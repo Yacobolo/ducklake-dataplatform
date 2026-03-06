@@ -22,7 +22,6 @@ This section is generated from versioned JSON Schema artifacts.
 - [Macro](./kinds/macro) (`kinds/macro.schema.json`)
 - [Model](./kinds/model) (`kinds/model.schema.json`)
 - [Notebook](./kinds/notebook) (`kinds/notebook.schema.json`)
-- [Pipeline](./kinds/pipeline) (`kinds/pipeline.schema.json`)
 - [PrincipalList](./kinds/principal-list) (`kinds/principal-list.schema.json`)
 - [PrivilegePresetList](./kinds/privilege-preset-list) (`kinds/privilege-preset-list.schema.json`)
 - [RowFilterList](./kinds/row-filter-list) (`kinds/row-filter-list.schema.json`)
@@ -46,12 +45,11 @@ This section is generated from versioned JSON Schema artifacts.
 | `kinds/compute-assignment-list.schema.json` | `6fbe93f03583e8d78c49daf83e080acbe453ad59a0f075aec68ca81c6ce0cbc7` |
 | `kinds/compute-endpoint-list.schema.json` | `f78cd62eb662a204b1cfb9bb3aa3175c103631b0dfc8470aea4670df123a0538` |
 | `kinds/external-location-list.schema.json` | `0ee50a446813a293604b06df459c07013a211df1e2bb11365062d306793b2514` |
-| `kinds/grant-list.schema.json` | `a9927dae7b587157ddf260c8742c3e8a8326dcce8df6d3af76f7cf5d7e93418d` |
+| `kinds/grant-list.schema.json` | `a31b4b090e5cd29ef4568de4839bfa526baa0c508749ba95d714377072f851aa` |
 | `kinds/group-list.schema.json` | `3c23b29013f530fefac36ed3beabb88fb8bc873bb1ad2e53d30d0376b91823d5` |
 | `kinds/macro.schema.json` | `fe3a76e6ed90c61b5be605c11462910fcc8f97e58609050cd92b6e22a5b2bed6` |
 | `kinds/model.schema.json` | `ec3ee7f0e447d9840dfaf3ffaf6e67c7167bb5f4dcee8b01aec94ff09439d9c4` |
 | `kinds/notebook.schema.json` | `10398673f15ef93cbc9acaf142f5bd71c3390623936002dc083745b52defc168` |
-| `kinds/pipeline.schema.json` | `08ba3655115f67848aad556d8e1d59ea00dbba9834392cbbd68094b5b37a3b32` |
 | `kinds/principal-list.schema.json` | `950660b984996c155f9e12c25948f3c8443d5b76940c3c0289eb532c8de151d4` |
 | `kinds/privilege-preset-list.schema.json` | `090c732c29ec1e85731909b89d44041f9e8138184a209812da0048290d53bf87` |
 | `kinds/row-filter-list.schema.json` | `ac9b42eda99888d725ae668923c2ac73c0156587844108078a034292a22c5743` |

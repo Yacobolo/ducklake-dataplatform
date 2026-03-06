@@ -37,8 +37,6 @@ tags:
     description: Compute endpoint and assignment management.
   - name: Notebooks
     description: SQL notebooks, sessions, jobs, and Git integration.
-  - name: Pipelines
-    description: Pipeline workflow scheduling and orchestration.
   - name: Assets
     description: Asset-centric orchestration, runs, partitions, and backfills.
   - name: Models
@@ -357,18 +355,6 @@ components:
       $ref: 'schemas/notebooks.yaml#/PaginatedGitRepos'
     GitSyncResult:
       $ref: 'schemas/notebooks.yaml#/GitSyncResult'
-    Pipeline:
-      $ref: 'schemas/pipeline.yaml#/Pipeline'
-    PipelineJob:
-      $ref: 'schemas/pipeline.yaml#/PipelineJob'
-    CreatePipelineRequest:
-      $ref: 'schemas/pipeline.yaml#/CreatePipelineRequest'
-    UpdatePipelineRequest:
-      $ref: 'schemas/pipeline.yaml#/UpdatePipelineRequest'
-    CreatePipelineJobRequest:
-      $ref: 'schemas/pipeline.yaml#/CreatePipelineJobRequest'
-    PaginatedPipelines:
-      $ref: 'schemas/pipeline.yaml#/PaginatedPipelines'
     Asset:
       $ref: 'schemas/asset.yaml#/Asset'
     AssetGraph:
@@ -690,15 +676,6 @@ paths:
     $ref: 'paths/notebooks.yaml#/paths/~1git-repos~1{gitRepoId}'
   /git-repos/{gitRepoId}/sync:
     $ref: 'paths/notebooks.yaml#/paths/~1git-repos~1{gitRepoId}~1sync'
-  # === Pipelines ===
-  /pipelines:
-    $ref: 'paths/pipeline.yaml#/paths/~1pipelines'
-  /pipelines/{pipelineName}:
-    $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1{pipelineName}'
-  /pipelines/{pipelineName}/jobs:
-    $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1{pipelineName}~1jobs'
-  /pipelines/{pipelineName}/jobs/{jobId}:
-    $ref: 'paths/pipeline.yaml#/paths/~1pipelines~1{pipelineName}~1jobs~1{jobId}'
   # === Assets ===
   /assets:
     $ref: 'paths/assets.yaml#/paths/~1assets'

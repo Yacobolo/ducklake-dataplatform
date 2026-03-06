@@ -705,6 +705,47 @@ func TestPipelineService_TriggerRun(t *testing.T) {
 	}
 }
 
+func TestPipelineService_TriggerRun_ClonesParams(t *testing.T) {
+	pipeRepo := &testutil.MockPipelineRepo{
+		GetPipelineByNameFn: func(ctx context.Context, name string) (*domain.Pipeline, error) {
+			return &domain.Pipeline{ID: "p1", Name: name, ConcurrencyLimit: 1}, nil
+		},
+		ListJobsByPipelineFn: func(ctx context.Context, pipelineID string) ([]domain.PipelineJob, error) {
+			return []domain.PipelineJob{{ID: "j1", PipelineID: pipelineID, Name: "extract"}}, nil
+		},
+	}
+	svc := newTestService(pipeRepo, &testutil.MockPipelineRunRepo{}, &testutil.MockAuditRepo{}, &testutil.MockNotebookProvider{})
+
+	inputParams := map[string]string{"date": "2026-01-01"}
+	run, err := svc.TriggerRun(context.Background(), "alice", "etl-daily", inputParams, domain.TriggerTypeManual)
+	require.NoError(t, err)
+	require.NotNil(t, run)
+
+	inputParams["date"] = "2026-01-02"
+	assert.Equal(t, "2026-01-01", run.Parameters["date"])
+}
+
+func TestPipelineService_SyncPipelinesToAssets_GetAssetUnexpectedError(t *testing.T) {
+	pipeRepo := &testutil.MockPipelineRepo{
+		ListPipelinesFn: func(ctx context.Context, page domain.PageRequest) ([]domain.Pipeline, int64, error) {
+			return []domain.Pipeline{{ID: "p1", Name: "etl-daily", CreatedBy: "alice"}}, 1, nil
+		},
+		ListJobsByPipelineFn: func(ctx context.Context, pipelineID string) ([]domain.PipelineJob, error) {
+			return []domain.PipelineJob{{ID: "j1", Name: "extract", PipelineID: pipelineID}}, nil
+		},
+	}
+
+	svc := newTestService(pipeRepo, &testutil.MockPipelineRunRepo{}, &testutil.MockAuditRepo{}, &testutil.MockNotebookProvider{})
+	assetRepo := &mockDataAssetRepo{getByIDErr: errors.New("temporary db issue")}
+	svc.SetAssetOrchestration(assetRepo, &mockAssetDependencyRepo{}, nil)
+
+	err := svc.SyncPipelinesToAssets(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "get asset")
+	assert.Empty(t, assetRepo.created)
+	assert.Empty(t, assetRepo.updated)
+}
+
 // === ListRuns ===
 
 func TestPipelineService_ListRuns(t *testing.T) {

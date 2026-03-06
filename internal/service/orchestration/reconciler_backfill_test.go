@@ -424,9 +424,10 @@ func TestBackfillService_CreateEmitsEvents(t *testing.T) {
 	eventRepo := &memEventRepo{}
 	router := NewTriggerRouter(eventRepo)
 	backfills := &memBackfillRepo{}
-	svc := NewBackfillService(backfills, router, nil)
+	svc := NewBackfillService(backfills, router, nil, nil)
 
-	req, slices, err := svc.Create(context.Background(), "asset-1", "admin", "2026-03-01", "2026-03-03", 2)
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin", IsAdmin: true, Type: "user"})
+	req, slices, err := svc.Create(ctx, "asset-1", "admin", "2026-03-01", "2026-03-03", 2)
 	require.NoError(t, err)
 	require.NotNil(t, req)
 	assert.Len(t, slices, 3)

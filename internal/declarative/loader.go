@@ -68,12 +68,7 @@ func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, erro
 		return nil, err
 	}
 
-	// 7. pipelines/
-	if err := loadPipelines(dir, state, opts); err != nil {
-		return nil, err
-	}
-
-	// 7b. assets/
+	// 7. assets/
 	if err := loadAssets(dir, state, opts); err != nil {
 		return nil, err
 	}
@@ -651,50 +646,6 @@ func loadNotebooks(root string, state *DesiredState, opts LoadOptions) error {
 		state.Notebooks = append(state.Notebooks, NotebookResource{
 			Name: nbName,
 			Spec: nbDoc.Spec,
-		})
-	}
-
-	return nil
-}
-
-// loadPipelines walks the pipelines/ directory. Each .yaml file is a pipeline.
-func loadPipelines(root string, state *DesiredState, opts LoadOptions) error {
-	plDir := filepath.Join(root, "pipelines")
-	if !dirExists(plDir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(plDir)
-	if err != nil {
-		return fmt.Errorf("read pipelines directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		plName := strings.TrimSuffix(entry.Name(), ".yaml")
-		plFile := filepath.Join(plDir, entry.Name())
-
-		var plDoc PipelineDoc
-		found, err := loadYAMLFile(plFile, &plDoc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(plFile, plDoc.APIVersion, plDoc.Kind, KindNamePipeline); err != nil {
-			return err
-		}
-		if plDoc.Metadata.Name != plName {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", plFile, plDoc.Metadata.Name, plName)
-		}
-		state.Pipelines = append(state.Pipelines, PipelineResource{
-			Name: plName,
-			Spec: plDoc.Spec,
 		})
 	}
 

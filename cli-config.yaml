@@ -10,8 +10,6 @@ group_overrides:
     short: "Manage the data catalog"
   Notebooks:
     short: "Notebooks, cells, sessions, and Git repositories"
-  Pipelines:
-    short: "Data pipelines, jobs, and runs"
   Semantic:
     name: semantic
     short: "Semantic models, metrics, and query planning"
@@ -325,10 +323,3 @@ command_overrides:
   syncGitRepo:
     verb: sync
     command_path: [git-repos]
-
-  # === Pipelines ===
-  createPipeline:
-    positional_args: *name_positional
-
-  listPipelines:
-    table_columns: [id, name, schedule_cron, is_paused, created_by, created_at]

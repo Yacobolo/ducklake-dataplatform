@@ -56,46 +56,63 @@ func (r *OrchestrationEventRepo) Enqueue(ctx context.Context, event *domain.Orch
 }
 
 func (r *OrchestrationEventRepo) ClaimNextPending(ctx context.Context, now time.Time) (*domain.OrchestrationEvent, error) {
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	row := tx.QueryRowContext(ctx, `
-		SELECT id, event_type, asset_id, partition_key, payload_json, status, attempt_count,
-		       available_at, last_error, idempotency_key, created_at, updated_at
-		FROM orchestration_events
-		WHERE status = ? AND available_at <= ?
-		ORDER BY available_at ASC, created_at ASC
-		LIMIT 1
-	`, domain.OrchestrationEventStatusPending, now.UTC())
-
-	event, err := scanOrchestrationEvent(row)
-	if err != nil {
-		var notFoundErr *domain.NotFoundError
-		if errors.As(err, &notFoundErr) {
-			return nil, err
+	nowUTC := now.UTC()
+	for {
+		tx, err := r.db.BeginTx(ctx, nil)
+		if err != nil {
+			return nil, fmt.Errorf("begin claim transaction: %w", err)
 		}
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, domain.ErrNotFound("no pending orchestration event")
+
+		row := tx.QueryRowContext(ctx, `
+			SELECT id, event_type, asset_id, partition_key, payload_json, status, attempt_count,
+			       available_at, last_error, idempotency_key, created_at, updated_at
+			FROM orchestration_events
+			WHERE status = ? AND available_at <= ?
+			ORDER BY available_at ASC, created_at ASC
+			LIMIT 1
+		`, domain.OrchestrationEventStatusPending, nowUTC)
+
+		event, scanErr := scanOrchestrationEvent(row)
+		if scanErr != nil {
+			_ = tx.Rollback()
+			var notFoundErr *domain.NotFoundError
+			if errors.As(scanErr, &notFoundErr) {
+				return nil, domain.ErrNotFound("no pending orchestration event")
+			}
+			if errors.Is(scanErr, sql.ErrNoRows) {
+				return nil, domain.ErrNotFound("no pending orchestration event")
+			}
+			return nil, fmt.Errorf("scan pending orchestration event: %w", scanErr)
 		}
-		return nil, err
-	}
 
-	_, err = tx.ExecContext(ctx, `
-		UPDATE orchestration_events
-		SET status = ?, attempt_count = attempt_count + 1, updated_at = CURRENT_TIMESTAMP
-		WHERE id = ?
-	`, domain.OrchestrationEventStatusProcessing, event.ID)
-	if err != nil {
-		return nil, mapDBError(err)
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
+		result, execErr := tx.ExecContext(ctx, `
+			UPDATE orchestration_events
+			SET status = ?, attempt_count = attempt_count + 1, updated_at = CURRENT_TIMESTAMP
+			WHERE id = ? AND status = ?
+		`, domain.OrchestrationEventStatusProcessing, event.ID, domain.OrchestrationEventStatusPending)
+		if execErr != nil {
+			_ = tx.Rollback()
+			return nil, fmt.Errorf("claim orchestration event %s: %w", event.ID, mapDBError(execErr))
+		}
 
-	return r.getByID(ctx, event.ID)
+		rowsAffected, affectedErr := result.RowsAffected()
+		if affectedErr != nil {
+			_ = tx.Rollback()
+			return nil, fmt.Errorf("read claim result for orchestration event %s: %w", event.ID, affectedErr)
+		}
+		if rowsAffected == 0 {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				return nil, fmt.Errorf("rollback failed claim transaction: %w", rollbackErr)
+			}
+			continue
+		}
+
+		if commitErr := tx.Commit(); commitErr != nil {
+			return nil, fmt.Errorf("commit claim transaction for orchestration event %s: %w", event.ID, commitErr)
+		}
+
+		return r.getByID(ctx, event.ID)
+	}
 }
 
 func (r *OrchestrationEventRepo) MarkProcessed(ctx context.Context, id string) error {

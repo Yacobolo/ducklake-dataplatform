@@ -64,9 +64,6 @@
       "$ref": "kinds/asset.schema.json"
     },
     {
-      "$ref": "kinds/pipeline.schema.json"
-    },
-    {
       "$ref": "kinds/model.schema.json"
     },
     {

@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -100,6 +102,66 @@ func TestBackfillRepo_CreateAndUpdate(t *testing.T) {
 	assert.Equal(t, int64(1), total)
 	require.Len(t, list, 1)
 	assert.Equal(t, domain.BackfillStatusSuccess, list[0].Status)
+}
+
+func TestOrchestrationEventRepo_ClaimNextPending_ConcurrentSingleWinner(t *testing.T) {
+	events, _, assets := setupQueueRepos(t)
+	ctx := context.Background()
+
+	asset, err := assets.Create(ctx, &domain.DataAsset{
+		AssetKey:  "main.ops.events_race",
+		AssetType: domain.AssetTypeTable,
+		Owner:     "ops",
+		CreatedBy: "admin",
+		IsActive:  true,
+	})
+	require.NoError(t, err)
+
+	assetID := asset.ID
+	_, err = events.Enqueue(ctx, &domain.OrchestrationEvent{
+		EventType:   "UPSTREAM_UPDATE",
+		AssetID:     &assetID,
+		Status:      domain.OrchestrationEventStatusPending,
+		PayloadJSON: map[string]any{"source": "race-test"},
+	})
+	require.NoError(t, err)
+
+	type claimResult struct {
+		event *domain.OrchestrationEvent
+		err   error
+	}
+
+	results := make(chan claimResult, 2)
+	var wg sync.WaitGroup
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			event, claimErr := events.ClaimNextPending(ctx, time.Now().UTC())
+			results <- claimResult{event: event, err: claimErr}
+		}()
+	}
+	wg.Wait()
+	close(results)
+
+	successes := 0
+	notFounds := 0
+	for result := range results {
+		if result.err == nil {
+			require.NotNil(t, result.event)
+			successes++
+			continue
+		}
+		var notFoundErr *domain.NotFoundError
+		if errors.As(result.err, &notFoundErr) {
+			notFounds++
+			continue
+		}
+		require.NoError(t, result.err)
+	}
+
+	assert.Equal(t, 1, successes)
+	assert.Equal(t, 1, notFounds)
 }
 
 func ptr(s string) *string { return &s }

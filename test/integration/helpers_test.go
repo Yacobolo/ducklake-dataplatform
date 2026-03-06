@@ -42,6 +42,7 @@ import (
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
 	"duck-demo/internal/middleware"
+	assetsvc "duck-demo/internal/service/asset"
 	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
@@ -49,6 +50,7 @@ import (
 	"duck-demo/internal/service/macro"
 	svcmodel "duck-demo/internal/service/model"
 	svcnotebook "duck-demo/internal/service/notebook"
+	"duck-demo/internal/service/orchestration"
 	svcpipeline "duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
@@ -1134,6 +1136,8 @@ type httpTestOpts struct {
 	// APIKeyEnabled overrides whether API key auth is enabled in middleware.
 	// Nil means default true.
 	APIKeyEnabled *bool
+	// WithAssets wires asset orchestration services and reconciler into the API.
+	WithAssets bool
 }
 
 // httpTestEnv bundles the test server, API keys, and direct DB access.
@@ -1143,6 +1147,13 @@ type httpTestEnv struct {
 	MetaDB         *sql.DB
 	DuckDB         *sql.DB                          // nil unless WithDuckLake
 	ExtLocationSvc *storage.ExternalLocationService // nil unless WithStorageCredentials
+	Reconciler     *orchestration.Reconciler
+}
+
+type integrationNoopAssetStepper struct{}
+
+func (integrationNoopAssetStepper) Execute(context.Context, string, orchestration.IOManager) (map[string]any, error) {
+	return map[string]any{"status": "noop"}, nil
 }
 
 type integrationSessionEngine struct{}
@@ -1405,6 +1416,43 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
 	)
 
+	var (
+		assetSvc    *assetsvc.Service
+		backfillSvc *orchestration.BackfillService
+		reconciler  *orchestration.Reconciler
+	)
+	if opts.WithAssets {
+		assetRepo := repository.NewDataAssetRepo(metaDB)
+		assetDepRepo := repository.NewAssetDependencyRepo(metaDB)
+		assetPartitionRepo := repository.NewAssetPartitionRepo(metaDB)
+		assetRunRepo := repository.NewAssetRunRepo(metaDB)
+		assetCheckRepo := repository.NewAssetCheckRepo(metaDB)
+		eventRepo := repository.NewOrchestrationEventRepo(metaDB)
+		backfillRepo := repository.NewBackfillRepo(metaDB)
+
+		assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
+		assetExecutor := orchestration.NewAssetExecutor(
+			assetRunRepo,
+			orchestration.NewAssetRunStateMachine(),
+			orchestration.NewInMemoryIOManager(),
+			orchestration.NewConcurrencyLimiter(8, 2),
+			integrationNoopAssetStepper{},
+		)
+		triggerRouter := orchestration.NewTriggerRouter(eventRepo)
+		backfillSvc = orchestration.NewBackfillService(backfillRepo, triggerRouter, auditRepo, authSvc)
+		backfillRunner := orchestration.NewBackfillRunner(backfillRepo, assetDepRepo, assetRunRepo, assetScheduler, assetExecutor)
+		reconciler = orchestration.NewReconciler(
+			eventRepo,
+			assetRepo,
+			assetRunRepo,
+			assetScheduler,
+			assetExecutor,
+			backfillRunner,
+			false,
+		)
+		assetSvc = assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, eventRepo, auditRepo, authSvc)
+	}
+
 	// Wire APIKeyService by default so API key endpoints are always available
 	// in integration test servers.
 	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
@@ -1475,8 +1523,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		apiKeySvc,
 		notebookSvc, nil, gitRepoSvc,
 		pipelineSvc,
-		nil,      // assetSvc
-		nil,      // assetBackfillSvc
+		assetSvc, // assetSvc
+		backfillSvc,
 		modelSvc, // modelSvc
 		macroSvc, // macroSvc
 		semanticSvc,
@@ -1541,8 +1589,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		querySvc,
 		viewSvc,
 		pipelineSvc,
-		nil,
-		nil,
+		assetSvc,
+		backfillSvc,
 		notebookSvc,
 		nil,
 		macroSvc,
@@ -1566,6 +1614,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		MetaDB:         metaDB,
 		DuckDB:         duckDB,
 		ExtLocationSvc: extLocationSvc,
+		Reconciler:     reconciler,
 	}
 }
 

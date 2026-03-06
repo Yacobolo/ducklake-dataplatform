@@ -88,7 +88,7 @@ Lists historical and active backfill requests for an asset.
 
 Create a backfill request
 
-Creates a partition-range backfill request for an asset. Requires admin privileges.
+Creates a partition-range backfill request for an asset. Requires EXECUTE_ASSET_MATERIALIZATION.
 
 - Operation ID: `createAssetBackfill`
 
@@ -255,7 +255,7 @@ Lists completed materializations and metadata for an asset.
 
 Trigger asset materialization
 
-Enqueues a materialization event for an asset. Requires admin privileges.
+Enqueues a materialization event for an asset. Requires EXECUTE_ASSET_MATERIALIZATION.
 
 - Operation ID: `triggerAssetMaterialization`
 

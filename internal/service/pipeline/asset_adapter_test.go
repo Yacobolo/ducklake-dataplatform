@@ -113,6 +113,21 @@ func TestSyncModelsToAssets_ListModelsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "list models")
 }
 
+func TestSyncModelsToAssets_GetAssetUnexpectedError(t *testing.T) {
+	modelRepo := &mockModelRepo{
+		listAllFn: func(context.Context) ([]domain.Model, error) {
+			return []domain.Model{{ID: "m1", ProjectName: "sales", Name: "stg_orders", CreatedBy: "alice"}}, nil
+		},
+	}
+	assetRepo := &mockDataAssetRepo{getByIDErr: errors.New("db unavailable")}
+
+	err := SyncModelsToAssets(context.Background(), modelRepo, assetRepo, &mockAssetDependencyRepo{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "get asset")
+	assert.Empty(t, assetRepo.created)
+	assert.Empty(t, assetRepo.updated)
+}
+
 type mockModelRepo struct {
 	listAllFn func(ctx context.Context) ([]domain.Model, error)
 }
@@ -157,9 +172,10 @@ func (m *mockModelRepo) UpdateDependencies(context.Context, string, []string) er
 }
 
 type mockDataAssetRepo struct {
-	existing map[string]domain.DataAsset
-	created  []domain.DataAsset
-	updated  []domain.DataAsset
+	existing   map[string]domain.DataAsset
+	created    []domain.DataAsset
+	updated    []domain.DataAsset
+	getByIDErr error
 }
 
 func (m *mockDataAssetRepo) Create(_ context.Context, a *domain.DataAsset) (*domain.DataAsset, error) {
@@ -172,6 +188,9 @@ func (m *mockDataAssetRepo) Create(_ context.Context, a *domain.DataAsset) (*dom
 }
 
 func (m *mockDataAssetRepo) GetByID(_ context.Context, id string) (*domain.DataAsset, error) {
+	if m.getByIDErr != nil {
+		return nil, m.getByIDErr
+	}
 	a, ok := m.existing[id]
 	if !ok {
 		return nil, domain.ErrNotFound("asset %s not found", id)

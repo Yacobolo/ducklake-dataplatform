@@ -14,15 +14,19 @@ type BackfillService struct {
 	backfills domain.BackfillRepository
 	router    *TriggerRouter
 	audit     domain.AuditRepository
+	auth      domain.AuthorizationService
 }
 
-func NewBackfillService(backfills domain.BackfillRepository, router *TriggerRouter, audit domain.AuditRepository) *BackfillService {
-	return &BackfillService{backfills: backfills, router: router, audit: audit}
+func NewBackfillService(backfills domain.BackfillRepository, router *TriggerRouter, audit domain.AuditRepository, auth domain.AuthorizationService) *BackfillService {
+	return &BackfillService{backfills: backfills, router: router, audit: audit, auth: auth}
 }
 
 func (s *BackfillService) Create(ctx context.Context, assetID, requestedBy, from, to string, maxParallelism int) (*domain.BackfillRequest, []domain.BackfillSlice, error) {
 	if strings.TrimSpace(assetID) == "" {
 		return nil, nil, domain.ErrValidation("asset_id is required")
+	}
+	if err := s.requirePrivilege(ctx, requestedBy, domain.PrivExecuteAssetMaterialization); err != nil {
+		return nil, nil, err
 	}
 	if from == "" || to == "" {
 		return nil, nil, domain.ErrValidation("partition_from and partition_to are required")
@@ -75,6 +79,28 @@ func (s *BackfillService) Create(ctx context.Context, assetID, requestedBy, from
 	}
 
 	return req, slices, nil
+}
+
+func (s *BackfillService) requirePrivilege(ctx context.Context, principalName string, privilege string) error {
+	if strings.TrimSpace(principalName) == "" {
+		return domain.ErrAccessDenied("principal context is required")
+	}
+	principal, _ := domain.PrincipalFromContext(ctx)
+	if s.auth == nil {
+		if principal.IsAdmin {
+			return nil
+		}
+		return domain.ErrAccessDenied("asset orchestration requires %s on catalog", privilege)
+	}
+
+	allowed, err := s.auth.CheckPrivilege(ctx, principalName, domain.SecurableCatalog, domain.CatalogID, privilege)
+	if err != nil {
+		return fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		return domain.ErrAccessDenied("%q lacks %s on catalog", principalName, privilege)
+	}
+	return nil
 }
 
 func partitionRange(from, to string) ([]string, error) {

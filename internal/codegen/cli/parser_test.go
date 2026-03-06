@@ -166,7 +166,7 @@ func TestParse_FullSpec(t *testing.T) {
 	for _, g := range groups {
 		groupNames[g.Name] = true
 	}
-	for _, expected := range []string{"catalog", "security", "query", "ingestion", "lineage", "governance", "observability", "storage", "manifest", "compute", "notebooks", "pipelines"} {
+	for _, expected := range []string{"catalog", "security", "query", "ingestion", "lineage", "governance", "observability", "storage", "manifest", "compute", "notebooks", "assets"} {
 		assert.True(t, groupNames[expected], "missing group: %s", expected)
 	}
 
@@ -206,8 +206,8 @@ func TestParse_FullSpec(t *testing.T) {
 		case "notebooks":
 			assert.Greater(t, len(g.Commands), 15, "notebooks should have many commands")
 
-		case "pipelines":
-			assert.GreaterOrEqual(t, len(g.Commands), 8, "pipelines should have expected commands")
+		case "assets":
+			assert.GreaterOrEqual(t, len(g.Commands), 8, "assets should have expected commands")
 		}
 	}
 }

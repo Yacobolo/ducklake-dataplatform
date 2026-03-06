@@ -202,7 +202,10 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 		return nil, fmt.Errorf("read notebooks: %w", err)
 	}
 	if err := c.readPipelines(ctx, state); err != nil {
-		return nil, fmt.Errorf("read pipelines: %w", err)
+		if !c.isOptionalReadError(err) {
+			return nil, fmt.Errorf("read pipelines: %w", err)
+		}
+		c.addOptionalReadWarning("pipelines", err)
 	}
 	if err := c.readMacros(ctx, state); err != nil {
 		if !c.isOptionalReadError(err) {

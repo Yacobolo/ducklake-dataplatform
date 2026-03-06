@@ -166,13 +166,13 @@ paths:
     post:
       operationId: triggerAssetMaterialization
       summary: Trigger asset materialization
-      description: Enqueues a materialization event for an asset. Requires admin privileges.
+      description: Enqueues a materialization event for an asset. Requires EXECUTE_ASSET_MATERIALIZATION.
       tags: [Assets]
       x-authz:
         mode: privilege
         checks:
           - securable_type: catalog
-            privilege: MANAGE_PIPELINES
+            privilege: EXECUTE_ASSET_MATERIALIZATION
             securable_id_source: catalog_sentinel
       requestBody:
         required: false
@@ -337,13 +337,13 @@ paths:
     post:
       operationId: createAssetBackfill
       summary: Create a backfill request
-      description: Creates a partition-range backfill request for an asset. Requires admin privileges.
+      description: Creates a partition-range backfill request for an asset. Requires EXECUTE_ASSET_MATERIALIZATION.
       tags: [Assets]
       x-authz:
         mode: privilege
         checks:
           - securable_type: catalog
-            privilege: MANAGE_PIPELINES
+            privilege: EXECUTE_ASSET_MATERIALIZATION
             securable_id_source: catalog_sentinel
       requestBody:
         required: true

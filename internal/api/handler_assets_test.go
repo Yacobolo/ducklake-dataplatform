@@ -173,33 +173,82 @@ func TestHandler_ListAssetCheckResults_NotFound(t *testing.T) {
 func TestAssetRunToAPI_MapsPartitionKey(t *testing.T) {
 	t.Parallel()
 	partitionKey := "2026-01-02"
+	partitionFrom := "2026-01-01"
+	partitionTo := "2026-01-03"
 	run := domain.AssetRun{
-		ID:           "run-1",
-		AssetID:      "asset-1",
-		PartitionKey: &partitionKey,
-		Status:       domain.AssetRunStatusQueued,
-		TriggerType:  domain.AssetTriggerTypeBackfill,
-		TriggeredBy:  "tester",
-		AttemptCount: 0,
-		MaxAttempts:  1,
-		CreatedAt:    time.Now().UTC(),
-		UpdatedAt:    time.Now().UTC(),
+		ID:            "run-1",
+		AssetID:       "asset-1",
+		PartitionKey:  &partitionKey,
+		PartitionFrom: &partitionFrom,
+		PartitionTo:   &partitionTo,
+		Status:        domain.AssetRunStatusQueued,
+		TriggerType:   domain.AssetTriggerTypeBackfill,
+		TriggeredBy:   "tester",
+		AttemptCount:  0,
+		MaxAttempts:   1,
+		CreatedAt:     time.Now().UTC(),
+		UpdatedAt:     time.Now().UTC(),
 	}
 
 	apiRun := assetRunToAPI(run)
 	require.NotNil(t, apiRun.PartitionKey)
+	require.NotNil(t, apiRun.PartitionFrom)
+	require.NotNil(t, apiRun.PartitionTo)
 	assert.Equal(t, partitionKey, *apiRun.PartitionKey)
+	assert.Equal(t, partitionFrom, *apiRun.PartitionFrom)
+	assert.Equal(t, partitionTo, *apiRun.PartitionTo)
 }
 
-func TestHandler_CreateAssetBackfill_RequiresAdmin(t *testing.T) {
+func TestHandler_ListAssetRuns_MapsPartitionRange(t *testing.T) {
+	t.Parallel()
+	partitionKey := "2026-01-02"
+	partitionFrom := "2026-01-01"
+	partitionTo := "2026-01-03"
+	h := &APIHandler{assets: &mockAssetService{
+		getAssetFn: func(_ context.Context, key string) (*domain.DataAsset, error) {
+			require.Equal(t, "sales.daily", key)
+			return &domain.DataAsset{ID: "asset-1", AssetKey: key}, nil
+		},
+		listRunsFn: func(_ context.Context, filter domain.AssetRunFilter) ([]domain.AssetRun, int64, error) {
+			require.NotNil(t, filter.AssetID)
+			require.Equal(t, "asset-1", *filter.AssetID)
+			return []domain.AssetRun{{
+				ID:            "run-1",
+				AssetID:       "asset-1",
+				PartitionKey:  &partitionKey,
+				PartitionFrom: &partitionFrom,
+				PartitionTo:   &partitionTo,
+				Status:        domain.AssetRunStatusSuccess,
+				TriggerType:   domain.AssetTriggerTypeBackfill,
+				TriggeredBy:   "tester",
+				MaxAttempts:   1,
+				CreatedAt:     time.Now().UTC(),
+				UpdatedAt:     time.Now().UTC(),
+			}}, 1, nil
+		},
+	}}
+
+	resp, err := h.ListAssetRuns(assetTestCtx(true), ListAssetRunsRequestObject{AssetKey: "sales.daily"})
+	require.NoError(t, err)
+	ok, cast := resp.(ListAssetRuns200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Data)
+	require.Len(t, *ok.Data, 1)
+	apiRun := (*ok.Data)[0]
+	require.NotNil(t, apiRun.PartitionFrom)
+	require.NotNil(t, apiRun.PartitionTo)
+	assert.Equal(t, partitionFrom, *apiRun.PartitionFrom)
+	assert.Equal(t, partitionTo, *apiRun.PartitionTo)
+}
+
+func TestHandler_CreateAssetBackfill_AccessDenied(t *testing.T) {
 	t.Parallel()
 	h := &APIHandler{
 		assets: &mockAssetService{getAssetFn: func(_ context.Context, _ string) (*domain.DataAsset, error) {
 			return &domain.DataAsset{ID: "asset-1", AssetKey: "sales.daily"}, nil
 		}},
 		backfills: &mockAssetBackfillService{createFn: func(context.Context, string, string, string, string, int) (*domain.BackfillRequest, []domain.BackfillSlice, error) {
-			t.Fatalf("create should not be called for non-admin")
-			return nil, nil, nil
+			return nil, nil, domain.ErrAccessDenied("\"tester\" lacks EXECUTE_ASSET_MATERIALIZATION on catalog")
 		}},
 	}
 	body := CreateAssetBackfillJSONRequestBody{PartitionFrom: "2026-01-01", PartitionTo: "2026-01-02"}
@@ -228,22 +277,21 @@ func TestHandler_TriggerAssetMaterialization(t *testing.T) {
 	}}
 	body := TriggerAssetMaterializationJSONRequestBody{PartitionKey: &partition, IdempotencyKey: &idem, Payload: &map[string]any{"source": "manual"}}
 
-	resp, err := h.TriggerAssetMaterialization(assetTestCtx(true), TriggerAssetMaterializationRequestObject{AssetKey: "sales.daily", Body: &body})
+	resp, err := h.TriggerAssetMaterialization(assetTestCtx(false), TriggerAssetMaterializationRequestObject{AssetKey: "sales.daily", Body: &body})
 	require.NoError(t, err)
 	accepted, cast := resp.(TriggerAssetMaterialization202JSONResponse)
 	require.True(t, cast)
 	assert.Equal(t, "event-1", *accepted.EventId)
 }
 
-func TestHandler_TriggerAssetMaterialization_RequiresAdmin(t *testing.T) {
+func TestHandler_TriggerAssetMaterialization_AccessDenied(t *testing.T) {
 	t.Parallel()
 	h := &APIHandler{assets: &mockAssetService{
 		getAssetFn: func(_ context.Context, _ string) (*domain.DataAsset, error) {
 			return &domain.DataAsset{ID: "asset-1", AssetKey: "sales.daily"}, nil
 		},
 		triggerMaterializationFn: func(_ context.Context, _ string, _ *string, _ map[string]any, _ *string) (*domain.OrchestrationEvent, error) {
-			t.Fatalf("trigger should not be called for non-admin")
-			return nil, nil
+			return nil, domain.ErrAccessDenied("\"tester\" lacks EXECUTE_ASSET_MATERIALIZATION on catalog")
 		},
 	}}
 

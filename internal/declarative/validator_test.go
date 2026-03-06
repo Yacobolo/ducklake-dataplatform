@@ -520,31 +520,6 @@ func TestValidate_StorageCredentialErrors(t *testing.T) {
 	}
 }
 
-func TestValidate_PipelineJobCycleError(t *testing.T) {
-	state := &DesiredState{
-		Notebooks: []NotebookResource{{Name: "nb1", Spec: NotebookSpec{}}},
-		Pipelines: []PipelineResource{{
-			Name: "p1",
-			Spec: PipelineSpec{
-				Jobs: []PipelineJobSpec{
-					{Name: "j1", Notebook: "nb1", DependsOn: []string{"j2"}},
-					{Name: "j2", Notebook: "nb1", DependsOn: []string{"j1"}},
-				},
-			},
-		}},
-	}
-	errs := Validate(state)
-	require.NotEmpty(t, errs)
-	found := false
-	for _, e := range errs {
-		if containsStr(e.Error(), "circular") || containsStr(e.Error(), "cycle") {
-			found = true
-			break
-		}
-	}
-	assert.True(t, found, "expected error containing 'circular' or 'cycle', got %v", errs)
-}
-
 func TestValidate_ModelErrors(t *testing.T) {
 	tests := []struct {
 		name    string

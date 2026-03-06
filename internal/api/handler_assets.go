@@ -148,11 +148,6 @@ func (h *APIHandler) ListAssetRuns(ctx context.Context, req ListAssetRunsRequest
 }
 
 func (h *APIHandler) TriggerAssetMaterialization(ctx context.Context, req TriggerAssetMaterializationRequestObject) (TriggerAssetMaterializationResponseObject, error) {
-	principal, _ := domain.PrincipalFromContext(ctx)
-	if !principal.IsAdmin {
-		return TriggerAssetMaterialization403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: "asset materialization requires admin privileges"}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-	}
-
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
@@ -178,6 +173,9 @@ func (h *APIHandler) TriggerAssetMaterialization(ctx context.Context, req Trigge
 	if err != nil {
 		if errors.As(err, new(*domain.ValidationError)) {
 			return TriggerAssetMaterialization400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		if errors.As(err, new(*domain.AccessDeniedError)) {
+			return TriggerAssetMaterialization403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 		return nil, err
 	}
@@ -282,9 +280,6 @@ func (h *APIHandler) ListAssetBackfills(ctx context.Context, req ListAssetBackfi
 
 func (h *APIHandler) CreateAssetBackfill(ctx context.Context, req CreateAssetBackfillRequestObject) (CreateAssetBackfillResponseObject, error) {
 	principal, _ := domain.PrincipalFromContext(ctx)
-	if !principal.IsAdmin {
-		return CreateAssetBackfill403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: "asset backfill requires admin privileges"}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-	}
 
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
@@ -302,6 +297,9 @@ func (h *APIHandler) CreateAssetBackfill(ctx context.Context, req CreateAssetBac
 	if err != nil {
 		if errors.As(err, new(*domain.ValidationError)) {
 			return CreateAssetBackfill400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		if errors.As(err, new(*domain.AccessDeniedError)) {
+			return CreateAssetBackfill403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 		return nil, err
 	}
@@ -379,20 +377,22 @@ func assetRunToAPI(r domain.AssetRun) AssetRun {
 	ct := r.CreatedAt
 	ut := r.UpdatedAt
 	return AssetRun{
-		Id:           &r.ID,
-		AssetId:      &r.AssetID,
-		RunGroupId:   r.RunGroupID,
-		PartitionKey: r.PartitionKey,
-		Status:       &r.Status,
-		TriggerType:  &r.TriggerType,
-		TriggeredBy:  &r.TriggeredBy,
-		AttemptCount: int32Ptr(safeIntToInt32(r.AttemptCount)),
-		MaxAttempts:  int32Ptr(safeIntToInt32(r.MaxAttempts)),
-		StartedAt:    r.StartedAt,
-		FinishedAt:   r.FinishedAt,
-		ErrorMessage: r.ErrorMessage,
-		CreatedAt:    &ct,
-		UpdatedAt:    &ut,
+		Id:            &r.ID,
+		AssetId:       &r.AssetID,
+		RunGroupId:    r.RunGroupID,
+		PartitionKey:  r.PartitionKey,
+		PartitionFrom: r.PartitionFrom,
+		PartitionTo:   r.PartitionTo,
+		Status:        &r.Status,
+		TriggerType:   &r.TriggerType,
+		TriggeredBy:   &r.TriggeredBy,
+		AttemptCount:  int32Ptr(safeIntToInt32(r.AttemptCount)),
+		MaxAttempts:   int32Ptr(safeIntToInt32(r.MaxAttempts)),
+		StartedAt:     r.StartedAt,
+		FinishedAt:    r.FinishedAt,
+		ErrorMessage:  r.ErrorMessage,
+		CreatedAt:     &ct,
+		UpdatedAt:     &ut,
 	}
 }
 

@@ -156,6 +156,10 @@ func SyncModelsToAssets(
 				return fmt.Errorf("update asset %s: %w", asset.AssetKey, updateErr)
 			}
 		} else {
+			var notFoundErr *domain.NotFoundError
+			if !errors.As(getErr, &notFoundErr) {
+				return fmt.Errorf("get asset %s: %w", asset.AssetKey, getErr)
+			}
 			if _, createErr := assetRepo.Create(ctx, &asset); createErr != nil {
 				return fmt.Errorf("create asset %s: %w", asset.AssetKey, createErr)
 			}

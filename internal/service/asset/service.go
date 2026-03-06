@@ -3,6 +3,7 @@ package asset
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -18,6 +19,7 @@ type Service struct {
 	backfills  domain.BackfillRepository
 	events     domain.OrchestrationEventRepository
 	audit      domain.AuditRepository
+	auth       domain.AuthorizationService
 }
 
 func NewService(
@@ -29,6 +31,7 @@ func NewService(
 	backfills domain.BackfillRepository,
 	events domain.OrchestrationEventRepository,
 	audit domain.AuditRepository,
+	auth domain.AuthorizationService,
 ) *Service {
 	return &Service{
 		assets:     assets,
@@ -39,6 +42,7 @@ func NewService(
 		backfills:  backfills,
 		events:     events,
 		audit:      audit,
+		auth:       auth,
 	}
 }
 
@@ -151,6 +155,9 @@ func (s *Service) TriggerMaterialization(ctx context.Context, assetID string, pa
 	if strings.TrimSpace(assetID) == "" {
 		return nil, domain.ErrValidation("asset_id is required")
 	}
+	if err := s.requirePrivilege(ctx, domain.PrivExecuteAssetMaterialization); err != nil {
+		return nil, err
+	}
 	if payload == nil {
 		payload = map[string]any{}
 	}
@@ -180,4 +187,26 @@ func (s *Service) TriggerMaterialization(ctx context.Context, assetID string, pa
 	}
 
 	return event, nil
+}
+
+func (s *Service) requirePrivilege(ctx context.Context, privilege string) error {
+	principal, _ := domain.PrincipalFromContext(ctx)
+	if strings.TrimSpace(principal.Name) == "" {
+		return domain.ErrAccessDenied("principal context is required")
+	}
+	if s.auth == nil {
+		if principal.IsAdmin {
+			return nil
+		}
+		return domain.ErrAccessDenied("asset orchestration requires %s on catalog", privilege)
+	}
+
+	allowed, err := s.auth.CheckPrivilege(ctx, principal.Name, domain.SecurableCatalog, domain.CatalogID, privilege)
+	if err != nil {
+		return fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		return domain.ErrAccessDenied("%q lacks %s on catalog", principal.Name, privilege)
+	}
+	return nil
 }

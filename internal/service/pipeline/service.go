@@ -129,6 +129,10 @@ func (s *Service) syncPipelineAssets(ctx context.Context, pipeline *domain.Pipel
 				return fmt.Errorf("update asset %s: %w", asset.AssetKey, updateErr)
 			}
 		} else {
+			var notFoundErr *domain.NotFoundError
+			if !errors.As(getErr, &notFoundErr) {
+				return fmt.Errorf("get asset %s: %w", asset.AssetKey, getErr)
+			}
 			if _, createErr := s.assetRepo.Create(ctx, &asset); createErr != nil {
 				return fmt.Errorf("create asset %s: %w", asset.AssetKey, createErr)
 			}
@@ -350,12 +354,11 @@ func (s *Service) DeleteJob(ctx context.Context, principal string, _ string, job
 // TriggerRun validates the pipeline DAG and delegates execution to asset orchestration.
 func (s *Service) TriggerRun(ctx context.Context, principal string, pipelineName string,
 	params map[string]string, triggerType string) (*domain.PipelineRun, error) {
-	pipelineID, err := s.triggerAssets(ctx, principal, pipelineName, params)
+	runID := domain.NewID()
+	paramsCopy := cloneParams(params)
+	pipelineID, err := s.triggerAssets(ctx, runID, principal, pipelineName, paramsCopy)
 	if err != nil {
 		return nil, err
-	}
-	if params == nil {
-		params = map[string]string{}
 	}
 
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
@@ -367,17 +370,17 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, pipelineName
 	})
 
 	return &domain.PipelineRun{
-		ID:          domain.NewID(),
+		ID:          runID,
 		PipelineID:  pipelineID,
 		Status:      domain.PipelineRunStatusPending,
 		TriggerType: triggerType,
 		TriggeredBy: principal,
-		Parameters:  params,
+		Parameters:  cloneParams(paramsCopy),
 		CreatedAt:   time.Now(),
 	}, nil
 }
 
-func (s *Service) triggerAssets(ctx context.Context, principal string, pipelineName string,
+func (s *Service) triggerAssets(ctx context.Context, runID string, principal string, pipelineName string,
 	params map[string]string) (string, error) {
 
 	p, err := s.pipelines.GetPipelineByName(ctx, pipelineName)
@@ -399,11 +402,13 @@ func (s *Service) triggerAssets(ctx context.Context, principal string, pipelineN
 		return "", err
 	}
 
-	if params == nil {
-		params = map[string]string{}
-	}
+	runCtx, cancel := context.WithCancel(context.Background())
+	s.runCancels.Store(runID, cancel)
 
-	go s.executeRunViaAssets(context.Background(), p, jobs, levels, params, principal)
+	go func() {
+		defer s.runCancels.LoadAndDelete(runID)
+		s.executeRunViaAssets(runCtx, p, jobs, levels, cloneParams(params), principal)
+	}()
 
 	return p.ID, nil
 }
@@ -428,14 +433,26 @@ func (s *Service) executeRunViaAssets(
 	}
 
 	for i := range adapted.Assets {
-		if _, getErr := s.assetRepo.GetByID(ctx, adapted.Assets[i].ID); getErr == nil {
+		_, getErr := s.assetRepo.GetByID(ctx, adapted.Assets[i].ID)
+		if getErr == nil {
 			continue
 		}
+		var notFoundErr *domain.NotFoundError
+		if !errors.As(getErr, &notFoundErr) {
+			s.logger.Error("get asset", "asset_id", adapted.Assets[i].ID, "error", getErr)
+			return
+		}
 		if _, createErr := s.assetRepo.Create(ctx, &adapted.Assets[i]); createErr != nil {
-			if _, updateErr := s.assetRepo.Update(ctx, adapted.Assets[i].ID, &adapted.Assets[i]); updateErr != nil {
-				s.logger.Error("ensure asset", "asset_id", adapted.Assets[i].ID, "error", createErr)
-				return
+			var conflictErr *domain.ConflictError
+			if errors.As(createErr, &conflictErr) {
+				if _, updateErr := s.assetRepo.Update(ctx, adapted.Assets[i].ID, &adapted.Assets[i]); updateErr != nil {
+					s.logger.Error("ensure asset", "asset_id", adapted.Assets[i].ID, "error", updateErr)
+					return
+				}
+				continue
 			}
+			s.logger.Error("create asset", "asset_id", adapted.Assets[i].ID, "error", createErr)
+			return
 		}
 	}
 
@@ -487,6 +504,17 @@ func (s *Service) executeRunViaAssets(
 		s.logger.Error("execute asset plan", "asset_run_id", assetRun.ID, "error", err)
 		return
 	}
+}
+
+func cloneParams(params map[string]string) map[string]string {
+	if len(params) == 0 {
+		return map[string]string{}
+	}
+	out := make(map[string]string, len(params))
+	for k, v := range params {
+		out[k] = v
+	}
+	return out
 }
 
 type pipelineAssetStepper struct {

@@ -333,7 +333,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		&noopAssetStepper{},
 	)
 	triggerRouter := orchestration.NewTriggerRouter(orchEventRepo)
-	backfillSvc := orchestration.NewBackfillService(backfillRepo, triggerRouter, auditRepo)
+	backfillSvc := orchestration.NewBackfillService(backfillRepo, triggerRouter, auditRepo, authSvc)
 	backfillRunner := orchestration.NewBackfillRunner(backfillRepo, assetDepRepo, assetRunRepo, assetScheduler, assetExecutor)
 	reconciler := orchestration.NewReconciler(
 		orchEventRepo,
@@ -344,7 +344,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		backfillRunner,
 		cfg.FeatureReconcilerShadow,
 	)
-	assetSvc := assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, orchEventRepo, auditRepo)
+	assetSvc := assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, orchEventRepo, auditRepo, authSvc)
 
 	// === Model ===
 	modelRepo := repository.NewModelRepo(deps.WriteDB)
