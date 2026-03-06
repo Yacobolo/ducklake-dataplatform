@@ -396,7 +396,7 @@ func TestHandler_ListGroupMembers(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListGroupMembersResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenListGroupMembers403JSONResponse)
+				forbidden, ok := resp.(ListGroupMembers403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -445,7 +445,7 @@ func TestHandler_CreateGroupMember(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateGroupMemberResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenCreateGroupMember403JSONResponse)
+				forbidden, ok := resp.(CreateGroupMember403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -498,7 +498,7 @@ func TestHandler_DeleteGroupMember(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteGroupMemberResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenDeleteGroupMember403JSONResponse)
+				forbidden, ok := resp.(DeleteGroupMember403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -593,7 +593,7 @@ func TestHandler_ListGrants(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenListGrantsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenListGrants403JSONResponse)
+				forbidden, ok := resp.(ListGrants403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -643,7 +643,7 @@ func TestHandler_DeleteGrant(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteGrantResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenDeleteGrant404JSONResponse)
+				notFound, ok := resp.(DeleteGrant404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -656,7 +656,7 @@ func TestHandler_DeleteGrant(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteGrantResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenDeleteGrant403JSONResponse)
+				forbidden, ok := resp.(DeleteGrant403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -755,7 +755,7 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenCreateColumnMask403JSONResponse)
+				forbidden, ok := resp.(CreateColumnMask403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -768,7 +768,7 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateColumnMask400JSONResponse)
+				badReq, ok := resp.(CreateColumnMask400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -821,7 +821,7 @@ func TestHandler_DeleteColumnMask(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenDeleteColumnMask403JSONResponse)
+				forbidden, ok := resp.(DeleteColumnMask403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -834,7 +834,7 @@ func TestHandler_DeleteColumnMask(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenDeleteColumnMask404JSONResponse)
+				notFound, ok := resp.(DeleteColumnMask404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -880,7 +880,7 @@ func TestHandler_BindColumnMask(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenBindColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenBindColumnMask403JSONResponse)
+				forbidden, ok := resp.(BindColumnMask403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -893,7 +893,7 @@ func TestHandler_BindColumnMask(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenBindColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenBindColumnMask400JSONResponse)
+				badReq, ok := resp.(BindColumnMask400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -946,7 +946,7 @@ func TestHandler_UnbindColumnMask(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUnbindColumnMaskResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenUnbindColumnMask403JSONResponse)
+				forbidden, ok := resp.(UnbindColumnMask403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},

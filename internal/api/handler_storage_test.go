@@ -300,7 +300,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateStorageCredentialResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateStorageCredential400JSONResponse)
+				badReq, ok := resp.(CreateStorageCredential400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 				assert.Contains(t, badReq.Body.Message, "credential name is required")
@@ -315,7 +315,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateStorageCredentialResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenCreateStorageCredential403JSONResponse)
+				forbidden, ok := resp.(CreateStorageCredential403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -329,7 +329,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateStorageCredentialResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(GenCreateStorageCredential409JSONResponse)
+				conflict, ok := resp.(CreateStorageCredential409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 				assert.Contains(t, conflict.Body.Message, "already exists")
@@ -344,7 +344,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateStorageCredentialResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateStorageCredential400JSONResponse)
+				badReq, ok := resp.(CreateStorageCredential400JSONResponse)
 				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -452,7 +452,7 @@ func TestHandler_UpdateStorageCredential(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateStorageCredentialResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenUpdateStorageCredential403JSONResponse)
+				forbidden, ok := resp.(UpdateStorageCredential403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -467,7 +467,7 @@ func TestHandler_UpdateStorageCredential(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateStorageCredentialResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenUpdateStorageCredential404JSONResponse)
+				notFound, ok := resp.(UpdateStorageCredential404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -520,7 +520,7 @@ func TestHandler_DeleteStorageCredential(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteStorageCredentialResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenDeleteStorageCredential403JSONResponse)
+				forbidden, ok := resp.(DeleteStorageCredential403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -534,7 +534,7 @@ func TestHandler_DeleteStorageCredential(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteStorageCredentialResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenDeleteStorageCredential404JSONResponse)
+				notFound, ok := resp.(DeleteStorageCredential404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -637,7 +637,7 @@ func TestHandler_CreateExternalLocation(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateExternalLocationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateExternalLocation400JSONResponse)
+				badReq, ok := resp.(CreateExternalLocation400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -651,7 +651,7 @@ func TestHandler_CreateExternalLocation(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateExternalLocationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenCreateExternalLocation403JSONResponse)
+				forbidden, ok := resp.(CreateExternalLocation403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -665,7 +665,7 @@ func TestHandler_CreateExternalLocation(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateExternalLocationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(GenCreateExternalLocation409JSONResponse)
+				conflict, ok := resp.(CreateExternalLocation409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 			},
@@ -679,7 +679,7 @@ func TestHandler_CreateExternalLocation(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateExternalLocationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateExternalLocation400JSONResponse)
+				badReq, ok := resp.(CreateExternalLocation400JSONResponse)
 				require.True(t, ok, "expected 400 response for not-found credential, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -693,7 +693,7 @@ func TestHandler_CreateExternalLocation(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateExternalLocationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateExternalLocation400JSONResponse)
+				badReq, ok := resp.(CreateExternalLocation400JSONResponse)
 				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -801,7 +801,7 @@ func TestHandler_UpdateExternalLocation(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateExternalLocationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenUpdateExternalLocation403JSONResponse)
+				forbidden, ok := resp.(UpdateExternalLocation403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -816,7 +816,7 @@ func TestHandler_UpdateExternalLocation(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateExternalLocationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenUpdateExternalLocation404JSONResponse)
+				notFound, ok := resp.(UpdateExternalLocation404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -869,7 +869,7 @@ func TestHandler_DeleteExternalLocation(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteExternalLocationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenDeleteExternalLocation403JSONResponse)
+				forbidden, ok := resp.(DeleteExternalLocation403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -883,7 +883,7 @@ func TestHandler_DeleteExternalLocation(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteExternalLocationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenDeleteExternalLocation404JSONResponse)
+				notFound, ok := resp.(DeleteExternalLocation404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -988,7 +988,7 @@ func TestHandler_CreateVolume(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateVolumeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateVolume400JSONResponse)
+				badReq, ok := resp.(CreateVolume400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -1002,7 +1002,7 @@ func TestHandler_CreateVolume(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateVolumeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenCreateVolume403JSONResponse)
+				forbidden, ok := resp.(CreateVolume403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -1016,7 +1016,7 @@ func TestHandler_CreateVolume(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateVolumeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(GenCreateVolume409JSONResponse)
+				conflict, ok := resp.(CreateVolume409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 			},
@@ -1030,7 +1030,7 @@ func TestHandler_CreateVolume(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateVolumeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateVolume400JSONResponse)
+				badReq, ok := resp.(CreateVolume400JSONResponse)
 				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -1145,7 +1145,7 @@ func TestHandler_UpdateVolume(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateVolumeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenUpdateVolume403JSONResponse)
+				forbidden, ok := resp.(UpdateVolume403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -1160,7 +1160,7 @@ func TestHandler_UpdateVolume(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateVolumeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenUpdateVolume404JSONResponse)
+				notFound, ok := resp.(UpdateVolume404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -1215,7 +1215,7 @@ func TestHandler_DeleteVolume(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteVolumeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenDeleteVolume403JSONResponse)
+				forbidden, ok := resp.(DeleteVolume403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -1229,7 +1229,7 @@ func TestHandler_DeleteVolume(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteVolumeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenDeleteVolume404JSONResponse)
+				notFound, ok := resp.(DeleteVolume404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},

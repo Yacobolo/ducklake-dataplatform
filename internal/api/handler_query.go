@@ -41,9 +41,9 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryReques
 		msg := err.Error()
 		switch int(code) {
 		case http.StatusBadRequest:
-			return GenExecuteQuery400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return ExecuteQuery400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case http.StatusForbidden:
-			return GenExecuteQuery403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return ExecuteQuery403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return GenExecuteQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
@@ -86,7 +86,7 @@ func (h *APIHandler) SubmitQuery(ctx context.Context, req GenSubmitQueryRequest)
 		code := errorCodeFromError(err)
 		switch int(code) {
 		case http.StatusBadRequest:
-			return GenSubmitQuery400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return SubmitQuery400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return GenSubmitQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
@@ -114,7 +114,7 @@ func (h *APIHandler) GetQuery(ctx context.Context, req GenGetQueryRequest) (GenG
 	body := queryJobToAPI(job)
 	return GenGetQuery200JSONResponse{
 		Body:    body,
-		Headers: GenGetQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GetQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -130,14 +130,14 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResults
 	}
 
 	if job.Status == domain.QueryJobStatusQueued || job.Status == domain.QueryJobStatusRunning {
-		return GenGetQueryResults409JSONResponse{GenConflictJSONResponse{Body: Error{Code: 409, Message: "query is not ready"}, Headers: GenConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GetQueryResults409JSONResponse{GenConflictJSONResponse{Body: Error{Code: 409, Message: "query is not ready"}, Headers: GenConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 	if job.Status == domain.QueryJobStatusFailed || job.Status == domain.QueryJobStatusCanceled {
 		msg := "query results are not available"
 		if job.ErrorMessage != nil && *job.ErrorMessage != "" {
 			msg = *job.ErrorMessage
 		}
-		return GenGetQueryResults409JSONResponse{GenConflictJSONResponse{Body: Error{Code: 409, Message: msg}, Headers: GenConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GetQueryResults409JSONResponse{GenConflictJSONResponse{Body: Error{Code: 409, Message: msg}, Headers: GenConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	maxResults := int32(100)
@@ -179,7 +179,7 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResults
 
 	return GenGetQueryResults200JSONResponse{
 		Body:    result,
-		Headers: GenGetQueryResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GetQueryResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -189,7 +189,7 @@ func (h *APIHandler) CancelQuery(ctx context.Context, req GenCancelQueryRequest)
 	if err != nil {
 		code := errorCodeFromError(err)
 		if int(code) == http.StatusNotFound {
-			return GenCancelQuery404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return CancelQuery404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 		return GenCancelQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
@@ -203,7 +203,7 @@ func (h *APIHandler) CancelQuery(ctx context.Context, req GenCancelQueryRequest)
 	if err := asyncSvc.CancelAsyncJob(ctx, principal, req.QueryId); err != nil {
 		code := errorCodeFromError(err)
 		if int(code) == http.StatusNotFound {
-			return GenCancelQuery404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return CancelQuery404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 		return GenCancelQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
@@ -232,12 +232,12 @@ func (h *APIHandler) DeleteQuery(ctx context.Context, req GenDeleteQueryRequest)
 	if err := asyncSvc.DeleteAsyncJob(ctx, principal, req.QueryId); err != nil {
 		code := errorCodeFromError(err)
 		if int(code) == http.StatusNotFound {
-			return GenDeleteQuery404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return DeleteQuery404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 		return GenDeleteQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
-	return GenDeleteQuery204Response{Headers: GenDeleteQuery204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+	return GenDeleteQuery204Response{Headers: DeleteQuery204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 func (h *APIHandler) lookupAsyncJob(ctx context.Context, queryID string) (*domain.QueryJob, error) {

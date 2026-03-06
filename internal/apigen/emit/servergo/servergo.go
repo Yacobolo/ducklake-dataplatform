@@ -387,6 +387,16 @@ func isNativeConcreteGenResponseOperation(operationID string) bool {
 		return true
 	case "listAPIKeys", "createAPIKey", "cleanupExpiredAPIKeys", "deleteAPIKey":
 		return true
+	case "getCatalog", "listSchemas", "createSchema", "getSchema", "updateSchema", "deleteSchema":
+		return true
+	case "listTables", "createTable", "getTable", "updateTable", "deleteTable", "listTableColumns", "updateColumn", "profileTable", "getMetastoreSummary":
+		return true
+	case "listStorageCredentials", "createStorageCredential", "getStorageCredential", "updateStorageCredential", "deleteStorageCredential":
+		return true
+	case "listExternalLocations", "createExternalLocation", "getExternalLocation", "updateExternalLocation", "deleteExternalLocation":
+		return true
+	case "listVolumes", "createVolume", "getVolume", "updateVolume", "deleteVolume":
+		return true
 	default:
 		return false
 	}

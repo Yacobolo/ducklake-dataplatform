@@ -93,7 +93,7 @@ func (h *APIHandler) ListQueryHistory(ctx context.Context, req GenListQueryHisto
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GenListQueryHistory403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return ListQueryHistory403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -107,7 +107,7 @@ func (h *APIHandler) ListQueryHistory(ctx context.Context, req GenListQueryHisto
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListQueryHistory200JSONResponse{
 		Body:    PaginatedQueryHistoryEntries{Data: &data, NextPageToken: optStr(npt)},
-		Headers: GenListQueryHistory200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: ListQueryHistory200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -121,7 +121,7 @@ func (h *APIHandler) SearchCatalog(ctx context.Context, req GenSearchCatalogRequ
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ValidationError)):
-			return GenSearchCatalog400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return SearchCatalog400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return GenSearchCatalog500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 500, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
@@ -135,7 +135,7 @@ func (h *APIHandler) SearchCatalog(ctx context.Context, req GenSearchCatalogRequ
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenSearchCatalog200JSONResponse{
 		Body:    PaginatedSearchResults{Data: &data, NextPageToken: optStr(npt)},
-		Headers: GenSearchCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: SearchCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

@@ -78,7 +78,7 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateUploadUrlResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GenCreateUploadUrl200JSONResponse)
+				ok200, ok := resp.(CreateUploadUrl200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "https://s3.amazonaws.com/bucket/key", *ok200.Body.UploadUrl)
 				assert.Equal(t, "uploads/data.csv", *ok200.Body.S3Key)
@@ -92,7 +92,7 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateUploadUrlResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateUploadUrl400JSONResponse)
+				badReq, ok := resp.(CreateUploadUrl400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 				assert.Contains(t, badReq.Body.Message, "not available")
@@ -107,7 +107,7 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateUploadUrlResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenCreateUploadUrl404JSONResponse)
+				notFound, ok := resp.(CreateUploadUrl404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -121,7 +121,7 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateUploadUrlResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenCreateUploadUrl403JSONResponse)
+				forbidden, ok := resp.(CreateUploadUrl403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -135,7 +135,7 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateUploadUrlResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateUploadUrl400JSONResponse)
+				badReq, ok := resp.(CreateUploadUrl400JSONResponse)
 				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -188,7 +188,7 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GenCommitTableIngestion200JSONResponse)
+				ok200, ok := resp.(CommitTableIngestion200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, int64(1), *ok200.Body.FilesRegistered)
 				assert.Equal(t, int64(0), *ok200.Body.FilesSkipped)
@@ -203,7 +203,7 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCommitTableIngestion400JSONResponse)
+				badReq, ok := resp.(CommitTableIngestion400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Contains(t, badReq.Body.Message, "not available")
 			},
@@ -217,7 +217,7 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenCommitTableIngestion404JSONResponse)
+				notFound, ok := resp.(CommitTableIngestion404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -231,7 +231,7 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenCommitTableIngestion403JSONResponse)
+				forbidden, ok := resp.(CommitTableIngestion403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -245,7 +245,7 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCommitTableIngestion400JSONResponse)
+				badReq, ok := resp.(CommitTableIngestion400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -259,7 +259,7 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCommitTableIngestionResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCommitTableIngestion400JSONResponse)
+				badReq, ok := resp.(CommitTableIngestion400JSONResponse)
 				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -312,7 +312,7 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GenLoadTableExternalFiles200JSONResponse)
+				ok200, ok := resp.(LoadTableExternalFiles200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, int64(1), *ok200.Body.FilesRegistered)
 				assert.Equal(t, "test-table", *ok200.Body.Table)
@@ -326,7 +326,7 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenLoadTableExternalFiles400JSONResponse)
+				badReq, ok := resp.(LoadTableExternalFiles400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Contains(t, badReq.Body.Message, "not available")
 			},
@@ -340,7 +340,7 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenLoadTableExternalFiles404JSONResponse)
+				notFound, ok := resp.(LoadTableExternalFiles404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -354,7 +354,7 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenLoadTableExternalFiles403JSONResponse)
+				forbidden, ok := resp.(LoadTableExternalFiles403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -368,7 +368,7 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenLoadTableExternalFiles400JSONResponse)
+				badReq, ok := resp.(LoadTableExternalFiles400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -382,7 +382,7 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenLoadTableExternalFilesResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenLoadTableExternalFiles400JSONResponse)
+				badReq, ok := resp.(LoadTableExternalFiles400JSONResponse)
 				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},

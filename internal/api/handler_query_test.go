@@ -283,7 +283,7 @@ func TestHandler_ProfileTable(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenProfileTableResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GenProfileTable200JSONResponse)
+				ok200, ok := resp.(ProfileTable200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.RowCount)
 				assert.Equal(t, int64(42), *ok200.Body.RowCount)
@@ -297,7 +297,7 @@ func TestHandler_ProfileTable(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenProfileTableResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenProfileTable404JSONResponse)
+				notFound, ok := resp.(ProfileTable404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -310,7 +310,7 @@ func TestHandler_ProfileTable(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenProfileTableResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenProfileTable403JSONResponse)
+				forbidden, ok := resp.(ProfileTable403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},

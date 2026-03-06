@@ -269,9 +269,192 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 			},
 			{
 				Method:      "get",
+				Path:        "/storage/credentials",
+				OperationID: "listStorageCredentials",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedStorageCredentials"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/storage/credentials",
+				OperationID: "createStorageCredential",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/StorageCredential"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/storage/credentials/{credentialName}",
+				OperationID: "getStorageCredential",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/StorageCredential"}}},
+			},
+			{
+				Method:      "patch",
+				Path:        "/storage/credentials/{credentialName}",
+				OperationID: "updateStorageCredential",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/StorageCredential"}}},
+			},
+			{
+				Method:      "delete",
+				Path:        "/storage/credentials/{credentialName}",
+				OperationID: "deleteStorageCredential",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "get",
+				Path:        "/external-locations",
+				OperationID: "listExternalLocations",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedExternalLocations"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/external-locations",
+				OperationID: "createExternalLocation",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/ExternalLocation"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/external-locations/{locationName}",
+				OperationID: "getExternalLocation",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/ExternalLocation"}}},
+			},
+			{
+				Method:      "patch",
+				Path:        "/external-locations/{locationName}",
+				OperationID: "updateExternalLocation",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/ExternalLocation"}}},
+			},
+			{
+				Method:      "delete",
+				Path:        "/external-locations/{locationName}",
+				OperationID: "deleteExternalLocation",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/volumes",
+				OperationID: "listVolumes",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedVolumes"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/volumes",
+				OperationID: "createVolume",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/VolumeDetail"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}",
+				OperationID: "getVolume",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/VolumeDetail"}}},
+			},
+			{
+				Method:      "patch",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}",
+				OperationID: "updateVolume",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/VolumeDetail"}}},
+			},
+			{
+				Method:      "delete",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}",
+				OperationID: "deleteVolume",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "get",
 				Path:        "/tables",
 				OperationID: "listTables",
 				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedTables"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs/{catalogName}",
+				OperationID: "getCatalog",
+				Responses: []ir.Response{
+					{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/CatalogInfo"}},
+					{StatusCode: 404, Description: "not found", Schema: &ir.SchemaRef{Ref: "#/schemas/Error"}},
+				},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs/{catalogName}/schemas",
+				OperationID: "listSchemas",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedSchemaDetails"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/catalogs/{catalogName}/schemas",
+				OperationID: "createSchema",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/SchemaDetail"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}",
+				OperationID: "getSchema",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/SchemaDetail"}}},
+			},
+			{
+				Method:      "patch",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}",
+				OperationID: "updateSchema",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/SchemaDetail"}}},
+			},
+			{
+				Method:      "delete",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}",
+				OperationID: "deleteSchema",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "post",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/tables",
+				OperationID: "createTable",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/TableDetail"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}",
+				OperationID: "getTable",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/TableDetail"}}},
+			},
+			{
+				Method:      "patch",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}",
+				OperationID: "updateTable",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/TableDetail"}}},
+			},
+			{
+				Method:      "delete",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}",
+				OperationID: "deleteTable",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns",
+				OperationID: "listTableColumns",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedColumnDetails"}}},
+			},
+			{
+				Method:      "patch",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}",
+				OperationID: "updateColumn",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/ColumnDetail"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile",
+				OperationID: "profileTable",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/TableStatistics"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs/{catalogName}/summary",
+				OperationID: "getMetastoreSummary",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/MetastoreSummary"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs",
+				OperationID: "listCatalogs",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/CatalogRegistrationList"}}},
 			},
 		},
 	}
@@ -326,6 +509,36 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	require.Contains(t, content, "return CleanupExpiredAPIKeys200JSONResponse(response).VisitCleanupExpiredAPIKeysResponse(w)")
 	require.Contains(t, content, "type GenDeleteAPIKey204Response DeleteAPIKey204Response")
 	require.Contains(t, content, "return DeleteAPIKey204Response(response).VisitDeleteAPIKeyResponse(w)")
+	require.Contains(t, content, "type GenListStorageCredentials200JSONResponse ListStorageCredentials200JSONResponse")
+	require.Contains(t, content, "return ListStorageCredentials200JSONResponse(response).VisitListStorageCredentialsResponse(w)")
+	require.Contains(t, content, "type GenCreateStorageCredential201JSONResponse CreateStorageCredential201JSONResponse")
+	require.Contains(t, content, "return CreateStorageCredential201JSONResponse(response).VisitCreateStorageCredentialResponse(w)")
+	require.Contains(t, content, "type GenGetStorageCredential200JSONResponse GetStorageCredential200JSONResponse")
+	require.Contains(t, content, "return GetStorageCredential200JSONResponse(response).VisitGetStorageCredentialResponse(w)")
+	require.Contains(t, content, "type GenUpdateStorageCredential200JSONResponse UpdateStorageCredential200JSONResponse")
+	require.Contains(t, content, "return UpdateStorageCredential200JSONResponse(response).VisitUpdateStorageCredentialResponse(w)")
+	require.Contains(t, content, "type GenDeleteStorageCredential204Response DeleteStorageCredential204Response")
+	require.Contains(t, content, "return DeleteStorageCredential204Response(response).VisitDeleteStorageCredentialResponse(w)")
+	require.Contains(t, content, "type GenListExternalLocations200JSONResponse ListExternalLocations200JSONResponse")
+	require.Contains(t, content, "return ListExternalLocations200JSONResponse(response).VisitListExternalLocationsResponse(w)")
+	require.Contains(t, content, "type GenCreateExternalLocation201JSONResponse CreateExternalLocation201JSONResponse")
+	require.Contains(t, content, "return CreateExternalLocation201JSONResponse(response).VisitCreateExternalLocationResponse(w)")
+	require.Contains(t, content, "type GenGetExternalLocation200JSONResponse GetExternalLocation200JSONResponse")
+	require.Contains(t, content, "return GetExternalLocation200JSONResponse(response).VisitGetExternalLocationResponse(w)")
+	require.Contains(t, content, "type GenUpdateExternalLocation200JSONResponse UpdateExternalLocation200JSONResponse")
+	require.Contains(t, content, "return UpdateExternalLocation200JSONResponse(response).VisitUpdateExternalLocationResponse(w)")
+	require.Contains(t, content, "type GenDeleteExternalLocation204Response DeleteExternalLocation204Response")
+	require.Contains(t, content, "return DeleteExternalLocation204Response(response).VisitDeleteExternalLocationResponse(w)")
+	require.Contains(t, content, "type GenListVolumes200JSONResponse ListVolumes200JSONResponse")
+	require.Contains(t, content, "return ListVolumes200JSONResponse(response).VisitListVolumesResponse(w)")
+	require.Contains(t, content, "type GenCreateVolume201JSONResponse CreateVolume201JSONResponse")
+	require.Contains(t, content, "return CreateVolume201JSONResponse(response).VisitCreateVolumeResponse(w)")
+	require.Contains(t, content, "type GenGetVolume200JSONResponse GetVolume200JSONResponse")
+	require.Contains(t, content, "return GetVolume200JSONResponse(response).VisitGetVolumeResponse(w)")
+	require.Contains(t, content, "type GenUpdateVolume200JSONResponse UpdateVolume200JSONResponse")
+	require.Contains(t, content, "return UpdateVolume200JSONResponse(response).VisitUpdateVolumeResponse(w)")
+	require.Contains(t, content, "type GenDeleteVolume204Response DeleteVolume204Response")
+	require.Contains(t, content, "return DeleteVolume204Response(response).VisitDeleteVolumeResponse(w)")
 
 	require.NotContains(t, content, "type GenListGroups200JSONResponse = ListGroups200JSONResponse")
 	require.NotContains(t, content, "type GenCreateGroup201JSONResponse = CreateGroup201JSONResponse")
@@ -339,8 +552,72 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	require.NotContains(t, content, "type GenCreateAPIKey201JSONResponse = CreateAPIKey201JSONResponse")
 	require.NotContains(t, content, "type GenCleanupExpiredAPIKeys200JSONResponse = CleanupExpiredAPIKeys200JSONResponse")
 	require.NotContains(t, content, "type GenDeleteAPIKey204Response = DeleteAPIKey204Response")
+	require.NotContains(t, content, "type GenListStorageCredentials200JSONResponse = ListStorageCredentials200JSONResponse")
+	require.NotContains(t, content, "type GenCreateStorageCredential201JSONResponse = CreateStorageCredential201JSONResponse")
+	require.NotContains(t, content, "type GenGetStorageCredential200JSONResponse = GetStorageCredential200JSONResponse")
+	require.NotContains(t, content, "type GenUpdateStorageCredential200JSONResponse = UpdateStorageCredential200JSONResponse")
+	require.NotContains(t, content, "type GenDeleteStorageCredential204Response = DeleteStorageCredential204Response")
+	require.NotContains(t, content, "type GenListExternalLocations200JSONResponse = ListExternalLocations200JSONResponse")
+	require.NotContains(t, content, "type GenCreateExternalLocation201JSONResponse = CreateExternalLocation201JSONResponse")
+	require.NotContains(t, content, "type GenGetExternalLocation200JSONResponse = GetExternalLocation200JSONResponse")
+	require.NotContains(t, content, "type GenUpdateExternalLocation200JSONResponse = UpdateExternalLocation200JSONResponse")
+	require.NotContains(t, content, "type GenDeleteExternalLocation204Response = DeleteExternalLocation204Response")
+	require.NotContains(t, content, "type GenListVolumes200JSONResponse = ListVolumes200JSONResponse")
+	require.NotContains(t, content, "type GenCreateVolume201JSONResponse = CreateVolume201JSONResponse")
+	require.NotContains(t, content, "type GenGetVolume200JSONResponse = GetVolume200JSONResponse")
+	require.NotContains(t, content, "type GenUpdateVolume200JSONResponse = UpdateVolume200JSONResponse")
+	require.NotContains(t, content, "type GenDeleteVolume204Response = DeleteVolume204Response")
 
-	require.Contains(t, content, "type GenListTables200JSONResponse = ListTables200JSONResponse")
+	require.Contains(t, content, "type GenGetCatalog200JSONResponse GetCatalog200JSONResponse")
+	require.Contains(t, content, "return GetCatalog200JSONResponse(response).VisitGetCatalogResponse(w)")
+	require.Contains(t, content, "type GenGetCatalog404JSONResponse GetCatalog404JSONResponse")
+	require.Contains(t, content, "return GetCatalog404JSONResponse(response).VisitGetCatalogResponse(w)")
+	require.Contains(t, content, "type GenListSchemas200JSONResponse ListSchemas200JSONResponse")
+	require.Contains(t, content, "return ListSchemas200JSONResponse(response).VisitListSchemasResponse(w)")
+	require.Contains(t, content, "type GenCreateSchema201JSONResponse CreateSchema201JSONResponse")
+	require.Contains(t, content, "return CreateSchema201JSONResponse(response).VisitCreateSchemaResponse(w)")
+	require.Contains(t, content, "type GenGetSchema200JSONResponse GetSchema200JSONResponse")
+	require.Contains(t, content, "return GetSchema200JSONResponse(response).VisitGetSchemaResponse(w)")
+	require.Contains(t, content, "type GenUpdateSchema200JSONResponse UpdateSchema200JSONResponse")
+	require.Contains(t, content, "return UpdateSchema200JSONResponse(response).VisitUpdateSchemaResponse(w)")
+	require.Contains(t, content, "type GenDeleteSchema204Response DeleteSchema204Response")
+	require.Contains(t, content, "return DeleteSchema204Response(response).VisitDeleteSchemaResponse(w)")
+	require.Contains(t, content, "type GenListTables200JSONResponse ListTables200JSONResponse")
+	require.Contains(t, content, "return ListTables200JSONResponse(response).VisitListTablesResponse(w)")
+	require.Contains(t, content, "type GenCreateTable201JSONResponse CreateTable201JSONResponse")
+	require.Contains(t, content, "return CreateTable201JSONResponse(response).VisitCreateTableResponse(w)")
+	require.Contains(t, content, "type GenGetTable200JSONResponse GetTable200JSONResponse")
+	require.Contains(t, content, "return GetTable200JSONResponse(response).VisitGetTableResponse(w)")
+	require.Contains(t, content, "type GenUpdateTable200JSONResponse UpdateTable200JSONResponse")
+	require.Contains(t, content, "return UpdateTable200JSONResponse(response).VisitUpdateTableResponse(w)")
+	require.Contains(t, content, "type GenDeleteTable204Response DeleteTable204Response")
+	require.Contains(t, content, "return DeleteTable204Response(response).VisitDeleteTableResponse(w)")
+	require.Contains(t, content, "type GenListTableColumns200JSONResponse ListTableColumns200JSONResponse")
+	require.Contains(t, content, "return ListTableColumns200JSONResponse(response).VisitListTableColumnsResponse(w)")
+	require.Contains(t, content, "type GenUpdateColumn200JSONResponse UpdateColumn200JSONResponse")
+	require.Contains(t, content, "return UpdateColumn200JSONResponse(response).VisitUpdateColumnResponse(w)")
+	require.Contains(t, content, "type GenProfileTable200JSONResponse ProfileTable200JSONResponse")
+	require.Contains(t, content, "return ProfileTable200JSONResponse(response).VisitProfileTableResponse(w)")
+	require.Contains(t, content, "type GenGetMetastoreSummary200JSONResponse GetMetastoreSummary200JSONResponse")
+	require.Contains(t, content, "return GetMetastoreSummary200JSONResponse(response).VisitGetMetastoreSummaryResponse(w)")
+
+	require.NotContains(t, content, "type GenGetCatalog200JSONResponse = GetCatalog200JSONResponse")
+	require.NotContains(t, content, "type GenListSchemas200JSONResponse = ListSchemas200JSONResponse")
+	require.NotContains(t, content, "type GenCreateSchema201JSONResponse = CreateSchema201JSONResponse")
+	require.NotContains(t, content, "type GenGetSchema200JSONResponse = GetSchema200JSONResponse")
+	require.NotContains(t, content, "type GenUpdateSchema200JSONResponse = UpdateSchema200JSONResponse")
+	require.NotContains(t, content, "type GenDeleteSchema204Response = DeleteSchema204Response")
+	require.NotContains(t, content, "type GenListTables200JSONResponse = ListTables200JSONResponse")
+	require.NotContains(t, content, "type GenCreateTable201JSONResponse = CreateTable201JSONResponse")
+	require.NotContains(t, content, "type GenGetTable200JSONResponse = GetTable200JSONResponse")
+	require.NotContains(t, content, "type GenUpdateTable200JSONResponse = UpdateTable200JSONResponse")
+	require.NotContains(t, content, "type GenDeleteTable204Response = DeleteTable204Response")
+	require.NotContains(t, content, "type GenListTableColumns200JSONResponse = ListTableColumns200JSONResponse")
+	require.NotContains(t, content, "type GenUpdateColumn200JSONResponse = UpdateColumn200JSONResponse")
+	require.NotContains(t, content, "type GenProfileTable200JSONResponse = ProfileTable200JSONResponse")
+	require.NotContains(t, content, "type GenGetMetastoreSummary200JSONResponse = GetMetastoreSummary200JSONResponse")
+
+	require.Contains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
 }
 
 func TestPathParamTypeName(t *testing.T) {

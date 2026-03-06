@@ -124,7 +124,7 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenRegisterCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenRegisterCatalog403JSONResponse)
+				forbidden, ok := resp.(RegisterCatalog403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -137,7 +137,7 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenRegisterCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenRegisterCatalog400JSONResponse)
+				badReq, ok := resp.(RegisterCatalog400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -150,7 +150,7 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenRegisterCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(GenRegisterCatalog409JSONResponse)
+				conflict, ok := resp.(RegisterCatalog409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 			},
@@ -300,7 +300,7 @@ func TestHandler_UpdateCatalogRegistration(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenUpdateCatalogRegistration403JSONResponse)
+				forbidden, ok := resp.(UpdateCatalogRegistration403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -313,7 +313,7 @@ func TestHandler_UpdateCatalogRegistration(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenUpdateCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenUpdateCatalogRegistration404JSONResponse)
+				notFound, ok := resp.(UpdateCatalogRegistration404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -365,7 +365,7 @@ func TestHandler_DeleteCatalogRegistration(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenDeleteCatalogRegistration403JSONResponse)
+				forbidden, ok := resp.(DeleteCatalogRegistration403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -378,7 +378,7 @@ func TestHandler_DeleteCatalogRegistration(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenDeleteCatalogRegistration404JSONResponse)
+				notFound, ok := resp.(DeleteCatalogRegistration404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -414,7 +414,7 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenSetDefaultCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GenSetDefaultCatalog200JSONResponse)
+				ok200, ok := resp.(SetDefaultCatalog200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "c-1", *ok200.Body.Id)
 				assert.True(t, *ok200.Body.IsDefault)
@@ -428,7 +428,7 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenSetDefaultCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenSetDefaultCatalog403JSONResponse)
+				forbidden, ok := resp.(SetDefaultCatalog403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -441,7 +441,7 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenSetDefaultCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenSetDefaultCatalog404JSONResponse)
+				notFound, ok := resp.(SetDefaultCatalog404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -454,7 +454,7 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenSetDefaultCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenSetDefaultCatalog400JSONResponse)
+				badReq, ok := resp.(SetDefaultCatalog400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
