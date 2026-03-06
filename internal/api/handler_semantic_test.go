@@ -188,7 +188,7 @@ func TestHandler_CreateSemanticModel_ValidationErrorMaps400(t *testing.T) {
 	}})
 	require.NoError(t, err)
 
-	badReq, ok := resp.(GenCreateSemanticModel400JSONResponse)
+	badReq, ok := resp.(CreateSemanticModel400JSONResponse)
 	require.True(t, ok, "expected 400 response, got %T", resp)
 	assert.Contains(t, badReq.Body.Message, "bad semantic model")
 }
@@ -268,7 +268,7 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 	}})
 	require.NoError(t, err)
 
-	okResp, ok := resp.(GenExplainMetricQuery200JSONResponse)
+	okResp, ok := resp.(ExplainMetricQuery200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
 	require.NotNil(t, okResp.Plan)
 	require.NotNil(t, okResp.Plan.GeneratedSql)
@@ -317,7 +317,7 @@ func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
 	}})
 	require.NoError(t, err)
 
-	okResp, ok := resp.(GenRunMetricQuery200JSONResponse)
+	okResp, ok := resp.(RunMetricQuery200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
 	require.NotNil(t, okResp.Result)
 	require.NotNil(t, okResp.Result.RowCount)
@@ -390,7 +390,7 @@ func TestHandler_CheckMetricFreshness_AmbiguousMetricReturns400(t *testing.T) {
 	resp, err := h.CheckMetricFreshness(context.Background(), GenCheckMetricFreshnessRequest{MetricName: "total_revenue"})
 	require.NoError(t, err)
 
-	badReq, ok := resp.(GenCheckMetricFreshness400JSONResponse)
+	badReq, ok := resp.(CheckMetricFreshness400JSONResponse)
 	require.True(t, ok, "expected 400 response, got %T", resp)
 	assert.Contains(t, badReq.Body.Message, "ambiguous")
 }

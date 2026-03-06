@@ -206,7 +206,7 @@ func TestHandler_ListModelRuns_InvalidStatusReturns400(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, called)
 
-	badReq, ok := resp.(GenListModelRuns400JSONResponse)
+	badReq, ok := resp.(ListModelRuns400JSONResponse)
 	require.True(t, ok, "expected 400 response, got %T", resp)
 	assert.Contains(t, badReq.Body.Message, "status must be one of")
 }

@@ -452,6 +452,96 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 			},
 			{
 				Method:      "get",
+				Path:        "/pipelines",
+				OperationID: "listPipelines",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedPipelines"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/pipelines",
+				OperationID: "createPipeline",
+				Responses: []ir.Response{
+					{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/Pipeline"}},
+					{StatusCode: 400, Description: "bad request", Schema: &ir.SchemaRef{Ref: "#/schemas/Error"}},
+				},
+			},
+			{
+				Method:      "get",
+				Path:        "/pipelines/{pipelineName}",
+				OperationID: "getPipeline",
+				Responses: []ir.Response{
+					{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/Pipeline"}},
+					{StatusCode: 404, Description: "not found", Schema: &ir.SchemaRef{Ref: "#/schemas/Error"}},
+				},
+			},
+			{
+				Method:      "patch",
+				Path:        "/pipelines/{pipelineName}",
+				OperationID: "updatePipeline",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/Pipeline"}}},
+			},
+			{
+				Method:      "delete",
+				Path:        "/pipelines/{pipelineName}",
+				OperationID: "deletePipeline",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "get",
+				Path:        "/pipelines/{pipelineName}/jobs",
+				OperationID: "listPipelineJobs",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PipelineJobList"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/pipelines/{pipelineName}/jobs",
+				OperationID: "createPipelineJob",
+				Responses: []ir.Response{
+					{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/PipelineJob"}},
+					{StatusCode: 409, Description: "conflict", Schema: &ir.SchemaRef{Ref: "#/schemas/Error"}},
+				},
+			},
+			{
+				Method:      "delete",
+				Path:        "/pipelines/{pipelineName}/jobs/{jobId}",
+				OperationID: "deletePipelineJob",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "post",
+				Path:        "/pipelines/{pipelineName}/runs",
+				OperationID: "triggerPipelineRun",
+				Responses: []ir.Response{
+					{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/PipelineRun"}},
+					{StatusCode: 404, Description: "not found", Schema: &ir.SchemaRef{Ref: "#/schemas/Error"}},
+				},
+			},
+			{
+				Method:      "get",
+				Path:        "/pipelines/{pipelineName}/runs",
+				OperationID: "listPipelineRuns",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedPipelineRuns"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/pipelines/runs/{runId}",
+				OperationID: "getPipelineRun",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PipelineRun"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/pipelines/runs/{runId}/cancel",
+				OperationID: "cancelPipelineRun",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PipelineRun"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/pipelines/runs/{runId}/jobs",
+				OperationID: "listPipelineJobRuns",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PipelineJobRunList"}}},
+			},
+			{
+				Method:      "get",
 				Path:        "/catalogs",
 				OperationID: "listCatalogs",
 				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/CatalogRegistrationList"}}},
@@ -616,6 +706,178 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	require.NotContains(t, content, "type GenUpdateColumn200JSONResponse = UpdateColumn200JSONResponse")
 	require.NotContains(t, content, "type GenProfileTable200JSONResponse = ProfileTable200JSONResponse")
 	require.NotContains(t, content, "type GenGetMetastoreSummary200JSONResponse = GetMetastoreSummary200JSONResponse")
+	require.Contains(t, content, "type GenListPipelines200JSONResponse ListPipelines200JSONResponse")
+	require.Contains(t, content, "return ListPipelines200JSONResponse(response).VisitListPipelinesResponse(w)")
+	require.Contains(t, content, "type GenCreatePipeline201JSONResponse CreatePipeline201JSONResponse")
+	require.Contains(t, content, "return CreatePipeline201JSONResponse(response).VisitCreatePipelineResponse(w)")
+	require.Contains(t, content, "type GenCreatePipeline400JSONResponse CreatePipeline400JSONResponse")
+	require.Contains(t, content, "return CreatePipeline400JSONResponse(response).VisitCreatePipelineResponse(w)")
+	require.Contains(t, content, "type GenGetPipeline200JSONResponse GetPipeline200JSONResponse")
+	require.Contains(t, content, "return GetPipeline200JSONResponse(response).VisitGetPipelineResponse(w)")
+	require.Contains(t, content, "type GenGetPipeline404JSONResponse GetPipeline404JSONResponse")
+	require.Contains(t, content, "return GetPipeline404JSONResponse(response).VisitGetPipelineResponse(w)")
+	require.Contains(t, content, "type GenUpdatePipeline200JSONResponse UpdatePipeline200JSONResponse")
+	require.Contains(t, content, "return UpdatePipeline200JSONResponse(response).VisitUpdatePipelineResponse(w)")
+	require.Contains(t, content, "type GenDeletePipeline204Response DeletePipeline204Response")
+	require.Contains(t, content, "return DeletePipeline204Response(response).VisitDeletePipelineResponse(w)")
+	require.Contains(t, content, "type GenListPipelineJobs200JSONResponse ListPipelineJobs200JSONResponse")
+	require.Contains(t, content, "return ListPipelineJobs200JSONResponse(response).VisitListPipelineJobsResponse(w)")
+	require.Contains(t, content, "type GenCreatePipelineJob201JSONResponse CreatePipelineJob201JSONResponse")
+	require.Contains(t, content, "return CreatePipelineJob201JSONResponse(response).VisitCreatePipelineJobResponse(w)")
+	require.Contains(t, content, "type GenCreatePipelineJob409JSONResponse CreatePipelineJob409JSONResponse")
+	require.Contains(t, content, "return CreatePipelineJob409JSONResponse(response).VisitCreatePipelineJobResponse(w)")
+	require.Contains(t, content, "type GenDeletePipelineJob204Response DeletePipelineJob204Response")
+	require.Contains(t, content, "return DeletePipelineJob204Response(response).VisitDeletePipelineJobResponse(w)")
+	require.Contains(t, content, "type GenTriggerPipelineRun201JSONResponse TriggerPipelineRun201JSONResponse")
+	require.Contains(t, content, "return TriggerPipelineRun201JSONResponse(response).VisitTriggerPipelineRunResponse(w)")
+	require.Contains(t, content, "type GenTriggerPipelineRun404JSONResponse TriggerPipelineRun404JSONResponse")
+	require.Contains(t, content, "return TriggerPipelineRun404JSONResponse(response).VisitTriggerPipelineRunResponse(w)")
+	require.Contains(t, content, "type GenListPipelineRuns200JSONResponse ListPipelineRuns200JSONResponse")
+	require.Contains(t, content, "return ListPipelineRuns200JSONResponse(response).VisitListPipelineRunsResponse(w)")
+	require.Contains(t, content, "type GenGetPipelineRun200JSONResponse GetPipelineRun200JSONResponse")
+	require.Contains(t, content, "return GetPipelineRun200JSONResponse(response).VisitGetPipelineRunResponse(w)")
+	require.Contains(t, content, "type GenCancelPipelineRun200JSONResponse CancelPipelineRun200JSONResponse")
+	require.Contains(t, content, "return CancelPipelineRun200JSONResponse(response).VisitCancelPipelineRunResponse(w)")
+	require.Contains(t, content, "type GenListPipelineJobRuns200JSONResponse ListPipelineJobRuns200JSONResponse")
+	require.Contains(t, content, "return ListPipelineJobRuns200JSONResponse(response).VisitListPipelineJobRunsResponse(w)")
+
+	require.NotContains(t, content, "type GenListPipelines200JSONResponse = ListPipelines200JSONResponse")
+	require.NotContains(t, content, "type GenCreatePipeline201JSONResponse = CreatePipeline201JSONResponse")
+	require.NotContains(t, content, "type GenCreatePipeline400JSONResponse = CreatePipeline400JSONResponse")
+	require.NotContains(t, content, "type GenGetPipeline200JSONResponse = GetPipeline200JSONResponse")
+	require.NotContains(t, content, "type GenGetPipeline404JSONResponse = GetPipeline404JSONResponse")
+	require.NotContains(t, content, "type GenUpdatePipeline200JSONResponse = UpdatePipeline200JSONResponse")
+	require.NotContains(t, content, "type GenDeletePipeline204Response = DeletePipeline204Response")
+	require.NotContains(t, content, "type GenListPipelineJobs200JSONResponse = ListPipelineJobs200JSONResponse")
+	require.NotContains(t, content, "type GenCreatePipelineJob201JSONResponse = CreatePipelineJob201JSONResponse")
+	require.NotContains(t, content, "type GenCreatePipelineJob409JSONResponse = CreatePipelineJob409JSONResponse")
+	require.NotContains(t, content, "type GenDeletePipelineJob204Response = DeletePipelineJob204Response")
+	require.NotContains(t, content, "type GenTriggerPipelineRun201JSONResponse = TriggerPipelineRun201JSONResponse")
+	require.NotContains(t, content, "type GenTriggerPipelineRun404JSONResponse = TriggerPipelineRun404JSONResponse")
+	require.NotContains(t, content, "type GenListPipelineRuns200JSONResponse = ListPipelineRuns200JSONResponse")
+	require.NotContains(t, content, "type GenGetPipelineRun200JSONResponse = GetPipelineRun200JSONResponse")
+	require.NotContains(t, content, "type GenCancelPipelineRun200JSONResponse = CancelPipelineRun200JSONResponse")
+	require.NotContains(t, content, "type GenListPipelineJobRuns200JSONResponse = ListPipelineJobRuns200JSONResponse")
+
+	require.Contains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+}
+
+func TestEmit_GeneratesNativeConcreteResponsesForModelsAndSemantic(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "get",
+				Path:        "/models",
+				OperationID: "listModels",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedModels"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/semantic/models",
+				OperationID: "listSemanticModels",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedSemanticModels"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs",
+				OperationID: "listCatalogs",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/CatalogRegistrationList"}}},
+			},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenListModels200JSONResponse ListModels200JSONResponse")
+	require.Contains(t, content, "return ListModels200JSONResponse(response).VisitListModelsResponse(w)")
+	require.NotContains(t, content, "type GenListModels200JSONResponse = ListModels200JSONResponse")
+
+	require.Contains(t, content, "type GenListSemanticModels200JSONResponse ListSemanticModels200JSONResponse")
+	require.Contains(t, content, "return ListSemanticModels200JSONResponse(response).VisitListSemanticModelsResponse(w)")
+	require.NotContains(t, content, "type GenListSemanticModels200JSONResponse = ListSemanticModels200JSONResponse")
+
+	require.Contains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+}
+
+func TestEmit_GeneratesNativeConcreteResponsesForNotebookDomainOps(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "get",
+				Path:        "/notebooks",
+				OperationID: "listNotebooks",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedNotebooks"}}},
+			},
+			{
+				Method:      "delete",
+				Path:        "/notebooks/{notebookId}",
+				OperationID: "deleteNotebook",
+				Responses:   []ir.Response{{StatusCode: 204, Description: "no content"}},
+			},
+			{
+				Method:      "post",
+				Path:        "/notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}",
+				OperationID: "executeCell",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/CellExecutionResult"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/notebooks/{notebookId}/sessions/{sessionId}/run-all-async",
+				OperationID: "runAllCellsAsync",
+				Responses:   []ir.Response{{StatusCode: 202, Description: "accepted", Schema: &ir.SchemaRef{Ref: "#/schemas/NotebookJob"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/git-repos",
+				OperationID: "listGitRepos",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/PaginatedGitRepos"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/git-repos/{gitRepoId}/sync",
+				OperationID: "syncGitRepo",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/GitSyncResult"}}},
+			},
+			{
+				Method:      "get",
+				Path:        "/catalogs",
+				OperationID: "listCatalogs",
+				Responses:   []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/CatalogRegistrationList"}}},
+			},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenListNotebooks200JSONResponse ListNotebooks200JSONResponse")
+	require.Contains(t, content, "return ListNotebooks200JSONResponse(response).VisitListNotebooksResponse(w)")
+	require.NotContains(t, content, "type GenListNotebooks200JSONResponse = ListNotebooks200JSONResponse")
+
+	require.Contains(t, content, "type GenDeleteNotebook204Response DeleteNotebook204Response")
+	require.Contains(t, content, "return DeleteNotebook204Response(response).VisitDeleteNotebookResponse(w)")
+	require.NotContains(t, content, "type GenDeleteNotebook204Response = DeleteNotebook204Response")
+
+	require.Contains(t, content, "type GenExecuteCell201JSONResponse ExecuteCell201JSONResponse")
+	require.Contains(t, content, "return ExecuteCell201JSONResponse(response).VisitExecuteCellResponse(w)")
+	require.Contains(t, content, "type GenRunAllCellsAsync202JSONResponse RunAllCellsAsync202JSONResponse")
+	require.Contains(t, content, "return RunAllCellsAsync202JSONResponse(response).VisitRunAllCellsAsyncResponse(w)")
+
+	require.Contains(t, content, "type GenListGitRepos200JSONResponse ListGitRepos200JSONResponse")
+	require.Contains(t, content, "return ListGitRepos200JSONResponse(response).VisitListGitReposResponse(w)")
+	require.Contains(t, content, "type GenSyncGitRepo201JSONResponse SyncGitRepo201JSONResponse")
+	require.Contains(t, content, "return SyncGitRepo201JSONResponse(response).VisitSyncGitRepoResponse(w)")
 
 	require.Contains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
 }

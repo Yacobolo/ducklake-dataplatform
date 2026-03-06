@@ -295,11 +295,11 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 		msg := err.Error()
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GenCreateManifest404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return CreateManifest404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GenCreateManifest403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return CreateManifest403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return GenCreateManifest400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return CreateManifest400JSONResponse{GenBadRequestJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenBadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return GenCreateManifest500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
@@ -312,7 +312,7 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 		cols[i] = ManifestColumn{Name: &name, Type: &typ}
 	}
 
-	return GenCreateManifest200JSONResponse{
+	return CreateManifest200JSONResponse{
 		Body: ManifestResponse{
 			Table:       &result.Table,
 			Schema:      &result.Schema,
@@ -322,6 +322,6 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 			ColumnMasks: &result.ColumnMasks,
 			ExpiresAt:   &result.ExpiresAt,
 		},
-		Headers: GenCreateManifest200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: CreateManifest200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

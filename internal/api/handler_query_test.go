@@ -156,7 +156,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GenCreateManifest200JSONResponse)
+				ok200, ok := resp.(CreateManifest200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Table)
 				assert.Equal(t, "users", *ok200.Body.Table)
@@ -179,7 +179,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenCreateManifest404JSONResponse)
+				notFound, ok := resp.(CreateManifest404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -193,7 +193,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenCreateManifest403JSONResponse)
+				forbidden, ok := resp.(CreateManifest403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -207,7 +207,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateManifest400JSONResponse)
+				badReq, ok := resp.(CreateManifest400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -246,7 +246,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(GenCreateManifest200JSONResponse)
+				_, ok := resp.(CreateManifest200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 			},
 		},

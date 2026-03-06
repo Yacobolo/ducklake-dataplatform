@@ -565,7 +565,7 @@ func TestHandler_DeleteLineageEdge(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteLineageEdgeResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenDeleteLineageEdge404JSONResponse)
+				notFound, ok := resp.(DeleteLineageEdge404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -603,7 +603,7 @@ func TestHandler_PurgeLineage(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenPurgeLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GenPurgeLineage200JSONResponse)
+				ok200, ok := resp.(PurgeLineage200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, int64(42), *ok200.Body.DeletedCount)
 			},
@@ -618,7 +618,7 @@ func TestHandler_PurgeLineage(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenPurgeLineageResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenPurgeLineage403JSONResponse)
+				forbidden, ok := resp.(PurgeLineage403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 				assert.Contains(t, forbidden.Body.Message, "admin")
@@ -741,7 +741,7 @@ func TestHandler_CreateTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenCreateTag403JSONResponse)
+				forbidden, ok := resp.(CreateTag403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 				assert.Contains(t, forbidden.Body.Message, "admin")
@@ -757,7 +757,7 @@ func TestHandler_CreateTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenCreateTag400JSONResponse)
+				badReq, ok := resp.(CreateTag400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
@@ -772,7 +772,7 @@ func TestHandler_CreateTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(GenCreateTag409JSONResponse)
+				conflict, ok := resp.(CreateTag409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 			},
@@ -825,7 +825,7 @@ func TestHandler_DeleteTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenDeleteTag403JSONResponse)
+				forbidden, ok := resp.(DeleteTag403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 				assert.Contains(t, forbidden.Body.Message, "admin")
@@ -841,7 +841,7 @@ func TestHandler_DeleteTag(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenDeleteTag404JSONResponse)
+				notFound, ok := resp.(DeleteTag404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -895,7 +895,7 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				conflict, ok := resp.(GenCreateTagAssignment409JSONResponse)
+				conflict, ok := resp.(CreateTagAssignment409JSONResponse)
 				require.True(t, ok, "expected 409 response, got %T", resp)
 				assert.Equal(t, int32(409), conflict.Body.Code)
 			},
@@ -960,7 +960,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GenDeleteTagAssignment404JSONResponse)
+				notFound, ok := resp.(DeleteTagAssignment404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -974,7 +974,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				forbidden, ok := resp.(GenDeleteTagAssignment403JSONResponse)
+				forbidden, ok := resp.(DeleteTagAssignment403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
@@ -988,7 +988,7 @@ func TestHandler_DeleteTagAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenDeleteTagAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(GenDeleteTagAssignment400JSONResponse)
+				badReq, ok := resp.(DeleteTagAssignment400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
 			},

@@ -397,6 +397,26 @@ func isNativeConcreteGenResponseOperation(operationID string) bool {
 		return true
 	case "listVolumes", "createVolume", "getVolume", "updateVolume", "deleteVolume":
 		return true
+	case "listNotebooks", "createNotebook", "getNotebook", "updateNotebook", "deleteNotebook":
+		return true
+	case "createCell", "updateCell", "deleteCell", "reorderCells":
+		return true
+	case "createNotebookSession", "closeNotebookSession", "executeCell", "runAllCells", "runAllCellsAsync":
+		return true
+	case "listNotebookJobs", "getNotebookJob":
+		return true
+	case "listGitRepos", "createGitRepo", "getGitRepo", "syncGitRepo", "deleteGitRepo":
+		return true
+	case "listPipelines", "createPipeline", "getPipeline", "updatePipeline", "deletePipeline":
+		return true
+	case "listPipelineJobs", "createPipelineJob", "deletePipelineJob":
+		return true
+	case "triggerPipelineRun", "listPipelineRuns", "getPipelineRun", "cancelPipelineRun", "listPipelineJobRuns":
+		return true
+	case "listModels", "createModel", "getModel", "updateModel", "deleteModel", "getModelDAG", "triggerModelRun", "listModelRuns", "getModelRun", "listModelRunSteps", "cancelModelRun", "createModelTest", "listModelTests", "deleteModelTest", "listModelTestResults", "checkModelFreshness", "checkSourceFreshness", "promoteNotebookToModel":
+		return true
+	case "listSemanticModels", "createSemanticModel", "getSemanticModel", "updateSemanticModel", "deleteSemanticModel", "listSemanticMetrics", "createSemanticMetric", "updateSemanticMetric", "deleteSemanticMetric", "listSemanticRelationships", "createSemanticRelationship", "updateSemanticRelationship", "deleteSemanticRelationship", "listSemanticPreAggregations", "createSemanticPreAggregation", "updateSemanticPreAggregation", "deleteSemanticPreAggregation", "explainMetricQuery", "runMetricQuery", "checkMetricFreshness":
+		return true
 	default:
 		return false
 	}
