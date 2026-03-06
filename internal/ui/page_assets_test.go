@@ -55,6 +55,32 @@ func TestUIAssetDetailPage_ActionsVisibility(t *testing.T) {
 	})
 }
 
+func TestUIAssetsListPage_EmptyStateMessaging(t *testing.T) {
+	html := renderAssetsListPageForTest(t, nil, "", false, false)
+
+	assert.Contains(t, html, "No assets found yet.")
+	assert.Contains(t, html, "Open catalogs")
+	assert.Contains(t, html, "requires execute asset materialization permission")
+	assert.Contains(t, html, "Backfill is not configured in this environment")
+}
+
+func TestUIAssetsListPage_FilterValueHydratesFromQuery(t *testing.T) {
+	rows := []assetsListRowData{{
+		Filter:   "orders.daily table analytics",
+		AssetKey: "orders.daily",
+		URL:      "/ui/assets/orders.daily",
+		Type:     "table",
+		Owner:    "analytics",
+		Active:   true,
+		Updated:  "2026-03-01T00:00:00Z",
+	}}
+	html := renderAssetsListPageForTest(t, rows, "orders", true, true)
+
+	assert.Contains(t, html, `data-signals="{&#34;q&#34;:&#34;orders&#34;}"`)
+	assert.Contains(t, html, "data-quick-filter-input=\"true\"")
+	assert.Contains(t, html, "history.replaceState")
+}
+
 func renderAssetDetailPageForTest(t *testing.T, data assetDetailPageData) string {
 	t.Helper()
 
@@ -67,6 +93,23 @@ func renderAssetDetailPageForTest(t *testing.T, data assetDetailPageData) string
 
 	var buf strings.Builder
 	err := assetDetailPage(data).Render(&buf)
+	require.NoError(t, err)
+	return buf.String()
+}
+
+func renderAssetsListPageForTest(t *testing.T, rows []assetsListRowData, filter string, canMaterialize bool, backfillConfigured bool) string {
+	t.Helper()
+
+	var buf strings.Builder
+	err := assetsListPage(
+		domain.ContextPrincipal{Name: "tester", Type: "user"},
+		rows,
+		domain.PageRequest{MaxResults: 30},
+		int64(len(rows)),
+		filter,
+		canMaterialize,
+		backfillConfigured,
+	).Render(&buf)
 	require.NoError(t, err)
 	return buf.String()
 }

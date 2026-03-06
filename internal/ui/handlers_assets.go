@@ -40,7 +40,16 @@ func (h *Handler) AssetsList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	renderHTML(w, http.StatusOK, assetsListPage(principalFromContext(r.Context()), rows, pageReq, total))
+	canMaterialize, err := h.Asset.CanTriggerMaterialization(r.Context())
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
+	filterValue := strings.TrimSpace(r.URL.Query().Get("q"))
+	backfillConfigured := h.Backfill != nil
+
+	renderHTML(w, http.StatusOK, assetsListPage(principalFromContext(r.Context()), rows, pageReq, total, filterValue, canMaterialize, backfillConfigured))
 }
 
 func (h *Handler) AssetsDetail(w http.ResponseWriter, r *http.Request) {

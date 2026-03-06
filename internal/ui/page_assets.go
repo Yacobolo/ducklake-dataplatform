@@ -23,7 +23,7 @@ type assetsListRowData struct {
 	Updated  string
 }
 
-func assetsListPage(principal domain.ContextPrincipal, rows []assetsListRowData, page domain.PageRequest, total int64) Node {
+func assetsListPage(principal domain.ContextPrincipal, rows []assetsListRowData, page domain.PageRequest, total int64, filterValue string, canMaterialize bool, backfillConfigured bool) Node {
 	tableRows := make([]Node, 0, len(rows))
 	for i := range rows {
 		row := rows[i]
@@ -43,7 +43,19 @@ func assetsListPage(principal domain.ContextPrincipal, rows []assetsListRowData,
 		)
 	}
 
-	tableNode := Node(emptyStateCard("No assets found.", "", ""))
+	emptyMessage := "No assets found yet."
+	hint := "Apply declarative config or sync a catalog to populate this list."
+	if !canMaterialize {
+		hint = "You can browse assets once they exist. Triggering materialization requires execute asset materialization permission."
+	}
+	if !backfillConfigured {
+		hint += " Backfill is not configured in this environment."
+	}
+
+	tableNode := Div(
+		emptyStateCard(emptyMessage, "Open catalogs", "/ui/catalogs"),
+		Div(Class(cardClass()), P(Class(mutedClass()), Text(hint))),
+	)
 	if len(tableRows) > 0 {
 		tableNode = Div(
 			Class(cardClass("table-wrap")),
@@ -59,7 +71,7 @@ func assetsListPage(principal domain.ContextPrincipal, rows []assetsListRowData,
 		"Assets",
 		"assets",
 		principal,
-		quickFilterCard("Filter by asset key, type, or owner"),
+		quickFilterCardWithValue("Filter by asset key, type, or owner", filterValue),
 		tableNode,
 		paginationCard("/ui/assets", page, total),
 	)
