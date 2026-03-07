@@ -21,6 +21,42 @@ paths:
           $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
+    post:
+      operationId: createAsset
+      summary: Create asset definition
+      description: Creates a first-class asset definition and its dependency/check metadata. Requires MANAGE_ASSET_DEFINITIONS.
+      tags: [Assets]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_ASSET_DEFINITIONS
+            securable_id_source: catalog_sentinel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/asset.yaml#/CreateAssetRequest'
+      responses:
+        '201':
+          description: Created asset definition
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/Asset'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '409':
+          $ref: '../schemas/responses.yaml#/responses/Conflict'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
 
   /assets/{assetKey}:
     parameters:
@@ -45,6 +81,68 @@ paths:
                 $ref: '../schemas/asset.yaml#/Asset'
         '401':
           $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    put:
+      operationId: updateAsset
+      summary: Update asset definition
+      description: Replaces a first-class asset definition and reconciles its dependency/check metadata. Requires MANAGE_ASSET_DEFINITIONS.
+      tags: [Assets]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_ASSET_DEFINITIONS
+            securable_id_source: catalog_sentinel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/asset.yaml#/UpdateAssetRequest'
+      responses:
+        '200':
+          description: Updated asset definition
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/Asset'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    delete:
+      operationId: deleteAsset
+      summary: Delete asset definition
+      description: Deletes a first-class asset definition and its dependency/check metadata. Requires MANAGE_ASSET_DEFINITIONS.
+      tags: [Assets]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_ASSET_DEFINITIONS
+            securable_id_source: catalog_sentinel
+      responses:
+        '204':
+          description: Asset deleted
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
         '404':
           $ref: '../schemas/responses.yaml#/responses/NotFound'
         '429':

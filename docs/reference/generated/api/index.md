@@ -8,7 +8,7 @@ This section is generated from `internal/api/openapi.bundled.yaml`.
 
 ## Endpoint Groups
 
-- [Assets](./endpoints/assets) (12 operations)
+- [Assets](./endpoints/assets) (15 operations)
 - [Catalogs](./endpoints/catalogs) (30 operations)
 - [Compute](./endpoints/compute) (9 operations)
 - [Governance](./endpoints/governance) (7 operations)
@@ -29,6 +29,7 @@ This section is generated from `internal/api/openapi.bundled.yaml`.
 - [Asset](./schemas/asset)
 - [AssetBackfillDetails](./schemas/assetbackfilldetails)
 - [AssetCheck](./schemas/assetcheck)
+- [AssetCheckInput](./schemas/assetcheckinput)
 - [AssetCheckList](./schemas/assetchecklist)
 - [AssetCheckResult](./schemas/assetcheckresult)
 - [AssetGraph](./schemas/assetgraph)
@@ -59,6 +60,7 @@ This section is generated from `internal/api/openapi.bundled.yaml`.
 - [CreateAPIKeyResponse](./schemas/createapikeyresponse)
 - [CreateAssetBackfillRequest](./schemas/createassetbackfillrequest)
 - [CreateAssetBackfillResponse](./schemas/createassetbackfillresponse)
+- [CreateAssetRequest](./schemas/createassetrequest)
 - [CreateCatalogRequest](./schemas/createcatalogrequest)
 - [CreateCellRequest](./schemas/createcellrequest)
 - [CreateColumnMaskRequest](./schemas/createcolumnmaskrequest)
@@ -207,6 +209,7 @@ This section is generated from `internal/api/openapi.bundled.yaml`.
 - [TagAssignment](./schemas/tagassignment)
 - [TriggerAssetMaterializationRequest](./schemas/triggerassetmaterializationrequest)
 - [TriggerModelRunRequest](./schemas/triggermodelrunrequest)
+- [UpdateAssetRequest](./schemas/updateassetrequest)
 - [UpdateCatalogRegistrationRequest](./schemas/updatecatalogregistrationrequest)
 - [UpdateCellRequest](./schemas/updatecellrequest)
 - [UpdateColumnRequest](./schemas/updatecolumnrequest)

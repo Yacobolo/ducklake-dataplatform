@@ -13,7 +13,10 @@ import (
 
 type mockAssetService struct {
 	listAssetsFn             func(context.Context, domain.AssetFilter) ([]domain.DataAsset, int64, error)
+	createAssetFn            func(context.Context, domain.CreateAssetRequest) (*domain.DataAsset, error)
 	getAssetFn               func(context.Context, string) (*domain.DataAsset, error)
+	updateAssetFn            func(context.Context, string, domain.UpdateAssetRequest) (*domain.DataAsset, error)
+	deleteAssetFn            func(context.Context, string) error
 	resolveAssetKeysFn       func(context.Context, []string) (map[string]string, error)
 	getGraphFn               func(context.Context, string) ([]domain.AssetDependency, []domain.AssetDependency, error)
 	listPartitionsFn         func(context.Context, string, domain.PageRequest) ([]domain.AssetPartition, int64, error)
@@ -29,8 +32,17 @@ type mockAssetService struct {
 func (m *mockAssetService) ListAssets(ctx context.Context, filter domain.AssetFilter) ([]domain.DataAsset, int64, error) {
 	return m.listAssetsFn(ctx, filter)
 }
+func (m *mockAssetService) CreateAsset(ctx context.Context, req domain.CreateAssetRequest) (*domain.DataAsset, error) {
+	return m.createAssetFn(ctx, req)
+}
 func (m *mockAssetService) GetAsset(ctx context.Context, key string) (*domain.DataAsset, error) {
 	return m.getAssetFn(ctx, key)
+}
+func (m *mockAssetService) UpdateAsset(ctx context.Context, assetKey string, req domain.UpdateAssetRequest) (*domain.DataAsset, error) {
+	return m.updateAssetFn(ctx, assetKey, req)
+}
+func (m *mockAssetService) DeleteAsset(ctx context.Context, assetKey string) error {
+	return m.deleteAssetFn(ctx, assetKey)
 }
 func (m *mockAssetService) ResolveAssetKeys(ctx context.Context, assetIDs []string) (map[string]string, error) {
 	if m.resolveAssetKeysFn == nil {
@@ -118,6 +130,39 @@ func TestHandler_ListAssets(t *testing.T) {
 	assert.Equal(t, "sales.daily", *(*ok.Data)[0].AssetKey)
 }
 
+func TestHandler_CreateAsset(t *testing.T) {
+	t.Parallel()
+	createdAt := time.Now().UTC()
+	h := &APIHandler{assets: &mockAssetService{createAssetFn: func(_ context.Context, req domain.CreateAssetRequest) (*domain.DataAsset, error) {
+		require.Equal(t, "showcase.rides.gold", req.AssetKey)
+		require.Equal(t, domain.AssetTypeTable, req.AssetType)
+		require.Equal(t, []string{"showcase.rides.silver"}, req.UpstreamAssetKeys)
+		require.Len(t, req.Checks, 1)
+		assert.True(t, req.IsActive)
+		return &domain.DataAsset{ID: "asset-1", AssetKey: req.AssetKey, AssetType: req.AssetType, Owner: req.Owner, CreatedAt: createdAt, UpdatedAt: createdAt}, nil
+	}}}
+
+	resp, err := h.CreateAsset(assetTestCtx(true), CreateAssetRequestObject{Body: &CreateAssetJSONRequestBody{
+		AssetKey:          "showcase.rides.gold",
+		AssetType:         domain.AssetTypeTable,
+		Owner:             "platform-admins",
+		Description:       assetStrPtr("Gold showcase asset"),
+		Tags:              &[]string{"showcase", "gold"},
+		IoProfile:         assetStrPtr("duckdb"),
+		IsActive:          assetBoolPtr(true),
+		UpstreamAssetKeys: &[]string{"showcase.rides.silver"},
+		Checks: &[]AssetCheckInput{{
+			Name:      "gold_non_empty",
+			CheckType: "SQL_ASSERT",
+			Enabled:   assetBoolPtr(true),
+		}},
+	}})
+	require.NoError(t, err)
+	created, ok := resp.(CreateAsset201JSONResponse)
+	require.True(t, ok)
+	assert.Equal(t, "showcase.rides.gold", *created.AssetKey)
+}
+
 func TestHandler_GetAsset_NotFound(t *testing.T) {
 	t.Parallel()
 	h := &APIHandler{assets: &mockAssetService{getAssetFn: func(_ context.Context, _ string) (*domain.DataAsset, error) {
@@ -145,6 +190,42 @@ func TestHandler_GetAsset(t *testing.T) {
 	assert.Equal(t, "sales.daily", *ok.AssetKey)
 	assert.Equal(t, domain.AssetTypeModel, *ok.AssetType)
 	assert.Equal(t, "analytics", *ok.Owner)
+}
+
+func TestHandler_UpdateAsset(t *testing.T) {
+	t.Parallel()
+	updatedAt := time.Now().UTC()
+	h := &APIHandler{assets: &mockAssetService{updateAssetFn: func(_ context.Context, assetKey string, req domain.UpdateAssetRequest) (*domain.DataAsset, error) {
+		require.Equal(t, "showcase.rides.silver", assetKey)
+		require.Equal(t, "analytics", req.Owner)
+		require.Equal(t, []string{"showcase.rides.bronze"}, req.UpstreamAssetKeys)
+		return &domain.DataAsset{ID: "asset-1", AssetKey: assetKey, AssetType: req.AssetType, Owner: req.Owner, CreatedAt: updatedAt, UpdatedAt: updatedAt}, nil
+	}}}
+
+	resp, err := h.UpdateAsset(assetTestCtx(true), UpdateAssetRequestObject{AssetKey: "showcase.rides.silver", Body: &UpdateAssetJSONRequestBody{
+		AssetType:         domain.AssetTypeTable,
+		Owner:             "analytics",
+		Description:       assetStrPtr("Silver showcase asset"),
+		IsActive:          assetBoolPtr(true),
+		UpstreamAssetKeys: &[]string{"showcase.rides.bronze"},
+	}})
+	require.NoError(t, err)
+	updated, ok := resp.(UpdateAsset200JSONResponse)
+	require.True(t, ok)
+	assert.Equal(t, "analytics", *updated.Owner)
+}
+
+func TestHandler_DeleteAsset(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{deleteAssetFn: func(_ context.Context, assetKey string) error {
+		require.Equal(t, "showcase.rides.raw", assetKey)
+		return nil
+	}}}
+
+	resp, err := h.DeleteAsset(assetTestCtx(true), DeleteAssetRequestObject{AssetKey: "showcase.rides.raw"})
+	require.NoError(t, err)
+	_, ok := resp.(DeleteAsset204Response)
+	require.True(t, ok)
 }
 
 func TestHandler_GetAssetGraph(t *testing.T) {
@@ -321,6 +402,25 @@ func TestHandler_ListAssetCheckResults_NotFound(t *testing.T) {
 	require.NoError(t, err)
 	_, cast := resp.(ListAssetCheckResults404JSONResponse)
 	require.True(t, cast)
+}
+
+func TestDomainAssetChecks_Defaults(t *testing.T) {
+	t.Parallel()
+	checks := domainAssetChecks(&[]AssetCheckInput{{
+		Name:      "gold_non_empty",
+		CheckType: "SQL_ASSERT",
+	}})
+	require.Len(t, checks, 1)
+	assert.True(t, checks[0].Enabled)
+	assert.Empty(t, checks[0].Severity)
+}
+
+func assetBoolPtr(v bool) *bool {
+	return &v
+}
+
+func assetStrPtr(v string) *string {
+	return &v
 }
 
 func TestAssetRunToAPI_MapsPartitionKey(t *testing.T) {
