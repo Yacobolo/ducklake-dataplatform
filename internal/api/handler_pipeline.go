@@ -41,7 +41,7 @@ func (h *APIHandler) ListPipelines(ctx context.Context, req GenListPipelinesRequ
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListPipelines200JSONResponse{
 		Body:    PaginatedPipelines{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListPipelines200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListPipelines200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -80,7 +80,7 @@ func (h *APIHandler) CreatePipeline(ctx context.Context, req GenCreatePipelineRe
 	}
 	return GenCreatePipeline201JSONResponse{
 		Body:    pipelineToAPI(*result),
-		Headers: CreatePipeline201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreatePipeline201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -97,7 +97,7 @@ func (h *APIHandler) GetPipeline(ctx context.Context, req GenGetPipelineRequest)
 	}
 	return GenGetPipeline200JSONResponse{
 		Body:    pipelineToAPI(*result),
-		Headers: GetPipeline200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetPipeline200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -128,7 +128,7 @@ func (h *APIHandler) UpdatePipeline(ctx context.Context, req GenUpdatePipelineRe
 	}
 	return GenUpdatePipeline200JSONResponse{
 		Body:    pipelineToAPI(*result),
-		Headers: UpdatePipeline200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdatePipeline200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -147,7 +147,7 @@ func (h *APIHandler) DeletePipeline(ctx context.Context, req GenDeletePipelineRe
 		}
 	}
 	return GenDeletePipeline204Response{
-		Headers: DeletePipeline204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenDeletePipeline204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -171,7 +171,7 @@ func (h *APIHandler) ListPipelineJobs(ctx context.Context, req GenListPipelineJo
 	}
 	return GenListPipelineJobs200JSONResponse{
 		Body:    PipelineJobList{Data: &data},
-		Headers: ListPipelineJobs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListPipelineJobs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -224,7 +224,7 @@ func (h *APIHandler) CreatePipelineJob(ctx context.Context, req GenCreatePipelin
 	}
 	return GenCreatePipelineJob201JSONResponse{
 		Body:    pipelineJobToAPI(*result),
-		Headers: CreatePipelineJob201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreatePipelineJob201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -243,7 +243,7 @@ func (h *APIHandler) DeletePipelineJob(ctx context.Context, req GenDeletePipelin
 		}
 	}
 	return GenDeletePipelineJob204Response{
-		Headers: DeletePipelineJob204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenDeletePipelineJob204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -275,7 +275,7 @@ func (h *APIHandler) TriggerPipelineRun(ctx context.Context, req GenTriggerPipel
 	}
 	return GenTriggerPipelineRun201JSONResponse{
 		Body:    pipelineRunToAPI(*result),
-		Headers: TriggerPipelineRun201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenTriggerPipelineRun201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -307,7 +307,7 @@ func (h *APIHandler) ListPipelineRuns(ctx context.Context, req GenListPipelineRu
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListPipelineRuns200JSONResponse{
 		Body:    PaginatedPipelineRuns{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListPipelineRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListPipelineRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -324,7 +324,7 @@ func (h *APIHandler) GetPipelineRun(ctx context.Context, req GenGetPipelineRunRe
 	}
 	return GenGetPipelineRun200JSONResponse{
 		Body:    pipelineRunToAPI(*result),
-		Headers: GetPipelineRun200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetPipelineRun200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -378,7 +378,7 @@ func (h *APIHandler) ListPipelineJobRuns(ctx context.Context, req GenListPipelin
 	}
 	return GenListPipelineJobRuns200JSONResponse{
 		Body:    PipelineJobRunList{Data: &data},
-		Headers: ListPipelineJobRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListPipelineJobRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

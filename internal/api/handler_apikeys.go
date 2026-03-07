@@ -43,7 +43,7 @@ func (h *APIHandler) CreateAPIKey(ctx context.Context, req GenCreateAPIKeyReques
 			ExpiresAt: key.ExpiresAt,
 			CreatedAt: &key.CreatedAt,
 		},
-		Headers: CreateAPIKey201ResponseHeaders{
+		Headers: GenCreateAPIKey201ResponseHeaders{
 			XRateLimitLimit:     defaultRateLimitLimit,
 			XRateLimitRemaining: defaultRateLimitRemaining,
 			XRateLimitReset:     defaultRateLimitReset,
@@ -70,7 +70,7 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req GenListAPIKeysRequest)
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListAPIKeys200JSONResponse{
 		Body:    PaginatedAPIKeys{Data: &data, NextPageToken: optStr(npt)},
-		Headers: ListAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -98,7 +98,7 @@ func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ GenCleanupExpi
 			return nil, err
 		}
 	}
-	return GenCleanupExpiredAPIKeys201JSONResponse{
+	return CleanupExpiredAPIKeys200JSONResponse{
 		Body:    CleanupAPIKeysResponse{DeletedCount: &count},
 		Headers: CleanupExpiredAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil

@@ -46,7 +46,7 @@ func (h *APIHandler) RegisterCatalog(ctx context.Context, request GenRegisterCat
 	}
 	return GenRegisterCatalog201JSONResponse{
 		Body:    catalogRegistrationToAPI(*result),
-		Headers: RegisterCatalog201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenRegisterCatalog201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -70,7 +70,7 @@ func (h *APIHandler) ListCatalogs(ctx context.Context, request GenListCatalogsRe
 			NextPageToken: optStr(npt),
 			TotalCount:    &tc,
 		},
-		Headers: ListCatalogs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListCatalogs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -87,7 +87,7 @@ func (h *APIHandler) GetCatalogRegistration(ctx context.Context, request GenGetC
 	}
 	return GenGetCatalogRegistration200JSONResponse{
 		Body:    catalogRegistrationToAPI(*result),
-		Headers: GetCatalogRegistration200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetCatalogRegistration200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -112,7 +112,7 @@ func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request GenU
 	}
 	return GenUpdateCatalogRegistration200JSONResponse{
 		Body:    catalogRegistrationToAPI(*result),
-		Headers: UpdateCatalogRegistration200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateCatalogRegistration200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -129,7 +129,7 @@ func (h *APIHandler) DeleteCatalogRegistration(ctx context.Context, request GenD
 		}
 	}
 	return GenDeleteCatalogRegistration204Response{
-		Headers: DeleteCatalogRegistration204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenDeleteCatalogRegistration204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

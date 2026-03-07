@@ -46,9 +46,7 @@ func TestGenerateArtifacts(t *testing.T) {
 	requestModelsPath := filepath.Join(dir, "request_models.gen.go")
 	cliPath := filepath.Join(dir, "cli.gen.go")
 	typesPath := filepath.Join(dir, "types.gen.go")
-	legacyServerPath := filepath.Join(dir, "server.gen.go")
 	require.NoError(t, os.WriteFile(typesPath, []byte("package api\n\ntype HealthResponse struct{}\n"), 0o644))
-	require.NoError(t, os.WriteFile(legacyServerPath, []byte("package api\n\ntype GetHealth200JSONResponse HealthResponse\n"), 0o644))
 
 	require.NoError(t, generateOpenAPI(doc, openapiPath))
 	require.NoError(t, generateServer(doc, serverPath, requestModelsPath))

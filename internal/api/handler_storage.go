@@ -52,7 +52,7 @@ func (h *APIHandler) ListStorageCredentials(ctx context.Context, req GenListStor
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListStorageCredentials200JSONResponse{
 		Body:    PaginatedStorageCredentials{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListStorageCredentials200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListStorageCredentials200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -122,7 +122,7 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req GenCreateS
 	}
 	return GenCreateStorageCredential201JSONResponse{
 		Body:    storageCredentialToAPI(*result),
-		Headers: CreateStorageCredential201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateStorageCredential201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -140,7 +140,7 @@ func (h *APIHandler) GetStorageCredential(ctx context.Context, req GenGetStorage
 	}
 	return GenGetStorageCredential200JSONResponse{
 		Body:    storageCredentialToAPI(*result),
-		Headers: GetStorageCredential200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetStorageCredential200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -179,7 +179,7 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req GenUpdateS
 	}
 	return GenUpdateStorageCredential200JSONResponse{
 		Body:    storageCredentialToAPI(*result),
-		Headers: UpdateStorageCredential200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateStorageCredential200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -218,7 +218,7 @@ func (h *APIHandler) ListExternalLocations(ctx context.Context, req GenListExter
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListExternalLocations200JSONResponse{
 		Body:    PaginatedExternalLocations{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListExternalLocations200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListExternalLocations200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -263,7 +263,7 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req GenCreateEx
 	}
 	return GenCreateExternalLocation201JSONResponse{
 		Body:    externalLocationToAPI(*result),
-		Headers: CreateExternalLocation201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateExternalLocation201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -281,7 +281,7 @@ func (h *APIHandler) GetExternalLocation(ctx context.Context, req GenGetExternal
 	}
 	return GenGetExternalLocation200JSONResponse{
 		Body:    externalLocationToAPI(*result),
-		Headers: GetExternalLocation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetExternalLocation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -314,7 +314,7 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req GenUpdateEx
 	}
 	return GenUpdateExternalLocation200JSONResponse{
 		Body:    externalLocationToAPI(*result),
-		Headers: UpdateExternalLocation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateExternalLocation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -397,7 +397,7 @@ func (h *APIHandler) ListVolumes(ctx context.Context, request GenListVolumesRequ
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListVolumes200JSONResponse{
 		Body:    PaginatedVolumes{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListVolumes200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListVolumes200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -433,7 +433,7 @@ func (h *APIHandler) CreateVolume(ctx context.Context, request GenCreateVolumeRe
 	}
 	return GenCreateVolume201JSONResponse{
 		Body:    volumeToAPI(*result),
-		Headers: CreateVolume201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateVolume201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -451,7 +451,7 @@ func (h *APIHandler) GetVolume(ctx context.Context, request GenGetVolumeRequest)
 	}
 	return GenGetVolume200JSONResponse{
 		Body:    volumeToAPI(*result),
-		Headers: GetVolume200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetVolume200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -477,7 +477,7 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, request GenUpdateVolumeRe
 	}
 	return GenUpdateVolume200JSONResponse{
 		Body:    volumeToAPI(*result),
-		Headers: UpdateVolume200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateVolume200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

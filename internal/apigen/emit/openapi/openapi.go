@@ -116,6 +116,17 @@ func buildOperation(endpoint ir.Endpoint) (map[string]any, error) {
 	for _, response := range endpoint.Responses {
 		key := strconv.Itoa(response.StatusCode)
 		entry := map[string]any{"description": response.Description}
+		if len(response.Headers) > 0 {
+			headers := make(map[string]any, len(response.Headers))
+			for _, header := range response.Headers {
+				headers[header.Name] = map[string]any{
+					"required":    header.Required,
+					"description": header.Description,
+					"schema":      schemaRefMap(header.Schema),
+				}
+			}
+			entry["headers"] = headers
+		}
 		if response.Schema != nil {
 			entry["content"] = map[string]any{
 				"application/json": map[string]any{

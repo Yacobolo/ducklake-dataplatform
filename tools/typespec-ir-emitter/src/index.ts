@@ -41,9 +41,21 @@ type IREndpoint = {
   responses: Array<{
     status_code: number;
     description: string;
+    headers?: Array<{
+      name: string;
+      required?: boolean;
+      description?: string;
+      schema: IRSchemaRef;
+    }>; 
     schema?: IRSchemaRef;
+    extensions?: Record<string, unknown>;
   }>;
   extensions?: Record<string, unknown>;
+};
+
+type IRResponseShape = {
+  kind: "wrapped_json";
+  body_type: string;
 };
 
 type IRDocument = {
@@ -171,7 +183,7 @@ function appendOperation(
     summary: humanizeOperationName(operation.name),
     ...(operationDoc ? { description: operationDoc } : {}),
     tags: tagsForRoute(routePath),
-    responses: buildResponses(verb.toLowerCase(), routePath, operation.name, responseSchema),
+    responses: buildResponses(verb.toLowerCase(), routePath, operation.name, responseSchema, isAuthenticated),
   };
 
   if (parameters.length > 0) {
@@ -479,27 +491,234 @@ function buildResponses(
   routePath: string,
   operationName: string,
   responseSchema: IRSchemaRef | undefined,
+  isAuthenticated: boolean,
 ): IREndpoint["responses"] {
   const responses: IREndpoint["responses"] = [];
   const successCode = successStatusCode(method, operationName, responseSchema !== undefined);
   const successDescription = successCode === 201 ? "Created" : successCode === 204 ? "No Content" : "OK";
+  const responseShape = responseShapeForOperation(operationName, successCode);
 
   responses.push({
     status_code: successCode,
     description: successDescription,
+    ...(isAuthenticated ? { headers: responseHeaders(successCode) } : {}),
     ...(successCode !== 204 && responseSchema ? { schema: responseSchema } : {}),
+    ...(responseShape ? { extensions: { "x-apigen-response-shape": responseShape } } : {}),
   });
 
   if (method === "get" && routePath.includes("{")) {
-    responses.push({ status_code: 404, description: "Not Found", schema: { ref: "Error" } });
+    responses.push({
+      status_code: 404,
+      description: "Not Found",
+      ...(isAuthenticated ? { headers: responseHeaders(404) } : {}),
+      schema: { ref: "Error" },
+    });
   }
 
-  responses.push({ status_code: 401, description: "Unauthorized", schema: { ref: "Error" } });
-  responses.push({ status_code: 429, description: "Too Many Requests", schema: { ref: "Error" } });
-  responses.push({ status_code: 500, description: "Internal Server Error", schema: { ref: "Error" } });
+  responses.push({
+    status_code: 401,
+    description: "Unauthorized",
+    ...(isAuthenticated ? { headers: responseHeaders(401) } : {}),
+    schema: { ref: "Error" },
+  });
+  responses.push({
+    status_code: 429,
+    description: "Too Many Requests",
+    ...(isAuthenticated ? { headers: responseHeaders(429) } : {}),
+    schema: { ref: "Error" },
+  });
+  responses.push({
+    status_code: 500,
+    description: "Internal Server Error",
+    ...(isAuthenticated ? { headers: responseHeaders(500) } : {}),
+    schema: { ref: "Error" },
+  });
 
   return responses;
 }
+
+function responseHeaders(statusCode: number): NonNullable<IREndpoint["responses"]>[number]["headers"] {
+  const headers: NonNullable<IREndpoint["responses"]>[number]["headers"] = [
+    {
+      name: "X-RateLimit-Limit",
+      description: "Maximum requests allowed in the current rate-limit window.",
+      schema: { type: "integer", format: "int32" },
+    },
+    {
+      name: "X-RateLimit-Remaining",
+      description: "Remaining requests in the current rate-limit window.",
+      schema: { type: "integer", format: "int32" },
+    },
+    {
+      name: "X-RateLimit-Reset",
+      description: "Unix timestamp when the current rate-limit window resets.",
+      schema: { type: "integer", format: "int64" },
+    },
+  ];
+
+  if (statusCode === 429) {
+    headers.unshift({
+      name: "Retry-After",
+      description: "Seconds until the client should retry the request.",
+      schema: { type: "integer", format: "int32" },
+    });
+  }
+
+  return headers;
+}
+
+function responseShapeForOperation(operationName: string, statusCode: number): IRResponseShape | undefined {
+  return responseShapeManifest[`${operationName}:${statusCode}`];
+}
+
+const responseShapeManifest: Record<string, IRResponseShape> = {
+  "cancelModelRun:201": { kind: "wrapped_json", body_type: "ModelRun" },
+  "cancelPipelineRun:201": { kind: "wrapped_json", body_type: "PipelineRun" },
+  "cancelQuery:201": { kind: "wrapped_json", body_type: "CancelQueryResponse" },
+  "checkModelFreshness:200": { kind: "wrapped_json", body_type: "FreshnessStatus" },
+  "checkSourceFreshness:200": { kind: "wrapped_json", body_type: "SourceFreshnessStatus" },
+  "cleanupExpiredAPIKeys:201": { kind: "wrapped_json", body_type: "CleanupAPIKeysResponse" },
+  "commitTableIngestion:201": { kind: "wrapped_json", body_type: "IngestionResult" },
+  "createAPIKey:201": { kind: "wrapped_json", body_type: "CreateAPIKeyResponse" },
+  "createCell:201": { kind: "wrapped_json", body_type: "Cell" },
+  "createColumnMask:201": { kind: "wrapped_json", body_type: "ColumnMask" },
+  "createComputeAssignment:201": { kind: "wrapped_json", body_type: "ComputeAssignment" },
+  "createComputeEndpoint:201": { kind: "wrapped_json", body_type: "ComputeEndpoint" },
+  "createExternalLocation:201": { kind: "wrapped_json", body_type: "ExternalLocation" },
+  "createGitRepo:201": { kind: "wrapped_json", body_type: "GitRepo" },
+  "createGrant:201": { kind: "wrapped_json", body_type: "PrivilegeGrant" },
+  "createGroup:201": { kind: "wrapped_json", body_type: "Group" },
+  "createMacro:201": { kind: "wrapped_json", body_type: "Macro" },
+  "createManifest:201": { kind: "wrapped_json", body_type: "ManifestResponse" },
+  "createModel:201": { kind: "wrapped_json", body_type: "Model" },
+  "createModelTest:201": { kind: "wrapped_json", body_type: "ModelTest" },
+  "createNotebook:201": { kind: "wrapped_json", body_type: "Notebook" },
+  "createNotebookSession:201": { kind: "wrapped_json", body_type: "NotebookSession" },
+  "createPipeline:201": { kind: "wrapped_json", body_type: "Pipeline" },
+  "createPipelineJob:201": { kind: "wrapped_json", body_type: "PipelineJob" },
+  "createPrincipal:201": { kind: "wrapped_json", body_type: "Principal" },
+  "createRowFilter:201": { kind: "wrapped_json", body_type: "RowFilter" },
+  "createSchema:201": { kind: "wrapped_json", body_type: "SchemaDetail" },
+  "createStorageCredential:201": { kind: "wrapped_json", body_type: "StorageCredential" },
+  "createTable:201": { kind: "wrapped_json", body_type: "TableDetail" },
+  "createTag:201": { kind: "wrapped_json", body_type: "Tag" },
+  "createTagAssignment:201": { kind: "wrapped_json", body_type: "TagAssignment" },
+  "createUploadUrl:201": { kind: "wrapped_json", body_type: "UploadUrlResponse" },
+  "createView:201": { kind: "wrapped_json", body_type: "ViewDetail" },
+  "createVolume:201": { kind: "wrapped_json", body_type: "VolumeDetail" },
+  "createSemanticMetric:201": { kind: "wrapped_json", body_type: "SemanticMetric" },
+  "createSemanticModel:201": { kind: "wrapped_json", body_type: "SemanticModel" },
+  "createSemanticPreAggregation:201": { kind: "wrapped_json", body_type: "SemanticPreAggregation" },
+  "createSemanticRelationship:201": { kind: "wrapped_json", body_type: "SemanticRelationship" },
+  "checkMetricFreshness:200": { kind: "wrapped_json", body_type: "MetricFreshnessStatus" },
+  "diffMacroRevisions:200": { kind: "wrapped_json", body_type: "MacroRevisionDiff" },
+  "explainMetricQuery:201": { kind: "wrapped_json", body_type: "MetricQueryExplainResponse" },
+  "executeCell:201": { kind: "wrapped_json", body_type: "CellExecutionResult" },
+  "executeQuery:201": { kind: "wrapped_json", body_type: "QueryResult" },
+  "getCatalog:200": { kind: "wrapped_json", body_type: "CatalogInfo" },
+  "getCatalogRegistration:200": { kind: "wrapped_json", body_type: "CatalogRegistration" },
+  "getColumnImpact:200": { kind: "wrapped_json", body_type: "PaginatedColumnLineageEdges" },
+  "getColumnLineage:200": { kind: "wrapped_json", body_type: "PaginatedColumnLineageEdges" },
+  "getComputeEndpoint:200": { kind: "wrapped_json", body_type: "ComputeEndpoint" },
+  "getComputeEndpointHealth:200": { kind: "wrapped_json", body_type: "ComputeEndpointHealth" },
+  "getDownstreamLineage:200": { kind: "wrapped_json", body_type: "PaginatedLineageEdges" },
+  "getExternalLocation:200": { kind: "wrapped_json", body_type: "ExternalLocation" },
+  "getGitRepo:200": { kind: "wrapped_json", body_type: "GitRepo" },
+  "getGroup:200": { kind: "wrapped_json", body_type: "Group" },
+  "getMacro:200": { kind: "wrapped_json", body_type: "Macro" },
+  "getMacroImpact:200": { kind: "wrapped_json", body_type: "MacroImpactList" },
+  "getMetastoreSummary:200": { kind: "wrapped_json", body_type: "MetastoreSummary" },
+  "getModel:200": { kind: "wrapped_json", body_type: "Model" },
+  "getModelDAG:200": { kind: "wrapped_json", body_type: "ModelDAG" },
+  "getModelRun:200": { kind: "wrapped_json", body_type: "ModelRun" },
+  "getNotebook:200": { kind: "wrapped_json", body_type: "NotebookDetail" },
+  "getNotebookJob:200": { kind: "wrapped_json", body_type: "NotebookJob" },
+  "getPipeline:200": { kind: "wrapped_json", body_type: "Pipeline" },
+  "getPipelineRun:200": { kind: "wrapped_json", body_type: "PipelineRun" },
+  "getPrincipal:200": { kind: "wrapped_json", body_type: "Principal" },
+  "getQuery:200": { kind: "wrapped_json", body_type: "QueryJob" },
+  "getQueryResults:200": { kind: "wrapped_json", body_type: "QueryResult" },
+  "getSchema:200": { kind: "wrapped_json", body_type: "SchemaDetail" },
+  "getSemanticModel:200": { kind: "wrapped_json", body_type: "SemanticModel" },
+  "getStorageCredential:200": { kind: "wrapped_json", body_type: "StorageCredential" },
+  "getTable:200": { kind: "wrapped_json", body_type: "TableDetail" },
+  "getTableLineage:200": { kind: "wrapped_json", body_type: "LineageNode" },
+  "getUpstreamLineage:200": { kind: "wrapped_json", body_type: "PaginatedLineageEdges" },
+  "getView:200": { kind: "wrapped_json", body_type: "ViewDetail" },
+  "getVolume:200": { kind: "wrapped_json", body_type: "VolumeDetail" },
+  "listAPIKeys:200": { kind: "wrapped_json", body_type: "PaginatedAPIKeys" },
+  "listAuditLogs:200": { kind: "wrapped_json", body_type: "PaginatedAuditLogs" },
+  "listCatalogs:200": { kind: "wrapped_json", body_type: "CatalogRegistrationList" },
+  "listClassifications:200": { kind: "wrapped_json", body_type: "PaginatedTags" },
+  "listComputeAssignments:200": { kind: "wrapped_json", body_type: "PaginatedComputeAssignments" },
+  "listComputeEndpoints:200": { kind: "wrapped_json", body_type: "PaginatedComputeEndpoints" },
+  "listExternalLocations:200": { kind: "wrapped_json", body_type: "PaginatedExternalLocations" },
+  "listGitRepos:200": { kind: "wrapped_json", body_type: "PaginatedGitRepos" },
+  "listGrants:200": { kind: "wrapped_json", body_type: "PaginatedGrants" },
+  "listGroupMembers:200": { kind: "wrapped_json", body_type: "PaginatedGroupMembers" },
+  "listGroups:200": { kind: "wrapped_json", body_type: "PaginatedGroups" },
+  "listMacroRevisions:200": { kind: "wrapped_json", body_type: "MacroRevisionList" },
+  "listMacros:200": { kind: "wrapped_json", body_type: "PaginatedMacros" },
+  "listModelRunSteps:200": { kind: "wrapped_json", body_type: "ModelRunStepList" },
+  "listModelRuns:200": { kind: "wrapped_json", body_type: "PaginatedModelRuns" },
+  "listModelTestResults:200": { kind: "wrapped_json", body_type: "ModelTestResultList" },
+  "listModelTests:200": { kind: "wrapped_json", body_type: "ModelTestList" },
+  "listModels:200": { kind: "wrapped_json", body_type: "PaginatedModels" },
+  "listNotebookJobs:200": { kind: "wrapped_json", body_type: "PaginatedNotebookJobs" },
+  "listNotebooks:200": { kind: "wrapped_json", body_type: "PaginatedNotebooks" },
+  "listPipelineJobRuns:200": { kind: "wrapped_json", body_type: "PipelineJobRunList" },
+  "listPipelineJobs:200": { kind: "wrapped_json", body_type: "PipelineJobList" },
+  "listPipelineRuns:200": { kind: "wrapped_json", body_type: "PaginatedPipelineRuns" },
+  "listPipelines:200": { kind: "wrapped_json", body_type: "PaginatedPipelines" },
+  "listPrincipals:200": { kind: "wrapped_json", body_type: "PaginatedPrincipals" },
+  "listQueryHistory:200": { kind: "wrapped_json", body_type: "PaginatedQueryHistoryEntries" },
+  "listRowFilters:200": { kind: "wrapped_json", body_type: "PaginatedRowFilters" },
+  "listSchemas:200": { kind: "wrapped_json", body_type: "PaginatedSchemaDetails" },
+  "listColumnMasks:200": { kind: "wrapped_json", body_type: "PaginatedColumnMasks" },
+  "listSemanticMetrics:200": { kind: "wrapped_json", body_type: "SemanticMetricList" },
+  "listSemanticModels:200": { kind: "wrapped_json", body_type: "PaginatedSemanticModels" },
+  "listSemanticPreAggregations:200": { kind: "wrapped_json", body_type: "SemanticPreAggregationList" },
+  "listSemanticRelationships:200": { kind: "wrapped_json", body_type: "PaginatedSemanticRelationships" },
+  "listStorageCredentials:200": { kind: "wrapped_json", body_type: "PaginatedStorageCredentials" },
+  "listTableColumns:200": { kind: "wrapped_json", body_type: "PaginatedColumnDetails" },
+  "listTables:200": { kind: "wrapped_json", body_type: "PaginatedTableDetails" },
+  "listTags:200": { kind: "wrapped_json", body_type: "PaginatedTags" },
+  "listViews:200": { kind: "wrapped_json", body_type: "PaginatedViewDetails" },
+  "listVolumes:200": { kind: "wrapped_json", body_type: "PaginatedVolumes" },
+  "loadTableExternalFiles:201": { kind: "wrapped_json", body_type: "IngestionResult" },
+  "profileTable:201": { kind: "wrapped_json", body_type: "TableStatistics" },
+  "promoteNotebookToModel:201": { kind: "wrapped_json", body_type: "Model" },
+  "purgeLineage:201": { kind: "wrapped_json", body_type: "PurgeLineageResponse" },
+  "registerCatalog:201": { kind: "wrapped_json", body_type: "CatalogRegistration" },
+  "reorderCells:201": { kind: "wrapped_json", body_type: "CellList" },
+  "runAllCells:201": { kind: "wrapped_json", body_type: "RunAllResult" },
+  "runAllCellsAsync:201": { kind: "wrapped_json", body_type: "NotebookJob" },
+  "runMetricQuery:201": { kind: "wrapped_json", body_type: "MetricQueryRunResponse" },
+  "searchCatalog:200": { kind: "wrapped_json", body_type: "PaginatedSearchResults" },
+  "setDefaultCatalog:201": { kind: "wrapped_json", body_type: "CatalogRegistration" },
+  "submitQuery:201": { kind: "wrapped_json", body_type: "SubmitQueryResponse" },
+  "syncGitRepo:201": { kind: "wrapped_json", body_type: "GitSyncResult" },
+  "triggerModelRun:201": { kind: "wrapped_json", body_type: "ModelRun" },
+  "triggerPipelineRun:201": { kind: "wrapped_json", body_type: "PipelineRun" },
+  "updateCatalogRegistration:200": { kind: "wrapped_json", body_type: "CatalogRegistration" },
+  "updateCell:200": { kind: "wrapped_json", body_type: "Cell" },
+  "updateColumn:200": { kind: "wrapped_json", body_type: "ColumnDetail" },
+  "updateComputeEndpoint:200": { kind: "wrapped_json", body_type: "ComputeEndpoint" },
+  "updateExternalLocation:200": { kind: "wrapped_json", body_type: "ExternalLocation" },
+  "updateMacro:200": { kind: "wrapped_json", body_type: "Macro" },
+  "updateModel:200": { kind: "wrapped_json", body_type: "Model" },
+  "updateNotebook:200": { kind: "wrapped_json", body_type: "Notebook" },
+  "updatePipeline:200": { kind: "wrapped_json", body_type: "Pipeline" },
+  "updateSchema:200": { kind: "wrapped_json", body_type: "SchemaDetail" },
+  "updateSemanticMetric:200": { kind: "wrapped_json", body_type: "SemanticMetric" },
+  "updateSemanticModel:200": { kind: "wrapped_json", body_type: "SemanticModel" },
+  "updateSemanticPreAggregation:200": { kind: "wrapped_json", body_type: "SemanticPreAggregation" },
+  "updateSemanticRelationship:200": { kind: "wrapped_json", body_type: "SemanticRelationship" },
+  "updateStorageCredential:200": { kind: "wrapped_json", body_type: "StorageCredential" },
+  "updateTable:200": { kind: "wrapped_json", body_type: "TableDetail" },
+  "updateView:200": { kind: "wrapped_json", body_type: "ViewDetail" },
+  "updateVolume:200": { kind: "wrapped_json", body_type: "VolumeDetail" },
+};
 
 function successStatusCode(method: string, operationName: string, hasResponseSchema: boolean): number {
   if (method === "delete") {

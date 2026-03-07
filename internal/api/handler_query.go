@@ -57,7 +57,7 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryReques
 	}
 	rowCount := int64(result.RowCount)
 
-	return GenExecuteQuery201JSONResponse{
+	return ExecuteQuery200JSONResponse{
 		Body: QueryResult{
 			Columns:  &result.Columns,
 			Rows:     &rows,
@@ -94,7 +94,7 @@ func (h *APIHandler) SubmitQuery(ctx context.Context, req GenSubmitQueryRequest)
 
 	status := string(job.Status)
 	apiStatus := SubmitQueryResponseStatus(status)
-	return GenSubmitQuery201JSONResponse{
+	return SubmitQuery202JSONResponse{
 		Body:    SubmitQueryResponse{QueryId: job.ID, Status: apiStatus},
 		Headers: SubmitQuery202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
@@ -114,7 +114,7 @@ func (h *APIHandler) GetQuery(ctx context.Context, req GenGetQueryRequest) (GenG
 	body := queryJobToAPI(job)
 	return GenGetQuery200JSONResponse{
 		Body:    body,
-		Headers: GetQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -179,7 +179,7 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResults
 
 	return GenGetQueryResults200JSONResponse{
 		Body:    result,
-		Headers: GetQueryResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetQueryResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -213,7 +213,7 @@ func (h *APIHandler) CancelQuery(ctx context.Context, req GenCancelQueryRequest)
 		status = string(domain.QueryJobStatusCanceled)
 	}
 	apiStatus := CancelQueryResponseStatus(status)
-	return GenCancelQuery201JSONResponse{
+	return CancelQuery200JSONResponse{
 		Body:    CancelQueryResponse{QueryId: job.ID, Status: apiStatus},
 		Headers: CancelQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
@@ -237,7 +237,7 @@ func (h *APIHandler) DeleteQuery(ctx context.Context, req GenDeleteQueryRequest)
 		return GenDeleteQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
-	return GenDeleteQuery204Response{Headers: DeleteQuery204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+	return GenDeleteQuery204Response{Headers: GenDeleteQuery204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 func (h *APIHandler) lookupAsyncJob(ctx context.Context, queryID string) (*domain.QueryJob, error) {

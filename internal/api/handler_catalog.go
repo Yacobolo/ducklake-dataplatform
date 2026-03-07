@@ -48,7 +48,7 @@ func (h *APIHandler) GetCatalog(ctx context.Context, request GenGetCatalogReques
 	}
 	return GenGetCatalog200JSONResponse{
 		Body:    catalogInfoToAPI(*info),
-		Headers: GetCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -66,7 +66,7 @@ func (h *APIHandler) ListSchemas(ctx context.Context, request GenListSchemasRequ
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListSchemas200JSONResponse{
 		Body:    PaginatedSchemaDetails{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListSchemas200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListSchemas200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -101,7 +101,7 @@ func (h *APIHandler) CreateSchema(ctx context.Context, request GenCreateSchemaRe
 	}
 	return GenCreateSchema201JSONResponse{
 		Body:    schemaDetailToAPI(*result),
-		Headers: CreateSchema201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateSchema201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -118,7 +118,7 @@ func (h *APIHandler) GetSchema(ctx context.Context, request GenGetSchemaRequest)
 	}
 	return GenGetSchema200JSONResponse{
 		Body:    schemaDetailToAPI(*result),
-		Headers: GetSchema200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetSchema200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -145,7 +145,7 @@ func (h *APIHandler) UpdateSchema(ctx context.Context, request GenUpdateSchemaRe
 	}
 	return GenUpdateSchema200JSONResponse{
 		Body:    schemaDetailToAPI(*result),
-		Headers: UpdateSchema200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateSchema200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -192,7 +192,7 @@ func (h *APIHandler) ListTables(ctx context.Context, request GenListTablesReques
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListTables200JSONResponse{
 		Body:    PaginatedTableDetails{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListTables200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListTables200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -243,7 +243,7 @@ func (h *APIHandler) CreateTable(ctx context.Context, request GenCreateTableRequ
 	}
 	return GenCreateTable201JSONResponse{
 		Body:    tableDetailToAPI(*result),
-		Headers: CreateTable201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateTable201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -260,7 +260,7 @@ func (h *APIHandler) GetTable(ctx context.Context, request GenGetTableRequest) (
 	}
 	return GenGetTable200JSONResponse{
 		Body:    tableDetailToAPI(*result),
-		Headers: GetTable200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetTable200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -291,7 +291,7 @@ func (h *APIHandler) UpdateTable(ctx context.Context, request GenUpdateTableRequ
 	}
 	return GenUpdateTable200JSONResponse{
 		Body:    tableDetailToAPI(*result),
-		Headers: UpdateTable200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateTable200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -330,7 +330,7 @@ func (h *APIHandler) ListTableColumns(ctx context.Context, request GenListTableC
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListTableColumns200JSONResponse{
 		Body:    PaginatedColumnDetails{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListTableColumns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListTableColumns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -358,7 +358,7 @@ func (h *APIHandler) UpdateColumn(ctx context.Context, request GenUpdateColumnRe
 	}
 	return GenUpdateColumn200JSONResponse{
 		Body:    columnDetailToAPI(*result),
-		Headers: UpdateColumn200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateColumn200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -397,6 +397,6 @@ func (h *APIHandler) GetMetastoreSummary(ctx context.Context, request GenGetMeta
 			SchemaCount:    &summary.SchemaCount,
 			TableCount:     &summary.TableCount,
 		},
-		Headers: GetMetastoreSummary200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetMetastoreSummary200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

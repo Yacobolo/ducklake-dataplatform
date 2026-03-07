@@ -162,12 +162,12 @@ func TestHandler_CreateSemanticModel_UsesPrincipalAndMapsRequest(t *testing.T) {
 
 	created, ok := resp.(GenCreateSemanticModel201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
-	require.NotNil(t, created.ProjectName)
-	assert.Equal(t, "analytics", *created.ProjectName)
-	require.NotNil(t, created.Name)
-	assert.Equal(t, "sales", *created.Name)
-	require.NotNil(t, created.Tags)
-	assert.Equal(t, tags, *created.Tags)
+	require.NotNil(t, created.Body.ProjectName)
+	assert.Equal(t, "analytics", *created.Body.ProjectName)
+	require.NotNil(t, created.Body.Name)
+	assert.Equal(t, "sales", *created.Body.Name)
+	require.NotNil(t, created.Body.Tags)
+	assert.Equal(t, tags, *created.Body.Tags)
 }
 
 func TestHandler_CreateSemanticModel_ValidationErrorMaps400(t *testing.T) {
@@ -216,10 +216,10 @@ func TestHandler_ListSemanticModels_PassesFiltersAndPagination(t *testing.T) {
 
 	okResp, ok := resp.(GenListSemanticModels200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
-	require.NotNil(t, okResp.Data)
-	require.Len(t, *okResp.Data, 1)
-	require.NotNil(t, okResp.NextPageToken)
-	assert.NotEmpty(t, *okResp.NextPageToken)
+	require.NotNil(t, okResp.Body.Data)
+	require.Len(t, *okResp.Body.Data, 1)
+	require.NotNil(t, okResp.Body.NextPageToken)
+	assert.NotEmpty(t, *okResp.Body.NextPageToken)
 }
 
 func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
@@ -270,11 +270,11 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 
 	okResp, ok := resp.(ExplainMetricQuery200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
-	require.NotNil(t, okResp.Plan)
-	require.NotNil(t, okResp.Plan.GeneratedSql)
-	assert.Equal(t, "select ...", *okResp.Plan.GeneratedSql)
-	require.NotNil(t, okResp.Plan.SelectedPreAggregation)
-	assert.Equal(t, preAgg, *okResp.Plan.SelectedPreAggregation)
+	require.NotNil(t, okResp.Body.Plan)
+	require.NotNil(t, okResp.Body.Plan.GeneratedSql)
+	assert.Equal(t, "select ...", *okResp.Body.Plan.GeneratedSql)
+	require.NotNil(t, okResp.Body.Plan.SelectedPreAggregation)
+	assert.Equal(t, preAgg, *okResp.Body.Plan.SelectedPreAggregation)
 }
 
 func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
@@ -319,11 +319,11 @@ func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
 
 	okResp, ok := resp.(RunMetricQuery200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
-	require.NotNil(t, okResp.Result)
-	require.NotNil(t, okResp.Result.RowCount)
-	assert.EqualValues(t, 1, *okResp.Result.RowCount)
-	require.NotNil(t, okResp.Result.Columns)
-	assert.Equal(t, []string{"order_date", "total_revenue"}, *okResp.Result.Columns)
+	require.NotNil(t, okResp.Body.Result)
+	require.NotNil(t, okResp.Body.Result.RowCount)
+	assert.EqualValues(t, 1, *okResp.Body.Result.RowCount)
+	require.NotNil(t, okResp.Body.Result.Columns)
+	assert.Equal(t, []string{"order_date", "total_revenue"}, *okResp.Body.Result.Columns)
 }
 
 func TestHandler_CheckMetricFreshness_ResolvesMetricAndReturnsFreshness(t *testing.T) {
@@ -357,17 +357,17 @@ func TestHandler_CheckMetricFreshness_ResolvesMetricAndReturnsFreshness(t *testi
 
 	okResp, ok := resp.(GenCheckMetricFreshness200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
-	require.NotNil(t, okResp.MetricName)
-	assert.Equal(t, "total_revenue", *okResp.MetricName)
-	require.NotNil(t, okResp.ProjectName)
-	assert.Equal(t, "analytics", *okResp.ProjectName)
-	require.NotNil(t, okResp.SemanticModelName)
-	assert.Equal(t, "sales", *okResp.SemanticModelName)
-	require.NotNil(t, okResp.FreshnessStatus)
-	assert.Equal(t, "fresh", *okResp.FreshnessStatus)
-	require.NotNil(t, okResp.FreshnessBasis)
-	assert.Equal(t, []string{"analytics.fct_sales"}, *okResp.FreshnessBasis)
-	require.NotNil(t, okResp.CheckedAt)
+	require.NotNil(t, okResp.Body.MetricName)
+	assert.Equal(t, "total_revenue", *okResp.Body.MetricName)
+	require.NotNil(t, okResp.Body.ProjectName)
+	assert.Equal(t, "analytics", *okResp.Body.ProjectName)
+	require.NotNil(t, okResp.Body.SemanticModelName)
+	assert.Equal(t, "sales", *okResp.Body.SemanticModelName)
+	require.NotNil(t, okResp.Body.FreshnessStatus)
+	assert.Equal(t, "fresh", *okResp.Body.FreshnessStatus)
+	require.NotNil(t, okResp.Body.FreshnessBasis)
+	assert.Equal(t, []string{"analytics.fct_sales"}, *okResp.Body.FreshnessBasis)
+	require.NotNil(t, okResp.Body.CheckedAt)
 }
 
 func TestHandler_CheckMetricFreshness_AmbiguousMetricReturns400(t *testing.T) {

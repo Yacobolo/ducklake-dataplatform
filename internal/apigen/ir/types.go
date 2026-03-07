@@ -63,9 +63,28 @@ type RequestBody struct {
 
 // Response describes one operation response.
 type Response struct {
-	StatusCode  int        `json:"status_code"`
-	Description string     `json:"description"`
-	Schema      *SchemaRef `json:"schema,omitempty"`
+	StatusCode  int            `json:"status_code"`
+	Description string         `json:"description"`
+	Headers     []Header       `json:"headers,omitempty"`
+	Schema      *SchemaRef     `json:"schema,omitempty"`
+	Extensions  map[string]any `json:"extensions,omitempty"`
+}
+
+// Header describes one response header.
+type Header struct {
+	Name        string    `json:"name"`
+	Required    bool      `json:"required,omitempty"`
+	Description string    `json:"description,omitempty"`
+	Schema      SchemaRef `json:"schema"`
+}
+
+// ResponseShapeExtensionKey stores APIGen-owned response shape metadata.
+const ResponseShapeExtensionKey = "x-apigen-response-shape"
+
+// ResponseShape describes the APIGen-owned response transport shape.
+type ResponseShape struct {
+	Kind     string `json:"kind"`
+	BodyType string `json:"body_type,omitempty"`
 }
 
 // SchemaRef references or describes a schema.

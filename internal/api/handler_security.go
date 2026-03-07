@@ -75,7 +75,7 @@ func (h *APIHandler) ListPrincipals(ctx context.Context, req GenListPrincipalsRe
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListPrincipals200JSONResponse{
 		Body:    PaginatedPrincipals{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListPrincipals200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListPrincipals200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -105,7 +105,7 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req GenCreatePrincipal
 	}
 	return GenCreatePrincipal201JSONResponse{
 		Body:    principalToAPI(*result),
-		Headers: CreatePrincipal201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreatePrincipal201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -122,7 +122,7 @@ func (h *APIHandler) GetPrincipal(ctx context.Context, req GenGetPrincipalReques
 	}
 	return GenGetPrincipal200JSONResponse{
 		Body:    principalToAPI(*p),
-		Headers: GetPrincipal200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetPrincipal200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -177,7 +177,7 @@ func (h *APIHandler) ListGroups(ctx context.Context, req GenListGroupsRequest) (
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListGroups200JSONResponse{
 		Body:    PaginatedGroups{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListGroups200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListGroups200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -198,7 +198,7 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req GenCreateGroupRequest)
 	}
 	return GenCreateGroup201JSONResponse{
 		Body:    groupToAPI(*result),
-		Headers: CreateGroup201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateGroup201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -215,7 +215,7 @@ func (h *APIHandler) GetGroup(ctx context.Context, req GenGetGroupRequest) (GenG
 	}
 	return GenGetGroup200JSONResponse{
 		Body:    groupToAPI(*g),
-		Headers: GetGroup200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetGroup200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -251,7 +251,7 @@ func (h *APIHandler) ListGroupMembers(ctx context.Context, req GenListGroupMembe
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListGroupMembers200JSONResponse{
 		Body:    PaginatedGroupMembers{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListGroupMembers200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListGroupMembers200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -322,7 +322,7 @@ func (h *APIHandler) ListGrants(ctx context.Context, req GenListGrantsRequest) (
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListGrants200JSONResponse{
 		Body:    PaginatedGrants{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListGrants200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListGrants200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -346,7 +346,7 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req GenCreateGrantRequest)
 	}
 	return GenCreateGrant201JSONResponse{
 		Body:    grantToAPI(*result),
-		Headers: CreateGrant201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateGrant201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -388,7 +388,7 @@ func (h *APIHandler) ListRowFilters(ctx context.Context, req GenListRowFiltersRe
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListRowFilters200JSONResponse{
 		Body:    PaginatedRowFilters{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListRowFilters200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListRowFilters200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -414,7 +414,7 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req GenCreateRowFilter
 	}
 	return GenCreateRowFilter201JSONResponse{
 		Body:    rowFilterToAPI(*result),
-		Headers: CreateRowFilter201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateRowFilter201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -449,7 +449,7 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req GenBindRowFilterRequ
 			return nil, err
 		}
 	}
-	return GenBindRowFilter201JSONResponse{}, nil
+	return BindRowFilter204Response{}, nil
 }
 
 // UnbindRowFilter implements the endpoint for unbinding a row filter from a principal.
@@ -487,7 +487,7 @@ func (h *APIHandler) ListColumnMasks(ctx context.Context, req GenListColumnMasks
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListColumnMasks200JSONResponse{
 		Body:    PaginatedColumnMasks{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListColumnMasks200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListColumnMasks200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -514,7 +514,7 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req GenCreateColumnMa
 	}
 	return GenCreateColumnMask201JSONResponse{
 		Body:    columnMaskToAPI(*result),
-		Headers: CreateColumnMask201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateColumnMask201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -554,7 +554,7 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req GenBindColumnMaskRe
 			return nil, err
 		}
 	}
-	return GenBindColumnMask201JSONResponse{}, nil
+	return BindColumnMask204Response{}, nil
 }
 
 // UnbindColumnMask implements the endpoint for unbinding a column mask from a principal.

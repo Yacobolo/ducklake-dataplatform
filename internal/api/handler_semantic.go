@@ -41,7 +41,7 @@ type semanticService interface {
 func (h *APIHandler) ListSemanticModels(ctx context.Context, req GenListSemanticModelsRequest) (GenListSemanticModelsResponse, error) {
 	if isNilService(h.semantics) {
 		empty := []SemanticModel{}
-		return GenListSemanticModels200JSONResponse(semanticModelsPageToGen(empty, nil)), nil
+		return GenListSemanticModels200JSONResponse{Body: semanticModelsPageToGen(empty, nil), Headers: GenListSemanticModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
@@ -55,7 +55,7 @@ func (h *APIHandler) ListSemanticModels(ctx context.Context, req GenListSemantic
 		data[i] = semanticModelToAPI(m)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return GenListSemanticModels200JSONResponse(semanticModelsPageToGen(data, optStr(nextToken))), nil
+	return GenListSemanticModels200JSONResponse{Body: semanticModelsPageToGen(data, optStr(nextToken)), Headers: GenListSemanticModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // CreateSemanticModel creates a semantic model.
@@ -82,7 +82,7 @@ func (h *APIHandler) CreateSemanticModel(ctx context.Context, req GenCreateSeman
 		}
 	}
 
-	return GenCreateSemanticModel201JSONResponse(semanticModelToAPI(*result)), nil
+	return GenCreateSemanticModel201JSONResponse{Body: semanticModelToAPI(*result), Headers: GenCreateSemanticModel201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // GetSemanticModel retrieves a semantic model.
@@ -94,7 +94,7 @@ func (h *APIHandler) GetSemanticModel(ctx context.Context, req GenGetSemanticMod
 		}
 		return nil, err
 	}
-	return GenGetSemanticModel200JSONResponse(semanticModelToAPI(*result)), nil
+	return GenGetSemanticModel200JSONResponse{Body: semanticModelToAPI(*result), Headers: GenGetSemanticModel200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // UpdateSemanticModel updates a semantic model.
@@ -123,7 +123,7 @@ func (h *APIHandler) UpdateSemanticModel(ctx context.Context, req GenUpdateSeman
 		}
 	}
 
-	return GenUpdateSemanticModel200JSONResponse(semanticModelToAPI(*result)), nil
+	return GenUpdateSemanticModel200JSONResponse{Body: semanticModelToAPI(*result), Headers: GenUpdateSemanticModel200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // DeleteSemanticModel deletes a semantic model.
@@ -146,7 +146,7 @@ func (h *APIHandler) DeleteSemanticModel(ctx context.Context, req GenDeleteSeman
 func (h *APIHandler) ListSemanticMetrics(ctx context.Context, req GenListSemanticMetricsRequest) (GenListSemanticMetricsResponse, error) {
 	if isNilService(h.semantics) {
 		empty := []SemanticMetric{}
-		return GenListSemanticMetrics200JSONResponse(semanticMetricListToGen(empty)), nil
+		return GenListSemanticMetrics200JSONResponse{Body: semanticMetricListToGen(empty), Headers: GenListSemanticMetrics200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
 	items, err := h.semantics.ListMetrics(ctx, req.ProjectName, req.SemanticModelName)
@@ -160,7 +160,7 @@ func (h *APIHandler) ListSemanticMetrics(ctx context.Context, req GenListSemanti
 	for i, item := range items {
 		data[i] = semanticMetricToAPI(item)
 	}
-	return GenListSemanticMetrics200JSONResponse(semanticMetricListToGen(data)), nil
+	return GenListSemanticMetrics200JSONResponse{Body: semanticMetricListToGen(data), Headers: GenListSemanticMetrics200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // CreateSemanticMetric creates a metric under a semantic model.
@@ -196,7 +196,7 @@ func (h *APIHandler) CreateSemanticMetric(ctx context.Context, req GenCreateSema
 		}
 	}
 
-	return GenCreateSemanticMetric201JSONResponse(semanticMetricToAPI(*result)), nil
+	return GenCreateSemanticMetric201JSONResponse{Body: semanticMetricToAPI(*result), Headers: GenCreateSemanticMetric201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // UpdateSemanticMetric updates a metric under a semantic model.
@@ -235,7 +235,7 @@ func (h *APIHandler) UpdateSemanticMetric(ctx context.Context, req GenUpdateSema
 		}
 	}
 
-	return GenUpdateSemanticMetric200JSONResponse(semanticMetricToAPI(*result)), nil
+	return GenUpdateSemanticMetric200JSONResponse{Body: semanticMetricToAPI(*result), Headers: GenUpdateSemanticMetric200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // DeleteSemanticMetric deletes a metric under a semantic model.
@@ -257,7 +257,7 @@ func (h *APIHandler) DeleteSemanticMetric(ctx context.Context, req GenDeleteSema
 func (h *APIHandler) ListSemanticPreAggregations(ctx context.Context, req GenListSemanticPreAggregationsRequest) (GenListSemanticPreAggregationsResponse, error) {
 	if isNilService(h.semantics) {
 		empty := []SemanticPreAggregation{}
-		return GenListSemanticPreAggregations200JSONResponse(semanticPreAggregationListToGen(empty)), nil
+		return GenListSemanticPreAggregations200JSONResponse{Body: semanticPreAggregationListToGen(empty), Headers: GenListSemanticPreAggregations200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
 	items, err := h.semantics.ListPreAggregations(ctx, req.ProjectName, req.SemanticModelName)
@@ -271,7 +271,7 @@ func (h *APIHandler) ListSemanticPreAggregations(ctx context.Context, req GenLis
 	for i, item := range items {
 		data[i] = semanticPreAggregationToAPI(item)
 	}
-	return GenListSemanticPreAggregations200JSONResponse(semanticPreAggregationListToGen(data)), nil
+	return GenListSemanticPreAggregations200JSONResponse{Body: semanticPreAggregationListToGen(data), Headers: GenListSemanticPreAggregations200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // CreateSemanticPreAggregation creates a pre-aggregation under a semantic model.
@@ -300,7 +300,7 @@ func (h *APIHandler) CreateSemanticPreAggregation(ctx context.Context, req GenCr
 			return nil, err
 		}
 	}
-	return GenCreateSemanticPreAggregation201JSONResponse(semanticPreAggregationToAPI(*result)), nil
+	return GenCreateSemanticPreAggregation201JSONResponse{Body: semanticPreAggregationToAPI(*result), Headers: GenCreateSemanticPreAggregation201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // UpdateSemanticPreAggregation updates a pre-aggregation under a semantic model.
@@ -325,7 +325,7 @@ func (h *APIHandler) UpdateSemanticPreAggregation(ctx context.Context, req GenUp
 			return nil, err
 		}
 	}
-	return GenUpdateSemanticPreAggregation200JSONResponse(semanticPreAggregationToAPI(*result)), nil
+	return GenUpdateSemanticPreAggregation200JSONResponse{Body: semanticPreAggregationToAPI(*result), Headers: GenUpdateSemanticPreAggregation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // DeleteSemanticPreAggregation deletes a pre-aggregation under a semantic model.
@@ -347,7 +347,7 @@ func (h *APIHandler) DeleteSemanticPreAggregation(ctx context.Context, req GenDe
 func (h *APIHandler) ListSemanticRelationships(ctx context.Context, req GenListSemanticRelationshipsRequest) (GenListSemanticRelationshipsResponse, error) {
 	if isNilService(h.semantics) {
 		empty := []SemanticRelationship{}
-		return GenListSemanticRelationships200JSONResponse(semanticRelationshipsPageToGen(empty, nil)), nil
+		return GenListSemanticRelationships200JSONResponse{Body: semanticRelationshipsPageToGen(empty, nil), Headers: GenListSemanticRelationships200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
@@ -360,7 +360,7 @@ func (h *APIHandler) ListSemanticRelationships(ctx context.Context, req GenListS
 		data[i] = semanticRelationshipToAPI(rel)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return GenListSemanticRelationships200JSONResponse(semanticRelationshipsPageToGen(data, optStr(nextToken))), nil
+	return GenListSemanticRelationships200JSONResponse{Body: semanticRelationshipsPageToGen(data, optStr(nextToken)), Headers: GenListSemanticRelationships200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // CreateSemanticRelationship creates a semantic relationship.
@@ -388,7 +388,7 @@ func (h *APIHandler) CreateSemanticRelationship(ctx context.Context, req GenCrea
 			return nil, err
 		}
 	}
-	return GenCreateSemanticRelationship201JSONResponse(semanticRelationshipToAPI(*result)), nil
+	return GenCreateSemanticRelationship201JSONResponse{Body: semanticRelationshipToAPI(*result), Headers: GenCreateSemanticRelationship201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // UpdateSemanticRelationship updates a semantic relationship.
@@ -423,7 +423,7 @@ func (h *APIHandler) UpdateSemanticRelationship(ctx context.Context, req GenUpda
 			return nil, err
 		}
 	}
-	return GenUpdateSemanticRelationship200JSONResponse(semanticRelationshipToAPI(*result)), nil
+	return GenUpdateSemanticRelationship200JSONResponse{Body: semanticRelationshipToAPI(*result), Headers: GenUpdateSemanticRelationship200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // DeleteSemanticRelationship deletes a semantic relationship.
@@ -501,7 +501,7 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 
 	basis := append([]string(nil), plan.FreshnessBasis...)
 	checkedAt := time.Now().UTC()
-	return GenCheckMetricFreshness200JSONResponse(MetricFreshnessStatus{
+	return GenCheckMetricFreshness200JSONResponse{Body: MetricFreshnessStatus{
 		MetricName:             &req.MetricName,
 		ProjectName:            &match.projectName,
 		SemanticModelName:      &match.semanticModelName,
@@ -509,7 +509,7 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 		FreshnessBasis:         &basis,
 		SelectedPreAggregation: plan.SelectedPreAggregation,
 		CheckedAt:              &checkedAt,
-	}), nil
+	}, Headers: GenCheckMetricFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // ExplainMetricQuery compiles a semantic metric query without executing it.
@@ -527,7 +527,7 @@ func (h *APIHandler) ExplainMetricQuery(ctx context.Context, req GenExplainMetri
 	}
 
 	apiPlan := metricQueryPlanToAPI(*plan)
-	return ExplainMetricQuery200JSONResponse(MetricQueryExplainResponse{Plan: &apiPlan}), nil
+	return ExplainMetricQuery200JSONResponse{Body: MetricQueryExplainResponse{Plan: &apiPlan}, Headers: ExplainMetricQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // RunMetricQuery compiles and executes a semantic metric query.
@@ -553,7 +553,7 @@ func (h *APIHandler) RunMetricQuery(ctx context.Context, req GenRunMetricQueryRe
 		Rows:     &result.Result.Rows,
 		RowCount: ptrInt64(int64(result.Result.RowCount)),
 	}
-	return RunMetricQuery200JSONResponse(MetricQueryRunResponse{Plan: &apiPlan, Result: &apiResult}), nil
+	return RunMetricQuery200JSONResponse{Body: MetricQueryRunResponse{Plan: &apiPlan, Result: &apiResult}, Headers: RunMetricQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 func semanticModelToAPI(m domain.SemanticModel) SemanticModel {
@@ -624,36 +624,36 @@ func semanticPreAggregationToAPI(p domain.SemanticPreAggregation) SemanticPreAgg
 	}
 }
 
-func semanticModelsPageToGen(items []SemanticModel, nextPageToken *string) GenSchemaPaginatedSemanticModels {
-	data := make([]GenSchemaSemanticModel, len(items))
+func semanticModelsPageToGen(items []SemanticModel, nextPageToken *string) PaginatedSemanticModels {
+	data := make([]SemanticModel, len(items))
 	for i, item := range items {
-		data[i] = GenSchemaSemanticModel(item)
+		data[i] = item
 	}
-	return GenSchemaPaginatedSemanticModels{Data: &data, NextPageToken: nextPageToken}
+	return PaginatedSemanticModels{Data: &data, NextPageToken: nextPageToken}
 }
 
-func semanticMetricListToGen(items []SemanticMetric) GenSchemaSemanticMetricList {
-	data := make([]GenSchemaSemanticMetric, len(items))
+func semanticMetricListToGen(items []SemanticMetric) SemanticMetricList {
+	data := make([]SemanticMetric, len(items))
 	for i, item := range items {
-		data[i] = GenSchemaSemanticMetric(item)
+		data[i] = item
 	}
-	return GenSchemaSemanticMetricList{Data: &data}
+	return SemanticMetricList{Data: &data}
 }
 
-func semanticPreAggregationListToGen(items []SemanticPreAggregation) GenSchemaSemanticPreAggregationList {
-	data := make([]GenSchemaSemanticPreAggregation, len(items))
+func semanticPreAggregationListToGen(items []SemanticPreAggregation) SemanticPreAggregationList {
+	data := make([]SemanticPreAggregation, len(items))
 	for i, item := range items {
-		data[i] = GenSchemaSemanticPreAggregation(item)
+		data[i] = item
 	}
-	return GenSchemaSemanticPreAggregationList{Data: &data}
+	return SemanticPreAggregationList{Data: &data}
 }
 
-func semanticRelationshipsPageToGen(items []SemanticRelationship, nextPageToken *string) GenSchemaPaginatedSemanticRelationships {
-	data := make([]GenSchemaSemanticRelationship, len(items))
+func semanticRelationshipsPageToGen(items []SemanticRelationship, nextPageToken *string) PaginatedSemanticRelationships {
+	data := make([]SemanticRelationship, len(items))
 	for i, item := range items {
-		data[i] = GenSchemaSemanticRelationship(item)
+		data[i] = item
 	}
-	return GenSchemaPaginatedSemanticRelationships{Data: &data, NextPageToken: nextPageToken}
+	return PaginatedSemanticRelationships{Data: &data, NextPageToken: nextPageToken}
 }
 
 func metricQueryPlanToAPI(plan semantic.MetricQueryPlan) MetricQueryPlan {

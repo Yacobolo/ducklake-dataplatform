@@ -39,7 +39,7 @@ func (h *APIHandler) ListViews(ctx context.Context, request GenListViewsRequest)
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListViews200JSONResponse{
 		Body:    PaginatedViewDetails{Data: &data, NextPageToken: optStr(npt)},
-		Headers: ListViews200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListViews200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -69,7 +69,7 @@ func (h *APIHandler) CreateView(ctx context.Context, request GenCreateViewReques
 	}
 	return GenCreateView201JSONResponse{
 		Body:    viewDetailToAPI(*result),
-		Headers: CreateView201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateView201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -86,7 +86,7 @@ func (h *APIHandler) GetView(ctx context.Context, request GenGetViewRequest) (Ge
 	}
 	return GenGetView200JSONResponse{
 		Body:    viewDetailToAPI(*result),
-		Headers: GetView200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetView200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -117,7 +117,7 @@ func (h *APIHandler) UpdateView(ctx context.Context, request GenUpdateViewReques
 	}
 	return GenUpdateView200JSONResponse{
 		Body:    viewDetailToAPI(*result),
-		Headers: UpdateView200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateView200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

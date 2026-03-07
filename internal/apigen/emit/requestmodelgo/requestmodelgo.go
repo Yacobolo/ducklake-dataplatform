@@ -16,21 +16,22 @@ import (
 
 // Emit renders APIGen-owned request schema types derived from legacy oapi models.
 func Emit(doc ir.Document, legacyTypesPath string) ([]byte, error) {
-	return emit(doc, legacyTypesPath, "")
+	return emit(doc, legacyTypesPath)
 }
 
-// EmitWithResponseRoots renders APIGen-owned request and safe response schema types.
-func EmitWithResponseRoots(doc ir.Document, legacyTypesPath string, legacyServerPath string) ([]byte, error) {
-	return emit(doc, legacyTypesPath, legacyServerPath)
+// EmitWithResponseRoots renders APIGen-owned request and safe response schema
+// types using IR-declared response schemas.
+func EmitWithResponseRoots(doc ir.Document, legacyTypesPath string) ([]byte, error) {
+	return emit(doc, legacyTypesPath)
 }
 
-func emit(doc ir.Document, legacyTypesPath string, legacyServerPath string) ([]byte, error) {
+func emit(doc ir.Document, legacyTypesPath string) ([]byte, error) {
 	typesByName, err := loadLegacyTypes(legacyTypesPath)
 	if err != nil {
 		return nil, err
 	}
 
-	rootNames, err := schemaRoots(doc, legacyTypesPath, legacyServerPath)
+	rootNames, err := schemaRoots(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -83,20 +84,14 @@ func emit(doc ir.Document, legacyTypesPath string, legacyServerPath string) ([]b
 	return []byte(b.String()), nil
 }
 
-func schemaRoots(doc ir.Document, legacyTypesPath string, legacyServerPath string) ([]string, error) {
+func schemaRoots(doc ir.Document) ([]string, error) {
 	seen := make(map[string]struct{})
 	for _, name := range requestSchemaRoots(doc) {
 		seen[name] = struct{}{}
 	}
 
-	if legacyServerPath != "" {
-		responseRoots, err := safeResponseSchemaRoots(doc, legacyTypesPath, legacyServerPath)
-		if err != nil {
-			return nil, err
-		}
-		for _, name := range responseRoots {
-			seen[name] = struct{}{}
-		}
+	for _, name := range safeResponseSchemaRoots(doc) {
+		seen[name] = struct{}{}
 	}
 
 	rootNames := make([]string, 0, len(seen))
@@ -151,24 +146,21 @@ func requestSchemaRoots(doc ir.Document) []string {
 	return rootNames
 }
 
-func safeResponseSchemaRoots(doc ir.Document, legacyTypesPath string, legacyServerPath string) ([]string, error) {
-	legacyTypesByName, err := loadLegacyTypes(legacyTypesPath)
-	if err != nil {
-		return nil, err
-	}
-	legacyResponseBodies, err := loadLegacyDirectResponseBodies(legacyServerPath, legacyTypesByName)
-	if err != nil {
-		return nil, err
-	}
-
+func safeResponseSchemaRoots(doc ir.Document) []string {
 	seen := make(map[string]struct{})
 	for _, endpoint := range doc.Endpoints {
 		for _, response := range endpoint.Responses {
+			if shape, ok, err := ir.ResponseShapeMetadata(response); err == nil && ok {
+				if shape.BodyType != "" {
+					seen[shape.BodyType] = struct{}{}
+				}
+				continue
+			}
 			if response.Schema == nil || isErrorSchemaRef(*response.Schema) {
 				continue
 			}
-			bodyTypeName := legacyResponseBodies[legacyResponseTypeName(endpoint.OperationID, response.StatusCode)]
-			if bodyTypeName == "" {
+			bodyTypeName, ok := normalizedSchemaRefName(*response.Schema)
+			if !ok {
 				continue
 			}
 			seen[bodyTypeName] = struct{}{}
@@ -180,34 +172,7 @@ func safeResponseSchemaRoots(doc ir.Document, legacyTypesPath string, legacyServ
 		rootNames = append(rootNames, name)
 	}
 	sort.Strings(rootNames)
-	return rootNames, nil
-}
-
-func loadLegacyDirectResponseBodies(path string, legacyTypesByName map[string]*ast.TypeSpec) (map[string]string, error) {
-	typesByName, err := loadLegacyTypes(path)
-	if err != nil {
-		return nil, fmt.Errorf("parse legacy server responses: %w", err)
-	}
-
-	bodyTypes := make(map[string]string, len(typesByName))
-	for name, spec := range typesByName {
-		if !strings.HasSuffix(name, "JSONResponse") {
-			continue
-		}
-		ident, ok := spec.Type.(*ast.Ident)
-		if !ok {
-			continue
-		}
-		if _, ok := legacyTypesByName[ident.Name]; !ok {
-			continue
-		}
-		bodyTypes[name] = ident.Name
-	}
-	return bodyTypes, nil
-}
-
-func legacyResponseTypeName(operationID string, statusCode int) string {
-	return exportedName(operationID) + fmt.Sprintf("%dJSONResponse", statusCode)
+	return rootNames
 }
 
 func normalizedSchemaRefName(schema ir.SchemaRef) (string, bool) {

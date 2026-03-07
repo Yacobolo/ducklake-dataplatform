@@ -154,13 +154,11 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "\tParams GenListGroupMembersParams")
 	require.Contains(t, content, "type GenListGroupMembersResponse interface {")
 	require.Contains(t, content, "\tVisitListGroupMembersResponse(w http.ResponseWriter) error")
-	require.Contains(t, content, "type GenListGroupMembers200Response ListGroupMembers200Response")
+	require.Contains(t, content, "type GenListGroupMembers200Response struct{}")
 	require.Contains(t, content, "func (response GenListGroupMembers200Response) VisitListGroupMembersResponse(w http.ResponseWriter) error {")
-	require.Contains(t, content, "rv := reflect.ValueOf(response)")
-	require.Contains(t, content, "headers := rv.FieldByName(\"Headers\")")
 	require.Contains(t, content, "w.WriteHeader(200)")
 	require.Contains(t, content, "return nil")
-	require.NotContains(t, content, "type GenListGroupMembers200Response = ListGroupMembers200Response")
+	require.Contains(t, content, "type ListGroupMembers200Response = GenListGroupMembers200Response")
 	require.Contains(t, content, "ListGroupMembers(ctx context.Context, request GenListGroupMembersRequest) (GenListGroupMembersResponse, error)")
 }
 
@@ -671,55 +669,52 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	require.Contains(t, content, "type GenExecuteQueryRequest struct {")
 	require.Contains(t, content, "type GenExecuteQueryResponse interface {")
 	require.Contains(t, content, "\tVisitExecuteQueryResponse(w http.ResponseWriter) error")
-	require.Contains(t, content, "type GenExecuteQuery201JSONResponse ExecuteQuery200JSONResponse")
+	require.Contains(t, content, "type GenExecuteQuery201JSONResponse ")
 	require.Contains(t, content, "func (response GenExecuteQuery201JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {")
-	require.Contains(t, content, "rv := reflect.ValueOf(response)")
-	require.Contains(t, content, "headers := rv.FieldByName(\"Headers\")")
-	require.Contains(t, content, "body := rv.FieldByName(\"Body\")")
 	require.Contains(t, content, "w.Header().Set(\"Content-Type\", \"application/json\")")
 	require.Contains(t, content, "w.WriteHeader(201)")
 	require.Contains(t, content, "return json.NewEncoder(w).Encode(")
 	require.Contains(t, content, "w.WriteHeader(204)")
 	require.Contains(t, content, "return nil")
-	require.NotContains(t, content, "type GenExecuteQuery201JSONResponse = ExecuteQuery201JSONResponse")
+	require.Contains(t, content, "type ExecuteQuery200JSONResponse GenExecuteQuery201JSONResponse")
+	require.Contains(t, content, "func (response ExecuteQuery200JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {")
 
-	require.Contains(t, content, "type GenSubmitQuery201JSONResponse SubmitQuery202JSONResponse")
-	require.Contains(t, content, "type GenGetQuery200JSONResponse GetQuery200JSONResponse")
-	require.Contains(t, content, "type GenGetQueryResults200JSONResponse GetQueryResults200JSONResponse")
-	require.Contains(t, content, "type GenCancelQuery201JSONResponse CancelQuery200JSONResponse")
-	require.Contains(t, content, "type GenDeleteQuery204Response DeleteQuery204Response")
-	require.NotContains(t, content, "type GenDeleteQuery204Response = DeleteQuery204Response")
+	require.Contains(t, content, "type SubmitQuery202JSONResponse GenSubmitQuery201JSONResponse")
+	require.Contains(t, content, "type GetQuery200JSONResponse = GenGetQuery200JSONResponse")
+	require.Contains(t, content, "type GetQueryResults200JSONResponse = GenGetQueryResults200JSONResponse")
+	require.Contains(t, content, "type CancelQuery200JSONResponse GenCancelQuery201JSONResponse")
+	require.Contains(t, content, "type DeleteQuery204Response = GenDeleteQuery204Response")
 
-	require.Contains(t, content, "type GenListGroups200JSONResponse ListGroups200JSONResponse")
+	require.Contains(t, content, "type ListGroups200JSONResponse = GenListGroups200JSONResponse")
 	require.Contains(t, content, "type GenForbiddenJSONResponse struct {")
 	require.Contains(t, content, "type GenListGroups403JSONResponse struct{ GenForbiddenJSONResponse }")
 	require.Contains(t, content, "w.WriteHeader(403)")
-	require.Contains(t, content, "type GenCreateGroup201JSONResponse CreateGroup201JSONResponse")
-	require.Contains(t, content, "type GenGetGroup200JSONResponse GetGroup200JSONResponse")
-	require.Contains(t, content, "type GenDeleteGroup204Response DeleteGroup204Response")
-	require.Contains(t, content, "type GenListPrincipals200JSONResponse ListPrincipals200JSONResponse")
-	require.Contains(t, content, "type GenCreatePrincipal201JSONResponse CreatePrincipal201JSONResponse")
-	require.Contains(t, content, "type GenGetPrincipal200JSONResponse GetPrincipal200JSONResponse")
-	require.Contains(t, content, "type GenDeletePrincipal204Response DeletePrincipal204Response")
-	require.Contains(t, content, "type GenListAPIKeys200JSONResponse ListAPIKeys200JSONResponse")
-	require.Contains(t, content, "type GenCreateAPIKey201JSONResponse CreateAPIKey201JSONResponse")
-	require.Contains(t, content, "type GenCleanupExpiredAPIKeys200JSONResponse CleanupExpiredAPIKeys200JSONResponse")
-	require.Contains(t, content, "type GenDeleteAPIKey204Response DeleteAPIKey204Response")
-	require.Contains(t, content, "type GenListStorageCredentials200JSONResponse ListStorageCredentials200JSONResponse")
-	require.Contains(t, content, "type GenCreateStorageCredential201JSONResponse CreateStorageCredential201JSONResponse")
-	require.Contains(t, content, "type GenGetStorageCredential200JSONResponse GetStorageCredential200JSONResponse")
-	require.Contains(t, content, "type GenUpdateStorageCredential200JSONResponse UpdateStorageCredential200JSONResponse")
-	require.Contains(t, content, "type GenDeleteStorageCredential204Response DeleteStorageCredential204Response")
-	require.Contains(t, content, "type GenListExternalLocations200JSONResponse ListExternalLocations200JSONResponse")
-	require.Contains(t, content, "type GenCreateExternalLocation201JSONResponse CreateExternalLocation201JSONResponse")
-	require.Contains(t, content, "type GenGetExternalLocation200JSONResponse GetExternalLocation200JSONResponse")
-	require.Contains(t, content, "type GenUpdateExternalLocation200JSONResponse UpdateExternalLocation200JSONResponse")
-	require.Contains(t, content, "type GenDeleteExternalLocation204Response DeleteExternalLocation204Response")
-	require.Contains(t, content, "type GenListVolumes200JSONResponse ListVolumes200JSONResponse")
-	require.Contains(t, content, "type GenCreateVolume201JSONResponse CreateVolume201JSONResponse")
-	require.Contains(t, content, "type GenGetVolume200JSONResponse GetVolume200JSONResponse")
-	require.Contains(t, content, "type GenUpdateVolume200JSONResponse UpdateVolume200JSONResponse")
-	require.Contains(t, content, "type GenDeleteVolume204Response DeleteVolume204Response")
+	require.Contains(t, content, "type CreateGroup201JSONResponse = GenCreateGroup201JSONResponse")
+	require.Contains(t, content, "type GetGroup200JSONResponse = GenGetGroup200JSONResponse")
+	require.Contains(t, content, "type DeleteGroup204Response = GenDeleteGroup204Response")
+	require.Contains(t, content, "type ListPrincipals200JSONResponse = GenListPrincipals200JSONResponse")
+	require.Contains(t, content, "type CreatePrincipal201JSONResponse = GenCreatePrincipal201JSONResponse")
+	require.Contains(t, content, "type GetPrincipal200JSONResponse = GenGetPrincipal200JSONResponse")
+	require.Contains(t, content, "type DeletePrincipal204Response = GenDeletePrincipal204Response")
+	require.Contains(t, content, "type ListAPIKeys200JSONResponse = GenListAPIKeys200JSONResponse")
+	require.Contains(t, content, "type CreateAPIKey201JSONResponse = GenCreateAPIKey201JSONResponse")
+	require.Contains(t, content, "type CleanupExpiredAPIKeys200JSONResponse = GenCleanupExpiredAPIKeys200JSONResponse")
+	require.Contains(t, content, "type DeleteAPIKey204Response = GenDeleteAPIKey204Response")
+	require.Contains(t, content, "type ListStorageCredentials200JSONResponse = GenListStorageCredentials200JSONResponse")
+	require.Contains(t, content, "type CreateStorageCredential201JSONResponse = GenCreateStorageCredential201JSONResponse")
+	require.Contains(t, content, "type GetStorageCredential200JSONResponse = GenGetStorageCredential200JSONResponse")
+	require.Contains(t, content, "type UpdateStorageCredential200JSONResponse = GenUpdateStorageCredential200JSONResponse")
+	require.Contains(t, content, "type DeleteStorageCredential204Response = GenDeleteStorageCredential204Response")
+	require.Contains(t, content, "type ListExternalLocations200JSONResponse = GenListExternalLocations200JSONResponse")
+	require.Contains(t, content, "type CreateExternalLocation201JSONResponse = GenCreateExternalLocation201JSONResponse")
+	require.Contains(t, content, "type GetExternalLocation200JSONResponse = GenGetExternalLocation200JSONResponse")
+	require.Contains(t, content, "type UpdateExternalLocation200JSONResponse = GenUpdateExternalLocation200JSONResponse")
+	require.Contains(t, content, "type DeleteExternalLocation204Response = GenDeleteExternalLocation204Response")
+	require.Contains(t, content, "type ListVolumes200JSONResponse = GenListVolumes200JSONResponse")
+	require.Contains(t, content, "type CreateVolume201JSONResponse = GenCreateVolume201JSONResponse")
+	require.Contains(t, content, "type GetVolume200JSONResponse = GenGetVolume200JSONResponse")
+	require.Contains(t, content, "type UpdateVolume200JSONResponse = GenUpdateVolume200JSONResponse")
+	require.Contains(t, content, "type DeleteVolume204Response = GenDeleteVolume204Response")
 
 	require.NotContains(t, content, "type GenListGroups200JSONResponse = ListGroups200JSONResponse")
 	require.NotContains(t, content, "type GenCreateGroup201JSONResponse = CreateGroup201JSONResponse")
@@ -749,23 +744,23 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	require.NotContains(t, content, "type GenUpdateVolume200JSONResponse = UpdateVolume200JSONResponse")
 	require.NotContains(t, content, "type GenDeleteVolume204Response = DeleteVolume204Response")
 
-	require.Contains(t, content, "type GenGetCatalog200JSONResponse GetCatalog200JSONResponse")
+	require.Contains(t, content, "type GetCatalog200JSONResponse = GenGetCatalog200JSONResponse")
 	require.Contains(t, content, "type GenGetCatalog404JSONResponse struct{ GenNotFoundJSONResponse }")
 	require.Contains(t, content, "w.WriteHeader(404)")
-	require.Contains(t, content, "type GenListSchemas200JSONResponse ListSchemas200JSONResponse")
-	require.Contains(t, content, "type GenCreateSchema201JSONResponse CreateSchema201JSONResponse")
-	require.Contains(t, content, "type GenGetSchema200JSONResponse GetSchema200JSONResponse")
-	require.Contains(t, content, "type GenUpdateSchema200JSONResponse UpdateSchema200JSONResponse")
-	require.Contains(t, content, "type GenDeleteSchema204Response DeleteSchema204Response")
-	require.Contains(t, content, "type GenListTables200JSONResponse ListTables200JSONResponse")
-	require.Contains(t, content, "type GenCreateTable201JSONResponse CreateTable201JSONResponse")
-	require.Contains(t, content, "type GenGetTable200JSONResponse GetTable200JSONResponse")
-	require.Contains(t, content, "type GenUpdateTable200JSONResponse UpdateTable200JSONResponse")
-	require.Contains(t, content, "type GenDeleteTable204Response DeleteTable204Response")
-	require.Contains(t, content, "type GenListTableColumns200JSONResponse ListTableColumns200JSONResponse")
-	require.Contains(t, content, "type GenUpdateColumn200JSONResponse UpdateColumn200JSONResponse")
-	require.Contains(t, content, "type GenProfileTable200JSONResponse ProfileTable200JSONResponse")
-	require.Contains(t, content, "type GenGetMetastoreSummary200JSONResponse GetMetastoreSummary200JSONResponse")
+	require.Contains(t, content, "type ListSchemas200JSONResponse = GenListSchemas200JSONResponse")
+	require.Contains(t, content, "type CreateSchema201JSONResponse = GenCreateSchema201JSONResponse")
+	require.Contains(t, content, "type GetSchema200JSONResponse = GenGetSchema200JSONResponse")
+	require.Contains(t, content, "type UpdateSchema200JSONResponse = GenUpdateSchema200JSONResponse")
+	require.Contains(t, content, "type DeleteSchema204Response = GenDeleteSchema204Response")
+	require.Contains(t, content, "type ListTables200JSONResponse = GenListTables200JSONResponse")
+	require.Contains(t, content, "type CreateTable201JSONResponse = GenCreateTable201JSONResponse")
+	require.Contains(t, content, "type GetTable200JSONResponse = GenGetTable200JSONResponse")
+	require.Contains(t, content, "type UpdateTable200JSONResponse = GenUpdateTable200JSONResponse")
+	require.Contains(t, content, "type DeleteTable204Response = GenDeleteTable204Response")
+	require.Contains(t, content, "type ListTableColumns200JSONResponse = GenListTableColumns200JSONResponse")
+	require.Contains(t, content, "type UpdateColumn200JSONResponse = GenUpdateColumn200JSONResponse")
+	require.Contains(t, content, "type ProfileTable200JSONResponse = GenProfileTable200JSONResponse")
+	require.Contains(t, content, "type GetMetastoreSummary200JSONResponse = GenGetMetastoreSummary200JSONResponse")
 
 	require.NotContains(t, content, "type GenGetCatalog200JSONResponse = GetCatalog200JSONResponse")
 	require.NotContains(t, content, "type GenListSchemas200JSONResponse = ListSchemas200JSONResponse")
@@ -782,25 +777,25 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	require.NotContains(t, content, "type GenUpdateColumn200JSONResponse = UpdateColumn200JSONResponse")
 	require.NotContains(t, content, "type GenProfileTable200JSONResponse = ProfileTable200JSONResponse")
 	require.NotContains(t, content, "type GenGetMetastoreSummary200JSONResponse = GetMetastoreSummary200JSONResponse")
-	require.Contains(t, content, "type GenListPipelines200JSONResponse ListPipelines200JSONResponse")
-	require.Contains(t, content, "type GenCreatePipeline201JSONResponse CreatePipeline201JSONResponse")
+	require.Contains(t, content, "type ListPipelines200JSONResponse = GenListPipelines200JSONResponse")
+	require.Contains(t, content, "type CreatePipeline201JSONResponse = GenCreatePipeline201JSONResponse")
 	require.Contains(t, content, "type GenCreatePipeline400JSONResponse struct{ GenBadRequestJSONResponse }")
 	require.Contains(t, content, "w.WriteHeader(400)")
-	require.Contains(t, content, "type GenGetPipeline200JSONResponse GetPipeline200JSONResponse")
+	require.Contains(t, content, "type GetPipeline200JSONResponse = GenGetPipeline200JSONResponse")
 	require.Contains(t, content, "type GenGetPipeline404JSONResponse struct{ GenNotFoundJSONResponse }")
-	require.Contains(t, content, "type GenUpdatePipeline200JSONResponse UpdatePipeline200JSONResponse")
-	require.Contains(t, content, "type GenDeletePipeline204Response DeletePipeline204Response")
-	require.Contains(t, content, "type GenListPipelineJobs200JSONResponse ListPipelineJobs200JSONResponse")
-	require.Contains(t, content, "type GenCreatePipelineJob201JSONResponse CreatePipelineJob201JSONResponse")
+	require.Contains(t, content, "type UpdatePipeline200JSONResponse = GenUpdatePipeline200JSONResponse")
+	require.Contains(t, content, "type DeletePipeline204Response = GenDeletePipeline204Response")
+	require.Contains(t, content, "type ListPipelineJobs200JSONResponse = GenListPipelineJobs200JSONResponse")
+	require.Contains(t, content, "type CreatePipelineJob201JSONResponse = GenCreatePipelineJob201JSONResponse")
 	require.Contains(t, content, "type GenCreatePipelineJob409JSONResponse struct{ GenConflictJSONResponse }")
 	require.Contains(t, content, "w.WriteHeader(409)")
-	require.Contains(t, content, "type GenDeletePipelineJob204Response DeletePipelineJob204Response")
-	require.Contains(t, content, "type GenTriggerPipelineRun201JSONResponse TriggerPipelineRun201JSONResponse")
+	require.Contains(t, content, "type DeletePipelineJob204Response = GenDeletePipelineJob204Response")
+	require.Contains(t, content, "type TriggerPipelineRun201JSONResponse = GenTriggerPipelineRun201JSONResponse")
 	require.Contains(t, content, "type GenTriggerPipelineRun404JSONResponse struct{ GenNotFoundJSONResponse }")
-	require.Contains(t, content, "type GenListPipelineRuns200JSONResponse ListPipelineRuns200JSONResponse")
-	require.Contains(t, content, "type GenGetPipelineRun200JSONResponse GetPipelineRun200JSONResponse")
-	require.Contains(t, content, "type GenCancelPipelineRun200JSONResponse CancelPipelineRun200JSONResponse")
-	require.Contains(t, content, "type GenListPipelineJobRuns200JSONResponse ListPipelineJobRuns200JSONResponse")
+	require.Contains(t, content, "type ListPipelineRuns200JSONResponse = GenListPipelineRuns200JSONResponse")
+	require.Contains(t, content, "type GetPipelineRun200JSONResponse = GenGetPipelineRun200JSONResponse")
+	require.Contains(t, content, "type CancelPipelineRun200JSONResponse = GenCancelPipelineRun200JSONResponse")
+	require.Contains(t, content, "type ListPipelineJobRuns200JSONResponse = GenListPipelineJobRuns200JSONResponse")
 
 	require.NotContains(t, content, "type GenListPipelines200JSONResponse = ListPipelines200JSONResponse")
 	require.NotContains(t, content, "type GenCreatePipeline201JSONResponse = CreatePipeline201JSONResponse")
@@ -820,8 +815,7 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	require.NotContains(t, content, "type GenCancelPipelineRun200JSONResponse = CancelPipelineRun200JSONResponse")
 	require.NotContains(t, content, "type GenListPipelineJobRuns200JSONResponse = ListPipelineJobRuns200JSONResponse")
 
-	require.Contains(t, content, "type GenListCatalogs200JSONResponse ListCatalogs200JSONResponse")
-	require.NotContains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+	require.Contains(t, content, "type ListCatalogs200JSONResponse = GenListCatalogs200JSONResponse")
 }
 
 func TestEmit_GeneratesNativeConcreteResponsesForModelsAndSemantic(t *testing.T) {
@@ -856,32 +850,24 @@ func TestEmit_GeneratesNativeConcreteResponsesForModelsAndSemantic(t *testing.T)
 	require.NoError(t, err)
 	content := string(b)
 
-	require.Contains(t, content, "type GenListModels200JSONResponse ListModels200JSONResponse")
+	require.Contains(t, content, "type ListModels200JSONResponse = GenListModels200JSONResponse")
 	require.Contains(t, content, "func (response GenListModels200JSONResponse) VisitListModelsResponse(w http.ResponseWriter) error {")
-	require.Contains(t, content, "rv := reflect.ValueOf(response)")
-	require.Contains(t, content, "headers := rv.FieldByName(\"Headers\")")
-	require.Contains(t, content, "body := rv.FieldByName(\"Body\")")
 	require.Contains(t, content, "w.WriteHeader(200)")
 	require.Contains(t, content, "return json.NewEncoder(w).Encode(")
-	require.NotContains(t, content, "type GenListModels200JSONResponse = ListModels200JSONResponse")
 
-	require.Contains(t, content, "type GenListSemanticModels200JSONResponse ListSemanticModels200JSONResponse")
+	require.Contains(t, content, "type ListSemanticModels200JSONResponse = GenListSemanticModels200JSONResponse")
 	require.Contains(t, content, "func (response GenListSemanticModels200JSONResponse) VisitListSemanticModelsResponse(w http.ResponseWriter) error {")
-	require.NotContains(t, content, "type GenListSemanticModels200JSONResponse = ListSemanticModels200JSONResponse")
 
-	require.Contains(t, content, "type GenListCatalogs200JSONResponse ListCatalogs200JSONResponse")
+	require.Contains(t, content, "type ListCatalogs200JSONResponse = GenListCatalogs200JSONResponse")
 	require.Contains(t, content, "func (response GenListCatalogs200JSONResponse) VisitListCatalogsResponse(w http.ResponseWriter) error {")
-	require.NotContains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
 }
 
 func TestEmitWithLegacyResponses_OwnsDirectSchemaResponses(t *testing.T) {
 	t.Helper()
 
 	dir := t.TempDir()
-	legacyServerPath := filepath.Join(dir, "server.gen.go")
 	legacyTypesPath := filepath.Join(dir, "types.gen.go")
 	require.NoError(t, os.WriteFile(legacyTypesPath, []byte("package api\n\ntype PaginatedSemanticModels struct{}\ntype SemanticModel struct{}\ntype Model struct{}\n"), 0o600))
-	require.NoError(t, os.WriteFile(legacyServerPath, []byte("package api\n\ntype ListSemanticModels200JSONResponse PaginatedSemanticModels\ntype CreateSemanticModel201JSONResponse SemanticModel\ntype CreateModel201JSONResponse struct {\n\tBody Model\n}\n"), 0o600))
 
 	doc := ir.Document{
 		SchemaVersion: "v1",
@@ -898,14 +884,45 @@ func TestEmitWithLegacyResponses_OwnsDirectSchemaResponses(t *testing.T) {
 		},
 	}
 
-	b, err := EmitWithLegacyResponses(doc, legacyServerPath, legacyTypesPath)
+	b, err := EmitWithLegacyResponses(doc, legacyTypesPath)
 	require.NoError(t, err)
 	content := string(b)
 
 	require.Contains(t, content, "type GenListSemanticModels200JSONResponse GenSchemaPaginatedSemanticModels")
 	require.Contains(t, content, "type GenCreateSemanticModel201JSONResponse GenSchemaSemanticModel")
 	require.Contains(t, content, "return json.NewEncoder(w).Encode(response)")
-	require.Contains(t, content, "type GenCreateModel201JSONResponse CreateModel201JSONResponse")
+	require.Contains(t, content, "type GenCreateModel201JSONResponse GenSchemaModel")
+}
+
+func TestEmitWithLegacyResponses_OwnsWrappedResponseStructs(t *testing.T) {
+	t.Helper()
+
+	dir := t.TempDir()
+	legacyTypesPath := filepath.Join(dir, "types.gen.go")
+	require.NoError(t, os.WriteFile(legacyTypesPath, []byte("package api\n\ntype CreateWidgetResponse struct{}\n"), 0o600))
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{Method: "post", Path: "/widgets", OperationID: "createWidget", Responses: []ir.Response{{StatusCode: 201, Headers: []ir.Header{{Name: "X-RateLimit-Limit", Schema: ir.SchemaRef{Type: "integer", Format: "int32"}}, {Name: "X-RateLimit-Remaining", Schema: ir.SchemaRef{Type: "integer", Format: "int32"}}, {Name: "X-RateLimit-Reset", Schema: ir.SchemaRef{Type: "integer", Format: "int64"}}}, Schema: &ir.SchemaRef{Type: "string"}, Extensions: map[string]any{ir.ResponseShapeExtensionKey: map[string]any{"kind": "wrapped_json", "body_type": "CreateWidgetResponse"}}}}},
+		},
+	}
+
+	b, err := EmitWithLegacyResponses(doc, legacyTypesPath)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenCreateWidget201ResponseHeaders struct {")
+	require.Contains(t, content, "\tXRateLimitLimit int32")
+	require.Contains(t, content, "\tXRateLimitRemaining int32")
+	require.Contains(t, content, "\tXRateLimitReset int64")
+	require.Contains(t, content, "type GenCreateWidget201JSONResponse struct {")
+	require.Contains(t, content, "\tBody CreateWidgetResponse")
+	require.Contains(t, content, "\tHeaders GenCreateWidget201ResponseHeaders")
+	require.Contains(t, content, "w.Header().Set(\"X-RateLimit-Limit\", fmt.Sprint(response.Headers.XRateLimitLimit))")
+	require.Contains(t, content, "return json.NewEncoder(w).Encode(response.Body)")
+	require.NotContains(t, content, "type GenCreateWidget201JSONResponse CreateWidget201JSONResponse")
 }
 
 func TestEmit_GeneratesNativeConcreteResponsesForNotebookDomainOps(t *testing.T) {
@@ -964,27 +981,24 @@ func TestEmit_GeneratesNativeConcreteResponsesForNotebookDomainOps(t *testing.T)
 	require.NoError(t, err)
 	content := string(b)
 
-	require.Contains(t, content, "type GenListNotebooks200JSONResponse ListNotebooks200JSONResponse")
+	require.Contains(t, content, "type ListNotebooks200JSONResponse = GenListNotebooks200JSONResponse")
 	require.Contains(t, content, "func (response GenListNotebooks200JSONResponse) VisitListNotebooksResponse(w http.ResponseWriter) error {")
-	require.NotContains(t, content, "type GenListNotebooks200JSONResponse = ListNotebooks200JSONResponse")
 
-	require.Contains(t, content, "type GenDeleteNotebook204Response DeleteNotebook204Response")
+	require.Contains(t, content, "type DeleteNotebook204Response = GenDeleteNotebook204Response")
 	require.Contains(t, content, "func (response GenDeleteNotebook204Response) VisitDeleteNotebookResponse(w http.ResponseWriter) error {")
 	require.Contains(t, content, "w.WriteHeader(204)")
 	require.Contains(t, content, "return nil")
-	require.NotContains(t, content, "type GenDeleteNotebook204Response = DeleteNotebook204Response")
 
-	require.Contains(t, content, "type GenExecuteCell201JSONResponse ExecuteCell200JSONResponse")
-	require.Contains(t, content, "func (response GenExecuteCell201JSONResponse) VisitExecuteCellResponse(w http.ResponseWriter) error {")
-	require.Contains(t, content, "type GenRunAllCellsAsync202JSONResponse RunAllCellsAsync202JSONResponse")
+	require.Contains(t, content, "type ExecuteCell200JSONResponse GenExecuteCell201JSONResponse")
+	require.Contains(t, content, "func (response ExecuteCell200JSONResponse) VisitExecuteCellResponse(w http.ResponseWriter) error {")
+	require.Contains(t, content, "type RunAllCellsAsync202JSONResponse = GenRunAllCellsAsync202JSONResponse")
 	require.Contains(t, content, "w.WriteHeader(202)")
 
-	require.Contains(t, content, "type GenListGitRepos200JSONResponse ListGitRepos200JSONResponse")
-	require.Contains(t, content, "type GenSyncGitRepo201JSONResponse SyncGitRepo200JSONResponse")
-	require.Contains(t, content, "func (response GenSyncGitRepo201JSONResponse) VisitSyncGitRepoResponse(w http.ResponseWriter) error {")
+	require.Contains(t, content, "type ListGitRepos200JSONResponse = GenListGitRepos200JSONResponse")
+	require.Contains(t, content, "type SyncGitRepo200JSONResponse GenSyncGitRepo201JSONResponse")
+	require.Contains(t, content, "func (response SyncGitRepo200JSONResponse) VisitSyncGitRepoResponse(w http.ResponseWriter) error {")
 
-	require.Contains(t, content, "type GenListCatalogs200JSONResponse ListCatalogs200JSONResponse")
-	require.NotContains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+	require.Contains(t, content, "type ListCatalogs200JSONResponse = GenListCatalogs200JSONResponse")
 }
 
 func TestEmit_UsesLegacyConcreteResponseTypesForKnownStatusDrift(t *testing.T) {
@@ -1004,14 +1018,12 @@ func TestEmit_UsesLegacyConcreteResponseTypesForKnownStatusDrift(t *testing.T) {
 	require.NoError(t, err)
 	content := string(b)
 
-	require.Contains(t, content, "type GenSubmitQuery201JSONResponse SubmitQuery202JSONResponse")
-	require.Contains(t, content, "type GenCancelQuery201JSONResponse CancelQuery200JSONResponse")
-	require.Contains(t, content, "type GenBindColumnMask201JSONResponse BindColumnMask204Response")
-	require.Contains(t, content, "if !body.IsValid() {")
-	require.Contains(t, content, "w.WriteHeader(201)")
-	require.NotContains(t, content, "type GenSubmitQuery201JSONResponse SubmitQuery201JSONResponse")
-	require.NotContains(t, content, "type GenCancelQuery201JSONResponse CancelQuery201JSONResponse")
-	require.NotContains(t, content, "type GenBindColumnMask201JSONResponse BindColumnMask201JSONResponse")
+	require.Contains(t, content, "type SubmitQuery202JSONResponse GenSubmitQuery201JSONResponse")
+	require.Contains(t, content, "func (response SubmitQuery202JSONResponse) VisitSubmitQueryResponse(w http.ResponseWriter) error {")
+	require.Contains(t, content, "type CancelQuery200JSONResponse GenCancelQuery201JSONResponse")
+	require.Contains(t, content, "type BindColumnMask204Response GenBindColumnMask201JSONResponse")
+	require.Contains(t, content, "func (response BindColumnMask204Response) VisitBindColumnMaskResponse(w http.ResponseWriter) error {")
+	require.Contains(t, content, "w.WriteHeader(204)")
 }
 
 func TestEmit_GeneratesNativeConcreteResponsesForRemainingDomains(t *testing.T) {
@@ -1070,29 +1082,29 @@ func TestEmit_GeneratesNativeConcreteResponsesForRemainingDomains(t *testing.T) 
 	require.NoError(t, err)
 	content := string(b)
 
-	require.Contains(t, content, "type GenCreateGrant201JSONResponse CreateGrant201JSONResponse")
+	require.Contains(t, content, "type CreateGrant201JSONResponse = GenCreateGrant201JSONResponse")
 	require.Contains(t, content, "func (response GenCreateGrant201JSONResponse) VisitCreateGrantResponse(w http.ResponseWriter) error {")
 	require.Contains(t, content, "w.WriteHeader(201)")
 	require.Contains(t, content, "return json.NewEncoder(w).Encode(")
 	require.NotContains(t, content, "type GenCreateGrant201JSONResponse = CreateGrant201JSONResponse")
 
-	require.Contains(t, content, "type GenGetColumnLineage200JSONResponse GetColumnLineage200JSONResponse")
+	require.Contains(t, content, "type GetColumnLineage200JSONResponse = GenGetColumnLineage200JSONResponse")
 	require.Contains(t, content, "func (response GenGetColumnLineage200JSONResponse) VisitGetColumnLineageResponse(w http.ResponseWriter) error {")
 	require.NotContains(t, content, "type GenGetColumnLineage200JSONResponse = GetColumnLineage200JSONResponse")
 
-	require.Contains(t, content, "type GenCreateMacro201JSONResponse CreateMacro201JSONResponse")
+	require.Contains(t, content, "type CreateMacro201JSONResponse = GenCreateMacro201JSONResponse")
 	require.NotContains(t, content, "type GenCreateMacro201JSONResponse = CreateMacro201JSONResponse")
 
-	require.Contains(t, content, "type GenRegisterCatalog201JSONResponse RegisterCatalog201JSONResponse")
+	require.Contains(t, content, "type RegisterCatalog201JSONResponse = GenRegisterCatalog201JSONResponse")
 	require.NotContains(t, content, "type GenRegisterCatalog201JSONResponse = RegisterCatalog201JSONResponse")
 
-	require.Contains(t, content, "type GenListTags200JSONResponse ListTags200JSONResponse")
+	require.Contains(t, content, "type ListTags200JSONResponse = GenListTags200JSONResponse")
 	require.NotContains(t, content, "type GenListTags200JSONResponse = ListTags200JSONResponse")
 
-	require.Contains(t, content, "type GenListRowFilters200JSONResponse ListRowFilters200JSONResponse")
+	require.Contains(t, content, "type ListRowFilters200JSONResponse = GenListRowFilters200JSONResponse")
 	require.NotContains(t, content, "type GenListRowFilters200JSONResponse = ListRowFilters200JSONResponse")
 
-	require.Contains(t, content, "type GenListCatalogs200JSONResponse ListCatalogs200JSONResponse")
+	require.Contains(t, content, "type ListCatalogs200JSONResponse = GenListCatalogs200JSONResponse")
 	require.NotContains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
 }
 
@@ -1125,54 +1137,54 @@ func TestEmit_GeneratesNativeConcreteResponsesForSelectorGapOps(t *testing.T) {
 	require.NoError(t, err)
 	content := string(b)
 
-	require.Contains(t, content, "type GenListCatalogs200JSONResponse ListCatalogs200JSONResponse")
+	require.Contains(t, content, "type ListCatalogs200JSONResponse = GenListCatalogs200JSONResponse")
 	require.Contains(t, content, "func (response GenListCatalogs200JSONResponse) VisitListCatalogsResponse(w http.ResponseWriter) error {")
 	require.NotContains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
 
-	require.Contains(t, content, "type GenListComputeEndpoints200JSONResponse ListComputeEndpoints200JSONResponse")
+	require.Contains(t, content, "type ListComputeEndpoints200JSONResponse = GenListComputeEndpoints200JSONResponse")
 	require.Contains(t, content, "func (response GenListComputeEndpoints200JSONResponse) VisitListComputeEndpointsResponse(w http.ResponseWriter) error {")
 	require.NotContains(t, content, "type GenListComputeEndpoints200JSONResponse = ListComputeEndpoints200JSONResponse")
 
-	require.Contains(t, content, "type GenCreateComputeEndpoint201JSONResponse CreateComputeEndpoint201JSONResponse")
+	require.Contains(t, content, "type CreateComputeEndpoint201JSONResponse = GenCreateComputeEndpoint201JSONResponse")
 	require.Contains(t, content, "func (response GenCreateComputeEndpoint201JSONResponse) VisitCreateComputeEndpointResponse(w http.ResponseWriter) error {")
 	require.NotContains(t, content, "type GenCreateComputeEndpoint201JSONResponse = CreateComputeEndpoint201JSONResponse")
 
-	require.Contains(t, content, "type GenGetComputeEndpoint200JSONResponse GetComputeEndpoint200JSONResponse")
+	require.Contains(t, content, "type GetComputeEndpoint200JSONResponse = GenGetComputeEndpoint200JSONResponse")
 	require.NotContains(t, content, "type GenGetComputeEndpoint200JSONResponse = GetComputeEndpoint200JSONResponse")
 
-	require.Contains(t, content, "type GenUpdateComputeEndpoint200JSONResponse UpdateComputeEndpoint200JSONResponse")
+	require.Contains(t, content, "type UpdateComputeEndpoint200JSONResponse = GenUpdateComputeEndpoint200JSONResponse")
 	require.NotContains(t, content, "type GenUpdateComputeEndpoint200JSONResponse = UpdateComputeEndpoint200JSONResponse")
 
-	require.Contains(t, content, "type GenDeleteComputeEndpoint204Response DeleteComputeEndpoint204Response")
+	require.Contains(t, content, "type DeleteComputeEndpoint204Response = GenDeleteComputeEndpoint204Response")
 	require.Contains(t, content, "w.WriteHeader(204)")
 	require.Contains(t, content, "return nil")
 	require.NotContains(t, content, "type GenDeleteComputeEndpoint204Response = DeleteComputeEndpoint204Response")
 
-	require.Contains(t, content, "type GenListComputeAssignments200JSONResponse ListComputeAssignments200JSONResponse")
+	require.Contains(t, content, "type ListComputeAssignments200JSONResponse = GenListComputeAssignments200JSONResponse")
 	require.NotContains(t, content, "type GenListComputeAssignments200JSONResponse = ListComputeAssignments200JSONResponse")
 
-	require.Contains(t, content, "type GenCreateComputeAssignment201JSONResponse CreateComputeAssignment201JSONResponse")
+	require.Contains(t, content, "type CreateComputeAssignment201JSONResponse = GenCreateComputeAssignment201JSONResponse")
 	require.NotContains(t, content, "type GenCreateComputeAssignment201JSONResponse = CreateComputeAssignment201JSONResponse")
 
-	require.Contains(t, content, "type GenDeleteComputeAssignment204Response DeleteComputeAssignment204Response")
+	require.Contains(t, content, "type DeleteComputeAssignment204Response = GenDeleteComputeAssignment204Response")
 	require.NotContains(t, content, "type GenDeleteComputeAssignment204Response = DeleteComputeAssignment204Response")
 
-	require.Contains(t, content, "type GenGetComputeEndpointHealth200JSONResponse GetComputeEndpointHealth200JSONResponse")
+	require.Contains(t, content, "type GetComputeEndpointHealth200JSONResponse = GenGetComputeEndpointHealth200JSONResponse")
 	require.NotContains(t, content, "type GenGetComputeEndpointHealth200JSONResponse = GetComputeEndpointHealth200JSONResponse")
 
-	require.Contains(t, content, "type GenListGroupMembers200JSONResponse ListGroupMembers200JSONResponse")
+	require.Contains(t, content, "type ListGroupMembers200JSONResponse = GenListGroupMembers200JSONResponse")
 	require.NotContains(t, content, "type GenListGroupMembers200JSONResponse = ListGroupMembers200JSONResponse")
 
-	require.Contains(t, content, "type GenCreateGroupMember201JSONResponse CreateGroupMember201JSONResponse")
+	require.Contains(t, content, "type CreateGroupMember201JSONResponse = GenCreateGroupMember201JSONResponse")
 	require.NotContains(t, content, "type GenCreateGroupMember201JSONResponse = CreateGroupMember201JSONResponse")
 
-	require.Contains(t, content, "type GenDeleteGroupMember204Response DeleteGroupMember204Response")
+	require.Contains(t, content, "type DeleteGroupMember204Response = GenDeleteGroupMember204Response")
 	require.NotContains(t, content, "type GenDeleteGroupMember204Response = DeleteGroupMember204Response")
 
-	require.Contains(t, content, "type GenCreateManifest201JSONResponse CreateManifest200JSONResponse")
+	require.Contains(t, content, "type CreateManifest200JSONResponse GenCreateManifest201JSONResponse")
 	require.NotContains(t, content, "type GenCreateManifest201JSONResponse = CreateManifest201JSONResponse")
 
-	require.Contains(t, content, "type GenUpdatePrincipalAdmin200JSONResponse UpdatePrincipalAdmin200JSONResponse")
+	require.Contains(t, content, "type UpdatePrincipalAdmin200JSONResponse = GenUpdatePrincipalAdmin200JSONResponse")
 	require.Contains(t, content, "func (response GenUpdatePrincipalAdmin200JSONResponse) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {")
 	require.Contains(t, content, "return json.NewEncoder(w).Encode(")
 	require.NotContains(t, content, "type GenUpdatePrincipalAdmin200JSONResponse = UpdatePrincipalAdmin200JSONResponse")
@@ -1189,7 +1201,12 @@ func TestEmit_WritesNativeHeadersWithoutLegacyVisitFallback(t *testing.T) {
 				Method:      "get",
 				Path:        "/api-keys",
 				OperationID: "listAPIKeys",
-				Responses:   []ir.Response{{StatusCode: 429, Description: "rate limited", Schema: &ir.SchemaRef{Ref: "#/schemas/Error"}}},
+				Responses: []ir.Response{{
+					StatusCode:  429,
+					Description: "rate limited",
+					Headers:     []ir.Header{{Name: "Retry-After", Schema: ir.SchemaRef{Type: "integer", Format: "int32"}}, {Name: "X-RateLimit-Limit", Schema: ir.SchemaRef{Type: "integer", Format: "int32"}}, {Name: "X-RateLimit-Remaining", Schema: ir.SchemaRef{Type: "integer", Format: "int32"}}, {Name: "X-RateLimit-Reset", Schema: ir.SchemaRef{Type: "integer", Format: "int64"}}},
+					Schema:      &ir.SchemaRef{Ref: "#/schemas/Error"},
+				}},
 			},
 			{
 				Method:      "post",
@@ -1206,12 +1223,44 @@ func TestEmit_WritesNativeHeadersWithoutLegacyVisitFallback(t *testing.T) {
 
 	require.Contains(t, content, "type GenRateLimitExceededResponseHeaders struct {")
 	require.Contains(t, content, "type GenListAPIKeys429JSONResponse struct{ GenRateLimitExceededJSONResponse }")
-	require.Contains(t, content, "if v := headers.FieldByName(\"RetryAfter\"); v.IsValid() {")
-	require.Contains(t, content, "w.Header().Set(\"Retry-After\", fmt.Sprint(v.Interface()))")
-	require.Contains(t, content, "type GenExecuteQuery201JSONResponse ExecuteQuery200JSONResponse")
-	require.Contains(t, content, "w.WriteHeader(201)")
+	require.Contains(t, content, "headers := rv.FieldByName(\"Headers\")")
+	require.Contains(t, content, "type ExecuteQuery200JSONResponse GenExecuteQuery201JSONResponse")
+	require.Contains(t, content, "func (response ExecuteQuery200JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {")
+	require.Contains(t, content, "w.WriteHeader(200)")
 	require.NotContains(t, content, "return ExecuteQuery201JSONResponse(response).VisitExecuteQueryResponse(w)")
 	require.NotContains(t, content, "return ListAPIKeys429JSONResponse(response).VisitListAPIKeysResponse(w)")
+}
+
+func TestEmit_UsesIRResponseHeadersForVisitMethods(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{{
+			Method:      "get",
+			Path:        "/widgets/{id}",
+			OperationID: "getWidget",
+			Responses: []ir.Response{{
+				StatusCode:  200,
+				Description: "ok",
+				Headers: []ir.Header{{
+					Name:   "X-Trace-Id",
+					Schema: ir.SchemaRef{Type: "string"},
+				}},
+				Schema: &ir.SchemaRef{Type: "string"},
+			}},
+		}},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenGetWidget200ResponseHeaders struct {")
+	require.Contains(t, content, "\tXTraceId string")
+	require.Contains(t, content, "w.Header().Set(\"X-Trace-Id\", fmt.Sprint(response.Headers.XTraceId))")
+	require.Contains(t, content, "return json.NewEncoder(w).Encode(response.Body)")
 }
 
 func TestPathParamTypeName(t *testing.T) {

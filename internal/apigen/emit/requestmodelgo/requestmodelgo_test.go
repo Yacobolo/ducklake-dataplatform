@@ -50,10 +50,8 @@ func TestEmitWithResponseRoots_ClonesSafeDirectResponseSchemas(t *testing.T) {
 
 	dir := t.TempDir()
 	legacyTypesPath := filepath.Join(dir, "types.gen.go")
-	legacyServerPath := filepath.Join(dir, "server.gen.go")
 
-	require.NoError(t, os.WriteFile(legacyTypesPath, []byte("package api\n\ntype SemanticModel struct {\n\tName string `json:\"name\"`\n\tConfig *SemanticConfig `json:\"config,omitempty\"`\n}\n\ntype SemanticConfig struct {\n\tEnabled *bool `json:\"enabled,omitempty\"`\n}\n"), 0o600))
-	require.NoError(t, os.WriteFile(legacyServerPath, []byte("package api\n\ntype ListSemanticModels200JSONResponse PaginatedSemanticModels\ntype CreateSemanticModel201JSONResponse SemanticModel\ntype CreateModel201JSONResponse struct {\n\tBody Model\n}\n"), 0o600))
+	require.NoError(t, os.WriteFile(legacyTypesPath, []byte("package api\n\ntype SemanticModel struct {\n\tName string `json:\"name\"`\n\tConfig *SemanticConfig `json:\"config,omitempty\"`\n}\n\ntype SemanticConfig struct {\n\tEnabled *bool `json:\"enabled,omitempty\"`\n}\n\ntype Model struct {\n\tID string `json:\"id\"`\n}\n"), 0o600))
 
 	doc := ir.Document{
 		Schemas: map[string]ir.Schema{
@@ -61,15 +59,15 @@ func TestEmitWithResponseRoots_ClonesSafeDirectResponseSchemas(t *testing.T) {
 		},
 		Endpoints: []ir.Endpoint{
 			{OperationID: "createSemanticModel", Responses: []ir.Response{{StatusCode: 201, Schema: &ir.SchemaRef{Ref: "SemanticModel"}}}},
-			{OperationID: "createModel", Responses: []ir.Response{{StatusCode: 201, Schema: &ir.SchemaRef{Ref: "Model"}}}},
+			{OperationID: "createModel", Responses: []ir.Response{{StatusCode: 201, Schema: &ir.SchemaRef{Type: "string"}, Extensions: map[string]any{ir.ResponseShapeExtensionKey: map[string]any{"kind": "wrapped_json", "body_type": "Model"}}}}},
 		},
 	}
 
-	b, err := EmitWithResponseRoots(doc, legacyTypesPath, legacyServerPath)
+	b, err := EmitWithResponseRoots(doc, legacyTypesPath)
 	require.NoError(t, err)
 	content := string(b)
 
 	require.Contains(t, content, "type GenSchemaSemanticModel struct {")
 	require.Contains(t, content, "Config *GenSchemaSemanticConfig `json:\"config,omitempty\"`")
-	require.NotContains(t, content, "type GenSchemaModel")
+	require.Contains(t, content, "type GenSchemaModel struct {")
 }

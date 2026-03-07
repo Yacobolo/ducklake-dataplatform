@@ -31,7 +31,16 @@ func TestEmitYAML(t *testing.T) {
 				Parameters: []ir.Parameter{
 					{Name: "id", In: "path", Required: true, Schema: ir.SchemaRef{Type: "string"}},
 				},
-				Responses: []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "Item"}}},
+				Responses: []ir.Response{{
+					StatusCode:  200,
+					Description: "ok",
+					Headers: []ir.Header{{
+						Name:        "X-RateLimit-Remaining",
+						Description: "Requests left in the current window.",
+						Schema:      ir.SchemaRef{Type: "integer", Format: "int32"},
+					}},
+					Schema: &ir.SchemaRef{Ref: "Item"},
+				}},
 			},
 		},
 	}
@@ -44,4 +53,7 @@ func TestEmitYAML(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "3.2.0", doc.OpenAPI)
 	require.Equal(t, "getItem", doc.Paths.Value("/items/{id}").Get.OperationID)
+	headers := doc.Paths.Value("/items/{id}").Get.Responses.Value("200").Value.Headers
+	require.Contains(t, headers, "X-RateLimit-Remaining")
+	require.Equal(t, openapi3.Types{"integer"}, *headers["X-RateLimit-Remaining"].Value.Schema.Value.Type)
 }

@@ -84,9 +84,8 @@ func generateServer(doc ir.Document, outPath string, requestModelsOutPath string
 		return fmt.Errorf("validate operation ids: %w", err)
 	}
 	legacyDir := filepath.Dir(outPath)
-	legacyServerPath := filepath.Join(legacyDir, "server.gen.go")
 	legacyTypesPath := filepath.Join(legacyDir, "types.gen.go")
-	b, err := servergoemit.EmitWithLegacyResponses(doc, legacyServerPath, legacyTypesPath)
+	b, err := servergoemit.EmitWithLegacyResponses(doc, legacyTypesPath)
 	if err != nil {
 		return fmt.Errorf("emit server go: %w", err)
 	}
@@ -97,7 +96,7 @@ func generateServer(doc ir.Document, outPath string, requestModelsOutPath string
 	if err := writeFile(outPath, formatted); err != nil {
 		return err
 	}
-	requestModels, err := requestmodelgoemit.EmitWithResponseRoots(doc, legacyTypesPath, legacyServerPath)
+	requestModels, err := requestmodelgoemit.EmitWithResponseRoots(doc, legacyTypesPath)
 	if err != nil {
 		return fmt.Errorf("emit request models go: %w", err)
 	}

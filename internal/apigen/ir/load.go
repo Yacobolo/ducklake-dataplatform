@@ -68,6 +68,37 @@ func Validate(doc Document) error {
 		if len(endpoint.Responses) == 0 {
 			return fmt.Errorf("endpoint %q must have at least one response", endpoint.OperationID)
 		}
+		for _, response := range endpoint.Responses {
+			if response.StatusCode <= 0 {
+				return fmt.Errorf("endpoint %q has invalid response status_code %d", endpoint.OperationID, response.StatusCode)
+			}
+			if strings.TrimSpace(response.Description) == "" {
+				return fmt.Errorf("endpoint %q response %d description is required", endpoint.OperationID, response.StatusCode)
+			}
+			if shape, ok, err := ResponseShapeMetadata(response); err != nil {
+				return fmt.Errorf("endpoint %q response %d shape metadata: %w", endpoint.OperationID, response.StatusCode, err)
+			} else if ok {
+				switch shape.Kind {
+				case "wrapped_json":
+					if shape.BodyType == "" {
+						return fmt.Errorf("endpoint %q response %d wrapped_json body_type is required", endpoint.OperationID, response.StatusCode)
+					}
+				default:
+					return fmt.Errorf("endpoint %q response %d has unsupported shape kind %q", endpoint.OperationID, response.StatusCode, shape.Kind)
+				}
+			}
+			seenHeaders := make(map[string]struct{}, len(response.Headers))
+			for _, header := range response.Headers {
+				name := strings.TrimSpace(header.Name)
+				if name == "" {
+					return fmt.Errorf("endpoint %q response %d header name is required", endpoint.OperationID, response.StatusCode)
+				}
+				if _, exists := seenHeaders[strings.ToLower(name)]; exists {
+					return fmt.Errorf("endpoint %q response %d has duplicate header %q", endpoint.OperationID, response.StatusCode, header.Name)
+				}
+				seenHeaders[strings.ToLower(name)] = struct{}{}
+			}
+		}
 
 		opKey := endpoint.OperationID
 		if _, exists := seenOperation[opKey]; exists {
@@ -93,4 +124,14 @@ func Normalize(doc *Document) {
 		}
 		return doc.Endpoints[i].Path < doc.Endpoints[j].Path
 	})
+	for i := range doc.Endpoints {
+		sort.Slice(doc.Endpoints[i].Responses, func(a, b int) bool {
+			return doc.Endpoints[i].Responses[a].StatusCode < doc.Endpoints[i].Responses[b].StatusCode
+		})
+		for j := range doc.Endpoints[i].Responses {
+			sort.Slice(doc.Endpoints[i].Responses[j].Headers, func(a, b int) bool {
+				return strings.ToLower(doc.Endpoints[i].Responses[j].Headers[a].Name) < strings.ToLower(doc.Endpoints[i].Responses[j].Headers[b].Name)
+			})
+		}
+	}
 }

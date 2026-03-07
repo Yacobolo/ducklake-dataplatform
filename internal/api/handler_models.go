@@ -39,7 +39,7 @@ func (h *APIHandler) ListModels(ctx context.Context, req GenListModelsRequest) (
 		empty := []Model{}
 		return GenListModels200JSONResponse{
 			Body:    PaginatedModels{Data: &empty, NextPageToken: nil},
-			Headers: ListModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+			Headers: GenListModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 		}, nil
 	}
 
@@ -56,7 +56,7 @@ func (h *APIHandler) ListModels(ctx context.Context, req GenListModelsRequest) (
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListModels200JSONResponse{
 		Body:    PaginatedModels{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -105,7 +105,7 @@ func (h *APIHandler) CreateModel(ctx context.Context, req GenCreateModelRequest)
 	}
 	return GenCreateModel201JSONResponse{
 		Body:    modelToAPI(*result),
-		Headers: CreateModel201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateModel201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -122,7 +122,7 @@ func (h *APIHandler) GetModel(ctx context.Context, req GenGetModelRequest) (GenG
 	}
 	return GenGetModel200JSONResponse{
 		Body:    modelToAPI(*result),
-		Headers: GetModel200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetModel200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -169,7 +169,7 @@ func (h *APIHandler) UpdateModel(ctx context.Context, req GenUpdateModelRequest)
 	}
 	return GenUpdateModel200JSONResponse{
 		Body:    modelToAPI(*result),
-		Headers: UpdateModel200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateModel200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -188,7 +188,7 @@ func (h *APIHandler) DeleteModel(ctx context.Context, req GenDeleteModelRequest)
 		}
 	}
 	return GenDeleteModel204Response{
-		Headers: DeleteModel204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenDeleteModel204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -205,7 +205,7 @@ func (h *APIHandler) GetModelDAG(ctx context.Context, req GenGetModelDAGRequest)
 	}
 	return GenGetModelDAG200JSONResponse{
 		Body:    dagToAPI(tiers),
-		Headers: GetModelDAG200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetModelDAG200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -248,7 +248,7 @@ func (h *APIHandler) TriggerModelRun(ctx context.Context, req GenTriggerModelRun
 	}
 	return GenTriggerModelRun201JSONResponse{
 		Body:    modelRunToAPI(*result),
-		Headers: TriggerModelRun201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenTriggerModelRun201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -278,7 +278,7 @@ func (h *APIHandler) ListModelRuns(ctx context.Context, req GenListModelRunsRequ
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListModelRuns200JSONResponse{
 		Body:    PaginatedModelRuns{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListModelRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListModelRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -295,7 +295,7 @@ func (h *APIHandler) GetModelRun(ctx context.Context, req GenGetModelRunRequest)
 	}
 	return GenGetModelRun200JSONResponse{
 		Body:    modelRunToAPI(*result),
-		Headers: GetModelRun200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetModelRun200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -317,7 +317,7 @@ func (h *APIHandler) ListModelRunSteps(ctx context.Context, req GenListModelRunS
 	}
 	return GenListModelRunSteps200JSONResponse{
 		Body:    ModelRunStepList{Data: &data},
-		Headers: ListModelRunSteps200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListModelRunSteps200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -605,7 +605,7 @@ func (h *APIHandler) CreateModelTest(ctx context.Context, req GenCreateModelTest
 	}
 	return GenCreateModelTest201JSONResponse{
 		Body:    modelTestToAPI(*result),
-		Headers: CreateModelTest201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateModelTest201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -627,7 +627,7 @@ func (h *APIHandler) ListModelTests(ctx context.Context, req GenListModelTestsRe
 	}
 	return GenListModelTests200JSONResponse{
 		Body:    ModelTestList{Data: &data},
-		Headers: ListModelTests200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListModelTests200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -646,7 +646,7 @@ func (h *APIHandler) DeleteModelTest(ctx context.Context, req GenDeleteModelTest
 		}
 	}
 	return GenDeleteModelTest204Response{
-		Headers: DeleteModelTest204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenDeleteModelTest204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -668,7 +668,7 @@ func (h *APIHandler) ListModelTestResults(ctx context.Context, req GenListModelT
 	}
 	return GenListModelTestResults200JSONResponse{
 		Body:    ModelTestResultList{Data: &data},
-		Headers: ListModelTestResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListModelTestResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -821,7 +821,7 @@ func (h *APIHandler) CheckModelFreshness(ctx context.Context, req GenCheckModelF
 	}
 	return GenCheckModelFreshness200JSONResponse{
 		Body:    freshnessStatusToAPI(*result),
-		Headers: CheckModelFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCheckModelFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -867,7 +867,7 @@ func (h *APIHandler) CheckSourceFreshness(ctx context.Context, req GenCheckSourc
 
 	return GenCheckSourceFreshness200JSONResponse{
 		Body:    sourceFreshnessStatusToAPI(*result),
-		Headers: CheckSourceFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCheckSourceFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -923,6 +923,6 @@ func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req GenPromoteN
 	}
 	return GenPromoteNotebookToModel201JSONResponse{
 		Body:    modelToAPI(*result),
-		Headers: PromoteNotebookToModel201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenPromoteNotebookToModel201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
