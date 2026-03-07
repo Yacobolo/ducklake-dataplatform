@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"duck-demo/internal/duckdbsql"
-	"github.com/robfig/cron/v3"
 )
 
 // ValidationError represents a single validation problem.
@@ -62,46 +61,50 @@ var validBindingScopeTypes = map[string]bool{
 
 // Valid privilege names.
 var validPrivileges = map[string]bool{
-	"SELECT":                    true,
-	"INSERT":                    true,
-	"UPDATE":                    true,
-	"DELETE":                    true,
-	"USE_CATALOG":               true,
-	"USE_SCHEMA":                true,
-	"USAGE":                     true,
-	"CREATE_TABLE":              true,
-	"CREATE_VIEW":               true,
-	"CREATE_SCHEMA":             true,
-	"MODIFY":                    true,
-	"MANAGE":                    true,
-	"APPLY_TAG":                 true,
-	"MANAGE_TAGS":               true,
-	"MANAGE_POLICIES":           true,
-	"ALL_PRIVILEGES":            true,
-	"CREATE_EXTERNAL_LOCATION":  true,
-	"CREATE_STORAGE_CREDENTIAL": true,
-	"CREATE_VOLUME":             true,
-	"READ_VOLUME":               true,
-	"WRITE_VOLUME":              true,
-	"READ_FILES":                true,
-	"WRITE_FILES":               true,
-	"MANAGE_COMPUTE":            true,
-	"MANAGE_PIPELINES":          true,
+	"SELECT":                        true,
+	"INSERT":                        true,
+	"UPDATE":                        true,
+	"DELETE":                        true,
+	"USE_CATALOG":                   true,
+	"USE_SCHEMA":                    true,
+	"USAGE":                         true,
+	"CREATE_TABLE":                  true,
+	"CREATE_VIEW":                   true,
+	"CREATE_SCHEMA":                 true,
+	"MODIFY":                        true,
+	"MANAGE":                        true,
+	"APPLY_TAG":                     true,
+	"MANAGE_TAGS":                   true,
+	"MANAGE_POLICIES":               true,
+	"ALL_PRIVILEGES":                true,
+	"CREATE_EXTERNAL_LOCATION":      true,
+	"CREATE_STORAGE_CREDENTIAL":     true,
+	"CREATE_VOLUME":                 true,
+	"READ_VOLUME":                   true,
+	"WRITE_VOLUME":                  true,
+	"READ_FILES":                    true,
+	"WRITE_FILES":                   true,
+	"MANAGE_COMPUTE":                true,
+	"MANAGE_ASSET_DEFINITIONS":      true,
+	"EXECUTE_ASSET_MATERIALIZATION": true,
+	"MANAGE_ASSET_POLICIES":         true,
 }
 
 var allowedPrivilegesBySecurable = map[string]map[string]bool{
 	"catalog": {
-		"USE_CATALOG":               true,
-		"USAGE":                     true,
-		"CREATE_SCHEMA":             true,
-		"CREATE_EXTERNAL_LOCATION":  true,
-		"CREATE_STORAGE_CREDENTIAL": true,
-		"MANAGE_COMPUTE":            true,
-		"MANAGE_PIPELINES":          true,
-		"MANAGE_TAGS":               true,
-		"MODIFY":                    true,
-		"MANAGE":                    true,
-		"ALL_PRIVILEGES":            true,
+		"USE_CATALOG":                   true,
+		"USAGE":                         true,
+		"CREATE_SCHEMA":                 true,
+		"CREATE_EXTERNAL_LOCATION":      true,
+		"CREATE_STORAGE_CREDENTIAL":     true,
+		"MANAGE_COMPUTE":                true,
+		"MANAGE_ASSET_DEFINITIONS":      true,
+		"EXECUTE_ASSET_MATERIALIZATION": true,
+		"MANAGE_ASSET_POLICIES":         true,
+		"MANAGE_TAGS":                   true,
+		"MODIFY":                        true,
+		"MANAGE":                        true,
+		"ALL_PRIVILEGES":                true,
 	},
 	"schema": {
 		"USE_CATALOG":    true,
@@ -364,8 +367,8 @@ func Validate(state *DesiredState) []ValidationError {
 	// 20. Validate notebooks.
 	validateNotebooks(state.Notebooks, &errs)
 
-	// 21. Validate pipelines.
-	validatePipelines(state.Pipelines, notebookNames, endpointNames, &errs)
+	// 21. Validate orchestration resources.
+	validateAssets(state.Assets, &errs)
 
 	// 22. Validate macros.
 	validateMacros(state.Macros, &errs)
@@ -1494,79 +1497,103 @@ func validateNotebooks(notebooks []NotebookResource, errs *[]ValidationError) {
 	}
 }
 
-// === Pipelines ===
+func validateAssets(assets []AssetResource, errs *[]ValidationError) {
+	validPartitionDefinitionTypes := map[string]bool{
+		"daily":   true,
+		"hourly":  true,
+		"static":  true,
+		"dynamic": true,
+	}
 
-func validatePipelines(pipelines []PipelineResource, notebookNames, endpointNames map[string]bool, errs *[]ValidationError) {
-	seen := make(map[string]bool, len(pipelines))
-	for i, p := range pipelines {
-		path := fmt.Sprintf("pipeline[%d]", i)
-		if p.Name != "" {
-			path = fmt.Sprintf("pipeline[%s]", p.Name)
+	seen := make(map[string]bool, len(assets))
+	for i, a := range assets {
+		path := fmt.Sprintf("asset[%d]", i)
+		if a.Name != "" {
+			path = fmt.Sprintf("asset[%s]", a.Name)
 		}
-		if p.Name == "" {
+		if strings.TrimSpace(a.Name) == "" {
 			addErr(errs, path, "name is required")
+			continue
 		}
-		if strings.TrimSpace(p.Name) == "" {
-			addErr(errs, path, "name must not be blank")
+		if seen[a.Name] {
+			addErr(errs, path, "duplicate asset name %q", a.Name)
 		}
-		if p.Spec.ScheduleCron != "" {
-			if _, err := cron.ParseStandard(p.Spec.ScheduleCron); err != nil {
-				addErr(errs, path, "schedule_cron is invalid: %v", err)
+		seen[a.Name] = true
+
+		for j, dep := range a.Spec.DependsOn {
+			if strings.TrimSpace(dep) == "" {
+				addErr(errs, fmt.Sprintf("%s.depends_on[%d]", path, j), "depends_on entry must not be blank")
 			}
 		}
 
-		// Build set of job names within this pipeline for depends_on validation.
-		jobNames := make(map[string]bool, len(p.Spec.Jobs))
-		for _, j := range p.Spec.Jobs {
-			if j.Name != "" {
-				jobNames[j.Name] = true
-			}
+		if a.Spec.IOProfile != "" && strings.TrimSpace(a.Spec.IOProfile) == "" {
+			addErr(errs, fmt.Sprintf("%s.io_profile", path), "io_profile must not be blank when provided")
 		}
 
-		jobSeen := make(map[string]bool, len(p.Spec.Jobs))
-		for j, job := range p.Spec.Jobs {
-			jpath := fmt.Sprintf("%s.job[%d]", path, j)
-			if job.Name != "" {
-				jpath = fmt.Sprintf("%s.job[%s]", path, job.Name)
-			}
-			if job.Name == "" {
-				addErr(errs, jpath, "job name is required")
-			}
-			if job.Notebook == "" {
-				addErr(errs, jpath, "notebook is required")
-			}
-			if job.Notebook != "" && !notebookNames[job.Notebook] {
-				addErr(errs, jpath, "references unknown notebook %q", job.Notebook)
-			}
-			if job.ComputeEndpoint != "" && !endpointNames[job.ComputeEndpoint] {
-				addErr(errs, jpath, "references unknown compute endpoint %q", job.ComputeEndpoint)
+		if a.Spec.PartitionDefinition != nil {
+			typeValue := strings.ToLower(strings.TrimSpace(a.Spec.PartitionDefinition.Type))
+			if !validPartitionDefinitionTypes[typeValue] {
+				addErr(errs, fmt.Sprintf("%s.partition_definition.type", path), "partition_definition.type must be one of [daily, hourly, static, dynamic], got %q", a.Spec.PartitionDefinition.Type)
 			}
 
-			for _, dep := range job.DependsOn {
-				if !jobNames[dep] {
-					addErr(errs, jpath, "depends_on references unknown job %q in pipeline %q", dep, p.Name)
+			if typeValue == "static" {
+				hasStaticKeys := false
+				for _, key := range a.Spec.PartitionDefinition.StaticKeys {
+					if strings.TrimSpace(key) != "" {
+						hasStaticKeys = true
+						break
+					}
+				}
+				if !hasStaticKeys {
+					addErr(errs, fmt.Sprintf("%s.partition_definition.static_keys", path), "static partition requires at least one non-empty static_keys entry")
 				}
 			}
 
-			if job.Name != "" {
-				if jobSeen[job.Name] {
-					addErr(errs, jpath, "duplicate job name %q within pipeline %q", job.Name, p.Name)
-				}
-				jobSeen[job.Name] = true
+			if typeValue == "dynamic" && strings.TrimSpace(a.Spec.PartitionDefinition.DynamicGroup) == "" {
+				addErr(errs, fmt.Sprintf("%s.partition_definition.dynamic_group", path), "dynamic partition requires dynamic_group")
 			}
 		}
 
-		// Detect circular dependencies among jobs.
-		cycles := detectJobCycles(p.Spec.Jobs)
-		for _, cycle := range cycles {
-			addErr(errs, path, "circular job dependency detected: %s", strings.Join(cycle, " -> "))
+		if a.Spec.AutoMaterializePolicy != nil {
+			if a.Spec.AutoMaterializePolicy.MinIntervalSeconds != nil && *a.Spec.AutoMaterializePolicy.MinIntervalSeconds <= 0 {
+				addErr(errs, fmt.Sprintf("%s.auto_materialize_policy.min_interval_seconds", path), "auto_materialize_policy.min_interval_seconds must be > 0")
+			}
+			if a.Spec.AutoMaterializePolicy.Mode != "" && strings.TrimSpace(a.Spec.AutoMaterializePolicy.Mode) == "" {
+				addErr(errs, fmt.Sprintf("%s.auto_materialize_policy.mode", path), "auto_materialize_policy.mode must not be blank when provided")
+			}
 		}
 
-		if p.Name != "" {
-			if seen[p.Name] {
-				addErr(errs, path, "duplicate pipeline name %q", p.Name)
+		if a.Spec.FreshnessPolicy != nil {
+			if a.Spec.FreshnessPolicy.MaxLagSeconds != nil && *a.Spec.FreshnessPolicy.MaxLagSeconds <= 0 {
+				addErr(errs, fmt.Sprintf("%s.freshness_policy.max_lag_seconds", path), "freshness_policy.max_lag_seconds must be > 0")
 			}
-			seen[p.Name] = true
+		}
+
+		if a.Spec.MaterializationPolicy != nil && a.Spec.MaterializationPolicy.Mode != "" && strings.TrimSpace(a.Spec.MaterializationPolicy.Mode) == "" {
+			addErr(errs, fmt.Sprintf("%s.materialization_policy.mode", path), "materialization_policy.mode must not be blank when provided")
+		}
+
+		if a.Spec.MaxLagSeconds != nil && *a.Spec.MaxLagSeconds <= 0 {
+			addErr(errs, fmt.Sprintf("%s.max_lag_seconds", path), "max_lag_seconds must be > 0")
+		}
+
+		for j, check := range a.Spec.CheckDefinitions {
+			cpath := fmt.Sprintf("%s.checks[%d]", path, j)
+			if strings.TrimSpace(check.Name) == "" {
+				addErr(errs, cpath, "check name is required")
+			}
+			if strings.TrimSpace(check.CheckType) == "" {
+				addErr(errs, cpath, "check_type is required")
+			}
+		}
+	}
+
+	for _, a := range assets {
+		path := fmt.Sprintf("asset[%s]", a.Name)
+		for i, dep := range a.Spec.DependsOn {
+			if !seen[dep] {
+				addErr(errs, fmt.Sprintf("%s.depends_on[%d]", path, i), "depends_on references unknown asset %q", dep)
+			}
 		}
 	}
 }
@@ -1973,56 +2000,4 @@ func validateMacros(macros []MacroResource, errs *[]ValidationError) {
 			seen[m.Name] = true
 		}
 	}
-}
-
-// detectJobCycles finds circular dependencies in pipeline job graphs using DFS.
-func detectJobCycles(jobs []PipelineJobSpec) [][]string {
-	adj := make(map[string][]string, len(jobs))
-	for _, j := range jobs {
-		adj[j.Name] = append(adj[j.Name], j.DependsOn...)
-	}
-
-	var cycles [][]string
-	const (
-		white = 0
-		gray  = 1
-		black = 2
-	)
-	color := make(map[string]int, len(jobs))
-	parent := make(map[string]string, len(jobs))
-
-	var dfs func(node string)
-	dfs = func(node string) {
-		color[node] = gray
-		for _, next := range adj[node] {
-			if color[next] == gray {
-				cycle := []string{next, node}
-				cur := node
-				for cur != next {
-					cur = parent[cur]
-					if cur == "" {
-						break
-					}
-					cycle = append(cycle, cur)
-				}
-				for l, r := 0, len(cycle)-1; l < r; l, r = l+1, r-1 {
-					cycle[l], cycle[r] = cycle[r], cycle[l]
-				}
-				cycles = append(cycles, cycle)
-				return
-			}
-			if color[next] == white {
-				parent[next] = node
-				dfs(next)
-			}
-		}
-		color[node] = black
-	}
-
-	for _, j := range jobs {
-		if j.Name != "" && color[j.Name] == white {
-			dfs(j.Name)
-		}
-	}
-	return cycles
 }

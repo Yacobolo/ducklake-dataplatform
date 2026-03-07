@@ -169,11 +169,31 @@ func run() error {
 		logger.Warn("catalog AttachAll failed", "error", err)
 	}
 
-	// Start pipeline scheduler
-	if err := application.Scheduler.Start(ctx); err != nil {
-		logger.Warn("pipeline scheduler failed to start", "error", err)
+	if application.Reconciler != nil {
+		reconcilerStop := make(chan struct{})
+		go func() {
+			ticker := time.NewTicker(750 * time.Millisecond)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					close(reconcilerStop)
+					return
+				case <-ticker.C:
+					if err := application.Reconciler.Tick(ctx); err != nil {
+						logger.Warn("asset reconciler tick failed", "error", err)
+					}
+				}
+			}
+		}()
+		defer func() {
+			select {
+			case <-reconcilerStop:
+			case <-time.After(2 * time.Second):
+				logger.Warn("timed out waiting for reconciler shutdown")
+			}
+		}()
 	}
-	defer application.Scheduler.Stop()
 
 	// Create API handler.
 	svc := application.Services
@@ -190,7 +210,8 @@ func run() error {
 		svc.Notebook,
 		svc.SessionManager,
 		svc.GitService,
-		svc.Pipeline,
+		svc.Asset,
+		svc.Backfill,
 		svc.Model,
 		svc.Macro,
 		svc.Semantic,
@@ -343,6 +364,8 @@ func run() error {
 		svc.Query,
 		svc.View,
 		svc.Pipeline,
+		svc.Asset,
+		svc.Backfill,
 		svc.Notebook,
 		svc.SessionManager,
 		svc.Macro,

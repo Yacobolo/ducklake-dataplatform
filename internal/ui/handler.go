@@ -8,11 +8,13 @@ import (
 
 	"duck-demo/internal/config"
 	"duck-demo/internal/domain"
+	assetsvc "duck-demo/internal/service/asset"
 	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
 	"duck-demo/internal/service/macro"
 	"duck-demo/internal/service/model"
 	"duck-demo/internal/service/notebook"
+	"duck-demo/internal/service/orchestration"
 	"duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
 
@@ -25,6 +27,8 @@ type Handler struct {
 	Query               *query.QueryService
 	View                *catalog.ViewService
 	Pipeline            *pipeline.Service
+	Asset               *assetsvc.Service
+	Backfill            *orchestration.BackfillService
 	Notebook            *notebook.Service
 	SessionManager      *notebook.SessionManager
 	Macro               *macro.Service
@@ -46,6 +50,8 @@ func NewHandler(
 	querySvc *query.QueryService,
 	viewSvc *catalog.ViewService,
 	pipelineSvc *pipeline.Service,
+	assetSvc *assetsvc.Service,
+	backfillSvc *orchestration.BackfillService,
 	notebookSvc *notebook.Service,
 	sessionManager *notebook.SessionManager,
 	macroSvc *macro.Service,
@@ -62,6 +68,8 @@ func NewHandler(
 		Query:               querySvc,
 		View:                viewSvc,
 		Pipeline:            pipelineSvc,
+		Asset:               assetSvc,
+		Backfill:            backfillSvc,
 		Notebook:            notebookSvc,
 		SessionManager:      sessionManager,
 		Macro:               macroSvc,

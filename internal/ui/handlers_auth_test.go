@@ -93,7 +93,7 @@ func TestUIAuth_TokenCookieIgnored(t *testing.T) {
 }
 
 func TestUIAuth_UIDevBypassLoopbackAllowsHome(t *testing.T) {
-	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, config.AuthConfig{UIDevBypass: true}, false)
+	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, config.AuthConfig{UIDevBypass: true}, false)
 	r := chi.NewRouter()
 	r.Route("/ui", func(r chi.Router) {
 		MountRoutes(r, h)
@@ -108,7 +108,7 @@ func TestUIAuth_UIDevBypassLoopbackAllowsHome(t *testing.T) {
 }
 
 func TestUIAuth_UIDevBypassNonLoopbackStillRedirects(t *testing.T) {
-	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, config.AuthConfig{UIDevBypass: true}, false)
+	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, config.AuthConfig{UIDevBypass: true}, false)
 	r := chi.NewRouter()
 	r.Route("/ui", func(r chi.Router) {
 		MountRoutes(r, h)
@@ -123,8 +123,20 @@ func TestUIAuth_UIDevBypassNonLoopbackStillRedirects(t *testing.T) {
 	assert.Equal(t, "/ui/login", resp.Header().Get("Location"))
 }
 
+func TestUIAuth_LegacyPipelinesRouteNotMounted(t *testing.T) {
+	router, _ := newUITestRouter(t)
+	sessionCookie := loginSessionCookie(t, router)
+
+	r := httptest.NewRequest(http.MethodGet, "/ui/pipelines", nil)
+	r.AddCookie(sessionCookie)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
 func TestUIAuth_UIDevBypassUsesPrincipalResolverWhenAvailable(t *testing.T) {
-	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &stubPrincipalResolver{principal: &domain.Principal{ID: "p-dev", Name: "resolver-admin", Type: "user", IsAdmin: true}}, config.AuthConfig{UIDevBypass: true}, false)
+	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &stubPrincipalResolver{principal: &domain.Principal{ID: "p-dev", Name: "resolver-admin", Type: "user", IsAdmin: true}}, config.AuthConfig{UIDevBypass: true}, false)
 	r := chi.NewRouter()
 	r.Route("/ui", func(r chi.Router) {
 		MountRoutes(r, h)
@@ -175,7 +187,7 @@ func newUITestRouter(t *testing.T) (*chi.Mux, string) {
 
 	webSessionService := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, 30*time.Minute, 24*time.Hour)
 	authCfg := config.AuthConfig{WebSessionCookieName: "ui_session"}
-	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, authService, webSessionService, nil, authCfg, false)
+	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, authService, webSessionService, nil, authCfg, false)
 
 	r := chi.NewRouter()
 	r.Route("/ui", func(r chi.Router) {

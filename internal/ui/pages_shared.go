@@ -67,7 +67,7 @@ var navItems = []navItem{
 	{Label: "Overview", Href: "/ui", Key: "home", Icon: "house"},
 	{Label: "SQL Editor", Href: "/ui/sql", Key: "sql", Icon: "square-terminal"},
 	{Label: "Catalogs", Href: "/ui/catalogs", Key: "catalogs", Icon: "database"},
-	{Label: "Pipelines", Href: "/ui/pipelines", Key: "pipelines", Icon: "workflow"},
+	{Label: "Assets", Href: "/ui/assets", Key: "assets", Icon: "git-fork"},
 	{Label: "Notebooks", Href: "/ui/notebooks", Key: "notebooks", Icon: "notebook-text"},
 	{Label: "Macros", Href: "/ui/macros", Key: "macros", Icon: "braces"},
 	{Label: "Models", Href: "/ui/models", Key: "models", Icon: "boxes"},
@@ -599,18 +599,48 @@ func secondaryButtonClass() string {
 }
 
 func quickFilterCard(placeholder string, extraControls ...Node) Node {
+	return quickFilterCardWithValue(placeholder, "", extraControls...)
+}
+
+func quickFilterCardWithValue(placeholder, initialValue string, extraControls ...Node) Node {
 	controls := []Node{
 		Div(
 			Class("d-flex flex-items-center gap-2 flex-1"),
 			Label(Class("sr-only"), Text("Quick filter")),
-			Input(Type("search"), Class("form-control"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off")),
+			Input(Type("search"), Class("form-control"), Name("q"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off"), Attr("data-quick-filter-input", "true")),
 		),
 	}
 	controls = append(controls, extraControls...)
+	syncScript := `(function(){
+  var input=document.querySelector('[data-quick-filter-input="true"]');
+  if(!(input instanceof HTMLInputElement)){ return; }
+
+  function syncURL(value){
+    var url=new URL(window.location.href);
+    if(value){
+      url.searchParams.set('q', value);
+    } else {
+      url.searchParams.delete('q');
+    }
+    url.searchParams.delete('page_token');
+    var next=url.pathname;
+    var query=url.searchParams.toString();
+    if(query){ next+='?'+query; }
+    if(next!==window.location.pathname+window.location.search){
+      window.history.replaceState({}, '', next);
+    }
+  }
+
+  input.addEventListener('input', function(){
+    syncURL(input.value.trim());
+  });
+})();`
+
 	return Div(
 		Class(cardClass("toolbar")),
-		data.Signals(map[string]any{"q": ""}),
+		data.Signals(map[string]any{"q": initialValue}),
 		Div(Class("d-flex flex-wrap flex-items-center gap-2"), Group(controls)),
+		Script(Raw(syncScript)),
 	)
 }
 

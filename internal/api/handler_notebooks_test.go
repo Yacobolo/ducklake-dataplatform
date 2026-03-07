@@ -200,7 +200,8 @@ func setupNotebookTestServer(t *testing.T, nb notebookService, sess sessionServi
 		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, // queryHistory..computeEndpoints
 		nil, // apiKeys
 		nb, sess, git,
-		nil, // pipelineSvc
+		nil, // assetSvc
+		nil, // assetBackfillSvc
 		nil, // modelSvc
 		nil, // macroSvc
 		nil, // semanticSvc

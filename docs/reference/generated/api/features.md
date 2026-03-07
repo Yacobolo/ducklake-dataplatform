@@ -6,6 +6,7 @@ This page is generated from OpenAPI tags and operations.
 
 | Feature | What you can do | API coverage |
 | --- | --- | --- |
+| [Assets](./endpoints/assets) | Asset-centric orchestration, runs, partitions, and backfills. | 12 operations |
 | [Catalogs](./endpoints/catalogs) | Catalog registration, schema, table, column, and view management. | 30 operations |
 | [Compute](./endpoints/compute) | Compute endpoint and assignment management. | 9 operations |
 | [Governance](./endpoints/governance) | Tags, classifications, and catalog search. | 7 operations |
@@ -15,7 +16,6 @@ This page is generated from OpenAPI tags and operations.
 | [Models](./endpoints/models) | Transformation model definitions, runs, DAG management, macros, and freshness. | 26 operations |
 | [Notebooks](./endpoints/notebooks) | SQL notebooks, sessions, jobs, and Git integration. | 21 operations |
 | [Observability](./endpoints/observability) | Audit logs, query history, and metastore summary. | 3 operations |
-| [Pipelines](./endpoints/pipelines) | Pipeline workflow scheduling and orchestration. | 13 operations |
 | [Query](./endpoints/query) | Execute SQL queries against the platform. | 6 operations |
 | [Security](./endpoints/security) | Principals, groups, grants, row filters, and column masks. | 29 operations |
 | [Semantic](./endpoints/semantic) | Semantic models, metrics, relationships, query explain, and query run endpoints. | 20 operations |

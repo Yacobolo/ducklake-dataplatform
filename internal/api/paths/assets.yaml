@@ -1,0 +1,411 @@
+paths:
+  /assets:
+    get:
+      operationId: listAssets
+      summary: List assets
+      description: Returns first-class asset definitions visible to the authenticated principal.
+      tags: [Assets]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of assets
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/PaginatedAssets'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /assets/{assetKey}:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: getAsset
+      summary: Get asset by key
+      description: Returns one asset definition and orchestration metadata by asset key.
+      tags: [Assets]
+      responses:
+        '200':
+          description: Asset details
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/Asset'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /assets/{assetKey}/graph:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: getAssetGraph
+      summary: Get asset graph edges
+      description: Returns immediate upstream and downstream edges for the requested asset.
+      tags: [Assets]
+      responses:
+        '200':
+          description: Asset dependency graph for a single asset.
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/AssetGraph'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /assets/{assetKey}/partitions:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: listAssetPartitions
+      summary: List partitions for an asset
+      description: Lists partition states for the requested asset.
+      tags: [Assets]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of asset partitions
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/PaginatedAssetPartitions'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /assets/{assetKey}/runs:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: listAssetRuns
+      summary: List runs for an asset
+      description: Lists asset materialization runs and status transitions.
+      tags: [Assets]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        '200':
+          description: Paginated list of asset runs
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/PaginatedAssetRuns'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /assets/{assetKey}/materialize:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    post:
+      operationId: triggerAssetMaterialization
+      summary: Trigger asset materialization
+      description: Enqueues a materialization event for an asset. Requires EXECUTE_ASSET_MATERIALIZATION.
+      tags: [Assets]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: EXECUTE_ASSET_MATERIALIZATION
+            securable_id_source: catalog_sentinel
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/asset.yaml#/TriggerAssetMaterializationRequest'
+      responses:
+        '202':
+          description: Materialization event enqueued
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/AssetTriggerResponse'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /assets/{assetKey}/materializations:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: listAssetMaterializations
+      summary: List materializations for an asset
+      description: Lists completed materializations and metadata for an asset.
+      tags: [Assets]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of asset materializations
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/PaginatedAssetMaterializations'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /assets/{assetKey}/checks:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: listAssetChecks
+      summary: List checks for an asset
+      description: Lists data quality checks configured for an asset.
+      tags: [Assets]
+      responses:
+        '200':
+          description: List of checks
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/AssetCheckList'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /assets/{assetKey}/check-results:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: listAssetCheckResults
+      summary: List check results for an asset
+      description: Lists data quality check results across all checks configured for an asset.
+      tags: [Assets]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of check results
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/PaginatedAssetCheckResults'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /assets/{assetKey}/backfills:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+    get:
+      operationId: listAssetBackfills
+      summary: List backfill requests for an asset
+      description: Lists historical and active backfill requests for an asset.
+      tags: [Assets]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        '200':
+          description: Paginated list of backfill requests
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/PaginatedBackfillRequests'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+    post:
+      operationId: createAssetBackfill
+      summary: Create a backfill request
+      description: Creates a partition-range backfill request for an asset. Requires EXECUTE_ASSET_MATERIALIZATION.
+      tags: [Assets]
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: EXECUTE_ASSET_MATERIALIZATION
+            securable_id_source: catalog_sentinel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/asset.yaml#/CreateAssetBackfillRequest'
+      responses:
+        '201':
+          description: Backfill request created
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/CreateAssetBackfillResponse'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /assets/{assetKey}/backfills/{backfillId}:
+    parameters:
+      - name: assetKey
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 255
+          pattern: '^\S+$'
+      - name: backfillId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          maxLength: 36
+    get:
+      operationId: getAssetBackfill
+      summary: Get one backfill request
+      description: Returns a backfill request and its generated partition slices.
+      tags: [Assets]
+      responses:
+        '200':
+          description: Backfill request details
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/asset.yaml#/AssetBackfillDetails'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'

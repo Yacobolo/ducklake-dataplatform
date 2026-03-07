@@ -20,15 +20,17 @@ const (
 	PrivAllPrivileges = "ALL_PRIVILEGES"
 
 	// Storage & governance privileges.
-	PrivCreateExternalLocation  = "CREATE_EXTERNAL_LOCATION"
-	PrivCreateStorageCredential = "CREATE_STORAGE_CREDENTIAL"
-	PrivCreateVolume            = "CREATE_VOLUME"
-	PrivReadVolume              = "READ_VOLUME"
-	PrivWriteVolume             = "WRITE_VOLUME"
-	PrivReadFiles               = "READ_FILES"
-	PrivWriteFiles              = "WRITE_FILES"
-	PrivManageCompute           = "MANAGE_COMPUTE"
-	PrivManagePipelines         = "MANAGE_PIPELINES"
+	PrivCreateExternalLocation      = "CREATE_EXTERNAL_LOCATION"
+	PrivCreateStorageCredential     = "CREATE_STORAGE_CREDENTIAL"
+	PrivCreateVolume                = "CREATE_VOLUME"
+	PrivReadVolume                  = "READ_VOLUME"
+	PrivWriteVolume                 = "WRITE_VOLUME"
+	PrivReadFiles                   = "READ_FILES"
+	PrivWriteFiles                  = "WRITE_FILES"
+	PrivManageCompute               = "MANAGE_COMPUTE"
+	PrivManageAssetDefinitions      = "MANAGE_ASSET_DEFINITIONS"
+	PrivExecuteAssetMaterialization = "EXECUTE_ASSET_MATERIALIZATION"
+	PrivManageAssetPolicies         = "MANAGE_ASSET_POLICIES"
 )
 
 // Securable type constants.

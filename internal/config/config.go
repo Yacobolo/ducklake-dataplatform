@@ -144,13 +144,16 @@ type Config struct {
 	Auth AuthConfig
 
 	// Distributed execution feature controls.
-	FeatureRemoteRouting bool
-	FeatureAsyncQueue    bool
-	FeatureCursorMode    bool
-	FeatureInternalGRPC  bool
-	FeatureFlightSQL     bool
-	FeaturePGWire        bool
-	RemoteCanaryUsers    []string
+	FeatureRemoteRouting    bool
+	FeatureAsyncQueue       bool
+	FeatureCursorMode       bool
+	FeatureInternalGRPC     bool
+	FeatureFlightSQL        bool
+	FeaturePGWire           bool
+	FeatureReconcilerShadow bool
+	OrchestrationIOManager  string
+	OrchestrationIOFSRoot   string
+	RemoteCanaryUsers       []string
 
 	// Warnings collects non-fatal warnings generated during config loading.
 	// These are logged by the caller after the logger is initialised.
@@ -203,21 +206,24 @@ func LoadFromEnv() (*Config, error) {
 	}
 
 	cfg := &Config{
-		MetaDBPath:           os.Getenv("META_DB_PATH"),
-		ListenAddr:           os.Getenv("LISTEN_ADDR"),
-		TLSCertFile:          os.Getenv("TLS_CERT_FILE"),
-		TLSKeyFile:           os.Getenv("TLS_KEY_FILE"),
-		FlightSQLAddr:        os.Getenv("FLIGHT_SQL_LISTEN_ADDR"),
-		PGWireAddr:           os.Getenv("PG_WIRE_LISTEN_ADDR"),
-		EncryptionKey:        encryptionKey,
-		LogLevel:             os.Getenv("LOG_LEVEL"),
-		Env:                  os.Getenv("ENV"),
-		FeatureRemoteRouting: parseBoolEnvDefault("FEATURE_REMOTE_ROUTING", true),
-		FeatureAsyncQueue:    parseBoolEnvDefault("FEATURE_ASYNC_QUEUE", true),
-		FeatureCursorMode:    parseBoolEnvDefault("FEATURE_CURSOR_MODE", true),
-		FeatureInternalGRPC:  parseBoolEnvDefault("FEATURE_INTERNAL_GRPC", true),
-		FeatureFlightSQL:     parseBoolEnvDefault("FEATURE_FLIGHT_SQL", true),
-		FeaturePGWire:        parseBoolEnvDefault("FEATURE_PG_WIRE", true),
+		MetaDBPath:              os.Getenv("META_DB_PATH"),
+		ListenAddr:              os.Getenv("LISTEN_ADDR"),
+		TLSCertFile:             os.Getenv("TLS_CERT_FILE"),
+		TLSKeyFile:              os.Getenv("TLS_KEY_FILE"),
+		FlightSQLAddr:           os.Getenv("FLIGHT_SQL_LISTEN_ADDR"),
+		PGWireAddr:              os.Getenv("PG_WIRE_LISTEN_ADDR"),
+		EncryptionKey:           encryptionKey,
+		LogLevel:                os.Getenv("LOG_LEVEL"),
+		Env:                     os.Getenv("ENV"),
+		FeatureRemoteRouting:    parseBoolEnvDefault("FEATURE_REMOTE_ROUTING", true),
+		FeatureAsyncQueue:       parseBoolEnvDefault("FEATURE_ASYNC_QUEUE", true),
+		FeatureCursorMode:       parseBoolEnvDefault("FEATURE_CURSOR_MODE", true),
+		FeatureInternalGRPC:     parseBoolEnvDefault("FEATURE_INTERNAL_GRPC", true),
+		FeatureFlightSQL:        parseBoolEnvDefault("FEATURE_FLIGHT_SQL", true),
+		FeaturePGWire:           parseBoolEnvDefault("FEATURE_PG_WIRE", true),
+		FeatureReconcilerShadow: parseBoolEnvDefault("FEATURE_RECONCILER_SHADOW", false),
+		OrchestrationIOManager:  os.Getenv("ORCHESTRATION_IO_MANAGER"),
+		OrchestrationIOFSRoot:   os.Getenv("ORCHESTRATION_IO_FS_ROOT"),
 	}
 
 	// Rate limiting
@@ -369,6 +375,9 @@ func LoadFromEnv() (*Config, error) {
 	}
 	if cfg.LogLevel == "" {
 		cfg.LogLevel = "info"
+	}
+	if cfg.OrchestrationIOManager == "" {
+		cfg.OrchestrationIOManager = "memory"
 	}
 	if cfg.RateLimitRPS == 0 {
 		cfg.RateLimitRPS = 100

@@ -413,32 +413,70 @@ type NotebookPublishModelSpec struct {
 	OutputCell      string `yaml:"output_cell"`
 }
 
-// PipelineDoc declares a pipeline of notebook jobs.
-type PipelineDoc struct {
-	APIVersion string       `yaml:"apiVersion"`
-	Kind       string       `yaml:"kind"`
-	Metadata   ObjectMeta   `yaml:"metadata"`
-	Spec       PipelineSpec `yaml:"spec"`
+// AssetDoc declares an asset-centric orchestration node.
+type AssetDoc struct {
+	APIVersion string     `yaml:"apiVersion"`
+	Kind       string     `yaml:"kind"`
+	Metadata   ObjectMeta `yaml:"metadata"`
+	Spec       AssetSpec  `yaml:"spec"`
 }
 
-// PipelineSpec holds the configuration for a pipeline.
-type PipelineSpec struct {
-	Description      string            `yaml:"description,omitempty"`
-	ScheduleCron     string            `yaml:"schedule_cron,omitempty"`
-	IsPaused         bool              `yaml:"is_paused,omitempty"`
-	ConcurrencyLimit *int              `yaml:"concurrency_limit,omitempty"`
-	Jobs             []PipelineJobSpec `yaml:"jobs,omitempty"`
+// AssetSpec holds the configuration for an orchestration asset.
+type AssetSpec struct {
+	AssetType             string                          `yaml:"asset_type,omitempty"`
+	Owner                 string                          `yaml:"owner,omitempty"`
+	Description           string                          `yaml:"description,omitempty"`
+	Tags                  []string                        `yaml:"tags,omitempty"`
+	DependsOn             []string                        `yaml:"depends_on,omitempty"`
+	IOProfile             string                          `yaml:"io_profile,omitempty"`
+	PartitionDefinition   *AssetPartitionDefinitionSpec   `yaml:"partition_definition,omitempty"`
+	AutoMaterializePolicy *AssetAutoMaterializePolicySpec `yaml:"auto_materialize_policy,omitempty"`
+	FreshnessPolicy       *AssetFreshnessPolicySpec       `yaml:"freshness_policy,omitempty"`
+	MaterializationPolicy *AssetMaterializationPolicySpec `yaml:"materialization_policy,omitempty"`
+	PartitionType         string                          `yaml:"partition_type,omitempty"`
+	AutoMaterialize       bool                            `yaml:"auto_materialize,omitempty"`
+	MaxLagSeconds         *int64                          `yaml:"max_lag_seconds,omitempty"`
+	CronSchedule          string                          `yaml:"cron_schedule,omitempty"`
+	CheckDefinitions      []AssetCheckSpec                `yaml:"checks,omitempty"`
+	Properties            map[string]string               `yaml:"properties,omitempty"`
 }
 
-// PipelineJobSpec describes a single job within a pipeline.
-type PipelineJobSpec struct {
-	Name            string   `yaml:"name"`
-	Notebook        string   `yaml:"notebook"`
-	ComputeEndpoint string   `yaml:"compute_endpoint,omitempty"`
-	DependsOn       []string `yaml:"depends_on,omitempty"`
-	TimeoutSeconds  *int     `yaml:"timeout_seconds,omitempty"`
-	RetryCount      *int     `yaml:"retry_count,omitempty"`
-	Order           *int     `yaml:"order,omitempty"`
+// AssetPartitionDefinitionSpec defines asset partitioning behavior.
+type AssetPartitionDefinitionSpec struct {
+	Type         string   `yaml:"type,omitempty"`
+	Timezone     string   `yaml:"timezone,omitempty"`
+	StaticKeys   []string `yaml:"static_keys,omitempty"`
+	DynamicGroup string   `yaml:"dynamic_group,omitempty"`
+}
+
+// AssetAutoMaterializePolicySpec defines auto-materialize orchestration policy.
+type AssetAutoMaterializePolicySpec struct {
+	Mode                   string `yaml:"mode,omitempty"`
+	MinIntervalSeconds     *int64 `yaml:"min_interval_seconds,omitempty"`
+	RequireAllUpstreams    *bool  `yaml:"require_all_upstreams,omitempty"`
+	OnFreshnessBreach      *bool  `yaml:"on_freshness_breach,omitempty"`
+	OnUpstreamMaterialized *bool  `yaml:"on_upstream_materialized,omitempty"`
+}
+
+// AssetFreshnessPolicySpec defines freshness constraints for an asset.
+type AssetFreshnessPolicySpec struct {
+	MaxLagSeconds *int64 `yaml:"max_lag_seconds,omitempty"`
+	CronSchedule  string `yaml:"cron_schedule,omitempty"`
+}
+
+// AssetMaterializationPolicySpec defines how an asset can materialize.
+type AssetMaterializationPolicySpec struct {
+	Mode            string `yaml:"mode,omitempty"`
+	AllowConcurrent *bool  `yaml:"allow_concurrent,omitempty"`
+}
+
+// AssetCheckSpec declares an asset check in declarative config.
+type AssetCheckSpec struct {
+	Name      string            `yaml:"name"`
+	CheckType string            `yaml:"check_type"`
+	Severity  string            `yaml:"severity,omitempty"`
+	Enabled   *bool             `yaml:"enabled,omitempty"`
+	Config    map[string]string `yaml:"config,omitempty"`
 }
 
 // === State Containers ===
@@ -465,7 +503,7 @@ type DesiredState struct {
 	ComputeAssignments []ComputeAssignmentSpec
 	APIKeys            []APIKeySpec
 	Notebooks          []NotebookResource
-	Pipelines          []PipelineResource
+	Assets             []AssetResource
 	Models             []ModelResource
 	SemanticModels     []SemanticModelResource
 	Macros             []MacroResource
@@ -533,10 +571,10 @@ type NotebookResource struct {
 	Spec NotebookSpec
 }
 
-// PipelineResource is a pipeline with its resolved name.
-type PipelineResource struct {
+// AssetResource is an asset with its resolved key.
+type AssetResource struct {
 	Name string
-	Spec PipelineSpec
+	Spec AssetSpec
 }
 
 // === SQL Macros ===

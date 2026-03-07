@@ -446,3 +446,25 @@ spec:
 	require.Len(t, state.Views, 1, "should load only the .yaml view file")
 	assert.Equal(t, "my-view", state.Views[0].ViewName)
 }
+
+func TestLoader_FailsForLegacyPipelinesDirectory(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	pipelinesDir := filepath.Join(dir, "pipelines")
+	require.NoError(t, os.MkdirAll(pipelinesDir, 0o755))
+
+	legacyPipelineYAML := []byte(`apiVersion: duck/v1
+kind: Pipeline
+metadata:
+  name: legacy
+spec:
+  description: legacy pipeline
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(pipelinesDir, "legacy.yaml"), legacyPipelineYAML, 0o644))
+
+	_, err := LoadDirectory(dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "legacy pipelines/ configs are no longer supported")
+	assert.Contains(t, err.Error(), "migrate pipeline definitions to assets/")
+}

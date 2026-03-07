@@ -33,7 +33,7 @@ func Diff(desired, actual *DesiredState) *Plan {
 	diffComputeAssignments(plan, desired.ComputeAssignments, actual.ComputeAssignments)
 	diffAPIKeys(plan, desired.APIKeys, actual.APIKeys)
 	diffNotebooks(plan, desired.Notebooks, actual.Notebooks)
-	diffPipelines(plan, desired.Pipelines, actual.Pipelines)
+	diffAssets(plan, desired.Assets, actual.Assets)
 	diffModels(plan, desired.Models, actual.Models)
 	diffSemanticModels(plan, desired.SemanticModels, actual.SemanticModels)
 	diffMacros(plan, desired.Macros, actual.Macros)
@@ -113,6 +113,18 @@ func diffStringPtrField(changes *[]FieldDiff, field string, oldVal, newVal *stri
 	}
 	if newVal != nil {
 		newStr = *newVal
+	}
+	diffField(changes, field, oldStr, newStr)
+}
+
+func diffInt64PtrField(changes *[]FieldDiff, field string, oldVal, newVal *int64) {
+	oldStr := ""
+	newStr := ""
+	if oldVal != nil {
+		oldStr = fmt.Sprintf("%d", *oldVal)
+	}
+	if newVal != nil {
+		newStr = fmt.Sprintf("%d", *newVal)
 	}
 	diffField(changes, field, oldStr, newStr)
 }
@@ -1064,6 +1076,53 @@ func diffNotebooks(plan *Plan, desired, actual []NotebookResource) {
 	}
 }
 
+// === Assets ===
+
+func diffAssets(plan *Plan, desired, actual []AssetResource) {
+	actualMap := make(map[string]AssetResource, len(actual))
+	for _, a := range actual {
+		actualMap[a.Name] = a
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, d := range desired {
+		seen[d.Name] = true
+		a, exists := actualMap[d.Name]
+		if !exists {
+			addCreate(plan, KindAsset, d.Name, "", d)
+			continue
+		}
+
+		var changes []FieldDiff
+		diffField(&changes, "asset_type", a.Spec.AssetType, d.Spec.AssetType)
+		diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
+		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
+		diffField(&changes, "tags", formatStringSlice(a.Spec.Tags), formatStringSlice(d.Spec.Tags))
+		diffField(&changes, "depends_on", formatStringSlice(a.Spec.DependsOn), formatStringSlice(d.Spec.DependsOn))
+		diffField(&changes, "io_profile", a.Spec.IOProfile, d.Spec.IOProfile)
+		diffField(&changes, "partition_definition", stableJSON(a.Spec.PartitionDefinition), stableJSON(d.Spec.PartitionDefinition))
+		diffField(&changes, "auto_materialize_policy", stableJSON(a.Spec.AutoMaterializePolicy), stableJSON(d.Spec.AutoMaterializePolicy))
+		diffField(&changes, "freshness_policy", stableJSON(a.Spec.FreshnessPolicy), stableJSON(d.Spec.FreshnessPolicy))
+		diffField(&changes, "materialization_policy", stableJSON(a.Spec.MaterializationPolicy), stableJSON(d.Spec.MaterializationPolicy))
+		diffField(&changes, "partition_type", a.Spec.PartitionType, d.Spec.PartitionType)
+		diffBoolField(&changes, "auto_materialize", a.Spec.AutoMaterialize, d.Spec.AutoMaterialize)
+		diffInt64PtrField(&changes, "max_lag_seconds", a.Spec.MaxLagSeconds, d.Spec.MaxLagSeconds)
+		diffField(&changes, "cron_schedule", a.Spec.CronSchedule, d.Spec.CronSchedule)
+		diffField(&changes, "checks", stableJSON(a.Spec.CheckDefinitions), stableJSON(d.Spec.CheckDefinitions))
+		diffMapField(&changes, "properties", a.Spec.Properties, d.Spec.Properties)
+
+		if len(changes) > 0 {
+			addUpdate(plan, KindAsset, d.Name, "", d, a, changes)
+		}
+	}
+
+	for _, a := range actual {
+		if !seen[a.Name] {
+			addDelete(plan, KindAsset, a.Name, a)
+		}
+	}
+}
+
 // diffCells compares two cell lists and appends a single FieldDiff if they differ.
 func diffCells(changes *[]FieldDiff, actual, desired []CellSpec) {
 	if len(actual) == len(desired) {
@@ -1093,84 +1152,7 @@ func mustJSON(v interface{}) string {
 	return string(b)
 }
 
-// === Pipelines ===
-
-func diffPipelines(plan *Plan, desired, actual []PipelineResource) {
-	actualMap := make(map[string]PipelineResource, len(actual))
-	for _, a := range actual {
-		actualMap[a.Name] = a
-	}
-
-	seen := make(map[string]bool, len(desired))
-	for _, d := range desired {
-		seen[d.Name] = true
-		a, exists := actualMap[d.Name]
-		if !exists {
-			addCreate(plan, KindPipeline, d.Name, "", d)
-			for _, j := range d.Spec.Jobs {
-				jobName := d.Name + "/" + j.Name
-				addCreate(plan, KindPipelineJob, jobName, "", j)
-			}
-			continue
-		}
-		var changes []FieldDiff
-		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
-		diffField(&changes, "schedule_cron", a.Spec.ScheduleCron, d.Spec.ScheduleCron)
-		diffBoolField(&changes, "is_paused", a.Spec.IsPaused, d.Spec.IsPaused)
-		diffIntPtrField(&changes, "concurrency_limit", a.Spec.ConcurrencyLimit, d.Spec.ConcurrencyLimit)
-		if len(changes) > 0 {
-			addUpdate(plan, KindPipeline, d.Name, "", d, a, changes)
-		}
-		// Diff jobs inline.
-		diffPipelineJobs(plan, d.Name, d.Spec.Jobs, a.Spec.Jobs)
-	}
-
-	for _, a := range actual {
-		if !seen[a.Name] {
-			// Delete jobs first (same layer, but SortActions handles ordering).
-			for _, j := range a.Spec.Jobs {
-				jobName := a.Name + "/" + j.Name
-				addDelete(plan, KindPipelineJob, jobName, j)
-			}
-			addDelete(plan, KindPipeline, a.Name, a)
-		}
-	}
-}
-
-func diffPipelineJobs(plan *Plan, pipelineName string, desired, actual []PipelineJobSpec) {
-	actualMap := make(map[string]PipelineJobSpec, len(actual))
-	for _, a := range actual {
-		actualMap[a.Name] = a
-	}
-
-	seen := make(map[string]bool, len(desired))
-	for _, d := range desired {
-		jobName := pipelineName + "/" + d.Name
-		seen[d.Name] = true
-		a, exists := actualMap[d.Name]
-		if !exists {
-			addCreate(plan, KindPipelineJob, jobName, "", d)
-			continue
-		}
-		var changes []FieldDiff
-		diffField(&changes, "notebook", a.Notebook, d.Notebook)
-		diffField(&changes, "compute_endpoint", a.ComputeEndpoint, d.ComputeEndpoint)
-		diffField(&changes, "depends_on", formatStringSlice(a.DependsOn), formatStringSlice(d.DependsOn))
-		diffIntPtrField(&changes, "timeout_seconds", a.TimeoutSeconds, d.TimeoutSeconds)
-		diffIntPtrField(&changes, "retry_count", a.RetryCount, d.RetryCount)
-		diffIntPtrField(&changes, "order", a.Order, d.Order)
-		if len(changes) > 0 {
-			addUpdate(plan, KindPipelineJob, jobName, "", d, a, changes)
-		}
-	}
-
-	for _, a := range actual {
-		if !seen[a.Name] {
-			jobName := pipelineName + "/" + a.Name
-			addDelete(plan, KindPipelineJob, jobName, a)
-		}
-	}
-}
+// === Helpers ===
 
 // formatStringSlice returns a stable comma-separated string for comparison.
 func formatStringSlice(s []string) string {

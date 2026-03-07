@@ -520,31 +520,6 @@ func TestValidate_StorageCredentialErrors(t *testing.T) {
 	}
 }
 
-func TestValidate_PipelineJobCycleError(t *testing.T) {
-	state := &DesiredState{
-		Notebooks: []NotebookResource{{Name: "nb1", Spec: NotebookSpec{}}},
-		Pipelines: []PipelineResource{{
-			Name: "p1",
-			Spec: PipelineSpec{
-				Jobs: []PipelineJobSpec{
-					{Name: "j1", Notebook: "nb1", DependsOn: []string{"j2"}},
-					{Name: "j2", Notebook: "nb1", DependsOn: []string{"j1"}},
-				},
-			},
-		}},
-	}
-	errs := Validate(state)
-	require.NotEmpty(t, errs)
-	found := false
-	for _, e := range errs {
-		if containsStr(e.Error(), "circular") || containsStr(e.Error(), "cycle") {
-			found = true
-			break
-		}
-	}
-	assert.True(t, found, "expected error containing 'circular' or 'cycle', got %v", errs)
-}
-
 func TestValidate_ModelErrors(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -843,4 +818,115 @@ func TestValidate_MacroValid(t *testing.T) {
 		}
 	}
 	assert.Empty(t, macroErrs, "valid macros should have no macro errors: %v", macroErrs)
+}
+
+func TestValidate_AssetPolicyRules(t *testing.T) {
+	positiveLag := int64(60)
+	positiveInterval := int64(30)
+
+	valid := &DesiredState{Assets: []AssetResource{{
+		Name: "orders_asset",
+		Spec: AssetSpec{
+			DependsOn: []string{},
+			IOProfile: "warehouse-default",
+			PartitionDefinition: &AssetPartitionDefinitionSpec{
+				Type:       "static",
+				StaticKeys: []string{"us", "eu"},
+			},
+			AutoMaterializePolicy: &AssetAutoMaterializePolicySpec{
+				Mode:               "scheduled",
+				MinIntervalSeconds: &positiveInterval,
+			},
+			FreshnessPolicy: &AssetFreshnessPolicySpec{
+				MaxLagSeconds: &positiveLag,
+			},
+			MaterializationPolicy: &AssetMaterializationPolicySpec{
+				Mode: "incremental",
+			},
+			CheckDefinitions: []AssetCheckSpec{{Name: "row_count", CheckType: "threshold"}},
+		},
+	}}}
+
+	err := Validate(valid)
+	var assetErrs []ValidationError
+	for _, e := range err {
+		if strings.HasPrefix(e.Path, "asset[") {
+			assetErrs = append(assetErrs, e)
+		}
+	}
+	assert.Empty(t, assetErrs, "valid asset should have no asset errors: %v", assetErrs)
+
+	minusOne := int64(-1)
+	zero := int64(0)
+	invalid := &DesiredState{Assets: []AssetResource{{
+		Name: "broken_asset",
+		Spec: AssetSpec{
+			IOProfile:           " ",
+			PartitionDefinition: &AssetPartitionDefinitionSpec{Type: "static", StaticKeys: []string{"   "}},
+			AutoMaterializePolicy: &AssetAutoMaterializePolicySpec{
+				MinIntervalSeconds: &zero,
+			},
+			FreshnessPolicy: &AssetFreshnessPolicySpec{
+				MaxLagSeconds: &minusOne,
+			},
+			MaterializationPolicy: &AssetMaterializationPolicySpec{Mode: " "},
+			MaxLagSeconds:         &zero,
+		},
+	}}}
+
+	err = Validate(invalid)
+	require.NotEmpty(t, err)
+
+	contains := []string{
+		"io_profile must not be blank",
+		"static partition requires at least one non-empty static_keys entry",
+		"auto_materialize_policy.min_interval_seconds must be > 0",
+		"freshness_policy.max_lag_seconds must be > 0",
+		"materialization_policy.mode must not be blank",
+		"max_lag_seconds must be > 0",
+	}
+	for _, needle := range contains {
+		found := false
+		for _, e := range err {
+			if containsStr(e.Error(), needle) {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "expected error containing %q, got %v", needle, err)
+	}
+}
+
+func TestValidate_AssetPartitionDefinitionRules(t *testing.T) {
+	state := &DesiredState{Assets: []AssetResource{
+		{
+			Name: "invalid_type",
+			Spec: AssetSpec{
+				PartitionDefinition: &AssetPartitionDefinitionSpec{Type: "weekly"},
+			},
+		},
+		{
+			Name: "missing_dynamic_group",
+			Spec: AssetSpec{
+				PartitionDefinition: &AssetPartitionDefinitionSpec{Type: "dynamic"},
+			},
+		},
+	}}
+
+	err := Validate(state)
+	require.NotEmpty(t, err)
+
+	foundTypeErr := false
+	foundDynamicGroupErr := false
+	for _, e := range err {
+		if containsStr(e.Error(), "partition_definition.type must be one of") && containsStr(e.Error(), "weekly") {
+			foundTypeErr = true
+		}
+		if containsStr(e.Error(), "dynamic partition requires dynamic_group") {
+			foundDynamicGroupErr = true
+		}
+	}
+
+	assert.True(t, foundTypeErr, "expected partition_definition.type enum error, got %v", err)
+	assert.True(t, foundDynamicGroupErr, "expected dynamic_group required error, got %v", err)
 }
