@@ -227,6 +227,14 @@ components:
       $ref: 'schemas/catalog.yaml#/TableStatistics'
     MetastoreSummary:
       $ref: 'schemas/catalog.yaml#/MetastoreSummary'
+    VersionedObjectSummary:
+      $ref: 'schemas/catalog.yaml#/VersionedObjectSummary'
+    CatalogVersionSummary:
+      $ref: 'schemas/catalog.yaml#/CatalogVersionSummary'
+    CatalogHistoryEntry:
+      $ref: 'schemas/catalog.yaml#/CatalogHistoryEntry'
+    CatalogHistoryResponse:
+      $ref: 'schemas/catalog.yaml#/CatalogHistoryResponse'
     QueryHistoryEntry:
       $ref: 'schemas/observability.yaml#/QueryHistoryEntry'
     PaginatedQueryHistoryEntries:
@@ -564,6 +572,10 @@ paths:
     $ref: 'paths/catalog.yaml#/paths/~1catalogs~1{catalogName}~1set-default'
   /catalogs/{catalogName}/info:
     $ref: 'paths/catalog.yaml#/paths/~1catalogs~1{catalogName}~1info'
+  /catalogs/{catalogName}/version-summary:
+    $ref: 'paths/catalog.yaml#/paths/~1catalogs~1{catalogName}~1version-summary'
+  /catalogs/{catalogName}/history:
+    $ref: 'paths/catalog.yaml#/paths/~1catalogs~1{catalogName}~1history'
   # === Catalog Schemas, Tables, Columns, Views, Volumes ===
   /catalogs/{catalogName}/schemas:
     $ref: 'paths/catalog.yaml#/paths/~1catalogs~1{catalogName}~1schemas'

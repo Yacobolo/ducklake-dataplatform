@@ -9,7 +9,7 @@ This section is generated from `internal/api/openapi.bundled.yaml`.
 ## Endpoint Groups
 
 - [Assets](./endpoints/assets) (12 operations)
-- [Catalogs](./endpoints/catalogs) (30 operations)
+- [Catalogs](./endpoints/catalogs) (32 operations)
 - [Compute](./endpoints/compute) (9 operations)
 - [Governance](./endpoints/governance) (7 operations)
 - [Ingestion](./endpoints/ingestion) (3 operations)
@@ -40,9 +40,12 @@ This section is generated from `internal/api/openapi.bundled.yaml`.
 - [BackfillRequest](./schemas/backfillrequest)
 - [BackfillSlice](./schemas/backfillslice)
 - [CancelQueryResponse](./schemas/cancelqueryresponse)
+- [CatalogHistoryEntry](./schemas/cataloghistoryentry)
+- [CatalogHistoryResponse](./schemas/cataloghistoryresponse)
 - [CatalogInfo](./schemas/cataloginfo)
 - [CatalogRegistration](./schemas/catalogregistration)
 - [CatalogRegistrationList](./schemas/catalogregistrationlist)
+- [CatalogVersionSummary](./schemas/catalogversionsummary)
 - [Cell](./schemas/cell)
 - [CellExecutionResult](./schemas/cellexecutionresult)
 - [CellList](./schemas/celllist)
@@ -227,5 +230,6 @@ This section is generated from `internal/api/openapi.bundled.yaml`.
 - [UpdateVolumeRequest](./schemas/updatevolumerequest)
 - [UploadUrlRequest](./schemas/uploadurlrequest)
 - [UploadUrlResponse](./schemas/uploadurlresponse)
+- [VersionedObjectSummary](./schemas/versionedobjectsummary)
 - [ViewDetail](./schemas/viewdetail)
 - [VolumeDetail](./schemas/volumedetail)

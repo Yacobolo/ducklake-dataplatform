@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+	"strings"
 	"time"
 
 	dbstore "duck-demo/internal/db/dbstore"
@@ -95,4 +96,103 @@ func (r *CatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.Metastor
 		`SELECT COUNT(*) FROM ducklake_table WHERE end_snapshot IS NULL`).Scan(&summary.TableCount)
 
 	return summary, nil
+}
+
+// GetCatalogVersionSummary returns additive DuckLake version metadata for the catalog.
+func (r *CatalogRepo) GetCatalogVersionSummary(ctx context.Context) (*domain.CatalogVersionSummary, error) {
+	summary := &domain.CatalogVersionSummary{CatalogName: r.catalogName}
+
+	rows, err := r.metaDB.QueryContext(ctx, `
+		SELECT key, value
+		FROM ducklake_metadata
+		WHERE key IN ('version', 'created_by', 'encrypted', 'data_path')`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close() //nolint:errcheck
+
+	for rows.Next() {
+		var key string
+		var value sql.NullString
+		if err := rows.Scan(&key, &value); err != nil {
+			return nil, err
+		}
+		if !value.Valid {
+			continue
+		}
+		switch key {
+		case "version":
+			summary.Version = value.String
+		case "created_by":
+			summary.CreatedBy = value.String
+		case "encrypted":
+			if parsed, ok := parseDuckLakeBool(value.String); ok {
+				summary.Encrypted = &parsed
+			}
+		case "data_path":
+			summary.DataPath = value.String
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	entitySummaries := []*domain.VersionedObjectSummary{&summary.Schemas, &summary.Tables, &summary.Columns}
+	tableNames := []string{"ducklake_schema", "ducklake_table", "ducklake_column"}
+	for i := range tableNames {
+		entitySummary, err := r.getVersionedObjectSummary(ctx, tableNames[i])
+		if err != nil {
+			return nil, err
+		}
+		*entitySummaries[i] = entitySummary
+		mergeLatestSnapshot(&summary.LatestSnapshotID, entitySummary.LatestSnapshotID)
+	}
+
+	return summary, nil
+}
+
+func (r *CatalogRepo) getVersionedObjectSummary(ctx context.Context, tableName string) (domain.VersionedObjectSummary, error) {
+	query := `
+		SELECT
+			COUNT(*) AS total_count,
+			COALESCE(SUM(CASE WHEN end_snapshot IS NULL THEN 1 ELSE 0 END), 0) AS active_count,
+			COALESCE(SUM(CASE WHEN end_snapshot IS NOT NULL THEN 1 ELSE 0 END), 0) AS historical_count,
+			MAX(COALESCE(end_snapshot, begin_snapshot)) AS latest_snapshot_id
+		FROM ` + tableName
+
+	var result domain.VersionedObjectSummary
+	var latestSnapshotID sql.NullInt64
+	if err := r.metaDB.QueryRowContext(ctx, query).Scan(
+		&result.TotalCount,
+		&result.ActiveCount,
+		&result.HistoricalCount,
+		&latestSnapshotID,
+	); err != nil {
+		return domain.VersionedObjectSummary{}, err
+	}
+	result.HasHistory = result.HistoricalCount > 0
+	if latestSnapshotID.Valid {
+		result.LatestSnapshotID = &latestSnapshotID.Int64
+	}
+	return result, nil
+}
+
+func parseDuckLakeBool(value string) (bool, bool) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "true", "1", "yes":
+		return true, true
+	case "false", "0", "no":
+		return false, true
+	default:
+		return false, false
+	}
+}
+
+func mergeLatestSnapshot(current **int64, candidate *int64) {
+	if candidate == nil {
+		return
+	}
+	if *current == nil || *candidate > **current {
+		*current = candidate
+	}
 }

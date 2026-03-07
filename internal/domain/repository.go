@@ -170,6 +170,8 @@ type IntrospectionRepository interface {
 type CatalogRepository interface {
 	GetCatalogInfo(ctx context.Context) (*CatalogInfo, error)
 	GetMetastoreSummary(ctx context.Context) (*MetastoreSummary, error)
+	GetCatalogVersionSummary(ctx context.Context) (*CatalogVersionSummary, error)
+	ListCatalogHistory(ctx context.Context, filter CatalogHistoryFilter) ([]CatalogHistoryEntry, error)
 
 	CreateSchema(ctx context.Context, name, comment, owner string) (*SchemaDetail, error)
 	GetSchema(ctx context.Context, name string) (*SchemaDetail, error)

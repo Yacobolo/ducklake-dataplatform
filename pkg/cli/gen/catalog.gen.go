@@ -30,6 +30,12 @@ func newCatalogCmd(client *Client) *cobra.Command {
 	}
 	cmd.AddCommand(columnsCmd)
 
+	historyCmd := &cobra.Command{
+		Use:   "history",
+		Short: "Manage history",
+	}
+	cmd.AddCommand(historyCmd)
+
 	schemasCmd := &cobra.Command{
 		Use:   "schemas",
 		Short: "Manage schemas",
@@ -41,6 +47,12 @@ func newCatalogCmd(client *Client) *cobra.Command {
 		Short: "Manage tables",
 	}
 	cmd.AddCommand(tablesCmd)
+
+	versionSummaryCmd := &cobra.Command{
+		Use:   "version-summary",
+		Short: "Manage version-summary",
+	}
+	cmd.AddCommand(versionSummaryCmd)
 
 	viewsCmd := &cobra.Command{
 		Use:   "views",
@@ -1346,6 +1358,100 @@ func newCatalogCmd(client *Client) *cobra.Command {
 		tablesCmd.AddCommand(c)
 	}
 
+	// getCatalogVersionSummary
+	{
+		c := &cobra.Command{
+			Use:   "get",
+			Short: "Get catalog version summary",
+			Long:  "Returns additive DuckLake metastore version metadata for a catalog.",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				outputFlag, _ := cmd.Flags().GetString("output")
+				_ = outputFlag
+				urlPath := "/catalogs/{catalogName}/version-summary"
+				{
+					v, _ := cmd.Flags().GetString("catalog-name")
+					if v != "" {
+						urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
+					}
+				}
+
+				if strings.Contains(urlPath, "{") {
+					return fmt.Errorf("unresolved path parameter in URL: %s", urlPath)
+				}
+				query := url.Values{}
+
+				// Execute request
+				resp, err := client.Do("GET", urlPath, query, nil)
+				if err != nil {
+					return err
+				}
+				if err := CheckError(resp); err != nil {
+					return err
+				}
+				respBody, err := ReadBody(resp)
+				if err != nil {
+					return fmt.Errorf("read response: %w", err)
+				}
+
+				// Handle --quiet
+				quiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
+				if quiet {
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err == nil {
+						// Handle paginated list responses ({"data": [...]})
+						if items, ok := data["data"].([]interface{}); ok {
+							for _, item := range items {
+								if m, ok := item.(map[string]interface{}); ok {
+									for _, key := range []string{"id", "name", "key"} {
+										if v, ok := m[key]; ok {
+											fmt.Fprintln(os.Stdout, v)
+											break
+										}
+									}
+								}
+							}
+							return nil
+						}
+						// Handle single resource responses
+						for _, key := range []string{"id", "name", "key"} {
+							if v, ok := data[key]; ok {
+								fmt.Fprintln(os.Stdout, v)
+								return nil
+							}
+						}
+					}
+					fmt.Fprintln(os.Stdout, string(respBody))
+					return nil
+				}
+
+				switch OutputFormat(outputFlag) {
+				case OutputJSON:
+					var pretty interface{}
+					json.Unmarshal(respBody, &pretty)
+					return PrintJSON(os.Stdout, pretty)
+				default:
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err != nil {
+						return fmt.Errorf("parse response: %w", err)
+					}
+					PrintDetail(os.Stdout, data)
+				}
+				return nil
+			},
+		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
+
+		// Apply overrides
+		if fn, ok := runOverrides["getCatalogVersionSummary"]; ok {
+			c.RunE = fn(client)
+		}
+		if fn, ok := commandOverrides["getCatalogVersionSummary"]; ok {
+			fn(c)
+		}
+		versionSummaryCmd.AddCommand(c)
+	}
+
 	// getView
 	{
 		c := &cobra.Command{
@@ -1650,6 +1756,120 @@ func newCatalogCmd(client *Client) *cobra.Command {
 			fn(c)
 		}
 		columnsCmd.AddCommand(c)
+	}
+
+	// listCatalogHistory
+	{
+		c := &cobra.Command{
+			Use:   "list",
+			Short: "List catalog history",
+			Long:  "Returns recent DuckLake schema, table, and column history entries.",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				outputFlag, _ := cmd.Flags().GetString("output")
+				_ = outputFlag
+				urlPath := "/catalogs/{catalogName}/history"
+				{
+					v, _ := cmd.Flags().GetString("catalog-name")
+					if v != "" {
+						urlPath = strings.Replace(urlPath, "{catalogName}", v, 1)
+					}
+				}
+
+				if strings.Contains(urlPath, "{") {
+					return fmt.Errorf("unresolved path parameter in URL: %s", urlPath)
+				}
+				query := url.Values{}
+				if cmd.Flags().Changed("entity-type") {
+					v, _ := cmd.Flags().GetString("entity-type")
+					query.Set("entity_type", v)
+				}
+				if cmd.Flags().Changed("limit") {
+					v, _ := cmd.Flags().GetInt64("limit")
+					query.Set("limit", fmt.Sprintf("%d", v))
+				}
+				if cmd.Flags().Changed("schema-name") {
+					v, _ := cmd.Flags().GetString("schema-name")
+					query.Set("schema_name", v)
+				}
+				if cmd.Flags().Changed("table-name") {
+					v, _ := cmd.Flags().GetString("table-name")
+					query.Set("table_name", v)
+				}
+
+				// Execute request
+				resp, err := client.Do("GET", urlPath, query, nil)
+				if err != nil {
+					return err
+				}
+				if err := CheckError(resp); err != nil {
+					return err
+				}
+				respBody, err := ReadBody(resp)
+				if err != nil {
+					return fmt.Errorf("read response: %w", err)
+				}
+
+				// Handle --quiet
+				quiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
+				if quiet {
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err == nil {
+						// Handle paginated list responses ({"data": [...]})
+						if items, ok := data["data"].([]interface{}); ok {
+							for _, item := range items {
+								if m, ok := item.(map[string]interface{}); ok {
+									for _, key := range []string{"id", "name", "key"} {
+										if v, ok := m[key]; ok {
+											fmt.Fprintln(os.Stdout, v)
+											break
+										}
+									}
+								}
+							}
+							return nil
+						}
+						// Handle single resource responses
+						for _, key := range []string{"id", "name", "key"} {
+							if v, ok := data[key]; ok {
+								fmt.Fprintln(os.Stdout, v)
+								return nil
+							}
+						}
+					}
+					fmt.Fprintln(os.Stdout, string(respBody))
+					return nil
+				}
+
+				switch OutputFormat(outputFlag) {
+				case OutputJSON:
+					var pretty interface{}
+					json.Unmarshal(respBody, &pretty)
+					return PrintJSON(os.Stdout, pretty)
+				default:
+					var data map[string]interface{}
+					if err := json.Unmarshal(respBody, &data); err != nil {
+						return fmt.Errorf("parse response: %w", err)
+					}
+					PrintDetail(os.Stdout, data)
+				}
+				return nil
+			},
+		}
+		c.Flags().String("catalog-name", "", "Name of the catalog.")
+		_ = c.MarkFlagRequired("catalog-name")
+		c.Flags().String("entity-type", "", "Filter results to a single DuckLake metadata entity type. (one of: schema, table, column)")
+		c.Flags().Int64("limit", 50, "Maximum number of history entries to return.")
+		c.Flags().String("schema-name", "", "Restrict results to a schema.")
+		c.Flags().String("table-name", "", "Restrict results to a table.")
+
+		// Apply overrides
+		if fn, ok := runOverrides["listCatalogHistory"]; ok {
+			c.RunE = fn(client)
+		}
+		if fn, ok := commandOverrides["listCatalogHistory"]; ok {
+			fn(c)
+		}
+		historyCmd.AddCommand(c)
 	}
 
 	// listCatalogs
