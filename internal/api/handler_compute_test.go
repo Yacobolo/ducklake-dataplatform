@@ -135,13 +135,13 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		params   ListComputeEndpointsParams
+		params   GenListComputeEndpointsParams
 		svcFn    func(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error)
 		assertFn func(t *testing.T, resp GenListComputeEndpointsResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
-			params: ListComputeEndpointsParams{},
+			params: GenListComputeEndpointsParams{},
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 				return []domain.ComputeEndpoint{sampleComputeEndpoint()}, 1, nil
 			},
@@ -157,7 +157,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 		},
 		{
 			name:   "empty list returns 200 with empty data",
-			params: ListComputeEndpointsParams{},
+			params: GenListComputeEndpointsParams{},
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 				return []domain.ComputeEndpoint{}, 0, nil
 			},
@@ -172,7 +172,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 		},
 		{
 			name:   "service error propagates",
-			params: ListComputeEndpointsParams{},
+			params: GenListComputeEndpointsParams{},
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 				return nil, 0, assert.AnError
 			},
@@ -486,14 +486,14 @@ func TestHandler_ListComputeAssignments(t *testing.T) {
 	tests := []struct {
 		name         string
 		endpointName string
-		params       ListComputeAssignmentsParams
+		params       GenListComputeAssignmentsParams
 		svcFn        func(ctx context.Context, principal, endpointName string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
 		assertFn     func(t *testing.T, resp GenListComputeAssignmentsResponse, err error)
 	}{
 		{
 			name:         "happy path returns 200",
 			endpointName: "analytics-xl",
-			params:       ListComputeAssignmentsParams{},
+			params:       GenListComputeAssignmentsParams{},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
 				return []domain.ComputeAssignment{sampleComputeAssignment()}, 1, nil
 			},
@@ -510,7 +510,7 @@ func TestHandler_ListComputeAssignments(t *testing.T) {
 		{
 			name:         "not found returns 404",
 			endpointName: "nonexistent",
-			params:       ListComputeAssignmentsParams{},
+			params:       GenListComputeAssignmentsParams{},
 			svcFn: func(_ context.Context, _ string, name string, _ domain.PageRequest) ([]domain.ComputeAssignment, int64, error) {
 				return nil, 0, domain.ErrNotFound("endpoint %s not found", name)
 			},

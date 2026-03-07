@@ -202,13 +202,13 @@ func TestHandler_ListStorageCredentials(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		params   ListStorageCredentialsParams
+		params   GenListStorageCredentialsParams
 		svcFn    func(ctx context.Context, principal string, page domain.PageRequest) ([]domain.StorageCredential, int64, error)
 		assertFn func(t *testing.T, resp GenListStorageCredentialsResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
-			params: ListStorageCredentialsParams{},
+			params: GenListStorageCredentialsParams{},
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 				return []domain.StorageCredential{sampleStorageCredential()}, 1, nil
 			},
@@ -224,7 +224,7 @@ func TestHandler_ListStorageCredentials(t *testing.T) {
 		},
 		{
 			name:   "empty list returns 200 with empty data",
-			params: ListStorageCredentialsParams{},
+			params: GenListStorageCredentialsParams{},
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 				return []domain.StorageCredential{}, 0, nil
 			},
@@ -239,7 +239,7 @@ func TestHandler_ListStorageCredentials(t *testing.T) {
 		},
 		{
 			name:   "service error propagates",
-			params: ListStorageCredentialsParams{},
+			params: GenListStorageCredentialsParams{},
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
 				return nil, 0, assert.AnError
 			},
@@ -559,13 +559,13 @@ func TestHandler_ListExternalLocations(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		params   ListExternalLocationsParams
+		params   GenListExternalLocationsParams
 		svcFn    func(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ExternalLocation, int64, error)
 		assertFn func(t *testing.T, resp GenListExternalLocationsResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
-			params: ListExternalLocationsParams{},
+			params: GenListExternalLocationsParams{},
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
 				return []domain.ExternalLocation{sampleExternalLocation()}, 1, nil
 			},
@@ -581,7 +581,7 @@ func TestHandler_ListExternalLocations(t *testing.T) {
 		},
 		{
 			name:   "service error propagates",
-			params: ListExternalLocationsParams{},
+			params: GenListExternalLocationsParams{},
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
 				return nil, 0, assert.AnError
 			},
@@ -946,7 +946,7 @@ func TestHandler_ListVolumes(t *testing.T) {
 			resp, err := handler.ListVolumes(storageTestCtx(), GenListVolumesRequest{
 				CatalogName: CatalogName("test-catalog"),
 				SchemaName:  "test-schema",
-				Params:      ListVolumesParams{},
+				Params:      GenListVolumesParams{},
 			})
 			tt.assertFn(t, resp, err)
 		})

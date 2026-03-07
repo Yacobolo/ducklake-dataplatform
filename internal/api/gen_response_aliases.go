@@ -13,27 +13,3 @@ type GenInternalErrorJSONResponse = InternalErrorJSONResponse
 type GenInternalErrorResponseHeaders = InternalErrorResponseHeaders
 type GenNotFoundJSONResponse = NotFoundJSONResponse
 type GenNotFoundResponseHeaders = NotFoundResponseHeaders
-
-// Compatibility aliases for IR status drift until server.gen.go is aligned.
-type BindColumnMask201JSONResponse = BindColumnMask204Response
-type BindRowFilter201JSONResponse = BindRowFilter204Response
-type CancelModelRun201JSONResponse = CancelModelRun200JSONResponse
-type CancelPipelineRun201JSONResponse = CancelPipelineRun200JSONResponse
-type CancelQuery201JSONResponse = CancelQuery200JSONResponse
-type CleanupExpiredAPIKeys201JSONResponse = CleanupExpiredAPIKeys200JSONResponse
-type CommitTableIngestion201JSONResponse = CommitTableIngestion200JSONResponse
-type CreateManifest201JSONResponse = CreateManifest200JSONResponse
-type CreateUploadUrl201JSONResponse = CreateUploadUrl200JSONResponse
-type ExecuteCell201JSONResponse = ExecuteCell200JSONResponse
-type ExecuteQuery201JSONResponse = ExecuteQuery200JSONResponse
-type ExplainMetricQuery201JSONResponse = ExplainMetricQuery200JSONResponse
-type LoadTableExternalFiles201JSONResponse = LoadTableExternalFiles200JSONResponse
-type ProfileTable201JSONResponse = ProfileTable200JSONResponse
-type PurgeLineage201JSONResponse = PurgeLineage200JSONResponse
-type ReorderCells201JSONResponse = ReorderCells200JSONResponse
-type RunAllCells201JSONResponse = RunAllCells200JSONResponse
-type RunAllCellsAsync201JSONResponse = RunAllCellsAsync202JSONResponse
-type RunMetricQuery201JSONResponse = RunMetricQuery200JSONResponse
-type SetDefaultCatalog201JSONResponse = SetDefaultCatalog200JSONResponse
-type SubmitQuery201JSONResponse = SubmitQuery202JSONResponse
-type SyncGitRepo201JSONResponse = SyncGitRepo200JSONResponse

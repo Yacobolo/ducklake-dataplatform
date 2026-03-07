@@ -34,13 +34,13 @@ func isNilService(v interface{}) bool {
 }
 
 // pageFromParams extracts a PageRequest from optional max_results/page_token params.
-func pageFromParams(maxResults *MaxResults, pageToken *PageToken) domain.PageRequest {
+func pageFromParams[MaxResultsType ~int32, PageTokenType ~string](maxResults *MaxResultsType, pageToken *PageTokenType) domain.PageRequest {
 	p := domain.PageRequest{}
 	if maxResults != nil {
 		p.MaxResults = int(*maxResults)
 	}
 	if pageToken != nil {
-		p.PageToken = *pageToken
+		p.PageToken = string(*pageToken)
 	}
 	return p
 }

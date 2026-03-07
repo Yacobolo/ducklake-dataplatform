@@ -236,13 +236,13 @@ func TestHandler_ListAuditLogs(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		params   ListAuditLogsParams
+		params   GenListAuditLogsParams
 		svcFn    func(ctx context.Context, filter domain.AuditFilter) ([]domain.AuditEntry, int64, error)
 		assertFn func(t *testing.T, resp GenListAuditLogsResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
-			params: ListAuditLogsParams{},
+			params: GenListAuditLogsParams{},
 			svcFn: func(_ context.Context, _ domain.AuditFilter) ([]domain.AuditEntry, int64, error) {
 				return []domain.AuditEntry{sampleAuditEntry()}, 1, nil
 			},
@@ -258,7 +258,7 @@ func TestHandler_ListAuditLogs(t *testing.T) {
 		},
 		{
 			name:   "service error propagates",
-			params: ListAuditLogsParams{},
+			params: GenListAuditLogsParams{},
 			svcFn: func(_ context.Context, _ domain.AuditFilter) ([]domain.AuditEntry, int64, error) {
 				return nil, 0, assert.AnError
 			},
@@ -285,13 +285,13 @@ func TestHandler_ListQueryHistory(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		params   ListQueryHistoryParams
+		params   GenListQueryHistoryParams
 		svcFn    func(ctx context.Context, filter domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error)
 		assertFn func(t *testing.T, resp GenListQueryHistoryResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
-			params: ListQueryHistoryParams{},
+			params: GenListQueryHistoryParams{},
 			svcFn: func(_ context.Context, _ domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error) {
 				return []domain.QueryHistoryEntry{sampleQueryHistoryEntry()}, 1, nil
 			},
@@ -307,7 +307,7 @@ func TestHandler_ListQueryHistory(t *testing.T) {
 		},
 		{
 			name:   "service error propagates",
-			params: ListQueryHistoryParams{},
+			params: GenListQueryHistoryParams{},
 			svcFn: func(_ context.Context, _ domain.QueryHistoryFilter) ([]domain.QueryHistoryEntry, int64, error) {
 				return nil, 0, assert.AnError
 			},
@@ -334,13 +334,13 @@ func TestHandler_SearchCatalog(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		params   SearchCatalogParams
+		params   GenSearchCatalogParams
 		svcFn    func(ctx context.Context, query string, objectType *string, catalogName *string, page domain.PageRequest) ([]domain.SearchResult, int64, error)
 		assertFn func(t *testing.T, resp GenSearchCatalogResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
-			params: SearchCatalogParams{Query: "my_table"},
+			params: GenSearchCatalogParams{Query: "my_table"},
 			svcFn: func(_ context.Context, _ string, _ *string, _ *string, _ domain.PageRequest) ([]domain.SearchResult, int64, error) {
 				return []domain.SearchResult{sampleSearchResult()}, 1, nil
 			},
@@ -356,7 +356,7 @@ func TestHandler_SearchCatalog(t *testing.T) {
 		},
 		{
 			name:   "service error returns 500",
-			params: SearchCatalogParams{Query: "fail"},
+			params: GenSearchCatalogParams{Query: "fail"},
 			svcFn: func(_ context.Context, _ string, _ *string, _ *string, _ domain.PageRequest) ([]domain.SearchResult, int64, error) {
 				return nil, 0, assert.AnError
 			},
@@ -428,7 +428,7 @@ func TestHandler_GetTableLineage(t *testing.T) {
 			resp, err := handler.GetTableLineage(govTestCtx(), GenGetTableLineageRequest{
 				SchemaName: "test-schema",
 				TableName:  "my_table",
-				Params:     GetTableLineageParams{},
+				Params:     GenGetTableLineageParams{},
 			})
 			tt.assertFn(t, resp, err)
 		})
@@ -478,7 +478,7 @@ func TestHandler_GetUpstreamLineage(t *testing.T) {
 			resp, err := handler.GetUpstreamLineage(govTestCtx(), GenGetUpstreamLineageRequest{
 				SchemaName: "test-schema",
 				TableName:  "my_table",
-				Params:     GetUpstreamLineageParams{},
+				Params:     GenGetUpstreamLineageParams{},
 			})
 			tt.assertFn(t, resp, err)
 		})
@@ -527,7 +527,7 @@ func TestHandler_GetDownstreamLineage(t *testing.T) {
 			resp, err := handler.GetDownstreamLineage(govTestCtx(), GenGetDownstreamLineageRequest{
 				SchemaName: "test-schema",
 				TableName:  "my_table",
-				Params:     GetDownstreamLineageParams{},
+				Params:     GenGetDownstreamLineageParams{},
 			})
 			tt.assertFn(t, resp, err)
 		})
@@ -660,13 +660,13 @@ func TestHandler_ListTags(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		params   ListTagsParams
+		params   GenListTagsParams
 		svcFn    func(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error)
 		assertFn func(t *testing.T, resp GenListTagsResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
-			params: ListTagsParams{},
+			params: GenListTagsParams{},
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Tag, int64, error) {
 				return []domain.Tag{sampleTag()}, 1, nil
 			},
@@ -682,7 +682,7 @@ func TestHandler_ListTags(t *testing.T) {
 		},
 		{
 			name:   "service error propagates",
-			params: ListTagsParams{},
+			params: GenListTagsParams{},
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Tag, int64, error) {
 				return nil, 0, assert.AnError
 			},

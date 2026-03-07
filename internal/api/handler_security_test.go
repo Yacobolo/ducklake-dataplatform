@@ -410,7 +410,7 @@ func TestHandler_ListGroupMembers(t *testing.T) {
 			handler := &APIHandler{groups: svc}
 			resp, err := handler.ListGroupMembers(secTestCtx(), GenListGroupMembersRequest{
 				GroupId: "g-1",
-				Params:  ListGroupMembersParams{},
+				Params:  GenListGroupMembersParams{},
 			})
 			tt.assertFn(t, resp, err)
 		})
@@ -512,7 +512,7 @@ func TestHandler_DeleteGroupMember(t *testing.T) {
 			handler := &APIHandler{groups: svc}
 			resp, err := handler.DeleteGroupMember(secTestCtx(), GenDeleteGroupMemberRequest{
 				GroupId: "g-1",
-				Params: DeleteGroupMemberParams{
+				Params: GenDeleteGroupMemberParams{
 					MemberId:   "p-1",
 					MemberType: "user",
 				},
@@ -526,13 +526,13 @@ func TestHandler_ListGrants(t *testing.T) {
 	t.Parallel()
 
 	principalID := "p-1"
-	pt := ListGrantsParamsPrincipalType("user")
+	pt := "user"
 	securableType := "table"
 	securableID := "t-1"
 
 	tests := []struct {
 		name               string
-		params             ListGrantsParams
+		params             GenListGrantsParams
 		listForPrincipalFn func(ctx context.Context, principalID string, principalType string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 		listForSecurableFn func(ctx context.Context, securableType string, securableID string, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
 		listAllFn          func(ctx context.Context, page domain.PageRequest) ([]domain.PrivilegeGrant, int64, error)
@@ -540,7 +540,7 @@ func TestHandler_ListGrants(t *testing.T) {
 	}{
 		{
 			name:   "with principal filter returns 200",
-			params: ListGrantsParams{PrincipalId: &principalID, PrincipalType: &pt},
+			params: GenListGrantsParams{PrincipalId: &principalID, PrincipalType: &pt},
 			listForPrincipalFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 				return []domain.PrivilegeGrant{secSampleGrant()}, 1, nil
 			},
@@ -556,7 +556,7 @@ func TestHandler_ListGrants(t *testing.T) {
 		},
 		{
 			name:   "with securable filter returns 200",
-			params: ListGrantsParams{SecurableType: &securableType, SecurableId: &securableID},
+			params: GenListGrantsParams{SecurableType: &securableType, SecurableId: &securableID},
 			listForSecurableFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 				return []domain.PrivilegeGrant{secSampleGrant()}, 1, nil
 			},
@@ -571,7 +571,7 @@ func TestHandler_ListGrants(t *testing.T) {
 		},
 		{
 			name:   "missing params returns 200",
-			params: ListGrantsParams{},
+			params: GenListGrantsParams{},
 			listAllFn: func(_ context.Context, _ domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 				return []domain.PrivilegeGrant{secSampleGrant()}, 1, nil
 			},
@@ -586,7 +586,7 @@ func TestHandler_ListGrants(t *testing.T) {
 		},
 		{
 			name:   "access denied returns 403",
-			params: ListGrantsParams{PrincipalId: &principalID, PrincipalType: &pt},
+			params: GenListGrantsParams{PrincipalId: &principalID, PrincipalType: &pt},
 			listForPrincipalFn: func(_ context.Context, _ string, _ string, _ domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
 				return nil, 0, domain.ErrAccessDenied("not allowed")
 			},
@@ -717,7 +717,7 @@ func TestHandler_ListColumnMasks(t *testing.T) {
 			handler := &APIHandler{columnMasks: svc}
 			resp, err := handler.ListColumnMasks(secTestCtx(), GenListColumnMasksRequest{
 				TableId: "t-1",
-				Params:  ListColumnMasksParams{},
+				Params:  GenListColumnMasksParams{},
 			})
 			tt.assertFn(t, resp, err)
 		})
@@ -960,7 +960,7 @@ func TestHandler_UnbindColumnMask(t *testing.T) {
 			handler := &APIHandler{columnMasks: svc}
 			resp, err := handler.UnbindColumnMask(secTestCtx(), GenUnbindColumnMaskRequest{
 				ColumnMaskId: "m-1",
-				Params: UnbindColumnMaskParams{
+				Params: GenUnbindColumnMaskParams{
 					PrincipalId:   "p-1",
 					PrincipalType: "user",
 				},

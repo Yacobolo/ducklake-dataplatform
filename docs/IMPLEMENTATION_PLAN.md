@@ -10,7 +10,7 @@ Before diving into each feature, these are the patterns every implementation mus
 - **Mappers**: DB↔Domain in `internal/db/mapper/domain_dbstore.go`, Domain→API in `internal/api/handler.go` (inline helpers)
 - **Repository**: `internal/db/repository/*.go`, constructor `NewXxxRepo(db *sql.DB)`
 - **Service**: `internal/service/*.go`, constructor `NewXxxService(deps...)`
-- **API Handler**: `internal/api/handler.go` — `APIHandler` struct with service fields, implements `StrictServerInterface`
+- **API Handler**: `internal/api/handler.go` — `APIHandler` struct with service fields, implements `GenStrictServerInterface` via APIGen-generated transport glue
 - **OpenAPI/IR generation**: `api/spec/main.tsp` → `task generate:api` → `api/gen/openapi.yaml` + `api/gen/json-ir.json` + `internal/api/openapi.generated.yaml` + `internal/api/server.apigen.gen.go` + `pkg/cli/gen/apigen_registry.gen.go`
 - **Pagination**: `domain.PageRequest` + `domain.NextPageToken()`, API params `max_results`/`page_token`
 - **Auth**: `middleware.PrincipalFromContext(ctx)` returns the principal name

@@ -155,7 +155,7 @@ Run `examples/` to see declarative "data platform as code" configurations, inclu
 cmd/server/             -- HTTP server entry point
 cmd/compute-agent/      -- Remote compute agent binary
 cmd/cli/                -- CLI client
-internal/api/           -- HTTP handlers (generated StrictServerInterface)
+internal/api/           -- HTTP handlers and APIGen-generated transport glue
 internal/service/       -- Business logic (depends on domain interfaces only)
 internal/domain/        -- Types, interfaces, errors (zero external deps)
 internal/db/repository/ -- Implements domain repository interfaces

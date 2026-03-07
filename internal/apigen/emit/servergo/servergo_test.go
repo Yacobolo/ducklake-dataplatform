@@ -31,7 +31,7 @@ func TestEmit(t *testing.T) {
 	require.Contains(t, content, "router.MethodFunc(\"GET\", \"/healthz\"")
 	require.Contains(t, content, "func RegisterAPIGenRoutes(router chi.Router, server GenServerInterface)")
 	require.Contains(t, content, "func DispatchAPIGenOperation(operationID string, dispatcher GenOperationDispatcher")
-	require.Contains(t, content, "\"github.com/oapi-codegen/runtime\"")
+	require.NotContains(t, content, "\"github.com/oapi-codegen/runtime\"")
 	require.Contains(t, content, "type genStrictBridge struct")
 	require.Contains(t, content, "type GenStrictServerInterface interface")
 	require.Contains(t, content, "func DispatchAPIGenStrictOperation(operationID string, handler GenStrictServerInterface")
@@ -133,10 +133,12 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.NoError(t, err)
 	content := string(b)
 
-	require.Contains(t, content, "ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId string, params ListGroupMembersParams)")
-	require.Contains(t, content, "runtime.BindStyledParameterWithOptions(\"simple\", \"groupId\", chi.URLParam(r, \"groupId\")")
-	require.Contains(t, content, "runtime.BindQueryParameter(\"form\", true, false, \"max_results\", r.URL.Query(), &params.MaxResults)")
+	require.Contains(t, content, "ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId string, params GenListGroupMembersParams)")
+	require.Contains(t, content, "bindPathParameter(\"groupId\", chi.URLParam(r, \"groupId\"), true, &groupId)")
+	require.Contains(t, content, "bindQueryParameter(r.URL.Query(), \"max_results\", false, &params.MaxResults)")
 	require.Contains(t, content, "dispatcher.ListGroupMembers(w, r, groupId, params)")
+	require.Contains(t, content, "type GenListGroupMembersParams struct {")
+	require.Contains(t, content, "\tMaxResults *int32")
 	require.Contains(t, content, "var request GenListGroupMembersRequest")
 	require.Contains(t, content, "\"fmt\"")
 	require.Contains(t, content, "\"reflect\"")
@@ -144,7 +146,7 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "if err := response.VisitListGroupMembersResponse(w); err != nil")
 	require.Contains(t, content, "type GenListGroupMembersRequest struct {")
 	require.Contains(t, content, "\tGroupId string")
-	require.Contains(t, content, "\tParams ListGroupMembersParams")
+	require.Contains(t, content, "\tParams GenListGroupMembersParams")
 	require.Contains(t, content, "type GenListGroupMembersResponse interface {")
 	require.Contains(t, content, "\tVisitListGroupMembersResponse(w http.ResponseWriter) error")
 	require.Contains(t, content, "type GenListGroupMembers200Response ListGroupMembers200Response")
@@ -155,6 +157,106 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "return nil")
 	require.NotContains(t, content, "type GenListGroupMembers200Response = ListGroupMembers200Response")
 	require.Contains(t, content, "ListGroupMembers(ctx context.Context, request GenListGroupMembersRequest) (GenListGroupMembersResponse, error)")
+}
+
+func TestEmit_GeneratesNativeBodyAliasesWhenIRHasConcreteSchemaRefs(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Schemas: map[string]ir.Schema{
+			"CreateAPIKeyRequest":   {Type: "object"},
+			"CreatePipelineRequest": {Type: "object"},
+			"MetricQueryRequest":    {Type: "object"},
+		},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "post",
+				Path:        "/api-keys",
+				OperationID: "createAPIKey",
+				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "CreateAPIKeyRequest"}},
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created"}},
+			},
+			{
+				Method:      "post",
+				Path:        "/pipelines",
+				OperationID: "createPipeline",
+				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "GenericRequest"}},
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created"}},
+			},
+			{
+				Method:      "post",
+				Path:        "/metric-queries:run",
+				OperationID: "runMetricQuery",
+				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "GenericRequest"}},
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created"}},
+			},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenCreateAPIKeyJSONBody = CreateAPIKeyRequest")
+	require.Contains(t, content, "type GenCreatePipelineJSONBody = CreatePipelineRequest")
+	require.Contains(t, content, "type GenRunMetricQueryJSONBody = MetricQueryRequest")
+}
+
+func TestEmit_FallsBackToLegacyBodyAliasWhenGenericRequestHasNoConcreteSchema(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Schemas: map[string]ir.Schema{
+			"GenericRequest": {Type: "object"},
+		},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "post",
+				Path:        "/widgets",
+				OperationID: "createWidget",
+				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "GenericRequest"}},
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created"}},
+			},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenCreateWidgetJSONBody = CreateWidgetJSONRequestBody")
+}
+
+func TestEmit_ImportsTimeForDateTimeParameters(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "get",
+				Path:        "/audit-logs",
+				OperationID: "listAuditLogs",
+				Parameters: []ir.Parameter{
+					{Name: "from", In: "query", Schema: ir.SchemaRef{Type: "string", Format: "date-time"}},
+				},
+				Responses: []ir.Response{{StatusCode: 200, Description: "ok"}},
+			},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "\"time\"")
+	require.Contains(t, content, "type GenListAuditLogsParams struct {")
+	require.Contains(t, content, "\tFrom *time.Time")
 }
 
 func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
@@ -564,7 +666,7 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	require.Contains(t, content, "type GenExecuteQueryRequest struct {")
 	require.Contains(t, content, "type GenExecuteQueryResponse interface {")
 	require.Contains(t, content, "\tVisitExecuteQueryResponse(w http.ResponseWriter) error")
-	require.Contains(t, content, "type GenExecuteQuery201JSONResponse ExecuteQuery201JSONResponse")
+	require.Contains(t, content, "type GenExecuteQuery201JSONResponse ExecuteQuery200JSONResponse")
 	require.Contains(t, content, "func (response GenExecuteQuery201JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {")
 	require.Contains(t, content, "rv := reflect.ValueOf(response)")
 	require.Contains(t, content, "headers := rv.FieldByName(\"Headers\")")
@@ -576,10 +678,10 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	require.Contains(t, content, "return nil")
 	require.NotContains(t, content, "type GenExecuteQuery201JSONResponse = ExecuteQuery201JSONResponse")
 
-	require.Contains(t, content, "type GenSubmitQuery201JSONResponse SubmitQuery201JSONResponse")
+	require.Contains(t, content, "type GenSubmitQuery201JSONResponse SubmitQuery202JSONResponse")
 	require.Contains(t, content, "type GenGetQuery200JSONResponse GetQuery200JSONResponse")
 	require.Contains(t, content, "type GenGetQueryResults200JSONResponse GetQueryResults200JSONResponse")
-	require.Contains(t, content, "type GenCancelQuery201JSONResponse CancelQuery201JSONResponse")
+	require.Contains(t, content, "type GenCancelQuery201JSONResponse CancelQuery200JSONResponse")
 	require.Contains(t, content, "type GenDeleteQuery204Response DeleteQuery204Response")
 	require.NotContains(t, content, "type GenDeleteQuery204Response = DeleteQuery204Response")
 
@@ -832,17 +934,44 @@ func TestEmit_GeneratesNativeConcreteResponsesForNotebookDomainOps(t *testing.T)
 	require.Contains(t, content, "return nil")
 	require.NotContains(t, content, "type GenDeleteNotebook204Response = DeleteNotebook204Response")
 
-	require.Contains(t, content, "type GenExecuteCell201JSONResponse ExecuteCell201JSONResponse")
+	require.Contains(t, content, "type GenExecuteCell201JSONResponse ExecuteCell200JSONResponse")
 	require.Contains(t, content, "func (response GenExecuteCell201JSONResponse) VisitExecuteCellResponse(w http.ResponseWriter) error {")
 	require.Contains(t, content, "type GenRunAllCellsAsync202JSONResponse RunAllCellsAsync202JSONResponse")
 	require.Contains(t, content, "w.WriteHeader(202)")
 
 	require.Contains(t, content, "type GenListGitRepos200JSONResponse ListGitRepos200JSONResponse")
-	require.Contains(t, content, "type GenSyncGitRepo201JSONResponse SyncGitRepo201JSONResponse")
+	require.Contains(t, content, "type GenSyncGitRepo201JSONResponse SyncGitRepo200JSONResponse")
 	require.Contains(t, content, "func (response GenSyncGitRepo201JSONResponse) VisitSyncGitRepoResponse(w http.ResponseWriter) error {")
 
 	require.Contains(t, content, "type GenListCatalogs200JSONResponse ListCatalogs200JSONResponse")
 	require.NotContains(t, content, "type GenListCatalogs200JSONResponse = ListCatalogs200JSONResponse")
+}
+
+func TestEmit_UsesLegacyConcreteResponseTypesForKnownStatusDrift(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{Method: "post", Path: "/queries", OperationID: "submitQuery", Responses: []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/SubmitQueryResponse"}}}},
+			{Method: "post", Path: "/queries/{queryId}/cancel", OperationID: "cancelQuery", Responses: []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/CancelQueryResponse"}}}},
+			{Method: "post", Path: "/security/column-masks/{maskName}/bindings", OperationID: "bindColumnMask", Responses: []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Type: "string"}}}},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenSubmitQuery201JSONResponse SubmitQuery202JSONResponse")
+	require.Contains(t, content, "type GenCancelQuery201JSONResponse CancelQuery200JSONResponse")
+	require.Contains(t, content, "type GenBindColumnMask201JSONResponse BindColumnMask204Response")
+	require.Contains(t, content, "if !body.IsValid() {")
+	require.Contains(t, content, "w.WriteHeader(201)")
+	require.NotContains(t, content, "type GenSubmitQuery201JSONResponse SubmitQuery201JSONResponse")
+	require.NotContains(t, content, "type GenCancelQuery201JSONResponse CancelQuery201JSONResponse")
+	require.NotContains(t, content, "type GenBindColumnMask201JSONResponse BindColumnMask201JSONResponse")
 }
 
 func TestEmit_GeneratesNativeConcreteResponsesForRemainingDomains(t *testing.T) {
@@ -1000,13 +1129,48 @@ func TestEmit_GeneratesNativeConcreteResponsesForSelectorGapOps(t *testing.T) {
 	require.Contains(t, content, "type GenDeleteGroupMember204Response DeleteGroupMember204Response")
 	require.NotContains(t, content, "type GenDeleteGroupMember204Response = DeleteGroupMember204Response")
 
-	require.Contains(t, content, "type GenCreateManifest201JSONResponse CreateManifest201JSONResponse")
+	require.Contains(t, content, "type GenCreateManifest201JSONResponse CreateManifest200JSONResponse")
 	require.NotContains(t, content, "type GenCreateManifest201JSONResponse = CreateManifest201JSONResponse")
 
 	require.Contains(t, content, "type GenUpdatePrincipalAdmin200JSONResponse UpdatePrincipalAdmin200JSONResponse")
 	require.Contains(t, content, "func (response GenUpdatePrincipalAdmin200JSONResponse) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {")
 	require.Contains(t, content, "return json.NewEncoder(w).Encode(")
 	require.NotContains(t, content, "type GenUpdatePrincipalAdmin200JSONResponse = UpdatePrincipalAdmin200JSONResponse")
+}
+
+func TestEmit_WritesNativeHeadersWithoutLegacyVisitFallback(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "get",
+				Path:        "/api-keys",
+				OperationID: "listAPIKeys",
+				Responses:   []ir.Response{{StatusCode: 429, Description: "rate limited", Schema: &ir.SchemaRef{Ref: "#/schemas/Error"}}},
+			},
+			{
+				Method:      "post",
+				Path:        "/query",
+				OperationID: "executeQuery",
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/QueryResult"}}},
+			},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenListAPIKeys429JSONResponse ListAPIKeys429JSONResponse")
+	require.Contains(t, content, "if v := headers.FieldByName(\"RetryAfter\"); v.IsValid() {")
+	require.Contains(t, content, "w.Header().Set(\"Retry-After\", fmt.Sprint(v.Interface()))")
+	require.Contains(t, content, "type GenExecuteQuery201JSONResponse ExecuteQuery200JSONResponse")
+	require.Contains(t, content, "w.WriteHeader(201)")
+	require.NotContains(t, content, "return ExecuteQuery201JSONResponse(response).VisitExecuteQueryResponse(w)")
+	require.NotContains(t, content, "return ListAPIKeys429JSONResponse(response).VisitListAPIKeysResponse(w)")
 }
 
 func TestPathParamTypeName(t *testing.T) {

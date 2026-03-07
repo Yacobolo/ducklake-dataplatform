@@ -201,8 +201,8 @@ func TestHandler_ListModelRuns_InvalidStatusReturns400(t *testing.T) {
 		},
 	}
 
-	invalid := ListModelRunsParamsStatus("INVALID")
-	resp, err := h.ListModelRuns(context.Background(), GenListModelRunsRequest{Params: ListModelRunsParams{Status: &invalid}})
+	invalid := "INVALID"
+	resp, err := h.ListModelRuns(context.Background(), GenListModelRunsRequest{Params: GenListModelRunsParams{Status: &invalid}})
 	require.NoError(t, err)
 	assert.False(t, called)
 
@@ -327,7 +327,7 @@ func TestHandler_CheckSourceFreshness_DefaultsAndMapping(t *testing.T) {
 	resp, err := h.CheckSourceFreshness(ctx, GenCheckSourceFreshnessRequest{
 		SourceSchema: "raw",
 		SourceTable:  "orders",
-		Params:       CheckSourceFreshnessParams{},
+		Params:       GenCheckSourceFreshnessParams{},
 	})
 	require.NoError(t, err)
 	require.True(t, called)

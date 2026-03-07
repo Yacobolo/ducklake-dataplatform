@@ -211,7 +211,7 @@ func TestHandler_ListSemanticModels_PassesFiltersAndPagination(t *testing.T) {
 		},
 	}
 
-	resp, err := h.ListSemanticModels(context.Background(), GenListSemanticModelsRequest{Params: ListSemanticModelsParams{ProjectName: &projectName, MaxResults: &maxResults}})
+	resp, err := h.ListSemanticModels(context.Background(), GenListSemanticModelsRequest{Params: GenListSemanticModelsParams{ProjectName: &projectName, MaxResults: &maxResults}})
 	require.NoError(t, err)
 
 	okResp, ok := resp.(GenListSemanticModels200JSONResponse)

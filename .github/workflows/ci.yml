@@ -28,7 +28,7 @@ permissions:
 jobs:
   # ── Generate ────────────────────────────────────────────────
   # Shared job: produces generated code artifact once so downstream
-  # jobs skip Node + oapi-codegen + sqlc entirely.
+  # jobs skip TypeSpec/APIGen setup and sqlc entirely.
   generate:
     name: Generate Code
     runs-on: ubuntu-latest

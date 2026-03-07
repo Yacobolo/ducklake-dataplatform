@@ -444,13 +444,13 @@ func TestHandler_ListPipelines(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		params   ListPipelinesParams
+		params   GenListPipelinesParams
 		svcFn    func(ctx context.Context, page domain.PageRequest) ([]domain.Pipeline, int64, error)
 		assertFn func(t *testing.T, resp GenListPipelinesResponse, err error)
 	}{
 		{
 			name:   "happy path returns 200 with results",
-			params: ListPipelinesParams{},
+			params: GenListPipelinesParams{},
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Pipeline, int64, error) {
 				return []domain.Pipeline{samplePipeline()}, 1, nil
 			},
@@ -467,7 +467,7 @@ func TestHandler_ListPipelines(t *testing.T) {
 		},
 		{
 			name:   "empty list returns 200 with empty data",
-			params: ListPipelinesParams{},
+			params: GenListPipelinesParams{},
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Pipeline, int64, error) {
 				return []domain.Pipeline{}, 0, nil
 			},
@@ -789,14 +789,14 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 	tests := []struct {
 		name     string
 		pipeName string
-		params   ListPipelineRunsParams
+		params   GenListPipelineRunsParams
 		svcFn    func(ctx context.Context, pipelineName string, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error)
 		assertFn func(t *testing.T, resp GenListPipelineRunsResponse, err error)
 	}{
 		{
 			name:     "happy path returns 200",
 			pipeName: "etl-daily",
-			params:   ListPipelineRunsParams{},
+			params:   GenListPipelineRunsParams{},
 			svcFn: func(_ context.Context, _ string, _ domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error) {
 				return []domain.PipelineRun{sampleRun()}, 1, nil
 			},
@@ -813,7 +813,7 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 		{
 			name:     "not found returns 404",
 			pipeName: "nonexistent",
-			params:   ListPipelineRunsParams{},
+			params:   GenListPipelineRunsParams{},
 			svcFn: func(_ context.Context, name string, _ domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error) {
 				return nil, 0, domain.ErrNotFound("pipeline %s not found", name)
 			},
@@ -828,9 +828,9 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 		{
 			name:     "status filter is forwarded",
 			pipeName: "etl-daily",
-			params: func() ListPipelineRunsParams {
-				s := ListPipelineRunsParamsStatus("RUNNING")
-				return ListPipelineRunsParams{Status: &s}
+			params: func() GenListPipelineRunsParams {
+				s := "RUNNING"
+				return GenListPipelineRunsParams{Status: &s}
 			}(),
 			svcFn: func(_ context.Context, _ string, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error) {
 				require.NotNil(t, filter.Status)

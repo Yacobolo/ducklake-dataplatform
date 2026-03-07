@@ -31,7 +31,7 @@ Single package/test: `go test -race -run TestName ./internal/pkg/...`
 ```
 cmd/server/          → HTTP server entry point
 cmd/cli/             → CLI binary (duck)
-internal/api/        → HTTP handlers (generated StrictServerInterface)
+internal/api/        → HTTP handlers and APIGen-generated transport code
 internal/service/    → business logic
 internal/domain/     → types, interfaces, errors (zero deps)
 internal/db/         → repository implementations, sqlc, migrations, mappers

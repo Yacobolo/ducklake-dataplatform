@@ -20,6 +20,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 	}
 
 	var b strings.Builder
+	usesTime := docUsesTimeTypes(doc)
 	hasStrictOperations := false
 	for _, endpoint := range doc.Endpoints {
 		if endpoint.OperationID != "getHealth" {
@@ -36,8 +37,10 @@ func Emit(doc ir.Document) ([]byte, error) {
 	}
 	b.WriteString("\t\"encoding/json\"\n")
 	b.WriteString("\t\"net/http\"\n\n")
+	if usesTime {
+		b.WriteString("\t\"time\"\n\n")
+	}
 	b.WriteString("\t\"github.com/go-chi/chi/v5\"\n")
-	b.WriteString("\t\"github.com/oapi-codegen/runtime\"\n")
 	b.WriteString(")\n\n")
 	b.WriteString("const apigenOpenAPISpecJSON = `")
 	b.WriteString(specJSON)
@@ -77,7 +80,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 		}
 		queryParams := endpointQueryParams(endpoint)
 		if len(queryParams) > 0 {
-			signature += ", params " + name + "Params"
+			signature += ", params Gen" + name + "Params"
 		}
 		signature += ")\n"
 		b.WriteString(signature)
@@ -111,7 +114,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 				required = "true"
 			}
 			b.WriteString("\t\tvar " + varName + " " + typeName + "\n")
-			b.WriteString("\t\terr = runtime.BindStyledParameterWithOptions(\"simple\", \"" + p.Name + "\", chi.URLParam(r, \"" + p.Name + "\"), &" + varName + ", runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: " + required + "})\n")
+			b.WriteString("\t\terr = bindPathParameter(\"" + p.Name + "\", chi.URLParam(r, \"" + p.Name + "\"), " + required + ", &" + varName + ")\n")
 			b.WriteString("\t\tif err != nil {\n")
 			b.WriteString("\t\t\thttp.Error(w, err.Error(), http.StatusBadRequest)\n")
 			b.WriteString("\t\t\treturn true\n")
@@ -119,14 +122,14 @@ func Emit(doc ir.Document) ([]byte, error) {
 		}
 
 		if len(queryParams) > 0 {
-			b.WriteString("\t\tvar params " + name + "Params\n")
+			b.WriteString("\t\tvar params Gen" + name + "Params\n")
 			for _, p := range queryParams {
 				fieldName := exportedName(p.Name)
 				required := "false"
 				if p.Required {
 					required = "true"
 				}
-				b.WriteString("\t\terr = runtime.BindQueryParameter(\"form\", true, " + required + ", \"" + p.Name + "\", r.URL.Query(), &params." + fieldName + ")\n")
+				b.WriteString("\t\terr = bindQueryParameter(r.URL.Query(), \"" + p.Name + "\", " + required + ", &params." + fieldName + ")\n")
 				b.WriteString("\t\tif err != nil {\n")
 				b.WriteString("\t\t\thttp.Error(w, err.Error(), http.StatusBadRequest)\n")
 				b.WriteString("\t\t\treturn true\n")
@@ -157,13 +160,25 @@ func Emit(doc ir.Document) ([]byte, error) {
 		name := exportedName(endpoint.OperationID)
 		pathParams := endpointPathParams(endpoint)
 		queryParams := endpointQueryParams(endpoint)
+		if len(queryParams) > 0 {
+			b.WriteString("// Gen" + name + "Params represents the APIGen strict query parameter contract for " + name + ".\n")
+			b.WriteString("type Gen" + name + "Params struct {\n")
+			for _, p := range queryParams {
+				fieldType := parameterTypeName(endpoint, p)
+				if !p.Required {
+					fieldType = "*" + fieldType
+				}
+				b.WriteString("\t" + exportedName(p.Name) + " " + fieldType + "\n")
+			}
+			b.WriteString("}\n\n")
+		}
 		b.WriteString("// Gen" + name + "Request represents the APIGen strict request contract for " + name + ".\n")
 		b.WriteString("type Gen" + name + "Request struct {\n")
 		for _, p := range pathParams {
 			b.WriteString("\t" + exportedName(p.Name) + " " + pathParamTypeName(p) + "\n")
 		}
 		if len(queryParams) > 0 {
-			b.WriteString("\tParams " + name + "Params\n")
+			b.WriteString("\tParams Gen" + name + "Params\n")
 		}
 		if endpoint.RequestBody != nil {
 			b.WriteString("\tBody *Gen" + name + "JSONBody\n")
@@ -175,79 +190,77 @@ func Emit(doc ir.Document) ([]byte, error) {
 		b.WriteString("}\n\n")
 		for _, response := range endpoint.Responses {
 			statusCode := fmt.Sprintf("%d", response.StatusCode)
-			useLegacyVisit := isStatusDriftAlias(endpoint.OperationID, statusCode)
-			if isNativeConcreteGenResponseOperation(endpoint.OperationID) {
-				if response.Schema != nil {
-					b.WriteString("// Gen" + name + statusCode + "JSONResponse is the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
-					b.WriteString("type Gen" + name + statusCode + "JSONResponse " + name + statusCode + "JSONResponse\n\n")
-					b.WriteString("// Visit" + name + "Response writes " + name + " " + statusCode + " responses to the client.\n")
-					b.WriteString("func (response Gen" + name + statusCode + "JSONResponse) Visit" + name + "Response(w http.ResponseWriter) error {\n")
-					if useLegacyVisit {
-						b.WriteString("\treturn " + name + statusCode + "JSONResponse(response).Visit" + name + "Response(w)\n")
-					} else {
-						b.WriteString("\trv := reflect.ValueOf(response)\n")
-						b.WriteString("\theaders := rv.FieldByName(\"Headers\")\n")
-						b.WriteString("\tif headers.IsValid() {\n")
-						b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitLimit\"); v.IsValid() {\n")
-						b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Limit\", fmt.Sprint(v.Interface()))\n")
-						b.WriteString("\t\t}\n")
-						b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitRemaining\"); v.IsValid() {\n")
-						b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Remaining\", fmt.Sprint(v.Interface()))\n")
-						b.WriteString("\t\t}\n")
-						b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitReset\"); v.IsValid() {\n")
-						b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Reset\", fmt.Sprint(v.Interface()))\n")
-						b.WriteString("\t\t}\n")
-						b.WriteString("\t}\n")
-						b.WriteString("\tbody := rv.FieldByName(\"Body\")\n")
-						b.WriteString("\tif !body.IsValid() {\n")
-						b.WriteString("\t\treturn " + name + statusCode + "JSONResponse(response).Visit" + name + "Response(w)\n")
-						b.WriteString("\t}\n")
-						b.WriteString("\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
-						b.WriteString("\tw.WriteHeader(" + statusCode + ")\n")
-						b.WriteString("\treturn json.NewEncoder(w).Encode(body.Interface())\n")
-					}
-					b.WriteString("}\n\n")
-					continue
-				}
-
-				b.WriteString("// Gen" + name + statusCode + "Response is the APIGen concrete response for " + name + " " + statusCode + ".\n")
-				b.WriteString("type Gen" + name + statusCode + "Response " + name + statusCode + "Response\n\n")
+			responseTypeName := responseTypeName(endpoint.OperationID, response)
+			legacyNoBodyJSONResponse := isLegacyNoBodyJSONResponse(endpoint.OperationID, response)
+			if response.Schema != nil {
+				b.WriteString("// Gen" + name + statusCode + "JSONResponse is the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
+				b.WriteString("type Gen" + name + statusCode + "JSONResponse " + responseTypeName + "\n\n")
 				b.WriteString("// Visit" + name + "Response writes " + name + " " + statusCode + " responses to the client.\n")
-				b.WriteString("func (response Gen" + name + statusCode + "Response) Visit" + name + "Response(w http.ResponseWriter) error {\n")
-				if useLegacyVisit {
-					b.WriteString("\treturn " + name + statusCode + "Response(response).Visit" + name + "Response(w)\n")
+				b.WriteString("func (response Gen" + name + statusCode + "JSONResponse) Visit" + name + "Response(w http.ResponseWriter) error {\n")
+				b.WriteString("\trv := reflect.ValueOf(response)\n")
+				b.WriteString("\theaders := rv.FieldByName(\"Headers\")\n")
+				b.WriteString("\tif headers.IsValid() {\n")
+				b.WriteString("\t\tif v := headers.FieldByName(\"RetryAfter\"); v.IsValid() {\n")
+				b.WriteString("\t\t\tw.Header().Set(\"Retry-After\", fmt.Sprint(v.Interface()))\n")
+				b.WriteString("\t\t}\n")
+				b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitLimit\"); v.IsValid() {\n")
+				b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Limit\", fmt.Sprint(v.Interface()))\n")
+				b.WriteString("\t\t}\n")
+				b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitRemaining\"); v.IsValid() {\n")
+				b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Remaining\", fmt.Sprint(v.Interface()))\n")
+				b.WriteString("\t\t}\n")
+				b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitReset\"); v.IsValid() {\n")
+				b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Reset\", fmt.Sprint(v.Interface()))\n")
+				b.WriteString("\t\t}\n")
+				b.WriteString("\t}\n")
+				b.WriteString("\tbody := rv.FieldByName(\"Body\")\n")
+				b.WriteString("\tif !body.IsValid() {\n")
+				if legacyNoBodyJSONResponse {
+					b.WriteString("\t\tw.WriteHeader(" + statusCode + ")\n")
+					b.WriteString("\t\treturn nil\n")
 				} else {
-					b.WriteString("\trv := reflect.ValueOf(response)\n")
-					b.WriteString("\theaders := rv.FieldByName(\"Headers\")\n")
-					b.WriteString("\tif headers.IsValid() {\n")
-					b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitLimit\"); v.IsValid() {\n")
-					b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Limit\", fmt.Sprint(v.Interface()))\n")
-					b.WriteString("\t\t}\n")
-					b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitRemaining\"); v.IsValid() {\n")
-					b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Remaining\", fmt.Sprint(v.Interface()))\n")
-					b.WriteString("\t\t}\n")
-					b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitReset\"); v.IsValid() {\n")
-					b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Reset\", fmt.Sprint(v.Interface()))\n")
-					b.WriteString("\t\t}\n")
-					b.WriteString("\t}\n")
-					b.WriteString("\tw.WriteHeader(" + statusCode + ")\n")
-					b.WriteString("\treturn nil\n")
+					b.WriteString("\t\treturn fmt.Errorf(\"apigen: " + name + " " + statusCode + " response body missing\")\n")
 				}
+				b.WriteString("\t}\n")
+				b.WriteString("\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
+				b.WriteString("\tw.WriteHeader(" + statusCode + ")\n")
+				b.WriteString("\treturn json.NewEncoder(w).Encode(body.Interface())\n")
 				b.WriteString("}\n\n")
 				continue
 			}
 
-			if response.Schema != nil {
-				b.WriteString("// Gen" + name + statusCode + "JSONResponse aliases the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
-				b.WriteString("type Gen" + name + statusCode + "JSONResponse = " + name + statusCode + "JSONResponse\n\n")
-				continue
-			}
-			b.WriteString("// Gen" + name + statusCode + "Response aliases the APIGen concrete response for " + name + " " + statusCode + ".\n")
-			b.WriteString("type Gen" + name + statusCode + "Response = " + name + statusCode + "Response\n\n")
+			b.WriteString("// Gen" + name + statusCode + "Response is the APIGen concrete response for " + name + " " + statusCode + ".\n")
+			b.WriteString("type Gen" + name + statusCode + "Response " + responseTypeName + "\n\n")
+			b.WriteString("// Visit" + name + "Response writes " + name + " " + statusCode + " responses to the client.\n")
+			b.WriteString("func (response Gen" + name + statusCode + "Response) Visit" + name + "Response(w http.ResponseWriter) error {\n")
+			b.WriteString("\trv := reflect.ValueOf(response)\n")
+			b.WriteString("\theaders := rv.FieldByName(\"Headers\")\n")
+			b.WriteString("\tif headers.IsValid() {\n")
+			b.WriteString("\t\tif v := headers.FieldByName(\"RetryAfter\"); v.IsValid() {\n")
+			b.WriteString("\t\t\tw.Header().Set(\"Retry-After\", fmt.Sprint(v.Interface()))\n")
+			b.WriteString("\t\t}\n")
+			b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitLimit\"); v.IsValid() {\n")
+			b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Limit\", fmt.Sprint(v.Interface()))\n")
+			b.WriteString("\t\t}\n")
+			b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitRemaining\"); v.IsValid() {\n")
+			b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Remaining\", fmt.Sprint(v.Interface()))\n")
+			b.WriteString("\t\t}\n")
+			b.WriteString("\t\tif v := headers.FieldByName(\"XRateLimitReset\"); v.IsValid() {\n")
+			b.WriteString("\t\t\tw.Header().Set(\"X-RateLimit-Reset\", fmt.Sprint(v.Interface()))\n")
+			b.WriteString("\t\t}\n")
+			b.WriteString("\t}\n")
+			b.WriteString("\tw.WriteHeader(" + statusCode + ")\n")
+			b.WriteString("\treturn nil\n")
+			b.WriteString("}\n\n")
 		}
 		if endpoint.RequestBody != nil {
-			b.WriteString("// Gen" + name + "JSONBody aliases the APIGen strict JSON request body contract for " + name + ".\n")
-			b.WriteString("type Gen" + name + "JSONBody = " + name + "JSONRequestBody\n\n")
+			bodyTypeName, usesLegacyAlias := requestBodyTypeName(doc, endpoint)
+			if usesLegacyAlias {
+				b.WriteString("// Gen" + name + "JSONBody aliases the APIGen strict JSON request body contract for " + name + ".\n")
+			} else {
+				b.WriteString("// Gen" + name + "JSONBody aliases the APIGen strict JSON request body schema for " + name + ".\n")
+			}
+			b.WriteString("type Gen" + name + "JSONBody = " + bodyTypeName + "\n\n")
 		}
 	}
 
@@ -279,7 +292,7 @@ func Emit(doc ir.Document) ([]byte, error) {
 			sig += ", " + lowerCamelName(p.Name) + " " + pathParamTypeName(p)
 		}
 		if len(queryParams) > 0 {
-			sig += ", params " + name + "Params"
+			sig += ", params Gen" + name + "Params"
 		}
 		sig += ") {\n"
 		b.WriteString(sig)
@@ -396,8 +409,23 @@ func endpointQueryParams(endpoint ir.Endpoint) []ir.Parameter {
 }
 
 func pathParamTypeName(param ir.Parameter) string {
-	schemaType := strings.ToLower(strings.TrimSpace(param.Schema.Type))
-	schemaFormat := strings.ToLower(strings.TrimSpace(param.Schema.Format))
+	return schemaTypeName(param.Schema)
+}
+
+func parameterTypeName(endpoint ir.Endpoint, param ir.Parameter) string {
+	if typeName, ok := legacyParameterTypeName(endpoint.OperationID, param.Name); ok {
+		return typeName
+	}
+	return schemaTypeName(param.Schema)
+}
+
+func schemaTypeName(schema ir.SchemaRef) string {
+	if schema.Ref != "" {
+		return exportedName(schema.Ref)
+	}
+
+	schemaType := strings.ToLower(strings.TrimSpace(schema.Type))
+	schemaFormat := strings.ToLower(strings.TrimSpace(schema.Format))
 
 	switch schemaType {
 	case "integer":
@@ -418,93 +446,192 @@ func pathParamTypeName(param ir.Parameter) string {
 		return "float64"
 	case "boolean", "bool":
 		return "bool"
+	case "string":
+		switch schemaFormat {
+		case "date-time":
+			return "time.Time"
+		}
+		return "string"
 	default:
 		return "string"
 	}
 }
 
-func isNativeConcreteGenResponseOperation(operationID string) bool {
-	switch operationID {
-	case "executeQuery", "submitQuery", "getQuery", "getQueryResults", "cancelQuery", "deleteQuery":
-		return true
-	case "listPrincipals", "createPrincipal", "getPrincipal", "deletePrincipal", "listGroups", "createGroup", "getGroup", "deleteGroup":
-		return true
-	case "listAPIKeys", "createAPIKey", "cleanupExpiredAPIKeys", "deleteAPIKey":
-		return true
-	case "getCatalog", "listSchemas", "createSchema", "getSchema", "updateSchema", "deleteSchema":
-		return true
-	case "listTables", "createTable", "getTable", "updateTable", "deleteTable", "listTableColumns", "updateColumn", "profileTable", "getMetastoreSummary":
-		return true
-	case "listStorageCredentials", "createStorageCredential", "getStorageCredential", "updateStorageCredential", "deleteStorageCredential":
-		return true
-	case "listExternalLocations", "createExternalLocation", "getExternalLocation", "updateExternalLocation", "deleteExternalLocation":
-		return true
-	case "listVolumes", "createVolume", "getVolume", "updateVolume", "deleteVolume":
-		return true
-	case "listNotebooks", "createNotebook", "getNotebook", "updateNotebook", "deleteNotebook":
-		return true
-	case "createCell", "updateCell", "deleteCell", "reorderCells":
-		return true
-	case "createNotebookSession", "closeNotebookSession", "executeCell", "runAllCells", "runAllCellsAsync":
-		return true
-	case "listNotebookJobs", "getNotebookJob":
-		return true
-	case "listGitRepos", "createGitRepo", "getGitRepo", "syncGitRepo", "deleteGitRepo":
-		return true
-	case "listPipelines", "createPipeline", "getPipeline", "updatePipeline", "deletePipeline":
-		return true
-	case "listPipelineJobs", "createPipelineJob", "deletePipelineJob":
-		return true
-	case "triggerPipelineRun", "listPipelineRuns", "getPipelineRun", "cancelPipelineRun", "listPipelineJobRuns":
-		return true
-	case "listModels", "createModel", "getModel", "updateModel", "deleteModel", "getModelDAG", "triggerModelRun", "listModelRuns", "getModelRun", "listModelRunSteps", "cancelModelRun", "createModelTest", "listModelTests", "deleteModelTest", "listModelTestResults", "checkModelFreshness", "checkSourceFreshness", "promoteNotebookToModel":
-		return true
-	case "listSemanticModels", "createSemanticModel", "getSemanticModel", "updateSemanticModel", "deleteSemanticModel", "listSemanticMetrics", "createSemanticMetric", "updateSemanticMetric", "deleteSemanticMetric", "listSemanticRelationships", "createSemanticRelationship", "updateSemanticRelationship", "deleteSemanticRelationship", "listSemanticPreAggregations", "createSemanticPreAggregation", "updateSemanticPreAggregation", "deleteSemanticPreAggregation", "explainMetricQuery", "runMetricQuery", "checkMetricFreshness":
-		return true
-	case "createGrant", "deleteGrant", "listGrants", "listClassifications", "listAuditLogs", "searchCatalog", "listQueryHistory":
-		return true
-	case "getColumnLineage", "getColumnImpact", "getUpstreamLineage", "getDownstreamLineage", "getTableLineage", "deleteLineageEdge", "purgeLineage":
-		return true
-	case "createMacro", "listMacros", "getMacro", "updateMacro", "deleteMacro", "listMacroRevisions", "diffMacroRevisions", "getMacroImpact":
-		return true
-	case "registerCatalog", "getCatalogRegistration", "updateCatalogRegistration", "deleteCatalogRegistration", "loadTableExternalFiles", "commitTableIngestion", "createUploadUrl", "setDefaultCatalog", "listViews", "createView", "getView", "updateView", "deleteView":
-		return true
-	case "listCatalogs", "listComputeEndpoints", "createComputeEndpoint", "getComputeEndpoint", "updateComputeEndpoint", "deleteComputeEndpoint", "listComputeAssignments", "createComputeAssignment", "deleteComputeAssignment", "getComputeEndpointHealth", "listGroupMembers", "createGroupMember", "deleteGroupMember", "createManifest", "updatePrincipalAdmin":
-		return true
-	case "listTags", "createTag", "deleteTag", "createTagAssignment", "deleteTagAssignment":
-		return true
-	case "listRowFilters", "createRowFilter", "bindRowFilter", "unbindRowFilter", "deleteRowFilter", "listColumnMasks", "createColumnMask", "bindColumnMask", "unbindColumnMask", "deleteColumnMask":
-		return true
+func docUsesTimeTypes(doc ir.Document) bool {
+	for _, endpoint := range doc.Endpoints {
+		for _, param := range endpoint.Parameters {
+			if parameterTypeName(endpoint, param) == "time.Time" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func legacyParameterTypeName(operationID, paramName string) (string, bool) {
+	key := operationID + ":" + paramName
+	switch key {
+	case "listQueryHistory:from", "listQueryHistory:to":
+		return "time.Time", true
 	default:
-		return false
+		return "", false
 	}
 }
 
-func isStatusDriftAlias(operationID, statusCode string) bool {
-	key := operationID + ":" + statusCode
+func requestBodyTypeName(doc ir.Document, endpoint ir.Endpoint) (string, bool) {
+	if endpoint.RequestBody == nil {
+		return "", false
+	}
+
+	schema := endpoint.RequestBody.Schema
+	if schema.Ref != "" && schema.Ref != "GenericRequest" {
+		if _, ok := doc.Schemas[schema.Ref]; ok {
+			return exportedName(schema.Ref), false
+		}
+	}
+	if schema.Ref == "GenericRequest" {
+		if schemaName, ok := resolveGenericRequestBodySchemaName(doc, endpoint.OperationID); ok {
+			return schemaName, false
+		}
+	}
+	if schema.Type != "" {
+		return schemaTypeName(schema), false
+	}
+
+	name := exportedName(endpoint.OperationID)
+	return name + "JSONRequestBody", true
+}
+
+func resolveGenericRequestBodySchemaName(doc ir.Document, operationID string) (string, bool) {
+	if schemaName, ok := genericRequestBodySchemaOverrides[operationID]; ok {
+		return schemaName, true
+	}
+	for _, candidate := range genericRequestBodySchemaCandidates(operationID) {
+		if _, ok := doc.Schemas[candidate]; ok {
+			return candidate, true
+		}
+	}
+	return "", false
+}
+
+func genericRequestBodySchemaCandidates(operationID string) []string {
+	return []string{exportedName(operationID) + "Request"}
+}
+
+var genericRequestBodySchemaOverrides = map[string]string{
+	"bindColumnMask":               "ColumnMaskBindingRequest",
+	"bindRowFilter":                "RowFilterBindingRequest",
+	"commitTableIngestion":         "CommitIngestionRequest",
+	"createCell":                   "CreateCellRequest",
+	"createComputeAssignment":      "CreateComputeAssignmentRequest",
+	"createComputeEndpoint":        "CreateComputeEndpointRequest",
+	"createGitRepo":                "CreateGitRepoRequest",
+	"createMacro":                  "CreateMacroRequest",
+	"createManifest":               "ManifestRequest",
+	"createModelTest":              "CreateModelTestRequest",
+	"createNotebook":               "CreateNotebookRequest",
+	"createPipeline":               "CreatePipelineRequest",
+	"createPipelineJob":            "CreatePipelineJobRequest",
+	"createSemanticMetric":         "CreateSemanticMetricRequest",
+	"createSemanticModel":          "CreateSemanticModelRequest",
+	"createSemanticPreAggregation": "CreateSemanticPreAggregationRequest",
+	"createSemanticRelationship":   "CreateSemanticRelationshipRequest",
+	"createTag":                    "CreateTagRequest",
+	"createTagAssignment":          "CreateTagAssignmentRequest",
+	"createUploadUrl":              "UploadUrlRequest",
+	"executeQuery":                 "QueryRequest",
+	"explainMetricQuery":           "MetricQueryRequest",
+	"loadTableExternalFiles":       "LoadExternalRequest",
+	"promoteNotebookToModel":       "PromoteNotebookRequest",
+	"purgeLineage":                 "PurgeLineageRequest",
+	"reorderCells":                 "ReorderCellsRequest",
+	"runMetricQuery":               "MetricQueryRequest",
+	"triggerModelRun":              "TriggerModelRunRequest",
+	"triggerPipelineRun":           "TriggerPipelineRunRequest",
+	"updateCell":                   "UpdateCellRequest",
+	"updateComputeEndpoint":        "UpdateComputeEndpointRequest",
+	"updateMacro":                  "UpdateMacroRequest",
+	"updateModel":                  "UpdateModelRequest",
+	"updateNotebook":               "UpdateNotebookRequest",
+	"updatePipeline":               "UpdatePipelineRequest",
+	"updateSemanticMetric":         "UpdateSemanticMetricRequest",
+	"updateSemanticModel":          "UpdateSemanticModelRequest",
+	"updateSemanticPreAggregation": "UpdateSemanticPreAggregationRequest",
+	"updateSemanticRelationship":   "UpdateSemanticRelationshipRequest",
+}
+
+func responseTypeName(operationID string, response ir.Response) string {
+	if typeName, ok := legacyResponseTypeName(operationID, response.StatusCode, response.Schema != nil); ok {
+		return typeName
+	}
+
+	statusCode := fmt.Sprintf("%d", response.StatusCode)
+	if response.Schema != nil {
+		return exportedName(operationID) + statusCode + "JSONResponse"
+	}
+	return exportedName(operationID) + statusCode + "Response"
+}
+
+func legacyResponseTypeName(operationID string, statusCode int, hasSchema bool) (string, bool) {
+	key := fmt.Sprintf("%s:%d:%t", operationID, statusCode, hasSchema)
 	switch key {
-	case "bindColumnMask:201",
-		"bindRowFilter:201",
-		"cancelModelRun:201",
-		"cancelPipelineRun:201",
-		"cancelQuery:201",
-		"cleanupExpiredAPIKeys:201",
-		"commitTableIngestion:201",
-		"createManifest:201",
-		"createUploadUrl:201",
-		"executeCell:201",
-		"executeQuery:201",
-		"explainMetricQuery:201",
-		"loadTableExternalFiles:201",
-		"profileTable:201",
-		"purgeLineage:201",
-		"reorderCells:201",
-		"runAllCells:201",
-		"runAllCellsAsync:201",
-		"runMetricQuery:201",
-		"setDefaultCatalog:201",
-		"submitQuery:201",
-		"syncGitRepo:201":
+	case "bindColumnMask:201:true":
+		return "BindColumnMask204Response", true
+	case "bindRowFilter:201:true":
+		return "BindRowFilter204Response", true
+	case "cancelModelRun:201:true":
+		return "CancelModelRun200JSONResponse", true
+	case "cancelPipelineRun:201:true":
+		return "CancelPipelineRun200JSONResponse", true
+	case "cancelQuery:201:true":
+		return "CancelQuery200JSONResponse", true
+	case "cleanupExpiredAPIKeys:201:true":
+		return "CleanupExpiredAPIKeys200JSONResponse", true
+	case "commitTableIngestion:201:true":
+		return "CommitTableIngestion200JSONResponse", true
+	case "createManifest:201:true":
+		return "CreateManifest200JSONResponse", true
+	case "createUploadUrl:201:true":
+		return "CreateUploadUrl200JSONResponse", true
+	case "executeCell:201:true":
+		return "ExecuteCell200JSONResponse", true
+	case "executeQuery:201:true":
+		return "ExecuteQuery200JSONResponse", true
+	case "explainMetricQuery:201:true":
+		return "ExplainMetricQuery200JSONResponse", true
+	case "loadTableExternalFiles:201:true":
+		return "LoadTableExternalFiles200JSONResponse", true
+	case "profileTable:201:true":
+		return "ProfileTable200JSONResponse", true
+	case "purgeLineage:201:true":
+		return "PurgeLineage200JSONResponse", true
+	case "reorderCells:201:true":
+		return "ReorderCells200JSONResponse", true
+	case "runAllCells:201:true":
+		return "RunAllCells200JSONResponse", true
+	case "runAllCellsAsync:201:true":
+		return "RunAllCellsAsync202JSONResponse", true
+	case "runMetricQuery:201:true":
+		return "RunMetricQuery200JSONResponse", true
+	case "setDefaultCatalog:201:true":
+		return "SetDefaultCatalog200JSONResponse", true
+	case "submitQuery:201:true":
+		return "SubmitQuery202JSONResponse", true
+	case "syncGitRepo:201:true":
+		return "SyncGitRepo200JSONResponse", true
+	default:
+		return "", false
+	}
+}
+
+func isLegacyNoBodyJSONResponse(operationID string, response ir.Response) bool {
+	if response.Schema == nil {
+		return false
+	}
+
+	key := fmt.Sprintf("%s:%d", operationID, response.StatusCode)
+	switch key {
+	case "bindColumnMask:201", "bindRowFilter:201":
 		return true
 	default:
 		return false

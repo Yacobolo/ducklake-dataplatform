@@ -144,7 +144,7 @@ func TestHandler_ListViews(t *testing.T) {
 			resp, err := handler.ListViews(viewTestCtx(), GenListViewsRequest{
 				CatalogName: CatalogName("test-catalog"),
 				SchemaName:  "test-schema",
-				Params:      ListViewsParams{},
+				Params:      GenListViewsParams{},
 			})
 			tt.assertFn(t, resp, err)
 		})

@@ -370,7 +370,7 @@ func TestHandler_GetQueryResults_Paged(t *testing.T) {
 	maxResults := int32(1)
 	resp, err := handler.GetQueryResults(queryTestCtx(), GenGetQueryResultsRequest{
 		QueryId: "job-1",
-		Params:  GetQueryResultsParams{MaxResults: &maxResults},
+		Params:  GenGetQueryResultsParams{MaxResults: &maxResults},
 	})
 	require.NoError(t, err)
 

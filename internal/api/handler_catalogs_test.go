@@ -214,7 +214,7 @@ func TestHandler_ListCatalogs(t *testing.T) {
 			t.Parallel()
 			svc := &mockCatalogRegistrationService{listFn: tt.svcFn}
 			handler := &APIHandler{catalogRegistration: svc}
-			resp, err := handler.ListCatalogs(catTestCtx(), GenListCatalogsRequest{Params: ListCatalogsParams{}})
+			resp, err := handler.ListCatalogs(catTestCtx(), GenListCatalogsRequest{Params: GenListCatalogsParams{}})
 			tt.assertFn(t, resp, err)
 		})
 	}
