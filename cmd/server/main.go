@@ -465,16 +465,15 @@ func curlHostForListenAddr(listenAddr string) string {
 	return trimmed
 }
 
-// runAdmin handles "admin promote" and "admin demote" subcommands.
-// These operate directly on the SQLite metastore without starting the server.
+// runAdmin handles one-shot admin subcommands.
 //
 // Usage:
 //
 //	go run ./cmd/server admin promote --principal=<name> [--create]
-//	go run ./cmd/server admin demote  --principal=<name>
+//	go run ./cmd/server admin demote --principal=<name>
 func runAdmin(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: server admin <promote|demote> --principal=<name> [--create]")
+		return fmt.Errorf("usage: server admin <promote|demote> [flags]")
 	}
 	action := args[0]
 	if action != "promote" && action != "demote" {
