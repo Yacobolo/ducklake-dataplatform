@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GO_VERSION: "1.25.7"
+  GO_VERSION: "1.26.1"
   NODE_VERSION: "20"
   # Pinned tool versions for reproducible builds
   TASK_VERSION: "v3.45.4"
