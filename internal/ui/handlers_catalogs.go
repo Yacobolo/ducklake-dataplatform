@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -101,6 +100,12 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 		})
 	}
 
+	assetLinks, err := h.linkedAssetResolver(r.Context())
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
 	explorerSchemas := make([]catalogWorkspaceSchemaNodeData, 0, len(schemas))
 	for i := range schemas {
 		s := schemas[i]
@@ -121,7 +126,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 			tableNodes := make([]catalogWorkspaceObjectNodeData, 0, len(tables))
 			for j := range tables {
 				t := tables[j]
-				assetRef, _ := h.linkedAssetRef(r.Context(), catalogName, s.Name, t.Name)
+				assetRef := assetLinks.resolve(catalogName, s.Name, t.Name)
 				tableNodes = append(tableNodes, catalogWorkspaceObjectNodeData{
 					Name:     t.Name,
 					URL:      catalogExplorerURL(catalogName, s.Name, "table", t.Name),
@@ -141,7 +146,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 			viewNodes := make([]catalogWorkspaceObjectNodeData, 0, len(views))
 			for j := range views {
 				v := views[j]
-				assetRef, _ := h.linkedAssetRef(r.Context(), catalogName, s.Name, v.Name)
+				assetRef := assetLinks.resolve(catalogName, s.Name, v.Name)
 				viewNodes = append(viewNodes, catalogWorkspaceObjectNodeData{
 					Name:     v.Name,
 					URL:      catalogExplorerURL(catalogName, s.Name, "view", v.Name),
@@ -212,7 +217,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	if selectedType == "table" && selectedSchema != "" && selectedName != "" {
 		table, tableErr := h.Catalog.GetTable(r.Context(), catalogName, selectedSchema, selectedName)
 		if tableErr == nil {
-			assetRef, _ := h.linkedAssetRef(r.Context(), catalogName, selectedSchema, selectedName)
+			assetRef := assetLinks.resolve(catalogName, selectedSchema, selectedName)
 			columnRows := make([]tableColumnRowData, 0, len(table.Columns))
 			for i := range table.Columns {
 				c := table.Columns[i]
@@ -242,7 +247,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	if selectedType == "view" && selectedSchema != "" && selectedName != "" {
 		v, viewErr := h.View.GetView(r.Context(), catalogName, selectedSchema, selectedName)
 		if viewErr == nil {
-			assetRef, _ := h.linkedAssetRef(r.Context(), catalogName, selectedSchema, selectedName)
+			assetRef := assetLinks.resolve(catalogName, selectedSchema, selectedName)
 			columns, _, columnsErr := h.Catalog.ListColumns(r.Context(), catalogName, selectedSchema, selectedName, domain.PageRequest{MaxResults: 200})
 			columnRows := make([]tableColumnRowData, 0, len(columns))
 			for i := range columns {
@@ -295,22 +300,44 @@ type linkedAssetRef struct {
 	URL string
 }
 
-func (h *Handler) linkedAssetRef(ctx context.Context, catalogName, schemaName, objectName string) (linkedAssetRef, error) {
-	if h == nil || h.Asset == nil {
-		return linkedAssetRef{}, nil
-	}
+type linkedAssetResolver struct {
+	byKey map[string]linkedAssetRef
+}
+
+func (r linkedAssetResolver) resolve(catalogName, schemaName, objectName string) linkedAssetRef {
 	for _, candidate := range assetLookupCandidates(catalogName, schemaName, objectName) {
-		asset, err := h.Asset.GetAsset(ctx, candidate)
-		if err == nil && asset != nil {
-			return linkedAssetRef{Key: asset.AssetKey, URL: "/ui/assets/" + asset.AssetKey}, nil
+		if ref, ok := r.byKey[candidate]; ok {
+			return ref
 		}
-		var notFound *domain.NotFoundError
-		if err == nil || errors.As(err, &notFound) {
-			continue
-		}
-		return linkedAssetRef{}, err
 	}
-	return linkedAssetRef{}, nil
+	return linkedAssetRef{}
+}
+
+func (h *Handler) linkedAssetResolver(ctx context.Context) (linkedAssetResolver, error) {
+	if h == nil || h.Asset == nil {
+		return linkedAssetResolver{byKey: map[string]linkedAssetRef{}}, nil
+	}
+
+	resolver := linkedAssetResolver{byKey: map[string]linkedAssetRef{}}
+	page := domain.PageRequest{MaxResults: domain.MaxMaxResults}
+	offset := 0
+
+	for {
+		page.PageToken = domain.EncodePageToken(offset)
+		assets, total, err := h.Asset.ListAssets(ctx, domain.AssetFilter{Page: page})
+		if err != nil {
+			return linkedAssetResolver{}, err
+		}
+		for i := range assets {
+			asset := assets[i]
+			resolver.byKey[asset.AssetKey] = linkedAssetRef{Key: asset.AssetKey, URL: "/ui/assets/" + asset.AssetKey}
+		}
+		offset += len(assets)
+		if len(assets) == 0 || int64(offset) >= total {
+			break
+		}
+	}
+	return resolver, nil
 }
 
 func assetLookupCandidates(catalogName, schemaName, objectName string) []string {
