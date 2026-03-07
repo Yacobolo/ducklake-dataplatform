@@ -463,9 +463,10 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 	}
 
 	headers := []Node{Th(Text("Name")), Th(Text("Owner")), Th(Text("Created at"))}
-	if d.Panel.Mode == "table" || d.Panel.Mode == "view" {
+	switch d.Panel.Mode {
+	case "table", "view":
 		headers = []Node{Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable"))}
-	} else if d.Panel.Mode == "schema" {
+	case "schema":
 		headers = []Node{Th(Text("Name")), Th(Text("Owner")), Th(Text("Created at")), Th(Text("Asset"))}
 	}
 

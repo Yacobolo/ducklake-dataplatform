@@ -398,7 +398,7 @@ func buildAssetDetailSummary(d assetDetailPageData) assetDetailSummary {
 		PartitionHint:        "No partition inventory recorded.",
 	}
 	if len(d.Runs) > 0 {
-		summary.LatestRunStatus = strings.Title(strings.ToLower(strings.ReplaceAll(d.Runs[0].Status, "_", " ")))
+		summary.LatestRunStatus = titleizeWords(d.Runs[0].Status)
 	}
 	if len(d.Materializations) > 0 {
 		summary.LatestMaterializedAt = formatTime(d.Materializations[0].MaterializedAt)

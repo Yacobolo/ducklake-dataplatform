@@ -270,7 +270,7 @@ func assetsInventorySection(rows []assetsListRowData, emptyMessage string, hint 
 }
 
 func assetOperationalBadges(row assetsListRowData) []Node {
-	badges := []Node{statusLabel(strings.Title(strings.ToLower(row.MaterializationMode)), "accent")}
+	badges := []Node{statusLabel(titleizeWords(row.MaterializationMode), "accent")}
 	if row.FreshnessTracked {
 		badges = append(badges, statusLabel("SLA", "success"))
 	} else {

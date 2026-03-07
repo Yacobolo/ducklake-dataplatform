@@ -31,14 +31,14 @@ func (h *Handler) AssetsList(w http.ResponseWriter, r *http.Request) {
 		item := items[i]
 		partitionType := "Unpartitioned"
 		if item.PartitionDefinition != nil {
-			partitionType = strings.Title(strings.ToLower(strings.TrimSpace(item.PartitionDefinition.Type)))
+			partitionType = titleizeWords(item.PartitionDefinition.Type)
 		}
 		materializationMode := "Manual"
 		if item.MaterializationPolicy != nil && strings.TrimSpace(item.MaterializationPolicy.Mode) != "" {
-			materializationMode = strings.Title(strings.ToLower(strings.TrimSpace(item.MaterializationPolicy.Mode)))
+			materializationMode = titleizeWords(item.MaterializationPolicy.Mode)
 		}
 		if item.AutoMaterializePolicy != nil && strings.TrimSpace(item.AutoMaterializePolicy.Mode) != "" {
-			materializationMode = strings.Title(strings.ToLower(strings.TrimSpace(item.AutoMaterializePolicy.Mode)))
+			materializationMode = titleizeWords(item.AutoMaterializePolicy.Mode)
 		}
 		rows = append(rows, assetsListRowData{
 			Filter:              strings.Join(append([]string{item.AssetKey, item.AssetType, item.Owner, item.Description}, item.Tags...), " "),
