@@ -29,14 +29,31 @@ func (h *Handler) AssetsList(w http.ResponseWriter, r *http.Request) {
 	rows := make([]assetsListRowData, 0, len(items))
 	for i := range items {
 		item := items[i]
+		partitionType := "Unpartitioned"
+		if item.PartitionDefinition != nil {
+			partitionType = strings.Title(strings.ToLower(strings.TrimSpace(item.PartitionDefinition.Type)))
+		}
+		materializationMode := "Manual"
+		if item.MaterializationPolicy != nil && strings.TrimSpace(item.MaterializationPolicy.Mode) != "" {
+			materializationMode = strings.Title(strings.ToLower(strings.TrimSpace(item.MaterializationPolicy.Mode)))
+		}
+		if item.AutoMaterializePolicy != nil && strings.TrimSpace(item.AutoMaterializePolicy.Mode) != "" {
+			materializationMode = strings.Title(strings.ToLower(strings.TrimSpace(item.AutoMaterializePolicy.Mode)))
+		}
 		rows = append(rows, assetsListRowData{
-			Filter:   item.AssetKey + " " + item.AssetType + " " + item.Owner,
-			AssetKey: item.AssetKey,
-			URL:      "/ui/assets/" + item.AssetKey,
-			Type:     item.AssetType,
-			Owner:    item.Owner,
-			Active:   item.IsActive,
-			Updated:  formatTime(item.UpdatedAt),
+			Filter:              strings.Join(append([]string{item.AssetKey, item.AssetType, item.Owner, item.Description}, item.Tags...), " "),
+			AssetKey:            item.AssetKey,
+			URL:                 "/ui/assets/" + item.AssetKey,
+			Type:                item.AssetType,
+			Owner:               item.Owner,
+			Description:         item.Description,
+			Tags:                append([]string(nil), item.Tags...),
+			Active:              item.IsActive,
+			Updated:             formatTime(item.UpdatedAt),
+			FreshnessTracked:    item.FreshnessPolicy != nil,
+			PartitionType:       partitionType,
+			AutoMaterialized:    item.AutoMaterializePolicy != nil,
+			MaterializationMode: materializationMode,
 		})
 	}
 

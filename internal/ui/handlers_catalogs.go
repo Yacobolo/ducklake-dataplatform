@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -119,13 +121,15 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 			tableNodes := make([]catalogWorkspaceObjectNodeData, 0, len(tables))
 			for j := range tables {
 				t := tables[j]
+				assetURL, _ := h.linkedAssetURL(r.Context(), catalogName, s.Name, t.Name)
 				tableNodes = append(tableNodes, catalogWorkspaceObjectNodeData{
-					Name:    t.Name,
-					URL:     catalogExplorerURL(catalogName, s.Name, "table", t.Name),
-					Active:  selectedType == "table" && selectedSchema == s.Name && selectedName == t.Name,
-					Owner:   t.Owner,
-					Created: formatTime(t.CreatedAt),
-					Kind:    "table",
+					Name:     t.Name,
+					URL:      catalogExplorerURL(catalogName, s.Name, "table", t.Name),
+					AssetURL: assetURL,
+					Active:   selectedType == "table" && selectedSchema == s.Name && selectedName == t.Name,
+					Owner:    t.Owner,
+					Created:  formatTime(t.CreatedAt),
+					Kind:     "table",
 				})
 			}
 			schemaNode.Tables = tableNodes
@@ -136,13 +140,15 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 			viewNodes := make([]catalogWorkspaceObjectNodeData, 0, len(views))
 			for j := range views {
 				v := views[j]
+				assetURL, _ := h.linkedAssetURL(r.Context(), catalogName, s.Name, v.Name)
 				viewNodes = append(viewNodes, catalogWorkspaceObjectNodeData{
-					Name:    v.Name,
-					URL:     catalogExplorerURL(catalogName, s.Name, "view", v.Name),
-					Active:  selectedType == "view" && selectedSchema == s.Name && selectedName == v.Name,
-					Owner:   v.Owner,
-					Created: formatTime(v.CreatedAt),
-					Kind:    "view",
+					Name:     v.Name,
+					URL:      catalogExplorerURL(catalogName, s.Name, "view", v.Name),
+					AssetURL: assetURL,
+					Active:   selectedType == "view" && selectedSchema == s.Name && selectedName == v.Name,
+					Owner:    v.Owner,
+					Created:  formatTime(v.CreatedAt),
+					Kind:     "view",
 				})
 			}
 			schemaNode.Views = viewNodes
@@ -204,6 +210,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	if selectedType == "table" && selectedSchema != "" && selectedName != "" {
 		table, tableErr := h.Catalog.GetTable(r.Context(), catalogName, selectedSchema, selectedName)
 		if tableErr == nil {
+			assetURL, _ := h.linkedAssetURL(r.Context(), catalogName, selectedSchema, selectedName)
 			columnRows := make([]tableColumnRowData, 0, len(table.Columns))
 			for i := range table.Columns {
 				c := table.Columns[i]
@@ -223,7 +230,8 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 					{Label: "Tags", Value: tagsLabel(table.Tags)},
 					{Label: "Updated", Value: formatTime(table.UpdatedAt)},
 				},
-				Columns: columnRows,
+				Columns:  columnRows,
+				AssetURL: assetURL,
 			}
 		}
 	}
@@ -231,6 +239,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	if selectedType == "view" && selectedSchema != "" && selectedName != "" {
 		v, viewErr := h.View.GetView(r.Context(), catalogName, selectedSchema, selectedName)
 		if viewErr == nil {
+			assetURL, _ := h.linkedAssetURL(r.Context(), catalogName, selectedSchema, selectedName)
 			columns, _, columnsErr := h.Catalog.ListColumns(r.Context(), catalogName, selectedSchema, selectedName, domain.PageRequest{MaxResults: 200})
 			columnRows := make([]tableColumnRowData, 0, len(columns))
 			for i := range columns {
@@ -253,6 +262,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 				Definition:       v.ViewDefinition,
 				Columns:          columnRows,
 				ColumnsAvailable: columnsErr == nil,
+				AssetURL:         assetURL,
 			}
 		}
 	}
@@ -274,6 +284,43 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 		QuickFilterMessage: "Filter catalogs, schemas, tables, and views",
 		CSRFField:          csrfFieldProvider(r),
 	}))
+}
+
+func (h *Handler) linkedAssetURL(ctx context.Context, catalogName, schemaName, objectName string) (string, error) {
+	if h == nil || h.Asset == nil {
+		return "", nil
+	}
+	for _, candidate := range assetLookupCandidates(catalogName, schemaName, objectName) {
+		asset, err := h.Asset.GetAsset(ctx, candidate)
+		if err == nil && asset != nil {
+			return "/ui/assets/" + asset.AssetKey, nil
+		}
+		var notFound *domain.NotFoundError
+		if err == nil || errors.As(err, &notFound) {
+			continue
+		}
+		return "", err
+	}
+	return "", nil
+}
+
+func assetLookupCandidates(catalogName, schemaName, objectName string) []string {
+	parts := []string{strings.TrimSpace(objectName), strings.TrimSpace(schemaName) + "." + strings.TrimSpace(objectName), strings.TrimSpace(catalogName) + "." + strings.TrimSpace(schemaName) + "." + strings.TrimSpace(objectName)}
+	out := make([]string, 0, len(parts))
+	seen := map[string]struct{}{}
+	for i := range parts {
+		candidate := strings.Trim(parts[i], ".")
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		if _, ok := seen[candidate]; ok {
+			continue
+		}
+		seen[candidate] = struct{}{}
+		out = append(out, candidate)
+	}
+	return out
 }
 
 func (h *Handler) CatalogsNew(w http.ResponseWriter, r *http.Request) {

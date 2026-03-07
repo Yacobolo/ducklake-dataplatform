@@ -50,12 +50,13 @@ type catalogWorkspaceCatalogLinkData struct {
 }
 
 type catalogWorkspaceObjectNodeData struct {
-	Name    string
-	URL     string
-	Active  bool
-	Owner   string
-	Created string
-	Kind    string
+	Name     string
+	URL      string
+	AssetURL string
+	Active   bool
+	Owner    string
+	Created  string
+	Kind     string
 }
 
 type catalogWorkspaceSchemaNodeData struct {
@@ -90,6 +91,7 @@ type catalogWorkspacePanelData struct {
 	Columns          []tableColumnRowData
 	Definition       string
 	ColumnsAvailable bool
+	AssetURL         string
 }
 
 type catalogWorkspacePageData struct {
@@ -170,6 +172,9 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 	}
 	if d.Panel.EditURL != "" {
 		panelActions = append(panelActions, A(Href(d.Panel.EditURL), Class(secondaryButtonClass()), Text("Edit")))
+	}
+	if d.Panel.AssetURL != "" {
+		panelActions = append(panelActions, A(Href(d.Panel.AssetURL), Class(secondaryButtonClass()), Text("Open asset")))
 	}
 	if d.Panel.SetDefaultURL != "" {
 		panelActions = append(panelActions,
@@ -400,23 +405,33 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 			}
 			for j := range schema.Tables {
 				table := schema.Tables[j]
+				assetNode := Node(Text("-"))
+				if table.AssetURL != "" {
+					assetNode = A(Href(table.AssetURL), Text("Open asset"))
+				}
 				childRows = append(childRows,
 					Tr(
 						data.Show(containsExprSignal(table.Name+" "+table.Owner+" "+table.Created+" "+table.Kind, "childq")),
 						Td(A(Href(table.URL), Text(table.Name))),
 						Td(Text(dashIfEmpty(table.Owner))),
 						Td(Text(dashIfEmpty(table.Created))),
+						Td(assetNode),
 					),
 				)
 			}
 			for j := range schema.Views {
 				view := schema.Views[j]
+				assetNode := Node(Text("-"))
+				if view.AssetURL != "" {
+					assetNode = A(Href(view.AssetURL), Text("Open asset"))
+				}
 				childRows = append(childRows,
 					Tr(
 						data.Show(containsExprSignal(view.Name+" "+view.Owner+" "+view.Created+" "+view.Kind, "childq")),
 						Td(A(Href(view.URL), Text(view.Name))),
 						Td(Text(dashIfEmpty(view.Owner))),
 						Td(Text(dashIfEmpty(view.Created))),
+						Td(assetNode),
 					),
 				)
 			}
@@ -447,6 +462,8 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 	headers := []Node{Th(Text("Name")), Th(Text("Owner")), Th(Text("Created at"))}
 	if d.Panel.Mode == "table" || d.Panel.Mode == "view" {
 		headers = []Node{Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable"))}
+	} else if d.Panel.Mode == "schema" {
+		headers = []Node{Th(Text("Name")), Th(Text("Owner")), Th(Text("Created at")), Th(Text("Asset"))}
 	}
 
 	childTable := Node(P(Class("catalog-muted"), Text("No child elements.")))

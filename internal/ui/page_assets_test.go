@@ -18,6 +18,13 @@ func TestUIAssetDetailPage_ActionsVisibility(t *testing.T) {
 			CanMaterialize:     true,
 			CanBackfill:        true,
 			BackfillConfigured: true,
+			Runs: []domain.AssetRun{{
+				ID:           "run-1",
+				Status:       domain.AssetRunStatusSuccess,
+				TriggerType:  domain.AssetTriggerTypeManual,
+				AttemptCount: 1,
+				MaxAttempts:  1,
+			}},
 		})
 
 		assert.Contains(t, html, `action="/ui/assets/orders.daily/materialize"`)
@@ -25,6 +32,9 @@ func TestUIAssetDetailPage_ActionsVisibility(t *testing.T) {
 		assert.NotContains(t, html, "Materialization unavailable")
 		assert.NotContains(t, html, "Backfill unavailable")
 		assert.NotContains(t, html, "Backfill service is not configured")
+		assert.Contains(t, html, "Asset command center")
+		assert.Contains(t, html, "At a glance")
+		assert.Contains(t, html, "asset-graph")
 	})
 
 	t.Run("unauthorized", func(t *testing.T) {
@@ -66,19 +76,68 @@ func TestUIAssetsListPage_EmptyStateMessaging(t *testing.T) {
 
 func TestUIAssetsListPage_FilterValueHydratesFromQuery(t *testing.T) {
 	rows := []assetsListRowData{{
-		Filter:   "orders.daily table analytics",
-		AssetKey: "orders.daily",
-		URL:      "/ui/assets/orders.daily",
-		Type:     "table",
-		Owner:    "analytics",
-		Active:   true,
-		Updated:  "2026-03-01T00:00:00Z",
+		Filter:              "orders.daily table analytics gold daily",
+		AssetKey:            "orders.daily",
+		URL:                 "/ui/assets/orders.daily",
+		Type:                "table",
+		Owner:               "analytics",
+		Description:         "Daily order mart",
+		Tags:                []string{"gold", "daily"},
+		Active:              true,
+		Updated:             "2026-03-01T00:00:00Z",
+		FreshnessTracked:    true,
+		PartitionType:       "Daily",
+		AutoMaterialized:    true,
+		MaterializationMode: "Eager",
 	}}
 	html := renderAssetsListPageForTest(t, rows, "orders", true, true)
 
 	assert.Contains(t, html, `data-signals="{&#34;q&#34;:&#34;orders&#34;}"`)
 	assert.Contains(t, html, "data-quick-filter-input=\"true\"")
 	assert.Contains(t, html, "history.replaceState")
+	assert.Contains(t, html, "Asset showcase")
+	assert.Contains(t, html, "Daily order mart")
+	assert.Contains(t, html, "Total assets")
+}
+
+func TestUIAssetsListPage_RendersOperationalSummary(t *testing.T) {
+	html := renderAssetsListPageForTest(t, []assetsListRowData{{
+		Filter:              "orders.daily table analytics",
+		AssetKey:            "orders.daily",
+		URL:                 "/ui/assets/orders.daily",
+		Type:                "table",
+		Owner:               "analytics",
+		Description:         "Daily orders mart",
+		Active:              true,
+		Updated:             "2026-03-01T00:00:00Z",
+		FreshnessTracked:    true,
+		PartitionType:       "Daily",
+		AutoMaterialized:    true,
+		MaterializationMode: "Eager",
+	}}, "", true, true)
+
+	assert.Contains(t, html, "Assets are where metadata turns into runtime behavior")
+	assert.Contains(t, html, "Total assets")
+	assert.Contains(t, html, "Asset mix")
+	assert.Contains(t, html, "Inventory")
+	assert.Contains(t, html, "SLA")
+	assert.Contains(t, html, "Auto")
+}
+
+func TestUIAssetDetailPage_RendersGraphHost(t *testing.T) {
+	html := renderAssetDetailPageForTest(t, assetDetailPageData{
+		AssetKey:            "mart.daily_revenue",
+		UpstreamAssetKeys:   []string{"models.orders_enriched"},
+		DownstreamAssetKeys: []string{"analytics.exec_summary"},
+		DependencyEdges: []assetDependencyEdgeData{
+			{FromKey: "models.orders_enriched", ToKey: "mart.daily_revenue"},
+			{FromKey: "mart.daily_revenue", ToKey: "analytics.exec_summary"},
+		},
+	})
+
+	assert.Contains(t, html, "asset-graph-view")
+	assert.Contains(t, html, "Interactive dependency map")
+	assert.Contains(t, html, "Adjacency list")
 }
 
 func renderAssetDetailPageForTest(t *testing.T, data assetDetailPageData) string {
