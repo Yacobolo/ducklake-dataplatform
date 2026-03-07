@@ -198,7 +198,6 @@ func setupNotebookTestServer(t *testing.T, nb notebookService, sess sessionServi
 		nil, // macroSvc
 		nil, // semanticSvc
 	)
-	strictHandler := NewAPIGenStrictAdapter(handler)
 
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
@@ -211,7 +210,7 @@ func setupNotebookTestServer(t *testing.T, nb notebookService, sess sessionServi
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	})
-	RegisterAPIGenRoutes(r, strictHandler)
+	RegisterAPIGenStrictRoutes(r, handler)
 
 	return httptest.NewServer(r)
 }

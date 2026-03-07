@@ -196,7 +196,6 @@ func run() error {
 		svc.Semantic,
 	)
 
-	apigenHandler := api.NewAPIGenStrictAdapter(handler)
 	authHandler := api.NewAuthHTTPHandler(svc.Auth, svc.WebSessionAuth)
 
 	// Setup Chi router
@@ -333,7 +332,7 @@ func run() error {
 		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
 		r.Post("/auth/sessions/revoke-all", authHandler.RevokeAllWebSessions)
 		r.Get("/auth/sessions/stats", authHandler.GetWebSessionStats)
-		api.RegisterAPIGenRoutes(r, apigenHandler)
+		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
 	uiHandler := ui.NewHandler(

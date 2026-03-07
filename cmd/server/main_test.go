@@ -88,30 +88,30 @@ func TestAPIGenRoutes_MountUnderV1_NoDoublePrefix(t *testing.T) {
 	}
 }
 
-func TestAPIGenStrictAdapter_DispatchesExecuteQueryOnV1Route(t *testing.T) {
+func TestAPIGenStrictRoutes_DispatchesExecuteQueryOnV1Route(t *testing.T) {
 	t.Parallel()
 
 	strict := &executeQueryStrictStub{}
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenRoutes(r, api.NewAPIGenStrictAdapter(strict))
+		api.RegisterAPIGenStrictRoutes(r, strict)
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/query", strings.NewReader(`{"sql":"select 1"}`))
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
-	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusCreated, rr.Code)
 	assert.True(t, strict.called)
 }
 
-func TestAPIGenStrictAdapter_HandlesGetHealthOnV1Route(t *testing.T) {
+func TestAPIGenStrictRoutes_HandlesGetHealthOnV1Route(t *testing.T) {
 	t.Parallel()
 
 	strict := &executeQueryStrictStub{}
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenRoutes(r, api.NewAPIGenStrictAdapter(strict))
+		api.RegisterAPIGenStrictRoutes(r, strict)
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/v1/healthz", nil)

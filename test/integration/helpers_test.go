@@ -703,8 +703,6 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		nil, // macroSvc
 		nil, // semanticSvc
 	)
-	strictHandler := api.NewAPIGenStrictAdapter(handler)
-
 	// Router with auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
 	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
@@ -715,7 +713,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	}, nil)
 	r.Use(authenticator.Middleware())
 	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenRoutes(r, strictHandler)
+		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
 	srv := httptest.NewServer(r)
@@ -839,8 +837,6 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 		nil, // macroSvc
 		nil, // semanticSvc
 	)
-	strictHandler := api.NewAPIGenStrictAdapter(handler)
-
 	// Router with auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
 	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
@@ -851,7 +847,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 	}, nil)
 	r.Use(authenticator.Middleware())
 	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenRoutes(r, strictHandler)
+		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
 	srv := httptest.NewServer(r)
@@ -1471,8 +1467,6 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		macroSvc, // macroSvc
 		semanticSvc,
 	)
-	strictHandler := api.NewAPIGenStrictAdapter(handler)
-
 	r := chi.NewRouter()
 
 	// Always use the full Authenticator for correct IsAdmin resolution.
@@ -1522,7 +1516,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
 		r.Post("/auth/sessions/revoke-all", authHandler.RevokeAllWebSessions)
 		r.Get("/auth/sessions/stats", authHandler.GetWebSessionStats)
-		api.RegisterAPIGenRoutes(r, strictHandler)
+		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
 	uiHandler := ui.NewHandler(
@@ -2220,8 +2214,6 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 		nil, // macroSvc
 		nil, // semanticSvc
 	)
-	strictHandler := api.NewAPIGenStrictAdapter(handler)
-
 	r := chi.NewRouter()
 	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
 	authenticator := middleware.NewAuthenticator(validator, apiKeyRepo, principalRepo, nil, config.AuthConfig{
@@ -2231,7 +2223,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	}, nil)
 	r.Use(authenticator.Middleware())
 	r.Route("/v1", func(r chi.Router) {
-		api.RegisterAPIGenRoutes(r, strictHandler)
+		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
 	srv := httptest.NewServer(r)

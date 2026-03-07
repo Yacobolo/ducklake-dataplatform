@@ -155,7 +155,6 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), catalogRepoFactory, cat, auditRepo)
 
 	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	strictHandler := NewAPIGenStrictAdapter(handler)
 
 	// Lookup principal to get admin status for context injection
 	p, err := principalRepo.GetByName(context.Background(), principalName)
@@ -176,7 +175,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	})
-	RegisterAPIGenRoutes(r, strictHandler)
+	RegisterAPIGenStrictRoutes(r, handler)
 
 	return httptest.NewServer(r)
 }
@@ -437,7 +436,6 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), mockFactory, cat, auditRepo)
 
 	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	strictHandler := NewAPIGenStrictAdapter(handler)
 
 	// Lookup principal to get admin status for context injection
 	p2, err := principalRepo.GetByName(context.Background(), principalName)
@@ -457,7 +455,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	})
-	RegisterAPIGenRoutes(r, strictHandler)
+	RegisterAPIGenStrictRoutes(r, handler)
 
 	return httptest.NewServer(r)
 }
@@ -1270,7 +1268,6 @@ func setupSecurityTestServer(t *testing.T, principalName string, isAdmin bool) *
 		nil, // macroSvc
 		nil, // semanticSvc
 	)
-	strictHandler := NewAPIGenStrictAdapter(handler)
 
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
@@ -1283,7 +1280,7 @@ func setupSecurityTestServer(t *testing.T, principalName string, isAdmin bool) *
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	})
-	RegisterAPIGenRoutes(r, strictHandler)
+	RegisterAPIGenStrictRoutes(r, handler)
 
 	return httptest.NewServer(r)
 }

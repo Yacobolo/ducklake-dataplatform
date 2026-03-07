@@ -51,6 +51,7 @@ tasks:
       - api/gen/openapi.yaml
       - api/gen/json-ir.json
       - internal/api/openapi.generated.yaml
+      - internal/api/gen_request_models.gen.go
       - internal/api/server.apigen.gen.go
       - pkg/cli/gen/apigen_registry.gen.go
 
@@ -76,7 +77,7 @@ tasks:
         msg: "apigen artifacts missing. Run 'task generate:api' first."
     cmds:
       - task generate:api
-      - git diff --exit-code -- internal/api/openapi.generated.yaml internal/api/server.apigen.gen.go pkg/cli/gen/apigen_registry.gen.go
+      - git diff --exit-code -- internal/api/openapi.generated.yaml internal/api/gen_request_models.gen.go internal/api/server.apigen.gen.go pkg/cli/gen/apigen_registry.gen.go
 
   generate:declarative-schema:
     desc: Generate declarative JSON Schema artifacts

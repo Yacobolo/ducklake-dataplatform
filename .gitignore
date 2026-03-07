@@ -45,6 +45,7 @@ internal/api/openapi.generated.yaml
 internal/api/types.gen.go
 internal/api/server.gen.go
 internal/api/server.apigen.gen.go
+internal/api/gen_request_models.gen.go
 internal/db/dbstore/*.sql.go
 internal/db/dbstore/db.go
 internal/db/dbstore/models.go

@@ -257,7 +257,7 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 		},
 	}
 
-	resp, err := h.ExplainMetricQuery(context.Background(), GenExplainMetricQueryRequest{Body: &MetricQueryRequest{
+	resp, err := h.ExplainMetricQuery(context.Background(), GenExplainMetricQueryRequest{Body: &GenExplainMetricQueryJSONBody{
 		ProjectName:       "analytics",
 		SemanticModelName: "sales",
 		Metrics:           []string{"total_revenue"},
@@ -309,7 +309,7 @@ func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
 		},
 	}
 
-	resp, err := h.RunMetricQuery(ctx, GenRunMetricQueryRequest{Body: &MetricQueryRequest{
+	resp, err := h.RunMetricQuery(ctx, GenRunMetricQueryRequest{Body: &GenRunMetricQueryJSONBody{
 		ProjectName:       "analytics",
 		SemanticModelName: "sales",
 		Metrics:           []string{"total_revenue"},
