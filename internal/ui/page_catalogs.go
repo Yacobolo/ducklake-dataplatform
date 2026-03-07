@@ -53,6 +53,7 @@ type catalogWorkspaceObjectNodeData struct {
 	Name     string
 	URL      string
 	AssetURL string
+	AssetKey string
 	Active   bool
 	Owner    string
 	Created  string
@@ -92,6 +93,7 @@ type catalogWorkspacePanelData struct {
 	Definition       string
 	ColumnsAvailable bool
 	AssetURL         string
+	AssetKey         string
 }
 
 type catalogWorkspacePageData struct {
@@ -174,7 +176,8 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 		panelActions = append(panelActions, A(Href(d.Panel.EditURL), Class(secondaryButtonClass()), Text("Edit")))
 	}
 	if d.Panel.AssetURL != "" {
-		panelActions = append(panelActions, A(Href(d.Panel.AssetURL), Class(secondaryButtonClass()), Text("Open asset")))
+		label := fallbackString(d.Panel.AssetKey, "Open asset")
+		panelActions = append(panelActions, A(Href(d.Panel.AssetURL), Class(secondaryButtonClass()), Text(label)))
 	}
 	if d.Panel.SetDefaultURL != "" {
 		panelActions = append(panelActions,
@@ -407,7 +410,7 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 				table := schema.Tables[j]
 				assetNode := Node(Text("-"))
 				if table.AssetURL != "" {
-					assetNode = A(Href(table.AssetURL), Text("Open asset"))
+					assetNode = A(Href(table.AssetURL), Text(fallbackString(table.AssetKey, "Open asset")))
 				}
 				childRows = append(childRows,
 					Tr(
@@ -423,7 +426,7 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 				view := schema.Views[j]
 				assetNode := Node(Text("-"))
 				if view.AssetURL != "" {
-					assetNode = A(Href(view.AssetURL), Text("Open asset"))
+					assetNode = A(Href(view.AssetURL), Text(fallbackString(view.AssetKey, "Open asset")))
 				}
 				childRows = append(childRows,
 					Tr(
@@ -474,6 +477,13 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 	return Div(
 		Class("catalog-section catalog-section-inline"),
 		descriptionNode,
+		If(d.Panel.AssetURL != "",
+			Div(Class("catalog-section"),
+				H3(Class("catalog-section-title"), Text("Linked asset")),
+				P(Class("catalog-muted"), Text("This object is already represented in the orchestration graph and asset workspace.")),
+				A(Href(d.Panel.AssetURL), Class(secondaryButtonClass()), Text(fallbackString(d.Panel.AssetKey, "Open asset"))),
+			),
+		),
 		Div(Class("catalog-overview-toolbar"),
 			Div(Class("catalog-overview-filter"),
 				I(Class("nav-icon"), Attr("data-lucide", "search"), Attr("aria-hidden", "true")),

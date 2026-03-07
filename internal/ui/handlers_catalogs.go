@@ -121,11 +121,12 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 			tableNodes := make([]catalogWorkspaceObjectNodeData, 0, len(tables))
 			for j := range tables {
 				t := tables[j]
-				assetURL, _ := h.linkedAssetURL(r.Context(), catalogName, s.Name, t.Name)
+				assetRef, _ := h.linkedAssetRef(r.Context(), catalogName, s.Name, t.Name)
 				tableNodes = append(tableNodes, catalogWorkspaceObjectNodeData{
 					Name:     t.Name,
 					URL:      catalogExplorerURL(catalogName, s.Name, "table", t.Name),
-					AssetURL: assetURL,
+					AssetURL: assetRef.URL,
+					AssetKey: assetRef.Key,
 					Active:   selectedType == "table" && selectedSchema == s.Name && selectedName == t.Name,
 					Owner:    t.Owner,
 					Created:  formatTime(t.CreatedAt),
@@ -140,11 +141,12 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 			viewNodes := make([]catalogWorkspaceObjectNodeData, 0, len(views))
 			for j := range views {
 				v := views[j]
-				assetURL, _ := h.linkedAssetURL(r.Context(), catalogName, s.Name, v.Name)
+				assetRef, _ := h.linkedAssetRef(r.Context(), catalogName, s.Name, v.Name)
 				viewNodes = append(viewNodes, catalogWorkspaceObjectNodeData{
 					Name:     v.Name,
 					URL:      catalogExplorerURL(catalogName, s.Name, "view", v.Name),
-					AssetURL: assetURL,
+					AssetURL: assetRef.URL,
+					AssetKey: assetRef.Key,
 					Active:   selectedType == "view" && selectedSchema == s.Name && selectedName == v.Name,
 					Owner:    v.Owner,
 					Created:  formatTime(v.CreatedAt),
@@ -210,7 +212,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	if selectedType == "table" && selectedSchema != "" && selectedName != "" {
 		table, tableErr := h.Catalog.GetTable(r.Context(), catalogName, selectedSchema, selectedName)
 		if tableErr == nil {
-			assetURL, _ := h.linkedAssetURL(r.Context(), catalogName, selectedSchema, selectedName)
+			assetRef, _ := h.linkedAssetRef(r.Context(), catalogName, selectedSchema, selectedName)
 			columnRows := make([]tableColumnRowData, 0, len(table.Columns))
 			for i := range table.Columns {
 				c := table.Columns[i]
@@ -231,7 +233,8 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 					{Label: "Updated", Value: formatTime(table.UpdatedAt)},
 				},
 				Columns:  columnRows,
-				AssetURL: assetURL,
+				AssetURL: assetRef.URL,
+				AssetKey: assetRef.Key,
 			}
 		}
 	}
@@ -239,7 +242,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	if selectedType == "view" && selectedSchema != "" && selectedName != "" {
 		v, viewErr := h.View.GetView(r.Context(), catalogName, selectedSchema, selectedName)
 		if viewErr == nil {
-			assetURL, _ := h.linkedAssetURL(r.Context(), catalogName, selectedSchema, selectedName)
+			assetRef, _ := h.linkedAssetRef(r.Context(), catalogName, selectedSchema, selectedName)
 			columns, _, columnsErr := h.Catalog.ListColumns(r.Context(), catalogName, selectedSchema, selectedName, domain.PageRequest{MaxResults: 200})
 			columnRows := make([]tableColumnRowData, 0, len(columns))
 			for i := range columns {
@@ -262,7 +265,8 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 				Definition:       v.ViewDefinition,
 				Columns:          columnRows,
 				ColumnsAvailable: columnsErr == nil,
-				AssetURL:         assetURL,
+				AssetURL:         assetRef.URL,
+				AssetKey:         assetRef.Key,
 			}
 		}
 	}
@@ -286,22 +290,27 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	}))
 }
 
-func (h *Handler) linkedAssetURL(ctx context.Context, catalogName, schemaName, objectName string) (string, error) {
+type linkedAssetRef struct {
+	Key string
+	URL string
+}
+
+func (h *Handler) linkedAssetRef(ctx context.Context, catalogName, schemaName, objectName string) (linkedAssetRef, error) {
 	if h == nil || h.Asset == nil {
-		return "", nil
+		return linkedAssetRef{}, nil
 	}
 	for _, candidate := range assetLookupCandidates(catalogName, schemaName, objectName) {
 		asset, err := h.Asset.GetAsset(ctx, candidate)
 		if err == nil && asset != nil {
-			return "/ui/assets/" + asset.AssetKey, nil
+			return linkedAssetRef{Key: asset.AssetKey, URL: "/ui/assets/" + asset.AssetKey}, nil
 		}
 		var notFound *domain.NotFoundError
 		if err == nil || errors.As(err, &notFound) {
 			continue
 		}
-		return "", err
+		return linkedAssetRef{}, err
 	}
-	return "", nil
+	return linkedAssetRef{}, nil
 }
 
 func assetLookupCandidates(catalogName, schemaName, objectName string) []string {
