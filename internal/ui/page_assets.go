@@ -372,7 +372,7 @@ func retryTimelinePanel(entries []assetRetryTimelineEntry) Node {
 			retryTag = statusLabel("retry", "attention")
 		}
 		items = append(items,
-			Li(Attr("style", "list-style:none; margin:0; padding:0 0 0 1rem; border-left: 2px solid var(--color-border-muted);"),
+			Li(Attr("style", "list-style:none; margin:0; padding:0 0 0 1rem; border-left: 2px solid var(--borderColor-muted);"),
 				Div(Class("d-flex flex-wrap gap-2 flex-items-center mb-1"),
 					Strong(Text(entry.RunID)),
 					statusLabel(entry.Status, runStatusTone(entry.Status)),
@@ -447,7 +447,7 @@ func partitionCalendarPanel(months []assetPartitionCalendarMonth) Node {
 				cells = append(cells, Div(Attr("style", "height: 2.5rem;")))
 				continue
 			}
-			cellStyle := "height:2.5rem; border-radius:6px; border:1px solid var(--color-border-muted); padding:0.2rem; font-size:0.75rem;"
+			cellStyle := "height:2.5rem; border-radius:6px; border:1px solid var(--borderColor-muted); padding:0.2rem; font-size:0.75rem;"
 			if cell.HasPartition {
 				cellStyle = cellStyle + partitionCalendarToneStyle(cell.Tone)
 			}
@@ -482,13 +482,13 @@ func partitionCalendarPanel(months []assetPartitionCalendarMonth) Node {
 func partitionCalendarToneStyle(tone string) string {
 	switch tone {
 	case "success":
-		return "background: var(--color-success-subtle); color: var(--color-success-fg); border-color: var(--color-success-emphasis);"
+		return "background: var(--bgColor-success-muted); color: var(--fgColor-success); border-color: var(--borderColor-success-muted);"
 	case "attention":
-		return "background: var(--color-attention-subtle); color: var(--color-attention-fg); border-color: var(--color-attention-emphasis);"
+		return "background: var(--bgColor-attention-muted); color: var(--fgColor-attention); border-color: var(--borderColor-attention-muted);"
 	case "severe":
-		return "background: var(--color-danger-subtle); color: var(--color-danger-fg); border-color: var(--color-danger-emphasis);"
+		return "background: var(--bgColor-danger-muted); color: var(--fgColor-danger); border-color: var(--borderColor-danger-muted);"
 	default:
-		return "background: var(--color-accent-subtle); color: var(--color-accent-fg); border-color: var(--color-accent-emphasis);"
+		return "background: var(--bgColor-accent-muted); color: var(--fgColor-accent); border-color: var(--borderColor-accent-muted);"
 	}
 }
 
@@ -523,8 +523,8 @@ func partitionSummary(statuses map[string]int) Node {
 		bars = append(bars,
 			Div(Class("mb-2"),
 				Div(Class("d-flex flex-items-center flex-wrap gap-2 mb-1"), statusLabel(status, partitionStatusTone(status)), Span(Class("color-fg-muted text-small"), Text(strconv.Itoa(count)+" / "+strconv.Itoa(total)))),
-				Div(Class("Box"), Attr("style", "height:8px; background: var(--color-canvas-subtle); border-radius: 999px; overflow: hidden;"),
-					Div(Attr("style", "height:100%; width:"+strconv.Itoa(percent)+"%; background: var(--color-accent-emphasis);")),
+				Div(Class("Box"), Attr("style", "height:8px; background: var(--canvas-subtle); border-radius: 999px; overflow: hidden;"),
+					Div(Attr("style", "height:100%; width:"+strconv.Itoa(percent)+"%; background: var(--bgColor-accent-emphasis);")),
 				),
 			),
 		)

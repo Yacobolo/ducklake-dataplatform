@@ -65,6 +65,7 @@ type catalogExplorerPanelData struct {
 
 var navItems = []navItem{
 	{Label: "Overview", Href: "/ui", Key: "home", Icon: "house"},
+	{Label: "Components", Href: "/ui/components", Key: "components", Icon: "layout-grid"},
 	{Label: "SQL Editor", Href: "/ui/sql", Key: "sql", Icon: "square-terminal"},
 	{Label: "Catalogs", Href: "/ui/catalogs", Key: "catalogs", Icon: "database"},
 	{Label: "Assets", Href: "/ui/assets", Key: "assets", Icon: "git-fork"},

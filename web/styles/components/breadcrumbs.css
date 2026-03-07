@@ -1,0 +1,42 @@
+.Breadcrumbs {
+  display: block;
+}
+
+.Breadcrumbs-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.Breadcrumbs-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.Breadcrumbs-item:not(:last-child)::after {
+  content: "/";
+  color: var(--fgColor-muted);
+  margin-left: var(--space-1);
+}
+
+.Breadcrumbs-link {
+  color: var(--fgColor-link);
+  text-decoration: none;
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-lineHeight);
+}
+
+.Breadcrumbs-link:hover {
+  text-decoration: underline;
+}
+
+.Breadcrumbs-link.is-active {
+  color: var(--fgColor-default);
+  font-weight: var(--base-text-weight-semibold);
+  text-decoration: none;
+}

@@ -1,0 +1,24 @@
+.ActionBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: end;
+}
+
+.ActionBar-search,
+.ActionBar-controls {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.ActionBar-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@media (max-width: var(--breakpoint-medium)) {
+  .ActionBar {
+    grid-template-columns: 1fr;
+  }
+}
