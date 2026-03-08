@@ -9,13 +9,14 @@ import (
 
 // GroupService provides group management operations.
 type GroupService struct {
-	repo  domain.GroupRepository
-	audit domain.AuditRepository
+	repo       domain.GroupRepository
+	principals domain.PrincipalRepository
+	audit      domain.AuditRepository
 }
 
 // NewGroupService creates a new GroupService.
-func NewGroupService(repo domain.GroupRepository, audit domain.AuditRepository) *GroupService {
-	return &GroupService{repo: repo, audit: audit}
+func NewGroupService(repo domain.GroupRepository, principals domain.PrincipalRepository, audit domain.AuditRepository) *GroupService {
+	return &GroupService{repo: repo, principals: principals, audit: audit}
 }
 
 // Create validates and persists a new group. Requires admin privileges.
@@ -71,6 +72,21 @@ func (s *GroupService) AddMember(ctx context.Context, req domain.AddGroupMemberR
 	if err := req.Validate(); err != nil {
 		return err
 	}
+	if _, err := s.repo.GetByID(ctx, req.GroupID); err != nil {
+		return err
+	}
+	if req.MemberType == "group" {
+		if req.MemberID == req.GroupID {
+			return domain.ErrValidation("group cannot be a member of itself")
+		}
+		if _, err := s.repo.GetByID(ctx, req.MemberID); err != nil {
+			return err
+		}
+	} else {
+		if _, err := s.principals.GetByID(ctx, req.MemberID); err != nil {
+			return err
+		}
+	}
 	m := &domain.GroupMember{
 		GroupID:    req.GroupID,
 		MemberType: req.MemberType,
@@ -91,6 +107,9 @@ func (s *GroupService) RemoveMember(ctx context.Context, req domain.RemoveGroupM
 	if err := req.Validate(); err != nil {
 		return err
 	}
+	if _, err := s.repo.GetByID(ctx, req.GroupID); err != nil {
+		return err
+	}
 	m := &domain.GroupMember{
 		GroupID:    req.GroupID,
 		MemberType: req.MemberType,
@@ -106,6 +125,9 @@ func (s *GroupService) RemoveMember(ctx context.Context, req domain.RemoveGroupM
 // ListMembers returns a paginated list of members in a group. Requires admin privileges.
 func (s *GroupService) ListMembers(ctx context.Context, groupID string, page domain.PageRequest) ([]domain.GroupMember, int64, error) {
 	if err := requireAdmin(ctx); err != nil {
+		return nil, 0, err
+	}
+	if _, err := s.repo.GetByID(ctx, groupID); err != nil {
 		return nil, 0, err
 	}
 	return s.repo.ListMembers(ctx, groupID, page)

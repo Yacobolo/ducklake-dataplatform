@@ -238,6 +238,7 @@ func run() error {
 		RequestsPerSecond: cfg.RateLimitRPS,
 		Burst:             cfg.RateLimitBurst,
 	}))
+	r.Use(api.RequestValidationMiddleware)
 
 	// Consistent JSON error responses for unknown routes and wrong methods
 	r.NotFound(func(w http.ResponseWriter, _ *http.Request) {

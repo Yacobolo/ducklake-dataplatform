@@ -373,6 +373,24 @@ func TestHandler_GetGroup(t *testing.T) {
 	}
 }
 
+func TestHandler_CreateGroup_ConflictReturns409(t *testing.T) {
+	t.Parallel()
+
+	handler := &APIHandler{groups: &mockGroupService{
+		createFn: func(_ context.Context, _ domain.CreateGroupRequest) (*domain.Group, error) {
+			return nil, domain.ErrConflict("group already exists")
+		},
+	}}
+
+	body := CreateGroupJSONRequestBody{Name: "engineers"}
+	resp, err := handler.CreateGroup(secTestCtx(), CreateGroupRequestObject{Body: &body})
+	require.NoError(t, err)
+
+	conflict, ok := resp.(CreateGroup409JSONResponse)
+	require.True(t, ok, "expected 409 response, got %T", resp)
+	assert.Equal(t, int32(409), conflict.Body.Code)
+}
+
 func TestHandler_ListGroupMembers(t *testing.T) {
 	t.Parallel()
 
@@ -407,6 +425,19 @@ func TestHandler_ListGroupMembers(t *testing.T) {
 				forbidden, ok := resp.(ListGroupMembers403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
+			},
+		},
+		{
+			name: "missing group returns 404",
+			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.GroupMember, int64, error) {
+				return nil, 0, domain.ErrNotFound("group not found")
+			},
+			assertFn: func(t *testing.T, resp ListGroupMembersResponseObject, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				notFound, ok := resp.(ListGroupMembers404JSONResponse)
+				require.True(t, ok, "expected 404 response, got %T", resp)
+				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
 		},
 	}
@@ -456,6 +487,32 @@ func TestHandler_CreateGroupMember(t *testing.T) {
 				forbidden, ok := resp.(CreateGroupMember403JSONResponse)
 				require.True(t, ok, "expected 403 response, got %T", resp)
 				assert.Equal(t, int32(403), forbidden.Body.Code)
+			},
+		},
+		{
+			name: "missing group returns 404",
+			svcFn: func(_ context.Context, _ domain.AddGroupMemberRequest) error {
+				return domain.ErrNotFound("group not found")
+			},
+			assertFn: func(t *testing.T, resp CreateGroupMemberResponseObject, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				notFound, ok := resp.(CreateGroupMember404JSONResponse)
+				require.True(t, ok, "expected 404 response, got %T", resp)
+				assert.Equal(t, int32(404), notFound.Body.Code)
+			},
+		},
+		{
+			name: "validation returns 400",
+			svcFn: func(_ context.Context, _ domain.AddGroupMemberRequest) error {
+				return domain.ErrValidation("group cannot be a member of itself")
+			},
+			assertFn: func(t *testing.T, resp CreateGroupMemberResponseObject, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				badReq, ok := resp.(CreateGroupMember400JSONResponse)
+				require.True(t, ok, "expected 400 response, got %T", resp)
+				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
 		},
 	}

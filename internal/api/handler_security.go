@@ -194,6 +194,10 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObje
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return CreateGroup403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateGroup400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ConflictError)):
+			return CreateGroup409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -240,8 +244,12 @@ func (h *APIHandler) ListGroupMembers(ctx context.Context, req ListGroupMembersR
 	ms, total, err := h.groups.ListMembers(ctx, req.GroupId, page)
 	if err != nil {
 		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return ListGroupMembers400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return ListGroupMembers403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return ListGroupMembers404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -265,8 +273,12 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMembe
 		MemberID:   req.Body.MemberId,
 	}); err != nil {
 		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateGroupMember400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return CreateGroupMember403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return CreateGroupMember404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -282,8 +294,12 @@ func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMembe
 		MemberID:   req.Params.MemberId,
 	}); err != nil {
 		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return DeleteGroupMember400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return DeleteGroupMember403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return DeleteGroupMember404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}

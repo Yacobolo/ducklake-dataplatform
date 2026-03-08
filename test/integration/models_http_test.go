@@ -1463,16 +1463,11 @@ func TestHTTP_ModelRunEndpoints(t *testing.T) {
 		require.Equal(t, 404, resp.StatusCode)
 	})
 
-	t.Run("list_run_steps_empty_for_nonexistent_run", func(t *testing.T) {
+	t.Run("list_run_steps_not_found_for_nonexistent_run", func(t *testing.T) {
 		resp := doRequest(t, "GET",
 			env.Server.URL+"/v1/model-runs/00000000-0000-0000-0000-000000000000/steps",
 			env.Keys.Admin, nil)
-		require.Equal(t, 200, resp.StatusCode)
-
-		var result map[string]interface{}
-		decodeJSON(t, resp, &result)
-		data := result["data"].([]interface{})
-		assert.Equal(t, 0, len(data), "steps should be empty for nonexistent run")
+		require.Equal(t, 404, resp.StatusCode)
 	})
 }
 

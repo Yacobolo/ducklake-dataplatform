@@ -13,13 +13,14 @@ import (
 
 // APIKeyService provides API key management operations.
 type APIKeyService struct {
-	repo  domain.APIKeyRepository
-	audit domain.AuditRepository
+	repo       domain.APIKeyRepository
+	principals domain.PrincipalRepository
+	audit      domain.AuditRepository
 }
 
 // NewAPIKeyService creates a new APIKeyService.
-func NewAPIKeyService(repo domain.APIKeyRepository, audit domain.AuditRepository) *APIKeyService {
-	return &APIKeyService{repo: repo, audit: audit}
+func NewAPIKeyService(repo domain.APIKeyRepository, principals domain.PrincipalRepository, audit domain.AuditRepository) *APIKeyService {
+	return &APIKeyService{repo: repo, principals: principals, audit: audit}
 }
 
 // Create generates a new API key for the given principal.
@@ -38,6 +39,9 @@ func (s *APIKeyService) Create(ctx context.Context, req domain.CreateAPIKeyReque
 	// Non-admin users can only create keys for themselves.
 	if !caller.IsAdmin && caller.ID != req.PrincipalID {
 		return "", nil, domain.ErrAccessDenied("non-admin users can only create API keys for themselves")
+	}
+	if _, err := s.principals.GetByID(ctx, req.PrincipalID); err != nil {
+		return "", nil, err
 	}
 
 	// Generate a cryptographically secure random key.
