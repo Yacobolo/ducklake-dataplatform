@@ -49,7 +49,7 @@ func TestGenerateArtifacts(t *testing.T) {
 	require.NoError(t, os.WriteFile(canonicalOpenAPIPath, []byte("openapi: 3.0.0\ninfo:\n  title: Duck\n  version: 0.1.0\npaths: {}\n"), 0o644))
 
 	require.NoError(t, generateOpenAPI(doc, openapiPath))
-	require.NoError(t, generateServer(doc, serverPath, requestModelsPath, canonicalOpenAPIPath))
+	require.NoError(t, generateServer(doc, serverPath, requestModelsPath, "", canonicalOpenAPIPath))
 	require.NoError(t, generateCLI(doc, cliPath))
 
 	_, err = os.Stat(openapiPath)

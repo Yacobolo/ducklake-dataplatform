@@ -30,6 +30,7 @@ func main() {
 	canonicalOpenAPIPath := fs.String("canonical-openapi", "api/gen/openapi.yaml", "canonical OpenAPI YAML path to embed into generated server code")
 	serverOut := fs.String("server-out", "internal/api/server.apigen.gen.go", "output server Go path")
 	requestModelsOut := fs.String("request-models-out", "internal/api/gen_request_models.gen.go", "output APIGen request models Go path")
+	compatTypesOut := fs.String("compat-types-out", "", "optional output path for standalone APIGen-owned compatibility schema types")
 	cliOut := fs.String("cli-out", "pkg/cli/gen/apigen_registry.gen.go", "output CLI Go path")
 	if err := fs.Parse(os.Args[2:]); err != nil {
 		fatalf("parse flags: %v", err)
@@ -46,7 +47,7 @@ func main() {
 			fatalf("generate openapi: %v", err)
 		}
 	case "server":
-		if err := generateServer(doc, *serverOut, *requestModelsOut, *canonicalOpenAPIPath); err != nil {
+		if err := generateServer(doc, *serverOut, *requestModelsOut, *compatTypesOut, *canonicalOpenAPIPath); err != nil {
 			fatalf("generate server: %v", err)
 		}
 	case "cli":
@@ -54,7 +55,7 @@ func main() {
 			fatalf("generate cli: %v", err)
 		}
 	case "all":
-		if err := generateServer(doc, *serverOut, *requestModelsOut, *canonicalOpenAPIPath); err != nil {
+		if err := generateServer(doc, *serverOut, *requestModelsOut, *compatTypesOut, *canonicalOpenAPIPath); err != nil {
 			fatalf("generate server: %v", err)
 		}
 		if err := generateCLI(doc, *cliOut); err != nil {
@@ -79,7 +80,7 @@ func generateOpenAPI(doc ir.Document, outPath string) error {
 	return nil
 }
 
-func generateServer(doc ir.Document, outPath string, requestModelsOutPath string, canonicalOpenAPIPath string) error {
+func generateServer(doc ir.Document, outPath string, requestModelsOutPath string, compatTypesOutPath string, canonicalOpenAPIPath string) error {
 	if err := servergoemit.ValidateOperationIDs(doc); err != nil {
 		return fmt.Errorf("validate operation ids: %w", err)
 	}
@@ -108,6 +109,19 @@ func generateServer(doc ir.Document, outPath string, requestModelsOutPath string
 	}
 	if err := writeFile(requestModelsOutPath, formattedRequestModels); err != nil {
 		return err
+	}
+	if compatTypesOutPath != "" {
+		compatTypes, err := requestmodelgoemit.EmitStandaloneCompatibilityTypes(doc, "")
+		if err != nil {
+			return fmt.Errorf("emit compatibility types go: %w", err)
+		}
+		formattedCompatTypes, err := format.Source(compatTypes)
+		if err != nil {
+			return fmt.Errorf("format compatibility types go output: %w", err)
+		}
+		if err := writeFile(compatTypesOutPath, formattedCompatTypes); err != nil {
+			return err
+		}
 	}
 	return nil
 }

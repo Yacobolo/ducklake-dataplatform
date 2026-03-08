@@ -142,3 +142,52 @@ func TestEmit_ApigenOwnedSchemaNames(t *testing.T) {
 	require.Contains(t, content, "type GenSchemaQueryResponse struct")
 	require.Contains(t, content, "Columns []any `json:\"columns\"`")
 }
+
+func TestEmitStandaloneCompatibilityTypes_EmitsConcreteCanonicalTypes(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		Schemas: map[string]ir.Schema{
+			"CreateWidgetRequest": {
+				Type: "object",
+				Properties: map[string]ir.SchemaProperty{
+					"name": {Schema: ir.SchemaRef{Type: "string"}},
+				},
+				Required: []string{"name"},
+			},
+			"PaginatedWidgets": {
+				Type: "object",
+				Properties: map[string]ir.SchemaProperty{
+					"data": {Schema: ir.SchemaRef{Ref: "WidgetList"}},
+				},
+			},
+			"WidgetList": {
+				Type:  "array",
+				Items: &ir.SchemaRef{Ref: "Widget"},
+			},
+			"Widget": {
+				Type: "object",
+				Properties: map[string]ir.SchemaProperty{
+					"id": {Schema: ir.SchemaRef{Type: "string"}},
+				},
+				Required: []string{"id"},
+			},
+		},
+		Endpoints: []ir.Endpoint{
+			{OperationID: "createWidget", RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "CreateWidgetRequest"}}},
+			{OperationID: "listWidgets", Responses: []ir.Response{{StatusCode: 200, Schema: &ir.SchemaRef{Ref: "PaginatedWidgets"}}}},
+		},
+	}
+
+	b, err := EmitStandaloneCompatibilityTypes(doc, "")
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type CreateWidgetRequest struct")
+	require.Contains(t, content, "Name string `json:\"name\"`")
+	require.Contains(t, content, "type Widget struct")
+	require.Contains(t, content, "type WidgetList []Widget")
+	require.Contains(t, content, "type PaginatedWidgets struct")
+	require.Contains(t, content, "type GenSchemaCreateWidgetRequest = CreateWidgetRequest")
+	require.Contains(t, content, "type GenSchemaPaginatedWidgets = PaginatedWidgets")
+}
