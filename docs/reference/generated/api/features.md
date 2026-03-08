@@ -6,8 +6,8 @@ This page is generated from OpenAPI tags and operations.
 
 | Feature | What you can do | API coverage |
 | --- | --- | --- |
-| [Assets](./endpoints/assets) | Asset-centric orchestration, runs, partitions, and backfills. | 12 operations |
-| [Catalogs](./endpoints/catalogs) | Catalog registration, schema, table, column, and view management. | 30 operations |
+| [Assets](./endpoints/assets) | Asset-centric orchestration, runs, partitions, and backfills. | 15 operations |
+| [Catalogs](./endpoints/catalogs) | Catalog registration, schema, table, column, and view management. | 32 operations |
 | [Compute](./endpoints/compute) | Compute endpoint and assignment management. | 9 operations |
 | [Governance](./endpoints/governance) | Tags, classifications, and catalog search. | 7 operations |
 | [Ingestion](./endpoints/ingestion) | Data ingestion via upload, commit, and external file loading. | 3 operations |

@@ -414,6 +414,183 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
+  /catalogs/{catalogName}/version-summary:
+    parameters:
+      - $ref: '../schemas/responses.yaml#/parameters/catalogName'
+    get:
+      operationId: getCatalogVersionSummary
+      summary: Get catalog version summary
+      tags: [Catalogs]
+      description: Returns additive DuckLake metastore version metadata for a catalog.
+      responses:
+        '200':
+          description: Catalog version summary
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/catalog.yaml#/CatalogVersionSummary'
+              example:
+                catalog_name: lake
+                version: '0.3'
+                created_by: DuckDB 6ddac802ff
+                encrypted: false
+                data_path: s3://my-bucket/data/
+                latest_snapshot_id: 42
+                schemas:
+                  total_count: 3
+                  active_count: 1
+                  historical_count: 2
+                  has_history: true
+                  latest_snapshot_id: 42
+                tables:
+                  total_count: 5
+                  active_count: 2
+                  historical_count: 3
+                  has_history: true
+                  latest_snapshot_id: 42
+                columns:
+                  total_count: 18
+                  active_count: 12
+                  historical_count: 6
+                  has_history: true
+                  latest_snapshot_id: 42
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
+  /catalogs/{catalogName}/history:
+    parameters:
+      - $ref: '../schemas/responses.yaml#/parameters/catalogName'
+    get:
+      operationId: listCatalogHistory
+      summary: List catalog history
+      tags: [Catalogs]
+      description: Returns recent DuckLake schema, table, and column history entries.
+      parameters:
+        - name: entity_type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [schema, table, column]
+          description: Filter results to a single DuckLake metadata entity type.
+        - name: schema_name
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+            pattern: '^\S.*$'
+          description: Restrict results to a schema.
+        - name: table_name
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+            pattern: '^\S.*$'
+          description: Restrict results to a table.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 200
+            default: 50
+          description: Maximum number of history entries to return.
+      responses:
+        '200':
+          description: Catalog history entries
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests allowed in the current window.
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Remaining:
+              description: Requests remaining in the current window.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 1000000
+                format: int32
+            X-RateLimit-Reset:
+              description: UTC epoch seconds when the rate limit resets.
+              schema:
+                type: integer
+                minimum: 0
+                maximum: 4102444800
+                format: int64
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/catalog.yaml#/CatalogHistoryResponse'
+              example:
+                data:
+                  - entity_type: table
+                    schema_name: main
+                    table_name: users
+                    object_name: main.users
+                    object_id: '42'
+                    begin_snapshot_id: 2
+                    end_snapshot_id: 4
+                    latest_snapshot_id: 4
+                    is_active: false
+                    has_history: true
+                  - entity_type: column
+                    schema_name: main
+                    table_name: users
+                    column_name: email
+                    object_name: main.users.email
+                    object_id: '99'
+                    begin_snapshot_id: 4
+                    latest_snapshot_id: 4
+                    is_active: true
+                    has_history: false
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+
   /catalogs/{catalogName}/schemas:
     parameters:
       - $ref: '../schemas/responses.yaml#/parameters/catalogName'

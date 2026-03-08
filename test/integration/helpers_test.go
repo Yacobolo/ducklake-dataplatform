@@ -1352,6 +1352,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			extLocationRepo, storageCredRepo, authSvc, auditRepo,
 			secretMgr, slog.New(slog.NewTextHandler(io.Discard, nil)),
 		)
+		catalogSvc = catalog.NewCatalogService(catalogRepoFactory, authSvc, auditRepo, tagRepo, tableStatsRepo, extLocationRepo)
 	}
 
 	// Optionally wire compute endpoints with full resolver + engine

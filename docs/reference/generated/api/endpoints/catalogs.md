@@ -136,6 +136,40 @@ Removes a catalog registration. Does not delete the underlying data.
 | `429` | Rate limit exceeded. Retry after the indicated duration. |
 | `500` | An unexpected internal server error occurred. |
 
+## `GET /catalogs/{catalogName}/history`
+
+List catalog history
+
+Returns recent DuckLake schema, table, and column history entries.
+
+- Operation ID: `listCatalogHistory`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalogName` | `string` | `true` | Name of the catalog. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `entity_type` | `string` | `false` | Filter results to a single DuckLake metadata entity type. |
+| `limit` | `integer` | `false` | Maximum number of history entries to return. |
+| `schema_name` | `string` | `false` | Restrict results to a schema. |
+| `table_name` | `string` | `false` | Restrict results to a table. |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | Catalog history entries |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
 ## `GET /catalogs/{catalogName}/info`
 
 Get catalog info
@@ -898,6 +932,31 @@ Sets the specified catalog as the default catalog for the platform.
 | `400` | Invalid request parameters or malformed request body. |
 | `401` | Authentication credentials are missing or invalid. |
 | `403` | Insufficient privileges to perform this operation. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
+## `GET /catalogs/{catalogName}/version-summary`
+
+Get catalog version summary
+
+Returns additive DuckLake metastore version metadata for a catalog.
+
+- Operation ID: `getCatalogVersionSummary`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalogName` | `string` | `true` | Name of the catalog. |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | Catalog version summary |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
 | `404` | The requested resource was not found. |
 | `429` | Rate limit exceeded. Retry after the indicated duration. |
 | `500` | An unexpected internal server error occurred. |

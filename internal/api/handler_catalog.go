@@ -17,6 +17,8 @@ func principalFromCtx(ctx context.Context) string {
 // catalogService defines the catalog operations used by the API handler.
 type catalogService interface {
 	GetCatalogInfo(ctx context.Context, catalogName string) (*domain.CatalogInfo, error)
+	GetCatalogVersionSummary(ctx context.Context, catalogName string) (*domain.CatalogVersionSummary, error)
+	ListCatalogHistory(ctx context.Context, catalogName string, filter domain.CatalogHistoryFilter) ([]domain.CatalogHistoryEntry, error)
 	ListSchemas(ctx context.Context, catalogName string, page domain.PageRequest) ([]domain.SchemaDetail, int64, error)
 	CreateSchema(ctx context.Context, catalogName string, principal string, req domain.CreateSchemaRequest) (*domain.SchemaDetail, error)
 	GetSchema(ctx context.Context, catalogName string, name string) (*domain.SchemaDetail, error)
@@ -49,6 +51,60 @@ func (h *APIHandler) GetCatalog(ctx context.Context, request GetCatalogRequestOb
 	return GetCatalog200JSONResponse{
 		Body:    catalogInfoToAPI(*info),
 		Headers: GetCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetCatalogVersionSummary implements the endpoint for retrieving catalog version metadata.
+func (h *APIHandler) GetCatalogVersionSummary(ctx context.Context, request GetCatalogVersionSummaryRequestObject) (GetCatalogVersionSummaryResponseObject, error) {
+	summary, err := h.catalog.GetCatalogVersionSummary(ctx, string(request.CatalogName))
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return GetCatalogVersionSummary404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+	return GetCatalogVersionSummary200JSONResponse{
+		Body:    catalogVersionSummaryToAPI(*summary),
+		Headers: GetCatalogVersionSummary200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// ListCatalogHistory implements the endpoint for retrieving snapshot-aware catalog history.
+func (h *APIHandler) ListCatalogHistory(ctx context.Context, request ListCatalogHistoryRequestObject) (ListCatalogHistoryResponseObject, error) {
+	filter := domain.CatalogHistoryFilter{}
+	if request.Params.EntityType != nil {
+		filter.EntityType = string(*request.Params.EntityType)
+	}
+	if request.Params.SchemaName != nil {
+		filter.SchemaName = *request.Params.SchemaName
+	}
+	if request.Params.TableName != nil {
+		filter.TableName = *request.Params.TableName
+	}
+	if request.Params.Limit != nil {
+		filter.Limit = int(*request.Params.Limit)
+	}
+
+	entries, err := h.catalog.ListCatalogHistory(ctx, string(request.CatalogName), filter)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return ListCatalogHistory400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return ListCatalogHistory404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+	out := make([]CatalogHistoryEntry, len(entries))
+	for i := range entries {
+		out[i] = catalogHistoryEntryToAPI(entries[i])
+	}
+	return ListCatalogHistory200JSONResponse{
+		Body:    CatalogHistoryResponse{Data: &out},
+		Headers: ListCatalogHistory200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

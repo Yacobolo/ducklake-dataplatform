@@ -155,6 +155,58 @@ func catalogInfoToAPI(c domain.CatalogInfo) CatalogInfo {
 	}
 }
 
+func catalogVersionSummaryToAPI(s domain.CatalogVersionSummary) CatalogVersionSummary {
+	result := CatalogVersionSummary{
+		CatalogName: &s.CatalogName,
+		Version:     strPtrIfNonEmpty(s.Version),
+		CreatedBy:   strPtrIfNonEmpty(s.CreatedBy),
+		Encrypted:   s.Encrypted,
+		DataPath:    strPtrIfNonEmpty(s.DataPath),
+		Schemas:     versionedObjectSummaryPtr(s.Schemas),
+		Tables:      versionedObjectSummaryPtr(s.Tables),
+		Columns:     versionedObjectSummaryPtr(s.Columns),
+	}
+	if s.LatestSnapshotID != nil {
+		result.LatestSnapshotId = s.LatestSnapshotID
+	}
+	return result
+}
+
+func catalogHistoryEntryToAPI(e domain.CatalogHistoryEntry) CatalogHistoryEntry {
+	result := CatalogHistoryEntry{
+		EntityType:       &e.EntityType,
+		SchemaName:       strPtrIfNonEmpty(e.SchemaName),
+		TableName:        strPtrIfNonEmpty(e.TableName),
+		ColumnName:       strPtrIfNonEmpty(e.ColumnName),
+		ObjectName:       &e.ObjectName,
+		ObjectId:         &e.ObjectID,
+		BeginSnapshotId:  e.BeginSnapshotID,
+		EndSnapshotId:    e.EndSnapshotID,
+		LatestSnapshotId: e.LatestSnapshotID,
+		IsActive:         &e.IsActive,
+		HasHistory:       &e.HasHistory,
+	}
+	return result
+}
+
+func versionedObjectSummaryToAPI(s domain.VersionedObjectSummary) VersionedObjectSummary {
+	result := VersionedObjectSummary{
+		TotalCount:      &s.TotalCount,
+		ActiveCount:     &s.ActiveCount,
+		HistoricalCount: &s.HistoricalCount,
+		HasHistory:      &s.HasHistory,
+	}
+	if s.LatestSnapshotID != nil {
+		result.LatestSnapshotId = s.LatestSnapshotID
+	}
+	return result
+}
+
+func versionedObjectSummaryPtr(s domain.VersionedObjectSummary) *VersionedObjectSummary {
+	result := versionedObjectSummaryToAPI(s)
+	return &result
+}
+
 func schemaDetailToAPI(s domain.SchemaDetail) SchemaDetail {
 	tags := make([]Tag, len(s.Tags))
 	for i, t := range s.Tags {
