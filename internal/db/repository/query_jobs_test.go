@@ -13,8 +13,6 @@ import (
 )
 
 func TestQueryJobRepo_CRUDLifecycle(t *testing.T) {
-	t.Parallel()
-
 	writeDB, _ := db.OpenTestSQLite(t)
 	repo := NewQueryJobRepo(writeDB)
 
@@ -55,4 +53,24 @@ func TestQueryJobRepo_CRUDLifecycle(t *testing.T) {
 
 	_, err = repo.GetByID(context.Background(), created.ID)
 	require.Error(t, err)
+}
+
+func TestQueryJobRepo_ListByPrincipal(t *testing.T) {
+	writeDB, _ := db.OpenTestSQLite(t)
+	repo := NewQueryJobRepo(writeDB)
+
+	_, err := repo.Create(context.Background(), &domain.QueryJob{PrincipalName: "alice", RequestID: "req-1", SQLText: "SELECT 1", Status: domain.QueryJobStatusQueued})
+	require.NoError(t, err)
+	_, err = repo.Create(context.Background(), &domain.QueryJob{PrincipalName: "alice", RequestID: "req-2", SQLText: "SELECT 2", Status: domain.QueryJobStatusQueued})
+	require.NoError(t, err)
+	_, err = repo.Create(context.Background(), &domain.QueryJob{PrincipalName: "bob", RequestID: "req-3", SQLText: "SELECT 3", Status: domain.QueryJobStatusQueued})
+	require.NoError(t, err)
+
+	items, total, err := repo.ListByPrincipal(context.Background(), "alice", domain.PageRequest{MaxResults: 10})
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), total)
+	require.Len(t, items, 2)
+	for i := range items {
+		assert.Equal(t, "alice", items[i].PrincipalName)
+	}
 }

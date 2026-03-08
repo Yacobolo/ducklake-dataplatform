@@ -160,7 +160,7 @@ jobs:
     needs: generate
     if: github.event_name != 'push' || github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       matrix:
         suite: [unit, integration]

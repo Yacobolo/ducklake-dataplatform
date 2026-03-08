@@ -40,7 +40,7 @@ func notebooksListPage(principal domain.ContextPrincipal, rows []notebooksListRo
 	if len(tableRows) > 0 {
 		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
 	}
-	return appPage("Notebooks", "notebooks", principal, pageToolbar("/ui/notebooks/new", "New notebook"), quickFilterCard("Filter by notebook or owner"), tableNode, paginationCard("/ui/notebooks", page, total))
+	return appPage("Notebooks", "notebooks", principal, pageToolbar("/ui/notebooks/new", "New notebook"), pageToolbar("/ui/notebooks/git-repos", "Git repos"), quickFilterCard("Filter by notebook or owner"), tableNode, paginationCard("/ui/notebooks", page, total))
 }
 
 type notebookCellRowData struct {
@@ -71,6 +71,7 @@ type notebookCellResultData struct {
 
 type notebookJobRowData struct {
 	ID      string
+	URL     string
 	State   string
 	Updated string
 }
@@ -85,7 +86,11 @@ type notebookDetailPageData struct {
 	DeleteURL     string
 	NewCellURL    string
 	RunAllURL     string
+	RunAllAsyncURL string
 	ReorderURL    string
+	JobsURL       string
+	GitRepoURL    string
+	PromoteURL    string
 	Jobs          []notebookJobRowData
 	Cells         []notebookCellRowData
 	Explorer      []catalogExplorerCatalogItem
@@ -367,7 +372,10 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			),
 			Div(Class("button-row notebook-toolbar-actions"),
 				Form(Method("post"), Action(d.RunAllURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(primaryButtonClass()), Text("Run all"))),
+				Form(Method("post"), Action(d.RunAllAsyncURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(secondaryButtonClass()), Text("Run async"))),
 				A(Href(d.NewCellURL), Class(secondaryButtonClass()), Text("New cell")),
+				A(Href(d.JobsURL), Class(secondaryButtonClass()), Text("Jobs")),
+				A(Href(d.GitRepoURL), Class(secondaryButtonClass()), Text("Git repos")),
 				Details(
 					Class("dropdown details-reset details-overlay d-inline-block"),
 					Summary(
@@ -395,13 +403,14 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			[]workspaceAsideTab{
 				{ID: "outline", Label: "Outline", Icon: "list-tree", Count: strconv.Itoa(len(d.Cells)), Content: outlinePanel, PanelClass: "notebook-outline-panel-wrap"},
 				{ID: "explorer", Label: "Explorer", Icon: "database", Content: explorerPanel},
-				{ID: "runs", Label: "Runs", Icon: "workflow", Content: P(Class("color-fg-muted text-small"), Text("Pipeline run history will appear here."))},
+				{ID: "runs", Label: "Runs", Icon: "workflow", Count: strconv.Itoa(len(d.Jobs)), Content: notebookJobsAside(d.Jobs)},
 			},
 			"outline",
 		),
 		Div(
 			Class("notebook-main"),
 			toolbarNode,
+			notebookPromoteCard(d),
 			Div(
 				Class("notebook-cells"),
 				Attr("data-reorder-url", d.ReorderURL),
@@ -418,6 +427,52 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		workspaceNode,
 		Script(Src(uiScriptHref("sql-editor.js"))),
 		Script(Src(uiScriptHref("notebook.js"))),
+	)
+}
+
+func notebookJobsAside(jobs []notebookJobRowData) Node {
+	if len(jobs) == 0 {
+		return P(Class("color-fg-muted text-small"), Text("No async jobs yet."))
+	}
+	rows := make([]Node, 0, len(jobs))
+	for i := range jobs {
+		job := jobs[i]
+		rows = append(rows, Li(A(Href(job.URL), Text(job.ID)), Text(" "), statusLabel(job.State, notebookJobTone(job.State)), Text(" "), Span(Class(mutedClass()), Text(job.Updated))))
+	}
+	return Ul(Group(rows))
+}
+
+func notebookPromoteCard(d notebookDetailPageData) Node {
+	options := []Node{}
+	for i := range d.Cells {
+		cell := d.Cells[i]
+		if cell.CellType != string(domain.CellTypeSQL) {
+			continue
+		}
+		label := fmt.Sprintf("%s (%s)", cell.Title, cell.ID)
+		options = append(options, Option(Value(cell.ID), Text(label)))
+	}
+	if len(options) == 0 {
+		return Div(Class(cardClass()), H2(Text("Promote to model")), P(Class(mutedClass()), Text("Add at least one SQL cell before promoting notebook output to a model.")))
+	}
+	return Div(
+		Class(cardClass()),
+		H2(Text("Promote to model")),
+		Form(
+			Method("post"),
+			Action(d.PromoteURL),
+			d.CSRFFieldFunc(),
+			Input(Type("hidden"), Name("notebook_id"), Value(d.NotebookID)),
+			Label(Text("Output cell")),
+			Select(Name("output_cell_id"), Group(options)),
+			Label(Text("Project")),
+			Input(Name("project_name"), Required()),
+			Label(Text("Model name")),
+			Input(Name("name"), Required()),
+			Label(Text("Materialization")),
+			Select(Name("materialization"), Option(Value("VIEW"), Text("VIEW")), Option(Value("TABLE"), Text("TABLE")), Option(Value("INCREMENTAL"), Text("INCREMENTAL")), Option(Value("EPHEMERAL"), Text("EPHEMERAL"))),
+			Button(Type("submit"), Class(primaryButtonClass()), Text("Promote notebook output")),
+		),
 	)
 }
 
@@ -523,6 +578,166 @@ func notebookJobTone(state string) string {
 	default:
 		return "attention"
 	}
+}
+
+type gitRepoRowData struct {
+	ID         string
+	URL        string
+	Repository string
+	Branch     string
+	Path       string
+	Owner      string
+	LastSync   string
+}
+
+type notebookGitReposListPageData struct {
+	Principal domain.ContextPrincipal
+	Rows      []gitRepoRowData
+	Page      domain.PageRequest
+	Total     int64
+}
+
+func notebookGitReposListPage(d notebookGitReposListPageData) Node {
+	rows := make([]Node, 0, len(d.Rows))
+	for i := range d.Rows {
+		row := d.Rows[i]
+		rows = append(rows, Tr(
+			Td(A(Href(row.URL), Text(row.Repository))),
+			Td(Text(row.Branch)),
+			Td(Text(row.Path)),
+			Td(Text(row.Owner)),
+			Td(Text(row.LastSync)),
+		))
+	}
+	tableNode := Node(emptyStateCard("No Git repositories registered.", "Register Git repo", "/ui/notebooks/git-repos/new"))
+	if len(rows) > 0 {
+		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Repository")), Th(Text("Branch")), Th(Text("Path")), Th(Text("Owner")), Th(Text("Last sync")))), TBody(Group(rows))))
+	}
+	return appPage("Notebook Git Repos", "notebooks", d.Principal, pageToolbar("/ui/notebooks/git-repos/new", "Register Git repo"), tableNode, paginationCard("/ui/notebooks/git-repos", d.Page, d.Total))
+}
+
+func notebookGitReposNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "Register Git Repo", "notebooks", "/ui/notebooks/git-repos", csrfFieldProvider,
+		Label(Text("Repository URL")),
+		Input(Name("url"), Required()),
+		Label(Text("Branch")),
+		Input(Name("branch"), Value("main"), Required()),
+		Label(Text("Path")),
+		Input(Name("path")),
+		Label(Text("Auth token")),
+		Input(Name("auth_token"), Type("password")),
+	)
+}
+
+type notebookGitRepoDetailPageData struct {
+	Principal     domain.ContextPrincipal
+	ID            string
+	URL           string
+	Branch        string
+	Path          string
+	Owner         string
+	LastSync      string
+	LastCommit    string
+	DeleteURL     string
+	SyncURL       string
+	CSRFFieldFunc func() Node
+}
+
+func notebookGitRepoDetailPage(d notebookGitRepoDetailPageData) Node {
+	return appPage(
+		"Git Repo",
+		"notebooks",
+		d.Principal,
+		Div(
+			Class(cardClass()),
+			P(Text("Repository: "+d.URL)),
+			P(Text("Branch: "+d.Branch)),
+			P(Text("Path: "+d.Path)),
+			P(Text("Owner: "+d.Owner)),
+			P(Text("Last sync: "+d.LastSync)),
+			P(Text("Last commit: "+d.LastCommit)),
+			Div(Class("BtnGroup"),
+				Form(Method("post"), Action(d.SyncURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(primaryButtonClass()), Text("Sync repo"))),
+				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete repo"))),
+			),
+		),
+	)
+}
+
+type notebookGitRepoSyncResultPageData struct {
+	Principal domain.ContextPrincipal
+	GitRepoID string
+	Result    *domain.GitSyncResult
+}
+
+func notebookGitRepoSyncResultPage(d notebookGitRepoSyncResultPageData) Node {
+	if d.Result == nil {
+		return appPage("Git Sync", "notebooks", d.Principal, emptyStateCard("No sync result available.", "Back to repo", "/ui/notebooks/git-repos/"+d.GitRepoID))
+	}
+	return appPage("Git Sync", "notebooks", d.Principal, Div(Class(cardClass()), P(Text("Created notebooks: "+strconv.Itoa(d.Result.NotebooksCreated))), P(Text("Updated notebooks: "+strconv.Itoa(d.Result.NotebooksUpdated))), P(Text("Deleted notebooks: "+strconv.Itoa(d.Result.NotebooksDeleted))), P(Text("Commit: "+d.Result.CommitSHA))))
+}
+
+type notebookGitRepoSyncUnavailablePageData struct {
+	Principal domain.ContextPrincipal
+	GitRepoID string
+	RepoURL   string
+	Branch    string
+	Path      string
+	Message   string
+}
+
+func notebookGitRepoSyncUnavailablePage(d notebookGitRepoSyncUnavailablePageData) Node {
+	return appPage(
+		"Git Sync Unavailable",
+		"notebooks",
+		d.Principal,
+		pageToolbar("/ui/notebooks/git-repos/"+d.GitRepoID, "Back to repo"),
+		Div(
+			Class(cardClass()),
+			H2(Text("Sync is not available yet")),
+			P(Text(d.Message)),
+			P(Text("Repository: "+d.RepoURL)),
+			P(Text("Branch: "+d.Branch)),
+			P(Text("Path: "+d.Path)),
+			P(Class(mutedClass()), Text("The repo is registered correctly, but server-side sync execution has not been implemented yet.")),
+		),
+	)
+}
+
+type notebookJobsListPageData struct {
+	Principal  domain.ContextPrincipal
+	NotebookID string
+	Rows       []notebookJobRowData
+	Page       domain.PageRequest
+	Total      int64
+}
+
+func notebookJobsListPage(d notebookJobsListPageData) Node {
+	rows := make([]Node, 0, len(d.Rows))
+	for i := range d.Rows {
+		row := d.Rows[i]
+		rows = append(rows, Tr(Td(A(Href(row.URL), Text(row.ID))), Td(statusLabel(row.State, notebookJobTone(row.State))), Td(Text(row.Updated))))
+	}
+	tableNode := Node(emptyStateCard("No notebook jobs found.", "Back to notebook", "/ui/notebooks/"+d.NotebookID))
+	if len(rows) > 0 {
+		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Job ID")), Th(Text("State")), Th(Text("Updated")))), TBody(Group(rows))))
+	}
+	return appPage("Notebook Jobs", "notebooks", d.Principal, tableNode, paginationCard("/ui/notebooks/"+d.NotebookID+"/jobs", d.Page, d.Total))
+}
+
+type notebookJobDetailPageData struct {
+	Principal  domain.ContextPrincipal
+	NotebookID string
+	JobID      string
+	State      string
+	Result     string
+	ErrorText  string
+	CreatedAt  string
+	UpdatedAt  string
+}
+
+func notebookJobDetailPage(d notebookJobDetailPageData) Node {
+	return appPage("Notebook Job: "+d.JobID, "notebooks", d.Principal, Div(Class(cardClass()), P(Text("State: "), statusLabel(d.State, notebookJobTone(d.State))), P(Text("Created: "+d.CreatedAt)), P(Text("Updated: "+d.UpdatedAt)), P(Text("Error: "+d.ErrorText))), Div(Class(cardClass()), H2(Text("Result payload")), Pre(Text(d.Result))))
 }
 
 func humanDuration(d time.Duration) string {

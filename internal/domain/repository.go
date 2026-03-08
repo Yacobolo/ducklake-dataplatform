@@ -200,6 +200,7 @@ type QueryHistoryRepository interface {
 type QueryJobRepository interface {
 	Create(ctx context.Context, job *QueryJob) (*QueryJob, error)
 	GetByID(ctx context.Context, id string) (*QueryJob, error)
+	ListByPrincipal(ctx context.Context, principalName string, page PageRequest) ([]QueryJob, int64, error)
 	GetByRequestID(ctx context.Context, principalName, requestID string) (*QueryJob, error)
 	MarkRunning(ctx context.Context, id string, attempt int) error
 	MarkRetrying(ctx context.Context, id string, attempt int, nextRetryAt time.Time, message string) error
