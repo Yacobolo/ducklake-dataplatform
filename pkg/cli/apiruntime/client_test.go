@@ -1,4 +1,4 @@
-package gen
+package apiruntime
 
 import (
 	"encoding/json"
