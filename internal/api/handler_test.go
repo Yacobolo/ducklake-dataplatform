@@ -1518,7 +1518,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 	tableID := "test-table-id"
 
 	t.Run("create row filter", func(t *testing.T) {
-		body := `{"filter_sql":"\"Pclass\" = 1","description":"First class only"}`
+		body := `{"name":"first-class-only","filter_sql":"\"Pclass\" = 1","description":"First class only"}`
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
@@ -1528,7 +1528,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 	})
 
 	t.Run("create row filter invalid SQL", func(t *testing.T) {
-		body := `{"filter_sql":"NOT VALID ((("}`
+		body := `{"name":"invalid-filter","filter_sql":"NOT VALID ((("}`
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
@@ -1544,7 +1544,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 
 	t.Run("bind and unbind row filter", func(t *testing.T) {
 		// Create a filter.
-		body := `{"filter_sql":"\"Age\" > 18"}`
+		body := `{"name":"adult-only","filter_sql":"\"Age\" > 18"}`
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
@@ -1565,7 +1565,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 
 	t.Run("delete row filter", func(t *testing.T) {
 		// Create a filter to delete.
-		body := `{"filter_sql":"\"Fare\" > 100"}`
+		body := `{"name":"high-fare","filter_sql":"\"Fare\" > 100"}`
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
@@ -1587,7 +1587,7 @@ func TestAPI_RowFilter_NonAdminDenied(t *testing.T) {
 	defer srv.Close()
 
 	t.Run("create denied", func(t *testing.T) {
-		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/t1/row-filters", `{"filter_sql":"x = 1"}`)
+		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/t1/row-filters", `{"name":"x-filter","filter_sql":"x = 1"}`)
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusForbidden, resp.StatusCode)
 	})

@@ -62,6 +62,7 @@ func TestColumnMaskService_Create_AdminAllowed(t *testing.T) {
 	svc := NewColumnMaskService(repo, audit)
 
 	result, err := svc.Create(adminCtx(), domain.CreateColumnMaskRequest{
+		Name:           "mask-ticket",
 		TableID:        "t-1",
 		ColumnName:     "Name",
 		MaskExpression: "'***'",
@@ -75,6 +76,7 @@ func TestColumnMaskService_Create_NonAdminDenied(t *testing.T) {
 	svc := NewColumnMaskService(&mockColumnMaskRepo{}, &testutil.MockAuditRepo{})
 
 	_, err := svc.Create(nonAdminCtx(), domain.CreateColumnMaskRequest{
+		Name:           "mask-ticket",
 		TableID:        "t-1",
 		ColumnName:     "Name",
 		MaskExpression: "'***'",
@@ -88,6 +90,7 @@ func TestColumnMaskService_Create_EmptyColumnName(t *testing.T) {
 	svc := NewColumnMaskService(&mockColumnMaskRepo{}, &testutil.MockAuditRepo{})
 
 	_, err := svc.Create(adminCtx(), domain.CreateColumnMaskRequest{
+		Name:           "missing-column-name",
 		TableID:        "t-1",
 		MaskExpression: "'***'",
 		// Missing ColumnName.
@@ -101,6 +104,7 @@ func TestColumnMaskService_Create_EmptyMaskExpression(t *testing.T) {
 	svc := NewColumnMaskService(&mockColumnMaskRepo{}, &testutil.MockAuditRepo{})
 
 	_, err := svc.Create(adminCtx(), domain.CreateColumnMaskRequest{
+		Name:       "missing-mask-expression",
 		TableID:    "t-1",
 		ColumnName: "Name",
 		// Missing MaskExpression.

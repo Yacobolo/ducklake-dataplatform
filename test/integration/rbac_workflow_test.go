@@ -205,6 +205,7 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 	steps := []step{
 		{"create_filter", func(t *testing.T) {
 			body := map[string]interface{}{
+				"name":        "survivors-only",
 				"filter_sql":  `"Survived" = 1`,
 				"description": "survivors only",
 			}
@@ -280,6 +281,7 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 	steps := []step{
 		{"create_mask", func(t *testing.T) {
 			body := map[string]interface{}{
+				"name":            "fare-mask",
 				"column_name":     "Fare",
 				"mask_expression": "0.0",
 				"description":     "fare mask",
@@ -393,6 +395,7 @@ func TestWorkflow_ManagementEndpointsAuthzEnforced(t *testing.T) {
 
 	t.Run("analyst_cannot_create_row_filter", func(t *testing.T) {
 		body := map[string]interface{}{
+			"name":       "denied-filter",
 			"filter_sql": `"Pclass" = 99`,
 		}
 		resp := doRequest(t, "POST", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Analyst, body)

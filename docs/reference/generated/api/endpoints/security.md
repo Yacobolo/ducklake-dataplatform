@@ -126,6 +126,39 @@ Permanently removes a column masking rule and all its principal bindings.
 | `429` | Rate limit exceeded. Retry after the indicated duration. |
 | `500` | An unexpected internal server error occurred. |
 
+## `GET /column-masks/{columnMaskId}/bindings`
+
+List column mask bindings
+
+Returns a paginated list of principal bindings for the column mask.
+
+- Operation ID: `listColumnMaskBindings`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `columnMaskId` | `string` | `true` | Unique identifier of the column mask. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | Maximum number of results to return per page. |
+| `page_token` | `string` | `false` | Opaque pagination token from a previous response. |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | Paginated list of bindings |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `403` | Insufficient privileges to perform this operation. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
 ## `POST /column-masks/{columnMaskId}/bindings`
 
 Bind mask to principal
@@ -622,6 +655,39 @@ Permanently removes a row-level security filter and all its principal bindings.
 | Code | Description |
 | --- | --- |
 | `204` | Deleted |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `403` | Insufficient privileges to perform this operation. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
+## `GET /row-filters/{rowFilterId}/bindings`
+
+List row filter bindings
+
+Returns a paginated list of principal bindings for the row filter.
+
+- Operation ID: `listRowFilterBindings`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `rowFilterId` | `string` | `true` | Unique identifier of the row filter. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | Maximum number of results to return per page. |
+| `page_token` | `string` | `false` | Opaque pagination token from a previous response. |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | Paginated list of bindings |
 | `400` | Invalid request parameters or malformed request body. |
 | `401` | Authentication credentials are missing or invalid. |
 | `403` | Insufficient privileges to perform this operation. |

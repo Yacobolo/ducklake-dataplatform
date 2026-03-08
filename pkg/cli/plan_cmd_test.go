@@ -24,7 +24,7 @@ func TestPlanCmd_InvalidOutputFormat(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported output format \"yaml\": use 'text' or 'json'")
 }
-func TestApplyCmd_AssetActionsFailPreflightBeforeExecution(t *testing.T) {
+func TestApplyCmd_AssetActionsExecute(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
@@ -32,9 +32,9 @@ func TestApplyCmd_AssetActionsFailPreflightBeforeExecution(t *testing.T) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		requestCount++
 		w.Header().Set("Content-Type", "application/json")
-		if r.Method != http.MethodGet {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte(`{"error":"write endpoints should not be called"}`))
+		if r.Method == http.MethodPost && r.URL.Path == "/v1/assets" {
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"asset_key":"daily_kpi","asset_type":"table"}`))
 			return
 		}
 		_, _ = w.Write([]byte(`{"data":[]}`))
@@ -62,8 +62,6 @@ spec:
 	})
 
 	err := rootCmd.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "preflight capability validation")
-	assert.Contains(t, err.Error(), "asset actions are not supported")
+	require.NoError(t, err)
 	assert.Positive(t, requestCount)
 }

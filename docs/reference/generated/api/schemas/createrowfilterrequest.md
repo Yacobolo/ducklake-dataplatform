@@ -5,7 +5,7 @@
 Request body for creating a new row-level security filter.
 
 - Type: `object`
-- Required fields: `filter_sql`
+- Required fields: `filter_sql`, `name`
 
 ## Properties
 
@@ -13,5 +13,6 @@ Request body for creating a new row-level security filter.
 | --- | --- | --- | --- |
 | `description` | `string` | `false` | - |
 | `filter_sql` | `string` | `true` | - |
+| `name` | `string` | `true` | - |
 | `table_id` | `string` | `false` | Table ID (required when creating via top-level POST /row-filters) |
 

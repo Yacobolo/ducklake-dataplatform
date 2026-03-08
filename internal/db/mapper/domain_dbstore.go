@@ -192,6 +192,7 @@ func RowFilterFromDB(f dbstore.RowFilter) *domain.RowFilter {
 	return &domain.RowFilter{
 		ID:          f.ID,
 		TableID:     f.TableID,
+		Name:        f.Name.String,
 		FilterSQL:   f.FilterSql,
 		Description: f.Description.String,
 		CreatedAt:   parseTime(f.CreatedAt),
@@ -233,6 +234,7 @@ func ColumnMaskFromDB(m dbstore.ColumnMask) *domain.ColumnMask {
 	return &domain.ColumnMask{
 		ID:             m.ID,
 		TableID:        m.TableID,
+		Name:           m.Name.String,
 		ColumnName:     m.ColumnName,
 		MaskExpression: m.MaskExpression,
 		Description:    m.Description.String,

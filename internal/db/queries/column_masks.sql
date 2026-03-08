@@ -1,6 +1,6 @@
 -- name: CreateColumnMask :one
-INSERT INTO column_masks (id, table_id, column_name, mask_expression, description)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO column_masks (id, table_id, name, column_name, mask_expression, description)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetColumnMasksForTable :many

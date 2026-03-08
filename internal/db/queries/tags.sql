@@ -35,3 +35,9 @@ DELETE FROM tag_assignments WHERE securable_type = ? AND securable_id = ?;
 
 -- name: DeleteTagAssignmentsBySecurableTypes :exec
 DELETE FROM tag_assignments WHERE securable_type IN (?, ?) AND securable_id = ?;
+
+-- name: ListTagAssignments :many
+SELECT * FROM tag_assignments ORDER BY id LIMIT ? OFFSET ?;
+
+-- name: CountTagAssignments :one
+SELECT COUNT(*) as cnt FROM tag_assignments;

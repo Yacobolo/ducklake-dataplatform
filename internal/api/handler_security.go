@@ -43,6 +43,7 @@ type rowFilterService interface {
 	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, req domain.BindRowFilterRequest) error
 	Unbind(ctx context.Context, req domain.BindRowFilterRequest) error
+	ListBindings(ctx context.Context, filterID string) ([]domain.RowFilterBinding, error)
 }
 
 // columnMaskService defines the column mask operations used by the API handler.
@@ -52,6 +53,7 @@ type columnMaskService interface {
 	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, req domain.BindColumnMaskRequest) error
 	Unbind(ctx context.Context, req domain.BindColumnMaskRequest) error
+	ListBindings(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error)
 }
 
 // === Principals ===
@@ -396,6 +398,7 @@ func (h *APIHandler) ListRowFilters(ctx context.Context, req ListRowFiltersReque
 func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterRequestObject) (CreateRowFilterResponseObject, error) {
 	domReq := domain.CreateRowFilterRequest{
 		TableID:   req.TableId,
+		Name:      req.Body.Name,
 		FilterSQL: req.Body.FilterSql,
 	}
 	if req.Body.Description != nil {
@@ -452,6 +455,35 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequest
 	return BindRowFilter204Response{}, nil
 }
 
+// ListRowFilterBindings implements the endpoint for listing bindings for a row filter.
+func (h *APIHandler) ListRowFilterBindings(ctx context.Context, req ListRowFilterBindingsRequestObject) (ListRowFilterBindingsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	bindings, err := h.rowFilters.ListBindings(ctx, req.RowFilterId)
+	if err != nil {
+		return nil, err
+	}
+	start := page.Offset()
+	if start > len(bindings) {
+		start = len(bindings)
+	}
+	end := start + page.Limit()
+	if end > len(bindings) {
+		end = len(bindings)
+	}
+	data := make([]RowFilterBinding, 0, end-start)
+	for _, binding := range bindings[start:end] {
+		principalType := RowFilterBindingPrincipalType(binding.PrincipalType)
+		data = append(data, RowFilterBinding{
+			Id:            &binding.ID,
+			RowFilterId:   &binding.RowFilterID,
+			PrincipalId:   &binding.PrincipalID,
+			PrincipalType: &principalType,
+		})
+	}
+	next := domain.NextPageToken(start, page.Limit(), int64(len(bindings)))
+	return ListRowFilterBindings200JSONResponse(PaginatedRowFilterBindings{Data: &data, NextPageToken: optStr(next)}), nil
+}
+
 // UnbindRowFilter implements the endpoint for unbinding a row filter from a principal.
 func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterRequestObject) (UnbindRowFilterResponseObject, error) {
 	if err := h.rowFilters.Unbind(ctx, domain.BindRowFilterRequest{
@@ -494,6 +526,7 @@ func (h *APIHandler) ListColumnMasks(ctx context.Context, req ListColumnMasksReq
 // CreateColumnMask implements the endpoint for creating a column mask on a table.
 func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskRequestObject) (CreateColumnMaskResponseObject, error) {
 	domReq := domain.CreateColumnMaskRequest{
+		Name:           req.Body.Name,
 		TableID:        req.TableId,
 		ColumnName:     req.Body.ColumnName,
 		MaskExpression: req.Body.MaskExpression,
@@ -555,6 +588,36 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 		}
 	}
 	return BindColumnMask204Response{}, nil
+}
+
+// ListColumnMaskBindings implements the endpoint for listing bindings for a column mask.
+func (h *APIHandler) ListColumnMaskBindings(ctx context.Context, req ListColumnMaskBindingsRequestObject) (ListColumnMaskBindingsResponseObject, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	bindings, err := h.columnMasks.ListBindings(ctx, req.ColumnMaskId)
+	if err != nil {
+		return nil, err
+	}
+	start := page.Offset()
+	if start > len(bindings) {
+		start = len(bindings)
+	}
+	end := start + page.Limit()
+	if end > len(bindings) {
+		end = len(bindings)
+	}
+	data := make([]ColumnMaskBinding, 0, end-start)
+	for _, binding := range bindings[start:end] {
+		principalType := ColumnMaskBindingPrincipalType(binding.PrincipalType)
+		data = append(data, ColumnMaskBinding{
+			Id:            &binding.ID,
+			ColumnMaskId:  &binding.ColumnMaskID,
+			PrincipalId:   &binding.PrincipalID,
+			PrincipalType: &principalType,
+			SeeOriginal:   &binding.SeeOriginal,
+		})
+	}
+	next := domain.NextPageToken(start, page.Limit(), int64(len(bindings)))
+	return ListColumnMaskBindings200JSONResponse(PaginatedColumnMaskBindings{Data: &data, NextPageToken: optStr(next)}), nil
 }
 
 // UnbindColumnMask implements the endpoint for unbinding a column mask from a principal.

@@ -159,6 +159,39 @@ Permanently deletes a tag and all of its assignments from the catalog.
 | `429` | Rate limit exceeded. Retry after the indicated duration. |
 | `500` | An unexpected internal server error occurred. |
 
+## `GET /tags/{tagId}/assignments`
+
+List assignments for a tag
+
+Returns a paginated list of assignments for a tag.
+
+- Operation ID: `listTagAssignments`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `tagId` | `string` | `true` | Unique identifier of the tag. |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | Maximum number of results to return per page. |
+| `page_token` | `string` | `false` | Opaque pagination token from a previous response. |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | Paginated list of assignments |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `403` | Insufficient privileges to perform this operation. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
 ## `POST /tags/{tagId}/assignments`
 
 Assign a tag to a securable object

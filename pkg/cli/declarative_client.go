@@ -36,7 +36,9 @@ type resourceIndex struct {
 	locationIDByName      map[string]string // "external_location_name" → UUID
 	credentialIDByName    map[string]string // "storage_credential_name" → UUID
 	computeIDByName       map[string]string // "local" → UUID
+	computeAssignIDByKey  map[string]string // "endpoint|principalType|principal" -> UUID
 	tagIDByKey            map[string]string // "pii" or "pii:value" → UUID
+	tagAssignIDByKey      map[string]string // "tag|securableType|securable|column" -> UUID
 	rowFilterIDByPath     map[string]string // "cat.sch.tbl/filterName" → UUID
 	columnMaskIDByPath    map[string]string // "cat.sch.tbl/maskName" → UUID
 	notebookIDByName      map[string]string // "kpi_walkthrough" → UUID
@@ -54,7 +56,9 @@ func newResourceIndex() *resourceIndex {
 		locationIDByName:      make(map[string]string),
 		credentialIDByName:    make(map[string]string),
 		computeIDByName:       make(map[string]string),
+		computeAssignIDByKey:  make(map[string]string),
 		tagIDByKey:            make(map[string]string),
+		tagAssignIDByKey:      make(map[string]string),
 		rowFilterIDByPath:     make(map[string]string),
 		columnMaskIDByPath:    make(map[string]string),
 		notebookIDByName:      make(map[string]string),
@@ -186,6 +190,12 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 	}
 	if err := c.readTags(ctx, state); err != nil {
 		return nil, fmt.Errorf("read tags: %w", err)
+	}
+	if err := c.readTablePolicies(ctx, state); err != nil {
+		return nil, fmt.Errorf("read table policies: %w", err)
+	}
+	if err := c.readTagAssignments(ctx, state); err != nil {
+		return nil, fmt.Errorf("read tag assignments: %w", err)
 	}
 	if err := c.readNotebooks(ctx, state); err != nil {
 		return nil, fmt.Errorf("read notebooks: %w", err)
@@ -747,6 +757,7 @@ type apiComputeEndpoint struct {
 }
 
 type apiComputeAssignment struct {
+	ID            string `json:"id"`
 	Endpoint      string `json:"endpoint"`
 	Principal     string `json:"principal"`
 	PrincipalType string `json:"principal_type"`
@@ -796,7 +807,11 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 					PrincipalType: a.PrincipalType,
 					IsDefault:     a.IsDefault,
 					FallbackLocal: a.FallbackLocal,
+					AssignmentID:  a.ID,
 				})
+				if a.ID != "" && c.index != nil {
+					c.index.computeAssignIDByKey[computeAssignmentKey(ep.Name, a.PrincipalType, a.Principal)] = a.ID
+				}
 			}
 		}
 	}
@@ -843,6 +858,190 @@ func tagKey(key string, value *string) string {
 		return key + ":" + *value
 	}
 	return key
+}
+
+func computeAssignmentKey(endpoint, principalType, principal string) string {
+	return endpoint + "|" + principalType + "|" + principal
+}
+
+func tagAssignmentKey(tag, securableType, securable, columnName string) string {
+	key := tag + "|" + securableType + "|" + securable
+	if columnName != "" {
+		key += "|" + columnName
+	}
+	return key
+}
+
+type apiRowFilter struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	FilterSQL   string `json:"filter_sql"`
+	Description string `json:"description"`
+}
+
+type apiRowFilterBinding struct {
+	PrincipalID   string `json:"principal_id"`
+	PrincipalType string `json:"principal_type"`
+}
+
+type apiColumnMaskBinding struct {
+	PrincipalID   string `json:"principal_id"`
+	PrincipalType string `json:"principal_type"`
+	SeeOriginal   bool   `json:"see_original"`
+}
+
+type apiTagAssignment struct {
+	ID           string  `json:"id"`
+	SecurableType string `json:"securable_type"`
+	SecurableID  string  `json:"securable_id"`
+	ColumnName   *string `json:"column_name"`
+}
+
+func (c *APIStateClient) readTablePolicies(ctx context.Context, state *declarative.DesiredState) error {
+	for tablePath, tableID := range c.index.tableIDByPath {
+		parts := strings.SplitN(tablePath, ".", 3)
+		if len(parts) != 3 {
+			continue
+		}
+		catalogName, schemaName, tableName := parts[0], parts[1], parts[2]
+
+		rowFilterPages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/row-filters")
+		if err != nil {
+			return err
+		}
+		if len(rowFilterPages) > 0 {
+			var rowFilters []apiRowFilter
+			if err := mergePages(rowFilterPages, &rowFilters); err != nil {
+				return err
+			}
+			resource := declarative.RowFilterResource{CatalogName: catalogName, SchemaName: schemaName, TableName: tableName}
+			for _, filter := range rowFilters {
+				spec := declarative.RowFilterSpec{
+					Name:        filter.Name,
+					FilterSQL:   filter.FilterSQL,
+					Description: filter.Description,
+				}
+				bindingPages, err := c.fetchAllPages(ctx, "/row-filters/"+filter.ID+"/bindings")
+				if err != nil {
+					return err
+				}
+				if len(bindingPages) > 0 {
+					var bindings []apiRowFilterBinding
+					if err := mergePages(bindingPages, &bindings); err != nil {
+						return err
+					}
+					for _, binding := range bindings {
+						name := c.reverseLookupPrincipalName(binding.PrincipalID, binding.PrincipalType)
+						if name == "" {
+							name, err = c.lookupMemberNameByID(ctx, binding.PrincipalID, binding.PrincipalType)
+							if err != nil {
+								return err
+							}
+						}
+						spec.Bindings = append(spec.Bindings, declarative.FilterBindingRef{
+							Principal:     name,
+							PrincipalType: binding.PrincipalType,
+						})
+					}
+				}
+				resource.Filters = append(resource.Filters, spec)
+				if filter.ID != "" {
+					c.index.rowFilterIDByPath[tablePath+"/"+filter.Name] = filter.ID
+				}
+			}
+			if len(resource.Filters) > 0 {
+				state.RowFilters = append(state.RowFilters, resource)
+			}
+		}
+
+		columnMaskPages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/column-masks")
+		if err != nil {
+			return err
+		}
+		if len(columnMaskPages) > 0 {
+			var masks []apiColumnMask
+			if err := mergePages(columnMaskPages, &masks); err != nil {
+				return err
+			}
+			resource := declarative.ColumnMaskResource{CatalogName: catalogName, SchemaName: schemaName, TableName: tableName}
+			for _, mask := range masks {
+				spec := declarative.ColumnMaskSpec{
+					Name:           mask.Name,
+					ColumnName:     mask.ColumnName,
+					MaskExpression: mask.MaskExpression,
+					Description:    mask.Description,
+				}
+				bindingPages, err := c.fetchAllPages(ctx, "/column-masks/"+mask.ID+"/bindings")
+				if err != nil {
+					return err
+				}
+				if len(bindingPages) > 0 {
+					var bindings []apiColumnMaskBinding
+					if err := mergePages(bindingPages, &bindings); err != nil {
+						return err
+					}
+					for _, binding := range bindings {
+						name := c.reverseLookupPrincipalName(binding.PrincipalID, binding.PrincipalType)
+						if name == "" {
+							name, err = c.lookupMemberNameByID(ctx, binding.PrincipalID, binding.PrincipalType)
+							if err != nil {
+								return err
+							}
+						}
+						spec.Bindings = append(spec.Bindings, declarative.MaskBindingRef{
+							Principal:     name,
+							PrincipalType: binding.PrincipalType,
+							SeeOriginal:   binding.SeeOriginal,
+						})
+					}
+				}
+				resource.Masks = append(resource.Masks, spec)
+				if mask.ID != "" {
+					c.index.columnMaskIDByPath[tablePath+"/"+mask.Name] = mask.ID
+				}
+			}
+			if len(resource.Masks) > 0 {
+				state.ColumnMasks = append(state.ColumnMasks, resource)
+			}
+		}
+	}
+	return nil
+}
+
+func (c *APIStateClient) readTagAssignments(ctx context.Context, state *declarative.DesiredState) error {
+	for tag, tagID := range c.index.tagIDByKey {
+		pages, err := c.fetchAllPages(ctx, "/tags/"+tagID+"/assignments")
+		if err != nil {
+			return err
+		}
+		if len(pages) == 0 {
+			continue
+		}
+		var assignments []apiTagAssignment
+		if err := mergePages(pages, &assignments); err != nil {
+			return err
+		}
+		for _, assignment := range assignments {
+			securablePath := c.reverseLookupSecurablePath(assignment.SecurableType, assignment.SecurableID)
+			if securablePath == "" {
+				continue
+			}
+			spec := declarative.TagAssignmentSpec{
+				Tag:           tag,
+				SecurableType: assignment.SecurableType,
+				Securable:     securablePath,
+				AssignmentID:  assignment.ID,
+			}
+			if assignment.ColumnName != nil {
+				spec.ColumnName = *assignment.ColumnName
+			}
+			state.TagAssignments = append(state.TagAssignments, spec)
+			if assignment.ID != "" {
+				c.index.tagAssignIDByKey[tagAssignmentKey(tag, spec.SecurableType, spec.Securable, spec.ColumnName)] = assignment.ID
+			}
+		}
+	}
+	return nil
 }
 
 // --- Workflow resources (simplified) ---
@@ -1788,6 +1987,7 @@ func (c *APIStateClient) lookupTableIDByPath(_ context.Context, catalogName, sch
 
 type apiColumnMask struct {
 	ID             string `json:"id"`
+	Name           string `json:"name"`
 	ColumnName     string `json:"column_name"`
 	MaskExpression string `json:"mask_expression"`
 	Description    string `json:"description"`
@@ -1835,8 +2035,14 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 	switch action.ResourceKind {
 	case declarative.KindPrincipal:
 		return c.executePrincipal(ctx, action)
+	case declarative.KindStorageCredential:
+		return c.executeStorageCredential(ctx, action)
 	case declarative.KindGroup:
 		return c.executeGroup(ctx, action)
+	case declarative.KindExternalLocation:
+		return c.executeExternalLocation(ctx, action)
+	case declarative.KindComputeEndpoint:
+		return c.executeComputeEndpoint(ctx, action)
 	case declarative.KindGroupMembership:
 		return c.executeGroupMembership(ctx, action)
 	case declarative.KindPrivilegeGrant:
@@ -1849,6 +2055,10 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeTable(ctx, action)
 	case declarative.KindView:
 		return c.executeView(ctx, action)
+	case declarative.KindVolume:
+		return c.executeVolume(ctx, action)
+	case declarative.KindComputeAssignment:
+		return c.executeComputeAssignment(ctx, action)
 	case declarative.KindTag:
 		return c.executeTag(ctx, action)
 	case declarative.KindTagAssignment:
@@ -2333,8 +2543,78 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 }
 
 func (c *APIStateClient) executeAsset(_ context.Context, action declarative.Action) error {
-	_ = action
-	return fmt.Errorf("asset definitions are read-only through the current API; declarative apply cannot create/update/delete assets yet")
+	toAssetBody := func(asset declarative.AssetResource) map[string]interface{} {
+		body := map[string]interface{}{
+			"asset_key":     asset.Name,
+			"asset_type":    asset.Spec.AssetType,
+			"owner":         asset.Spec.Owner,
+			"description":   asset.Spec.Description,
+			"tags":          asset.Spec.Tags,
+			"io_profile":    asset.Spec.IOProfile,
+			"is_active":     true,
+			"cron_schedule": asset.Spec.CronSchedule,
+		}
+		if len(asset.Spec.DependsOn) > 0 {
+			body["depends_on"] = asset.Spec.DependsOn
+		}
+		if asset.Spec.PartitionDefinition != nil {
+			body["partition_definition"] = asset.Spec.PartitionDefinition
+		}
+		if asset.Spec.AutoMaterializePolicy != nil {
+			body["auto_materialize_policy"] = asset.Spec.AutoMaterializePolicy
+		}
+		if asset.Spec.FreshnessPolicy != nil {
+			body["freshness_policy"] = asset.Spec.FreshnessPolicy
+		}
+		if asset.Spec.MaterializationPolicy != nil {
+			body["materialization_policy"] = asset.Spec.MaterializationPolicy
+		}
+		if asset.Spec.PartitionType != "" {
+			body["partition_type"] = asset.Spec.PartitionType
+		}
+		if asset.Spec.MaxLagSeconds != nil {
+			body["max_lag_seconds"] = *asset.Spec.MaxLagSeconds
+		}
+		if len(asset.Spec.CheckDefinitions) > 0 {
+			body["checks"] = asset.Spec.CheckDefinitions
+		}
+		if len(asset.Spec.Properties) > 0 {
+			body["properties"] = asset.Spec.Properties
+		}
+		return body
+	}
+
+	switch action.Operation {
+	case declarative.OpCreate:
+		asset := action.Desired.(declarative.AssetResource)
+		resp, err := c.client.Do(http.MethodPost, "/assets", nil, toAssetBody(asset))
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			return nil
+		}
+		return gen.CheckError(resp)
+	case declarative.OpUpdate:
+		asset := action.Desired.(declarative.AssetResource)
+		resp, err := c.client.Do(http.MethodPut, "/assets/"+asset.Name, nil, toAssetBody(asset))
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+	case declarative.OpDelete:
+		key := action.ResourceName
+		if actual, ok := action.Actual.(declarative.AssetResource); ok && actual.Name != "" {
+			key = actual.Name
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/assets/"+key, nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for asset", action.Operation)
+	}
 }
 
 func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID string, desired []declarative.CellSpec) error {
@@ -2922,6 +3202,291 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 	}
 }
 
+func (c *APIStateClient) executeStorageCredential(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		spec := action.Desired.(declarative.StorageCredentialSpec)
+		body := map[string]interface{}{
+			"name":            spec.Name,
+			"credential_type": spec.CredentialType,
+		}
+		if spec.Comment != "" {
+			body["comment"] = spec.Comment
+		}
+		resp, err := c.client.Do(http.MethodPost, "/storage-credentials", nil, body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			return nil
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.credentialIDByName[spec.Name] = id
+		}
+		return nil
+	case declarative.OpUpdate:
+		spec := action.Desired.(declarative.StorageCredentialSpec)
+		body := map[string]interface{}{
+			"comment": spec.Comment,
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/storage-credentials/"+spec.Name, nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+	case declarative.OpDelete:
+		name := action.ResourceName
+		if actual, ok := action.Actual.(declarative.StorageCredentialSpec); ok && actual.Name != "" {
+			name = actual.Name
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/storage-credentials/"+name, nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for storage-credential", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeExternalLocation(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		spec := action.Desired.(declarative.ExternalLocationSpec)
+		body := map[string]interface{}{
+			"name":            spec.Name,
+			"url":             spec.URL,
+			"credential_name": spec.CredentialName,
+		}
+		if spec.StorageType != "" {
+			body["storage_type"] = spec.StorageType
+		}
+		if spec.Comment != "" {
+			body["comment"] = spec.Comment
+		}
+		body["read_only"] = spec.ReadOnly
+		resp, err := c.client.Do(http.MethodPost, "/external-locations", nil, body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			return nil
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.locationIDByName[spec.Name] = id
+		}
+		return nil
+	case declarative.OpUpdate:
+		spec := action.Desired.(declarative.ExternalLocationSpec)
+		body := map[string]interface{}{
+			"url":             spec.URL,
+			"credential_name": spec.CredentialName,
+			"storage_type":    spec.StorageType,
+			"comment":         spec.Comment,
+			"read_only":       spec.ReadOnly,
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/external-locations/"+spec.Name, nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+	case declarative.OpDelete:
+		name := action.ResourceName
+		if actual, ok := action.Actual.(declarative.ExternalLocationSpec); ok && actual.Name != "" {
+			name = actual.Name
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/external-locations/"+name, nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for external-location", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeComputeEndpoint(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		spec := action.Desired.(declarative.ComputeEndpointSpec)
+		body := map[string]interface{}{
+			"name": spec.Name,
+			"type": spec.Type,
+		}
+		if spec.URL != "" {
+			body["url"] = spec.URL
+		}
+		if spec.Size != "" {
+			body["size"] = spec.Size
+		}
+		if spec.MaxMemoryGB != nil {
+			body["max_memory_gb"] = *spec.MaxMemoryGB
+		}
+		resp, err := c.client.Do(http.MethodPost, "/compute-endpoints", nil, body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			return nil
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.computeIDByName[spec.Name] = id
+		}
+		return nil
+	case declarative.OpUpdate:
+		spec := action.Desired.(declarative.ComputeEndpointSpec)
+		body := map[string]interface{}{
+			"url":  spec.URL,
+			"size": spec.Size,
+		}
+		if spec.MaxMemoryGB != nil {
+			body["max_memory_gb"] = *spec.MaxMemoryGB
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/compute-endpoints/"+spec.Name, nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+	case declarative.OpDelete:
+		name := action.ResourceName
+		if actual, ok := action.Actual.(declarative.ComputeEndpointSpec); ok && actual.Name != "" {
+			name = actual.Name
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/compute-endpoints/"+name, nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for compute-endpoint", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeComputeAssignment(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		spec := action.Desired.(declarative.ComputeAssignmentSpec)
+		principalID, err := c.resolvePrincipalID(spec.Principal, spec.PrincipalType)
+		if err != nil {
+			return fmt.Errorf("resolve principal for compute assignment: %w", err)
+		}
+		body := map[string]interface{}{
+			"principal_id":   principalID,
+			"principal_type": spec.PrincipalType,
+			"is_default":     spec.IsDefault,
+			"fallback_local": spec.FallbackLocal,
+		}
+		resp, err := c.client.Do(http.MethodPost, "/compute-endpoints/"+spec.Endpoint+"/assignments", nil, body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			return nil
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.computeAssignIDByKey[computeAssignmentKey(spec.Endpoint, spec.PrincipalType, spec.Principal)] = id
+		}
+		return nil
+	case declarative.OpUpdate:
+		spec := action.Desired.(declarative.ComputeAssignmentSpec)
+		actual := action.Actual.(declarative.ComputeAssignmentSpec)
+		deleteAction := declarative.Action{Operation: declarative.OpDelete, Actual: actual, ResourceName: action.ResourceName}
+		if err := c.executeComputeAssignment(context.TODO(), deleteAction); err != nil {
+			return err
+		}
+		createAction := declarative.Action{Operation: declarative.OpCreate, Desired: spec, ResourceName: action.ResourceName}
+		return c.executeComputeAssignment(context.TODO(), createAction)
+	case declarative.OpDelete:
+		spec := action.Actual.(declarative.ComputeAssignmentSpec)
+		assignmentID := spec.AssignmentID
+		if assignmentID == "" && c.index != nil {
+			assignmentID = c.index.computeAssignIDByKey[computeAssignmentKey(spec.Endpoint, spec.PrincipalType, spec.Principal)]
+		}
+		if assignmentID == "" {
+			return fmt.Errorf("compute assignment %s has no assignment id", action.ResourceName)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/compute-endpoints/"+spec.Endpoint+"/assignments/"+assignmentID, nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for compute-assignment", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeVolume(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		volume := action.Desired.(declarative.VolumeResource)
+		body := map[string]interface{}{
+			"name": volume.VolumeName,
+		}
+		if volume.Spec.VolumeType != "" {
+			body["volume_type"] = volume.Spec.VolumeType
+		}
+		if volume.Spec.StorageLocation != "" {
+			body["storage_location"] = volume.Spec.StorageLocation
+		}
+		if volume.Spec.Comment != "" {
+			body["comment"] = volume.Spec.Comment
+		}
+		resp, err := c.client.Do(http.MethodPost, "/catalogs/"+volume.CatalogName+"/schemas/"+volume.SchemaName+"/volumes", nil, body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			return nil
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.volumeIDByPath[volume.CatalogName+"."+volume.SchemaName+"."+volume.VolumeName] = id
+		}
+		return nil
+	case declarative.OpUpdate:
+		volume := action.Desired.(declarative.VolumeResource)
+		body := map[string]interface{}{
+			"comment": volume.Spec.Comment,
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+volume.CatalogName+"/schemas/"+volume.SchemaName+"/volumes/"+volume.VolumeName, nil, body)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+	case declarative.OpDelete:
+		parts := strings.SplitN(action.ResourceName, ".", 3)
+		if len(parts) != 3 {
+			return fmt.Errorf("invalid volume resource name: %s", action.ResourceName)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/catalogs/"+parts[0]+"/schemas/"+parts[1]+"/volumes/"+parts[2], nil, nil)
+		if err != nil {
+			return err
+		}
+		return gen.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for volume", action.Operation)
+	}
+}
+
 // --- Security resource execution ---
 
 func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.Action) error {
@@ -3480,13 +4045,31 @@ func (c *APIStateClient) executeTagAssignment(ctx context.Context, action declar
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			if strings.Contains(strings.ToLower(err.Error()), "already exists") {
+				return nil
+			}
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.tagAssignIDByKey[tagAssignmentKey(assignment.Tag, assignment.SecurableType, assignment.Securable, assignment.ColumnName)] = id
+		}
+		return nil
 
 	case declarative.OpDelete:
-		// Tag assignment deletes require the assignment ID. Since we don't
-		// track assignment IDs during ReadState, we use the tag ID and
-		// attempt deletion via the composite endpoint.
 		assignment := action.Actual.(declarative.TagAssignmentSpec)
+		assignmentID := assignment.AssignmentID
+		if assignmentID == "" && c.index != nil {
+			assignmentID = c.index.tagAssignIDByKey[tagAssignmentKey(assignment.Tag, assignment.SecurableType, assignment.Securable, assignment.ColumnName)]
+		}
+		if assignmentID != "" {
+			resp, err := c.client.Do(http.MethodDelete, "/tag-assignments/"+assignmentID, nil, nil)
+			if err != nil {
+				return err
+			}
+			return gen.CheckError(resp)
+		}
 		tagID, err := c.resolveTagID(assignment.Tag)
 		if err != nil {
 			return fmt.Errorf("resolve tag for assignment delete: %w", err)
@@ -3527,6 +4110,7 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 			return fmt.Errorf("resolve table for row filter: %w", err)
 		}
 		body := map[string]interface{}{
+			"name":       filter.Name,
 			"filter_sql": filter.FilterSQL,
 		}
 		if filter.Description != "" {
@@ -3544,6 +4128,24 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 			c.index.rowFilterIDByPath[action.ResourceName] = id
 		}
 		return nil
+
+	case declarative.OpUpdate:
+		desired := action.Desired.(declarative.RowFilterSpec)
+		actual := action.Actual.(declarative.RowFilterSpec)
+		deleteAction := declarative.Action{
+			Operation:    declarative.OpDelete,
+			ResourceName: action.ResourceName,
+			Actual:       actual,
+		}
+		if err := c.executeRowFilter(ctx, deleteAction); err != nil {
+			return err
+		}
+		createAction := declarative.Action{
+			Operation:    declarative.OpCreate,
+			ResourceName: action.ResourceName,
+			Desired:      desired,
+		}
+		return c.executeRowFilter(ctx, createAction)
 
 	case declarative.OpDelete:
 		filterID, err := c.resolveRowFilterID(action.ResourceName)
@@ -3589,6 +4191,23 @@ func (c *APIStateClient) executeRowFilterBinding(_ context.Context, action decla
 		}
 		return gen.CheckError(resp)
 
+	case declarative.OpUpdate:
+		binding := action.Desired.(declarative.FilterBindingRef)
+		deleteAction := declarative.Action{
+			Operation: declarative.OpDelete,
+			Actual:    binding,
+		}
+		deleteAction.ResourceName = action.ResourceName
+		if err := c.executeRowFilterBinding(context.TODO(), deleteAction); err != nil {
+			return err
+		}
+		createAction := declarative.Action{
+			Operation: declarative.OpCreate,
+			Desired:   binding,
+		}
+		createAction.ResourceName = action.ResourceName
+		return c.executeRowFilterBinding(context.TODO(), createAction)
+
 	case declarative.OpDelete:
 		binding := action.Actual.(declarative.FilterBindingRef)
 		principalID, err := c.resolvePrincipalID(binding.Principal, binding.PrincipalType)
@@ -3623,6 +4242,7 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 			return fmt.Errorf("resolve table for column mask: %w", err)
 		}
 		body := map[string]interface{}{
+			"name":            mask.Name,
 			"column_name":     mask.ColumnName,
 			"mask_expression": mask.MaskExpression,
 		}
@@ -3651,6 +4271,24 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 			c.index.columnMaskIDByPath[action.ResourceName] = id
 		}
 		return nil
+
+	case declarative.OpUpdate:
+		desired := action.Desired.(declarative.ColumnMaskSpec)
+		actual := action.Actual.(declarative.ColumnMaskSpec)
+		deleteAction := declarative.Action{
+			Operation:    declarative.OpDelete,
+			ResourceName: action.ResourceName,
+			Actual:       actual,
+		}
+		if err := c.executeColumnMask(ctx, deleteAction); err != nil {
+			return err
+		}
+		createAction := declarative.Action{
+			Operation:    declarative.OpCreate,
+			ResourceName: action.ResourceName,
+			Desired:      desired,
+		}
+		return c.executeColumnMask(ctx, createAction)
 
 	case declarative.OpDelete:
 		maskID, err := c.resolveColumnMaskID(action.ResourceName)
@@ -3696,6 +4334,23 @@ func (c *APIStateClient) executeColumnMaskBinding(_ context.Context, action decl
 			return err
 		}
 		return gen.CheckError(resp)
+
+	case declarative.OpUpdate:
+		binding := action.Desired.(declarative.MaskBindingRef)
+		deleteAction := declarative.Action{
+			Operation:    declarative.OpDelete,
+			ResourceName: action.ResourceName,
+			Actual:       binding,
+		}
+		if err := c.executeColumnMaskBinding(context.TODO(), deleteAction); err != nil {
+			return err
+		}
+		createAction := declarative.Action{
+			Operation:    declarative.OpCreate,
+			ResourceName: action.ResourceName,
+			Desired:      binding,
+		}
+		return c.executeColumnMaskBinding(context.TODO(), createAction)
 
 	case declarative.OpDelete:
 		binding := action.Actual.(declarative.MaskBindingRef)

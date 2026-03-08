@@ -9,7 +9,7 @@ This page is generated from OpenAPI tags and operations.
 | [Assets](./endpoints/assets) | Asset-centric orchestration, runs, partitions, and backfills. | 15 operations |
 | [Catalogs](./endpoints/catalogs) | Catalog registration, schema, table, column, and view management. | 32 operations |
 | [Compute](./endpoints/compute) | Compute endpoint and assignment management. | 9 operations |
-| [Governance](./endpoints/governance) | Tags, classifications, and catalog search. | 7 operations |
+| [Governance](./endpoints/governance) | Tags, classifications, and catalog search. | 8 operations |
 | [Ingestion](./endpoints/ingestion) | Data ingestion via upload, commit, and external file loading. | 3 operations |
 | [Lineage](./endpoints/lineage) | Table lineage tracking and management. | 7 operations |
 | [Manifest](./endpoints/manifest) | Client-side query manifest with presigned URLs. | 1 operations |
@@ -17,6 +17,6 @@ This page is generated from OpenAPI tags and operations.
 | [Notebooks](./endpoints/notebooks) | SQL notebooks, sessions, jobs, and Git integration. | 21 operations |
 | [Observability](./endpoints/observability) | Audit logs, query history, and metastore summary. | 3 operations |
 | [Query](./endpoints/query) | Execute SQL queries against the platform. | 6 operations |
-| [Security](./endpoints/security) | Principals, groups, grants, row filters, and column masks. | 29 operations |
+| [Security](./endpoints/security) | Principals, groups, grants, row filters, and column masks. | 31 operations |
 | [Semantic](./endpoints/semantic) | Semantic models, metrics, relationships, query explain, and query run endpoints. | 20 operations |
 | [Storage](./endpoints/storage) | Storage credentials and external locations. | 10 operations |

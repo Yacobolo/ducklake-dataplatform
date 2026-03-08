@@ -32,6 +32,7 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 	steps := []step{
 		{"create", func(t *testing.T) {
 			body := map[string]interface{}{
+				"name":            "mask-ticket",
 				"column_name":     "Ticket",
 				"mask_expression": "'REDACTED'",
 				"description":     "ticket mask",

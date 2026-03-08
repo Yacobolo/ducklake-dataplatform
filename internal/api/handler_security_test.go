@@ -164,6 +164,7 @@ type mockColumnMaskService struct {
 	deleteFn      func(ctx context.Context, id string) error
 	bindFn        func(ctx context.Context, req domain.BindColumnMaskRequest) error
 	unbindFn      func(ctx context.Context, req domain.BindColumnMaskRequest) error
+	listBindings  func(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error)
 }
 
 func (m *mockColumnMaskService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
@@ -199,6 +200,13 @@ func (m *mockColumnMaskService) Unbind(ctx context.Context, req domain.BindColum
 		panic("mockColumnMaskService.Unbind called but not configured")
 	}
 	return m.unbindFn(ctx, req)
+}
+
+func (m *mockColumnMaskService) ListBindings(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error) {
+	if m.listBindings == nil {
+		return nil, nil
+	}
+	return m.listBindings(ctx, maskID)
 }
 
 // === Helpers ===
@@ -781,6 +789,7 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 			svc := &mockColumnMaskService{createFn: tt.svcFn}
 			handler := &APIHandler{columnMasks: svc}
 			body := CreateColumnMaskJSONRequestBody{
+				Name:           "mask-ssn",
 				ColumnName:     "ssn",
 				MaskExpression: "'***'",
 			}
