@@ -3,6 +3,7 @@ package ui
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -48,6 +49,7 @@ func (h *Handler) MacrosDetail(w http.ResponseWriter, r *http.Request) {
 		Owner:         m.Owner,
 		EditURL:       "/ui/macros/" + name + "/edit",
 		DiffURL:       "/ui/macros/" + name + "/diff",
+		ImpactURL:     "/ui/macros/" + name + "/impact",
 		DeleteURL:     "/ui/macros/" + name + "/delete",
 		Definition:    m.Body,
 		Revisions:     revRows,
@@ -172,5 +174,48 @@ func (h *Handler) MacrosDiff(w http.ResponseWriter, r *http.Request) {
 		ToVersion:       toVersion,
 		RevisionOptions: revisionOptions,
 		Diff:            diff,
+	}))
+}
+
+func (h *Handler) MacrosImpact(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "macroName")
+	if _, err := h.Macro.Get(r.Context(), name); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
+	pageReq := domain.PageRequest{MaxResults: domain.MaxMaxResults}
+	edges, _, err := h.Lineage.GetDownstream(r.Context(), "macro."+name, pageReq)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
+	seen := map[string]macroImpactRowData{}
+	for i := range edges {
+		edge := edges[i]
+		if edge.TargetTable == nil || strings.TrimSpace(*edge.TargetTable) == "" {
+			continue
+		}
+		targetTable := strings.TrimSpace(*edge.TargetTable)
+		label := targetTable
+		if strings.TrimSpace(edge.TargetSchema) != "" {
+			label = edge.TargetSchema + "." + targetTable
+		}
+		seen[label] = macroImpactRowData{
+			ModelName: label,
+			LastSeen:  formatTime(edge.CreatedAt),
+			URL:       "/ui/models/" + edge.TargetSchema + "/" + targetTable,
+		}
+	}
+
+	rows := make([]macroImpactRowData, 0, len(seen))
+	for _, row := range seen {
+		rows = append(rows, row)
+	}
+	renderHTML(w, http.StatusOK, macroImpactPage(macroImpactPageData{
+		Principal: principalFromContext(r.Context()),
+		Name:      name,
+		Rows:      rows,
 	}))
 }

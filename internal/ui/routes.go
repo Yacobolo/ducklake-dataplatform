@@ -167,6 +167,7 @@ func MountRoutes(r chi.Router, h *Handler) {
 
 		r.Get("/macros", h.MacrosList)
 		r.Get("/macros/{macroName}/diff", h.MacrosDiff)
+		r.Get("/macros/{macroName}/impact", h.MacrosImpact)
 		r.Get("/macros/{macroName}", h.MacrosDetail)
 		r.Get("/macros/new", h.MacrosNew)
 		r.Post("/macros", h.MacrosCreate)
