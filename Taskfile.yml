@@ -228,24 +228,106 @@ tasks:
     deps: [test:integration]
 
   check:
-    desc: Run all checks (lint + test) and print a CI-style summary
+    desc: Run all checks with concise output (prints logs only for failures)
     silent: true
     cmds:
       - |
+        tmpdir=$(mktemp -d)
+        trap 'rm -rf "$tmpdir"' EXIT
+
         failed=0
         results=""
-        for step in lint:go lint:api verify:declarative-schema verify:docs-generated test:arch test:unit test:integration; do
-          if task "$step" > /dev/null 2>&1; then
-            results="${results}  ${step} ... ok\n"
-          else
-            results="${results}  ${step} ... FAIL\n"
-            failed=1
+        failures=""
+
+        sanitize_name() {
+          printf "%s" "$1" | tr ':/' '__'
+        }
+
+        append_result() {
+          step_name="$1"
+          step_status="$2"
+          results="${results}  ${step_name} ... ${step_status}\n"
+        }
+
+        run_step() {
+          step_name="$1"
+          step_cmd="$2"
+          log_file="$tmpdir/$(sanitize_name "$step_name").log"
+
+          if sh -c "$step_cmd" >"$log_file" 2>&1; then
+            append_result "$step_name" "ok"
+            return
           fi
-        done
-        printf "\n=== Check Summary ===\n${results}\n"
+
+          append_result "$step_name" "FAIL"
+          failures="${failures}\n--- ${step_name} ---\n$(cat "$log_file")\n"
+          failed=1
+          return
+        }
+
+        run_step_bg() {
+          step_name="$1"
+          step_cmd="$2"
+          log_file="$tmpdir/$(sanitize_name "$step_name").log"
+          status_file="$tmpdir/$(sanitize_name "$step_name").status"
+
+          (
+            if sh -c "$step_cmd" >"$log_file" 2>&1; then
+              printf "ok" >"$status_file"
+            else
+              printf "FAIL" >"$status_file"
+            fi
+          ) &
+
+          printf "%s|%s|%s\n" "$!" "$step_name" "$log_file" >>"$tmpdir/background.steps"
+        }
+
+        wait_for_bg_steps() {
+          while IFS='|' read -r step_pid step_name log_file; do
+            wait "$step_pid" || true
+            step_status=$(cat "$tmpdir/$(sanitize_name "$step_name").status")
+            append_result "$step_name" "$step_status"
+            if [ "$step_status" != "ok" ]; then
+              failures="${failures}\n--- ${step_name} ---\n$(cat "$log_file")\n"
+              failed=1
+            fi
+          done <"$tmpdir/background.steps"
+        }
+
+        : >"$tmpdir/background.steps"
+
+        run_step "bundle-api" "task bundle-api"
+        run_step "generate:declarative-schema" "task generate:declarative-schema"
+
+        run_step_bg "lint:go" "golangci-lint run"
+        run_step_bg "lint:api" "go run ./cmd/lint-api internal/api/openapi.bundled.yaml"
+        run_step_bg "verify:declarative-schema" "git diff --exit-code -- schemas/declarative/v1"
+        run_step_bg "verify:docs-generated" "go run ./cmd/docsgen -openapi internal/api/openapi.bundled.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated && git diff --exit-code -- docs/reference/generated"
+        run_step_bg "test:arch" "gotestsum --format pkgname-and-test-fails -- ./internal/architecture/..."
+
+        wait_for_bg_steps
+        run_step "test:unit" "gotestsum --format pkgname-and-test-fails -- -race ./..."
+        run_step "test:integration" "gotestsum --format pkgname-and-test-fails -- -tags integration -timeout 120s ./test/integration/... ./internal/api ./internal/service/security ./internal/service/ingestion ./internal/service/storage ./internal/engine"
+
+        printf "\n=== Check Summary ===\n%b\n" "$results"
         if [ "$failed" -eq 1 ]; then
-          echo "Some checks failed. Run the individual task for details."
+          printf "%b" "$failures"
+          echo "Some checks failed."
           exit 1
-        else
-          echo "All checks passed."
         fi
+
+        echo "All checks passed."
+
+  check:verbose:
+    desc: Run all checks with streaming output
+    output: prefixed
+    deps: [bundle-api, generate:declarative-schema]
+    cmds:
+      - golangci-lint run
+      - go run ./cmd/lint-api internal/api/openapi.bundled.yaml
+      - git diff --exit-code -- schemas/declarative/v1
+      - go run ./cmd/docsgen -openapi internal/api/openapi.bundled.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated
+      - git diff --exit-code -- docs/reference/generated
+      - gotestsum --format pkgname-and-test-fails -- ./internal/architecture/...
+      - gotestsum --format pkgname-and-test-fails -- -race ./...
+      - gotestsum --format pkgname-and-test-fails -- -tags integration -timeout 120s ./test/integration/... ./internal/api ./internal/service/security ./internal/service/ingestion ./internal/service/storage ./internal/engine
