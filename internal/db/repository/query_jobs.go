@@ -56,8 +56,7 @@ func (r *QueryJobRepo) GetByID(ctx context.Context, id string) (*domain.QueryJob
 }
 
 // ListByPrincipal returns query jobs for a principal ordered by recency.
-func (r *QueryJobRepo) ListByPrincipal(ctx context.Context, principalName string, page domain.PageRequest) ([]domain.QueryJob, int64, error) {
-	var total int64
+func (r *QueryJobRepo) ListByPrincipal(ctx context.Context, principalName string, page domain.PageRequest) (items []domain.QueryJob, total int64, err error) {
 	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM query_jobs WHERE principal_name = ?`, principalName).Scan(&total); err != nil {
 		return nil, 0, mapDBError(err)
 	}
@@ -74,9 +73,13 @@ func (r *QueryJobRepo) ListByPrincipal(ctx context.Context, principalName string
 	if err != nil {
 		return nil, 0, mapDBError(err)
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close query jobs rows: %w", closeErr)
+		}
+	}()
 
-	items := make([]domain.QueryJob, 0)
+	items = make([]domain.QueryJob, 0)
 	for rows.Next() {
 		item, scanErr := r.scanRow(rows)
 		if scanErr != nil {
