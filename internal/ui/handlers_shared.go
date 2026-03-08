@@ -9,6 +9,7 @@ import (
 
 func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 	renderHTML(w, http.StatusOK, overviewPage(principalFromContext(r.Context()), []overviewCardData{
+		{Title: "Components", Description: "Browse the shared component library and design-token patterns.", Href: "/ui/components", LinkLabel: "Open components ->"},
 		{Title: "SQL Editor", Description: "Run ad-hoc SQL with current principal permissions.", Href: "/ui/sql", LinkLabel: "Open SQL editor ->"},
 		{Title: "Catalogs", Description: "Browse registered catalogs and metastore summary.", Href: "/ui/catalogs", LinkLabel: "Open catalogs ->"},
 		{Title: "Assets", Description: "Inspect asset graph, runs, materializations, and backfills.", Href: "/ui/assets", LinkLabel: "Open assets ->"},
@@ -16,6 +17,10 @@ func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 		{Title: "Macros", Description: "Inspect macro definitions and revisions.", Href: "/ui/macros", LinkLabel: "Open macros ->"},
 		{Title: "Models", Description: "Read model SQL, dependencies, and config.", Href: "/ui/models", LinkLabel: "Open models ->"},
 	}))
+}
+
+func (h *Handler) ComponentsPage(w http.ResponseWriter, r *http.Request) {
+	renderHTML(w, http.StatusOK, componentsPage(principalFromContext(r.Context())))
 }
 
 func stringsJoin(values []string) string {

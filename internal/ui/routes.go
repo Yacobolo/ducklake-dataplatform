@@ -26,6 +26,7 @@ func MountRoutes(r chi.Router, h *Handler) {
 		r.Use(h.EnsureCSRFToken)
 		r.Use(h.RequireCSRF)
 		r.Get("/", h.Home)
+		r.Get("/components", h.ComponentsPage)
 		r.Get("/sql", h.SQLEditorPage)
 		r.Post("/sql/run", h.SQLEditorRun)
 		r.Post("/sql/download.csv", h.SQLEditorDownloadCSV)
