@@ -8,7 +8,7 @@ These are the key concepts to understand before building on the platform.
 - A **schema** groups related tables/views.
 - A **table** stores data; a **view** stores a reusable query definition.
 
-See endpoint coverage in [Catalogs](/reference/generated/api/endpoints/catalogs).
+See endpoint coverage in [API Reference](/reference/generated/api/index).
 
 ## Identity and Access
 
@@ -16,14 +16,14 @@ See endpoint coverage in [Catalogs](/reference/generated/api/endpoints/catalogs)
 - **Groups** let you manage permissions in bulk.
 - **Grants** assign privileges on securable objects.
 
-See [Security](/reference/generated/api/endpoints/security) for operations.
+See [API Reference](/reference/generated/api/index) for operations.
 
 ## Query Execution
 
 - Queries run through `POST /v1/query` as the authenticated principal.
 - Access checks happen at execution time based on grants and security policies.
 
-See [Query](/reference/generated/api/endpoints/query).
+See [API Reference](/reference/generated/api/index).
 
 ## Data Security Controls
 

@@ -58,6 +58,7 @@ pkg/cli/gen/*.gen.go
 /bin/
 
 # Docs site build/deps
+docs/reference/generated/
 docs/node_modules/
 docs/.vitepress/dist/
 docs/.vitepress/cache/
