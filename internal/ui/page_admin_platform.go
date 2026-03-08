@@ -41,6 +41,7 @@ func governanceSectionNav(active string) Node {
 		{Key: "lineage", Label: "Lineage", Href: "/ui/governance/lineage"},
 		{Key: "audit", Label: "Audit Logs", Href: "/ui/governance/audit-logs"},
 		{Key: "history", Label: "Query History", Href: "/ui/governance/query-history"},
+		{Key: "manifest", Label: "Manifest", Href: "/ui/governance/manifest"},
 	})
 }
 

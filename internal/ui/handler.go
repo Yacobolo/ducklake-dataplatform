@@ -30,6 +30,7 @@ type Handler struct {
 	CatalogRegistration *catalog.CatalogRegistrationService
 	Catalog             *catalog.CatalogService
 	Query               *query.QueryService
+	Manifest            *query.ManifestService
 	View                *catalog.ViewService
 	Pipeline            *pipeline.Service
 	Asset               *assetsvc.Service

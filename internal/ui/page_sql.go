@@ -266,6 +266,13 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 									Span(Text("Run query")),
 								),
 								Button(
+									Type("submit"),
+									FormAction("/ui/sql/run-async"),
+									Class(secondaryButtonClass()),
+									I(Class("btn-icon-glyph"), Attr("data-lucide", "timer-reset"), Attr("aria-hidden", "true")),
+									Span(Text("Run async")),
+								),
+								Button(
 									Type("button"),
 									ID("sql-format-query"),
 									Class(secondaryButtonClass()),

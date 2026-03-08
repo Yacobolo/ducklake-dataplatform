@@ -86,6 +86,7 @@ type semanticMetricRowData struct {
 	Type       string
 	Expression string
 	Status     string
+	EditURL    string
 	DeleteURL  string
 }
 
@@ -93,6 +94,7 @@ type semanticPreAggRowData struct {
 	Name      string
 	Grain     string
 	Target    string
+	EditURL   string
 	DeleteURL string
 }
 
@@ -103,6 +105,7 @@ type semanticModelDetailPageData struct {
 	BaseModelRef      string
 	DefaultTimeDim    string
 	Description       string
+	EditURL           string
 	DeleteURL         string
 	MetricsCreateURL  string
 	PreAggCreateURL   string
@@ -122,7 +125,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 			Td(Text(metric.Type)),
 			Td(Text(metric.Expression)),
 			Td(statusLabel(metric.Status, "accent")),
-			Td(Class("text-right"), actionMenu("Actions", actionMenuPost(metric.DeleteURL, "Delete metric", d.CSRFFieldProvider, true))),
+			Td(Class("text-right"), actionMenu("Actions", actionMenuLink(metric.EditURL, "Edit metric"), actionMenuPost(metric.DeleteURL, "Delete metric", d.CSRFFieldProvider, true))),
 		))
 	}
 	preAggRows := make([]Node, 0, len(d.PreAggregations))
@@ -132,7 +135,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 			Td(Text(preAgg.Name)),
 			Td(Text(preAgg.Grain)),
 			Td(Text(preAgg.Target)),
-			Td(Class("text-right"), actionMenu("Actions", actionMenuPost(preAgg.DeleteURL, "Delete pre-aggregation", d.CSRFFieldProvider, true))),
+			Td(Class("text-right"), actionMenu("Actions", actionMenuLink(preAgg.EditURL, "Edit pre-aggregation"), actionMenuPost(preAgg.DeleteURL, "Delete pre-aggregation", d.CSRFFieldProvider, true))),
 		))
 	}
 	return appPage(
@@ -144,7 +147,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 			P(Text("Base model: "+d.BaseModelRef)),
 			P(Text("Default time dimension: "+d.DefaultTimeDim)),
 			P(Text("Description: "+valueOrDash(d.Description))),
-			Div(Class("BtnGroup"), A(Href("/ui/semantic/relationships"), Class(secondaryButtonClass()), Text("Relationships")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete")))),
+			Div(Class("BtnGroup"), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href("/ui/semantic/relationships"), Class(secondaryButtonClass()), Text("Relationships")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete")))),
 		),
 		Div(
 			Class(cardClass()),
@@ -211,6 +214,7 @@ type semanticRelationshipRowData struct {
 	ToModel   string
 	Type      string
 	JoinSQL   string
+	EditURL   string
 	DeleteURL string
 }
 
@@ -237,7 +241,7 @@ func semanticRelationshipsPage(d semanticRelationshipsPageData) Node {
 			Td(Text(row.ToModel)),
 			Td(Text(row.Type)),
 			Td(Text(row.JoinSQL)),
-			Td(Class("text-right"), actionMenu("Actions", actionMenuPost(row.DeleteURL, "Delete relationship", d.CSRFFieldProvider, true))),
+			Td(Class("text-right"), actionMenu("Actions", actionMenuLink(row.EditURL, "Edit relationship"), actionMenuPost(row.DeleteURL, "Delete relationship", d.CSRFFieldProvider, true))),
 		))
 	}
 	tableNode := Node(emptyStateCard("No relationships defined.", "Create semantic model", "/ui/semantic/models/new"))
@@ -363,4 +367,84 @@ func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string
 			),
 		),
 	)
+}
+
+func semanticModelsEditPage(principal domain.ContextPrincipal, projectName, semanticModelName string, item *domain.SemanticModel, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "Edit Semantic Model", "semantic", "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/update", csrfFieldProvider,
+		Label(Text("Description")),
+		Textarea(Name("description"), Text(item.Description)),
+		Label(Text("Base model reference")),
+		Input(Name("base_model_ref"), Value(item.BaseModelRef), Required()),
+		Label(Text("Default time dimension")),
+		Input(Name("default_time_dimension"), Value(item.DefaultTimeDimension)),
+		Label(Text("Tags (comma separated)")),
+		Input(Name("tags"), Value(csvValues(item.Tags))),
+	)
+}
+
+func semanticMetricEditPage(principal domain.ContextPrincipal, projectName, semanticModelName string, metric *domain.SemanticMetric, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "Edit Semantic Metric", "semantic", "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/metrics/"+metric.Name+"/update", csrfFieldProvider,
+		Label(Text("Description")),
+		Textarea(Name("description"), Text(metric.Description)),
+		Label(Text("Metric type")),
+		Select(Name("metric_type"), optionSelected("SUM", metric.MetricType), optionSelected("COUNT", metric.MetricType), optionSelected("COUNT_DISTINCT", metric.MetricType), optionSelected("AVG", metric.MetricType), optionSelected("MIN", metric.MetricType), optionSelected("MAX", metric.MetricType), optionSelected("RATIO", metric.MetricType)),
+		Label(Text("Expression mode")),
+		Select(Name("expression_mode"), optionSelected("DSL", metric.ExpressionMode), optionSelected("SQL", metric.ExpressionMode)),
+		Label(Text("Expression")),
+		Textarea(Name("expression"), Text(metric.Expression), Required()),
+		Label(Text("Default time grain")),
+		Input(Name("default_time_grain"), Value(metric.DefaultTimeGrain)),
+		Label(Text("Format")),
+		Input(Name("format"), Value(metric.Format)),
+		Label(Text("Certification state")),
+		Select(Name("certification_state"), optionSelected("DRAFT", metric.CertificationState), optionSelected("CERTIFIED", metric.CertificationState), optionSelected("DEPRECATED", metric.CertificationState)),
+	)
+}
+
+func semanticPreAggregationEditPage(principal domain.ContextPrincipal, projectName, semanticModelName string, item *domain.SemanticPreAggregation, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "Edit Pre-Aggregation", "semantic", "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/pre-aggregations/"+item.Name+"/update", csrfFieldProvider,
+		Label(Text("Metric set (comma separated)")),
+		Input(Name("metric_set"), Value(csvValues(item.MetricSet))),
+		Label(Text("Dimension set (comma separated)")),
+		Input(Name("dimension_set"), Value(csvValues(item.DimensionSet))),
+		Label(Text("Grain")),
+		Input(Name("grain"), Value(item.Grain)),
+		Label(Text("Target relation")),
+		Input(Name("target_relation"), Value(item.TargetRelation), Required()),
+		Label(Text("Refresh policy")),
+		Input(Name("refresh_policy"), Value(item.RefreshPolicy)),
+	)
+}
+
+func semanticRelationshipEditPage(principal domain.ContextPrincipal, item *domain.SemanticRelationship, modelOptions []semanticOptionData, csrfFieldProvider func() Node) Node {
+	fromOptions := make([]Node, 0, len(modelOptions))
+	toOptions := make([]Node, 0, len(modelOptions))
+	for i := range modelOptions {
+		opt := modelOptions[i]
+		fromOptions = append(fromOptions, Option(Value(opt.Value), Text(opt.Label), selectedIf(opt.Value == item.FromSemanticID)))
+		toOptions = append(toOptions, Option(Value(opt.Value), Text(opt.Label), selectedIf(opt.Value == item.ToSemanticID)))
+	}
+	return formPage(principal, "Edit Relationship", "semantic", "/ui/semantic/relationships/"+item.Name+"/update", csrfFieldProvider,
+		Label(Text("From model")),
+		Select(Name("from_semantic_id"), Disabled(), Group(fromOptions)),
+		Label(Text("To model")),
+		Select(Name("to_semantic_id"), Disabled(), Group(toOptions)),
+		Label(Text("Relationship type")),
+		Select(Name("relationship_type"), optionSelected("ONE_TO_ONE", item.RelationshipType), optionSelected("ONE_TO_MANY", item.RelationshipType), optionSelected("MANY_TO_ONE", item.RelationshipType), optionSelected("MANY_TO_MANY", item.RelationshipType)),
+		Label(Text("Join SQL")),
+		Textarea(Name("join_sql"), Text(item.JoinSQL), Required()),
+		Label(Text("Cost")),
+		Input(Name("cost"), Value(strconv.Itoa(item.Cost))),
+		Label(Text("Max hops")),
+		Input(Name("max_hops"), Value(strconv.Itoa(item.MaxHops))),
+		Label(Text("Default relationship")),
+		Input(Type("checkbox"), Name("is_default"), Value("true"), checkedIf(item.IsDefault)),
+	)
+}
+
+func selectedIf(v bool) Node {
+	if v {
+		return Selected()
+	}
+	return nil
 }

@@ -391,6 +391,7 @@ func run() error {
 	uiHandler.Audit = svc.Audit
 	uiHandler.QueryHistory = svc.QueryHistory
 	uiHandler.Lineage = svc.Lineage
+	uiHandler.Manifest = svc.Manifest
 	uiHandler.GitService = svc.GitService
 	uiHandler.Semantic = svc.Semantic
 	r.Route("/ui", func(r chi.Router) {

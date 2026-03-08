@@ -613,6 +613,7 @@ func (h *Handler) GovernanceHome(w http.ResponseWriter, r *http.Request) {
 		{Title: "Lineage", Description: "Inspect upstream, downstream, and column-level lineage.", Href: "/ui/governance/lineage", LinkLabel: "Open lineage ->"},
 		{Title: "Audit Logs", Description: "Inspect platform audit activity.", Href: "/ui/governance/audit-logs", LinkLabel: "Open audit logs ->"},
 		{Title: "Query History", Description: "Review query execution history.", Href: "/ui/governance/query-history", LinkLabel: "Open query history ->"},
+		{Title: "Manifest", Description: "Generate secure table manifests with files, filters, and masks.", Href: "/ui/governance/manifest", LinkLabel: "Open manifest ->"},
 	}))
 }
 

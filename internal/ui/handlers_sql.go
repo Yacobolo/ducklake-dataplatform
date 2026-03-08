@@ -2,11 +2,14 @@ package ui
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/query"
@@ -16,6 +19,13 @@ import (
 
 const sqlEditorMaxRows = 200
 const sqlEditorCSVMaxRows = 5000
+
+type queryAsyncUI interface {
+	SubmitAsync(ctx context.Context, principalName, sqlQuery, requestID string) (*domain.QueryJob, error)
+	GetAsyncJob(ctx context.Context, principalName, jobID string) (*domain.QueryJob, error)
+	CancelAsyncJob(ctx context.Context, principalName, jobID string) error
+	DeleteAsyncJob(ctx context.Context, principalName, jobID string) error
+}
 
 func (h *Handler) SQLEditorPage(w http.ResponseWriter, r *http.Request) {
 	state := h.sqlEditorState(r, nil)
@@ -95,6 +105,98 @@ func (h *Handler) SQLEditorDownloadCSV(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(buf.Bytes())
+}
+
+func (h *Handler) SQLEditorRunAsync(w http.ResponseWriter, r *http.Request) {
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+
+	asyncSvc, ok := any(h.Query).(queryAsyncUI)
+	if !ok {
+		renderHTML(w, http.StatusInternalServerError, errorPage("Async Query Unavailable", "Async query service is not configured."))
+		return
+	}
+
+	sqlText := strings.TrimSpace(r.Form.Get("sql"))
+	principal, _ := principalLabel(r.Context())
+	job, err := asyncSvc.SubmitAsync(r.Context(), principal, sqlText, strings.TrimSpace(r.Form.Get("request_id")))
+	if err != nil {
+		state := h.sqlEditorState(r, r.Form)
+		h.renderSQLEditor(w, r, sqlText, nil, err.Error(), state)
+		return
+	}
+
+	http.Redirect(w, r, "/ui/sql/jobs/"+job.ID, http.StatusSeeOther)
+}
+
+func (h *Handler) SQLEditorJobDetail(w http.ResponseWriter, r *http.Request) {
+	asyncSvc, ok := any(h.Query).(queryAsyncUI)
+	if !ok {
+		renderHTML(w, http.StatusInternalServerError, errorPage("Async Query Unavailable", "Async query service is not configured."))
+		return
+	}
+
+	jobID := chi.URLParam(r, "jobID")
+	principal, _ := principalLabel(r.Context())
+	job, err := asyncSvc.GetAsyncJob(r.Context(), principal, jobID)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
+	renderHTML(w, http.StatusOK, sqlAsyncJobPage(sqlAsyncJobPageData{
+		Principal:         principalFromContext(r.Context()),
+		JobID:             job.ID,
+		Status:            string(job.Status),
+		RequestID:         job.RequestID,
+		SQLText:           job.SQLText,
+		Columns:           job.Columns,
+		Rows:              job.Rows,
+		RowCount:          job.RowCount,
+		ErrorText:         strOrDash(job.ErrorMessage),
+		AttemptCount:      job.AttemptCount,
+		MaxAttempts:       job.MaxAttempts,
+		LastHeartbeatText: formatTimePtr(job.LastHeartbeat),
+		NextRetryText:     formatTimePtr(job.NextRetryAt),
+		CreatedAtText:     formatTime(job.CreatedAt),
+		StartedAtText:     formatTimePtr(job.StartedAt),
+		CompletedAtText:   formatTimePtr(job.CompletedAt),
+		CancelURL:         "/ui/sql/jobs/" + job.ID + "/cancel",
+		DeleteURL:         "/ui/sql/jobs/" + job.ID + "/delete",
+		EditorURL:         "/ui/sql?sql=" + url.QueryEscape(job.SQLText),
+		CSRFFieldProvider: csrfFieldProvider(r),
+	}))
+}
+
+func (h *Handler) SQLEditorJobCancel(w http.ResponseWriter, r *http.Request) {
+	asyncSvc, ok := any(h.Query).(queryAsyncUI)
+	if !ok {
+		renderHTML(w, http.StatusInternalServerError, errorPage("Async Query Unavailable", "Async query service is not configured."))
+		return
+	}
+	jobID := chi.URLParam(r, "jobID")
+	principal, _ := principalLabel(r.Context())
+	if err := asyncSvc.CancelAsyncJob(r.Context(), principal, jobID); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/sql/jobs/"+jobID, http.StatusSeeOther)
+}
+
+func (h *Handler) SQLEditorJobDelete(w http.ResponseWriter, r *http.Request) {
+	asyncSvc, ok := any(h.Query).(queryAsyncUI)
+	if !ok {
+		renderHTML(w, http.StatusInternalServerError, errorPage("Async Query Unavailable", "Async query service is not configured."))
+		return
+	}
+	jobID := chi.URLParam(r, "jobID")
+	principal, _ := principalLabel(r.Context())
+	if err := asyncSvc.DeleteAsyncJob(r.Context(), principal, jobID); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/sql", http.StatusSeeOther)
 }
 
 func (h *Handler) renderSQLEditor(w http.ResponseWriter, r *http.Request, sqlText string, result *query.QueryResult, runError string, state sqlEditorContext) {
