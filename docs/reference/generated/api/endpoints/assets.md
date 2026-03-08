@@ -28,6 +28,31 @@ Returns first-class asset definitions visible to the authenticated principal.
 | `429` | Rate limit exceeded. Retry after the indicated duration. |
 | `500` | An unexpected internal server error occurred. |
 
+## `POST /assets`
+
+Create asset definition
+
+Creates a first-class asset definition and its dependency/check metadata. Requires MANAGE_ASSET_DEFINITIONS.
+
+- Operation ID: `createAsset`
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | Created asset definition |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `403` | Insufficient privileges to perform this operation. |
+| `409` | The resource already exists or conflicts with current state. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
 ## `GET /assets/{assetKey}`
 
 Get asset by key
@@ -48,6 +73,63 @@ Returns one asset definition and orchestration metadata by asset key.
 | --- | --- |
 | `200` | Asset details |
 | `401` | Authentication credentials are missing or invalid. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
+## `PUT /assets/{assetKey}`
+
+Update asset definition
+
+Replaces a first-class asset definition and reconciles its dependency/check metadata. Requires MANAGE_ASSET_DEFINITIONS.
+
+- Operation ID: `updateAsset`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `assetKey` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | Updated asset definition |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `403` | Insufficient privileges to perform this operation. |
+| `404` | The requested resource was not found. |
+| `429` | Rate limit exceeded. Retry after the indicated duration. |
+| `500` | An unexpected internal server error occurred. |
+
+## `DELETE /assets/{assetKey}`
+
+Delete asset definition
+
+Deletes a first-class asset definition and its dependency/check metadata. Requires MANAGE_ASSET_DEFINITIONS.
+
+- Operation ID: `deleteAsset`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `assetKey` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | Asset deleted |
+| `400` | Invalid request parameters or malformed request body. |
+| `401` | Authentication credentials are missing or invalid. |
+| `403` | Insufficient privileges to perform this operation. |
 | `404` | The requested resource was not found. |
 | `429` | Rate limit exceeded. Retry after the indicated duration. |
 | `500` | An unexpected internal server error occurred. |
