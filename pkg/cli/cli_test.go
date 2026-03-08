@@ -663,6 +663,63 @@ func TestCLI_InvalidOutputFormat(t *testing.T) {
 	assert.Contains(t, err.Error(), "unsupported output format")
 }
 
+func TestCLI_ProfileAPIKeyOverridesStaleProfileToken(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 200, `{"data":[]}`))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	require.NoError(t, SaveUserConfig(&UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {
+				Host:   srv.URL,
+				Token:  "stale-token",
+				APIKey: "",
+			},
+		},
+	}))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--api-key", "fresh-api-key",
+		"catalog", "schemas", "list", "test",
+	})
+
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	captured := rec.last()
+	assert.Equal(t, "fresh-api-key", captured.Headers.Get("X-API-Key"))
+	assert.Empty(t, captured.Headers.Get("Authorization"))
+}
+
+func TestCLI_ZeroArgCommandsRejectUnexpectedArgs(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "version", args: []string{"version", "extra"}},
+		{name: "commands", args: []string{"commands", "extra"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rootCmd := newRootCmd()
+			rootCmd.SetArgs(tt.args)
+
+			err := rootCmd.Execute()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "unknown command")
+		})
+	}
+}
+
 // === Additional Edge Cases ===
 
 func TestCLI_ErrorPropagation_ContainsStatusCode(t *testing.T) {

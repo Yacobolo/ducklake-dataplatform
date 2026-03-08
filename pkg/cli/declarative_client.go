@@ -471,12 +471,14 @@ func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.De
 }
 
 type apiSchema struct {
-	ID           string            `json:"id"`
+	ID           string            `json:"schema_id"`
+	LegacyID     string            `json:"id"`
 	Name         string            `json:"name"`
 	Comment      string            `json:"comment"`
 	Owner        string            `json:"owner"`
 	LocationName string            `json:"location_name"`
 	Properties   map[string]string `json:"properties"`
+	Tags         []apiTag          `json:"tags"`
 }
 
 func (c *APIStateClient) readSchemas(ctx context.Context, catalogName string, state *declarative.DesiredState) error {
@@ -504,8 +506,8 @@ func (c *APIStateClient) readSchemas(ctx context.Context, catalogName string, st
 				Properties:   s.Properties,
 			},
 		})
-		if s.ID != "" && c.index != nil {
-			c.index.schemaIDByPath[catalogName+"."+s.Name] = s.ID
+		if schemaID := s.effectiveID(); schemaID != "" && c.index != nil {
+			c.index.schemaIDByPath[catalogName+"."+s.Name] = schemaID
 		}
 
 		// Fetch tables, views, volumes for this schema.
@@ -523,7 +525,8 @@ func (c *APIStateClient) readSchemas(ctx context.Context, catalogName string, st
 }
 
 type apiTable struct {
-	ID           string            `json:"id"`
+	ID           string            `json:"table_id"`
+	LegacyID     string            `json:"id"`
 	Name         string            `json:"name"`
 	TableType    string            `json:"table_type"`
 	Comment      string            `json:"comment"`
@@ -533,6 +536,7 @@ type apiTable struct {
 	SourcePath   string            `json:"source_path"`
 	FileFormat   string            `json:"file_format"`
 	LocationName string            `json:"location_name"`
+	Tags         []apiTag          `json:"tags"`
 }
 
 type apiColumn struct {
@@ -557,8 +561,14 @@ func (c *APIStateClient) readTables(ctx context.Context, catalogName, schemaName
 	}
 
 	for _, t := range items {
+		effective := t
+		if detail, err := c.readTableDetail(ctx, catalogName, schemaName, t.Name); err == nil &&
+			(detail.effectiveID() != "" || detail.TableType != "" || len(detail.Columns) > 0) {
+			effective = *detail
+		}
+
 		var cols []declarative.ColumnDef
-		for _, col := range t.Columns {
+		for _, col := range effective.Columns {
 			cols = append(cols, declarative.ColumnDef{
 				Name:    col.Name,
 				Type:    col.Type,
@@ -571,21 +581,63 @@ func (c *APIStateClient) readTables(ctx context.Context, catalogName, schemaName
 			SchemaName:  schemaName,
 			TableName:   t.Name,
 			Spec: declarative.TableSpec{
-				TableType:    t.TableType,
-				Comment:      t.Comment,
-				Owner:        t.Owner,
+				TableType:    effective.TableType,
+				Comment:      effective.Comment,
+				Owner:        effective.Owner,
 				Columns:      cols,
-				Properties:   t.Properties,
-				SourcePath:   t.SourcePath,
-				FileFormat:   t.FileFormat,
-				LocationName: t.LocationName,
+				Properties:   effective.Properties,
+				SourcePath:   effective.SourcePath,
+				FileFormat:   effective.FileFormat,
+				LocationName: effective.LocationName,
 			},
 		})
-		if t.ID != "" && c.index != nil {
-			c.index.tableIDByPath[catalogName+"."+schemaName+"."+t.Name] = t.ID
+		if tableID := effective.effectiveID(); tableID != "" && c.index != nil {
+			c.index.tableIDByPath[catalogName+"."+schemaName+"."+t.Name] = tableID
+		}
+
+		for _, tag := range effective.Tags {
+			spec := declarative.TagAssignmentSpec{
+				Tag:           tagKey(tag.Key, tag.Value),
+				SecurableType: "table",
+				Securable:     catalogName + "." + schemaName + "." + t.Name,
+			}
+			state.TagAssignments = append(state.TagAssignments, spec)
 		}
 	}
 	return nil
+}
+
+func (c *APIStateClient) readTableDetail(_ context.Context, catalogName, schemaName, tableName string) (*apiTable, error) {
+	resp, err := c.client.Do(http.MethodGet, "/catalogs/"+catalogName+"/schemas/"+schemaName+"/tables/"+tableName, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := gen.ReadBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("GET /catalogs/%s/schemas/%s/tables/%s: HTTP %d: %s", catalogName, schemaName, tableName, resp.StatusCode, string(body))
+	}
+	var detail apiTable
+	if err := json.Unmarshal(body, &detail); err != nil {
+		return nil, err
+	}
+	return &detail, nil
+}
+
+func (s apiSchema) effectiveID() string {
+	if s.ID != "" {
+		return s.ID
+	}
+	return s.LegacyID
+}
+
+func (t apiTable) effectiveID() string {
+	if t.ID != "" {
+		return t.ID
+	}
+	return t.LegacyID
 }
 
 type apiView struct {
@@ -891,10 +943,10 @@ type apiColumnMaskBinding struct {
 }
 
 type apiTagAssignment struct {
-	ID           string  `json:"id"`
-	SecurableType string `json:"securable_type"`
-	SecurableID  string  `json:"securable_id"`
-	ColumnName   *string `json:"column_name"`
+	ID            string  `json:"id"`
+	SecurableType string  `json:"securable_type"`
+	SecurableID   string  `json:"securable_id"`
+	ColumnName    *string `json:"column_name"`
 }
 
 func (c *APIStateClient) readTablePolicies(ctx context.Context, state *declarative.DesiredState) error {
@@ -1009,6 +1061,10 @@ func (c *APIStateClient) readTablePolicies(ctx context.Context, state *declarati
 }
 
 func (c *APIStateClient) readTagAssignments(ctx context.Context, state *declarative.DesiredState) error {
+	seen := make(map[string]struct{}, len(state.TagAssignments))
+	for _, spec := range state.TagAssignments {
+		seen[tagAssignmentKey(spec.Tag, spec.SecurableType, spec.Securable, spec.ColumnName)] = struct{}{}
+	}
 	for tag, tagID := range c.index.tagIDByKey {
 		pages, err := c.fetchAllPages(ctx, "/tags/"+tagID+"/assignments")
 		if err != nil {
@@ -1035,10 +1091,18 @@ func (c *APIStateClient) readTagAssignments(ctx context.Context, state *declarat
 			if assignment.ColumnName != nil {
 				spec.ColumnName = *assignment.ColumnName
 			}
+			key := tagAssignmentKey(tag, spec.SecurableType, spec.Securable, spec.ColumnName)
+			if _, ok := seen[key]; ok {
+				if assignment.ID != "" {
+					c.index.tagAssignIDByKey[key] = assignment.ID
+				}
+				continue
+			}
 			state.TagAssignments = append(state.TagAssignments, spec)
 			if assignment.ID != "" {
-				c.index.tagAssignIDByKey[tagAssignmentKey(tag, spec.SecurableType, spec.Securable, spec.ColumnName)] = assignment.ID
+				c.index.tagAssignIDByKey[key] = assignment.ID
 			}
+			seen[key] = struct{}{}
 		}
 	}
 	return nil

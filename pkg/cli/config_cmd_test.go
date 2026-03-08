@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMaskSecret(t *testing.T) {
@@ -61,4 +63,130 @@ func TestMaskConfig_EmptyProfiles(t *testing.T) {
 
 	masked := maskConfig(cfg)
 	assert.Empty(t, masked.Profiles)
+}
+
+func TestConfigShow_TableOutput(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	cfg := &UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {
+				Host:   "http://localhost:8080",
+				APIKey: "secret-api-key",
+				Output: "json",
+			},
+		},
+	}
+	require.NoError(t, SaveUserConfig(cfg))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"config", "show", "--output", "table"})
+
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+
+	require.NoError(t, err)
+	assert.Contains(t, output, "PROFILE")
+	assert.Contains(t, output, "ACTIVE")
+	assert.Contains(t, output, "default")
+	assert.Contains(t, output, "api-key")
+}
+
+func TestConfigSetProfile_GlobalJSONOutputNotShadowed(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--output", "json",
+		"config", "set-profile",
+		"--name", "default",
+		"--host", "http://localhost:8080",
+	})
+
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+
+	require.NoError(t, err)
+
+	var result map[string]string
+	require.NoError(t, json.Unmarshal([]byte(output), &result))
+	assert.Equal(t, "ok", result["status"])
+
+	cfg, err := LoadUserConfig()
+	require.NoError(t, err)
+	assert.Empty(t, cfg.Profiles["default"].Output)
+}
+
+func TestConfigSetProfile_ValidatesDefaultOutputAndHost(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	t.Run("invalid default output", func(t *testing.T) {
+		rootCmd := newRootCmd()
+		rootCmd.SetArgs([]string{
+			"config", "set-profile",
+			"--name", "default",
+			"--default-output", "yaml",
+		})
+
+		err := rootCmd.Execute()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unsupported output format")
+	})
+
+	t.Run("invalid host", func(t *testing.T) {
+		rootCmd := newRootCmd()
+		rootCmd.SetArgs([]string{
+			"config", "set-profile",
+			"--name", "default",
+			"--host", "localhost:8080",
+		})
+
+		err := rootCmd.Execute()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid host")
+	})
+}
+
+func TestConfigCommands_RejectUnexpectedArgs(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	cfg := &UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {Host: "http://localhost:8080"},
+		},
+	}
+	require.NoError(t, SaveUserConfig(cfg))
+
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "show",
+			args: []string{"config", "show", "extra"},
+		},
+		{
+			name: "set-profile",
+			args: []string{"config", "set-profile", "--name", "p1", "extra"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rootCmd := newRootCmd()
+			rootCmd.SetArgs(tt.args)
+
+			err := rootCmd.Execute()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "unknown command")
+		})
+	}
 }
