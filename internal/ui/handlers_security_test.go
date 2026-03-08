@@ -152,9 +152,9 @@ func newUISecurityTestEnv(t *testing.T) uiSecurityTestEnv {
 	webSessionService := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, 30*time.Minute, 24*time.Hour)
 	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, authService, webSessionService, nil, config.AuthConfig{WebSessionCookieName: "ui_session"}, false)
 	h.Principal = securitysvc.NewPrincipalService(principalRepo, auditRepo)
-	h.Group = securitysvc.NewGroupService(groupRepo, auditRepo)
+	h.Group = securitysvc.NewGroupService(groupRepo, principalRepo, auditRepo)
 	h.Grant = securitysvc.NewGrantService(grantRepo, auditRepo)
-	h.APIKey = securitysvc.NewAPIKeyService(apiKeyRepo, auditRepo)
+	h.APIKey = securitysvc.NewAPIKeyService(apiKeyRepo, principalRepo, auditRepo)
 
 	router := chi.NewRouter()
 	router.Route("/ui", func(r chi.Router) {

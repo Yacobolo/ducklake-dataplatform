@@ -14,7 +14,10 @@ import (
 
 type mockModelService struct {
 	triggerRunFn           func(ctx context.Context, principal string, req domain.TriggerModelRunRequest) (*domain.ModelRun, error)
+	getRunFn               func(ctx context.Context, runID string) (*domain.ModelRun, error)
 	listRunsFn             func(ctx context.Context, filter domain.ModelRunFilter) ([]domain.ModelRun, int64, error)
+	listRunStepsFn         func(ctx context.Context, runID string) ([]domain.ModelRunStep, error)
+	listTestResultsFn      func(ctx context.Context, runID, stepID string) ([]domain.ModelTestResult, error)
 	checkSourceFreshnessFn func(ctx context.Context, principal, sourceSchema, sourceTable, timestampColumn string, maxLagSeconds int64) (*domain.SourceFreshnessStatus, error)
 }
 
@@ -42,8 +45,11 @@ func (m *mockModelService) TriggerRun(ctx context.Context, principal string, req
 	}
 	return m.triggerRunFn(ctx, principal, req)
 }
-func (m *mockModelService) GetRun(context.Context, string) (*domain.ModelRun, error) {
-	panic("not implemented")
+func (m *mockModelService) GetRun(ctx context.Context, runID string) (*domain.ModelRun, error) {
+	if m.getRunFn == nil {
+		panic("not implemented")
+	}
+	return m.getRunFn(ctx, runID)
 }
 func (m *mockModelService) ListRuns(ctx context.Context, filter domain.ModelRunFilter) ([]domain.ModelRun, int64, error) {
 	if m.listRunsFn == nil {
@@ -51,8 +57,11 @@ func (m *mockModelService) ListRuns(ctx context.Context, filter domain.ModelRunF
 	}
 	return m.listRunsFn(ctx, filter)
 }
-func (m *mockModelService) ListRunSteps(context.Context, string) ([]domain.ModelRunStep, error) {
-	panic("not implemented")
+func (m *mockModelService) ListRunSteps(ctx context.Context, runID string) ([]domain.ModelRunStep, error) {
+	if m.listRunStepsFn == nil {
+		panic("not implemented")
+	}
+	return m.listRunStepsFn(ctx, runID)
 }
 func (m *mockModelService) CancelRun(context.Context, string, string) error {
 	panic("not implemented")
@@ -66,8 +75,11 @@ func (m *mockModelService) ListTests(context.Context, string, string) ([]domain.
 func (m *mockModelService) DeleteTest(context.Context, string, string, string, string) error {
 	panic("not implemented")
 }
-func (m *mockModelService) ListTestResults(context.Context, string, string) ([]domain.ModelTestResult, error) {
-	panic("not implemented")
+func (m *mockModelService) ListTestResults(ctx context.Context, runID, stepID string) ([]domain.ModelTestResult, error) {
+	if m.listTestResultsFn == nil {
+		panic("not implemented")
+	}
+	return m.listTestResultsFn(ctx, runID, stepID)
 }
 func (m *mockModelService) CheckFreshness(context.Context, string, string) (*domain.FreshnessStatus, error) {
 	panic("not implemented")
@@ -243,6 +255,47 @@ func TestHandler_ListModelRuns_IncludesModelNamesAndProject(t *testing.T) {
 	assert.Equal(t, "analytics", *run.ProjectName)
 	require.NotNil(t, run.ModelNames)
 	assert.Equal(t, []string{"stg_orders", "fct_orders"}, *run.ModelNames)
+}
+
+func TestHandler_ListModelRunSteps_MissingRunReturns404(t *testing.T) {
+	t.Parallel()
+
+	h := &APIHandler{
+		models: &mockModelService{
+			listRunStepsFn: func(_ context.Context, _ string) ([]domain.ModelRunStep, error) {
+				return nil, domain.ErrNotFound("run not found")
+			},
+		},
+	}
+
+	resp, err := h.ListModelRunSteps(context.Background(), ListModelRunStepsRequestObject{RunId: "00000000-0000-0000-0000-000000000000"})
+	require.NoError(t, err)
+
+	notFound, ok := resp.(ListModelRunSteps404JSONResponse)
+	require.True(t, ok, "expected 404 response, got %T", resp)
+	assert.Equal(t, int32(404), notFound.Body.Code)
+}
+
+func TestHandler_ListModelTestResults_MissingRunReturns404(t *testing.T) {
+	t.Parallel()
+
+	h := &APIHandler{
+		models: &mockModelService{
+			listTestResultsFn: func(_ context.Context, _, _ string) ([]domain.ModelTestResult, error) {
+				return nil, domain.ErrNotFound("run not found")
+			},
+		},
+	}
+
+	resp, err := h.ListModelTestResults(context.Background(), ListModelTestResultsRequestObject{
+		RunId:  "00000000-0000-0000-0000-000000000000",
+		StepId: "00000000-0000-0000-0000-000000000001",
+	})
+	require.NoError(t, err)
+
+	notFound, ok := resp.(ListModelTestResults404JSONResponse)
+	require.True(t, ok, "expected 404 response, got %T", resp)
+	assert.Equal(t, int32(404), notFound.Body.Code)
 }
 
 func boolPtr(v bool) *bool { return &v }

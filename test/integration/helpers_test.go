@@ -679,7 +679,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	// Remaining services (querySvc gets nil engine — we never hit /v1/query)
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -816,7 +816,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 	// Remaining services (querySvc gets nil engine — we never hit /v1/query)
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -1225,7 +1225,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 
 	// Build services
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -1297,7 +1297,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			nil,
 		)
 		principalSvc = security.NewPrincipalService(principalRepo, auditRepo)
-		groupSvc = security.NewGroupService(groupRepo, auditRepo)
+		groupSvc = security.NewGroupService(groupRepo, principalRepo, auditRepo)
 		grantSvc = security.NewGrantService(grantRepo, auditRepo)
 		rowFilterSvc = security.NewRowFilterService(rowFilterRepo, auditRepo)
 		columnMaskSvc = security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -1454,7 +1454,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 
 	// Wire APIKeyService by default so API key endpoints are always available
 	// in integration test servers.
-	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
+	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, principalRepo, auditRepo)
 	authService := authsvc.NewService(principalRepo, localCredentialRepo, authLoginAttemptRepo, setupStateRepo, authProviderRepo, auditRepo, string(jwtSecret))
 	webSessionAuth := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, 30*time.Minute, 24*time.Hour)
 	authHandler := api.NewAuthHTTPHandler(authService, webSessionAuth)
@@ -2253,7 +2253,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)

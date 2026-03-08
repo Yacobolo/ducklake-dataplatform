@@ -208,13 +208,11 @@ func TestHTTP_DeleteLineageEdge(t *testing.T) {
 			}
 		}},
 
-		{"delete_nonexistent_204_idempotent", func(t *testing.T) {
-			// Deleting a nonexistent edge returns 204 (idempotent — the SQL
-			// DELETE succeeds with 0 rows affected and no error).
+		{"delete_nonexistent_404", func(t *testing.T) {
 			resp := doRequest(t, "DELETE",
 				fmt.Sprintf("%s/v1/lineage/edges/%s", env.Server.URL, "nonexistent-id"),
 				env.Keys.Admin, nil)
-			assert.Equal(t, 204, resp.StatusCode)
+			assert.Equal(t, 404, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 	}

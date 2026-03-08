@@ -137,7 +137,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	lineageRepo := repository.NewLineageRepo(metaDB)
 	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -419,7 +419,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	lineageRepo2 := repository.NewLineageRepo(metaDB)
 	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo2)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -1306,12 +1306,12 @@ func setupSecurityTestServer(t *testing.T, principalName string, isAdmin bool) *
 	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
 
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
 	auditSvc := governance.NewAuditService(auditRepo)
-	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
+	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, principalRepo, auditRepo)
 
 	handler := NewHandler(
 		nil, // querySvc (not needed for security tests)

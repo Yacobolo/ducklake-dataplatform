@@ -419,6 +419,9 @@ func (s *Service) ListRuns(ctx context.Context, filter domain.ModelRunFilter) ([
 
 // ListRunSteps returns the steps for a model run.
 func (s *Service) ListRunSteps(ctx context.Context, runID string) ([]domain.ModelRunStep, error) {
+	if _, err := s.runs.GetRunByID(ctx, runID); err != nil {
+		return nil, err
+	}
 	return s.runs.ListStepsByRun(ctx, runID)
 }
 
@@ -515,7 +518,10 @@ func (s *Service) DeleteTest(ctx context.Context, principal, projectName, modelN
 }
 
 // ListTestResults returns all test results for a model run step.
-func (s *Service) ListTestResults(ctx context.Context, _, stepID string) ([]domain.ModelTestResult, error) {
+func (s *Service) ListTestResults(ctx context.Context, runID, stepID string) ([]domain.ModelTestResult, error) {
+	if _, err := s.runs.GetRunByID(ctx, runID); err != nil {
+		return nil, err
+	}
 	return s.testResults.ListByStep(ctx, stepID)
 }
 

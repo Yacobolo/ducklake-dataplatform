@@ -235,7 +235,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	principalSvc.SetAuthIdentityRepository(authIdentityRepo)
 	authService := authsvc.NewService(principalRepo, localCredentialRepo, authLoginAttemptRepo, setupStateRepo, authProviderRepo, auditRepo, cfg.Auth.JWTSecret)
 	webSessionAuth := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, cfg.Auth.WebSessionIdleTTL, cfg.Auth.WebSessionAbsoluteTTL)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo, authSvc)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -367,7 +367,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)
-	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
+	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, principalRepo, auditRepo)
 
 	return &App{
 		Services: Services{

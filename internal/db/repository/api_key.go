@@ -13,12 +13,13 @@ import (
 
 // APIKeyRepo implements both domain.APIKeyRepository and middleware.APIKeyLookup using sqlc queries.
 type APIKeyRepo struct {
-	q *dbstore.Queries
+	q  *dbstore.Queries
+	db *sql.DB
 }
 
 // NewAPIKeyRepo creates a new APIKeyRepo.
 func NewAPIKeyRepo(db *sql.DB) *APIKeyRepo {
-	return &APIKeyRepo{q: dbstore.New(db)}
+	return &APIKeyRepo{q: dbstore.New(db), db: db}
 }
 
 // Compile-time check that APIKeyRepo implements domain.APIKeyRepository.
@@ -123,7 +124,18 @@ func (r *APIKeyRepo) GetByID(ctx context.Context, id string) (*domain.APIKey, er
 
 // Delete removes an API key by ID.
 func (r *APIKeyRepo) Delete(ctx context.Context, id string) error {
-	return r.q.DeleteAPIKey(ctx, id)
+	result, err := r.db.ExecContext(ctx, "DELETE FROM api_keys WHERE id = ?", id)
+	if err != nil {
+		return mapDBError(err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return domain.ErrNotFound("api key %s not found", id)
+	}
+	return nil
 }
 
 // DeleteExpired removes all expired API keys and returns the count deleted.
