@@ -13,8 +13,6 @@ import (
 )
 
 func TestQueryJobRepo_CRUDLifecycle(t *testing.T) {
-	t.Parallel()
-
 	writeDB, _ := db.OpenTestSQLite(t)
 	repo := NewQueryJobRepo(writeDB)
 
@@ -58,8 +56,6 @@ func TestQueryJobRepo_CRUDLifecycle(t *testing.T) {
 }
 
 func TestQueryJobRepo_ListByPrincipal(t *testing.T) {
-	t.Parallel()
-
 	writeDB, _ := db.OpenTestSQLite(t)
 	repo := NewQueryJobRepo(writeDB)
 
