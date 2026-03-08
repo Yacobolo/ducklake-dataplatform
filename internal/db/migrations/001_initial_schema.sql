@@ -858,19 +858,6 @@ CREATE INDEX idx_orchestration_events_status_updated
 CREATE UNIQUE INDEX idx_row_filters_table_name ON row_filters(table_id, name);
 CREATE UNIQUE INDEX idx_column_masks_table_name ON column_masks(table_id, name);
 
-INSERT INTO tags (id, key, value, created_by) VALUES
-    ('1', 'classification', 'pii', 'system'),
-    ('2', 'classification', 'sensitive', 'system'),
-    ('3', 'classification', 'confidential', 'system'),
-    ('4', 'classification', 'public', 'system'),
-    ('5', 'classification', 'personal_data', 'system'),
-    ('6', 'sensitivity', 'high', 'system'),
-    ('7', 'sensitivity', 'medium', 'system'),
-    ('8', 'sensitivity', 'low', 'system');
-
-INSERT INTO setup_state (id, setup_completed) VALUES (1, 0);
-INSERT INTO auth_providers (id, oidc_enabled) VALUES (1, 0);
-
 -- +goose Down
 PRAGMA foreign_keys = OFF;
 DROP TABLE IF EXISTS backfill_slices;
