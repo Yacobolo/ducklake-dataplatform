@@ -107,7 +107,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().StringVar(&host, "host", "http://localhost:8080", "API host URL")
 	rootCmd.PersistentFlags().StringVar(&apiKey, "api-key", "", "API key for authentication")
 	rootCmd.PersistentFlags().StringVar(&token, "token", "", "JWT token for authentication")
-	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "table", "Output format (table, json)")
+	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "table", "Output format (table, json, csv)")
 	rootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "", "Config profile to use")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Only output resource identifiers")
 

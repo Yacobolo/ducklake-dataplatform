@@ -13,8 +13,8 @@ func getOutputFormat(cmd *cobra.Command) string {
 }
 
 func validateOutputFormat(output string) error {
-	if output != "" && output != "table" && output != "json" {
-		return fmt.Errorf("unsupported output format %q: use 'table' or 'json'", output)
+	if output != "" && output != "table" && output != "json" && output != "csv" {
+		return fmt.Errorf("unsupported output format %q: use 'table', 'json', or 'csv'", output)
 	}
 	return nil
 }

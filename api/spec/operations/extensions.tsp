@@ -24,15 +24,15 @@ op cancelQuery(queryId: string): Created<GenericResponse> | MutatingErrorRespons
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url")
 @post
-op createUploadUrl(catalogName: string, schemaName: string, tableName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op createUploadUrl(catalogName: string, schemaName: string, tableName: string, @body body: UploadUrlRequest): Ok<UploadUrlResponse> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit")
 @post
-op commitTableIngestion(catalogName: string, schemaName: string, tableName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op commitTableIngestion(catalogName: string, schemaName: string, tableName: string, @body body: CommitIngestionRequest): Ok<IngestionResult> | MutatingErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load")
 @post
-op loadTableExternalFiles(catalogName: string, schemaName: string, tableName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op loadTableExternalFiles(catalogName: string, schemaName: string, tableName: string, @body body: LoadExternalRequest): Ok<IngestionResult> | MutatingErrorResponses;
 
 @route("/search")
 @get
@@ -132,19 +132,19 @@ op deleteExternalLocation(locationName: string): NoContent | MutatingErrorRespon
 
 @route("/compute-endpoints")
 @get
-op listComputeEndpoints(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op listComputeEndpoints(@query max_results?: int32, @query page_token?: string): Ok<PaginatedComputeEndpoints> | StandardErrorResponses;
 
 @route("/compute-endpoints")
 @post
-op createComputeEndpoint(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createComputeEndpoint(@body body: CreateComputeEndpointRequest): Created<ComputeEndpoint> | MutatingErrorResponses;
 
 @route("/compute-endpoints/{endpointName}")
 @get
-op getComputeEndpoint(endpointName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getComputeEndpoint(endpointName: string): Ok<ComputeEndpoint> | ResourceErrorResponses;
 
 @route("/compute-endpoints/{endpointName}")
 @patch(#{ implicitOptionality: true })
-op updateComputeEndpoint(endpointName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op updateComputeEndpoint(endpointName: string, @body body: UpdateComputeEndpointRequest): Ok<ComputeEndpoint> | MutatingErrorResponses;
 
 @route("/compute-endpoints/{endpointName}")
 @delete
@@ -152,15 +152,15 @@ op deleteComputeEndpoint(endpointName: string): NoContent | MutatingErrorRespons
 
 @route("/compute-endpoints/{endpointName}/assignments")
 @get
-op listComputeAssignments(endpointName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
+op listComputeAssignments(endpointName: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedComputeAssignments> | ResourceErrorResponses;
 
 @route("/compute-endpoints/{endpointName}/assignments")
 @post
-op createComputeAssignment(endpointName: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createComputeAssignment(endpointName: string, @body body: CreateComputeAssignmentRequest): Created<ComputeAssignment> | MutatingErrorResponses;
 
 @route("/compute-endpoints/{endpointName}/health")
 @get
-op getComputeEndpointHealth(endpointName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getComputeEndpointHealth(endpointName: string): Ok<ComputeEndpointHealth> | ResourceErrorResponses;
 
 @route("/compute-endpoints/{endpointName}/assignments/{assignmentId}")
 @delete

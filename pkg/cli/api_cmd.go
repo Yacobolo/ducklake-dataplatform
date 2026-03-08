@@ -42,7 +42,7 @@ func newAPIListCmd() *cobra.Command {
 
 			if tag != "" {
 				lowerTag := strings.ToLower(tag)
-				var filtered []gen.APIEndpoint
+				var filtered []gen.APIGenEndpoint
 				for _, ep := range endpoints {
 					for _, t := range ep.Tags {
 						if strings.ToLower(t) == lowerTag {
@@ -82,7 +82,7 @@ func newAPISearchCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			query := strings.ToLower(args[0])
-			var matches []gen.APIEndpoint
+			var matches []gen.APIGenEndpoint
 
 			for _, ep := range allAPIEndpoints() {
 				// Search across path, summary, description, operation ID, and parameter names
@@ -124,7 +124,7 @@ func newAPIDescribeCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opID := args[0]
-			var found *gen.APIEndpoint
+			var found *gen.APIGenEndpoint
 			endpoints := allAPIEndpoints()
 			for i := range endpoints {
 				if endpoints[i].OperationID == opID {
@@ -156,28 +156,28 @@ func newAPIDescribeCmd() *cobra.Command {
 
 			if len(found.Parameters) > 0 {
 				_, _ = fmt.Fprintln(os.Stdout, "\nPARAMETERS:")
-				columns := []string{"name", "in", "type", "required", "enum"}
+				columns := []string{"name", "in", "type", "required", "enum", "description"}
 				var rows [][]string
 				for _, p := range found.Parameters {
 					req := ""
 					if p.Required {
 						req = "yes"
 					}
-					rows = append(rows, []string{p.Name, p.In, p.Type, req, strings.Join(p.Enum, ", ")})
+					rows = append(rows, []string{p.Name, p.In, p.Type, req, strings.Join(p.Enum, ", "), p.Description})
 				}
 				gen.PrintTable(os.Stdout, columns, rows)
 			}
 
 			if len(found.BodyFields) > 0 {
 				_, _ = fmt.Fprintln(os.Stdout, "\nBODY FIELDS:")
-				columns := []string{"name", "type", "required", "enum"}
+				columns := []string{"name", "type", "required", "enum", "description"}
 				var rows [][]string
 				for _, f := range found.BodyFields {
 					req := ""
 					if f.Required {
 						req = "yes"
 					}
-					rows = append(rows, []string{f.Name, f.Type, req, strings.Join(f.Enum, ", ")})
+					rows = append(rows, []string{f.Name, f.Type, req, strings.Join(f.Enum, ", "), f.Description})
 				}
 				gen.PrintTable(os.Stdout, columns, rows)
 			}
@@ -199,7 +199,7 @@ func newAPICurlCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opID := args[0]
-			var found *gen.APIEndpoint
+			var found *gen.APIGenEndpoint
 			endpoints := allAPIEndpoints()
 			for i := range endpoints {
 				if endpoints[i].OperationID == opID {
@@ -291,54 +291,15 @@ func newAPICurlCmd() *cobra.Command {
 	return cmd
 }
 
-func allAPIEndpoints() []gen.APIEndpoint {
-	combined := make([]gen.APIEndpoint, 0, len(gen.APIGeneratedEndpoints))
+func allAPIEndpoints() []gen.APIGenEndpoint {
+	combined := make([]gen.APIGenEndpoint, 0, len(gen.APIGeneratedEndpoints))
 	seen := make(map[string]struct{}, len(gen.APIGeneratedEndpoints))
 	for _, generated := range gen.APIGeneratedEndpoints {
 		if _, ok := seen[generated.OperationID]; ok {
 			continue
 		}
 		seen[generated.OperationID] = struct{}{}
-		combined = append(combined, fromAPIGeneratedEndpoint(generated))
+		combined = append(combined, generated)
 	}
 	return combined
-}
-
-func fromAPIGeneratedEndpoint(endpoint gen.APIGenEndpoint) gen.APIEndpoint {
-	converted := gen.APIEndpoint{
-		OperationID: endpoint.OperationID,
-		Method:      endpoint.Method,
-		Path:        endpoint.Path,
-		Summary:     endpoint.Summary,
-		Description: endpoint.Description,
-		Tags:        append([]string(nil), endpoint.Tags...),
-		CLICommand:  endpoint.CLICommand,
-	}
-
-	if len(endpoint.Parameters) > 0 {
-		converted.Parameters = make([]gen.APIParam, 0, len(endpoint.Parameters))
-		for _, parameter := range endpoint.Parameters {
-			converted.Parameters = append(converted.Parameters, gen.APIParam{
-				Name:     parameter.Name,
-				In:       parameter.In,
-				Type:     parameter.Type,
-				Required: parameter.Required,
-				Enum:     append([]string(nil), parameter.Enum...),
-			})
-		}
-	}
-
-	if len(endpoint.BodyFields) > 0 {
-		converted.BodyFields = make([]gen.APIField, 0, len(endpoint.BodyFields))
-		for _, field := range endpoint.BodyFields {
-			converted.BodyFields = append(converted.BodyFields, gen.APIField{
-				Name:     field.Name,
-				Type:     field.Type,
-				Required: field.Required,
-				Enum:     append([]string(nil), field.Enum...),
-			})
-		}
-	}
-
-	return converted
 }

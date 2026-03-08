@@ -4,9 +4,6 @@ package servergo
 import (
 	"encoding/json"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"sort"
 	"strings"
 
@@ -17,32 +14,42 @@ import (
 
 // Emit renders Go server scaffolding from IR.
 func Emit(doc ir.Document) ([]byte, error) {
-	return emit(doc, nil)
+	return emit(doc, "")
 }
 
 // EmitWithLegacyResponses renders Go server scaffolding using APIGen-owned
-// response metadata plus legacy type names for direct-schema compatibility.
-func EmitWithLegacyResponses(doc ir.Document, legacyTypesPath string) ([]byte, error) {
-	legacyTypesByName, err := loadLegacyTypeNames(legacyTypesPath)
-	if err != nil {
-		return nil, err
-	}
-	return emit(doc, legacyTypesByName)
+// response metadata while preserving legacy concrete response aliases.
+func EmitWithLegacyResponses(doc ir.Document, _ string) ([]byte, error) {
+	return EmitWithLegacyResponsesAndSpec(doc, "", "")
 }
 
-func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error) {
-	specJSON, err := emitSpecJSON(doc)
-	if err != nil {
-		return nil, err
+// EmitWithLegacyResponsesAndSpec renders Go server scaffolding using APIGen-owned
+// response metadata while embedding the provided OpenAPI JSON when non-empty.
+// embedding the provided OpenAPI JSON when non-empty.
+func EmitWithLegacyResponsesAndSpec(doc ir.Document, _ string, embeddedSpecJSON string) ([]byte, error) {
+	return emit(doc, embeddedSpecJSON)
+}
+
+func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
+	specJSON := embeddedSpecJSON
+	if specJSON == "" {
+		var err error
+		specJSON, err = emitSpecJSON(doc)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var b strings.Builder
 	usesTime := docUsesTimeTypes(doc)
 	hasStrictOperations := false
+	hasRequestBodies := false
 	for _, endpoint := range doc.Endpoints {
 		if endpoint.OperationID != "getHealth" {
 			hasStrictOperations = true
-			break
+		}
+		if endpoint.RequestBody != nil {
+			hasRequestBodies = true
 		}
 	}
 	b.WriteString("package api\n\n")
@@ -50,7 +57,11 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 	if hasStrictOperations {
 		b.WriteString("\t\"context\"\n")
 		b.WriteString("\t\"fmt\"\n")
+		if hasRequestBodies {
+			b.WriteString("\t\"io\"\n")
+		}
 		b.WriteString("\t\"reflect\"\n")
+		b.WriteString("\t\"strings\"\n")
 	}
 	b.WriteString("\t\"encoding/json\"\n")
 	b.WriteString("\t\"net/http\"\n\n")
@@ -59,13 +70,13 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 	}
 	b.WriteString("\t\"github.com/go-chi/chi/v5\"\n")
 	b.WriteString(")\n\n")
-	b.WriteString("const apigenOpenAPISpecJSON = `")
+	b.WriteString("const embeddedOpenAPISpecJSON = `")
 	b.WriteString(specJSON)
 	b.WriteString("`\n\n")
-	b.WriteString("// GetAPIGenSwagger returns the generated OpenAPI document as generic JSON map.\n")
-	b.WriteString("func GetAPIGenSwagger() (map[string]any, error) {\n")
+	b.WriteString("// GetEmbeddedOpenAPISpec returns the canonical OpenAPI document as generic JSON map.\n")
+	b.WriteString("func GetEmbeddedOpenAPISpec() (map[string]any, error) {\n")
 	b.WriteString("\tvar doc map[string]any\n")
-	b.WriteString("\tif err := json.Unmarshal([]byte(apigenOpenAPISpecJSON), &doc); err != nil {\n")
+	b.WriteString("\tif err := json.Unmarshal([]byte(embeddedOpenAPISpecJSON), &doc); err != nil {\n")
 	b.WriteString("\t\treturn nil, err\n")
 	b.WriteString("\t}\n")
 	b.WriteString("\treturn doc, nil\n")
@@ -138,7 +149,7 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 			b.WriteString("\t\tvar " + varName + " " + typeName + "\n")
 			b.WriteString("\t\terr = bindPathParameter(\"" + p.Name + "\", chi.URLParam(r, \"" + p.Name + "\"), " + required + ", &" + varName + ")\n")
 			b.WriteString("\t\tif err != nil {\n")
-			b.WriteString("\t\t\thttp.Error(w, err.Error(), http.StatusBadRequest)\n")
+			b.WriteString("\t\t\twriteAPIGenError(w, http.StatusBadRequest, err.Error())\n")
 			b.WriteString("\t\t\treturn true\n")
 			b.WriteString("\t\t}\n")
 		}
@@ -153,7 +164,7 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 				}
 				b.WriteString("\t\terr = bindQueryParameter(r.URL.Query(), \"" + p.Name + "\", " + required + ", &params." + fieldName + ")\n")
 				b.WriteString("\t\tif err != nil {\n")
-				b.WriteString("\t\t\thttp.Error(w, err.Error(), http.StatusBadRequest)\n")
+				b.WriteString("\t\t\twriteAPIGenError(w, http.StatusBadRequest, err.Error())\n")
 				b.WriteString("\t\t\treturn true\n")
 				b.WriteString("\t\t}\n")
 			}
@@ -175,6 +186,41 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 	b.WriteString("\t}\n")
 	b.WriteString("}\n")
 	b.WriteString("\n")
+	if hasStrictOperations {
+		b.WriteString("func apigenErrorMessage(statusCode int, message string) string {\n")
+		b.WriteString("\tif statusCode >= http.StatusInternalServerError {\n")
+		b.WriteString("\t\tif statusText := strings.ToLower(http.StatusText(statusCode)); statusText != \"\" {\n")
+		b.WriteString("\t\t\treturn statusText\n")
+		b.WriteString("\t\t}\n")
+		b.WriteString("\t}\n")
+		b.WriteString("\treturn message\n")
+		b.WriteString("}\n\n")
+		b.WriteString("func writeAPIGenError(w http.ResponseWriter, statusCode int, message string) {\n")
+		b.WriteString("\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
+		b.WriteString("\tw.WriteHeader(statusCode)\n")
+		b.WriteString("\t_ = json.NewEncoder(w).Encode(Error{Code: int32(statusCode), Message: apigenErrorMessage(statusCode, message)})\n")
+		b.WriteString("}\n\n")
+	}
+	if hasRequestBodies {
+		b.WriteString("func decodeAPIGenJSONBody(body io.Reader, dest any) error {\n")
+		b.WriteString("\tdecoder := json.NewDecoder(body)\n")
+		b.WriteString("\tdecoder.DisallowUnknownFields()\n")
+		b.WriteString("\tif err := decoder.Decode(dest); err != nil {\n")
+		b.WriteString("\t\tif err == io.EOF {\n")
+		b.WriteString("\t\t\treturn fmt.Errorf(\"request body must not be empty\")\n")
+		b.WriteString("\t\t}\n")
+		b.WriteString("\t\treturn fmt.Errorf(\"invalid JSON body: %w\", err)\n")
+		b.WriteString("\t}\n")
+		b.WriteString("\tvar extra json.RawMessage\n")
+		b.WriteString("\tif err := decoder.Decode(&extra); err != io.EOF {\n")
+		b.WriteString("\t\tif err == nil {\n")
+		b.WriteString("\t\t\treturn fmt.Errorf(\"request body must contain a single JSON value\")\n")
+		b.WriteString("\t\t}\n")
+		b.WriteString("\t\treturn fmt.Errorf(\"invalid JSON body: %w\", err)\n")
+		b.WriteString("\t}\n")
+		b.WriteString("\treturn nil\n")
+		b.WriteString("}\n\n")
+	}
 	emitSharedErrorResponseTypes(&b, doc)
 	for _, endpoint := range doc.Endpoints {
 		if endpoint.OperationID == "getHealth" {
@@ -227,22 +273,9 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 				emitLegacyResponseCompatibilityAlias(&b, name, legacyTypeName, "Gen"+name+statusCode+"JSONResponse", statusCode, responseHeaderFields(response), legacyNoBodyJSONResponse)
 				continue
 			}
-			if len(response.Headers) == 0 && response.Schema != nil && usesDirectOwnedResponseSchema(response, doc, legacyTypesByName) {
-				schemaName, _ := responseSchemaTypeName(doc, *response.Schema)
-				b.WriteString("// Gen" + name + statusCode + "JSONResponse is the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
-				b.WriteString("type Gen" + name + statusCode + "JSONResponse GenSchema" + schemaName + "\n\n")
-				b.WriteString("// Visit" + name + "Response writes " + name + " " + statusCode + " responses to the client.\n")
-				b.WriteString("func (response Gen" + name + statusCode + "JSONResponse) Visit" + name + "Response(w http.ResponseWriter) error {\n")
-				b.WriteString("\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
-				b.WriteString("\tw.WriteHeader(" + statusCode + ")\n")
-				b.WriteString("\treturn json.NewEncoder(w).Encode(response)\n")
-				b.WriteString("}\n\n")
-				emitLegacyResponseCompatibilityAlias(&b, name, legacyTypeName, "Gen"+name+statusCode+"JSONResponse", statusCode, nil, legacyNoBodyJSONResponse)
-				continue
-			}
 			if shape, ok, err := ir.ResponseShapeMetadata(response); err == nil && ok && shape.Kind == "wrapped_json" {
 				headersTypeName := "Gen" + name + statusCode + "ResponseHeaders"
-				headersFields := responseHeaderFields(response)
+				headersFields := responseHeaderFieldsWithDefaults(response)
 				emitOwnedResponseHeaders(&b, headersTypeName, headersFields)
 				b.WriteString("// Gen" + name + statusCode + "JSONResponse is the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
 				b.WriteString("type Gen" + name + statusCode + "JSONResponse struct {\n")
@@ -259,11 +292,24 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 				emitLegacyResponseCompatibilityAlias(&b, name, legacyTypeName, "Gen"+name+statusCode+"JSONResponse", statusCode, headersFields, legacyNoBodyJSONResponse)
 				continue
 			}
+			if len(response.Headers) == 0 && response.Schema != nil && usesDirectOwnedResponseSchema(response, doc) && len(responseHeaderFieldsWithDefaults(response)) == 0 {
+				schemaName, _ := responseSchemaTypeName(doc, *response.Schema)
+				b.WriteString("// Gen" + name + statusCode + "JSONResponse is the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
+				b.WriteString("type Gen" + name + statusCode + "JSONResponse GenSchema" + schemaName + "\n\n")
+				b.WriteString("// Visit" + name + "Response writes " + name + " " + statusCode + " responses to the client.\n")
+				b.WriteString("func (response Gen" + name + statusCode + "JSONResponse) Visit" + name + "Response(w http.ResponseWriter) error {\n")
+				b.WriteString("\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
+				b.WriteString("\tw.WriteHeader(" + statusCode + ")\n")
+				b.WriteString("\treturn json.NewEncoder(w).Encode(response)\n")
+				b.WriteString("}\n\n")
+				emitLegacyResponseCompatibilityAlias(&b, name, legacyTypeName, "Gen"+name+statusCode+"JSONResponse", statusCode, nil, legacyNoBodyJSONResponse)
+				continue
+			}
 			if response.Schema != nil {
-				bodyTypeName := responseBodyTypeName(doc, legacyTypesByName, *response.Schema)
-				if len(response.Headers) > 0 {
+				bodyTypeName := responseBodyTypeName(doc, *response.Schema)
+				headersFields := responseHeaderFieldsWithDefaults(response)
+				if len(headersFields) > 0 {
 					headersTypeName := "Gen" + name + statusCode + "ResponseHeaders"
-					headersFields := responseHeaderFields(response)
 					emitOwnedResponseHeaders(&b, headersTypeName, headersFields)
 					b.WriteString("// Gen" + name + statusCode + "JSONResponse is the APIGen concrete JSON response for " + name + " " + statusCode + ".\n")
 					b.WriteString("type Gen" + name + statusCode + "JSONResponse struct {\n")
@@ -291,9 +337,9 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 				emitLegacyResponseCompatibilityAlias(&b, name, legacyTypeName, "Gen"+name+statusCode+"JSONResponse", statusCode, nil, legacyNoBodyJSONResponse)
 				continue
 			}
-			if len(response.Headers) > 0 {
+			headersFields := responseHeaderFieldsWithDefaults(response)
+			if len(headersFields) > 0 {
 				headersTypeName := "Gen" + name + statusCode + "ResponseHeaders"
-				headersFields := responseHeaderFields(response)
 				emitOwnedResponseHeaders(&b, headersTypeName, headersFields)
 				b.WriteString("// Gen" + name + statusCode + "Response is the APIGen concrete response for " + name + " " + statusCode + ".\n")
 				b.WriteString("type Gen" + name + statusCode + "Response struct {\n")
@@ -305,7 +351,7 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 				b.WriteString("\tw.WriteHeader(" + statusCode + ")\n")
 				b.WriteString("\treturn nil\n")
 				b.WriteString("}\n\n")
-				emitLegacyResponseCompatibilityAlias(&b, name, legacyTypeName, "Gen"+name+statusCode+"Response", statusCode, headersFields, false)
+				emitLegacyResponseCompatibilityAlias(&b, name, legacyTypeName, "Gen"+name+statusCode+"Response", statusCode, headersFields, isLegacyNoBodyResponse(endpoint.OperationID, response))
 				continue
 			}
 
@@ -316,7 +362,7 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 			b.WriteString("\tw.WriteHeader(" + statusCode + ")\n")
 			b.WriteString("\treturn nil\n")
 			b.WriteString("}\n\n")
-			emitLegacyResponseCompatibilityAlias(&b, name, legacyTypeName, "Gen"+name+statusCode+"Response", statusCode, nil, false)
+			emitLegacyResponseCompatibilityAlias(&b, name, legacyTypeName, "Gen"+name+statusCode+"Response", statusCode, nil, isLegacyNoBodyResponse(endpoint.OperationID, response))
 		}
 		emitMissingSharedErrorResponses(&b, endpoint)
 		if endpoint.RequestBody != nil {
@@ -385,8 +431,8 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 
 		if endpoint.RequestBody != nil {
 			b.WriteString("\tvar body Gen" + name + "JSONBody\n")
-			b.WriteString("\tif err := json.NewDecoder(r.Body).Decode(&body); err != nil {\n")
-			b.WriteString("\t\thttp.Error(w, err.Error(), http.StatusBadRequest)\n")
+			b.WriteString("\tif err := decodeAPIGenJSONBody(r.Body, &body); err != nil {\n")
+			b.WriteString("\t\twriteAPIGenError(w, http.StatusBadRequest, err.Error())\n")
 			b.WriteString("\t\treturn\n")
 			b.WriteString("\t}\n")
 			b.WriteString("\trequest.Body = &body\n")
@@ -394,11 +440,11 @@ func emit(doc ir.Document, legacyTypesByName map[string]struct{}) ([]byte, error
 
 		b.WriteString("\tresponse, err := b.handler." + name + "(r.Context(), request)\n")
 		b.WriteString("\tif err != nil {\n")
-		b.WriteString("\t\thttp.Error(w, err.Error(), http.StatusInternalServerError)\n")
+		b.WriteString("\t\twriteAPIGenError(w, http.StatusInternalServerError, err.Error())\n")
 		b.WriteString("\t\treturn\n")
 		b.WriteString("\t}\n")
 		b.WriteString("\tif err := response.Visit" + name + "Response(w); err != nil {\n")
-		b.WriteString("\t\thttp.Error(w, err.Error(), http.StatusInternalServerError)\n")
+		b.WriteString("\t\twriteAPIGenError(w, http.StatusInternalServerError, err.Error())\n")
 		b.WriteString("\t}\n")
 		b.WriteString("}\n\n")
 	}
@@ -698,6 +744,10 @@ func emitMissingSharedErrorResponses(b *strings.Builder, endpoint ir.Endpoint) {
 func legacyResponseTypeName(operationID string, statusCode int, hasSchema bool) (string, bool) {
 	key := fmt.Sprintf("%s:%d:%t", operationID, statusCode, hasSchema)
 	switch key {
+	case "bindColumnMask:201:false":
+		return "BindColumnMask204Response", true
+	case "bindRowFilter:201:false":
+		return "BindRowFilter204Response", true
 	case "bindColumnMask:201:true":
 		return "BindColumnMask204Response", true
 	case "bindRowFilter:201:true":
@@ -710,6 +760,10 @@ func legacyResponseTypeName(operationID string, statusCode int, hasSchema bool) 
 		return "CancelQuery200JSONResponse", true
 	case "cleanupExpiredAPIKeys:201:true":
 		return "CleanupExpiredAPIKeys200JSONResponse", true
+	case "createGroupMember:201:false":
+		return "CreateGroupMember204Response", true
+	case "createGroupMember:201:true":
+		return "CreateGroupMember204Response", true
 	case "commitTableIngestion:201:true":
 		return "CommitTableIngestion200JSONResponse", true
 	case "createManifest:201:true":
@@ -798,13 +852,66 @@ func emitLegacyResponseCompatibilityAlias(b *strings.Builder, operationName stri
 		b.WriteString("type " + legacyTypeName + " = " + genTypeName + "\n\n")
 		return
 	}
+	genLegacyTypeName := "Gen" + legacyTypeName
+	legacyHeadersTypeName := responseHeadersTypeName(legacyTypeName)
 	if len(headers) > 0 {
-		legacyHeadersTypeName := responseHeadersTypeName(legacyTypeName)
 		genHeadersTypeName := responseHeadersTypeName(genTypeName)
 		if legacyHeadersTypeName != "" && genHeadersTypeName != "" {
 			b.WriteString("// " + legacyHeadersTypeName + " aliases the APIGen-owned response headers for legacy handlers.\n")
 			b.WriteString("type " + legacyHeadersTypeName + " = " + genHeadersTypeName + "\n\n")
+			genLegacyHeadersTypeName := responseHeadersTypeName(genLegacyTypeName)
+			if genLegacyHeadersTypeName != "" {
+				b.WriteString("// " + genLegacyHeadersTypeName + " aliases the APIGen-owned legacy response headers.\n")
+				b.WriteString("type " + genLegacyHeadersTypeName + " = " + legacyHeadersTypeName + "\n\n")
+			}
 		}
+	} else if legacyHeadersTypeName != "" {
+		b.WriteString("// " + legacyHeadersTypeName + " preserves the legacy response headers type for handlers.\n")
+		b.WriteString("type " + legacyHeadersTypeName + " struct{}\n\n")
+		genLegacyHeadersTypeName := responseHeadersTypeName(genLegacyTypeName)
+		if genLegacyHeadersTypeName != "" {
+			b.WriteString("// " + genLegacyHeadersTypeName + " aliases the APIGen-owned legacy response headers.\n")
+			b.WriteString("type " + genLegacyHeadersTypeName + " = " + legacyHeadersTypeName + "\n\n")
+		}
+	}
+	if legacyNoBody {
+		b.WriteString("// " + legacyTypeName + " preserves the legacy concrete response status for handlers.\n")
+		b.WriteString("type " + legacyTypeName + " struct {")
+		if legacyHeadersTypeName != "" {
+			b.WriteString("\n\tHeaders " + legacyHeadersTypeName + "\n")
+		}
+		b.WriteString("}\n\n")
+		b.WriteString("// Visit" + operationName + "Response writes legacy-compatible " + operationName + " responses to the client.\n")
+		b.WriteString("func (response " + legacyTypeName + ") Visit" + operationName + "Response(w http.ResponseWriter) error {\n")
+		if len(headers) > 0 {
+			for _, header := range headers {
+				b.WriteString("\tw.Header().Set(\"" + header.HeaderName + "\", fmt.Sprint(response.Headers." + header.Name + "))\n")
+			}
+		}
+		b.WriteString("\tw.WriteHeader(" + legacyStatusCode + ")\n")
+		b.WriteString("\treturn nil\n")
+		b.WriteString("}\n\n")
+		b.WriteString("// " + genLegacyTypeName + " aliases the APIGen legacy-compatible response type.\n")
+		b.WriteString("type " + genLegacyTypeName + " = " + legacyTypeName + "\n\n")
+		return
+	}
+	if strings.HasSuffix(legacyTypeName, "JSONResponse") {
+		b.WriteString("// " + legacyTypeName + " preserves the legacy concrete response status for handlers.\n")
+		b.WriteString("type " + legacyTypeName + " " + genTypeName + "\n\n")
+		b.WriteString("// Visit" + operationName + "Response writes legacy-compatible " + operationName + " responses to the client.\n")
+		b.WriteString("func (response " + legacyTypeName + ") Visit" + operationName + "Response(w http.ResponseWriter) error {\n")
+		if len(headers) > 0 {
+			for _, header := range headers {
+				b.WriteString("\tw.Header().Set(\"" + header.HeaderName + "\", fmt.Sprint(response.Headers." + header.Name + "))\n")
+			}
+		}
+		b.WriteString("\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
+		b.WriteString("\tw.WriteHeader(" + legacyStatusCode + ")\n")
+		b.WriteString("\treturn json.NewEncoder(w).Encode(response.Body)\n")
+		b.WriteString("}\n\n")
+		b.WriteString("// " + genLegacyTypeName + " aliases the APIGen legacy-compatible response type.\n")
+		b.WriteString("type " + genLegacyTypeName + " = " + legacyTypeName + "\n\n")
+		return
 	}
 	b.WriteString("// " + legacyTypeName + " preserves the legacy concrete response status for handlers.\n")
 	b.WriteString("type " + legacyTypeName + " " + genTypeName + "\n\n")
@@ -821,12 +928,6 @@ func emitLegacyResponseCompatibilityAlias(b *strings.Builder, operationName stri
 		}
 		b.WriteString("\t}\n")
 	}
-	if legacyNoBody {
-		b.WriteString("\tw.WriteHeader(" + legacyStatusCode + ")\n")
-		b.WriteString("\treturn nil\n")
-		b.WriteString("}\n\n")
-		return
-	}
 	b.WriteString("\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
 	b.WriteString("\tw.WriteHeader(" + legacyStatusCode + ")\n")
 	b.WriteString("\tbody := rv.FieldByName(\"Body\")\n")
@@ -835,6 +936,8 @@ func emitLegacyResponseCompatibilityAlias(b *strings.Builder, operationName stri
 	b.WriteString("\t}\n")
 	b.WriteString("\treturn json.NewEncoder(w).Encode(response)\n")
 	b.WriteString("}\n\n")
+	b.WriteString("// " + genLegacyTypeName + " aliases the APIGen legacy-compatible response type.\n")
+	b.WriteString("type " + genLegacyTypeName + " = " + legacyTypeName + "\n\n")
 }
 
 func compatibilityResponseStatusCode(responseTypeName string) (string, bool) {
@@ -865,14 +968,11 @@ func responseHeadersTypeName(responseTypeName string) string {
 	}
 }
 
-func responseBodyTypeName(doc ir.Document, legacyTypesByName map[string]struct{}, schema ir.SchemaRef) string {
+func responseBodyTypeName(doc ir.Document, schema ir.SchemaRef) string {
 	if ref, ok := normalizedSchemaRefName(schema); ok {
 		name := exportedName(ref)
 		if _, ok := doc.Schemas[ref]; ok {
-			return name
-		}
-		if _, ok := legacyTypesByName[name]; ok {
-			return name
+			return "GenSchema" + name
 		}
 		return name
 	}
@@ -907,6 +1007,16 @@ func responseHeaderFields(response ir.Response) []ownedHeaderField {
 		})
 	}
 	return fields
+}
+
+func responseHeaderFieldsWithDefaults(response ir.Response) []ownedHeaderField {
+	if len(response.Headers) > 0 {
+		return responseHeaderFields(response)
+	}
+	if response.StatusCode >= 200 && response.StatusCode < 300 {
+		return responseHeaderFields(ir.Response{Headers: defaultSharedErrorHeaders(response.StatusCode)})
+	}
+	return nil
 }
 
 func emitVisitResponseHeaders(b *strings.Builder, response ir.Response) {
@@ -973,7 +1083,9 @@ func sharedErrorHeaders(doc ir.Document, statusCode int) []ir.Header {
 			if _, ok := sharedErrorResponseType(response); !ok {
 				continue
 			}
-			return response.Headers
+			if len(response.Headers) > 0 {
+				return response.Headers
+			}
 		}
 	}
 	return defaultSharedErrorHeaders(statusCode)
@@ -1012,7 +1124,10 @@ func isLegacyNoBodyJSONResponse(operationID string, response ir.Response) bool {
 	if response.Schema == nil {
 		return false
 	}
+	return isLegacyNoBodyResponse(operationID, response)
+}
 
+func isLegacyNoBodyResponse(operationID string, response ir.Response) bool {
 	key := fmt.Sprintf("%s:%d", operationID, response.StatusCode)
 	switch key {
 	case "bindColumnMask:201", "bindRowFilter:201":
@@ -1022,49 +1137,27 @@ func isLegacyNoBodyJSONResponse(operationID string, response ir.Response) bool {
 	}
 }
 
-func loadLegacyTypeNames(path string) (map[string]struct{}, error) {
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
-	if err != nil {
-		return nil, fmt.Errorf("parse legacy types go: %w", err)
-	}
-
-	names := map[string]struct{}{}
-	for _, decl := range file.Decls {
-		genDecl, ok := decl.(*ast.GenDecl)
-		if !ok || genDecl.Tok != token.TYPE {
-			continue
-		}
-		for _, spec := range genDecl.Specs {
-			typeSpec, ok := spec.(*ast.TypeSpec)
-			if !ok {
-				continue
-			}
-			names[typeSpec.Name.Name] = struct{}{}
-		}
-	}
-	return names, nil
-}
-
 type ownedHeaderField struct {
 	Name       string
 	HeaderName string
 	Type       string
 }
 
-func usesDirectOwnedResponseSchema(response ir.Response, doc ir.Document, legacyTypesByName map[string]struct{}) bool {
+func usesDirectOwnedResponseSchema(response ir.Response, doc ir.Document) bool {
 	if response.Schema == nil {
+		return false
+	}
+	if shape, ok, err := ir.ResponseShapeMetadata(response); err == nil && ok && shape.Kind == "wrapped_json" {
 		return false
 	}
 	if isErrorSchema(*response.Schema) {
 		return false
 	}
-	schemaTypeName, ok := responseSchemaTypeName(doc, *response.Schema)
+	_, ok := responseSchemaTypeName(doc, *response.Schema)
 	if !ok {
 		return false
 	}
-	_, ok = legacyTypesByName[schemaTypeName]
-	return ok
+	return true
 }
 
 func responseSchemaTypeName(doc ir.Document, schema ir.SchemaRef) (string, bool) {

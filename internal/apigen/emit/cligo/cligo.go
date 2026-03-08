@@ -15,30 +15,32 @@ func Emit(doc ir.Document) ([]byte, error) {
 	b.WriteString("package gen\n\n")
 	b.WriteString("// APIGenEndpoint is generated from JSON IR.\n")
 	b.WriteString("type APIGenEndpoint struct {\n")
-	b.WriteString("\tOperationID string\n")
-	b.WriteString("\tMethod string\n")
-	b.WriteString("\tPath string\n")
-	b.WriteString("\tSummary string\n")
-	b.WriteString("\tDescription string\n")
-	b.WriteString("\tTags []string\n")
-	b.WriteString("\tParameters []APIGenParam\n")
-	b.WriteString("\tBodyFields []APIGenField\n")
-	b.WriteString("\tCLICommand string\n")
+	b.WriteString("\tOperationID string `json:\"operation_id\"`\n")
+	b.WriteString("\tMethod string `json:\"method\"`\n")
+	b.WriteString("\tPath string `json:\"path\"`\n")
+	b.WriteString("\tSummary string `json:\"summary\"`\n")
+	b.WriteString("\tDescription string `json:\"description,omitempty\"`\n")
+	b.WriteString("\tTags []string `json:\"tags,omitempty\"`\n")
+	b.WriteString("\tParameters []APIGenParam `json:\"parameters,omitempty\"`\n")
+	b.WriteString("\tBodyFields []APIGenField `json:\"body_fields,omitempty\"`\n")
+	b.WriteString("\tCLICommand string `json:\"cli_command,omitempty\"`\n")
 	b.WriteString("}\n\n")
 	b.WriteString("// APIGenParam is generated parameter metadata from JSON IR.\n")
 	b.WriteString("type APIGenParam struct {\n")
-	b.WriteString("\tName string\n")
-	b.WriteString("\tIn string\n")
-	b.WriteString("\tType string\n")
-	b.WriteString("\tRequired bool\n")
-	b.WriteString("\tEnum []string\n")
+	b.WriteString("\tName string `json:\"name\"`\n")
+	b.WriteString("\tIn string `json:\"in\"`\n")
+	b.WriteString("\tType string `json:\"type\"`\n")
+	b.WriteString("\tDescription string `json:\"description,omitempty\"`\n")
+	b.WriteString("\tRequired bool `json:\"required,omitempty\"`\n")
+	b.WriteString("\tEnum []string `json:\"enum,omitempty\"`\n")
 	b.WriteString("}\n\n")
 	b.WriteString("// APIGenField is generated request body field metadata from JSON IR.\n")
 	b.WriteString("type APIGenField struct {\n")
-	b.WriteString("\tName string\n")
-	b.WriteString("\tType string\n")
-	b.WriteString("\tRequired bool\n")
-	b.WriteString("\tEnum []string\n")
+	b.WriteString("\tName string `json:\"name\"`\n")
+	b.WriteString("\tType string `json:\"type\"`\n")
+	b.WriteString("\tDescription string `json:\"description,omitempty\"`\n")
+	b.WriteString("\tRequired bool `json:\"required,omitempty\"`\n")
+	b.WriteString("\tEnum []string `json:\"enum,omitempty\"`\n")
 	b.WriteString("}\n\n")
 	b.WriteString("// APIGeneratedEndpoints contains operation metadata for tooling and discovery.\n")
 	b.WriteString("var APIGeneratedEndpoints = []APIGenEndpoint{\n")
@@ -67,11 +69,12 @@ func collectParameters(doc ir.Document, endpoint ir.Endpoint) []apiParam {
 	params := make([]apiParam, 0, len(endpoint.Parameters))
 	for _, parameter := range endpoint.Parameters {
 		params = append(params, apiParam{
-			Name:     parameter.Name,
-			In:       parameter.In,
-			Type:     schemaType(doc, parameter.Schema),
-			Required: parameter.Required,
-			Enum:     schemaEnum(doc, parameter.Schema),
+			Name:        parameter.Name,
+			In:          parameter.In,
+			Type:        schemaType(doc, parameter.Schema),
+			Description: parameter.Description,
+			Required:    parameter.Required,
+			Enum:        schemaEnum(doc, parameter.Schema),
 		})
 	}
 	return params
@@ -103,10 +106,11 @@ func collectBodyFields(doc ir.Document, endpoint ir.Endpoint) []apiField {
 		property := bodySchema.Properties[name]
 		_, isRequired := required[name]
 		fields = append(fields, apiField{
-			Name:     name,
-			Type:     schemaType(doc, property.Schema),
-			Required: isRequired,
-			Enum:     schemaEnum(doc, property.Schema),
+			Name:        name,
+			Type:        schemaType(doc, property.Schema),
+			Description: property.Description,
+			Required:    isRequired,
+			Enum:        schemaEnum(doc, property.Schema),
 		})
 	}
 	return fields
@@ -164,18 +168,20 @@ func cliCommandFromExtensions(extensions map[string]any) string {
 }
 
 type apiParam struct {
-	Name     string
-	In       string
-	Type     string
-	Required bool
-	Enum     []string
+	Name        string
+	In          string
+	Type        string
+	Description string
+	Required    bool
+	Enum        []string
 }
 
 type apiField struct {
-	Name     string
-	Type     string
-	Required bool
-	Enum     []string
+	Name        string
+	Type        string
+	Description string
+	Required    bool
+	Enum        []string
 }
 
 func renderStringSlice(values []string) string {
@@ -204,7 +210,7 @@ func renderParams(params []apiParam) string {
 		if i > 0 {
 			b.WriteString(", ")
 		}
-		fmt.Fprintf(&b, "{Name: %q, In: %q, Type: %q, Required: %t, Enum: %s}", param.Name, param.In, param.Type, param.Required, renderStringSlice(param.Enum))
+		fmt.Fprintf(&b, "{Name: %q, In: %q, Type: %q, Description: %q, Required: %t, Enum: %s}", param.Name, param.In, param.Type, param.Description, param.Required, renderStringSlice(param.Enum))
 	}
 	b.WriteString("}")
 	return b.String()
@@ -220,7 +226,7 @@ func renderFields(fields []apiField) string {
 		if i > 0 {
 			b.WriteString(", ")
 		}
-		fmt.Fprintf(&b, "{Name: %q, Type: %q, Required: %t, Enum: %s}", field.Name, field.Type, field.Required, renderStringSlice(field.Enum))
+		fmt.Fprintf(&b, "{Name: %q, Type: %q, Description: %q, Required: %t, Enum: %s}", field.Name, field.Type, field.Description, field.Required, renderStringSlice(field.Enum))
 	}
 	b.WriteString("}")
 	return b.String()

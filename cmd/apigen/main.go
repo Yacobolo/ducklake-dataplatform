@@ -3,6 +3,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"go/format"
@@ -14,6 +15,7 @@ import (
 	requestmodelgoemit "duck-demo/internal/apigen/emit/requestmodelgo"
 	servergoemit "duck-demo/internal/apigen/emit/servergo"
 	"duck-demo/internal/apigen/ir"
+	"go.yaml.in/yaml/v4"
 )
 
 func main() {
@@ -24,7 +26,8 @@ func main() {
 	command := os.Args[1]
 	fs := flag.NewFlagSet(command, flag.ExitOnError)
 	irPath := fs.String("ir", "api/gen/json-ir.json", "input JSON IR path")
-	openapiOut := fs.String("openapi-out", "internal/api/openapi.generated.yaml", "output OpenAPI YAML path")
+	openapiOut := fs.String("openapi-out", "api/gen/openapi.apigen.yaml", "output OpenAPI YAML path for optional debug/compat emission")
+	canonicalOpenAPIPath := fs.String("canonical-openapi", "api/gen/openapi.yaml", "canonical OpenAPI YAML path to embed into generated server code")
 	serverOut := fs.String("server-out", "internal/api/server.apigen.gen.go", "output server Go path")
 	requestModelsOut := fs.String("request-models-out", "internal/api/gen_request_models.gen.go", "output APIGen request models Go path")
 	cliOut := fs.String("cli-out", "pkg/cli/gen/apigen_registry.gen.go", "output CLI Go path")
@@ -43,7 +46,7 @@ func main() {
 			fatalf("generate openapi: %v", err)
 		}
 	case "server":
-		if err := generateServer(doc, *serverOut, *requestModelsOut); err != nil {
+		if err := generateServer(doc, *serverOut, *requestModelsOut, *canonicalOpenAPIPath); err != nil {
 			fatalf("generate server: %v", err)
 		}
 	case "cli":
@@ -51,10 +54,7 @@ func main() {
 			fatalf("generate cli: %v", err)
 		}
 	case "all":
-		if err := generateOpenAPI(doc, *openapiOut); err != nil {
-			fatalf("generate openapi: %v", err)
-		}
-		if err := generateServer(doc, *serverOut, *requestModelsOut); err != nil {
+		if err := generateServer(doc, *serverOut, *requestModelsOut, *canonicalOpenAPIPath); err != nil {
 			fatalf("generate server: %v", err)
 		}
 		if err := generateCLI(doc, *cliOut); err != nil {
@@ -79,13 +79,15 @@ func generateOpenAPI(doc ir.Document, outPath string) error {
 	return nil
 }
 
-func generateServer(doc ir.Document, outPath string, requestModelsOutPath string) error {
+func generateServer(doc ir.Document, outPath string, requestModelsOutPath string, canonicalOpenAPIPath string) error {
 	if err := servergoemit.ValidateOperationIDs(doc); err != nil {
 		return fmt.Errorf("validate operation ids: %w", err)
 	}
-	legacyDir := filepath.Dir(outPath)
-	legacyTypesPath := filepath.Join(legacyDir, "types.gen.go")
-	b, err := servergoemit.EmitWithLegacyResponses(doc, legacyTypesPath)
+	embeddedSpecJSON, err := loadOpenAPIAsJSON(canonicalOpenAPIPath)
+	if err != nil {
+		return fmt.Errorf("load canonical openapi: %w", err)
+	}
+	b, err := servergoemit.EmitWithLegacyResponsesAndSpec(doc, "", embeddedSpecJSON)
 	if err != nil {
 		return fmt.Errorf("emit server go: %w", err)
 	}
@@ -96,7 +98,7 @@ func generateServer(doc ir.Document, outPath string, requestModelsOutPath string
 	if err := writeFile(outPath, formatted); err != nil {
 		return err
 	}
-	requestModels, err := requestmodelgoemit.EmitWithResponseRoots(doc, legacyTypesPath)
+	requestModels, err := requestmodelgoemit.EmitWithResponseRoots(doc, "")
 	if err != nil {
 		return fmt.Errorf("emit request models go: %w", err)
 	}
@@ -143,6 +145,22 @@ func writeFile(outPath string, content []byte) error {
 		return fmt.Errorf("write output: %w", err)
 	}
 	return nil
+}
+
+func loadOpenAPIAsJSON(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("read openapi file: %w", err)
+	}
+	var doc map[string]any
+	if err := yaml.Unmarshal(content, &doc); err != nil {
+		return "", fmt.Errorf("decode openapi yaml: %w", err)
+	}
+	marshaled, err := json.Marshal(doc)
+	if err != nil {
+		return "", fmt.Errorf("marshal openapi json: %w", err)
+	}
+	return string(marshaled), nil
 }
 
 func fatalf(format string, args ...any) {

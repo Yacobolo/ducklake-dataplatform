@@ -1,8 +1,6 @@
 package servergo
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -141,9 +139,15 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId string, params GenListGroupMembersParams)")
 	require.Contains(t, content, "bindPathParameter(\"groupId\", chi.URLParam(r, \"groupId\"), true, &groupId)")
 	require.Contains(t, content, "bindQueryParameter(r.URL.Query(), \"max_results\", false, &params.MaxResults)")
+	require.Contains(t, content, "writeAPIGenError(w, http.StatusBadRequest, err.Error())")
 	require.Contains(t, content, "dispatcher.ListGroupMembers(w, r, groupId, params)")
 	require.Contains(t, content, "type GenListGroupMembersParams struct {")
 	require.Contains(t, content, "\tMaxResults *int32")
+	require.Contains(t, content, "func apigenErrorMessage(statusCode int, message string) string {")
+	require.Contains(t, content, "if statusCode >= http.StatusInternalServerError {")
+	require.Contains(t, content, "if statusText := strings.ToLower(http.StatusText(statusCode)); statusText != \"\" {")
+	require.Contains(t, content, "func writeAPIGenError(w http.ResponseWriter, statusCode int, message string) {")
+	require.Contains(t, content, "_ = json.NewEncoder(w).Encode(Error{Code: int32(statusCode), Message: apigenErrorMessage(statusCode, message)})")
 	require.Contains(t, content, "var request GenListGroupMembersRequest")
 	require.Contains(t, content, "\"fmt\"")
 	require.Contains(t, content, "\"reflect\"")
@@ -154,12 +158,50 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "\tParams GenListGroupMembersParams")
 	require.Contains(t, content, "type GenListGroupMembersResponse interface {")
 	require.Contains(t, content, "\tVisitListGroupMembersResponse(w http.ResponseWriter) error")
-	require.Contains(t, content, "type GenListGroupMembers200Response struct{}")
+	require.Contains(t, content, "type GenListGroupMembers200ResponseHeaders struct {")
+	require.Contains(t, content, "type GenListGroupMembers200Response struct {")
+	require.Contains(t, content, "\tHeaders GenListGroupMembers200ResponseHeaders")
 	require.Contains(t, content, "func (response GenListGroupMembers200Response) VisitListGroupMembersResponse(w http.ResponseWriter) error {")
+	require.Contains(t, content, "w.Header().Set(\"X-RateLimit-Limit\", fmt.Sprint(response.Headers.XRateLimitLimit))")
 	require.Contains(t, content, "w.WriteHeader(200)")
 	require.Contains(t, content, "return nil")
 	require.Contains(t, content, "type ListGroupMembers200Response = GenListGroupMembers200Response")
 	require.Contains(t, content, "ListGroupMembers(ctx context.Context, request GenListGroupMembersRequest) (GenListGroupMembersResponse, error)")
+}
+
+func TestEmit_GeneratesStrictJSONBodyDecoding(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Schemas: map[string]ir.Schema{
+			"CreatePipelineRequest": {Type: "object"},
+		},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "post",
+				Path:        "/pipelines",
+				OperationID: "createPipeline",
+				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "CreatePipelineRequest"}},
+				Responses:   []ir.Response{{StatusCode: 201, Description: "created"}},
+			},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "\"io\"")
+	require.Contains(t, content, "func decodeAPIGenJSONBody(body io.Reader, dest any) error {")
+	require.Contains(t, content, "decoder.DisallowUnknownFields()")
+	require.Contains(t, content, "return fmt.Errorf(\"request body must not be empty\")")
+	require.Contains(t, content, "return fmt.Errorf(\"request body must contain a single JSON value\")")
+	require.Contains(t, content, "if err := decodeAPIGenJSONBody(r.Body, &body); err != nil {")
+	require.Contains(t, content, "writeAPIGenError(w, http.StatusBadRequest, err.Error())")
+	require.Contains(t, content, "writeAPIGenError(w, http.StatusInternalServerError, err.Error())")
+	require.Contains(t, content, "Message: apigenErrorMessage(statusCode, message)")
 }
 
 func TestEmit_GeneratesNativeBodyAliasesWhenIRHasConcreteSchemaRefs(t *testing.T) {
@@ -677,12 +719,15 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 	require.Contains(t, content, "w.WriteHeader(204)")
 	require.Contains(t, content, "return nil")
 	require.Contains(t, content, "type ExecuteQuery200JSONResponse GenExecuteQuery201JSONResponse")
+	require.Contains(t, content, "type GenExecuteQuery200JSONResponse = ExecuteQuery200JSONResponse")
 	require.Contains(t, content, "func (response ExecuteQuery200JSONResponse) VisitExecuteQueryResponse(w http.ResponseWriter) error {")
 
 	require.Contains(t, content, "type SubmitQuery202JSONResponse GenSubmitQuery201JSONResponse")
+	require.Contains(t, content, "type GenSubmitQuery202JSONResponse = SubmitQuery202JSONResponse")
 	require.Contains(t, content, "type GetQuery200JSONResponse = GenGetQuery200JSONResponse")
 	require.Contains(t, content, "type GetQueryResults200JSONResponse = GenGetQueryResults200JSONResponse")
 	require.Contains(t, content, "type CancelQuery200JSONResponse GenCancelQuery201JSONResponse")
+	require.Contains(t, content, "type GenCancelQuery200JSONResponse = CancelQuery200JSONResponse")
 	require.Contains(t, content, "type DeleteQuery204Response = GenDeleteQuery204Response")
 
 	require.Contains(t, content, "type ListGroups200JSONResponse = GenListGroups200JSONResponse")
@@ -865,10 +910,6 @@ func TestEmit_GeneratesNativeConcreteResponsesForModelsAndSemantic(t *testing.T)
 func TestEmitWithLegacyResponses_OwnsDirectSchemaResponses(t *testing.T) {
 	t.Helper()
 
-	dir := t.TempDir()
-	legacyTypesPath := filepath.Join(dir, "types.gen.go")
-	require.NoError(t, os.WriteFile(legacyTypesPath, []byte("package api\n\ntype PaginatedSemanticModels struct{}\ntype SemanticModel struct{}\ntype Model struct{}\n"), 0o600))
-
 	doc := ir.Document{
 		SchemaVersion: "v1",
 		Info:          ir.Info{Title: "t", Version: "1"},
@@ -884,22 +925,21 @@ func TestEmitWithLegacyResponses_OwnsDirectSchemaResponses(t *testing.T) {
 		},
 	}
 
-	b, err := EmitWithLegacyResponses(doc, legacyTypesPath)
+	b, err := EmitWithLegacyResponses(doc, "")
 	require.NoError(t, err)
 	content := string(b)
 
-	require.Contains(t, content, "type GenListSemanticModels200JSONResponse GenSchemaPaginatedSemanticModels")
-	require.Contains(t, content, "type GenCreateSemanticModel201JSONResponse GenSchemaSemanticModel")
-	require.Contains(t, content, "return json.NewEncoder(w).Encode(response)")
-	require.Contains(t, content, "type GenCreateModel201JSONResponse GenSchemaModel")
+	require.Contains(t, content, "type GenListSemanticModels200JSONResponse struct {")
+	require.Contains(t, content, "\tBody GenSchemaPaginatedSemanticModels")
+	require.Contains(t, content, "type GenCreateSemanticModel201JSONResponse struct {")
+	require.Contains(t, content, "\tBody GenSchemaSemanticModel")
+	require.Contains(t, content, "return json.NewEncoder(w).Encode(response.Body)")
+	require.Contains(t, content, "type GenCreateModel201JSONResponse struct {")
+	require.Contains(t, content, "\tBody GenSchemaModel")
 }
 
 func TestEmitWithLegacyResponses_OwnsWrappedResponseStructs(t *testing.T) {
 	t.Helper()
-
-	dir := t.TempDir()
-	legacyTypesPath := filepath.Join(dir, "types.gen.go")
-	require.NoError(t, os.WriteFile(legacyTypesPath, []byte("package api\n\ntype CreateWidgetResponse struct{}\n"), 0o600))
 
 	doc := ir.Document{
 		SchemaVersion: "v1",
@@ -909,7 +949,7 @@ func TestEmitWithLegacyResponses_OwnsWrappedResponseStructs(t *testing.T) {
 		},
 	}
 
-	b, err := EmitWithLegacyResponses(doc, legacyTypesPath)
+	b, err := EmitWithLegacyResponses(doc, "")
 	require.NoError(t, err)
 	content := string(b)
 
@@ -990,12 +1030,14 @@ func TestEmit_GeneratesNativeConcreteResponsesForNotebookDomainOps(t *testing.T)
 	require.Contains(t, content, "return nil")
 
 	require.Contains(t, content, "type ExecuteCell200JSONResponse GenExecuteCell201JSONResponse")
+	require.Contains(t, content, "type GenExecuteCell200JSONResponse = ExecuteCell200JSONResponse")
 	require.Contains(t, content, "func (response ExecuteCell200JSONResponse) VisitExecuteCellResponse(w http.ResponseWriter) error {")
 	require.Contains(t, content, "type RunAllCellsAsync202JSONResponse = GenRunAllCellsAsync202JSONResponse")
 	require.Contains(t, content, "w.WriteHeader(202)")
 
 	require.Contains(t, content, "type ListGitRepos200JSONResponse = GenListGitRepos200JSONResponse")
 	require.Contains(t, content, "type SyncGitRepo200JSONResponse GenSyncGitRepo201JSONResponse")
+	require.Contains(t, content, "type GenSyncGitRepo200JSONResponse = SyncGitRepo200JSONResponse")
 	require.Contains(t, content, "func (response SyncGitRepo200JSONResponse) VisitSyncGitRepoResponse(w http.ResponseWriter) error {")
 
 	require.Contains(t, content, "type ListCatalogs200JSONResponse = GenListCatalogs200JSONResponse")
@@ -1019,9 +1061,14 @@ func TestEmit_UsesLegacyConcreteResponseTypesForKnownStatusDrift(t *testing.T) {
 	content := string(b)
 
 	require.Contains(t, content, "type SubmitQuery202JSONResponse GenSubmitQuery201JSONResponse")
+	require.Contains(t, content, "type GenSubmitQuery202JSONResponse = SubmitQuery202JSONResponse")
 	require.Contains(t, content, "func (response SubmitQuery202JSONResponse) VisitSubmitQueryResponse(w http.ResponseWriter) error {")
 	require.Contains(t, content, "type CancelQuery200JSONResponse GenCancelQuery201JSONResponse")
-	require.Contains(t, content, "type BindColumnMask204Response GenBindColumnMask201JSONResponse")
+	require.Contains(t, content, "type GenCancelQuery200JSONResponse = CancelQuery200JSONResponse")
+	require.NotContains(t, content, "type CancelQuery200JSONResponse struct {\n\tBody any")
+	require.Contains(t, content, "type BindColumnMask204Response struct {")
+	require.Contains(t, content, "\tHeaders BindColumnMask204ResponseHeaders")
+	require.Contains(t, content, "type GenBindColumnMask204Response = BindColumnMask204Response")
 	require.Contains(t, content, "func (response BindColumnMask204Response) VisitBindColumnMaskResponse(w http.ResponseWriter) error {")
 	require.Contains(t, content, "w.WriteHeader(204)")
 }
@@ -1175,13 +1222,14 @@ func TestEmit_GeneratesNativeConcreteResponsesForSelectorGapOps(t *testing.T) {
 	require.Contains(t, content, "type ListGroupMembers200JSONResponse = GenListGroupMembers200JSONResponse")
 	require.NotContains(t, content, "type GenListGroupMembers200JSONResponse = ListGroupMembers200JSONResponse")
 
-	require.Contains(t, content, "type CreateGroupMember201JSONResponse = GenCreateGroupMember201JSONResponse")
-	require.NotContains(t, content, "type GenCreateGroupMember201JSONResponse = CreateGroupMember201JSONResponse")
+	require.Contains(t, content, "type GenCreateGroupMember201JSONResponse struct {")
+	require.Contains(t, content, "type GenCreateGroupMember204Response = CreateGroupMember204Response")
 
 	require.Contains(t, content, "type DeleteGroupMember204Response = GenDeleteGroupMember204Response")
 	require.NotContains(t, content, "type GenDeleteGroupMember204Response = DeleteGroupMember204Response")
 
 	require.Contains(t, content, "type CreateManifest200JSONResponse GenCreateManifest201JSONResponse")
+	require.Contains(t, content, "type GenCreateManifest200JSONResponse = CreateManifest200JSONResponse")
 	require.NotContains(t, content, "type GenCreateManifest201JSONResponse = CreateManifest201JSONResponse")
 
 	require.Contains(t, content, "type UpdatePrincipalAdmin200JSONResponse = GenUpdatePrincipalAdmin200JSONResponse")

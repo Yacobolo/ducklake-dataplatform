@@ -9,7 +9,7 @@
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `columns` | `array` | `false` | - |
+| `columns` | `array[CreateColumnRequest]` | `false` | - |
 | `comment` | `string` | `false` | - |
 | `name` | `string` | `true` | - |
 

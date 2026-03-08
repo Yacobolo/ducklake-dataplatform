@@ -9,6 +9,7 @@
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `code` | `integer` | `true` | HTTP status code |
-| `message` | `string` | `true` | Error message |
+| `code` | `integer` | `true` | - |
+| `details` | `object` | `false` | - |
+| `message` | `string` | `true` | - |
 

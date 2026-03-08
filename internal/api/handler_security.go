@@ -269,7 +269,7 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req GenCreateGroupMe
 			return nil, err
 		}
 	}
-	return GenCreateGroupMember204Response{}, nil
+	return CreateGroupMember204Response{}, nil
 }
 
 // DeleteGroupMember implements the endpoint for removing a member from a group.

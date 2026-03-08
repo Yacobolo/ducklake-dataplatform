@@ -290,6 +290,23 @@ func TestCLI_JSONInputRawString(t *testing.T) {
 	assert.Equal(t, "test", body["comment"])
 }
 
+func TestCLI_GeneratedHelp_ShowsStructuredBodyHints(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 201, `{"name":"myschema"}`))
+	defer srv.Close()
+
+	rootCmd := newTestRootCmd(t, srv)
+	rootCmd.SetArgs([]string{"--host", srv.URL, "catalog", "schemas", "create", "--help"})
+
+	old := captureStdout(t)
+	err := rootCmd.Execute()
+	output := old()
+	require.NoError(t, err)
+	assert.Contains(t, output, "Properties (JSON object; use --json for nested input)")
+	assert.Contains(t, output, "Location Name")
+	assert.Contains(t, output, "Catalog Name")
+}
+
 func TestCLI_JSONInputFromFile(t *testing.T) {
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(jsonHandler(rec, 201, `{"name":"myschema"}`))

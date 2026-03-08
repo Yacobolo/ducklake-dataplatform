@@ -17,7 +17,7 @@ func TestEmit(t *testing.T) {
 			"CreateQueryRequest": {
 				Type: "object",
 				Properties: map[string]ir.SchemaProperty{
-					"sql": {Schema: ir.SchemaRef{Type: "string"}},
+					"sql": {Description: "SQL text to execute", Schema: ir.SchemaRef{Type: "string"}},
 				},
 				Required: []string{"sql"},
 			},
@@ -31,7 +31,7 @@ func TestEmit(t *testing.T) {
 				Description: "Runs SQL against the default catalog",
 				Tags:        []string{"query"},
 				Parameters: []ir.Parameter{
-					{Name: "catalogName", In: "path", Required: true, Schema: ir.SchemaRef{Type: "string"}},
+					{Name: "catalogName", In: "path", Required: true, Description: "Catalog to query", Schema: ir.SchemaRef{Type: "string"}},
 				},
 				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "CreateQueryRequest"}},
 				Responses:   []ir.Response{{StatusCode: 200, Description: "ok"}},
@@ -48,7 +48,7 @@ func TestEmit(t *testing.T) {
 	require.Contains(t, string(b), "executeQuery")
 	require.Contains(t, string(b), "Summary: \"Execute a query\"")
 	require.Contains(t, string(b), "Description: \"Runs SQL against the default catalog\"")
-	require.Contains(t, string(b), "Parameters: []APIGenParam{{Name: \"catalogName\"")
-	require.Contains(t, string(b), "BodyFields: []APIGenField{{Name: \"sql\"")
+	require.Contains(t, string(b), "Parameters: []APIGenParam{{Name: \"catalogName\", In: \"path\", Type: \"string\", Description: \"Catalog to query\"")
+	require.Contains(t, string(b), "BodyFields: []APIGenField{{Name: \"sql\", Type: \"string\", Description: \"SQL text to execute\"")
 	require.Contains(t, string(b), "CLICommand: \"query execute\"")
 }

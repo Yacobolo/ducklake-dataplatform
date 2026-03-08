@@ -237,13 +237,13 @@ func run() error {
 
 	// Public endpoints — no auth required
 	r.Get("/openapi.json", func(w http.ResponseWriter, _ *http.Request) {
-		apigenSwagger, err := api.GetAPIGenSwagger()
+		openAPIDoc, err := api.GetEmbeddedOpenAPISpec()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(apigenSwagger)
+		_ = json.NewEncoder(w).Encode(openAPIDoc)
 	})
 
 	r.Get("/docs", func(w http.ResponseWriter, _ *http.Request) {

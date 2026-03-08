@@ -273,9 +273,9 @@ func (h *APIHandler) TriggerPipelineRun(ctx context.Context, req GenTriggerPipel
 			return TriggerPipelineRun400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return GenTriggerPipelineRun201JSONResponse{
+	return GenTriggerPipelineRun200JSONResponse{
 		Body:    pipelineRunToAPI(*result),
-		Headers: GenTriggerPipelineRun201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenTriggerPipelineRun200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

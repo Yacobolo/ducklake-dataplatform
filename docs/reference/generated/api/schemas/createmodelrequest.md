@@ -10,5 +10,5 @@
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `name` | `string` | `true` | - |
-| `payload` | `Record` | `false` | - |
+| `payload` | `object` | `false` | - |
 

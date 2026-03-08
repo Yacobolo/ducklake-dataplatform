@@ -39,7 +39,7 @@ tasks:
       - go run . -gen=all -outdir=../../internal/duckdbsql/catalog/
 
   generate:api:
-    desc: Generate OpenAPI/server/CLI from JSON IR (apigen)
+    desc: Generate server/CLI from JSON IR (apigen)
     deps: [typespec:compile]
     cmds:
       - go run ./cmd/apigen all -ir api/gen/json-ir.json
@@ -50,7 +50,6 @@ tasks:
     generates:
       - api/gen/openapi.yaml
       - api/gen/json-ir.json
-      - internal/api/openapi.generated.yaml
       - internal/api/gen_request_models.gen.go
       - internal/api/server.apigen.gen.go
       - pkg/cli/gen/apigen_registry.gen.go
@@ -73,14 +72,14 @@ tasks:
   verify:apigen-generated:
     desc: Verify apigen artifacts are up to date
     preconditions:
-      - sh: test -f internal/api/openapi.generated.yaml
+      - sh: test -f api/gen/openapi.yaml
         msg: "apigen artifacts missing. Run 'task generate:api' first."
     cmds:
       - task generate:api
       - test -f internal/api/gen_request_models.gen.go
       - test -f internal/api/server.apigen.gen.go
       - test -f pkg/cli/gen/apigen_registry.gen.go
-      - git diff --exit-code -- api/gen/openapi.yaml
+      - git diff --exit-code -- api/gen/openapi.yaml internal/api/gen_request_models.gen.go internal/api/server.apigen.gen.go pkg/cli/gen/apigen_registry.gen.go
 
   generate:declarative-schema:
     desc: Generate declarative JSON Schema artifacts
@@ -104,9 +103,9 @@ tasks:
     desc: Generate docs reference pages from generated API and schemas
     deps: [generate:api, generate:declarative-schema]
     cmds:
-      - go run ./cmd/docsgen -openapi internal/api/openapi.generated.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated
+      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated
     sources:
-      - internal/api/openapi.generated.yaml
+      - api/gen/openapi.yaml
       - schemas/declarative/v1/index.json
       - schemas/declarative/v1/kinds/*.schema.json
       - cmd/docsgen/*.go
@@ -117,7 +116,7 @@ tasks:
       - docs/reference/generated/declarative/index.md
 
   docs:generate:generated:
-    desc: Generate docs from apigen OpenAPI artifact and declarative schemas
+    desc: Generate docs from canonical OpenAPI artifact and declarative schemas
     deps: [generate:api, generate:declarative-schema]
     cmds:
       - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated
@@ -214,16 +213,16 @@ tasks:
       - golangci-lint run
 
   lint:api:
-    desc: Lint generated OpenAPI spec for consistency
+    desc: Lint canonical OpenAPI spec for consistency
     deps: [generate:api]
     cmds:
-      - go run ./cmd/lint-api internal/api/openapi.generated.yaml
+      - go run ./cmd/lint-api api/gen/openapi.yaml
 
   lint:api:generated:
-    desc: Alias for generated OpenAPI lint
+    desc: Alias for canonical OpenAPI lint
     deps: [generate:api]
     cmds:
-      - go run ./cmd/lint-api internal/api/openapi.generated.yaml
+      - go run ./cmd/lint-api api/gen/openapi.yaml
 
   lint:api:typespec:
     desc: Lint TypeSpec OpenAPI artifact for consistency

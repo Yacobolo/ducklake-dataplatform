@@ -235,6 +235,317 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Duck
+  /auth/bootstrap/complete:
+    post:
+      operationId: bootstrapComplete
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BootstrapCompleteRequest'
+      security:
+        - {}
+      x-authz:
+        mode: public
+      x-apigen-manual: true
+  /auth/bootstrap/tokens:
+    post:
+      operationId: createBootstrapToken
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BootstrapTokenResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BootstrapTokenRequest'
+      x-authz:
+        mode: admin_only
+      x-apigen-manual: true
+  /auth/local/login:
+    post:
+      operationId: localLogin
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocalLoginRequest'
+      security:
+        - {}
+      x-authz:
+        mode: public
+      x-apigen-manual: true
+  /auth/provider/oidc:
+    get:
+      operationId: getOIDCProvider
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OIDCProviderResponse'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      x-authz:
+        mode: admin_only
+      x-apigen-manual: true
+    put:
+      operationId: upsertOIDCProvider
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OIDCProviderRequest'
+      x-authz:
+        mode: admin_only
+      x-apigen-manual: true
+  /auth/sessions/revoke-all:
+    post:
+      operationId: revokeAllWebSessions
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Service unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeWebSessionsRequest'
+      x-authz:
+        mode: admin_only
+      x-apigen-manual: true
+  /auth/sessions/stats:
+    get:
+      operationId: getWebSessionStats
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebSessionStatsResponse'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Service unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      x-authz:
+        mode: admin_only
+      x-apigen-manual: true
   /catalogs:
     post:
       operationId: registerCatalog
@@ -658,7 +969,11 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateSchemaRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_SCHEMA
+            securable_id_source: catalog_name_param
   /catalogs/{catalogName}/schemas/{schemaName}:
     get:
       operationId: getSchema
@@ -765,7 +1080,11 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateSchemaRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: schema
+            privilege: CREATE_SCHEMA
+            securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteSchema
       parameters:
@@ -815,7 +1134,11 @@ paths:
       tags:
         - Duck
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: schema
+            privilege: CREATE_SCHEMA
+            securable_id_source: runtime_resolved_object_id
   /catalogs/{catalogName}/schemas/{schemaName}/tables:
     get:
       operationId: listTables
@@ -935,7 +1258,11 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateTableRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: schema
+            privilege: CREATE_TABLE
+            securable_id_source: runtime_resolved_object_id
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}:
     get:
       operationId: getTable
@@ -1052,7 +1379,11 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateTableRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: table
+            privilege: CREATE_TABLE
+            securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteTable
       parameters:
@@ -1101,7 +1432,11 @@ paths:
       tags:
         - Duck
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: table
+            privilege: CREATE_TABLE
+            securable_id_source: runtime_resolved_object_id
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns:
     get:
       operationId: listTableColumns
@@ -1237,7 +1572,11 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateColumnRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: table
+            privilege: CREATE_TABLE
+            securable_id_source: runtime_resolved_object_id
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit:
     post:
       operationId: commitTableIngestion
@@ -1263,7 +1602,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/IngestionResult'
         '401':
           description: Access is unauthorized.
           content:
@@ -1295,7 +1634,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CommitIngestionRequest'
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: table
+            privilege: INSERT
+            securable_id_source: runtime_resolved_object_id
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load:
     post:
       operationId: loadTableExternalFiles
@@ -1321,7 +1666,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/IngestionResult'
         '401':
           description: Access is unauthorized.
           content:
@@ -1353,7 +1698,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/LoadExternalRequest'
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: table
+            privilege: INSERT
+            securable_id_source: runtime_resolved_object_id
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url:
     post:
       operationId: createUploadUrl
@@ -1379,7 +1730,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/UploadUrlResponse'
         '401':
           description: Access is unauthorized.
           content:
@@ -1411,7 +1762,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/UploadUrlRequest'
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: table
+            privilege: INSERT
+            securable_id_source: runtime_resolved_object_id
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile:
     post:
       operationId: profileTable
@@ -1583,7 +1940,11 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateViewRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: schema
+            privilege: CREATE_TABLE
+            securable_id_source: runtime_resolved_object_id
   /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}:
     get:
       operationId: getView
@@ -1700,7 +2061,11 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateViewRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: schema
+            privilege: CREATE_TABLE
+            securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteView
       parameters:
@@ -1749,7 +2114,11 @@ paths:
       tags:
         - Duck
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: schema
+            privilege: CREATE_TABLE
+            securable_id_source: runtime_resolved_object_id
   /catalogs/{catalogName}/schemas/{schemaName}/volumes:
     get:
       operationId: listVolumes
@@ -1869,7 +2238,11 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateVolumeRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_VOLUME
+            securable_id_source: catalog_sentinel
   /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}:
     get:
       operationId: getVolume
@@ -1986,7 +2359,11 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateVolumeRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: volume
+            privilege: CREATE_VOLUME
+            securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteVolume
       parameters:
@@ -2035,7 +2412,11 @@ paths:
       tags:
         - Duck
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: volume
+            privilege: CREATE_VOLUME
+            securable_id_source: runtime_resolved_object_id
   /catalogs/{catalogName}/set-default:
     post:
       operationId: setDefaultCatalog
@@ -2282,7 +2663,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedComputeEndpoints'
         '401':
           description: Access is unauthorized.
           content:
@@ -2312,7 +2693,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ComputeEndpoint'
         '401':
           description: Access is unauthorized.
           content:
@@ -2344,9 +2725,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateComputeEndpointRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_COMPUTE
+            securable_id_source: catalog_sentinel
   /compute-endpoints/{endpointName}:
     get:
       operationId: getComputeEndpoint
@@ -2362,7 +2747,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ComputeEndpoint'
         '401':
           description: Access is unauthorized.
           content:
@@ -2409,7 +2794,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ComputeEndpoint'
         '401':
           description: Access is unauthorized.
           content:
@@ -2441,9 +2826,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/UpdateComputeEndpointRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: compute_endpoint
+            privilege: MANAGE_COMPUTE
+            securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteComputeEndpoint
       parameters:
@@ -2482,7 +2871,11 @@ paths:
       tags:
         - Duck
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: compute_endpoint
+            privilege: MANAGE_COMPUTE
+            securable_id_source: runtime_resolved_object_id
   /compute-endpoints/{endpointName}/assignments:
     get:
       operationId: listComputeAssignments
@@ -2511,7 +2904,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedComputeAssignments'
         '401':
           description: Access is unauthorized.
           content:
@@ -2558,7 +2951,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ComputeAssignment'
         '401':
           description: Access is unauthorized.
           content:
@@ -2590,9 +2983,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateComputeAssignmentRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: compute_endpoint
+            privilege: MANAGE_COMPUTE
+            securable_id_source: runtime_resolved_object_id
   /compute-endpoints/{endpointName}/assignments/{assignmentId}:
     delete:
       operationId: deleteComputeAssignment
@@ -2637,7 +3034,11 @@ paths:
       tags:
         - Duck
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_COMPUTE
+            securable_id_source: catalog_sentinel
   /compute-endpoints/{endpointName}/health:
     get:
       operationId: getComputeEndpointHealth
@@ -2653,7 +3054,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ComputeEndpointHealth'
         '401':
           description: Access is unauthorized.
           content:
@@ -2773,7 +3174,11 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateExternalLocationRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_EXTERNAL_LOCATION
+            securable_id_source: catalog_sentinel
   /external-locations/{locationName}:
     get:
       operationId: getExternalLocation
@@ -2870,7 +3275,11 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateExternalLocationRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: external_location
+            privilege: CREATE_EXTERNAL_LOCATION
+            securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteExternalLocation
       parameters:
@@ -2909,7 +3318,11 @@ paths:
       tags:
         - Duck
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: external_location
+            privilege: CREATE_EXTERNAL_LOCATION
+            securable_id_source: runtime_resolved_object_id
   /git-repos:
     get:
       operationId: listGitRepos
@@ -3234,7 +3647,7 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateGrantRequest'
       x-authz:
-        mode: authenticated
+        mode: admin_only
   /grants/{grantId}:
     delete:
       operationId: deleteGrant
@@ -3274,7 +3687,7 @@ paths:
       tags:
         - Duck
       x-authz:
-        mode: authenticated
+        mode: admin_only
   /groups:
     get:
       operationId: listGroups
@@ -8533,7 +8946,11 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateStorageCredentialRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: CREATE_STORAGE_CREDENTIAL
+            securable_id_source: catalog_sentinel
   /storage-credentials/{credentialName}:
     get:
       operationId: getStorageCredential
@@ -8630,7 +9047,11 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateStorageCredentialRequest'
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: storage_credential
+            privilege: CREATE_STORAGE_CREDENTIAL
+            securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteStorageCredential
       parameters:
@@ -8669,7 +9090,11 @@ paths:
       tags:
         - Duck
       x-authz:
-        mode: authenticated
+        mode: privilege
+        checks:
+          - securable_type: storage_credential
+            privilege: CREATE_STORAGE_CREDENTIAL
+            securable_id_source: runtime_resolved_object_id
   /tables/{tableId}/column-masks:
     get:
       operationId: listColumnMasks
@@ -9150,6 +9575,60 @@ components:
           format: int64
         created_at:
           type: string
+    AuthLoginResponse:
+      type: object
+      required:
+        - token
+        - principal
+      properties:
+        token:
+          type: string
+        principal:
+          $ref: '#/components/schemas/AuthPrincipalSummary'
+    AuthPrincipalSummary:
+      type: object
+      required:
+        - id
+        - name
+        - is_admin
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        is_admin:
+          type: boolean
+    BootstrapCompleteRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        principal_name:
+          type: string
+        bootstrap_token:
+          type: string
+    BootstrapTokenRequest:
+      type: object
+      properties:
+        ttl_seconds:
+          type: integer
+          format: int64
+    BootstrapTokenResponse:
+      type: object
+      required:
+        - bootstrap_token
+        - ttl_seconds
+      properties:
+        bootstrap_token:
+          type: string
+        ttl_seconds:
+          type: integer
+          format: int64
     CatalogInfo:
       type: object
       required:
@@ -9260,6 +9739,104 @@ components:
           type: string
         see_original:
           type: boolean
+    CommitIngestionRequest:
+      type: object
+      required:
+        - s3_keys
+      properties:
+        s3_keys:
+          type: array
+          items:
+            type: string
+        options:
+          $ref: '#/components/schemas/IngestionOptions'
+    ComputeAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+        endpoint_id:
+          type: string
+        endpoint_name:
+          type: string
+        principal_id:
+          type: string
+        principal_type:
+          $ref: '#/components/schemas/ComputeAssignmentPrincipalType'
+        fallback_local:
+          type: boolean
+        is_default:
+          type: boolean
+        created_at:
+          type: string
+    ComputeAssignmentPrincipalType:
+      type: string
+      enum:
+        - user
+        - group
+    ComputeEndpoint:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ComputeEndpointType'
+        size:
+          $ref: '#/components/schemas/ComputeEndpointSize'
+        status:
+          $ref: '#/components/schemas/ComputeEndpointStatus'
+        url:
+          type: string
+        external_id:
+          type: string
+        max_memory_gb:
+          type: integer
+          format: int64
+        owner:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    ComputeEndpointHealth:
+      type: object
+      properties:
+        endpoint_name:
+          type: string
+        status:
+          type: string
+        memory_used_mb:
+          type: integer
+          format: int32
+        max_memory_gb:
+          type: integer
+          format: int32
+        uptime_seconds:
+          type: integer
+          format: int32
+        duckdb_version:
+          type: string
+    ComputeEndpointSize:
+      type: string
+      enum:
+        - SMALL
+        - MEDIUM
+        - LARGE
+    ComputeEndpointStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - STARTING
+        - STOPPING
+        - ERROR
+    ComputeEndpointType:
+      type: string
+      enum:
+        - LOCAL
+        - REMOTE
     CreateAPIKeyRequest:
       type: object
       required:
@@ -9330,6 +9907,40 @@ components:
           type: boolean
         comment:
           type: string
+    CreateComputeAssignmentRequest:
+      type: object
+      required:
+        - principal_id
+        - principal_type
+      properties:
+        principal_id:
+          type: string
+        principal_type:
+          $ref: '#/components/schemas/ComputeAssignmentPrincipalType'
+        fallback_local:
+          type: boolean
+        is_default:
+          type: boolean
+    CreateComputeEndpointRequest:
+      type: object
+      required:
+        - name
+        - type
+        - url
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ComputeEndpointType'
+        url:
+          type: string
+        auth_token:
+          type: string
+        max_memory_gb:
+          type: integer
+          format: int64
+        size:
+          $ref: '#/components/schemas/ComputeEndpointSize'
     CreateExternalLocationRequest:
       type: object
       required:
@@ -9583,6 +10194,52 @@ components:
       properties:
         status:
           type: string
+    IngestionOptions:
+      type: object
+      properties:
+        allow_missing_columns:
+          type: boolean
+        ignore_extra_columns:
+          type: boolean
+    IngestionResult:
+      type: object
+      required:
+        - files_registered
+        - files_skipped
+        - schema
+        - table
+      properties:
+        files_registered:
+          type: integer
+          format: int64
+        files_skipped:
+          type: integer
+          format: int64
+        schema:
+          type: string
+        table:
+          type: string
+    LoadExternalRequest:
+      type: object
+      required:
+        - paths
+      properties:
+        paths:
+          type: array
+          items:
+            type: string
+        options:
+          $ref: '#/components/schemas/IngestionOptions'
+    LocalLoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
     ManifestColumn:
       type: object
       required:
@@ -9648,6 +10305,47 @@ components:
         table_count:
           type: integer
           format: int32
+    OIDCProviderRequest:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+        issuer_url:
+          type: string
+        jwks_url:
+          type: string
+        audience:
+          type: string
+        client_id:
+          type: string
+        client_secret:
+          type: string
+        scopes:
+          type: string
+    OIDCProviderResponse:
+      type: object
+      required:
+        - enabled
+        - secret_stored
+      properties:
+        enabled:
+          type: boolean
+        issuer_url:
+          type: string
+        jwks_url:
+          type: string
+        audience:
+          type: string
+        client_id:
+          type: string
+        scopes:
+          type: string
+        updated_at:
+          type: string
+        secret_stored:
+          type: boolean
     PaginatedAPIKeys:
       type: object
       required:
@@ -9690,6 +10388,28 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ColumnMask'
+        next_page_token:
+          type: string
+    PaginatedComputeAssignments:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComputeAssignment'
+        next_page_token:
+          type: string
+    PaginatedComputeEndpoints:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComputeEndpoint'
         next_page_token:
           type: string
     PaginatedExternalLocations:
@@ -9915,6 +10635,13 @@ components:
           type: array
           items:
             type: string
+    RevokeWebSessionsRequest:
+      type: object
+      required:
+        - principal_id
+      properties:
+        principal_id:
+          type: string
     RowFilter:
       type: object
       required:
@@ -10064,6 +10791,20 @@ components:
           type: string
         nullable:
           type: boolean
+    UpdateComputeEndpointRequest:
+      type: object
+      properties:
+        auth_token:
+          type: string
+        max_memory_gb:
+          type: integer
+          format: int64
+        size:
+          $ref: '#/components/schemas/ComputeEndpointSize'
+        status:
+          $ref: '#/components/schemas/ComputeEndpointStatus'
+        url:
+          type: string
     UpdateExternalLocationRequest:
       type: object
       properties:
@@ -10131,6 +10872,25 @@ components:
           type: string
         storage_location:
           type: string
+    UploadUrlRequest:
+      type: object
+      properties:
+        filename:
+          type: string
+    UploadUrlResponse:
+      type: object
+      required:
+        - upload_url
+        - s3_key
+        - expires_at
+      properties:
+        upload_url:
+          type: string
+        s3_key:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
     ViewDetail:
       type: object
       required:
@@ -10191,6 +10951,46 @@ components:
           type: string
         updated_at:
           type: string
+    WebSessionStatsResponse:
+      type: object
+      required:
+        - created_total
+        - resolved_total
+        - resolve_failed_total
+        - revoked_total
+        - revoked_all_total
+        - reaped_total
+        - active_sessions
+        - idle_ttl_seconds
+        - absolute_ttl_seconds
+      properties:
+        created_total:
+          type: integer
+          format: int64
+        resolved_total:
+          type: integer
+          format: int64
+        resolve_failed_total:
+          type: integer
+          format: int64
+        revoked_total:
+          type: integer
+          format: int64
+        revoked_all_total:
+          type: integer
+          format: int64
+        reaped_total:
+          type: integer
+          format: int64
+        active_sessions:
+          type: integer
+          format: int64
+        idle_ttl_seconds:
+          type: integer
+          format: int64
+        absolute_ttl_seconds:
+          type: integer
+          format: int64
   securitySchemes:
     BearerAuth:
       type: http
@@ -10200,6 +11000,6 @@ components:
       in: header
       name: X-API-Key
 servers:
-  - url: https://api.example.com
+  - url: https://api.example.com/v1
     description: Primary API server
     variables: {}

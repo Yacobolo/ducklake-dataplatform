@@ -2,6 +2,7 @@ package cli
 
 import (
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -154,26 +155,33 @@ func walkCommands(cmd *cobra.Command, parentPath string) []CommandEntry {
 // collectFlags gathers flag metadata from a command.
 func collectFlags(cmd *cobra.Command) []FlagEntry {
 	var flags []FlagEntry
-	cmd.Flags().VisitAll(func(f *pflag.Flag) {
-		if f.Hidden {
-			return
-		}
-		// Skip help flag
-		if f.Name == "help" {
-			return
-		}
-		entry := FlagEntry{
-			Name:    f.Name,
-			Short:   f.Shorthand,
-			Type:    f.Value.Type(),
-			Default: f.DefValue,
-			Usage:   f.Usage,
-		}
-		// Check if flag is required by looking at annotations
-		if ann, ok := f.Annotations[cobra.BashCompOneRequiredFlag]; ok && len(ann) > 0 && ann[0] == "true" {
-			entry.Required = true
-		}
-		flags = append(flags, entry)
+	seen := map[string]struct{}{}
+	appendFlags := func(flagSet *pflag.FlagSet) {
+		flagSet.VisitAll(func(f *pflag.Flag) {
+			if f.Hidden || f.Name == "help" {
+				return
+			}
+			if _, ok := seen[f.Name]; ok {
+				return
+			}
+			seen[f.Name] = struct{}{}
+			entry := FlagEntry{
+				Name:    f.Name,
+				Short:   f.Shorthand,
+				Type:    f.Value.Type(),
+				Default: f.DefValue,
+				Usage:   f.Usage,
+			}
+			if ann, ok := f.Annotations[cobra.BashCompOneRequiredFlag]; ok && len(ann) > 0 && ann[0] == "true" {
+				entry.Required = true
+			}
+			flags = append(flags, entry)
+		})
+	}
+	appendFlags(cmd.InheritedFlags())
+	appendFlags(cmd.Flags())
+	sort.Slice(flags, func(i, j int) bool {
+		return flags[i].Name < flags[j].Name
 	})
 	return flags
 }

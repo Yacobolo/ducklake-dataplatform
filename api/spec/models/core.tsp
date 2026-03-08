@@ -28,6 +28,12 @@ model NoContent {
 }
 
 @error
+model BadRequestResponse {
+  @statusCode statusCode: 400;
+  @body body: Error;
+}
+
+@error
 model UnauthorizedResponse {
   @statusCode statusCode: 401;
   @body body: Error;
@@ -46,8 +52,20 @@ model NotFoundResponse {
 }
 
 @error
+model ConflictResponse {
+  @statusCode statusCode: 409;
+  @body body: Error;
+}
+
+@error
 model TooManyRequestsResponse {
   @statusCode statusCode: 429;
+  @body body: Error;
+}
+
+@error
+model ServiceUnavailableResponse {
+  @statusCode statusCode: 503;
   @body body: Error;
 }
 
@@ -94,6 +112,75 @@ model CreatePrincipalRequest {
 
 model UpdatePrincipalAdminRequest {
   is_admin: boolean;
+}
+
+model AuthPrincipalSummary {
+  id: string;
+  name: string;
+  is_admin: boolean;
+}
+
+model AuthLoginResponse {
+  token: string;
+  principal: AuthPrincipalSummary;
+}
+
+model BootstrapCompleteRequest {
+  username: string;
+  password: string;
+  principal_name?: string;
+  bootstrap_token?: string;
+}
+
+model LocalLoginRequest {
+  username: string;
+  password: string;
+}
+
+model BootstrapTokenRequest {
+  ttl_seconds?: int64;
+}
+
+model BootstrapTokenResponse {
+  bootstrap_token: string;
+  ttl_seconds: int64;
+}
+
+model OIDCProviderRequest {
+  enabled: boolean;
+  issuer_url?: string;
+  jwks_url?: string;
+  audience?: string;
+  client_id?: string;
+  client_secret?: string;
+  scopes?: string;
+}
+
+model OIDCProviderResponse {
+  enabled: boolean;
+  issuer_url?: string;
+  jwks_url?: string;
+  audience?: string;
+  client_id?: string;
+  scopes?: string;
+  updated_at?: string;
+  secret_stored: boolean;
+}
+
+model RevokeWebSessionsRequest {
+  principal_id: string;
+}
+
+model WebSessionStatsResponse {
+  created_total: int64;
+  resolved_total: int64;
+  resolve_failed_total: int64;
+  revoked_total: int64;
+  revoked_all_total: int64;
+  reaped_total: int64;
+  active_sessions: int64;
+  idle_ttl_seconds: int64;
+  absolute_ttl_seconds: int64;
 }
 
 model Group {
@@ -493,6 +580,98 @@ model UpdateVolumeRequest {
   comment?: string;
   new_name?: string;
   storage_location?: string;
+}
+
+enum ComputeAssignmentPrincipalType {
+  User: "user";
+  Group: "group";
+}
+
+enum ComputeEndpointSize {
+  SMALL: "SMALL";
+  MEDIUM: "MEDIUM";
+  LARGE: "LARGE";
+}
+
+enum ComputeEndpointStatus {
+  ACTIVE: "ACTIVE";
+  INACTIVE: "INACTIVE";
+  STARTING: "STARTING";
+  STOPPING: "STOPPING";
+  ERROR: "ERROR";
+}
+
+enum ComputeEndpointType {
+  LOCAL: "LOCAL";
+  REMOTE: "REMOTE";
+}
+
+model ComputeAssignment {
+  id?: string;
+  endpoint_id?: string;
+  endpoint_name?: string;
+  principal_id?: string;
+  principal_type?: ComputeAssignmentPrincipalType;
+  fallback_local?: boolean;
+  is_default?: boolean;
+  created_at?: string;
+}
+
+model PaginatedComputeAssignments {
+  data: ComputeAssignment[];
+  next_page_token?: string;
+}
+
+model CreateComputeAssignmentRequest {
+  principal_id: string;
+  principal_type: ComputeAssignmentPrincipalType;
+  fallback_local?: boolean;
+  is_default?: boolean;
+}
+
+model ComputeEndpoint {
+  id?: string;
+  name?: string;
+  type?: ComputeEndpointType;
+  size?: ComputeEndpointSize;
+  status?: ComputeEndpointStatus;
+  url?: string;
+  external_id?: string;
+  max_memory_gb?: int64;
+  owner?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+model PaginatedComputeEndpoints {
+  data: ComputeEndpoint[];
+  next_page_token?: string;
+}
+
+model CreateComputeEndpointRequest {
+  name: string;
+  type: ComputeEndpointType;
+  url: string;
+  auth_token?: string;
+  max_memory_gb?: int64;
+  size?: ComputeEndpointSize;
+}
+
+model UpdateComputeEndpointRequest {
+  auth_token?: string;
+  max_memory_gb?: int64;
+  size?: ComputeEndpointSize;
+  status?: ComputeEndpointStatus;
+  url?: string;
+}
+
+model ComputeEndpointHealth {
+  endpoint_name?: string;
+  status?: string;
+  memory_used_mb?: int32;
+  max_memory_gb?: int32;
+  uptime_seconds?: int32;
+  duckdb_version?: string;
 }
 
 model GenericRequest {

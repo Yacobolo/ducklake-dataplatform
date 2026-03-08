@@ -8,5 +8,5 @@
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `payload` | `Record` | `false` | - |
+| `payload` | `object` | `false` | - |
 

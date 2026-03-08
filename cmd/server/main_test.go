@@ -101,7 +101,7 @@ func TestAPIGenStrictRoutes_DispatchesExecuteQueryOnV1Route(t *testing.T) {
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
-	assert.Equal(t, http.StatusCreated, rr.Code)
+	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.True(t, strict.called)
 }
 
@@ -147,5 +147,5 @@ type executeQueryStrictStub struct {
 
 func (s *executeQueryStrictStub) ExecuteQuery(_ context.Context, _ api.GenExecuteQueryRequest) (api.GenExecuteQueryResponse, error) {
 	s.called = true
-	return api.GenExecuteQuery201JSONResponse{}, nil
+	return api.GenExecuteQuery200JSONResponse{}, nil
 }

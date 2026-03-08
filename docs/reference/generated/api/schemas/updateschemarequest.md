@@ -9,5 +9,5 @@
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
-| `properties` | `Record` | `false` | - |
+| `properties` | `object` | `false` | - |
 

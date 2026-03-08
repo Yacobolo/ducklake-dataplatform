@@ -1,6 +1,7 @@
 package architecture_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"sort"
@@ -8,6 +9,8 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/require"
+
+	"duck-demo/internal/api"
 )
 
 type openAPICoreOperation struct {
@@ -21,7 +24,7 @@ func TestOpenAPIContractParity_CoreOperationShape(t *testing.T) {
 	t.Helper()
 
 	typespecDoc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
-	generatedDoc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "internal", "api", "openapi.generated.yaml"))
+	generatedDoc := loadEmbeddedOpenAPISpec(t)
 
 	typespecOps := collectOpenAPICoreOperations(t, typespecDoc)
 	generatedOps := collectOpenAPICoreOperations(t, generatedDoc)
@@ -33,6 +36,22 @@ func TestOpenAPIContractParity_CoreOperationShape(t *testing.T) {
 		require.Equalf(t, expected.OperationID, actual.OperationID, "openapi parity: operationId drift for %s %s", expected.Method, expected.Path)
 		require.Equalf(t, expected.HasRequestBody, actual.HasRequestBody, "openapi parity: requestBody presence drift for %s %s", expected.Method, expected.Path)
 	}
+}
+
+func loadEmbeddedOpenAPISpec(t *testing.T) *openapi3.T {
+	t.Helper()
+
+	docMap, err := api.GetEmbeddedOpenAPISpec()
+	require.NoError(t, err)
+
+	jsonBytes, err := json.Marshal(docMap)
+	require.NoError(t, err)
+
+	loader := openapi3.NewLoader()
+	doc, err := loader.LoadFromData(jsonBytes)
+	require.NoError(t, err)
+
+	return doc
 }
 
 func loadOpenAPISpec(t *testing.T, specPath string) *openapi3.T {

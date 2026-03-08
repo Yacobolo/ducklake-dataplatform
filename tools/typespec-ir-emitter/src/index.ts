@@ -1,6 +1,7 @@
-import type { EmitContext, Model, Namespace, Operation, Type } from "@typespec/compiler";
+import type { EmitContext, Model, ModelProperty, Namespace, Operation, Type } from "@typespec/compiler";
 import { getDoc, resolvePath } from "@typespec/compiler";
-import { getOperationVerb, getRoutePath } from "@typespec/http";
+import { getExtensions } from "@typespec/openapi";
+import { getHttpOperation, getOperationVerb, getRoutePath } from "@typespec/http";
 
 type EmitterOptions = {
   "output-file"?: string;
@@ -168,10 +169,15 @@ function appendOperation(
     return;
   }
 
-  const responseSchema = isNoContentReturn(operation.returnType) ? undefined : toSchemaRef(operation.returnType, schemas);
+  const operationExtensions = getIRCompatibleExtensions(getExtensions(context.program, operation));
+  if (operationExtensions["x-apigen-manual"] === true || isManuallyMountedOperation(operation.name)) {
+    return;
+  }
+
+  const [httpOperation] = getHttpOperation(context.program, operation);
   const bodySchema = getBodySchema(context, operation, schemas);
   const parameters = getParameters(context, operation, routePath, schemas);
-  const authzMetadata = operationAuthz(operation.name);
+  const authzMetadata = authzMetadataForOperation(operationExtensions, operation.name);
   const isAuthenticated = authzMetadata.mode !== "public";
   const operationDoc = cleanText(getDoc(context.program, operation));
   const cliCommand = cliCommandForOperation(operation.name);
@@ -183,7 +189,7 @@ function appendOperation(
     summary: humanizeOperationName(operation.name),
     ...(operationDoc ? { description: operationDoc } : {}),
     tags: tagsForRoute(routePath),
-    responses: buildResponses(verb.toLowerCase(), routePath, operation.name, responseSchema, isAuthenticated),
+    responses: buildResponses(context, httpOperation, operation.name, schemas),
   };
 
   if (parameters.length > 0) {
@@ -199,6 +205,12 @@ function appendOperation(
   }
 
   const extensions: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(operationExtensions)) {
+    if (key === "x-apigen-manual") {
+      continue;
+    }
+    extensions[key] = value;
+  }
   if (cliCommand !== "") {
     extensions["x-cli-command"] = cliCommand;
   }
@@ -211,6 +223,32 @@ function appendOperation(
   }
 
   endpoints.push(endpoint);
+}
+
+function getIRCompatibleExtensions(extensions: ReadonlyMap<string, unknown>): Record<string, unknown> {
+  const output: Record<string, unknown> = {};
+  for (const [key, value] of extensions) {
+    if (!key.startsWith("x-")) {
+      continue;
+    }
+    output[key] = value;
+  }
+  return output;
+}
+
+function isManuallyMountedOperation(operationName: string): boolean {
+  switch (operationName) {
+    case "bootstrapComplete":
+    case "localLogin":
+    case "createBootstrapToken":
+    case "getOIDCProvider":
+    case "upsertOIDCProvider":
+    case "revokeAllWebSessions":
+    case "getWebSessionStats":
+      return true;
+    default:
+      return false;
+  }
 }
 
 function getBodySchema(
@@ -420,6 +458,35 @@ function operationAuthz(operationName: string): AuthzMetadata {
   return { mode: "authenticated" };
 }
 
+function authzMetadataForOperation(
+  operationExtensions: Record<string, unknown>,
+  operationName: string,
+): AuthzMetadata {
+  const authzValue = operationExtensions["x-authz"];
+  if (isAuthzMetadata(authzValue)) {
+    return authzValue;
+  }
+  return operationAuthz(operationName);
+}
+
+function isAuthzMetadata(value: unknown): value is AuthzMetadata {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  switch (candidate.mode) {
+    case "public":
+    case "authenticated":
+    case "admin_only":
+      return true;
+    case "privilege":
+      return Array.isArray(candidate.checks);
+    default:
+      return false;
+  }
+}
+
 function tagsForRoute(routePath: string): string[] {
   if (routePath === "/healthz") {
     return ["system"];
@@ -487,88 +554,85 @@ function tagsForRoute(routePath: string): string[] {
 }
 
 function buildResponses(
-  method: string,
-  routePath: string,
+  context: EmitContext<EmitterOptions>,
+  httpOperation: ReturnType<typeof getHttpOperation>[0],
   operationName: string,
-  responseSchema: IRSchemaRef | undefined,
-  isAuthenticated: boolean,
+  schemas: Record<string, IRSchema>,
 ): IREndpoint["responses"] {
   const responses: IREndpoint["responses"] = [];
-  const successCode = successStatusCode(method, operationName, responseSchema !== undefined);
-  const successDescription = successCode === 201 ? "Created" : successCode === 204 ? "No Content" : "OK";
-  const responseShape = responseShapeForOperation(operationName, successCode);
 
-  responses.push({
-    status_code: successCode,
-    description: successDescription,
-    ...(isAuthenticated ? { headers: responseHeaders(successCode) } : {}),
-    ...(successCode !== 204 && responseSchema ? { schema: responseSchema } : {}),
-    ...(responseShape ? { extensions: { "x-apigen-response-shape": responseShape } } : {}),
-  });
+  for (const response of httpOperation.responses) {
+    if (typeof response.statusCodes !== "number") {
+      continue;
+    }
 
-  if (method === "get" && routePath.includes("{")) {
+    const responseContent = selectResponseContent(response.responses);
+    const responseShape = responseShapeForOperation(operationName, response.statusCodes);
+    const headers = responseContent?.headers
+      ? Object.entries(responseContent.headers)
+          .map(([name, prop]) => ({
+            name,
+            required: !prop.optional,
+            description: cleanText(getDoc(context.program, prop)),
+            schema: toSchemaRef(prop.type, schemas),
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : undefined;
+    const bodyType = responseContent?.body?.type;
+
     responses.push({
-      status_code: 404,
-      description: "Not Found",
-      ...(isAuthenticated ? { headers: responseHeaders(404) } : {}),
-      schema: { ref: "Error" },
+      status_code: response.statusCodes,
+      description: cleanText(response.description) || defaultResponseDescription(response.statusCodes),
+      ...(headers && headers.length > 0 ? { headers } : {}),
+      ...(bodyType && !isNoContentReturn(bodyType) ? { schema: toSchemaRef(bodyType, schemas) } : {}),
+      ...(responseShape ? { extensions: { "x-apigen-response-shape": responseShape } } : {}),
     });
   }
 
-  responses.push({
-    status_code: 401,
-    description: "Unauthorized",
-    ...(isAuthenticated ? { headers: responseHeaders(401) } : {}),
-    schema: { ref: "Error" },
-  });
-  responses.push({
-    status_code: 429,
-    description: "Too Many Requests",
-    ...(isAuthenticated ? { headers: responseHeaders(429) } : {}),
-    schema: { ref: "Error" },
-  });
-  responses.push({
-    status_code: 500,
-    description: "Internal Server Error",
-    ...(isAuthenticated ? { headers: responseHeaders(500) } : {}),
-    schema: { ref: "Error" },
-  });
-
+  responses.sort((a, b) => a.status_code - b.status_code);
   return responses;
 }
 
-function responseHeaders(statusCode: number): NonNullable<IREndpoint["responses"]>[number]["headers"] {
-  const headers: NonNullable<IREndpoint["responses"]>[number]["headers"] = [
-    {
-      name: "X-RateLimit-Limit",
-      description: "Maximum requests allowed in the current rate-limit window.",
-      schema: { type: "integer", format: "int32" },
-    },
-    {
-      name: "X-RateLimit-Remaining",
-      description: "Remaining requests in the current rate-limit window.",
-      schema: { type: "integer", format: "int32" },
-    },
-    {
-      name: "X-RateLimit-Reset",
-      description: "Unix timestamp when the current rate-limit window resets.",
-      schema: { type: "integer", format: "int64" },
-    },
-  ];
+function selectResponseContent(
+  contents: Array<{ headers?: Record<string, ModelProperty>; body?: { type: Type } }>,
+): { headers?: Record<string, ModelProperty>; body?: { type: Type } } | undefined {
+  return contents.find((content) => content.body || (content.headers && Object.keys(content.headers).length > 0)) ?? contents[0];
+}
 
-  if (statusCode === 429) {
-    headers.unshift({
-      name: "Retry-After",
-      description: "Seconds until the client should retry the request.",
-      schema: { type: "integer", format: "int32" },
-    });
+function defaultResponseDescription(statusCode: number): string {
+  switch (statusCode) {
+    case 200:
+      return "OK";
+    case 201:
+      return "Created";
+    case 204:
+      return "No Content";
+    case 400:
+      return "Bad Request";
+    case 401:
+      return "Unauthorized";
+    case 403:
+      return "Forbidden";
+    case 404:
+      return "Not Found";
+    case 409:
+      return "Conflict";
+    case 429:
+      return "Too Many Requests";
+    case 500:
+      return "Internal Server Error";
+    case 503:
+      return "Service Unavailable";
+    default:
+      return `HTTP ${statusCode}`;
   }
-
-  return headers;
 }
 
 function responseShapeForOperation(operationName: string, statusCode: number): IRResponseShape | undefined {
-  return responseShapeManifest[`${operationName}:${statusCode}`];
+  return (
+    responseShapeManifest[`${operationName}:${statusCode}`] ??
+    Object.entries(responseShapeManifest).find(([key]) => key.startsWith(`${operationName}:`))?.[1]
+  );
 }
 
 const responseShapeManifest: Record<string, IRResponseShape> = {
@@ -720,29 +784,7 @@ const responseShapeManifest: Record<string, IRResponseShape> = {
   "updateVolume:200": { kind: "wrapped_json", body_type: "VolumeDetail" },
 };
 
-function successStatusCode(method: string, operationName: string, hasResponseSchema: boolean): number {
-  if (method === "delete") {
-    return 204;
-  }
-  if (method === "put") {
-    return 204;
-  }
-  if (method === "post") {
-    if (operationName === "createGroupMember") {
-      return 204;
-    }
-    if (!hasResponseSchema) {
-      return 204;
-    }
-    return 201;
-  }
-  return 200;
-}
-
 function isNoContentReturn(type: Type): boolean {
-  if (type.kind === "Void") {
-    return true;
-  }
   if (type.kind === "Intrinsic" && type.name.toLowerCase() === "void") {
     return true;
   }

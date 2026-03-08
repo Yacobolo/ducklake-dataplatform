@@ -12,5 +12,5 @@
 | `comment` | `string` | `false` | - |
 | `location_name` | `string` | `false` | - |
 | `name` | `string` | `true` | - |
-| `properties` | `Record` | `false` | - |
+| `properties` | `object` | `false` | - |
 

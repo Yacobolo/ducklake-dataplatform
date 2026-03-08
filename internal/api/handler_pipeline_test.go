@@ -504,7 +504,7 @@ func TestHandler_CreatePipelineJob(t *testing.T) {
 		assertFn func(t *testing.T, resp GenCreatePipelineJobResponse, err error)
 	}{
 		{
-			name:     "happy path returns 201",
+			name:     "happy path returns 200",
 			pipeName: "etl-daily",
 			body:     GenCreatePipelineJobJSONBody{Name: "extract", NotebookId: pipelineStrPtr("nb-1")},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
@@ -712,8 +712,8 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenTriggerPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				created, ok := resp.(GenTriggerPipelineRun201JSONResponse)
-				require.True(t, ok, "expected 201 response, got %T", resp)
+				created, ok := resp.(GenTriggerPipelineRun200JSONResponse)
+				require.True(t, ok, "expected 200 response, got %T", resp)
 				assert.Equal(t, "run-1", *created.Body.Id)
 				assert.Equal(t, PipelineRunStatus(domain.PipelineRunStatusRunning), *created.Body.Status)
 			},
@@ -732,8 +732,8 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenTriggerPipelineRunResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(GenTriggerPipelineRun201JSONResponse)
-				require.True(t, ok, "expected 201 response, got %T", resp)
+				_, ok := resp.(GenTriggerPipelineRun200JSONResponse)
+				require.True(t, ok, "expected 200 response, got %T", resp)
 			},
 		},
 		{

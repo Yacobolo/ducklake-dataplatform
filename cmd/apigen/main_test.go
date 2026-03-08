@@ -45,11 +45,11 @@ func TestGenerateArtifacts(t *testing.T) {
 	serverPath := filepath.Join(dir, "server.apigen.gen.go")
 	requestModelsPath := filepath.Join(dir, "request_models.gen.go")
 	cliPath := filepath.Join(dir, "cli.gen.go")
-	typesPath := filepath.Join(dir, "types.gen.go")
-	require.NoError(t, os.WriteFile(typesPath, []byte("package api\n\ntype HealthResponse struct{}\n"), 0o644))
+	canonicalOpenAPIPath := filepath.Join(dir, "canonical-openapi.yaml")
+	require.NoError(t, os.WriteFile(canonicalOpenAPIPath, []byte("openapi: 3.0.0\ninfo:\n  title: Duck\n  version: 0.1.0\npaths: {}\n"), 0o644))
 
 	require.NoError(t, generateOpenAPI(doc, openapiPath))
-	require.NoError(t, generateServer(doc, serverPath, requestModelsPath))
+	require.NoError(t, generateServer(doc, serverPath, requestModelsPath, canonicalOpenAPIPath))
 	require.NoError(t, generateCLI(doc, cliPath))
 
 	_, err = os.Stat(openapiPath)

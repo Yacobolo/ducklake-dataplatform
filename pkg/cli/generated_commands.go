@@ -15,7 +15,7 @@ import (
 )
 
 type generatedCommandSpec struct {
-	Endpoint             gen.APIEndpoint
+	Endpoint             gen.APIGenEndpoint
 	CommandPath          []string
 	PathParamNames       []string
 	PositionalPathParams []string
@@ -23,7 +23,7 @@ type generatedCommandSpec struct {
 }
 
 func addRuntimeGeneratedCommands(rootCmd *cobra.Command, client *gen.Client) {
-	specs := buildGeneratedCommandSpecs()
+	specs := mustBuildGeneratedCommandSpecs()
 	groups := map[string]*cobra.Command{}
 
 	for _, spec := range specs {
@@ -59,10 +59,17 @@ func addRuntimeGeneratedCommands(rootCmd *cobra.Command, client *gen.Client) {
 	}
 }
 
-func buildGeneratedCommandSpecs() []generatedCommandSpec {
-	endpoints := allAPIEndpoints()
+func mustBuildGeneratedCommandSpecs() []generatedCommandSpec {
+	specs, err := buildGeneratedCommandSpecsFromEndpoints(allAPIEndpoints())
+	if err != nil {
+		panic(err)
+	}
+	return specs
+}
+
+func buildGeneratedCommandSpecsFromEndpoints(endpoints []gen.APIGenEndpoint) ([]generatedCommandSpec, error) {
 	specs := make([]generatedCommandSpec, 0, len(endpoints))
-	seen := make(map[string]struct{}, len(endpoints))
+	seen := make(map[string]string, len(endpoints))
 	parentRoots := map[string]bool{}
 
 	for _, endpoint := range endpoints {
@@ -82,10 +89,10 @@ func buildGeneratedCommandSpecs() []generatedCommandSpec {
 		}
 
 		normalizedPath := strings.Join(commandPath, " ")
-		if _, ok := seen[normalizedPath]; ok {
-			continue
+		if existingOpID, ok := seen[normalizedPath]; ok {
+			return nil, fmt.Errorf("duplicate generated CLI command %q for operations %q and %q", normalizedPath, existingOpID, endpoint.OperationID)
 		}
-		seen[normalizedPath] = struct{}{}
+		seen[normalizedPath] = endpoint.OperationID
 
 		pathParams := pathParameterNames(endpoint.Path)
 		positionalPath := selectPositionalPathParams(endpoint, pathParams)
@@ -109,7 +116,7 @@ func buildGeneratedCommandSpecs() []generatedCommandSpec {
 		return left < right
 	})
 
-	return specs
+	return specs, nil
 }
 
 func newGeneratedLeafCommand(spec generatedCommandSpec, client *gen.Client) *cobra.Command {
@@ -150,14 +157,14 @@ func newGeneratedLeafCommand(spec generatedCommandSpec, client *gen.Client) *cob
 				continue
 			}
 			flagName := toFlagName(p.Name)
-			cmd.Flags().String(flagName, "", "Path parameter.")
+			cmd.Flags().String(flagName, "", buildFlagUsage(p.Name, p.Type, p.Description, p.Enum, false))
 			_ = cmd.MarkFlagRequired(flagName)
 			continue
 		}
 
 		if p.In == "query" {
 			flagName := toFlagName(p.Name)
-			addTypedFlag(cmd, flagName, p.Type, p.Required, p.Enum, p.Name)
+			addTypedFlag(cmd, flagName, p.Type, p.Required, p.Enum, p.Description, p.Name, false)
 			if p.Required {
 				_ = cmd.MarkFlagRequired(flagName)
 			}
@@ -171,7 +178,7 @@ func newGeneratedLeafCommand(spec generatedCommandSpec, client *gen.Client) *cob
 			if spec.PositionalBodyName && field.Name == "name" {
 				continue
 			}
-			addTypedFlag(cmd, toFlagName(field.Name), field.Type, field.Required, field.Enum, field.Name)
+			addTypedFlag(cmd, toFlagName(field.Name), field.Type, field.Required, field.Enum, field.Description, field.Name, true)
 		}
 	}
 
@@ -364,7 +371,7 @@ func runGeneratedEndpoint(cmd *cobra.Command, client *gen.Client, spec generated
 	return nil
 }
 
-func selectPositionalPathParams(endpoint gen.APIEndpoint, pathParams []string) []string {
+func selectPositionalPathParams(endpoint gen.APIGenEndpoint, pathParams []string) []string {
 	if len(pathParams) == 0 {
 		return nil
 	}
@@ -397,7 +404,7 @@ func selectPositionalPathParams(endpoint gen.APIEndpoint, pathParams []string) [
 	return selected
 }
 
-func selectPositionalBodyName(endpoint gen.APIEndpoint, pathParams []string, positionalPath []string) bool {
+func selectPositionalBodyName(endpoint gen.APIGenEndpoint, pathParams []string, positionalPath []string) bool {
 	if !strings.HasPrefix(endpoint.OperationID, "create") {
 		return false
 	}
@@ -467,13 +474,8 @@ func toArgName(name string) string {
 	return strings.ReplaceAll(toFlagName(name), "_", "-")
 }
 
-func addTypedFlag(cmd *cobra.Command, name, typ string, required bool, enum []string, usage string) {
-	if usage == "" {
-		usage = name
-	}
-	if len(enum) > 0 {
-		usage = usage + " (one of: " + strings.Join(enum, ", ") + ")"
-	}
+func addTypedFlag(cmd *cobra.Command, name, typ string, required bool, enum []string, description, fallbackName string, bodyField bool) {
+	usage := buildFlagUsage(fallbackName, typ, description, enum, bodyField)
 
 	switch typ {
 	case "integer", "int", "int32", "int64", "number":
@@ -491,6 +493,52 @@ func addTypedFlag(cmd *cobra.Command, name, typ string, required bool, enum []st
 	}
 
 	_ = required
+}
+
+func buildFlagUsage(name, typ, description string, enum []string, bodyField bool) string {
+	usage := strings.TrimSpace(description)
+	if usage == "" {
+		usage = humanizeIdentifier(name)
+	}
+
+	switch typ {
+	case "object":
+		if bodyField {
+			usage += " (JSON object; use --json for nested input)"
+		} else {
+			usage += " (JSON object)"
+		}
+	case "array":
+		if bodyField {
+			usage += " (repeat flag or use --json for nested input)"
+		} else {
+			usage += " (repeat flag to pass multiple values)"
+		}
+	}
+
+	if len(enum) > 0 {
+		usage += " (one of: " + strings.Join(enum, ", ") + ")"
+	}
+
+	return usage
+}
+
+func humanizeIdentifier(name string) string {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return "Value"
+	}
+	replaced := strings.NewReplacer("_", " ", "-", " ").Replace(toFlagName(trimmed))
+	parts := strings.Fields(replaced)
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		runes := []rune(strings.ToLower(part))
+		runes[0] = []rune(strings.ToUpper(string(runes[0])))[0]
+		parts[i] = string(runes)
+	}
+	return strings.Join(parts, " ")
 }
 
 func setQueryValueFromFlag(cmd *cobra.Command, query url.Values, queryName, flagName, typ string) error {
