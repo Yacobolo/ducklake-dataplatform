@@ -66,6 +66,36 @@ func (s *CatalogService) GetMetastoreSummary(ctx context.Context, catalogName st
 	return repo.GetMetastoreSummary(ctx)
 }
 
+// GetCatalogVersionSummary returns additive DuckLake version metadata for a catalog.
+func (s *CatalogService) GetCatalogVersionSummary(ctx context.Context, catalogName string) (*domain.CatalogVersionSummary, error) {
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	return repo.GetCatalogVersionSummary(ctx)
+}
+
+// ListCatalogHistory returns snapshot-scoped metastore history entries.
+func (s *CatalogService) ListCatalogHistory(ctx context.Context, catalogName string, filter domain.CatalogHistoryFilter) ([]domain.CatalogHistoryEntry, error) {
+	if filter.Limit <= 0 {
+		filter.Limit = 50
+	}
+	if filter.Limit > 200 {
+		filter.Limit = 200
+	}
+	switch filter.EntityType {
+	case "", "schema", "table", "column":
+	default:
+		return nil, domain.ErrValidation("unsupported entity_type: %q", filter.EntityType)
+	}
+
+	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
+	if err != nil {
+		return nil, err
+	}
+	return repo.ListCatalogHistory(ctx, filter)
+}
+
 // ListSchemas returns a paginated list of schemas.
 func (s *CatalogService) ListSchemas(ctx context.Context, catalogName string, page domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)

@@ -53,6 +53,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	selectedType := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("type")))
 	selectedName := strings.TrimSpace(r.URL.Query().Get("name"))
 	activeTab := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("tab")))
+	historyEntity := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("history_entity")))
 	if selectedType == "" {
 		selectedType = "catalog"
 	}
@@ -83,6 +84,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	}
 
 	summary, summaryErr := h.Catalog.GetMetastoreSummary(r.Context(), catalogName)
+	versionSummary, versionSummaryErr := h.Catalog.GetCatalogVersionSummary(r.Context(), catalogName)
 	schemas, _, schemasErr := h.Catalog.ListSchemas(r.Context(), catalogName, domain.PageRequest{MaxResults: 200})
 	if selectedSchema == "" && len(schemas) > 0 {
 		selectedSchema = schemas[0].Name
@@ -188,6 +190,11 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 	}
 
 	panel.MetaItems = metastoreItems
+	panel.VersionSummary = versionSummary
+	panel.HistoryEntity = historyEntity
+	if versionSummaryErr != nil {
+		panel.VersionError = "Version metadata is unavailable right now."
+	}
 	panel.EditURL = "/ui/catalogs/" + url.PathEscape(registration.Name) + "/edit"
 	panel.SetDefaultURL = "/ui/catalogs/" + url.PathEscape(registration.Name) + "/set-default"
 	panel.DeleteURL = "/ui/catalogs/" + url.PathEscape(registration.Name) + "/delete"
@@ -211,6 +218,7 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 					{Label: "Tags", Value: tagsLabel(schema.Tags)},
 				},
 			}
+			panel.HistoryEntity = historyEntity
 		}
 	}
 
@@ -237,9 +245,10 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 					{Label: "Tags", Value: tagsLabel(table.Tags)},
 					{Label: "Updated", Value: formatTime(table.UpdatedAt)},
 				},
-				Columns:  columnRows,
-				AssetURL: assetRef.URL,
-				AssetKey: assetRef.Key,
+				Columns:       columnRows,
+				AssetURL:      assetRef.URL,
+				AssetKey:      assetRef.Key,
+				HistoryEntity: historyEntity,
 			}
 		}
 	}
@@ -272,7 +281,24 @@ func (h *Handler) renderCatalogWorkspace(w http.ResponseWriter, r *http.Request,
 				ColumnsAvailable: columnsErr == nil,
 				AssetURL:         assetRef.URL,
 				AssetKey:         assetRef.Key,
+				HistoryEntity:    historyEntity,
 			}
+		}
+	}
+
+	if activeTab == "history" && selectedType != "view" {
+		historyFilter := domain.CatalogHistoryFilter{EntityType: historyEntity, Limit: 50}
+		if selectedType == "schema" || selectedType == "table" {
+			historyFilter.SchemaName = selectedSchema
+		}
+		if selectedType == "table" {
+			historyFilter.TableName = selectedName
+		}
+		historyEntries, historyErr := h.Catalog.ListCatalogHistory(r.Context(), catalogName, historyFilter)
+		if historyErr == nil {
+			panel.HistoryEntries = historyEntries
+		} else {
+			panel.VersionError = "History is unavailable right now."
 		}
 	}
 

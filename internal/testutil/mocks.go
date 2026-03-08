@@ -349,23 +349,25 @@ var _ domain.SearchRepository = (*MockSearchRepo)(nil)
 // MockCatalogRepo implements domain.CatalogRepository for testing.
 // Uses function fields so tests only need to set the methods they care about.
 type MockCatalogRepo struct {
-	GetCatalogInfoFn       func(ctx context.Context) (*domain.CatalogInfo, error)
-	GetMetastoreSummaryFn  func(ctx context.Context) (*domain.MetastoreSummary, error)
-	CreateSchemaFn         func(ctx context.Context, name, comment, owner string) (*domain.SchemaDetail, error)
-	GetSchemaFn            func(ctx context.Context, name string) (*domain.SchemaDetail, error)
-	ListSchemasFn          func(ctx context.Context, page domain.PageRequest) ([]domain.SchemaDetail, int64, error)
-	UpdateSchemaFn         func(ctx context.Context, name string, comment *string, props map[string]string) (*domain.SchemaDetail, error)
-	DeleteSchemaFn         func(ctx context.Context, name string, force bool) error
-	CreateTableFn          func(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error)
-	CreateExternalTableFn  func(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error)
-	GetTableFn             func(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error)
-	ListTablesFn           func(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error)
-	DeleteTableFn          func(ctx context.Context, schemaName, tableName string) error
-	UpdateTableFn          func(ctx context.Context, schemaName, tableName string, comment *string, props map[string]string, owner *string) (*domain.TableDetail, error)
-	UpdateCatalogFn        func(ctx context.Context, comment *string) (*domain.CatalogInfo, error)
-	UpdateColumnFn         func(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*domain.ColumnDetail, error)
-	ListColumnsFn          func(ctx context.Context, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error)
-	SetSchemaStoragePathFn func(ctx context.Context, schemaID string, path string) error
+	GetCatalogInfoFn           func(ctx context.Context) (*domain.CatalogInfo, error)
+	GetMetastoreSummaryFn      func(ctx context.Context) (*domain.MetastoreSummary, error)
+	GetCatalogVersionSummaryFn func(ctx context.Context) (*domain.CatalogVersionSummary, error)
+	ListCatalogHistoryFn       func(ctx context.Context, filter domain.CatalogHistoryFilter) ([]domain.CatalogHistoryEntry, error)
+	CreateSchemaFn             func(ctx context.Context, name, comment, owner string) (*domain.SchemaDetail, error)
+	GetSchemaFn                func(ctx context.Context, name string) (*domain.SchemaDetail, error)
+	ListSchemasFn              func(ctx context.Context, page domain.PageRequest) ([]domain.SchemaDetail, int64, error)
+	UpdateSchemaFn             func(ctx context.Context, name string, comment *string, props map[string]string) (*domain.SchemaDetail, error)
+	DeleteSchemaFn             func(ctx context.Context, name string, force bool) error
+	CreateTableFn              func(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error)
+	CreateExternalTableFn      func(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error)
+	GetTableFn                 func(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error)
+	ListTablesFn               func(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error)
+	DeleteTableFn              func(ctx context.Context, schemaName, tableName string) error
+	UpdateTableFn              func(ctx context.Context, schemaName, tableName string, comment *string, props map[string]string, owner *string) (*domain.TableDetail, error)
+	UpdateCatalogFn            func(ctx context.Context, comment *string) (*domain.CatalogInfo, error)
+	UpdateColumnFn             func(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*domain.ColumnDetail, error)
+	ListColumnsFn              func(ctx context.Context, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error)
+	SetSchemaStoragePathFn     func(ctx context.Context, schemaID string, path string) error
 }
 
 // GetCatalogInfo implements the interface method for testing.
@@ -382,6 +384,22 @@ func (m *MockCatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.Meta
 		return m.GetMetastoreSummaryFn(ctx)
 	}
 	panic("unexpected call to MockCatalogRepo.GetMetastoreSummary")
+}
+
+// GetCatalogVersionSummary implements the interface method for testing.
+func (m *MockCatalogRepo) GetCatalogVersionSummary(ctx context.Context) (*domain.CatalogVersionSummary, error) {
+	if m.GetCatalogVersionSummaryFn != nil {
+		return m.GetCatalogVersionSummaryFn(ctx)
+	}
+	panic("unexpected call to MockCatalogRepo.GetCatalogVersionSummary")
+}
+
+// ListCatalogHistory implements the interface method for testing.
+func (m *MockCatalogRepo) ListCatalogHistory(ctx context.Context, filter domain.CatalogHistoryFilter) ([]domain.CatalogHistoryEntry, error) {
+	if m.ListCatalogHistoryFn != nil {
+		return m.ListCatalogHistoryFn(ctx, filter)
+	}
+	panic("unexpected call to MockCatalogRepo.ListCatalogHistory")
 }
 
 // CreateSchema implements the interface method for testing.

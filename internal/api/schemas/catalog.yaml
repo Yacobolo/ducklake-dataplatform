@@ -509,6 +509,157 @@ MetastoreSummary:
       maximum: 9223372036854775807
       example: 100
 
+VersionedObjectSummary:
+  description: Snapshot/version counts for a DuckLake metastore entity type.
+  type: object
+  properties:
+    total_count:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 9223372036854775807
+      example: 3
+    active_count:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 9223372036854775807
+      example: 1
+    historical_count:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 9223372036854775807
+      example: 2
+    has_history:
+      type: boolean
+      example: true
+    latest_snapshot_id:
+      type: integer
+      format: int64
+      nullable: true
+      minimum: 0
+      maximum: 9223372036854775807
+      example: 42
+
+CatalogVersionSummary:
+  description: Additive DuckLake metastore version metadata for a catalog.
+  type: object
+  properties:
+    catalog_name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: analytics
+    version:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: '0.3'
+    created_by:
+      type: string
+      maxLength: 255
+      pattern: '[\s\S]+'
+      example: DuckDB 6ddac802ff
+    encrypted:
+      type: boolean
+      nullable: true
+      example: false
+    data_path:
+      type: string
+      maxLength: 2048
+      pattern: '^\S.*$'
+      example: s3://my-bucket/data/
+    latest_snapshot_id:
+      type: integer
+      format: int64
+      nullable: true
+      minimum: 0
+      maximum: 9223372036854775807
+      example: 42
+    schemas:
+      $ref: '#/VersionedObjectSummary'
+    tables:
+      $ref: '#/VersionedObjectSummary'
+    columns:
+      $ref: '#/VersionedObjectSummary'
+
+CatalogHistoryEntry:
+  description: Snapshot-scoped DuckLake metastore history entry.
+  type: object
+  properties:
+    entity_type:
+      type: string
+      maxLength: 32
+      pattern: '^\S+$'
+      example: table
+    schema_name:
+      type: string
+      nullable: true
+      maxLength: 255
+      pattern: '[\s\S]*'
+      example: main
+    table_name:
+      type: string
+      nullable: true
+      maxLength: 255
+      pattern: '[\s\S]*'
+      example: users
+    column_name:
+      type: string
+      nullable: true
+      maxLength: 255
+      pattern: '[\s\S]*'
+      example: email
+    object_name:
+      type: string
+      maxLength: 1024
+      pattern: '[\s\S]+'
+      example: main.users.email
+    object_id:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+      example: '42'
+    begin_snapshot_id:
+      type: integer
+      format: int64
+      nullable: true
+      minimum: 0
+      maximum: 9223372036854775807
+      example: 1
+    end_snapshot_id:
+      type: integer
+      format: int64
+      nullable: true
+      minimum: 0
+      maximum: 9223372036854775807
+      example: 2
+    latest_snapshot_id:
+      type: integer
+      format: int64
+      nullable: true
+      minimum: 0
+      maximum: 9223372036854775807
+      example: 2
+    is_active:
+      type: boolean
+      example: false
+    has_history:
+      type: boolean
+      example: true
+
+CatalogHistoryResponse:
+  description: Recent DuckLake metastore history entries.
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/CatalogHistoryEntry'
+      maxItems: 200
+      example: []
+
 ViewDetail:
   description: Detailed information about a view including its definition and source tables.
   type: object

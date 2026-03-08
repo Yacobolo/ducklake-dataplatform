@@ -544,6 +544,62 @@ func TestAPI_GetMetastoreSummary(t *testing.T) {
 	}
 }
 
+func TestAPI_GetCatalogVersionSummary(t *testing.T) {
+	mock := newMockCatalogRepo()
+	mock.addSchema("main")
+	mock.addTable("main", "users", []domain.ColumnDetail{{Name: "id", Type: "INTEGER"}})
+
+	srv := setupCatalogTestServer(t, "admin_user", mock)
+	defer srv.Close()
+
+	resp := doRequest(t, "GET", srv.URL+"/catalogs/lake/version-summary", "")
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	result := decodeJSON[CatalogVersionSummary](t, resp)
+
+	if result.CatalogName == nil || *result.CatalogName != "lake" {
+		t.Fatalf("expected catalog_name=lake, got %v", result.CatalogName)
+	}
+	if result.Version == nil || *result.Version != "0.3" {
+		t.Fatalf("expected version=0.3, got %v", result.Version)
+	}
+	if result.CreatedBy == nil || *result.CreatedBy != "DuckDB 6ddac802ff" {
+		t.Fatalf("expected created_by, got %v", result.CreatedBy)
+	}
+	if result.Encrypted == nil || *result.Encrypted {
+		t.Fatalf("expected encrypted=false, got %v", result.Encrypted)
+	}
+	if result.Schemas.ActiveCount == nil || *result.Schemas.ActiveCount != 1 {
+		t.Fatalf("expected schemas.active_count=1, got %v", result.Schemas.ActiveCount)
+	}
+	if result.Tables.ActiveCount == nil || *result.Tables.ActiveCount != 1 {
+		t.Fatalf("expected tables.active_count=1, got %v", result.Tables.ActiveCount)
+	}
+}
+
+func TestAPI_ListCatalogHistory(t *testing.T) {
+	mock := newMockCatalogRepo()
+	srv := setupCatalogTestServer(t, "admin_user", mock)
+	defer srv.Close()
+
+	resp := doRequest(t, "GET", srv.URL+"/catalogs/lake/history?entity_type=table", "")
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	result := decodeJSON[CatalogHistoryResponse](t, resp)
+	if result.Data == nil || len(*result.Data) != 1 {
+		t.Fatalf("expected 1 history row, got %v", result.Data)
+	}
+	row := (*result.Data)[0]
+	if row.EntityType == nil || *row.EntityType != "table" {
+		t.Fatalf("expected entity_type=table, got %v", row.EntityType)
+	}
+	if row.ObjectName == nil || *row.ObjectName != "main.users" {
+		t.Fatalf("expected object_name=main.users, got %v", row.ObjectName)
+	}
+}
+
 func TestAPI_SchemaCRUD(t *testing.T) {
 	mock := newMockCatalogRepo()
 	srv := setupCatalogTestServer(t, "admin_user", mock)

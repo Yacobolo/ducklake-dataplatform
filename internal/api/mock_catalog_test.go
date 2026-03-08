@@ -68,6 +68,67 @@ func (m *mockCatalogRepo) GetMetastoreSummary(_ context.Context) (*domain.Metast
 	}, nil
 }
 
+func (m *mockCatalogRepo) GetCatalogVersionSummary(_ context.Context) (*domain.CatalogVersionSummary, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	latestSnapshotID := int64(1)
+	return &domain.CatalogVersionSummary{
+		CatalogName:      "lake",
+		Version:          "0.3",
+		CreatedBy:        "DuckDB 6ddac802ff",
+		Encrypted:        boolPtr(false),
+		LatestSnapshotID: &latestSnapshotID,
+		Schemas: domain.VersionedObjectSummary{
+			TotalCount:      int64(len(m.schemas)),
+			ActiveCount:     int64(len(m.schemas)),
+			HistoricalCount: 0,
+			HasHistory:      false,
+		},
+		Tables: domain.VersionedObjectSummary{
+			TotalCount:      int64(len(m.tables)),
+			ActiveCount:     int64(len(m.tables)),
+			HistoricalCount: 0,
+			HasHistory:      false,
+		},
+		Columns: domain.VersionedObjectSummary{
+			TotalCount:      int64(len(m.columns["main.users"])),
+			ActiveCount:     int64(len(m.columns["main.users"])),
+			HistoricalCount: 0,
+			HasHistory:      false,
+		},
+	}, nil
+}
+
+func (m *mockCatalogRepo) ListCatalogHistory(_ context.Context, filter domain.CatalogHistoryFilter) ([]domain.CatalogHistoryEntry, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	entries := []domain.CatalogHistoryEntry{
+		{EntityType: "schema", SchemaName: "main", ObjectName: "main", ObjectID: "1", BeginSnapshotID: int64Ptr(0), LatestSnapshotID: int64Ptr(0), IsActive: true},
+		{EntityType: "table", SchemaName: "main", TableName: "users", ObjectName: "main.users", ObjectID: "2", BeginSnapshotID: int64Ptr(1), EndSnapshotID: int64Ptr(2), LatestSnapshotID: int64Ptr(2), HasHistory: true},
+		{EntityType: "column", SchemaName: "main", TableName: "users", ColumnName: "id", ObjectName: "main.users.id", ObjectID: "3", BeginSnapshotID: int64Ptr(2), LatestSnapshotID: int64Ptr(2), IsActive: true},
+	}
+	filtered := make([]domain.CatalogHistoryEntry, 0, len(entries))
+	for i := range entries {
+		entry := entries[i]
+		if filter.EntityType != "" && entry.EntityType != filter.EntityType {
+			continue
+		}
+		if filter.SchemaName != "" && entry.SchemaName != filter.SchemaName {
+			continue
+		}
+		if filter.TableName != "" && entry.TableName != filter.TableName {
+			continue
+		}
+		filtered = append(filtered, entry)
+	}
+	if filter.Limit > 0 && len(filtered) > filter.Limit {
+		filtered = filtered[:filter.Limit]
+	}
+	return filtered, nil
+}
+
 func (m *mockCatalogRepo) CreateSchema(_ context.Context, name, comment, owner string) (*domain.SchemaDetail, error) {
 	if err := m.validateIdentifier(name); err != nil {
 		return nil, err
@@ -456,3 +517,5 @@ func (m *mockCatalogRepo) addTable(schemaName, tableName string, cols []domain.C
 	}
 	m.columns[key] = cols
 }
+
+func int64Ptr(v int64) *int64 { return &v }

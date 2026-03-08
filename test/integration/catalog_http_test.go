@@ -306,6 +306,49 @@ func TestHTTP_MetastoreSummary(t *testing.T) {
 	})
 }
 
+func TestHTTP_CatalogVersionSummary(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+
+	resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/version-summary", env.Keys.Admin, nil)
+	require.Equal(t, 200, resp.StatusCode)
+
+	var result map[string]interface{}
+	decodeJSON(t, resp, &result)
+	assert.Equal(t, "lake", result["catalog_name"])
+	assert.Equal(t, "0.3", result["version"])
+	assert.Equal(t, "DuckDB 6ddac802ff", result["created_by"])
+	assert.Equal(t, false, result["encrypted"])
+
+	schemas, ok := result["schemas"].(map[string]interface{})
+	require.True(t, ok)
+	assert.GreaterOrEqual(t, schemas["total_count"].(float64), float64(1))
+
+	tables, ok := result["tables"].(map[string]interface{})
+	require.True(t, ok)
+	assert.GreaterOrEqual(t, tables["total_count"].(float64), float64(1))
+
+	columns, ok := result["columns"].(map[string]interface{})
+	require.True(t, ok)
+	assert.GreaterOrEqual(t, columns["total_count"].(float64), float64(1))
+}
+
+func TestHTTP_CatalogHistory(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
+
+	resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/history?entity_type=column&schema_name=main&table_name=titanic&limit=5", env.Keys.Admin, nil)
+	require.Equal(t, 200, resp.StatusCode)
+
+	var result map[string]interface{}
+	decodeJSON(t, resp, &result)
+	data, ok := result["data"].([]interface{})
+	require.True(t, ok)
+	require.NotEmpty(t, data)
+	row := data[0].(map[string]interface{})
+	assert.Equal(t, "column", row["entity_type"])
+	assert.Equal(t, "main", row["schema_name"])
+	assert.Equal(t, "titanic", row["table_name"])
+}
+
 // TestHTTP_CatalogAuthorization tests that catalog mutation endpoints enforce privileges.
 func TestHTTP_CatalogAuthorization(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithDuckLake: true})
