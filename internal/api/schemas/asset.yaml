@@ -249,6 +249,103 @@ AssetCheckResult:
       format: date-time
       maxLength: 64
 
+AssetCheckInput:
+  description: Asset check definition used for create/update requests.
+  type: object
+  additionalProperties: false
+  required: [name, check_type]
+  properties:
+    name:
+      type: string
+      maxLength: 255
+    check_type:
+      type: string
+      maxLength: 255
+    severity:
+      type: string
+      maxLength: 64
+    enabled:
+      type: boolean
+    config_json:
+      type: object
+      additionalProperties: true
+
+CreateAssetRequest:
+  description: Request body for creating an asset definition.
+  type: object
+  additionalProperties: false
+  required: [asset_key, asset_type, owner]
+  properties:
+    asset_key:
+      type: string
+      maxLength: 255
+      pattern: '^\S+$'
+    asset_type:
+      type: string
+      maxLength: 64
+    owner:
+      type: string
+      maxLength: 255
+    description:
+      type: string
+      maxLength: 4096
+    tags:
+      type: array
+      items:
+        type: string
+        maxLength: 255
+    io_profile:
+      type: string
+      maxLength: 255
+    is_active:
+      type: boolean
+    upstream_asset_keys:
+      type: array
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S+$'
+    checks:
+      type: array
+      items:
+        $ref: '#/AssetCheckInput'
+
+UpdateAssetRequest:
+  description: Request body for replacing an asset definition.
+  type: object
+  additionalProperties: false
+  required: [asset_type, owner]
+  properties:
+    asset_type:
+      type: string
+      maxLength: 64
+    owner:
+      type: string
+      maxLength: 255
+    description:
+      type: string
+      maxLength: 4096
+    tags:
+      type: array
+      items:
+        type: string
+        maxLength: 255
+    io_profile:
+      type: string
+      maxLength: 255
+    is_active:
+      type: boolean
+    upstream_asset_keys:
+      type: array
+      items:
+        type: string
+        maxLength: 255
+        pattern: '^\S+$'
+    checks:
+      type: array
+      items:
+        $ref: '#/AssetCheckInput'
+
 BackfillRequest:
   description: Backfill request metadata for an asset partition range.
   type: object

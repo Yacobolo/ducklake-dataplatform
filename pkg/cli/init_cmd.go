@@ -51,13 +51,32 @@ type initDesiredState struct {
 }
 
 type initShowcaseSpec struct {
-	PipelineName      string
 	RawTableName      string
 	BronzeTableName   string
 	SilverTableName   string
 	GoldTableName     string
 	QualityTableName  string
 	SandboxSmokeTable string
+	Assets            []initAssetSpec
+}
+
+type initAssetSpec struct {
+	AssetKey         string
+	AssetType        string
+	Owner            string
+	Description      string
+	Tags             []string
+	IOProfile        string
+	IsActive         bool
+	UpstreamAssetKey []string
+	Checks           []initAssetCheckSpec
+}
+
+type initAssetCheckSpec struct {
+	Name      string
+	CheckType string
+	Severity  string
+	Enabled   bool
 }
 
 type initStorageCredential struct {
@@ -95,12 +114,23 @@ type initExistingState struct {
 	Schemas     map[string]string
 	Tables      map[string]map[string]bool
 	Views       map[string]map[string]bool
-	Pipelines   map[string]bool
+	Assets      map[string]initAssetState
 	Groups      map[string]string
 	Principals  map[string]string
 	Memberships map[string]map[string]bool
 	Grants      map[string]bool
 	GrantIDs    map[string]string
+}
+
+type initAssetState struct {
+	AssetType        string
+	Owner            string
+	Description      string
+	Tags             []string
+	IOProfile        string
+	IsActive         bool
+	UpstreamAssetKey []string
+	Checks           []initAssetCheckSpec
 }
 
 func newInitCmd(client *gen.Client) *cobra.Command {
@@ -402,7 +432,6 @@ func buildDesiredState(opts initOptions) initDesiredState {
 			{Name: fmt.Sprintf("%s-sandbox", opts.env), URL: base + "sandbox/"},
 		},
 		Showcase: initShowcaseSpec{
-			PipelineName:      "rides_demo",
 			RawTableName:      "rides_raw",
 			BronzeTableName:   "rides_bronze_trips",
 			SilverTableName:   "rides_silver_trips",
@@ -411,6 +440,7 @@ func buildDesiredState(opts initOptions) initDesiredState {
 			SandboxSmokeTable: "sandbox_getting_started",
 		},
 	}
+	state.Showcase.Assets = buildShowcaseAssets(state.Showcase)
 
 	if opts.withSecurity {
 		state.Groups = []string{"platform-admins", "data-engineers", "analytics", "service-accounts"}
@@ -451,6 +481,76 @@ func buildDesiredState(opts initOptions) initDesiredState {
 	return state
 }
 
+func buildShowcaseAssets(_ initShowcaseSpec) []initAssetSpec {
+	return []initAssetSpec{
+		{
+			AssetKey:    "showcase.rides.raw",
+			AssetType:   "TABLE",
+			Owner:       "platform-admins",
+			Description: "Landing-zone source rows for the medallion showcase.",
+			Tags:        []string{"landing", "rides", "showcase"},
+			IOProfile:   "duckdb",
+			IsActive:    true,
+		},
+		{
+			AssetKey:         "showcase.rides.bronze",
+			AssetType:        "TABLE",
+			Owner:            "data-engineers",
+			Description:      "Bronze normalized ride trips for the medallion showcase.",
+			Tags:             []string{"bronze", "rides", "showcase"},
+			IOProfile:        "duckdb",
+			IsActive:         true,
+			UpstreamAssetKey: []string{"showcase.rides.raw"},
+		},
+		{
+			AssetKey:         "showcase.rides.silver",
+			AssetType:        "TABLE",
+			Owner:            "data-engineers",
+			Description:      "Silver cleaned trips with quality-ready metrics.",
+			Tags:             []string{"rides", "showcase", "silver"},
+			IOProfile:        "duckdb",
+			IsActive:         true,
+			UpstreamAssetKey: []string{"showcase.rides.bronze"},
+			Checks: []initAssetCheckSpec{
+				{Name: "silver_positive_distance", CheckType: "SQL_ASSERT", Severity: "ERROR", Enabled: true},
+				{Name: "silver_non_null_pickup", CheckType: "SQL_ASSERT", Severity: "ERROR", Enabled: true},
+			},
+		},
+		{
+			AssetKey:         "showcase.rides.gold",
+			AssetType:        "TABLE",
+			Owner:            "analytics",
+			Description:      "Gold daily ride metrics for analytics consumption.",
+			Tags:             []string{"gold", "rides", "showcase"},
+			IOProfile:        "duckdb",
+			IsActive:         true,
+			UpstreamAssetKey: []string{"showcase.rides.silver"},
+			Checks: []initAssetCheckSpec{
+				{Name: "gold_non_empty", CheckType: "SQL_ASSERT", Severity: "ERROR", Enabled: true},
+			},
+		},
+		{
+			AssetKey:         "showcase.rides.quality",
+			AssetType:        "TABLE",
+			Owner:            "data-engineers",
+			Description:      "Recorded quality outcomes for showcase checks.",
+			Tags:             []string{"gold", "quality", "showcase"},
+			IOProfile:        "duckdb",
+			IsActive:         true,
+			UpstreamAssetKey: []string{"showcase.rides.silver", "showcase.rides.gold"},
+		},
+		{
+			AssetKey:    "showcase.rides.sandbox",
+			AssetType:   "TABLE",
+			Owner:       "analytics",
+			Description: "Sandbox playground table for safe experimentation.",
+			Tags:        []string{"sandbox", "showcase"},
+			IOProfile:   "duckdb",
+			IsActive:    true,
+		},
+	}
+}
+
 func trimPathPrefix(prefix string) string {
 	p := strings.TrimSpace(prefix)
 	p = strings.TrimPrefix(p, "/")
@@ -469,7 +569,7 @@ func fetchExistingState(client *gen.Client, desired initDesiredState) (initExist
 		Schemas:     map[string]string{},
 		Tables:      map[string]map[string]bool{},
 		Views:       map[string]map[string]bool{},
-		Pipelines:   map[string]bool{},
+		Assets:      map[string]initAssetState{},
 		Groups:      map[string]string{},
 		Principals:  map[string]string{},
 		Memberships: map[string]map[string]bool{},
@@ -566,14 +666,67 @@ func fetchExistingState(client *gen.Client, desired initDesiredState) (initExist
 		}
 	}
 
-	var pipelines struct {
-		Data []struct {
-			Name string `json:"name"`
-		} `json:"data"`
-	}
-	if err := doJSON(client, "GET", "/pipelines", nil, nil, &pipelines); err == nil {
-		for _, pipeline := range pipelines.Data {
-			state.Pipelines[pipeline.Name] = true
+	if len(desired.Showcase.Assets) > 0 {
+		var assets struct {
+			Data []struct {
+				AssetKey    string   `json:"asset_key"`
+				AssetType   string   `json:"asset_type"`
+				Owner       string   `json:"owner"`
+				Description string   `json:"description"`
+				Tags        []string `json:"tags"`
+				IOProfile   string   `json:"io_profile"`
+				IsActive    bool     `json:"is_active"`
+			} `json:"data"`
+		}
+		if err := doJSON(client, "GET", "/assets", nil, nil, &assets); err == nil {
+			for _, asset := range assets.Data {
+				state.Assets[asset.AssetKey] = initAssetState{
+					AssetType:   asset.AssetType,
+					Owner:       asset.Owner,
+					Description: asset.Description,
+					Tags:        append([]string{}, asset.Tags...),
+					IOProfile:   asset.IOProfile,
+					IsActive:    asset.IsActive,
+				}
+			}
+		}
+
+		for _, asset := range desired.Showcase.Assets {
+			current, ok := state.Assets[asset.AssetKey]
+			if !ok {
+				continue
+			}
+
+			graphPath := fmt.Sprintf("/assets/%s/graph", url.PathEscape(asset.AssetKey))
+			var graph struct {
+				UpstreamAssetKeys []string `json:"upstream_asset_keys"`
+			}
+			if err := doJSON(client, "GET", graphPath, nil, nil, &graph); err == nil {
+				current.UpstreamAssetKey = append([]string{}, graph.UpstreamAssetKeys...)
+			}
+
+			checksPath := fmt.Sprintf("/assets/%s/checks", url.PathEscape(asset.AssetKey))
+			var checks struct {
+				Data []struct {
+					Name      string `json:"name"`
+					CheckType string `json:"check_type"`
+					Severity  string `json:"severity"`
+					Enabled   bool   `json:"enabled"`
+				} `json:"data"`
+			}
+			if err := doJSON(client, "GET", checksPath, nil, nil, &checks); err == nil {
+				current.Checks = make([]initAssetCheckSpec, 0, len(checks.Data))
+				for _, check := range checks.Data {
+					current.Checks = append(current.Checks, initAssetCheckSpec{
+						Name:      check.Name,
+						CheckType: check.CheckType,
+						Severity:  check.Severity,
+						Enabled:   check.Enabled,
+					})
+				}
+			}
+
+			state.Assets[asset.AssetKey] = current
 		}
 	}
 
@@ -664,11 +817,12 @@ func fetchExistingState(client *gen.Client, desired initDesiredState) (initExist
 
 type initPlan struct {
 	Creates []string `json:"creates"`
+	Updates []string `json:"updates"`
 	Exists  []string `json:"exists"`
 }
 
 func computeInitPlan(desired initDesiredState, existing initExistingState) initPlan {
-	plan := initPlan{Creates: []string{}, Exists: []string{}}
+	plan := initPlan{Creates: []string{}, Updates: []string{}, Exists: []string{}}
 
 	if existing.Credentials[desired.Credential.Name] {
 		plan.Exists = append(plan.Exists, fmt.Sprintf("storage credential %q", desired.Credential.Name))
@@ -766,13 +920,32 @@ func computeInitPlan(desired initDesiredState, existing initExistingState) initP
 		plan.Creates = append(plan.Creates, fmt.Sprintf("sandbox table %q.%q", "sandbox", desired.Showcase.SandboxSmokeTable))
 	}
 
-	if existing.Pipelines[desired.Showcase.PipelineName] {
-		plan.Exists = append(plan.Exists, fmt.Sprintf("pipeline %q", desired.Showcase.PipelineName))
-	} else {
-		plan.Creates = append(plan.Creates, fmt.Sprintf("pipeline %q", desired.Showcase.PipelineName))
+	for _, asset := range desired.Showcase.Assets {
+		current, ok := existing.Assets[asset.AssetKey]
+		switch {
+		case !ok:
+			plan.Creates = append(plan.Creates, fmt.Sprintf("asset %q", asset.AssetKey))
+		case assetStateMatches(asset, current):
+			plan.Exists = append(plan.Exists, fmt.Sprintf("asset %q", asset.AssetKey))
+		default:
+			plan.Updates = append(plan.Updates, fmt.Sprintf("asset %q", asset.AssetKey))
+		}
+
+		if !stringSlicesEqual(asset.UpstreamAssetKey, current.UpstreamAssetKey) {
+			plan.Updates = append(plan.Updates, fmt.Sprintf("asset graph %q", asset.AssetKey))
+		} else {
+			plan.Exists = append(plan.Exists, fmt.Sprintf("asset graph %q", asset.AssetKey))
+		}
+
+		if !assetChecksEqual(asset.Checks, current.Checks) {
+			plan.Updates = append(plan.Updates, fmt.Sprintf("asset checks %q", asset.AssetKey))
+		} else {
+			plan.Exists = append(plan.Exists, fmt.Sprintf("asset checks %q", asset.AssetKey))
+		}
 	}
 
 	sort.Strings(plan.Creates)
+	sort.Strings(plan.Updates)
 	sort.Strings(plan.Exists)
 	return plan
 }
@@ -781,14 +954,17 @@ func printPlan(plan initPlan) {
 	for _, c := range plan.Creates {
 		_, _ = fmt.Fprintf(os.Stdout, "+ %s\n", c)
 	}
+	for _, u := range plan.Updates {
+		_, _ = fmt.Fprintf(os.Stdout, "~ %s\n", u)
+	}
 	for _, e := range plan.Exists {
 		_, _ = fmt.Fprintf(os.Stdout, "= %s\n", e)
 	}
-	_, _ = fmt.Fprintf(os.Stdout, "\nPlan: %d to create, %d already present.\n", len(plan.Creates), len(plan.Exists))
+	_, _ = fmt.Fprintf(os.Stdout, "\nPlan: %d to create, %d to update, %d already present.\n", len(plan.Creates), len(plan.Updates), len(plan.Exists))
 }
 
 func countMissing(plan initPlan) int {
-	return len(plan.Creates)
+	return len(plan.Creates) + len(plan.Updates)
 }
 
 func applyDesiredState(client *gen.Client, desired initDesiredState, existing initExistingState) error {
@@ -857,16 +1033,12 @@ func applyDesiredState(client *gen.Client, desired initDesiredState, existing in
 		return err
 	}
 
-	if !current.Pipelines[desired.Showcase.PipelineName] {
-		pipelineBody := map[string]interface{}{
-			"name":              desired.Showcase.PipelineName,
-			"description":       "Opinionated medallion demo pipeline (manual run)",
-			"concurrency_limit": 1,
-			"is_paused":         false,
-		}
-		if err := doNoContentOrJSON(client, "POST", "/pipelines", pipelineBody); err != nil {
-			return fmt.Errorf("create pipeline %q: %w", desired.Showcase.PipelineName, err)
-		}
+	current, err = fetchExistingState(client, desired)
+	if err != nil {
+		return err
+	}
+	if err := applyShowcaseAssets(client, desired, current); err != nil {
+		return err
 	}
 
 	if len(desired.Groups) == 0 && len(desired.Principals) == 0 {
@@ -1095,8 +1267,102 @@ func applyShowcaseState(client *gen.Client, desired initDesiredState) error {
 	return nil
 }
 
+func applyShowcaseAssets(client *gen.Client, desired initDesiredState, existing initExistingState) error {
+	for _, asset := range desired.Showcase.Assets {
+		body := map[string]interface{}{
+			"asset_type":          asset.AssetType,
+			"owner":               asset.Owner,
+			"description":         asset.Description,
+			"tags":                asset.Tags,
+			"io_profile":          asset.IOProfile,
+			"is_active":           asset.IsActive,
+			"upstream_asset_keys": asset.UpstreamAssetKey,
+			"checks":              assetChecksBody(asset.Checks),
+		}
+
+		if _, ok := existing.Assets[asset.AssetKey]; ok {
+			path := fmt.Sprintf("/assets/%s", url.PathEscape(asset.AssetKey))
+			if err := doNoContentOrJSON(client, "PUT", path, body); err != nil {
+				return fmt.Errorf("update asset %q: %w", asset.AssetKey, err)
+			}
+			continue
+		}
+
+		body["asset_key"] = asset.AssetKey
+		if err := doNoContentOrJSON(client, "POST", "/assets", body); err != nil {
+			return fmt.Errorf("create asset %q: %w", asset.AssetKey, err)
+		}
+	}
+
+	return nil
+}
+
+func assetChecksBody(checks []initAssetCheckSpec) []map[string]interface{} {
+	if len(checks) == 0 {
+		return []map[string]interface{}{}
+	}
+	body := make([]map[string]interface{}, 0, len(checks))
+	for _, check := range checks {
+		body = append(body, map[string]interface{}{
+			"name":       check.Name,
+			"check_type": check.CheckType,
+			"severity":   check.Severity,
+			"enabled":    check.Enabled,
+		})
+	}
+	return body
+}
+
+func assetStateMatches(desired initAssetSpec, existing initAssetState) bool {
+	return desired.AssetType == existing.AssetType &&
+		desired.Owner == existing.Owner &&
+		desired.Description == existing.Description &&
+		desired.IOProfile == existing.IOProfile &&
+		desired.IsActive == existing.IsActive &&
+		stringSlicesEqual(desired.Tags, existing.Tags)
+}
+
+func assetChecksEqual(desired, existing []initAssetCheckSpec) bool {
+	if len(desired) != len(existing) {
+		return false
+	}
+	left := append([]initAssetCheckSpec{}, desired...)
+	right := append([]initAssetCheckSpec{}, existing...)
+	sort.Slice(left, func(i, j int) bool { return left[i].Name < left[j].Name })
+	sort.Slice(right, func(i, j int) bool { return right[i].Name < right[j].Name })
+	for i := range left {
+		if left[i] != right[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func stringSlicesEqual(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	lcopy := append([]string{}, left...)
+	rcopy := append([]string{}, right...)
+	sort.Strings(lcopy)
+	sort.Strings(rcopy)
+	for i := range lcopy {
+		if lcopy[i] != rcopy[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func runInitHealthChecks(client *gen.Client, desired initDesiredState) ([]string, error) {
 	issues := make([]string, 0)
+
+	existing, err := fetchExistingState(client, desired)
+	if err != nil {
+		issues = append(issues, fmt.Sprintf("unable to inspect asset bootstrap state: %v", err))
+		return issues, nil
+	}
+	issues = append(issues, assetHealthIssues(desired.Showcase.Assets, existing.Assets)...)
 
 	rawRef := qualifiedName(desired.CatalogName, "landing", desired.Showcase.RawTableName)
 	goldRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.GoldTableName)
@@ -1132,10 +1398,33 @@ func runInitHealthChecks(client *gen.Client, desired initDesiredState) ([]string
 	return issues, nil
 }
 
+func assetHealthIssues(desiredAssets []initAssetSpec, existingAssets map[string]initAssetState) []string {
+	issues := make([]string, 0)
+	for _, asset := range desiredAssets {
+		existing, ok := existingAssets[asset.AssetKey]
+		if !ok {
+			issues = append(issues, fmt.Sprintf("asset %q is missing", asset.AssetKey))
+			continue
+		}
+		if !assetStateMatches(asset, existing) {
+			issues = append(issues, fmt.Sprintf("asset %q metadata drifted", asset.AssetKey))
+		}
+		if !stringSlicesEqual(asset.UpstreamAssetKey, existing.UpstreamAssetKey) {
+			issues = append(issues, fmt.Sprintf("asset %q graph drifted", asset.AssetKey))
+		}
+		if !assetChecksEqual(asset.Checks, existing.Checks) {
+			issues = append(issues, fmt.Sprintf("asset %q checks drifted", asset.AssetKey))
+		}
+	}
+	return issues
+}
+
 func destroyDesiredState(client *gen.Client, desired initDesiredState) error {
-	pipelinePath := fmt.Sprintf("/pipelines/%s", desired.Showcase.PipelineName)
-	if err := doNoContentOrJSONAllowNotFound(client, "DELETE", pipelinePath, nil); err != nil {
-		return fmt.Errorf("delete pipeline %q: %w", desired.Showcase.PipelineName, err)
+	for _, asset := range desired.Showcase.Assets {
+		path := fmt.Sprintf("/assets/%s", url.PathEscape(asset.AssetKey))
+		if err := doNoContentOrJSONAllowNotFound(client, "DELETE", path, nil); err != nil {
+			return fmt.Errorf("delete asset %q: %w", asset.AssetKey, err)
+		}
 	}
 
 	if err := deleteTable(client, desired.CatalogName, "gold", desired.Showcase.QualityTableName); err != nil {
@@ -1167,11 +1456,12 @@ func printInitRunbook(desired initDesiredState) {
 
 	_, _ = fmt.Fprintln(os.Stdout, "")
 	_, _ = fmt.Fprintln(os.Stdout, "Next steps:")
-	_, _ = fmt.Fprintf(os.Stdout, "  1) Run pipeline now: duck pipelines runs create %s\n", desired.Showcase.PipelineName)
-	_, _ = fmt.Fprintf(os.Stdout, "  2) Query gold output: duck query execute --sql \"SELECT * FROM %s ORDER BY trip_date LIMIT 10\"\n", goldRef)
-	_, _ = fmt.Fprintf(os.Stdout, "  3) Check data quality: duck query execute --sql \"SELECT * FROM %s\"\n", qualityRef)
-	_, _ = fmt.Fprintf(os.Stdout, "  4) Use sandbox safely: duck query execute --sql \"SELECT COUNT(*) FROM %s\"\n", sandboxRef)
-	_, _ = fmt.Fprintln(os.Stdout, "  5) Tear down demo assets: duck init destroy")
+	_, _ = fmt.Fprintln(os.Stdout, "  1) Inspect asset graph: duck assets list")
+	_, _ = fmt.Fprintln(os.Stdout, "  2) Inspect one asset: duck assets get showcase.rides.gold")
+	_, _ = fmt.Fprintf(os.Stdout, "  3) Query gold output: duck query execute --sql \"SELECT * FROM %s ORDER BY trip_date LIMIT 10\"\n", goldRef)
+	_, _ = fmt.Fprintf(os.Stdout, "  4) Check data quality: duck query execute --sql \"SELECT * FROM %s\"\n", qualityRef)
+	_, _ = fmt.Fprintf(os.Stdout, "  5) Use sandbox safely: duck query execute --sql \"SELECT COUNT(*) FROM %s\"\n", sandboxRef)
+	_, _ = fmt.Fprintln(os.Stdout, "  6) Tear down demo assets: duck init destroy")
 }
 
 func executeSQL(client *gen.Client, sql string) error {

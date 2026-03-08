@@ -1,0 +1,261 @@
+package asset
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"duck-demo/internal/domain"
+)
+
+func TestService_CreateAsset_ReconcilesDependenciesAndChecks(t *testing.T) {
+	t.Parallel()
+
+	assets := &fakeAssetRepo{assetsByID: map[string]domain.DataAsset{}, idsByKey: map[string]string{}}
+	deps := &fakeAssetDependencyRepo{}
+	checks := &fakeAssetCheckRepo{checksByAsset: map[string][]domain.AssetCheck{}}
+
+	_, err := assets.Create(adminCtx(), &domain.DataAsset{AssetKey: "showcase.rides.raw", AssetType: domain.AssetTypeTable, Owner: "platform-admins", CreatedBy: "tester", IsActive: true, SchemaJSON: map[string]any{}})
+	require.NoError(t, err)
+
+	svc := &Service{assets: assets, deps: deps, checks: checks}
+	created, err := svc.CreateAsset(adminCtx(), domain.CreateAssetRequest{
+		AssetKey:          "showcase.rides.bronze",
+		AssetType:         domain.AssetTypeTable,
+		Owner:             "data-engineers",
+		Description:       "Bronze showcase asset",
+		Tags:              []string{"showcase", "bronze"},
+		IOProfile:         "duckdb",
+		IsActive:          true,
+		UpstreamAssetKeys: []string{"showcase.rides.raw"},
+		Checks:            []domain.AssetCheckInput{{Name: "bronze_non_empty", CheckType: "SQL_ASSERT", Enabled: true}},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "showcase.rides.bronze", created.AssetKey)
+	require.Len(t, deps.byAsset[created.ID], 1)
+	assert.Equal(t, assets.idsByKey["showcase.rides.raw"], deps.byAsset[created.ID][0].UpstreamAssetID)
+	require.Len(t, checks.checksByAsset[created.ID], 1)
+	assert.Equal(t, "bronze_non_empty", checks.checksByAsset[created.ID][0].Name)
+}
+
+func TestService_UpdateAsset_ReplacesChecks(t *testing.T) {
+	t.Parallel()
+
+	assets := &fakeAssetRepo{assetsByID: map[string]domain.DataAsset{}, idsByKey: map[string]string{}}
+	deps := &fakeAssetDependencyRepo{}
+	checks := &fakeAssetCheckRepo{checksByAsset: map[string][]domain.AssetCheck{}}
+
+	asset, err := assets.Create(adminCtx(), &domain.DataAsset{AssetKey: "showcase.rides.gold", AssetType: domain.AssetTypeTable, Owner: "analytics", CreatedBy: "tester", IsActive: true, SchemaJSON: map[string]any{}})
+	require.NoError(t, err)
+	_, err = checks.CreateCheck(adminCtx(), &domain.AssetCheck{AssetID: asset.ID, Name: "old_check", CheckType: "SQL_ASSERT", Enabled: true, ConfigJSON: map[string]any{}})
+	require.NoError(t, err)
+
+	svc := &Service{assets: assets, deps: deps, checks: checks}
+	updated, err := svc.UpdateAsset(adminCtx(), "showcase.rides.gold", domain.UpdateAssetRequest{
+		AssetType: domain.AssetTypeTable,
+		Owner:     "analytics",
+		Checks: []domain.AssetCheckInput{{
+			Name:      "gold_non_empty",
+			CheckType: "SQL_ASSERT",
+			Severity:  "ERROR",
+			Enabled:   true,
+		}},
+		IsActive: true,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, updated.ID, asset.ID)
+	require.Len(t, checks.checksByAsset[asset.ID], 1)
+	assert.Equal(t, "gold_non_empty", checks.checksByAsset[asset.ID][0].Name)
+}
+
+func adminCtx() context.Context {
+	return domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "tester", IsAdmin: true, Type: "user"})
+}
+
+type fakeAssetRepo struct {
+	assetsByID map[string]domain.DataAsset
+	idsByKey   map[string]string
+	seq        int
+}
+
+func (f *fakeAssetRepo) Create(_ context.Context, a *domain.DataAsset) (*domain.DataAsset, error) {
+	f.seq++
+	if _, exists := f.idsByKey[a.AssetKey]; exists {
+		return nil, domain.ErrConflict("asset %q already exists", a.AssetKey)
+	}
+	id := domain.NewID()
+	now := time.Now().UTC()
+	assetCopy := *a
+	assetCopy.ID = id
+	assetCopy.CreatedAt = now
+	assetCopy.UpdatedAt = now
+	if assetCopy.SchemaJSON == nil {
+		assetCopy.SchemaJSON = map[string]any{}
+	}
+	f.assetsByID[id] = assetCopy
+	f.idsByKey[assetCopy.AssetKey] = id
+	return &assetCopy, nil
+}
+
+func (f *fakeAssetRepo) GetByID(_ context.Context, id string) (*domain.DataAsset, error) {
+	asset, ok := f.assetsByID[id]
+	if !ok {
+		return nil, domain.ErrNotFound("asset %q not found", id)
+	}
+	assetCopy := asset
+	return &assetCopy, nil
+}
+
+func (f *fakeAssetRepo) GetByKey(_ context.Context, assetKey string) (*domain.DataAsset, error) {
+	id, ok := f.idsByKey[assetKey]
+	if !ok {
+		return nil, domain.ErrNotFound("asset %q not found", assetKey)
+	}
+	return f.GetByID(context.Background(), id)
+}
+
+func (f *fakeAssetRepo) List(_ context.Context, _ domain.AssetFilter) ([]domain.DataAsset, int64, error) {
+	out := make([]domain.DataAsset, 0, len(f.assetsByID))
+	for _, asset := range f.assetsByID {
+		out = append(out, asset)
+	}
+	return out, int64(len(out)), nil
+}
+
+func (f *fakeAssetRepo) Update(_ context.Context, id string, a *domain.DataAsset) (*domain.DataAsset, error) {
+	current, ok := f.assetsByID[id]
+	if !ok {
+		return nil, domain.ErrNotFound("asset %q not found", id)
+	}
+	updated := *a
+	updated.ID = id
+	updated.CreatedAt = current.CreatedAt
+	updated.UpdatedAt = time.Now().UTC()
+	f.assetsByID[id] = updated
+	f.idsByKey[updated.AssetKey] = id
+	return &updated, nil
+}
+
+func (f *fakeAssetRepo) Delete(_ context.Context, id string) error {
+	asset, ok := f.assetsByID[id]
+	if !ok {
+		return domain.ErrNotFound("asset %q not found", id)
+	}
+	delete(f.assetsByID, id)
+	delete(f.idsByKey, asset.AssetKey)
+	return nil
+}
+
+type fakeAssetDependencyRepo struct {
+	byAsset map[string][]domain.AssetDependency
+}
+
+func (f *fakeAssetDependencyRepo) Create(_ context.Context, d *domain.AssetDependency) (*domain.AssetDependency, error) {
+	if f.byAsset == nil {
+		f.byAsset = map[string][]domain.AssetDependency{}
+	}
+	depCopy := *d
+	depCopy.ID = domain.NewID()
+	f.byAsset[d.AssetID] = append(f.byAsset[d.AssetID], depCopy)
+	return &depCopy, nil
+}
+
+func (f *fakeAssetDependencyRepo) ListUpstream(_ context.Context, assetID string) ([]domain.AssetDependency, error) {
+	return append([]domain.AssetDependency{}, f.byAsset[assetID]...), nil
+}
+
+func (f *fakeAssetDependencyRepo) ListDownstream(_ context.Context, upstreamAssetID string) ([]domain.AssetDependency, error) {
+	out := make([]domain.AssetDependency, 0)
+	for _, deps := range f.byAsset {
+		for _, dep := range deps {
+			if dep.UpstreamAssetID == upstreamAssetID {
+				out = append(out, dep)
+			}
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeAssetDependencyRepo) Delete(_ context.Context, id string) error { return nil }
+
+func (f *fakeAssetDependencyRepo) DeleteByAsset(_ context.Context, assetID string) error {
+	if f.byAsset == nil {
+		return nil
+	}
+	delete(f.byAsset, assetID)
+	return nil
+}
+
+type fakeAssetCheckRepo struct {
+	checksByAsset map[string][]domain.AssetCheck
+}
+
+func (f *fakeAssetCheckRepo) CreateCheck(_ context.Context, c *domain.AssetCheck) (*domain.AssetCheck, error) {
+	checkCopy := *c
+	checkCopy.ID = domain.NewID()
+	checkCopy.CreatedAt = time.Now().UTC()
+	checkCopy.UpdatedAt = checkCopy.CreatedAt
+	if checkCopy.ConfigJSON == nil {
+		checkCopy.ConfigJSON = map[string]any{}
+	}
+	f.checksByAsset[c.AssetID] = append(f.checksByAsset[c.AssetID], checkCopy)
+	return &checkCopy, nil
+}
+
+func (f *fakeAssetCheckRepo) GetCheckByID(_ context.Context, id string) (*domain.AssetCheck, error) {
+	for _, checks := range f.checksByAsset {
+		for _, check := range checks {
+			if check.ID == id {
+				checkCopy := check
+				return &checkCopy, nil
+			}
+		}
+	}
+	return nil, domain.ErrNotFound("check %q not found", id)
+}
+
+func (f *fakeAssetCheckRepo) ListChecksByAsset(_ context.Context, assetID string) ([]domain.AssetCheck, error) {
+	return append([]domain.AssetCheck{}, f.checksByAsset[assetID]...), nil
+}
+
+func (f *fakeAssetCheckRepo) UpdateCheck(_ context.Context, id string, c *domain.AssetCheck) (*domain.AssetCheck, error) {
+	for assetID, checks := range f.checksByAsset {
+		for i := range checks {
+			if checks[i].ID == id {
+				checks[i].Name = c.Name
+				checks[i].CheckType = c.CheckType
+				checks[i].Severity = c.Severity
+				checks[i].Enabled = c.Enabled
+				checks[i].ConfigJSON = c.ConfigJSON
+				checks[i].UpdatedAt = time.Now().UTC()
+				f.checksByAsset[assetID] = checks
+				checkCopy := checks[i]
+				return &checkCopy, nil
+			}
+		}
+	}
+	return nil, domain.ErrNotFound("check %q not found", id)
+}
+
+func (f *fakeAssetCheckRepo) DeleteCheck(_ context.Context, id string) error {
+	for assetID, checks := range f.checksByAsset {
+		for i := range checks {
+			if checks[i].ID == id {
+				f.checksByAsset[assetID] = append(checks[:i], checks[i+1:]...)
+				return nil
+			}
+		}
+	}
+	return domain.ErrNotFound("check %q not found", id)
+}
+
+func (f *fakeAssetCheckRepo) CreateCheckResult(_ context.Context, _ *domain.AssetCheckResult) (*domain.AssetCheckResult, error) {
+	panic("not implemented")
+}
+
+func (f *fakeAssetCheckRepo) ListCheckResults(_ context.Context, _ string, _ domain.PageRequest) ([]domain.AssetCheckResult, int64, error) {
+	panic("not implemented")
+}

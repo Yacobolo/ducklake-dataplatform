@@ -10,7 +10,10 @@ import (
 
 type assetService interface {
 	ListAssets(ctx context.Context, filter domain.AssetFilter) ([]domain.DataAsset, int64, error)
+	CreateAsset(ctx context.Context, req domain.CreateAssetRequest) (*domain.DataAsset, error)
 	GetAsset(ctx context.Context, key string) (*domain.DataAsset, error)
+	UpdateAsset(ctx context.Context, assetKey string, req domain.UpdateAssetRequest) (*domain.DataAsset, error)
+	DeleteAsset(ctx context.Context, assetKey string) error
 	ResolveAssetKeys(ctx context.Context, assetIDs []string) (map[string]string, error)
 	GetGraph(ctx context.Context, assetID string) ([]domain.AssetDependency, []domain.AssetDependency, error)
 	ListPartitions(ctx context.Context, assetID string, page domain.PageRequest) ([]domain.AssetPartition, int64, error)
@@ -25,6 +28,24 @@ type assetService interface {
 
 type assetBackfillService interface {
 	Create(ctx context.Context, assetID, requestedBy, from, to string, maxParallelism int) (*domain.BackfillRequest, []domain.BackfillSlice, error)
+}
+
+func (h *APIHandler) CreateAsset(ctx context.Context, req CreateAssetRequestObject) (CreateAssetResponseObject, error) {
+	created, err := h.assets.CreateAsset(ctx, domainCreateAssetRequest(req.Body))
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return CreateAsset403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateAsset400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ConflictError)):
+			return CreateAsset409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return CreateAsset201JSONResponse(assetToAPI(*created)), nil
 }
 
 func (h *APIHandler) ListAssets(ctx context.Context, req ListAssetsRequestObject) (ListAssetsResponseObject, error) {
@@ -52,6 +73,41 @@ func (h *APIHandler) GetAsset(ctx context.Context, req GetAssetRequestObject) (G
 	}
 
 	return GetAsset200JSONResponse(assetToAPI(*asset)), nil
+}
+
+func (h *APIHandler) UpdateAsset(ctx context.Context, req UpdateAssetRequestObject) (UpdateAssetResponseObject, error) {
+	updated, err := h.assets.UpdateAsset(ctx, req.AssetKey, domainUpdateAssetRequest(req.Body))
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return UpdateAsset403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return UpdateAsset400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return UpdateAsset404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return UpdateAsset200JSONResponse(assetToAPI(*updated)), nil
+}
+
+func (h *APIHandler) DeleteAsset(ctx context.Context, req DeleteAssetRequestObject) (DeleteAssetResponseObject, error) {
+	if err := h.assets.DeleteAsset(ctx, req.AssetKey); err != nil {
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteAsset403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return DeleteAsset400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return DeleteAsset404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return DeleteAsset204Response{}, nil
 }
 
 func (h *APIHandler) GetAssetGraph(ctx context.Context, req GetAssetGraphRequestObject) (GetAssetGraphResponseObject, error) {
@@ -367,6 +423,88 @@ func assetToAPI(a domain.DataAsset) Asset {
 		CreatedAt:   &ct,
 		UpdatedAt:   &ut,
 	}
+}
+
+func domainCreateAssetRequest(req *CreateAssetJSONRequestBody) domain.CreateAssetRequest {
+	if req == nil {
+		return domain.CreateAssetRequest{}
+	}
+	return domain.CreateAssetRequest{
+		AssetKey:          req.AssetKey,
+		AssetType:         req.AssetType,
+		Owner:             req.Owner,
+		Description:       derefString(req.Description),
+		Tags:              derefStringSlice(req.Tags),
+		IOProfile:         derefString(req.IoProfile),
+		IsActive:          derefBoolDefault(req.IsActive, true),
+		UpstreamAssetKeys: derefStringSlice(req.UpstreamAssetKeys),
+		Checks:            domainAssetChecks(req.Checks),
+	}
+}
+
+func domainUpdateAssetRequest(req *UpdateAssetJSONRequestBody) domain.UpdateAssetRequest {
+	if req == nil {
+		return domain.UpdateAssetRequest{}
+	}
+	return domain.UpdateAssetRequest{
+		AssetType:         req.AssetType,
+		Owner:             req.Owner,
+		Description:       derefString(req.Description),
+		Tags:              derefStringSlice(req.Tags),
+		IOProfile:         derefString(req.IoProfile),
+		IsActive:          derefBoolDefault(req.IsActive, true),
+		UpstreamAssetKeys: derefStringSlice(req.UpstreamAssetKeys),
+		Checks:            domainAssetChecks(req.Checks),
+	}
+}
+
+func domainAssetChecks(checks *[]AssetCheckInput) []domain.AssetCheckInput {
+	if checks == nil {
+		return []domain.AssetCheckInput{}
+	}
+	out := make([]domain.AssetCheckInput, 0, len(*checks))
+	for i := range *checks {
+		out = append(out, domain.AssetCheckInput{
+			Name:       (*checks)[i].Name,
+			CheckType:  (*checks)[i].CheckType,
+			Severity:   derefString((*checks)[i].Severity),
+			Enabled:    derefBoolDefault((*checks)[i].Enabled, true),
+			ConfigJSON: derefMap((*checks)[i].ConfigJson),
+		})
+	}
+	return out
+}
+
+func derefString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func derefStringSlice(value *[]string) []string {
+	if value == nil {
+		return []string{}
+	}
+	return append([]string{}, (*value)...)
+}
+
+func derefBoolDefault(value *bool, fallback bool) bool {
+	if value == nil {
+		return fallback
+	}
+	return *value
+}
+
+func derefMap(value *map[string]any) map[string]any {
+	if value == nil {
+		return map[string]any{}
+	}
+	out := make(map[string]any, len(*value))
+	for k, v := range *value {
+		out[k] = v
+	}
+	return out
 }
 
 func assetPartitionToAPI(p domain.AssetPartition) AssetPartition {
