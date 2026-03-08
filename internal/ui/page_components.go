@@ -101,7 +101,7 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 	actionBarShowcase := actionBar()
 
 	toolbarShowcase := Div(
-		Class("component-stack"),
+		Class("component-stack component-stack-wide"),
 		pageToolbar("/ui/components", "New component"),
 		quickFilterCardWithValue("Filter by name, type, or owner", "asset"),
 	)
@@ -151,7 +151,7 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 	)
 
 	emptyAndPaginationShowcase := Div(
-		Class("component-stack"),
+		Class("component-stack component-stack-wide"),
 		emptyStateCard("No semantic models yet.", "Create model", "/ui/models/new"),
 		paginationCard("/ui/components", domain.PageRequest{MaxResults: 10}, 42),
 	)
@@ -278,7 +278,7 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 				Class(cardClass("component-section")),
 				H2(Text("Toolbar & Filters")),
 				P(Class(mutedClass()), Text("Reusable toolbar and quick-filter card for list pages.")),
-				Div(Class("component-embed-flat"), toolbarShowcase),
+				toolbarShowcase,
 			),
 			Div(
 				Class(cardClass("component-section")),

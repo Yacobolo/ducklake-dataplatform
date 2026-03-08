@@ -33,6 +33,10 @@
   max-width: var(--overlay-width-small);
 }
 
+.component-stack-wide {
+  max-width: none;
+}
+
 .component-columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -119,6 +123,13 @@
   background: var(--bgColor-transparent);
   box-shadow: none;
   padding: 0;
+}
+
+.component-section .ToolbarCard,
+.component-section .BlankslateCard,
+.component-section .PaginationCard,
+.component-section .ActionBar {
+  margin-bottom: 0;
 }
 
 .token-grid {

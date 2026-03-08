@@ -562,15 +562,35 @@ func containsExpr(value string) string {
 }
 
 func paginationCard(basePath string, page domain.PageRequest, total int64) Node {
+	shown := min(page.Limit(), int(total))
+	summary := fmt.Sprintf("Showing %d of %d entries.", shown, total)
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
-		return Div(Class(cardClass()), P(Class(mutedClass()), Text(fmt.Sprintf("Showing %d of %d entries.", min(page.Limit(), int(total)), total))))
+		return Div(
+			Class(cardClass("PaginationCard")),
+			Div(
+				Class("PaginationCard-row"),
+				Div(
+					Class("PaginationCard-meta"),
+					P(Class("PaginationCard-title"), Text("Pagination")),
+					P(Class("PaginationCard-summary"), Text(summary)),
+				),
+				Span(Class("btn btn-sm PaginationCard-button is-disabled"), Attr("aria-disabled", "true"), Text("Next")),
+			),
+		)
 	}
 	url := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
 	return Div(
-		Class(cardClass()),
-		P(Class(mutedClass()), Text(fmt.Sprintf("Showing up to %d of %d entries.", page.Limit(), total))),
-		A(Href(url), Text("Next page ->")),
+		Class(cardClass("PaginationCard")),
+		Div(
+			Class("PaginationCard-row"),
+			Div(
+				Class("PaginationCard-meta"),
+				P(Class("PaginationCard-title"), Text("Pagination")),
+				P(Class("PaginationCard-summary"), Text(summary)),
+			),
+			A(Href(url), Class("btn btn-sm"), Text("Next page")),
+		),
 	)
 }
 
@@ -606,7 +626,7 @@ func quickFilterCard(placeholder string, extraControls ...Node) Node {
 func quickFilterCardWithValue(placeholder, initialValue string, extraControls ...Node) Node {
 	controls := []Node{
 		Div(
-			Class("d-flex flex-items-center gap-2 flex-1"),
+			Class("ToolbarCard-search"),
 			Label(Class("sr-only"), Text("Quick filter")),
 			Input(Type("search"), Class("form-control"), Name("q"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off"), Attr("data-quick-filter-input", "true")),
 		),
@@ -638,19 +658,23 @@ func quickFilterCardWithValue(placeholder, initialValue string, extraControls ..
 })();`
 
 	return Div(
-		Class(cardClass("toolbar")),
+		Class(cardClass("toolbar ToolbarCard ToolbarCard-filter")),
 		data.Signals(map[string]any{"q": initialValue}),
-		Div(Class("d-flex flex-wrap flex-items-center gap-2"), Group(controls)),
+		Div(Class("ToolbarCard-controls"), Group(controls)),
 		Script(Raw(syncScript)),
 	)
 }
 
 func pageToolbar(newHref, newLabel string) Node {
 	return Div(
-		Class(cardClass("toolbar")),
+		Class(cardClass("toolbar ToolbarCard")),
 		Div(
-			Class("d-flex flex-justify-between flex-items-center flex-wrap gap-2"),
-			P(Class("color-fg-muted text-small mb-0"), Text("Browse and manage resources.")),
+			Class("ToolbarCard-row"),
+			Div(
+				Class("ToolbarCard-copy"),
+				Span(Class("Label"), Text("Workspace")),
+				P(Class("color-fg-muted text-small mb-0"), Text("Browse and manage resources.")),
+			),
 			A(Href(newHref), Class(primaryButtonClass()), Text(newLabel)),
 		),
 	)
@@ -662,9 +686,17 @@ func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 		cta = A(Href(ctaHref), Class(primaryButtonClass()), Text(ctaLabel))
 	}
 	return Div(
-		Class(cardClass("blankslate")),
-		P(Class("color-fg-muted mb-2"), Text(message)),
-		cta,
+		Class(cardClass("blankslate BlankslateCard")),
+		Div(
+			Class("BlankslateCard-icon"),
+			I(Class("nav-icon"), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true")),
+		),
+		Div(
+			Class("BlankslateCard-body"),
+			P(Class("BlankslateCard-title"), Text("No results yet")),
+			P(Class("color-fg-muted mb-2"), Text(message)),
+			cta,
+		),
 	)
 }
 

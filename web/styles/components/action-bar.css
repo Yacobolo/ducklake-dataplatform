@@ -1,8 +1,17 @@
 .ActionBar {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  grid-template-areas:
+    "meta search sort"
+    "meta actions actions";
   gap: var(--space-2);
-  align-items: end;
+  align-items: start;
+  padding: var(--space-2);
+  border: var(--borderWidth-default) solid var(--borderColor-default);
+  border-radius: var(--borderRadius-medium);
+  background:
+    linear-gradient(180deg, var(--bgColor-muted) 0%, var(--bgColor-default) 72%),
+    var(--bgColor-default);
 }
 
 .ActionBar-search,
@@ -11,14 +20,48 @@
   gap: var(--space-1);
 }
 
+.ActionBar-meta {
+  grid-area: meta;
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+.ActionBar-search {
+  grid-area: search;
+}
+
+.ActionBar-controls {
+  grid-area: sort;
+}
+
+.ActionBar label {
+  margin: 0;
+  color: var(--fgColor-muted);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-lineHeight);
+}
+
 .ActionBar-actions {
+  grid-area: actions;
   display: inline-flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  align-self: start;
+  justify-self: start;
 }
 
 @media (max-width: var(--breakpoint-medium)) {
   .ActionBar {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "meta"
+      "search"
+      "sort"
+      "actions";
+  }
+
+  .ActionBar-actions {
+    justify-self: start;
   }
 }
