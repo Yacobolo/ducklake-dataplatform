@@ -20,6 +20,7 @@ import (
 	"duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
+	"duck-demo/internal/service/semantic"
 	"duck-demo/internal/service/storage"
 
 	gomponents "maragu.dev/gomponents"
@@ -35,8 +36,10 @@ type Handler struct {
 	Backfill            *orchestration.BackfillService
 	Notebook            *notebook.Service
 	SessionManager      *notebook.SessionManager
+	GitService          *notebook.GitService
 	Macro               *macro.Service
 	Model               *model.Service
+	Semantic            *semantic.Service
 	Principal           *security.PrincipalService
 	Group               *security.GroupService
 	Grant               *security.GrantService

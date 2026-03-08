@@ -20,6 +20,7 @@ func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 		{Title: "Notebooks", Description: "Read notebook metadata and cell snapshots.", Href: "/ui/notebooks", LinkLabel: "Open notebooks ->"},
 		{Title: "Macros", Description: "Inspect macro definitions and revisions.", Href: "/ui/macros", LinkLabel: "Open macros ->"},
 		{Title: "Models", Description: "Read model SQL, dependencies, and config.", Href: "/ui/models", LinkLabel: "Open models ->"},
+		{Title: "Semantic", Description: "Manage semantic models, metrics, pre-aggregations, relationships, and metric queries.", Href: "/ui/semantic", LinkLabel: "Open semantic ->"},
 	}))
 }
 

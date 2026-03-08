@@ -69,7 +69,12 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 	jobRows := make([]notebookJobRowData, 0, len(jobs))
 	for i := range jobs {
 		job := jobs[i]
-		jobRows = append(jobRows, notebookJobRowData{ID: job.ID, State: string(job.State), Updated: formatTime(job.UpdatedAt)})
+		jobRows = append(jobRows, notebookJobRowData{ID: job.ID, URL: "/ui/notebooks/" + id + "/jobs/" + job.ID, State: string(job.State), Updated: formatTime(job.UpdatedAt)})
+	}
+
+	gitRepoURL := "/ui/notebooks/git-repos"
+	if nb.GitRepoID != nil && *nb.GitRepoID != "" {
+		gitRepoURL = "/ui/notebooks/git-repos/" + *nb.GitRepoID
 	}
 
 	selectedCatalog := strings.TrimSpace(r.URL.Query().Get("catalog"))
@@ -128,7 +133,11 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 		DeleteURL:     "/ui/notebooks/" + id + "/delete",
 		NewCellURL:    "/ui/notebooks/" + id + "/cells/new",
 		RunAllURL:     "/ui/notebooks/" + id + "/run-all",
+		RunAllAsyncURL: "/ui/notebooks/" + id + "/run-all-async",
 		ReorderURL:    "/ui/notebooks/" + id + "/cells/reorder",
+		JobsURL:       "/ui/notebooks/" + id + "/jobs",
+		GitRepoURL:    gitRepoURL,
+		PromoteURL:    "/ui/models/promote",
 		Jobs:          jobRows,
 		Cells:         cellNodes,
 		Explorer:      explorerCatalogs,
@@ -342,6 +351,169 @@ func (h *Handler) NotebookRunAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/ui/notebooks/"+notebookID, http.StatusSeeOther)
+}
+
+func (h *Handler) NotebookRunAllAsync(w http.ResponseWriter, r *http.Request) {
+	notebookID := chi.URLParam(r, "notebookID")
+	principal, _ := principalLabel(r.Context())
+
+	session, err := h.SessionManager.CreateSession(r.Context(), notebookID, principal)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
+	job, err := h.SessionManager.RunAllAsync(r.Context(), session.ID, principal)
+	if err != nil {
+		_ = h.SessionManager.CloseSession(r.Context(), session.ID, principal)
+		h.renderServiceError(w, r, err)
+		return
+	}
+
+	http.Redirect(w, r, "/ui/notebooks/"+notebookID+"/jobs/"+job.ID, http.StatusSeeOther)
+}
+
+func (h *Handler) NotebookJobsList(w http.ResponseWriter, r *http.Request) {
+	notebookID := chi.URLParam(r, "notebookID")
+	pageReq := pageFromRequest(r, 30)
+	jobs, total, err := h.SessionManager.ListJobs(r.Context(), notebookID, pageReq)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	rows := make([]notebookJobRowData, 0, len(jobs))
+	for i := range jobs {
+		job := jobs[i]
+		rows = append(rows, notebookJobRowData{
+			ID:      job.ID,
+			URL:     "/ui/notebooks/" + notebookID + "/jobs/" + job.ID,
+			State:   string(job.State),
+			Updated: formatTime(job.UpdatedAt),
+		})
+	}
+	renderHTML(w, http.StatusOK, notebookJobsListPage(notebookJobsListPageData{
+		Principal:  principalFromContext(r.Context()),
+		NotebookID: notebookID,
+		Rows:       rows,
+		Page:       pageReq,
+		Total:      total,
+	}))
+}
+
+func (h *Handler) NotebookJobsDetail(w http.ResponseWriter, r *http.Request) {
+	notebookID := chi.URLParam(r, "notebookID")
+	jobID := chi.URLParam(r, "jobID")
+	job, err := h.SessionManager.GetJob(r.Context(), jobID)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	renderHTML(w, http.StatusOK, notebookJobDetailPage(notebookJobDetailPageData{
+		Principal:  principalFromContext(r.Context()),
+		NotebookID: notebookID,
+		JobID:      job.ID,
+		State:      string(job.State),
+		Result:     strOrDash(job.Result),
+		ErrorText:  strOrDash(job.Error),
+		CreatedAt:  formatTime(job.CreatedAt),
+		UpdatedAt:  formatTime(job.UpdatedAt),
+	}))
+}
+
+func (h *Handler) NotebookGitReposList(w http.ResponseWriter, r *http.Request) {
+	pageReq := pageFromRequest(r, 30)
+	items, total, err := h.GitService.ListGitRepos(r.Context(), pageReq)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	rows := make([]gitRepoRowData, 0, len(items))
+	for i := range items {
+		item := items[i]
+		rows = append(rows, gitRepoRowData{
+			ID:         item.ID,
+			URL:        "/ui/notebooks/git-repos/" + item.ID,
+			Repository: item.URL,
+			Branch:     item.Branch,
+			Path:       valueOrDash(item.Path),
+			Owner:      item.Owner,
+			LastSync:   formatTimePtr(item.LastSyncAt),
+		})
+	}
+	renderHTML(w, http.StatusOK, notebookGitReposListPage(notebookGitReposListPageData{
+		Principal: principalFromContext(r.Context()),
+		Rows:      rows,
+		Page:      pageReq,
+		Total:     total,
+	}))
+}
+
+func (h *Handler) NotebookGitReposNew(w http.ResponseWriter, r *http.Request) {
+	renderHTML(w, http.StatusOK, notebookGitReposNewPage(principalFromContext(r.Context()), csrfFieldProvider(r)))
+}
+
+func (h *Handler) NotebookGitReposCreate(w http.ResponseWriter, r *http.Request) {
+	principal, _ := principalLabel(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	repo, err := h.GitService.CreateGitRepo(r.Context(), principal, domain.CreateGitRepoRequest{
+		URL:       formString(r.Form, "url"),
+		Branch:    formString(r.Form, "branch"),
+		Path:      formString(r.Form, "path"),
+		AuthToken: formString(r.Form, "auth_token"),
+	})
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/notebooks/git-repos/"+repo.ID, http.StatusSeeOther)
+}
+
+func (h *Handler) NotebookGitReposDetail(w http.ResponseWriter, r *http.Request) {
+	gitRepoID := chi.URLParam(r, "gitRepoID")
+	item, err := h.GitService.GetGitRepo(r.Context(), gitRepoID)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	renderHTML(w, http.StatusOK, notebookGitRepoDetailPage(notebookGitRepoDetailPageData{
+		Principal:     principalFromContext(r.Context()),
+		ID:            item.ID,
+		URL:           item.URL,
+		Branch:        item.Branch,
+		Path:          valueOrDash(item.Path),
+		Owner:         item.Owner,
+		LastSync:      formatTimePtr(item.LastSyncAt),
+		LastCommit:    strOrDash(item.LastCommit),
+		DeleteURL:     "/ui/notebooks/git-repos/" + item.ID + "/delete",
+		SyncURL:       "/ui/notebooks/git-repos/" + item.ID + "/sync",
+		CSRFFieldFunc: csrfFieldProvider(r),
+	}))
+}
+
+func (h *Handler) NotebookGitReposDelete(w http.ResponseWriter, r *http.Request) {
+	gitRepoID := chi.URLParam(r, "gitRepoID")
+	principal, isAdmin := principalLabel(r.Context())
+	if err := h.GitService.DeleteGitRepo(r.Context(), principal, isAdmin, gitRepoID); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/notebooks/git-repos", http.StatusSeeOther)
+}
+
+func (h *Handler) NotebookGitReposSync(w http.ResponseWriter, r *http.Request) {
+	gitRepoID := chi.URLParam(r, "gitRepoID")
+	result, err := h.GitService.SyncGitRepo(r.Context(), gitRepoID)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	renderHTML(w, http.StatusOK, notebookGitRepoSyncResultPage(notebookGitRepoSyncResultPageData{
+		Principal: principalFromContext(r.Context()),
+		GitRepoID: gitRepoID,
+		Result:    result,
+	}))
 }
 
 func (h *Handler) NotebookCellsMove(w http.ResponseWriter, r *http.Request) {

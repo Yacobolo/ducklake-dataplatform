@@ -47,6 +47,7 @@ func (h *Handler) MacrosDetail(w http.ResponseWriter, r *http.Request) {
 		Status:        m.Status,
 		Owner:         m.Owner,
 		EditURL:       "/ui/macros/" + name + "/edit",
+		DiffURL:       "/ui/macros/" + name + "/diff",
 		DeleteURL:     "/ui/macros/" + name + "/delete",
 		Definition:    m.Body,
 		Revisions:     revRows,
@@ -120,4 +121,56 @@ func (h *Handler) MacrosDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/ui/macros", http.StatusSeeOther)
+}
+
+func (h *Handler) MacrosDiff(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "macroName")
+	revisions, err := h.Macro.ListRevisions(r.Context(), name)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	if len(revisions) < 2 {
+		renderHTML(w, http.StatusOK, macroDiffPage(macroDiffPageData{
+			Principal: principalFromContext(r.Context()),
+			Name:      name,
+		}))
+		return
+	}
+
+	fromVersion := revisions[len(revisions)-1].Version
+	toVersion := revisions[0].Version
+	if raw := r.URL.Query().Get("from"); raw != "" {
+		if parsed, convErr := strconv.Atoi(raw); convErr == nil {
+			fromVersion = parsed
+		}
+	}
+	if raw := r.URL.Query().Get("to"); raw != "" {
+		if parsed, convErr := strconv.Atoi(raw); convErr == nil {
+			toVersion = parsed
+		}
+	}
+
+	diff, err := h.Macro.DiffRevisions(r.Context(), name, fromVersion, toVersion)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
+	revisionOptions := make([]macroRevisionOptionData, 0, len(revisions))
+	for i := range revisions {
+		revisionOptions = append(revisionOptions, macroRevisionOptionData{
+			Value: strconv.Itoa(revisions[i].Version),
+			Label: "v" + strconv.Itoa(revisions[i].Version) + " • " + formatTime(revisions[i].CreatedAt),
+		})
+	}
+
+	renderHTML(w, http.StatusOK, macroDiffPage(macroDiffPageData{
+		Principal:       principalFromContext(r.Context()),
+		Name:            name,
+		FromVersion:     fromVersion,
+		ToVersion:       toVersion,
+		RevisionOptions: revisionOptions,
+		Diff:            diff,
+	}))
 }

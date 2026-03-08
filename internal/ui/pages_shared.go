@@ -76,6 +76,7 @@ var navItems = []navItem{
 	{Label: "Notebooks", Href: "/ui/notebooks", Key: "notebooks", Icon: "notebook-text"},
 	{Label: "Macros", Href: "/ui/macros", Key: "macros", Icon: "braces"},
 	{Label: "Models", Href: "/ui/models", Key: "models", Icon: "boxes"},
+	{Label: "Semantic", Href: "/ui/semantic", Key: "semantic", Icon: "waypoints"},
 }
 
 func appPage(title, active string, principal domain.ContextPrincipal, body ...Node) Node {

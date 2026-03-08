@@ -2,6 +2,7 @@ package ui
 
 import (
 	"duck-demo/internal/domain"
+	"strconv"
 
 	. "maragu.dev/gomponents"
 	data "maragu.dev/gomponents-datastar"
@@ -45,6 +46,7 @@ type macroDetailPageData struct {
 	Status        string
 	Owner         string
 	EditURL       string
+	DiffURL       string
 	DeleteURL     string
 	Definition    string
 	Revisions     []macroRevisionRowData
@@ -57,7 +59,7 @@ func macroDetailPage(d macroDetailPageData) Node {
 		r := d.Revisions[i]
 		revRows = append(revRows, Tr(Td(Text(r.Version)), Td(Text(r.Status)), Td(Text(r.CreatedBy)), Td(Text(r.Created))))
 	}
-	return appPage("Macro: "+d.Name, "macros", d.Principal, Div(Class(cardClass()), P(Text("Type: "+d.Type)), P(Text("Visibility: "+d.Visibility)), P(Text("Status: "+d.Status)), P(Text("Owner: "+d.Owner)), Div(Class("BtnGroup"), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete"))))), Div(Class(cardClass()), H2(Text("Definition")), Pre(Text(d.Definition))), Div(Class(cardClass("table-wrap")), H2(Text("Revisions")), Table(Class("data-table"), THead(Tr(Th(Text("Version")), Th(Text("Status")), Th(Text("Created by")), Th(Text("Created")))), TBody(Group(revRows)))))
+	return appPage("Macro: "+d.Name, "macros", d.Principal, Div(Class(cardClass()), P(Text("Type: "+d.Type)), P(Text("Visibility: "+d.Visibility)), P(Text("Status: "+d.Status)), P(Text("Owner: "+d.Owner)), Div(Class("BtnGroup"), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href(d.DiffURL), Class(secondaryButtonClass()), Text("Diff revisions")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete"))))), Div(Class(cardClass()), H2(Text("Definition")), Pre(Text(d.Definition))), Div(Class(cardClass("table-wrap")), H2(Text("Revisions")), Table(Class("data-table"), THead(Tr(Th(Text("Version")), Th(Text("Status")), Th(Text("Created by")), Th(Text("Created")))), TBody(Group(revRows)))))
 }
 
 func macrosNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
@@ -89,5 +91,57 @@ func macrosEditPage(principal domain.ContextPrincipal, macroName string, macro *
 		Textarea(Name("body"), Text(macro.Body), Required()),
 		Label(Text("Status")),
 		Select(Name("status"), optionSelected("ACTIVE", macro.Status), optionSelected("DEPRECATED", macro.Status)),
+	)
+}
+
+type macroRevisionOptionData struct {
+	Value string
+	Label string
+}
+
+type macroDiffPageData struct {
+	Principal       domain.ContextPrincipal
+	Name            string
+	FromVersion     int
+	ToVersion       int
+	RevisionOptions []macroRevisionOptionData
+	Diff            *domain.MacroRevisionDiff
+}
+
+func macroDiffPage(d macroDiffPageData) Node {
+	if d.Diff == nil {
+		return appPage("Macro Diff: "+d.Name, "macros", d.Principal, emptyStateCard("At least two revisions are required to diff a macro.", "Back to macro", "/ui/macros/"+d.Name))
+	}
+	fromOptions := make([]Node, 0, len(d.RevisionOptions))
+	toOptions := make([]Node, 0, len(d.RevisionOptions))
+	for i := range d.RevisionOptions {
+		option := d.RevisionOptions[i]
+		fromOptions = append(fromOptions, optionSelected(option.Value, strconv.Itoa(d.FromVersion)))
+		toOptions = append(toOptions, optionSelected(option.Value, strconv.Itoa(d.ToVersion)))
+	}
+	return appPage(
+		"Macro Diff: "+d.Name,
+		"macros",
+		d.Principal,
+		Div(
+			Class(cardClass()),
+			Form(
+				Method("get"),
+				Action("/ui/macros/"+d.Name+"/diff"),
+				Label(Text("From revision")),
+				Select(Name("from"), Group(fromOptions)),
+				Label(Text("To revision")),
+				Select(Name("to"), Group(toOptions)),
+				Button(Type("submit"), Class(primaryButtonClass()), Text("Compare revisions")),
+			),
+			P(Text("Changed: "), statusLabel(boolLabel(d.Diff.Changed), boolTone(d.Diff.Changed))),
+			P(Text("Parameters changed: "), statusLabel(boolLabel(d.Diff.ParametersChanged), boolTone(d.Diff.ParametersChanged))),
+			P(Text("Body changed: "), statusLabel(boolLabel(d.Diff.BodyChanged), boolTone(d.Diff.BodyChanged))),
+			P(Text("Description changed: "), statusLabel(boolLabel(d.Diff.DescriptionChanged), boolTone(d.Diff.DescriptionChanged))),
+			P(Text("Status changed: "), statusLabel(boolLabel(d.Diff.StatusChanged), boolTone(d.Diff.StatusChanged))),
+		),
+		Div(Class(cardClass()), H2(Text("Parameters")), P(Text("From: "+stringsJoin(d.Diff.FromParameters))), P(Text("To: "+stringsJoin(d.Diff.ToParameters)))),
+		Div(Class(cardClass()), H2(Text("Description")), P(Text("From: "+d.Diff.FromDescription)), P(Text("To: "+d.Diff.ToDescription))),
+		Div(Class(cardClass()), H2(Text("Body")), H3(Text("From")), Pre(Text(d.Diff.FromBody)), H3(Text("To")), Pre(Text(d.Diff.ToBody))),
 	)
 }
