@@ -31,6 +31,7 @@ func MountRoutes(r chi.Router, h *Handler) {
 		r.Post("/sql/run", h.SQLEditorRun)
 		r.Post("/sql/run-async", h.SQLEditorRunAsync)
 		r.Post("/sql/download.csv", h.SQLEditorDownloadCSV)
+		r.Get("/sql/jobs", h.SQLEditorJobsList)
 		r.Get("/sql/jobs/{jobID}", h.SQLEditorJobDetail)
 		r.Post("/sql/jobs/{jobID}/cancel", h.SQLEditorJobCancel)
 		r.Post("/sql/jobs/{jobID}/delete", h.SQLEditorJobDelete)

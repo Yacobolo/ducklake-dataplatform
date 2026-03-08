@@ -55,6 +55,41 @@ func (r *QueryJobRepo) GetByID(ctx context.Context, id string) (*domain.QueryJob
 	`, id)
 }
 
+// ListByPrincipal returns query jobs for a principal ordered by recency.
+func (r *QueryJobRepo) ListByPrincipal(ctx context.Context, principalName string, page domain.PageRequest) ([]domain.QueryJob, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM query_jobs WHERE principal_name = ?`, principalName).Scan(&total); err != nil {
+		return nil, 0, mapDBError(err)
+	}
+
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, principal_name, request_id, sql_text, status, columns_json, rows_json, row_count,
+		       error_message, attempt_count, max_attempts, last_heartbeat_at, next_retry_at,
+		       created_at, started_at, completed_at, updated_at
+		FROM query_jobs
+		WHERE principal_name = ?
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?
+	`, principalName, page.Limit(), page.Offset())
+	if err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	defer rows.Close()
+
+	items := make([]domain.QueryJob, 0)
+	for rows.Next() {
+		item, scanErr := r.scanRow(rows)
+		if scanErr != nil {
+			return nil, 0, scanErr
+		}
+		items = append(items, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate query jobs: %w", err)
+	}
+	return items, total, nil
+}
+
 // GetByRequestID returns a query job by principal + request id.
 func (r *QueryJobRepo) GetByRequestID(ctx context.Context, principalName, requestID string) (*domain.QueryJob, error) {
 	return r.getOne(ctx, `
@@ -175,6 +210,13 @@ func (r *QueryJobRepo) Delete(ctx context.Context, id string) error {
 }
 
 func (r *QueryJobRepo) getOne(ctx context.Context, stmt string, args ...interface{}) (*domain.QueryJob, error) {
+	row := r.db.QueryRowContext(ctx, stmt, args...)
+	return r.scanRow(row)
+}
+
+func (r *QueryJobRepo) scanRow(scanner interface {
+	Scan(dest ...interface{}) error
+}) (*domain.QueryJob, error) {
 	var (
 		job                                                  domain.QueryJob
 		status                                               string
@@ -183,7 +225,7 @@ func (r *QueryJobRepo) getOne(ctx context.Context, stmt string, args ...interfac
 		createdAt, updatedAt                                 time.Time
 	)
 
-	err := r.db.QueryRowContext(ctx, stmt, args...).Scan(
+	err := scanner.Scan(
 		&job.ID,
 		&job.PrincipalName,
 		&job.RequestID,

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -23,6 +24,7 @@ const sqlEditorCSVMaxRows = 5000
 type queryAsyncUI interface {
 	SubmitAsync(ctx context.Context, principalName, sqlQuery, requestID string) (*domain.QueryJob, error)
 	GetAsyncJob(ctx context.Context, principalName, jobID string) (*domain.QueryJob, error)
+	ListAsyncJobs(ctx context.Context, principalName string, page domain.PageRequest) ([]domain.QueryJob, int64, error)
 	CancelAsyncJob(ctx context.Context, principalName, jobID string) error
 	DeleteAsyncJob(ctx context.Context, principalName, jobID string) error
 }
@@ -128,6 +130,43 @@ func (h *Handler) SQLEditorRunAsync(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/ui/sql/jobs/"+job.ID, http.StatusSeeOther)
+}
+
+func (h *Handler) SQLEditorJobsList(w http.ResponseWriter, r *http.Request) {
+	asyncSvc, ok := any(h.Query).(queryAsyncUI)
+	if !ok {
+		renderHTML(w, http.StatusInternalServerError, errorPage("Async Query Unavailable", "Async query service is not configured."))
+		return
+	}
+
+	pageReq := pageFromRequest(r, 30)
+	principal, _ := principalLabel(r.Context())
+	jobs, total, err := asyncSvc.ListAsyncJobs(r.Context(), principal, pageReq)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
+	rows := make([]sqlAsyncJobRowData, 0, len(jobs))
+	for i := range jobs {
+		job := jobs[i]
+		rows = append(rows, sqlAsyncJobRowData{
+			JobID:       job.ID,
+			URL:         "/ui/sql/jobs/" + job.ID,
+			Status:      string(job.Status),
+			RequestID:   job.RequestID,
+			RowCount:    strconv.Itoa(job.RowCount),
+			CreatedAt:   formatTime(job.CreatedAt),
+			CompletedAt: formatTimePtr(job.CompletedAt),
+		})
+	}
+
+	renderHTML(w, http.StatusOK, sqlAsyncJobsListPage(sqlAsyncJobsListPageData{
+		Principal: principalFromContext(r.Context()),
+		Rows:      rows,
+		Page:      pageReq,
+		Total:     total,
+	}))
 }
 
 func (h *Handler) SQLEditorJobDetail(w http.ResponseWriter, r *http.Request) {

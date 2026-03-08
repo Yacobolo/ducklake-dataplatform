@@ -279,6 +279,7 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 									I(Class("btn-icon-glyph"), Attr("data-lucide", "align-left"), Attr("aria-hidden", "true")),
 									Span(Text("Format SQL")),
 								),
+								A(Href("/ui/sql/jobs"), Class(secondaryButtonClass()), Text("Jobs")),
 								Span(Class("sr-only"), Text("Shortcuts: Run Cmd or Ctrl plus Enter. Format Cmd or Ctrl plus Shift plus F.")),
 							),
 						),
