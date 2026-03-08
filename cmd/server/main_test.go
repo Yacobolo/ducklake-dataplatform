@@ -1,9 +1,11 @@
 package main
 
 import (
+	"flag"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCurlHostForListenAddr(t *testing.T) {
@@ -36,4 +38,21 @@ func TestCurlHostForListenAddr(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestWantsServerHelp(t *testing.T) {
+	t.Parallel()
+
+	assert.True(t, wantsServerHelp([]string{"--help"}))
+	assert.True(t, wantsServerHelp([]string{"-h"}))
+	assert.True(t, wantsServerHelp([]string{"help"}))
+	assert.False(t, wantsServerHelp(nil))
+	assert.False(t, wantsServerHelp([]string{"admin"}))
+}
+
+func TestRunAdmin_Help(t *testing.T) {
+	t.Parallel()
+
+	err := runAdmin([]string{"--help"})
+	require.ErrorIs(t, err, flag.ErrHelp)
 }

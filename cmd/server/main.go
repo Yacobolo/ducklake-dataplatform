@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net"
@@ -35,9 +36,17 @@ import (
 )
 
 func main() {
+	if wantsServerHelp(os.Args[1:]) {
+		printServerUsage()
+		return
+	}
+
 	// Handle admin subcommands before starting the server.
 	if len(os.Args) >= 2 && os.Args[1] == "admin" {
 		if err := runAdmin(os.Args[2:]); err != nil {
+			if errors.Is(err, flag.ErrHelp) {
+				return
+			}
 			fmt.Fprintf(os.Stderr, "fatal: %v\n", err)
 			os.Exit(1)
 		}
@@ -475,6 +484,10 @@ func runAdmin(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("usage: server admin <promote|demote> [flags]")
 	}
+	if isHelpFlag(args[0]) {
+		printAdminUsage()
+		return flag.ErrHelp
+	}
 	action := args[0]
 	if action != "promote" && action != "demote" {
 		return fmt.Errorf("unknown admin action %q; use 'promote' or 'demote'", action)
@@ -555,4 +568,34 @@ func runAdmin(args []string) error {
 
 	fmt.Printf("principal %q %sd successfully\n", principalName, action)
 	return nil
+}
+
+func wantsServerHelp(args []string) bool {
+	return len(args) > 0 && isHelpFlag(args[0])
+}
+
+func isHelpFlag(arg string) bool {
+	return arg == "--help" || arg == "-h" || arg == "help"
+}
+
+func printServerUsage() {
+	_, _ = fmt.Fprintln(os.Stdout, "DuckDB Data Platform server")
+	_, _ = fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintln(os.Stdout, "Usage:")
+	_, _ = fmt.Fprintln(os.Stdout, "  server")
+	_, _ = fmt.Fprintln(os.Stdout, "  server admin <promote|demote> [flags]")
+	_, _ = fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintln(os.Stdout, "Environment:")
+	_, _ = fmt.Fprintln(os.Stdout, "  LISTEN_ADDR              HTTP listen address (default :8080)")
+	_, _ = fmt.Fprintln(os.Stdout, "  META_DB_PATH             SQLite metastore path")
+	_, _ = fmt.Fprintln(os.Stdout, "  FLIGHT_SQL_LISTEN_ADDR   Flight SQL listen address")
+	_, _ = fmt.Fprintln(os.Stdout, "  PG_WIRE_LISTEN_ADDR      PG-wire listen address")
+	_, _ = fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintln(os.Stdout, "Use `server admin --help` for admin subcommand usage.")
+}
+
+func printAdminUsage() {
+	_, _ = fmt.Fprintln(os.Stdout, "Usage:")
+	_, _ = fmt.Fprintln(os.Stdout, "  server admin promote --principal=<name> [--create]")
+	_, _ = fmt.Fprintln(os.Stdout, "  server admin demote --principal=<name>")
 }

@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -27,6 +29,9 @@ const (
 func OpenSQLite(path string, mode string, maxOpen int) (*sql.DB, error) {
 	if mode != "read" && mode != "write" {
 		return nil, fmt.Errorf("invalid SQLite mode %q: must be \"read\" or \"write\"", mode)
+	}
+	if err := ensureSQLiteParentDir(path); err != nil {
+		return nil, err
 	}
 
 	dsn := buildDSN(path, mode)
@@ -93,4 +98,15 @@ func buildDSN(path string, mode string) string {
 	}
 
 	return path + "?" + params.Encode()
+}
+
+func ensureSQLiteParentDir(path string) error {
+	parent := filepath.Dir(path)
+	if parent == "." || parent == "" {
+		return nil
+	}
+	if err := os.MkdirAll(parent, 0o750); err != nil {
+		return fmt.Errorf("create sqlite parent dir %q: %w", parent, err)
+	}
+	return nil
 }
