@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -35,12 +36,12 @@ import (
 )
 
 func main() {
-	// Handle admin subcommands before starting the server.
-	if len(os.Args) >= 2 && os.Args[1] == "admin" {
-		if err := runAdmin(os.Args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "fatal: %v\n", err)
-			os.Exit(1)
-		}
+	handled, err := handleTopLevelArgs(os.Args, runAdmin, os.Stdout)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "fatal: %v\n", err)
+		os.Exit(1)
+	}
+	if handled {
 		return
 	}
 
@@ -48,6 +49,29 @@ func main() {
 		fmt.Fprintf(os.Stderr, "fatal: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func handleTopLevelArgs(args []string, adminRunner func([]string) error, out io.Writer) (bool, error) {
+	// Handle admin subcommands before starting the server.
+	if len(args) >= 2 {
+		switch args[1] {
+		case "admin":
+			return true, adminRunner(args[2:])
+		case "-h", "--help", "help":
+			printUsage(out)
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func printUsage(out io.Writer) {
+	_, _ = fmt.Fprintln(out, "Usage:")
+	_, _ = fmt.Fprintln(out, "  server")
+	_, _ = fmt.Fprintln(out, "  server admin <subcommand>")
+	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out, "Options:")
+	_, _ = fmt.Fprintln(out, "  -h, --help    Show this help message")
 }
 
 func run() error {

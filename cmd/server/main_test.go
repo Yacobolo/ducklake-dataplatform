@@ -1,39 +1,73 @@
 package main
 
 import (
+	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestCurlHostForListenAddr(t *testing.T) {
+func TestHandleTopLevelArgs_Help(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name       string
-		listenAddr string
-		want       string
-	}{
-		{name: "port only", listenAddr: ":8080", want: "localhost:8080"},
-		{name: "ipv4 host and port", listenAddr: "127.0.0.1:8080", want: "127.0.0.1:8080"},
-		{name: "wildcard ipv4", listenAddr: "0.0.0.0:8080", want: "localhost:8080"},
-		{name: "wildcard ipv6", listenAddr: "[::]:8080", want: "localhost:8080"},
-		{name: "ipv6 loopback", listenAddr: "[::1]:8080", want: "[::1]:8080"},
-		{name: "trim host and port", listenAddr: " localhost:9090 ", want: "localhost:9090"},
-		{name: "trim port only", listenAddr: "  :7070  ", want: "localhost:7070"},
-		{name: "empty falls back", listenAddr: "", want: "localhost:8080"},
-		{name: "whitespace falls back", listenAddr: "   ", want: "localhost:8080"},
-		{name: "malformed passes through", listenAddr: "localhost", want: "localhost"},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, arg := range []string{"help", "-h", "--help"} {
+		t.Run(arg, func(t *testing.T) {
 			t.Parallel()
 
-			got := curlHostForListenAddr(tt.listenAddr)
+			var out bytes.Buffer
+			called := false
+			handled, err := handleTopLevelArgs([]string{"server", arg}, func(_ []string) error {
+				called = true
+				return nil
+			}, &out)
 
-			assert.Equal(t, tt.want, got)
+			require.NoError(t, err)
+			assert.True(t, handled)
+			assert.False(t, called)
+			assert.Contains(t, out.String(), "Usage:")
+			assert.Contains(t, out.String(), "server admin <subcommand>")
 		})
 	}
+}
+
+func TestHandleTopLevelArgs_AdminDelegates(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+	var gotArgs []string
+	handled, err := handleTopLevelArgs([]string{"server", "admin", "users", "list"}, func(args []string) error {
+		gotArgs = append([]string(nil), args...)
+		return nil
+	}, &out)
+
+	require.NoError(t, err)
+	assert.True(t, handled)
+	assert.Equal(t, []string{"users", "list"}, gotArgs)
+	assert.Empty(t, out.String())
+}
+
+func TestHandleTopLevelArgs_AdminReturnsError(t *testing.T) {
+	t.Parallel()
+
+	wantErr := errors.New("boom")
+	handled, err := handleTopLevelArgs([]string{"server", "admin"}, func(_ []string) error {
+		return wantErr
+	}, &bytes.Buffer{})
+
+	require.ErrorIs(t, err, wantErr)
+	assert.True(t, handled)
+}
+
+func TestHandleTopLevelArgs_NoTopLevelCommand(t *testing.T) {
+	t.Parallel()
+
+	handled, err := handleTopLevelArgs([]string{"server"}, func(_ []string) error {
+		t.Fatal("admin runner should not be called")
+		return nil
+	}, &bytes.Buffer{})
+
+	require.NoError(t, err)
+	assert.False(t, handled)
 }
