@@ -107,6 +107,9 @@ type macroDiffPageData struct {
 	ToVersion       int
 	RevisionOptions []macroRevisionOptionData
 	Diff            *domain.MacroRevisionDiff
+	ImpactAdded     []macroImpactRowData
+	ImpactRemoved   []macroImpactRowData
+	ImpactUnchanged []macroImpactRowData
 }
 
 func macroDiffPage(d macroDiffPageData) Node {
@@ -144,6 +147,9 @@ func macroDiffPage(d macroDiffPageData) Node {
 		Div(Class(cardClass()), H2(Text("Parameters")), P(Text("From: "+stringsJoin(d.Diff.FromParameters))), P(Text("To: "+stringsJoin(d.Diff.ToParameters)))),
 		Div(Class(cardClass()), H2(Text("Description")), P(Text("From: "+d.Diff.FromDescription)), P(Text("To: "+d.Diff.ToDescription))),
 		Div(Class(cardClass()), H2(Text("Body")), H3(Text("From")), Pre(Text(d.Diff.FromBody)), H3(Text("To")), Pre(Text(d.Diff.ToBody))),
+		macroImpactSection("Impact added", d.ImpactAdded, "No newly impacted models."),
+		macroImpactSection("Impact removed", d.ImpactRemoved, "No removed impacted models."),
+		macroImpactSection("Impact unchanged", d.ImpactUnchanged, "No unchanged impacted models."),
 	)
 }
 
@@ -170,4 +176,16 @@ func macroImpactPage(d macroImpactPageData) Node {
 		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Model")), Th(Text("Last seen")))), TBody(Group(rows))))
 	}
 	return appPage("Macro Impact: "+d.Name, "macros", d.Principal, tableNode)
+}
+
+func macroImpactSection(title string, rowsData []macroImpactRowData, emptyMessage string) Node {
+	if len(rowsData) == 0 {
+		return Div(Class(cardClass()), H2(Text(title)), P(Class(mutedClass()), Text(emptyMessage)))
+	}
+	rows := make([]Node, 0, len(rowsData))
+	for i := range rowsData {
+		row := rowsData[i]
+		rows = append(rows, Tr(Td(A(Href(row.URL), Text(row.ModelName))), Td(Text(row.LastSeen))))
+	}
+	return Div(Class(cardClass("table-wrap")), H2(Text(title)), Table(Class("data-table"), THead(Tr(Th(Text("Model")), Th(Text("Last seen")))), TBody(Group(rows))))
 }

@@ -14,6 +14,7 @@ import (
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
 	"duck-demo/internal/db/repository"
+	"duck-demo/internal/domain"
 	authsvc "duck-demo/internal/service/auth"
 	notebooksvc "duck-demo/internal/service/notebook"
 	semanticsvc "duck-demo/internal/service/semantic"
@@ -68,6 +69,28 @@ func TestUIAdvanced_SemanticModelCreateFlow(t *testing.T) {
 	assert.Contains(t, detail.Body.String(), "analytics.fct_sales")
 	assert.Contains(t, detail.Body.String(), "order_date")
 	assert.Contains(t, detail.Body.String(), "Create metric")
+}
+
+func TestUIAdvanced_NotebookGitRepoSyncUnavailablePage(t *testing.T) {
+	env := newUIAdvancedTestEnv(t)
+	sessionCookie := loginSessionCookie(t, env.router)
+	csrfCookie := fetchCSRFCookie(t, env.router, sessionCookie, "/ui/notebooks/git-repos/new")
+
+	createForm := url.Values{}
+	createForm.Set("csrf_token", csrfCookie.Value)
+	createForm.Set("url", "https://github.com/acme/notebooks.git")
+	createForm.Set("branch", "main")
+
+	createResp := postFormWithCookies(t, env.router, "/ui/notebooks/git-repos", createForm, sessionCookie, csrfCookie)
+	require.Equal(t, http.StatusSeeOther, createResp.Code)
+	location := createResp.Header().Get("Location")
+
+	syncForm := url.Values{}
+	syncForm.Set("csrf_token", csrfCookie.Value)
+	syncResp := postFormWithCookies(t, env.router, location+"/sync", syncForm, sessionCookie, csrfCookie)
+	require.Equal(t, http.StatusOK, syncResp.Code)
+	assert.Contains(t, syncResp.Body.String(), "Sync is not available yet")
+	assert.Contains(t, syncResp.Body.String(), domain.ErrNotImplemented("git sync is not yet implemented").Error())
 }
 
 func newUIAdvancedTestEnv(t *testing.T) uiAdvancedTestEnv {

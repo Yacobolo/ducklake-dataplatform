@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"context"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -159,6 +162,23 @@ func (h *Handler) MacrosDiff(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fromRevision, err := h.Macro.GetRevisionByVersion(r.Context(), name, fromVersion)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	toRevision, err := h.Macro.GetRevisionByVersion(r.Context(), name, toVersion)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
+	addedImpact, removedImpact, unchangedImpact, err := h.macroImpactDelta(r.Context(), name, &fromRevision.CreatedAt, &toRevision.CreatedAt)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
 	revisionOptions := make([]macroRevisionOptionData, 0, len(revisions))
 	for i := range revisions {
 		revisionOptions = append(revisionOptions, macroRevisionOptionData{
@@ -174,6 +194,9 @@ func (h *Handler) MacrosDiff(w http.ResponseWriter, r *http.Request) {
 		ToVersion:       toVersion,
 		RevisionOptions: revisionOptions,
 		Diff:            diff,
+		ImpactAdded:     addedImpact,
+		ImpactRemoved:   removedImpact,
+		ImpactUnchanged: unchangedImpact,
 	}))
 }
 
@@ -184,16 +207,77 @@ func (h *Handler) MacrosImpact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pageReq := domain.PageRequest{MaxResults: domain.MaxMaxResults}
-	edges, _, err := h.Lineage.GetDownstream(r.Context(), "macro."+name, pageReq)
+	rows, err := h.listMacroImpactAsOf(r.Context(), name, nil)
 	if err != nil {
 		h.renderServiceError(w, r, err)
 		return
 	}
+	renderHTML(w, http.StatusOK, macroImpactPage(macroImpactPageData{
+		Principal: principalFromContext(r.Context()),
+		Name:      name,
+		Rows:      rows,
+	}))
+}
+
+func (h *Handler) macroImpactDelta(ctx context.Context, macroName string, from, to *time.Time) ([]macroImpactRowData, []macroImpactRowData, []macroImpactRowData, error) {
+	fromRows, err := h.listMacroImpactAsOf(ctx, macroName, from)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	toRows, err := h.listMacroImpactAsOf(ctx, macroName, to)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	fromByModel := map[string]macroImpactRowData{}
+	toByModel := map[string]macroImpactRowData{}
+	for i := range fromRows {
+		fromByModel[fromRows[i].ModelName] = fromRows[i]
+	}
+	for i := range toRows {
+		toByModel[toRows[i].ModelName] = toRows[i]
+	}
+
+	added := make([]macroImpactRowData, 0)
+	removed := make([]macroImpactRowData, 0)
+	unchanged := make([]macroImpactRowData, 0)
+	for modelName, row := range toByModel {
+		if _, ok := fromByModel[modelName]; ok {
+			unchanged = append(unchanged, row)
+			continue
+		}
+		added = append(added, row)
+	}
+	for modelName, row := range fromByModel {
+		if _, ok := toByModel[modelName]; ok {
+			continue
+		}
+		removed = append(removed, row)
+	}
+
+	sortMacroImpactRows(added)
+	sortMacroImpactRows(removed)
+	sortMacroImpactRows(unchanged)
+	return added, removed, unchanged, nil
+}
+
+func (h *Handler) listMacroImpactAsOf(ctx context.Context, macroName string, asOf *time.Time) ([]macroImpactRowData, error) {
+	if h.Lineage == nil {
+		return []macroImpactRowData{}, nil
+	}
+	pageReq := domain.PageRequest{MaxResults: domain.MaxMaxResults}
+	edges, _, err := h.Lineage.GetDownstream(ctx, "macro."+macroName, pageReq)
+	if err != nil {
+		return nil, err
+	}
 
 	seen := map[string]macroImpactRowData{}
+	lastSeenByModel := map[string]time.Time{}
 	for i := range edges {
 		edge := edges[i]
+		if asOf != nil && edge.CreatedAt.After(*asOf) {
+			continue
+		}
 		if edge.TargetTable == nil || strings.TrimSpace(*edge.TargetTable) == "" {
 			continue
 		}
@@ -202,6 +286,11 @@ func (h *Handler) MacrosImpact(w http.ResponseWriter, r *http.Request) {
 		if strings.TrimSpace(edge.TargetSchema) != "" {
 			label = edge.TargetSchema + "." + targetTable
 		}
+		currentSeen, ok := lastSeenByModel[label]
+		if ok && !edge.CreatedAt.After(currentSeen) {
+			continue
+		}
+		lastSeenByModel[label] = edge.CreatedAt
 		seen[label] = macroImpactRowData{
 			ModelName: label,
 			LastSeen:  formatTime(edge.CreatedAt),
@@ -213,9 +302,12 @@ func (h *Handler) MacrosImpact(w http.ResponseWriter, r *http.Request) {
 	for _, row := range seen {
 		rows = append(rows, row)
 	}
-	renderHTML(w, http.StatusOK, macroImpactPage(macroImpactPageData{
-		Principal: principalFromContext(r.Context()),
-		Name:      name,
-		Rows:      rows,
-	}))
+	sortMacroImpactRows(rows)
+	return rows, nil
+}
+
+func sortMacroImpactRows(rows []macroImpactRowData) {
+	sort.Slice(rows, func(i, j int) bool {
+		return rows[i].ModelName < rows[j].ModelName
+	})
 }

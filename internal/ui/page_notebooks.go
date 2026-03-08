@@ -677,6 +677,33 @@ func notebookGitRepoSyncResultPage(d notebookGitRepoSyncResultPageData) Node {
 	return appPage("Git Sync", "notebooks", d.Principal, Div(Class(cardClass()), P(Text("Created notebooks: "+strconv.Itoa(d.Result.NotebooksCreated))), P(Text("Updated notebooks: "+strconv.Itoa(d.Result.NotebooksUpdated))), P(Text("Deleted notebooks: "+strconv.Itoa(d.Result.NotebooksDeleted))), P(Text("Commit: "+d.Result.CommitSHA))))
 }
 
+type notebookGitRepoSyncUnavailablePageData struct {
+	Principal domain.ContextPrincipal
+	GitRepoID string
+	RepoURL   string
+	Branch    string
+	Path      string
+	Message   string
+}
+
+func notebookGitRepoSyncUnavailablePage(d notebookGitRepoSyncUnavailablePageData) Node {
+	return appPage(
+		"Git Sync Unavailable",
+		"notebooks",
+		d.Principal,
+		pageToolbar("/ui/notebooks/git-repos/"+d.GitRepoID, "Back to repo"),
+		Div(
+			Class(cardClass()),
+			H2(Text("Sync is not available yet")),
+			P(Text(d.Message)),
+			P(Text("Repository: "+d.RepoURL)),
+			P(Text("Branch: "+d.Branch)),
+			P(Text("Path: "+d.Path)),
+			P(Class(mutedClass()), Text("The repo is registered correctly, but server-side sync execution has not been implemented yet.")),
+		),
+	)
+}
+
 type notebookJobsListPageData struct {
 	Principal  domain.ContextPrincipal
 	NotebookID string
