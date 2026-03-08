@@ -1,9 +1,11 @@
 package ui
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func parseFormOrRenderBadRequest(w http.ResponseWriter, r *http.Request) bool {
@@ -56,6 +58,25 @@ func formOptionalInt64(values map[string][]string, key string) (*int64, error) {
 		return nil, err
 	}
 	return &n, nil
+}
+
+func formOptionalTime(values map[string][]string, key string) (*time.Time, error) {
+	v := formString(values, key)
+	if v == "" {
+		return nil, nil
+	}
+	layouts := []string{
+		time.RFC3339,
+		"2006-01-02T15:04",
+		"2006-01-02",
+	}
+	for i := range layouts {
+		parsed, err := time.Parse(layouts[i], v)
+		if err == nil {
+			return &parsed, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid time value %q", v)
 }
 
 func formCSV(values map[string][]string, key string) []string {

@@ -17,6 +17,7 @@ import (
 	"duck-demo/internal/service/orchestration"
 	"duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
+	"duck-demo/internal/service/security"
 
 	gomponents "maragu.dev/gomponents"
 )
@@ -33,6 +34,12 @@ type Handler struct {
 	SessionManager      *notebook.SessionManager
 	Macro               *macro.Service
 	Model               *model.Service
+	Principal           *security.PrincipalService
+	Group               *security.GroupService
+	Grant               *security.GrantService
+	RowFilter           *security.RowFilterService
+	ColumnMask          *security.ColumnMaskService
+	APIKey              *security.APIKeyService
 	AuthService         *authsvc.Service
 	WebSessionService   *authsvc.SessionService
 	PrincipalResolver   PrincipalResolver

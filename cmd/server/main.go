@@ -376,6 +376,12 @@ func run() error {
 		cfg.Auth,
 		cfg.IsProduction(),
 	)
+	uiHandler.Principal = svc.Principal
+	uiHandler.Group = svc.Group
+	uiHandler.Grant = svc.Grant
+	uiHandler.RowFilter = svc.RowFilter
+	uiHandler.ColumnMask = svc.ColumnMask
+	uiHandler.APIKey = svc.APIKey
 	r.Route("/ui", func(r chi.Router) {
 		ui.MountRoutes(r, uiHandler)
 	})
