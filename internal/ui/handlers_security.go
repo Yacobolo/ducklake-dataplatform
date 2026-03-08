@@ -417,3 +417,212 @@ func (h *Handler) SecurityAPIKeysCleanup(w http.ResponseWriter, r *http.Request)
 	}
 	http.Redirect(w, r, "/ui/security/api-keys", http.StatusSeeOther)
 }
+
+func (h *Handler) SecurityRowFiltersList(w http.ResponseWriter, r *http.Request) {
+	tableID := r.URL.Query().Get("table_id")
+	rows := []securityRowFilterRowData{}
+	if tableID != "" {
+		items, _, err := h.RowFilter.GetForTable(r.Context(), tableID, domain.PageRequest{MaxResults: 100})
+		if err != nil {
+			h.renderServiceError(w, r, err)
+			return
+		}
+		for i := range items {
+			item := items[i]
+			bindings, err := h.RowFilter.ListBindings(r.Context(), item.ID)
+			if err != nil {
+				h.renderServiceError(w, r, err)
+				return
+			}
+			rows = append(rows, securityRowFilterRowData{
+				ID:          item.ID,
+				TableID:     item.TableID,
+				FilterSQL:   item.FilterSQL,
+				Description: item.Description,
+				CreatedAt:   formatTime(item.CreatedAt),
+				Bindings:    bindings,
+			})
+		}
+	}
+	renderHTML(w, http.StatusOK, securityRowFiltersPage(securityRowFilterPageData{
+		Principal:         principalFromContext(r.Context()),
+		TableID:           tableID,
+		Rows:              rows,
+		CSRFFieldProvider: csrfFieldProvider(r),
+	}))
+}
+
+func (h *Handler) SecurityRowFiltersCreate(w http.ResponseWriter, r *http.Request) {
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	req := domain.CreateRowFilterRequest{
+		TableID:     formString(r.Form, "table_id"),
+		Description: formString(r.Form, "description"),
+		FilterSQL:   formString(r.Form, "filter_sql"),
+	}
+	if _, err := h.RowFilter.Create(r.Context(), req); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/security/row-filters?table_id="+url.QueryEscape(req.TableID), http.StatusSeeOther)
+}
+
+func (h *Handler) SecurityRowFiltersDelete(w http.ResponseWriter, r *http.Request) {
+	filterID := chi.URLParam(r, "filterID")
+	if err := h.RowFilter.Delete(r.Context(), filterID); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	redirect := r.Referer()
+	if redirect == "" {
+		redirect = "/ui/security/row-filters"
+	}
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
+}
+
+func (h *Handler) SecurityRowFiltersBind(w http.ResponseWriter, r *http.Request) {
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	req := domain.BindRowFilterRequest{
+		RowFilterID:   formString(r.Form, "row_filter_id"),
+		PrincipalType: formString(r.Form, "principal_type"),
+		PrincipalID:   formString(r.Form, "principal_id"),
+	}
+	if err := h.RowFilter.Bind(r.Context(), req); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	redirect := r.Referer()
+	if redirect == "" {
+		redirect = "/ui/security/row-filters"
+	}
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
+}
+
+func (h *Handler) SecurityRowFiltersUnbind(w http.ResponseWriter, r *http.Request) {
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	req := domain.BindRowFilterRequest{
+		RowFilterID:   formString(r.Form, "row_filter_id"),
+		PrincipalType: formString(r.Form, "principal_type"),
+		PrincipalID:   formString(r.Form, "principal_id"),
+	}
+	if err := h.RowFilter.Unbind(r.Context(), req); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	redirect := r.Referer()
+	if redirect == "" {
+		redirect = "/ui/security/row-filters"
+	}
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
+}
+
+func (h *Handler) SecurityColumnMasksList(w http.ResponseWriter, r *http.Request) {
+	tableID := r.URL.Query().Get("table_id")
+	rows := []securityColumnMaskRowData{}
+	if tableID != "" {
+		items, _, err := h.ColumnMask.GetForTable(r.Context(), tableID, domain.PageRequest{MaxResults: 100})
+		if err != nil {
+			h.renderServiceError(w, r, err)
+			return
+		}
+		for i := range items {
+			item := items[i]
+			bindings, err := h.ColumnMask.ListBindings(r.Context(), item.ID)
+			if err != nil {
+				h.renderServiceError(w, r, err)
+				return
+			}
+			rows = append(rows, securityColumnMaskRowData{
+				ID:             item.ID,
+				TableID:        item.TableID,
+				ColumnName:     item.ColumnName,
+				MaskExpression: item.MaskExpression,
+				Description:    item.Description,
+				CreatedAt:      formatTime(item.CreatedAt),
+				Bindings:       bindings,
+			})
+		}
+	}
+	renderHTML(w, http.StatusOK, securityColumnMasksPage(securityColumnMaskPageData{
+		Principal:         principalFromContext(r.Context()),
+		TableID:           tableID,
+		Rows:              rows,
+		CSRFFieldProvider: csrfFieldProvider(r),
+	}))
+}
+
+func (h *Handler) SecurityColumnMasksCreate(w http.ResponseWriter, r *http.Request) {
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	req := domain.CreateColumnMaskRequest{
+		TableID:        formString(r.Form, "table_id"),
+		ColumnName:     formString(r.Form, "column_name"),
+		Description:    formString(r.Form, "description"),
+		MaskExpression: formString(r.Form, "mask_expression"),
+	}
+	if _, err := h.ColumnMask.Create(r.Context(), req); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/security/column-masks?table_id="+url.QueryEscape(req.TableID), http.StatusSeeOther)
+}
+
+func (h *Handler) SecurityColumnMasksDelete(w http.ResponseWriter, r *http.Request) {
+	maskID := chi.URLParam(r, "maskID")
+	if err := h.ColumnMask.Delete(r.Context(), maskID); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	redirect := r.Referer()
+	if redirect == "" {
+		redirect = "/ui/security/column-masks"
+	}
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
+}
+
+func (h *Handler) SecurityColumnMasksBind(w http.ResponseWriter, r *http.Request) {
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	req := domain.BindColumnMaskRequest{
+		ColumnMaskID:  formString(r.Form, "column_mask_id"),
+		PrincipalType: formString(r.Form, "principal_type"),
+		PrincipalID:   formString(r.Form, "principal_id"),
+		SeeOriginal:   formBool(r.Form, "see_original"),
+	}
+	if err := h.ColumnMask.Bind(r.Context(), req); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	redirect := r.Referer()
+	if redirect == "" {
+		redirect = "/ui/security/column-masks"
+	}
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
+}
+
+func (h *Handler) SecurityColumnMasksUnbind(w http.ResponseWriter, r *http.Request) {
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	req := domain.BindColumnMaskRequest{
+		ColumnMaskID:  formString(r.Form, "column_mask_id"),
+		PrincipalType: formString(r.Form, "principal_type"),
+		PrincipalID:   formString(r.Form, "principal_id"),
+	}
+	if err := h.ColumnMask.Unbind(r.Context(), req); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	redirect := r.Referer()
+	if redirect == "" {
+		redirect = "/ui/security/column-masks"
+	}
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
+}

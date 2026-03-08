@@ -382,6 +382,15 @@ func run() error {
 	uiHandler.RowFilter = svc.RowFilter
 	uiHandler.ColumnMask = svc.ColumnMask
 	uiHandler.APIKey = svc.APIKey
+	uiHandler.StorageCredential = svc.StorageCredential
+	uiHandler.ExternalLocation = svc.ExternalLocation
+	uiHandler.Volume = svc.Volume
+	uiHandler.ComputeEndpoint = svc.ComputeEndpoint
+	uiHandler.Search = svc.Search
+	uiHandler.Tag = svc.Tag
+	uiHandler.Audit = svc.Audit
+	uiHandler.QueryHistory = svc.QueryHistory
+	uiHandler.Lineage = svc.Lineage
 	r.Route("/ui", func(r chi.Router) {
 		ui.MountRoutes(r, uiHandler)
 	})

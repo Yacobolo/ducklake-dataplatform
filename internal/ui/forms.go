@@ -36,6 +36,17 @@ func formBool(values map[string][]string, key string) bool {
 	return v == "true" || v == "1" || v == "on" || v == "yes"
 }
 
+func formOptionalBool(values map[string][]string, key string) *bool {
+	if values == nil {
+		return nil
+	}
+	if _, ok := values[key]; !ok {
+		return nil
+	}
+	v := formBool(values, key)
+	return &v
+}
+
 func formOptionalInt(values map[string][]string, key string) (*int, error) {
 	v := formString(values, key)
 	if v == "" {

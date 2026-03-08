@@ -43,6 +43,8 @@ func securitySectionNav(active string) Node {
 		{key: "principals", label: "Principals", href: "/ui/security/principals"},
 		{key: "groups", label: "Groups", href: "/ui/security/groups"},
 		{key: "grants", label: "Grants", href: "/ui/security/grants"},
+		{key: "row-filters", label: "Row Filters", href: "/ui/security/row-filters"},
+		{key: "column-masks", label: "Column Masks", href: "/ui/security/column-masks"},
 		{key: "api-keys", label: "API Keys", href: "/ui/security/api-keys"},
 	}
 	nodes := make([]Node, 0, len(links))
@@ -601,5 +603,230 @@ func securityAPIKeyCreatedPage(principal domain.ContextPrincipal, principalID, k
 			Pre(Text(rawKey)),
 			A(Href(apiKeysPagePath(principalID)), Class(primaryButtonClass()), Text("Back to API keys")),
 		),
+	)
+}
+
+type securityRowFilterPageData struct {
+	Principal         domain.ContextPrincipal
+	TableID           string
+	Rows              []securityRowFilterRowData
+	CSRFFieldProvider func() Node
+}
+
+type securityRowFilterRowData struct {
+	ID          string
+	TableID     string
+	FilterSQL   string
+	Description string
+	CreatedAt   string
+	Bindings    []domain.RowFilterBinding
+}
+
+func securityRowFiltersPage(d securityRowFilterPageData) Node {
+	rows := make([]Node, 0, len(d.Rows))
+	for i := range d.Rows {
+		row := d.Rows[i]
+		bindings := "-"
+		if len(row.Bindings) > 0 {
+			parts := make([]string, 0, len(row.Bindings))
+			for j := range row.Bindings {
+				parts = append(parts, row.Bindings[j].PrincipalType+":"+row.Bindings[j].PrincipalID)
+			}
+			bindings = stringsJoin(parts)
+		}
+		rows = append(rows,
+			Tr(
+				Td(Text(row.TableID)),
+				Td(Pre(Text(row.FilterSQL))),
+				Td(Text(dashIfEmpty(row.Description))),
+				Td(Text(bindings)),
+				Td(Text(row.CreatedAt)),
+				Td(Class("text-right"), actionMenu("Actions",
+					actionMenuPost("/ui/security/row-filters/"+row.ID+"/delete", "Delete row filter", d.CSRFFieldProvider, true),
+				)),
+			),
+		)
+	}
+
+	tableNode := Node(emptyStateCard("No row filters found for the selected table.", "", ""))
+	if len(rows) > 0 {
+		tableNode = Div(Class(cardClass("table-wrap")),
+			Table(Class("data-table"),
+				THead(Tr(Th(Text("Table ID")), Th(Text("Filter SQL")), Th(Text("Description")), Th(Text("Bindings")), Th(Text("Created")), Th(Class("text-right"), Text("Actions")))),
+				TBody(Group(rows)),
+			),
+		)
+	}
+
+	return appPage(
+		"Security: Row Filters",
+		"security",
+		d.Principal,
+		securitySectionNav("row-filters"),
+		Div(Class(cardClass()),
+			H2(Text("Create row filter")),
+			Form(Class("stack-form"), Method("post"), Action("/ui/security/row-filters"),
+				d.CSRFFieldProvider(),
+				Label(Text("Table ID")),
+				Input(Name("table_id"), Value(d.TableID), Required()),
+				Label(Text("Description")),
+				Input(Name("description")),
+				Label(Text("Filter SQL")),
+				Textarea(Name("filter_sql"), Required()),
+				Div(Class("form-actions"), Button(Type("submit"), Class(primaryButtonClass()), Text("Create row filter"))),
+			),
+		),
+		Div(Class(cardClass()),
+			H2(Text("Filter")),
+			Form(Class("stack-form"), Method("get"), Action("/ui/security/row-filters"),
+				Label(Text("Table ID")),
+				Input(Name("table_id"), Value(d.TableID)),
+				Div(Class("form-actions"), Button(Type("submit"), Class(secondaryButtonClass()), Text("Apply filter"))),
+			),
+		),
+		Div(Class(cardClass()),
+			H2(Text("Bind row filter")),
+			Form(Class("stack-form"), Method("post"), Action("/ui/security/row-filters/bindings"),
+				d.CSRFFieldProvider(),
+				Label(Text("Row Filter ID")),
+				Input(Name("row_filter_id"), Required()),
+				Label(Text("Principal type")),
+				Select(Name("principal_type"), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
+				Label(Text("Principal ID")),
+				Input(Name("principal_id"), Required()),
+				Div(Class("form-actions"), Button(Type("submit"), Class(secondaryButtonClass()), Text("Bind filter"))),
+			),
+		),
+		Div(Class(cardClass()),
+			H2(Text("Unbind row filter")),
+			Form(Class("stack-form"), Method("post"), Action("/ui/security/row-filters/bindings/delete"),
+				d.CSRFFieldProvider(),
+				Label(Text("Row Filter ID")),
+				Input(Name("row_filter_id"), Required()),
+				Label(Text("Principal type")),
+				Select(Name("principal_type"), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
+				Label(Text("Principal ID")),
+				Input(Name("principal_id"), Required()),
+				Div(Class("form-actions"), Button(Type("submit"), Class("btn btn-danger"), Text("Unbind filter"))),
+			),
+		),
+		tableNode,
+	)
+}
+
+type securityColumnMaskPageData struct {
+	Principal         domain.ContextPrincipal
+	TableID           string
+	Rows              []securityColumnMaskRowData
+	CSRFFieldProvider func() Node
+}
+
+type securityColumnMaskRowData struct {
+	ID             string
+	TableID        string
+	ColumnName     string
+	MaskExpression string
+	Description    string
+	CreatedAt      string
+	Bindings       []domain.ColumnMaskBinding
+}
+
+func securityColumnMasksPage(d securityColumnMaskPageData) Node {
+	rows := make([]Node, 0, len(d.Rows))
+	for i := range d.Rows {
+		row := d.Rows[i]
+		bindings := "-"
+		if len(row.Bindings) > 0 {
+			parts := make([]string, 0, len(row.Bindings))
+			for j := range row.Bindings {
+				entry := row.Bindings[j].PrincipalType + ":" + row.Bindings[j].PrincipalID
+				if row.Bindings[j].SeeOriginal {
+					entry += " (see original)"
+				}
+				parts = append(parts, entry)
+			}
+			bindings = stringsJoin(parts)
+		}
+		rows = append(rows,
+			Tr(
+				Td(Text(row.TableID)),
+				Td(Text(row.ColumnName)),
+				Td(Pre(Text(row.MaskExpression))),
+				Td(Text(dashIfEmpty(row.Description))),
+				Td(Text(bindings)),
+				Td(Text(row.CreatedAt)),
+				Td(Class("text-right"), actionMenu("Actions",
+					actionMenuPost("/ui/security/column-masks/"+row.ID+"/delete", "Delete column mask", d.CSRFFieldProvider, true),
+				)),
+			),
+		)
+	}
+
+	tableNode := Node(emptyStateCard("No column masks found for the selected table.", "", ""))
+	if len(rows) > 0 {
+		tableNode = Div(Class(cardClass("table-wrap")),
+			Table(Class("data-table"),
+				THead(Tr(Th(Text("Table ID")), Th(Text("Column")), Th(Text("Mask Expression")), Th(Text("Description")), Th(Text("Bindings")), Th(Text("Created")), Th(Class("text-right"), Text("Actions")))),
+				TBody(Group(rows)),
+			),
+		)
+	}
+
+	return appPage(
+		"Security: Column Masks",
+		"security",
+		d.Principal,
+		securitySectionNav("column-masks"),
+		Div(Class(cardClass()),
+			H2(Text("Create column mask")),
+			Form(Class("stack-form"), Method("post"), Action("/ui/security/column-masks"),
+				d.CSRFFieldProvider(),
+				Label(Text("Table ID")),
+				Input(Name("table_id"), Value(d.TableID), Required()),
+				Label(Text("Column name")),
+				Input(Name("column_name"), Required()),
+				Label(Text("Description")),
+				Input(Name("description")),
+				Label(Text("Mask expression")),
+				Textarea(Name("mask_expression"), Required()),
+				Div(Class("form-actions"), Button(Type("submit"), Class(primaryButtonClass()), Text("Create column mask"))),
+			),
+		),
+		Div(Class(cardClass()),
+			H2(Text("Filter")),
+			Form(Class("stack-form"), Method("get"), Action("/ui/security/column-masks"),
+				Label(Text("Table ID")),
+				Input(Name("table_id"), Value(d.TableID)),
+				Div(Class("form-actions"), Button(Type("submit"), Class(secondaryButtonClass()), Text("Apply filter"))),
+			),
+		),
+		Div(Class(cardClass()),
+			H2(Text("Bind column mask")),
+			Form(Class("stack-form"), Method("post"), Action("/ui/security/column-masks/bindings"),
+				d.CSRFFieldProvider(),
+				Label(Text("Column Mask ID")),
+				Input(Name("column_mask_id"), Required()),
+				Label(Text("Principal type")),
+				Select(Name("principal_type"), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
+				Label(Text("Principal ID")),
+				Input(Name("principal_id"), Required()),
+				Label(Input(Type("checkbox"), Name("see_original")), Text(" Allow original values")),
+				Div(Class("form-actions"), Button(Type("submit"), Class(secondaryButtonClass()), Text("Bind mask"))),
+			),
+		),
+		Div(Class(cardClass()),
+			H2(Text("Unbind column mask")),
+			Form(Class("stack-form"), Method("post"), Action("/ui/security/column-masks/bindings/delete"),
+				d.CSRFFieldProvider(),
+				Label(Text("Column Mask ID")),
+				Input(Name("column_mask_id"), Required()),
+				Label(Text("Principal type")),
+				Select(Name("principal_type"), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
+				Label(Text("Principal ID")),
+				Input(Name("principal_id"), Required()),
+				Div(Class("form-actions"), Button(Type("submit"), Class("btn btn-danger"), Text("Unbind mask"))),
+			),
+		),
+		tableNode,
 	)
 }
