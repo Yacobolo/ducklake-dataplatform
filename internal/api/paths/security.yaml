@@ -1156,6 +1156,7 @@ paths:
             schema:
               $ref: '../schemas/security.yaml#/CreateRowFilterRequest'
             example:
+              name: regional_filter
               table_id: "550e8400-e29b-41d4-a716-446655440005"
               filter_sql: region = 'us-east-1'
               description: Restrict to US East region
@@ -1256,6 +1257,33 @@ paths:
   /row-filters/{rowFilterId}/bindings:
     parameters:
       - $ref: '../schemas/responses.yaml#/parameters/rowFilterId'
+    get:
+      operationId: listRowFilterBindings
+      summary: List row filter bindings
+      description: Returns a paginated list of principal bindings for the row filter.
+      tags: [Security]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of bindings
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/security.yaml#/PaginatedRowFilterBindings'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
     post:
       operationId: bindRowFilter
       summary: Bind filter to principal
@@ -1437,6 +1465,7 @@ paths:
             schema:
               $ref: '../schemas/security.yaml#/CreateColumnMaskRequest'
             example:
+              name: email_mask
               column_name: email
               mask_expression: '''***@'' || split_part(email, ''@'', 2)'
               description: Mask email local part
@@ -1538,6 +1567,33 @@ paths:
   /column-masks/{columnMaskId}/bindings:
     parameters:
       - $ref: '../schemas/responses.yaml#/parameters/columnMaskId'
+    get:
+      operationId: listColumnMaskBindings
+      summary: List column mask bindings
+      description: Returns a paginated list of principal bindings for the column mask.
+      tags: [Security]
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of bindings
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/security.yaml#/PaginatedColumnMaskBindings'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
     post:
       operationId: bindColumnMask
       summary: Bind mask to principal

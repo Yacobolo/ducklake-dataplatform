@@ -106,11 +106,12 @@ func (m *mockLineageService) GetColumnLineageForSourceColumn(ctx context.Context
 }
 
 type mockTagService struct {
-	listTagsFn    func(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error)
-	createTagFn   func(ctx context.Context, principal string, req domain.CreateTagRequest) (*domain.Tag, error)
-	deleteTagFn   func(ctx context.Context, principal string, id string) error
-	assignTagFn   func(ctx context.Context, principal string, req domain.AssignTagRequest) (*domain.TagAssignment, error)
-	unassignTagFn func(ctx context.Context, principal string, id string) error
+	listTagsFn            func(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error)
+	createTagFn           func(ctx context.Context, principal string, req domain.CreateTagRequest) (*domain.Tag, error)
+	deleteTagFn           func(ctx context.Context, principal string, id string) error
+	assignTagFn           func(ctx context.Context, principal string, req domain.AssignTagRequest) (*domain.TagAssignment, error)
+	unassignTagFn         func(ctx context.Context, principal string, id string) error
+	listAssignmentsForTag func(ctx context.Context, tagID string) ([]domain.TagAssignment, error)
 }
 
 func (m *mockTagService) ListTags(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error) {
@@ -146,6 +147,13 @@ func (m *mockTagService) UnassignTag(ctx context.Context, principal string, id s
 		panic("mockTagService.UnassignTag called but not configured")
 	}
 	return m.unassignTagFn(ctx, principal, id)
+}
+
+func (m *mockTagService) ListAssignmentsForTag(ctx context.Context, tagID string) ([]domain.TagAssignment, error) {
+	if m.listAssignmentsForTag == nil {
+		return nil, nil
+	}
+	return m.listAssignmentsForTag(ctx, tagID)
 }
 
 // === Helpers ===

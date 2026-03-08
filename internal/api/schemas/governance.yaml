@@ -182,3 +182,19 @@ PaginatedTags:
       maxLength: 4096
       pattern: '^\S+$'
       example: eyJpZCI6MTB9
+
+PaginatedTagAssignments:
+  description: A paginated list of tag assignments.
+  type: object
+  properties:
+    data:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/TagAssignment'
+      example: []
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
+      example: eyJpZCI6MTB9

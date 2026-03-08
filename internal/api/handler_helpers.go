@@ -111,6 +111,7 @@ func rowFilterToAPI(f domain.RowFilter) RowFilter {
 	return RowFilter{
 		Id:          &f.ID,
 		TableId:     &f.TableID,
+		Name:        &f.Name,
 		FilterSql:   &f.FilterSQL,
 		Description: &f.Description,
 		CreatedAt:   &t,
@@ -122,6 +123,7 @@ func columnMaskToAPI(m domain.ColumnMask) ColumnMask {
 	return ColumnMask{
 		Id:             &m.ID,
 		TableId:        &m.TableID,
+		Name:           &m.Name,
 		ColumnName:     &m.ColumnName,
 		MaskExpression: &m.MaskExpression,
 		Description:    &m.Description,

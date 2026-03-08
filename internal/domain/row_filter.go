@@ -6,6 +6,7 @@ import "time"
 type RowFilter struct {
 	ID          string
 	TableID     string
+	Name        string
 	FilterSQL   string
 	Description string
 	CreatedAt   time.Time
@@ -14,6 +15,7 @@ type RowFilter struct {
 // CreateRowFilterRequest holds parameters for creating a row filter.
 type CreateRowFilterRequest struct {
 	TableID     string
+	Name        string
 	FilterSQL   string
 	Description string
 }
@@ -22,6 +24,9 @@ type CreateRowFilterRequest struct {
 func (r *CreateRowFilterRequest) Validate() error {
 	if r.TableID == "" {
 		return ErrValidation("table_id is required")
+	}
+	if r.Name == "" {
+		return ErrValidation("name is required")
 	}
 	if r.FilterSQL == "" {
 		return ErrValidation("filter_sql is required")

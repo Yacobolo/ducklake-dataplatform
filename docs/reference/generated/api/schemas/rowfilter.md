@@ -14,5 +14,6 @@ A row-level security filter applied to a table.
 | `description` | `string` | `false` | - |
 | `filter_sql` | `string` | `false` | - |
 | `id` | `string` | `false` | - |
+| `name` | `string` | `false` | - |
 | `table_id` | `string` | `false` | - |
 

@@ -271,6 +271,7 @@ type TagAssignmentSpec struct {
 	SecurableType string `yaml:"securable_type"` // schema, table, column
 	Securable     string `yaml:"securable"`      // dot-path
 	ColumnName    string `yaml:"column_name,omitempty"`
+	AssignmentID  string `yaml:"-" json:"-"`
 }
 
 // === Storage ===
@@ -365,6 +366,7 @@ type ComputeAssignmentSpec struct {
 	PrincipalType string `yaml:"principal_type"` // user or group
 	IsDefault     bool   `yaml:"is_default,omitempty"`
 	FallbackLocal bool   `yaml:"fallback_local,omitempty"`
+	AssignmentID  string `yaml:"-" json:"-"`
 }
 
 // === Workflows ===

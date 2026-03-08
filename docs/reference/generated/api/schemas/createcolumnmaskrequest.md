@@ -5,7 +5,7 @@
 Request body for creating a new column mask.
 
 - Type: `object`
-- Required fields: `column_name`, `mask_expression`
+- Required fields: `column_name`, `mask_expression`, `name`
 
 ## Properties
 
@@ -14,4 +14,5 @@ Request body for creating a new column mask.
 | `column_name` | `string` | `true` | - |
 | `description` | `string` | `false` | - |
 | `mask_expression` | `string` | `true` | - |
+| `name` | `string` | `true` | - |
 

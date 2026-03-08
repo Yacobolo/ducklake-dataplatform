@@ -24,6 +24,7 @@ func (r *RowFilterRepo) Create(ctx context.Context, f *domain.RowFilter) (*domai
 	row, err := r.q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
 		ID:          newID(),
 		TableID:     f.TableID,
+		Name:        sql.NullString{String: f.Name, Valid: f.Name != ""},
 		FilterSql:   f.FilterSQL,
 		Description: sql.NullString{String: f.Description, Valid: f.Description != ""},
 	})

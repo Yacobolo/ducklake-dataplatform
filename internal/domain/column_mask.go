@@ -6,6 +6,7 @@ import "time"
 type ColumnMask struct {
 	ID             string
 	TableID        string
+	Name           string
 	ColumnName     string
 	MaskExpression string
 	Description    string
@@ -15,6 +16,7 @@ type ColumnMask struct {
 // CreateColumnMaskRequest holds parameters for creating a column mask.
 type CreateColumnMaskRequest struct {
 	TableID        string
+	Name           string
 	ColumnName     string
 	MaskExpression string
 	Description    string
@@ -24,6 +26,9 @@ type CreateColumnMaskRequest struct {
 func (r *CreateColumnMaskRequest) Validate() error {
 	if r.TableID == "" {
 		return ErrValidation("table_id is required")
+	}
+	if r.Name == "" {
+		return ErrValidation("name is required")
 	}
 	if r.ColumnName == "" {
 		return ErrValidation("column_name is required")

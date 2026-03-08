@@ -958,8 +958,8 @@ func TestExecute_UnimplementedKindReturnsError(t *testing.T) {
 
 	action := declarative.Action{
 		Operation:    declarative.OpCreate,
-		ResourceKind: declarative.KindVolume,
-		ResourceName: "demo.analytics.stage",
+		ResourceKind: declarative.ResourceKind(999),
+		ResourceName: "unknown.resource",
 	}
 
 	err := sc.Execute(context.Background(), action)
@@ -1764,17 +1764,24 @@ func TestValidateApplyCapabilities_SemanticEndpointRequired(t *testing.T) {
 	assert.Contains(t, err.Error(), "/semantic-models endpoint is unavailable")
 }
 
-func TestValidateApplyCapabilities_AssetActionsUnsupported(t *testing.T) {
+func TestValidateApplyCapabilities_AssetEndpointRequired(t *testing.T) {
 	t.Parallel()
 
-	sc := NewAPIStateClient(gen.NewClient("http://example.test", "", "test-token"))
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/assets", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"code":"NOT_FOUND"}`))
+	})
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
 	err := sc.ValidateApplyCapabilities(context.Background(), []declarative.Action{{
 		Operation:    declarative.OpCreate,
 		ResourceKind: declarative.KindAsset,
 		ResourceName: "daily_kpi",
 	}})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "asset actions are not supported")
+	assert.Contains(t, err.Error(), "/assets endpoint is unavailable")
 }
 
 // === ReadState helper ===
@@ -2345,7 +2352,7 @@ func TestReadState_NotebooksAndAssets(t *testing.T) {
 	assert.Equal(t, "row_count_positive", state.Assets[0].Spec.CheckDefinitions[0].Name)
 }
 
-func TestExecuteAsset_ReturnsReadOnlyError(t *testing.T) {
+func TestExecuteAsset_Create(t *testing.T) {
 	t.Parallel()
 
 	var captured []execCapture
@@ -2359,9 +2366,11 @@ func TestExecuteAsset_ReturnsReadOnlyError(t *testing.T) {
 			Spec: declarative.AssetSpec{AssetType: "table"},
 		},
 	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "asset definitions are read-only")
-	assert.Empty(t, captured)
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+	assert.Equal(t, http.MethodPost, captured[0].Method)
+	assert.Contains(t, captured[0].Path, "/assets")
+	assert.Equal(t, "daily_kpi", bodyStr(captured[0], "asset_key"))
 }
 
 func TestReadState_APIKeys(t *testing.T) {

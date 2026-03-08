@@ -447,6 +447,11 @@ RowFilter:
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
       example: "550e8400-e29b-41d4-a716-446655440000"
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: regional_filter
     filter_sql:
       type: string
       maxLength: 65536
@@ -467,7 +472,7 @@ CreateRowFilterRequest:
   description: Request body for creating a new row-level security filter.
   type: object
   additionalProperties: false
-  required: [filter_sql]
+  required: [name, filter_sql]
   properties:
     table_id:
       type: string
@@ -485,6 +490,11 @@ CreateRowFilterRequest:
       maxLength: 1024
       pattern: '[\s\S]+'
       example: A detailed description
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: regional_filter
 
 RowFilterBindingRequest:
   description: Request body for binding a row filter to a principal.
@@ -502,6 +512,48 @@ RowFilterBindingRequest:
       maxLength: 64
       enum: [user, group]
       example: user
+
+RowFilterBinding:
+  description: Binding between a row filter and a principal.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    row_filter_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    principal_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    principal_type:
+      type: string
+      enum: [user, group]
+      maxLength: 64
+      pattern: '^\S+$'
+      example: user
+
+PaginatedRowFilterBindings:
+  description: Paginated row filter bindings.
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/RowFilterBinding'
+      maxItems: 1000
+      example: []
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 PaginatedRowFilters:
   description: Paginated list of row-level security filters.
@@ -533,6 +585,11 @@ ColumnMask:
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       maxLength: 36
       example: "550e8400-e29b-41d4-a716-446655440000"
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: email_mask
     column_name:
       type: string
       maxLength: 255
@@ -558,8 +615,13 @@ CreateColumnMaskRequest:
   description: Request body for creating a new column mask.
   type: object
   additionalProperties: false
-  required: [column_name, mask_expression]
+  required: [name, column_name, mask_expression]
   properties:
+    name:
+      type: string
+      maxLength: 255
+      pattern: '^\S.*$'
+      example: email_mask
     column_name:
       type: string
       maxLength: 255
@@ -596,6 +658,52 @@ ColumnMaskBindingRequest:
       type: boolean
       default: false
       example: true
+
+ColumnMaskBinding:
+  description: Binding between a column mask and a principal.
+  type: object
+  properties:
+    id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    column_mask_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    principal_id:
+      type: string
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    principal_type:
+      type: string
+      enum: [user, group]
+      maxLength: 64
+      pattern: '^\S+$'
+      example: user
+    see_original:
+      type: boolean
+      default: false
+      example: true
+
+PaginatedColumnMaskBindings:
+  description: Paginated column mask bindings.
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: '#/ColumnMaskBinding'
+      maxItems: 1000
+      example: []
+    next_page_token:
+      type: string
+      maxLength: 4096
+      pattern: '^\S+$'
+      example: eyJpZCI6MTB9
 
 PaginatedColumnMasks:
   description: Paginated list of column masks.

@@ -15,5 +15,6 @@ A column masking rule that transforms column values for specific principals.
 | `description` | `string` | `false` | - |
 | `id` | `string` | `false` | - |
 | `mask_expression` | `string` | `false` | - |
+| `name` | `string` | `false` | - |
 | `table_id` | `string` | `false` | - |
 

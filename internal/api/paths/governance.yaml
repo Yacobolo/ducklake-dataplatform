@@ -242,6 +242,33 @@ paths:
   /tags/{tagId}/assignments:
     parameters:
       - $ref: '../schemas/responses.yaml#/parameters/tagId'
+    get:
+      operationId: listTagAssignments
+      summary: List assignments for a tag
+      tags: [Governance]
+      description: Returns a paginated list of assignments for a tag.
+      parameters:
+        - $ref: '../schemas/common.yaml#/parameters/MaxResults'
+        - $ref: '../schemas/common.yaml#/parameters/PageToken'
+      responses:
+        '200':
+          description: Paginated list of assignments
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/governance.yaml#/PaginatedTagAssignments'
+        '400':
+          $ref: '../schemas/responses.yaml#/responses/BadRequest'
+        '401':
+          $ref: '../schemas/responses.yaml#/responses/Unauthorized'
+        '403':
+          $ref: '../schemas/responses.yaml#/responses/Forbidden'
+        '404':
+          $ref: '../schemas/responses.yaml#/responses/NotFound'
+        '429':
+          $ref: '../schemas/responses.yaml#/responses/RateLimitExceeded'
+        '500':
+          $ref: '../schemas/responses.yaml#/responses/InternalError'
     post:
       operationId: createTagAssignment
       summary: Assign a tag to a securable object

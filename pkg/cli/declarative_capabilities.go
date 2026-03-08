@@ -119,7 +119,12 @@ func (c *APIStateClient) ValidateApplyCapabilities(ctx context.Context, actions 
 		}
 	}
 	if endpointRequiredByPlan(actions, declarative.KindAsset) {
-		return fmt.Errorf("asset actions are not supported by declarative apply yet; asset definitions are currently read-only through the API")
+		if err := c.probeEndpoint(ctx, "/assets"); err != nil {
+			if c.isOptionalReadError(err) {
+				return fmt.Errorf("asset actions present but /assets endpoint is unavailable: %w", err)
+			}
+			return fmt.Errorf("cannot probe /assets endpoint: %w", err)
+		}
 	}
 	return nil
 }

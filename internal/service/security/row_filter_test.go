@@ -62,6 +62,7 @@ func TestRowFilterService_Create_AdminAllowed(t *testing.T) {
 	svc := NewRowFilterService(repo, audit)
 
 	result, err := svc.Create(adminCtx(), domain.CreateRowFilterRequest{
+		Name:      "first-class-only",
 		TableID:   "t-1",
 		FilterSQL: `"Pclass" = 1`,
 	})
@@ -74,6 +75,7 @@ func TestRowFilterService_Create_NonAdminDenied(t *testing.T) {
 	svc := NewRowFilterService(&mockRowFilterRepo{}, &testutil.MockAuditRepo{})
 
 	_, err := svc.Create(nonAdminCtx(), domain.CreateRowFilterRequest{
+		Name:      "first-class-only",
 		TableID:   "t-1",
 		FilterSQL: `"Pclass" = 1`,
 	})
@@ -86,6 +88,7 @@ func TestRowFilterService_Create_ValidationError(t *testing.T) {
 	svc := NewRowFilterService(&mockRowFilterRepo{}, &testutil.MockAuditRepo{})
 
 	_, err := svc.Create(adminCtx(), domain.CreateRowFilterRequest{
+		Name: "missing-filter-sql",
 		TableID: "t-1",
 		// Missing FilterSQL.
 	})
@@ -238,6 +241,7 @@ func TestRowFilterService_Create_InvalidSQL(t *testing.T) {
 	svc := NewRowFilterService(&mockRowFilterRepo{}, &testutil.MockAuditRepo{})
 
 	_, err := svc.Create(adminCtx(), domain.CreateRowFilterRequest{
+		Name:      "invalid-filter",
 		TableID:   "t-1",
 		FilterSQL: "NOT VALID (((",
 	})
