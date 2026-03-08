@@ -60,3 +60,6 @@ docs/.vitepress/dist/
 docs/.vitepress/cache/
 web/node_modules/
 .playwright-cli/
+
+# macOS Finder metadata
+.DS_Store
