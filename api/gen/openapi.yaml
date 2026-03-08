@@ -4943,7 +4943,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/MetricQueryExplainResponse'
         '401':
           description: Access is unauthorized.
           content:
@@ -4975,7 +4975,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/MetricQueryRequest'
   /metric-queries:run:
     post:
       operationId: runMetricQuery
@@ -4986,7 +4986,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/MetricQueryRunResponse'
         '401':
           description: Access is unauthorized.
           content:
@@ -5018,7 +5018,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/MetricQueryRequest'
   /metrics/{metricName}/freshness:
     get:
       operationId: checkMetricFreshness
@@ -5046,7 +5046,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/MetricFreshnessStatus'
         '401':
           description: Access is unauthorized.
           content:
@@ -5089,7 +5089,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ModelRun'
         '401':
           description: Access is unauthorized.
           content:
@@ -5121,7 +5121,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/TriggerModelRunRequest'
     get:
       operationId: listModelRuns
       parameters:
@@ -5150,7 +5150,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedModelRuns'
         '401':
           description: Access is unauthorized.
           content:
@@ -5186,7 +5186,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ModelRun'
         '401':
           description: Access is unauthorized.
           content:
@@ -5234,7 +5234,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ModelRun'
         '401':
           description: Access is unauthorized.
           content:
@@ -5276,7 +5276,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ModelRunStepList'
         '401':
           description: Access is unauthorized.
           content:
@@ -5329,7 +5329,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ModelTestResultList'
         '401':
           description: Access is unauthorized.
           content:
@@ -5391,7 +5391,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedModels'
         '401':
           description: Access is unauthorized.
           content:
@@ -5421,7 +5421,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Model'
         '401':
           description: Access is unauthorized.
           content:
@@ -5470,7 +5470,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ModelDAG'
         '401':
           description: Access is unauthorized.
           content:
@@ -5501,7 +5501,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Model'
         '401':
           description: Access is unauthorized.
           content:
@@ -5533,7 +5533,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/PromoteNotebookRequest'
   /models/{projectName}/{modelName}:
     get:
       operationId: getModel
@@ -5554,7 +5554,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Model'
         '401':
           description: Access is unauthorized.
           content:
@@ -5606,7 +5606,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Model'
         '401':
           description: Access is unauthorized.
           content:
@@ -5638,7 +5638,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/UpdateModelRequest'
     delete:
       operationId: deleteModel
       parameters:
@@ -5701,7 +5701,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/FreshnessStatus'
         '401':
           description: Access is unauthorized.
           content:
@@ -5754,7 +5754,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ModelTest'
         '401':
           description: Access is unauthorized.
           content:
@@ -5786,7 +5786,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateModelTestRequest'
     get:
       operationId: listModelTests
       parameters:
@@ -5806,7 +5806,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/ModelTestList'
         '401':
           description: Access is unauthorized.
           content:
@@ -5916,7 +5916,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedNotebooks'
         '401':
           description: Access is unauthorized.
           content:
@@ -5946,7 +5946,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Notebook'
         '401':
           description: Access is unauthorized.
           content:
@@ -5978,7 +5978,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateNotebookRequest'
   /notebooks/{notebookId}:
     get:
       operationId: getNotebook
@@ -5994,7 +5994,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/NotebookDetail'
         '401':
           description: Access is unauthorized.
           content:
@@ -6041,7 +6041,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Notebook'
         '401':
           description: Access is unauthorized.
           content:
@@ -6073,7 +6073,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/UpdateNotebookRequest'
     delete:
       operationId: deleteNotebook
       parameters:
@@ -6126,7 +6126,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Cell'
         '401':
           description: Access is unauthorized.
           content:
@@ -6158,7 +6158,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateCellRequest'
   /notebooks/{notebookId}/cells/reorder:
     post:
       operationId: reorderCells
@@ -6174,7 +6174,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/CellList'
         '401':
           description: Access is unauthorized.
           content:
@@ -6206,7 +6206,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/ReorderCellsRequest'
   /notebooks/{notebookId}/cells/{cellId}:
     patch:
       operationId: updateCell
@@ -6227,7 +6227,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Cell'
         '401':
           description: Access is unauthorized.
           content:
@@ -6259,7 +6259,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/UpdateCellRequest'
     delete:
       operationId: deleteCell
       parameters:
@@ -6330,7 +6330,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedNotebookJobs'
         '401':
           description: Access is unauthorized.
           content:
@@ -6383,7 +6383,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/NotebookJob'
         '401':
           description: Access is unauthorized.
           content:
@@ -6431,7 +6431,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/NotebookSession'
         '401':
           description: Access is unauthorized.
           content:
@@ -6526,7 +6526,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/CellExecutionResult'
         '401':
           description: Access is unauthorized.
           content:
@@ -6573,7 +6573,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/RunAllResult'
         '401':
           description: Access is unauthorized.
           content:
@@ -6615,12 +6615,12 @@ paths:
           schema:
             type: string
       responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/NotebookJob'
         '401':
           description: Access is unauthorized.
           content:
@@ -8874,7 +8874,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/SourceFreshnessStatus'
         '401':
           description: Access is unauthorized.
           content:
@@ -9740,6 +9740,64 @@ components:
         total_count:
           type: integer
           format: int32
+    Cell:
+      type: object
+      properties:
+        id:
+          type: string
+        notebook_id:
+          type: string
+        cell_type:
+          $ref: '#/components/schemas/CellCellType'
+        content:
+          type: string
+        position:
+          type: integer
+          format: int32
+        last_result:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CellCellType:
+      type: string
+      enum:
+        - sql
+        - markdown
+    CellExecutionResult:
+      type: object
+      properties:
+        cell_id:
+          type: string
+        columns:
+          type: array
+          items:
+            type: string
+        rows:
+          type: array
+          items:
+            type: array
+            items: {}
+        row_count:
+          type: integer
+          format: int32
+        error:
+          type: string
+        duration_ms:
+          type: integer
+          format: int64
+    CellList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cell'
     CleanupAPIKeysResponse:
       type: object
       required:
@@ -9964,6 +10022,18 @@ components:
           type: string
         comment:
           type: string
+    CreateCellRequest:
+      type: object
+      required:
+        - cell_type
+      properties:
+        cell_type:
+          $ref: '#/components/schemas/CellCellType'
+        content:
+          type: string
+        position:
+          type: integer
+          format: int32
     CreateColumnMaskRequest:
       type: object
       required:
@@ -10133,14 +10203,55 @@ components:
     CreateModelRequest:
       type: object
       required:
+        - project_name
+        - name
+        - sql
+      properties:
+        project_name:
+          type: string
+        name:
+          type: string
+        sql:
+          type: string
+        materialization:
+          $ref: '#/components/schemas/ModelMaterialization'
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        config:
+          $ref: '#/components/schemas/ModelConfig'
+        contract:
+          $ref: '#/components/schemas/ModelContract'
+        freshness_policy:
+          $ref: '#/components/schemas/FreshnessPolicy'
+    CreateModelTestRequest:
+      type: object
+      required:
+        - name
+        - test_type
+      properties:
+        name:
+          type: string
+        test_type:
+          $ref: '#/components/schemas/ModelTestTestType'
+        column:
+          type: string
+        config:
+          $ref: '#/components/schemas/ModelTestConfig'
+    CreateNotebookRequest:
+      type: object
+      required:
         - name
       properties:
         name:
           type: string
-        payload:
-          type: object
-          additionalProperties:
-            type: string
+        description:
+          type: string
+        source:
+          type: string
     CreatePrincipalRequest:
       type: object
       required:
@@ -10300,6 +10411,28 @@ components:
           type: string
         updated_at:
           type: string
+    FreshnessPolicy:
+      type: object
+      properties:
+        max_lag_seconds:
+          type: integer
+          format: int64
+        cron_schedule:
+          type: string
+    FreshnessStatus:
+      type: object
+      properties:
+        is_fresh:
+          type: boolean
+        last_run_at:
+          type: string
+          format: date-time
+        max_lag_seconds:
+          type: integer
+          format: int64
+        stale_since:
+          type: string
+          format: date-time
     GenericRequest:
       type: object
       properties:
@@ -10691,6 +10824,478 @@ components:
         table_count:
           type: integer
           format: int32
+    MetricFreshnessStatus:
+      type: object
+      properties:
+        metric_name:
+          type: string
+        project_name:
+          type: string
+        semantic_model_name:
+          type: string
+        freshness_status:
+          type: string
+        freshness_basis:
+          type: array
+          items:
+            type: string
+        selected_pre_aggregation:
+          type: string
+        checked_at:
+          type: string
+          format: date-time
+    MetricQueryExplainResponse:
+      type: object
+      properties:
+        plan:
+          $ref: '#/components/schemas/MetricQueryPlan'
+    MetricQueryJoinStep:
+      type: object
+      properties:
+        relationship_name:
+          type: string
+        from_model:
+          type: string
+        to_model:
+          type: string
+        join_sql:
+          type: string
+    MetricQueryPlan:
+      type: object
+      properties:
+        base_model_name:
+          type: string
+        base_relation:
+          type: string
+        metrics:
+          type: array
+          items:
+            type: string
+        dimensions:
+          type: array
+          items:
+            type: string
+        join_path:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricQueryJoinStep'
+        selected_pre_aggregation:
+          type: string
+        generated_sql:
+          type: string
+        freshness_status:
+          type: string
+        freshness_basis:
+          type: array
+          items:
+            type: string
+    MetricQueryRequest:
+      type: object
+      required:
+        - project_name
+        - semantic_model_name
+        - metrics
+      properties:
+        project_name:
+          type: string
+        semantic_model_name:
+          type: string
+        metrics:
+          type: array
+          items:
+            type: string
+        dimensions:
+          type: array
+          items:
+            type: string
+        filters:
+          type: array
+          items:
+            type: string
+        order_by:
+          type: array
+          items:
+            type: string
+        limit:
+          type: integer
+          format: int32
+    MetricQueryRunResponse:
+      type: object
+      properties:
+        plan:
+          $ref: '#/components/schemas/MetricQueryPlan'
+        result:
+          $ref: '#/components/schemas/QueryResult'
+    Model:
+      type: object
+      properties:
+        id:
+          type: string
+        project_name:
+          type: string
+        name:
+          type: string
+        sql:
+          type: string
+        materialization:
+          $ref: '#/components/schemas/ModelMaterialization'
+        description:
+          type: string
+        owner:
+          type: string
+        depends_on:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        config:
+          $ref: '#/components/schemas/ModelConfig'
+        contract:
+          $ref: '#/components/schemas/ModelContract'
+        freshness_policy:
+          $ref: '#/components/schemas/FreshnessPolicy'
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ModelConfig:
+      type: object
+      properties:
+        unique_key:
+          type: array
+          items:
+            type: string
+        incremental_strategy:
+          type: string
+        on_schema_change:
+          $ref: '#/components/schemas/ModelConfigOnSchemaChange'
+    ModelConfigOnSchemaChange:
+      type: string
+      enum:
+        - ignore
+        - fail
+    ModelContract:
+      type: object
+      properties:
+        enforce:
+          type: boolean
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelContractColumn'
+    ModelContractColumn:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        nullable:
+          type: boolean
+    ModelDAG:
+      type: object
+      properties:
+        tiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelDAGTier'
+    ModelDAGNode:
+      type: object
+      properties:
+        project_name:
+          type: string
+        model_name:
+          type: string
+        materialization:
+          $ref: '#/components/schemas/ModelMaterialization'
+        depends_on:
+          type: array
+          items:
+            type: string
+    ModelDAGTier:
+      type: object
+      properties:
+        tier:
+          type: integer
+          format: int32
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelDAGNode'
+    ModelMaterialization:
+      type: string
+      enum:
+        - VIEW
+        - TABLE
+        - INCREMENTAL
+        - EPHEMERAL
+        - SEED
+        - SNAPSHOT
+    ModelRun:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        trigger_type:
+          type: string
+        triggered_by:
+          type: string
+        project_name:
+          type: string
+        model_names:
+          type: array
+          items:
+            type: string
+        full_refresh:
+          type: boolean
+        compile_manifest:
+          type: string
+        compile_diagnostics:
+          $ref: '#/components/schemas/ModelRunCompileDiagnostics'
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ModelRunCompileDiagnostics:
+      type: object
+      properties:
+        warnings:
+          type: array
+          items:
+            type: string
+        errors:
+          type: array
+          items:
+            type: string
+    ModelRunStep:
+      type: object
+      properties:
+        id:
+          type: string
+        run_id:
+          type: string
+        model_name:
+          type: string
+        compiled_sql:
+          type: string
+        compiled_hash:
+          type: string
+        depends_on:
+          type: array
+          items:
+            type: string
+        vars_used:
+          type: array
+          items:
+            type: string
+        macros_used:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        rows_affected:
+          type: integer
+          format: int64
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ModelRunStepList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelRunStep'
+    ModelTest:
+      type: object
+      properties:
+        id:
+          type: string
+        model_id:
+          type: string
+        name:
+          type: string
+        test_type:
+          $ref: '#/components/schemas/ModelTestTestType'
+        column:
+          type: string
+        config:
+          $ref: '#/components/schemas/ModelTestConfig'
+        created_at:
+          type: string
+          format: date-time
+    ModelTestConfig:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            type: string
+        to_model:
+          type: string
+        to_column:
+          type: string
+        custom_sql:
+          type: string
+    ModelTestList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelTest'
+    ModelTestResult:
+      type: object
+      properties:
+        id:
+          type: string
+        run_step_id:
+          type: string
+        test_id:
+          type: string
+        test_name:
+          type: string
+        status:
+          $ref: '#/components/schemas/ModelTestResultStatus'
+        rows_returned:
+          type: integer
+          format: int64
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ModelTestResultList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelTestResult'
+    ModelTestResultStatus:
+      type: string
+      enum:
+        - PASS
+        - FAIL
+        - ERROR
+    ModelTestTestType:
+      type: string
+      enum:
+        - not_null
+        - unique
+        - accepted_values
+        - relationships
+        - custom_sql
+    Notebook:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    NotebookDetail:
+      type: object
+      properties:
+        notebook:
+          $ref: '#/components/schemas/Notebook'
+        cells:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cell'
+    NotebookJob:
+      type: object
+      properties:
+        id:
+          type: string
+        notebook_id:
+          type: string
+        session_id:
+          type: string
+        state:
+          $ref: '#/components/schemas/NotebookJobState'
+        result:
+          type: string
+        error:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    NotebookJobState:
+      type: string
+      enum:
+        - pending
+        - running
+        - complete
+        - failed
+    NotebookSession:
+      type: object
+      properties:
+        id:
+          type: string
+        notebook_id:
+          type: string
+        principal:
+          type: string
+        state:
+          $ref: '#/components/schemas/NotebookSessionState'
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+    NotebookSessionState:
+      type: string
+      enum:
+        - active
+        - closed
     OIDCProviderRequest:
       type: object
       required:
@@ -10886,6 +11491,50 @@ components:
             $ref: '#/components/schemas/Macro'
         next_page_token:
           type: string
+    PaginatedModelRuns:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelRun'
+        next_page_token:
+          type: string
+    PaginatedModels:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Model'
+        next_page_token:
+          type: string
+    PaginatedNotebookJobs:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotebookJob'
+        next_page_token:
+          type: string
+    PaginatedNotebooks:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notebook'
+        next_page_token:
+          type: string
     PaginatedPrincipals:
       type: object
       required:
@@ -11029,6 +11678,25 @@ components:
           type: string
         granted_at:
           type: string
+    PromoteNotebookRequest:
+      type: object
+      required:
+        - notebook_id
+        - cell_index
+        - project_name
+        - name
+      properties:
+        notebook_id:
+          type: string
+        cell_index:
+          type: integer
+          format: int32
+        project_name:
+          type: string
+        name:
+          type: string
+        materialization:
+          $ref: '#/components/schemas/ModelMaterialization'
     PurgeLineageRequest:
       type: object
       required:
@@ -11135,6 +11803,15 @@ components:
           format: int64
         next_page_token:
           type: string
+    ReorderCellsRequest:
+      type: object
+      required:
+        - cell_ids
+      properties:
+        cell_ids:
+          type: array
+          items:
+            type: string
     RevokeWebSessionsRequest:
       type: object
       required:
@@ -11169,6 +11846,18 @@ components:
           type: string
         principal_type:
           type: string
+    RunAllResult:
+      type: object
+      properties:
+        notebook_id:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CellExecutionResult'
+        total_duration_ms:
+          type: integer
+          format: int64
     SchemaDetail:
       type: object
       required:
@@ -11196,6 +11885,26 @@ components:
           type: string
     SetDefaultCatalogRequest:
       type: object
+    SourceFreshnessStatus:
+      type: object
+      properties:
+        is_fresh:
+          type: boolean
+        source_schema:
+          type: string
+        source_table:
+          type: string
+        timestamp_column:
+          type: string
+        last_loaded_at:
+          type: string
+          format: date-time
+        max_lag_seconds:
+          type: integer
+          format: int64
+        stale_since:
+          type: string
+          format: date-time
     StorageCredential:
       type: object
       required:
@@ -11326,6 +12035,23 @@ components:
         - table
         - column
         - macro
+    TriggerModelRunRequest:
+      type: object
+      required:
+        - project_name
+      properties:
+        project_name:
+          type: string
+        model_names:
+          type: array
+          items:
+            type: string
+        full_refresh:
+          type: boolean
+        target_catalog:
+          type: string
+        target_schema:
+          type: string
     UpdateCatalogRegistrationRequest:
       type: object
       properties:
@@ -11333,6 +12059,14 @@ components:
           type: string
         comment:
           type: string
+    UpdateCellRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        position:
+          type: integer
+          format: int32
     UpdateColumnRequest:
       type: object
       properties:
@@ -11396,6 +12130,32 @@ components:
           type: array
           items:
             type: string
+    UpdateModelRequest:
+      type: object
+      properties:
+        sql:
+          type: string
+        materialization:
+          $ref: '#/components/schemas/ModelMaterialization'
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        config:
+          $ref: '#/components/schemas/ModelConfig'
+        contract:
+          $ref: '#/components/schemas/ModelContract'
+        freshness_policy:
+          $ref: '#/components/schemas/FreshnessPolicy'
+    UpdateNotebookRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
     UpdatePrincipalAdminRequest:
       type: object
       required:

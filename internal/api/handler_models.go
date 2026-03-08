@@ -392,12 +392,10 @@ func modelToAPI(m domain.Model) Model {
 
 func modelRunToAPI(r domain.ModelRun) ModelRun {
 	ct := r.CreatedAt
-	status := ModelRunStatus(r.Status)
-	triggerType := ModelRunTriggerType(r.TriggerType)
 	resp := ModelRun{
 		Id:          &r.ID,
-		Status:      &status,
-		TriggerType: &triggerType,
+		Status:      strPtrIfNonEmpty(r.Status),
+		TriggerType: strPtrIfNonEmpty(r.TriggerType),
 		TriggeredBy: &r.TriggeredBy,
 		CreatedAt:   &ct,
 	}
@@ -479,12 +477,11 @@ func selectorToModelNames(selector string) []string {
 
 func modelRunStepToAPI(s domain.ModelRunStep) ModelRunStep {
 	ct := s.CreatedAt
-	status := ModelRunStepStatus(s.Status)
 	resp := ModelRunStep{
 		Id:        &s.ID,
 		RunId:     &s.RunID,
 		ModelName: &s.ModelName,
-		Status:    &status,
+		Status:    strPtrIfNonEmpty(s.Status),
 		CreatedAt: &ct,
 	}
 	if s.CompiledSQL != nil {

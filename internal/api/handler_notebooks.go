@@ -279,7 +279,7 @@ func (h *APIHandler) ReorderCells(ctx context.Context, req GenReorderCellsReques
 		data[i] = cellToAPI(c)
 	}
 	return ReorderCells200JSONResponse{
-		Body:    data,
+		Body:    CellList{Data: &data},
 		Headers: ReorderCells200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

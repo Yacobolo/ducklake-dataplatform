@@ -168,19 +168,19 @@ op deleteComputeAssignment(endpointName: string, assignmentId: string): NoConten
 
 @route("/notebooks")
 @get
-op listNotebooks(@query owner?: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op listNotebooks(@query owner?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedNotebooks> | StandardErrorResponses;
 
 @route("/notebooks")
 @post
-op createNotebook(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createNotebook(@body body: CreateNotebookRequest): Created<Notebook> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}")
 @get
-op getNotebook(notebookId: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getNotebook(notebookId: string): Ok<NotebookDetail> | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}")
 @patch(#{ implicitOptionality: true })
-op updateNotebook(notebookId: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op updateNotebook(notebookId: string, @body body: UpdateNotebookRequest): Ok<Notebook> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}")
 @delete
@@ -188,15 +188,15 @@ op deleteNotebook(notebookId: string): NoContent | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/cells")
 @post
-op createCell(notebookId: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createCell(notebookId: string, @body body: CreateCellRequest): Created<Cell> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/cells/reorder")
 @post
-op reorderCells(notebookId: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op reorderCells(notebookId: string, @body body: ReorderCellsRequest): Ok<CellList> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/cells/{cellId}")
 @patch(#{ implicitOptionality: true })
-op updateCell(notebookId: string, cellId: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op updateCell(notebookId: string, cellId: string, @body body: UpdateCellRequest): Ok<Cell> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/cells/{cellId}")
 @delete
@@ -204,7 +204,7 @@ op deleteCell(notebookId: string, cellId: string): NoContent | MutatingErrorResp
 
 @route("/notebooks/{notebookId}/sessions")
 @post
-op createNotebookSession(notebookId: string): Created<GenericResponse> | MutatingErrorResponses;
+op createNotebookSession(notebookId: string): Created<NotebookSession> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}")
 @delete
@@ -212,23 +212,23 @@ op closeNotebookSession(notebookId: string, sessionId: string): NoContent | Muta
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}")
 @post
-op executeCell(notebookId: string, sessionId: string, cellId: string): Ok<GenericResponse> | MutatingErrorResponses;
+op executeCell(notebookId: string, sessionId: string, cellId: string): Ok<CellExecutionResult> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}/run-all")
 @post
-op runAllCells(notebookId: string, sessionId: string): Ok<GenericResponse> | MutatingErrorResponses;
+op runAllCells(notebookId: string, sessionId: string): Ok<RunAllResult> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}/run-all-async")
 @post
-op runAllCellsAsync(notebookId: string, sessionId: string): Created<GenericResponse> | MutatingErrorResponses;
+op runAllCellsAsync(notebookId: string, sessionId: string): Accepted<NotebookJob> | MutatingErrorResponses;
 
 @route("/notebooks/{notebookId}/jobs")
 @get
-op listNotebookJobs(notebookId: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
+op listNotebookJobs(notebookId: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedNotebookJobs> | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/jobs/{jobId}")
 @get
-op getNotebookJob(notebookId: string, jobId: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getNotebookJob(notebookId: string, jobId: string): Ok<NotebookJob> | ResourceErrorResponses;
 
 @route("/git-repos")
 @get
@@ -304,19 +304,19 @@ op listPipelineJobRuns(runId: string): Ok<GenericResponse> | ResourceErrorRespon
 
 @route("/models")
 @get
-op listModels(@query project_name?: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op listModels(@query project_name?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedModels> | StandardErrorResponses;
 
 @route("/models")
 @post
-op createModel(@body body: CreateModelRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createModel(@body body: CreateModelRequest): Created<Model> | MutatingErrorResponses;
 
 @route("/models/{projectName}/{modelName}")
 @get
-op getModel(projectName: string, modelName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getModel(projectName: string, modelName: string): Ok<Model> | ResourceErrorResponses;
 
 @route("/models/{projectName}/{modelName}")
 @patch(#{ implicitOptionality: true })
-op updateModel(projectName: string, modelName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op updateModel(projectName: string, modelName: string, @body body: UpdateModelRequest): Ok<Model> | MutatingErrorResponses;
 
 @route("/models/{projectName}/{modelName}")
 @delete
@@ -324,31 +324,31 @@ op deleteModel(projectName: string, modelName: string): NoContent | MutatingErro
 
 @route("/models/dag")
 @get
-op getModelDAG(@query project_name?: string): Ok<GenericResponse> | StandardErrorResponses;
+op getModelDAG(@query project_name?: string): Ok<ModelDAG> | StandardErrorResponses;
 
 @route("/model-runs")
 @post
-op triggerModelRun(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op triggerModelRun(@body body: TriggerModelRunRequest): Created<ModelRun> | MutatingErrorResponses;
 
 @route("/model-runs")
 @get
-op listModelRuns(@query status?: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op listModelRuns(@query status?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedModelRuns> | StandardErrorResponses;
 
 @route("/model-runs/{runId}")
 @get
-op getModelRun(runId: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getModelRun(runId: string): Ok<ModelRun> | ResourceErrorResponses;
 
 @route("/model-runs/{runId}/steps")
 @get
-op listModelRunSteps(runId: string): Ok<GenericResponse> | ResourceErrorResponses;
+op listModelRunSteps(runId: string): Ok<ModelRunStepList> | ResourceErrorResponses;
 
 @route("/models/{projectName}/{modelName}/tests")
 @post
-op createModelTest(projectName: string, modelName: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createModelTest(projectName: string, modelName: string, @body body: CreateModelTestRequest): Created<ModelTest> | MutatingErrorResponses;
 
 @route("/models/{projectName}/{modelName}/tests")
 @get
-op listModelTests(projectName: string, modelName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op listModelTests(projectName: string, modelName: string): Ok<ModelTestList> | ResourceErrorResponses;
 
 @route("/models/{projectName}/{modelName}/tests/{testId}")
 @delete
@@ -356,23 +356,23 @@ op deleteModelTest(projectName: string, modelName: string, testId: string): NoCo
 
 @route("/model-runs/{runId}/steps/{stepId}/test-results")
 @get
-op listModelTestResults(runId: string, stepId: string): Ok<GenericResponse> | ResourceErrorResponses;
+op listModelTestResults(runId: string, stepId: string): Ok<ModelTestResultList> | ResourceErrorResponses;
 
 @route("/models/{projectName}/{modelName}/freshness")
 @get
-op checkModelFreshness(projectName: string, modelName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op checkModelFreshness(projectName: string, modelName: string): Ok<FreshnessStatus> | ResourceErrorResponses;
 
 @route("/sources/{sourceSchema}/{sourceTable}/freshness")
 @get
-op checkSourceFreshness(sourceSchema: string, sourceTable: string, @query timestamp_column?: string, @query max_lag_seconds?: int64): Ok<GenericResponse> | ResourceErrorResponses;
+op checkSourceFreshness(sourceSchema: string, sourceTable: string, @query timestamp_column?: string, @query max_lag_seconds?: int64): Ok<SourceFreshnessStatus> | ResourceErrorResponses;
 
 @route("/models/from-notebook")
 @post
-op promoteNotebookToModel(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op promoteNotebookToModel(@body body: PromoteNotebookRequest): Created<Model> | MutatingErrorResponses;
 
 @route("/model-runs/{runId}/cancel")
 @post
-op cancelModelRun(runId: string): Ok<GenericResponse> | MutatingErrorResponses;
+op cancelModelRun(runId: string): Ok<ModelRun> | MutatingErrorResponses;
 
 @route("/macros")
 @get
@@ -476,12 +476,12 @@ op deleteSemanticRelationship(relationshipName: string): NoContent | MutatingErr
 
 @route("/metric-queries:explain")
 @post
-op explainMetricQuery(@body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op explainMetricQuery(@body body: MetricQueryRequest): Ok<MetricQueryExplainResponse> | MutatingErrorResponses;
 
 @route("/metric-queries:run")
 @post
-op runMetricQuery(@body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op runMetricQuery(@body body: MetricQueryRequest): Ok<MetricQueryRunResponse> | MutatingErrorResponses;
 
 @route("/metrics/{metricName}/freshness")
 @get
-op checkMetricFreshness(metricName: string, @query project_name?: string, @query semantic_model_name?: string): Ok<GenericResponse> | ResourceErrorResponses;
+op checkMetricFreshness(metricName: string, @query project_name?: string, @query semantic_model_name?: string): Ok<MetricFreshnessStatus> | ResourceErrorResponses;

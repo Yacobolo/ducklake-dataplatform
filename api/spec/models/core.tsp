@@ -720,13 +720,407 @@ model SubmitQueryRequest {
   request_id?: string;
 }
 
-model CreateModelRequest {
+enum ModelMaterialization {
+  VIEW,
+  TABLE,
+  INCREMENTAL,
+  EPHEMERAL,
+  SEED,
+  SNAPSHOT,
+}
+
+enum ModelConfigOnSchemaChange {
+  ignore,
+  fail,
+}
+
+model ModelConfig {
+  unique_key?: string[];
+  incremental_strategy?: string;
+  on_schema_change?: ModelConfigOnSchemaChange;
+}
+
+model ModelContractColumn {
   name: string;
-  payload?: Record<string>;
+  type: string;
+  nullable?: boolean;
+}
+
+model ModelContract {
+  enforce?: boolean;
+  columns?: ModelContractColumn[];
+}
+
+model FreshnessPolicy {
+  max_lag_seconds?: int64;
+  cron_schedule?: string;
+}
+
+model CreateModelRequest {
+  project_name: string;
+  name: string;
+  sql: string;
+  materialization?: ModelMaterialization;
+  description?: string;
+  tags?: string[];
+  config?: ModelConfig;
+  contract?: ModelContract;
+  freshness_policy?: FreshnessPolicy;
+}
+
+model UpdateModelRequest {
+  sql?: string;
+  materialization?: ModelMaterialization;
+  description?: string;
+  tags?: string[];
+  config?: ModelConfig;
+  contract?: ModelContract;
+  freshness_policy?: FreshnessPolicy;
+}
+
+model Model {
+  id?: string;
+  project_name?: string;
+  name?: string;
+  sql?: string;
+  materialization?: ModelMaterialization;
+  description?: string;
+  owner?: string;
+  depends_on?: string[];
+  tags?: string[];
+  config?: ModelConfig;
+  contract?: ModelContract;
+  freshness_policy?: FreshnessPolicy;
+  created_by?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedModels {
+  data: Model[];
+  next_page_token?: string;
+}
+
+model ModelDAGNode {
+  project_name?: string;
+  model_name?: string;
+  materialization?: ModelMaterialization;
+  depends_on?: string[];
+}
+
+model ModelDAGTier {
+  tier?: int32;
+  nodes?: ModelDAGNode[];
+}
+
+model ModelDAG {
+  tiers?: ModelDAGTier[];
+}
+
+enum ModelTestTestType {
+  not_null,
+  unique,
+  accepted_values,
+  relationships,
+  custom_sql,
+}
+
+model ModelTestConfig {
+  values?: string[];
+  to_model?: string;
+  to_column?: string;
+  custom_sql?: string;
+}
+
+model CreateModelTestRequest {
+  name: string;
+  test_type: ModelTestTestType;
+  column?: string;
+  config?: ModelTestConfig;
+}
+
+model ModelTest {
+  id?: string;
+  model_id?: string;
+  name?: string;
+  test_type?: ModelTestTestType;
+  column?: string;
+  config?: ModelTestConfig;
+  created_at?: utcDateTime;
+}
+
+model ModelTestList {
+  data: ModelTest[];
+}
+
+enum ModelTestResultStatus {
+  PASS,
+  FAIL,
+  ERROR,
+}
+
+model ModelTestResult {
+  id?: string;
+  run_step_id?: string;
+  test_id?: string;
+  test_name?: string;
+  status?: ModelTestResultStatus;
+  rows_returned?: int64;
+  error_message?: string;
+  created_at?: utcDateTime;
+}
+
+model ModelTestResultList {
+  data: ModelTestResult[];
+}
+
+model FreshnessStatus {
+  is_fresh?: boolean;
+  last_run_at?: utcDateTime;
+  max_lag_seconds?: int64;
+  stale_since?: utcDateTime;
+}
+
+model SourceFreshnessStatus {
+  is_fresh?: boolean;
+  source_schema?: string;
+  source_table?: string;
+  timestamp_column?: string;
+  last_loaded_at?: utcDateTime;
+  max_lag_seconds?: int64;
+  stale_since?: utcDateTime;
+}
+
+model PromoteNotebookRequest {
+  notebook_id: string;
+  cell_index: int32;
+  project_name: string;
+  name: string;
+  materialization?: ModelMaterialization;
+}
+
+model CreateNotebookRequest {
+  name: string;
+  description?: string;
+  source?: string;
+}
+
+model UpdateNotebookRequest {
+  name?: string;
+  description?: string;
+}
+
+model Notebook {
+  id?: string;
+  name?: string;
+  description?: string;
+  owner?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedNotebooks {
+  data: Notebook[];
+  next_page_token?: string;
+}
+
+enum CellCellType {
+  sql,
+  markdown,
+}
+
+model CreateCellRequest {
+  cell_type: CellCellType;
+  content?: string;
+  position?: int32;
+}
+
+model UpdateCellRequest {
+  content?: string;
+  position?: int32;
+}
+
+model Cell {
+  id?: string;
+  notebook_id?: string;
+  cell_type?: CellCellType;
+  content?: string;
+  position?: int32;
+  last_result?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model CellList {
+  data: Cell[];
+}
+
+model ReorderCellsRequest {
+  cell_ids: string[];
+}
+
+model NotebookDetail {
+  notebook?: Notebook;
+  cells?: Cell[];
+}
+
+enum NotebookSessionState {
+  active,
+  closed,
+}
+
+model NotebookSession {
+  id?: string;
+  notebook_id?: string;
+  principal?: string;
+  state?: NotebookSessionState;
+  created_at?: utcDateTime;
+  last_used_at?: utcDateTime;
+}
+
+model CellExecutionResult {
+  cell_id?: string;
+  columns?: string[];
+  rows?: unknown[][];
+  row_count?: int32;
+  error?: string;
+  duration_ms?: int64;
+}
+
+model RunAllResult {
+  notebook_id?: string;
+  results?: CellExecutionResult[];
+  total_duration_ms?: int64;
+}
+
+enum NotebookJobState {
+  pending,
+  running,
+  complete,
+  failed,
+}
+
+model NotebookJob {
+  id?: string;
+  notebook_id?: string;
+  session_id?: string;
+  state?: NotebookJobState;
+  result?: string;
+  error?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedNotebookJobs {
+  data: NotebookJob[];
+  next_page_token?: string;
 }
 
 model GenericResponse {
   data?: Record<string>;
+}
+
+model TriggerModelRunRequest {
+  project_name: string;
+  model_names?: string[];
+  full_refresh?: boolean;
+  target_catalog?: string;
+  target_schema?: string;
+}
+
+model ModelRunCompileDiagnostics {
+  warnings?: string[];
+  errors?: string[];
+}
+
+model ModelRun {
+  id?: string;
+  status?: string;
+  trigger_type?: string;
+  triggered_by?: string;
+  project_name?: string;
+  model_names?: string[];
+  full_refresh?: boolean;
+  compile_manifest?: string;
+  compile_diagnostics?: ModelRunCompileDiagnostics;
+  started_at?: utcDateTime;
+  finished_at?: utcDateTime;
+  error_message?: string;
+  created_at?: utcDateTime;
+}
+
+model PaginatedModelRuns {
+  data: ModelRun[];
+  next_page_token?: string;
+}
+
+model ModelRunStep {
+  id?: string;
+  run_id?: string;
+  model_name?: string;
+  compiled_sql?: string;
+  compiled_hash?: string;
+  depends_on?: string[];
+  vars_used?: string[];
+  macros_used?: string[];
+  status?: string;
+  rows_affected?: int64;
+  started_at?: utcDateTime;
+  finished_at?: utcDateTime;
+  error_message?: string;
+  created_at?: utcDateTime;
+}
+
+model ModelRunStepList {
+  data: ModelRunStep[];
+}
+
+model MetricQueryRequest {
+  project_name: string;
+  semantic_model_name: string;
+  metrics: string[];
+  dimensions?: string[];
+  filters?: string[];
+  order_by?: string[];
+  limit?: int32;
+}
+
+model MetricQueryJoinStep {
+  relationship_name?: string;
+  from_model?: string;
+  to_model?: string;
+  join_sql?: string;
+}
+
+model MetricQueryPlan {
+  base_model_name?: string;
+  base_relation?: string;
+  metrics?: string[];
+  dimensions?: string[];
+  join_path?: MetricQueryJoinStep[];
+  selected_pre_aggregation?: string;
+  generated_sql?: string;
+  freshness_status?: string;
+  freshness_basis?: string[];
+}
+
+model MetricQueryExplainResponse {
+  plan?: MetricQueryPlan;
+}
+
+model MetricQueryRunResponse {
+  plan?: MetricQueryPlan;
+  result?: QueryResult;
+}
+
+model MetricFreshnessStatus {
+  metric_name?: string;
+  project_name?: string;
+  semantic_model_name?: string;
+  freshness_status?: string;
+  freshness_basis?: string[];
+  selected_pre_aggregation?: string;
+  checked_at?: utcDateTime;
 }
 
 model PurgeLineageRequest {
