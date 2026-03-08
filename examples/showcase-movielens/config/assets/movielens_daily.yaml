@@ -6,7 +6,4 @@ spec:
   asset_type: notebook
   owner: data_eng
   description: Daily showcase run for notebook-based KPI checks
-  cron_schedule: "0 9 * * *"
-  auto_materialize: true
-  properties:
-    notebook: 01_kpi_walkthrough
+  checks: []

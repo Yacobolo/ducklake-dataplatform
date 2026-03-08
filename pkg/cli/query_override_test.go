@@ -74,6 +74,19 @@ func TestQueryOverride(t *testing.T) {
 			},
 		},
 		{
+			name:       "SQL from positional argument",
+			args:       []string{"query", "execute", "SELECT 1"},
+			statusCode: http.StatusOK,
+			response:   `{"columns":["1"],"rows":[[1]],"row_count":1}`,
+			wantErr:    false,
+			checkReq: func(t *testing.T, c captured) {
+				t.Helper()
+				var body map[string]interface{}
+				require.NoError(t, json.Unmarshal(c.body, &body))
+				assert.Equal(t, "SELECT 1", body["sql"])
+			},
+		},
+		{
 			name:       "server returns nil values",
 			args:       []string{"query", "execute", "--sql", "SELECT id, name FROM t"},
 			statusCode: http.StatusOK,
@@ -130,6 +143,18 @@ func TestQueryOverride(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestQueryExecute_RejectsTooManyPositionalArgs(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"query", "execute", "SELECT", "1"})
+
+	err := rootCmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "accepts at most 1 arg(s)")
 }
 
 func TestQueryOverride_SubmitAndWaitResults(t *testing.T) {
