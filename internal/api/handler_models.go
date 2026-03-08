@@ -38,7 +38,7 @@ func (h *APIHandler) ListModels(ctx context.Context, req GenListModelsRequest) (
 	if isNilService(h.models) {
 		empty := []Model{}
 		return GenListModels200JSONResponse{
-			Body:    PaginatedModels{Data: &empty, NextPageToken: nil},
+			Body:    PaginatedModels{Data: empty, NextPageToken: nil},
 			Headers: GenListModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 		}, nil
 	}
@@ -55,7 +55,7 @@ func (h *APIHandler) ListModels(ctx context.Context, req GenListModelsRequest) (
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListModels200JSONResponse{
-		Body:    PaginatedModels{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedModels{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -277,7 +277,7 @@ func (h *APIHandler) ListModelRuns(ctx context.Context, req GenListModelRunsRequ
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListModelRuns200JSONResponse{
-		Body:    PaginatedModelRuns{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedModelRuns{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListModelRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -316,7 +316,7 @@ func (h *APIHandler) ListModelRunSteps(ctx context.Context, req GenListModelRunS
 		data[i] = modelRunStepToAPI(s)
 	}
 	return GenListModelRunSteps200JSONResponse{
-		Body:    ModelRunStepList{Data: &data},
+		Body:    ModelRunStepList{Data: data},
 		Headers: GenListModelRunSteps200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -520,7 +520,7 @@ func dagToAPI(tiers [][]model.DAGNode) ModelDAG {
 		tierNum := int32(i) //nolint:gosec // tier index is small
 		nodes := make([]ModelDAGNode, len(tier))
 		for j, node := range tier {
-			mat := ModelDAGNodeMaterialization(node.Model.Materialization)
+			mat := ModelMaterialization(node.Model.Materialization)
 			n := ModelDAGNode{
 				ProjectName:     &node.Model.ProjectName,
 				ModelName:       optStr(node.Model.Name),
@@ -623,7 +623,7 @@ func (h *APIHandler) ListModelTests(ctx context.Context, req GenListModelTestsRe
 		data[i] = modelTestToAPI(t)
 	}
 	return GenListModelTests200JSONResponse{
-		Body:    ModelTestList{Data: &data},
+		Body:    ModelTestList{Data: data},
 		Headers: GenListModelTests200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -664,7 +664,7 @@ func (h *APIHandler) ListModelTestResults(ctx context.Context, req GenListModelT
 		data[i] = modelTestResultToAPI(r)
 	}
 	return GenListModelTestResults200JSONResponse{
-		Body:    ModelTestResultList{Data: &data},
+		Body:    ModelTestResultList{Data: data},
 		Headers: GenListModelTestResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

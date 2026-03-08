@@ -59,7 +59,7 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryReques
 
 	return ExecuteQuery200JSONResponse{
 		Body: QueryResult{
-			Columns:  &result.Columns,
+			Columns:  result.Columns,
 			Rows:     &rows,
 			RowCount: &rowCount,
 		},
@@ -93,7 +93,7 @@ func (h *APIHandler) SubmitQuery(ctx context.Context, req GenSubmitQueryRequest)
 	}
 
 	status := string(job.Status)
-	apiStatus := SubmitQueryResponseStatus(status)
+	apiStatus := QueryJobStatus(status)
 	return SubmitQuery202JSONResponse{
 		Body:    SubmitQueryResponse{QueryId: job.ID, Status: apiStatus},
 		Headers: SubmitQuery202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
@@ -170,7 +170,7 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResults
 		nextPageToken = domain.EncodePageToken(end)
 	}
 
-	result := QueryResult{Columns: &job.Columns, Rows: &rows}
+	result := QueryResult{Columns: job.Columns, Rows: &rows}
 	rowCount := int64(job.RowCount)
 	result.RowCount = &rowCount
 	if nextPageToken != "" {
@@ -212,7 +212,7 @@ func (h *APIHandler) CancelQuery(ctx context.Context, req GenCancelQueryRequest)
 	if job.Status == domain.QueryJobStatusQueued || job.Status == domain.QueryJobStatusRunning {
 		status = string(domain.QueryJobStatusCanceled)
 	}
-	apiStatus := CancelQueryResponseStatus(status)
+	apiStatus := QueryJobStatus(status)
 	return CancelQuery200JSONResponse{
 		Body:    CancelQueryResponse{QueryId: job.ID, Status: apiStatus},
 		Headers: CancelQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
@@ -307,20 +307,18 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 
 	cols := make([]ManifestColumn, len(result.Columns))
 	for i, c := range result.Columns {
-		name := c.Name
-		typ := c.Type
-		cols[i] = ManifestColumn{Name: &name, Type: &typ}
+		cols[i] = ManifestColumn{Name: c.Name, Type: c.Type}
 	}
 
 	return CreateManifest200JSONResponse{
 		Body: ManifestResponse{
-			Table:       &result.Table,
+			Table:       result.Table,
 			Schema:      &result.Schema,
 			Columns:     &cols,
 			Files:       &result.Files,
 			RowFilters:  &result.RowFilters,
 			ColumnMasks: &result.ColumnMasks,
-			ExpiresAt:   &result.ExpiresAt,
+			ExpiresAt:   formatTimePtr(&result.ExpiresAt),
 		},
 		Headers: CreateManifest200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil

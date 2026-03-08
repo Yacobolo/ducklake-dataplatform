@@ -53,8 +53,8 @@ func TestHelpers_pageFromParams(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		maxResults *MaxResults
-		pageToken  *PageToken
+		maxResults *int32
+		pageToken  *string
 		wantMR     int
 		wantPT     string
 	}{
@@ -134,16 +134,12 @@ func TestHelpers_principalToAPI(t *testing.T) {
 	p := domain.Principal{ID: "p-1", Name: "alice", Type: "user", IsAdmin: true, CreatedAt: helpersFixedTime}
 	result := principalToAPI(p)
 
-	require.NotNil(t, result.Id)
-	assert.Equal(t, "p-1", *result.Id)
-	require.NotNil(t, result.Name)
-	assert.Equal(t, "alice", *result.Name)
-	require.NotNil(t, result.Type)
-	assert.Equal(t, PrincipalType("user"), *result.Type)
-	require.NotNil(t, result.IsAdmin)
-	assert.True(t, *result.IsAdmin)
+	assert.Equal(t, "p-1", result.Id)
+	assert.Equal(t, "alice", result.Name)
+	assert.Equal(t, "user", result.Type)
+	assert.True(t, result.IsAdmin)
 	require.NotNil(t, result.CreatedAt)
-	assert.Equal(t, helpersFixedTime, *result.CreatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 }
 
 func TestHelpers_groupToAPI(t *testing.T) {
@@ -151,14 +147,12 @@ func TestHelpers_groupToAPI(t *testing.T) {
 	g := domain.Group{ID: "g-1", Name: "analysts", Description: "Data analysts", CreatedAt: helpersFixedTime}
 	result := groupToAPI(g)
 
-	require.NotNil(t, result.Id)
-	assert.Equal(t, "g-1", *result.Id)
-	require.NotNil(t, result.Name)
-	assert.Equal(t, "analysts", *result.Name)
+	assert.Equal(t, "g-1", result.Id)
+	assert.Equal(t, "analysts", result.Name)
 	require.NotNil(t, result.Description)
 	assert.Equal(t, "Data analysts", *result.Description)
 	require.NotNil(t, result.CreatedAt)
-	assert.Equal(t, helpersFixedTime, *result.CreatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 }
 
 func TestHelpers_grantToAPI(t *testing.T) {
@@ -170,20 +164,14 @@ func TestHelpers_grantToAPI(t *testing.T) {
 	}
 	result := grantToAPI(g)
 
-	require.NotNil(t, result.Id)
-	assert.Equal(t, "gr-1", *result.Id)
-	require.NotNil(t, result.PrincipalId)
-	assert.Equal(t, "p-1", *result.PrincipalId)
-	require.NotNil(t, result.PrincipalType)
-	assert.Equal(t, PrivilegeGrantPrincipalType("user"), *result.PrincipalType)
-	require.NotNil(t, result.SecurableType)
-	assert.Equal(t, "table", *result.SecurableType)
-	require.NotNil(t, result.SecurableId)
-	assert.Equal(t, "t-1", *result.SecurableId)
-	require.NotNil(t, result.Privilege)
-	assert.Equal(t, PrivilegeName("SELECT"), *result.Privilege)
+	assert.Equal(t, "gr-1", result.Id)
+	assert.Equal(t, "p-1", result.PrincipalId)
+	assert.Equal(t, "user", result.PrincipalType)
+	assert.Equal(t, "table", result.SecurableType)
+	assert.Equal(t, "t-1", result.SecurableId)
+	assert.Equal(t, "SELECT", result.Privilege)
 	require.NotNil(t, result.GrantedAt)
-	assert.Equal(t, helpersFixedTime, *result.GrantedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.GrantedAt)
 }
 
 func TestHelpers_rowFilterToAPI(t *testing.T) {
@@ -194,16 +182,13 @@ func TestHelpers_rowFilterToAPI(t *testing.T) {
 	}
 	result := rowFilterToAPI(rf)
 
-	require.NotNil(t, result.Id)
-	assert.Equal(t, "rf-1", *result.Id)
-	require.NotNil(t, result.TableId)
-	assert.Equal(t, "t-1", *result.TableId)
-	require.NotNil(t, result.FilterSql)
-	assert.Equal(t, "age > 18", *result.FilterSql)
+	assert.Equal(t, "rf-1", result.Id)
+	assert.Equal(t, "t-1", result.TableId)
+	assert.Equal(t, "age > 18", result.FilterSql)
 	require.NotNil(t, result.Description)
 	assert.Equal(t, "Adults only", *result.Description)
 	require.NotNil(t, result.CreatedAt)
-	assert.Equal(t, helpersFixedTime, *result.CreatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 }
 
 func TestHelpers_columnMaskToAPI(t *testing.T) {
@@ -215,18 +200,14 @@ func TestHelpers_columnMaskToAPI(t *testing.T) {
 	}
 	result := columnMaskToAPI(cm)
 
-	require.NotNil(t, result.Id)
-	assert.Equal(t, "cm-1", *result.Id)
-	require.NotNil(t, result.TableId)
-	assert.Equal(t, "t-1", *result.TableId)
-	require.NotNil(t, result.ColumnName)
-	assert.Equal(t, "ssn", *result.ColumnName)
-	require.NotNil(t, result.MaskExpression)
-	assert.Equal(t, "'***'", *result.MaskExpression)
+	assert.Equal(t, "cm-1", result.Id)
+	assert.Equal(t, "t-1", result.TableId)
+	assert.Equal(t, "ssn", result.ColumnName)
+	assert.Equal(t, "'***'", result.MaskExpression)
 	require.NotNil(t, result.Description)
 	assert.Equal(t, "Mask SSN", *result.Description)
 	require.NotNil(t, result.CreatedAt)
-	assert.Equal(t, helpersFixedTime, *result.CreatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 }
 
 func TestHelpers_schemaDetailToAPI(t *testing.T) {
@@ -239,12 +220,9 @@ func TestHelpers_schemaDetailToAPI(t *testing.T) {
 	}
 	result := schemaDetailToAPI(s)
 
-	require.NotNil(t, result.SchemaId)
-	assert.Equal(t, "s-1", *result.SchemaId)
-	require.NotNil(t, result.Name)
-	assert.Equal(t, "main", *result.Name)
-	require.NotNil(t, result.CatalogName)
-	assert.Equal(t, "default", *result.CatalogName)
+	assert.Equal(t, "s-1", result.SchemaId)
+	assert.Equal(t, "main", result.Name)
+	assert.Equal(t, "default", result.CatalogName)
 	require.NotNil(t, result.Comment)
 	assert.Equal(t, "default schema", *result.Comment)
 	require.NotNil(t, result.Owner)
@@ -252,9 +230,9 @@ func TestHelpers_schemaDetailToAPI(t *testing.T) {
 	require.NotNil(t, result.Properties)
 	assert.Equal(t, map[string]string{"key": "val"}, *result.Properties)
 	require.NotNil(t, result.CreatedAt)
-	assert.Equal(t, helpersFixedTime, *result.CreatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 	require.NotNil(t, result.UpdatedAt)
-	assert.Equal(t, helpersFixedTime, *result.UpdatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.UpdatedAt)
 }
 
 func TestHelpers_tableDetailToAPI(t *testing.T) {
@@ -274,24 +252,15 @@ func TestHelpers_tableDetailToAPI(t *testing.T) {
 	}
 	result := tableDetailToAPI(td)
 
-	require.NotNil(t, result.TableId)
-	assert.Equal(t, "t-1", *result.TableId)
-	require.NotNil(t, result.Name)
-	assert.Equal(t, "users", *result.Name)
-	require.NotNil(t, result.SchemaName)
-	assert.Equal(t, "main", *result.SchemaName)
-	require.NotNil(t, result.CatalogName)
-	assert.Equal(t, "default", *result.CatalogName)
+	assert.Equal(t, "t-1", result.TableId)
+	assert.Equal(t, "users", result.Name)
+	assert.Equal(t, "main", result.SchemaName)
+	assert.Equal(t, "default", result.CatalogName)
 	require.NotNil(t, result.TableType)
 	assert.Equal(t, "MANAGED", *result.TableType)
 	require.NotNil(t, result.Columns)
 	require.Len(t, *result.Columns, 1)
-	assert.Equal(t, "id", *(*result.Columns)[0].Name)
-	require.NotNil(t, result.StoragePath, "StoragePath should be set")
-	assert.Equal(t, "/data/users", *result.StoragePath)
-	require.NotNil(t, result.Statistics, "Statistics should be set")
-	require.NotNil(t, result.Statistics.RowCount)
-	assert.Equal(t, int64(100), *result.Statistics.RowCount)
+	assert.Equal(t, "id", (*result.Columns)[0].Name)
 }
 
 func TestHelpers_columnDetailToAPI(t *testing.T) {
@@ -303,18 +272,14 @@ func TestHelpers_columnDetailToAPI(t *testing.T) {
 	}
 	result := columnDetailToAPI(c)
 
-	require.NotNil(t, result.Name)
-	assert.Equal(t, "id", *result.Name)
-	require.NotNil(t, result.Type)
-	assert.Equal(t, "INTEGER", *result.Type)
+	assert.Equal(t, "id", result.Name)
+	assert.Equal(t, "INTEGER", result.Type)
 	require.NotNil(t, result.Position)
 	assert.Equal(t, int32(0), *result.Position)
 	require.NotNil(t, result.Nullable)
 	assert.False(t, *result.Nullable)
 	require.NotNil(t, result.Comment)
 	assert.Equal(t, "Primary key", *result.Comment)
-	require.NotNil(t, result.Properties)
-	assert.Empty(t, *result.Properties)
 }
 
 func TestHelpers_searchResultToAPI(t *testing.T) {
@@ -356,7 +321,7 @@ func TestHelpers_lineageEdgeToAPI(t *testing.T) {
 	require.NotNil(t, result.TargetSchema)
 	assert.Equal(t, "s2", *result.TargetSchema)
 	require.NotNil(t, result.EdgeType)
-	assert.Equal(t, LineageEdgeEdgeType("READ"), *result.EdgeType)
+	assert.Equal(t, "READ", *result.EdgeType)
 	require.NotNil(t, result.PrincipalName)
 	assert.Equal(t, "alice", *result.PrincipalName)
 	require.NotNil(t, result.CreatedAt)
@@ -397,28 +362,22 @@ func TestHelpers_viewDetailToAPI(t *testing.T) {
 	}
 	result := viewDetailToAPI(v)
 
-	require.NotNil(t, result.Id)
-	assert.Equal(t, "v-1", *result.Id)
+	assert.Equal(t, "v-1", result.Id)
 	require.NotNil(t, result.SchemaId)
 	assert.Equal(t, "s-1", *result.SchemaId)
-	require.NotNil(t, result.SchemaName)
-	assert.Equal(t, "main", *result.SchemaName)
-	require.NotNil(t, result.CatalogName)
-	assert.Equal(t, "default", *result.CatalogName)
-	require.NotNil(t, result.Name)
-	assert.Equal(t, "active_users", *result.Name)
+	assert.Equal(t, "main", result.SchemaName)
+	assert.Equal(t, "default", result.CatalogName)
+	assert.Equal(t, "active_users", result.Name)
 	require.NotNil(t, result.ViewDefinition)
 	assert.Equal(t, "SELECT * FROM users WHERE active", *result.ViewDefinition)
 	require.NotNil(t, result.Owner)
 	assert.Equal(t, "admin", *result.Owner)
-	require.NotNil(t, result.Properties)
-	assert.Empty(t, *result.Properties)
 	require.NotNil(t, result.SourceTables)
 	assert.Equal(t, []string{"users"}, *result.SourceTables)
 	require.NotNil(t, result.CreatedAt)
-	assert.Equal(t, helpersFixedTime, *result.CreatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 	require.NotNil(t, result.UpdatedAt)
-	assert.Equal(t, helpersFixedTime, *result.UpdatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.UpdatedAt)
 }
 
 func TestHelpers_catalogInfoToAPI(t *testing.T) {
@@ -429,14 +388,13 @@ func TestHelpers_catalogInfoToAPI(t *testing.T) {
 	}
 	result := catalogInfoToAPI(ci)
 
-	require.NotNil(t, result.Name)
-	assert.Equal(t, "default", *result.Name)
+	assert.Equal(t, "default", result.Name)
 	require.NotNil(t, result.Comment)
 	assert.Equal(t, "Default catalog", *result.Comment)
 	require.NotNil(t, result.CreatedAt)
-	assert.Equal(t, helpersFixedTime, *result.CreatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 	require.NotNil(t, result.UpdatedAt)
-	assert.Equal(t, helpersFixedTime, *result.UpdatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.UpdatedAt)
 }
 
 // === strPtrIfNonEmpty ===

@@ -43,9 +43,9 @@ func (h *APIHandler) CreateUploadUrl(ctx context.Context, request GenCreateUploa
 	t := result.ExpiresAt
 	return CreateUploadUrl200JSONResponse{
 		Body: UploadUrlResponse{
-			UploadUrl: &result.UploadURL,
-			S3Key:     &result.S3Key,
-			ExpiresAt: &t,
+			UploadUrl: result.UploadURL,
+			S3Key:     result.S3Key,
+			ExpiresAt: t,
 		},
 		Headers: CreateUploadUrl200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
@@ -86,10 +86,10 @@ func (h *APIHandler) CommitTableIngestion(ctx context.Context, request GenCommit
 	filesSkipped := int64(result.FilesSkipped)
 	return CommitTableIngestion200JSONResponse{
 		Body: IngestionResult{
-			FilesRegistered: &filesRegistered,
-			FilesSkipped:    &filesSkipped,
-			Schema:          &result.Schema,
-			Table:           &result.Table,
+			FilesRegistered: filesRegistered,
+			FilesSkipped:    filesSkipped,
+			Schema:          result.Schema,
+			Table:           result.Table,
 		},
 		Headers: CommitTableIngestion200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
@@ -130,10 +130,10 @@ func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, request GenLoad
 	filesSkipped := int64(result.FilesSkipped)
 	return LoadTableExternalFiles200JSONResponse{
 		Body: IngestionResult{
-			FilesRegistered: &filesRegistered,
-			FilesSkipped:    &filesSkipped,
-			Schema:          &result.Schema,
-			Table:           &result.Table,
+			FilesRegistered: filesRegistered,
+			FilesSkipped:    filesSkipped,
+			Schema:          result.Schema,
+			Table:           result.Table,
 		},
 		Headers: LoadTableExternalFiles200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil

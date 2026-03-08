@@ -51,7 +51,7 @@ func (h *APIHandler) ListStorageCredentials(ctx context.Context, req GenListStor
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListStorageCredentials200JSONResponse{
-		Body:    PaginatedStorageCredentials{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedStorageCredentials{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListStorageCredentials200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -59,8 +59,10 @@ func (h *APIHandler) ListStorageCredentials(ctx context.Context, req GenListStor
 // CreateStorageCredential implements the endpoint for creating a new storage credential.
 func (h *APIHandler) CreateStorageCredential(ctx context.Context, req GenCreateStorageCredentialRequest) (GenCreateStorageCredentialResponse, error) {
 	domReq := domain.CreateStorageCredentialRequest{
-		Name:           req.Body.Name,
-		CredentialType: domain.CredentialType(req.Body.CredentialType),
+		Name: req.Body.Name,
+	}
+	if req.Body.CredentialType != nil {
+		domReq.CredentialType = domain.CredentialType(*req.Body.CredentialType)
 	}
 	// S3 fields
 	if req.Body.KeyId != nil {
@@ -77,26 +79,6 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req GenCreateS
 	}
 	if req.Body.UrlStyle != nil {
 		domReq.URLStyle = *req.Body.UrlStyle
-	}
-	// Azure fields
-	if req.Body.AzureAccountName != nil {
-		domReq.AzureAccountName = *req.Body.AzureAccountName
-	}
-	if req.Body.AzureAccountKey != nil {
-		domReq.AzureAccountKey = *req.Body.AzureAccountKey
-	}
-	if req.Body.AzureClientId != nil {
-		domReq.AzureClientID = *req.Body.AzureClientId
-	}
-	if req.Body.AzureTenantId != nil {
-		domReq.AzureTenantID = *req.Body.AzureTenantId
-	}
-	if req.Body.AzureClientSecret != nil {
-		domReq.AzureClientSecret = *req.Body.AzureClientSecret
-	}
-	// GCS fields
-	if req.Body.GcsKeyFilePath != nil {
-		domReq.GCSKeyFilePath = *req.Body.GcsKeyFilePath
 	}
 	if req.Body.Comment != nil {
 		domReq.Comment = *req.Body.Comment
@@ -153,15 +135,7 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req GenUpdateS
 		Endpoint: req.Body.Endpoint,
 		Region:   req.Body.Region,
 		URLStyle: req.Body.UrlStyle,
-		// Azure fields
-		AzureAccountName:  req.Body.AzureAccountName,
-		AzureAccountKey:   req.Body.AzureAccountKey,
-		AzureClientID:     req.Body.AzureClientId,
-		AzureTenantID:     req.Body.AzureTenantId,
-		AzureClientSecret: req.Body.AzureClientSecret,
-		// GCS fields
-		GCSKeyFilePath: req.Body.GcsKeyFilePath,
-		Comment:        req.Body.Comment,
+		Comment:  req.Body.Comment,
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -217,7 +191,7 @@ func (h *APIHandler) ListExternalLocations(ctx context.Context, req GenListExter
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListExternalLocations200JSONResponse{
-		Body:    PaginatedExternalLocations{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedExternalLocations{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListExternalLocations200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -225,9 +199,11 @@ func (h *APIHandler) ListExternalLocations(ctx context.Context, req GenListExter
 // CreateExternalLocation implements the endpoint for creating a new external location.
 func (h *APIHandler) CreateExternalLocation(ctx context.Context, req GenCreateExternalLocationRequest) (GenCreateExternalLocationResponse, error) {
 	domReq := domain.CreateExternalLocationRequest{
-		Name:           req.Body.Name,
-		URL:            req.Body.Url,
-		CredentialName: req.Body.CredentialName,
+		Name: req.Body.Name,
+		URL:  req.Body.Url,
+	}
+	if req.Body.CredentialName != nil {
+		domReq.CredentialName = *req.Body.CredentialName
 	}
 	if req.Body.StorageType != nil {
 		domReq.StorageType = domain.StorageType(*req.Body.StorageType)
@@ -290,7 +266,6 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req GenUpdateEx
 	domReq := domain.UpdateExternalLocationRequest{
 		URL:     req.Body.Url,
 		Comment: req.Body.Comment,
-		Owner:   req.Body.Owner,
 	}
 	if req.Body.CredentialName != nil {
 		domReq.CredentialName = req.Body.CredentialName
@@ -340,25 +315,18 @@ func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req GenDeleteEx
 // storageCredentialToAPI converts a domain StorageCredential to the API type.
 // IMPORTANT: Never expose key_id, secret, azure_account_key, or azure_client_secret in API responses.
 func storageCredentialToAPI(c domain.StorageCredential) StorageCredential {
-	ct := StorageCredentialCredentialType(c.CredentialType)
 	resp := StorageCredential{
-		Id:             &c.ID,
-		Name:           &c.Name,
-		CredentialType: &ct,
+		Id:             c.ID,
+		Name:           c.Name,
+		CredentialType: strPtrIfNonEmpty(string(c.CredentialType)),
 		// S3 fields (non-sensitive)
-		Endpoint: &c.Endpoint,
-		Region:   &c.Region,
-		UrlStyle: &c.URLStyle,
-		// Azure fields (non-sensitive only)
-		AzureAccountName: optStr(c.AzureAccountName),
-		AzureClientId:    optStr(c.AzureClientID),
-		AzureTenantId:    optStr(c.AzureTenantID),
-		// GCS fields
-		GcsKeyFilePath: optStr(c.GCSKeyFilePath),
-		Comment:        optStr(c.Comment),
-		Owner:          &c.Owner,
-		CreatedAt:      &c.CreatedAt,
-		UpdatedAt:      &c.UpdatedAt,
+		Endpoint:  &c.Endpoint,
+		Region:    &c.Region,
+		UrlStyle:  &c.URLStyle,
+		Comment:   optStr(c.Comment),
+		Owner:     &c.Owner,
+		CreatedAt: formatTimePtr(&c.CreatedAt),
+		UpdatedAt: formatTimePtr(&c.UpdatedAt),
 	}
 	return resp
 }
@@ -366,16 +334,16 @@ func storageCredentialToAPI(c domain.StorageCredential) StorageCredential {
 func externalLocationToAPI(l domain.ExternalLocation) ExternalLocation {
 	st := string(l.StorageType)
 	return ExternalLocation{
-		Id:             &l.ID,
-		Name:           &l.Name,
-		Url:            &l.URL,
+		Id:             l.ID,
+		Name:           l.Name,
+		Url:            l.URL,
 		CredentialName: &l.CredentialName,
 		StorageType:    &st,
 		Comment:        optStr(l.Comment),
 		Owner:          &l.Owner,
 		ReadOnly:       &l.ReadOnly,
-		CreatedAt:      &l.CreatedAt,
-		UpdatedAt:      &l.UpdatedAt,
+		CreatedAt:      formatTimePtr(&l.CreatedAt),
+		UpdatedAt:      formatTimePtr(&l.UpdatedAt),
 	}
 }
 
@@ -396,7 +364,7 @@ func (h *APIHandler) ListVolumes(ctx context.Context, request GenListVolumesRequ
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListVolumes200JSONResponse{
-		Body:    PaginatedVolumes{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedVolumes{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListVolumes200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -404,8 +372,10 @@ func (h *APIHandler) ListVolumes(ctx context.Context, request GenListVolumesRequ
 // CreateVolume implements the endpoint for creating a new volume in a schema.
 func (h *APIHandler) CreateVolume(ctx context.Context, request GenCreateVolumeRequest) (GenCreateVolumeResponse, error) {
 	domReq := domain.CreateVolumeRequest{
-		Name:       request.Body.Name,
-		VolumeType: string(request.Body.VolumeType),
+		Name: request.Body.Name,
+	}
+	if request.Body.VolumeType != nil {
+		domReq.VolumeType = *request.Body.VolumeType
 	}
 	if request.Body.StorageLocation != nil {
 		domReq.StorageLocation = *request.Body.StorageLocation
@@ -460,7 +430,6 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, request GenUpdateVolumeRe
 	domReq := domain.UpdateVolumeRequest{
 		NewName: request.Body.NewName,
 		Comment: request.Body.Comment,
-		Owner:   request.Body.Owner,
 	}
 
 	principal := principalFromCtx(ctx)
@@ -499,17 +468,16 @@ func (h *APIHandler) DeleteVolume(ctx context.Context, request GenDeleteVolumeRe
 
 // volumeToAPI converts a domain Volume to the API VolumeDetail type.
 func volumeToAPI(v domain.Volume) VolumeDetail {
-	vt := VolumeDetailVolumeType(v.VolumeType)
 	return VolumeDetail{
-		Id:              &v.ID,
-		Name:            &v.Name,
-		SchemaName:      &v.SchemaName,
-		CatalogName:     &v.CatalogName,
-		VolumeType:      &vt,
+		Id:              v.ID,
+		Name:            v.Name,
+		SchemaName:      v.SchemaName,
+		CatalogName:     v.CatalogName,
+		VolumeType:      optStr(v.VolumeType),
 		StorageLocation: optStr(v.StorageLocation),
 		Comment:         optStr(v.Comment),
 		Owner:           &v.Owner,
-		CreatedAt:       &v.CreatedAt,
-		UpdatedAt:       &v.UpdatedAt,
+		CreatedAt:       formatTimePtr(&v.CreatedAt),
+		UpdatedAt:       formatTimePtr(&v.UpdatedAt),
 	}
 }

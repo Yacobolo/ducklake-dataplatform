@@ -148,6 +148,7 @@ func writeFile(outPath string, content []byte) error {
 }
 
 func loadOpenAPIAsJSON(path string) (string, error) {
+	//nolint:gosec // Path comes from the checked-in generation pipeline inputs.
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return "", fmt.Errorf("read openapi file: %w", err)

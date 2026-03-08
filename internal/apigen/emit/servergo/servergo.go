@@ -198,7 +198,7 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 		b.WriteString("func writeAPIGenError(w http.ResponseWriter, statusCode int, message string) {\n")
 		b.WriteString("\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
 		b.WriteString("\tw.WriteHeader(statusCode)\n")
-		b.WriteString("\t_ = json.NewEncoder(w).Encode(Error{Code: int32(statusCode), Message: apigenErrorMessage(statusCode, message)})\n")
+		b.WriteString("\t_ = json.NewEncoder(w).Encode(Error{Code: safeIntToInt32(statusCode), Message: apigenErrorMessage(statusCode, message)})\n")
 		b.WriteString("}\n\n")
 	}
 	if hasRequestBodies {
@@ -569,8 +569,7 @@ func schemaTypeName(schema ir.SchemaRef) string {
 	case "boolean", "bool":
 		return "bool"
 	case "string":
-		switch schemaFormat {
-		case "date-time":
+		if schemaFormat == "date-time" {
 			return "time.Time"
 		}
 		return "string"
@@ -1020,18 +1019,20 @@ func responseHeaderFieldsWithDefaults(response ir.Response) []ownedHeaderField {
 }
 
 func emitVisitResponseHeaders(b *strings.Builder, response ir.Response) {
-	b.WriteString("\trv := reflect.ValueOf(response)\n")
-	b.WriteString("\theaders := rv.FieldByName(\"Headers\")\n")
-	b.WriteString("\tif headers.IsValid() {\n")
-	for _, header := range response.Headers {
-		b.WriteString("\t\tif v := headers.FieldByName(\"" + headerFieldName(header.Name) + "\"); v.IsValid() {\n")
-		b.WriteString("\t\t\tw.Header().Set(\"" + header.Name + "\", fmt.Sprint(v.Interface()))\n")
-		b.WriteString("\t\t}\n")
+	if len(response.Headers) > 0 {
+		b.WriteString("\theaders := rv.FieldByName(\"Headers\")\n")
+		b.WriteString("\tif headers.IsValid() {\n")
+		for _, header := range response.Headers {
+			b.WriteString("\t\tif v := headers.FieldByName(\"" + headerFieldName(header.Name) + "\"); v.IsValid() {\n")
+			b.WriteString("\t\t\tw.Header().Set(\"" + header.Name + "\", fmt.Sprint(v.Interface()))\n")
+			b.WriteString("\t\t}\n")
+		}
+		b.WriteString("\t}\n")
 	}
-	b.WriteString("\t}\n")
 }
 
 func emitVisitResponseBody(b *strings.Builder, response ir.Response, statusCode string, requireBody bool, missingBodyError string) {
+	b.WriteString("\trv := reflect.ValueOf(response)\n")
 	emitVisitResponseHeaders(b, response)
 	b.WriteString("\tbody := rv.FieldByName(\"Body\")\n")
 	b.WriteString("\tif !body.IsValid() {\n")
@@ -1154,10 +1155,7 @@ func usesDirectOwnedResponseSchema(response ir.Response, doc ir.Document) bool {
 		return false
 	}
 	_, ok := responseSchemaTypeName(doc, *response.Schema)
-	if !ok {
-		return false
-	}
-	return true
+	return ok
 }
 
 func responseSchemaTypeName(doc ir.Document, schema ir.SchemaRef) (string, bool) {

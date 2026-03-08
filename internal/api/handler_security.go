@@ -74,7 +74,7 @@ func (h *APIHandler) ListPrincipals(ctx context.Context, req GenListPrincipalsRe
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListPrincipals200JSONResponse{
-		Body:    PaginatedPrincipals{Data: &out, NextPageToken: optStr(npt)},
+		Body:    PaginatedPrincipals{Data: out, NextPageToken: optStr(npt)},
 		Headers: GenListPrincipals200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -176,7 +176,7 @@ func (h *APIHandler) ListGroups(ctx context.Context, req GenListGroupsRequest) (
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListGroups200JSONResponse{
-		Body:    PaginatedGroups{Data: &out, NextPageToken: optStr(npt)},
+		Body:    PaginatedGroups{Data: out, NextPageToken: optStr(npt)},
 		Headers: GenListGroups200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -250,7 +250,7 @@ func (h *APIHandler) ListGroupMembers(ctx context.Context, req GenListGroupMembe
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListGroupMembers200JSONResponse{
-		Body:    PaginatedGroupMembers{Data: &out, NextPageToken: optStr(npt)},
+		Body:    PaginatedGroupMembers{Data: out, NextPageToken: optStr(npt)},
 		Headers: GenListGroupMembers200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -321,7 +321,7 @@ func (h *APIHandler) ListGrants(ctx context.Context, req GenListGrantsRequest) (
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListGrants200JSONResponse{
-		Body:    PaginatedGrants{Data: &out, NextPageToken: optStr(npt)},
+		Body:    PaginatedGrants{Data: out, NextPageToken: optStr(npt)},
 		Headers: GenListGrants200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -387,7 +387,7 @@ func (h *APIHandler) ListRowFilters(ctx context.Context, req GenListRowFiltersRe
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListRowFilters200JSONResponse{
-		Body:    PaginatedRowFilters{Data: &out, NextPageToken: optStr(npt)},
+		Body:    PaginatedRowFilters{Data: out, NextPageToken: optStr(npt)},
 		Headers: GenListRowFilters200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -486,7 +486,7 @@ func (h *APIHandler) ListColumnMasks(ctx context.Context, req GenListColumnMasks
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListColumnMasks200JSONResponse{
-		Body:    PaginatedColumnMasks{Data: &out, NextPageToken: optStr(npt)},
+		Body:    PaginatedColumnMasks{Data: out, NextPageToken: optStr(npt)},
 		Headers: GenListColumnMasks200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

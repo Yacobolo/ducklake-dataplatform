@@ -824,8 +824,6 @@ func TestLintActualSpec(t *testing.T) {
 	// Set APILINT_ENFORCE_CLEAN=1 to require zero violations.
 	if os.Getenv("APILINT_ENFORCE_CLEAN") == "1" {
 		assert.Empty(t, vs, "expected zero violations from the actual spec")
-	} else {
-		assert.True(t, len(vs) >= 0)
 	}
 
 	errors := Filter(vs, SeverityError)

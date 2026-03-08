@@ -460,8 +460,8 @@ func TestHandler_ListPipelines(t *testing.T) {
 				ok200, ok := resp.(GenListPipelines200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "etl-daily", *(*ok200.Body.Data)[0].Name)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "etl-daily", *ok200.Body.Data[0].Name)
 				assert.Nil(t, ok200.Body.NextPageToken, "no next page for single result")
 			},
 		},
@@ -477,7 +477,7 @@ func TestHandler_ListPipelines(t *testing.T) {
 				ok200, ok := resp.(GenListPipelines200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				assert.Empty(t, *ok200.Body.Data)
+				assert.Empty(t, ok200.Body.Data)
 			},
 		},
 	}
@@ -605,8 +605,8 @@ func TestHandler_ListPipelineJobs(t *testing.T) {
 				ok200, ok := resp.(GenListPipelineJobs200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "extract", *(*ok200.Body.Data)[0].Name)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "extract", *ok200.Body.Data[0].Name)
 			},
 		},
 		{
@@ -806,8 +806,8 @@ func TestHandler_ListPipelineRuns(t *testing.T) {
 				ok200, ok := resp.(GenListPipelineRuns200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "run-1", *(*ok200.Body.Data)[0].Id)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "run-1", *ok200.Body.Data[0].Id)
 			},
 		},
 		{
@@ -1009,10 +1009,10 @@ func TestHandler_ListPipelineJobRuns(t *testing.T) {
 				ok200, ok := resp.(GenListPipelineJobRuns200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "jr-1", *(*ok200.Body.Data)[0].Id)
-				assert.Equal(t, "extract", *(*ok200.Body.Data)[0].JobName)
-				assert.Equal(t, PipelineJobRunStatus(domain.PipelineJobRunStatusRunning), *(*ok200.Body.Data)[0].Status)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "jr-1", *ok200.Body.Data[0].Id)
+				assert.Equal(t, "extract", *ok200.Body.Data[0].JobName)
+				assert.Equal(t, PipelineJobRunStatus(domain.PipelineJobRunStatusRunning), *ok200.Body.Data[0].Status)
 			},
 		},
 		{

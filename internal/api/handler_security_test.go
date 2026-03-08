@@ -286,8 +286,8 @@ func TestHandler_GetPrincipal(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenGetPrincipal200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "p-1", *ok200.Body.Id)
-				assert.Equal(t, "alice", *ok200.Body.Name)
+				assert.Equal(t, "p-1", ok200.Body.Id)
+				assert.Equal(t, "alice", ok200.Body.Name)
 			},
 		},
 		{
@@ -335,8 +335,8 @@ func TestHandler_GetGroup(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenGetGroup200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "g-1", *ok200.Body.Id)
-				assert.Equal(t, "engineers", *ok200.Body.Name)
+				assert.Equal(t, "g-1", ok200.Body.Id)
+				assert.Equal(t, "engineers", ok200.Body.Name)
 			},
 		},
 		{
@@ -384,8 +384,8 @@ func TestHandler_ListGroupMembers(t *testing.T) {
 				ok200, ok := resp.(GenListGroupMembers200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "p-1", *(*ok200.Body.Data)[0].MemberId)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "p-1", ok200.Body.Data[0].MemberId)
 			},
 		},
 		{
@@ -550,8 +550,8 @@ func TestHandler_ListGrants(t *testing.T) {
 				ok200, ok := resp.(GenListGrants200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "grant-1", *(*ok200.Body.Data)[0].Id)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "grant-1", ok200.Body.Data[0].Id)
 			},
 		},
 		{
@@ -566,7 +566,7 @@ func TestHandler_ListGrants(t *testing.T) {
 				ok200, ok := resp.(GenListGrants200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
+				require.Len(t, ok200.Body.Data, 1)
 			},
 		},
 		{
@@ -581,7 +581,7 @@ func TestHandler_ListGrants(t *testing.T) {
 				ok200, ok := resp.(GenListGrants200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
+				require.Len(t, ok200.Body.Data, 1)
 			},
 		},
 		{
@@ -693,9 +693,9 @@ func TestHandler_ListColumnMasks(t *testing.T) {
 				ok200, ok := resp.(GenListColumnMasks200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "m-1", *(*ok200.Body.Data)[0].Id)
-				assert.Equal(t, "ssn", *(*ok200.Body.Data)[0].ColumnName)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "m-1", ok200.Body.Data[0].Id)
+				assert.Equal(t, "ssn", ok200.Body.Data[0].ColumnName)
 			},
 		},
 		{
@@ -743,8 +743,8 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 				require.NoError(t, err)
 				created, ok := resp.(GenCreateColumnMask201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
-				assert.Equal(t, "m-1", *created.Body.Id)
-				assert.Equal(t, "ssn", *created.Body.ColumnName)
+				assert.Equal(t, "m-1", created.Body.Id)
+				assert.Equal(t, "ssn", created.Body.ColumnName)
 			},
 		},
 		{

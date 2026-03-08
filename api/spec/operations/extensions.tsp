@@ -36,7 +36,7 @@ op loadTableExternalFiles(catalogName: string, schemaName: string, tableName: st
 
 @route("/search")
 @get
-op searchCatalog(@query query: string, @query type?: string, @query catalog?: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op searchCatalog(@query query: string, @query type?: string, @query catalog?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedSearchResults> | StandardErrorResponses;
 
 @route("/lineage/tables/{schemaName}/{tableName}")
 @get
@@ -252,19 +252,19 @@ op syncGitRepo(gitRepoId: string): Ok<GitSyncResult> | MutatingErrorResponses;
 
 @route("/pipelines")
 @get
-op listPipelines(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op listPipelines(@query max_results?: int32, @query page_token?: string): Ok<PaginatedPipelines> | StandardErrorResponses;
 
 @route("/pipelines")
 @post
-op createPipeline(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createPipeline(@body body: CreatePipelineRequest): Created<Pipeline> | MutatingErrorResponses;
 
 @route("/pipelines/{pipelineName}")
 @get
-op getPipeline(pipelineName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getPipeline(pipelineName: string): Ok<Pipeline> | ResourceErrorResponses;
 
 @route("/pipelines/{pipelineName}")
 @patch(#{ implicitOptionality: true })
-op updatePipeline(pipelineName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op updatePipeline(pipelineName: string, @body body: UpdatePipelineRequest): Ok<Pipeline> | MutatingErrorResponses;
 
 @route("/pipelines/{pipelineName}")
 @delete
@@ -272,11 +272,11 @@ op deletePipeline(pipelineName: string): NoContent | MutatingErrorResponses;
 
 @route("/pipelines/{pipelineName}/jobs")
 @get
-op listPipelineJobs(pipelineName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op listPipelineJobs(pipelineName: string): Ok<PipelineJobList> | ResourceErrorResponses;
 
 @route("/pipelines/{pipelineName}/jobs")
 @post
-op createPipelineJob(pipelineName: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createPipelineJob(pipelineName: string, @body body: CreatePipelineJobRequest): Created<PipelineJob> | MutatingErrorResponses;
 
 @route("/pipelines/{pipelineName}/jobs/{jobId}")
 @delete
@@ -284,23 +284,23 @@ op deletePipelineJob(pipelineName: string, jobId: string): NoContent | MutatingE
 
 @route("/pipelines/{pipelineName}/runs")
 @post
-op triggerPipelineRun(pipelineName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op triggerPipelineRun(pipelineName: string, @body body?: TriggerPipelineRunRequest): Ok<PipelineRun> | MutatingErrorResponses;
 
 @route("/pipelines/{pipelineName}/runs")
 @get
-op listPipelineRuns(pipelineName: string, @query max_results?: int32, @query page_token?: string, @query status?: string): Ok<GenericResponse> | ResourceErrorResponses;
+op listPipelineRuns(pipelineName: string, @query max_results?: int32, @query page_token?: string, @query status?: string): Ok<PaginatedPipelineRuns> | ResourceErrorResponses;
 
 @route("/pipelines/runs/{runId}")
 @get
-op getPipelineRun(runId: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getPipelineRun(runId: string): Ok<PipelineRun> | ResourceErrorResponses;
 
 @route("/pipelines/runs/{runId}/cancel")
 @post
-op cancelPipelineRun(runId: string): Ok<GenericResponse> | MutatingErrorResponses;
+op cancelPipelineRun(runId: string): Ok<PipelineRun> | MutatingErrorResponses;
 
 @route("/pipelines/runs/{runId}/jobs")
 @get
-op listPipelineJobRuns(runId: string): Ok<GenericResponse> | ResourceErrorResponses;
+op listPipelineJobRuns(runId: string): Ok<PipelineJobRunList> | ResourceErrorResponses;
 
 @route("/models")
 @get
@@ -408,19 +408,19 @@ op diffMacroRevisions(macroName: string, @query from_version: int32, @query to_v
 
 @route("/semantic-models")
 @get
-op listSemanticModels(@query project_name?: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op listSemanticModels(@query project_name?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedSemanticModels> | StandardErrorResponses;
 
 @route("/semantic-models")
 @post
-op createSemanticModel(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createSemanticModel(@body body: CreateSemanticModelRequest): Created<SemanticModel> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}")
 @get
-op getSemanticModel(projectName: string, semanticModelName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getSemanticModel(projectName: string, semanticModelName: string): Ok<SemanticModel> | ResourceErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}")
 @patch(#{ implicitOptionality: true })
-op updateSemanticModel(projectName: string, semanticModelName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op updateSemanticModel(projectName: string, semanticModelName: string, @body body: UpdateSemanticModelRequest): Ok<SemanticModel> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}")
 @delete
@@ -428,15 +428,15 @@ op deleteSemanticModel(projectName: string, semanticModelName: string): NoConten
 
 @route("/semantic-models/{projectName}/{semanticModelName}/metrics")
 @get
-op listSemanticMetrics(projectName: string, semanticModelName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op listSemanticMetrics(projectName: string, semanticModelName: string): Ok<SemanticMetricList> | ResourceErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/metrics")
 @post
-op createSemanticMetric(projectName: string, semanticModelName: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createSemanticMetric(projectName: string, semanticModelName: string, @body body: CreateSemanticMetricRequest): Created<SemanticMetric> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}")
 @patch(#{ implicitOptionality: true })
-op updateSemanticMetric(projectName: string, semanticModelName: string, metricName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op updateSemanticMetric(projectName: string, semanticModelName: string, metricName: string, @body body: UpdateSemanticMetricRequest): Ok<SemanticMetric> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}")
 @delete
@@ -444,15 +444,15 @@ op deleteSemanticMetric(projectName: string, semanticModelName: string, metricNa
 
 @route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations")
 @get
-op listSemanticPreAggregations(projectName: string, semanticModelName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op listSemanticPreAggregations(projectName: string, semanticModelName: string): Ok<SemanticPreAggregationList> | ResourceErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations")
 @post
-op createSemanticPreAggregation(projectName: string, semanticModelName: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createSemanticPreAggregation(projectName: string, semanticModelName: string, @body body: CreateSemanticPreAggregationRequest): Created<SemanticPreAggregation> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}")
 @patch(#{ implicitOptionality: true })
-op updateSemanticPreAggregation(projectName: string, semanticModelName: string, preAggregationName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op updateSemanticPreAggregation(projectName: string, semanticModelName: string, preAggregationName: string, @body body: UpdateSemanticPreAggregationRequest): Ok<SemanticPreAggregation> | MutatingErrorResponses;
 
 @route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}")
 @delete
@@ -460,15 +460,15 @@ op deleteSemanticPreAggregation(projectName: string, semanticModelName: string, 
 
 @route("/semantic-relationships")
 @get
-op listSemanticRelationships(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op listSemanticRelationships(@query max_results?: int32, @query page_token?: string): Ok<PaginatedSemanticRelationships> | StandardErrorResponses;
 
 @route("/semantic-relationships")
 @post
-op createSemanticRelationship(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createSemanticRelationship(@body body: CreateSemanticRelationshipRequest): Created<SemanticRelationship> | MutatingErrorResponses;
 
 @route("/semantic-relationships/{relationshipName}")
 @patch(#{ implicitOptionality: true })
-op updateSemanticRelationship(relationshipName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op updateSemanticRelationship(relationshipName: string, @body body: UpdateSemanticRelationshipRequest): Ok<SemanticRelationship> | MutatingErrorResponses;
 
 @route("/semantic-relationships/{relationshipName}")
 @delete

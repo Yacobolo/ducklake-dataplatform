@@ -150,9 +150,8 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenListComputeEndpoints200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "analytics-xl", *(*ok200.Body.Data)[0].Name)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "analytics-xl", *ok200.Body.Data[0].Name)
 			},
 		},
 		{
@@ -166,8 +165,7 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenListComputeEndpoints200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				require.NotNil(t, ok200.Body.Data)
-				assert.Empty(t, *ok200.Body.Data)
+				assert.Empty(t, ok200.Body.Data)
 			},
 		},
 		{
@@ -205,7 +203,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 	}{
 		{
 			name: "happy path returns 201",
-			body: GenCreateComputeEndpointJSONBody{Name: "analytics-xl", Url: "https://compute.example.com", Type: CreateComputeEndpointRequestTypeLOCAL},
+			body: GenCreateComputeEndpointJSONBody{Name: "analytics-xl", Url: "https://compute.example.com", Type: LOCAL},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				ep := sampleComputeEndpoint()
 				return &ep, nil
@@ -221,7 +219,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 		},
 		{
 			name: "validation error returns 400",
-			body: GenCreateComputeEndpointJSONBody{Name: "", Url: "", Type: CreateComputeEndpointRequestTypeLOCAL},
+			body: GenCreateComputeEndpointJSONBody{Name: "", Url: "", Type: LOCAL},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrValidation("name is required")
 			},
@@ -236,7 +234,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 		},
 		{
 			name: "access denied returns 403",
-			body: GenCreateComputeEndpointJSONBody{Name: "ep", Url: "http://x", Type: CreateComputeEndpointRequestTypeLOCAL},
+			body: GenCreateComputeEndpointJSONBody{Name: "ep", Url: "http://x", Type: LOCAL},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
@@ -250,7 +248,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 		},
 		{
 			name: "conflict error returns 409",
-			body: GenCreateComputeEndpointJSONBody{Name: "analytics-xl", Url: "http://x", Type: CreateComputeEndpointRequestTypeLOCAL},
+			body: GenCreateComputeEndpointJSONBody{Name: "analytics-xl", Url: "http://x", Type: LOCAL},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return nil, domain.ErrConflict("endpoint analytics-xl already exists")
 			},
@@ -265,7 +263,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 		},
 		{
 			name: "unknown error falls through to 400",
-			body: GenCreateComputeEndpointJSONBody{Name: "fail", Url: "http://x", Type: CreateComputeEndpointRequestTypeLOCAL},
+			body: GenCreateComputeEndpointJSONBody{Name: "fail", Url: "http://x", Type: LOCAL},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return nil, assert.AnError
 			},
@@ -502,9 +500,8 @@ func TestHandler_ListComputeAssignments(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenListComputeAssignments200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "assign-1", *(*ok200.Body.Data)[0].Id)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "assign-1", *ok200.Body.Data[0].Id)
 			},
 		},
 		{
@@ -551,7 +548,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 		{
 			name:         "happy path returns 201",
 			endpointName: "analytics-xl",
-			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "user-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
+			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "user-1", PrincipalType: ComputeAssignmentPrincipalTypeUser},
 			svcFn: func(_ context.Context, _ string, _ string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
 				if req.IsDefault {
 					return nil, domain.ErrValidation("is_default must be explicit")
@@ -571,7 +568,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 		{
 			name:         "validation error returns 400",
 			endpointName: "analytics-xl",
-			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
+			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "", PrincipalType: ComputeAssignmentPrincipalTypeUser},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
 				return nil, domain.ErrValidation("principal_id is required")
 			},
@@ -586,7 +583,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 		{
 			name:         "access denied returns 403",
 			endpointName: "analytics-xl",
-			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "u-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
+			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "u-1", PrincipalType: ComputeAssignmentPrincipalTypeUser},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
@@ -601,7 +598,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 		{
 			name:         "conflict error returns 409",
 			endpointName: "analytics-xl",
-			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "user-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
+			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "user-1", PrincipalType: ComputeAssignmentPrincipalTypeUser},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
 				return nil, domain.ErrConflict("assignment already exists")
 			},
@@ -616,7 +613,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 		{
 			name:         "unknown error falls through to 400",
 			endpointName: "analytics-xl",
-			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "u-1", PrincipalType: CreateComputeAssignmentRequestPrincipalTypeUser},
+			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "u-1", PrincipalType: ComputeAssignmentPrincipalTypeUser},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
 				return nil, assert.AnError
 			},

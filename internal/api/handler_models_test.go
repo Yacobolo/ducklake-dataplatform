@@ -237,8 +237,8 @@ func TestHandler_ListModelRuns_IncludesModelNamesAndProject(t *testing.T) {
 	okResp, ok := resp.(GenListModelRuns200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
 	require.NotNil(t, okResp.Body.Data)
-	require.Len(t, *okResp.Body.Data, 1)
-	run := (*okResp.Body.Data)[0]
+	require.Len(t, okResp.Body.Data, 1)
+	run := okResp.Body.Data[0]
 	require.NotNil(t, run.ProjectName)
 	assert.Equal(t, "analytics", *run.ProjectName)
 	require.NotNil(t, run.ModelNames)

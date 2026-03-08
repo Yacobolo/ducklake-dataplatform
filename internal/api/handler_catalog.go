@@ -65,7 +65,7 @@ func (h *APIHandler) ListSchemas(ctx context.Context, request GenListSchemasRequ
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListSchemas200JSONResponse{
-		Body:    PaginatedSchemaDetails{Data: &out, NextPageToken: optStr(npt)},
+		Body:    PaginatedSchemaDetails{Data: out, NextPageToken: optStr(npt)},
 		Headers: GenListSchemas200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -191,7 +191,7 @@ func (h *APIHandler) ListTables(ctx context.Context, request GenListTablesReques
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListTables200JSONResponse{
-		Body:    PaginatedTableDetails{Data: &out, NextPageToken: optStr(npt)},
+		Body:    PaginatedTableDetails{Data: out, NextPageToken: optStr(npt)},
 		Headers: GenListTables200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -211,18 +211,6 @@ func (h *APIHandler) CreateTable(ctx context.Context, request GenCreateTableRequ
 	}
 	if request.Body.Comment != nil {
 		domReq.Comment = *request.Body.Comment
-	}
-	if request.Body.TableType != nil {
-		domReq.TableType = string(*request.Body.TableType)
-	}
-	if request.Body.SourcePath != nil {
-		domReq.SourcePath = *request.Body.SourcePath
-	}
-	if request.Body.FileFormat != nil {
-		domReq.FileFormat = string(*request.Body.FileFormat)
-	}
-	if request.Body.LocationName != nil {
-		domReq.LocationName = *request.Body.LocationName
 	}
 
 	principal := principalFromCtx(ctx)
@@ -270,11 +258,11 @@ func (h *APIHandler) UpdateTable(ctx context.Context, request GenUpdateTableRequ
 	if request.Body.Comment != nil {
 		domReq.Comment = request.Body.Comment
 	}
-	if request.Body.Properties != nil {
-		domReq.Properties = *request.Body.Properties
-	}
 	if request.Body.Owner != nil {
 		domReq.Owner = request.Body.Owner
+	}
+	if request.Body.Properties != nil {
+		domReq.Properties = *request.Body.Properties
 	}
 
 	principal := principalFromCtx(ctx)
@@ -329,7 +317,7 @@ func (h *APIHandler) ListTableColumns(ctx context.Context, request GenListTableC
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListTableColumns200JSONResponse{
-		Body:    PaginatedColumnDetails{Data: &out, NextPageToken: optStr(npt)},
+		Body:    PaginatedColumnDetails{Data: out, NextPageToken: optStr(npt)},
 		Headers: GenListTableColumns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -339,9 +327,6 @@ func (h *APIHandler) UpdateColumn(ctx context.Context, request GenUpdateColumnRe
 	domReq := domain.UpdateColumnRequest{}
 	if request.Body.Comment != nil {
 		domReq.Comment = request.Body.Comment
-	}
-	if request.Body.Properties != nil {
-		domReq.Properties = *request.Body.Properties
 	}
 
 	principal := principalFromCtx(ctx)
@@ -390,12 +375,12 @@ func (h *APIHandler) GetMetastoreSummary(ctx context.Context, request GenGetMeta
 	}
 	return GenGetMetastoreSummary200JSONResponse{
 		Body: MetastoreSummary{
-			CatalogName:    &summary.CatalogName,
+			CatalogName:    summary.CatalogName,
 			MetastoreType:  &summary.MetastoreType,
 			StorageBackend: &summary.StorageBackend,
 			DataPath:       &summary.DataPath,
-			SchemaCount:    &summary.SchemaCount,
-			TableCount:     &summary.TableCount,
+			SchemaCount:    ptrI32(safeInt64ToInt32(summary.SchemaCount)),
+			TableCount:     ptrI32(safeInt64ToInt32(summary.TableCount)),
 		},
 		Headers: GenGetMetastoreSummary200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil

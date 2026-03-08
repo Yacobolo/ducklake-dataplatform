@@ -40,7 +40,7 @@ func (h *APIHandler) ListPipelines(ctx context.Context, req GenListPipelinesRequ
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListPipelines200JSONResponse{
-		Body:    PaginatedPipelines{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedPipelines{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListPipelines200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -170,7 +170,7 @@ func (h *APIHandler) ListPipelineJobs(ctx context.Context, req GenListPipelineJo
 		data[i] = pipelineJobToAPI(j)
 	}
 	return GenListPipelineJobs200JSONResponse{
-		Body:    PipelineJobList{Data: &data},
+		Body:    PipelineJobList{Data: data},
 		Headers: GenListPipelineJobs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -306,7 +306,7 @@ func (h *APIHandler) ListPipelineRuns(ctx context.Context, req GenListPipelineRu
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListPipelineRuns200JSONResponse{
-		Body:    PaginatedPipelineRuns{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedPipelineRuns{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListPipelineRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -377,7 +377,7 @@ func (h *APIHandler) ListPipelineJobRuns(ctx context.Context, req GenListPipelin
 		data[i] = pipelineJobRunToAPI(jr)
 	}
 	return GenListPipelineJobRuns200JSONResponse{
-		Body:    PipelineJobRunList{Data: &data},
+		Body:    PipelineJobRunList{Data: data},
 		Headers: GenListPipelineJobRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

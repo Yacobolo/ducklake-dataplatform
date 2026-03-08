@@ -10,4 +10,5 @@
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
 | `owner` | `string` | `false` | - |
+| `properties` | `object` | `false` | - |
 

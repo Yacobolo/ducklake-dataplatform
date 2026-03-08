@@ -549,7 +549,7 @@ func (h *APIHandler) RunMetricQuery(ctx context.Context, req GenRunMetricQueryRe
 
 	apiPlan := metricQueryPlanToAPI(result.Plan)
 	apiResult := QueryResult{
-		Columns:  &result.Result.Columns,
+		Columns:  result.Result.Columns,
 		Rows:     &result.Result.Rows,
 		RowCount: ptrInt64(int64(result.Result.RowCount)),
 	}
@@ -626,34 +626,26 @@ func semanticPreAggregationToAPI(p domain.SemanticPreAggregation) SemanticPreAgg
 
 func semanticModelsPageToGen(items []SemanticModel, nextPageToken *string) PaginatedSemanticModels {
 	data := make([]SemanticModel, len(items))
-	for i, item := range items {
-		data[i] = item
-	}
-	return PaginatedSemanticModels{Data: &data, NextPageToken: nextPageToken}
+	copy(data, items)
+	return PaginatedSemanticModels{Data: data, NextPageToken: nextPageToken}
 }
 
 func semanticMetricListToGen(items []SemanticMetric) SemanticMetricList {
 	data := make([]SemanticMetric, len(items))
-	for i, item := range items {
-		data[i] = item
-	}
-	return SemanticMetricList{Data: &data}
+	copy(data, items)
+	return SemanticMetricList{Data: data}
 }
 
 func semanticPreAggregationListToGen(items []SemanticPreAggregation) SemanticPreAggregationList {
 	data := make([]SemanticPreAggregation, len(items))
-	for i, item := range items {
-		data[i] = item
-	}
-	return SemanticPreAggregationList{Data: &data}
+	copy(data, items)
+	return SemanticPreAggregationList{Data: data}
 }
 
 func semanticRelationshipsPageToGen(items []SemanticRelationship, nextPageToken *string) PaginatedSemanticRelationships {
 	data := make([]SemanticRelationship, len(items))
-	for i, item := range items {
-		data[i] = item
-	}
-	return PaginatedSemanticRelationships{Data: &data, NextPageToken: nextPageToken}
+	copy(data, items)
+	return PaginatedSemanticRelationships{Data: data, NextPageToken: nextPageToken}
 }
 
 func metricQueryPlanToAPI(plan semantic.MetricQueryPlan) MetricQueryPlan {
@@ -759,11 +751,11 @@ func ptrInt64(v int64) *int64 {
 	return &v
 }
 
-func optCertificationState(v string) *SemanticMetricCertificationState {
+func optCertificationState(v string) *CreateSemanticMetricRequestCertificationState {
 	if v == "" {
 		return nil
 	}
-	s := SemanticMetricCertificationState(v)
+	s := CreateSemanticMetricRequestCertificationState(v)
 	return &s
 }
 

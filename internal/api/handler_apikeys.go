@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"time"
 
 	"duck-demo/internal/domain"
 )
@@ -17,13 +18,29 @@ type apiKeyService interface {
 
 // === API Keys ===
 
+func parseRFC3339Ptr(value string) (*time.Time, bool) {
+	parsed, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return nil, false
+	}
+	return &parsed, true
+}
+
 // CreateAPIKey implements the endpoint for creating a new API key.
 func (h *APIHandler) CreateAPIKey(ctx context.Context, req GenCreateAPIKeyRequest) (GenCreateAPIKeyResponse, error) {
-	rawKey, key, err := h.apiKeys.Create(ctx, domain.CreateAPIKeyRequest{
-		PrincipalID: req.Body.PrincipalId,
-		Name:        req.Body.Name,
-		ExpiresAt:   req.Body.ExpiresAt,
-	})
+	domReq := domain.CreateAPIKeyRequest{PrincipalID: req.Body.PrincipalId}
+	if req.Body.Name != nil {
+		domReq.Name = *req.Body.Name
+	}
+	if req.Body.ExpiresAt != nil {
+		parsed, ok := parseRFC3339Ptr(*req.Body.ExpiresAt)
+		if !ok {
+			return CreateAPIKey400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "expires_at must be RFC3339"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		domReq.ExpiresAt = parsed
+	}
+
+	rawKey, key, err := h.apiKeys.Create(ctx, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ValidationError)):
@@ -36,12 +53,12 @@ func (h *APIHandler) CreateAPIKey(ctx context.Context, req GenCreateAPIKeyReques
 	}
 	return GenCreateAPIKey201JSONResponse{
 		Body: CreateAPIKeyResponse{
-			Id:        &key.ID,
-			Key:       &rawKey,
-			Name:      &key.Name,
+			Id:        key.ID,
+			Key:       rawKey,
+			Name:      strPtrIfNonEmpty(key.Name),
 			KeyPrefix: &key.KeyPrefix,
-			ExpiresAt: key.ExpiresAt,
-			CreatedAt: &key.CreatedAt,
+			ExpiresAt: formatTimePtr(key.ExpiresAt),
+			CreatedAt: formatTimePtr(&key.CreatedAt),
 		},
 		Headers: GenCreateAPIKey201ResponseHeaders{
 			XRateLimitLimit:     defaultRateLimitLimit,
@@ -69,7 +86,7 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req GenListAPIKeysRequest)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListAPIKeys200JSONResponse{
-		Body:    PaginatedAPIKeys{Data: &data, NextPageToken: optStr(npt)},
+		Body:    PaginatedAPIKeys{Data: data, NextPageToken: optStr(npt)},
 		Headers: GenListAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -99,7 +116,7 @@ func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ GenCleanupExpi
 		}
 	}
 	return CleanupExpiredAPIKeys200JSONResponse{
-		Body:    CleanupAPIKeysResponse{DeletedCount: &count},
+		Body:    CleanupAPIKeysResponse{DeletedCount: safeInt64ToInt32(count)},
 		Headers: CleanupExpiredAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -107,11 +124,11 @@ func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ GenCleanupExpi
 // apiKeyToAPI converts a domain APIKey to the API representation.
 func apiKeyToAPI(k domain.APIKey) APIKeyInfo {
 	return APIKeyInfo{
-		Id:          &k.ID,
-		PrincipalId: &k.PrincipalID,
-		Name:        &k.Name,
+		Id:          k.ID,
+		PrincipalId: k.PrincipalID,
+		Name:        k.Name,
 		KeyPrefix:   &k.KeyPrefix,
-		ExpiresAt:   k.ExpiresAt,
-		CreatedAt:   &k.CreatedAt,
+		ExpiresAt:   formatTimePtr(k.ExpiresAt),
+		CreatedAt:   formatTimePtr(&k.CreatedAt),
 	}
 }

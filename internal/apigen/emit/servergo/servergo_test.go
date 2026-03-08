@@ -147,7 +147,7 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "if statusCode >= http.StatusInternalServerError {")
 	require.Contains(t, content, "if statusText := strings.ToLower(http.StatusText(statusCode)); statusText != \"\" {")
 	require.Contains(t, content, "func writeAPIGenError(w http.ResponseWriter, statusCode int, message string) {")
-	require.Contains(t, content, "_ = json.NewEncoder(w).Encode(Error{Code: int32(statusCode), Message: apigenErrorMessage(statusCode, message)})")
+	require.Contains(t, content, "_ = json.NewEncoder(w).Encode(Error{Code: safeIntToInt32(statusCode), Message: apigenErrorMessage(statusCode, message)})")
 	require.Contains(t, content, "var request GenListGroupMembersRequest")
 	require.Contains(t, content, "\"fmt\"")
 	require.Contains(t, content, "\"reflect\"")

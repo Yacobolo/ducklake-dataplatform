@@ -218,8 +218,8 @@ func TestHandler_ListStorageCredentials(t *testing.T) {
 				ok200, ok := resp.(GenListStorageCredentials200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "my-s3-cred", *(*ok200.Body.Data)[0].Name)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "my-s3-cred", ok200.Body.Data[0].Name)
 			},
 		},
 		{
@@ -234,7 +234,7 @@ func TestHandler_ListStorageCredentials(t *testing.T) {
 				ok200, ok := resp.(GenListStorageCredentials200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				assert.Empty(t, *ok200.Body.Data)
+				assert.Empty(t, ok200.Body.Data)
 			},
 		},
 		{
@@ -264,7 +264,7 @@ func TestHandler_ListStorageCredentials(t *testing.T) {
 func TestHandler_CreateStorageCredential(t *testing.T) {
 	t.Parallel()
 
-	ct := CreateStorageCredentialRequestCredentialTypeS3
+	ct := "S3"
 	tests := []struct {
 		name     string
 		body     GenCreateStorageCredentialJSONBody
@@ -273,7 +273,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 	}{
 		{
 			name: "happy path returns 201",
-			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: ct},
+			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: storageStrPtr(ct)},
 			svcFn: func(_ context.Context, _ string, req domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
 				if req.URLStyle != "" {
 					return nil, domain.ErrValidation("url_style must be explicit")
@@ -287,13 +287,13 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 				require.NoError(t, err)
 				created, ok := resp.(GenCreateStorageCredential201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
-				assert.Equal(t, "my-s3-cred", *created.Body.Name)
-				assert.Equal(t, "cred-1", *created.Body.Id)
+				assert.Equal(t, "my-s3-cred", created.Body.Name)
+				assert.Equal(t, "cred-1", created.Body.Id)
 			},
 		},
 		{
 			name: "validation error returns 400",
-			body: GenCreateStorageCredentialJSONBody{Name: "", CredentialType: ct},
+			body: GenCreateStorageCredentialJSONBody{Name: "", CredentialType: storageStrPtr(ct)},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
 				return nil, domain.ErrValidation("credential name is required")
 			},
@@ -308,7 +308,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 		},
 		{
 			name: "access denied returns 403",
-			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: ct},
+			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: storageStrPtr(ct)},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
 				return nil, domain.ErrAccessDenied("only admins can create credentials")
 			},
@@ -322,7 +322,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 		},
 		{
 			name: "conflict error returns 409",
-			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: ct},
+			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: storageStrPtr(ct)},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
 				return nil, domain.ErrConflict("credential my-s3-cred already exists")
 			},
@@ -337,7 +337,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 		},
 		{
 			name: "unknown error falls through to 400",
-			body: GenCreateStorageCredentialJSONBody{Name: "fail", CredentialType: ct},
+			body: GenCreateStorageCredentialJSONBody{Name: "fail", CredentialType: storageStrPtr(ct)},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
 				return nil, assert.AnError
 			},
@@ -384,7 +384,7 @@ func TestHandler_GetStorageCredential(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenGetStorageCredential200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "my-s3-cred", *ok200.Body.Name)
+				assert.Equal(t, "my-s3-cred", ok200.Body.Name)
 			},
 		},
 		{
@@ -439,7 +439,7 @@ func TestHandler_UpdateStorageCredential(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenUpdateStorageCredential200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "my-s3-cred", *ok200.Body.Name)
+				assert.Equal(t, "my-s3-cred", ok200.Body.Name)
 			},
 		},
 		{
@@ -575,8 +575,8 @@ func TestHandler_ListExternalLocations(t *testing.T) {
 				ok200, ok := resp.(GenListExternalLocations200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "my-s3-location", *(*ok200.Body.Data)[0].Name)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "my-s3-location", ok200.Body.Data[0].Name)
 			},
 		},
 		{
@@ -614,7 +614,7 @@ func TestHandler_CreateExternalLocation(t *testing.T) {
 	}{
 		{
 			name: "happy path returns 201",
-			body: GenCreateExternalLocationJSONBody{Name: "my-s3-location", Url: "s3://bucket/", CredentialName: "my-s3-cred"},
+			body: GenCreateExternalLocationJSONBody{Name: "my-s3-location", Url: "s3://bucket/", CredentialName: storageStrPtr("my-s3-cred")},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error) {
 				l := sampleExternalLocation()
 				return &l, nil
@@ -624,13 +624,13 @@ func TestHandler_CreateExternalLocation(t *testing.T) {
 				require.NoError(t, err)
 				created, ok := resp.(GenCreateExternalLocation201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
-				assert.Equal(t, "my-s3-location", *created.Body.Name)
-				assert.Equal(t, "loc-1", *created.Body.Id)
+				assert.Equal(t, "my-s3-location", created.Body.Name)
+				assert.Equal(t, "loc-1", created.Body.Id)
 			},
 		},
 		{
 			name: "validation error returns 400",
-			body: GenCreateExternalLocationJSONBody{Name: "", Url: "", CredentialName: ""},
+			body: GenCreateExternalLocationJSONBody{Name: "", Url: "", CredentialName: storageStrPtr("")},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error) {
 				return nil, domain.ErrValidation("location name is required")
 			},
@@ -644,7 +644,7 @@ func TestHandler_CreateExternalLocation(t *testing.T) {
 		},
 		{
 			name: "access denied returns 403",
-			body: GenCreateExternalLocationJSONBody{Name: "loc", Url: "s3://b/", CredentialName: "c"},
+			body: GenCreateExternalLocationJSONBody{Name: "loc", Url: "s3://b/", CredentialName: storageStrPtr("c")},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
@@ -658,7 +658,7 @@ func TestHandler_CreateExternalLocation(t *testing.T) {
 		},
 		{
 			name: "conflict error returns 409",
-			body: GenCreateExternalLocationJSONBody{Name: "my-s3-location", Url: "s3://b/", CredentialName: "c"},
+			body: GenCreateExternalLocationJSONBody{Name: "my-s3-location", Url: "s3://b/", CredentialName: storageStrPtr("c")},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error) {
 				return nil, domain.ErrConflict("location already exists")
 			},
@@ -672,7 +672,7 @@ func TestHandler_CreateExternalLocation(t *testing.T) {
 		},
 		{
 			name: "not found credential returns 400",
-			body: GenCreateExternalLocationJSONBody{Name: "loc", Url: "s3://b/", CredentialName: "missing-cred"},
+			body: GenCreateExternalLocationJSONBody{Name: "loc", Url: "s3://b/", CredentialName: storageStrPtr("missing-cred")},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error) {
 				return nil, domain.ErrNotFound("credential missing-cred not found")
 			},
@@ -686,7 +686,7 @@ func TestHandler_CreateExternalLocation(t *testing.T) {
 		},
 		{
 			name: "unknown error falls through to 400",
-			body: GenCreateExternalLocationJSONBody{Name: "fail", Url: "s3://b/", CredentialName: "c"},
+			body: GenCreateExternalLocationJSONBody{Name: "fail", Url: "s3://b/", CredentialName: storageStrPtr("c")},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error) {
 				return nil, assert.AnError
 			},
@@ -733,7 +733,7 @@ func TestHandler_GetExternalLocation(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenGetExternalLocation200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "my-s3-location", *ok200.Body.Name)
+				assert.Equal(t, "my-s3-location", ok200.Body.Name)
 			},
 		},
 		{
@@ -788,7 +788,7 @@ func TestHandler_UpdateExternalLocation(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenUpdateExternalLocation200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "my-s3-location", *ok200.Body.Name)
+				assert.Equal(t, "my-s3-location", ok200.Body.Name)
 			},
 		},
 		{
@@ -922,8 +922,8 @@ func TestHandler_ListVolumes(t *testing.T) {
 				ok200, ok := resp.(GenListVolumes200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "my-volume", *(*ok200.Body.Data)[0].Name)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "my-volume", ok200.Body.Data[0].Name)
 			},
 		},
 		{
@@ -944,7 +944,7 @@ func TestHandler_ListVolumes(t *testing.T) {
 			svc := &mockVolumeService{listFn: tt.svcFn}
 			handler := &APIHandler{volumes: svc}
 			resp, err := handler.ListVolumes(storageTestCtx(), GenListVolumesRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				Params:      GenListVolumesParams{},
 			})
@@ -956,7 +956,7 @@ func TestHandler_ListVolumes(t *testing.T) {
 func TestHandler_CreateVolume(t *testing.T) {
 	t.Parallel()
 
-	vt := CreateVolumeRequestVolumeTypeMANAGED
+	vt := storageStrPtr("MANAGED")
 	tests := []struct {
 		name     string
 		body     GenCreateVolumeJSONBody
@@ -975,8 +975,8 @@ func TestHandler_CreateVolume(t *testing.T) {
 				require.NoError(t, err)
 				created, ok := resp.(GenCreateVolume201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
-				assert.Equal(t, "my-volume", *created.Body.Name)
-				assert.Equal(t, "vol-1", *created.Body.Id)
+				assert.Equal(t, "my-volume", created.Body.Name)
+				assert.Equal(t, "vol-1", created.Body.Id)
 			},
 		},
 		{
@@ -1044,7 +1044,7 @@ func TestHandler_CreateVolume(t *testing.T) {
 			handler := &APIHandler{volumes: svc}
 			body := tt.body
 			resp, err := handler.CreateVolume(storageTestCtx(), GenCreateVolumeRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				Body:        &body,
 			})
@@ -1074,7 +1074,7 @@ func TestHandler_GetVolume(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenGetVolume200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "my-volume", *ok200.Body.Name)
+				assert.Equal(t, "my-volume", ok200.Body.Name)
 			},
 		},
 		{
@@ -1099,7 +1099,7 @@ func TestHandler_GetVolume(t *testing.T) {
 			svc := &mockVolumeService{getFn: tt.svcFn}
 			handler := &APIHandler{volumes: svc}
 			resp, err := handler.GetVolume(storageTestCtx(), GenGetVolumeRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				VolumeName:  tt.volumeName,
 			})
@@ -1132,7 +1132,7 @@ func TestHandler_UpdateVolume(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenUpdateVolume200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "my-volume", *ok200.Body.Name)
+				assert.Equal(t, "my-volume", ok200.Body.Name)
 			},
 		},
 		{
@@ -1174,7 +1174,7 @@ func TestHandler_UpdateVolume(t *testing.T) {
 			handler := &APIHandler{volumes: svc}
 			body := tt.body
 			resp, err := handler.UpdateVolume(storageTestCtx(), GenUpdateVolumeRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				VolumeName:  tt.volumeName,
 				Body:        &body,
@@ -1242,7 +1242,7 @@ func TestHandler_DeleteVolume(t *testing.T) {
 			svc := &mockVolumeService{deleteFn: tt.svcFn}
 			handler := &APIHandler{volumes: svc}
 			resp, err := handler.DeleteVolume(storageTestCtx(), GenDeleteVolumeRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				VolumeName:  tt.volumeName,
 			})

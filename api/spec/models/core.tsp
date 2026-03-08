@@ -474,6 +474,7 @@ model SchemaDetail {
   catalog_name: string;
   comment?: string;
   properties?: Record<string>;
+  tags?: Tag[];
   owner?: string;
   created_at?: string;
   updated_at?: string;
@@ -524,7 +525,10 @@ model TableDetail {
   table_type?: string;
   columns?: ColumnDetail[];
   comment?: string;
+  properties?: Record<string>;
   owner?: string;
+  tags?: Tag[];
+  statistics?: TableStatistics;
   created_at?: string;
   updated_at?: string;
 }
@@ -542,6 +546,7 @@ model CreateTableRequest {
 
 model UpdateTableRequest {
   comment?: string;
+  properties?: Record<string>;
   owner?: string;
 }
 
@@ -1016,8 +1021,335 @@ model PaginatedNotebookJobs {
   next_page_token?: string;
 }
 
+model CreatePipelineRequest {
+  name: string;
+  description?: string;
+  schedule_cron?: string;
+  is_paused?: boolean;
+  concurrency_limit?: int32;
+}
+
+model UpdatePipelineRequest {
+  description?: string;
+  schedule_cron?: string;
+  is_paused?: boolean;
+  concurrency_limit?: int32;
+}
+
+model Pipeline {
+  id?: string;
+  name?: string;
+  description?: string;
+  schedule_cron?: string;
+  is_paused?: boolean;
+  concurrency_limit?: int32;
+  created_by?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedPipelines {
+  data: Pipeline[];
+  next_page_token?: string;
+}
+
+enum PipelineJobJobType {
+  NOTEBOOK,
+  MODEL_RUN,
+}
+
+model CreatePipelineJobRequest {
+  name: string;
+  notebook_id?: string;
+  compute_endpoint_id?: string;
+  depends_on?: string[];
+  timeout_seconds?: int64;
+  retry_count?: int32;
+  job_order?: int32;
+  job_type?: PipelineJobJobType;
+  model_selector?: string;
+}
+
+model PipelineJob {
+  id?: string;
+  pipeline_id?: string;
+  name?: string;
+  notebook_id?: string;
+  compute_endpoint_id?: string;
+  depends_on?: string[];
+  timeout_seconds?: int64;
+  retry_count?: int32;
+  job_order?: int32;
+  job_type?: PipelineJobJobType;
+  model_selector?: string;
+  created_at?: utcDateTime;
+}
+
+model PipelineJobList {
+  data: PipelineJob[];
+}
+
+enum PipelineRunStatus {
+  PENDING,
+  RUNNING,
+  SUCCESS,
+  FAILED,
+  CANCELLED,
+}
+
+enum PipelineRunTriggerType {
+  MANUAL,
+  SCHEDULED,
+}
+
+model TriggerPipelineRunRequest {
+  parameters?: Record<string>;
+}
+
+model PipelineRun {
+  id?: string;
+  pipeline_id?: string;
+  status?: PipelineRunStatus;
+  trigger_type?: PipelineRunTriggerType;
+  triggered_by?: string;
+  parameters?: Record<string>;
+  git_commit_hash?: string;
+  started_at?: utcDateTime;
+  finished_at?: utcDateTime;
+  error_message?: string;
+  created_at?: utcDateTime;
+}
+
+model PaginatedPipelineRuns {
+  data: PipelineRun[];
+  next_page_token?: string;
+}
+
+enum PipelineJobRunStatus {
+  PENDING,
+  RUNNING,
+  SUCCESS,
+  FAILED,
+  SKIPPED,
+  CANCELLED,
+}
+
+model PipelineJobRun {
+  id?: string;
+  run_id?: string;
+  job_id?: string;
+  job_name?: string;
+  status?: PipelineJobRunStatus;
+  started_at?: utcDateTime;
+  finished_at?: utcDateTime;
+  error_message?: string;
+  retry_attempt?: int32;
+  created_at?: utcDateTime;
+}
+
+model PipelineJobRunList {
+  data: PipelineJobRun[];
+}
+
 model GenericResponse {
   data?: Record<string>;
+}
+
+model SearchResult {
+  type?: string;
+  name?: string;
+  schema_name?: string;
+  table_name?: string;
+  comment?: string;
+  match_field?: string;
+}
+
+model PaginatedSearchResults {
+  data: SearchResult[];
+  next_page_token?: string;
+}
+
+model CreateSemanticModelRequest {
+  project_name: string;
+  name: string;
+  description?: string;
+  base_model_ref: string;
+  default_time_dimension?: string;
+  tags?: string[];
+}
+
+model UpdateSemanticModelRequest {
+  description?: string;
+  owner?: string;
+  base_model_ref?: string;
+  default_time_dimension?: string;
+  tags?: string[];
+}
+
+model SemanticModel {
+  id?: string;
+  project_name?: string;
+  name?: string;
+  description?: string;
+  owner?: string;
+  base_model_ref?: string;
+  default_time_dimension?: string;
+  tags?: string[];
+  created_by?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedSemanticModels {
+  data: SemanticModel[];
+  next_page_token?: string;
+}
+
+enum SemanticMetricMetricType {
+  SUM,
+  COUNT,
+  COUNT_DISTINCT,
+  AVG,
+  MIN,
+  MAX,
+  RATIO,
+}
+
+enum SemanticMetricExpressionMode {
+  DSL,
+  SQL,
+}
+
+enum CreateSemanticMetricRequestCertificationState {
+  DRAFT,
+  CERTIFIED,
+  DEPRECATED,
+}
+
+alias SemanticMetricCertificationState = CreateSemanticMetricRequestCertificationState;
+
+model CreateSemanticMetricRequest {
+  name: string;
+  description?: string;
+  metric_type: SemanticMetricMetricType;
+  expression_mode?: SemanticMetricExpressionMode;
+  expression: string;
+  default_time_grain?: string;
+  format?: string;
+  certification_state?: CreateSemanticMetricRequestCertificationState;
+}
+
+model UpdateSemanticMetricRequest {
+  description?: string;
+  metric_type?: SemanticMetricMetricType;
+  expression_mode?: SemanticMetricExpressionMode;
+  expression?: string;
+  default_time_grain?: string;
+  format?: string;
+  owner?: string;
+  certification_state?: SemanticMetricCertificationState;
+}
+
+model SemanticMetric {
+  id?: string;
+  semantic_model_id?: string;
+  name?: string;
+  description?: string;
+  metric_type?: SemanticMetricMetricType;
+  expression_mode?: SemanticMetricExpressionMode;
+  expression?: string;
+  default_time_grain?: string;
+  format?: string;
+  owner?: string;
+  certification_state?: SemanticMetricCertificationState;
+  created_by?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model SemanticMetricList {
+  data: SemanticMetric[];
+}
+
+model CreateSemanticPreAggregationRequest {
+  name: string;
+  metric_set?: string[];
+  dimension_set?: string[];
+  grain?: string;
+  target_relation: string;
+  refresh_policy?: string;
+}
+
+model UpdateSemanticPreAggregationRequest {
+  metric_set?: string[];
+  dimension_set?: string[];
+  grain?: string;
+  target_relation?: string;
+  refresh_policy?: string;
+}
+
+model SemanticPreAggregation {
+  id?: string;
+  semantic_model_id?: string;
+  name?: string;
+  metric_set?: string[];
+  dimension_set?: string[];
+  grain?: string;
+  target_relation?: string;
+  refresh_policy?: string;
+  created_by?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model SemanticPreAggregationList {
+  data: SemanticPreAggregation[];
+}
+
+enum SemanticRelationshipRelationshipType {
+  ONE_TO_ONE,
+  ONE_TO_MANY,
+  MANY_TO_ONE,
+  MANY_TO_MANY,
+}
+
+model CreateSemanticRelationshipRequest {
+  name: string;
+  from_semantic_id: string;
+  to_semantic_id: string;
+  relationship_type: SemanticRelationshipRelationshipType;
+  join_sql: string;
+  is_default?: boolean;
+  cost?: int32;
+  max_hops?: int32;
+}
+
+model UpdateSemanticRelationshipRequest {
+  relationship_type?: SemanticRelationshipRelationshipType;
+  join_sql?: string;
+  is_default?: boolean;
+  cost?: int32;
+  max_hops?: int32;
+}
+
+model SemanticRelationship {
+  id?: string;
+  name?: string;
+  from_semantic_id?: string;
+  to_semantic_id?: string;
+  relationship_type?: SemanticRelationshipRelationshipType;
+  join_sql?: string;
+  is_default?: boolean;
+  cost?: int32;
+  max_hops?: int32;
+  created_by?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedSemanticRelationships {
+  data: SemanticRelationship[];
+  next_page_token?: string;
 }
 
 model TriggerModelRunRequest {

@@ -343,8 +343,8 @@ func TestAPI_NotebookCRUD(t *testing.T) {
 
 		list := nbDecodeJSON[PaginatedNotebooks](t, resp)
 		require.NotNil(t, list.Data)
-		require.Len(t, *list.Data, 1)
-		assert.Equal(t, nbID, *(*list.Data)[0].Id)
+		require.Len(t, list.Data, 1)
+		assert.Equal(t, nbID, *list.Data[0].Id)
 	})
 
 	t.Run("update notebook", func(t *testing.T) {
@@ -456,15 +456,15 @@ func TestAPI_CellCRUD(t *testing.T) {
 		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/"+nbID+"/cells/reorder", body)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
-		var cells []Cell
+		var cells CellList
 		defer resp.Body.Close() //nolint:errcheck
 		err := json.NewDecoder(resp.Body).Decode(&cells)
 		require.NoError(t, err)
-		require.Len(t, cells, 3)
-		assert.Equal(t, "cell-b", *cells[0].Id)
-		assert.Equal(t, int32(0), *cells[0].Position)
-		assert.Equal(t, "cell-a", *cells[1].Id)
-		assert.Equal(t, int32(1), *cells[1].Position)
+		require.Len(t, cells.Data, 3)
+		assert.Equal(t, "cell-b", *cells.Data[0].Id)
+		assert.Equal(t, int32(0), *cells.Data[0].Position)
+		assert.Equal(t, "cell-a", *cells.Data[1].Id)
+		assert.Equal(t, int32(1), *cells.Data[1].Position)
 	})
 
 	t.Run("delete cell", func(t *testing.T) {
@@ -597,8 +597,8 @@ func TestAPI_Sessions(t *testing.T) {
 
 		list := nbDecodeJSON[PaginatedNotebookJobs](t, resp)
 		require.NotNil(t, list.Data)
-		require.Len(t, *list.Data, 1)
-		assert.Equal(t, jobID, *(*list.Data)[0].Id)
+		require.Len(t, list.Data, 1)
+		assert.Equal(t, jobID, *list.Data[0].Id)
 	})
 
 	t.Run("get job", func(t *testing.T) {
@@ -691,8 +691,8 @@ func TestAPI_GitRepoCRUD(t *testing.T) {
 
 		list := nbDecodeJSON[PaginatedGitRepos](t, resp)
 		require.NotNil(t, list.Data)
-		require.Len(t, *list.Data, 1)
-		assert.Equal(t, repoID, *(*list.Data)[0].Id)
+		require.Len(t, list.Data, 1)
+		assert.Equal(t, repoID, *list.Data[0].Id)
 	})
 
 	t.Run("delete git repo", func(t *testing.T) {

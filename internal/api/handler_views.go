@@ -38,7 +38,7 @@ func (h *APIHandler) ListViews(ctx context.Context, request GenListViewsRequest)
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListViews200JSONResponse{
-		Body:    PaginatedViewDetails{Data: &data, NextPageToken: optStr(npt)},
+		Body:    PaginatedViewDetails{Data: data, NextPageToken: optStr(npt)},
 		Headers: GenListViews200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -95,9 +95,6 @@ func (h *APIHandler) UpdateView(ctx context.Context, request GenUpdateViewReques
 	domReq := domain.UpdateViewRequest{}
 	if request.Body.Comment != nil {
 		domReq.Comment = request.Body.Comment
-	}
-	if request.Body.Properties != nil {
-		domReq.Properties = *request.Body.Properties
 	}
 	if request.Body.ViewDefinition != nil {
 		domReq.ViewDefinition = request.Body.ViewDefinition

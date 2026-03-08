@@ -37,7 +37,7 @@ func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req GenListComput
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListComputeEndpoints200JSONResponse{
-		Body:    PaginatedComputeEndpoints{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedComputeEndpoints{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListComputeEndpoints200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -170,7 +170,7 @@ func (h *APIHandler) ListComputeAssignments(ctx context.Context, req GenListComp
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListComputeAssignments200JSONResponse{
-		Body:    PaginatedComputeAssignments{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedComputeAssignments{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListComputeAssignments200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -288,8 +288,8 @@ func computeEndpointToAPI(ep domain.ComputeEndpoint) ComputeEndpoint {
 		Type:       &t,
 		Status:     &st,
 		Owner:      &ep.Owner,
-		CreatedAt:  &ct,
-		UpdatedAt:  &ut,
+		CreatedAt:  formatTimePtr(&ct),
+		UpdatedAt:  formatTimePtr(&ut),
 	}
 	if ep.Size != "" {
 		s := ComputeEndpointSize(ep.Size)
@@ -312,6 +312,6 @@ func computeAssignmentToAPI(a domain.ComputeAssignment) ComputeAssignment {
 		EndpointName:  optStr(a.EndpointName),
 		IsDefault:     &a.IsDefault,
 		FallbackLocal: &a.FallbackLocal,
-		CreatedAt:     &ct,
+		CreatedAt:     formatTimePtr(&ct),
 	}
 }

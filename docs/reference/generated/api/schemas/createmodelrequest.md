@@ -3,12 +3,19 @@
 # Schema: `CreateModelRequest`
 
 - Type: `object`
-- Required fields: `name`
+- Required fields: `name`, `project_name`, `sql`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
+| `config` | `ModelConfig` | `false` | - |
+| `contract` | `ModelContract` | `false` | - |
+| `description` | `string` | `false` | - |
+| `freshness_policy` | `FreshnessPolicy` | `false` | - |
+| `materialization` | `ModelMaterialization` | `false` | - |
 | `name` | `string` | `true` | - |
-| `payload` | `object` | `false` | - |
+| `project_name` | `string` | `true` | - |
+| `sql` | `string` | `true` | - |
+| `tags` | `array[string]` | `false` | - |
 

@@ -112,7 +112,7 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 				require.NoError(t, err)
 				created, ok := resp.(GenRegisterCatalog201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
-				assert.Equal(t, "c-1", *created.Body.Id)
+				assert.Equal(t, "c-1", created.Body.Id)
 				assert.Equal(t, "cat", created.Body.Name)
 			},
 		},
@@ -164,9 +164,9 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 			handler := &APIHandler{catalogRegistration: svc}
 			body := GenRegisterCatalogJSONBody{
 				Name:          "cat",
-				MetastoreType: "ducklake",
-				Dsn:           "sqlite:test.db",
-				DataPath:      "/data",
+				MetastoreType: catStrPtr("ducklake"),
+				Dsn:           catStrPtr("sqlite:test.db"),
+				DataPath:      catStrPtr("/data"),
 			}
 			resp, err := handler.RegisterCatalog(catTestCtx(), GenRegisterCatalogRequest{Body: &body})
 			tt.assertFn(t, resp, err)
@@ -192,9 +192,8 @@ func TestHandler_ListCatalogs(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenListCatalogs200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "cat", (*ok200.Body.Data)[0].Name)
+				require.Len(t, ok200.Body.Catalogs, 1)
+				assert.Equal(t, "cat", ok200.Body.Catalogs[0].Name)
 			},
 		},
 		{
@@ -239,7 +238,7 @@ func TestHandler_GetCatalogRegistration(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenGetCatalogRegistration200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "c-1", *ok200.Body.Id)
+				assert.Equal(t, "c-1", ok200.Body.Id)
 				assert.Equal(t, "cat", ok200.Body.Name)
 			},
 		},
@@ -289,7 +288,7 @@ func TestHandler_UpdateCatalogRegistration(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenUpdateCatalogRegistration200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "c-1", *ok200.Body.Id)
+				assert.Equal(t, "c-1", ok200.Body.Id)
 			},
 		},
 		{
@@ -416,7 +415,7 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(SetDefaultCatalog200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "c-1", *ok200.Body.Id)
+				assert.Equal(t, "c-1", ok200.Body.Id)
 				assert.True(t, *ok200.Body.IsDefault)
 			},
 		},

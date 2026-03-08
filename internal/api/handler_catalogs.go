@@ -21,11 +21,15 @@ type catalogRegistrationService interface {
 
 // RegisterCatalog implements the endpoint for registering a new catalog.
 func (h *APIHandler) RegisterCatalog(ctx context.Context, request GenRegisterCatalogRequest) (GenRegisterCatalogResponse, error) {
-	domReq := domain.CreateCatalogRequest{
-		Name:          request.Body.Name,
-		MetastoreType: string(request.Body.MetastoreType),
-		DSN:           request.Body.Dsn,
-		DataPath:      request.Body.DataPath,
+	domReq := domain.CreateCatalogRequest{Name: request.Body.Name}
+	if request.Body.MetastoreType != nil {
+		domReq.MetastoreType = *request.Body.MetastoreType
+	}
+	if request.Body.Dsn != nil {
+		domReq.DSN = *request.Body.Dsn
+	}
+	if request.Body.DataPath != nil {
+		domReq.DataPath = *request.Body.DataPath
 	}
 	if request.Body.Comment != nil {
 		domReq.Comment = *request.Body.Comment
@@ -66,9 +70,9 @@ func (h *APIHandler) ListCatalogs(ctx context.Context, request GenListCatalogsRe
 	tc := total
 	return GenListCatalogs200JSONResponse{
 		Body: CatalogRegistrationList{
-			Data:          &data,
+			Catalogs:      data,
 			NextPageToken: optStr(npt),
-			TotalCount:    &tc,
+			TotalCount:    ptrI32(safeInt64ToInt32(tc)),
 		},
 		Headers: GenListCatalogs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
@@ -96,7 +100,6 @@ func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request GenU
 	domReq := domain.UpdateCatalogRegistrationRequest{
 		Comment:  request.Body.Comment,
 		DataPath: request.Body.DataPath,
-		DSN:      request.Body.Dsn,
 	}
 
 	result, err := h.catalogRegistration.Update(ctx, string(request.CatalogName), domReq)
@@ -156,19 +159,16 @@ func (h *APIHandler) SetDefaultCatalog(ctx context.Context, request GenSetDefaul
 
 // catalogRegistrationToAPI converts a domain CatalogRegistration to the API type.
 func catalogRegistrationToAPI(r domain.CatalogRegistration) CatalogRegistration {
-	ct := r.CreatedAt
-	ut := r.UpdatedAt
 	return CatalogRegistration{
-		Id:            &r.ID,
+		Id:            r.ID,
 		Name:          r.Name,
-		MetastoreType: CatalogRegistrationMetastoreType(r.MetastoreType),
-		Dsn:           r.DSN,
-		DataPath:      r.DataPath,
-		Status:        CatalogRegistrationStatus(r.Status),
-		StatusMessage: optStr(r.StatusMessage),
+		MetastoreType: strPtrIfNonEmpty(string(r.MetastoreType)),
+		Dsn:           strPtrIfNonEmpty(r.DSN),
+		DataPath:      strPtrIfNonEmpty(r.DataPath),
+		Status:        strPtrIfNonEmpty(string(r.Status)),
 		IsDefault:     &r.IsDefault,
 		Comment:       optStr(r.Comment),
-		CreatedAt:     &ct,
-		UpdatedAt:     &ut,
+		CreatedAt:     formatTimePtr(&r.CreatedAt),
+		UpdatedAt:     formatTimePtr(&r.UpdatedAt),
 	}
 }

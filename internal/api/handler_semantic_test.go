@@ -217,7 +217,7 @@ func TestHandler_ListSemanticModels_PassesFiltersAndPagination(t *testing.T) {
 	okResp, ok := resp.(GenListSemanticModels200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
 	require.NotNil(t, okResp.Body.Data)
-	require.Len(t, *okResp.Body.Data, 1)
+	require.Len(t, okResp.Body.Data, 1)
 	require.NotNil(t, okResp.Body.NextPageToken)
 	assert.NotEmpty(t, *okResp.Body.NextPageToken)
 }
@@ -323,7 +323,7 @@ func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
 	require.NotNil(t, okResp.Body.Result.RowCount)
 	assert.EqualValues(t, 1, *okResp.Body.Result.RowCount)
 	require.NotNil(t, okResp.Body.Result.Columns)
-	assert.Equal(t, []string{"order_date", "total_revenue"}, *okResp.Body.Result.Columns)
+	assert.Equal(t, []string{"order_date", "total_revenue"}, okResp.Body.Result.Columns)
 }
 
 func TestHandler_CheckMetricFreshness_ResolvesMetricAndReturnsFreshness(t *testing.T) {

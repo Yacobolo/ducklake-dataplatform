@@ -56,7 +56,7 @@ func (h *APIHandler) ListNotebooks(ctx context.Context, req GenListNotebooksRequ
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListNotebooks200JSONResponse{
-		Body:    PaginatedNotebooks{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedNotebooks{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListNotebooks200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -279,7 +279,7 @@ func (h *APIHandler) ReorderCells(ctx context.Context, req GenReorderCellsReques
 		data[i] = cellToAPI(c)
 	}
 	return ReorderCells200JSONResponse{
-		Body:    CellList{Data: &data},
+		Body:    CellList{Data: data},
 		Headers: ReorderCells200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -403,7 +403,7 @@ func (h *APIHandler) ListNotebookJobs(ctx context.Context, req GenListNotebookJo
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListNotebookJobs200JSONResponse{
-		Body:    PaginatedNotebookJobs{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedNotebookJobs{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListNotebookJobs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -441,7 +441,7 @@ func (h *APIHandler) ListGitRepos(ctx context.Context, req GenListGitReposReques
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListGitRepos200JSONResponse{
-		Body:    PaginatedGitRepos{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedGitRepos{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListGitRepos200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -449,9 +449,11 @@ func (h *APIHandler) ListGitRepos(ctx context.Context, req GenListGitReposReques
 // CreateGitRepo implements the endpoint for registering a Git repository.
 func (h *APIHandler) CreateGitRepo(ctx context.Context, req GenCreateGitRepoRequest) (GenCreateGitRepoResponse, error) {
 	domReq := domain.CreateGitRepoRequest{
-		URL:       req.Body.Url,
-		Branch:    req.Body.Branch,
-		AuthToken: req.Body.AuthToken,
+		URL:    req.Body.Url,
+		Branch: req.Body.Branch,
+	}
+	if req.Body.AuthToken != nil {
+		domReq.AuthToken = *req.Body.AuthToken
 	}
 	if req.Body.Path != nil {
 		domReq.Path = *req.Body.Path

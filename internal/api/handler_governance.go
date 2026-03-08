@@ -71,7 +71,7 @@ func (h *APIHandler) ListAuditLogs(ctx context.Context, req GenListAuditLogsRequ
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListAuditLogs200JSONResponse{
-		Body:    PaginatedAuditLogs{Data: &data, NextPageToken: optStr(npt)},
+		Body:    PaginatedAuditLogs{Data: data, NextPageToken: optStr(npt)},
 		Headers: GenListAuditLogs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -106,7 +106,7 @@ func (h *APIHandler) ListQueryHistory(ctx context.Context, req GenListQueryHisto
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListQueryHistory200JSONResponse{
-		Body:    PaginatedQueryHistoryEntries{Data: &data, NextPageToken: optStr(npt)},
+		Body:    PaginatedQueryHistoryEntries{Data: data, NextPageToken: optStr(npt)},
 		Headers: GenListQueryHistory200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -134,7 +134,7 @@ func (h *APIHandler) SearchCatalog(ctx context.Context, req GenSearchCatalogRequ
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenSearchCatalog200JSONResponse{
-		Body:    PaginatedSearchResults{Data: &data, NextPageToken: optStr(npt)},
+		Body:    PaginatedSearchResults{Data: data, NextPageToken: optStr(npt)},
 		Headers: GenSearchCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -187,7 +187,7 @@ func (h *APIHandler) GetUpstreamLineage(ctx context.Context, req GenGetUpstreamL
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenGetUpstreamLineage200JSONResponse{
-		Body:    PaginatedLineageEdges{Data: &data, NextPageToken: optStr(npt)},
+		Body:    PaginatedLineageEdges{Data: data, NextPageToken: optStr(npt)},
 		Headers: GenGetUpstreamLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -209,7 +209,7 @@ func (h *APIHandler) GetDownstreamLineage(ctx context.Context, req GenGetDownstr
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenGetDownstreamLineage200JSONResponse{
-		Body:    PaginatedLineageEdges{Data: &data, NextPageToken: optStr(npt)},
+		Body:    PaginatedLineageEdges{Data: data, NextPageToken: optStr(npt)},
 		Headers: GenGetDownstreamLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -264,7 +264,7 @@ func (h *APIHandler) GetColumnLineage(ctx context.Context, req GenGetColumnLinea
 	}
 
 	return GenGetColumnLineage200JSONResponse{
-		Body:    PaginatedColumnLineageEdges{Data: &data},
+		Body:    PaginatedColumnLineageEdges{Data: data},
 		Headers: GenGetColumnLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -282,7 +282,7 @@ func (h *APIHandler) GetColumnImpact(ctx context.Context, req GenGetColumnImpact
 	}
 
 	return GenGetColumnImpact200JSONResponse{
-		Body:    PaginatedColumnLineageEdges{Data: &data},
+		Body:    PaginatedColumnLineageEdges{Data: data},
 		Headers: GenGetColumnImpact200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -304,7 +304,7 @@ func (h *APIHandler) ListTags(ctx context.Context, req GenListTagsRequest) (GenL
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListTags200JSONResponse{
-		Body:    PaginatedTags{Data: &data, NextPageToken: optStr(npt)},
+		Body:    PaginatedTags{Data: data, NextPageToken: optStr(npt)},
 		Headers: GenListTags200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -418,7 +418,7 @@ func (h *APIHandler) ListClassifications(ctx context.Context, _ GenListClassific
 	}
 
 	return GenListClassifications200JSONResponse{
-		Body:    PaginatedTags{Data: &filtered},
+		Body:    PaginatedTags{Data: filtered},
 		Headers: GenListClassifications200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

@@ -13,25 +13,25 @@ func TestBindPathParameter(t *testing.T) {
 	t.Helper()
 
 	t.Run("binds string aliases", func(t *testing.T) {
-		var catalogName CatalogName
+		var catalogName string
 
 		err := bindPathParameter("catalogName", "analytics", true, &catalogName)
 
 		require.NoError(t, err)
-		assert.Equal(t, CatalogName("analytics"), catalogName)
+		assert.Equal(t, "analytics", catalogName)
 	})
 
 	t.Run("binds int aliases", func(t *testing.T) {
-		var maxResults MaxResults
+		var maxResults int32
 
 		err := bindPathParameter("max_results", "25", true, &maxResults)
 
 		require.NoError(t, err)
-		assert.Equal(t, MaxResults(25), maxResults)
+		assert.EqualValues(t, 25, maxResults)
 	})
 
 	t.Run("returns required missing error", func(t *testing.T) {
-		var catalogName CatalogName
+		var catalogName string
 
 		err := bindPathParameter("catalogName", "", true, &catalogName)
 
@@ -40,7 +40,7 @@ func TestBindPathParameter(t *testing.T) {
 	})
 
 	t.Run("returns parse errors", func(t *testing.T) {
-		var maxResults MaxResults
+		var maxResults int32
 
 		err := bindPathParameter("max_results", "nope", true, &maxResults)
 
@@ -58,16 +58,16 @@ func TestBindQueryParameter(t *testing.T) {
 			"principal_type": []string{"user"},
 		}
 
-		var maxResults *MaxResults
-		var principalType *ListGrantsParamsPrincipalType
+		var maxResults *int32
+		var principalType *string
 
 		require.NoError(t, bindQueryParameter(params, "max_results", false, &maxResults))
 		require.NoError(t, bindQueryParameter(params, "principal_type", false, &principalType))
 
 		require.NotNil(t, maxResults)
-		assert.Equal(t, MaxResults(50), *maxResults)
+		assert.EqualValues(t, 50, *maxResults)
 		require.NotNil(t, principalType)
-		assert.Equal(t, ListGrantsParamsPrincipalType("user"), *principalType)
+		assert.Equal(t, "user", *principalType)
 	})
 
 	t.Run("binds required booleans", func(t *testing.T) {
@@ -92,7 +92,7 @@ func TestBindQueryParameter(t *testing.T) {
 	})
 
 	t.Run("leaves optional pointers nil when absent", func(t *testing.T) {
-		var pageToken *PageToken
+		var pageToken *string
 
 		err := bindQueryParameter(url.Values{}, "page_token", false, &pageToken)
 

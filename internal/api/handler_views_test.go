@@ -107,8 +107,8 @@ func TestHandler_ListViews(t *testing.T) {
 				ok200, ok := resp.(GenListViews200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "my-view", *(*ok200.Body.Data)[0].Name)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "my-view", ok200.Body.Data[0].Name)
 			},
 		},
 		{
@@ -142,7 +142,7 @@ func TestHandler_ListViews(t *testing.T) {
 			svc := &mockViewService{listViewsFn: tt.svcFn}
 			handler := &APIHandler{views: svc}
 			resp, err := handler.ListViews(viewTestCtx(), GenListViewsRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				Params:      GenListViewsParams{},
 			})
@@ -172,8 +172,8 @@ func TestHandler_CreateView(t *testing.T) {
 				require.NoError(t, err)
 				created, ok := resp.(GenCreateView201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
-				assert.Equal(t, "my-view", *created.Body.Name)
-				assert.Equal(t, "view-1", *created.Body.Id)
+				assert.Equal(t, "my-view", created.Body.Name)
+				assert.Equal(t, "view-1", created.Body.Id)
 			},
 		},
 		{
@@ -243,7 +243,7 @@ func TestHandler_CreateView(t *testing.T) {
 			handler := &APIHandler{views: svc}
 			body := tt.body
 			resp, err := handler.CreateView(viewTestCtx(), GenCreateViewRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				Body:        &body,
 			})
@@ -273,7 +273,7 @@ func TestHandler_GetView(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenGetView200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "my-view", *ok200.Body.Name)
+				assert.Equal(t, "my-view", ok200.Body.Name)
 			},
 		},
 		{
@@ -299,7 +299,7 @@ func TestHandler_GetView(t *testing.T) {
 			svc := &mockViewService{getViewFn: tt.svcFn}
 			handler := &APIHandler{views: svc}
 			resp, err := handler.GetView(viewTestCtx(), GenGetViewRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				ViewName:    tt.viewName,
 			})
@@ -332,7 +332,7 @@ func TestHandler_UpdateView(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenUpdateView200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "my-view", *ok200.Body.Name)
+				assert.Equal(t, "my-view", ok200.Body.Name)
 			},
 		},
 		{
@@ -374,7 +374,7 @@ func TestHandler_UpdateView(t *testing.T) {
 			handler := &APIHandler{views: svc}
 			body := tt.body
 			resp, err := handler.UpdateView(viewTestCtx(), GenUpdateViewRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				ViewName:    tt.viewName,
 				Body:        &body,
@@ -442,7 +442,7 @@ func TestHandler_DeleteView(t *testing.T) {
 			svc := &mockViewService{deleteViewFn: tt.svcFn}
 			handler := &APIHandler{views: svc}
 			resp, err := handler.DeleteView(viewTestCtx(), GenDeleteViewRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				ViewName:    tt.viewName,
 			})

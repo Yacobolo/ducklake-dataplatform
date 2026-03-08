@@ -252,8 +252,8 @@ func TestHandler_ListAuditLogs(t *testing.T) {
 				ok200, ok := resp.(GenListAuditLogs200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "audit-1", *(*ok200.Body.Data)[0].Id)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "audit-1", ok200.Body.Data[0].Id)
 			},
 		},
 		{
@@ -301,8 +301,8 @@ func TestHandler_ListQueryHistory(t *testing.T) {
 				ok200, ok := resp.(GenListQueryHistory200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "qh-1", *(*ok200.Body.Data)[0].Id)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "qh-1", ok200.Body.Data[0].Id)
 			},
 		},
 		{
@@ -350,8 +350,8 @@ func TestHandler_SearchCatalog(t *testing.T) {
 				ok200, ok := resp.(GenSearchCatalog200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "my_table", *(*ok200.Body.Data)[0].Name)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "my_table", *ok200.Body.Data[0].Name)
 			},
 		},
 		{
@@ -454,8 +454,8 @@ func TestHandler_GetUpstreamLineage(t *testing.T) {
 				ok200, ok := resp.(GenGetUpstreamLineage200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "edge-1", *(*ok200.Body.Data)[0].Id)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "edge-1", *ok200.Body.Data[0].Id)
 			},
 		},
 		{
@@ -504,7 +504,7 @@ func TestHandler_GetDownstreamLineage(t *testing.T) {
 				ok200, ok := resp.(GenGetDownstreamLineage200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
+				require.Len(t, ok200.Body.Data, 1)
 			},
 		},
 		{
@@ -676,8 +676,8 @@ func TestHandler_ListTags(t *testing.T) {
 				ok200, ok := resp.(GenListTags200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "tag-1", *(*ok200.Body.Data)[0].Id)
+				require.Len(t, ok200.Body.Data, 1)
+				assert.Equal(t, "tag-1", *ok200.Body.Data[0].Id)
 			},
 		},
 		{
@@ -1043,7 +1043,7 @@ func TestHandler_ListClassifications(t *testing.T) {
 				ok200, ok := resp.(GenListClassifications200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.Data)
-				assert.Len(t, *ok200.Body.Data, 2, "should filter to classification and sensitivity only")
+				assert.Len(t, ok200.Body.Data, 2, "should filter to classification and sensitivity only")
 			},
 		},
 		{
@@ -1058,8 +1058,7 @@ func TestHandler_ListClassifications(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(GenListClassifications200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				require.NotNil(t, ok200.Body.Data)
-				assert.Empty(t, *ok200.Body.Data)
+				assert.Empty(t, ok200.Body.Data)
 			},
 		},
 		{

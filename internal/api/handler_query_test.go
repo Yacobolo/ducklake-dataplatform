@@ -158,13 +158,12 @@ func TestHandler_CreateManifest(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(CreateManifest200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				require.NotNil(t, ok200.Body.Table)
-				assert.Equal(t, "users", *ok200.Body.Table)
+				assert.Equal(t, "users", ok200.Body.Table)
 				require.NotNil(t, ok200.Body.Schema)
 				assert.Equal(t, "main", *ok200.Body.Schema)
 				require.NotNil(t, ok200.Body.Columns)
 				require.Len(t, *ok200.Body.Columns, 1)
-				assert.Equal(t, "id", *(*ok200.Body.Columns)[0].Name)
+				assert.Equal(t, "id", (*ok200.Body.Columns)[0].Name)
 				require.NotNil(t, ok200.Body.Files)
 				require.Len(t, *ok200.Body.Files, 1)
 				assert.Equal(t, "s3://bucket/data/file.parquet", (*ok200.Body.Files)[0])
@@ -349,7 +348,7 @@ func TestHandler_SubmitQuery(t *testing.T) {
 	ok, okType := resp.(SubmitQuery202JSONResponse)
 	require.True(t, okType)
 	assert.Equal(t, "job-1", ok.Body.QueryId)
-	assert.Equal(t, SubmitQueryResponseStatus("QUEUED"), ok.Body.Status)
+	assert.Equal(t, QueryJobStatus("QUEUED"), ok.Body.Status)
 }
 
 func TestHandler_GetQueryResults_Paged(t *testing.T) {

@@ -80,8 +80,8 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(CreateUploadUrl200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "https://s3.amazonaws.com/bucket/key", *ok200.Body.UploadUrl)
-				assert.Equal(t, "uploads/data.csv", *ok200.Body.S3Key)
+				assert.Equal(t, "https://s3.amazonaws.com/bucket/key", ok200.Body.UploadUrl)
+				assert.Equal(t, "uploads/data.csv", ok200.Body.S3Key)
 			},
 		},
 		{
@@ -154,7 +154,7 @@ func TestHandler_CreateUploadUrl(t *testing.T) {
 			}
 			body := tt.body
 			resp, err := handler.CreateUploadUrl(ingestionTestCtx(), GenCreateUploadUrlRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				TableName:   "test-table",
 				Body:        &body,
@@ -190,9 +190,9 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(CommitTableIngestion200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, int64(1), *ok200.Body.FilesRegistered)
-				assert.Equal(t, int64(0), *ok200.Body.FilesSkipped)
-				assert.Equal(t, "test-table", *ok200.Body.Table)
+				assert.Equal(t, int64(1), ok200.Body.FilesRegistered)
+				assert.Equal(t, int64(0), ok200.Body.FilesSkipped)
+				assert.Equal(t, "test-table", ok200.Body.Table)
 			},
 		},
 		{
@@ -278,7 +278,7 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 			}
 			body := tt.body
 			resp, err := handler.CommitTableIngestion(ingestionTestCtx(), GenCommitTableIngestionRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				TableName:   "test-table",
 				Body:        &body,
@@ -314,8 +314,8 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(LoadTableExternalFiles200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, int64(1), *ok200.Body.FilesRegistered)
-				assert.Equal(t, "test-table", *ok200.Body.Table)
+				assert.Equal(t, int64(1), ok200.Body.FilesRegistered)
+				assert.Equal(t, "test-table", ok200.Body.Table)
 			},
 		},
 		{
@@ -401,7 +401,7 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 			}
 			body := tt.body
 			resp, err := handler.LoadTableExternalFiles(ingestionTestCtx(), GenLoadTableExternalFilesRequest{
-				CatalogName: CatalogName("test-catalog"),
+				CatalogName: "test-catalog",
 				SchemaName:  "test-schema",
 				TableName:   "test-table",
 				Body:        &body,

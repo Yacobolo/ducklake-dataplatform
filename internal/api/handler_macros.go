@@ -30,7 +30,7 @@ func (h *APIHandler) ListMacros(ctx context.Context, req GenListMacrosRequest) (
 	if isNilService(h.macros) {
 		empty := []Macro{}
 		return GenListMacros200JSONResponse{
-			Body:    PaginatedMacros{Data: &empty, NextPageToken: nil},
+			Body:    PaginatedMacros{Data: empty, NextPageToken: nil},
 			Headers: GenListMacros200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 		}, nil
 	}
@@ -47,7 +47,7 @@ func (h *APIHandler) ListMacros(ctx context.Context, req GenListMacrosRequest) (
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	return GenListMacros200JSONResponse{
-		Body:    PaginatedMacros{Data: &data, NextPageToken: optStr(nextToken)},
+		Body:    PaginatedMacros{Data: data, NextPageToken: optStr(nextToken)},
 		Headers: GenListMacros200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -126,7 +126,7 @@ func (h *APIHandler) ListMacroRevisions(ctx context.Context, req GenListMacroRev
 		out = append(out, macroRevisionToAPI(r))
 	}
 	return GenListMacroRevisions200JSONResponse{
-		Body:    MacroRevisionList{Data: &out},
+		Body:    MacroRevisionList{Data: out},
 		Headers: GenListMacroRevisions200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -233,7 +233,7 @@ func (h *APIHandler) GetMacroImpact(ctx context.Context, req GenGetMacroImpactRe
 
 	npt := domain.NextPageToken(start, page.Limit(), int64(len(impacted)))
 	return GenGetMacroImpact200JSONResponse{
-		Body:    MacroImpactList{Data: &data, NextPageToken: optStr(npt)},
+		Body:    MacroImpactList{Data: data, NextPageToken: optStr(npt)},
 		Headers: GenGetMacroImpact200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

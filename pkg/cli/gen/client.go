@@ -2,6 +2,7 @@ package gen
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -61,7 +62,7 @@ func (c *Client) Do(method, path string, query url.Values, body any) (*http.Resp
 		bodyReader = bytes.NewReader(payload)
 	}
 
-	req, err := http.NewRequest(method, reqURL, bodyReader)
+	req, err := http.NewRequestWithContext(context.Background(), method, reqURL, bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("build request: %w", err)
 	}

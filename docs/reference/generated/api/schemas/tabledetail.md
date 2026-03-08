@@ -15,8 +15,11 @@
 | `created_at` | `string` | `false` | - |
 | `name` | `string` | `true` | - |
 | `owner` | `string` | `false` | - |
+| `properties` | `object` | `false` | - |
 | `schema_name` | `string` | `true` | - |
+| `statistics` | `TableStatistics` | `false` | - |
 | `table_id` | `string` | `true` | - |
 | `table_type` | `string` | `false` | - |
+| `tags` | `array[Tag]` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 

@@ -16,5 +16,6 @@
 | `owner` | `string` | `false` | - |
 | `properties` | `object` | `false` | - |
 | `schema_id` | `string` | `true` | - |
+| `tags` | `array[Tag]` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 

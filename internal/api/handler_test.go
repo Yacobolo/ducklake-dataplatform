@@ -198,10 +198,10 @@ func TestAPI_ListPrincipals(t *testing.T) {
 
 	var result PaginatedPrincipals
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
-	if result.Data == nil || len(*result.Data) < 2 {
+	if len(result.Data) < 2 {
 		t.Errorf("expected at least 2 principals, got %v", result.Data)
 	}
-	t.Logf("got %d principals", len(*result.Data))
+	t.Logf("got %d principals", len(result.Data))
 }
 
 func TestAPI_ExecuteQuery_Admin(t *testing.T) {
@@ -270,12 +270,12 @@ func TestAPI_CreateAndDeletePrincipal(t *testing.T) {
 
 	var p Principal
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&p))
-	if p.Name == nil || *p.Name != "test_user" {
+	if p.Name != "test_user" {
 		t.Errorf("expected name=test_user, got %v", p.Name)
 	}
 
 	// Delete
-	req, err = http.NewRequestWithContext(ctx, "DELETE", srv.URL+"/principals/"+*p.Id, nil)
+	req, err = http.NewRequestWithContext(ctx, "DELETE", srv.URL+"/principals/"+p.Id, nil)
 	require.NoError(t, err)
 	resp2, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -316,9 +316,7 @@ func TestAPI_AuditLogs(t *testing.T) {
 
 	var auditResult PaginatedAuditLogs
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&auditResult))
-	if auditResult.Data != nil {
-		t.Logf("got %d audit entries", len(*auditResult.Data))
-	}
+	t.Logf("got %d audit entries", len(auditResult.Data))
 }
 
 // setupCatalogTestServer creates a test server wired with a mockCatalogRepo.
@@ -504,7 +502,7 @@ func TestAPI_GetCatalog(t *testing.T) {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
 	}
 	result := decodeJSON[CatalogInfo](t, resp)
-	if result.Name == nil || *result.Name != "lake" {
+	if result.Name != "lake" {
 		t.Errorf("expected name=lake, got %v", result.Name)
 	}
 }
@@ -529,9 +527,9 @@ func TestAPI_GetMetastoreSummary(t *testing.T) {
 		got  interface{}
 		want interface{}
 	}{
-		{"catalog_name", ptrVal(result.CatalogName), "lake"},
-		{"schema_count", ptrVal(result.SchemaCount), int64(2)},
-		{"table_count", ptrVal(result.TableCount), int64(1)},
+		{"catalog_name", result.CatalogName, "lake"},
+		{"schema_count", ptrVal(result.SchemaCount), int32(2)},
+		{"table_count", ptrVal(result.TableCount), int32(1)},
 		{"metastore_type", ptrVal(result.MetastoreType), "DuckLake (SQLite)"},
 		{"storage_backend", ptrVal(result.StorageBackend), "S3"},
 	}
@@ -565,7 +563,7 @@ func TestAPI_SchemaCRUD(t *testing.T) {
 			wantStatus: 201,
 			check: func(t *testing.T, resp *http.Response) {
 				r := decodeJSON[SchemaDetail](t, resp)
-				if r.Name == nil || *r.Name != "test_schema" {
+				if r.Name != "test_schema" {
 					t.Errorf("name: got %v, want test_schema", r.Name)
 				}
 				if r.Comment == nil || *r.Comment != "a test schema" {
@@ -574,7 +572,7 @@ func TestAPI_SchemaCRUD(t *testing.T) {
 				if r.Owner == nil || *r.Owner != "admin_user" {
 					t.Errorf("owner: got %v, want admin_user", r.Owner)
 				}
-				if r.CatalogName == nil || *r.CatalogName != "lake" {
+				if r.CatalogName != "lake" {
 					t.Errorf("catalog_name: got %v, want lake", r.CatalogName)
 				}
 			},
@@ -586,7 +584,7 @@ func TestAPI_SchemaCRUD(t *testing.T) {
 			wantStatus: 200,
 			check: func(t *testing.T, resp *http.Response) {
 				r := decodeJSON[SchemaDetail](t, resp)
-				if r.Name == nil || *r.Name != "test_schema" {
+				if r.Name != "test_schema" {
 					t.Errorf("name: got %v, want test_schema", r.Name)
 				}
 			},
@@ -598,7 +596,7 @@ func TestAPI_SchemaCRUD(t *testing.T) {
 			wantStatus: 200,
 			check: func(t *testing.T, resp *http.Response) {
 				r := decodeJSON[PaginatedSchemaDetails](t, resp)
-				if r.Data == nil || len(*r.Data) != 1 {
+				if len(r.Data) != 1 {
 					t.Errorf("expected 1 schema, got %v", r.Data)
 				}
 			},
@@ -672,10 +670,10 @@ func TestAPI_TableCRUD(t *testing.T) {
 			wantStatus: 201,
 			check: func(t *testing.T, resp *http.Response) {
 				r := decodeJSON[TableDetail](t, resp)
-				if r.Name == nil || *r.Name != "users" {
+				if r.Name != "users" {
 					t.Errorf("name: got %v, want users", r.Name)
 				}
-				if r.SchemaName == nil || *r.SchemaName != "test_schema" {
+				if r.SchemaName != "test_schema" {
 					t.Errorf("schema_name: got %v, want test_schema", r.SchemaName)
 				}
 				if r.Comment == nil || *r.Comment != "user table" {
@@ -703,10 +701,10 @@ func TestAPI_TableCRUD(t *testing.T) {
 					t.Fatalf("columns: got %d, want 2", len(*r.Columns))
 				}
 				cols := *r.Columns
-				if cols[0].Name == nil || *cols[0].Name != "id" {
+				if cols[0].Name != "id" {
 					t.Errorf("col[0].name: got %v, want id", cols[0].Name)
 				}
-				if cols[1].Type == nil || *cols[1].Type != "VARCHAR" {
+				if cols[1].Type != "VARCHAR" {
 					t.Errorf("col[1].type: got %v, want VARCHAR", cols[1].Type)
 				}
 				// Verify nullable field is present in column response
@@ -724,7 +722,7 @@ func TestAPI_TableCRUD(t *testing.T) {
 			wantStatus: 200,
 			check: func(t *testing.T, resp *http.Response) {
 				r := decodeJSON[PaginatedTableDetails](t, resp)
-				if r.Data == nil || len(*r.Data) != 1 {
+				if len(r.Data) != 1 {
 					t.Errorf("expected 1 table, got %v", r.Data)
 				}
 			},
@@ -736,11 +734,11 @@ func TestAPI_TableCRUD(t *testing.T) {
 			wantStatus: 200,
 			check: func(t *testing.T, resp *http.Response) {
 				r := decodeJSON[PaginatedColumnDetails](t, resp)
-				if r.Data == nil || len(*r.Data) != 2 {
+				if len(r.Data) != 2 {
 					t.Fatalf("expected 2 columns, got %v", r.Data)
 				}
-				cols := *r.Data
-				if cols[0].Name == nil || *cols[0].Name != "id" {
+				cols := r.Data
+				if cols[0].Name != "id" {
 					t.Errorf("col[0].name: got %v, want id", cols[0].Name)
 				}
 				if cols[0].Position == nil || *cols[0].Position != 0 {
@@ -947,11 +945,11 @@ func TestAPI_CatalogPagination(t *testing.T) {
 	t.Run(tests[0].name, func(t *testing.T) {
 		resp := doRequest(t, "GET", srv.URL+tests[0].path, "")
 		r := decodeJSON[PaginatedSchemaDetails](t, resp)
-		if r.Data == nil || len(*r.Data) != tests[0].wantCount {
-			t.Fatalf("count: got %d, want %d", len(*r.Data), tests[0].wantCount)
+		if len(r.Data) != tests[0].wantCount {
+			t.Fatalf("count: got %d, want %d", len(r.Data), tests[0].wantCount)
 		}
-		if (*r.Data)[0].Name == nil || *(*r.Data)[0].Name != tests[0].wantFirstName {
-			t.Errorf("first: got %v, want %s", (*r.Data)[0].Name, tests[0].wantFirstName)
+		if r.Data[0].Name != tests[0].wantFirstName {
+			t.Errorf("first: got %v, want %s", r.Data[0].Name, tests[0].wantFirstName)
 		}
 		if tests[0].wantHasToken && r.NextPageToken == nil {
 			t.Fatal("expected next_page_token, got nil")
@@ -973,12 +971,9 @@ func TestAPI_CatalogPagination(t *testing.T) {
 			resp := doRequest(t, "GET", srv.URL+path, "")
 			r := decodeJSON[PaginatedSchemaDetails](t, resp)
 
-			if r.Data == nil {
-				t.Fatal("data is nil")
-			}
-			for _, s := range *r.Data {
-				if s.Name != nil {
-					allNames = append(allNames, *s.Name)
+			for _, s := range r.Data {
+				if s.Name != "" {
+					allNames = append(allNames, s.Name)
 				}
 			}
 
@@ -1023,12 +1018,9 @@ func TestAPI_ExistingPagination(t *testing.T) {
 			resp := doRequest(t, "GET", srv.URL+path, "")
 			r := decodeJSON[PaginatedPrincipals](t, resp)
 
-			if r.Data == nil {
-				t.Fatal("data is nil")
-			}
-			for _, p := range *r.Data {
-				if p.Name != nil {
-					allNames = append(allNames, *p.Name)
+			for _, p := range r.Data {
+				if p.Name != "" {
+					allNames = append(allNames, p.Name)
 				}
 			}
 
@@ -1064,9 +1056,7 @@ func TestAPI_ExistingPagination(t *testing.T) {
 			}
 			r := decodeJSON[PaginatedGroups](t, resp)
 
-			if r.Data != nil {
-				count += len(*r.Data)
-			}
+			count += len(r.Data)
 
 			if r.NextPageToken == nil {
 				break
@@ -1391,28 +1381,24 @@ func TestAPI_APIKey_CRUD(t *testing.T) {
 	require.NotNil(t, p.Id)
 
 	// Create API key.
-	body := fmt.Sprintf(`{"principal_id":"%s","name":"test-key"}`, *p.Id)
+	body := fmt.Sprintf(`{"principal_id":"%s","name":"test-key"}`, p.Id)
 	resp2 := doRequest(t, http.MethodPost, srv.URL+"/api-keys", body)
 	require.Equal(t, http.StatusCreated, resp2.StatusCode)
 	keyResp := decodeJSON[CreateAPIKeyResponse](t, resp2)
-	require.NotNil(t, keyResp.Key, "raw key should be returned on create")
-	require.NotEmpty(t, *keyResp.Key)
-	require.NotNil(t, keyResp.Id)
+	require.NotEmpty(t, keyResp.Key, "raw key should be returned on create")
 
 	// List API keys.
-	listURL := fmt.Sprintf("%s/api-keys?principal_id=%s", srv.URL, *p.Id)
+	listURL := fmt.Sprintf("%s/api-keys?principal_id=%s", srv.URL, p.Id)
 	resp3 := doRequest(t, http.MethodGet, listURL, "")
 	require.Equal(t, http.StatusOK, resp3.StatusCode)
 	listResp := decodeJSON[PaginatedAPIKeys](t, resp3)
-	require.NotNil(t, listResp.Data)
-	require.Len(t, *listResp.Data, 1)
+	require.Len(t, listResp.Data, 1)
 	// Raw key should NOT be in list response.
-	item := (*listResp.Data)[0]
-	require.NotNil(t, item.Name)
-	require.Equal(t, "test-key", *item.Name)
+	item := listResp.Data[0]
+	require.Equal(t, "test-key", item.Name)
 
 	// Delete API key.
-	deleteURL := fmt.Sprintf("%s/api-keys/%s", srv.URL, *keyResp.Id)
+	deleteURL := fmt.Sprintf("%s/api-keys/%s", srv.URL, keyResp.Id)
 	resp4 := doRequest(t, http.MethodDelete, deleteURL, "")
 	defer resp4.Body.Close() //nolint:errcheck
 	require.Equal(t, http.StatusNoContent, resp4.StatusCode)
@@ -1420,9 +1406,7 @@ func TestAPI_APIKey_CRUD(t *testing.T) {
 	// Verify deleted - list should be empty.
 	resp5 := doRequest(t, http.MethodGet, listURL, "")
 	listResp2 := decodeJSON[PaginatedAPIKeys](t, resp5)
-	if listResp2.Data != nil {
-		require.Empty(t, *listResp2.Data)
-	}
+	require.Empty(t, listResp2.Data)
 }
 
 func TestAPI_ReadEndpoints_NonAdminAccess(t *testing.T) {
@@ -1462,9 +1446,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
-		require.NotNil(t, rf.Id)
-		require.NotNil(t, rf.FilterSql)
-		assert.Equal(t, `"Pclass" = 1`, *rf.FilterSql)
+		assert.Equal(t, `"Pclass" = 1`, rf.FilterSql)
 	})
 
 	t.Run("create row filter invalid SQL", func(t *testing.T) {
@@ -1478,8 +1460,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 		resp := doRequest(t, http.MethodGet, srv.URL+"/tables/"+tableID+"/row-filters", "")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		list := decodeJSON[PaginatedRowFilters](t, resp)
-		require.NotNil(t, list.Data)
-		assert.GreaterOrEqual(t, len(*list.Data), 1)
+		assert.GreaterOrEqual(t, len(list.Data), 1)
 	})
 
 	t.Run("bind and unbind row filter", func(t *testing.T) {
@@ -1488,16 +1469,16 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
-		filterID := *rf.Id
+		filterID := rf.Id
 
 		// Bind.
-		bindBody := fmt.Sprintf(`{"principal_id":"%s","principal_type":"user"}`, *p.Id)
+		bindBody := fmt.Sprintf(`{"principal_id":"%s","principal_type":"user"}`, p.Id)
 		resp2 := doRequest(t, http.MethodPost, srv.URL+"/row-filters/"+filterID+"/bindings", bindBody)
 		defer resp2.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusNoContent, resp2.StatusCode)
 
 		// Unbind.
-		unbindURL := fmt.Sprintf("%s/row-filters/%s/bindings?principal_id=%s&principal_type=user", srv.URL, filterID, *p.Id)
+		unbindURL := fmt.Sprintf("%s/row-filters/%s/bindings?principal_id=%s&principal_type=user", srv.URL, filterID, p.Id)
 		resp3 := doRequest(t, http.MethodDelete, unbindURL, "")
 		defer resp3.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusNoContent, resp3.StatusCode)
@@ -1510,7 +1491,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
 
-		resp2 := doRequest(t, http.MethodDelete, srv.URL+"/row-filters/"+*rf.Id, "")
+		resp2 := doRequest(t, http.MethodDelete, srv.URL+"/row-filters/"+rf.Id, "")
 		defer resp2.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusNoContent, resp2.StatusCode)
 	})
