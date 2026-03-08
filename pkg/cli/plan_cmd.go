@@ -7,10 +7,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
-func newPlanCmd(client *gen.Client) *cobra.Command {
+func newPlanCmd(client *apiruntime.Client) *cobra.Command {
 	var (
 		configDir                string
 		output                   string

@@ -11,7 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 type initOptions struct {
@@ -88,7 +88,7 @@ type initExistingState struct {
 	Grants      map[string]bool
 }
 
-func newInitCmd(client *gen.Client) *cobra.Command {
+func newInitCmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Bootstrap an opinionated medallion setup",
@@ -101,7 +101,7 @@ func newInitCmd(client *gen.Client) *cobra.Command {
 	return cmd
 }
 
-func newInitPlanCmd(client *gen.Client) *cobra.Command {
+func newInitPlanCmd(client *apiruntime.Client) *cobra.Command {
 	opts := defaultInitOptions()
 	cmd := &cobra.Command{
 		Use:   "plan",
@@ -119,7 +119,7 @@ func newInitPlanCmd(client *gen.Client) *cobra.Command {
 
 			plan := computeInitPlan(desired, existing)
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, plan)
+				return apiruntime.PrintJSON(os.Stdout, plan)
 			}
 
 			printPlan(plan)
@@ -130,7 +130,7 @@ func newInitPlanCmd(client *gen.Client) *cobra.Command {
 	return cmd
 }
 
-func newInitApplyCmd(client *gen.Client) *cobra.Command {
+func newInitApplyCmd(client *apiruntime.Client) *cobra.Command {
 	opts := defaultInitOptions()
 	cmd := &cobra.Command{
 		Use:   "apply",
@@ -157,7 +157,7 @@ func newInitApplyCmd(client *gen.Client) *cobra.Command {
 			}
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
 			}
 			_, _ = fmt.Fprintln(os.Stdout, "init apply completed")
 			return nil
@@ -167,7 +167,7 @@ func newInitApplyCmd(client *gen.Client) *cobra.Command {
 	return cmd
 }
 
-func newInitVerifyCmd(client *gen.Client) *cobra.Command {
+func newInitVerifyCmd(client *apiruntime.Client) *cobra.Command {
 	opts := defaultInitOptions()
 	cmd := &cobra.Command{
 		Use:   "verify",
@@ -191,7 +191,7 @@ func newInitVerifyCmd(client *gen.Client) *cobra.Command {
 					status = "incomplete"
 				}
 				payload := map[string]interface{}{"status": status, "missing": missing, "plan": plan}
-				return gen.PrintJSON(os.Stdout, payload)
+				return apiruntime.PrintJSON(os.Stdout, payload)
 			}
 
 			if missing == 0 {
@@ -389,7 +389,7 @@ func trimPathPrefix(prefix string) string {
 	return p + "/"
 }
 
-func fetchExistingState(client *gen.Client, desired initDesiredState) (initExistingState, error) {
+func fetchExistingState(client *apiruntime.Client, desired initDesiredState) (initExistingState, error) {
 	state := initExistingState{
 		Credentials: map[string]bool{},
 		Locations:   map[string]bool{},
@@ -628,7 +628,7 @@ func countMissing(plan initPlan) int {
 	return len(plan.Creates)
 }
 
-func applyDesiredState(client *gen.Client, desired initDesiredState, existing initExistingState) error {
+func applyDesiredState(client *apiruntime.Client, desired initDesiredState, existing initExistingState) error {
 	if !existing.Credentials[desired.Credential.Name] {
 		body := map[string]interface{}{
 			"name":            desired.Credential.Name,
@@ -783,15 +783,15 @@ func grantKey(principalID, principalType, securableID, securableType, privilege 
 	return strings.ToLower(strings.Join([]string{principalID, principalType, securableID, securableType, privilege}, "|"))
 }
 
-func doJSON(client *gen.Client, method, path string, query url.Values, body interface{}, out interface{}) error {
+func doJSON(client *apiruntime.Client, method, path string, query url.Values, body interface{}, out interface{}) error {
 	resp, err := client.Do(method, path, query, body)
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(resp); err != nil {
+	if err := apiruntime.CheckError(resp); err != nil {
 		return err
 	}
-	respBody, err := gen.ReadBody(resp)
+	respBody, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -801,19 +801,19 @@ func doJSON(client *gen.Client, method, path string, query url.Values, body inte
 	return nil
 }
 
-func doNoContentOrJSON(client *gen.Client, method, path string, body interface{}) error {
+func doNoContentOrJSON(client *apiruntime.Client, method, path string, body interface{}) error {
 	resp, err := client.Do(method, path, nil, body)
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(resp); err != nil {
-		var apiErr *gen.APIError
+	if err := apiruntime.CheckError(resp); err != nil {
+		var apiErr *apiruntime.APIError
 		if errors.As(err, &apiErr) && apiErr.HTTPStatus == 409 {
 			return nil
 		}
 		return err
 	}
-	_, err = gen.ReadBody(resp)
+	_, err = apiruntime.ReadBody(resp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}

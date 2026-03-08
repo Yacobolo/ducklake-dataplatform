@@ -9,10 +9,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
-func newAuthCmd(client *gen.Client) *cobra.Command {
+func newAuthCmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "auth",
 		Short: "Authentication helpers",
@@ -58,7 +58,7 @@ func newAuthTokenCmd() *cobra.Command {
 			}
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, map[string]string{"token": signed, "principal": principal})
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{"token": signed, "principal": principal})
 			}
 			_, _ = fmt.Fprintln(os.Stdout, signed)
 			return nil
@@ -75,7 +75,7 @@ func newAuthTokenCmd() *cobra.Command {
 	return cmd
 }
 
-func newAuthLocalLoginCmd(client *gen.Client) *cobra.Command {
+func newAuthLocalLoginCmd(client *apiruntime.Client) *cobra.Command {
 	var username string
 	var password string
 
@@ -90,10 +90,10 @@ func newAuthLocalLoginCmd(client *gen.Client) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
-			body, err := gen.ReadBody(resp)
+			body, err := apiruntime.ReadBody(resp)
 			if err != nil {
 				return err
 			}
@@ -109,7 +109,7 @@ func newAuthLocalLoginCmd(client *gen.Client) *cobra.Command {
 				return err
 			}
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, payload)
+				return apiruntime.PrintJSON(os.Stdout, payload)
 			}
 			_, _ = fmt.Fprintln(os.Stdout, "local login succeeded; token saved to active profile")
 			return nil
@@ -123,14 +123,14 @@ func newAuthLocalLoginCmd(client *gen.Client) *cobra.Command {
 	return cmd
 }
 
-func newAuthBootstrapCmd(client *gen.Client) *cobra.Command {
+func newAuthBootstrapCmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{Use: "bootstrap", Short: "Bootstrap authentication flows"}
 	cmd.AddCommand(newAuthBootstrapCompleteCmd(client))
 	cmd.AddCommand(newAuthBootstrapTokenCreateCmd(client))
 	return cmd
 }
 
-func newAuthBootstrapCompleteCmd(client *gen.Client) *cobra.Command {
+func newAuthBootstrapCompleteCmd(client *apiruntime.Client) *cobra.Command {
 	var username string
 	var password string
 	var principalName string
@@ -149,10 +149,10 @@ func newAuthBootstrapCompleteCmd(client *gen.Client) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
-			body, err := gen.ReadBody(resp)
+			body, err := apiruntime.ReadBody(resp)
 			if err != nil {
 				return err
 			}
@@ -167,7 +167,7 @@ func newAuthBootstrapCompleteCmd(client *gen.Client) *cobra.Command {
 				}
 			}
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, payload)
+				return apiruntime.PrintJSON(os.Stdout, payload)
 			}
 			_, _ = fmt.Fprintln(os.Stdout, "bootstrap completed; token saved to active profile")
 			return nil
@@ -182,7 +182,7 @@ func newAuthBootstrapCompleteCmd(client *gen.Client) *cobra.Command {
 	return cmd
 }
 
-func newAuthBootstrapTokenCreateCmd(client *gen.Client) *cobra.Command {
+func newAuthBootstrapTokenCreateCmd(client *apiruntime.Client) *cobra.Command {
 	var ttl time.Duration
 
 	cmd := &cobra.Command{
@@ -193,17 +193,17 @@ func newAuthBootstrapTokenCreateCmd(client *gen.Client) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
-			body, err := gen.ReadBody(resp)
+			body, err := apiruntime.ReadBody(resp)
 			if err != nil {
 				return err
 			}
 			if getOutputFormat(cmd) == "json" {
 				var payload map[string]interface{}
 				_ = json.Unmarshal(body, &payload)
-				return gen.PrintJSON(os.Stdout, payload)
+				return apiruntime.PrintJSON(os.Stdout, payload)
 			}
 			_, _ = fmt.Fprintln(os.Stdout, string(body))
 			return nil
@@ -213,7 +213,7 @@ func newAuthBootstrapTokenCreateCmd(client *gen.Client) *cobra.Command {
 	return cmd
 }
 
-func newAuthProviderCmd(client *gen.Client) *cobra.Command {
+func newAuthProviderCmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{Use: "provider", Short: "Manage auth providers"}
 	oidc := &cobra.Command{Use: "oidc", Short: "Manage OIDC provider settings"}
 	oidc.AddCommand(newAuthProviderOIDCGetCmd(client))
@@ -223,7 +223,7 @@ func newAuthProviderCmd(client *gen.Client) *cobra.Command {
 	return cmd
 }
 
-func newAuthProviderOIDCGetCmd(client *gen.Client) *cobra.Command {
+func newAuthProviderOIDCGetCmd(client *apiruntime.Client) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get",
 		Short: "Get OIDC provider configuration",
@@ -232,17 +232,17 @@ func newAuthProviderOIDCGetCmd(client *gen.Client) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
-			body, err := gen.ReadBody(resp)
+			body, err := apiruntime.ReadBody(resp)
 			if err != nil {
 				return err
 			}
 			if getOutputFormat(cmd) == "json" {
 				var payload map[string]interface{}
 				_ = json.Unmarshal(body, &payload)
-				return gen.PrintJSON(os.Stdout, payload)
+				return apiruntime.PrintJSON(os.Stdout, payload)
 			}
 			_, _ = fmt.Fprintln(os.Stdout, string(body))
 			return nil
@@ -250,7 +250,7 @@ func newAuthProviderOIDCGetCmd(client *gen.Client) *cobra.Command {
 	}
 }
 
-func newAuthProviderOIDCSetCmd(client *gen.Client) *cobra.Command {
+func newAuthProviderOIDCSetCmd(client *apiruntime.Client) *cobra.Command {
 	var issuer string
 	var jwks string
 	var audience string
@@ -274,7 +274,7 @@ func newAuthProviderOIDCSetCmd(client *gen.Client) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 			_, _ = fmt.Fprintln(os.Stdout, "oidc provider updated")
@@ -292,7 +292,7 @@ func newAuthProviderOIDCSetCmd(client *gen.Client) *cobra.Command {
 	return cmd
 }
 
-func newAuthProviderOIDCDisableCmd(client *gen.Client) *cobra.Command {
+func newAuthProviderOIDCDisableCmd(client *apiruntime.Client) *cobra.Command {
 	return &cobra.Command{
 		Use:   "disable",
 		Short: "Disable OIDC provider",
@@ -301,7 +301,7 @@ func newAuthProviderOIDCDisableCmd(client *gen.Client) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 			_, _ = fmt.Fprintln(os.Stdout, "oidc provider disabled")

@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 func newConfigInitCmd() *cobra.Command {
@@ -48,7 +48,7 @@ func newConfigInitCmd() *cobra.Command {
 			}
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, map[string]string{
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{
 					"status": "ok",
 					"path":   absPath,
 					"mode":   mode,

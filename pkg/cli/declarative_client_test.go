@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 // execCapture stores method, path, body, and query for assertion in execute tests.
@@ -51,7 +51,7 @@ func newTestExecuteClient(t *testing.T, captured *[]execCapture) *APIStateClient
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	return sc
@@ -1133,7 +1133,7 @@ func TestExecuteModel_CreateWithTestReconcile(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
 	sc.index = newResourceIndex()
 
 	action := declarative.Action{
@@ -1213,7 +1213,7 @@ func TestExecuteModel_UpdateReconcilesTests(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
 	sc.index = newResourceIndex()
 
 	action := declarative.Action{
@@ -1287,7 +1287,7 @@ func TestExecuteModel_SkipsTestsWhenEndpointUnavailable(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
 	sc.index = newResourceIndex()
 
 	action := declarative.Action{
@@ -1367,7 +1367,7 @@ func TestExecuteSemanticModel_CreateReconcilesChildren(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
 	sc.index = newResourceIndex()
 
 	action := declarative.Action{
@@ -1464,7 +1464,7 @@ func TestExecuteSemanticModel_UpdateReconcilesAndDeletesChildren(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
 	sc.index = newResourceIndex()
 
 	action := declarative.Action{
@@ -1637,7 +1637,7 @@ func TestReadState_OptionalModelAndMacroEndpoints(t *testing.T) {
 func TestReadState_ConnectionErrorsStrictModeAreNotOptional(t *testing.T) {
 	t.Parallel()
 
-	sc := NewAPIStateClientWithOptions(gen.NewClient("http://127.0.0.1:1", "", "test-token"), APIStateClientOptions{
+	sc := NewAPIStateClientWithOptions(apiruntime.NewClient("http://127.0.0.1:1", "", "test-token"), APIStateClientOptions{
 		CompatibilityMode: CapabilityCompatibilityStrict,
 	})
 
@@ -1674,7 +1674,7 @@ func TestReadState_ConnectionErrorsLegacyModeAreOptionalForModelMacro(t *testing
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClientWithOptions(gen.NewClient(srv.URL, "", "test-token"), APIStateClientOptions{
+	sc := NewAPIStateClientWithOptions(apiruntime.NewClient(srv.URL, "", "test-token"), APIStateClientOptions{
 		CompatibilityMode: CapabilityCompatibilityLegacy,
 	})
 
@@ -1733,7 +1733,7 @@ func setupReadStateClient(t *testing.T, handler http.Handler) *APIStateClient {
 	t.Helper()
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	return NewAPIStateClient(client)
 }
 
@@ -2353,7 +2353,7 @@ func TestExecuteAPIKey_Delete(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	sc = withTestIndex(sc)
@@ -2417,7 +2417,7 @@ func TestValidateNoSelfAPIKeyDeletion_BlocksDelete(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "duckflix-secret-value", "")
+	client := apiruntime.NewClient(srv.URL, "duckflix-secret-value", "")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -2834,7 +2834,7 @@ func TestExecute_APIErrorResponse(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -2940,7 +2940,7 @@ func TestExecuteSchema_CreatePopulatesIndexFromSchemaID(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -2970,7 +2970,7 @@ func TestExecuteTable_CreatePopulatesIndexFromTableID(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -3010,7 +3010,7 @@ func TestExecuteSchema_CreateConflictHydratesIndex(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -3045,7 +3045,7 @@ func TestExecuteTable_CreateConflictHydratesIndex(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -3083,7 +3083,7 @@ func TestExecuteColumnMask_CreateAlreadyExistsHydratesIndex(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	sc.index.tableIDByPath["demo.titanic.passengers"] = "table-1"
@@ -3143,7 +3143,7 @@ func TestExecuteTagAssignment_CreateResolvesTableIDViaLookup(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	sc.index.tagIDByKey["classification:pii"] = "tag-classification-pii"
@@ -3187,7 +3187,7 @@ func TestExecuteTagAssignment_DeleteResolvesTableIDViaLookup(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	sc.index.tagIDByKey["classification:pii"] = "tag-classification-pii"
@@ -3232,7 +3232,7 @@ func TestExecute_CrossLayerResolution(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	// Pre-populate what ReadState would provide for existing resources.
@@ -3281,7 +3281,7 @@ func TestExecute_CreateWithNoIDInResponse(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 

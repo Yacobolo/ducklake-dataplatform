@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"duck-demo/pkg/cli/apiruntime"
 	"duck-demo/pkg/cli/gen"
 )
 
@@ -22,7 +23,7 @@ type generatedCommandSpec struct {
 	PositionalBodyName   bool
 }
 
-func addRuntimeGeneratedCommands(rootCmd *cobra.Command, client *gen.Client) {
+func addRuntimeGeneratedCommands(rootCmd *cobra.Command, client *apiruntime.Client) {
 	specs := mustBuildGeneratedCommandSpecs()
 	groups := map[string]*cobra.Command{}
 
@@ -119,7 +120,7 @@ func buildGeneratedCommandSpecsFromEndpoints(endpoints []gen.APIGenEndpoint) ([]
 	return specs, nil
 }
 
-func newGeneratedLeafCommand(spec generatedCommandSpec, client *gen.Client) *cobra.Command {
+func newGeneratedLeafCommand(spec generatedCommandSpec, client *apiruntime.Client) *cobra.Command {
 	endpoint := spec.Endpoint
 	leaf := spec.CommandPath[len(spec.CommandPath)-1]
 
@@ -186,17 +187,17 @@ func newGeneratedLeafCommand(spec generatedCommandSpec, client *gen.Client) *cob
 		cmd.Flags().Bool("yes", false, "Skip confirmation prompt")
 	}
 
-	gen.ApplyRunOverride(endpoint.OperationID, cmd, client)
-	gen.ApplyCommandOverride(endpoint.OperationID, cmd)
+	apiruntime.ApplyRunOverride(endpoint.OperationID, cmd, client)
+	apiruntime.ApplyCommandOverride(endpoint.OperationID, cmd)
 
 	return cmd
 }
 
-func runGeneratedEndpoint(cmd *cobra.Command, client *gen.Client, spec generatedCommandSpec, args []string) error {
+func runGeneratedEndpoint(cmd *cobra.Command, client *apiruntime.Client, spec generatedCommandSpec, args []string) error {
 	endpoint := spec.Endpoint
 
 	if endpoint.Method == "DELETE" && !cmd.Flags().Changed("yes") {
-		if !gen.ConfirmPrompt("Are you sure?") {
+		if !apiruntime.ConfirmPrompt("Are you sure?") {
 			return nil
 		}
 	}
@@ -309,20 +310,20 @@ func runGeneratedEndpoint(cmd *cobra.Command, client *gen.Client, spec generated
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(resp); err != nil {
+	if err := apiruntime.CheckError(resp); err != nil {
 		return err
 	}
 
 	if endpoint.Method == "DELETE" {
 		outputFlag := getOutputFormat(cmd)
-		if gen.OutputFormat(outputFlag) == gen.OutputJSON {
-			return gen.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
+		if apiruntime.OutputFormat(outputFlag) == apiruntime.OutputJSON {
+			return apiruntime.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
 		}
 		_, _ = fmt.Fprintln(os.Stdout, "Done.")
 		return nil
 	}
 
-	respBody, err := gen.ReadBody(resp)
+	respBody, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -355,17 +356,17 @@ func runGeneratedEndpoint(cmd *cobra.Command, client *gen.Client, spec generated
 		return nil
 	}
 
-	switch gen.OutputFormat(getOutputFormat(cmd)) {
-	case gen.OutputJSON:
+	switch apiruntime.OutputFormat(getOutputFormat(cmd)) {
+	case apiruntime.OutputJSON:
 		var pretty interface{}
 		_ = json.Unmarshal(respBody, &pretty)
-		return gen.PrintJSON(os.Stdout, pretty)
+		return apiruntime.PrintJSON(os.Stdout, pretty)
 	default:
 		var data map[string]interface{}
 		if err := json.Unmarshal(respBody, &data); err != nil {
 			return fmt.Errorf("parse response: %w", err)
 		}
-		gen.PrintDetail(os.Stdout, data)
+		apiruntime.PrintDetail(os.Stdout, data)
 	}
 
 	return nil

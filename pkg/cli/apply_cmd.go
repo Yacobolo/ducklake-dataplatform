@@ -9,10 +9,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
-func newApplyCmd(client *gen.Client) *cobra.Command {
+func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 	var (
 		configDir                string
 		autoApprove              bool
@@ -48,7 +48,7 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 					for i, ve := range validationErrs {
 						errMsgs[i] = ve.Error()
 					}
-					_ = gen.PrintJSON(os.Stdout, map[string]interface{}{
+					_ = apiruntime.PrintJSON(os.Stdout, map[string]interface{}{
 						"status": "error",
 						"errors": errMsgs,
 					})
@@ -78,7 +78,7 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 
 			if !plan.HasChanges() {
 				if isJSON {
-					return gen.PrintJSON(os.Stdout, map[string]interface{}{
+					return apiruntime.PrintJSON(os.Stdout, map[string]interface{}{
 						"status":    "ok",
 						"changes":   false,
 						"succeeded": 0,
@@ -96,7 +96,7 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 
 			// 6. Confirm unless auto-approved.
 			if !autoApprove {
-				if !gen.IsStdinTTY() {
+				if !apiruntime.IsStdinTTY() {
 					return fmt.Errorf("confirmation required but stdin is not a terminal; use --auto-approve")
 				}
 				_, _ = fmt.Fprint(os.Stdout, "\nApply these changes? [y/N] ")
@@ -184,7 +184,7 @@ func newApplyCmd(client *gen.Client) *cobra.Command {
 				if failed > 0 {
 					status = "partial"
 				}
-				_ = gen.PrintJSON(os.Stdout, map[string]interface{}{
+				_ = apiruntime.PrintJSON(os.Stdout, map[string]interface{}{
 					"status":    status,
 					"changes":   true,
 					"succeeded": succeeded,

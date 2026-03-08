@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 // CommandEntry represents a single CLI command for introspection output.
@@ -83,7 +83,7 @@ This is designed for AI agents to discover available CLI capabilities in a singl
 
 			// Output
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, entries)
+				return apiruntime.PrintJSON(os.Stdout, entries)
 			}
 
 			// Table output
@@ -92,7 +92,7 @@ This is designed for AI agents to discover available CLI capabilities in a singl
 			for _, e := range entries {
 				rows = append(rows, []string{e.Path, e.Short})
 			}
-			gen.PrintTable(os.Stdout, columns, rows)
+			apiruntime.PrintTable(os.Stdout, columns, rows)
 			return nil
 		},
 	}

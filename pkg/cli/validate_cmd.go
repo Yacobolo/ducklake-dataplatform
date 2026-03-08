@@ -7,10 +7,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
-func newValidateCmd(_ *gen.Client) *cobra.Command {
+func newValidateCmd(_ *apiruntime.Client) *cobra.Command {
 	var (
 		configDir          string
 		allowUnknownFields bool
@@ -37,7 +37,7 @@ func newValidateCmd(_ *gen.Client) *cobra.Command {
 					for i, ve := range validationErrs {
 						errMsgs[i] = ve.Error()
 					}
-					if err := gen.PrintJSON(os.Stdout, map[string]interface{}{
+					if err := apiruntime.PrintJSON(os.Stdout, map[string]interface{}{
 						"valid":  false,
 						"errors": errMsgs,
 					}); err != nil {
@@ -53,7 +53,7 @@ func newValidateCmd(_ *gen.Client) *cobra.Command {
 			}
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, map[string]interface{}{
+				return apiruntime.PrintJSON(os.Stdout, map[string]interface{}{
 					"valid": true,
 				})
 			}

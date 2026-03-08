@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 var (
@@ -24,12 +24,12 @@ func Execute() int {
 			errObj := map[string]interface{}{
 				"error": err.Error(),
 			}
-			var apiErr *gen.APIError
+			var apiErr *apiruntime.APIError
 			if errors.As(err, &apiErr) {
 				errObj["http_status"] = apiErr.HTTPStatus
 				errObj["code"] = apiErr.Code
 			}
-			_ = gen.PrintJSON(os.Stdout, errObj)
+			_ = apiruntime.PrintJSON(os.Stdout, errObj)
 		} else {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		}
@@ -112,7 +112,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Only output resource identifiers")
 
 	// Create client using a lazy initializer
-	client := gen.NewClient(host, apiKey, token)
+	client := apiruntime.NewClient(host, apiKey, token)
 
 	// Wire PersistentPreRun to update client after config resolution
 	originalPreRun := rootCmd.PersistentPreRunE
@@ -132,7 +132,7 @@ func newRootCmd() *cobra.Command {
 		}
 		if yesFlag := cmd.Flags().Lookup("yes"); yesFlag != nil {
 			yes, _ := cmd.Flags().GetBool("yes")
-			if !yes && !gen.IsStdinTTY() {
+			if !yes && !apiruntime.IsStdinTTY() {
 				return fmt.Errorf("confirmation required but stdin is not a terminal; use --yes to skip")
 			}
 		}

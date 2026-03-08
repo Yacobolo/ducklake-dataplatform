@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 // CapabilityCompatibilityMode controls optional-endpoint compatibility behavior.
@@ -117,7 +117,7 @@ func (c *APIStateClient) probeEndpoint(ctx context.Context, path string) error {
 	if err != nil {
 		return fmt.Errorf("GET %s: %w", path, err)
 	}
-	body, err := gen.ReadBody(resp)
+	body, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return fmt.Errorf("read GET %s: %w", path, err)
 	}

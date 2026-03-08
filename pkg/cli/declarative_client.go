@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 // StateReader fetches current state from the server API.
@@ -65,9 +65,9 @@ func newResourceIndex() *resourceIndex {
 	}
 }
 
-// APIStateClient implements both StateReader and StateWriter using the gen.Client.
+// APIStateClient implements both StateReader and StateWriter using the CLI runtime client.
 type APIStateClient struct {
-	client               *gen.Client
+	client               *apiruntime.Client
 	index                *resourceIndex
 	compatibilityMode    CapabilityCompatibilityMode
 	optionalReadWarnings []string
@@ -80,12 +80,12 @@ var (
 )
 
 // NewAPIStateClient creates a new client adapter.
-func NewAPIStateClient(client *gen.Client) *APIStateClient {
+func NewAPIStateClient(client *apiruntime.Client) *APIStateClient {
 	return NewAPIStateClientWithOptions(client, APIStateClientOptions{})
 }
 
 // NewAPIStateClientWithOptions creates a new client adapter with behavior options.
-func NewAPIStateClientWithOptions(client *gen.Client, options APIStateClientOptions) *APIStateClient {
+func NewAPIStateClientWithOptions(client *apiruntime.Client, options APIStateClientOptions) *APIStateClient {
 	return &APIStateClient{
 		client:            client,
 		compatibilityMode: normalizeCompatibilityMode(options.CompatibilityMode),
@@ -116,7 +116,7 @@ func (c *APIStateClient) fetchAllPages(_ context.Context, path string) ([]json.R
 			return nil, fmt.Errorf("GET %s: %w", path, err)
 		}
 
-		body, err := gen.ReadBody(resp)
+		body, err := apiruntime.ReadBody(resp)
 		if err != nil {
 			return nil, fmt.Errorf("read GET %s: %w", path, err)
 		}
@@ -928,7 +928,7 @@ func (c *APIStateClient) readNotebookDetail(_ context.Context, notebookID string
 	if err != nil {
 		return nil, err
 	}
-	body, err := gen.ReadBody(resp)
+	body, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -1518,7 +1518,7 @@ func (c *APIStateClient) lookupMemberNameByID(_ context.Context, id, memberType 
 	if err != nil {
 		return "", err
 	}
-	body, err := gen.ReadBody(resp)
+	body, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return "", err
 	}
@@ -1681,7 +1681,7 @@ func (c *APIStateClient) resolveColumnMaskID(resourceName string) (string, error
 
 // checkCreateResponse reads the response body, checks for errors, and extracts the created resource ID.
 func (c *APIStateClient) checkCreateResponse(resp *http.Response) (string, error) {
-	body, err := gen.ReadBody(resp)
+	body, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return "", err
 	}
@@ -1901,7 +1901,7 @@ func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectNa
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 			continue
@@ -1912,7 +1912,7 @@ func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectNa
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -1925,7 +1925,7 @@ func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectNa
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -1960,7 +1960,7 @@ func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, p
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 			continue
@@ -1971,7 +1971,7 @@ func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, p
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -1984,7 +1984,7 @@ func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, p
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2026,7 +2026,7 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 			continue
@@ -2039,7 +2039,7 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2052,7 +2052,7 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2121,7 +2121,7 @@ func (c *APIStateClient) executeSemanticModel(ctx context.Context, action declar
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 
@@ -2140,7 +2140,7 @@ func (c *APIStateClient) executeSemanticModel(ctx context.Context, action declar
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for semantic model", action.Operation)
@@ -2166,7 +2166,7 @@ func (c *APIStateClient) executeAPIKey(ctx context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpUpdate:
 		actual := action.Actual.(declarative.APIKeySpec)
@@ -2178,7 +2178,7 @@ func (c *APIStateClient) executeAPIKey(ctx context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 		create := declarative.Action{Operation: declarative.OpCreate, Desired: action.Desired}
@@ -2194,7 +2194,7 @@ func (c *APIStateClient) executeAPIKey(ctx context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for api-key", action.Operation)
@@ -2252,7 +2252,7 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 		return c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells)
@@ -2270,7 +2270,7 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 		if c.index != nil {
@@ -2327,7 +2327,7 @@ func (c *APIStateClient) executePipeline(_ context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		pipelineName := action.ResourceName
@@ -2335,7 +2335,7 @@ func (c *APIStateClient) executePipeline(_ context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 		if c.index != nil {
@@ -2399,7 +2399,7 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2416,7 +2416,7 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2477,7 +2477,7 @@ func (c *APIStateClient) deletePipelineJobByName(ctx context.Context, pipelineNa
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(resp); err != nil {
+	if err := apiruntime.CheckError(resp); err != nil {
 		return err
 	}
 	if c.index != nil {
@@ -2852,7 +2852,7 @@ func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, m
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 		}
@@ -2861,7 +2861,7 @@ func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, m
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2877,7 +2877,7 @@ func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, m
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2928,7 +2928,7 @@ func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Acti
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpUpdate:
 		macro := action.Desired.(declarative.MacroResource)
@@ -2960,14 +2960,14 @@ func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Acti
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		resp, err := c.client.Do(http.MethodDelete, "/macros/"+action.ResourceName, nil, nil)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for macro", action.Operation)
@@ -3006,7 +3006,7 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 		return c.reconcileModelTests(ctx, model.ProjectName, model.ModelName, model.Spec.Tests)
@@ -3030,7 +3030,7 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 		return c.reconcileModelTests(ctx, model.ProjectName, model.ModelName, model.Spec.Tests)
@@ -3044,7 +3044,7 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for model", action.Operation)
@@ -3088,7 +3088,7 @@ func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		spec := action.Actual.(declarative.PrincipalSpec)
@@ -3100,7 +3100,7 @@ func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for principal", action.Operation)
@@ -3135,14 +3135,14 @@ func (c *APIStateClient) executeGroup(_ context.Context, action declarative.Acti
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		resp, err := c.client.Do(http.MethodDelete, "/groups/"+action.ResourceName, nil, nil)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for group", action.Operation)
@@ -3172,7 +3172,7 @@ func (c *APIStateClient) executeGrant(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		grant := action.Actual.(declarative.GrantSpec)
@@ -3195,7 +3195,7 @@ func (c *APIStateClient) executeGrant(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		// Grants are typically immutable — recreate via delete+create.
@@ -3249,14 +3249,14 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		resp, err := c.client.Do(http.MethodDelete, "/catalogs/"+action.ResourceName, nil, nil)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for catalog", action.Operation)
@@ -3316,7 +3316,7 @@ func (c *APIStateClient) executeSchema(ctx context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		parts := strings.SplitN(action.ResourceName, ".", 2)
@@ -3327,7 +3327,7 @@ func (c *APIStateClient) executeSchema(ctx context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for schema", action.Operation)
@@ -3406,7 +3406,7 @@ func (c *APIStateClient) executeTable(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		parts := strings.SplitN(action.ResourceName, ".", 3)
@@ -3418,7 +3418,7 @@ func (c *APIStateClient) executeTable(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for table", action.Operation)
@@ -3445,7 +3445,7 @@ func (c *APIStateClient) executeView(_ context.Context, action declarative.Actio
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpUpdate:
 		vw := action.Desired.(declarative.ViewResource)
@@ -3464,7 +3464,7 @@ func (c *APIStateClient) executeView(_ context.Context, action declarative.Actio
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		parts := strings.SplitN(action.ResourceName, ".", 3)
@@ -3476,7 +3476,7 @@ func (c *APIStateClient) executeView(_ context.Context, action declarative.Actio
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for view", action.Operation)
@@ -3512,7 +3512,7 @@ func (c *APIStateClient) executeGroupMembership(_ context.Context, action declar
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		member := action.Actual.(declarative.MemberRef)
@@ -3536,7 +3536,7 @@ func (c *APIStateClient) executeGroupMembership(_ context.Context, action declar
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for group-membership", action.Operation)
@@ -3577,7 +3577,7 @@ func (c *APIStateClient) executeTag(_ context.Context, action declarative.Action
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for tag", action.Operation)
@@ -3609,7 +3609,7 @@ func (c *APIStateClient) executeTagAssignment(ctx context.Context, action declar
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		// Tag assignment deletes require the assignment ID. Since we don't
@@ -3635,7 +3635,7 @@ func (c *APIStateClient) executeTagAssignment(ctx context.Context, action declar
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for tag-assignment", action.Operation)
@@ -3683,7 +3683,7 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for row-filter", action.Operation)
@@ -3716,7 +3716,7 @@ func (c *APIStateClient) executeRowFilterBinding(_ context.Context, action decla
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		binding := action.Actual.(declarative.FilterBindingRef)
@@ -3731,7 +3731,7 @@ func (c *APIStateClient) executeRowFilterBinding(_ context.Context, action decla
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for row-filter-binding", action.Operation)
@@ -3790,7 +3790,7 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for column-mask", action.Operation)
@@ -3824,7 +3824,7 @@ func (c *APIStateClient) executeColumnMaskBinding(_ context.Context, action decl
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		binding := action.Actual.(declarative.MaskBindingRef)
@@ -3839,7 +3839,7 @@ func (c *APIStateClient) executeColumnMaskBinding(_ context.Context, action decl
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for column-mask-binding", action.Operation)

@@ -10,10 +10,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
-func newFindCmd(client *gen.Client) *cobra.Command {
+func newFindCmd(client *apiruntime.Client) *cobra.Command {
 	var (
 		objectType string
 		catalog    string
@@ -53,7 +53,7 @@ This is designed as the agent's "grep" for the data catalog.`,
 	return cmd
 }
 
-func newFindTablesCmd(client *gen.Client, catalog *string, maxResults *int64) *cobra.Command {
+func newFindTablesCmd(client *apiruntime.Client, catalog *string, maxResults *int64) *cobra.Command {
 	return &cobra.Command{
 		Use:   "tables <pattern>",
 		Short: "Search for tables by name pattern",
@@ -67,7 +67,7 @@ func newFindTablesCmd(client *gen.Client, catalog *string, maxResults *int64) *c
 	}
 }
 
-func newFindColumnsCmd(client *gen.Client, catalog *string, maxResults *int64) *cobra.Command {
+func newFindColumnsCmd(client *apiruntime.Client, catalog *string, maxResults *int64) *cobra.Command {
 	return &cobra.Command{
 		Use:   "columns <pattern>",
 		Short: "Search for columns by name pattern across all tables",
@@ -81,7 +81,7 @@ func newFindColumnsCmd(client *gen.Client, catalog *string, maxResults *int64) *
 	}
 }
 
-func runFind(cmd *cobra.Command, client *gen.Client, query, objectType, catalog string, maxResults int64) error {
+func runFind(cmd *cobra.Command, client *apiruntime.Client, query, objectType, catalog string, maxResults int64) error {
 	// Strip glob wildcards for the API query — we filter client-side
 	apiQuery := strings.ReplaceAll(query, "*", "")
 	if apiQuery == "" {
@@ -102,11 +102,11 @@ func runFind(cmd *cobra.Command, client *gen.Client, query, objectType, catalog 
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(resp); err != nil {
+	if err := apiruntime.CheckError(resp); err != nil {
 		return err
 	}
 
-	respBody, err := gen.ReadBody(resp)
+	respBody, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -142,7 +142,7 @@ func runFind(cmd *cobra.Command, client *gen.Client, query, objectType, catalog 
 	// Output
 	if getOutputFormat(cmd) == "json" {
 		// Use filtered data.Data so glob filtering is reflected in JSON output
-		return gen.PrintJSON(os.Stdout, data)
+		return apiruntime.PrintJSON(os.Stdout, data)
 	}
 
 	// Table output
@@ -159,6 +159,6 @@ func runFind(cmd *cobra.Command, client *gen.Client, query, objectType, catalog 
 		}
 		rows = append(rows, []string{item.Type, displayName, schema, item.MatchField})
 	}
-	gen.PrintTable(os.Stdout, columns, rows)
+	apiruntime.PrintTable(os.Stdout, columns, rows)
 	return nil
 }

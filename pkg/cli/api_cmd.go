@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"duck-demo/pkg/cli/apiruntime"
 	"duck-demo/pkg/cli/gen"
 )
 
@@ -55,7 +56,7 @@ func newAPIListCmd() *cobra.Command {
 			}
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, endpoints)
+				return apiruntime.PrintJSON(os.Stdout, endpoints)
 			}
 
 			columns := []string{"method", "path", "operation_id", "summary"}
@@ -63,7 +64,7 @@ func newAPIListCmd() *cobra.Command {
 			for _, ep := range endpoints {
 				rows = append(rows, []string{ep.Method, ep.Path, ep.OperationID, ep.Summary})
 			}
-			gen.PrintTable(os.Stdout, columns, rows)
+			apiruntime.PrintTable(os.Stdout, columns, rows)
 			return nil
 		},
 	}
@@ -100,7 +101,7 @@ func newAPISearchCmd() *cobra.Command {
 			}
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, matches)
+				return apiruntime.PrintJSON(os.Stdout, matches)
 			}
 
 			columns := []string{"method", "path", "operation_id", "summary"}
@@ -108,7 +109,7 @@ func newAPISearchCmd() *cobra.Command {
 			for _, ep := range matches {
 				rows = append(rows, []string{ep.Method, ep.Path, ep.OperationID, ep.Summary})
 			}
-			gen.PrintTable(os.Stdout, columns, rows)
+			apiruntime.PrintTable(os.Stdout, columns, rows)
 			return nil
 		},
 	}
@@ -137,7 +138,7 @@ func newAPIDescribeCmd() *cobra.Command {
 			}
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, found)
+				return apiruntime.PrintJSON(os.Stdout, found)
 			}
 
 			// Human-friendly detail
@@ -165,7 +166,7 @@ func newAPIDescribeCmd() *cobra.Command {
 					}
 					rows = append(rows, []string{p.Name, p.In, p.Type, req, strings.Join(p.Enum, ", "), p.Description})
 				}
-				gen.PrintTable(os.Stdout, columns, rows)
+				apiruntime.PrintTable(os.Stdout, columns, rows)
 			}
 
 			if len(found.BodyFields) > 0 {
@@ -179,7 +180,7 @@ func newAPIDescribeCmd() *cobra.Command {
 					}
 					rows = append(rows, []string{f.Name, f.Type, req, strings.Join(f.Enum, ", "), f.Description})
 				}
-				gen.PrintTable(os.Stdout, columns, rows)
+				apiruntime.PrintTable(os.Stdout, columns, rows)
 			}
 
 			return nil
@@ -276,7 +277,7 @@ func newAPICurlCmd() *cobra.Command {
 			result := strings.Join(curlParts, " \\\n  ")
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, map[string]string{
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{
 					"curl": result,
 				})
 			}

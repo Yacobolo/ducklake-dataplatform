@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 func newConfigCmd() *cobra.Command {
@@ -40,7 +40,7 @@ func newConfigShowCmd() *cobra.Command {
 				cfg = maskConfig(cfg)
 			}
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, cfg)
+				return apiruntime.PrintJSON(os.Stdout, cfg)
 			}
 			data, err := yaml.Marshal(cfg)
 			if err != nil {
@@ -133,7 +133,7 @@ func newConfigSetProfileCmd() *cobra.Command {
 				return err
 			}
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, map[string]string{
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{
 					"status":  "ok",
 					"profile": name,
 					"path":    ConfigPath(),
@@ -173,7 +173,7 @@ func newConfigUseProfileCmd() *cobra.Command {
 				return err
 			}
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, map[string]string{
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{
 					"status":         "ok",
 					"active_profile": name,
 				})
