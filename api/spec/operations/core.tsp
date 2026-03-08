@@ -8,7 +8,7 @@ op getHealth(): Ok<HealthResponse> | StandardErrorResponses;
 
 @route("/query")
 @post
-op executeQuery(@body body: QueryRequest): Ok<QueryResponse> | MutatingErrorResponses;
+op executeQuery(@body body: QueryRequest): Ok<QueryResult> | MutatingErrorResponses;
 
 @route("/principals")
 @get

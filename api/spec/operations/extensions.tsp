@@ -4,11 +4,11 @@ namespace Duck;
 
 @route("/queries")
 @post
-op submitQuery(@body body: SubmitQueryRequest): Created<GenericResponse> | MutatingErrorResponses;
+op submitQuery(@body body: SubmitQueryRequest): Accepted<SubmitQueryResponse> | MutatingErrorResponses;
 
 @route("/queries/{queryId}")
 @get
-op getQuery(queryId: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getQuery(queryId: string): Ok<QueryJob> | ResourceErrorResponses;
 
 @route("/queries/{queryId}")
 @delete
@@ -16,11 +16,11 @@ op deleteQuery(queryId: string): NoContent | MutatingErrorResponses;
 
 @route("/queries/{queryId}/results")
 @get
-op getQueryResults(queryId: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getQueryResults(queryId: string, @query max_results?: int32, @query page_token?: string): Ok<QueryResult> | ResourceErrorResponses;
 
 @route("/queries/{queryId}/cancel")
 @post
-op cancelQuery(queryId: string): Created<GenericResponse> | MutatingErrorResponses;
+op cancelQuery(queryId: string): Ok<CancelQueryResponse> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url")
 @post
@@ -40,15 +40,15 @@ op searchCatalog(@query query: string, @query type?: string, @query catalog?: st
 
 @route("/lineage/tables/{schemaName}/{tableName}")
 @get
-op getTableLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getTableLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<LineageNode> | ResourceErrorResponses;
 
 @route("/lineage/tables/{schemaName}/{tableName}/upstream")
 @get
-op getUpstreamLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getUpstreamLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedLineageEdges> | ResourceErrorResponses;
 
 @route("/lineage/tables/{schemaName}/{tableName}/downstream")
 @get
-op getDownstreamLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getDownstreamLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedLineageEdges> | ResourceErrorResponses;
 
 @route("/lineage/edges/{edgeId}")
 @delete
@@ -56,23 +56,23 @@ op deleteLineageEdge(edgeId: string): NoContent | MutatingErrorResponses;
 
 @route("/lineage/columns/{schemaName}/{tableName}")
 @get
-op getColumnLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getColumnLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedColumnLineageEdges> | ResourceErrorResponses;
 
 @route("/lineage/columns/{schemaName}/{tableName}/{columnName}/impact")
 @get
-op getColumnImpact(schemaName: string, tableName: string, columnName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getColumnImpact(schemaName: string, tableName: string, columnName: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedColumnLineageEdges> | ResourceErrorResponses;
 
 @route("/lineage/purge")
 @post
-op purgeLineage(@body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op purgeLineage(@body body: PurgeLineageRequest): Ok<PurgeLineageResponse> | MutatingErrorResponses;
 
 @route("/tags")
 @get
-op listTags(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op listTags(@query max_results?: int32, @query page_token?: string): Ok<PaginatedTags> | StandardErrorResponses;
 
 @route("/tags")
 @post
-op createTag(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createTag(@body body: CreateTagRequest): Created<Tag> | MutatingErrorResponses;
 
 @route("/tags/{tagId}")
 @delete
@@ -80,7 +80,7 @@ op deleteTag(tagId: string): NoContent | MutatingErrorResponses;
 
 @route("/tags/{tagId}/assignments")
 @post
-op createTagAssignment(tagId: string, @body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createTagAssignment(tagId: string, @body body: CreateTagAssignmentRequest): Created<TagAssignment> | MutatingErrorResponses;
 
 @route("/tag-assignments/{assignmentId}")
 @delete
@@ -88,7 +88,7 @@ op deleteTagAssignment(assignmentId: string): NoContent | MutatingErrorResponses
 
 @route("/classifications")
 @get
-op listClassifications(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op listClassifications(@query max_results?: int32, @query page_token?: string): Ok<PaginatedTags> | StandardErrorResponses;
 
 @route("/storage-credentials")
 @get
@@ -232,15 +232,15 @@ op getNotebookJob(notebookId: string, jobId: string): Ok<GenericResponse> | Reso
 
 @route("/git-repos")
 @get
-op listGitRepos(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op listGitRepos(@query max_results?: int32, @query page_token?: string): Ok<PaginatedGitRepos> | StandardErrorResponses;
 
 @route("/git-repos")
 @post
-op createGitRepo(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createGitRepo(@body body: CreateGitRepoRequest): Created<GitRepo> | MutatingErrorResponses;
 
 @route("/git-repos/{gitRepoId}")
 @get
-op getGitRepo(gitRepoId: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getGitRepo(gitRepoId: string): Ok<GitRepo> | ResourceErrorResponses;
 
 @route("/git-repos/{gitRepoId}")
 @delete
@@ -248,7 +248,7 @@ op deleteGitRepo(gitRepoId: string): NoContent | MutatingErrorResponses;
 
 @route("/git-repos/{gitRepoId}/sync")
 @post
-op syncGitRepo(gitRepoId: string): Ok<GenericResponse> | MutatingErrorResponses;
+op syncGitRepo(gitRepoId: string): Ok<GitSyncResult> | MutatingErrorResponses;
 
 @route("/pipelines")
 @get
@@ -376,19 +376,19 @@ op cancelModelRun(runId: string): Ok<GenericResponse> | MutatingErrorResponses;
 
 @route("/macros")
 @get
-op listMacros(@query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | StandardErrorResponses;
+op listMacros(@query max_results?: int32, @query page_token?: string): Ok<PaginatedMacros> | StandardErrorResponses;
 
 @route("/macros")
 @post
-op createMacro(@body body: GenericRequest): Created<GenericResponse> | MutatingErrorResponses;
+op createMacro(@body body: CreateMacroRequest): Created<Macro> | MutatingErrorResponses;
 
 @route("/macros/{macroName}")
 @get
-op getMacro(macroName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getMacro(macroName: string): Ok<Macro> | ResourceErrorResponses;
 
 @route("/macros/{macroName}")
 @patch(#{ implicitOptionality: true })
-op updateMacro(macroName: string, @body body: GenericRequest): Ok<GenericResponse> | MutatingErrorResponses;
+op updateMacro(macroName: string, @body body: UpdateMacroRequest): Ok<Macro> | MutatingErrorResponses;
 
 @route("/macros/{macroName}")
 @delete
@@ -396,15 +396,15 @@ op deleteMacro(macroName: string): NoContent | MutatingErrorResponses;
 
 @route("/macros/{macroName}/revisions")
 @get
-op listMacroRevisions(macroName: string): Ok<GenericResponse> | ResourceErrorResponses;
+op listMacroRevisions(macroName: string): Ok<MacroRevisionList> | ResourceErrorResponses;
 
 @route("/macros/{macroName}/impact")
 @get
-op getMacroImpact(macroName: string, @query max_results?: int32, @query page_token?: string): Ok<GenericResponse> | ResourceErrorResponses;
+op getMacroImpact(macroName: string, @query max_results?: int32, @query page_token?: string): Ok<MacroImpactList> | ResourceErrorResponses;
 
 @route("/macros/{macroName}/diff")
 @get
-op diffMacroRevisions(macroName: string, @query from_version: int32, @query to_version: int32): Ok<GenericResponse> | ResourceErrorResponses;
+op diffMacroRevisions(macroName: string, @query from_version: int32, @query to_version: int32): Ok<MacroRevisionDiff> | ResourceErrorResponses;
 
 @route("/semantic-models")
 @get

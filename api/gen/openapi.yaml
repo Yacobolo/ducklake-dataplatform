@@ -252,6 +252,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
           content:
@@ -287,7 +293,7 @@ paths:
       security:
         - {}
       x-authz:
-        mode: public
+        mode: none
       x-apigen-manual: true
   /auth/bootstrap/tokens:
     post:
@@ -302,6 +308,12 @@ paths:
                 $ref: '#/components/schemas/BootstrapTokenResponse'
         '400':
           description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
@@ -340,14 +352,20 @@ paths:
       operationId: localLogin
       parameters: []
       responses:
-        '200':
-          description: The request has succeeded.
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthLoginResponse'
         '400':
           description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
@@ -381,7 +399,7 @@ paths:
       security:
         - {}
       x-authz:
-        mode: public
+        mode: none
       x-apigen-manual: true
   /auth/provider/oidc:
     get:
@@ -394,6 +412,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OIDCProviderResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
           content:
@@ -425,6 +449,12 @@ paths:
           description: 'There is no content to send for this request, but the headers may be useful. '
         '400':
           description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
@@ -467,6 +497,12 @@ paths:
           description: 'There is no content to send for this request, but the headers may be useful. '
         '400':
           description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
@@ -517,6 +553,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WebSessionStatsResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
           content:
@@ -2488,7 +2530,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedTags'
         '401':
           description: Access is unauthorized.
           content:
@@ -3346,7 +3388,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedGitRepos'
         '401':
           description: Access is unauthorized.
           content:
@@ -3376,7 +3418,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/GitRepo'
         '401':
           description: Access is unauthorized.
           content:
@@ -3408,7 +3450,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateGitRepoRequest'
   /git-repos/{gitRepoId}:
     get:
       operationId: getGitRepo
@@ -3424,7 +3466,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/GitRepo'
         '401':
           description: Access is unauthorized.
           content:
@@ -3509,7 +3551,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/GitSyncResult'
         '401':
           description: Access is unauthorized.
           content:
@@ -4076,7 +4118,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedColumnLineageEdges'
         '401':
           description: Access is unauthorized.
           content:
@@ -4147,7 +4189,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedColumnLineageEdges'
         '401':
           description: Access is unauthorized.
           content:
@@ -4228,7 +4270,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PurgeLineageResponse'
         '401':
           description: Access is unauthorized.
           content:
@@ -4260,7 +4302,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/PurgeLineageRequest'
   /lineage/tables/{schemaName}/{tableName}:
     get:
       operationId: getTableLineage
@@ -4294,7 +4336,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/LineageNode'
         '401':
           description: Access is unauthorized.
           content:
@@ -4360,7 +4402,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedLineageEdges'
         '401':
           description: Access is unauthorized.
           content:
@@ -4426,7 +4468,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedLineageEdges'
         '401':
           description: Access is unauthorized.
           content:
@@ -4482,7 +4524,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedMacros'
         '401':
           description: Access is unauthorized.
           content:
@@ -4512,7 +4554,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Macro'
         '401':
           description: Access is unauthorized.
           content:
@@ -4544,7 +4586,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateMacroRequest'
   /macros/{macroName}:
     get:
       operationId: getMacro
@@ -4560,7 +4602,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Macro'
         '401':
           description: Access is unauthorized.
           content:
@@ -4607,7 +4649,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Macro'
         '401':
           description: Access is unauthorized.
           content:
@@ -4639,7 +4681,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/UpdateMacroRequest'
     delete:
       operationId: deleteMacro
       parameters:
@@ -4706,7 +4748,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/MacroRevisionDiff'
         '401':
           description: Access is unauthorized.
           content:
@@ -4767,7 +4809,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/MacroImpactList'
         '401':
           description: Access is unauthorized.
           content:
@@ -4815,7 +4857,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/MacroRevisionList'
         '401':
           description: Access is unauthorized.
           content:
@@ -7433,12 +7475,12 @@ paths:
       operationId: submitQuery
       parameters: []
       responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/SubmitQueryResponse'
         '401':
           description: Access is unauthorized.
           content:
@@ -7486,7 +7528,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/QueryJob'
         '401':
           description: Access is unauthorized.
           content:
@@ -7566,12 +7608,12 @@ paths:
           schema:
             type: string
       responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
+        '200':
+          description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/CancelQueryResponse'
         '401':
           description: Access is unauthorized.
           content:
@@ -7580,6 +7622,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -7626,7 +7674,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/QueryResult'
         '401':
           description: Access is unauthorized.
           content:
@@ -7669,7 +7717,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/QueryResponse'
+                $ref: '#/components/schemas/QueryResult'
         '401':
           description: Access is unauthorized.
           content:
@@ -9372,7 +9420,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/PaginatedTags'
         '401':
           description: Access is unauthorized.
           content:
@@ -9402,7 +9450,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/Tag'
         '401':
           description: Access is unauthorized.
           content:
@@ -9434,7 +9482,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateTagRequest'
   /tags/{tagId}:
     delete:
       operationId: deleteTag
@@ -9488,7 +9536,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericResponse'
+                $ref: '#/components/schemas/TagAssignment'
         '401':
           description: Access is unauthorized.
           content:
@@ -9520,7 +9568,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GenericRequest'
+              $ref: '#/components/schemas/CreateTagAssignmentRequest'
 security:
   - BearerAuth: []
   - ApiKeyAuth: []
@@ -9629,6 +9677,16 @@ components:
         ttl_seconds:
           type: integer
           format: int64
+    CancelQueryResponse:
+      type: object
+      required:
+        - query_id
+        - status
+      properties:
+        query_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/QueryJobStatus'
     CatalogInfo:
       type: object
       required:
@@ -9707,6 +9765,31 @@ components:
           type: boolean
         comment:
           type: string
+    ColumnLineageEdge:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        lineage_edge_id:
+          type: string
+        target_column:
+          type: string
+        source_schema:
+          type: string
+        source_table:
+          type: string
+        source_column:
+          type: string
+        transform_type:
+          $ref: '#/components/schemas/ColumnLineageEdgeTransformType'
+        function:
+          type: string
+    ColumnLineageEdgeTransformType:
+      type: string
+      enum:
+        - DIRECT
+        - EXPRESSION
     ColumnMask:
       type: object
       required:
@@ -9959,6 +10042,20 @@ components:
           type: string
         read_only:
           type: boolean
+    CreateGitRepoRequest:
+      type: object
+      required:
+        - url
+        - branch
+      properties:
+        url:
+          type: string
+        branch:
+          type: string
+        path:
+          type: string
+        auth_token:
+          type: string
     CreateGrantRequest:
       type: object
       required:
@@ -9996,6 +10093,42 @@ components:
         name:
           type: string
         description:
+          type: string
+    CreateMacroRequest:
+      type: object
+      required:
+        - name
+        - body
+      properties:
+        name:
+          type: string
+        body:
+          type: string
+        macro_type:
+          type: string
+        parameters:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        catalog_name:
+          type: string
+        project_name:
+          type: string
+        visibility:
+          type: string
+        owner:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        status:
           type: string
     CreateModelRequest:
       type: object
@@ -10079,6 +10212,27 @@ components:
             $ref: '#/components/schemas/CreateColumnRequest'
         comment:
           type: string
+    CreateTagAssignmentRequest:
+      type: object
+      required:
+        - securable_type
+        - securable_id
+      properties:
+        securable_type:
+          $ref: '#/components/schemas/TagAssignmentSecurableType'
+        securable_id:
+          type: string
+        column_name:
+          type: string
+    CreateTagRequest:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          type: string
+        value:
+          type: string
     CreateViewRequest:
       type: object
       required:
@@ -10160,6 +10314,44 @@ components:
           type: object
           additionalProperties:
             type: string
+    GitRepo:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        branch:
+          type: string
+        path:
+          type: string
+        owner:
+          type: string
+        last_sync_at:
+          type: string
+          format: date-time
+        last_commit:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    GitSyncResult:
+      type: object
+      properties:
+        notebooks_created:
+          type: integer
+          format: int32
+        notebooks_updated:
+          type: integer
+          format: int32
+        notebooks_deleted:
+          type: integer
+          format: int32
+        commit_sha:
+          type: string
     Group:
       type: object
       required:
@@ -10219,6 +10411,39 @@ components:
           type: string
         table:
           type: string
+    LineageEdge:
+      type: object
+      properties:
+        id:
+          type: string
+        source_table:
+          type: string
+        target_table:
+          type: string
+        source_schema:
+          type: string
+        target_schema:
+          type: string
+        edge_type:
+          type: string
+        principal_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    LineageNode:
+      type: object
+      properties:
+        table_name:
+          type: string
+        upstream:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineageEdge'
+        downstream:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineageEdge'
     LoadExternalRequest:
       type: object
       required:
@@ -10240,6 +10465,167 @@ components:
           type: string
         password:
           type: string
+    Macro:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        macro_type:
+          type: string
+        parameters:
+          type: array
+          items:
+            type: string
+        body:
+          type: string
+        description:
+          type: string
+        catalog_name:
+          type: string
+        project_name:
+          type: string
+        visibility:
+          type: string
+        owner:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    MacroImpactList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MacroImpactModel'
+        next_page_token:
+          type: string
+    MacroImpactModel:
+      type: object
+      properties:
+        target_table:
+          type: string
+        target_schema:
+          type: string
+        model_name:
+          type: string
+        last_seen_at:
+          type: string
+          format: date-time
+    MacroRevision:
+      type: object
+      properties:
+        id:
+          type: string
+        macro_name:
+          type: string
+        version:
+          type: integer
+          format: int32
+        content_hash:
+          type: string
+        parameters:
+          type: array
+          items:
+            type: string
+        body:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    MacroRevisionDiff:
+      type: object
+      properties:
+        macro_name:
+          type: string
+        from_version:
+          type: integer
+          format: int32
+        to_version:
+          type: integer
+          format: int32
+        from_content_hash:
+          type: string
+        to_content_hash:
+          type: string
+        changed:
+          type: boolean
+        parameters_changed:
+          type: boolean
+        body_changed:
+          type: boolean
+        description_changed:
+          type: boolean
+        status_changed:
+          type: boolean
+        from_parameters:
+          type: array
+          items:
+            type: string
+        to_parameters:
+          type: array
+          items:
+            type: string
+        from_body:
+          type: string
+        to_body:
+          type: string
+        from_description:
+          type: string
+        to_description:
+          type: string
+        from_status:
+          type: string
+        to_status:
+          type: string
+        impact_changed:
+          type: boolean
+        impacted_models_added:
+          type: array
+          items:
+            $ref: '#/components/schemas/MacroImpactModel'
+        impacted_models_removed:
+          type: array
+          items:
+            $ref: '#/components/schemas/MacroImpactModel'
+        impacted_models_unchanged:
+          type: array
+          items:
+            $ref: '#/components/schemas/MacroImpactModel'
+    MacroRevisionList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MacroRevision'
     ManifestColumn:
       type: object
       required:
@@ -10379,6 +10765,17 @@ components:
             $ref: '#/components/schemas/ColumnDetail'
         next_page_token:
           type: string
+    PaginatedColumnLineageEdges:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnLineageEdge'
+        next_page_token:
+          type: string
     PaginatedColumnMasks:
       type: object
       required:
@@ -10423,6 +10820,17 @@ components:
             $ref: '#/components/schemas/ExternalLocation'
         next_page_token:
           type: string
+    PaginatedGitRepos:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/GitRepo'
+        next_page_token:
+          type: string
     PaginatedGrants:
       type: object
       required:
@@ -10454,6 +10862,28 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Group'
+        next_page_token:
+          type: string
+    PaginatedLineageEdges:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineageEdge'
+        next_page_token:
+          type: string
+    PaginatedMacros:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Macro'
         next_page_token:
           type: string
     PaginatedPrincipals:
@@ -10522,6 +10952,17 @@ components:
             $ref: '#/components/schemas/TableDetail'
         next_page_token:
           type: string
+    PaginatedTags:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        next_page_token:
+          type: string
     PaginatedViewDetails:
       type: object
       required:
@@ -10588,6 +11029,20 @@ components:
           type: string
         granted_at:
           type: string
+    PurgeLineageRequest:
+      type: object
+      required:
+        - older_than_days
+      properties:
+        older_than_days:
+          type: integer
+          format: int32
+    PurgeLineageResponse:
+      type: object
+      properties:
+        deleted_count:
+          type: integer
+          format: int64
     QueryHistoryEntry:
       type: object
       required:
@@ -10619,6 +11074,41 @@ components:
           format: int64
         created_at:
           type: string
+    QueryJob:
+      type: object
+      required:
+        - query_id
+        - status
+        - row_count
+      properties:
+        query_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/QueryJobStatus'
+        row_count:
+          type: integer
+          format: int64
+        request_id:
+          type: string
+        error:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+    QueryJobStatus:
+      type: string
+      enum:
+        - QUEUED
+        - RUNNING
+        - SUCCEEDED
+        - FAILED
+        - CANCELED
     QueryRequest:
       type: object
       required:
@@ -10626,7 +11116,7 @@ components:
       properties:
         sql:
           type: string
-    QueryResponse:
+    QueryResult:
       type: object
       required:
         - columns
@@ -10635,6 +11125,16 @@ components:
           type: array
           items:
             type: string
+        rows:
+          type: array
+          items:
+            type: array
+            items: {}
+        row_count:
+          type: integer
+          format: int64
+        next_page_token:
+          type: string
     RevokeWebSessionsRequest:
       type: object
       required:
@@ -10731,6 +11231,16 @@ components:
           type: string
         request_id:
           type: string
+    SubmitQueryResponse:
+      type: object
+      required:
+        - query_id
+        - status
+      properties:
+        query_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/QueryJobStatus'
     TableDetail:
       type: object
       required:
@@ -10777,6 +11287,45 @@ components:
           type: string
         profiled_by:
           type: string
+    Tag:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        value:
+          type: string
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    TagAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+        tag_id:
+          type: string
+        securable_type:
+          $ref: '#/components/schemas/TagAssignmentSecurableType'
+        securable_id:
+          type: string
+        column_name:
+          type: string
+        assigned_by:
+          type: string
+        assigned_at:
+          type: string
+          format: date-time
+    TagAssignmentSecurableType:
+      type: string
+      enum:
+        - schema
+        - table
+        - column
+        - macro
     UpdateCatalogRegistrationRequest:
       type: object
       properties:
@@ -10818,6 +11367,35 @@ components:
           type: string
         read_only:
           type: boolean
+    UpdateMacroRequest:
+      type: object
+      properties:
+        body:
+          type: string
+        description:
+          type: string
+        parameters:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        catalog_name:
+          type: string
+        project_name:
+          type: string
+        visibility:
+          type: string
+        owner:
+          type: string
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
     UpdatePrincipalAdminRequest:
       type: object
       required:

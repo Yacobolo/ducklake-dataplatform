@@ -333,11 +333,10 @@ func (h *APIHandler) DeleteMacro(ctx context.Context, req GenDeleteMacroRequest)
 func macroToAPI(m domain.Macro) Macro {
 	ct := m.CreatedAt
 	ut := m.UpdatedAt
-	mt := MacroMacroType(m.MacroType)
 	resp := Macro{
 		Id:          &m.ID,
 		Name:        &m.Name,
-		MacroType:   &mt,
+		MacroType:   strPtrIfNonEmpty(m.MacroType),
 		Body:        &m.Body,
 		Description: &m.Description,
 		CreatedBy:   &m.CreatedBy,
@@ -351,8 +350,7 @@ func macroToAPI(m domain.Macro) Macro {
 		resp.ProjectName = &m.ProjectName
 	}
 	if m.Visibility != "" {
-		v := MacroVisibility(m.Visibility)
-		resp.Visibility = &v
+		resp.Visibility = &m.Visibility
 	}
 	if m.Owner != "" {
 		resp.Owner = &m.Owner
@@ -365,8 +363,7 @@ func macroToAPI(m domain.Macro) Macro {
 		resp.Tags = &m.Tags
 	}
 	if m.Status != "" {
-		s := MacroStatus(m.Status)
-		resp.Status = &s
+		resp.Status = &m.Status
 	}
 	if len(m.Parameters) > 0 {
 		resp.Parameters = &m.Parameters
@@ -391,8 +388,7 @@ func macroRevisionToAPI(r domain.MacroRevision) MacroRevision {
 		resp.Parameters = &r.Parameters
 	}
 	if r.Status != "" {
-		s := MacroRevisionStatus(r.Status)
-		resp.Status = &s
+		resp.Status = &r.Status
 	}
 	return resp
 }
@@ -423,12 +419,10 @@ func macroRevisionDiffToAPI(d domain.MacroRevisionDiff) MacroRevisionDiff {
 		resp.ToParameters = &d.ToParameters
 	}
 	if d.FromStatus != "" {
-		s := MacroRevisionDiffFromStatus(d.FromStatus)
-		resp.FromStatus = &s
+		resp.FromStatus = &d.FromStatus
 	}
 	if d.ToStatus != "" {
-		s := MacroRevisionDiffToStatus(d.ToStatus)
-		resp.ToStatus = &s
+		resp.ToStatus = &d.ToStatus
 	}
 	return resp
 }

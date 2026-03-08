@@ -2,9 +2,9 @@ using TypeSpec.OpenAPI;
 
 namespace Duck;
 
-@@extension(bootstrapComplete, "x-authz", #{ mode: "public" });
+@@extension(bootstrapComplete, "x-authz", #{ mode: "none" });
 @@extension(bootstrapComplete, "x-apigen-manual", true);
-@@extension(localLogin, "x-authz", #{ mode: "public" });
+@@extension(localLogin, "x-authz", #{ mode: "none" });
 @@extension(localLogin, "x-apigen-manual", true);
 @@extension(createBootstrapToken, "x-authz", #{ mode: "admin_only" });
 @@extension(createBootstrapToken, "x-apigen-manual", true);

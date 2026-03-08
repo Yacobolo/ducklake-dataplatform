@@ -19,6 +19,11 @@ model Created<T> {
   @body body: T;
 }
 
+model Accepted<T> {
+  @statusCode statusCode: 202;
+  @body body: T;
+}
+
 model CreatedEmpty {
   @statusCode statusCode: 201;
 }
@@ -87,8 +92,40 @@ model QueryRequest {
   sql: string;
 }
 
-model QueryResponse {
+model QueryResult {
   columns: string[];
+  rows?: unknown[][];
+  row_count?: int64;
+  next_page_token?: string;
+}
+
+enum QueryJobStatus {
+  QUEUED,
+  RUNNING,
+  SUCCEEDED,
+  FAILED,
+  CANCELED,
+}
+
+model QueryJob {
+  query_id: string;
+  status: QueryJobStatus;
+  row_count: int64;
+  request_id?: string;
+  error?: string;
+  created_at?: utcDateTime;
+  started_at?: utcDateTime;
+  completed_at?: utcDateTime;
+}
+
+model SubmitQueryResponse {
+  query_id: string;
+  status: QueryJobStatus;
+}
+
+model CancelQueryResponse {
+  query_id: string;
+  status: QueryJobStatus;
 }
 
 model Principal {
@@ -690,6 +727,235 @@ model CreateModelRequest {
 
 model GenericResponse {
   data?: Record<string>;
+}
+
+model PurgeLineageRequest {
+  older_than_days: int32;
+}
+
+model PurgeLineageResponse {
+  deleted_count?: int64;
+}
+
+enum ColumnLineageEdgeTransformType {
+  DIRECT,
+  EXPRESSION,
+}
+
+model ColumnLineageEdge {
+  id?: int64;
+  lineage_edge_id?: string;
+  target_column?: string;
+  source_schema?: string;
+  source_table?: string;
+  source_column?: string;
+  transform_type?: ColumnLineageEdgeTransformType;
+  function?: string;
+}
+
+model PaginatedColumnLineageEdges {
+  data: ColumnLineageEdge[];
+  next_page_token?: string;
+}
+
+model LineageEdge {
+  id?: string;
+  source_table?: string;
+  target_table?: string;
+  source_schema?: string;
+  target_schema?: string;
+  edge_type?: string;
+  principal_name?: string;
+  created_at?: utcDateTime;
+}
+
+model PaginatedLineageEdges {
+  data: LineageEdge[];
+  next_page_token?: string;
+}
+
+model LineageNode {
+  table_name?: string;
+  upstream?: LineageEdge[];
+  downstream?: LineageEdge[];
+}
+
+model Tag {
+  id?: string;
+  key?: string;
+  value?: string;
+  created_by?: string;
+  created_at?: utcDateTime;
+}
+
+model PaginatedTags {
+  data: Tag[];
+  next_page_token?: string;
+}
+
+model CreateTagRequest {
+  key: string;
+  value?: string;
+}
+
+enum TagAssignmentSecurableType {
+  schema,
+  table,
+  column,
+  macro,
+}
+
+model TagAssignment {
+  id?: string;
+  tag_id?: string;
+  securable_type?: TagAssignmentSecurableType;
+  securable_id?: string;
+  column_name?: string;
+  assigned_by?: string;
+  assigned_at?: utcDateTime;
+}
+
+model CreateTagAssignmentRequest {
+  securable_type: TagAssignmentSecurableType;
+  securable_id: string;
+  column_name?: string;
+}
+
+model GitRepo {
+  id?: string;
+  url?: string;
+  branch?: string;
+  path?: string;
+  owner?: string;
+  last_sync_at?: utcDateTime;
+  last_commit?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedGitRepos {
+  data: GitRepo[];
+  next_page_token?: string;
+}
+
+model CreateGitRepoRequest {
+  url: string;
+  branch: string;
+  path?: string;
+  auth_token?: string;
+}
+
+model GitSyncResult {
+  notebooks_created?: int32;
+  notebooks_updated?: int32;
+  notebooks_deleted?: int32;
+  commit_sha?: string;
+}
+
+model Macro {
+  id?: string;
+  name?: string;
+  macro_type?: string;
+  parameters?: string[];
+  body?: string;
+  description?: string;
+  catalog_name?: string;
+  project_name?: string;
+  visibility?: string;
+  owner?: string;
+  properties?: Record<string>;
+  tags?: string[];
+  status?: string;
+  created_by?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedMacros {
+  data: Macro[];
+  next_page_token?: string;
+}
+
+model CreateMacroRequest {
+  name: string;
+  body: string;
+  macro_type?: string;
+  parameters?: string[];
+  description?: string;
+  catalog_name?: string;
+  project_name?: string;
+  visibility?: string;
+  owner?: string;
+  properties?: Record<string>;
+  tags?: string[];
+  status?: string;
+}
+
+model UpdateMacroRequest {
+  body?: string;
+  description?: string;
+  parameters?: string[];
+  status?: string;
+  catalog_name?: string;
+  project_name?: string;
+  visibility?: string;
+  owner?: string;
+  properties?: Record<string>;
+  tags?: string[];
+}
+
+model MacroRevision {
+  id?: string;
+  macro_name?: string;
+  version?: int32;
+  content_hash?: string;
+  parameters?: string[];
+  body?: string;
+  description?: string;
+  status?: string;
+  created_by?: string;
+  created_at?: utcDateTime;
+}
+
+model MacroRevisionList {
+  data: MacroRevision[];
+}
+
+model MacroImpactModel {
+  target_table?: string;
+  target_schema?: string;
+  model_name?: string;
+  last_seen_at?: utcDateTime;
+}
+
+model MacroImpactList {
+  data: MacroImpactModel[];
+  next_page_token?: string;
+}
+
+model MacroRevisionDiff {
+  macro_name?: string;
+  from_version?: int32;
+  to_version?: int32;
+  from_content_hash?: string;
+  to_content_hash?: string;
+  changed?: boolean;
+  parameters_changed?: boolean;
+  body_changed?: boolean;
+  description_changed?: boolean;
+  status_changed?: boolean;
+  from_parameters?: string[];
+  to_parameters?: string[];
+  from_body?: string;
+  to_body?: string;
+  from_description?: string;
+  to_description?: string;
+  from_status?: string;
+  to_status?: string;
+  impact_changed?: boolean;
+  impacted_models_added?: MacroImpactModel[];
+  impacted_models_removed?: MacroImpactModel[];
+  impacted_models_unchanged?: MacroImpactModel[];
 }
 
 model StorageCredential {

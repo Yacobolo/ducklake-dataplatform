@@ -43,6 +43,7 @@ tasks:
     deps: [typespec:compile]
     cmds:
       - go run ./cmd/apigen all -ir api/gen/json-ir.json
+      - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1 -generate types,skip-prune -package api -o internal/api/types.gen.go api/gen/openapi.yaml
     sources:
       - api/gen/json-ir.json
       - cmd/apigen/**/*.go
@@ -209,6 +210,7 @@ tasks:
 
   lint:go:
     desc: Run Go linters
+    deps: [generate:api]
     cmds:
       - golangci-lint run
 

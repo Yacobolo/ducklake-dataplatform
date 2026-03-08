@@ -258,14 +258,13 @@ func searchResultToAPI(r domain.SearchResult) SearchResult {
 
 func lineageEdgeToAPI(e domain.LineageEdge) LineageEdge {
 	t := e.CreatedAt
-	et := LineageEdgeEdgeType(e.EdgeType)
 	return LineageEdge{
 		Id:            &e.ID,
 		SourceTable:   &e.SourceTable,
 		TargetTable:   e.TargetTable,
 		SourceSchema:  strPtrIfNonEmpty(e.SourceSchema),
 		TargetSchema:  strPtrIfNonEmpty(e.TargetSchema),
-		EdgeType:      &et,
+		EdgeType:      strPtrIfNonEmpty(e.EdgeType),
 		PrincipalName: &e.PrincipalName,
 		CreatedAt:     &t,
 	}
