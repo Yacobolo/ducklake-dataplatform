@@ -23,7 +23,7 @@ type computeEndpointService interface {
 // === Compute Endpoints ===
 
 // ListComputeEndpoints implements the endpoint for listing all compute endpoints.
-func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req ListComputeEndpointsRequestObject) (ListComputeEndpointsResponseObject, error) {
+func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req GenListComputeEndpointsRequest) (GenListComputeEndpointsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	principal := principalFromCtx(ctx)
 	eps, total, err := h.computeEndpoints.List(ctx, principal, page)
@@ -36,14 +36,14 @@ func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req ListComputeEn
 		data[i] = computeEndpointToAPI(ep)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListComputeEndpoints200JSONResponse{
-		Body:    PaginatedComputeEndpoints{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListComputeEndpoints200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListComputeEndpoints200JSONResponse{
+		Body:    PaginatedComputeEndpoints{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListComputeEndpoints200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateComputeEndpoint implements the endpoint for creating a new compute endpoint.
-func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req CreateComputeEndpointRequestObject) (CreateComputeEndpointResponseObject, error) {
+func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req GenCreateComputeEndpointRequest) (GenCreateComputeEndpointResponse, error) {
 	domReq := domain.CreateComputeEndpointRequest{
 		Name: req.Body.Name,
 		URL:  req.Body.Url,
@@ -53,7 +53,7 @@ func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req CreateComput
 		domReq.Size = string(*req.Body.Size)
 	}
 	if req.Body.MaxMemoryGb != nil {
-		domReq.MaxMemoryGB = req.Body.MaxMemoryGb
+		domReq.MaxMemoryGB = int32PtrToInt64Ptr(req.Body.MaxMemoryGb)
 	}
 	if req.Body.AuthToken != nil {
 		domReq.AuthToken = *req.Body.AuthToken
@@ -74,35 +74,35 @@ func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req CreateComput
 			return CreateComputeEndpoint400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateComputeEndpoint201JSONResponse{
+	return GenCreateComputeEndpoint201JSONResponse{
 		Body:    computeEndpointToAPI(*result),
-		Headers: CreateComputeEndpoint201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateComputeEndpoint201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetComputeEndpoint implements the endpoint for retrieving a compute endpoint by name.
-func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GetComputeEndpointRequestObject) (GetComputeEndpointResponseObject, error) {
+func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GenGetComputeEndpointRequest) (GenGetComputeEndpointResponse, error) {
 	principal := principalFromCtx(ctx)
 	result, err := h.computeEndpoints.GetByName(ctx, principal, req.EndpointName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetComputeEndpoint404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetComputeEndpoint404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetComputeEndpoint200JSONResponse{
+	return GenGetComputeEndpoint200JSONResponse{
 		Body:    computeEndpointToAPI(*result),
-		Headers: GetComputeEndpoint200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetComputeEndpoint200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateComputeEndpoint implements the endpoint for updating a compute endpoint.
-func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req UpdateComputeEndpointRequestObject) (UpdateComputeEndpointResponseObject, error) {
+func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req GenUpdateComputeEndpointRequest) (GenUpdateComputeEndpointResponse, error) {
 	domReq := domain.UpdateComputeEndpointRequest{
 		URL:         req.Body.Url,
-		MaxMemoryGB: req.Body.MaxMemoryGb,
+		MaxMemoryGB: int32PtrToInt64Ptr(req.Body.MaxMemoryGb),
 		AuthToken:   req.Body.AuthToken,
 	}
 	if req.Body.Size != nil {
@@ -127,14 +127,14 @@ func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req UpdateComput
 			return nil, err
 		}
 	}
-	return UpdateComputeEndpoint200JSONResponse{
+	return GenUpdateComputeEndpoint200JSONResponse{
 		Body:    computeEndpointToAPI(*result),
-		Headers: UpdateComputeEndpoint200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateComputeEndpoint200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteComputeEndpoint implements the endpoint for deleting a compute endpoint.
-func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req DeleteComputeEndpointRequestObject) (DeleteComputeEndpointResponseObject, error) {
+func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req GenDeleteComputeEndpointRequest) (GenDeleteComputeEndpointResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.computeEndpoints.Delete(ctx, principal, req.EndpointName); err != nil {
@@ -147,18 +147,18 @@ func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req DeleteComput
 			return nil, err
 		}
 	}
-	return DeleteComputeEndpoint204Response{}, nil
+	return GenDeleteComputeEndpoint204Response{}, nil
 }
 
 // ListComputeAssignments implements the endpoint for listing assignments for a compute endpoint.
-func (h *APIHandler) ListComputeAssignments(ctx context.Context, req ListComputeAssignmentsRequestObject) (ListComputeAssignmentsResponseObject, error) {
+func (h *APIHandler) ListComputeAssignments(ctx context.Context, req GenListComputeAssignmentsRequest) (GenListComputeAssignmentsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	principal := principalFromCtx(ctx)
 	assignments, total, err := h.computeEndpoints.ListAssignments(ctx, principal, req.EndpointName, page)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListComputeAssignments404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenListComputeAssignments404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -169,14 +169,14 @@ func (h *APIHandler) ListComputeAssignments(ctx context.Context, req ListCompute
 		data[i] = computeAssignmentToAPI(a)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListComputeAssignments200JSONResponse{
-		Body:    PaginatedComputeAssignments{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListComputeAssignments200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListComputeAssignments200JSONResponse{
+		Body:    PaginatedComputeAssignments{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListComputeAssignments200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateComputeAssignment implements the endpoint for assigning a principal to a compute endpoint.
-func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req CreateComputeAssignmentRequestObject) (CreateComputeAssignmentResponseObject, error) {
+func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req GenCreateComputeAssignmentRequest) (GenCreateComputeAssignmentResponse, error) {
 	domReq := domain.CreateComputeAssignmentRequest{
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: string(req.Body.PrincipalType),
@@ -203,14 +203,14 @@ func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req CreateComp
 			return CreateComputeAssignment400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateComputeAssignment201JSONResponse{
+	return GenCreateComputeAssignment201JSONResponse{
 		Body:    computeAssignmentToAPI(*result),
-		Headers: CreateComputeAssignment201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateComputeAssignment201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetComputeEndpointHealth implements the endpoint for checking compute endpoint health.
-func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComputeEndpointHealthRequestObject) (GetComputeEndpointHealthResponseObject, error) {
+func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GenGetComputeEndpointHealthRequest) (GenGetComputeEndpointHealthResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
@@ -220,9 +220,9 @@ func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComput
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return GetComputeEndpointHealth403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetComputeEndpointHealth404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetComputeEndpointHealth404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
-			return GetComputeEndpointHealth502JSONResponse{Body: Error{Code: 502, Message: err.Error()}, Headers: GetComputeEndpointHealth502ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+			return GetComputeEndpointHealth502JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 502, Message: err.Error()}, Headers: GetComputeEndpointHealth502ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
 
@@ -241,7 +241,7 @@ func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComput
 		v := safeIntToInt32(*result.MaxMemoryGb)
 		maxMemoryGb = &v
 	}
-	return GetComputeEndpointHealth200JSONResponse{
+	return GenGetComputeEndpointHealth200JSONResponse{
 		Body: ComputeEndpointHealth{
 			Status:        result.Status,
 			UptimeSeconds: uptimeSeconds,
@@ -250,12 +250,12 @@ func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GetComput
 			MaxMemoryGb:   maxMemoryGb,
 			EndpointName:  &req.EndpointName,
 		},
-		Headers: GetComputeEndpointHealth200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetComputeEndpointHealth200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteComputeAssignment implements the endpoint for removing a compute assignment.
-func (h *APIHandler) DeleteComputeAssignment(ctx context.Context, req DeleteComputeAssignmentRequestObject) (DeleteComputeAssignmentResponseObject, error) {
+func (h *APIHandler) DeleteComputeAssignment(ctx context.Context, req GenDeleteComputeAssignmentRequest) (GenDeleteComputeAssignmentResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.computeEndpoints.Unassign(ctx, principal, req.AssignmentId); err != nil {
@@ -268,7 +268,7 @@ func (h *APIHandler) DeleteComputeAssignment(ctx context.Context, req DeleteComp
 			return nil, err
 		}
 	}
-	return DeleteComputeAssignment204Response{}, nil
+	return GenDeleteComputeAssignment204Response{}, nil
 }
 
 // === Compute Endpoint Mappers ===
@@ -288,15 +288,15 @@ func computeEndpointToAPI(ep domain.ComputeEndpoint) ComputeEndpoint {
 		Type:       &t,
 		Status:     &st,
 		Owner:      &ep.Owner,
-		CreatedAt:  &ct,
-		UpdatedAt:  &ut,
+		CreatedAt:  formatTimePtr(&ct),
+		UpdatedAt:  formatTimePtr(&ut),
 	}
 	if ep.Size != "" {
 		s := ComputeEndpointSize(ep.Size)
 		resp.Size = &s
 	}
 	if ep.MaxMemoryGB != nil {
-		resp.MaxMemoryGb = ep.MaxMemoryGB
+		resp.MaxMemoryGb = safeInt64ToInt32Ptr(ep.MaxMemoryGB)
 	}
 	return resp
 }
@@ -312,6 +312,6 @@ func computeAssignmentToAPI(a domain.ComputeAssignment) ComputeAssignment {
 		EndpointName:  optStr(a.EndpointName),
 		IsDefault:     &a.IsDefault,
 		FallbackLocal: &a.FallbackLocal,
-		CreatedAt:     &ct,
+		CreatedAt:     formatTimePtr(&ct),
 	}
 }

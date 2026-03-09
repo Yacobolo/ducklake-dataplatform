@@ -44,7 +44,7 @@ task docs:generate
 task docs:check
 ```
 
-Generated reference lives under `docs/reference/generated` and should not be edited by hand.
+Generated reference lives under `docs/reference/generated` and is derived from `api/gen/openapi.yaml` and the declarative schema artifacts.
 
 ## Examples
 
@@ -58,3 +58,22 @@ Start with the MovieLens showcase:
 - Interactive server docs: `GET /docs`
 - OpenAPI spec: `GET /openapi.json`
 - Health check: `GET /healthz`
+
+```
+cmd/server/             -- HTTP server entry point
+cmd/compute-agent/      -- Remote compute agent binary
+cmd/cli/                -- CLI client
+internal/api/           -- HTTP handlers and APIGen-generated transport glue
+internal/service/       -- Business logic (depends on domain interfaces only)
+internal/domain/        -- Types, interfaces, errors (zero external deps)
+internal/db/repository/ -- Implements domain repository interfaces
+internal/db/dbstore/    -- sqlc-generated code (do not edit)
+internal/db/migrations/ -- Goose SQL migrations
+internal/engine/        -- SecureEngine (DuckDB + RBAC + RLS + column masking)
+internal/sqlrewrite/    -- SQL parsing/rewriting via pg_query_go
+internal/middleware/    -- JWT, API key, rate limiting, request-ID, CORS
+internal/config/        -- Environment-based configuration
+extension/duck_access/  -- C++ DuckDB client extension
+```
+
+Dependency direction: `api` -> `service` -> `domain` <- `repository`. Never import upward.

@@ -7,10 +7,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
-func newExportCmd(client *gen.Client) *cobra.Command {
+func newExportCmd(client *apiruntime.Client) *cobra.Command {
 	var (
 		configDir string
 		overwrite bool
@@ -37,7 +37,7 @@ func newExportCmd(client *gen.Client) *cobra.Command {
 			}
 
 			if isJSON {
-				return gen.PrintJSON(os.Stdout, map[string]string{
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{
 					"status": "ok",
 					"path":   configDir,
 				})

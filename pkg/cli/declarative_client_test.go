@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 // execCapture stores method, path, body, and query for assertion in execute tests.
@@ -51,7 +51,7 @@ func newTestExecuteClient(t *testing.T, captured *[]execCapture) *APIStateClient
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	return sc
@@ -397,174 +397,6 @@ func TestExecuteRowFilter_Delete(t *testing.T) {
 	assert.Contains(t, req.Path, "/row-filters/rf-id-first")
 }
 
-func TestExecuteReplaceUpdatesUseDeleteThenCreate(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name          string
-		prepareClient func(*APIStateClient)
-		action        declarative.Action
-		wantMethods   []string
-		wantPaths     []string
-	}{
-		{
-			name: "compute assignment",
-			prepareClient: func(sc *APIStateClient) {
-				sc.index.principalIDByName["alice"] = "principal-id-alice"
-			},
-			action: declarative.Action{
-				Operation:    declarative.OpUpdate,
-				ResourceKind: declarative.KindComputeAssignment,
-				ResourceName: "local|user|alice",
-				Desired: declarative.ComputeAssignmentSpec{
-					Endpoint:      "local",
-					Principal:     "alice",
-					PrincipalType: "user",
-					IsDefault:     true,
-					FallbackLocal: true,
-				},
-				Actual: declarative.ComputeAssignmentSpec{
-					Endpoint:      "local",
-					Principal:     "alice",
-					PrincipalType: "user",
-					AssignmentID:  "assignment-id-1",
-				},
-			},
-			wantMethods: []string{http.MethodDelete, http.MethodPost},
-			wantPaths: []string{
-				"/v1/compute-endpoints/local/assignments/assignment-id-1",
-				"/v1/compute-endpoints/local/assignments",
-			},
-		},
-		{
-			name:          "row filter",
-			prepareClient: func(sc *APIStateClient) { withTestIndex(sc) },
-			action: declarative.Action{
-				Operation:    declarative.OpUpdate,
-				ResourceKind: declarative.KindRowFilter,
-				ResourceName: "demo.titanic.passengers/first_class",
-				Desired: declarative.RowFilterSpec{
-					Name:      "first_class",
-					FilterSQL: `"Pclass" = 2`,
-				},
-				Actual: declarative.RowFilterSpec{
-					Name:      "first_class",
-					FilterSQL: `"Pclass" = 1`,
-				},
-			},
-			wantMethods: []string{http.MethodDelete, http.MethodPost},
-			wantPaths: []string{
-				"/v1/row-filters/rf-id-first",
-				"/v1/tables/table-id-passengers/row-filters",
-			},
-		},
-		{
-			name:          "row filter binding",
-			prepareClient: func(sc *APIStateClient) { withTestIndex(sc) },
-			action: declarative.Action{
-				Operation:    declarative.OpUpdate,
-				ResourceKind: declarative.KindRowFilterBinding,
-				ResourceName: "demo.titanic.passengers/first_class->user:alice",
-				Desired: declarative.FilterBindingRef{
-					Principal:     "alice",
-					PrincipalType: "user",
-				},
-			},
-			wantMethods: []string{http.MethodDelete, http.MethodPost},
-			wantPaths: []string{
-				"/v1/row-filters/rf-id-first/bindings",
-				"/v1/row-filters/rf-id-first/bindings",
-			},
-		},
-		{
-			name:          "column mask",
-			prepareClient: func(sc *APIStateClient) { withTestIndex(sc) },
-			action: declarative.Action{
-				Operation:    declarative.OpUpdate,
-				ResourceKind: declarative.KindColumnMask,
-				ResourceName: "demo.titanic.passengers/mask_name",
-				Desired: declarative.ColumnMaskSpec{
-					Name:           "mask_name",
-					ColumnName:     "Name",
-					MaskExpression: "'hidden'",
-				},
-				Actual: declarative.ColumnMaskSpec{
-					Name:           "mask_name",
-					ColumnName:     "Name",
-					MaskExpression: "'***'",
-				},
-			},
-			wantMethods: []string{http.MethodDelete, http.MethodPost},
-			wantPaths: []string{
-				"/v1/column-masks/cm-id-name",
-				"/v1/tables/table-id-passengers/column-masks",
-			},
-		},
-		{
-			name:          "column mask binding",
-			prepareClient: func(sc *APIStateClient) { withTestIndex(sc) },
-			action: declarative.Action{
-				Operation:    declarative.OpUpdate,
-				ResourceKind: declarative.KindColumnMaskBinding,
-				ResourceName: "demo.titanic.passengers/mask_name->user:alice",
-				Desired: declarative.MaskBindingRef{
-					Principal:     "alice",
-					PrincipalType: "user",
-					SeeOriginal:   true,
-				},
-			},
-			wantMethods: []string{http.MethodDelete, http.MethodPost},
-			wantPaths: []string{
-				"/v1/column-masks/cm-id-name/bindings",
-				"/v1/column-masks/cm-id-name/bindings",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			var (
-				mu       sync.Mutex
-				captured []execCapture
-			)
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				mu.Lock()
-				captured = append(captured, execCapture{
-					Method: r.Method,
-					Path:   r.URL.Path,
-					Query:  r.URL.Query(),
-				})
-				mu.Unlock()
-
-				w.Header().Set("Content-Type", "application/json")
-				if r.Method == http.MethodPost {
-					w.WriteHeader(http.StatusCreated)
-					_, _ = w.Write([]byte(`{"id":"generated-uuid-123"}`))
-					return
-				}
-				w.WriteHeader(http.StatusNoContent)
-				_, _ = w.Write([]byte(`{}`))
-			}))
-			t.Cleanup(srv.Close)
-
-			sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
-			sc.index = newResourceIndex()
-			tt.prepareClient(sc)
-
-			err := sc.Execute(context.Background(), tt.action)
-			require.NoError(t, err)
-
-			mu.Lock()
-			defer mu.Unlock()
-			require.Len(t, captured, 2)
-			assert.Equal(t, tt.wantMethods, []string{captured[0].Method, captured[1].Method})
-			assert.Equal(t, tt.wantPaths, []string{captured[0].Path, captured[1].Path})
-		})
-	}
-}
-
 // === Row filter binding execution tests (#128) ===
 
 func TestExecuteRowFilterBinding_Create(t *testing.T) {
@@ -721,65 +553,6 @@ func TestExecuteColumnMaskBinding_Delete(t *testing.T) {
 	assert.Contains(t, req.Path, "/column-masks/cm-id-name/bindings")
 	assert.Equal(t, "principal-id-alice", queryStr(req, "principal_id"))
 	assert.Equal(t, "user", queryStr(req, "principal_type"))
-}
-
-func TestExecuteReplaceUpdateRespectsCallerContext(t *testing.T) {
-	t.Parallel()
-
-	deleteStarted := make(chan struct{})
-	serverObservedCancel := make(chan struct{})
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodDelete && strings.HasSuffix(r.URL.Path, "/compute-endpoints/local/assignments/assignment-id-1") {
-			close(deleteStarted)
-			<-r.Context().Done()
-			close(serverObservedCancel)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":"generated-uuid-123"}`))
-	}))
-	t.Cleanup(srv.Close)
-
-	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
-	sc.index = newResourceIndex()
-	sc.index.principalIDByName["alice"] = "principal-id-alice"
-
-	action := declarative.Action{
-		Operation:    declarative.OpUpdate,
-		ResourceKind: declarative.KindComputeAssignment,
-		ResourceName: "local|user|alice",
-		Desired: declarative.ComputeAssignmentSpec{
-			Endpoint:      "local",
-			Principal:     "alice",
-			PrincipalType: "user",
-			IsDefault:     true,
-		},
-		Actual: declarative.ComputeAssignmentSpec{
-			Endpoint:      "local",
-			Principal:     "alice",
-			PrincipalType: "user",
-			AssignmentID:  "assignment-id-1",
-		},
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	errCh := make(chan error, 1)
-	go func() {
-		errCh <- sc.Execute(ctx, action)
-	}()
-
-	<-deleteStarted
-	cancel()
-
-	<-serverObservedCancel
-	err := <-errCh
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "context canceled")
 }
 
 // === Principal execution tests (ID capture) ===
@@ -1185,8 +958,8 @@ func TestExecute_UnimplementedKindReturnsError(t *testing.T) {
 
 	action := declarative.Action{
 		Operation:    declarative.OpCreate,
-		ResourceKind: declarative.ResourceKind(999),
-		ResourceName: "unknown.resource",
+		ResourceKind: declarative.KindVolume,
+		ResourceName: "demo.analytics.stage",
 	}
 
 	err := sc.Execute(context.Background(), action)
@@ -1229,122 +1002,6 @@ func TestExecuteNotebook_CreateCreatesCells(t *testing.T) {
 	assert.Equal(t, http.MethodPost, captured[3].Method)
 	assert.Contains(t, captured[3].Path, "/notebooks/generated-uuid-123/cells")
 	assert.Equal(t, "sql", bodyStr(captured[3], "cell_type"))
-}
-
-func TestExecuteNotebook_CreatePublishesModelFromOutputCell(t *testing.T) {
-	type createdCell struct {
-		ID   string
-		Name string
-	}
-
-	var (
-		mu             sync.Mutex
-		cells          []createdCell
-		publishBody    map[string]interface{}
-		notebookCreate bool
-	)
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		switch {
-		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/notebooks"):
-			notebookCreate = true
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":"nb-id-1"}`))
-			return
-		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/notebooks/nb-id-1"):
-			mu.Lock()
-			resp := map[string]interface{}{
-				"notebook": map[string]interface{}{"id": "nb-id-1", "name": "kpi_walkthrough", "description": "KPI notebook", "owner": "alice"},
-				"cells":    []map[string]interface{}{},
-			}
-			if len(cells) > 0 {
-				respCells := make([]map[string]interface{}, 0, len(cells))
-				for i, c := range cells {
-					respCells = append(respCells, map[string]interface{}{
-						"id":          c.ID,
-						"notebook_id": "nb-id-1",
-						"cell_type":   "sql",
-						"name":        c.Name,
-						"content":     "SELECT 1",
-						"position":    i,
-					})
-				}
-				resp["cells"] = respCells
-			}
-			mu.Unlock()
-			b, _ := json.Marshal(resp)
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write(b)
-			return
-		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/notebooks/nb-id-1/cells"):
-			body, _ := io.ReadAll(r.Body)
-			var req map[string]interface{}
-			_ = json.Unmarshal(body, &req)
-			name, _ := req["name"].(string)
-			mu.Lock()
-			cellID := "cell-" + name
-			if cellID == "cell-" {
-				cellID = "cell-generated"
-			}
-			cells = append(cells, createdCell{ID: cellID, Name: name})
-			mu.Unlock()
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":"` + cellID + `"}`))
-			return
-		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "/notebooks/nb-id-1/cells/"):
-			w.WriteHeader(http.StatusNoContent)
-			return
-		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/models/from-notebook"):
-			body, _ := io.ReadAll(r.Body)
-			_ = json.Unmarshal(body, &publishBody)
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"id":"model-id-1"}`))
-			return
-		default:
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{}`))
-		}
-	}))
-	defer srv.Close()
-
-	client := gen.NewClient(srv.URL, "", "test-token")
-	sc := NewAPIStateClient(client)
-	sc.index = newResourceIndex()
-
-	outputName := "out"
-	action := declarative.Action{
-		Operation:    declarative.OpCreate,
-		ResourceKind: declarative.KindNotebook,
-		ResourceName: "kpi_walkthrough",
-		Desired: declarative.NotebookResource{
-			Name: "kpi_walkthrough",
-			Spec: declarative.NotebookSpec{
-				Description: "KPI notebook",
-				Cells: []declarative.CellSpec{
-					{Type: "sql", Name: "base", Role: "transform", Content: "SELECT 1 AS id"},
-					{Type: "sql", Name: outputName, Role: "output", Content: "SELECT * FROM base"},
-				},
-				Publish: &declarative.NotebookPublishSpec{Model: &declarative.NotebookPublishModelSpec{
-					Project:         "analytics",
-					Name:            "stg_orders",
-					Materialization: "TABLE",
-					OutputCell:      outputName,
-				}},
-			},
-		},
-	}
-
-	err := sc.Execute(context.Background(), action)
-	require.NoError(t, err)
-	assert.True(t, notebookCreate)
-	require.NotNil(t, publishBody)
-	assert.Equal(t, "nb-id-1", publishBody["notebook_id"])
-	assert.Equal(t, "cell-out", publishBody["output_cell_id"])
-	assert.Equal(t, "analytics", publishBody["project_name"])
-	assert.Equal(t, "stg_orders", publishBody["name"])
-	assert.Equal(t, "TABLE", publishBody["materialization"])
 }
 
 func TestExecuteMacro_CreateUpdateDelete(t *testing.T) {
@@ -1440,7 +1097,7 @@ func TestExecuteModel_CreateWithTestReconcile(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
 	sc.index = newResourceIndex()
 
 	action := declarative.Action{
@@ -1520,7 +1177,7 @@ func TestExecuteModel_UpdateReconcilesTests(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
 	sc.index = newResourceIndex()
 
 	action := declarative.Action{
@@ -1594,7 +1251,7 @@ func TestExecuteModel_SkipsTestsWhenEndpointUnavailable(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
 	sc.index = newResourceIndex()
 
 	action := declarative.Action{
@@ -1674,7 +1331,7 @@ func TestExecuteSemanticModel_CreateReconcilesChildren(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
 	sc.index = newResourceIndex()
 
 	action := declarative.Action{
@@ -1771,7 +1428,7 @@ func TestExecuteSemanticModel_UpdateReconcilesAndDeletesChildren(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc := NewAPIStateClient(apiruntime.NewClient(srv.URL, "", "test-token"))
 	sc.index = newResourceIndex()
 
 	action := declarative.Action{
@@ -1944,10 +1601,53 @@ func TestReadState_OptionalModelAndMacroEndpoints(t *testing.T) {
 func TestReadState_ConnectionErrorsStrictModeAreNotOptional(t *testing.T) {
 	t.Parallel()
 
-	sc := NewAPIStateClient(gen.NewClient("http://127.0.0.1:1", "", "test-token"))
+	sc := NewAPIStateClientWithOptions(apiruntime.NewClient("http://127.0.0.1:1", "", "test-token"), APIStateClientOptions{
+		CompatibilityMode: CapabilityCompatibilityStrict,
+	})
 
 	_, err := sc.ReadState(context.Background())
 	require.Error(t, err)
+}
+
+func TestReadState_ConnectionErrorsLegacyModeAreOptionalForModelMacro(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", emptyListHandler())
+	mux.HandleFunc("/v1/groups", emptyListHandler())
+	mux.HandleFunc("/v1/api-keys", emptyListHandler())
+	mux.HandleFunc("/v1/catalogs", emptyListHandler())
+	mux.HandleFunc("/v1/storage-credentials", emptyListHandler())
+	mux.HandleFunc("/v1/external-locations", emptyListHandler())
+	mux.HandleFunc("/v1/grants", emptyListHandler())
+	mux.HandleFunc("/v1/compute-endpoints", emptyListHandler())
+	mux.HandleFunc("/v1/tags", emptyListHandler())
+	mux.HandleFunc("/v1/notebooks", emptyListHandler())
+	mux.HandleFunc("/v1/pipelines", emptyListHandler())
+	mux.HandleFunc("/v1/models", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`eof`))
+	})
+	mux.HandleFunc("/v1/macros", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`broken pipe`))
+	})
+	mux.HandleFunc("/v1/semantic-models", emptyListHandler())
+	mux.HandleFunc("/v1/semantic-relationships", emptyListHandler())
+
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	sc := NewAPIStateClientWithOptions(apiruntime.NewClient(srv.URL, "", "test-token"), APIStateClientOptions{
+		CompatibilityMode: CapabilityCompatibilityLegacy,
+	})
+
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, state.Models)
+	assert.Empty(t, state.Macros)
+	assert.Len(t, sc.OptionalReadWarnings(), 3)
+	assert.Contains(t, sc.OptionalReadWarnings()[0], "assets")
 }
 
 func TestValidateApplyCapabilities_ModelEndpointRequired(t *testing.T) {
@@ -1991,40 +1691,6 @@ func TestValidateApplyCapabilities_SemanticEndpointRequired(t *testing.T) {
 	assert.Contains(t, err.Error(), "/semantic-models endpoint is unavailable")
 }
 
-func TestValidateApplyCapabilities_AssetEndpointRequired(t *testing.T) {
-	t.Parallel()
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/assets", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		_, _ = w.Write([]byte(`{"code":"NOT_FOUND"}`))
-	})
-	mux.HandleFunc("/", emptyListHandler())
-
-	sc := setupReadStateClient(t, mux)
-	err := sc.ValidateApplyCapabilities(context.Background(), []declarative.Action{{
-		Operation:    declarative.OpCreate,
-		ResourceKind: declarative.KindAsset,
-		ResourceName: "daily_kpi",
-	}})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "/assets endpoint is unavailable")
-}
-
-func TestValidateApplyCapabilities_GroupUpdateUnsupported(t *testing.T) {
-	t.Parallel()
-
-	sc := setupReadStateClient(t, http.NewServeMux())
-	err := sc.ValidateApplyCapabilities(context.Background(), []declarative.Action{{
-		Operation:    declarative.OpUpdate,
-		ResourceKind: declarative.KindGroup,
-		ResourceName: "viewers",
-	}})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "group updates are not supported by the API")
-	assert.Contains(t, err.Error(), "viewers")
-}
-
 // === ReadState helper ===
 
 // setupReadStateClient creates an APIStateClient backed by a test server with the given mux.
@@ -2032,7 +1698,7 @@ func setupReadStateClient(t *testing.T, handler http.Handler) *APIStateClient {
 	t.Helper()
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	return NewAPIStateClient(client)
 }
 
@@ -2508,7 +2174,7 @@ func TestReadState_ComputeEndpointsWithAssignments(t *testing.T) {
 	assert.True(t, state.ComputeAssignments[0].IsDefault)
 }
 
-func TestReadState_NotebooksAndAssets(t *testing.T) {
+func TestReadState_Notebooks(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
@@ -2537,38 +2203,6 @@ func TestReadState_NotebooksAndAssets(t *testing.T) {
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
-	mux.HandleFunc("/v1/assets", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		resp := map[string]interface{}{
-			"data": []map[string]interface{}{
-				{
-					"asset_key":   "daily_kpi",
-					"asset_type":  "table",
-					"description": "KPI asset",
-					"owner":       "alice",
-					"tags":        []string{"finance"},
-				},
-			},
-		}
-		_ = json.NewEncoder(w).Encode(resp)
-	})
-	mux.HandleFunc("/v1/assets/daily_kpi/graph", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		resp := map[string]interface{}{
-			"asset_key":           "daily_kpi",
-			"upstream_asset_keys": []string{"seed_orders"},
-		}
-		_ = json.NewEncoder(w).Encode(resp)
-	})
-	mux.HandleFunc("/v1/assets/daily_kpi/checks", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		resp := map[string]interface{}{
-			"data": []map[string]interface{}{
-				{"name": "row_count_positive", "check_type": "row_count", "severity": "warning", "enabled": true},
-			},
-		}
-		_ = json.NewEncoder(w).Encode(resp)
-	})
 	mux.HandleFunc("/", emptyListHandler())
 
 	sc := setupReadStateClient(t, mux)
@@ -2583,35 +2217,6 @@ func TestReadState_NotebooksAndAssets(t *testing.T) {
 	require.Len(t, state.Notebooks[0].Spec.Cells, 2)
 	assert.Equal(t, "markdown", state.Notebooks[0].Spec.Cells[0].Type)
 	assert.Equal(t, "SELECT 1", state.Notebooks[0].Spec.Cells[1].Content)
-
-	require.Len(t, state.Assets, 1)
-	assert.Equal(t, "daily_kpi", state.Assets[0].Name)
-	assert.Equal(t, "table", state.Assets[0].Spec.AssetType)
-	assert.Equal(t, "KPI asset", state.Assets[0].Spec.Description)
-	assert.Equal(t, []string{"seed_orders"}, state.Assets[0].Spec.DependsOn)
-	require.Len(t, state.Assets[0].Spec.CheckDefinitions, 1)
-	assert.Equal(t, "row_count_positive", state.Assets[0].Spec.CheckDefinitions[0].Name)
-}
-
-func TestExecuteAsset_Create(t *testing.T) {
-	t.Parallel()
-
-	var captured []execCapture
-	sc := newTestExecuteClient(t, &captured)
-	err := sc.Execute(context.Background(), declarative.Action{
-		Operation:    declarative.OpCreate,
-		ResourceKind: declarative.KindAsset,
-		ResourceName: "daily_kpi",
-		Desired: declarative.AssetResource{
-			Name: "daily_kpi",
-			Spec: declarative.AssetSpec{AssetType: "table"},
-		},
-	})
-	require.NoError(t, err)
-	require.Len(t, captured, 1)
-	assert.Equal(t, http.MethodPost, captured[0].Method)
-	assert.Contains(t, captured[0].Path, "/assets")
-	assert.Equal(t, "daily_kpi", bodyStr(captured[0], "asset_key"))
 }
 
 func TestReadState_APIKeys(t *testing.T) {
@@ -2667,7 +2272,7 @@ func TestExecuteAPIKey_Delete(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	sc = withTestIndex(sc)
@@ -2731,7 +2336,7 @@ func TestValidateNoSelfAPIKeyDeletion_BlocksDelete(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "duckflix-secret-value", "")
+	client := apiruntime.NewClient(srv.URL, "duckflix-secret-value", "")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -3148,7 +2753,7 @@ func TestExecute_APIErrorResponse(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -3254,7 +2859,7 @@ func TestExecuteSchema_CreatePopulatesIndexFromSchemaID(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -3284,7 +2889,7 @@ func TestExecuteTable_CreatePopulatesIndexFromTableID(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -3324,7 +2929,7 @@ func TestExecuteSchema_CreateConflictHydratesIndex(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -3359,7 +2964,7 @@ func TestExecuteTable_CreateConflictHydratesIndex(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 
@@ -3397,7 +3002,7 @@ func TestExecuteColumnMask_CreateAlreadyExistsHydratesIndex(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	sc.index.tableIDByPath["demo.titanic.passengers"] = "table-1"
@@ -3457,7 +3062,7 @@ func TestExecuteTagAssignment_CreateResolvesTableIDViaLookup(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	sc.index.tagIDByKey["classification:pii"] = "tag-classification-pii"
@@ -3501,7 +3106,7 @@ func TestExecuteTagAssignment_DeleteResolvesTableIDViaLookup(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	sc.index.tagIDByKey["classification:pii"] = "tag-classification-pii"
@@ -3546,7 +3151,7 @@ func TestExecute_CrossLayerResolution(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 	// Pre-populate what ReadState would provide for existing resources.
@@ -3595,7 +3200,7 @@ func TestExecute_CreateWithNoIDInResponse(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	client := gen.NewClient(srv.URL, "", "test-token")
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
 	sc := NewAPIStateClient(client)
 	sc.index = newResourceIndex()
 

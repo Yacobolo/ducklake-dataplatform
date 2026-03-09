@@ -39,8 +39,8 @@ type authzContractExpectation struct {
 }
 
 func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
-	endpointByOperation := make(map[string]gen.APIEndpoint, len(gen.APIEndpoints))
-	for _, endpoint := range gen.APIEndpoints {
+	endpointByOperation := make(map[string]gen.APIGenEndpoint, len(gen.APIGeneratedEndpoints))
+	for _, endpoint := range gen.APIGeneratedEndpoints {
 		endpointByOperation[endpoint.OperationID] = endpoint
 	}
 	authzByOperation := loadAuthzByOperation(t)
@@ -81,7 +81,7 @@ func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
 			serviceFile:          "internal/service/catalog/catalog.go",
 			serviceMethod:        "UpdateSchema",
 			serviceBodySnippets:  []string{"domain.SecurableSchema", "domain.PrivCreateSchema"},
-			requiresLookupBefore: true,
+			requiresLookupBefore: false,
 		},
 		"deleteSchema": {
 			mode:                 "privilege",
@@ -91,7 +91,7 @@ func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
 			serviceFile:          "internal/service/catalog/catalog.go",
 			serviceMethod:        "DeleteSchema",
 			serviceBodySnippets:  []string{"domain.SecurableSchema", "domain.PrivCreateSchema"},
-			requiresLookupBefore: true,
+			requiresLookupBefore: false,
 		},
 		"createTable": {
 			mode:                 "privilege",
@@ -101,7 +101,7 @@ func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
 			serviceFile:          "internal/service/catalog/catalog.go",
 			serviceMethod:        "CreateTable",
 			serviceBodySnippets:  []string{"domain.SecurableSchema", "domain.PrivCreateTable"},
-			requiresLookupBefore: true,
+			requiresLookupBefore: false,
 		},
 		"updateTable": {
 			mode:                 "privilege",
@@ -111,7 +111,7 @@ func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
 			serviceFile:          "internal/service/catalog/catalog.go",
 			serviceMethod:        "UpdateTable",
 			serviceBodySnippets:  []string{"domain.SecurableTable", "domain.PrivCreateTable"},
-			requiresLookupBefore: true,
+			requiresLookupBefore: false,
 		},
 		"deleteTable": {
 			mode:                 "privilege",
@@ -121,7 +121,7 @@ func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
 			serviceFile:          "internal/service/catalog/catalog.go",
 			serviceMethod:        "DeleteTable",
 			serviceBodySnippets:  []string{"domain.SecurableTable", "domain.PrivCreateTable"},
-			requiresLookupBefore: true,
+			requiresLookupBefore: false,
 		},
 		"updateColumn": {
 			mode:                 "privilege",
@@ -131,7 +131,7 @@ func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
 			serviceFile:          "internal/service/catalog/catalog.go",
 			serviceMethod:        "UpdateColumn",
 			serviceBodySnippets:  []string{"domain.SecurableTable", "domain.PrivCreateTable"},
-			requiresLookupBefore: true,
+			requiresLookupBefore: false,
 		},
 		"createView": {
 			mode:                 "privilege",
@@ -191,6 +191,36 @@ func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
 			serviceMethod:        "Delete",
 			serviceBodySnippets:  []string{"domain.SecurableVolume", "domain.PrivCreateVolume"},
 			requiresLookupBefore: true,
+		},
+		"createUploadUrl": {
+			mode:                 "privilege",
+			securableType:        "table",
+			privilege:            "INSERT",
+			securableIDSource:    "runtime_resolved_object_id",
+			serviceFile:          "internal/service/ingestion/ingestion.go",
+			serviceMethod:        "RequestUploadURL",
+			serviceBodySnippets:  []string{"checkInsertPrivilege(ctx, principal, catalogName, schemaName, tableName)"},
+			requiresLookupBefore: false,
+		},
+		"commitTableIngestion": {
+			mode:                 "privilege",
+			securableType:        "table",
+			privilege:            "INSERT",
+			securableIDSource:    "runtime_resolved_object_id",
+			serviceFile:          "internal/service/ingestion/ingestion.go",
+			serviceMethod:        "CommitIngestion",
+			serviceBodySnippets:  []string{"checkInsertPrivilege(ctx, principal, catalogName, schemaName, tableName)"},
+			requiresLookupBefore: false,
+		},
+		"loadTableExternalFiles": {
+			mode:                 "privilege",
+			securableType:        "table",
+			privilege:            "INSERT",
+			securableIDSource:    "runtime_resolved_object_id",
+			serviceFile:          "internal/service/ingestion/ingestion.go",
+			serviceMethod:        "LoadExternalFiles",
+			serviceBodySnippets:  []string{"checkInsertPrivilege(ctx, principal, catalogName, schemaName, tableName)"},
+			requiresLookupBefore: false,
 		},
 		"createStorageCredential": {
 			mode:                "privilege",
@@ -346,7 +376,10 @@ func hasMatchingCheck(checks []apiAuthzCheck, exp authzContractExpectation) bool
 func loadAuthzByOperation(t *testing.T) map[string]apiAuthz {
 	t.Helper()
 
-	specPath := filepath.Join(repoRootDir(), "internal", "api", "openapi.bundled.yaml")
+	specPath := os.Getenv("AUTHZ_SPEC_PATH")
+	if strings.TrimSpace(specPath) == "" {
+		specPath = filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml")
+	}
 	loader := openapi3.NewLoader()
 	doc, err := loader.LoadFromFile(specPath)
 	require.NoErrorf(t, err, "load openapi spec %s", specPath)

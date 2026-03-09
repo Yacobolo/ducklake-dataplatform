@@ -198,7 +198,7 @@ func TestHTTP_NotebookPromotion_CreateOrUpdateWithPublishLink(t *testing.T) {
 
 	promoteBody := map[string]interface{}{
 		"notebook_id":     notebookID,
-		"output_cell_id":  outputCellID,
+		"cell_index":      0,
 		"project_name":    "analytics",
 		"name":            "nb_promoted_model",
 		"materialization": "TABLE",

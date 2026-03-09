@@ -92,7 +92,7 @@ func (h *AuthHTTPHandler) LocalLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeAuthJSON(w, http.StatusOK, map[string]interface{}{
+	writeAuthJSON(w, http.StatusCreated, map[string]interface{}{
 		"token": res.Token,
 		"principal": map[string]interface{}{
 			"id":       res.Principal.ID,

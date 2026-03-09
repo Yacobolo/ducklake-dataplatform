@@ -30,7 +30,7 @@ type assetBackfillService interface {
 	Create(ctx context.Context, assetID, requestedBy, from, to string, maxParallelism int) (*domain.BackfillRequest, []domain.BackfillSlice, error)
 }
 
-func (h *APIHandler) CreateAsset(ctx context.Context, req CreateAssetRequestObject) (CreateAssetResponseObject, error) {
+func (h *APIHandler) CreateAsset(ctx context.Context, req GenCreateAssetRequest) (GenCreateAssetResponse, error) {
 	created, err := h.assets.CreateAsset(ctx, domainCreateAssetRequest(req.Body))
 	if err != nil {
 		switch {
@@ -45,10 +45,13 @@ func (h *APIHandler) CreateAsset(ctx context.Context, req CreateAssetRequestObje
 		}
 	}
 
-	return CreateAsset201JSONResponse(assetToAPI(*created)), nil
+	return CreateAsset201JSONResponse{
+		Body:    assetToAPI(*created),
+		Headers: CreateAsset201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) ListAssets(ctx context.Context, req ListAssetsRequestObject) (ListAssetsResponseObject, error) {
+func (h *APIHandler) ListAssets(ctx context.Context, req GenListAssetsRequest) (GenListAssetsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	assets, total, err := h.assets.ListAssets(ctx, domain.AssetFilter{Page: page})
 	if err != nil {
@@ -60,10 +63,13 @@ func (h *APIHandler) ListAssets(ctx context.Context, req ListAssetsRequestObject
 		data[i] = assetToAPI(assets[i])
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListAssets200JSONResponse(PaginatedAssets{Data: &data, NextPageToken: optStr(nextToken)}), nil
+	return ListAssets200JSONResponse{
+		Body:    PaginatedAssets{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: ListAssets200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) GetAsset(ctx context.Context, req GetAssetRequestObject) (GetAssetResponseObject, error) {
+func (h *APIHandler) GetAsset(ctx context.Context, req GenGetAssetRequest) (GenGetAssetResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
@@ -72,10 +78,13 @@ func (h *APIHandler) GetAsset(ctx context.Context, req GetAssetRequestObject) (G
 		return nil, err
 	}
 
-	return GetAsset200JSONResponse(assetToAPI(*asset)), nil
+	return GetAsset200JSONResponse{
+		Body:    assetToAPI(*asset),
+		Headers: GetAsset200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) UpdateAsset(ctx context.Context, req UpdateAssetRequestObject) (UpdateAssetResponseObject, error) {
+func (h *APIHandler) UpdateAsset(ctx context.Context, req GenUpdateAssetRequest) (GenUpdateAssetResponse, error) {
 	updated, err := h.assets.UpdateAsset(ctx, req.AssetKey, domainUpdateAssetRequest(req.Body))
 	if err != nil {
 		switch {
@@ -90,10 +99,13 @@ func (h *APIHandler) UpdateAsset(ctx context.Context, req UpdateAssetRequestObje
 		}
 	}
 
-	return UpdateAsset200JSONResponse(assetToAPI(*updated)), nil
+	return UpdateAsset200JSONResponse{
+		Body:    assetToAPI(*updated),
+		Headers: UpdateAsset200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) DeleteAsset(ctx context.Context, req DeleteAssetRequestObject) (DeleteAssetResponseObject, error) {
+func (h *APIHandler) DeleteAsset(ctx context.Context, req GenDeleteAssetRequest) (GenDeleteAssetResponse, error) {
 	if err := h.assets.DeleteAsset(ctx, req.AssetKey); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -110,7 +122,7 @@ func (h *APIHandler) DeleteAsset(ctx context.Context, req DeleteAssetRequestObje
 	return DeleteAsset204Response{}, nil
 }
 
-func (h *APIHandler) GetAssetGraph(ctx context.Context, req GetAssetGraphRequestObject) (GetAssetGraphResponseObject, error) {
+func (h *APIHandler) GetAssetGraph(ctx context.Context, req GenGetAssetGraphRequest) (GenGetAssetGraphResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
@@ -147,7 +159,10 @@ func (h *APIHandler) GetAssetGraph(ctx context.Context, req GetAssetGraphRequest
 		UpstreamAssetKeys:   &upstreamKeys,
 		DownstreamAssetKeys: &downstreamKeys,
 	}
-	return GetAssetGraph200JSONResponse(graph), nil
+	return GetAssetGraph200JSONResponse{
+		Body:    graph,
+		Headers: GetAssetGraph200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 func dependencyAssetIDs(upstream []domain.AssetDependency, downstream []domain.AssetDependency) []string {
@@ -161,7 +176,7 @@ func dependencyAssetIDs(upstream []domain.AssetDependency, downstream []domain.A
 	return ids
 }
 
-func (h *APIHandler) ListAssetPartitions(ctx context.Context, req ListAssetPartitionsRequestObject) (ListAssetPartitionsResponseObject, error) {
+func (h *APIHandler) ListAssetPartitions(ctx context.Context, req GenListAssetPartitionsRequest) (GenListAssetPartitionsResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
@@ -181,10 +196,13 @@ func (h *APIHandler) ListAssetPartitions(ctx context.Context, req ListAssetParti
 		data[i] = assetPartitionToAPI(partitions[i])
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListAssetPartitions200JSONResponse(PaginatedAssetPartitions{Data: &data, NextPageToken: optStr(nextToken)}), nil
+	return ListAssetPartitions200JSONResponse{
+		Body:    PaginatedAssetPartitions{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: ListAssetPartitions200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) ListAssetRuns(ctx context.Context, req ListAssetRunsRequestObject) (ListAssetRunsResponseObject, error) {
+func (h *APIHandler) ListAssetRuns(ctx context.Context, req GenListAssetRunsRequest) (GenListAssetRunsResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
@@ -209,10 +227,13 @@ func (h *APIHandler) ListAssetRuns(ctx context.Context, req ListAssetRunsRequest
 		data[i] = assetRunToAPI(runs[i])
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListAssetRuns200JSONResponse(PaginatedAssetRuns{Data: &data, NextPageToken: optStr(nextToken)}), nil
+	return ListAssetRuns200JSONResponse{
+		Body:    PaginatedAssetRuns{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: ListAssetRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) TriggerAssetMaterialization(ctx context.Context, req TriggerAssetMaterializationRequestObject) (TriggerAssetMaterializationResponseObject, error) {
+func (h *APIHandler) TriggerAssetMaterialization(ctx context.Context, req GenTriggerAssetMaterializationRequest) (GenTriggerAssetMaterializationResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
@@ -245,10 +266,13 @@ func (h *APIHandler) TriggerAssetMaterialization(ctx context.Context, req Trigge
 		return nil, err
 	}
 
-	return TriggerAssetMaterialization202JSONResponse(AssetTriggerResponse{EventId: &event.ID, Status: &event.Status}), nil
+	return TriggerAssetMaterialization202JSONResponse{
+		Body:    AssetTriggerResponse{EventId: &event.ID, Status: &event.Status},
+		Headers: TriggerAssetMaterialization202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) ListAssetMaterializations(ctx context.Context, req ListAssetMaterializationsRequestObject) (ListAssetMaterializationsResponseObject, error) {
+func (h *APIHandler) ListAssetMaterializations(ctx context.Context, req GenListAssetMaterializationsRequest) (GenListAssetMaterializationsResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
@@ -268,10 +292,13 @@ func (h *APIHandler) ListAssetMaterializations(ctx context.Context, req ListAsse
 		data[i] = assetMaterializationToAPI(materializations[i])
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListAssetMaterializations200JSONResponse(PaginatedAssetMaterializations{Data: &data, NextPageToken: optStr(nextToken)}), nil
+	return ListAssetMaterializations200JSONResponse{
+		Body:    PaginatedAssetMaterializations{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: ListAssetMaterializations200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) ListAssetChecks(ctx context.Context, req ListAssetChecksRequestObject) (ListAssetChecksResponseObject, error) {
+func (h *APIHandler) ListAssetChecks(ctx context.Context, req GenListAssetChecksRequest) (GenListAssetChecksResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
@@ -289,10 +316,13 @@ func (h *APIHandler) ListAssetChecks(ctx context.Context, req ListAssetChecksReq
 	for i := range checks {
 		data[i] = assetCheckToAPI(checks[i])
 	}
-	return ListAssetChecks200JSONResponse(AssetCheckList{Data: &data}), nil
+	return ListAssetChecks200JSONResponse{
+		Body:    AssetCheckList{Data: data},
+		Headers: ListAssetChecks200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) ListAssetCheckResults(ctx context.Context, req ListAssetCheckResultsRequestObject) (ListAssetCheckResultsResponseObject, error) {
+func (h *APIHandler) ListAssetCheckResults(ctx context.Context, req GenListAssetCheckResultsRequest) (GenListAssetCheckResultsResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
@@ -312,10 +342,13 @@ func (h *APIHandler) ListAssetCheckResults(ctx context.Context, req ListAssetChe
 		data[i] = assetCheckResultToAPI(results[i])
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListAssetCheckResults200JSONResponse(PaginatedAssetCheckResults{Data: &data, NextPageToken: optStr(nextToken)}), nil
+	return ListAssetCheckResults200JSONResponse{
+		Body:    PaginatedAssetCheckResults{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: ListAssetCheckResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) ListAssetBackfills(ctx context.Context, req ListAssetBackfillsRequestObject) (ListAssetBackfillsResponseObject, error) {
+func (h *APIHandler) ListAssetBackfills(ctx context.Context, req GenListAssetBackfillsRequest) (GenListAssetBackfillsResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
@@ -340,10 +373,13 @@ func (h *APIHandler) ListAssetBackfills(ctx context.Context, req ListAssetBackfi
 		data[i] = backfillRequestToAPI(backfills[i])
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListAssetBackfills200JSONResponse(PaginatedBackfillRequests{Data: &data, NextPageToken: optStr(nextToken)}), nil
+	return ListAssetBackfills200JSONResponse{
+		Body:    PaginatedBackfillRequests{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: ListAssetBackfills200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) CreateAssetBackfill(ctx context.Context, req CreateAssetBackfillRequestObject) (CreateAssetBackfillResponseObject, error) {
+func (h *APIHandler) CreateAssetBackfill(ctx context.Context, req GenCreateAssetBackfillRequest) (GenCreateAssetBackfillResponse, error) {
 	principal, _ := domain.PrincipalFromContext(ctx)
 
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
@@ -374,10 +410,13 @@ func (h *APIHandler) CreateAssetBackfill(ctx context.Context, req CreateAssetBac
 		apiSlices[i] = backfillSliceToAPI(slices[i])
 	}
 	request := backfillRequestToAPI(*created)
-	return CreateAssetBackfill201JSONResponse(CreateAssetBackfillResponse{Request: &request, Slices: &apiSlices}), nil
+	return CreateAssetBackfill201JSONResponse{
+		Body:    CreateAssetBackfillResponse{Request: &request, Slices: &apiSlices},
+		Headers: CreateAssetBackfill201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
-func (h *APIHandler) GetAssetBackfill(ctx context.Context, req GetAssetBackfillRequestObject) (GetAssetBackfillResponseObject, error) {
+func (h *APIHandler) GetAssetBackfill(ctx context.Context, req GenGetAssetBackfillRequest) (GenGetAssetBackfillResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
@@ -404,12 +443,13 @@ func (h *APIHandler) GetAssetBackfill(ctx context.Context, req GetAssetBackfillR
 	}
 	request := backfillRequestToAPI(*backfill)
 
-	return GetAssetBackfill200JSONResponse(AssetBackfillDetails{Request: &request, Slices: &apiSlices}), nil
+	return GetAssetBackfill200JSONResponse{
+		Body:    AssetBackfillDetails{Request: &request, Slices: &apiSlices},
+		Headers: GetAssetBackfill200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 func assetToAPI(a domain.DataAsset) Asset {
-	ct := a.CreatedAt
-	ut := a.UpdatedAt
 	return Asset{
 		Id:          &a.ID,
 		AssetKey:    &a.AssetKey,
@@ -420,8 +460,8 @@ func assetToAPI(a domain.DataAsset) Asset {
 		IoProfile:   &a.IOProfile,
 		IsActive:    &a.IsActive,
 		CreatedBy:   &a.CreatedBy,
-		CreatedAt:   &ct,
-		UpdatedAt:   &ut,
+		CreatedAt:   formatTimePtr(&a.CreatedAt),
+		UpdatedAt:   formatTimePtr(&a.UpdatedAt),
 	}
 }
 
@@ -469,7 +509,7 @@ func domainAssetChecks(checks *[]AssetCheckInput) []domain.AssetCheckInput {
 			CheckType:  (*checks)[i].CheckType,
 			Severity:   derefString((*checks)[i].Severity),
 			Enabled:    derefBoolDefault((*checks)[i].Enabled, true),
-			ConfigJSON: derefMap((*checks)[i].ConfigJson),
+			ConfigJSON: derefRecordMap((*checks)[i].ConfigJson),
 		})
 	}
 	return out
@@ -496,7 +536,7 @@ func derefBoolDefault(value *bool, fallback bool) bool {
 	return *value
 }
 
-func derefMap(value *map[string]any) map[string]any {
+func derefRecordMap(value *Record) map[string]any {
 	if value == nil {
 		return map[string]any{}
 	}
@@ -508,21 +548,17 @@ func derefMap(value *map[string]any) map[string]any {
 }
 
 func assetPartitionToAPI(p domain.AssetPartition) AssetPartition {
-	ct := p.CreatedAt
-	ut := p.UpdatedAt
 	return AssetPartition{
 		Id:           &p.ID,
 		AssetId:      &p.AssetID,
 		PartitionKey: &p.PartitionKey,
 		Status:       &p.Status,
-		CreatedAt:    &ct,
-		UpdatedAt:    &ut,
+		CreatedAt:    formatTimePtr(&p.CreatedAt),
+		UpdatedAt:    formatTimePtr(&p.UpdatedAt),
 	}
 }
 
 func assetRunToAPI(r domain.AssetRun) AssetRun {
-	ct := r.CreatedAt
-	ut := r.UpdatedAt
 	return AssetRun{
 		Id:            &r.ID,
 		AssetId:       &r.AssetID,
@@ -535,31 +571,28 @@ func assetRunToAPI(r domain.AssetRun) AssetRun {
 		TriggeredBy:   &r.TriggeredBy,
 		AttemptCount:  int32Ptr(safeIntToInt32(r.AttemptCount)),
 		MaxAttempts:   int32Ptr(safeIntToInt32(r.MaxAttempts)),
-		StartedAt:     r.StartedAt,
-		FinishedAt:    r.FinishedAt,
+		StartedAt:     formatTimePtr(r.StartedAt),
+		FinishedAt:    formatTimePtr(r.FinishedAt),
 		ErrorMessage:  r.ErrorMessage,
-		CreatedAt:     &ct,
-		UpdatedAt:     &ut,
+		CreatedAt:     formatTimePtr(&r.CreatedAt),
+		UpdatedAt:     formatTimePtr(&r.UpdatedAt),
 	}
 }
 
 func assetMaterializationToAPI(m domain.AssetMaterialization) AssetMaterialization {
-	ct := m.CreatedAt
 	return AssetMaterialization{
 		Id:             &m.ID,
 		AssetId:        &m.AssetID,
 		RunId:          m.RunID,
 		PartitionKey:   m.PartitionKey,
-		RowCount:       m.RowCount,
+		RowCount:       safeInt64ToInt32Ptr(m.RowCount),
 		SchemaHash:     m.SchemaHash,
-		MaterializedAt: &m.MaterializedAt,
-		CreatedAt:      &ct,
+		MaterializedAt: formatTimePtr(&m.MaterializedAt),
+		CreatedAt:      formatTimePtr(&m.CreatedAt),
 	}
 }
 
 func assetCheckToAPI(c domain.AssetCheck) AssetCheck {
-	ct := c.CreatedAt
-	ut := c.UpdatedAt
 	return AssetCheck{
 		Id:        &c.ID,
 		AssetId:   &c.AssetID,
@@ -567,16 +600,16 @@ func assetCheckToAPI(c domain.AssetCheck) AssetCheck {
 		CheckType: &c.CheckType,
 		Severity:  &c.Severity,
 		Enabled:   &c.Enabled,
-		CreatedAt: &ct,
-		UpdatedAt: &ut,
+		CreatedAt: formatTimePtr(&c.CreatedAt),
+		UpdatedAt: formatTimePtr(&c.UpdatedAt),
 	}
 }
 
 func assetCheckResultToAPI(r domain.AssetCheckResult) AssetCheckResult {
-	ct := r.CreatedAt
-	var metrics *map[string]any
+	var metrics *Record
 	if r.MetricsJSON != nil {
-		metrics = &r.MetricsJSON
+		record := Record(r.MetricsJSON)
+		metrics = &record
 	}
 	return AssetCheckResult{
 		Id:           &r.ID,
@@ -586,7 +619,7 @@ func assetCheckResultToAPI(r domain.AssetCheckResult) AssetCheckResult {
 		Status:       &r.Status,
 		Message:      r.Message,
 		MetricsJson:  metrics,
-		CreatedAt:    &ct,
+		CreatedAt:    formatTimePtr(&r.CreatedAt),
 	}
 }
 
@@ -599,9 +632,9 @@ func backfillRequestToAPI(b domain.BackfillRequest) BackfillRequest {
 		Status:         &b.Status,
 		RequestedBy:    &b.RequestedBy,
 		MaxParallelism: int32Ptr(safeIntToInt32(b.MaxParallelism)),
-		CreatedAt:      &b.CreatedAt,
-		StartedAt:      b.StartedAt,
-		FinishedAt:     b.FinishedAt,
+		CreatedAt:      formatTimePtr(&b.CreatedAt),
+		StartedAt:      formatTimePtr(b.StartedAt),
+		FinishedAt:     formatTimePtr(b.FinishedAt),
 		ErrorMessage:   b.ErrorMessage,
 	}
 }
@@ -614,6 +647,12 @@ func backfillSliceToAPI(s domain.BackfillSlice) BackfillSlice {
 		PartitionKey: &s.PartitionKey,
 		Status:       &s.Status,
 		RunId:        s.RunID,
+		AttemptCount: int32Ptr(safeIntToInt32(s.AttemptCount)),
+		MaxAttempts:  int32Ptr(safeIntToInt32(s.MaxAttempts)),
+		CreatedAt:    formatTimePtr(&s.CreatedAt),
+		StartedAt:    formatTimePtr(s.StartedAt),
+		FinishedAt:   formatTimePtr(s.FinishedAt),
+		ErrorMessage: s.ErrorMessage,
 	}
 }
 

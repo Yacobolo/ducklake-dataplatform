@@ -16,7 +16,7 @@ import (
 
 	"duck-demo/internal/declarative"
 	"duck-demo/pkg/cli"
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 // ---------------------------------------------------------------------------
@@ -36,8 +36,10 @@ func writeYAML(t *testing.T, dir, relPath, content string) {
 
 func makeStateClient(t *testing.T, serverURL, apiKey string) *cli.APIStateClient {
 	t.Helper()
-	client := gen.NewClient(serverURL, apiKey, "")
-	return cli.NewAPIStateClient(client)
+	client := apiruntime.NewClient(serverURL, apiKey, "")
+	return cli.NewAPIStateClientWithOptions(client, cli.APIStateClientOptions{
+		CompatibilityMode: cli.CapabilityCompatibilityLegacy,
+	})
 }
 
 // ---------------------------------------------------------------------------

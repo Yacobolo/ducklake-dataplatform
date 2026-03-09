@@ -170,7 +170,7 @@ func writeAPIIndex(path string, tags []string, tagEndpoints map[string][]endpoin
 	var b strings.Builder
 	b.WriteString(generatedHeader())
 	b.WriteString("# API Reference\n\n")
-	b.WriteString("This section is generated from `internal/api/openapi.bundled.yaml`.\n\n")
+	b.WriteString("This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by default).\n\n")
 	b.WriteString("- [Feature Overview](./features)\n\n")
 	b.WriteString("## Endpoint Groups\n\n")
 	for _, tag := range tags {

@@ -18,7 +18,6 @@ env:
   # Pinned tool versions for reproducible builds
   TASK_VERSION: "v3.45.4"
   GOTESTSUM_VERSION: "v1.13.0"
-  OAPI_CODEGEN_VERSION: "v2.5.1"
   SQLC_VERSION: "v1.30.0"
   GOVULNCHECK_VERSION: "v1.1.4"
   GOLANGCI_LINT_VERSION: "v2.7"
@@ -30,7 +29,7 @@ permissions:
 jobs:
   # ── Generate ────────────────────────────────────────────────
   # Shared job: produces generated code artifact once so downstream
-  # jobs skip Node + oapi-codegen + sqlc entirely.
+  # jobs skip TypeSpec/APIGen setup and sqlc entirely.
   generate:
     name: Generate Code
     runs-on: ubuntu-latest
@@ -47,7 +46,6 @@ jobs:
       - name: Install tools
         run: |
           go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
-          go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@${{ env.OAPI_CODEGEN_VERSION }}
           go install github.com/sqlc-dev/sqlc/cmd/sqlc@${{ env.SQLC_VERSION }}
       - name: Run code generation
         run: task generate
@@ -56,9 +54,10 @@ jobs:
         with:
           name: generated-code
           path: |
-            internal/api/openapi.bundled.yaml
+            api/gen/openapi.yaml
+            internal/api/gen_request_models.gen.go
+            internal/api/server.apigen.gen.go
             internal/api/types.gen.go
-            internal/api/server.gen.go
             internal/db/dbstore/
             pkg/cli/gen/
             schemas/declarative/
@@ -117,6 +116,8 @@ jobs:
         run: go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
       - name: Lint OpenAPI spec
         run: task lint:api
+      - name: Verify apigen artifacts
+        run: task verify:apigen-generated
       - name: Verify declarative schema artifacts
         run: task verify:declarative-schema
 

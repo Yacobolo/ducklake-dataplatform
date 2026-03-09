@@ -119,8 +119,8 @@ func TestHandler_TriggerModelRun_UsesAllModelNames(t *testing.T) {
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin-user", IsAdmin: true})
 	modelNames := []string{"stg_orders", "fct_orders"}
-	resp, err := h.TriggerModelRun(ctx, TriggerModelRunRequestObject{
-		Body: &TriggerModelRunJSONRequestBody{
+	resp, err := h.TriggerModelRun(ctx, GenTriggerModelRunRequest{
+		Body: &GenTriggerModelRunJSONBody{
 			ProjectName: "analytics",
 			ModelNames:  &modelNames,
 		},
@@ -128,7 +128,7 @@ func TestHandler_TriggerModelRun_UsesAllModelNames(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "stg_orders,fct_orders", gotReq.Selector)
 
-	created, ok := resp.(TriggerModelRun201JSONResponse)
+	created, ok := resp.(GenTriggerModelRun201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
 	require.NotNil(t, created.Body.ProjectName)
 	assert.Equal(t, "analytics", *created.Body.ProjectName)
@@ -141,7 +141,7 @@ func TestHandler_TriggerModelRun_MapsPayloadFields(t *testing.T) {
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
 
-	reqBody := TriggerModelRunJSONRequestBody{
+	reqBody := GenTriggerModelRunJSONBody{
 		ProjectName:   "proj_a",
 		ModelNames:    &[]string{"stg_orders", "+fct_orders"},
 		FullRefresh:   boolPtr(true),
@@ -160,9 +160,9 @@ func TestHandler_TriggerModelRun_MapsPayloadFields(t *testing.T) {
 		}},
 	}
 
-	resp, err := h.TriggerModelRun(ctx, TriggerModelRunRequestObject{Body: &reqBody})
+	resp, err := h.TriggerModelRun(ctx, GenTriggerModelRunRequest{Body: &reqBody})
 	require.NoError(t, err)
-	_, ok := resp.(TriggerModelRun201JSONResponse)
+	_, ok := resp.(GenTriggerModelRun201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
 
 	assert.Equal(t, "alice", gotPrincipal)
@@ -178,7 +178,7 @@ func TestHandler_TriggerModelRun_DefaultTargetValues(t *testing.T) {
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
 
-	reqBody := TriggerModelRunJSONRequestBody{ProjectName: "proj_a"}
+	reqBody := GenTriggerModelRunJSONBody{ProjectName: "proj_a"}
 
 	var gotReq domain.TriggerModelRunRequest
 	h := &APIHandler{
@@ -189,9 +189,9 @@ func TestHandler_TriggerModelRun_DefaultTargetValues(t *testing.T) {
 		}},
 	}
 
-	resp, err := h.TriggerModelRun(ctx, TriggerModelRunRequestObject{Body: &reqBody})
+	resp, err := h.TriggerModelRun(ctx, GenTriggerModelRunRequest{Body: &reqBody})
 	require.NoError(t, err)
-	_, ok := resp.(TriggerModelRun201JSONResponse)
+	_, ok := resp.(GenTriggerModelRun201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
 
 	assert.Equal(t, "memory", gotReq.TargetCatalog)
@@ -213,8 +213,8 @@ func TestHandler_ListModelRuns_InvalidStatusReturns400(t *testing.T) {
 		},
 	}
 
-	invalid := ListModelRunsParamsStatus("INVALID")
-	resp, err := h.ListModelRuns(context.Background(), ListModelRunsRequestObject{Params: ListModelRunsParams{Status: &invalid}})
+	invalid := "INVALID"
+	resp, err := h.ListModelRuns(context.Background(), GenListModelRunsRequest{Params: GenListModelRunsParams{Status: &invalid}})
 	require.NoError(t, err)
 	assert.False(t, called)
 
@@ -243,14 +243,14 @@ func TestHandler_ListModelRuns_IncludesModelNamesAndProject(t *testing.T) {
 		},
 	}
 
-	resp, err := h.ListModelRuns(context.Background(), ListModelRunsRequestObject{})
+	resp, err := h.ListModelRuns(context.Background(), GenListModelRunsRequest{})
 	require.NoError(t, err)
 
-	okResp, ok := resp.(ListModelRuns200JSONResponse)
+	okResp, ok := resp.(GenListModelRuns200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
 	require.NotNil(t, okResp.Body.Data)
-	require.Len(t, *okResp.Body.Data, 1)
-	run := (*okResp.Body.Data)[0]
+	require.Len(t, okResp.Body.Data, 1)
+	run := okResp.Body.Data[0]
 	require.NotNil(t, run.ProjectName)
 	assert.Equal(t, "analytics", *run.ProjectName)
 	require.NotNil(t, run.ModelNames)
@@ -268,7 +268,7 @@ func TestHandler_ListModelRunSteps_MissingRunReturns404(t *testing.T) {
 		},
 	}
 
-	resp, err := h.ListModelRunSteps(context.Background(), ListModelRunStepsRequestObject{RunId: "00000000-0000-0000-0000-000000000000"})
+	resp, err := h.ListModelRunSteps(context.Background(), GenListModelRunStepsRequest{RunId: "00000000-0000-0000-0000-000000000000"})
 	require.NoError(t, err)
 
 	notFound, ok := resp.(ListModelRunSteps404JSONResponse)
@@ -287,7 +287,7 @@ func TestHandler_ListModelTestResults_MissingRunReturns404(t *testing.T) {
 		},
 	}
 
-	resp, err := h.ListModelTestResults(context.Background(), ListModelTestResultsRequestObject{
+	resp, err := h.ListModelTestResults(context.Background(), GenListModelTestResultsRequest{
 		RunId:  "00000000-0000-0000-0000-000000000000",
 		StepId: "00000000-0000-0000-0000-000000000001",
 	})
@@ -377,15 +377,15 @@ func TestHandler_CheckSourceFreshness_DefaultsAndMapping(t *testing.T) {
 		}, nil
 	}}}
 
-	resp, err := h.CheckSourceFreshness(ctx, CheckSourceFreshnessRequestObject{
+	resp, err := h.CheckSourceFreshness(ctx, GenCheckSourceFreshnessRequest{
 		SourceSchema: "raw",
 		SourceTable:  "orders",
-		Params:       CheckSourceFreshnessParams{},
+		Params:       GenCheckSourceFreshnessParams{},
 	})
 	require.NoError(t, err)
 	require.True(t, called)
 
-	okResp, ok := resp.(CheckSourceFreshness200JSONResponse)
+	okResp, ok := resp.(GenCheckSourceFreshness200JSONResponse)
 	require.True(t, ok, "expected 200 response, got %T", resp)
 	require.NotNil(t, okResp.Body.SourceSchema)
 	assert.Equal(t, "raw", *okResp.Body.SourceSchema)

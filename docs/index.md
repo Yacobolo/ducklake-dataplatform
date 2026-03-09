@@ -33,7 +33,7 @@ features:
     details: Manage access, security posture, and platform settings for shared use.
     link: /operations/
   - title: Advanced reference
-    details: Use API, declarative, and CLI reference only when deeper technical detail is required.
+    details: Use API, declarative, and CLI reference only when deeper technical detail is required. Generated reference pages derive from the canonical OpenAPI contract and declarative schemas.
     link: /reference/
 ---
 

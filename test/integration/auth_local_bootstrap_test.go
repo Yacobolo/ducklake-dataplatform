@@ -44,7 +44,7 @@ func TestAuth_BootstrapAndLocalLogin_E2E(t *testing.T) {
 		"username": "localbootstrap",
 		"password": "super-secure-password",
 	})
-	require.Equal(t, 200, loginResp.StatusCode)
+	require.Equal(t, 201, loginResp.StatusCode)
 
 	var loginPayload map[string]interface{}
 	decodeJSON(t, loginResp, &loginPayload)

@@ -12,7 +12,7 @@ import (
 func TestGeneratedFileSkipPatterns(t *testing.T) {
 	t.Helper()
 
-	assert.True(t, shouldSkipGeneratedFile("internal/api/types.gen.go"))
+	assert.True(t, shouldSkipGeneratedFile("internal/api/server.apigen.gen.go"))
 	assert.True(t, shouldSkipGeneratedFile("internal/duckdbsql/catalog/functions_gen.go"))
 	assert.True(t, shouldSkipGeneratedFile("internal/db/dbstore/catalog.sql.go"))
 

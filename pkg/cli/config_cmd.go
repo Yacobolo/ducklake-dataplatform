@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 func newConfigCmd() *cobra.Command {
@@ -42,7 +42,7 @@ func newConfigShowCmd() *cobra.Command {
 				cfg = maskConfig(cfg)
 			}
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, cfg)
+				return apiruntime.PrintJSON(os.Stdout, cfg)
 			}
 			if getOutputFormat(cmd) == "table" {
 				return printConfigTable(cmd, cfg)
@@ -145,7 +145,7 @@ func newConfigSetProfileCmd() *cobra.Command {
 				return err
 			}
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, map[string]string{
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{
 					"status":  "ok",
 					"profile": name,
 					"path":    ConfigPath(),
@@ -185,7 +185,7 @@ func newConfigUseProfileCmd() *cobra.Command {
 				return err
 			}
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, map[string]string{
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{
 					"status":         "ok",
 					"active_profile": name,
 				})
@@ -221,6 +221,6 @@ func printConfigTable(_ *cobra.Command, cfg *UserConfig) error {
 		rows = append(rows, []string{"", "", "", "", ""})
 	}
 
-	gen.PrintTable(os.Stdout, columns, rows)
+	apiruntime.PrintTable(os.Stdout, columns, rows)
 	return nil
 }

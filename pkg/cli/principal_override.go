@@ -8,12 +8,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 func init() {
 	// Override getPrincipal to resolve name→UUID before calling the API.
-	gen.RegisterRunOverride("getPrincipal", func(client *gen.Client) func(*cobra.Command, []string) error {
+	apiruntime.RegisterRunOverride("getPrincipal", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			id, err := resolvePrincipalArg(client, args[0])
 			if err != nil {
@@ -24,39 +24,39 @@ func init() {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 
-			respBody, err := gen.ReadBody(resp)
+			respBody, err := apiruntime.ReadBody(resp)
 			if err != nil {
 				return fmt.Errorf("read response: %w", err)
 			}
 
 			outputFlag, _ := cmd.Flags().GetString("output")
-			switch gen.OutputFormat(outputFlag) {
-			case gen.OutputJSON:
+			switch apiruntime.OutputFormat(outputFlag) {
+			case apiruntime.OutputJSON:
 				var pretty interface{}
 				if err := json.Unmarshal(respBody, &pretty); err != nil {
 					return fmt.Errorf("parse response: %w", err)
 				}
-				return gen.PrintJSON(os.Stdout, pretty)
+				return apiruntime.PrintJSON(os.Stdout, pretty)
 			default:
 				var data map[string]interface{}
 				if err := json.Unmarshal(respBody, &data); err != nil {
 					return fmt.Errorf("parse response: %w", err)
 				}
-				gen.PrintDetail(os.Stdout, data)
+				apiruntime.PrintDetail(os.Stdout, data)
 			}
 			return nil
 		}
 	})
 
 	// Override deletePrincipal to resolve name→UUID before calling the API.
-	gen.RegisterRunOverride("deletePrincipal", func(client *gen.Client) func(*cobra.Command, []string) error {
+	apiruntime.RegisterRunOverride("deletePrincipal", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			if !cmd.Flags().Changed("yes") {
-				if !gen.ConfirmPrompt("Are you sure?") {
+				if !apiruntime.ConfirmPrompt("Are you sure?") {
 					return nil
 				}
 			}
@@ -70,13 +70,13 @@ func init() {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 
 			outputFlag, _ := cmd.Root().PersistentFlags().GetString("output")
-			if gen.OutputFormat(outputFlag) == gen.OutputJSON {
-				return gen.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
+			if apiruntime.OutputFormat(outputFlag) == apiruntime.OutputJSON {
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
 			}
 			if _, err := fmt.Fprintln(os.Stdout, "Done."); err != nil {
 				return fmt.Errorf("write output: %w", err)
@@ -89,7 +89,7 @@ func init() {
 // resolvePrincipalArg resolves a principal argument that may be a name or UUID.
 // If the argument looks like a UUID (contains hyphens), it is returned as-is.
 // Otherwise, it is treated as a name and resolved via the ListPrincipals API.
-func resolvePrincipalArg(client *gen.Client, arg string) (string, error) {
+func resolvePrincipalArg(client *apiruntime.Client, arg string) (string, error) {
 	// Heuristic: UUIDs contain hyphens, names typically don't.
 	// If it looks like a UUID, use it directly.
 	if isLikelyUUID(arg) {
@@ -109,11 +109,11 @@ func resolvePrincipalArg(client *gen.Client, arg string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("list principals: %w", err)
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return "", fmt.Errorf("list principals: %w", err)
 		}
 
-		body, err := gen.ReadBody(resp)
+		body, err := apiruntime.ReadBody(resp)
 		if err != nil {
 			return "", fmt.Errorf("read principals response: %w", err)
 		}

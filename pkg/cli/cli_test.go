@@ -20,6 +20,7 @@ import (
 type capturedRequest struct {
 	Method  string
 	Path    string
+	URI     string
 	Query   string
 	Headers http.Header
 	Body    string
@@ -41,6 +42,7 @@ func (r *requestRecorder) record(req *http.Request) {
 	r.requests = append(r.requests, capturedRequest{
 		Method:  req.Method,
 		Path:    req.URL.Path,
+		URI:     req.RequestURI,
 		Query:   req.URL.RawQuery,
 		Headers: req.Header.Clone(),
 		Body:    string(body),
@@ -229,6 +231,26 @@ func TestCLI_PathParamSubstitution_MultiLevel(t *testing.T) {
 	assert.NotContains(t, captured.Path, "{schemaName}")
 }
 
+func TestCLI_PathParamSubstitution_EscapesPathSegments(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 200, `{"name":"schema"}`))
+	defer srv.Close()
+
+	rootCmd := newTestRootCmd(t, srv)
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"catalog", "schemas", "get", "my schema/part",
+		"--catalog-name", "prod/env",
+	})
+
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	captured := rec.last()
+	assert.Equal(t, "/v1/catalogs/prod/env/schemas/my schema/part", captured.Path)
+	assert.Contains(t, captured.URI, "/v1/catalogs/prod%2Fenv/schemas/my%20schema%2Fpart")
+}
+
 func TestCLI_PathParamSubstitution_NoUnresolvedPlaceholders(t *testing.T) {
 	// When catalogName IS provided as a positional arg, verify no unresolved
 	// placeholders remain. This test documents that substitution works
@@ -298,6 +320,23 @@ func TestCLI_JSONInputRawString(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(captured.Body), &body))
 	assert.Equal(t, "myschema", body["name"])
 	assert.Equal(t, "test", body["comment"])
+}
+
+func TestCLI_GeneratedHelp_ShowsStructuredBodyHints(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 201, `{"name":"myschema"}`))
+	defer srv.Close()
+
+	rootCmd := newTestRootCmd(t, srv)
+	rootCmd.SetArgs([]string{"--host", srv.URL, "catalog", "schemas", "create", "--help"})
+
+	old := captureStdout(t)
+	err := rootCmd.Execute()
+	output := old()
+	require.NoError(t, err)
+	assert.Contains(t, output, "Properties (JSON object; use --json for nested input)")
+	assert.Contains(t, output, "Location Name")
+	assert.Contains(t, output, "Catalog Name")
 }
 
 func TestCLI_JSONInputFromFile(t *testing.T) {
@@ -932,6 +971,24 @@ func TestCLI_ListWithMultipleQueryParams(t *testing.T) {
 	captured := rec.last()
 	assert.Contains(t, captured.Query, "max_results=25")
 	assert.Contains(t, captured.Query, "page_token=nextpage")
+}
+
+func TestCLI_RequiredQueryFlagEnforced(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 204, ``))
+	defer srv.Close()
+
+	rootCmd := newTestRootCmd(t, srv)
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"security", "members", "remove", "group-1",
+		"--yes",
+	})
+
+	err := rootCmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "required flag(s) \"member-id\", \"member-type\" not set")
+	assert.Empty(t, rec.requests, "no HTTP request should be made when required query flags are missing")
 }
 
 func TestCLI_UpdateSchemaOnlyComment(t *testing.T) {

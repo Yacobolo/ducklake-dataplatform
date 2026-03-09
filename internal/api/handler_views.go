@@ -19,13 +19,13 @@ type viewService interface {
 // === Views ===
 
 // ListViews implements the endpoint for listing views in a schema.
-func (h *APIHandler) ListViews(ctx context.Context, request ListViewsRequestObject) (ListViewsResponseObject, error) {
+func (h *APIHandler) ListViews(ctx context.Context, request GenListViewsRequest) (GenListViewsResponse, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	views, total, err := h.views.ListViews(ctx, string(request.CatalogName), request.SchemaName, page)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListViews404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenListViews404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -37,14 +37,14 @@ func (h *APIHandler) ListViews(ctx context.Context, request ListViewsRequestObje
 	}
 
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListViews200JSONResponse{
-		Body:    PaginatedViewDetails{Data: &data, NextPageToken: optStr(npt)},
-		Headers: ListViews200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListViews200JSONResponse{
+		Body:    PaginatedViewDetails{Data: data, NextPageToken: optStr(npt)},
+		Headers: GenListViews200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateView implements the endpoint for creating a new view in a schema.
-func (h *APIHandler) CreateView(ctx context.Context, request CreateViewRequestObject) (CreateViewResponseObject, error) {
+func (h *APIHandler) CreateView(ctx context.Context, request GenCreateViewRequest) (GenCreateViewResponse, error) {
 	domReq := domain.CreateViewRequest{
 		Name:           request.Body.Name,
 		ViewDefinition: request.Body.ViewDefinition,
@@ -67,37 +67,34 @@ func (h *APIHandler) CreateView(ctx context.Context, request CreateViewRequestOb
 			return CreateView400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateView201JSONResponse{
+	return GenCreateView201JSONResponse{
 		Body:    viewDetailToAPI(*result),
-		Headers: CreateView201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateView201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetView implements the endpoint for retrieving a view by name.
-func (h *APIHandler) GetView(ctx context.Context, request GetViewRequestObject) (GetViewResponseObject, error) {
+func (h *APIHandler) GetView(ctx context.Context, request GenGetViewRequest) (GenGetViewResponse, error) {
 	result, err := h.views.GetView(ctx, string(request.CatalogName), request.SchemaName, request.ViewName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetView404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetView404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetView200JSONResponse{
+	return GenGetView200JSONResponse{
 		Body:    viewDetailToAPI(*result),
-		Headers: GetView200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetView200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateView implements the endpoint for updating a view by name.
-func (h *APIHandler) UpdateView(ctx context.Context, request UpdateViewRequestObject) (UpdateViewResponseObject, error) {
+func (h *APIHandler) UpdateView(ctx context.Context, request GenUpdateViewRequest) (GenUpdateViewResponse, error) {
 	domReq := domain.UpdateViewRequest{}
 	if request.Body.Comment != nil {
 		domReq.Comment = request.Body.Comment
-	}
-	if request.Body.Properties != nil {
-		domReq.Properties = *request.Body.Properties
 	}
 	if request.Body.ViewDefinition != nil {
 		domReq.ViewDefinition = request.Body.ViewDefinition
@@ -115,14 +112,14 @@ func (h *APIHandler) UpdateView(ctx context.Context, request UpdateViewRequestOb
 			return nil, err
 		}
 	}
-	return UpdateView200JSONResponse{
+	return GenUpdateView200JSONResponse{
 		Body:    viewDetailToAPI(*result),
-		Headers: UpdateView200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateView200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteView implements the endpoint for deleting a view by name.
-func (h *APIHandler) DeleteView(ctx context.Context, request DeleteViewRequestObject) (DeleteViewResponseObject, error) {
+func (h *APIHandler) DeleteView(ctx context.Context, request GenDeleteViewRequest) (GenDeleteViewResponse, error) {
 	principal := principalFromCtx(ctx)
 	if err := h.views.DeleteView(ctx, string(request.CatalogName), principal, request.SchemaName, request.ViewName); err != nil {
 		switch {
@@ -134,5 +131,5 @@ func (h *APIHandler) DeleteView(ctx context.Context, request DeleteViewRequestOb
 			return nil, err
 		}
 	}
-	return DeleteView204Response{}, nil
+	return GenDeleteView204Response{}, nil
 }

@@ -13,11 +13,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 func init() {
-	gen.RegisterRunOverride("executeQuery", func(client *gen.Client) func(*cobra.Command, []string) error {
+	apiruntime.RegisterRunOverride("executeQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			sql, err := readSQLInput(cmd, args)
 			if err != nil {
@@ -29,18 +29,18 @@ func init() {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 
 			return printQueryResult(cmd, resp)
 		}
 	})
-	gen.RegisterOverride("executeQuery", func(c *cobra.Command) {
+	apiruntime.RegisterOverride("executeQuery", func(c *cobra.Command) {
 		c.Args = cobra.MaximumNArgs(1)
 	})
 
-	gen.RegisterRunOverride("submitQuery", func(client *gen.Client) func(*cobra.Command, []string) error {
+	apiruntime.RegisterRunOverride("submitQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			sql, err := readSQLInput(cmd, args)
 			if err != nil {
@@ -57,11 +57,11 @@ func init() {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 
-			respBody, err := gen.ReadBody(resp)
+			respBody, err := apiruntime.ReadBody(resp)
 			if err != nil {
 				return fmt.Errorf("read response: %w", err)
 			}
@@ -107,14 +107,14 @@ func init() {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resultsResp); err != nil {
+			if err := apiruntime.CheckError(resultsResp); err != nil {
 				return err
 			}
 			return printQueryResult(cmd, resultsResp)
 		}
 	})
 
-	gen.RegisterRunOverride("getQuery", func(client *gen.Client) func(*cobra.Command, []string) error {
+	apiruntime.RegisterRunOverride("getQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf("requires query id argument")
@@ -123,10 +123,10 @@ func init() {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
-			body, err := gen.ReadBody(resp)
+			body, err := apiruntime.ReadBody(resp)
 			if err != nil {
 				return fmt.Errorf("read response: %w", err)
 			}
@@ -134,7 +134,7 @@ func init() {
 		}
 	})
 
-	gen.RegisterRunOverride("getQueryResults", func(client *gen.Client) func(*cobra.Command, []string) error {
+	apiruntime.RegisterRunOverride("getQueryResults", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf("requires query id argument")
@@ -152,14 +152,14 @@ func init() {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 			return printQueryResult(cmd, resp)
 		}
 	})
 
-	gen.RegisterRunOverride("cancelQuery", func(client *gen.Client) func(*cobra.Command, []string) error {
+	apiruntime.RegisterRunOverride("cancelQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf("requires query id argument")
@@ -168,10 +168,10 @@ func init() {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
-			body, err := gen.ReadBody(resp)
+			body, err := apiruntime.ReadBody(resp)
 			if err != nil {
 				return fmt.Errorf("read response: %w", err)
 			}
@@ -179,13 +179,13 @@ func init() {
 		}
 	})
 
-	gen.RegisterRunOverride("deleteQuery", func(client *gen.Client) func(*cobra.Command, []string) error {
+	apiruntime.RegisterRunOverride("deleteQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
 		return func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return fmt.Errorf("requires query id argument")
 			}
 			if !cmd.Flags().Changed("yes") {
-				if !gen.ConfirmPrompt("Delete query job?") {
+				if !apiruntime.ConfirmPrompt("Delete query job?") {
 					return nil
 				}
 			}
@@ -193,19 +193,19 @@ func init() {
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 			outputFlag, _ := cmd.Root().PersistentFlags().GetString("output")
-			if gen.OutputFormat(outputFlag) == gen.OutputJSON {
-				return gen.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
+			if apiruntime.OutputFormat(outputFlag) == apiruntime.OutputJSON {
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
 			}
 			_, _ = fmt.Fprintln(os.Stdout, "Deleted.")
 			return nil
 		}
 	})
 
-	gen.RegisterOverride("submitQuery", func(c *cobra.Command) {
+	apiruntime.RegisterOverride("submitQuery", func(c *cobra.Command) {
 		c.Flags().Bool("wait", false, "Wait for query completion")
 		c.Flags().Duration("poll-interval", time.Second, "Status polling interval when --wait is enabled")
 		c.Flags().Duration("wait-timeout", 0, "Max wait duration (0 means wait indefinitely)")
@@ -218,7 +218,7 @@ func readSQLInput(cmd *cobra.Command, args []string) (string, error) {
 	sql, _ := cmd.Flags().GetString("sql")
 
 	if sql == "" && len(args) > 0 {
-		sql = strings.TrimSpace(args[0])
+		sql = args[0]
 	}
 
 	if sql == "" {
@@ -251,25 +251,25 @@ func printAnyResponse(cmd *cobra.Command, body []byte) error {
 		outputFlag, _ = cmd.Root().PersistentFlags().GetString("output")
 	}
 
-	switch gen.OutputFormat(outputFlag) {
-	case gen.OutputJSON:
+	switch apiruntime.OutputFormat(outputFlag) {
+	case apiruntime.OutputJSON:
 		var pretty interface{}
 		if err := json.Unmarshal(body, &pretty); err != nil {
 			return fmt.Errorf("parse JSON: %w", err)
 		}
-		return gen.PrintJSON(os.Stdout, pretty)
+		return apiruntime.PrintJSON(os.Stdout, pretty)
 	default:
 		var data map[string]interface{}
 		if err := json.Unmarshal(body, &data); err != nil {
 			return fmt.Errorf("parse response: %w", err)
 		}
-		gen.PrintDetail(os.Stdout, data)
+		apiruntime.PrintDetail(os.Stdout, data)
 		return nil
 	}
 }
 
 func printQueryResult(cmd *cobra.Command, resp *http.Response) error {
-	respBody, err := gen.ReadBody(resp)
+	respBody, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -295,20 +295,20 @@ func printQueryResult(cmd *cobra.Command, resp *http.Response) error {
 		outputFlag, _ = cmd.Root().PersistentFlags().GetString("output")
 	}
 
-	switch gen.OutputFormat(outputFlag) {
-	case gen.OutputJSON:
+	switch apiruntime.OutputFormat(outputFlag) {
+	case apiruntime.OutputJSON:
 		var pretty interface{}
 		if err := json.Unmarshal(respBody, &pretty); err != nil {
 			return fmt.Errorf("parse JSON: %w", err)
 		}
-		return gen.PrintJSON(os.Stdout, pretty)
-	case gen.OutputCSV:
+		return apiruntime.PrintJSON(os.Stdout, pretty)
+	case apiruntime.OutputCSV:
 		w := csv.NewWriter(os.Stdout)
 		_ = w.Write(result.Columns)
 		for _, row := range result.Rows {
 			record := make([]string, len(row))
 			for i, v := range row {
-				record[i] = gen.FormatValue(v)
+				record[i] = apiruntime.FormatValue(v)
 			}
 			_ = w.Write(record)
 		}
@@ -319,10 +319,10 @@ func printQueryResult(cmd *cobra.Command, resp *http.Response) error {
 		for i, row := range result.Rows {
 			rows[i] = make([]string, len(row))
 			for j, v := range row {
-				rows[i][j] = gen.FormatValue(v)
+				rows[i][j] = apiruntime.FormatValue(v)
 			}
 		}
-		gen.PrintTable(os.Stdout, result.Columns, rows)
+		apiruntime.PrintTable(os.Stdout, result.Columns, rows)
 		if result.NextPageToken != "" {
 			fmt.Fprintf(os.Stderr, "\n(%d rows, more pages available: --page-token %s)\n", result.RowCount, result.NextPageToken)
 		} else {
@@ -337,17 +337,17 @@ type waitedStatus struct {
 	Raw    []byte
 }
 
-func waitForQuery(client *gen.Client, queryID string, pollInterval, timeout time.Duration) (*waitedStatus, error) {
+func waitForQuery(client *apiruntime.Client, queryID string, pollInterval, timeout time.Duration) (*waitedStatus, error) {
 	start := time.Now()
 	for {
 		resp, err := client.Do("GET", "/queries/"+queryID, nil, nil)
 		if err != nil {
 			return nil, err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return nil, err
 		}
-		body, err := gen.ReadBody(resp)
+		body, err := apiruntime.ReadBody(resp)
 		if err != nil {
 			return nil, fmt.Errorf("read status response: %w", err)
 		}

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 func httpStatusFromError(err error) (int, bool) {
@@ -37,6 +37,9 @@ func isOptionalEndpointStatus(status int) bool {
 func (c *APIStateClient) isOptionalReadError(err error) bool {
 	if err == nil {
 		return false
+	}
+	if c.compatibilityMode == CapabilityCompatibilityLegacy {
+		return true
 	}
 	if status, ok := httpStatusFromError(err); ok {
 		return isOptionalEndpointStatus(status)
@@ -83,7 +86,7 @@ func (c *APIStateClient) probeEndpoint(ctx context.Context, path string) error {
 	if err != nil {
 		return fmt.Errorf("GET %s: %w", path, err)
 	}
-	body, err := gen.ReadBody(resp)
+	body, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return fmt.Errorf("read GET %s: %w", path, err)
 	}

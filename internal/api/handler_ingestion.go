@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"time"
 
 	"duck-demo/internal/domain"
 )
@@ -22,7 +23,7 @@ type ingestionService interface {
 // === Ingestion ===
 
 // CreateUploadUrl implements the endpoint for generating a pre-signed upload URL.
-func (h *APIHandler) CreateUploadUrl(ctx context.Context, request CreateUploadUrlRequestObject) (CreateUploadUrlResponseObject, error) {
+func (h *APIHandler) CreateUploadUrl(ctx context.Context, request GenCreateUploadUrlRequest) (GenCreateUploadUrlResponse, error) {
 	if h.ingestion == nil {
 		return CreateUploadUrl400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "ingestion not available (S3 not configured)"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
@@ -40,19 +41,19 @@ func (h *APIHandler) CreateUploadUrl(ctx context.Context, request CreateUploadUr
 		}
 	}
 
-	t := result.ExpiresAt
+	t := result.ExpiresAt.UTC().Format(time.RFC3339)
 	return CreateUploadUrl200JSONResponse{
 		Body: UploadUrlResponse{
-			UploadUrl: &result.UploadURL,
-			S3Key:     &result.S3Key,
-			ExpiresAt: &t,
+			UploadUrl: result.UploadURL,
+			S3Key:     result.S3Key,
+			ExpiresAt: t,
 		},
 		Headers: CreateUploadUrl200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CommitTableIngestion implements the endpoint for committing uploaded files to a table.
-func (h *APIHandler) CommitTableIngestion(ctx context.Context, request CommitTableIngestionRequestObject) (CommitTableIngestionResponseObject, error) {
+func (h *APIHandler) CommitTableIngestion(ctx context.Context, request GenCommitTableIngestionRequest) (GenCommitTableIngestionResponse, error) {
 	if h.ingestion == nil {
 		return CommitTableIngestion400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "ingestion not available (S3 not configured)"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
@@ -82,21 +83,19 @@ func (h *APIHandler) CommitTableIngestion(ctx context.Context, request CommitTab
 		}
 	}
 
-	filesRegistered := int64(result.FilesRegistered)
-	filesSkipped := int64(result.FilesSkipped)
 	return CommitTableIngestion200JSONResponse{
 		Body: IngestionResult{
-			FilesRegistered: &filesRegistered,
-			FilesSkipped:    &filesSkipped,
-			Schema:          &result.Schema,
-			Table:           &result.Table,
+			FilesRegistered: safeIntToInt32(result.FilesRegistered),
+			FilesSkipped:    safeIntToInt32(result.FilesSkipped),
+			Schema:          result.Schema,
+			Table:           result.Table,
 		},
 		Headers: CommitTableIngestion200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // LoadTableExternalFiles implements the endpoint for loading external files into a table.
-func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, request LoadTableExternalFilesRequestObject) (LoadTableExternalFilesResponseObject, error) {
+func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, request GenLoadTableExternalFilesRequest) (GenLoadTableExternalFilesResponse, error) {
 	if h.ingestion == nil {
 		return LoadTableExternalFiles400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "ingestion not available (S3 not configured)"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
@@ -126,14 +125,12 @@ func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, request LoadTab
 		}
 	}
 
-	filesRegistered := int64(result.FilesRegistered)
-	filesSkipped := int64(result.FilesSkipped)
 	return LoadTableExternalFiles200JSONResponse{
 		Body: IngestionResult{
-			FilesRegistered: &filesRegistered,
-			FilesSkipped:    &filesSkipped,
-			Schema:          &result.Schema,
-			Table:           &result.Table,
+			FilesRegistered: safeIntToInt32(result.FilesRegistered),
+			FilesSkipped:    safeIntToInt32(result.FilesSkipped),
+			Schema:          result.Schema,
+			Table:           result.Table,
 		},
 		Headers: LoadTableExternalFiles200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil

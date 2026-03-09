@@ -23,7 +23,7 @@ func TestAPI_ListAll(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIEndpoint
+	var endpoints []gen.APIGenEndpoint
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.Greater(t, len(endpoints), 50, "should have many API endpoints")
 }
@@ -40,7 +40,7 @@ func TestAPI_Search(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIEndpoint
+	var endpoints []gen.APIGenEndpoint
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.NotEmpty(t, endpoints, "should find schema-related endpoints")
 }
@@ -57,7 +57,7 @@ func TestAPI_Describe(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var ep gen.APIEndpoint
+	var ep gen.APIGenEndpoint
 	require.NoError(t, json.Unmarshal([]byte(output), &ep))
 	assert.Equal(t, "listSchemas", ep.OperationID)
 	assert.Equal(t, "GET", ep.Method)
@@ -88,7 +88,7 @@ func TestAPI_ListByTag(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIEndpoint
+	var endpoints []gen.APIGenEndpoint
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.NotEmpty(t, endpoints, "should find Security-tagged endpoints")
 	for _, ep := range endpoints {
@@ -115,7 +115,7 @@ func TestAPI_ListByTag_CaseInsensitive(t *testing.T) {
 	output := old()
 	require.NoError(t, err)
 
-	var endpoints []gen.APIEndpoint
+	var endpoints []gen.APIGenEndpoint
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
 	assert.NotEmpty(t, endpoints, "case-insensitive tag filter should match Security")
 }
@@ -133,7 +133,7 @@ func TestAPI_Search_NoMatches(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should be valid JSON with null or empty array
-	var endpoints []gen.APIEndpoint
+	var endpoints []gen.APIGenEndpoint
 	err = json.Unmarshal([]byte(output), &endpoints)
 	require.NoError(t, err)
 	assert.Empty(t, endpoints, "nonsense query should return no matches")
@@ -321,6 +321,7 @@ func TestAPI_Describe_TableOutput(t *testing.T) {
 	assert.Contains(t, output, "createSchema")
 	assert.Contains(t, output, "PARAMETERS:")
 	assert.Contains(t, output, "catalogName")
+	assert.Contains(t, output, "DESCRIPTION")
 	assert.Contains(t, output, "BODY FIELDS:")
 	assert.Contains(t, output, "name")
 }

@@ -59,7 +59,7 @@ type columnMaskService interface {
 // === Principals ===
 
 // ListPrincipals implements the endpoint for listing all principals. Requires admin privileges.
-func (h *APIHandler) ListPrincipals(ctx context.Context, req ListPrincipalsRequestObject) (ListPrincipalsResponseObject, error) {
+func (h *APIHandler) ListPrincipals(ctx context.Context, req GenListPrincipalsRequest) (GenListPrincipalsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	ps, total, err := h.principals.List(ctx, page)
 	if err != nil {
@@ -75,14 +75,14 @@ func (h *APIHandler) ListPrincipals(ctx context.Context, req ListPrincipalsReque
 		out[i] = principalToAPI(p)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListPrincipals200JSONResponse{
-		Body:    PaginatedPrincipals{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListPrincipals200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListPrincipals200JSONResponse{
+		Body:    PaginatedPrincipals{Data: out, NextPageToken: optStr(npt)},
+		Headers: GenListPrincipals200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreatePrincipal implements the endpoint for creating a new principal.
-func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalRequestObject) (CreatePrincipalResponseObject, error) {
+func (h *APIHandler) CreatePrincipal(ctx context.Context, req GenCreatePrincipalRequest) (GenCreatePrincipalResponse, error) {
 	domReq := domain.CreatePrincipalRequest{
 		Name: req.Body.Name,
 	}
@@ -105,31 +105,31 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req CreatePrincipalReq
 			return nil, err
 		}
 	}
-	return CreatePrincipal201JSONResponse{
+	return GenCreatePrincipal201JSONResponse{
 		Body:    principalToAPI(*result),
-		Headers: CreatePrincipal201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreatePrincipal201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetPrincipal implements the endpoint for retrieving a principal by ID.
-func (h *APIHandler) GetPrincipal(ctx context.Context, req GetPrincipalRequestObject) (GetPrincipalResponseObject, error) {
+func (h *APIHandler) GetPrincipal(ctx context.Context, req GenGetPrincipalRequest) (GenGetPrincipalResponse, error) {
 	p, err := h.principals.GetByID(ctx, req.PrincipalId)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetPrincipal404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetPrincipal404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetPrincipal200JSONResponse{
+	return GenGetPrincipal200JSONResponse{
 		Body:    principalToAPI(*p),
-		Headers: GetPrincipal200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetPrincipal200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeletePrincipal implements the endpoint for deleting a principal by ID.
-func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalRequestObject) (DeletePrincipalResponseObject, error) {
+func (h *APIHandler) DeletePrincipal(ctx context.Context, req GenDeletePrincipalRequest) (GenDeletePrincipalResponse, error) {
 	if err := h.principals.Delete(ctx, req.PrincipalId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -140,11 +140,11 @@ func (h *APIHandler) DeletePrincipal(ctx context.Context, req DeletePrincipalReq
 			return nil, err
 		}
 	}
-	return DeletePrincipal204Response{}, nil
+	return GenDeletePrincipal204Response{}, nil
 }
 
 // UpdatePrincipalAdmin implements the endpoint for updating a principal's admin status.
-func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req UpdatePrincipalAdminRequestObject) (UpdatePrincipalAdminResponseObject, error) {
+func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req GenUpdatePrincipalAdminRequest) (GenUpdatePrincipalAdminResponse, error) {
 	if err := h.principals.SetAdmin(ctx, req.PrincipalId, req.Body.IsAdmin); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -155,13 +155,13 @@ func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req UpdatePrincip
 			return nil, err
 		}
 	}
-	return UpdatePrincipalAdmin204Response{}, nil
+	return GenUpdatePrincipalAdmin204Response{}, nil
 }
 
 // === Groups ===
 
 // ListGroups implements the endpoint for listing all groups.
-func (h *APIHandler) ListGroups(ctx context.Context, req ListGroupsRequestObject) (ListGroupsResponseObject, error) {
+func (h *APIHandler) ListGroups(ctx context.Context, req GenListGroupsRequest) (GenListGroupsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	gs, total, err := h.groups.List(ctx, page)
 	if err != nil {
@@ -177,14 +177,14 @@ func (h *APIHandler) ListGroups(ctx context.Context, req ListGroupsRequestObject
 		out[i] = groupToAPI(g)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListGroups200JSONResponse{
-		Body:    PaginatedGroups{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListGroups200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListGroups200JSONResponse{
+		Body:    PaginatedGroups{Data: out, NextPageToken: optStr(npt)},
+		Headers: GenListGroups200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateGroup implements the endpoint for creating a new group.
-func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObject) (CreateGroupResponseObject, error) {
+func (h *APIHandler) CreateGroup(ctx context.Context, req GenCreateGroupRequest) (GenCreateGroupResponse, error) {
 	domReq := domain.CreateGroupRequest{Name: req.Body.Name}
 	if req.Body.Description != nil {
 		domReq.Description = *req.Body.Description
@@ -202,31 +202,31 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req CreateGroupRequestObje
 			return nil, err
 		}
 	}
-	return CreateGroup201JSONResponse{
+	return GenCreateGroup201JSONResponse{
 		Body:    groupToAPI(*result),
-		Headers: CreateGroup201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateGroup201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetGroup implements the endpoint for retrieving a group by ID.
-func (h *APIHandler) GetGroup(ctx context.Context, req GetGroupRequestObject) (GetGroupResponseObject, error) {
+func (h *APIHandler) GetGroup(ctx context.Context, req GenGetGroupRequest) (GenGetGroupResponse, error) {
 	g, err := h.groups.GetByID(ctx, req.GroupId)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetGroup404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetGroup404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetGroup200JSONResponse{
+	return GenGetGroup200JSONResponse{
 		Body:    groupToAPI(*g),
-		Headers: GetGroup200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetGroup200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteGroup implements the endpoint for deleting a group by ID.
-func (h *APIHandler) DeleteGroup(ctx context.Context, req DeleteGroupRequestObject) (DeleteGroupResponseObject, error) {
+func (h *APIHandler) DeleteGroup(ctx context.Context, req GenDeleteGroupRequest) (GenDeleteGroupResponse, error) {
 	if err := h.groups.Delete(ctx, req.GroupId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -235,11 +235,11 @@ func (h *APIHandler) DeleteGroup(ctx context.Context, req DeleteGroupRequestObje
 			return nil, err
 		}
 	}
-	return DeleteGroup204Response{}, nil
+	return GenDeleteGroup204Response{}, nil
 }
 
 // ListGroupMembers implements the endpoint for listing members of a group.
-func (h *APIHandler) ListGroupMembers(ctx context.Context, req ListGroupMembersRequestObject) (ListGroupMembersResponseObject, error) {
+func (h *APIHandler) ListGroupMembers(ctx context.Context, req GenListGroupMembersRequest) (GenListGroupMembersResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	ms, total, err := h.groups.ListMembers(ctx, req.GroupId, page)
 	if err != nil {
@@ -259,14 +259,14 @@ func (h *APIHandler) ListGroupMembers(ctx context.Context, req ListGroupMembersR
 		out[i] = groupMemberToAPI(m, req.GroupId)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListGroupMembers200JSONResponse{
-		Body:    PaginatedGroupMembers{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListGroupMembers200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListGroupMembers200JSONResponse{
+		Body:    PaginatedGroupMembers{Data: out, NextPageToken: optStr(npt)},
+		Headers: GenListGroupMembers200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateGroupMember implements the endpoint for adding a member to a group.
-func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMemberRequestObject) (CreateGroupMemberResponseObject, error) {
+func (h *APIHandler) CreateGroupMember(ctx context.Context, req GenCreateGroupMemberRequest) (GenCreateGroupMemberResponse, error) {
 	if err := h.groups.AddMember(ctx, domain.AddGroupMemberRequest{
 		GroupID:    req.GroupId,
 		MemberType: string(req.Body.MemberType),
@@ -287,7 +287,7 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req CreateGroupMembe
 }
 
 // DeleteGroupMember implements the endpoint for removing a member from a group.
-func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMemberRequestObject) (DeleteGroupMemberResponseObject, error) {
+func (h *APIHandler) DeleteGroupMember(ctx context.Context, req GenDeleteGroupMemberRequest) (GenDeleteGroupMemberResponse, error) {
 	if err := h.groups.RemoveMember(ctx, domain.RemoveGroupMemberRequest{
 		GroupID:    req.GroupId,
 		MemberType: string(req.Params.MemberType),
@@ -304,13 +304,13 @@ func (h *APIHandler) DeleteGroupMember(ctx context.Context, req DeleteGroupMembe
 			return nil, err
 		}
 	}
-	return DeleteGroupMember204Response{}, nil
+	return GenDeleteGroupMember204Response{}, nil
 }
 
 // === Grants ===
 
 // ListGrants implements the endpoint for listing privilege grants filtered by principal or securable.
-func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject) (ListGrantsResponseObject, error) {
+func (h *APIHandler) ListGrants(ctx context.Context, req GenListGrantsRequest) (GenListGrantsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	var grants []domain.PrivilegeGrant
 	var total int64
@@ -338,14 +338,14 @@ func (h *APIHandler) ListGrants(ctx context.Context, req ListGrantsRequestObject
 		out[i] = grantToAPI(g)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListGrants200JSONResponse{
-		Body:    PaginatedGrants{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListGrants200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListGrants200JSONResponse{
+		Body:    PaginatedGrants{Data: out, NextPageToken: optStr(npt)},
+		Headers: GenListGrants200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateGrant implements the endpoint for granting a privilege to a principal.
-func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObject) (CreateGrantResponseObject, error) {
+func (h *APIHandler) CreateGrant(ctx context.Context, req GenCreateGrantRequest) (GenCreateGrantResponse, error) {
 	domReq := domain.CreateGrantRequest{
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: string(req.Body.PrincipalType),
@@ -362,14 +362,14 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req CreateGrantRequestObje
 			return nil, err
 		}
 	}
-	return CreateGrant201JSONResponse{
+	return GenCreateGrant201JSONResponse{
 		Body:    grantToAPI(*result),
-		Headers: CreateGrant201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateGrant201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteGrant implements the endpoint for revoking a privilege from a principal.
-func (h *APIHandler) DeleteGrant(ctx context.Context, req DeleteGrantRequestObject) (DeleteGrantResponseObject, error) {
+func (h *APIHandler) DeleteGrant(ctx context.Context, req GenDeleteGrantRequest) (GenDeleteGrantResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.grants.Revoke(ctx, principal, req.GrantId); err != nil {
@@ -382,13 +382,13 @@ func (h *APIHandler) DeleteGrant(ctx context.Context, req DeleteGrantRequestObje
 			return nil, err
 		}
 	}
-	return DeleteGrant204Response{}, nil
+	return GenDeleteGrant204Response{}, nil
 }
 
 // === Row Filters ===
 
 // ListRowFilters implements the endpoint for listing row filters for a table.
-func (h *APIHandler) ListRowFilters(ctx context.Context, req ListRowFiltersRequestObject) (ListRowFiltersResponseObject, error) {
+func (h *APIHandler) ListRowFilters(ctx context.Context, req GenListRowFiltersRequest) (GenListRowFiltersResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	fs, total, err := h.rowFilters.GetForTable(ctx, req.TableId, page)
 	if err != nil {
@@ -404,14 +404,14 @@ func (h *APIHandler) ListRowFilters(ctx context.Context, req ListRowFiltersReque
 		out[i] = rowFilterToAPI(f)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListRowFilters200JSONResponse{
-		Body:    PaginatedRowFilters{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListRowFilters200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListRowFilters200JSONResponse{
+		Body:    PaginatedRowFilters{Data: out, NextPageToken: optStr(npt)},
+		Headers: GenListRowFilters200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateRowFilter implements the endpoint for creating a row filter on a table.
-func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterRequestObject) (CreateRowFilterResponseObject, error) {
+func (h *APIHandler) CreateRowFilter(ctx context.Context, req GenCreateRowFilterRequest) (GenCreateRowFilterResponse, error) {
 	domReq := domain.CreateRowFilterRequest{
 		TableID:   req.TableId,
 		Name:      req.Body.Name,
@@ -431,14 +431,14 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req CreateRowFilterReq
 			return nil, err
 		}
 	}
-	return CreateRowFilter201JSONResponse{
+	return GenCreateRowFilter201JSONResponse{
 		Body:    rowFilterToAPI(*result),
-		Headers: CreateRowFilter201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateRowFilter201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteRowFilter implements the endpoint for deleting a row filter.
-func (h *APIHandler) DeleteRowFilter(ctx context.Context, req DeleteRowFilterRequestObject) (DeleteRowFilterResponseObject, error) {
+func (h *APIHandler) DeleteRowFilter(ctx context.Context, req GenDeleteRowFilterRequest) (GenDeleteRowFilterResponse, error) {
 	if err := h.rowFilters.Delete(ctx, req.RowFilterId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -449,11 +449,11 @@ func (h *APIHandler) DeleteRowFilter(ctx context.Context, req DeleteRowFilterReq
 			return nil, err
 		}
 	}
-	return DeleteRowFilter204Response{}, nil
+	return GenDeleteRowFilter204Response{}, nil
 }
 
 // BindRowFilter implements the endpoint for binding a row filter to a principal.
-func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequestObject) (BindRowFilterResponseObject, error) {
+func (h *APIHandler) BindRowFilter(ctx context.Context, req GenBindRowFilterRequest) (GenBindRowFilterResponse, error) {
 	if err := h.rowFilters.Bind(ctx, domain.BindRowFilterRequest{
 		RowFilterID:   req.RowFilterId,
 		PrincipalID:   req.Body.PrincipalId,
@@ -472,7 +472,7 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req BindRowFilterRequest
 }
 
 // ListRowFilterBindings implements the endpoint for listing bindings for a row filter.
-func (h *APIHandler) ListRowFilterBindings(ctx context.Context, req ListRowFilterBindingsRequestObject) (ListRowFilterBindingsResponseObject, error) {
+func (h *APIHandler) ListRowFilterBindings(ctx context.Context, req GenListRowFilterBindingsRequest) (GenListRowFilterBindingsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	bindings, err := h.rowFilters.ListBindings(ctx, req.RowFilterId)
 	if err != nil {
@@ -488,20 +488,22 @@ func (h *APIHandler) ListRowFilterBindings(ctx context.Context, req ListRowFilte
 	}
 	data := make([]RowFilterBinding, 0, end-start)
 	for _, binding := range bindings[start:end] {
-		principalType := RowFilterBindingPrincipalType(binding.PrincipalType)
 		data = append(data, RowFilterBinding{
 			Id:            &binding.ID,
 			RowFilterId:   &binding.RowFilterID,
 			PrincipalId:   &binding.PrincipalID,
-			PrincipalType: &principalType,
+			PrincipalType: &binding.PrincipalType,
 		})
 	}
 	next := domain.NextPageToken(start, page.Limit(), int64(len(bindings)))
-	return ListRowFilterBindings200JSONResponse(PaginatedRowFilterBindings{Data: &data, NextPageToken: optStr(next)}), nil
+	return ListRowFilterBindings200JSONResponse{
+		Body:    PaginatedRowFilterBindings{Data: data, NextPageToken: optStr(next)},
+		Headers: ListRowFilterBindings200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // UnbindRowFilter implements the endpoint for unbinding a row filter from a principal.
-func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterRequestObject) (UnbindRowFilterResponseObject, error) {
+func (h *APIHandler) UnbindRowFilter(ctx context.Context, req GenUnbindRowFilterRequest) (GenUnbindRowFilterResponse, error) {
 	if err := h.rowFilters.Unbind(ctx, domain.BindRowFilterRequest{
 		RowFilterID:   req.RowFilterId,
 		PrincipalID:   req.Params.PrincipalId,
@@ -516,13 +518,13 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req UnbindRowFilterReq
 			return nil, err
 		}
 	}
-	return UnbindRowFilter204Response{}, nil
+	return GenUnbindRowFilter204Response{}, nil
 }
 
 // === Column Masks ===
 
 // ListColumnMasks implements the endpoint for listing column masks for a table.
-func (h *APIHandler) ListColumnMasks(ctx context.Context, req ListColumnMasksRequestObject) (ListColumnMasksResponseObject, error) {
+func (h *APIHandler) ListColumnMasks(ctx context.Context, req GenListColumnMasksRequest) (GenListColumnMasksResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	ms, total, err := h.columnMasks.GetForTable(ctx, req.TableId, page)
 	if err != nil {
@@ -533,14 +535,14 @@ func (h *APIHandler) ListColumnMasks(ctx context.Context, req ListColumnMasksReq
 		out[i] = columnMaskToAPI(m)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListColumnMasks200JSONResponse{
-		Body:    PaginatedColumnMasks{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListColumnMasks200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListColumnMasks200JSONResponse{
+		Body:    PaginatedColumnMasks{Data: out, NextPageToken: optStr(npt)},
+		Headers: GenListColumnMasks200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateColumnMask implements the endpoint for creating a column mask on a table.
-func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskRequestObject) (CreateColumnMaskResponseObject, error) {
+func (h *APIHandler) CreateColumnMask(ctx context.Context, req GenCreateColumnMaskRequest) (GenCreateColumnMaskResponse, error) {
 	domReq := domain.CreateColumnMaskRequest{
 		Name:           req.Body.Name,
 		TableID:        req.TableId,
@@ -561,14 +563,14 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req CreateColumnMaskR
 			return nil, err
 		}
 	}
-	return CreateColumnMask201JSONResponse{
+	return GenCreateColumnMask201JSONResponse{
 		Body:    columnMaskToAPI(*result),
-		Headers: CreateColumnMask201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateColumnMask201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteColumnMask implements the endpoint for deleting a column mask.
-func (h *APIHandler) DeleteColumnMask(ctx context.Context, req DeleteColumnMaskRequestObject) (DeleteColumnMaskResponseObject, error) {
+func (h *APIHandler) DeleteColumnMask(ctx context.Context, req GenDeleteColumnMaskRequest) (GenDeleteColumnMaskResponse, error) {
 	if err := h.columnMasks.Delete(ctx, req.ColumnMaskId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -579,11 +581,11 @@ func (h *APIHandler) DeleteColumnMask(ctx context.Context, req DeleteColumnMaskR
 			return nil, err
 		}
 	}
-	return DeleteColumnMask204Response{}, nil
+	return GenDeleteColumnMask204Response{}, nil
 }
 
 // BindColumnMask implements the endpoint for binding a column mask to a principal.
-func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskRequestObject) (BindColumnMaskResponseObject, error) {
+func (h *APIHandler) BindColumnMask(ctx context.Context, req GenBindColumnMaskRequest) (GenBindColumnMaskResponse, error) {
 	seeOriginal := false
 	if req.Body.SeeOriginal != nil {
 		seeOriginal = *req.Body.SeeOriginal
@@ -607,7 +609,7 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req BindColumnMaskReque
 }
 
 // ListColumnMaskBindings implements the endpoint for listing bindings for a column mask.
-func (h *APIHandler) ListColumnMaskBindings(ctx context.Context, req ListColumnMaskBindingsRequestObject) (ListColumnMaskBindingsResponseObject, error) {
+func (h *APIHandler) ListColumnMaskBindings(ctx context.Context, req GenListColumnMaskBindingsRequest) (GenListColumnMaskBindingsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	bindings, err := h.columnMasks.ListBindings(ctx, req.ColumnMaskId)
 	if err != nil {
@@ -623,21 +625,23 @@ func (h *APIHandler) ListColumnMaskBindings(ctx context.Context, req ListColumnM
 	}
 	data := make([]ColumnMaskBinding, 0, end-start)
 	for _, binding := range bindings[start:end] {
-		principalType := ColumnMaskBindingPrincipalType(binding.PrincipalType)
 		data = append(data, ColumnMaskBinding{
 			Id:            &binding.ID,
 			ColumnMaskId:  &binding.ColumnMaskID,
 			PrincipalId:   &binding.PrincipalID,
-			PrincipalType: &principalType,
+			PrincipalType: &binding.PrincipalType,
 			SeeOriginal:   &binding.SeeOriginal,
 		})
 	}
 	next := domain.NextPageToken(start, page.Limit(), int64(len(bindings)))
-	return ListColumnMaskBindings200JSONResponse(PaginatedColumnMaskBindings{Data: &data, NextPageToken: optStr(next)}), nil
+	return ListColumnMaskBindings200JSONResponse{
+		Body:    PaginatedColumnMaskBindings{Data: data, NextPageToken: optStr(next)},
+		Headers: ListColumnMaskBindings200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // UnbindColumnMask implements the endpoint for unbinding a column mask from a principal.
-func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskRequestObject) (UnbindColumnMaskResponseObject, error) {
+func (h *APIHandler) UnbindColumnMask(ctx context.Context, req GenUnbindColumnMaskRequest) (GenUnbindColumnMaskResponse, error) {
 	if err := h.columnMasks.Unbind(ctx, domain.BindColumnMaskRequest{
 		ColumnMaskID:  req.ColumnMaskId,
 		PrincipalID:   req.Params.PrincipalId,
@@ -650,5 +654,5 @@ func (h *APIHandler) UnbindColumnMask(ctx context.Context, req UnbindColumnMaskR
 			return nil, err
 		}
 	}
-	return UnbindColumnMask204Response{}, nil
+	return GenUnbindColumnMask204Response{}, nil
 }

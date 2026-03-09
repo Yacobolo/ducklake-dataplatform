@@ -44,7 +44,7 @@ type gitRepoService interface {
 // === Notebooks ===
 
 // ListNotebooks implements the endpoint for listing notebooks.
-func (h *APIHandler) ListNotebooks(ctx context.Context, req ListNotebooksRequestObject) (ListNotebooksResponseObject, error) {
+func (h *APIHandler) ListNotebooks(ctx context.Context, req GenListNotebooksRequest) (GenListNotebooksResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	nbs, total, err := h.notebooks.ListNotebooks(ctx, req.Params.Owner, page)
 	if err != nil {
@@ -56,14 +56,14 @@ func (h *APIHandler) ListNotebooks(ctx context.Context, req ListNotebooksRequest
 		data[i] = notebookToAPI(nb)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListNotebooks200JSONResponse{
-		Body:    PaginatedNotebooks{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListNotebooks200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListNotebooks200JSONResponse{
+		Body:    PaginatedNotebooks{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListNotebooks200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateNotebook implements the endpoint for creating a notebook.
-func (h *APIHandler) CreateNotebook(ctx context.Context, req CreateNotebookRequestObject) (CreateNotebookResponseObject, error) {
+func (h *APIHandler) CreateNotebook(ctx context.Context, req GenCreateNotebookRequest) (GenCreateNotebookResponse, error) {
 	domReq := domain.CreateNotebookRequest{
 		Name:        req.Body.Name,
 		Description: req.Body.Description,
@@ -83,19 +83,19 @@ func (h *APIHandler) CreateNotebook(ctx context.Context, req CreateNotebookReque
 			return CreateNotebook400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateNotebook201JSONResponse{
+	return GenCreateNotebook201JSONResponse{
 		Body:    notebookToAPI(*result),
-		Headers: CreateNotebook201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateNotebook201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetNotebook implements the endpoint for retrieving a notebook with its cells.
-func (h *APIHandler) GetNotebook(ctx context.Context, req GetNotebookRequestObject) (GetNotebookResponseObject, error) {
+func (h *APIHandler) GetNotebook(ctx context.Context, req GenGetNotebookRequest) (GenGetNotebookResponse, error) {
 	nb, cells, err := h.notebooks.GetNotebook(ctx, req.NotebookId)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetNotebook404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetNotebook404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -107,25 +107,17 @@ func (h *APIHandler) GetNotebook(ctx context.Context, req GetNotebookRequestObje
 		apiCells[i] = cellToAPI(c)
 	}
 	var publishModel *NotebookPublishModel
-	if pm, err := h.notebooks.GetPublishModel(ctx, req.NotebookId); err == nil && pm != nil {
-		materialization := NotebookPublishModelMaterialization(pm.Materialization)
-		publishModel = &NotebookPublishModel{
-			ProjectName:     &pm.ProjectName,
-			Name:            &pm.Name,
-			Materialization: &materialization,
-			OutputCellId:    &pm.OutputCellID,
-		}
-	} else if err != nil {
-		return nil, err
+	if model, err := h.notebooks.GetPublishModel(ctx, req.NotebookId); err == nil && model != nil {
+		publishModel = notebookPublishModelToAPI(model)
 	}
-	return GetNotebook200JSONResponse{
+	return GenGetNotebook200JSONResponse{
 		Body:    NotebookDetail{Notebook: &apiNb, Cells: &apiCells, PublishModel: publishModel},
-		Headers: GetNotebook200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetNotebook200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateNotebook implements the endpoint for updating notebook metadata.
-func (h *APIHandler) UpdateNotebook(ctx context.Context, req UpdateNotebookRequestObject) (UpdateNotebookResponseObject, error) {
+func (h *APIHandler) UpdateNotebook(ctx context.Context, req GenUpdateNotebookRequest) (GenUpdateNotebookResponse, error) {
 	domReq := domain.UpdateNotebookRequest{
 		Name:        req.Body.Name,
 		Description: req.Body.Description,
@@ -148,14 +140,14 @@ func (h *APIHandler) UpdateNotebook(ctx context.Context, req UpdateNotebookReque
 			return nil, err
 		}
 	}
-	return UpdateNotebook200JSONResponse{
+	return GenUpdateNotebook200JSONResponse{
 		Body:    notebookToAPI(*result),
-		Headers: UpdateNotebook200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateNotebook200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteNotebook implements the endpoint for deleting a notebook.
-func (h *APIHandler) DeleteNotebook(ctx context.Context, req DeleteNotebookRequestObject) (DeleteNotebookResponseObject, error) {
+func (h *APIHandler) DeleteNotebook(ctx context.Context, req GenDeleteNotebookRequest) (GenDeleteNotebookResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	isAdmin := cp.IsAdmin
@@ -170,16 +162,18 @@ func (h *APIHandler) DeleteNotebook(ctx context.Context, req DeleteNotebookReque
 			return nil, err
 		}
 	}
-	return DeleteNotebook204Response{}, nil
+	return GenDeleteNotebook204Response{}, nil
 }
 
 // === Cells ===
 
 // CreateCell implements the endpoint for adding a cell to a notebook.
-func (h *APIHandler) CreateCell(ctx context.Context, req CreateCellRequestObject) (CreateCellResponseObject, error) {
+func (h *APIHandler) CreateCell(ctx context.Context, req GenCreateCellRequest) (GenCreateCellResponse, error) {
 	domReq := domain.CreateCellRequest{
 		CellType: domain.CellType(req.Body.CellType),
-		Name:     req.Body.Name,
+	}
+	if req.Body.Name != nil {
+		domReq.Name = req.Body.Name
 	}
 	if req.Body.Role != nil {
 		role := domain.CellRole(*req.Body.Role)
@@ -189,11 +183,7 @@ func (h *APIHandler) CreateCell(ctx context.Context, req CreateCellRequestObject
 		domReq.Disabled = *req.Body.Disabled
 	}
 	if req.Body.Test != nil {
-		testCfg := &domain.NotebookCellTestConfig{}
-		if req.Body.Test.Severity != nil {
-			testCfg.Severity = domain.NotebookTestSeverity(*req.Body.Test.Severity)
-		}
-		domReq.Test = testCfg
+		domReq.Test = notebookCellTestConfigFromAPI(req.Body.Test)
 	}
 	if req.Body.Content != nil {
 		domReq.Content = *req.Body.Content
@@ -220,17 +210,19 @@ func (h *APIHandler) CreateCell(ctx context.Context, req CreateCellRequestObject
 			return CreateCell400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateCell201JSONResponse{
+	return GenCreateCell201JSONResponse{
 		Body:    cellToAPI(*result),
-		Headers: CreateCell201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateCell201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateCell implements the endpoint for updating a cell.
-func (h *APIHandler) UpdateCell(ctx context.Context, req UpdateCellRequestObject) (UpdateCellResponseObject, error) {
+func (h *APIHandler) UpdateCell(ctx context.Context, req GenUpdateCellRequest) (GenUpdateCellResponse, error) {
 	domReq := domain.UpdateCellRequest{
-		Name:    req.Body.Name,
 		Content: req.Body.Content,
+	}
+	if req.Body.Name != nil {
+		domReq.Name = req.Body.Name
 	}
 	if req.Body.Role != nil {
 		role := domain.CellRole(*req.Body.Role)
@@ -240,11 +232,7 @@ func (h *APIHandler) UpdateCell(ctx context.Context, req UpdateCellRequestObject
 		domReq.Disabled = req.Body.Disabled
 	}
 	if req.Body.Test != nil {
-		testCfg := &domain.NotebookCellTestConfig{}
-		if req.Body.Test.Severity != nil {
-			testCfg.Severity = domain.NotebookTestSeverity(*req.Body.Test.Severity)
-		}
-		domReq.Test = testCfg
+		domReq.Test = notebookCellTestConfigFromAPI(req.Body.Test)
 	}
 	if req.Body.Position != nil {
 		pos := int(*req.Body.Position)
@@ -268,14 +256,14 @@ func (h *APIHandler) UpdateCell(ctx context.Context, req UpdateCellRequestObject
 			return nil, err
 		}
 	}
-	return UpdateCell200JSONResponse{
+	return GenUpdateCell200JSONResponse{
 		Body:    cellToAPI(*result),
-		Headers: UpdateCell200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateCell200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteCell implements the endpoint for deleting a cell.
-func (h *APIHandler) DeleteCell(ctx context.Context, req DeleteCellRequestObject) (DeleteCellResponseObject, error) {
+func (h *APIHandler) DeleteCell(ctx context.Context, req GenDeleteCellRequest) (GenDeleteCellResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	isAdmin := cp.IsAdmin
@@ -290,11 +278,11 @@ func (h *APIHandler) DeleteCell(ctx context.Context, req DeleteCellRequestObject
 			return nil, err
 		}
 	}
-	return DeleteCell204Response{}, nil
+	return GenDeleteCell204Response{}, nil
 }
 
 // ReorderCells implements the endpoint for reordering cells in a notebook.
-func (h *APIHandler) ReorderCells(ctx context.Context, req ReorderCellsRequestObject) (ReorderCellsResponseObject, error) {
+func (h *APIHandler) ReorderCells(ctx context.Context, req GenReorderCellsRequest) (GenReorderCellsResponse, error) {
 	domReq := domain.ReorderCellsRequest{
 		CellIDs: req.Body.CellIds,
 	}
@@ -322,7 +310,7 @@ func (h *APIHandler) ReorderCells(ctx context.Context, req ReorderCellsRequestOb
 		data[i] = cellToAPI(c)
 	}
 	return ReorderCells200JSONResponse{
-		Body:    data,
+		Body:    CellList{Data: data},
 		Headers: ReorderCells200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -330,7 +318,7 @@ func (h *APIHandler) ReorderCells(ctx context.Context, req ReorderCellsRequestOb
 // === Sessions ===
 
 // CreateNotebookSession implements the endpoint for starting a notebook session.
-func (h *APIHandler) CreateNotebookSession(ctx context.Context, req CreateNotebookSessionRequestObject) (CreateNotebookSessionResponseObject, error) {
+func (h *APIHandler) CreateNotebookSession(ctx context.Context, req GenCreateNotebookSessionRequest) (GenCreateNotebookSessionResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
@@ -343,14 +331,14 @@ func (h *APIHandler) CreateNotebookSession(ctx context.Context, req CreateNotebo
 			return nil, err
 		}
 	}
-	return CreateNotebookSession201JSONResponse{
+	return GenCreateNotebookSession201JSONResponse{
 		Body:    sessionToAPI(*result),
-		Headers: CreateNotebookSession201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateNotebookSession201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CloseNotebookSession implements the endpoint for closing a notebook session.
-func (h *APIHandler) CloseNotebookSession(ctx context.Context, req CloseNotebookSessionRequestObject) (CloseNotebookSessionResponseObject, error) {
+func (h *APIHandler) CloseNotebookSession(ctx context.Context, req GenCloseNotebookSessionRequest) (GenCloseNotebookSessionResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.sessions.CloseSession(ctx, req.SessionId, principal); err != nil {
@@ -361,11 +349,11 @@ func (h *APIHandler) CloseNotebookSession(ctx context.Context, req CloseNotebook
 			return nil, err
 		}
 	}
-	return CloseNotebookSession204Response{}, nil
+	return GenCloseNotebookSession204Response{}, nil
 }
 
 // ExecuteCell implements the endpoint for executing a single cell in a session.
-func (h *APIHandler) ExecuteCell(ctx context.Context, req ExecuteCellRequestObject) (ExecuteCellResponseObject, error) {
+func (h *APIHandler) ExecuteCell(ctx context.Context, req GenExecuteCellRequest) (GenExecuteCellResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	result, err := h.sessions.ExecuteCell(ctx, req.SessionId, req.CellId, principal)
@@ -388,7 +376,7 @@ func (h *APIHandler) ExecuteCell(ctx context.Context, req ExecuteCellRequestObje
 }
 
 // RunAllCells implements the endpoint for executing all SQL cells synchronously.
-func (h *APIHandler) RunAllCells(ctx context.Context, req RunAllCellsRequestObject) (RunAllCellsResponseObject, error) {
+func (h *APIHandler) RunAllCells(ctx context.Context, req GenRunAllCellsRequest) (GenRunAllCellsResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	result, err := h.sessions.RunAll(ctx, req.SessionId, principal)
@@ -407,7 +395,7 @@ func (h *APIHandler) RunAllCells(ctx context.Context, req RunAllCellsRequestObje
 }
 
 // RunAllCellsAsync implements the endpoint for starting async execution of all cells.
-func (h *APIHandler) RunAllCellsAsync(ctx context.Context, req RunAllCellsAsyncRequestObject) (RunAllCellsAsyncResponseObject, error) {
+func (h *APIHandler) RunAllCellsAsync(ctx context.Context, req GenRunAllCellsAsyncRequest) (GenRunAllCellsAsyncResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	result, err := h.sessions.RunAllAsync(ctx, req.SessionId, principal)
@@ -428,13 +416,13 @@ func (h *APIHandler) RunAllCellsAsync(ctx context.Context, req RunAllCellsAsyncR
 // === Jobs ===
 
 // ListNotebookJobs implements the endpoint for listing jobs for a notebook.
-func (h *APIHandler) ListNotebookJobs(ctx context.Context, req ListNotebookJobsRequestObject) (ListNotebookJobsResponseObject, error) {
+func (h *APIHandler) ListNotebookJobs(ctx context.Context, req GenListNotebookJobsRequest) (GenListNotebookJobsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	jobs, total, err := h.sessions.ListJobs(ctx, req.NotebookId, page)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListNotebookJobs404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenListNotebookJobs404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -445,33 +433,33 @@ func (h *APIHandler) ListNotebookJobs(ctx context.Context, req ListNotebookJobsR
 		data[i] = notebookJobToAPI(j)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListNotebookJobs200JSONResponse{
-		Body:    PaginatedNotebookJobs{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListNotebookJobs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListNotebookJobs200JSONResponse{
+		Body:    PaginatedNotebookJobs{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListNotebookJobs200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetNotebookJob implements the endpoint for getting job status.
-func (h *APIHandler) GetNotebookJob(ctx context.Context, req GetNotebookJobRequestObject) (GetNotebookJobResponseObject, error) {
+func (h *APIHandler) GetNotebookJob(ctx context.Context, req GenGetNotebookJobRequest) (GenGetNotebookJobResponse, error) {
 	result, err := h.sessions.GetJob(ctx, req.JobId)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetNotebookJob404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetNotebookJob404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetNotebookJob200JSONResponse{
+	return GenGetNotebookJob200JSONResponse{
 		Body:    notebookJobToAPI(*result),
-		Headers: GetNotebookJob200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetNotebookJob200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // === Git Repos ===
 
 // ListGitRepos implements the endpoint for listing Git repositories.
-func (h *APIHandler) ListGitRepos(ctx context.Context, req ListGitReposRequestObject) (ListGitReposResponseObject, error) {
+func (h *APIHandler) ListGitRepos(ctx context.Context, req GenListGitReposRequest) (GenListGitReposResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	repos, total, err := h.gitRepos.ListGitRepos(ctx, page)
 	if err != nil {
@@ -483,18 +471,20 @@ func (h *APIHandler) ListGitRepos(ctx context.Context, req ListGitReposRequestOb
 		data[i] = gitRepoToAPI(r)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListGitRepos200JSONResponse{
-		Body:    PaginatedGitRepos{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListGitRepos200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListGitRepos200JSONResponse{
+		Body:    PaginatedGitRepos{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListGitRepos200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateGitRepo implements the endpoint for registering a Git repository.
-func (h *APIHandler) CreateGitRepo(ctx context.Context, req CreateGitRepoRequestObject) (CreateGitRepoResponseObject, error) {
+func (h *APIHandler) CreateGitRepo(ctx context.Context, req GenCreateGitRepoRequest) (GenCreateGitRepoResponse, error) {
 	domReq := domain.CreateGitRepoRequest{
-		URL:       req.Body.Url,
-		Branch:    req.Body.Branch,
-		AuthToken: req.Body.AuthToken,
+		URL:    req.Body.Url,
+		Branch: req.Body.Branch,
+	}
+	if req.Body.AuthToken != nil {
+		domReq.AuthToken = *req.Body.AuthToken
 	}
 	if req.Body.Path != nil {
 		domReq.Path = *req.Body.Path
@@ -513,31 +503,31 @@ func (h *APIHandler) CreateGitRepo(ctx context.Context, req CreateGitRepoRequest
 			return CreateGitRepo400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateGitRepo201JSONResponse{
+	return GenCreateGitRepo201JSONResponse{
 		Body:    gitRepoToAPI(*result),
-		Headers: CreateGitRepo201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateGitRepo201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetGitRepo implements the endpoint for retrieving a Git repository.
-func (h *APIHandler) GetGitRepo(ctx context.Context, req GetGitRepoRequestObject) (GetGitRepoResponseObject, error) {
+func (h *APIHandler) GetGitRepo(ctx context.Context, req GenGetGitRepoRequest) (GenGetGitRepoResponse, error) {
 	result, err := h.gitRepos.GetGitRepo(ctx, req.GitRepoId)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetGitRepo404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetGitRepo404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetGitRepo200JSONResponse{
+	return GenGetGitRepo200JSONResponse{
 		Body:    gitRepoToAPI(*result),
-		Headers: GetGitRepo200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetGitRepo200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteGitRepo implements the endpoint for deleting a Git repository.
-func (h *APIHandler) DeleteGitRepo(ctx context.Context, req DeleteGitRepoRequestObject) (DeleteGitRepoResponseObject, error) {
+func (h *APIHandler) DeleteGitRepo(ctx context.Context, req GenDeleteGitRepoRequest) (GenDeleteGitRepoResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	isAdmin := cp.IsAdmin
@@ -550,16 +540,16 @@ func (h *APIHandler) DeleteGitRepo(ctx context.Context, req DeleteGitRepoRequest
 			return nil, err
 		}
 	}
-	return DeleteGitRepo204Response{}, nil
+	return GenDeleteGitRepo204Response{}, nil
 }
 
 // SyncGitRepo implements the endpoint for triggering a Git sync.
-func (h *APIHandler) SyncGitRepo(ctx context.Context, req SyncGitRepoRequestObject) (SyncGitRepoResponseObject, error) {
+func (h *APIHandler) SyncGitRepo(ctx context.Context, req GenSyncGitRepoRequest) (GenSyncGitRepoResponse, error) {
 	result, err := h.gitRepos.SyncGitRepo(ctx, req.GitRepoId)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotImplementedError)):
-			return SyncGitRepo500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 501, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenSyncGitRepo500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 501, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return SyncGitRepo404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
@@ -584,70 +574,100 @@ func (h *APIHandler) SyncGitRepo(ctx context.Context, req SyncGitRepoRequestObje
 // === Notebook Mappers ===
 
 func notebookToAPI(nb domain.Notebook) Notebook {
-	ct := nb.CreatedAt
-	ut := nb.UpdatedAt
 	return Notebook{
 		Id:          &nb.ID,
 		Name:        &nb.Name,
 		Description: nb.Description,
 		Owner:       &nb.Owner,
-		CreatedAt:   &ct,
-		UpdatedAt:   &ut,
+		CreatedAt:   formatTimePtr(&nb.CreatedAt),
+		UpdatedAt:   formatTimePtr(&nb.UpdatedAt),
 	}
 }
 
 func cellToAPI(c domain.Cell) Cell {
-	ct := c.CreatedAt
-	ut := c.UpdatedAt
 	cellType := CellCellType(c.CellType)
-	role := CellRole(c.Role)
 	pos := int32(c.Position) //nolint:gosec // positions are small ints
-	test := notebookCellTestConfigToAPI(c.Test)
+	var role *CellRole
+	if c.Role != "" {
+		r := CellRole(c.Role)
+		role = &r
+	}
+	var disabled *bool
+	if c.Disabled {
+		disabledValue := true
+		disabled = &disabledValue
+	}
 	return Cell{
 		Id:         &c.ID,
 		NotebookId: &c.NotebookID,
 		CellType:   &cellType,
 		Name:       c.Name,
-		Role:       &role,
-		Disabled:   &c.Disabled,
-		Test:       test,
+		Role:       role,
+		Disabled:   disabled,
+		Test:       notebookCellTestConfigToAPI(c.Test),
 		Content:    &c.Content,
 		Position:   &pos,
 		LastResult: c.LastResult,
-		CreatedAt:  &ct,
-		UpdatedAt:  &ut,
+		CreatedAt:  formatTimePtr(&c.CreatedAt),
+		UpdatedAt:  formatTimePtr(&c.UpdatedAt),
 	}
 }
 
-func notebookCellTestConfigToAPI(c *domain.NotebookCellTestConfig) *NotebookCellTestConfig {
-	if c == nil {
+func notebookPublishModelToAPI(model *domain.NotebookPublishModel) *NotebookPublishModel {
+	if model == nil {
 		return nil
 	}
-	severity := NotebookCellTestConfigSeverity(c.Severity)
-	return &NotebookCellTestConfig{Severity: &severity}
+	materialization := ModelMaterialization(model.Materialization)
+	return &NotebookPublishModel{
+		ProjectName:     &model.ProjectName,
+		Name:            &model.Name,
+		Materialization: &materialization,
+		OutputCellId:    &model.OutputCellID,
+	}
+}
+
+func notebookCellTestConfigFromAPI(cfg *NotebookCellTestConfig) *domain.NotebookCellTestConfig {
+	if cfg == nil {
+		return nil
+	}
+	out := &domain.NotebookCellTestConfig{}
+	if cfg.Severity != nil {
+		out.Severity = domain.NotebookTestSeverity(*cfg.Severity)
+	}
+	return out
+}
+
+func notebookCellTestConfigToAPI(cfg *domain.NotebookCellTestConfig) *NotebookCellTestConfig {
+	if cfg == nil {
+		return nil
+	}
+	out := &NotebookCellTestConfig{}
+	if cfg.Severity != "" {
+		severity := NotebookTestSeverity(cfg.Severity)
+		out.Severity = &severity
+	}
+	return out
 }
 
 func sessionToAPI(s domain.NotebookSession) NotebookSession {
-	ct := s.CreatedAt
-	lu := s.LastUsedAt
 	state := NotebookSessionState(s.State)
 	return NotebookSession{
 		Id:         &s.ID,
 		NotebookId: &s.NotebookID,
 		Principal:  &s.Principal,
 		State:      &state,
-		CreatedAt:  &ct,
-		LastUsedAt: &lu,
+		CreatedAt:  formatTimePtr(&s.CreatedAt),
+		LastUsedAt: formatTimePtr(&s.LastUsedAt),
 	}
 }
 
 func cellExecutionResultToAPI(r domain.CellExecutionResult) CellExecutionResult {
-	durationMs := r.Duration.Milliseconds()
+	durationMs := safeInt64ToInt32(r.Duration.Milliseconds())
 	rowCount := int32(r.RowCount) //nolint:gosec // row counts are small
 	return CellExecutionResult{
 		CellId:     &r.CellID,
 		Columns:    &r.Columns,
-		Rows:       &r.Rows,
+		Rows:       rowsToStringMatrix(r.Rows),
 		RowCount:   &rowCount,
 		Error:      r.Error,
 		DurationMs: &durationMs,
@@ -655,7 +675,7 @@ func cellExecutionResultToAPI(r domain.CellExecutionResult) CellExecutionResult 
 }
 
 func runAllResultToAPI(r domain.RunAllResult) RunAllResult {
-	totalMs := r.TotalDuration.Milliseconds()
+	totalMs := safeInt64ToInt32(r.TotalDuration.Milliseconds())
 	results := make([]CellExecutionResult, len(r.Results))
 	for i, cr := range r.Results {
 		results[i] = cellExecutionResultToAPI(cr)
@@ -668,8 +688,6 @@ func runAllResultToAPI(r domain.RunAllResult) RunAllResult {
 }
 
 func notebookJobToAPI(j domain.NotebookJob) NotebookJob {
-	ct := j.CreatedAt
-	ut := j.UpdatedAt
 	state := NotebookJobState(j.State)
 	return NotebookJob{
 		Id:         &j.ID,
@@ -678,23 +696,21 @@ func notebookJobToAPI(j domain.NotebookJob) NotebookJob {
 		State:      &state,
 		Result:     j.Result,
 		Error:      j.Error,
-		CreatedAt:  &ct,
-		UpdatedAt:  &ut,
+		CreatedAt:  formatTimePtr(&j.CreatedAt),
+		UpdatedAt:  formatTimePtr(&j.UpdatedAt),
 	}
 }
 
 func gitRepoToAPI(r domain.GitRepo) GitRepo {
-	ct := r.CreatedAt
-	ut := r.UpdatedAt
 	return GitRepo{
 		Id:         &r.ID,
 		Url:        &r.URL,
 		Branch:     &r.Branch,
 		Path:       &r.Path,
 		Owner:      &r.Owner,
-		LastSyncAt: r.LastSyncAt,
+		LastSyncAt: formatTimePtr(r.LastSyncAt),
 		LastCommit: r.LastCommit,
-		CreatedAt:  &ct,
-		UpdatedAt:  &ut,
+		CreatedAt:  formatTimePtr(&r.CreatedAt),
+		UpdatedAt:  formatTimePtr(&r.UpdatedAt),
 	}
 }

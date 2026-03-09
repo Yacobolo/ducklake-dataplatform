@@ -216,6 +216,7 @@ func run() error {
 		svc.Volume,
 		svc.ComputeEndpoint,
 		svc.APIKey,
+		svc.Pipeline,
 		svc.Notebook,
 		svc.SessionManager,
 		svc.GitService,
@@ -226,8 +227,6 @@ func run() error {
 		svc.Semantic,
 	)
 
-	// Create strict handler wrapper
-	strictHandler := api.NewStrictHandler(handler, nil)
 	authHandler := api.NewAuthHTTPHandler(svc.Auth, svc.WebSessionAuth)
 
 	// Setup Chi router
@@ -270,13 +269,13 @@ func run() error {
 
 	// Public endpoints — no auth required
 	r.Get("/openapi.json", func(w http.ResponseWriter, _ *http.Request) {
-		swagger, err := api.GetSwagger()
+		openAPIDoc, err := api.GetEmbeddedOpenAPISpec()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(swagger)
+		_ = json.NewEncoder(w).Encode(openAPIDoc)
 	})
 
 	r.Get("/docs", func(w http.ResponseWriter, _ *http.Request) {
@@ -365,7 +364,7 @@ func run() error {
 		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
 		r.Post("/auth/sessions/revoke-all", authHandler.RevokeAllWebSessions)
 		r.Get("/auth/sessions/stats", authHandler.GetWebSessionStats)
-		api.HandlerFromMux(strictHandler, r)
+		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
 	uiHandler := ui.NewHandler(

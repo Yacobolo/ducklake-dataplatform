@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - docs/**
+      - api/spec/**
+      - api/gen/openapi.yaml
+      - tools/typespec-ir-emitter/**
+      - internal/apigen/**
+      - cmd/apigen/**
       - web/**
       - internal/api/**
       - internal/declarative/**
@@ -17,6 +22,11 @@ on:
     branches: [main]
     paths:
       - docs/**
+      - api/spec/**
+      - api/gen/openapi.yaml
+      - tools/typespec-ir-emitter/**
+      - internal/apigen/**
+      - cmd/apigen/**
       - web/**
       - internal/api/**
       - internal/declarative/**

@@ -1,8 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"math"
 	"reflect"
+	"time"
 
 	"duck-demo/internal/domain"
 )
@@ -34,13 +36,13 @@ func isNilService(v interface{}) bool {
 }
 
 // pageFromParams extracts a PageRequest from optional max_results/page_token params.
-func pageFromParams(maxResults *MaxResults, pageToken *PageToken) domain.PageRequest {
+func pageFromParams[MaxResultsType ~int32, PageTokenType ~string](maxResults *MaxResultsType, pageToken *PageTokenType) domain.PageRequest {
 	p := domain.PageRequest{}
 	if maxResults != nil {
 		p.MaxResults = int(*maxResults)
 	}
 	if pageToken != nil {
-		p.PageToken = *pageToken
+		p.PageToken = string(*pageToken)
 	}
 	return p
 }
@@ -60,81 +62,69 @@ func errorCodeFromError(err error) int32 {
 // === Mapping helpers ===
 
 func principalToAPI(p domain.Principal) Principal {
-	t := p.CreatedAt
-	pt := PrincipalType(p.Type)
 	return Principal{
-		Id:        &p.ID,
-		Name:      &p.Name,
-		Type:      &pt,
-		IsAdmin:   &p.IsAdmin,
-		CreatedAt: &t,
+		Id:        p.ID,
+		Name:      p.Name,
+		Type:      p.Type,
+		IsAdmin:   p.IsAdmin,
+		CreatedAt: formatTimePtr(&p.CreatedAt),
 	}
 }
 
 func groupToAPI(g domain.Group) Group {
-	t := g.CreatedAt
 	return Group{
-		Id:          &g.ID,
-		Name:        &g.Name,
+		Id:          g.ID,
+		Name:        g.Name,
 		Description: &g.Description,
-		CreatedAt:   &t,
+		CreatedAt:   formatTimePtr(&g.CreatedAt),
 	}
 }
 
 func groupMemberToAPI(m domain.GroupMember, groupID string) GroupMember {
-	mt := GroupMemberMemberType(m.MemberType)
 	return GroupMember{
-		GroupId:    &groupID,
-		MemberType: &mt,
-		MemberId:   &m.MemberID,
+		GroupId:    groupID,
+		MemberType: m.MemberType,
+		MemberId:   m.MemberID,
 	}
 }
 
 func grantToAPI(g domain.PrivilegeGrant) PrivilegeGrant {
-	t := g.GrantedAt
-	pt := PrivilegeGrantPrincipalType(g.PrincipalType)
-	privilege := PrivilegeName(g.Privilege)
 	return PrivilegeGrant{
-		Id:            &g.ID,
-		PrincipalId:   &g.PrincipalID,
-		PrincipalType: &pt,
-		SecurableType: &g.SecurableType,
-		SecurableId:   &g.SecurableID,
-		Privilege:     &privilege,
+		Id:            g.ID,
+		PrincipalId:   g.PrincipalID,
+		PrincipalType: g.PrincipalType,
+		SecurableType: g.SecurableType,
+		SecurableId:   g.SecurableID,
+		Privilege:     g.Privilege,
 		GrantedBy:     g.GrantedBy,
-		GrantedAt:     &t,
+		GrantedAt:     formatTimePtr(&g.GrantedAt),
 	}
 }
 
 func rowFilterToAPI(f domain.RowFilter) RowFilter {
-	t := f.CreatedAt
 	return RowFilter{
-		Id:          &f.ID,
-		TableId:     &f.TableID,
-		Name:        &f.Name,
-		FilterSql:   &f.FilterSQL,
+		Id:          f.ID,
+		TableId:     f.TableID,
+		FilterSql:   f.FilterSQL,
 		Description: &f.Description,
-		CreatedAt:   &t,
+		CreatedAt:   formatTimePtr(&f.CreatedAt),
 	}
 }
 
 func columnMaskToAPI(m domain.ColumnMask) ColumnMask {
-	t := m.CreatedAt
 	return ColumnMask{
-		Id:             &m.ID,
-		TableId:        &m.TableID,
-		Name:           &m.Name,
-		ColumnName:     &m.ColumnName,
-		MaskExpression: &m.MaskExpression,
+		Id:             m.ID,
+		TableId:        m.TableID,
+		ColumnName:     m.ColumnName,
+		MaskExpression: m.MaskExpression,
 		Description:    &m.Description,
-		CreatedAt:      &t,
+		CreatedAt:      formatTimePtr(&m.CreatedAt),
 	}
 }
 
 func auditEntryToAPI(e domain.AuditEntry) AuditEntry {
-	t := e.CreatedAt
 	return AuditEntry{
-		Id:             &e.ID,
+		Id:             e.ID,
 		PrincipalName:  &e.PrincipalName,
 		Action:         &e.Action,
 		StatementType:  e.StatementType,
@@ -143,70 +133,18 @@ func auditEntryToAPI(e domain.AuditEntry) AuditEntry {
 		TablesAccessed: &e.TablesAccessed,
 		Status:         &e.Status,
 		ErrorMessage:   e.ErrorMessage,
-		DurationMs:     e.DurationMs,
-		CreatedAt:      &t,
+		DurationMs:     safeInt64ToInt32Ptr(e.DurationMs),
+		CreatedAt:      formatTimePtr(&e.CreatedAt),
 	}
 }
 
 func catalogInfoToAPI(c domain.CatalogInfo) CatalogInfo {
 	return CatalogInfo{
-		Name:      &c.Name,
+		Name:      c.Name,
 		Comment:   &c.Comment,
-		CreatedAt: &c.CreatedAt,
-		UpdatedAt: &c.UpdatedAt,
+		CreatedAt: formatTimePtr(&c.CreatedAt),
+		UpdatedAt: formatTimePtr(&c.UpdatedAt),
 	}
-}
-
-func catalogVersionSummaryToAPI(s domain.CatalogVersionSummary) CatalogVersionSummary {
-	result := CatalogVersionSummary{
-		CatalogName: &s.CatalogName,
-		Version:     strPtrIfNonEmpty(s.Version),
-		CreatedBy:   strPtrIfNonEmpty(s.CreatedBy),
-		Encrypted:   s.Encrypted,
-		DataPath:    strPtrIfNonEmpty(s.DataPath),
-		Schemas:     versionedObjectSummaryPtr(s.Schemas),
-		Tables:      versionedObjectSummaryPtr(s.Tables),
-		Columns:     versionedObjectSummaryPtr(s.Columns),
-	}
-	if s.LatestSnapshotID != nil {
-		result.LatestSnapshotId = s.LatestSnapshotID
-	}
-	return result
-}
-
-func catalogHistoryEntryToAPI(e domain.CatalogHistoryEntry) CatalogHistoryEntry {
-	result := CatalogHistoryEntry{
-		EntityType:       &e.EntityType,
-		SchemaName:       strPtrIfNonEmpty(e.SchemaName),
-		TableName:        strPtrIfNonEmpty(e.TableName),
-		ColumnName:       strPtrIfNonEmpty(e.ColumnName),
-		ObjectName:       &e.ObjectName,
-		ObjectId:         &e.ObjectID,
-		BeginSnapshotId:  e.BeginSnapshotID,
-		EndSnapshotId:    e.EndSnapshotID,
-		LatestSnapshotId: e.LatestSnapshotID,
-		IsActive:         &e.IsActive,
-		HasHistory:       &e.HasHistory,
-	}
-	return result
-}
-
-func versionedObjectSummaryToAPI(s domain.VersionedObjectSummary) VersionedObjectSummary {
-	result := VersionedObjectSummary{
-		TotalCount:      &s.TotalCount,
-		ActiveCount:     &s.ActiveCount,
-		HistoricalCount: &s.HistoricalCount,
-		HasHistory:      &s.HasHistory,
-	}
-	if s.LatestSnapshotID != nil {
-		result.LatestSnapshotId = s.LatestSnapshotID
-	}
-	return result
-}
-
-func versionedObjectSummaryPtr(s domain.VersionedObjectSummary) *VersionedObjectSummary {
-	result := versionedObjectSummaryToAPI(s)
-	return &result
 }
 
 func schemaDetailToAPI(s domain.SchemaDetail) SchemaDetail {
@@ -215,16 +153,15 @@ func schemaDetailToAPI(s domain.SchemaDetail) SchemaDetail {
 		tags[i] = tagToAPI(t)
 	}
 	return SchemaDetail{
-		SchemaId:    &s.SchemaID,
-		Name:        &s.Name,
-		CatalogName: &s.CatalogName,
+		SchemaId:    s.SchemaID,
+		Name:        s.Name,
+		CatalogName: s.CatalogName,
 		Comment:     &s.Comment,
-		Owner:       &s.Owner,
-		Properties:  &s.Properties,
-		CreatedAt:   &s.CreatedAt,
-		UpdatedAt:   &s.UpdatedAt,
 		Tags:        &tags,
-		DeletedAt:   s.DeletedAt,
+		Owner:       &s.Owner,
+		Properties:  stringMapToRecord(s.Properties),
+		CreatedAt:   formatTimePtr(&s.CreatedAt),
+		UpdatedAt:   formatTimePtr(&s.UpdatedAt),
 	}
 }
 
@@ -238,34 +175,19 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 		tags[i] = tagToAPI(tg)
 	}
 	td := TableDetail{
-		TableId:     &t.TableID,
-		Name:        &t.Name,
-		SchemaName:  &t.SchemaName,
-		CatalogName: &t.CatalogName,
+		TableId:     t.TableID,
+		Name:        t.Name,
+		SchemaName:  t.SchemaName,
+		CatalogName: t.CatalogName,
 		TableType:   &t.TableType,
 		Columns:     &cols,
 		Comment:     &t.Comment,
+		Properties:  stringMapToRecord(t.Properties),
 		Owner:       &t.Owner,
-		Properties:  &t.Properties,
-		CreatedAt:   &t.CreatedAt,
-		UpdatedAt:   &t.UpdatedAt,
 		Tags:        &tags,
-		DeletedAt:   t.DeletedAt,
-	}
-	if t.Statistics != nil {
-		td.Statistics = tableStatisticsPtr(t.Statistics)
-	}
-	if t.StoragePath != "" {
-		td.StoragePath = &t.StoragePath
-	}
-	if t.SourcePath != "" {
-		td.SourcePath = &t.SourcePath
-	}
-	if t.FileFormat != "" {
-		td.FileFormat = &t.FileFormat
-	}
-	if t.LocationName != "" {
-		td.LocationName = &t.LocationName
+		Statistics:  tableStatisticsPtr(t.Statistics),
+		CreatedAt:   formatTimePtr(&t.CreatedAt),
+		UpdatedAt:   formatTimePtr(&t.UpdatedAt),
 	}
 	return td
 }
@@ -273,19 +195,17 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 func columnDetailToAPI(c domain.ColumnDetail) ColumnDetail {
 	pos := safeIntToInt32(c.Position)
 	return ColumnDetail{
-		Name:       &c.Name,
-		Type:       &c.Type,
-		Position:   &pos,
-		Nullable:   &c.Nullable,
-		Comment:    &c.Comment,
-		Properties: &c.Properties,
+		Name:     c.Name,
+		Type:     c.Type,
+		Position: &pos,
+		Nullable: &c.Nullable,
+		Comment:  &c.Comment,
 	}
 }
 
 func queryHistoryEntryToAPI(e domain.QueryHistoryEntry) QueryHistoryEntry {
-	t := e.CreatedAt
 	return QueryHistoryEntry{
-		Id:             &e.ID,
+		Id:             e.ID,
 		PrincipalName:  &e.PrincipalName,
 		OriginalSql:    e.OriginalSQL,
 		RewrittenSql:   e.RewrittenSQL,
@@ -293,9 +213,9 @@ func queryHistoryEntryToAPI(e domain.QueryHistoryEntry) QueryHistoryEntry {
 		TablesAccessed: &e.TablesAccessed,
 		Status:         &e.Status,
 		ErrorMessage:   e.ErrorMessage,
-		DurationMs:     e.DurationMs,
-		RowsReturned:   e.RowsReturned,
-		CreatedAt:      &t,
+		DurationMs:     safeInt64ToInt32Ptr(e.DurationMs),
+		RowsReturned:   safeInt64ToInt32Ptr(e.RowsReturned),
+		CreatedAt:      formatTimePtr(&e.CreatedAt),
 	}
 }
 
@@ -311,24 +231,23 @@ func searchResultToAPI(r domain.SearchResult) SearchResult {
 }
 
 func lineageEdgeToAPI(e domain.LineageEdge) LineageEdge {
-	t := e.CreatedAt
-	et := LineageEdgeEdgeType(e.EdgeType)
 	return LineageEdge{
 		Id:            &e.ID,
 		SourceTable:   &e.SourceTable,
 		TargetTable:   e.TargetTable,
 		SourceSchema:  strPtrIfNonEmpty(e.SourceSchema),
 		TargetSchema:  strPtrIfNonEmpty(e.TargetSchema),
-		EdgeType:      &et,
+		EdgeType:      strPtrIfNonEmpty(e.EdgeType),
 		PrincipalName: &e.PrincipalName,
-		CreatedAt:     &t,
+		CreatedAt:     formatTimePtr(&e.CreatedAt),
 	}
 }
 
 func columnLineageEdgeToAPI(e domain.ColumnLineageEdge) ColumnLineageEdge {
 	tt := ColumnLineageEdgeTransformType(e.TransformType)
+	id := safeInt64ToInt32(e.ID)
 	return ColumnLineageEdge{
-		Id:            &e.ID,
+		Id:            &id,
 		LineageEdgeId: &e.LineageEdgeID,
 		TargetColumn:  &e.TargetColumn,
 		SourceSchema:  strPtrIfNonEmpty(e.SourceSchema),
@@ -346,19 +265,97 @@ func strPtrIfNonEmpty(s string) *string {
 	return &s
 }
 
+func formatTimePtr(t *time.Time) *string {
+	if t == nil {
+		return nil
+	}
+	s := t.UTC().Format(time.RFC3339)
+	return &s
+}
+
+func safeInt64ToInt32(v int64) int32 {
+	if v > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if v < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(v)
+}
+
+func safeInt64ToInt32Ptr(v *int64) *int32 {
+	if v == nil {
+		return nil
+	}
+	out := safeInt64ToInt32(*v)
+	return &out
+}
+
+func int32PtrToInt64Ptr(v *int32) *int64 {
+	if v == nil {
+		return nil
+	}
+	out := int64(*v)
+	return &out
+}
+
+func stringMapToRecord(m map[string]string) *Record {
+	if len(m) == 0 {
+		return nil
+	}
+	record := make(Record, len(m))
+	for k, v := range m {
+		record[k] = v
+	}
+	return &record
+}
+
+func recordToStringMap(record *Record) map[string]string {
+	if record == nil {
+		return nil
+	}
+	out := make(map[string]string, len(*record))
+	for k, v := range *record {
+		switch typed := v.(type) {
+		case string:
+			out[k] = typed
+		default:
+			out[k] = fmt.Sprint(typed)
+		}
+	}
+	return out
+}
+
+func rowsToStringMatrix(rows [][]interface{}) *[][]string {
+	if len(rows) == 0 {
+		return nil
+	}
+	out := make([][]string, len(rows))
+	for i, row := range rows {
+		converted := make([]string, len(row))
+		for j, value := range row {
+			if value == nil {
+				converted[j] = ""
+				continue
+			}
+			converted[j] = fmt.Sprint(value)
+		}
+		out[i] = converted
+	}
+	return &out
+}
+
 func tagToAPI(t domain.Tag) Tag {
-	ct := t.CreatedAt
 	return Tag{
 		Id:        &t.ID,
 		Key:       &t.Key,
 		Value:     t.Value,
 		CreatedBy: &t.CreatedBy,
-		CreatedAt: &ct,
+		CreatedAt: formatTimePtr(&t.CreatedAt),
 	}
 }
 
 func tagAssignmentToAPI(a domain.TagAssignment) TagAssignment {
-	t := a.AssignedAt
 	st := TagAssignmentSecurableType(a.SecurableType)
 	return TagAssignment{
 		Id:            &a.ID,
@@ -367,26 +364,63 @@ func tagAssignmentToAPI(a domain.TagAssignment) TagAssignment {
 		SecurableId:   &a.SecurableID,
 		ColumnName:    a.ColumnName,
 		AssignedBy:    &a.AssignedBy,
-		AssignedAt:    &t,
+		AssignedAt:    formatTimePtr(&a.AssignedAt),
+	}
+}
+
+func catalogVersionSummaryToAPI(summary domain.CatalogVersionSummary) CatalogVersionSummary {
+	return CatalogVersionSummary{
+		CatalogName:      &summary.CatalogName,
+		Version:          &summary.Version,
+		CreatedBy:        &summary.CreatedBy,
+		Encrypted:        summary.Encrypted,
+		DataPath:         &summary.DataPath,
+		LatestSnapshotId: safeInt64ToInt32Ptr(summary.LatestSnapshotID),
+		Schemas:          versionedObjectSummaryPtr(summary.Schemas),
+		Tables:           versionedObjectSummaryPtr(summary.Tables),
+		Columns:          versionedObjectSummaryPtr(summary.Columns),
+	}
+}
+
+func versionedObjectSummaryPtr(summary domain.VersionedObjectSummary) *VersionedObjectSummary {
+	return &VersionedObjectSummary{
+		TotalCount:       safeInt64ToInt32Ptr(&summary.TotalCount),
+		ActiveCount:      safeInt64ToInt32Ptr(&summary.ActiveCount),
+		HistoricalCount:  safeInt64ToInt32Ptr(&summary.HistoricalCount),
+		HasHistory:       &summary.HasHistory,
+		LatestSnapshotId: safeInt64ToInt32Ptr(summary.LatestSnapshotID),
+	}
+}
+
+func catalogHistoryEntryToAPI(entry domain.CatalogHistoryEntry) CatalogHistoryEntry {
+	return CatalogHistoryEntry{
+		EntityType:       &entry.EntityType,
+		SchemaName:       optStr(entry.SchemaName),
+		TableName:        optStr(entry.TableName),
+		ColumnName:       optStr(entry.ColumnName),
+		ObjectName:       &entry.ObjectName,
+		ObjectId:         &entry.ObjectID,
+		BeginSnapshotId:  safeInt64ToInt32Ptr(entry.BeginSnapshotID),
+		EndSnapshotId:    safeInt64ToInt32Ptr(entry.EndSnapshotID),
+		LatestSnapshotId: safeInt64ToInt32Ptr(entry.LatestSnapshotID),
+		IsActive:         &entry.IsActive,
+		HasHistory:       &entry.HasHistory,
 	}
 }
 
 func viewDetailToAPI(v domain.ViewDetail) ViewDetail {
-	ct := v.CreatedAt
-	ut := v.UpdatedAt
 	return ViewDetail{
-		Id:             &v.ID,
+		Id:             v.ID,
 		SchemaId:       &v.SchemaID,
-		SchemaName:     &v.SchemaName,
-		CatalogName:    &v.CatalogName,
-		Name:           &v.Name,
+		SchemaName:     v.SchemaName,
+		CatalogName:    v.CatalogName,
+		Name:           v.Name,
 		ViewDefinition: &v.ViewDefinition,
 		Comment:        v.Comment,
-		Properties:     &v.Properties,
 		Owner:          &v.Owner,
 		SourceTables:   &v.SourceTables,
-		CreatedAt:      &ct,
-		UpdatedAt:      &ut,
+		CreatedAt:      formatTimePtr(&v.CreatedAt),
+		UpdatedAt:      formatTimePtr(&v.UpdatedAt),
 	}
 }
 
@@ -395,10 +429,10 @@ func tableStatisticsToAPI(s *domain.TableStatistics) TableStatistics {
 		return TableStatistics{}
 	}
 	return TableStatistics{
-		RowCount:       s.RowCount,
-		SizeBytes:      s.SizeBytes,
-		ColumnCount:    s.ColumnCount,
-		LastProfiledAt: s.LastProfiledAt,
+		RowCount:       safeInt64ToInt32Ptr(s.RowCount),
+		SizeBytes:      safeInt64ToInt32Ptr(s.SizeBytes),
+		ColumnCount:    safeInt64ToInt32Ptr(s.ColumnCount),
+		LastProfiledAt: formatTimePtr(s.LastProfiledAt),
 		ProfiledBy:     &s.ProfiledBy,
 	}
 }

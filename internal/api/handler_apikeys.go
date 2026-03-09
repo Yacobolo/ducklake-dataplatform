@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"time"
 
 	"duck-demo/internal/domain"
 )
@@ -17,13 +18,29 @@ type apiKeyService interface {
 
 // === API Keys ===
 
+func parseRFC3339Ptr(value string) (*time.Time, bool) {
+	parsed, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return nil, false
+	}
+	return &parsed, true
+}
+
 // CreateAPIKey implements the endpoint for creating a new API key.
-func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestObject) (CreateAPIKeyResponseObject, error) {
-	rawKey, key, err := h.apiKeys.Create(ctx, domain.CreateAPIKeyRequest{
-		PrincipalID: req.Body.PrincipalId,
-		Name:        req.Body.Name,
-		ExpiresAt:   req.Body.ExpiresAt,
-	})
+func (h *APIHandler) CreateAPIKey(ctx context.Context, req GenCreateAPIKeyRequest) (GenCreateAPIKeyResponse, error) {
+	domReq := domain.CreateAPIKeyRequest{PrincipalID: req.Body.PrincipalId}
+	if req.Body.Name != nil {
+		domReq.Name = *req.Body.Name
+	}
+	if req.Body.ExpiresAt != nil {
+		parsed, ok := parseRFC3339Ptr(*req.Body.ExpiresAt)
+		if !ok {
+			return CreateAPIKey400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "expires_at must be RFC3339"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		domReq.ExpiresAt = parsed
+	}
+
+	rawKey, key, err := h.apiKeys.Create(ctx, domReq)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.ValidationError)):
@@ -36,16 +53,16 @@ func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestOb
 			return nil, err
 		}
 	}
-	return CreateAPIKey201JSONResponse{
+	return GenCreateAPIKey201JSONResponse{
 		Body: CreateAPIKeyResponse{
-			Id:        &key.ID,
-			Key:       &rawKey,
-			Name:      &key.Name,
+			Id:        key.ID,
+			Key:       rawKey,
+			Name:      strPtrIfNonEmpty(key.Name),
 			KeyPrefix: &key.KeyPrefix,
-			ExpiresAt: key.ExpiresAt,
-			CreatedAt: &key.CreatedAt,
+			ExpiresAt: formatTimePtr(key.ExpiresAt),
+			CreatedAt: formatTimePtr(&key.CreatedAt),
 		},
-		Headers: CreateAPIKey201ResponseHeaders{
+		Headers: GenCreateAPIKey201ResponseHeaders{
 			XRateLimitLimit:     defaultRateLimitLimit,
 			XRateLimitRemaining: defaultRateLimitRemaining,
 			XRateLimitReset:     defaultRateLimitReset,
@@ -54,7 +71,7 @@ func (h *APIHandler) CreateAPIKey(ctx context.Context, req CreateAPIKeyRequestOb
 }
 
 // ListAPIKeys implements the endpoint for listing API keys for a principal.
-func (h *APIHandler) ListAPIKeys(ctx context.Context, req ListAPIKeysRequestObject) (ListAPIKeysResponseObject, error) {
+func (h *APIHandler) ListAPIKeys(ctx context.Context, req GenListAPIKeysRequest) (GenListAPIKeysResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	keys, total, err := h.apiKeys.List(ctx, req.Params.PrincipalId, page)
 	if err != nil {
@@ -70,14 +87,14 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req ListAPIKeysRequestObje
 		data[i] = apiKeyToAPI(k)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListAPIKeys200JSONResponse{
-		Body:    PaginatedAPIKeys{Data: &data, NextPageToken: optStr(npt)},
-		Headers: ListAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListAPIKeys200JSONResponse{
+		Body:    PaginatedAPIKeys{Data: data, NextPageToken: optStr(npt)},
+		Headers: GenListAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteAPIKey implements the endpoint for deleting an API key by ID.
-func (h *APIHandler) DeleteAPIKey(ctx context.Context, req DeleteAPIKeyRequestObject) (DeleteAPIKeyResponseObject, error) {
+func (h *APIHandler) DeleteAPIKey(ctx context.Context, req GenDeleteAPIKeyRequest) (GenDeleteAPIKeyResponse, error) {
 	if err := h.apiKeys.Delete(ctx, req.ApiKeyId); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
@@ -86,11 +103,11 @@ func (h *APIHandler) DeleteAPIKey(ctx context.Context, req DeleteAPIKeyRequestOb
 			return nil, err
 		}
 	}
-	return DeleteAPIKey204Response{}, nil
+	return GenDeleteAPIKey204Response{}, nil
 }
 
 // CleanupExpiredAPIKeys implements the endpoint for removing expired API keys.
-func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ CleanupExpiredAPIKeysRequestObject) (CleanupExpiredAPIKeysResponseObject, error) {
+func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ GenCleanupExpiredAPIKeysRequest) (GenCleanupExpiredAPIKeysResponse, error) {
 	count, err := h.apiKeys.CleanupExpired(ctx)
 	if err != nil {
 		switch {
@@ -101,7 +118,7 @@ func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ CleanupExpired
 		}
 	}
 	return CleanupExpiredAPIKeys200JSONResponse{
-		Body:    CleanupAPIKeysResponse{DeletedCount: &count},
+		Body:    CleanupAPIKeysResponse{DeletedCount: safeInt64ToInt32(count)},
 		Headers: CleanupExpiredAPIKeys200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -109,11 +126,11 @@ func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ CleanupExpired
 // apiKeyToAPI converts a domain APIKey to the API representation.
 func apiKeyToAPI(k domain.APIKey) APIKeyInfo {
 	return APIKeyInfo{
-		Id:          &k.ID,
-		PrincipalId: &k.PrincipalID,
-		Name:        &k.Name,
+		Id:          k.ID,
+		PrincipalId: k.PrincipalID,
+		Name:        k.Name,
 		KeyPrefix:   &k.KeyPrefix,
-		ExpiresAt:   k.ExpiresAt,
-		CreatedAt:   &k.CreatedAt,
+		ExpiresAt:   formatTimePtr(k.ExpiresAt),
+		CreatedAt:   formatTimePtr(&k.CreatedAt),
 	}
 }

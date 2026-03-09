@@ -1,6 +1,6 @@
 // Package gen contains generated CLI commands.
 //
-// The *.gen.go files are produced by cmd/cli-gen and gitignored.
+// The *.gen.go files are generated artifacts consumed by the CLI.
 // This file ensures their transitive dependencies (golang.org/x/term)
 // remain in go.mod/go.sum so downstream CI jobs can build after code generation.
 package gen

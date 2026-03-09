@@ -121,13 +121,13 @@ func TestHandler_ListAssets(t *testing.T) {
 		return []domain.DataAsset{{ID: "a1", AssetKey: "sales.daily", AssetType: domain.AssetTypeModel, CreatedAt: time.Now(), UpdatedAt: time.Now()}}, 1, nil
 	}}}
 
-	resp, err := h.ListAssets(assetTestCtx(true), ListAssetsRequestObject{})
+	resp, err := h.ListAssets(assetTestCtx(true), GenListAssetsRequest{})
 	require.NoError(t, err)
 	ok, cast := resp.(ListAssets200JSONResponse)
 	require.True(t, cast)
-	require.NotNil(t, ok.Data)
-	require.Len(t, *ok.Data, 1)
-	assert.Equal(t, "sales.daily", *(*ok.Data)[0].AssetKey)
+	require.NotNil(t, ok.Body.Data)
+	require.Len(t, ok.Body.Data, 1)
+	assert.Equal(t, "sales.daily", *ok.Body.Data[0].AssetKey)
 }
 
 func TestHandler_CreateAsset(t *testing.T) {
@@ -142,7 +142,7 @@ func TestHandler_CreateAsset(t *testing.T) {
 		return &domain.DataAsset{ID: "asset-1", AssetKey: req.AssetKey, AssetType: req.AssetType, Owner: req.Owner, CreatedAt: createdAt, UpdatedAt: createdAt}, nil
 	}}}
 
-	resp, err := h.CreateAsset(assetTestCtx(true), CreateAssetRequestObject{Body: &CreateAssetJSONRequestBody{
+	resp, err := h.CreateAsset(assetTestCtx(true), GenCreateAssetRequest{Body: &CreateAssetJSONRequestBody{
 		AssetKey:          "showcase.rides.gold",
 		AssetType:         domain.AssetTypeTable,
 		Owner:             "platform-admins",
@@ -160,7 +160,7 @@ func TestHandler_CreateAsset(t *testing.T) {
 	require.NoError(t, err)
 	created, ok := resp.(CreateAsset201JSONResponse)
 	require.True(t, ok)
-	assert.Equal(t, "showcase.rides.gold", *created.AssetKey)
+	assert.Equal(t, "showcase.rides.gold", *created.Body.AssetKey)
 }
 
 func TestHandler_GetAsset_NotFound(t *testing.T) {
@@ -169,7 +169,7 @@ func TestHandler_GetAsset_NotFound(t *testing.T) {
 		return nil, domain.ErrNotFound("asset not found")
 	}}}
 
-	resp, err := h.GetAsset(assetTestCtx(true), GetAssetRequestObject{AssetKey: "missing"})
+	resp, err := h.GetAsset(assetTestCtx(true), GenGetAssetRequest{AssetKey: "missing"})
 	require.NoError(t, err)
 	_, cast := resp.(GetAsset404JSONResponse)
 	require.True(t, cast)
@@ -183,13 +183,13 @@ func TestHandler_GetAsset(t *testing.T) {
 		return &domain.DataAsset{ID: "asset-1", AssetKey: key, AssetType: domain.AssetTypeModel, Owner: "analytics", CreatedAt: createdAt, UpdatedAt: createdAt}, nil
 	}}}
 
-	resp, err := h.GetAsset(assetTestCtx(true), GetAssetRequestObject{AssetKey: "sales.daily"})
+	resp, err := h.GetAsset(assetTestCtx(true), GenGetAssetRequest{AssetKey: "sales.daily"})
 	require.NoError(t, err)
 	ok, cast := resp.(GetAsset200JSONResponse)
 	require.True(t, cast)
-	assert.Equal(t, "sales.daily", *ok.AssetKey)
-	assert.Equal(t, domain.AssetTypeModel, *ok.AssetType)
-	assert.Equal(t, "analytics", *ok.Owner)
+	assert.Equal(t, "sales.daily", *ok.Body.AssetKey)
+	assert.Equal(t, domain.AssetTypeModel, *ok.Body.AssetType)
+	assert.Equal(t, "analytics", *ok.Body.Owner)
 }
 
 func TestHandler_UpdateAsset(t *testing.T) {
@@ -202,7 +202,7 @@ func TestHandler_UpdateAsset(t *testing.T) {
 		return &domain.DataAsset{ID: "asset-1", AssetKey: assetKey, AssetType: req.AssetType, Owner: req.Owner, CreatedAt: updatedAt, UpdatedAt: updatedAt}, nil
 	}}}
 
-	resp, err := h.UpdateAsset(assetTestCtx(true), UpdateAssetRequestObject{AssetKey: "showcase.rides.silver", Body: &UpdateAssetJSONRequestBody{
+	resp, err := h.UpdateAsset(assetTestCtx(true), GenUpdateAssetRequest{AssetKey: "showcase.rides.silver", Body: &UpdateAssetJSONRequestBody{
 		AssetType:         domain.AssetTypeTable,
 		Owner:             "analytics",
 		Description:       assetStrPtr("Silver showcase asset"),
@@ -212,7 +212,7 @@ func TestHandler_UpdateAsset(t *testing.T) {
 	require.NoError(t, err)
 	updated, ok := resp.(UpdateAsset200JSONResponse)
 	require.True(t, ok)
-	assert.Equal(t, "analytics", *updated.Owner)
+	assert.Equal(t, "analytics", *updated.Body.Owner)
 }
 
 func TestHandler_DeleteAsset(t *testing.T) {
@@ -222,7 +222,7 @@ func TestHandler_DeleteAsset(t *testing.T) {
 		return nil
 	}}}
 
-	resp, err := h.DeleteAsset(assetTestCtx(true), DeleteAssetRequestObject{AssetKey: "showcase.rides.raw"})
+	resp, err := h.DeleteAsset(assetTestCtx(true), GenDeleteAssetRequest{AssetKey: "showcase.rides.raw"})
 	require.NoError(t, err)
 	_, ok := resp.(DeleteAsset204Response)
 	require.True(t, ok)
@@ -248,14 +248,14 @@ func TestHandler_GetAssetGraph(t *testing.T) {
 		},
 	}}
 
-	resp, err := h.GetAssetGraph(assetTestCtx(true), GetAssetGraphRequestObject{AssetKey: "sales.daily"})
+	resp, err := h.GetAssetGraph(assetTestCtx(true), GenGetAssetGraphRequest{AssetKey: "sales.daily"})
 	require.NoError(t, err)
 	ok, cast := resp.(GetAssetGraph200JSONResponse)
 	require.True(t, cast)
-	require.NotNil(t, ok.UpstreamAssetKeys)
-	require.NotNil(t, ok.DownstreamAssetKeys)
-	assert.Equal(t, []string{"raw.orders"}, *ok.UpstreamAssetKeys)
-	assert.Equal(t, []string{"analytics.orders"}, *ok.DownstreamAssetKeys)
+	require.NotNil(t, ok.Body.UpstreamAssetKeys)
+	require.NotNil(t, ok.Body.DownstreamAssetKeys)
+	assert.Equal(t, []string{"raw.orders"}, *ok.Body.UpstreamAssetKeys)
+	assert.Equal(t, []string{"analytics.orders"}, *ok.Body.DownstreamAssetKeys)
 }
 
 func TestHandler_ListAssetPartitions(t *testing.T) {
@@ -272,14 +272,14 @@ func TestHandler_ListAssetPartitions(t *testing.T) {
 		},
 	}}
 
-	resp, err := h.ListAssetPartitions(assetTestCtx(true), ListAssetPartitionsRequestObject{AssetKey: "sales.daily"})
+	resp, err := h.ListAssetPartitions(assetTestCtx(true), GenListAssetPartitionsRequest{AssetKey: "sales.daily"})
 	require.NoError(t, err)
 	ok, cast := resp.(ListAssetPartitions200JSONResponse)
 	require.True(t, cast)
-	require.NotNil(t, ok.Data)
-	require.Len(t, *ok.Data, 1)
-	assert.Equal(t, "2026-01-01", *(*ok.Data)[0].PartitionKey)
-	assert.Equal(t, "READY", *(*ok.Data)[0].Status)
+	require.NotNil(t, ok.Body.Data)
+	require.Len(t, ok.Body.Data, 1)
+	assert.Equal(t, "2026-01-01", *ok.Body.Data[0].PartitionKey)
+	assert.Equal(t, "READY", *ok.Body.Data[0].Status)
 }
 
 func TestHandler_ListAssetMaterializations(t *testing.T) {
@@ -298,16 +298,16 @@ func TestHandler_ListAssetMaterializations(t *testing.T) {
 		},
 	}}
 
-	resp, err := h.ListAssetMaterializations(assetTestCtx(true), ListAssetMaterializationsRequestObject{AssetKey: "sales.daily"})
+	resp, err := h.ListAssetMaterializations(assetTestCtx(true), GenListAssetMaterializationsRequest{AssetKey: "sales.daily"})
 	require.NoError(t, err)
 	ok, cast := resp.(ListAssetMaterializations200JSONResponse)
 	require.True(t, cast)
-	require.NotNil(t, ok.Data)
-	require.Len(t, *ok.Data, 1)
-	require.NotNil(t, (*ok.Data)[0].PartitionKey)
-	require.NotNil(t, (*ok.Data)[0].RowCount)
-	assert.Equal(t, partitionKey, *(*ok.Data)[0].PartitionKey)
-	assert.Equal(t, rowCount, *(*ok.Data)[0].RowCount)
+	require.NotNil(t, ok.Body.Data)
+	require.Len(t, ok.Body.Data, 1)
+	require.NotNil(t, ok.Body.Data[0].PartitionKey)
+	require.NotNil(t, ok.Body.Data[0].RowCount)
+	assert.Equal(t, partitionKey, *ok.Body.Data[0].PartitionKey)
+	assert.Equal(t, int32(rowCount), *ok.Body.Data[0].RowCount)
 }
 
 func TestHandler_ListAssetChecks(t *testing.T) {
@@ -323,14 +323,14 @@ func TestHandler_ListAssetChecks(t *testing.T) {
 		},
 	}}
 
-	resp, err := h.ListAssetChecks(assetTestCtx(true), ListAssetChecksRequestObject{AssetKey: "sales.daily"})
+	resp, err := h.ListAssetChecks(assetTestCtx(true), GenListAssetChecksRequest{AssetKey: "sales.daily"})
 	require.NoError(t, err)
 	ok, cast := resp.(ListAssetChecks200JSONResponse)
 	require.True(t, cast)
-	require.NotNil(t, ok.Data)
-	require.Len(t, *ok.Data, 1)
-	assert.Equal(t, "row_count", *(*ok.Data)[0].Name)
-	assert.Equal(t, "ROW_COUNT", *(*ok.Data)[0].CheckType)
+	require.NotNil(t, ok.Body.Data)
+	require.Len(t, ok.Body.Data, 1)
+	assert.Equal(t, "row_count", *ok.Body.Data[0].Name)
+	assert.Equal(t, "ROW_COUNT", *ok.Body.Data[0].CheckType)
 }
 
 func TestHandler_ListAssetBackfills(t *testing.T) {
@@ -347,14 +347,14 @@ func TestHandler_ListAssetBackfills(t *testing.T) {
 		},
 	}}
 
-	resp, err := h.ListAssetBackfills(assetTestCtx(true), ListAssetBackfillsRequestObject{AssetKey: "sales.daily"})
+	resp, err := h.ListAssetBackfills(assetTestCtx(true), GenListAssetBackfillsRequest{AssetKey: "sales.daily"})
 	require.NoError(t, err)
 	ok, cast := resp.(ListAssetBackfills200JSONResponse)
 	require.True(t, cast)
-	require.NotNil(t, ok.Data)
-	require.Len(t, *ok.Data, 1)
-	assert.Equal(t, domain.BackfillStatusPending, *(*ok.Data)[0].Status)
-	assert.Equal(t, "2026-01-01", *(*ok.Data)[0].PartitionFrom)
+	require.NotNil(t, ok.Body.Data)
+	require.Len(t, ok.Body.Data, 1)
+	assert.Equal(t, domain.BackfillStatusPending, *ok.Body.Data[0].Status)
+	assert.Equal(t, "2026-01-01", *ok.Body.Data[0].PartitionFrom)
 }
 
 func TestHandler_ListAssetCheckResults(t *testing.T) {
@@ -380,16 +380,16 @@ func TestHandler_ListAssetCheckResults(t *testing.T) {
 		},
 	}}
 
-	resp, err := h.ListAssetCheckResults(assetTestCtx(true), ListAssetCheckResultsRequestObject{AssetKey: "sales.daily"})
+	resp, err := h.ListAssetCheckResults(assetTestCtx(true), GenListAssetCheckResultsRequest{AssetKey: "sales.daily"})
 	require.NoError(t, err)
 	ok, cast := resp.(ListAssetCheckResults200JSONResponse)
 	require.True(t, cast)
-	require.NotNil(t, ok.Data)
-	require.Len(t, *ok.Data, 1)
-	assert.Equal(t, "PASS", *(*ok.Data)[0].Status)
-	assert.Equal(t, "660e8400-e29b-41d4-a716-446655440000", *(*ok.Data)[0].CheckId)
-	require.NotNil(t, (*ok.Data)[0].MetricsJson)
-	assert.InDelta(t, 42.0, (*(*ok.Data)[0].MetricsJson)["rows_checked"], 0.000001)
+	require.NotNil(t, ok.Body.Data)
+	require.Len(t, ok.Body.Data, 1)
+	assert.Equal(t, "PASS", *ok.Body.Data[0].Status)
+	assert.Equal(t, "660e8400-e29b-41d4-a716-446655440000", *ok.Body.Data[0].CheckId)
+	require.NotNil(t, ok.Body.Data[0].MetricsJson)
+	assert.InDelta(t, 42.0, (*ok.Body.Data[0].MetricsJson)["rows_checked"], 0.000001)
 }
 
 func TestHandler_ListAssetCheckResults_NotFound(t *testing.T) {
@@ -398,7 +398,7 @@ func TestHandler_ListAssetCheckResults_NotFound(t *testing.T) {
 		return nil, domain.ErrNotFound("asset not found")
 	}}}
 
-	resp, err := h.ListAssetCheckResults(assetTestCtx(true), ListAssetCheckResultsRequestObject{AssetKey: "missing"})
+	resp, err := h.ListAssetCheckResults(assetTestCtx(true), GenListAssetCheckResultsRequest{AssetKey: "missing"})
 	require.NoError(t, err)
 	_, cast := resp.(ListAssetCheckResults404JSONResponse)
 	require.True(t, cast)
@@ -481,13 +481,13 @@ func TestHandler_ListAssetRuns_MapsPartitionRange(t *testing.T) {
 		},
 	}}
 
-	resp, err := h.ListAssetRuns(assetTestCtx(true), ListAssetRunsRequestObject{AssetKey: "sales.daily"})
+	resp, err := h.ListAssetRuns(assetTestCtx(true), GenListAssetRunsRequest{AssetKey: "sales.daily"})
 	require.NoError(t, err)
 	ok, cast := resp.(ListAssetRuns200JSONResponse)
 	require.True(t, cast)
-	require.NotNil(t, ok.Data)
-	require.Len(t, *ok.Data, 1)
-	apiRun := (*ok.Data)[0]
+	require.NotNil(t, ok.Body.Data)
+	require.Len(t, ok.Body.Data, 1)
+	apiRun := ok.Body.Data[0]
 	require.NotNil(t, apiRun.PartitionFrom)
 	require.NotNil(t, apiRun.PartitionTo)
 	assert.Equal(t, partitionFrom, *apiRun.PartitionFrom)
@@ -506,7 +506,7 @@ func TestHandler_CreateAssetBackfill_AccessDenied(t *testing.T) {
 	}
 	body := CreateAssetBackfillJSONRequestBody{PartitionFrom: "2026-01-01", PartitionTo: "2026-01-02"}
 
-	resp, err := h.CreateAssetBackfill(assetTestCtx(false), CreateAssetBackfillRequestObject{AssetKey: "sales.daily", Body: &body})
+	resp, err := h.CreateAssetBackfill(assetTestCtx(false), GenCreateAssetBackfillRequest{AssetKey: "sales.daily", Body: &body})
 	require.NoError(t, err)
 	_, cast := resp.(CreateAssetBackfill403JSONResponse)
 	require.True(t, cast)
@@ -528,13 +528,14 @@ func TestHandler_TriggerAssetMaterialization(t *testing.T) {
 			return &domain.OrchestrationEvent{ID: "event-1", Status: domain.OrchestrationEventStatusPending}, nil
 		},
 	}}
-	body := TriggerAssetMaterializationJSONRequestBody{PartitionKey: &partition, IdempotencyKey: &idem, Payload: &map[string]any{"source": "manual"}}
+	payload := Record{"source": "manual"}
+	body := TriggerAssetMaterializationJSONRequestBody{PartitionKey: &partition, IdempotencyKey: &idem, Payload: &payload}
 
-	resp, err := h.TriggerAssetMaterialization(assetTestCtx(false), TriggerAssetMaterializationRequestObject{AssetKey: "sales.daily", Body: &body})
+	resp, err := h.TriggerAssetMaterialization(assetTestCtx(false), GenTriggerAssetMaterializationRequest{AssetKey: "sales.daily", Body: &body})
 	require.NoError(t, err)
 	accepted, cast := resp.(TriggerAssetMaterialization202JSONResponse)
 	require.True(t, cast)
-	assert.Equal(t, "event-1", *accepted.EventId)
+	assert.Equal(t, "event-1", *accepted.Body.EventId)
 }
 
 func TestHandler_TriggerAssetMaterialization_AccessDenied(t *testing.T) {
@@ -548,7 +549,7 @@ func TestHandler_TriggerAssetMaterialization_AccessDenied(t *testing.T) {
 		},
 	}}
 
-	resp, err := h.TriggerAssetMaterialization(assetTestCtx(false), TriggerAssetMaterializationRequestObject{AssetKey: "sales.daily"})
+	resp, err := h.TriggerAssetMaterialization(assetTestCtx(false), GenTriggerAssetMaterializationRequest{AssetKey: "sales.daily"})
 	require.NoError(t, err)
 	_, cast := resp.(TriggerAssetMaterialization403JSONResponse)
 	require.True(t, cast)
@@ -570,15 +571,15 @@ func TestHandler_GetAssetBackfill(t *testing.T) {
 		},
 	}}
 
-	resp, err := h.GetAssetBackfill(assetTestCtx(true), GetAssetBackfillRequestObject{AssetKey: "sales.daily", BackfillId: "550e8400-e29b-41d4-a716-446655440000"})
+	resp, err := h.GetAssetBackfill(assetTestCtx(true), GenGetAssetBackfillRequest{AssetKey: "sales.daily", BackfillId: "550e8400-e29b-41d4-a716-446655440000"})
 	require.NoError(t, err)
 	ok, cast := resp.(GetAssetBackfill200JSONResponse)
 	require.True(t, cast)
-	require.NotNil(t, ok.Request)
-	require.NotNil(t, ok.Slices)
-	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", *ok.Request.Id)
-	require.Len(t, *ok.Slices, 1)
-	assert.Equal(t, "2026-01-01", *(*ok.Slices)[0].PartitionKey)
+	require.NotNil(t, ok.Body.Request)
+	require.NotNil(t, ok.Body.Slices)
+	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", *ok.Body.Request.Id)
+	require.Len(t, *ok.Body.Slices, 1)
+	assert.Equal(t, "2026-01-01", *(*ok.Body.Slices)[0].PartitionKey)
 }
 
 func TestHandler_GetAssetBackfill_NotFound(t *testing.T) {
@@ -592,7 +593,7 @@ func TestHandler_GetAssetBackfill_NotFound(t *testing.T) {
 		},
 	}}
 
-	resp, err := h.GetAssetBackfill(assetTestCtx(true), GetAssetBackfillRequestObject{AssetKey: "sales.daily", BackfillId: "550e8400-e29b-41d4-a716-446655440000"})
+	resp, err := h.GetAssetBackfill(assetTestCtx(true), GenGetAssetBackfillRequest{AssetKey: "sales.daily", BackfillId: "550e8400-e29b-41d4-a716-446655440000"})
 	require.NoError(t, err)
 	_, cast := resp.(GetAssetBackfill404JSONResponse)
 	require.True(t, cast)

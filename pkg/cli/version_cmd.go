@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 func newVersionCmd() *cobra.Command {
@@ -16,7 +16,7 @@ func newVersionCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, map[string]string{
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{
 					"version": version,
 					"commit":  commit,
 				})

@@ -32,7 +32,7 @@ type manifestService interface {
 }
 
 // ExecuteQuery implements the endpoint for executing a SQL query.
-func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestObject) (ExecuteQueryResponseObject, error) {
+func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryRequest) (GenExecuteQueryResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
@@ -45,22 +45,17 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 		case http.StatusForbidden:
 			return ExecuteQuery403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: code, Message: msg}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
-			return ExecuteQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: msg}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenExecuteQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
 
-	rows := make([][]interface{}, len(result.Rows))
-	for i, row := range result.Rows {
-		mapped := make([]interface{}, len(row))
-		copy(mapped, row)
-		rows[i] = mapped
-	}
-	rowCount := int64(result.RowCount)
+	rows := rowsToStringMatrix(result.Rows)
+	rowCount := safeIntToInt32(result.RowCount)
 
 	return ExecuteQuery200JSONResponse{
 		Body: QueryResult{
-			Columns:  &result.Columns,
-			Rows:     &rows,
+			Columns:  result.Columns,
+			Rows:     rows,
 			RowCount: &rowCount,
 		},
 		Headers: ExecuteQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
@@ -68,13 +63,13 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req ExecuteQueryRequestOb
 }
 
 // SubmitQuery implements async query submission endpoint.
-func (h *APIHandler) SubmitQuery(ctx context.Context, req SubmitQueryRequestObject) (SubmitQueryResponseObject, error) {
+func (h *APIHandler) SubmitQuery(ctx context.Context, req GenSubmitQueryRequest) (GenSubmitQueryResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
 	asyncSvc, ok := h.query.(queryAsyncService)
 	if !ok {
-		return SubmitQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: "async query service is not configured"}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GenSubmitQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 500, Message: "async query service is not configured"}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	requestID := ""
@@ -88,12 +83,12 @@ func (h *APIHandler) SubmitQuery(ctx context.Context, req SubmitQueryRequestObje
 		case http.StatusBadRequest:
 			return SubmitQuery400JSONResponse{BadRequestJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
-			return SubmitQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenSubmitQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
 
 	status := string(job.Status)
-	apiStatus := SubmitQueryResponseStatus(status)
+	apiStatus := QueryJobStatus(status)
 	return SubmitQuery202JSONResponse{
 		Body:    SubmitQueryResponse{QueryId: job.ID, Status: apiStatus},
 		Headers: SubmitQuery202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
@@ -101,32 +96,32 @@ func (h *APIHandler) SubmitQuery(ctx context.Context, req SubmitQueryRequestObje
 }
 
 // GetQuery implements async query status endpoint.
-func (h *APIHandler) GetQuery(ctx context.Context, req GetQueryRequestObject) (GetQueryResponseObject, error) {
+func (h *APIHandler) GetQuery(ctx context.Context, req GenGetQueryRequest) (GenGetQueryResponse, error) {
 	job, err := h.lookupAsyncJob(ctx, req.QueryId)
 	if err != nil {
 		code := errorCodeFromError(err)
 		if int(code) == http.StatusNotFound {
-			return GetQuery404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetQuery404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
-		return GetQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GenGetQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	body := queryJobToAPI(job)
-	return GetQuery200JSONResponse{
+	return GenGetQuery200JSONResponse{
 		Body:    body,
-		Headers: GetQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetQueryResults returns a page of async query results.
-func (h *APIHandler) GetQueryResults(ctx context.Context, req GetQueryResultsRequestObject) (GetQueryResultsResponseObject, error) {
+func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResultsRequest) (GenGetQueryResultsResponse, error) {
 	job, err := h.lookupAsyncJob(ctx, req.QueryId)
 	if err != nil {
 		code := errorCodeFromError(err)
 		if int(code) == http.StatusNotFound {
-			return GetQueryResults404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetQueryResults404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
-		return GetQueryResults500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GenGetQueryResults500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	if job.Status == domain.QueryJobStatusQueued || job.Status == domain.QueryJobStatusRunning {
@@ -170,49 +165,49 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GetQueryResultsReq
 		nextPageToken = domain.EncodePageToken(end)
 	}
 
-	result := QueryResult{Columns: &job.Columns, Rows: &rows}
-	rowCount := int64(job.RowCount)
+	result := QueryResult{Columns: job.Columns, Rows: rowsToStringMatrix(rows)}
+	rowCount := safeIntToInt32(job.RowCount)
 	result.RowCount = &rowCount
 	if nextPageToken != "" {
 		result.NextPageToken = &nextPageToken
 	}
 
-	return GetQueryResults200JSONResponse{
+	return GenGetQueryResults200JSONResponse{
 		Body:    result,
-		Headers: GetQueryResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetQueryResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CancelQuery cancels async query execution.
-func (h *APIHandler) CancelQuery(ctx context.Context, req CancelQueryRequestObject) (CancelQueryResponseObject, error) {
+func (h *APIHandler) CancelQuery(ctx context.Context, req GenCancelQueryRequest) (GenCancelQueryResponse, error) {
 	job, err := h.lookupAsyncJob(ctx, req.QueryId)
 	if err != nil {
 		code := errorCodeFromError(err)
 		if int(code) == http.StatusNotFound {
 			return CancelQuery404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
-		return CancelQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GenCancelQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	asyncSvc, ok := h.query.(queryAsyncService)
 	if !ok {
-		return CancelQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: "async query service is not configured"}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GenCancelQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 500, Message: "async query service is not configured"}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 	if err := asyncSvc.CancelAsyncJob(ctx, principal, req.QueryId); err != nil {
 		code := errorCodeFromError(err)
 		if int(code) == http.StatusNotFound {
 			return CancelQuery404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
-		return CancelQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GenCancelQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	status := string(job.Status)
 	if job.Status == domain.QueryJobStatusQueued || job.Status == domain.QueryJobStatusRunning {
 		status = string(domain.QueryJobStatusCanceled)
 	}
-	apiStatus := CancelQueryResponseStatus(status)
+	apiStatus := QueryJobStatus(status)
 	return CancelQuery200JSONResponse{
 		Body:    CancelQueryResponse{QueryId: job.ID, Status: apiStatus},
 		Headers: CancelQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
@@ -220,13 +215,13 @@ func (h *APIHandler) CancelQuery(ctx context.Context, req CancelQueryRequestObje
 }
 
 // DeleteQuery deletes async query state.
-func (h *APIHandler) DeleteQuery(ctx context.Context, req DeleteQueryRequestObject) (DeleteQueryResponseObject, error) {
+func (h *APIHandler) DeleteQuery(ctx context.Context, req GenDeleteQueryRequest) (GenDeleteQueryResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
 	asyncSvc, ok := h.query.(queryAsyncService)
 	if !ok {
-		return DeleteQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: "async query service is not configured"}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GenDeleteQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 500, Message: "async query service is not configured"}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	if err := asyncSvc.DeleteAsyncJob(ctx, principal, req.QueryId); err != nil {
@@ -234,10 +229,10 @@ func (h *APIHandler) DeleteQuery(ctx context.Context, req DeleteQueryRequestObje
 		if int(code) == http.StatusNotFound {
 			return DeleteQuery404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
-		return DeleteQuery500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		return GenDeleteQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
-	return DeleteQuery204Response{Headers: DeleteQuery204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+	return GenDeleteQuery204Response{Headers: GenDeleteQuery204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 func (h *APIHandler) lookupAsyncJob(ctx context.Context, queryID string) (*domain.QueryJob, error) {
@@ -259,28 +254,28 @@ func (h *APIHandler) lookupAsyncJob(ctx context.Context, queryID string) (*domai
 
 func queryJobToAPI(job *domain.QueryJob) QueryJob {
 	status := string(job.Status)
-	rowCount := int64(job.RowCount)
+	rowCount := safeIntToInt32(job.RowCount)
 	resp := QueryJob{
 		QueryId:   job.ID,
 		Status:    QueryJobStatus(status),
 		RowCount:  rowCount,
 		RequestId: &job.RequestID,
-		CreatedAt: &job.CreatedAt,
+		CreatedAt: formatTimePtr(&job.CreatedAt),
 	}
 	if job.ErrorMessage != nil {
 		resp.Error = job.ErrorMessage
 	}
 	if job.StartedAt != nil {
-		resp.StartedAt = job.StartedAt
+		resp.StartedAt = formatTimePtr(job.StartedAt)
 	}
 	if job.CompletedAt != nil {
-		resp.CompletedAt = job.CompletedAt
+		resp.CompletedAt = formatTimePtr(job.CompletedAt)
 	}
 	return resp
 }
 
 // CreateManifest implements the endpoint for generating a table read manifest.
-func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestRequestObject) (CreateManifestResponseObject, error) {
+func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRequest) (GenCreateManifestResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
@@ -301,26 +296,24 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req CreateManifestReque
 		case errors.As(err, new(*domain.ValidationError)):
 			return CreateManifest400JSONResponse{BadRequestJSONResponse{Body: Error{Code: code, Message: msg}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
-			return CreateManifest500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: msg}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCreateManifest500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
 
 	cols := make([]ManifestColumn, len(result.Columns))
 	for i, c := range result.Columns {
-		name := c.Name
-		typ := c.Type
-		cols[i] = ManifestColumn{Name: &name, Type: &typ}
+		cols[i] = ManifestColumn{Name: c.Name, Type: c.Type}
 	}
 
 	return CreateManifest200JSONResponse{
 		Body: ManifestResponse{
-			Table:       &result.Table,
+			Table:       result.Table,
 			Schema:      &result.Schema,
 			Columns:     &cols,
 			Files:       &result.Files,
 			RowFilters:  &result.RowFilters,
-			ColumnMasks: &result.ColumnMasks,
-			ExpiresAt:   &result.ExpiresAt,
+			ColumnMasks: stringMapToRecord(result.ColumnMasks),
+			ExpiresAt:   formatTimePtr(&result.ExpiresAt),
 		},
 		Headers: CreateManifest200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil

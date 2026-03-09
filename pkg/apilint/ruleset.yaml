@@ -85,6 +85,13 @@ rules:
   owasp-integer-limit: off
   owasp-rate-limit: off
   owasp-define-error-validation: off
+  # Temporarily relaxed while TypeSpec surface is standardized around shared
+  # error response unions. Today, adding 401/429/500 + 403/404 to every
+  # operation would create large mechanical churn with little immediate value.
+  # Service-layer authz and error mapping remain enforced in runtime/tests.
+  owasp-define-error-responses-401: warn
+  owasp-define-error-responses-429: warn
+  owasp-define-error-responses-500: warn
 
   # Suppressed: integer IDs are deliberate (SQLite autoincrement + DuckDB introspection).
   # TODO: Migrate to string UUIDs in a future project.
@@ -100,6 +107,7 @@ rules:
 
   # Downgraded: lineage endpoints use pagination params for edge depth control, not list pagination.
   check-pagination-schema-match: off
+  # Custom response/status checks are defined in the custom-rule section below.
 
   # Disable — intentionally off for this project
   camel-case-properties: off         # our API uses snake_case by convention
@@ -148,6 +156,33 @@ rules:
     then:
       function: checkSchemaRef
 
+  # POST-create should return 201 unless operation is an allowed action verb.
+  check-post-create-status:
+    description: "POST create operations should include 201 responses"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkPostCreateStatus
+
+  # Mutating operations should include 403 when auth is enabled.
+  check-mutating-ops-403:
+    description: "Mutating operations should include 403 responses"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkMutatingOps403
+
+  # GET operations on resource paths should include 404 responses.
+  check-get-resource-404:
+    description: "GET resource operations should include 404 responses"
+    given: "$"
+    severity: warn
+    resolved: false
+    then:
+      function: checkGetResource404
+
   # Paginated GET endpoints must include MaxResults + PageToken params
   check-pagination-params:
     description: "Paginated GET endpoints must include MaxResults + PageToken params"
@@ -165,33 +200,6 @@ rules:
     resolved: false
     then:
       function: checkPaginatedSchema
-
-  # POST-create endpoints should return 201
-  check-post-create-status:
-    description: "POST-create endpoints should return 201 (not 200)"
-    given: "$"
-    severity: warn
-    resolved: false
-    then:
-      function: checkPostCreateStatus
-
-  # Mutating operations should include 403 response
-  check-mutating-ops-403:
-    description: "Mutating operations should include 403 response"
-    given: "$"
-    severity: warn
-    resolved: false
-    then:
-      function: checkMutatingOps403
-
-  # GET resource paths should include 404 response
-  check-get-resource-404:
-    description: "GET operations on resource paths should include 404 response"
-    given: "$"
-    severity: warn
-    resolved: false
-    then:
-      function: checkGetResource404
 
   # Error responses should reference the standard Error schema
   check-error-schema-ref:

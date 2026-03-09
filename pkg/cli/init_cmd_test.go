@@ -4,10 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestBuildDesiredState_IncludesSandboxAndShowcase(t *testing.T) {
+func TestBuildDesiredState_WithSecurity(t *testing.T) {
 	t.Parallel()
 
 	state := buildDesiredState(initOptions{
@@ -26,17 +25,44 @@ func TestBuildDesiredState_IncludesSandboxAndShowcase(t *testing.T) {
 		withSecurity:   true,
 	})
 
-	assert.Contains(t, state.Schemas, "sandbox")
-	assert.Equal(t, "rides_raw", state.Showcase.RawTableName)
-	assert.Equal(t, "rides_gold_daily_metrics", state.Showcase.GoldTableName)
-	assert.Equal(t, "sandbox_getting_started", state.Showcase.SandboxSmokeTable)
-	assert.Len(t, state.Showcase.Assets, 6)
-	assert.Equal(t, "showcase.rides.gold", state.Showcase.Assets[3].AssetKey)
-	assert.Equal(t, []string{"showcase.rides.silver"}, state.Showcase.Assets[3].UpstreamAssetKey)
-	assert.Len(t, state.Showcase.Assets[3].Checks, 1)
+	assert.Equal(t, []string{"landing", "bronze", "silver", "gold"}, state.Schemas)
+	assert.Equal(t, "s3://demo-bucket/staging/", state.DataPath)
+	assert.Equal(t, "staging-landing", state.SchemaLocation["landing"])
+	assert.Equal(t, "staging-default-s3", state.Credential.Name)
+	assert.Len(t, state.Locations, 4)
+	assert.Contains(t, state.Groups, "analytics")
+	assert.Contains(t, state.Principals, "svc-transform")
+	assert.NotEmpty(t, state.Memberships)
+	assert.NotEmpty(t, state.SchemaGrants)
+	assert.NotEmpty(t, state.ServiceGrants)
 }
 
-func TestComputeInitPlan_ShowcaseAssetsMissing(t *testing.T) {
+func TestBuildDesiredState_WithoutSecurity(t *testing.T) {
+	t.Parallel()
+
+	state := buildDesiredState(initOptions{
+		env:            "staging",
+		catalogName:    "lake",
+		metastoreType:  "sqlite",
+		metastoreDSN:   "./ducklake_lake.sqlite",
+		credentialName: "staging-default-s3",
+		prefix:         "staging",
+		bucket:         "demo-bucket",
+		endpoint:       "s3.example.com",
+		region:         "us-east-1",
+		keyID:          "key",
+		secret:         "secret",
+		urlStyle:       "path",
+	})
+
+	assert.Empty(t, state.Groups)
+	assert.Empty(t, state.Principals)
+	assert.Empty(t, state.Memberships)
+	assert.Empty(t, state.SchemaGrants)
+	assert.Empty(t, state.ServiceGrants)
+}
+
+func TestComputeInitPlan_MissingResources(t *testing.T) {
 	t.Parallel()
 
 	desired := buildDesiredState(initOptions{
@@ -55,37 +81,29 @@ func TestComputeInitPlan_ShowcaseAssetsMissing(t *testing.T) {
 		withSecurity:   true,
 	})
 
-	existing := initExistingState{
-		Credentials: map[string]bool{desired.Credential.Name: true},
+	plan := computeInitPlan(desired, initExistingState{
+		Credentials: map[string]bool{},
 		Locations:   map[string]bool{},
-		Catalogs:    map[string]bool{desired.CatalogName: true},
-		Schemas: map[string]string{
-			"landing": "1",
-			"bronze":  "2",
-			"silver":  "3",
-			"gold":    "4",
-			"sandbox": "5",
-		},
-		Tables:      map[string]map[string]bool{},
-		Views:       map[string]map[string]bool{},
-		Assets:      map[string]initAssetState{},
+		Catalogs:    map[string]bool{},
+		Schemas:     map[string]string{},
 		Groups:      map[string]string{},
 		Principals:  map[string]string{},
 		Memberships: map[string]map[string]bool{},
 		Grants:      map[string]bool{},
-		GrantIDs:    map[string]string{},
-	}
+	})
 
-	plan := computeInitPlan(desired, existing)
-	require.NotEmpty(t, plan.Creates)
-	assert.Contains(t, plan.Creates, `showcase table "landing"."rides_raw"`)
-	assert.Contains(t, plan.Creates, `showcase table "gold"."rides_gold_daily_metrics"`)
-	assert.Contains(t, plan.Creates, `asset "showcase.rides.gold"`)
-	assert.Contains(t, plan.Updates, `asset graph "showcase.rides.gold"`)
-	assert.Contains(t, plan.Updates, `asset checks "showcase.rides.gold"`)
+	assert.Contains(t, plan.Creates, `storage credential "staging-default-s3"`)
+	assert.Contains(t, plan.Creates, `storage location "staging-landing"`)
+	assert.Contains(t, plan.Creates, `catalog "lake"`)
+	assert.Contains(t, plan.Creates, `schema "landing"`)
+	assert.Contains(t, plan.Creates, `group "analytics"`)
+	assert.Contains(t, plan.Creates, `principal "svc-bi"`)
+	assert.Contains(t, plan.Creates, `membership "service-accounts" <- "svc-ingest"`)
+	assert.Contains(t, plan.Creates, `grant USAGE on schema "gold" to group "analytics"`)
+	assert.Empty(t, plan.Exists)
 }
 
-func TestComputeInitPlan_ShowcaseAssetDrift(t *testing.T) {
+func TestComputeInitPlan_ExistingResources(t *testing.T) {
 	t.Parallel()
 
 	desired := buildDesiredState(initOptions{
@@ -105,80 +123,74 @@ func TestComputeInitPlan_ShowcaseAssetDrift(t *testing.T) {
 	})
 
 	existing := initExistingState{
-		Credentials: map[string]bool{desired.Credential.Name: true},
-		Locations:   map[string]bool{},
-		Catalogs:    map[string]bool{desired.CatalogName: true},
-		Schemas:     map[string]string{},
-		Tables:      map[string]map[string]bool{},
-		Views:       map[string]map[string]bool{},
-		Assets: map[string]initAssetState{
-			"showcase.rides.gold": {
-				AssetType:        "TABLE",
-				Owner:            "analytics",
-				Description:      "stale description",
-				Tags:             []string{"gold", "rides", "showcase"},
-				IOProfile:        "duckdb",
-				IsActive:         true,
-				UpstreamAssetKey: []string{"showcase.rides.silver"},
-				Checks: []initAssetCheckSpec{{
-					Name:      "gold_non_empty",
-					CheckType: "SQL_ASSERT",
-					Severity:  "WARN",
-					Enabled:   true,
-				}},
+		Credentials: map[string]bool{"staging-default-s3": true},
+		Locations: map[string]bool{
+			"staging-landing": true,
+			"staging-bronze":  true,
+			"staging-silver":  true,
+			"staging-gold":    true,
+		},
+		Catalogs: map[string]bool{"lake": true},
+		Schemas: map[string]string{
+			"landing": "schema-landing",
+			"bronze":  "schema-bronze",
+			"silver":  "schema-silver",
+			"gold":    "schema-gold",
+		},
+		Groups: map[string]string{
+			"platform-admins":  "group-platform-admins",
+			"data-engineers":   "group-data-engineers",
+			"analytics":        "group-analytics",
+			"service-accounts": "group-service-accounts",
+		},
+		Principals: map[string]string{
+			"svc-ingest":    "principal-svc-ingest",
+			"svc-transform": "principal-svc-transform",
+			"svc-bi":        "principal-svc-bi",
+		},
+		Memberships: map[string]map[string]bool{
+			"group-service-accounts": {
+				"principal-svc-ingest":    true,
+				"principal-svc-transform": true,
+				"principal-svc-bi":        true,
+			},
+			"group-data-engineers": {
+				"principal-svc-ingest":    true,
+				"principal-svc-transform": true,
+			},
+			"group-analytics": {
+				"principal-svc-bi": true,
 			},
 		},
-		Groups:      map[string]string{},
-		Principals:  map[string]string{},
-		Memberships: map[string]map[string]bool{},
-		Grants:      map[string]bool{},
-		GrantIDs:    map[string]string{},
+		Grants: map[string]bool{
+			grantKey("group-data-engineers", "group", "schema-landing", "schema", "USAGE"):   true,
+			grantKey("group-data-engineers", "group", "schema-bronze", "schema", "USAGE"):    true,
+			grantKey("group-data-engineers", "group", "schema-silver", "schema", "USAGE"):    true,
+			grantKey("group-data-engineers", "group", "schema-gold", "schema", "USAGE"):      true,
+			grantKey("group-analytics", "group", "schema-gold", "schema", "USAGE"):           true,
+			grantKey("group-service-accounts", "group", "schema-landing", "schema", "USAGE"): true,
+			grantKey("group-service-accounts", "group", "schema-bronze", "schema", "USAGE"):  true,
+			grantKey("group-service-accounts", "group", "schema-silver", "schema", "USAGE"):  true,
+			grantKey("group-service-accounts", "group", "schema-gold", "schema", "USAGE"):    true,
+			grantKey("principal-svc-ingest", "user", "schema-landing", "schema", "USAGE"):    true,
+			grantKey("principal-svc-transform", "user", "schema-landing", "schema", "USAGE"): true,
+			grantKey("principal-svc-ingest", "user", "schema-bronze", "schema", "USAGE"):     true,
+			grantKey("principal-svc-transform", "user", "schema-bronze", "schema", "USAGE"):  true,
+			grantKey("principal-svc-transform", "user", "schema-silver", "schema", "USAGE"):  true,
+			grantKey("principal-svc-transform", "user", "schema-gold", "schema", "USAGE"):    true,
+			grantKey("principal-svc-bi", "user", "schema-gold", "schema", "USAGE"):           true,
+		},
 	}
 
 	plan := computeInitPlan(desired, existing)
-	assert.Contains(t, plan.Updates, `asset "showcase.rides.gold"`)
-	assert.Contains(t, plan.Updates, `asset checks "showcase.rides.gold"`)
-}
 
-func TestAssetHealthIssues_ReportsMetadataGraphAndChecksDrift(t *testing.T) {
-	t.Parallel()
-
-	desired := buildDesiredState(initOptions{
-		env:            "staging",
-		catalogName:    "lake",
-		metastoreType:  "sqlite",
-		metastoreDSN:   "./ducklake_lake.sqlite",
-		credentialName: "staging-default-s3",
-		prefix:         "staging",
-		bucket:         "demo-bucket",
-		endpoint:       "s3.example.com",
-		region:         "us-east-1",
-		keyID:          "key",
-		secret:         "secret",
-		urlStyle:       "path",
-		withSecurity:   true,
-	})
-
-	issues := assetHealthIssues(desired.Showcase.Assets, map[string]initAssetState{
-		"showcase.rides.gold": {
-			AssetType:        "TABLE",
-			Owner:            "analytics",
-			Description:      "wrong",
-			Tags:             []string{"gold", "rides", "showcase"},
-			IOProfile:        "duckdb",
-			IsActive:         true,
-			UpstreamAssetKey: []string{"showcase.rides.bronze"},
-			Checks: []initAssetCheckSpec{{
-				Name:      "gold_non_empty",
-				CheckType: "SQL_ASSERT",
-				Severity:  "WARN",
-				Enabled:   true,
-			}},
-		},
-	})
-
-	assert.Contains(t, issues, `asset "showcase.rides.raw" is missing`)
-	assert.Contains(t, issues, `asset "showcase.rides.gold" metadata drifted`)
-	assert.Contains(t, issues, `asset "showcase.rides.gold" graph drifted`)
-	assert.Contains(t, issues, `asset "showcase.rides.gold" checks drifted`)
+	assert.Empty(t, plan.Creates)
+	assert.Contains(t, plan.Exists, `storage credential "staging-default-s3"`)
+	assert.Contains(t, plan.Exists, `storage location "staging-gold"`)
+	assert.Contains(t, plan.Exists, `catalog "lake"`)
+	assert.Contains(t, plan.Exists, `schema "gold"`)
+	assert.Contains(t, plan.Exists, `group "analytics"`)
+	assert.Contains(t, plan.Exists, `principal "svc-bi"`)
+	assert.Contains(t, plan.Exists, `membership "analytics" <- "svc-bi"`)
+	assert.Contains(t, plan.Exists, `grant USAGE on schema "gold" to user "svc-bi"`)
 }

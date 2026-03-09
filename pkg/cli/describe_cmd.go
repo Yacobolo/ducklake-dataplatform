@@ -9,10 +9,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
-func newDescribeCmd(client *gen.Client) *cobra.Command {
+func newDescribeCmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "describe [object-path]",
 		Short: "Describe a catalog object with progressive detail",
@@ -58,15 +58,15 @@ This is designed as the agent's "cat" for reading detailed metadata about any ob
 }
 
 // describePlatform shows all registered catalogs.
-func describePlatform(client *gen.Client, isJSON bool) error {
+func describePlatform(client *apiruntime.Client, isJSON bool) error {
 	resp, err := client.Do("GET", "/catalogs", nil, nil)
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(resp); err != nil {
+	if err := apiruntime.CheckError(resp); err != nil {
 		return err
 	}
-	body, err := gen.ReadBody(resp)
+	body, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -74,7 +74,7 @@ func describePlatform(client *gen.Client, isJSON bool) error {
 	if isJSON {
 		var pretty interface{}
 		_ = json.Unmarshal(body, &pretty)
-		return gen.PrintJSON(os.Stdout, pretty)
+		return apiruntime.PrintJSON(os.Stdout, pretty)
 	}
 
 	var data struct {
@@ -87,22 +87,22 @@ func describePlatform(client *gen.Client, isJSON bool) error {
 	_, _ = fmt.Fprintln(os.Stdout, "PLATFORM OVERVIEW")
 	_, _ = fmt.Fprintf(os.Stdout, "catalogs: %d\n\n", len(data.Data))
 	columns := []string{"name", "status", "is_default", "metastore_type"}
-	rows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(data.Data)}, columns)
-	gen.PrintTable(os.Stdout, columns, rows)
+	rows := apiruntime.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(data.Data)}, columns)
+	apiruntime.PrintTable(os.Stdout, columns, rows)
 	return nil
 }
 
 // describeCatalog shows catalog info and its schemas.
-func describeCatalog(client *gen.Client, catalog string, isJSON bool) error {
+func describeCatalog(client *apiruntime.Client, catalog string, isJSON bool) error {
 	// Fetch catalog registration info
 	regResp, err := client.Do("GET", "/catalogs/"+url.PathEscape(catalog), nil, nil)
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(regResp); err != nil {
+	if err := apiruntime.CheckError(regResp); err != nil {
 		return err
 	}
-	regBody, err := gen.ReadBody(regResp)
+	regBody, err := apiruntime.ReadBody(regResp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -112,10 +112,10 @@ func describeCatalog(client *gen.Client, catalog string, isJSON bool) error {
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(schemasResp); err != nil {
+	if err := apiruntime.CheckError(schemasResp); err != nil {
 		return err
 	}
-	schemasBody, err := gen.ReadBody(schemasResp)
+	schemasBody, err := apiruntime.ReadBody(schemasResp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -124,7 +124,7 @@ func describeCatalog(client *gen.Client, catalog string, isJSON bool) error {
 		var reg, schemas interface{}
 		_ = json.Unmarshal(regBody, &reg)
 		_ = json.Unmarshal(schemasBody, &schemas)
-		return gen.PrintJSON(os.Stdout, map[string]interface{}{
+		return apiruntime.PrintJSON(os.Stdout, map[string]interface{}{
 			"catalog": reg,
 			"schemas": schemas,
 		})
@@ -133,7 +133,7 @@ func describeCatalog(client *gen.Client, catalog string, isJSON bool) error {
 	var regData map[string]interface{}
 	_ = json.Unmarshal(regBody, &regData)
 	_, _ = fmt.Fprintf(os.Stdout, "CATALOG: %s\n", catalog)
-	gen.PrintDetail(os.Stdout, regData)
+	apiruntime.PrintDetail(os.Stdout, regData)
 
 	var schemasData struct {
 		Data []map[string]interface{} `json:"data"`
@@ -141,13 +141,13 @@ func describeCatalog(client *gen.Client, catalog string, isJSON bool) error {
 	_ = json.Unmarshal(schemasBody, &schemasData)
 	_, _ = fmt.Fprintf(os.Stdout, "\nSCHEMAS (%d):\n", len(schemasData.Data))
 	columns := []string{"name", "comment"}
-	rows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(schemasData.Data)}, columns)
-	gen.PrintTable(os.Stdout, columns, rows)
+	rows := apiruntime.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(schemasData.Data)}, columns)
+	apiruntime.PrintTable(os.Stdout, columns, rows)
 	return nil
 }
 
 // describeSchema shows schema detail and its tables, views, volumes.
-func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) error {
+func describeSchema(client *apiruntime.Client, catalog, schema string, isJSON bool) error {
 	base := "/catalogs/" + url.PathEscape(catalog) + "/schemas/" + url.PathEscape(schema)
 
 	// Fetch schema detail
@@ -155,10 +155,10 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(schemaResp); err != nil {
+	if err := apiruntime.CheckError(schemaResp); err != nil {
 		return err
 	}
-	schemaBody, err := gen.ReadBody(schemaResp)
+	schemaBody, err := apiruntime.ReadBody(schemaResp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -168,10 +168,10 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(tablesResp); err != nil {
+	if err := apiruntime.CheckError(tablesResp); err != nil {
 		return err
 	}
-	tablesBody, err := gen.ReadBody(tablesResp)
+	tablesBody, err := apiruntime.ReadBody(tablesResp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -181,10 +181,10 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(viewsResp); err != nil {
+	if err := apiruntime.CheckError(viewsResp); err != nil {
 		return err
 	}
-	viewsBody, err := gen.ReadBody(viewsResp)
+	viewsBody, err := apiruntime.ReadBody(viewsResp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -194,10 +194,10 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(volumesResp); err != nil {
+	if err := apiruntime.CheckError(volumesResp); err != nil {
 		return err
 	}
-	volumesBody, err := gen.ReadBody(volumesResp)
+	volumesBody, err := apiruntime.ReadBody(volumesResp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -212,7 +212,7 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 		if volumesBody != nil {
 			_ = json.Unmarshal(volumesBody, &volumesData)
 		}
-		return gen.PrintJSON(os.Stdout, map[string]interface{}{
+		return apiruntime.PrintJSON(os.Stdout, map[string]interface{}{
 			"schema":  schemaData,
 			"tables":  tablesData,
 			"views":   viewsData,
@@ -223,7 +223,7 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 	var schemaDetail map[string]interface{}
 	_ = json.Unmarshal(schemaBody, &schemaDetail)
 	_, _ = fmt.Fprintf(os.Stdout, "SCHEMA: %s.%s\n", catalog, schema)
-	gen.PrintDetail(os.Stdout, schemaDetail)
+	apiruntime.PrintDetail(os.Stdout, schemaDetail)
 
 	var tablesData struct {
 		Data []map[string]interface{} `json:"data"`
@@ -231,8 +231,8 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 	_ = json.Unmarshal(tablesBody, &tablesData)
 	_, _ = fmt.Fprintf(os.Stdout, "\nTABLES (%d):\n", len(tablesData.Data))
 	columns := []string{"name", "table_type", "comment"}
-	rows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(tablesData.Data)}, columns)
-	gen.PrintTable(os.Stdout, columns, rows)
+	rows := apiruntime.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(tablesData.Data)}, columns)
+	apiruntime.PrintTable(os.Stdout, columns, rows)
 
 	if viewsBody != nil {
 		var viewsData struct {
@@ -242,8 +242,8 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 		if len(viewsData.Data) > 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "\nVIEWS (%d):\n", len(viewsData.Data))
 			vColumns := []string{"name", "comment"}
-			vRows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(viewsData.Data)}, vColumns)
-			gen.PrintTable(os.Stdout, vColumns, vRows)
+			vRows := apiruntime.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(viewsData.Data)}, vColumns)
+			apiruntime.PrintTable(os.Stdout, vColumns, vRows)
 		}
 	}
 
@@ -255,8 +255,8 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 		if len(volumesData.Data) > 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "\nVOLUMES (%d):\n", len(volumesData.Data))
 			volColumns := []string{"name", "volume_type"}
-			volRows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(volumesData.Data)}, volColumns)
-			gen.PrintTable(os.Stdout, volColumns, volRows)
+			volRows := apiruntime.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(volumesData.Data)}, volColumns)
+			apiruntime.PrintTable(os.Stdout, volColumns, volRows)
 		}
 	}
 
@@ -264,7 +264,7 @@ func describeSchema(client *gen.Client, catalog, schema string, isJSON bool) err
 }
 
 // describeTable shows full table detail with columns, stats, and security policies.
-func describeTable(client *gen.Client, catalog, schema, table string, isJSON bool) error {
+func describeTable(client *apiruntime.Client, catalog, schema, table string, isJSON bool) error {
 	base := "/catalogs/" + url.PathEscape(catalog) + "/schemas/" + url.PathEscape(schema) + "/tables/" + url.PathEscape(table)
 
 	// Fetch table detail (includes columns)
@@ -272,10 +272,10 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 	if err != nil {
 		return err
 	}
-	if err := gen.CheckError(tableResp); err != nil {
+	if err := apiruntime.CheckError(tableResp); err != nil {
 		return err
 	}
-	tableBody, err := gen.ReadBody(tableResp)
+	tableBody, err := apiruntime.ReadBody(tableResp)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -287,7 +287,7 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 	}
 
 	// Fetch row filters and column masks.
-	tableID := gen.ExtractField(tableDetail, "table_id")
+	tableID := apiruntime.ExtractField(tableDetail, "table_id")
 	var rowFiltersBody, columnMasksBody []byte
 	if tableID != "" {
 		q := url.Values{}
@@ -295,10 +295,10 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(rfResp); err != nil {
+		if err := apiruntime.CheckError(rfResp); err != nil {
 			return err
 		}
-		rowFiltersBody, err = gen.ReadBody(rfResp)
+		rowFiltersBody, err = apiruntime.ReadBody(rfResp)
 		if err != nil {
 			return fmt.Errorf("read response: %w", err)
 		}
@@ -307,10 +307,10 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(cmResp); err != nil {
+		if err := apiruntime.CheckError(cmResp); err != nil {
 			return err
 		}
-		columnMasksBody, err = gen.ReadBody(cmResp)
+		columnMasksBody, err = apiruntime.ReadBody(cmResp)
 		if err != nil {
 			return fmt.Errorf("read response: %w", err)
 		}
@@ -330,7 +330,7 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 			_ = json.Unmarshal(columnMasksBody, &cm)
 			result["column_masks"] = cm
 		}
-		return gen.PrintJSON(os.Stdout, result)
+		return apiruntime.PrintJSON(os.Stdout, result)
 	}
 
 	// Human-friendly output
@@ -338,7 +338,7 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 
 	// Print key fields
 	for _, key := range []string{"table_type", "owner", "comment", "storage_path", "created_at", "updated_at"} {
-		if v := gen.ExtractField(tableDetail, key); v != "" {
+		if v := apiruntime.ExtractField(tableDetail, key); v != "" {
 			_, _ = fmt.Fprintf(os.Stdout, "%-14s %s\n", key+":", v)
 		}
 	}
@@ -347,7 +347,7 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 	if stats, ok := tableDetail["statistics"].(map[string]interface{}); ok {
 		_, _ = fmt.Fprintln(os.Stdout, "\nSTATISTICS:")
 		for _, key := range []string{"row_count", "size_bytes", "column_count", "last_profiled_at"} {
-			if v := gen.ExtractField(stats, key); v != "" {
+			if v := apiruntime.ExtractField(stats, key); v != "" {
 				_, _ = fmt.Fprintf(os.Stdout, "%-18s %s\n", key+":", v)
 			}
 		}
@@ -362,12 +362,12 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 			if m, ok := col.(map[string]interface{}); ok {
 				row := make([]string, len(colColumns))
 				for i, c := range colColumns {
-					row[i] = gen.ExtractField(m, c)
+					row[i] = apiruntime.ExtractField(m, c)
 				}
 				colRows = append(colRows, row)
 			}
 		}
-		gen.PrintTable(os.Stdout, colColumns, colRows)
+		apiruntime.PrintTable(os.Stdout, colColumns, colRows)
 	}
 
 	// Tags
@@ -377,10 +377,10 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 		var tagRows [][]string
 		for _, tag := range tags {
 			if m, ok := tag.(map[string]interface{}); ok {
-				tagRows = append(tagRows, []string{gen.ExtractField(m, "key"), gen.ExtractField(m, "value")})
+				tagRows = append(tagRows, []string{apiruntime.ExtractField(m, "key"), apiruntime.ExtractField(m, "value")})
 			}
 		}
-		gen.PrintTable(os.Stdout, tagColumns, tagRows)
+		apiruntime.PrintTable(os.Stdout, tagColumns, tagRows)
 	}
 
 	// Row Filters
@@ -392,8 +392,8 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 		if len(rf.Data) > 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "\nROW FILTERS (%d):\n", len(rf.Data))
 			rfColumns := []string{"id", "filter_sql", "description"}
-			rfRows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(rf.Data)}, rfColumns)
-			gen.PrintTable(os.Stdout, rfColumns, rfRows)
+			rfRows := apiruntime.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(rf.Data)}, rfColumns)
+			apiruntime.PrintTable(os.Stdout, rfColumns, rfRows)
 		}
 	}
 
@@ -406,15 +406,15 @@ func describeTable(client *gen.Client, catalog, schema, table string, isJSON boo
 		if len(cm.Data) > 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "\nCOLUMN MASKS (%d):\n", len(cm.Data))
 			cmColumns := []string{"column_name", "mask_expression", "description"}
-			cmRows := gen.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(cm.Data)}, cmColumns)
-			gen.PrintTable(os.Stdout, cmColumns, cmRows)
+			cmRows := apiruntime.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(cm.Data)}, cmColumns)
+			apiruntime.PrintTable(os.Stdout, cmColumns, cmRows)
 		}
 	}
 
 	return nil
 }
 
-// toInterfaceSlice converts []map[string]interface{} to []interface{} for gen.ExtractRows.
+// toInterfaceSlice converts []map[string]interface{} to []interface{} for apiruntime.ExtractRows.
 func toInterfaceSlice(in []map[string]interface{}) []interface{} {
 	out := make([]interface{}, len(in))
 	for i, v := range in {

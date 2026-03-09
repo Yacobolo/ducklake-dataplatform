@@ -41,9 +41,12 @@ ducklake_meta.sqlite*
 .task/
 
 # Generated code (regenerate with: task generate)
-internal/api/openapi.bundled.yaml
+api/gen/json-ir.json
+api/gen/openapi.apigen.yaml
 internal/api/types.gen.go
 internal/api/server.gen.go
+internal/api/server.apigen.gen.go
+internal/api/gen_request_models.gen.go
 internal/db/dbstore/*.sql.go
 internal/db/dbstore/db.go
 internal/db/dbstore/models.go
@@ -55,10 +58,13 @@ pkg/cli/gen/*.gen.go
 /bin/
 
 # Docs site build/deps
+docs/reference/generated/
 docs/node_modules/
 docs/.vitepress/dist/
 docs/.vitepress/cache/
 web/node_modules/
+api/spec/node_modules/
+tools/typespec-ir-emitter/node_modules/
 .playwright-cli/
 
 # macOS Finder metadata

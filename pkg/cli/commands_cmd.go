@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 // CommandEntry represents a single CLI command for introspection output.
@@ -84,7 +84,7 @@ This is designed for AI agents to discover available CLI capabilities in a singl
 
 			// Output
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, entries)
+				return apiruntime.PrintJSON(os.Stdout, entries)
 			}
 
 			// Table output
@@ -93,7 +93,7 @@ This is designed for AI agents to discover available CLI capabilities in a singl
 			for _, e := range entries {
 				rows = append(rows, []string{e.Path, e.Short})
 			}
-			gen.PrintTable(os.Stdout, columns, rows)
+			apiruntime.PrintTable(os.Stdout, columns, rows)
 			return nil
 		},
 	}
@@ -157,8 +157,8 @@ func walkCommands(cmd *cobra.Command, parentPath string) []CommandEntry {
 func collectFlags(cmd *cobra.Command) []FlagEntry {
 	var flags []FlagEntry
 	seen := map[string]struct{}{}
-	collect := func(set *pflag.FlagSet) {
-		set.VisitAll(func(f *pflag.Flag) {
+	appendFlags := func(flagSet *pflag.FlagSet) {
+		flagSet.VisitAll(func(f *pflag.Flag) {
 			if f.Hidden || f.Name == "help" {
 				return
 			}
@@ -166,7 +166,6 @@ func collectFlags(cmd *cobra.Command) []FlagEntry {
 				return
 			}
 			seen[f.Name] = struct{}{}
-
 			entry := FlagEntry{
 				Name:    f.Name,
 				Short:   f.Shorthand,
@@ -180,9 +179,8 @@ func collectFlags(cmd *cobra.Command) []FlagEntry {
 			flags = append(flags, entry)
 		})
 	}
-
-	collect(cmd.NonInheritedFlags())
-	collect(cmd.InheritedFlags())
+	appendFlags(cmd.InheritedFlags())
+	appendFlags(cmd.Flags())
 	sort.Slice(flags, func(i, j int) bool {
 		return flags[i].Name < flags[j].Name
 	})

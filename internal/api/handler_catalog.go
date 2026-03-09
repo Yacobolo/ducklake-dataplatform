@@ -38,24 +38,24 @@ type catalogService interface {
 // === Catalog Management ===
 
 // GetCatalog implements the endpoint for retrieving catalog information.
-func (h *APIHandler) GetCatalog(ctx context.Context, request GetCatalogRequestObject) (GetCatalogResponseObject, error) {
+func (h *APIHandler) GetCatalog(ctx context.Context, request GenGetCatalogRequest) (GenGetCatalogResponse, error) {
 	info, err := h.catalog.GetCatalogInfo(ctx, string(request.CatalogName))
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetCatalog404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetCatalog404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetCatalog200JSONResponse{
+	return GenGetCatalog200JSONResponse{
 		Body:    catalogInfoToAPI(*info),
-		Headers: GetCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetCatalogVersionSummary implements the endpoint for retrieving catalog version metadata.
-func (h *APIHandler) GetCatalogVersionSummary(ctx context.Context, request GetCatalogVersionSummaryRequestObject) (GetCatalogVersionSummaryResponseObject, error) {
+func (h *APIHandler) GetCatalogVersionSummary(ctx context.Context, request GenGetCatalogVersionSummaryRequest) (GenGetCatalogVersionSummaryResponse, error) {
 	summary, err := h.catalog.GetCatalogVersionSummary(ctx, string(request.CatalogName))
 	if err != nil {
 		switch {
@@ -72,7 +72,7 @@ func (h *APIHandler) GetCatalogVersionSummary(ctx context.Context, request GetCa
 }
 
 // ListCatalogHistory implements the endpoint for retrieving snapshot-aware catalog history.
-func (h *APIHandler) ListCatalogHistory(ctx context.Context, request ListCatalogHistoryRequestObject) (ListCatalogHistoryResponseObject, error) {
+func (h *APIHandler) ListCatalogHistory(ctx context.Context, request GenListCatalogHistoryRequest) (GenListCatalogHistoryResponse, error) {
 	filter := domain.CatalogHistoryFilter{}
 	if request.Params.EntityType != nil {
 		filter.EntityType = string(*request.Params.EntityType)
@@ -103,13 +103,13 @@ func (h *APIHandler) ListCatalogHistory(ctx context.Context, request ListCatalog
 		out[i] = catalogHistoryEntryToAPI(entries[i])
 	}
 	return ListCatalogHistory200JSONResponse{
-		Body:    CatalogHistoryResponse{Data: &out},
+		Body:    CatalogHistoryResponse{Data: out},
 		Headers: ListCatalogHistory200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // ListSchemas implements the endpoint for listing schemas in the catalog.
-func (h *APIHandler) ListSchemas(ctx context.Context, request ListSchemasRequestObject) (ListSchemasResponseObject, error) {
+func (h *APIHandler) ListSchemas(ctx context.Context, request GenListSchemasRequest) (GenListSchemasResponse, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	schemas, total, err := h.catalog.ListSchemas(ctx, string(request.CatalogName), page)
 	if err != nil {
@@ -120,14 +120,14 @@ func (h *APIHandler) ListSchemas(ctx context.Context, request ListSchemasRequest
 		out[i] = schemaDetailToAPI(s)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListSchemas200JSONResponse{
-		Body:    PaginatedSchemaDetails{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListSchemas200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListSchemas200JSONResponse{
+		Body:    PaginatedSchemaDetails{Data: out, NextPageToken: optStr(npt)},
+		Headers: GenListSchemas200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateSchema implements the endpoint for creating a new schema.
-func (h *APIHandler) CreateSchema(ctx context.Context, request CreateSchemaRequestObject) (CreateSchemaResponseObject, error) {
+func (h *APIHandler) CreateSchema(ctx context.Context, request GenCreateSchemaRequest) (GenCreateSchemaResponse, error) {
 	domReq := domain.CreateSchemaRequest{
 		Name: request.Body.Name,
 	}
@@ -135,7 +135,7 @@ func (h *APIHandler) CreateSchema(ctx context.Context, request CreateSchemaReque
 		domReq.Comment = *request.Body.Comment
 	}
 	if request.Body.Properties != nil {
-		domReq.Properties = *request.Body.Properties
+		domReq.Properties = recordToStringMap(request.Body.Properties)
 	}
 	if request.Body.LocationName != nil {
 		domReq.LocationName = *request.Body.LocationName
@@ -155,36 +155,36 @@ func (h *APIHandler) CreateSchema(ctx context.Context, request CreateSchemaReque
 			return CreateSchema400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateSchema201JSONResponse{
+	return GenCreateSchema201JSONResponse{
 		Body:    schemaDetailToAPI(*result),
-		Headers: CreateSchema201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateSchema201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetSchema implements the endpoint for retrieving a schema by name.
-func (h *APIHandler) GetSchema(ctx context.Context, request GetSchemaRequestObject) (GetSchemaResponseObject, error) {
+func (h *APIHandler) GetSchema(ctx context.Context, request GenGetSchemaRequest) (GenGetSchemaResponse, error) {
 	result, err := h.catalog.GetSchema(ctx, string(request.CatalogName), request.SchemaName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetSchema404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetSchema404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetSchema200JSONResponse{
+	return GenGetSchema200JSONResponse{
 		Body:    schemaDetailToAPI(*result),
-		Headers: GetSchema200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetSchema200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateSchema implements the endpoint for updating schema metadata.
-func (h *APIHandler) UpdateSchema(ctx context.Context, request UpdateSchemaRequestObject) (UpdateSchemaResponseObject, error) {
+func (h *APIHandler) UpdateSchema(ctx context.Context, request GenUpdateSchemaRequest) (GenUpdateSchemaResponse, error) {
 	domReq := domain.UpdateSchemaRequest{
 		Comment: request.Body.Comment,
 	}
 	if request.Body.Properties != nil {
-		domReq.Properties = *request.Body.Properties
+		domReq.Properties = recordToStringMap(request.Body.Properties)
 	}
 
 	principal := principalFromCtx(ctx)
@@ -199,14 +199,14 @@ func (h *APIHandler) UpdateSchema(ctx context.Context, request UpdateSchemaReque
 			return nil, err
 		}
 	}
-	return UpdateSchema200JSONResponse{
+	return GenUpdateSchema200JSONResponse{
 		Body:    schemaDetailToAPI(*result),
-		Headers: UpdateSchema200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateSchema200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteSchema implements the endpoint for deleting a schema by name.
-func (h *APIHandler) DeleteSchema(ctx context.Context, request DeleteSchemaRequestObject) (DeleteSchemaResponseObject, error) {
+func (h *APIHandler) DeleteSchema(ctx context.Context, request GenDeleteSchemaRequest) (GenDeleteSchemaResponse, error) {
 	force := false
 	if request.Params.Force != nil {
 		force = *request.Params.Force
@@ -223,20 +223,20 @@ func (h *APIHandler) DeleteSchema(ctx context.Context, request DeleteSchemaReque
 		case http.StatusConflict:
 			return DeleteSchema409JSONResponse{ConflictJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
-			return DeleteSchema500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDeleteSchema500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return DeleteSchema204Response{}, nil
+	return GenDeleteSchema204Response{}, nil
 }
 
 // ListTables implements the endpoint for listing tables in a schema.
-func (h *APIHandler) ListTables(ctx context.Context, request ListTablesRequestObject) (ListTablesResponseObject, error) {
+func (h *APIHandler) ListTables(ctx context.Context, request GenListTablesRequest) (GenListTablesResponse, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	tables, total, err := h.catalog.ListTables(ctx, string(request.CatalogName), request.SchemaName, page)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListTables404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenListTables404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -246,14 +246,14 @@ func (h *APIHandler) ListTables(ctx context.Context, request ListTablesRequestOb
 		out[i] = tableDetailToAPI(t)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListTables200JSONResponse{
-		Body:    PaginatedTableDetails{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListTables200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListTables200JSONResponse{
+		Body:    PaginatedTableDetails{Data: out, NextPageToken: optStr(npt)},
+		Headers: GenListTables200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateTable implements the endpoint for creating a new table in a schema.
-func (h *APIHandler) CreateTable(ctx context.Context, request CreateTableRequestObject) (CreateTableResponseObject, error) {
+func (h *APIHandler) CreateTable(ctx context.Context, request GenCreateTableRequest) (GenCreateTableResponse, error) {
 	var cols []domain.CreateColumnDef
 	if request.Body.Columns != nil {
 		cols = make([]domain.CreateColumnDef, len(*request.Body.Columns))
@@ -267,18 +267,6 @@ func (h *APIHandler) CreateTable(ctx context.Context, request CreateTableRequest
 	}
 	if request.Body.Comment != nil {
 		domReq.Comment = *request.Body.Comment
-	}
-	if request.Body.TableType != nil {
-		domReq.TableType = string(*request.Body.TableType)
-	}
-	if request.Body.SourcePath != nil {
-		domReq.SourcePath = *request.Body.SourcePath
-	}
-	if request.Body.FileFormat != nil {
-		domReq.FileFormat = string(*request.Body.FileFormat)
-	}
-	if request.Body.LocationName != nil {
-		domReq.LocationName = *request.Body.LocationName
 	}
 
 	principal := principalFromCtx(ctx)
@@ -297,40 +285,40 @@ func (h *APIHandler) CreateTable(ctx context.Context, request CreateTableRequest
 			return CreateTable400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateTable201JSONResponse{
+	return GenCreateTable201JSONResponse{
 		Body:    tableDetailToAPI(*result),
-		Headers: CreateTable201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateTable201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetTable implements the endpoint for retrieving a table by name.
-func (h *APIHandler) GetTable(ctx context.Context, request GetTableRequestObject) (GetTableResponseObject, error) {
+func (h *APIHandler) GetTable(ctx context.Context, request GenGetTableRequest) (GenGetTableResponse, error) {
 	result, err := h.catalog.GetTable(ctx, string(request.CatalogName), request.SchemaName, request.TableName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetTable404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetTable404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetTable200JSONResponse{
+	return GenGetTable200JSONResponse{
 		Body:    tableDetailToAPI(*result),
-		Headers: GetTable200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetTable200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateTable implements the endpoint for updating table metadata.
-func (h *APIHandler) UpdateTable(ctx context.Context, request UpdateTableRequestObject) (UpdateTableResponseObject, error) {
+func (h *APIHandler) UpdateTable(ctx context.Context, request GenUpdateTableRequest) (GenUpdateTableResponse, error) {
 	domReq := domain.UpdateTableRequest{}
 	if request.Body.Comment != nil {
 		domReq.Comment = request.Body.Comment
 	}
-	if request.Body.Properties != nil {
-		domReq.Properties = *request.Body.Properties
-	}
 	if request.Body.Owner != nil {
 		domReq.Owner = request.Body.Owner
+	}
+	if request.Body.Properties != nil {
+		domReq.Properties = recordToStringMap(request.Body.Properties)
 	}
 
 	principal := principalFromCtx(ctx)
@@ -345,14 +333,14 @@ func (h *APIHandler) UpdateTable(ctx context.Context, request UpdateTableRequest
 			return nil, err
 		}
 	}
-	return UpdateTable200JSONResponse{
+	return GenUpdateTable200JSONResponse{
 		Body:    tableDetailToAPI(*result),
-		Headers: UpdateTable200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateTable200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteTable implements the endpoint for deleting a table by name.
-func (h *APIHandler) DeleteTable(ctx context.Context, request DeleteTableRequestObject) (DeleteTableResponseObject, error) {
+func (h *APIHandler) DeleteTable(ctx context.Context, request GenDeleteTableRequest) (GenDeleteTableResponse, error) {
 	principal := principalFromCtx(ctx)
 	if err := h.catalog.DeleteTable(ctx, string(request.CatalogName), principal, request.SchemaName, request.TableName); err != nil {
 		switch {
@@ -364,17 +352,17 @@ func (h *APIHandler) DeleteTable(ctx context.Context, request DeleteTableRequest
 			return nil, err
 		}
 	}
-	return DeleteTable204Response{}, nil
+	return GenDeleteTable204Response{}, nil
 }
 
 // ListTableColumns implements the endpoint for listing columns of a table.
-func (h *APIHandler) ListTableColumns(ctx context.Context, request ListTableColumnsRequestObject) (ListTableColumnsResponseObject, error) {
+func (h *APIHandler) ListTableColumns(ctx context.Context, request GenListTableColumnsRequest) (GenListTableColumnsResponse, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	cols, total, err := h.catalog.ListColumns(ctx, string(request.CatalogName), request.SchemaName, request.TableName, page)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListTableColumns404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenListTableColumns404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -384,20 +372,17 @@ func (h *APIHandler) ListTableColumns(ctx context.Context, request ListTableColu
 		out[i] = columnDetailToAPI(c)
 	}
 	npt := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListTableColumns200JSONResponse{
-		Body:    PaginatedColumnDetails{Data: &out, NextPageToken: optStr(npt)},
-		Headers: ListTableColumns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListTableColumns200JSONResponse{
+		Body:    PaginatedColumnDetails{Data: out, NextPageToken: optStr(npt)},
+		Headers: GenListTableColumns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateColumn implements the endpoint for updating column metadata.
-func (h *APIHandler) UpdateColumn(ctx context.Context, request UpdateColumnRequestObject) (UpdateColumnResponseObject, error) {
+func (h *APIHandler) UpdateColumn(ctx context.Context, request GenUpdateColumnRequest) (GenUpdateColumnResponse, error) {
 	domReq := domain.UpdateColumnRequest{}
 	if request.Body.Comment != nil {
 		domReq.Comment = request.Body.Comment
-	}
-	if request.Body.Properties != nil {
-		domReq.Properties = *request.Body.Properties
 	}
 
 	principal := principalFromCtx(ctx)
@@ -412,14 +397,14 @@ func (h *APIHandler) UpdateColumn(ctx context.Context, request UpdateColumnReque
 			return nil, err
 		}
 	}
-	return UpdateColumn200JSONResponse{
+	return GenUpdateColumn200JSONResponse{
 		Body:    columnDetailToAPI(*result),
-		Headers: UpdateColumn200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateColumn200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // ProfileTable implements the endpoint for profiling table statistics.
-func (h *APIHandler) ProfileTable(ctx context.Context, request ProfileTableRequestObject) (ProfileTableResponseObject, error) {
+func (h *APIHandler) ProfileTable(ctx context.Context, request GenProfileTableRequest) (GenProfileTableResponse, error) {
 	principal := principalFromCtx(ctx)
 	stats, err := h.catalog.ProfileTable(ctx, string(request.CatalogName), principal, request.SchemaName, request.TableName)
 	if err != nil {
@@ -439,20 +424,20 @@ func (h *APIHandler) ProfileTable(ctx context.Context, request ProfileTableReque
 }
 
 // GetMetastoreSummary implements the endpoint for retrieving the metastore summary.
-func (h *APIHandler) GetMetastoreSummary(ctx context.Context, request GetMetastoreSummaryRequestObject) (GetMetastoreSummaryResponseObject, error) {
+func (h *APIHandler) GetMetastoreSummary(ctx context.Context, request GenGetMetastoreSummaryRequest) (GenGetMetastoreSummaryResponse, error) {
 	summary, err := h.catalog.GetMetastoreSummary(ctx, string(request.CatalogName))
 	if err != nil {
 		return nil, err
 	}
-	return GetMetastoreSummary200JSONResponse{
+	return GenGetMetastoreSummary200JSONResponse{
 		Body: MetastoreSummary{
-			CatalogName:    &summary.CatalogName,
+			CatalogName:    summary.CatalogName,
 			MetastoreType:  &summary.MetastoreType,
 			StorageBackend: &summary.StorageBackend,
 			DataPath:       &summary.DataPath,
-			SchemaCount:    &summary.SchemaCount,
-			TableCount:     &summary.TableCount,
+			SchemaCount:    ptrI32(safeInt64ToInt32(summary.SchemaCount)),
+			TableCount:     ptrI32(safeInt64ToInt32(summary.TableCount)),
 		},
-		Headers: GetMetastoreSummary200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetMetastoreSummary200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

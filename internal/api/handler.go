@@ -1,7 +1,7 @@
 // Package api provides HTTP handlers for the data platform REST API.
 package api
 
-// APIHandler implements the StrictServerInterface.
+// APIHandler implements the GenStrictServerInterface.
 type APIHandler struct {
 	query               queryService
 	principals          principalService
@@ -24,6 +24,7 @@ type APIHandler struct {
 	volumes             volumeService
 	computeEndpoints    computeEndpointService
 	apiKeys             apiKeyService
+	pipelines           pipelineService
 	notebooks           notebookService
 	sessions            sessionService
 	gitRepos            gitRepoService
@@ -57,6 +58,7 @@ func NewHandler(
 	volumes volumeService,
 	computeEndpoints computeEndpointService,
 	apiKeys apiKeyService,
+	pipelines pipelineService,
 	notebooks notebookService,
 	sessions sessionService,
 	gitRepos gitRepoService,
@@ -88,6 +90,7 @@ func NewHandler(
 		volumes:             volumes,
 		computeEndpoints:    computeEndpoints,
 		apiKeys:             apiKeys,
+		pipelines:           pipelines,
 		notebooks:           notebooks,
 		sessions:            sessions,
 		gitRepos:            gitRepos,
@@ -100,4 +103,4 @@ func NewHandler(
 }
 
 // Ensure Handler implements the interface.
-var _ StrictServerInterface = (*APIHandler)(nil)
+var _ GenStrictServerInterface = (*APIHandler)(nil)

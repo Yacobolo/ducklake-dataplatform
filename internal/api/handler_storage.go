@@ -37,7 +37,7 @@ type volumeService interface {
 // === Storage Credentials ===
 
 // ListStorageCredentials implements the endpoint for listing all storage credentials.
-func (h *APIHandler) ListStorageCredentials(ctx context.Context, req ListStorageCredentialsRequestObject) (ListStorageCredentialsResponseObject, error) {
+func (h *APIHandler) ListStorageCredentials(ctx context.Context, req GenListStorageCredentialsRequest) (GenListStorageCredentialsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	principal := principalFromCtx(ctx)
 	creds, total, err := h.storageCreds.List(ctx, principal, page)
@@ -50,17 +50,19 @@ func (h *APIHandler) ListStorageCredentials(ctx context.Context, req ListStorage
 		data[i] = storageCredentialToAPI(c)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListStorageCredentials200JSONResponse{
-		Body:    PaginatedStorageCredentials{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListStorageCredentials200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListStorageCredentials200JSONResponse{
+		Body:    PaginatedStorageCredentials{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListStorageCredentials200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateStorageCredential implements the endpoint for creating a new storage credential.
-func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStorageCredentialRequestObject) (CreateStorageCredentialResponseObject, error) {
+func (h *APIHandler) CreateStorageCredential(ctx context.Context, req GenCreateStorageCredentialRequest) (GenCreateStorageCredentialResponse, error) {
 	domReq := domain.CreateStorageCredentialRequest{
-		Name:           req.Body.Name,
-		CredentialType: domain.CredentialType(req.Body.CredentialType),
+		Name: req.Body.Name,
+	}
+	if req.Body.CredentialType != nil {
+		domReq.CredentialType = domain.CredentialType(*req.Body.CredentialType)
 	}
 	// S3 fields
 	if req.Body.KeyId != nil {
@@ -77,26 +79,6 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 	}
 	if req.Body.UrlStyle != nil {
 		domReq.URLStyle = *req.Body.UrlStyle
-	}
-	// Azure fields
-	if req.Body.AzureAccountName != nil {
-		domReq.AzureAccountName = *req.Body.AzureAccountName
-	}
-	if req.Body.AzureAccountKey != nil {
-		domReq.AzureAccountKey = *req.Body.AzureAccountKey
-	}
-	if req.Body.AzureClientId != nil {
-		domReq.AzureClientID = *req.Body.AzureClientId
-	}
-	if req.Body.AzureTenantId != nil {
-		domReq.AzureTenantID = *req.Body.AzureTenantId
-	}
-	if req.Body.AzureClientSecret != nil {
-		domReq.AzureClientSecret = *req.Body.AzureClientSecret
-	}
-	// GCS fields
-	if req.Body.GcsKeyFilePath != nil {
-		domReq.GCSKeyFilePath = *req.Body.GcsKeyFilePath
 	}
 	if req.Body.Comment != nil {
 		domReq.Comment = *req.Body.Comment
@@ -120,32 +102,32 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req CreateStor
 			return CreateStorageCredential400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateStorageCredential201JSONResponse{
+	return GenCreateStorageCredential201JSONResponse{
 		Body:    storageCredentialToAPI(*result),
-		Headers: CreateStorageCredential201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateStorageCredential201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetStorageCredential implements the endpoint for retrieving a storage credential by name.
-func (h *APIHandler) GetStorageCredential(ctx context.Context, req GetStorageCredentialRequestObject) (GetStorageCredentialResponseObject, error) {
+func (h *APIHandler) GetStorageCredential(ctx context.Context, req GenGetStorageCredentialRequest) (GenGetStorageCredentialResponse, error) {
 	principal := principalFromCtx(ctx)
 	result, err := h.storageCreds.GetByName(ctx, principal, req.CredentialName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetStorageCredential404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetStorageCredential404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetStorageCredential200JSONResponse{
+	return GenGetStorageCredential200JSONResponse{
 		Body:    storageCredentialToAPI(*result),
-		Headers: GetStorageCredential200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetStorageCredential200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateStorageCredential implements the endpoint for updating a storage credential by name.
-func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStorageCredentialRequestObject) (UpdateStorageCredentialResponseObject, error) {
+func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req GenUpdateStorageCredentialRequest) (GenUpdateStorageCredentialResponse, error) {
 	domReq := domain.UpdateStorageCredentialRequest{
 		// S3 fields
 		KeyID:    req.Body.KeyId,
@@ -153,15 +135,7 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStor
 		Endpoint: req.Body.Endpoint,
 		Region:   req.Body.Region,
 		URLStyle: req.Body.UrlStyle,
-		// Azure fields
-		AzureAccountName:  req.Body.AzureAccountName,
-		AzureAccountKey:   req.Body.AzureAccountKey,
-		AzureClientID:     req.Body.AzureClientId,
-		AzureTenantID:     req.Body.AzureTenantId,
-		AzureClientSecret: req.Body.AzureClientSecret,
-		// GCS fields
-		GCSKeyFilePath: req.Body.GcsKeyFilePath,
-		Comment:        req.Body.Comment,
+		Comment:  req.Body.Comment,
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -177,14 +151,14 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req UpdateStor
 			return nil, err
 		}
 	}
-	return UpdateStorageCredential200JSONResponse{
+	return GenUpdateStorageCredential200JSONResponse{
 		Body:    storageCredentialToAPI(*result),
-		Headers: UpdateStorageCredential200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateStorageCredential200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteStorageCredential implements the endpoint for deleting a storage credential by name.
-func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req DeleteStorageCredentialRequestObject) (DeleteStorageCredentialResponseObject, error) {
+func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req GenDeleteStorageCredentialRequest) (GenDeleteStorageCredentialResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.storageCreds.Delete(ctx, principal, req.CredentialName); err != nil {
@@ -197,13 +171,13 @@ func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req DeleteStor
 			return nil, err
 		}
 	}
-	return DeleteStorageCredential204Response{}, nil
+	return GenDeleteStorageCredential204Response{}, nil
 }
 
 // === External Locations ===
 
 // ListExternalLocations implements the endpoint for listing all external locations.
-func (h *APIHandler) ListExternalLocations(ctx context.Context, req ListExternalLocationsRequestObject) (ListExternalLocationsResponseObject, error) {
+func (h *APIHandler) ListExternalLocations(ctx context.Context, req GenListExternalLocationsRequest) (GenListExternalLocationsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	principal := principalFromCtx(ctx)
 	locs, total, err := h.externalLocations.List(ctx, principal, page)
@@ -216,18 +190,20 @@ func (h *APIHandler) ListExternalLocations(ctx context.Context, req ListExternal
 		data[i] = externalLocationToAPI(l)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListExternalLocations200JSONResponse{
-		Body:    PaginatedExternalLocations{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListExternalLocations200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListExternalLocations200JSONResponse{
+		Body:    PaginatedExternalLocations{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListExternalLocations200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateExternalLocation implements the endpoint for creating a new external location.
-func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExternalLocationRequestObject) (CreateExternalLocationResponseObject, error) {
+func (h *APIHandler) CreateExternalLocation(ctx context.Context, req GenCreateExternalLocationRequest) (GenCreateExternalLocationResponse, error) {
 	domReq := domain.CreateExternalLocationRequest{
-		Name:           req.Body.Name,
-		URL:            req.Body.Url,
-		CredentialName: req.Body.CredentialName,
+		Name: req.Body.Name,
+		URL:  req.Body.Url,
+	}
+	if req.Body.CredentialName != nil {
+		domReq.CredentialName = *req.Body.CredentialName
 	}
 	if req.Body.StorageType != nil {
 		domReq.StorageType = domain.StorageType(*req.Body.StorageType)
@@ -261,36 +237,35 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req CreateExter
 			return CreateExternalLocation400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateExternalLocation201JSONResponse{
+	return GenCreateExternalLocation201JSONResponse{
 		Body:    externalLocationToAPI(*result),
-		Headers: CreateExternalLocation201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateExternalLocation201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetExternalLocation implements the endpoint for retrieving an external location by name.
-func (h *APIHandler) GetExternalLocation(ctx context.Context, req GetExternalLocationRequestObject) (GetExternalLocationResponseObject, error) {
+func (h *APIHandler) GetExternalLocation(ctx context.Context, req GenGetExternalLocationRequest) (GenGetExternalLocationResponse, error) {
 	principal := principalFromCtx(ctx)
 	result, err := h.externalLocations.GetByName(ctx, principal, req.LocationName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetExternalLocation404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetExternalLocation404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetExternalLocation200JSONResponse{
+	return GenGetExternalLocation200JSONResponse{
 		Body:    externalLocationToAPI(*result),
-		Headers: GetExternalLocation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetExternalLocation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateExternalLocation implements the endpoint for updating an external location by name.
-func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExternalLocationRequestObject) (UpdateExternalLocationResponseObject, error) {
+func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req GenUpdateExternalLocationRequest) (GenUpdateExternalLocationResponse, error) {
 	domReq := domain.UpdateExternalLocationRequest{
 		URL:     req.Body.Url,
 		Comment: req.Body.Comment,
-		Owner:   req.Body.Owner,
 	}
 	if req.Body.CredentialName != nil {
 		domReq.CredentialName = req.Body.CredentialName
@@ -312,14 +287,14 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req UpdateExter
 			return nil, err
 		}
 	}
-	return UpdateExternalLocation200JSONResponse{
+	return GenUpdateExternalLocation200JSONResponse{
 		Body:    externalLocationToAPI(*result),
-		Headers: UpdateExternalLocation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateExternalLocation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteExternalLocation implements the endpoint for deleting an external location by name.
-func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req DeleteExternalLocationRequestObject) (DeleteExternalLocationResponseObject, error) {
+func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req GenDeleteExternalLocationRequest) (GenDeleteExternalLocationResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.externalLocations.Delete(ctx, principal, req.LocationName); err != nil {
@@ -332,7 +307,7 @@ func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req DeleteExter
 			return nil, err
 		}
 	}
-	return DeleteExternalLocation204Response{}, nil
+	return GenDeleteExternalLocation204Response{}, nil
 }
 
 // === API Mappers for Storage Credentials / External Locations ===
@@ -340,25 +315,18 @@ func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req DeleteExter
 // storageCredentialToAPI converts a domain StorageCredential to the API type.
 // IMPORTANT: Never expose key_id, secret, azure_account_key, or azure_client_secret in API responses.
 func storageCredentialToAPI(c domain.StorageCredential) StorageCredential {
-	ct := StorageCredentialCredentialType(c.CredentialType)
 	resp := StorageCredential{
-		Id:             &c.ID,
-		Name:           &c.Name,
-		CredentialType: &ct,
+		Id:             c.ID,
+		Name:           c.Name,
+		CredentialType: strPtrIfNonEmpty(string(c.CredentialType)),
 		// S3 fields (non-sensitive)
-		Endpoint: &c.Endpoint,
-		Region:   &c.Region,
-		UrlStyle: &c.URLStyle,
-		// Azure fields (non-sensitive only)
-		AzureAccountName: optStr(c.AzureAccountName),
-		AzureClientId:    optStr(c.AzureClientID),
-		AzureTenantId:    optStr(c.AzureTenantID),
-		// GCS fields
-		GcsKeyFilePath: optStr(c.GCSKeyFilePath),
-		Comment:        optStr(c.Comment),
-		Owner:          &c.Owner,
-		CreatedAt:      &c.CreatedAt,
-		UpdatedAt:      &c.UpdatedAt,
+		Endpoint:  &c.Endpoint,
+		Region:    &c.Region,
+		UrlStyle:  &c.URLStyle,
+		Comment:   optStr(c.Comment),
+		Owner:     &c.Owner,
+		CreatedAt: formatTimePtr(&c.CreatedAt),
+		UpdatedAt: formatTimePtr(&c.UpdatedAt),
 	}
 	return resp
 }
@@ -366,23 +334,23 @@ func storageCredentialToAPI(c domain.StorageCredential) StorageCredential {
 func externalLocationToAPI(l domain.ExternalLocation) ExternalLocation {
 	st := string(l.StorageType)
 	return ExternalLocation{
-		Id:             &l.ID,
-		Name:           &l.Name,
-		Url:            &l.URL,
+		Id:             l.ID,
+		Name:           l.Name,
+		Url:            l.URL,
 		CredentialName: &l.CredentialName,
 		StorageType:    &st,
 		Comment:        optStr(l.Comment),
 		Owner:          &l.Owner,
 		ReadOnly:       &l.ReadOnly,
-		CreatedAt:      &l.CreatedAt,
-		UpdatedAt:      &l.UpdatedAt,
+		CreatedAt:      formatTimePtr(&l.CreatedAt),
+		UpdatedAt:      formatTimePtr(&l.UpdatedAt),
 	}
 }
 
 // === Volumes ===
 
 // ListVolumes implements the endpoint for listing volumes in a schema.
-func (h *APIHandler) ListVolumes(ctx context.Context, request ListVolumesRequestObject) (ListVolumesResponseObject, error) {
+func (h *APIHandler) ListVolumes(ctx context.Context, request GenListVolumesRequest) (GenListVolumesResponse, error) {
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	principal := principalFromCtx(ctx)
 	vols, total, err := h.volumes.List(ctx, principal, string(request.CatalogName), request.SchemaName, page)
@@ -395,17 +363,19 @@ func (h *APIHandler) ListVolumes(ctx context.Context, request ListVolumesRequest
 		data[i] = volumeToAPI(v)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListVolumes200JSONResponse{
-		Body:    PaginatedVolumes{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListVolumes200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListVolumes200JSONResponse{
+		Body:    PaginatedVolumes{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListVolumes200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateVolume implements the endpoint for creating a new volume in a schema.
-func (h *APIHandler) CreateVolume(ctx context.Context, request CreateVolumeRequestObject) (CreateVolumeResponseObject, error) {
+func (h *APIHandler) CreateVolume(ctx context.Context, request GenCreateVolumeRequest) (GenCreateVolumeResponse, error) {
 	domReq := domain.CreateVolumeRequest{
-		Name:       request.Body.Name,
-		VolumeType: string(request.Body.VolumeType),
+		Name: request.Body.Name,
+	}
+	if request.Body.VolumeType != nil {
+		domReq.VolumeType = *request.Body.VolumeType
 	}
 	if request.Body.StorageLocation != nil {
 		domReq.StorageLocation = *request.Body.StorageLocation
@@ -431,36 +401,35 @@ func (h *APIHandler) CreateVolume(ctx context.Context, request CreateVolumeReque
 			return CreateVolume400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateVolume201JSONResponse{
+	return GenCreateVolume201JSONResponse{
 		Body:    volumeToAPI(*result),
-		Headers: CreateVolume201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateVolume201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetVolume implements the endpoint for retrieving a volume by name.
-func (h *APIHandler) GetVolume(ctx context.Context, request GetVolumeRequestObject) (GetVolumeResponseObject, error) {
+func (h *APIHandler) GetVolume(ctx context.Context, request GenGetVolumeRequest) (GenGetVolumeResponse, error) {
 	principal := principalFromCtx(ctx)
 	result, err := h.volumes.GetByName(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetVolume404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetVolume404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetVolume200JSONResponse{
+	return GenGetVolume200JSONResponse{
 		Body:    volumeToAPI(*result),
-		Headers: GetVolume200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetVolume200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateVolume implements the endpoint for updating a volume by name.
-func (h *APIHandler) UpdateVolume(ctx context.Context, request UpdateVolumeRequestObject) (UpdateVolumeResponseObject, error) {
+func (h *APIHandler) UpdateVolume(ctx context.Context, request GenUpdateVolumeRequest) (GenUpdateVolumeResponse, error) {
 	domReq := domain.UpdateVolumeRequest{
 		NewName: request.Body.NewName,
 		Comment: request.Body.Comment,
-		Owner:   request.Body.Owner,
 	}
 
 	principal := principalFromCtx(ctx)
@@ -475,14 +444,14 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, request UpdateVolumeReque
 			return nil, err
 		}
 	}
-	return UpdateVolume200JSONResponse{
+	return GenUpdateVolume200JSONResponse{
 		Body:    volumeToAPI(*result),
-		Headers: UpdateVolume200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateVolume200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteVolume implements the endpoint for deleting a volume by name.
-func (h *APIHandler) DeleteVolume(ctx context.Context, request DeleteVolumeRequestObject) (DeleteVolumeResponseObject, error) {
+func (h *APIHandler) DeleteVolume(ctx context.Context, request GenDeleteVolumeRequest) (GenDeleteVolumeResponse, error) {
 	principal := principalFromCtx(ctx)
 	if err := h.volumes.Delete(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName); err != nil {
 		switch {
@@ -494,22 +463,21 @@ func (h *APIHandler) DeleteVolume(ctx context.Context, request DeleteVolumeReque
 			return nil, err
 		}
 	}
-	return DeleteVolume204Response{}, nil
+	return GenDeleteVolume204Response{}, nil
 }
 
 // volumeToAPI converts a domain Volume to the API VolumeDetail type.
 func volumeToAPI(v domain.Volume) VolumeDetail {
-	vt := VolumeDetailVolumeType(v.VolumeType)
 	return VolumeDetail{
-		Id:              &v.ID,
-		Name:            &v.Name,
-		SchemaName:      &v.SchemaName,
-		CatalogName:     &v.CatalogName,
-		VolumeType:      &vt,
+		Id:              v.ID,
+		Name:            v.Name,
+		SchemaName:      v.SchemaName,
+		CatalogName:     v.CatalogName,
+		VolumeType:      optStr(v.VolumeType),
 		StorageLocation: optStr(v.StorageLocation),
 		Comment:         optStr(v.Comment),
 		Owner:           &v.Owner,
-		CreatedAt:       &v.CreatedAt,
-		UpdatedAt:       &v.UpdatedAt,
+		CreatedAt:       formatTimePtr(&v.CreatedAt),
+		UpdatedAt:       formatTimePtr(&v.UpdatedAt),
 	}
 }

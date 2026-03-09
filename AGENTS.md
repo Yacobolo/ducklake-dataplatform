@@ -34,7 +34,7 @@ Single package/test: `go test -race -run TestName ./internal/pkg/...`
 ```
 cmd/server/          → HTTP server entry point
 cmd/cli/             → CLI binary (duck)
-internal/api/        → HTTP handlers (generated StrictServerInterface)
+internal/api/        → HTTP handlers and APIGen-generated transport code
 internal/service/    → business logic
 internal/domain/     → types, interfaces, errors (zero deps)
 internal/db/         → repository implementations, sqlc, migrations, mappers
@@ -66,7 +66,8 @@ Dependency direction: `api` → `service` → `domain` ← `repository`. Never i
 
 ## Generated Code — Do Not Edit
 
-- `internal/api/types.gen.go`, `server.gen.go` — from `openapi.yaml` via oapi-codegen
+- `api/gen/openapi.yaml` — tracked TypeSpec output from `api/spec/main.tsp` via `task typespec:compile`
+- `api/gen/json-ir.json` — local APIGen intermediate from `api/spec/main.tsp` via `task typespec:compile` (generated, not committed)
+- `internal/api/gen_request_models.gen.go`, `internal/api/server.apigen.gen.go`, `pkg/cli/gen/apigen_registry.gen.go` — from JSON IR (`api/gen/json-ir.json`) via `cmd/apigen`
 - `internal/db/dbstore/*.sql.go` — from `internal/db/queries/*.sql` via sqlc
-- `pkg/cli/gen/*.gen.go` — from `openapi.yaml` via `cmd/cli-gen`
 - `internal/duckdbsql/catalog/*_gen.go` — from DuckDB introspection via `scripts/genduckdb`

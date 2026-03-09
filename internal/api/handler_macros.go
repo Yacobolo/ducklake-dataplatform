@@ -26,12 +26,12 @@ type macroService interface {
 // === Macros ===
 
 // ListMacros implements the endpoint for listing SQL macros.
-func (h *APIHandler) ListMacros(ctx context.Context, req ListMacrosRequestObject) (ListMacrosResponseObject, error) {
+func (h *APIHandler) ListMacros(ctx context.Context, req GenListMacrosRequest) (GenListMacrosResponse, error) {
 	if isNilService(h.macros) {
 		empty := []Macro{}
-		return ListMacros200JSONResponse{
-			Body:    PaginatedMacros{Data: &empty, NextPageToken: nil},
-			Headers: ListMacros200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		return GenListMacros200JSONResponse{
+			Body:    PaginatedMacros{Data: empty, NextPageToken: nil},
+			Headers: GenListMacros200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 		}, nil
 	}
 
@@ -46,14 +46,14 @@ func (h *APIHandler) ListMacros(ctx context.Context, req ListMacrosRequestObject
 		data[i] = macroToAPI(m)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListMacros200JSONResponse{
-		Body:    PaginatedMacros{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListMacros200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListMacros200JSONResponse{
+		Body:    PaginatedMacros{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListMacros200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateMacro implements the endpoint for creating a new SQL macro.
-func (h *APIHandler) CreateMacro(ctx context.Context, req CreateMacroRequestObject) (CreateMacroResponseObject, error) {
+func (h *APIHandler) CreateMacro(ctx context.Context, req GenCreateMacroRequest) (GenCreateMacroResponse, error) {
 	domReq := domain.CreateMacroRequest{
 		Name: req.Body.Name,
 		Body: req.Body.Body,
@@ -80,7 +80,7 @@ func (h *APIHandler) CreateMacro(ctx context.Context, req CreateMacroRequestObje
 		domReq.Owner = *req.Body.Owner
 	}
 	if req.Body.Properties != nil {
-		domReq.Properties = map[string]string(*req.Body.Properties)
+		domReq.Properties = recordToStringMap(req.Body.Properties)
 	}
 	if req.Body.Tags != nil {
 		domReq.Tags = *req.Body.Tags
@@ -104,19 +104,19 @@ func (h *APIHandler) CreateMacro(ctx context.Context, req CreateMacroRequestObje
 			return CreateMacro400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateMacro201JSONResponse{
+	return GenCreateMacro201JSONResponse{
 		Body:    macroToAPI(*result),
-		Headers: CreateMacro201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateMacro201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // ListMacroRevisions implements the endpoint for listing macro revisions.
-func (h *APIHandler) ListMacroRevisions(ctx context.Context, req ListMacroRevisionsRequestObject) (ListMacroRevisionsResponseObject, error) {
+func (h *APIHandler) ListMacroRevisions(ctx context.Context, req GenListMacroRevisionsRequest) (GenListMacroRevisionsResponse, error) {
 	revisions, err := h.macros.ListRevisions(ctx, req.MacroName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListMacroRevisions404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenListMacroRevisions404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -125,19 +125,19 @@ func (h *APIHandler) ListMacroRevisions(ctx context.Context, req ListMacroRevisi
 	for _, r := range revisions {
 		out = append(out, macroRevisionToAPI(r))
 	}
-	return ListMacroRevisions200JSONResponse{
-		Body:    MacroRevisionList{Data: &out},
-		Headers: ListMacroRevisions200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListMacroRevisions200JSONResponse{
+		Body:    MacroRevisionList{Data: out},
+		Headers: GenListMacroRevisions200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DiffMacroRevisions implements the endpoint for comparing two macro revisions.
-func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req DiffMacroRevisionsRequestObject) (DiffMacroRevisionsResponseObject, error) {
+func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req GenDiffMacroRevisionsRequest) (GenDiffMacroRevisionsResponse, error) {
 	diff, err := h.macros.DiffRevisions(ctx, req.MacroName, int(req.Params.FromVersion), int(req.Params.ToVersion))
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DiffMacroRevisions404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDiffMacroRevisions404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
 			return DiffMacroRevisions400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
@@ -149,7 +149,7 @@ func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req DiffMacroRevisi
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DiffMacroRevisions404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDiffMacroRevisions404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
 			return DiffMacroRevisions400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
@@ -161,7 +161,7 @@ func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req DiffMacroRevisi
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return DiffMacroRevisions404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenDiffMacroRevisions404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
 			return DiffMacroRevisions400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
@@ -193,20 +193,20 @@ func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req DiffMacroRevisi
 		apiDiff.ImpactedModelsUnchanged = &models
 	}
 
-	return DiffMacroRevisions200JSONResponse{
+	return GenDiffMacroRevisions200JSONResponse{
 		Body:    apiDiff,
-		Headers: DiffMacroRevisions200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenDiffMacroRevisions200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetMacroImpact implements the endpoint for retrieving reverse macro impact.
-func (h *APIHandler) GetMacroImpact(ctx context.Context, req GetMacroImpactRequestObject) (GetMacroImpactResponseObject, error) {
+func (h *APIHandler) GetMacroImpact(ctx context.Context, req GenGetMacroImpactRequest) (GenGetMacroImpactResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 
 	if _, err := h.macros.Get(ctx, req.MacroName); err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetMacroImpact404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetMacroImpact404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -232,31 +232,31 @@ func (h *APIHandler) GetMacroImpact(ctx context.Context, req GetMacroImpactReque
 	}
 
 	npt := domain.NextPageToken(start, page.Limit(), int64(len(impacted)))
-	return GetMacroImpact200JSONResponse{
-		Body:    MacroImpactList{Data: &data, NextPageToken: optStr(npt)},
-		Headers: GetMacroImpact200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenGetMacroImpact200JSONResponse{
+		Body:    MacroImpactList{Data: data, NextPageToken: optStr(npt)},
+		Headers: GenGetMacroImpact200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetMacro implements the endpoint for retrieving a macro by name.
-func (h *APIHandler) GetMacro(ctx context.Context, req GetMacroRequestObject) (GetMacroResponseObject, error) {
+func (h *APIHandler) GetMacro(ctx context.Context, req GenGetMacroRequest) (GenGetMacroResponse, error) {
 	result, err := h.macros.Get(ctx, req.MacroName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetMacro404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetMacro404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetMacro200JSONResponse{
+	return GenGetMacro200JSONResponse{
 		Body:    macroToAPI(*result),
-		Headers: GetMacro200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetMacro200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateMacro implements the endpoint for updating a SQL macro.
-func (h *APIHandler) UpdateMacro(ctx context.Context, req UpdateMacroRequestObject) (UpdateMacroResponseObject, error) {
+func (h *APIHandler) UpdateMacro(ctx context.Context, req GenUpdateMacroRequest) (GenUpdateMacroResponse, error) {
 	domReq := domain.UpdateMacroRequest{
 		Body:        req.Body.Body,
 		Description: req.Body.Description,
@@ -282,7 +282,7 @@ func (h *APIHandler) UpdateMacro(ctx context.Context, req UpdateMacroRequestObje
 		domReq.Owner = req.Body.Owner
 	}
 	if req.Body.Properties != nil {
-		domReq.Properties = map[string]string(*req.Body.Properties)
+		domReq.Properties = recordToStringMap(req.Body.Properties)
 	}
 	if req.Body.Tags != nil {
 		domReq.Tags = *req.Body.Tags
@@ -303,14 +303,14 @@ func (h *APIHandler) UpdateMacro(ctx context.Context, req UpdateMacroRequestObje
 			return nil, err
 		}
 	}
-	return UpdateMacro200JSONResponse{
+	return GenUpdateMacro200JSONResponse{
 		Body:    macroToAPI(*result),
-		Headers: UpdateMacro200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateMacro200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteMacro implements the endpoint for deleting a SQL macro.
-func (h *APIHandler) DeleteMacro(ctx context.Context, req DeleteMacroRequestObject) (DeleteMacroResponseObject, error) {
+func (h *APIHandler) DeleteMacro(ctx context.Context, req GenDeleteMacroRequest) (GenDeleteMacroResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.macros.Delete(ctx, principal, req.MacroName); err != nil {
@@ -323,26 +323,23 @@ func (h *APIHandler) DeleteMacro(ctx context.Context, req DeleteMacroRequestObje
 			return nil, err
 		}
 	}
-	return DeleteMacro204Response{
-		Headers: DeleteMacro204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenDeleteMacro204Response{
+		Headers: GenDeleteMacro204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // === Macro Mappers ===
 
 func macroToAPI(m domain.Macro) Macro {
-	ct := m.CreatedAt
-	ut := m.UpdatedAt
-	mt := MacroMacroType(m.MacroType)
 	resp := Macro{
 		Id:          &m.ID,
 		Name:        &m.Name,
-		MacroType:   &mt,
+		MacroType:   strPtrIfNonEmpty(m.MacroType),
 		Body:        &m.Body,
 		Description: &m.Description,
 		CreatedBy:   &m.CreatedBy,
-		CreatedAt:   &ct,
-		UpdatedAt:   &ut,
+		CreatedAt:   formatTimePtr(&m.CreatedAt),
+		UpdatedAt:   formatTimePtr(&m.UpdatedAt),
 	}
 	if m.CatalogName != "" {
 		resp.CatalogName = &m.CatalogName
@@ -351,22 +348,19 @@ func macroToAPI(m domain.Macro) Macro {
 		resp.ProjectName = &m.ProjectName
 	}
 	if m.Visibility != "" {
-		v := MacroVisibility(m.Visibility)
-		resp.Visibility = &v
+		resp.Visibility = &m.Visibility
 	}
 	if m.Owner != "" {
 		resp.Owner = &m.Owner
 	}
 	if len(m.Properties) > 0 {
-		props := map[string]string(m.Properties)
-		resp.Properties = &props
+		resp.Properties = stringMapToRecord(m.Properties)
 	}
 	if len(m.Tags) > 0 {
 		resp.Tags = &m.Tags
 	}
 	if m.Status != "" {
-		s := MacroStatus(m.Status)
-		resp.Status = &s
+		resp.Status = &m.Status
 	}
 	if len(m.Parameters) > 0 {
 		resp.Parameters = &m.Parameters
@@ -375,7 +369,6 @@ func macroToAPI(m domain.Macro) Macro {
 }
 
 func macroRevisionToAPI(r domain.MacroRevision) MacroRevision {
-	ct := r.CreatedAt
 	version := safeInt32(r.Version)
 	resp := MacroRevision{
 		Id:          &r.ID,
@@ -385,14 +378,13 @@ func macroRevisionToAPI(r domain.MacroRevision) MacroRevision {
 		Body:        &r.Body,
 		Description: &r.Description,
 		CreatedBy:   &r.CreatedBy,
-		CreatedAt:   &ct,
+		CreatedAt:   formatTimePtr(&r.CreatedAt),
 	}
 	if len(r.Parameters) > 0 {
 		resp.Parameters = &r.Parameters
 	}
 	if r.Status != "" {
-		s := MacroRevisionStatus(r.Status)
-		resp.Status = &s
+		resp.Status = &r.Status
 	}
 	return resp
 }
@@ -423,12 +415,10 @@ func macroRevisionDiffToAPI(d domain.MacroRevisionDiff) MacroRevisionDiff {
 		resp.ToParameters = &d.ToParameters
 	}
 	if d.FromStatus != "" {
-		s := MacroRevisionDiffFromStatus(d.FromStatus)
-		resp.FromStatus = &s
+		resp.FromStatus = &d.FromStatus
 	}
 	if d.ToStatus != "" {
-		s := MacroRevisionDiffToStatus(d.ToStatus)
-		resp.ToStatus = &s
+		resp.ToStatus = &d.ToStatus
 	}
 	return resp
 }
@@ -569,8 +559,7 @@ func macroImpactModelToAPI(m macroImpactModel) MacroImpactModel {
 		resp.TargetSchema = &m.TargetSchema
 	}
 	if !m.LastSeenAt.IsZero() {
-		lastSeen := m.LastSeenAt
-		resp.LastSeenAt = &lastSeen
+		resp.LastSeenAt = formatTimePtr(&m.LastSeenAt)
 	}
 	return resp
 }

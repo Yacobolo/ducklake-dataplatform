@@ -1,18 +1,16 @@
 package cli
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
 
 	"duck-demo/internal/declarative"
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 // StateReader fetches current state from the server API.
@@ -23,6 +21,29 @@ type StateReader interface {
 // StateWriter applies changes to the server API.
 type StateWriter interface {
 	Execute(ctx context.Context, action declarative.Action) error
+}
+
+// CapabilityCompatibilityMode controls how tolerant the declarative client is
+// of optional endpoint drift when reading state from older servers.
+type CapabilityCompatibilityMode string
+
+const (
+	// CapabilityCompatibilityLegacy tolerates optional endpoint failures.
+	CapabilityCompatibilityLegacy CapabilityCompatibilityMode = "legacy"
+	// CapabilityCompatibilityStrict requires optional endpoints to succeed.
+	CapabilityCompatibilityStrict CapabilityCompatibilityMode = "strict"
+)
+
+// APIStateClientOptions configures compatibility behavior for state reads.
+type APIStateClientOptions struct {
+	CompatibilityMode CapabilityCompatibilityMode
+}
+
+func normalizeCompatibilityMode(mode CapabilityCompatibilityMode) CapabilityCompatibilityMode {
+	if mode == CapabilityCompatibilityStrict {
+		return mode
+	}
+	return CapabilityCompatibilityLegacy
 }
 
 // resourceIndex maps human-readable names to API UUIDs. It is populated during
@@ -38,9 +59,7 @@ type resourceIndex struct {
 	locationIDByName      map[string]string // "external_location_name" → UUID
 	credentialIDByName    map[string]string // "storage_credential_name" → UUID
 	computeIDByName       map[string]string // "local" → UUID
-	computeAssignIDByKey  map[string]string // "endpoint|principalType|principal" -> UUID
 	tagIDByKey            map[string]string // "pii" or "pii:value" → UUID
-	tagAssignIDByKey      map[string]string // "tag|securableType|securable|column" -> UUID
 	rowFilterIDByPath     map[string]string // "cat.sch.tbl/filterName" → UUID
 	columnMaskIDByPath    map[string]string // "cat.sch.tbl/maskName" → UUID
 	notebookIDByName      map[string]string // "kpi_walkthrough" → UUID
@@ -58,19 +77,18 @@ func newResourceIndex() *resourceIndex {
 		locationIDByName:      make(map[string]string),
 		credentialIDByName:    make(map[string]string),
 		computeIDByName:       make(map[string]string),
-		computeAssignIDByKey:  make(map[string]string),
 		tagIDByKey:            make(map[string]string),
-		tagAssignIDByKey:      make(map[string]string),
 		rowFilterIDByPath:     make(map[string]string),
 		columnMaskIDByPath:    make(map[string]string),
 		notebookIDByName:      make(map[string]string),
 	}
 }
 
-// APIStateClient implements both StateReader and StateWriter using the gen.Client.
+// APIStateClient implements both StateReader and StateWriter using the CLI runtime client.
 type APIStateClient struct {
-	client               *gen.Client
+	client               *apiruntime.Client
 	index                *resourceIndex
+	compatibilityMode    CapabilityCompatibilityMode
 	optionalReadWarnings []string
 }
 
@@ -81,9 +99,15 @@ var (
 )
 
 // NewAPIStateClient creates a new client adapter.
-func NewAPIStateClient(client *gen.Client) *APIStateClient {
+func NewAPIStateClient(client *apiruntime.Client) *APIStateClient {
+	return NewAPIStateClientWithOptions(client, APIStateClientOptions{})
+}
+
+// NewAPIStateClientWithOptions creates a new client adapter with behavior options.
+func NewAPIStateClientWithOptions(client *apiruntime.Client, options APIStateClientOptions) *APIStateClient {
 	return &APIStateClient{
-		client: client,
+		client:            client,
+		compatibilityMode: normalizeCompatibilityMode(options.CompatibilityMode),
 	}
 }
 
@@ -91,57 +115,6 @@ func NewAPIStateClient(client *gen.Client) *APIStateClient {
 type listResponse struct {
 	Data          json.RawMessage `json:"data"`
 	NextPageToken string          `json:"next_page_token"`
-}
-
-type actionExecutor func(context.Context, declarative.Action) error
-
-func (c *APIStateClient) do(ctx context.Context, method, path string, query url.Values, body interface{}) (*http.Response, error) {
-	var bodyReader io.Reader
-	if body != nil {
-		data, err := json.Marshal(body)
-		if err != nil {
-			return nil, fmt.Errorf("marshal request body: %w", err)
-		}
-		bodyReader = bytes.NewReader(data)
-	}
-
-	u := c.client.BaseURL + "/v1" + path
-	if len(query) > 0 {
-		u += "?" + query.Encode()
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, u, bodyReader)
-	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
-	}
-
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-	req.Header.Set("Accept", "application/json")
-
-	if c.client.Token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.client.Token)
-	} else if c.client.APIKey != "" {
-		req.Header.Set("X-API-Key", c.client.APIKey)
-	}
-
-	resp, err := c.client.HTTPClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("execute request: %w", err)
-	}
-
-	return resp, nil
-}
-
-func (c *APIStateClient) replaceResource(ctx context.Context, deleteAction, createAction declarative.Action, exec actionExecutor) error {
-	if err := exec(ctx, deleteAction); err != nil {
-		return fmt.Errorf("replace resource delete step: %w", err)
-	}
-	if err := exec(ctx, createAction); err != nil {
-		return fmt.Errorf("replace resource create step: %w", err)
-	}
-	return nil
 }
 
 // fetchAllPages fetches all pages from a paginated list endpoint.
@@ -162,7 +135,7 @@ func (c *APIStateClient) fetchAllPages(_ context.Context, path string) ([]json.R
 			return nil, fmt.Errorf("GET %s: %w", path, err)
 		}
 
-		body, err := gen.ReadBody(resp)
+		body, err := apiruntime.ReadBody(resp)
 		if err != nil {
 			return nil, fmt.Errorf("read GET %s: %w", path, err)
 		}
@@ -243,12 +216,6 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 	}
 	if err := c.readTags(ctx, state); err != nil {
 		return nil, fmt.Errorf("read tags: %w", err)
-	}
-	if err := c.readTablePolicies(ctx, state); err != nil {
-		return nil, fmt.Errorf("read table policies: %w", err)
-	}
-	if err := c.readTagAssignments(ctx, state); err != nil {
-		return nil, fmt.Errorf("read tag assignments: %w", err)
 	}
 	if err := c.readNotebooks(ctx, state); err != nil {
 		return nil, fmt.Errorf("read notebooks: %w", err)
@@ -524,14 +491,12 @@ func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.De
 }
 
 type apiSchema struct {
-	ID           string            `json:"schema_id"`
-	LegacyID     string            `json:"id"`
+	ID           string            `json:"id"`
 	Name         string            `json:"name"`
 	Comment      string            `json:"comment"`
 	Owner        string            `json:"owner"`
 	LocationName string            `json:"location_name"`
 	Properties   map[string]string `json:"properties"`
-	Tags         []apiTag          `json:"tags"`
 }
 
 func (c *APIStateClient) readSchemas(ctx context.Context, catalogName string, state *declarative.DesiredState) error {
@@ -559,8 +524,8 @@ func (c *APIStateClient) readSchemas(ctx context.Context, catalogName string, st
 				Properties:   s.Properties,
 			},
 		})
-		if schemaID := s.effectiveID(); schemaID != "" && c.index != nil {
-			c.index.schemaIDByPath[catalogName+"."+s.Name] = schemaID
+		if s.ID != "" && c.index != nil {
+			c.index.schemaIDByPath[catalogName+"."+s.Name] = s.ID
 		}
 
 		// Fetch tables, views, volumes for this schema.
@@ -578,8 +543,7 @@ func (c *APIStateClient) readSchemas(ctx context.Context, catalogName string, st
 }
 
 type apiTable struct {
-	ID           string            `json:"table_id"`
-	LegacyID     string            `json:"id"`
+	ID           string            `json:"id"`
 	Name         string            `json:"name"`
 	TableType    string            `json:"table_type"`
 	Comment      string            `json:"comment"`
@@ -589,7 +553,6 @@ type apiTable struct {
 	SourcePath   string            `json:"source_path"`
 	FileFormat   string            `json:"file_format"`
 	LocationName string            `json:"location_name"`
-	Tags         []apiTag          `json:"tags"`
 }
 
 type apiColumn struct {
@@ -614,14 +577,8 @@ func (c *APIStateClient) readTables(ctx context.Context, catalogName, schemaName
 	}
 
 	for _, t := range items {
-		effective := t
-		if detail, err := c.readTableDetail(ctx, catalogName, schemaName, t.Name); err == nil &&
-			(detail.effectiveID() != "" || detail.TableType != "" || len(detail.Columns) > 0) {
-			effective = *detail
-		}
-
 		var cols []declarative.ColumnDef
-		for _, col := range effective.Columns {
+		for _, col := range t.Columns {
 			cols = append(cols, declarative.ColumnDef{
 				Name:    col.Name,
 				Type:    col.Type,
@@ -634,63 +591,21 @@ func (c *APIStateClient) readTables(ctx context.Context, catalogName, schemaName
 			SchemaName:  schemaName,
 			TableName:   t.Name,
 			Spec: declarative.TableSpec{
-				TableType:    effective.TableType,
-				Comment:      effective.Comment,
-				Owner:        effective.Owner,
+				TableType:    t.TableType,
+				Comment:      t.Comment,
+				Owner:        t.Owner,
 				Columns:      cols,
-				Properties:   effective.Properties,
-				SourcePath:   effective.SourcePath,
-				FileFormat:   effective.FileFormat,
-				LocationName: effective.LocationName,
+				Properties:   t.Properties,
+				SourcePath:   t.SourcePath,
+				FileFormat:   t.FileFormat,
+				LocationName: t.LocationName,
 			},
 		})
-		if tableID := effective.effectiveID(); tableID != "" && c.index != nil {
-			c.index.tableIDByPath[catalogName+"."+schemaName+"."+t.Name] = tableID
-		}
-
-		for _, tag := range effective.Tags {
-			spec := declarative.TagAssignmentSpec{
-				Tag:           tagKey(tag.Key, tag.Value),
-				SecurableType: "table",
-				Securable:     catalogName + "." + schemaName + "." + t.Name,
-			}
-			state.TagAssignments = append(state.TagAssignments, spec)
+		if t.ID != "" && c.index != nil {
+			c.index.tableIDByPath[catalogName+"."+schemaName+"."+t.Name] = t.ID
 		}
 	}
 	return nil
-}
-
-func (c *APIStateClient) readTableDetail(_ context.Context, catalogName, schemaName, tableName string) (*apiTable, error) {
-	resp, err := c.client.Do(http.MethodGet, "/catalogs/"+catalogName+"/schemas/"+schemaName+"/tables/"+tableName, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := gen.ReadBody(resp)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("GET /catalogs/%s/schemas/%s/tables/%s: HTTP %d: %s", catalogName, schemaName, tableName, resp.StatusCode, string(body))
-	}
-	var detail apiTable
-	if err := json.Unmarshal(body, &detail); err != nil {
-		return nil, err
-	}
-	return &detail, nil
-}
-
-func (s apiSchema) effectiveID() string {
-	if s.ID != "" {
-		return s.ID
-	}
-	return s.LegacyID
-}
-
-func (t apiTable) effectiveID() string {
-	if t.ID != "" {
-		return t.ID
-	}
-	return t.LegacyID
 }
 
 type apiView struct {
@@ -862,7 +777,6 @@ type apiComputeEndpoint struct {
 }
 
 type apiComputeAssignment struct {
-	ID            string `json:"id"`
 	Endpoint      string `json:"endpoint"`
 	Principal     string `json:"principal"`
 	PrincipalType string `json:"principal_type"`
@@ -912,11 +826,7 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 					PrincipalType: a.PrincipalType,
 					IsDefault:     a.IsDefault,
 					FallbackLocal: a.FallbackLocal,
-					AssignmentID:  a.ID,
 				})
-				if a.ID != "" && c.index != nil {
-					c.index.computeAssignIDByKey[computeAssignmentKey(ep.Name, a.PrincipalType, a.Principal)] = a.ID
-				}
 			}
 		}
 	}
@@ -965,202 +875,6 @@ func tagKey(key string, value *string) string {
 	return key
 }
 
-func computeAssignmentKey(endpoint, principalType, principal string) string {
-	return endpoint + "|" + principalType + "|" + principal
-}
-
-func tagAssignmentKey(tag, securableType, securable, columnName string) string {
-	key := tag + "|" + securableType + "|" + securable
-	if columnName != "" {
-		key += "|" + columnName
-	}
-	return key
-}
-
-type apiRowFilter struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	FilterSQL   string `json:"filter_sql"`
-	Description string `json:"description"`
-}
-
-type apiRowFilterBinding struct {
-	PrincipalID   string `json:"principal_id"`
-	PrincipalType string `json:"principal_type"`
-}
-
-type apiColumnMaskBinding struct {
-	PrincipalID   string `json:"principal_id"`
-	PrincipalType string `json:"principal_type"`
-	SeeOriginal   bool   `json:"see_original"`
-}
-
-type apiTagAssignment struct {
-	ID            string  `json:"id"`
-	SecurableType string  `json:"securable_type"`
-	SecurableID   string  `json:"securable_id"`
-	ColumnName    *string `json:"column_name"`
-}
-
-func (c *APIStateClient) readTablePolicies(ctx context.Context, state *declarative.DesiredState) error {
-	for tablePath, tableID := range c.index.tableIDByPath {
-		parts := strings.SplitN(tablePath, ".", 3)
-		if len(parts) != 3 {
-			continue
-		}
-		catalogName, schemaName, tableName := parts[0], parts[1], parts[2]
-
-		rowFilterPages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/row-filters")
-		if err != nil {
-			return err
-		}
-		if len(rowFilterPages) > 0 {
-			var rowFilters []apiRowFilter
-			if err := mergePages(rowFilterPages, &rowFilters); err != nil {
-				return err
-			}
-			resource := declarative.RowFilterResource{CatalogName: catalogName, SchemaName: schemaName, TableName: tableName}
-			for _, filter := range rowFilters {
-				spec := declarative.RowFilterSpec{
-					Name:        filter.Name,
-					FilterSQL:   filter.FilterSQL,
-					Description: filter.Description,
-				}
-				bindingPages, err := c.fetchAllPages(ctx, "/row-filters/"+filter.ID+"/bindings")
-				if err != nil {
-					return err
-				}
-				if len(bindingPages) > 0 {
-					var bindings []apiRowFilterBinding
-					if err := mergePages(bindingPages, &bindings); err != nil {
-						return err
-					}
-					for _, binding := range bindings {
-						name := c.reverseLookupPrincipalName(binding.PrincipalID, binding.PrincipalType)
-						if name == "" {
-							name, err = c.lookupMemberNameByID(ctx, binding.PrincipalID, binding.PrincipalType)
-							if err != nil {
-								return err
-							}
-						}
-						spec.Bindings = append(spec.Bindings, declarative.FilterBindingRef{
-							Principal:     name,
-							PrincipalType: binding.PrincipalType,
-						})
-					}
-				}
-				resource.Filters = append(resource.Filters, spec)
-				if filter.ID != "" {
-					c.index.rowFilterIDByPath[tablePath+"/"+filter.Name] = filter.ID
-				}
-			}
-			if len(resource.Filters) > 0 {
-				state.RowFilters = append(state.RowFilters, resource)
-			}
-		}
-
-		columnMaskPages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/column-masks")
-		if err != nil {
-			return err
-		}
-		if len(columnMaskPages) > 0 {
-			var masks []apiColumnMask
-			if err := mergePages(columnMaskPages, &masks); err != nil {
-				return err
-			}
-			resource := declarative.ColumnMaskResource{CatalogName: catalogName, SchemaName: schemaName, TableName: tableName}
-			for _, mask := range masks {
-				spec := declarative.ColumnMaskSpec{
-					Name:           mask.Name,
-					ColumnName:     mask.ColumnName,
-					MaskExpression: mask.MaskExpression,
-					Description:    mask.Description,
-				}
-				bindingPages, err := c.fetchAllPages(ctx, "/column-masks/"+mask.ID+"/bindings")
-				if err != nil {
-					return err
-				}
-				if len(bindingPages) > 0 {
-					var bindings []apiColumnMaskBinding
-					if err := mergePages(bindingPages, &bindings); err != nil {
-						return err
-					}
-					for _, binding := range bindings {
-						name := c.reverseLookupPrincipalName(binding.PrincipalID, binding.PrincipalType)
-						if name == "" {
-							name, err = c.lookupMemberNameByID(ctx, binding.PrincipalID, binding.PrincipalType)
-							if err != nil {
-								return err
-							}
-						}
-						spec.Bindings = append(spec.Bindings, declarative.MaskBindingRef{
-							Principal:     name,
-							PrincipalType: binding.PrincipalType,
-							SeeOriginal:   binding.SeeOriginal,
-						})
-					}
-				}
-				resource.Masks = append(resource.Masks, spec)
-				if mask.ID != "" {
-					c.index.columnMaskIDByPath[tablePath+"/"+mask.Name] = mask.ID
-				}
-			}
-			if len(resource.Masks) > 0 {
-				state.ColumnMasks = append(state.ColumnMasks, resource)
-			}
-		}
-	}
-	return nil
-}
-
-func (c *APIStateClient) readTagAssignments(ctx context.Context, state *declarative.DesiredState) error {
-	seen := make(map[string]struct{}, len(state.TagAssignments))
-	for _, spec := range state.TagAssignments {
-		seen[tagAssignmentKey(spec.Tag, spec.SecurableType, spec.Securable, spec.ColumnName)] = struct{}{}
-	}
-	for tag, tagID := range c.index.tagIDByKey {
-		pages, err := c.fetchAllPages(ctx, "/tags/"+tagID+"/assignments")
-		if err != nil {
-			return err
-		}
-		if len(pages) == 0 {
-			continue
-		}
-		var assignments []apiTagAssignment
-		if err := mergePages(pages, &assignments); err != nil {
-			return err
-		}
-		for _, assignment := range assignments {
-			securablePath := c.reverseLookupSecurablePath(assignment.SecurableType, assignment.SecurableID)
-			if securablePath == "" {
-				continue
-			}
-			spec := declarative.TagAssignmentSpec{
-				Tag:           tag,
-				SecurableType: assignment.SecurableType,
-				Securable:     securablePath,
-				AssignmentID:  assignment.ID,
-			}
-			if assignment.ColumnName != nil {
-				spec.ColumnName = *assignment.ColumnName
-			}
-			key := tagAssignmentKey(tag, spec.SecurableType, spec.Securable, spec.ColumnName)
-			if _, ok := seen[key]; ok {
-				if assignment.ID != "" {
-					c.index.tagAssignIDByKey[key] = assignment.ID
-				}
-				continue
-			}
-			state.TagAssignments = append(state.TagAssignments, spec)
-			if assignment.ID != "" {
-				c.index.tagAssignIDByKey[key] = assignment.ID
-			}
-			seen[key] = struct{}{}
-		}
-	}
-	return nil
-}
-
 // --- Workflow resources (simplified) ---
 
 type apiNotebook struct {
@@ -1171,133 +885,15 @@ type apiNotebook struct {
 }
 
 type apiNotebookCell struct {
-	ID       string                        `json:"id"`
-	CellType string                        `json:"cell_type"`
-	Name     string                        `json:"name"`
-	Role     string                        `json:"role"`
-	Disabled bool                          `json:"disabled"`
-	Test     *declarative.NotebookTestSpec `json:"test"`
-	Content  string                        `json:"content"`
-	Position int                           `json:"position"`
+	ID       string `json:"id"`
+	CellType string `json:"cell_type"`
+	Content  string `json:"content"`
+	Position int    `json:"position"`
 }
 
 type apiNotebookDetail struct {
-	Notebook     apiNotebook            `json:"notebook"`
-	Cells        []apiNotebookCell      `json:"cells"`
-	PublishModel *apiNotebookPublishRef `json:"publish_model"`
-}
-
-type apiNotebookPublishRef struct {
-	ProjectName     string `json:"project_name"`
-	Name            string `json:"name"`
-	Materialization string `json:"materialization"`
-	OutputCellID    string `json:"output_cell_id"`
-}
-
-func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/notebooks")
-	if err != nil {
-		return err
-	}
-	if len(pages) == 0 {
-		return nil
-	}
-
-	var items []apiNotebook
-	if err := mergePages(pages, &items); err != nil {
-		return err
-	}
-
-	for _, nb := range items {
-		if nb.ID != "" && c.index != nil {
-			c.index.notebookIDByName[nb.Name] = nb.ID
-		}
-
-		cells := make([]declarative.CellSpec, 0)
-		cellNameByID := make(map[string]string)
-		var publish *declarative.NotebookPublishSpec
-		if nb.ID != "" {
-			detail, err := c.readNotebookDetail(ctx, nb.ID)
-			if err != nil {
-				return fmt.Errorf("notebook %q detail: %w", nb.Name, err)
-			}
-			sort.Slice(detail.Cells, func(i, j int) bool {
-				return detail.Cells[i].Position < detail.Cells[j].Position
-			})
-			cells = make([]declarative.CellSpec, 0, len(detail.Cells))
-			for _, cell := range detail.Cells {
-				if cell.Name != "" {
-					cellNameByID[cell.ID] = cell.Name
-				}
-				role := normalizeNotebookCellRole(cell.CellType, cell.Role)
-				cells = append(cells, declarative.CellSpec{
-					Type:     cell.CellType,
-					Name:     cell.Name,
-					Role:     role,
-					Disabled: cell.Disabled,
-					Test:     cell.Test,
-					Content:  cell.Content,
-				})
-			}
-			if detail.PublishModel != nil {
-				outputCellName := cellNameByID[detail.PublishModel.OutputCellID]
-				if outputCellName != "" {
-					publish = &declarative.NotebookPublishSpec{
-						Model: &declarative.NotebookPublishModelSpec{
-							Project:         detail.PublishModel.ProjectName,
-							Name:            detail.PublishModel.Name,
-							Materialization: detail.PublishModel.Materialization,
-							OutputCell:      outputCellName,
-						},
-					}
-				}
-			}
-		}
-
-		state.Notebooks = append(state.Notebooks, declarative.NotebookResource{
-			Name: nb.Name,
-			Spec: declarative.NotebookSpec{
-				Description: nb.Description,
-				Owner:       nb.Owner,
-				Cells:       cells,
-				Publish:     publish,
-			},
-		})
-	}
-	return nil
-}
-
-func normalizeNotebookCellRole(cellType, role string) string {
-	switch cellType {
-	case "markdown":
-		if role == "markdown" {
-			return ""
-		}
-	case "sql":
-		if role == "transform" {
-			return ""
-		}
-	}
-	return role
-}
-
-func (c *APIStateClient) readNotebookDetail(_ context.Context, notebookID string) (*apiNotebookDetail, error) {
-	resp, err := c.client.Do(http.MethodGet, "/notebooks/"+notebookID, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	body, err := gen.ReadBody(resp)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("GET /notebooks/%s: HTTP %d: %s", notebookID, resp.StatusCode, string(body))
-	}
-	var detail apiNotebookDetail
-	if err := json.Unmarshal(body, &detail); err != nil {
-		return nil, err
-	}
-	return &detail, nil
+	Notebook apiNotebook       `json:"notebook"`
+	Cells    []apiNotebookCell `json:"cells"`
 }
 
 type apiAsset struct {
@@ -1321,6 +917,55 @@ type apiAssetCheck struct {
 	CheckType string `json:"check_type"`
 	Severity  string `json:"severity"`
 	Enabled   *bool  `json:"enabled"`
+}
+
+func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/notebooks")
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return nil
+	}
+
+	var items []apiNotebook
+	if err := mergePages(pages, &items); err != nil {
+		return err
+	}
+
+	for _, nb := range items {
+		if nb.ID != "" && c.index != nil {
+			c.index.notebookIDByName[nb.Name] = nb.ID
+		}
+
+		cells := make([]declarative.CellSpec, 0)
+		if nb.ID != "" {
+			detail, err := c.readNotebookDetail(ctx, nb.ID)
+			if err != nil {
+				return fmt.Errorf("notebook %q detail: %w", nb.Name, err)
+			}
+			sort.Slice(detail.Cells, func(i, j int) bool {
+				return detail.Cells[i].Position < detail.Cells[j].Position
+			})
+			cells = make([]declarative.CellSpec, 0, len(detail.Cells))
+			for _, cell := range detail.Cells {
+				cells = append(cells, declarative.CellSpec{
+					Type:    cell.CellType,
+					Content: cell.Content,
+				})
+			}
+		}
+
+		state.Notebooks = append(state.Notebooks, declarative.NotebookResource{
+			Name: nb.Name,
+			Spec: declarative.NotebookSpec{
+				Description: nb.Description,
+				Owner:       nb.Owner,
+				Cells:       cells,
+			},
+		})
+	}
+	return nil
 }
 
 func (c *APIStateClient) readAssets(ctx context.Context, state *declarative.DesiredState) error {
@@ -1370,7 +1015,7 @@ func (c *APIStateClient) readAssetGraph(_ context.Context, assetKey string) (*ap
 	if err != nil {
 		return nil, err
 	}
-	body, err := gen.ReadBody(resp)
+	body, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -1408,6 +1053,25 @@ func (c *APIStateClient) readAssetChecks(ctx context.Context, assetKey string) (
 		})
 	}
 	return out, nil
+}
+
+func (c *APIStateClient) readNotebookDetail(_ context.Context, notebookID string) (*apiNotebookDetail, error) {
+	resp, err := c.client.Do(http.MethodGet, "/notebooks/"+notebookID, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := apiruntime.ReadBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("GET /notebooks/%s: HTTP %d: %s", notebookID, resp.StatusCode, string(body))
+	}
+	var detail apiNotebookDetail
+	if err := json.Unmarshal(body, &detail); err != nil {
+		return nil, err
+	}
+	return &detail, nil
 }
 
 type apiMacro struct {
@@ -1879,7 +1543,7 @@ func (c *APIStateClient) lookupMemberNameByID(_ context.Context, id, memberType 
 	if err != nil {
 		return "", err
 	}
-	body, err := gen.ReadBody(resp)
+	body, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return "", err
 	}
@@ -2042,7 +1706,7 @@ func (c *APIStateClient) resolveColumnMaskID(resourceName string) (string, error
 
 // checkCreateResponse reads the response body, checks for errors, and extracts the created resource ID.
 func (c *APIStateClient) checkCreateResponse(resp *http.Response) (string, error) {
-	body, err := gen.ReadBody(resp)
+	body, err := apiruntime.ReadBody(resp)
 	if err != nil {
 		return "", err
 	}
@@ -2104,7 +1768,6 @@ func (c *APIStateClient) lookupTableIDByPath(_ context.Context, catalogName, sch
 
 type apiColumnMask struct {
 	ID             string `json:"id"`
-	Name           string `json:"name"`
 	ColumnName     string `json:"column_name"`
 	MaskExpression string `json:"mask_expression"`
 	Description    string `json:"description"`
@@ -2152,14 +1815,8 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 	switch action.ResourceKind {
 	case declarative.KindPrincipal:
 		return c.executePrincipal(ctx, action)
-	case declarative.KindStorageCredential:
-		return c.executeStorageCredential(ctx, action)
 	case declarative.KindGroup:
 		return c.executeGroup(ctx, action)
-	case declarative.KindExternalLocation:
-		return c.executeExternalLocation(ctx, action)
-	case declarative.KindComputeEndpoint:
-		return c.executeComputeEndpoint(ctx, action)
 	case declarative.KindGroupMembership:
 		return c.executeGroupMembership(ctx, action)
 	case declarative.KindPrivilegeGrant:
@@ -2172,10 +1829,6 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeTable(ctx, action)
 	case declarative.KindView:
 		return c.executeView(ctx, action)
-	case declarative.KindVolume:
-		return c.executeVolume(ctx, action)
-	case declarative.KindComputeAssignment:
-		return c.executeComputeAssignment(ctx, action)
 	case declarative.KindTag:
 		return c.executeTag(ctx, action)
 	case declarative.KindTagAssignment:
@@ -2271,7 +1924,7 @@ func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectNa
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 			continue
@@ -2282,7 +1935,7 @@ func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectNa
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2295,7 +1948,7 @@ func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectNa
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2330,7 +1983,7 @@ func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, p
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 			continue
@@ -2341,7 +1994,7 @@ func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, p
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2354,7 +2007,7 @@ func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, p
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2396,7 +2049,7 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 			continue
@@ -2409,7 +2062,7 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2422,7 +2075,7 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2491,7 +2144,7 @@ func (c *APIStateClient) executeSemanticModel(ctx context.Context, action declar
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 
@@ -2510,7 +2163,7 @@ func (c *APIStateClient) executeSemanticModel(ctx context.Context, action declar
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for semantic model", action.Operation)
@@ -2536,7 +2189,7 @@ func (c *APIStateClient) executeAPIKey(ctx context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpUpdate:
 		actual := action.Actual.(declarative.APIKeySpec)
@@ -2548,7 +2201,7 @@ func (c *APIStateClient) executeAPIKey(ctx context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 		create := declarative.Action{Operation: declarative.OpCreate, Desired: action.Desired}
@@ -2564,7 +2217,7 @@ func (c *APIStateClient) executeAPIKey(ctx context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for api-key", action.Operation)
@@ -2606,10 +2259,7 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if c.index != nil {
 			c.index.notebookIDByName[nb.Name] = notebookID
 		}
-		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
-			return err
-		}
-		return c.applyNotebookPublish(ctx, notebookID, nb)
+		return c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells)
 
 	case declarative.OpUpdate:
 		nb := action.Desired.(declarative.NotebookResource)
@@ -2625,13 +2275,10 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
-		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
-			return err
-		}
-		return c.applyNotebookPublish(ctx, notebookID, nb)
+		return c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells)
 
 	case declarative.OpDelete:
 		notebookName := action.ResourceName
@@ -2646,7 +2293,7 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 		if c.index != nil {
@@ -2711,14 +2358,14 @@ func (c *APIStateClient) executeAsset(_ context.Context, action declarative.Acti
 		if resp.StatusCode == http.StatusConflict {
 			return nil
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 	case declarative.OpUpdate:
 		asset := action.Desired.(declarative.AssetResource)
 		resp, err := c.client.Do(http.MethodPut, "/assets/"+asset.Name, nil, toAssetBody(asset))
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 	case declarative.OpDelete:
 		key := action.ResourceName
 		if actual, ok := action.Actual.(declarative.AssetResource); ok && actual.Name != "" {
@@ -2728,7 +2375,7 @@ func (c *APIStateClient) executeAsset(_ context.Context, action declarative.Acti
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 	default:
 		return fmt.Errorf("unsupported operation %s for asset", action.Operation)
 	}
@@ -2745,7 +2392,7 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -2755,18 +2402,6 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 			"cell_type": cell.Type,
 			"position":  i,
 		}
-		if cell.Name != "" {
-			body["name"] = cell.Name
-		}
-		if cell.Role != "" {
-			body["role"] = cell.Role
-		}
-		if cell.Disabled {
-			body["disabled"] = true
-		}
-		if cell.Test != nil {
-			body["test"] = cell.Test
-		}
 		if cell.Content != "" {
 			body["content"] = cell.Content
 		}
@@ -2774,48 +2409,12 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func (c *APIStateClient) applyNotebookPublish(ctx context.Context, notebookID string, nb declarative.NotebookResource) error {
-	if nb.Spec.Publish == nil || nb.Spec.Publish.Model == nil {
-		return nil
-	}
-	detail, err := c.readNotebookDetail(ctx, notebookID)
-	if err != nil {
-		return err
-	}
-	outputCellName := nb.Spec.Publish.Model.OutputCell
-	outputCellID := ""
-	for _, cell := range detail.Cells {
-		if cell.Name == outputCellName {
-			outputCellID = cell.ID
-			break
-		}
-	}
-	if outputCellID == "" {
-		return fmt.Errorf("publish.model.output_cell %q not found in notebook %q", outputCellName, nb.Name)
-	}
-
-	body := map[string]interface{}{
-		"notebook_id":    notebookID,
-		"output_cell_id": outputCellID,
-		"project_name":   nb.Spec.Publish.Model.Project,
-		"name":           nb.Spec.Publish.Model.Name,
-	}
-	if nb.Spec.Publish.Model.Materialization != "" {
-		body["materialization"] = nb.Spec.Publish.Model.Materialization
-	}
-	resp, err := c.client.Do(http.MethodPost, "/models/from-notebook", nil, body)
-	if err != nil {
-		return err
-	}
-	return gen.CheckError(resp)
 }
 
 func (c *APIStateClient) resolveNotebookID(ctx context.Context, notebookName string) (string, error) {
@@ -3120,7 +2719,7 @@ func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, m
 			if err != nil {
 				return err
 			}
-			if err := gen.CheckError(resp); err != nil {
+			if err := apiruntime.CheckError(resp); err != nil {
 				return err
 			}
 		}
@@ -3129,7 +2728,7 @@ func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, m
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -3145,7 +2744,7 @@ func (c *APIStateClient) reconcileModelTests(ctx context.Context, projectName, m
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 	}
@@ -3196,7 +2795,7 @@ func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Acti
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpUpdate:
 		macro := action.Desired.(declarative.MacroResource)
@@ -3228,14 +2827,14 @@ func (c *APIStateClient) executeMacro(_ context.Context, action declarative.Acti
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		resp, err := c.client.Do(http.MethodDelete, "/macros/"+action.ResourceName, nil, nil)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for macro", action.Operation)
@@ -3274,7 +2873,7 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 		return c.reconcileModelTests(ctx, model.ProjectName, model.ModelName, model.Spec.Tests)
@@ -3298,7 +2897,7 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		if err := gen.CheckError(resp); err != nil {
+		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
 		return c.reconcileModelTests(ctx, model.ProjectName, model.ModelName, model.Spec.Tests)
@@ -3312,292 +2911,10 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for model", action.Operation)
-	}
-}
-
-func (c *APIStateClient) executeStorageCredential(_ context.Context, action declarative.Action) error {
-	switch action.Operation {
-	case declarative.OpCreate:
-		spec := action.Desired.(declarative.StorageCredentialSpec)
-		body := map[string]interface{}{
-			"name":            spec.Name,
-			"credential_type": spec.CredentialType,
-		}
-		if spec.Comment != "" {
-			body["comment"] = spec.Comment
-		}
-		resp, err := c.client.Do(http.MethodPost, "/storage-credentials", nil, body)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode == http.StatusConflict {
-			return nil
-		}
-		id, err := c.checkCreateResponse(resp)
-		if err != nil {
-			return err
-		}
-		if id != "" && c.index != nil {
-			c.index.credentialIDByName[spec.Name] = id
-		}
-		return nil
-	case declarative.OpUpdate:
-		spec := action.Desired.(declarative.StorageCredentialSpec)
-		body := map[string]interface{}{
-			"comment": spec.Comment,
-		}
-		resp, err := c.client.Do(http.MethodPatch, "/storage-credentials/"+spec.Name, nil, body)
-		if err != nil {
-			return err
-		}
-		return gen.CheckError(resp)
-	case declarative.OpDelete:
-		name := action.ResourceName
-		if actual, ok := action.Actual.(declarative.StorageCredentialSpec); ok && actual.Name != "" {
-			name = actual.Name
-		}
-		resp, err := c.client.Do(http.MethodDelete, "/storage-credentials/"+name, nil, nil)
-		if err != nil {
-			return err
-		}
-		return gen.CheckError(resp)
-	default:
-		return fmt.Errorf("unsupported operation %s for storage-credential", action.Operation)
-	}
-}
-
-func (c *APIStateClient) executeExternalLocation(_ context.Context, action declarative.Action) error {
-	switch action.Operation {
-	case declarative.OpCreate:
-		spec := action.Desired.(declarative.ExternalLocationSpec)
-		body := map[string]interface{}{
-			"name":            spec.Name,
-			"url":             spec.URL,
-			"credential_name": spec.CredentialName,
-		}
-		if spec.StorageType != "" {
-			body["storage_type"] = spec.StorageType
-		}
-		if spec.Comment != "" {
-			body["comment"] = spec.Comment
-		}
-		body["read_only"] = spec.ReadOnly
-		resp, err := c.client.Do(http.MethodPost, "/external-locations", nil, body)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode == http.StatusConflict {
-			return nil
-		}
-		id, err := c.checkCreateResponse(resp)
-		if err != nil {
-			return err
-		}
-		if id != "" && c.index != nil {
-			c.index.locationIDByName[spec.Name] = id
-		}
-		return nil
-	case declarative.OpUpdate:
-		spec := action.Desired.(declarative.ExternalLocationSpec)
-		body := map[string]interface{}{
-			"url":             spec.URL,
-			"credential_name": spec.CredentialName,
-			"storage_type":    spec.StorageType,
-			"comment":         spec.Comment,
-			"read_only":       spec.ReadOnly,
-		}
-		resp, err := c.client.Do(http.MethodPatch, "/external-locations/"+spec.Name, nil, body)
-		if err != nil {
-			return err
-		}
-		return gen.CheckError(resp)
-	case declarative.OpDelete:
-		name := action.ResourceName
-		if actual, ok := action.Actual.(declarative.ExternalLocationSpec); ok && actual.Name != "" {
-			name = actual.Name
-		}
-		resp, err := c.client.Do(http.MethodDelete, "/external-locations/"+name, nil, nil)
-		if err != nil {
-			return err
-		}
-		return gen.CheckError(resp)
-	default:
-		return fmt.Errorf("unsupported operation %s for external-location", action.Operation)
-	}
-}
-
-func (c *APIStateClient) executeComputeEndpoint(_ context.Context, action declarative.Action) error {
-	switch action.Operation {
-	case declarative.OpCreate:
-		spec := action.Desired.(declarative.ComputeEndpointSpec)
-		body := map[string]interface{}{
-			"name": spec.Name,
-			"type": spec.Type,
-		}
-		if spec.URL != "" {
-			body["url"] = spec.URL
-		}
-		if spec.Size != "" {
-			body["size"] = spec.Size
-		}
-		if spec.MaxMemoryGB != nil {
-			body["max_memory_gb"] = *spec.MaxMemoryGB
-		}
-		resp, err := c.client.Do(http.MethodPost, "/compute-endpoints", nil, body)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode == http.StatusConflict {
-			return nil
-		}
-		id, err := c.checkCreateResponse(resp)
-		if err != nil {
-			return err
-		}
-		if id != "" && c.index != nil {
-			c.index.computeIDByName[spec.Name] = id
-		}
-		return nil
-	case declarative.OpUpdate:
-		spec := action.Desired.(declarative.ComputeEndpointSpec)
-		body := map[string]interface{}{
-			"url":  spec.URL,
-			"size": spec.Size,
-		}
-		if spec.MaxMemoryGB != nil {
-			body["max_memory_gb"] = *spec.MaxMemoryGB
-		}
-		resp, err := c.client.Do(http.MethodPatch, "/compute-endpoints/"+spec.Name, nil, body)
-		if err != nil {
-			return err
-		}
-		return gen.CheckError(resp)
-	case declarative.OpDelete:
-		name := action.ResourceName
-		if actual, ok := action.Actual.(declarative.ComputeEndpointSpec); ok && actual.Name != "" {
-			name = actual.Name
-		}
-		resp, err := c.client.Do(http.MethodDelete, "/compute-endpoints/"+name, nil, nil)
-		if err != nil {
-			return err
-		}
-		return gen.CheckError(resp)
-	default:
-		return fmt.Errorf("unsupported operation %s for compute-endpoint", action.Operation)
-	}
-}
-
-func (c *APIStateClient) executeComputeAssignment(ctx context.Context, action declarative.Action) error {
-	switch action.Operation {
-	case declarative.OpCreate:
-		spec := action.Desired.(declarative.ComputeAssignmentSpec)
-		principalID, err := c.resolvePrincipalID(spec.Principal, spec.PrincipalType)
-		if err != nil {
-			return fmt.Errorf("resolve principal for compute assignment: %w", err)
-		}
-		body := map[string]interface{}{
-			"principal_id":   principalID,
-			"principal_type": spec.PrincipalType,
-			"is_default":     spec.IsDefault,
-			"fallback_local": spec.FallbackLocal,
-		}
-		resp, err := c.do(ctx, http.MethodPost, "/compute-endpoints/"+spec.Endpoint+"/assignments", nil, body)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode == http.StatusConflict {
-			return nil
-		}
-		id, err := c.checkCreateResponse(resp)
-		if err != nil {
-			return err
-		}
-		if id != "" && c.index != nil {
-			c.index.computeAssignIDByKey[computeAssignmentKey(spec.Endpoint, spec.PrincipalType, spec.Principal)] = id
-		}
-		return nil
-	case declarative.OpUpdate:
-		spec := action.Desired.(declarative.ComputeAssignmentSpec)
-		actual := action.Actual.(declarative.ComputeAssignmentSpec)
-		deleteAction := declarative.Action{Operation: declarative.OpDelete, Actual: actual, ResourceName: action.ResourceName}
-		createAction := declarative.Action{Operation: declarative.OpCreate, Desired: spec, ResourceName: action.ResourceName}
-		return c.replaceResource(ctx, deleteAction, createAction, c.executeComputeAssignment)
-	case declarative.OpDelete:
-		spec := action.Actual.(declarative.ComputeAssignmentSpec)
-		assignmentID := spec.AssignmentID
-		if assignmentID == "" && c.index != nil {
-			assignmentID = c.index.computeAssignIDByKey[computeAssignmentKey(spec.Endpoint, spec.PrincipalType, spec.Principal)]
-		}
-		if assignmentID == "" {
-			return fmt.Errorf("compute assignment %s has no assignment id", action.ResourceName)
-		}
-		resp, err := c.do(ctx, http.MethodDelete, "/compute-endpoints/"+spec.Endpoint+"/assignments/"+assignmentID, nil, nil)
-		if err != nil {
-			return err
-		}
-		return gen.CheckError(resp)
-	default:
-		return fmt.Errorf("unsupported operation %s for compute-assignment", action.Operation)
-	}
-}
-
-func (c *APIStateClient) executeVolume(_ context.Context, action declarative.Action) error {
-	switch action.Operation {
-	case declarative.OpCreate:
-		volume := action.Desired.(declarative.VolumeResource)
-		body := map[string]interface{}{
-			"name": volume.VolumeName,
-		}
-		if volume.Spec.VolumeType != "" {
-			body["volume_type"] = volume.Spec.VolumeType
-		}
-		if volume.Spec.StorageLocation != "" {
-			body["storage_location"] = volume.Spec.StorageLocation
-		}
-		if volume.Spec.Comment != "" {
-			body["comment"] = volume.Spec.Comment
-		}
-		resp, err := c.client.Do(http.MethodPost, "/catalogs/"+volume.CatalogName+"/schemas/"+volume.SchemaName+"/volumes", nil, body)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode == http.StatusConflict {
-			return nil
-		}
-		id, err := c.checkCreateResponse(resp)
-		if err != nil {
-			return err
-		}
-		if id != "" && c.index != nil {
-			c.index.volumeIDByPath[volume.CatalogName+"."+volume.SchemaName+"."+volume.VolumeName] = id
-		}
-		return nil
-	case declarative.OpUpdate:
-		volume := action.Desired.(declarative.VolumeResource)
-		body := map[string]interface{}{
-			"comment": volume.Spec.Comment,
-		}
-		resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+volume.CatalogName+"/schemas/"+volume.SchemaName+"/volumes/"+volume.VolumeName, nil, body)
-		if err != nil {
-			return err
-		}
-		return gen.CheckError(resp)
-	case declarative.OpDelete:
-		parts := strings.SplitN(action.ResourceName, ".", 3)
-		if len(parts) != 3 {
-			return fmt.Errorf("invalid volume resource name: %s", action.ResourceName)
-		}
-		resp, err := c.client.Do(http.MethodDelete, "/catalogs/"+parts[0]+"/schemas/"+parts[1]+"/volumes/"+parts[2], nil, nil)
-		if err != nil {
-			return err
-		}
-		return gen.CheckError(resp)
-	default:
-		return fmt.Errorf("unsupported operation %s for volume", action.Operation)
 	}
 }
 
@@ -3638,7 +2955,7 @@ func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		spec := action.Actual.(declarative.PrincipalSpec)
@@ -3650,7 +2967,7 @@ func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for principal", action.Operation)
@@ -3685,14 +3002,14 @@ func (c *APIStateClient) executeGroup(_ context.Context, action declarative.Acti
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		resp, err := c.client.Do(http.MethodDelete, "/groups/"+action.ResourceName, nil, nil)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for group", action.Operation)
@@ -3722,7 +3039,7 @@ func (c *APIStateClient) executeGrant(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		grant := action.Actual.(declarative.GrantSpec)
@@ -3745,7 +3062,7 @@ func (c *APIStateClient) executeGrant(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		// Grants are typically immutable — recreate via delete+create.
@@ -3799,14 +3116,14 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		resp, err := c.client.Do(http.MethodDelete, "/catalogs/"+action.ResourceName, nil, nil)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for catalog", action.Operation)
@@ -3866,7 +3183,7 @@ func (c *APIStateClient) executeSchema(ctx context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		parts := strings.SplitN(action.ResourceName, ".", 2)
@@ -3877,7 +3194,7 @@ func (c *APIStateClient) executeSchema(ctx context.Context, action declarative.A
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for schema", action.Operation)
@@ -3956,7 +3273,7 @@ func (c *APIStateClient) executeTable(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		parts := strings.SplitN(action.ResourceName, ".", 3)
@@ -3968,7 +3285,7 @@ func (c *APIStateClient) executeTable(ctx context.Context, action declarative.Ac
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for table", action.Operation)
@@ -3995,7 +3312,7 @@ func (c *APIStateClient) executeView(_ context.Context, action declarative.Actio
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpUpdate:
 		vw := action.Desired.(declarative.ViewResource)
@@ -4014,7 +3331,7 @@ func (c *APIStateClient) executeView(_ context.Context, action declarative.Actio
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		parts := strings.SplitN(action.ResourceName, ".", 3)
@@ -4026,7 +3343,7 @@ func (c *APIStateClient) executeView(_ context.Context, action declarative.Actio
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for view", action.Operation)
@@ -4062,7 +3379,7 @@ func (c *APIStateClient) executeGroupMembership(_ context.Context, action declar
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		member := action.Actual.(declarative.MemberRef)
@@ -4086,7 +3403,7 @@ func (c *APIStateClient) executeGroupMembership(_ context.Context, action declar
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for group-membership", action.Operation)
@@ -4127,7 +3444,7 @@ func (c *APIStateClient) executeTag(_ context.Context, action declarative.Action
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for tag", action.Operation)
@@ -4159,31 +3476,13 @@ func (c *APIStateClient) executeTagAssignment(ctx context.Context, action declar
 		if err != nil {
 			return err
 		}
-		id, err := c.checkCreateResponse(resp)
-		if err != nil {
-			if strings.Contains(strings.ToLower(err.Error()), "already exists") {
-				return nil
-			}
-			return err
-		}
-		if id != "" && c.index != nil {
-			c.index.tagAssignIDByKey[tagAssignmentKey(assignment.Tag, assignment.SecurableType, assignment.Securable, assignment.ColumnName)] = id
-		}
-		return nil
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
+		// Tag assignment deletes require the assignment ID. Since we don't
+		// track assignment IDs during ReadState, we use the tag ID and
+		// attempt deletion via the composite endpoint.
 		assignment := action.Actual.(declarative.TagAssignmentSpec)
-		assignmentID := assignment.AssignmentID
-		if assignmentID == "" && c.index != nil {
-			assignmentID = c.index.tagAssignIDByKey[tagAssignmentKey(assignment.Tag, assignment.SecurableType, assignment.Securable, assignment.ColumnName)]
-		}
-		if assignmentID != "" {
-			resp, err := c.client.Do(http.MethodDelete, "/tag-assignments/"+assignmentID, nil, nil)
-			if err != nil {
-				return err
-			}
-			return gen.CheckError(resp)
-		}
 		tagID, err := c.resolveTagID(assignment.Tag)
 		if err != nil {
 			return fmt.Errorf("resolve tag for assignment delete: %w", err)
@@ -4203,7 +3502,7 @@ func (c *APIStateClient) executeTagAssignment(ctx context.Context, action declar
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for tag-assignment", action.Operation)
@@ -4224,13 +3523,12 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 			return fmt.Errorf("resolve table for row filter: %w", err)
 		}
 		body := map[string]interface{}{
-			"name":       filter.Name,
 			"filter_sql": filter.FilterSQL,
 		}
 		if filter.Description != "" {
 			body["description"] = filter.Description
 		}
-		resp, err := c.do(ctx, http.MethodPost, "/tables/"+tableID+"/row-filters", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/tables/"+tableID+"/row-filters", nil, body)
 		if err != nil {
 			return err
 		}
@@ -4243,31 +3541,16 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 		}
 		return nil
 
-	case declarative.OpUpdate:
-		desired := action.Desired.(declarative.RowFilterSpec)
-		actual := action.Actual.(declarative.RowFilterSpec)
-		deleteAction := declarative.Action{
-			Operation:    declarative.OpDelete,
-			ResourceName: action.ResourceName,
-			Actual:       actual,
-		}
-		createAction := declarative.Action{
-			Operation:    declarative.OpCreate,
-			ResourceName: action.ResourceName,
-			Desired:      desired,
-		}
-		return c.replaceResource(ctx, deleteAction, createAction, c.executeRowFilter)
-
 	case declarative.OpDelete:
 		filterID, err := c.resolveRowFilterID(action.ResourceName)
 		if err != nil {
 			return fmt.Errorf("resolve row filter for delete: %w", err)
 		}
-		resp, err := c.do(ctx, http.MethodDelete, "/row-filters/"+filterID, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/row-filters/"+filterID, nil, nil)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for row-filter", action.Operation)
@@ -4276,7 +3559,7 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 
 // --- Row filter binding execution ---
 
-func (c *APIStateClient) executeRowFilterBinding(ctx context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeRowFilterBinding(_ context.Context, action declarative.Action) error {
 	// ResourceName format: "catalog.schema.table/filterName->principalType:principalName"
 	parts := strings.SplitN(action.ResourceName, "->", 2)
 	filterPath := parts[0]
@@ -4296,25 +3579,11 @@ func (c *APIStateClient) executeRowFilterBinding(ctx context.Context, action dec
 			"principal_id":   principalID,
 			"principal_type": binding.PrincipalType,
 		}
-		resp, err := c.do(ctx, http.MethodPost, "/row-filters/"+filterID+"/bindings", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/row-filters/"+filterID+"/bindings", nil, body)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
-
-	case declarative.OpUpdate:
-		binding := action.Desired.(declarative.FilterBindingRef)
-		deleteAction := declarative.Action{
-			Operation: declarative.OpDelete,
-			Actual:    binding,
-		}
-		deleteAction.ResourceName = action.ResourceName
-		createAction := declarative.Action{
-			Operation: declarative.OpCreate,
-			Desired:   binding,
-		}
-		createAction.ResourceName = action.ResourceName
-		return c.replaceResource(ctx, deleteAction, createAction, c.executeRowFilterBinding)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		binding := action.Actual.(declarative.FilterBindingRef)
@@ -4325,11 +3594,11 @@ func (c *APIStateClient) executeRowFilterBinding(ctx context.Context, action dec
 		q := url.Values{}
 		q.Set("principal_id", principalID)
 		q.Set("principal_type", binding.PrincipalType)
-		resp, err := c.do(ctx, http.MethodDelete, "/row-filters/"+filterID+"/bindings", q, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/row-filters/"+filterID+"/bindings", q, nil)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for row-filter-binding", action.Operation)
@@ -4350,14 +3619,13 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 			return fmt.Errorf("resolve table for column mask: %w", err)
 		}
 		body := map[string]interface{}{
-			"name":            mask.Name,
 			"column_name":     mask.ColumnName,
 			"mask_expression": mask.MaskExpression,
 		}
 		if mask.Description != "" {
 			body["description"] = mask.Description
 		}
-		resp, err := c.do(ctx, http.MethodPost, "/tables/"+tableID+"/column-masks", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/tables/"+tableID+"/column-masks", nil, body)
 		if err != nil {
 			return err
 		}
@@ -4380,31 +3648,16 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 		}
 		return nil
 
-	case declarative.OpUpdate:
-		desired := action.Desired.(declarative.ColumnMaskSpec)
-		actual := action.Actual.(declarative.ColumnMaskSpec)
-		deleteAction := declarative.Action{
-			Operation:    declarative.OpDelete,
-			ResourceName: action.ResourceName,
-			Actual:       actual,
-		}
-		createAction := declarative.Action{
-			Operation:    declarative.OpCreate,
-			ResourceName: action.ResourceName,
-			Desired:      desired,
-		}
-		return c.replaceResource(ctx, deleteAction, createAction, c.executeColumnMask)
-
 	case declarative.OpDelete:
 		maskID, err := c.resolveColumnMaskID(action.ResourceName)
 		if err != nil {
 			return fmt.Errorf("resolve column mask for delete: %w", err)
 		}
-		resp, err := c.do(ctx, http.MethodDelete, "/column-masks/"+maskID, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/column-masks/"+maskID, nil, nil)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for column-mask", action.Operation)
@@ -4413,7 +3666,7 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 
 // --- Column mask binding execution ---
 
-func (c *APIStateClient) executeColumnMaskBinding(ctx context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeColumnMaskBinding(_ context.Context, action declarative.Action) error {
 	// ResourceName format: "catalog.schema.table/maskName->principalType:principalName"
 	parts := strings.SplitN(action.ResourceName, "->", 2)
 	maskPath := parts[0]
@@ -4434,25 +3687,11 @@ func (c *APIStateClient) executeColumnMaskBinding(ctx context.Context, action de
 			"principal_type": binding.PrincipalType,
 			"see_original":   binding.SeeOriginal,
 		}
-		resp, err := c.do(ctx, http.MethodPost, "/column-masks/"+maskID+"/bindings", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/column-masks/"+maskID+"/bindings", nil, body)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
-
-	case declarative.OpUpdate:
-		binding := action.Desired.(declarative.MaskBindingRef)
-		deleteAction := declarative.Action{
-			Operation:    declarative.OpDelete,
-			ResourceName: action.ResourceName,
-			Actual:       binding,
-		}
-		createAction := declarative.Action{
-			Operation:    declarative.OpCreate,
-			ResourceName: action.ResourceName,
-			Desired:      binding,
-		}
-		return c.replaceResource(ctx, deleteAction, createAction, c.executeColumnMaskBinding)
+		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
 		binding := action.Actual.(declarative.MaskBindingRef)
@@ -4463,11 +3702,11 @@ func (c *APIStateClient) executeColumnMaskBinding(ctx context.Context, action de
 		q := url.Values{}
 		q.Set("principal_id", principalID)
 		q.Set("principal_type", binding.PrincipalType)
-		resp, err := c.do(ctx, http.MethodDelete, "/column-masks/"+maskID+"/bindings", q, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/column-masks/"+maskID+"/bindings", q, nil)
 		if err != nil {
 			return err
 		}
-		return gen.CheckError(resp)
+		return apiruntime.CheckError(resp)
 
 	default:
 		return fmt.Errorf("unsupported operation %s for column-mask-binding", action.Operation)

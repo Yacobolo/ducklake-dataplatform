@@ -99,7 +99,7 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, req domain.CreateCatalogRequest) (*domain.CatalogRegistration, error)
-		assertFn func(t *testing.T, resp RegisterCatalogResponseObject, err error)
+		assertFn func(t *testing.T, resp GenRegisterCatalogResponse, err error)
 	}{
 		{
 			name: "happy path returns 201",
@@ -107,12 +107,12 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 				r := catSampleRegistration()
 				return &r, nil
 			},
-			assertFn: func(t *testing.T, resp RegisterCatalogResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenRegisterCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				created, ok := resp.(RegisterCatalog201JSONResponse)
+				created, ok := resp.(GenRegisterCatalog201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
-				assert.Equal(t, "c-1", *created.Body.Id)
+				assert.Equal(t, "c-1", created.Body.Id)
 				assert.Equal(t, "cat", created.Body.Name)
 			},
 		},
@@ -121,7 +121,7 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.CreateCatalogRequest) (*domain.CatalogRegistration, error) {
 				return nil, domain.ErrAccessDenied("admin required")
 			},
-			assertFn: func(t *testing.T, resp RegisterCatalogResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenRegisterCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(RegisterCatalog403JSONResponse)
@@ -134,7 +134,7 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.CreateCatalogRequest) (*domain.CatalogRegistration, error) {
 				return nil, domain.ErrValidation("name is required")
 			},
-			assertFn: func(t *testing.T, resp RegisterCatalogResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenRegisterCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(RegisterCatalog400JSONResponse)
@@ -147,7 +147,7 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.CreateCatalogRequest) (*domain.CatalogRegistration, error) {
 				return nil, domain.ErrConflict("catalog already exists")
 			},
-			assertFn: func(t *testing.T, resp RegisterCatalogResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenRegisterCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				conflict, ok := resp.(RegisterCatalog409JSONResponse)
@@ -162,13 +162,13 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 			t.Parallel()
 			svc := &mockCatalogRegistrationService{registerFn: tt.svcFn}
 			handler := &APIHandler{catalogRegistration: svc}
-			body := RegisterCatalogJSONRequestBody{
+			body := GenRegisterCatalogJSONBody{
 				Name:          "cat",
-				MetastoreType: "ducklake",
-				Dsn:           "sqlite:test.db",
-				DataPath:      "/data",
+				MetastoreType: catStrPtr("ducklake"),
+				Dsn:           catStrPtr("sqlite:test.db"),
+				DataPath:      catStrPtr("/data"),
 			}
-			resp, err := handler.RegisterCatalog(catTestCtx(), RegisterCatalogRequestObject{Body: &body})
+			resp, err := handler.RegisterCatalog(catTestCtx(), GenRegisterCatalogRequest{Body: &body})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -180,21 +180,20 @@ func TestHandler_ListCatalogs(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, page domain.PageRequest) ([]domain.CatalogRegistration, int64, error)
-		assertFn func(t *testing.T, resp ListCatalogsResponseObject, err error)
+		assertFn func(t *testing.T, resp GenListCatalogsResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.CatalogRegistration, int64, error) {
 				return []domain.CatalogRegistration{catSampleRegistration()}, 1, nil
 			},
-			assertFn: func(t *testing.T, resp ListCatalogsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListCatalogsResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(ListCatalogs200JSONResponse)
+				ok200, ok := resp.(GenListCatalogs200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				require.NotNil(t, ok200.Body.Data)
-				require.Len(t, *ok200.Body.Data, 1)
-				assert.Equal(t, "cat", (*ok200.Body.Data)[0].Name)
+				require.Len(t, ok200.Body.Catalogs, 1)
+				assert.Equal(t, "cat", ok200.Body.Catalogs[0].Name)
 			},
 		},
 		{
@@ -202,7 +201,7 @@ func TestHandler_ListCatalogs(t *testing.T) {
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.CatalogRegistration, int64, error) {
 				return nil, 0, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp ListCatalogsResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenListCatalogsResponse, err error) {
 				t.Helper()
 				require.Error(t, err)
 			},
@@ -214,7 +213,7 @@ func TestHandler_ListCatalogs(t *testing.T) {
 			t.Parallel()
 			svc := &mockCatalogRegistrationService{listFn: tt.svcFn}
 			handler := &APIHandler{catalogRegistration: svc}
-			resp, err := handler.ListCatalogs(catTestCtx(), ListCatalogsRequestObject{Params: ListCatalogsParams{}})
+			resp, err := handler.ListCatalogs(catTestCtx(), GenListCatalogsRequest{Params: GenListCatalogsParams{}})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -226,7 +225,7 @@ func TestHandler_GetCatalogRegistration(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, name string) (*domain.CatalogRegistration, error)
-		assertFn func(t *testing.T, resp GetCatalogRegistrationResponseObject, err error)
+		assertFn func(t *testing.T, resp GenGetCatalogRegistrationResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
@@ -234,12 +233,12 @@ func TestHandler_GetCatalogRegistration(t *testing.T) {
 				r := catSampleRegistration()
 				return &r, nil
 			},
-			assertFn: func(t *testing.T, resp GetCatalogRegistrationResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(GetCatalogRegistration200JSONResponse)
+				ok200, ok := resp.(GenGetCatalogRegistration200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "c-1", *ok200.Body.Id)
+				assert.Equal(t, "c-1", ok200.Body.Id)
 				assert.Equal(t, "cat", ok200.Body.Name)
 			},
 		},
@@ -248,10 +247,10 @@ func TestHandler_GetCatalogRegistration(t *testing.T) {
 			svcFn: func(_ context.Context, name string) (*domain.CatalogRegistration, error) {
 				return nil, domain.ErrNotFound("catalog %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp GetCatalogRegistrationResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenGetCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notFound, ok := resp.(GetCatalogRegistration404JSONResponse)
+				notFound, ok := resp.(GenGetCatalogRegistration404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
 			},
@@ -263,7 +262,7 @@ func TestHandler_GetCatalogRegistration(t *testing.T) {
 			t.Parallel()
 			svc := &mockCatalogRegistrationService{getFn: tt.svcFn}
 			handler := &APIHandler{catalogRegistration: svc}
-			resp, err := handler.GetCatalogRegistration(catTestCtx(), GetCatalogRegistrationRequestObject{CatalogName: "cat"})
+			resp, err := handler.GetCatalogRegistration(catTestCtx(), GenGetCatalogRegistrationRequest{CatalogName: "cat"})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -275,7 +274,7 @@ func TestHandler_UpdateCatalogRegistration(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, name string, req domain.UpdateCatalogRegistrationRequest) (*domain.CatalogRegistration, error)
-		assertFn func(t *testing.T, resp UpdateCatalogRegistrationResponseObject, err error)
+		assertFn func(t *testing.T, resp GenUpdateCatalogRegistrationResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
@@ -284,12 +283,12 @@ func TestHandler_UpdateCatalogRegistration(t *testing.T) {
 				r.Comment = "updated"
 				return &r, nil
 			},
-			assertFn: func(t *testing.T, resp UpdateCatalogRegistrationResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUpdateCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				ok200, ok := resp.(UpdateCatalogRegistration200JSONResponse)
+				ok200, ok := resp.(GenUpdateCatalogRegistration200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "c-1", *ok200.Body.Id)
+				assert.Equal(t, "c-1", ok200.Body.Id)
 			},
 		},
 		{
@@ -297,7 +296,7 @@ func TestHandler_UpdateCatalogRegistration(t *testing.T) {
 			svcFn: func(_ context.Context, _ string, _ domain.UpdateCatalogRegistrationRequest) (*domain.CatalogRegistration, error) {
 				return nil, domain.ErrAccessDenied("admin required")
 			},
-			assertFn: func(t *testing.T, resp UpdateCatalogRegistrationResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUpdateCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(UpdateCatalogRegistration403JSONResponse)
@@ -310,7 +309,7 @@ func TestHandler_UpdateCatalogRegistration(t *testing.T) {
 			svcFn: func(_ context.Context, name string, _ domain.UpdateCatalogRegistrationRequest) (*domain.CatalogRegistration, error) {
 				return nil, domain.ErrNotFound("catalog %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp UpdateCatalogRegistrationResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenUpdateCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(UpdateCatalogRegistration404JSONResponse)
@@ -325,10 +324,10 @@ func TestHandler_UpdateCatalogRegistration(t *testing.T) {
 			t.Parallel()
 			svc := &mockCatalogRegistrationService{updateFn: tt.svcFn}
 			handler := &APIHandler{catalogRegistration: svc}
-			body := UpdateCatalogRegistrationJSONRequestBody{
+			body := GenUpdateCatalogRegistrationJSONBody{
 				Comment: catStrPtr("updated"),
 			}
-			resp, err := handler.UpdateCatalogRegistration(catTestCtx(), UpdateCatalogRegistrationRequestObject{
+			resp, err := handler.UpdateCatalogRegistration(catTestCtx(), GenUpdateCatalogRegistrationRequest{
 				CatalogName: "cat",
 				Body:        &body,
 			})
@@ -343,17 +342,17 @@ func TestHandler_DeleteCatalogRegistration(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, name string) error
-		assertFn func(t *testing.T, resp DeleteCatalogRegistrationResponseObject, err error)
+		assertFn func(t *testing.T, resp GenDeleteCatalogRegistrationResponse, err error)
 	}{
 		{
 			name: "happy path returns 204",
 			svcFn: func(_ context.Context, _ string) error {
 				return nil
 			},
-			assertFn: func(t *testing.T, resp DeleteCatalogRegistrationResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				_, ok := resp.(DeleteCatalogRegistration204Response)
+				_, ok := resp.(GenDeleteCatalogRegistration204Response)
 				require.True(t, ok, "expected 204 response, got %T", resp)
 			},
 		},
@@ -362,7 +361,7 @@ func TestHandler_DeleteCatalogRegistration(t *testing.T) {
 			svcFn: func(_ context.Context, _ string) error {
 				return domain.ErrAccessDenied("admin required")
 			},
-			assertFn: func(t *testing.T, resp DeleteCatalogRegistrationResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(DeleteCatalogRegistration403JSONResponse)
@@ -375,7 +374,7 @@ func TestHandler_DeleteCatalogRegistration(t *testing.T) {
 			svcFn: func(_ context.Context, name string) error {
 				return domain.ErrNotFound("catalog %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp DeleteCatalogRegistrationResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenDeleteCatalogRegistrationResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(DeleteCatalogRegistration404JSONResponse)
@@ -390,7 +389,7 @@ func TestHandler_DeleteCatalogRegistration(t *testing.T) {
 			t.Parallel()
 			svc := &mockCatalogRegistrationService{deleteFn: tt.svcFn}
 			handler := &APIHandler{catalogRegistration: svc}
-			resp, err := handler.DeleteCatalogRegistration(catTestCtx(), DeleteCatalogRegistrationRequestObject{CatalogName: "cat"})
+			resp, err := handler.DeleteCatalogRegistration(catTestCtx(), GenDeleteCatalogRegistrationRequest{CatalogName: "cat"})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -402,7 +401,7 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, name string) (*domain.CatalogRegistration, error)
-		assertFn func(t *testing.T, resp SetDefaultCatalogResponseObject, err error)
+		assertFn func(t *testing.T, resp GenSetDefaultCatalogResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
@@ -411,12 +410,12 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 				r.IsDefault = true
 				return &r, nil
 			},
-			assertFn: func(t *testing.T, resp SetDefaultCatalogResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenSetDefaultCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(SetDefaultCatalog200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, "c-1", *ok200.Body.Id)
+				assert.Equal(t, "c-1", ok200.Body.Id)
 				assert.True(t, *ok200.Body.IsDefault)
 			},
 		},
@@ -425,7 +424,7 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 			svcFn: func(_ context.Context, _ string) (*domain.CatalogRegistration, error) {
 				return nil, domain.ErrAccessDenied("admin required")
 			},
-			assertFn: func(t *testing.T, resp SetDefaultCatalogResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenSetDefaultCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(SetDefaultCatalog403JSONResponse)
@@ -438,7 +437,7 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 			svcFn: func(_ context.Context, name string) (*domain.CatalogRegistration, error) {
 				return nil, domain.ErrNotFound("catalog %s not found", name)
 			},
-			assertFn: func(t *testing.T, resp SetDefaultCatalogResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenSetDefaultCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(SetDefaultCatalog404JSONResponse)
@@ -451,7 +450,7 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 			svcFn: func(_ context.Context, _ string) (*domain.CatalogRegistration, error) {
 				return nil, domain.ErrValidation("catalog must be ACTIVE")
 			},
-			assertFn: func(t *testing.T, resp SetDefaultCatalogResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenSetDefaultCatalogResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(SetDefaultCatalog400JSONResponse)
@@ -466,7 +465,7 @@ func TestHandler_SetDefaultCatalog(t *testing.T) {
 			t.Parallel()
 			svc := &mockCatalogRegistrationService{setDefaultFn: tt.svcFn}
 			handler := &APIHandler{catalogRegistration: svc}
-			resp, err := handler.SetDefaultCatalog(catTestCtx(), SetDefaultCatalogRequestObject{CatalogName: "cat"})
+			resp, err := handler.SetDefaultCatalog(catTestCtx(), GenSetDefaultCatalogRequest{CatalogName: "cat"})
 			tt.assertFn(t, resp, err)
 		})
 	}

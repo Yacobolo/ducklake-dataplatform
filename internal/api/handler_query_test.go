@@ -141,13 +141,13 @@ func TestHandler_CreateManifest(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		body     CreateManifestJSONRequestBody
+		body     GenCreateManifestJSONBody
 		svcFn    func(ctx context.Context, principalName, catalogName, schemaName, tableName string) (*query.ManifestResult, error)
-		assertFn func(t *testing.T, resp CreateManifestResponseObject, err error)
+		assertFn func(t *testing.T, resp GenCreateManifestResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
-			body: CreateManifestJSONRequestBody{Table: "users", Schema: queryTestStrPtr("main")},
+			body: GenCreateManifestJSONBody{Table: "users", Schema: queryTestStrPtr("main")},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return &query.ManifestResult{
 					Table:       "users",
@@ -159,18 +159,17 @@ func TestHandler_CreateManifest(t *testing.T) {
 					ExpiresAt:   time.Now().Add(time.Hour),
 				}, nil
 			},
-			assertFn: func(t *testing.T, resp CreateManifestResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(CreateManifest200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				require.NotNil(t, ok200.Body.Table)
-				assert.Equal(t, "users", *ok200.Body.Table)
+				assert.Equal(t, "users", ok200.Body.Table)
 				require.NotNil(t, ok200.Body.Schema)
 				assert.Equal(t, "main", *ok200.Body.Schema)
 				require.NotNil(t, ok200.Body.Columns)
 				require.Len(t, *ok200.Body.Columns, 1)
-				assert.Equal(t, "id", *(*ok200.Body.Columns)[0].Name)
+				assert.Equal(t, "id", (*ok200.Body.Columns)[0].Name)
 				require.NotNil(t, ok200.Body.Files)
 				require.Len(t, *ok200.Body.Files, 1)
 				assert.Equal(t, "s3://bucket/data/file.parquet", (*ok200.Body.Files)[0])
@@ -178,11 +177,11 @@ func TestHandler_CreateManifest(t *testing.T) {
 		},
 		{
 			name: "not found returns 404",
-			body: CreateManifestJSONRequestBody{Table: "nonexistent", Schema: queryTestStrPtr("main")},
+			body: GenCreateManifestJSONBody{Table: "nonexistent", Schema: queryTestStrPtr("main")},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, domain.ErrNotFound("table not found")
 			},
-			assertFn: func(t *testing.T, resp CreateManifestResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(CreateManifest404JSONResponse)
@@ -192,11 +191,11 @@ func TestHandler_CreateManifest(t *testing.T) {
 		},
 		{
 			name: "access denied returns 403",
-			body: CreateManifestJSONRequestBody{Table: "secret", Schema: queryTestStrPtr("main")},
+			body: GenCreateManifestJSONBody{Table: "secret", Schema: queryTestStrPtr("main")},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp CreateManifestResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(CreateManifest403JSONResponse)
@@ -206,11 +205,11 @@ func TestHandler_CreateManifest(t *testing.T) {
 		},
 		{
 			name: "validation error returns 400",
-			body: CreateManifestJSONRequestBody{Table: "", Schema: queryTestStrPtr("main")},
+			body: GenCreateManifestJSONBody{Table: "", Schema: queryTestStrPtr("main")},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, domain.ErrValidation("table name is required")
 			},
-			assertFn: func(t *testing.T, resp CreateManifestResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				badReq, ok := resp.(CreateManifest400JSONResponse)
@@ -220,21 +219,21 @@ func TestHandler_CreateManifest(t *testing.T) {
 		},
 		{
 			name: "internal error returns 500",
-			body: CreateManifestJSONRequestBody{Table: "users", Schema: queryTestStrPtr("main")},
+			body: GenCreateManifestJSONBody{Table: "users", Schema: queryTestStrPtr("main")},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, assert.AnError
 			},
-			assertFn: func(t *testing.T, resp CreateManifestResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				serverErr, ok := resp.(CreateManifest500JSONResponse)
+				serverErr, ok := resp.(GenCreateManifest500JSONResponse)
 				require.True(t, ok, "expected 500 response, got %T", resp)
 				assert.Equal(t, int32(500), serverErr.Body.Code)
 			},
 		},
 		{
 			name: "qualified table string is passed through without parsing",
-			body: CreateManifestJSONRequestBody{Table: "demo.titanic.passengers"},
+			body: GenCreateManifestJSONBody{Table: "demo.titanic.passengers"},
 			svcFn: func(_ context.Context, _ string, catalogName, schemaName, tableName string) (*query.ManifestResult, error) {
 				if catalogName != "" || schemaName != "main" || tableName != "demo.titanic.passengers" {
 					return nil, domain.ErrValidation("unexpected table reference")
@@ -249,7 +248,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 					ExpiresAt:   time.Now().Add(time.Hour),
 				}, nil
 			},
-			assertFn: func(t *testing.T, resp CreateManifestResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenCreateManifestResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				_, ok := resp.(CreateManifest200JSONResponse)
@@ -264,7 +263,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			svc := &mockManifestService{getManifestFn: tt.svcFn}
 			handler := &APIHandler{manifest: svc}
 			body := tt.body
-			resp, err := handler.CreateManifest(queryTestCtx(), CreateManifestRequestObject{Body: &body})
+			resp, err := handler.CreateManifest(queryTestCtx(), GenCreateManifestRequest{Body: &body})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -278,7 +277,7 @@ func TestHandler_ProfileTable(t *testing.T) {
 	tests := []struct {
 		name     string
 		svcFn    func(ctx context.Context, catalogName string, principal string, schemaName, tableName string) (*domain.TableStatistics, error)
-		assertFn func(t *testing.T, resp ProfileTableResponseObject, err error)
+		assertFn func(t *testing.T, resp GenProfileTableResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
@@ -286,13 +285,13 @@ func TestHandler_ProfileTable(t *testing.T) {
 				rc := int64(42)
 				return &domain.TableStatistics{RowCount: &rc}, nil
 			},
-			assertFn: func(t *testing.T, resp ProfileTableResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenProfileTableResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				ok200, ok := resp.(ProfileTable200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.RowCount)
-				assert.Equal(t, int64(42), *ok200.Body.RowCount)
+				assert.Equal(t, int32(42), *ok200.Body.RowCount)
 			},
 		},
 		{
@@ -300,7 +299,7 @@ func TestHandler_ProfileTable(t *testing.T) {
 			svcFn: func(_ context.Context, _, _, _, _ string) (*domain.TableStatistics, error) {
 				return nil, domain.ErrNotFound("table not found")
 			},
-			assertFn: func(t *testing.T, resp ProfileTableResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenProfileTableResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				notFound, ok := resp.(ProfileTable404JSONResponse)
@@ -313,7 +312,7 @@ func TestHandler_ProfileTable(t *testing.T) {
 			svcFn: func(_ context.Context, _, _, _, _ string) (*domain.TableStatistics, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
-			assertFn: func(t *testing.T, resp ProfileTableResponseObject, err error) {
+			assertFn: func(t *testing.T, resp GenProfileTableResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
 				forbidden, ok := resp.(ProfileTable403JSONResponse)
@@ -328,7 +327,7 @@ func TestHandler_ProfileTable(t *testing.T) {
 			t.Parallel()
 			svc := &mockCatalogServiceForQuery{profileTableFn: tt.svcFn}
 			handler := &APIHandler{catalog: svc}
-			resp, err := handler.ProfileTable(queryTestCtx(), ProfileTableRequestObject{
+			resp, err := handler.ProfileTable(queryTestCtx(), GenProfileTableRequest{
 				CatalogName: "default",
 				SchemaName:  "main",
 				TableName:   "users",
@@ -348,14 +347,14 @@ func TestHandler_SubmitQuery(t *testing.T) {
 		return &domain.QueryJob{ID: "job-1", Status: domain.QueryJobStatusQueued}, nil
 	}}}
 
-	body := SubmitQueryJSONRequestBody{Sql: "SELECT 1", RequestId: queryTestStrPtr("req-1")}
-	resp, err := handler.SubmitQuery(queryTestCtx(), SubmitQueryRequestObject{Body: &body})
+	body := GenSubmitQueryJSONBody{Sql: "SELECT 1", RequestId: queryTestStrPtr("req-1")}
+	resp, err := handler.SubmitQuery(queryTestCtx(), GenSubmitQueryRequest{Body: &body})
 	require.NoError(t, err)
 
 	ok, okType := resp.(SubmitQuery202JSONResponse)
 	require.True(t, okType)
 	assert.Equal(t, "job-1", ok.Body.QueryId)
-	assert.Equal(t, SubmitQueryResponseStatus("QUEUED"), ok.Body.Status)
+	assert.Equal(t, QueryJobStatus("QUEUED"), ok.Body.Status)
 }
 
 func TestHandler_GetQueryResults_Paged(t *testing.T) {
@@ -374,13 +373,13 @@ func TestHandler_GetQueryResults_Paged(t *testing.T) {
 	}}}
 
 	maxResults := int32(1)
-	resp, err := handler.GetQueryResults(queryTestCtx(), GetQueryResultsRequestObject{
+	resp, err := handler.GetQueryResults(queryTestCtx(), GenGetQueryResultsRequest{
 		QueryId: "job-1",
-		Params:  GetQueryResultsParams{MaxResults: &maxResults},
+		Params:  GenGetQueryResultsParams{MaxResults: &maxResults},
 	})
 	require.NoError(t, err)
 
-	ok, okType := resp.(GetQueryResults200JSONResponse)
+	ok, okType := resp.(GenGetQueryResults200JSONResponse)
 	require.True(t, okType)
 	require.NotNil(t, ok.Body.Rows)
 	require.Len(t, *ok.Body.Rows, 1)

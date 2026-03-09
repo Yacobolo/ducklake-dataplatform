@@ -45,9 +45,9 @@ func TestHandler_CreateAPIKey_UnknownPrincipalReturns400(t *testing.T) {
 
 	body := CreateAPIKeyJSONRequestBody{
 		PrincipalId: "00000000-0000-0000-0000-000000000000",
-		Name:        "example",
+		Name:        strPtr("example"),
 	}
-	resp, err := handler.CreateAPIKey(secTestCtx(), CreateAPIKeyRequestObject{Body: &body})
+	resp, err := handler.CreateAPIKey(secTestCtx(), GenCreateAPIKeyRequest{Body: &body})
 	require.NoError(t, err)
 
 	badReq, ok := resp.(CreateAPIKey400JSONResponse)
@@ -72,13 +72,13 @@ func TestHandler_CreateAPIKey_CreatesResponse(t *testing.T) {
 
 	body := CreateAPIKeyJSONRequestBody{
 		PrincipalId: "00000000-0000-0000-0000-000000000001",
-		Name:        "example",
+		Name:        strPtr("example"),
 	}
-	resp, err := handler.CreateAPIKey(secTestCtx(), CreateAPIKeyRequestObject{Body: &body})
+	resp, err := handler.CreateAPIKey(secTestCtx(), GenCreateAPIKeyRequest{Body: &body})
 	require.NoError(t, err)
 
 	created, ok := resp.(CreateAPIKey201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
-	assert.Equal(t, "raw-secret", *created.Body.Key)
-	assert.Equal(t, "key-1", *created.Body.Id)
+	assert.Equal(t, "raw-secret", created.Body.Key)
+	assert.Equal(t, "key-1", created.Body.Id)
 }

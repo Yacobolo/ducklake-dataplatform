@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -10,39 +9,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAPI_PipelineRoutesAreNotRegistered(t *testing.T) {
+func TestAPI_PipelineRoutesRemainExposed(t *testing.T) {
 	t.Parallel()
 
 	r := chi.NewRouter()
-	HandlerFromMux(Unimplemented{}, r)
+	RegisterAPIGenStrictRoutes(r, &APIHandler{})
 
+	found := false
 	err := chi.Walk(r, func(_ string, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
-		require.False(t, strings.HasPrefix(route, "/pipelines"), "legacy pipeline route should not be registered: %s", route)
+		if strings.HasPrefix(route, "/pipelines") {
+			found = true
+		}
 		return nil
 	})
 	require.NoError(t, err)
+	require.True(t, found, "pipeline routes should remain exposed")
 }
 
-func TestAPI_PipelineRoutesReturnNotFoundAcrossLegacySurface(t *testing.T) {
+func TestAPI_PipelineRoutesAreRegisteredAcrossLegacySurface(t *testing.T) {
 	t.Parallel()
 
 	r := chi.NewRouter()
-	HandlerFromMux(Unimplemented{}, r)
+	RegisterAPIGenStrictRoutes(r, &APIHandler{})
 
-	tests := map[string][]string{
-		"/pipelines":               {http.MethodGet, http.MethodPost},
-		"/pipelines/daily":         {http.MethodGet, http.MethodPatch, http.MethodDelete},
-		"/pipelines/daily/jobs":    {http.MethodGet, http.MethodPost},
-		"/pipelines/daily/jobs/id": {http.MethodDelete},
+	tests := []string{
+		"/pipelines",
+		"/pipelines/{pipelineName}",
+		"/pipelines/{pipelineName}/jobs",
+		"/pipelines/{pipelineName}/jobs/{jobId}",
 	}
-
-	for path, methods := range tests {
-		for _, method := range methods {
-			req := httptest.NewRequest(method, path, nil)
-			rr := httptest.NewRecorder()
-			r.ServeHTTP(rr, req)
-			require.Equal(t, http.StatusNotFound, rr.Code, "%s %s should be absent", method, path)
-		}
+	found := map[string]bool{}
+	err := chi.Walk(r, func(_ string, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+		found[route] = true
+		return nil
+	})
+	require.NoError(t, err)
+	for _, route := range tests {
+		require.True(t, found[route], "expected route to be registered: %s", route)
 	}
 }
 
@@ -50,10 +53,15 @@ func TestAPI_AssetRoutesRemainExposed(t *testing.T) {
 	t.Parallel()
 
 	r := chi.NewRouter()
-	HandlerFromMux(Unimplemented{}, r)
+	RegisterAPIGenStrictRoutes(r, &APIHandler{})
 
-	req := httptest.NewRequest(http.MethodGet, "/assets", nil)
-	rr := httptest.NewRecorder()
-	r.ServeHTTP(rr, req)
-	require.NotEqual(t, http.StatusNotFound, rr.Code, "asset route should remain exposed")
+	found := false
+	err := chi.Walk(r, func(_ string, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+		if route == "/assets" {
+			found = true
+		}
+		return nil
+	})
+	require.NoError(t, err)
+	require.True(t, found, "asset route should remain exposed")
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"duck-demo/pkg/cli/apiruntime"
 	"duck-demo/pkg/cli/gen"
 )
 
@@ -38,11 +39,11 @@ func newAPIListCmd() *cobra.Command {
   duck api list --tag Security
   duck api list --output json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			endpoints := gen.APIEndpoints
+			endpoints := allAPIEndpoints()
 
 			if tag != "" {
 				lowerTag := strings.ToLower(tag)
-				var filtered []gen.APIEndpoint
+				var filtered []gen.APIGenEndpoint
 				for _, ep := range endpoints {
 					for _, t := range ep.Tags {
 						if strings.ToLower(t) == lowerTag {
@@ -55,7 +56,7 @@ func newAPIListCmd() *cobra.Command {
 			}
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, endpoints)
+				return apiruntime.PrintJSON(os.Stdout, endpoints)
 			}
 
 			columns := []string{"method", "path", "operation_id", "summary"}
@@ -63,7 +64,7 @@ func newAPIListCmd() *cobra.Command {
 			for _, ep := range endpoints {
 				rows = append(rows, []string{ep.Method, ep.Path, ep.OperationID, ep.Summary})
 			}
-			gen.PrintTable(os.Stdout, columns, rows)
+			apiruntime.PrintTable(os.Stdout, columns, rows)
 			return nil
 		},
 	}
@@ -82,9 +83,9 @@ func newAPISearchCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			query := strings.ToLower(args[0])
-			var matches []gen.APIEndpoint
+			var matches []gen.APIGenEndpoint
 
-			for _, ep := range gen.APIEndpoints {
+			for _, ep := range allAPIEndpoints() {
 				// Search across path, summary, description, operation ID, and parameter names
 				searchText := strings.ToLower(ep.Path + " " + ep.Summary + " " + ep.Description + " " + ep.OperationID)
 				for _, p := range ep.Parameters {
@@ -100,7 +101,7 @@ func newAPISearchCmd() *cobra.Command {
 			}
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, matches)
+				return apiruntime.PrintJSON(os.Stdout, matches)
 			}
 
 			columns := []string{"method", "path", "operation_id", "summary"}
@@ -108,7 +109,7 @@ func newAPISearchCmd() *cobra.Command {
 			for _, ep := range matches {
 				rows = append(rows, []string{ep.Method, ep.Path, ep.OperationID, ep.Summary})
 			}
-			gen.PrintTable(os.Stdout, columns, rows)
+			apiruntime.PrintTable(os.Stdout, columns, rows)
 			return nil
 		},
 	}
@@ -124,10 +125,11 @@ func newAPIDescribeCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opID := args[0]
-			var found *gen.APIEndpoint
-			for i := range gen.APIEndpoints {
-				if gen.APIEndpoints[i].OperationID == opID {
-					found = &gen.APIEndpoints[i]
+			var found *gen.APIGenEndpoint
+			endpoints := allAPIEndpoints()
+			for i := range endpoints {
+				if endpoints[i].OperationID == opID {
+					found = &endpoints[i]
 					break
 				}
 			}
@@ -136,7 +138,7 @@ func newAPIDescribeCmd() *cobra.Command {
 			}
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, found)
+				return apiruntime.PrintJSON(os.Stdout, found)
 			}
 
 			// Human-friendly detail
@@ -155,30 +157,30 @@ func newAPIDescribeCmd() *cobra.Command {
 
 			if len(found.Parameters) > 0 {
 				_, _ = fmt.Fprintln(os.Stdout, "\nPARAMETERS:")
-				columns := []string{"name", "in", "type", "required", "enum"}
+				columns := []string{"name", "in", "type", "required", "enum", "description"}
 				var rows [][]string
 				for _, p := range found.Parameters {
 					req := ""
 					if p.Required {
 						req = "yes"
 					}
-					rows = append(rows, []string{p.Name, p.In, p.Type, req, strings.Join(p.Enum, ", ")})
+					rows = append(rows, []string{p.Name, p.In, p.Type, req, strings.Join(p.Enum, ", "), p.Description})
 				}
-				gen.PrintTable(os.Stdout, columns, rows)
+				apiruntime.PrintTable(os.Stdout, columns, rows)
 			}
 
 			if len(found.BodyFields) > 0 {
 				_, _ = fmt.Fprintln(os.Stdout, "\nBODY FIELDS:")
-				columns := []string{"name", "type", "required", "enum"}
+				columns := []string{"name", "type", "required", "enum", "description"}
 				var rows [][]string
 				for _, f := range found.BodyFields {
 					req := ""
 					if f.Required {
 						req = "yes"
 					}
-					rows = append(rows, []string{f.Name, f.Type, req, strings.Join(f.Enum, ", ")})
+					rows = append(rows, []string{f.Name, f.Type, req, strings.Join(f.Enum, ", "), f.Description})
 				}
-				gen.PrintTable(os.Stdout, columns, rows)
+				apiruntime.PrintTable(os.Stdout, columns, rows)
 			}
 
 			return nil
@@ -198,10 +200,11 @@ func newAPICurlCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opID := args[0]
-			var found *gen.APIEndpoint
-			for i := range gen.APIEndpoints {
-				if gen.APIEndpoints[i].OperationID == opID {
-					found = &gen.APIEndpoints[i]
+			var found *gen.APIGenEndpoint
+			endpoints := allAPIEndpoints()
+			for i := range endpoints {
+				if endpoints[i].OperationID == opID {
+					found = &endpoints[i]
 					break
 				}
 			}
@@ -274,7 +277,7 @@ func newAPICurlCmd() *cobra.Command {
 			result := strings.Join(curlParts, " \\\n  ")
 
 			if getOutputFormat(cmd) == "json" {
-				return gen.PrintJSON(os.Stdout, map[string]string{
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{
 					"curl": result,
 				})
 			}
@@ -287,4 +290,17 @@ func newAPICurlCmd() *cobra.Command {
 	cmd.Flags().StringArrayVar(&params, "param", nil, "Parameter values (key=value, repeatable)")
 
 	return cmd
+}
+
+func allAPIEndpoints() []gen.APIGenEndpoint {
+	combined := make([]gen.APIGenEndpoint, 0, len(gen.APIGeneratedEndpoints))
+	seen := make(map[string]struct{}, len(gen.APIGeneratedEndpoints))
+	for _, generated := range gen.APIGeneratedEndpoints {
+		if _, ok := seen[generated.OperationID]; ok {
+			continue
+		}
+		seen[generated.OperationID] = struct{}{}
+		combined = append(combined, generated)
+	}
+	return combined
 }

@@ -699,6 +699,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                     // ingestionSvc
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
+		nil, // pipelineSvc
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // assetSvc
 		nil, // assetBackfillSvc
@@ -706,8 +707,6 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		nil, // macroSvc
 		nil, // semanticSvc
 	)
-	strictHandler := api.NewStrictHandler(handler, nil)
-
 	// Router with auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
 	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
@@ -718,7 +717,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	}, nil)
 	r.Use(authenticator.Middleware())
 	r.Route("/v1", func(r chi.Router) {
-		api.HandlerFromMux(strictHandler, r)
+		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
 	srv := httptest.NewServer(r)
@@ -836,6 +835,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                     // ingestionSvc
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
+		nil, // pipelineSvc
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // assetSvc
 		nil, // assetBackfillSvc
@@ -843,8 +843,6 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 		nil, // macroSvc
 		nil, // semanticSvc
 	)
-	strictHandler := api.NewStrictHandler(handler, nil)
-
 	// Router with auth middleware (API key via SHA-256 hash lookup)
 	r := chi.NewRouter()
 	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
@@ -855,7 +853,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 	}, nil)
 	r.Use(authenticator.Middleware())
 	r.Route("/v1", func(r chi.Router) {
-		api.HandlerFromMux(strictHandler, r)
+		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
 	srv := httptest.NewServer(r)
@@ -1526,6 +1524,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		storageCredSvc, extLocationSvc, nil, // volumeSvc
 		computeEndpointSvc,
 		apiKeySvc,
+		nil, // pipelineSvc
 		notebookSvc, nil, gitRepoSvc,
 		assetSvc, // assetSvc
 		backfillSvc,
@@ -1533,8 +1532,6 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		macroSvc, // macroSvc
 		semanticSvc,
 	)
-	strictHandler := api.NewStrictHandler(handler, nil)
-
 	r := chi.NewRouter()
 
 	// Always use the full Authenticator for correct IsAdmin resolution.
@@ -1584,7 +1581,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
 		r.Post("/auth/sessions/revoke-all", authHandler.RevokeAllWebSessions)
 		r.Get("/auth/sessions/stats", authHandler.GetWebSessionStats)
-		api.HandlerFromMux(strictHandler, r)
+		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
 	uiHandler := ui.NewHandler(
@@ -2279,6 +2276,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,
 		nil, nil, nil, nil, nil,
+		nil, // pipelineSvc
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // assetSvc
 		nil, // assetBackfillSvc
@@ -2286,8 +2284,6 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 		nil, // macroSvc
 		nil, // semanticSvc
 	)
-	strictHandler := api.NewStrictHandler(handler, nil)
-
 	r := chi.NewRouter()
 	validator := &testHS256Validator{secret: []byte("test-jwt-secret")}
 	authenticator := middleware.NewAuthenticator(validator, apiKeyRepo, principalRepo, nil, config.AuthConfig{
@@ -2297,7 +2293,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	}, nil)
 	r.Use(authenticator.Middleware())
 	r.Route("/v1", func(r chi.Router) {
-		api.HandlerFromMux(strictHandler, r)
+		api.RegisterAPIGenStrictRoutes(r, handler)
 	})
 
 	srv := httptest.NewServer(r)

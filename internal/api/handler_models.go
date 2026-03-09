@@ -34,12 +34,12 @@ type modelService interface {
 // === Models ===
 
 // ListModels implements the endpoint for listing transformation models.
-func (h *APIHandler) ListModels(ctx context.Context, req ListModelsRequestObject) (ListModelsResponseObject, error) {
+func (h *APIHandler) ListModels(ctx context.Context, req GenListModelsRequest) (GenListModelsResponse, error) {
 	if isNilService(h.models) {
 		empty := []Model{}
-		return ListModels200JSONResponse{
-			Body:    PaginatedModels{Data: &empty, NextPageToken: nil},
-			Headers: ListModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		return GenListModels200JSONResponse{
+			Body:    PaginatedModels{Data: empty, NextPageToken: nil},
+			Headers: GenListModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 		}, nil
 	}
 
@@ -54,14 +54,14 @@ func (h *APIHandler) ListModels(ctx context.Context, req ListModelsRequestObject
 		data[i] = modelToAPI(m)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListModels200JSONResponse{
-		Body:    PaginatedModels{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListModels200JSONResponse{
+		Body:    PaginatedModels{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListModels200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CreateModel implements the endpoint for creating a new transformation model.
-func (h *APIHandler) CreateModel(ctx context.Context, req CreateModelRequestObject) (CreateModelResponseObject, error) {
+func (h *APIHandler) CreateModel(ctx context.Context, req GenCreateModelRequest) (GenCreateModelResponse, error) {
 	domReq := domain.CreateModelRequest{
 		ProjectName: req.Body.ProjectName,
 		Name:        req.Body.Name,
@@ -103,31 +103,31 @@ func (h *APIHandler) CreateModel(ctx context.Context, req CreateModelRequestObje
 			return CreateModel400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateModel201JSONResponse{
+	return GenCreateModel201JSONResponse{
 		Body:    modelToAPI(*result),
-		Headers: CreateModel201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateModel201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetModel implements the endpoint for retrieving a model by project and name.
-func (h *APIHandler) GetModel(ctx context.Context, req GetModelRequestObject) (GetModelResponseObject, error) {
+func (h *APIHandler) GetModel(ctx context.Context, req GenGetModelRequest) (GenGetModelResponse, error) {
 	result, err := h.models.GetModel(ctx, req.ProjectName, req.ModelName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetModel404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetModel404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetModel200JSONResponse{
+	return GenGetModel200JSONResponse{
 		Body:    modelToAPI(*result),
-		Headers: GetModel200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetModel200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // UpdateModel implements the endpoint for updating a transformation model.
-func (h *APIHandler) UpdateModel(ctx context.Context, req UpdateModelRequestObject) (UpdateModelResponseObject, error) {
+func (h *APIHandler) UpdateModel(ctx context.Context, req GenUpdateModelRequest) (GenUpdateModelResponse, error) {
 	domReq := domain.UpdateModelRequest{
 		SQL:         req.Body.Sql,
 		Description: req.Body.Description,
@@ -167,14 +167,14 @@ func (h *APIHandler) UpdateModel(ctx context.Context, req UpdateModelRequestObje
 			return nil, err
 		}
 	}
-	return UpdateModel200JSONResponse{
+	return GenUpdateModel200JSONResponse{
 		Body:    modelToAPI(*result),
-		Headers: UpdateModel200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateModel200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteModel implements the endpoint for deleting a transformation model.
-func (h *APIHandler) DeleteModel(ctx context.Context, req DeleteModelRequestObject) (DeleteModelResponseObject, error) {
+func (h *APIHandler) DeleteModel(ctx context.Context, req GenDeleteModelRequest) (GenDeleteModelResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.models.DeleteModel(ctx, principal, req.ProjectName, req.ModelName); err != nil {
@@ -187,13 +187,13 @@ func (h *APIHandler) DeleteModel(ctx context.Context, req DeleteModelRequestObje
 			return nil, err
 		}
 	}
-	return DeleteModel204Response{
-		Headers: DeleteModel204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenDeleteModel204Response{
+		Headers: GenDeleteModel204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetModelDAG implements the endpoint for retrieving the model dependency DAG.
-func (h *APIHandler) GetModelDAG(ctx context.Context, req GetModelDAGRequestObject) (GetModelDAGResponseObject, error) {
+func (h *APIHandler) GetModelDAG(ctx context.Context, req GenGetModelDAGRequest) (GenGetModelDAGResponse, error) {
 	tiers, err := h.models.GetDAG(ctx, req.Params.ProjectName)
 	if err != nil {
 		switch {
@@ -203,16 +203,16 @@ func (h *APIHandler) GetModelDAG(ctx context.Context, req GetModelDAGRequestObje
 			return nil, err
 		}
 	}
-	return GetModelDAG200JSONResponse{
+	return GenGetModelDAG200JSONResponse{
 		Body:    dagToAPI(tiers),
-		Headers: GetModelDAG200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetModelDAG200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // === Model Runs ===
 
 // TriggerModelRun implements the endpoint for triggering a model run.
-func (h *APIHandler) TriggerModelRun(ctx context.Context, req TriggerModelRunRequestObject) (TriggerModelRunResponseObject, error) {
+func (h *APIHandler) TriggerModelRun(ctx context.Context, req GenTriggerModelRunRequest) (GenTriggerModelRunResponse, error) {
 	domReq := domain.TriggerModelRunRequest{
 		TargetCatalog: "memory",
 		TargetSchema:  req.Body.ProjectName,
@@ -246,14 +246,14 @@ func (h *APIHandler) TriggerModelRun(ctx context.Context, req TriggerModelRunReq
 			return TriggerModelRun400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return TriggerModelRun201JSONResponse{
+	return GenTriggerModelRun201JSONResponse{
 		Body:    modelRunToAPI(*result),
-		Headers: TriggerModelRun201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenTriggerModelRun201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // ListModelRuns implements the endpoint for listing model runs.
-func (h *APIHandler) ListModelRuns(ctx context.Context, req ListModelRunsRequestObject) (ListModelRunsResponseObject, error) {
+func (h *APIHandler) ListModelRuns(ctx context.Context, req GenListModelRunsRequest) (GenListModelRunsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	filter := domain.ModelRunFilter{
 		Page: page,
@@ -276,36 +276,36 @@ func (h *APIHandler) ListModelRuns(ctx context.Context, req ListModelRunsRequest
 		data[i] = modelRunToAPI(r)
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return ListModelRuns200JSONResponse{
-		Body:    PaginatedModelRuns{Data: &data, NextPageToken: optStr(nextToken)},
-		Headers: ListModelRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListModelRuns200JSONResponse{
+		Body:    PaginatedModelRuns{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListModelRuns200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // GetModelRun implements the endpoint for retrieving a model run.
-func (h *APIHandler) GetModelRun(ctx context.Context, req GetModelRunRequestObject) (GetModelRunResponseObject, error) {
+func (h *APIHandler) GetModelRun(ctx context.Context, req GenGetModelRunRequest) (GenGetModelRunResponse, error) {
 	result, err := h.models.GetRun(ctx, req.RunId)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GetModelRun404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetModelRun404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return GetModelRun200JSONResponse{
+	return GenGetModelRun200JSONResponse{
 		Body:    modelRunToAPI(*result),
-		Headers: GetModelRun200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetModelRun200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // ListModelRunSteps implements the endpoint for listing model run steps.
-func (h *APIHandler) ListModelRunSteps(ctx context.Context, req ListModelRunStepsRequestObject) (ListModelRunStepsResponseObject, error) {
+func (h *APIHandler) ListModelRunSteps(ctx context.Context, req GenListModelRunStepsRequest) (GenListModelRunStepsResponse, error) {
 	steps, err := h.models.ListRunSteps(ctx, req.RunId)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListModelRunSteps404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenListModelRunSteps404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -315,14 +315,14 @@ func (h *APIHandler) ListModelRunSteps(ctx context.Context, req ListModelRunStep
 	for i, s := range steps {
 		data[i] = modelRunStepToAPI(s)
 	}
-	return ListModelRunSteps200JSONResponse{
-		Body:    ModelRunStepList{Data: &data},
-		Headers: ListModelRunSteps200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListModelRunSteps200JSONResponse{
+		Body:    ModelRunStepList{Data: data},
+		Headers: GenListModelRunSteps200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // CancelModelRun implements the endpoint for cancelling a model run.
-func (h *APIHandler) CancelModelRun(ctx context.Context, req CancelModelRunRequestObject) (CancelModelRunResponseObject, error) {
+func (h *APIHandler) CancelModelRun(ctx context.Context, req GenCancelModelRunRequest) (GenCancelModelRunResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.models.CancelRun(ctx, principal, req.RunId); err != nil {
@@ -354,8 +354,6 @@ func (h *APIHandler) CancelModelRun(ctx context.Context, req CancelModelRunReque
 // === Model Mappers ===
 
 func modelToAPI(m domain.Model) Model {
-	ct := m.CreatedAt
-	ut := m.UpdatedAt
 	mat := ModelMaterialization(m.Materialization)
 	resp := Model{
 		Id:              &m.ID,
@@ -366,8 +364,8 @@ func modelToAPI(m domain.Model) Model {
 		Description:     &m.Description,
 		Owner:           &m.Owner,
 		CreatedBy:       &m.CreatedBy,
-		CreatedAt:       &ct,
-		UpdatedAt:       &ut,
+		CreatedAt:       formatTimePtr(&m.CreatedAt),
+		UpdatedAt:       formatTimePtr(&m.UpdatedAt),
 	}
 	if len(m.DependsOn) > 0 {
 		resp.DependsOn = &m.DependsOn
@@ -391,15 +389,12 @@ func modelToAPI(m domain.Model) Model {
 }
 
 func modelRunToAPI(r domain.ModelRun) ModelRun {
-	ct := r.CreatedAt
-	status := ModelRunStatus(r.Status)
-	triggerType := ModelRunTriggerType(r.TriggerType)
 	resp := ModelRun{
 		Id:          &r.ID,
-		Status:      &status,
-		TriggerType: &triggerType,
+		Status:      strPtrIfNonEmpty(r.Status),
+		TriggerType: strPtrIfNonEmpty(r.TriggerType),
 		TriggeredBy: &r.TriggeredBy,
-		CreatedAt:   &ct,
+		CreatedAt:   formatTimePtr(&r.CreatedAt),
 	}
 	if r.TargetSchema != "" {
 		resp.ProjectName = &r.TargetSchema
@@ -423,10 +418,10 @@ func modelRunToAPI(r domain.ModelRun) ModelRun {
 		resp.ModelNames = &names
 	}
 	if r.StartedAt != nil {
-		resp.StartedAt = r.StartedAt
+		resp.StartedAt = formatTimePtr(r.StartedAt)
 	}
 	if r.FinishedAt != nil {
-		resp.FinishedAt = r.FinishedAt
+		resp.FinishedAt = formatTimePtr(r.FinishedAt)
 	}
 	if r.ErrorMessage != nil {
 		resp.ErrorMessage = r.ErrorMessage
@@ -478,14 +473,12 @@ func selectorToModelNames(selector string) []string {
 }
 
 func modelRunStepToAPI(s domain.ModelRunStep) ModelRunStep {
-	ct := s.CreatedAt
-	status := ModelRunStepStatus(s.Status)
 	resp := ModelRunStep{
 		Id:        &s.ID,
 		RunId:     &s.RunID,
 		ModelName: &s.ModelName,
-		Status:    &status,
-		CreatedAt: &ct,
+		Status:    strPtrIfNonEmpty(s.Status),
+		CreatedAt: formatTimePtr(&s.CreatedAt),
 	}
 	if s.CompiledSQL != nil {
 		resp.CompiledSql = s.CompiledSQL
@@ -503,13 +496,13 @@ func modelRunStepToAPI(s domain.ModelRunStep) ModelRunStep {
 		resp.MacrosUsed = &s.MacrosUsed
 	}
 	if s.RowsAffected != nil {
-		resp.RowsAffected = s.RowsAffected
+		resp.RowsAffected = safeInt64ToInt32Ptr(s.RowsAffected)
 	}
 	if s.StartedAt != nil {
-		resp.StartedAt = s.StartedAt
+		resp.StartedAt = formatTimePtr(s.StartedAt)
 	}
 	if s.FinishedAt != nil {
-		resp.FinishedAt = s.FinishedAt
+		resp.FinishedAt = formatTimePtr(s.FinishedAt)
 	}
 	if s.ErrorMessage != nil {
 		resp.ErrorMessage = s.ErrorMessage
@@ -523,7 +516,7 @@ func dagToAPI(tiers [][]model.DAGNode) ModelDAG {
 		tierNum := int32(i) //nolint:gosec // tier index is small
 		nodes := make([]ModelDAGNode, len(tier))
 		for j, node := range tier {
-			mat := ModelDAGNodeMaterialization(node.Model.Materialization)
+			mat := ModelMaterialization(node.Model.Materialization)
 			n := ModelDAGNode{
 				ProjectName:     &node.Model.ProjectName,
 				ModelName:       optStr(node.Model.Name),
@@ -557,7 +550,7 @@ func apiModelConfig(c domain.ModelConfig) ModelConfig {
 	return cfg
 }
 
-func domainModelConfig(c ModelConfig) domain.ModelConfig {
+func domainModelConfig(c GenSchemaModelConfig) domain.ModelConfig {
 	cfg := domain.ModelConfig{}
 	if c.UniqueKey != nil {
 		cfg.UniqueKey = *c.UniqueKey
@@ -574,7 +567,7 @@ func domainModelConfig(c ModelConfig) domain.ModelConfig {
 // === Model Tests ===
 
 // CreateModelTest implements the endpoint for creating a model test.
-func (h *APIHandler) CreateModelTest(ctx context.Context, req CreateModelTestRequestObject) (CreateModelTestResponseObject, error) {
+func (h *APIHandler) CreateModelTest(ctx context.Context, req GenCreateModelTestRequest) (GenCreateModelTestResponse, error) {
 	domReq := domain.CreateModelTestRequest{
 		Name:     req.Body.Name,
 		TestType: string(req.Body.TestType),
@@ -603,19 +596,19 @@ func (h *APIHandler) CreateModelTest(ctx context.Context, req CreateModelTestReq
 			return CreateModelTest400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return CreateModelTest201JSONResponse{
+	return GenCreateModelTest201JSONResponse{
 		Body:    modelTestToAPI(*result),
-		Headers: CreateModelTest201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateModelTest201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // ListModelTests implements the endpoint for listing tests for a model.
-func (h *APIHandler) ListModelTests(ctx context.Context, req ListModelTestsRequestObject) (ListModelTestsResponseObject, error) {
+func (h *APIHandler) ListModelTests(ctx context.Context, req GenListModelTestsRequest) (GenListModelTestsResponse, error) {
 	tests, err := h.models.ListTests(ctx, req.ProjectName, req.ModelName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListModelTests404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenListModelTests404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -625,14 +618,14 @@ func (h *APIHandler) ListModelTests(ctx context.Context, req ListModelTestsReque
 	for i, t := range tests {
 		data[i] = modelTestToAPI(t)
 	}
-	return ListModelTests200JSONResponse{
-		Body:    ModelTestList{Data: &data},
-		Headers: ListModelTests200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListModelTests200JSONResponse{
+		Body:    ModelTestList{Data: data},
+		Headers: GenListModelTests200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // DeleteModelTest implements the endpoint for deleting a model test.
-func (h *APIHandler) DeleteModelTest(ctx context.Context, req DeleteModelTestRequestObject) (DeleteModelTestResponseObject, error) {
+func (h *APIHandler) DeleteModelTest(ctx context.Context, req GenDeleteModelTestRequest) (GenDeleteModelTestResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.models.DeleteTest(ctx, principal, req.ProjectName, req.ModelName, req.TestId); err != nil {
@@ -645,18 +638,18 @@ func (h *APIHandler) DeleteModelTest(ctx context.Context, req DeleteModelTestReq
 			return nil, err
 		}
 	}
-	return DeleteModelTest204Response{
-		Headers: DeleteModelTest204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenDeleteModelTest204Response{
+		Headers: GenDeleteModelTest204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // ListModelTestResults implements the endpoint for listing test results for a run step.
-func (h *APIHandler) ListModelTestResults(ctx context.Context, req ListModelTestResultsRequestObject) (ListModelTestResultsResponseObject, error) {
+func (h *APIHandler) ListModelTestResults(ctx context.Context, req GenListModelTestResultsRequest) (GenListModelTestResultsResponse, error) {
 	results, err := h.models.ListTestResults(ctx, req.RunId, req.StepId)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return ListModelTestResults404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenListModelTestResults404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -666,23 +659,22 @@ func (h *APIHandler) ListModelTestResults(ctx context.Context, req ListModelTest
 	for i, r := range results {
 		data[i] = modelTestResultToAPI(r)
 	}
-	return ListModelTestResults200JSONResponse{
-		Body:    ModelTestResultList{Data: &data},
-		Headers: ListModelTestResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	return GenListModelTestResults200JSONResponse{
+		Body:    ModelTestResultList{Data: data},
+		Headers: GenListModelTestResults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 // === Model Test Mappers ===
 
 func modelTestToAPI(t domain.ModelTest) ModelTest {
-	ct := t.CreatedAt
 	tt := ModelTestTestType(t.TestType)
 	resp := ModelTest{
 		Id:        &t.ID,
 		ModelId:   &t.ModelID,
 		Name:      &t.Name,
 		TestType:  &tt,
-		CreatedAt: &ct,
+		CreatedAt: formatTimePtr(&t.CreatedAt),
 	}
 	if t.Column != "" {
 		resp.Column = &t.Column
@@ -695,7 +687,6 @@ func modelTestToAPI(t domain.ModelTest) ModelTest {
 }
 
 func modelTestResultToAPI(r domain.ModelTestResult) ModelTestResult {
-	ct := r.CreatedAt
 	status := ModelTestResultStatus(r.Status)
 	resp := ModelTestResult{
 		Id:        &r.ID,
@@ -703,10 +694,10 @@ func modelTestResultToAPI(r domain.ModelTestResult) ModelTestResult {
 		TestId:    &r.TestID,
 		TestName:  &r.TestName,
 		Status:    &status,
-		CreatedAt: &ct,
+		CreatedAt: formatTimePtr(&r.CreatedAt),
 	}
 	if r.RowsReturned != nil {
-		resp.RowsReturned = r.RowsReturned
+		resp.RowsReturned = safeInt64ToInt32Ptr(r.RowsReturned)
 	}
 	if r.ErrorMessage != nil {
 		resp.ErrorMessage = r.ErrorMessage
@@ -731,7 +722,7 @@ func apiModelTestConfig(c domain.ModelTestConfig) ModelTestConfig {
 	return cfg
 }
 
-func domainModelTestConfig(c ModelTestConfig) domain.ModelTestConfig {
+func domainModelTestConfig(c GenSchemaModelTestConfig) domain.ModelTestConfig {
 	cfg := domain.ModelTestConfig{}
 	if c.Values != nil {
 		cfg.Values = *c.Values
@@ -766,7 +757,7 @@ func apiModelContract(c domain.ModelContract) ModelContract {
 	return resp
 }
 
-func domainModelContract(c ModelContract) domain.ModelContract {
+func domainModelContract(c GenSchemaModelContract) domain.ModelContract {
 	resp := domain.ModelContract{}
 	if c.Enforce != nil {
 		resp.Enforce = *c.Enforce
@@ -787,7 +778,8 @@ func domainModelContract(c ModelContract) domain.ModelContract {
 func apiFreshnessPolicy(f domain.FreshnessPolicy) FreshnessPolicy {
 	resp := FreshnessPolicy{}
 	if f.MaxLagSeconds != 0 {
-		resp.MaxLagSeconds = &f.MaxLagSeconds
+		value := safeInt64ToInt32(f.MaxLagSeconds)
+		resp.MaxLagSeconds = &value
 	}
 	if f.CronSchedule != "" {
 		resp.CronSchedule = &f.CronSchedule
@@ -795,10 +787,10 @@ func apiFreshnessPolicy(f domain.FreshnessPolicy) FreshnessPolicy {
 	return resp
 }
 
-func domainFreshnessPolicy(f FreshnessPolicy) domain.FreshnessPolicy {
+func domainFreshnessPolicy(f GenSchemaFreshnessPolicy) domain.FreshnessPolicy {
 	resp := domain.FreshnessPolicy{}
 	if f.MaxLagSeconds != nil {
-		resp.MaxLagSeconds = *f.MaxLagSeconds
+		resp.MaxLagSeconds = int64(*f.MaxLagSeconds)
 	}
 	if f.CronSchedule != nil {
 		resp.CronSchedule = *f.CronSchedule
@@ -809,38 +801,38 @@ func domainFreshnessPolicy(f FreshnessPolicy) domain.FreshnessPolicy {
 // === Freshness ===
 
 // CheckModelFreshness implements the endpoint for checking a model's freshness status.
-func (h *APIHandler) CheckModelFreshness(ctx context.Context, req CheckModelFreshnessRequestObject) (CheckModelFreshnessResponseObject, error) {
+func (h *APIHandler) CheckModelFreshness(ctx context.Context, req GenCheckModelFreshnessRequest) (GenCheckModelFreshnessResponse, error) {
 	result, err := h.models.CheckFreshness(ctx, req.ProjectName, req.ModelName)
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return CheckModelFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCheckModelFreshness404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
 	}
-	return CheckModelFreshness200JSONResponse{
+	return GenCheckModelFreshness200JSONResponse{
 		Body:    freshnessStatusToAPI(*result),
-		Headers: CheckModelFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCheckModelFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
 func freshnessStatusToAPI(s domain.FreshnessStatus) FreshnessStatus {
 	resp := FreshnessStatus{
 		IsFresh:       &s.IsFresh,
-		MaxLagSeconds: &s.MaxLagSeconds,
+		MaxLagSeconds: safeInt64ToInt32Ptr(&s.MaxLagSeconds),
 	}
 	if s.LastRunAt != nil {
-		resp.LastRunAt = s.LastRunAt
+		resp.LastRunAt = formatTimePtr(s.LastRunAt)
 	}
 	if s.StaleSince != nil {
-		resp.StaleSince = s.StaleSince
+		resp.StaleSince = formatTimePtr(s.StaleSince)
 	}
 	return resp
 }
 
 // CheckSourceFreshness implements the endpoint for checking source freshness status.
-func (h *APIHandler) CheckSourceFreshness(ctx context.Context, req CheckSourceFreshnessRequestObject) (CheckSourceFreshnessResponseObject, error) {
+func (h *APIHandler) CheckSourceFreshness(ctx context.Context, req GenCheckSourceFreshnessRequest) (GenCheckSourceFreshnessResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
@@ -857,7 +849,7 @@ func (h *APIHandler) CheckSourceFreshness(ctx context.Context, req CheckSourceFr
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.NotFoundError)):
-			return CheckSourceFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenCheckSourceFreshness404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
 			return CheckSourceFreshness400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
@@ -865,9 +857,9 @@ func (h *APIHandler) CheckSourceFreshness(ctx context.Context, req CheckSourceFr
 		}
 	}
 
-	return CheckSourceFreshness200JSONResponse{
+	return GenCheckSourceFreshness200JSONResponse{
 		Body:    sourceFreshnessStatusToAPI(*result),
-		Headers: CheckSourceFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCheckSourceFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -876,16 +868,16 @@ func sourceFreshnessStatusToAPI(s domain.SourceFreshnessStatus) SourceFreshnessS
 		IsFresh:       &s.IsFresh,
 		SourceSchema:  &s.SourceSchema,
 		SourceTable:   &s.SourceTable,
-		MaxLagSeconds: &s.MaxLagSeconds,
+		MaxLagSeconds: safeInt64ToInt32Ptr(&s.MaxLagSeconds),
 	}
 	if s.TimestampCol != "" {
 		resp.TimestampColumn = &s.TimestampCol
 	}
 	if s.LastLoadedAt != nil {
-		resp.LastLoadedAt = s.LastLoadedAt
+		resp.LastLoadedAt = formatTimePtr(s.LastLoadedAt)
 	}
 	if s.StaleSince != nil {
-		resp.StaleSince = s.StaleSince
+		resp.StaleSince = formatTimePtr(s.StaleSince)
 	}
 	return resp
 }
@@ -893,10 +885,31 @@ func sourceFreshnessStatusToAPI(s domain.SourceFreshnessStatus) SourceFreshnessS
 // === Notebook Promotion ===
 
 // PromoteNotebookToModel implements the endpoint for promoting a notebook cell to a model.
-func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req PromoteNotebookToModelRequestObject) (PromoteNotebookToModelResponseObject, error) {
+func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req GenPromoteNotebookToModelRequest) (GenPromoteNotebookToModelResponse, error) {
+	_, cells, err := h.notebooks.GetNotebook(ctx, req.Body.NotebookId)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return PromoteNotebookToModel404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	var outputCellID string
+	for i := range cells {
+		if cells[i].Position == int(req.Body.CellIndex) {
+			outputCellID = cells[i].ID
+			break
+		}
+	}
+	if outputCellID == "" {
+		return PromoteNotebookToModel400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "output cell not found for requested cell_index"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
 	domReq := domain.PromoteNotebookRequest{
 		NotebookID:   req.Body.NotebookId,
-		OutputCellID: req.Body.OutputCellId,
+		OutputCellID: outputCellID,
 		ProjectName:  req.Body.ProjectName,
 		Name:         req.Body.Name,
 	}
@@ -921,8 +934,8 @@ func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req PromoteNote
 			return PromoteNotebookToModel400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
-	return PromoteNotebookToModel201JSONResponse{
+	return GenPromoteNotebookToModel201JSONResponse{
 		Body:    modelToAPI(*result),
-		Headers: PromoteNotebookToModel201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenPromoteNotebookToModel201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

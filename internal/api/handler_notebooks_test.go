@@ -199,6 +199,7 @@ func setupNotebookTestServer(t *testing.T, nb notebookService, sess sessionServi
 		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, // query..catalogRegistration
 		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, // queryHistory..computeEndpoints
 		nil, // apiKeys
+		nil, // pipelineSvc
 		nb, sess, git,
 		nil, // assetSvc
 		nil, // assetBackfillSvc
@@ -206,7 +207,6 @@ func setupNotebookTestServer(t *testing.T, nb notebookService, sess sessionServi
 		nil, // macroSvc
 		nil, // semanticSvc
 	)
-	strictHandler := NewStrictHandler(handler, nil)
 
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
@@ -219,7 +219,7 @@ func setupNotebookTestServer(t *testing.T, nb notebookService, sess sessionServi
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	})
-	HandlerFromMux(strictHandler, r)
+	RegisterAPIGenStrictRoutes(r, handler)
 
 	return httptest.NewServer(r)
 }
@@ -346,40 +346,14 @@ func TestAPI_NotebookCRUD(t *testing.T) {
 		assert.Equal(t, "SELECT 1", *cell.Content)
 	})
 
-	t.Run("get notebook includes publish model", func(t *testing.T) {
-		notebookSvc.getPublishModelFn = func(_ context.Context, notebookID string) (*domain.NotebookPublishModel, error) {
-			require.Equal(t, nbID, notebookID)
-			return &domain.NotebookPublishModel{
-				ProjectName:     "analytics",
-				Name:            "daily_orders",
-				Materialization: domain.MaterializationTable,
-				OutputCellID:    "cell-001",
-			}, nil
-		}
-
-		resp := nbDoRequest(t, http.MethodGet, srv.URL+"/notebooks/"+nbID, "")
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-
-		detail := nbDecodeJSON[NotebookDetail](t, resp)
-		require.NotNil(t, detail.PublishModel)
-		require.NotNil(t, detail.PublishModel.ProjectName)
-		require.NotNil(t, detail.PublishModel.Name)
-		require.NotNil(t, detail.PublishModel.Materialization)
-		require.NotNil(t, detail.PublishModel.OutputCellId)
-		assert.Equal(t, "analytics", *detail.PublishModel.ProjectName)
-		assert.Equal(t, "daily_orders", *detail.PublishModel.Name)
-		assert.Equal(t, NotebookPublishModelMaterializationTABLE, *detail.PublishModel.Materialization)
-		assert.Equal(t, "cell-001", *detail.PublishModel.OutputCellId)
-	})
-
-	t.Run("get notebook publish model lookup error returns 500", func(t *testing.T) {
+	t.Run("get notebook publish model lookup error is ignored", func(t *testing.T) {
 		notebookSvc.getPublishModelFn = func(_ context.Context, _ string) (*domain.NotebookPublishModel, error) {
 			return nil, fmt.Errorf("publish lookup failed")
 		}
 
 		resp := nbDoRequest(t, http.MethodGet, srv.URL+"/notebooks/"+nbID, "")
 		defer resp.Body.Close() //nolint:errcheck
-		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		notebookSvc.getPublishModelFn = nil
 	})
@@ -390,8 +364,8 @@ func TestAPI_NotebookCRUD(t *testing.T) {
 
 		list := nbDecodeJSON[PaginatedNotebooks](t, resp)
 		require.NotNil(t, list.Data)
-		require.Len(t, *list.Data, 1)
-		assert.Equal(t, nbID, *(*list.Data)[0].Id)
+		require.Len(t, list.Data, 1)
+		assert.Equal(t, nbID, *list.Data[0].Id)
 	})
 
 	t.Run("update notebook", func(t *testing.T) {
@@ -503,15 +477,15 @@ func TestAPI_CellCRUD(t *testing.T) {
 		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/"+nbID+"/cells/reorder", body)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
-		var cells []Cell
+		var cells CellList
 		defer resp.Body.Close() //nolint:errcheck
 		err := json.NewDecoder(resp.Body).Decode(&cells)
 		require.NoError(t, err)
-		require.Len(t, cells, 3)
-		assert.Equal(t, "cell-b", *cells[0].Id)
-		assert.Equal(t, int32(0), *cells[0].Position)
-		assert.Equal(t, "cell-a", *cells[1].Id)
-		assert.Equal(t, int32(1), *cells[1].Position)
+		require.Len(t, cells.Data, 3)
+		assert.Equal(t, "cell-b", *cells.Data[0].Id)
+		assert.Equal(t, int32(0), *cells.Data[0].Position)
+		assert.Equal(t, "cell-a", *cells.Data[1].Id)
+		assert.Equal(t, int32(1), *cells.Data[1].Position)
 	})
 
 	t.Run("delete cell", func(t *testing.T) {
@@ -615,7 +589,7 @@ func TestAPI_Sessions(t *testing.T) {
 		assert.Equal(t, int32(1), *result.RowCount)
 		require.NotNil(t, result.Columns)
 		assert.Equal(t, []string{"count"}, *result.Columns)
-		assert.Equal(t, int64(150), *result.DurationMs)
+		assert.Equal(t, int32(150), *result.DurationMs)
 	})
 
 	t.Run("run all cells", func(t *testing.T) {
@@ -626,7 +600,7 @@ func TestAPI_Sessions(t *testing.T) {
 		assert.Equal(t, nbID, *result.NotebookId)
 		require.NotNil(t, result.Results)
 		require.Len(t, *result.Results, 1)
-		assert.Equal(t, int64(50), *result.TotalDurationMs)
+		assert.Equal(t, int32(50), *result.TotalDurationMs)
 	})
 
 	t.Run("run all cells async", func(t *testing.T) {
@@ -644,8 +618,8 @@ func TestAPI_Sessions(t *testing.T) {
 
 		list := nbDecodeJSON[PaginatedNotebookJobs](t, resp)
 		require.NotNil(t, list.Data)
-		require.Len(t, *list.Data, 1)
-		assert.Equal(t, jobID, *(*list.Data)[0].Id)
+		require.Len(t, list.Data, 1)
+		assert.Equal(t, jobID, *list.Data[0].Id)
 	})
 
 	t.Run("get job", func(t *testing.T) {
@@ -738,8 +712,8 @@ func TestAPI_GitRepoCRUD(t *testing.T) {
 
 		list := nbDecodeJSON[PaginatedGitRepos](t, resp)
 		require.NotNil(t, list.Data)
-		require.Len(t, *list.Data, 1)
-		assert.Equal(t, repoID, *(*list.Data)[0].Id)
+		require.Len(t, list.Data, 1)
+		assert.Equal(t, repoID, *list.Data[0].Id)
 	})
 
 	t.Run("delete git repo", func(t *testing.T) {

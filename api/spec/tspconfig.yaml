@@ -1,0 +1,12 @@
+emit:
+  - "@typespec/openapi3"
+  - "@duck/typespec-ir-emitter"
+
+options:
+  "@typespec/openapi3":
+    emitter-output-dir: "{cwd}/../gen"
+    output-file: "openapi.yaml"
+    file-type: "yaml"
+  "@duck/typespec-ir-emitter":
+    emitter-output-dir: "{cwd}/../gen"
+    output-file: "json-ir.json"

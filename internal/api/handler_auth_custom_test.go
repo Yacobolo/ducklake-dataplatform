@@ -55,7 +55,7 @@ func TestAuthHTTPHandler_LocalLogin(t *testing.T) {
 
 	h.LocalLogin(rr, req)
 
-	require.Equal(t, http.StatusOK, rr.Code)
+	require.Equal(t, http.StatusCreated, rr.Code)
 	var resp map[string]interface{}
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
 	assert.NotEmpty(t, resp["token"])
