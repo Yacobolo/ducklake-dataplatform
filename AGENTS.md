@@ -7,6 +7,7 @@ Go data platform: secure SQL query layer over DuckDB with RBAC, row-level securi
 ## Commands
 
 ```bash
+task dev            # start local dev server; injects dev env and stable per-worktree ports
 task build          # go build ./...
 task test           # unit + integration tests
 task test:unit      # unit tests only
@@ -17,6 +18,8 @@ task build-cli      # build CLI binary → bin/duck
 ```
 
 Single package/test: `go test -race -run TestName ./internal/pkg/...`
+
+`task dev` does not require a checked-out `.env`; it injects a local-only dev profile, builds a local server binary, and derives stable HTTP/Flight SQL/PG wire ports from the current worktree path so multiple AI worktrees can run concurrently.
 
 ## Workflow
 
