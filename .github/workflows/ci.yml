@@ -29,7 +29,8 @@ permissions:
 jobs:
   # ── Generate ────────────────────────────────────────────────
   # Shared job: produces generated code artifact once so downstream
-  # jobs skip TypeSpec/APIGen setup and sqlc entirely.
+  # jobs skip TypeSpec/APIGen setup and sqlc entirely, including the
+  # APIGen-generated compatibility types file used by fresh checkouts.
   generate:
     name: Generate Code
     runs-on: ubuntu-latest

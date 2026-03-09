@@ -44,7 +44,8 @@ task docs:generate
 task docs:check
 ```
 
-Generated reference lives under `docs/reference/generated` and is derived from `api/gen/openapi.yaml` and the declarative schema artifacts.
+The canonical public API contract is `api/gen/openapi.yaml`.
+Generated reference under `docs/reference/generated` is derived from that contract plus the declarative schema artifacts.
 
 ## Examples
 
@@ -77,3 +78,5 @@ extension/duck_access/  -- C++ DuckDB client extension
 ```
 
 Dependency direction: `api` -> `service` -> `domain` <- `repository`. Never import upward.
+
+APIGen owns the server transport, compatibility API types, and generated CLI metadata from `api/gen/json-ir.json`.
