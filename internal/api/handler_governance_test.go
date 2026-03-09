@@ -605,7 +605,7 @@ func TestHandler_PurgeLineage(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(PurgeLineage200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, int64(42), *ok200.Body.DeletedCount)
+				assert.Equal(t, int32(42), *ok200.Body.DeletedCount)
 			},
 		},
 		{

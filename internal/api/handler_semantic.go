@@ -747,10 +747,6 @@ func intToI32Safe(v int) int32 {
 	return int32(v)
 }
 
-func ptrInt64(v int64) *int64 {
-	return &v
-}
-
 func optCertificationState(v string) *CreateSemanticMetricRequestCertificationState {
 	if v == "" {
 		return nil

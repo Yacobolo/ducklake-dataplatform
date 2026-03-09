@@ -568,7 +568,7 @@ func TestAPI_Sessions(t *testing.T) {
 		assert.Equal(t, int32(1), *result.RowCount)
 		require.NotNil(t, result.Columns)
 		assert.Equal(t, []string{"count"}, *result.Columns)
-		assert.Equal(t, int64(150), *result.DurationMs)
+		assert.Equal(t, int32(150), *result.DurationMs)
 	})
 
 	t.Run("run all cells", func(t *testing.T) {
@@ -579,7 +579,7 @@ func TestAPI_Sessions(t *testing.T) {
 		assert.Equal(t, nbID, *result.NotebookId)
 		require.NotNil(t, result.Results)
 		require.Len(t, *result.Results, 1)
-		assert.Equal(t, int64(50), *result.TotalDurationMs)
+		assert.Equal(t, int32(50), *result.TotalDurationMs)
 	})
 
 	t.Run("run all cells async", func(t *testing.T) {

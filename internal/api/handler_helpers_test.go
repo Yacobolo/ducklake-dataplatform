@@ -228,7 +228,7 @@ func TestHelpers_schemaDetailToAPI(t *testing.T) {
 	require.NotNil(t, result.Owner)
 	assert.Equal(t, "admin", *result.Owner)
 	require.NotNil(t, result.Properties)
-	assert.Equal(t, map[string]string{"key": "val"}, *result.Properties)
+	assert.Equal(t, Record{"key": "val"}, *result.Properties)
 	require.NotNil(t, result.CreatedAt)
 	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 	require.NotNil(t, result.UpdatedAt)
@@ -325,7 +325,7 @@ func TestHelpers_lineageEdgeToAPI(t *testing.T) {
 	require.NotNil(t, result.PrincipalName)
 	assert.Equal(t, "alice", *result.PrincipalName)
 	require.NotNil(t, result.CreatedAt)
-	assert.Equal(t, helpersFixedTime, *result.CreatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 }
 
 func TestHelpers_tagToAPI(t *testing.T) {
@@ -345,7 +345,7 @@ func TestHelpers_tagToAPI(t *testing.T) {
 	require.NotNil(t, result.CreatedBy)
 	assert.Equal(t, "admin", *result.CreatedBy)
 	require.NotNil(t, result.CreatedAt)
-	assert.Equal(t, helpersFixedTime, *result.CreatedAt)
+	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
 }
 
 func TestHelpers_viewDetailToAPI(t *testing.T) {
@@ -451,6 +451,6 @@ func TestHelpers_tableStatisticsToAPI(t *testing.T) {
 		stats := &domain.TableStatistics{RowCount: helpersIntPtr(100)}
 		result := tableStatisticsToAPI(stats)
 		require.NotNil(t, result.RowCount)
-		assert.Equal(t, int64(100), *result.RowCount)
+		assert.Equal(t, int32(100), *result.RowCount)
 	})
 }

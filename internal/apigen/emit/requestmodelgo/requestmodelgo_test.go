@@ -208,9 +208,66 @@ func TestEmitStandaloneCompatibilityTypes_EmitsConcreteCanonicalTypes(t *testing
 	require.Contains(t, content, "type WidgetList []Widget")
 	require.Contains(t, content, "type PaginatedWidgets struct")
 	require.Contains(t, content, "type WidgetState string")
+	require.Contains(t, content, "const (")
+	require.Contains(t, content, "WidgetStateDraft WidgetState = \"draft\"")
+	require.Contains(t, content, "WidgetStatePublished WidgetState = \"published\"")
 	require.Contains(t, content, "type AuditWidget struct")
 	require.Contains(t, content, "type ListWidgetsParams = GenListWidgetsParams")
 	require.Contains(t, content, "type CreateWidgetJSONRequestBody = GenCreateWidgetJSONBody")
+}
+
+func TestEmitStandaloneCompatibilityTypes_EmitsLegacyBareEnumConstantsWhenUnique(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		Schemas: map[string]ir.Schema{
+			"ComputeEndpointType": {
+				Type: "string",
+				Enum: []string{"LOCAL", "REMOTE"},
+			},
+			"PipelineRunStatus": {
+				Type: "string",
+				Enum: []string{"RUNNING", "FAILED"},
+			},
+			"NotebookSessionState": {
+				Type: "string",
+				Enum: []string{"RUNNING", "IDLE"},
+			},
+		},
+	}
+
+	b, err := EmitStandaloneCompatibilityTypes(doc, "")
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "ComputeEndpointTypeLOCAL ComputeEndpointType = \"LOCAL\"")
+	require.Contains(t, content, "LOCAL ComputeEndpointType = \"LOCAL\"")
+	require.Contains(t, content, "ComputeEndpointTypeREMOTE ComputeEndpointType = \"REMOTE\"")
+	require.Contains(t, content, "REMOTE ComputeEndpointType = \"REMOTE\"")
+	require.Contains(t, content, "PipelineRunStatusRUNNING PipelineRunStatus = \"RUNNING\"")
+	require.Contains(t, content, "NotebookSessionStateRUNNING NotebookSessionState = \"RUNNING\"")
+	require.NotContains(t, content, "\n\tRUNNING PipelineRunStatus = \"RUNNING\"\n")
+}
+
+func TestEmitStandaloneCompatibilityTypes_EmitsTypePrefixedEnumConstantsForMixedCaseValues(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		Schemas: map[string]ir.Schema{
+			"ComputeAssignmentPrincipalType": {
+				Type: "string",
+				Enum: []string{"user", "group"},
+			},
+		},
+	}
+
+	b, err := EmitStandaloneCompatibilityTypes(doc, "")
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "ComputeAssignmentPrincipalTypeUser ComputeAssignmentPrincipalType = \"user\"")
+	require.Contains(t, content, "ComputeAssignmentPrincipalTypeGroup ComputeAssignmentPrincipalType = \"group\"")
+	require.NotContains(t, content, "\n\tUser ComputeAssignmentPrincipalType = \"user\"\n")
 }
 
 func TestEmitStandaloneCompatibilityTypes_EmitsManualRequestBodyAliasesWhenSchemasExist(t *testing.T) {

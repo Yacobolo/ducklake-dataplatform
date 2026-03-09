@@ -354,7 +354,7 @@ func TestHTTP_ComputeLocalEndpointE2E(t *testing.T) {
 	adminID := lookupPrincipalID(t, env, "admin_user")
 	assignToEndpoint(t, env, "local-ep", adminID, "user")
 
-	// Query — should work via local executor (result types are native, not VARCHAR)
+	// Query — APIGen canonical responses now serialize row values as strings.
 	queryBody := map[string]interface{}{"sql": "SELECT 42 AS answer"}
 	resp = doRequest(t, "POST", env.Server.URL+"/v1/query", env.Keys.Admin, queryBody)
 	require.Equal(t, 200, resp.StatusCode)
@@ -364,8 +364,7 @@ func TestHTTP_ComputeLocalEndpointE2E(t *testing.T) {
 	rows := result["rows"].([]interface{})
 	require.Len(t, rows, 1)
 	row := rows[0].([]interface{})
-	// Local DuckDB returns native int, JSON-serialized as float64
-	assert.Equal(t, float64(42), row[0])
+	assert.Equal(t, "42", fmt.Sprintf("%v", row[0]))
 }
 
 // === E2E: Agent Unreachable ===
@@ -450,10 +449,9 @@ func TestHTTP_ComputeUnassignReverts(t *testing.T) {
 	decodeJSON(t, resp, &result)
 	columns := result["columns"].([]interface{})
 	assert.Equal(t, "local_answer", columns[0])
-	// After unassign, local DuckDB returns native int → float64
 	rows := result["rows"].([]interface{})
 	row := rows[0].([]interface{})
-	assert.Equal(t, float64(99), row[0])
+	assert.Equal(t, "99", fmt.Sprintf("%v", row[0]))
 }
 
 // === Health Check: LOCAL always ok ===

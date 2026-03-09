@@ -285,7 +285,7 @@ func TestHandler_ProfileTable(t *testing.T) {
 				ok200, ok := resp.(ProfileTable200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.RowCount)
-				assert.Equal(t, int64(42), *ok200.Body.RowCount)
+				assert.Equal(t, int32(42), *ok200.Body.RowCount)
 			},
 		},
 		{

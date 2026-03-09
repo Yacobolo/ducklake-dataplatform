@@ -704,7 +704,7 @@ func TestHandler_TriggerPipelineRun(t *testing.T) {
 		{
 			name:     "happy path returns 201",
 			pipeName: "etl-daily",
-			body:     &GenTriggerPipelineRunJSONBody{Parameters: &map[string]string{"env": "prod"}},
+			body:     &GenTriggerPipelineRunJSONBody{Parameters: &Record{"env": "prod"}},
 			svcFn: func(_ context.Context, _ string, _ string, _ map[string]string, _ string) (*domain.PipelineRun, error) {
 				r := sampleRun()
 				return &r, nil

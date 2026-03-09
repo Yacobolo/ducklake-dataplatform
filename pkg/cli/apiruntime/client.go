@@ -1,3 +1,4 @@
+// Package apiruntime provides the shared runtime used by the metadata-driven CLI.
 package apiruntime
 
 import (

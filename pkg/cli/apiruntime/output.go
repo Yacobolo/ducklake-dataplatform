@@ -14,8 +14,11 @@ import (
 type OutputFormat string
 
 const (
+	// OutputTable renders human-friendly columnar output.
 	OutputTable OutputFormat = "table"
+	// OutputJSON renders machine-readable JSON output.
 	OutputJSON  OutputFormat = "json"
+	// OutputCSV renders comma-separated tabular output.
 	OutputCSV   OutputFormat = "csv"
 )
 
@@ -74,10 +77,11 @@ func PrintTable(w io.Writer, columns []string, rows [][]string) {
 	for i := range rows {
 		for j := range rows[i] {
 			if j < len(widths) && len(rows[i][j]) > widths[j] {
-				if widths[j] > 3 {
-					rows[i][j] = rows[i][j][:widths[j]-3] + "..."
+				val := rows[i][j]
+				if widths[j] > 3 && len(val) >= widths[j]-3 {
+					rows[i][j] = truncateString(val, widths[j]-3) + "..."
 				} else {
-					rows[i][j] = rows[i][j][:widths[j]]
+					rows[i][j] = truncateString(val, widths[j]) //nolint:gosec
 				}
 			}
 		}
@@ -85,24 +89,24 @@ func PrintTable(w io.Writer, columns []string, rows [][]string) {
 
 	for i, col := range columns {
 		if i > 0 {
-			fmt.Fprint(w, "  ")
+			_, _ = fmt.Fprint(w, "  ")
 		}
-		fmt.Fprintf(w, "%-*s", widths[i], strings.ToUpper(col))
+		_, _ = fmt.Fprintf(w, "%-*s", widths[i], strings.ToUpper(col))
 	}
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 
 	for _, row := range rows {
 		for i := 0; i < len(columns); i++ {
 			if i > 0 {
-				fmt.Fprint(w, "  ")
+				_, _ = fmt.Fprint(w, "  ")
 			}
 			val := ""
 			if i < len(row) {
 				val = row[i]
 			}
-			fmt.Fprintf(w, "%-*s", widths[i], val)
+			_, _ = fmt.Fprintf(w, "%-*s", widths[i], val)
 		}
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w)
 	}
 }
 
@@ -127,7 +131,7 @@ func PrintDetail(w io.Writer, fields map[string]interface{}) {
 	for _, k := range keys {
 		v := fields[k]
 		padding := strings.Repeat(" ", maxKeyLen-len(k))
-		fmt.Fprintf(w, "%s:%s  %s\n", k, padding, FormatValue(v))
+		_, _ = fmt.Fprintf(w, "%s:%s  %s\n", k, padding, FormatValue(v))
 	}
 }
 
@@ -139,12 +143,12 @@ func IsStdinTTY() bool {
 // ConfirmPrompt asks the user for confirmation.
 func ConfirmPrompt(message string) bool {
 	if !IsStdinTTY() {
-		fmt.Fprintln(os.Stderr, "Error: confirmation required but stdin is not a terminal. Use --yes to skip.")
+		_, _ = fmt.Fprintln(os.Stderr, "Error: confirmation required but stdin is not a terminal. Use --yes to skip.")
 		return false
 	}
-	fmt.Fprintf(os.Stderr, "%s [y/N]: ", message)
+	_, _ = fmt.Fprintf(os.Stderr, "%s [y/N]: ", message)
 	var response string
-	fmt.Scanln(&response)
+	_, _ = fmt.Scanln(&response)
 	response = strings.ToLower(strings.TrimSpace(response))
 	return response == "y" || response == "yes"
 }
@@ -218,4 +222,14 @@ func maxInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func truncateString(value string, width int) string {
+	if width <= 0 {
+		return ""
+	}
+	if len(value) <= width {
+		return value
+	}
+	return value[:width]
 }

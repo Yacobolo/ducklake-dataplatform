@@ -190,8 +190,8 @@ func TestHandler_CommitTableIngestion(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(CommitTableIngestion200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, int64(1), ok200.Body.FilesRegistered)
-				assert.Equal(t, int64(0), ok200.Body.FilesSkipped)
+				assert.Equal(t, int32(1), ok200.Body.FilesRegistered)
+				assert.Equal(t, int32(0), ok200.Body.FilesSkipped)
 				assert.Equal(t, "test-table", ok200.Body.Table)
 			},
 		},
@@ -314,7 +314,7 @@ func TestHandler_LoadTableExternalFiles(t *testing.T) {
 				require.NoError(t, err)
 				ok200, ok := resp.(LoadTableExternalFiles200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
-				assert.Equal(t, int64(1), ok200.Body.FilesRegistered)
+				assert.Equal(t, int32(1), ok200.Body.FilesRegistered)
 				assert.Equal(t, "test-table", ok200.Body.Table)
 			},
 		},
