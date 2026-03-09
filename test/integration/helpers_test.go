@@ -1481,17 +1481,23 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		modelTestRepo := repository.NewModelTestRepo(metaDB)
 		modelTestResultRepo := repository.NewModelTestResultRepo(metaDB)
 		colLineageRepo := repository.NewColumnLineageRepo(metaDB)
-		modelSvc = svcmodel.NewService(
-			modelRepo, modelRunRepo, modelTestRepo, modelTestResultRepo, auditRepo,
-			lineageRepo, colLineageRepo,
-			integrationSessionEngine{}, duckDB,
-			slog.New(slog.NewTextHandler(io.Discard, nil)),
-		)
 		macroRepo := repository.NewMacroRepo(metaDB)
 		macroSvc = macro.NewService(macroRepo, auditRepo)
-		modelSvc.SetMacroRepo(macroRepo)
-		modelSvc.SetNotebookProvider(notebookProvider)
-		modelSvc.SetNotebookModelLinkRepo(notebookModelLinkRepo)
+		modelSvc = svcmodel.NewService(svcmodel.ServiceDeps{
+			Models:        modelRepo,
+			Runs:          modelRunRepo,
+			Tests:         modelTestRepo,
+			TestResults:   modelTestResultRepo,
+			Audit:         auditRepo,
+			Lineage:       lineageRepo,
+			ColumnLineage: colLineageRepo,
+			Macros:        macroRepo,
+			Notebooks:     notebookProvider,
+			NotebookLinks: notebookModelLinkRepo,
+			Engine:        integrationSessionEngine{},
+			DuckDB:        duckDB,
+			Logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
+		})
 		notebookSvc.SetPublishRepositories(modelRepo, notebookModelLinkRepo)
 	}
 
