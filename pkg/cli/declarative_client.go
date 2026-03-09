@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -89,6 +91,57 @@ func NewAPIStateClient(client *gen.Client) *APIStateClient {
 type listResponse struct {
 	Data          json.RawMessage `json:"data"`
 	NextPageToken string          `json:"next_page_token"`
+}
+
+type actionExecutor func(context.Context, declarative.Action) error
+
+func (c *APIStateClient) do(ctx context.Context, method, path string, query url.Values, body interface{}) (*http.Response, error) {
+	var bodyReader io.Reader
+	if body != nil {
+		data, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("marshal request body: %w", err)
+		}
+		bodyReader = bytes.NewReader(data)
+	}
+
+	u := c.client.BaseURL + "/v1" + path
+	if len(query) > 0 {
+		u += "?" + query.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, u, bodyReader)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("Accept", "application/json")
+
+	if c.client.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.client.Token)
+	} else if c.client.APIKey != "" {
+		req.Header.Set("X-API-Key", c.client.APIKey)
+	}
+
+	resp, err := c.client.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("execute request: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (c *APIStateClient) replaceResource(ctx context.Context, deleteAction, createAction declarative.Action, exec actionExecutor) error {
+	if err := exec(ctx, deleteAction); err != nil {
+		return fmt.Errorf("replace resource delete step: %w", err)
+	}
+	if err := exec(ctx, createAction); err != nil {
+		return fmt.Errorf("replace resource create step: %w", err)
+	}
+	return nil
 }
 
 // fetchAllPages fetches all pages from a paginated list endpoint.
@@ -3438,7 +3491,7 @@ func (c *APIStateClient) executeComputeEndpoint(_ context.Context, action declar
 	}
 }
 
-func (c *APIStateClient) executeComputeAssignment(_ context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeComputeAssignment(ctx context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
 		spec := action.Desired.(declarative.ComputeAssignmentSpec)
@@ -3452,7 +3505,7 @@ func (c *APIStateClient) executeComputeAssignment(_ context.Context, action decl
 			"is_default":     spec.IsDefault,
 			"fallback_local": spec.FallbackLocal,
 		}
-		resp, err := c.client.Do(http.MethodPost, "/compute-endpoints/"+spec.Endpoint+"/assignments", nil, body)
+		resp, err := c.do(ctx, http.MethodPost, "/compute-endpoints/"+spec.Endpoint+"/assignments", nil, body)
 		if err != nil {
 			return err
 		}
@@ -3471,11 +3524,8 @@ func (c *APIStateClient) executeComputeAssignment(_ context.Context, action decl
 		spec := action.Desired.(declarative.ComputeAssignmentSpec)
 		actual := action.Actual.(declarative.ComputeAssignmentSpec)
 		deleteAction := declarative.Action{Operation: declarative.OpDelete, Actual: actual, ResourceName: action.ResourceName}
-		if err := c.executeComputeAssignment(context.TODO(), deleteAction); err != nil {
-			return err
-		}
 		createAction := declarative.Action{Operation: declarative.OpCreate, Desired: spec, ResourceName: action.ResourceName}
-		return c.executeComputeAssignment(context.TODO(), createAction)
+		return c.replaceResource(ctx, deleteAction, createAction, c.executeComputeAssignment)
 	case declarative.OpDelete:
 		spec := action.Actual.(declarative.ComputeAssignmentSpec)
 		assignmentID := spec.AssignmentID
@@ -3485,7 +3535,7 @@ func (c *APIStateClient) executeComputeAssignment(_ context.Context, action decl
 		if assignmentID == "" {
 			return fmt.Errorf("compute assignment %s has no assignment id", action.ResourceName)
 		}
-		resp, err := c.client.Do(http.MethodDelete, "/compute-endpoints/"+spec.Endpoint+"/assignments/"+assignmentID, nil, nil)
+		resp, err := c.do(ctx, http.MethodDelete, "/compute-endpoints/"+spec.Endpoint+"/assignments/"+assignmentID, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -4180,7 +4230,7 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 		if filter.Description != "" {
 			body["description"] = filter.Description
 		}
-		resp, err := c.client.Do(http.MethodPost, "/tables/"+tableID+"/row-filters", nil, body)
+		resp, err := c.do(ctx, http.MethodPost, "/tables/"+tableID+"/row-filters", nil, body)
 		if err != nil {
 			return err
 		}
@@ -4201,22 +4251,19 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 			ResourceName: action.ResourceName,
 			Actual:       actual,
 		}
-		if err := c.executeRowFilter(ctx, deleteAction); err != nil {
-			return err
-		}
 		createAction := declarative.Action{
 			Operation:    declarative.OpCreate,
 			ResourceName: action.ResourceName,
 			Desired:      desired,
 		}
-		return c.executeRowFilter(ctx, createAction)
+		return c.replaceResource(ctx, deleteAction, createAction, c.executeRowFilter)
 
 	case declarative.OpDelete:
 		filterID, err := c.resolveRowFilterID(action.ResourceName)
 		if err != nil {
 			return fmt.Errorf("resolve row filter for delete: %w", err)
 		}
-		resp, err := c.client.Do(http.MethodDelete, "/row-filters/"+filterID, nil, nil)
+		resp, err := c.do(ctx, http.MethodDelete, "/row-filters/"+filterID, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -4229,7 +4276,7 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 
 // --- Row filter binding execution ---
 
-func (c *APIStateClient) executeRowFilterBinding(_ context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeRowFilterBinding(ctx context.Context, action declarative.Action) error {
 	// ResourceName format: "catalog.schema.table/filterName->principalType:principalName"
 	parts := strings.SplitN(action.ResourceName, "->", 2)
 	filterPath := parts[0]
@@ -4249,7 +4296,7 @@ func (c *APIStateClient) executeRowFilterBinding(_ context.Context, action decla
 			"principal_id":   principalID,
 			"principal_type": binding.PrincipalType,
 		}
-		resp, err := c.client.Do(http.MethodPost, "/row-filters/"+filterID+"/bindings", nil, body)
+		resp, err := c.do(ctx, http.MethodPost, "/row-filters/"+filterID+"/bindings", nil, body)
 		if err != nil {
 			return err
 		}
@@ -4262,15 +4309,12 @@ func (c *APIStateClient) executeRowFilterBinding(_ context.Context, action decla
 			Actual:    binding,
 		}
 		deleteAction.ResourceName = action.ResourceName
-		if err := c.executeRowFilterBinding(context.TODO(), deleteAction); err != nil {
-			return err
-		}
 		createAction := declarative.Action{
 			Operation: declarative.OpCreate,
 			Desired:   binding,
 		}
 		createAction.ResourceName = action.ResourceName
-		return c.executeRowFilterBinding(context.TODO(), createAction)
+		return c.replaceResource(ctx, deleteAction, createAction, c.executeRowFilterBinding)
 
 	case declarative.OpDelete:
 		binding := action.Actual.(declarative.FilterBindingRef)
@@ -4281,7 +4325,7 @@ func (c *APIStateClient) executeRowFilterBinding(_ context.Context, action decla
 		q := url.Values{}
 		q.Set("principal_id", principalID)
 		q.Set("principal_type", binding.PrincipalType)
-		resp, err := c.client.Do(http.MethodDelete, "/row-filters/"+filterID+"/bindings", q, nil)
+		resp, err := c.do(ctx, http.MethodDelete, "/row-filters/"+filterID+"/bindings", q, nil)
 		if err != nil {
 			return err
 		}
@@ -4313,7 +4357,7 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 		if mask.Description != "" {
 			body["description"] = mask.Description
 		}
-		resp, err := c.client.Do(http.MethodPost, "/tables/"+tableID+"/column-masks", nil, body)
+		resp, err := c.do(ctx, http.MethodPost, "/tables/"+tableID+"/column-masks", nil, body)
 		if err != nil {
 			return err
 		}
@@ -4344,22 +4388,19 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 			ResourceName: action.ResourceName,
 			Actual:       actual,
 		}
-		if err := c.executeColumnMask(ctx, deleteAction); err != nil {
-			return err
-		}
 		createAction := declarative.Action{
 			Operation:    declarative.OpCreate,
 			ResourceName: action.ResourceName,
 			Desired:      desired,
 		}
-		return c.executeColumnMask(ctx, createAction)
+		return c.replaceResource(ctx, deleteAction, createAction, c.executeColumnMask)
 
 	case declarative.OpDelete:
 		maskID, err := c.resolveColumnMaskID(action.ResourceName)
 		if err != nil {
 			return fmt.Errorf("resolve column mask for delete: %w", err)
 		}
-		resp, err := c.client.Do(http.MethodDelete, "/column-masks/"+maskID, nil, nil)
+		resp, err := c.do(ctx, http.MethodDelete, "/column-masks/"+maskID, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -4372,7 +4413,7 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 
 // --- Column mask binding execution ---
 
-func (c *APIStateClient) executeColumnMaskBinding(_ context.Context, action declarative.Action) error {
+func (c *APIStateClient) executeColumnMaskBinding(ctx context.Context, action declarative.Action) error {
 	// ResourceName format: "catalog.schema.table/maskName->principalType:principalName"
 	parts := strings.SplitN(action.ResourceName, "->", 2)
 	maskPath := parts[0]
@@ -4393,7 +4434,7 @@ func (c *APIStateClient) executeColumnMaskBinding(_ context.Context, action decl
 			"principal_type": binding.PrincipalType,
 			"see_original":   binding.SeeOriginal,
 		}
-		resp, err := c.client.Do(http.MethodPost, "/column-masks/"+maskID+"/bindings", nil, body)
+		resp, err := c.do(ctx, http.MethodPost, "/column-masks/"+maskID+"/bindings", nil, body)
 		if err != nil {
 			return err
 		}
@@ -4406,15 +4447,12 @@ func (c *APIStateClient) executeColumnMaskBinding(_ context.Context, action decl
 			ResourceName: action.ResourceName,
 			Actual:       binding,
 		}
-		if err := c.executeColumnMaskBinding(context.TODO(), deleteAction); err != nil {
-			return err
-		}
 		createAction := declarative.Action{
 			Operation:    declarative.OpCreate,
 			ResourceName: action.ResourceName,
 			Desired:      binding,
 		}
-		return c.executeColumnMaskBinding(context.TODO(), createAction)
+		return c.replaceResource(ctx, deleteAction, createAction, c.executeColumnMaskBinding)
 
 	case declarative.OpDelete:
 		binding := action.Actual.(declarative.MaskBindingRef)
@@ -4425,7 +4463,7 @@ func (c *APIStateClient) executeColumnMaskBinding(_ context.Context, action decl
 		q := url.Values{}
 		q.Set("principal_id", principalID)
 		q.Set("principal_type", binding.PrincipalType)
-		resp, err := c.client.Do(http.MethodDelete, "/column-masks/"+maskID+"/bindings", q, nil)
+		resp, err := c.do(ctx, http.MethodDelete, "/column-masks/"+maskID+"/bindings", q, nil)
 		if err != nil {
 			return err
 		}
