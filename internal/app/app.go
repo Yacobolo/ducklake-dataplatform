@@ -93,7 +93,7 @@ type App struct {
 // It also performs external-table view restoration.
 //
 // Construction order is designed so every dependency is available at the
-// time each constructor is called — no post-construction Set*() calls.
+// time each constructor is called, including feature-gated collaborators.
 func New(ctx context.Context, deps Deps) (*App, error) {
 	cfg := deps.Cfg
 
@@ -340,21 +340,24 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	modelRunRepo := repository.NewModelRunRepo(deps.WriteDB)
 	modelTestRepo := repository.NewModelTestRepo(deps.WriteDB)
 	modelTestResultRepo := repository.NewModelTestResultRepo(deps.WriteDB)
-	modelSvc := svcmodel.NewService(
-		modelRepo, modelRunRepo, modelTestRepo, modelTestResultRepo, auditRepo,
-		lineageRepo, colLineageRepo,
-		eng, deps.DuckDB,
-		deps.Logger.With("component", "model"),
-	)
-
 	// === Macro ===
 	macroRepo := repository.NewMacroRepo(deps.WriteDB)
 	macroSvc := macro.NewService(macroRepo, auditRepo)
-
-	// Wire optional dependencies into model service.
-	modelSvc.SetMacroRepo(macroRepo)
-	modelSvc.SetNotebookProvider(notebookProvider)
-	modelSvc.SetNotebookModelLinkRepo(notebookModelLinkRepo)
+	modelSvc := svcmodel.NewService(svcmodel.ServiceDeps{
+		Models:        modelRepo,
+		Runs:          modelRunRepo,
+		Tests:         modelTestRepo,
+		TestResults:   modelTestResultRepo,
+		Audit:         auditRepo,
+		Lineage:       lineageRepo,
+		ColumnLineage: colLineageRepo,
+		Macros:        macroRepo,
+		Notebooks:     notebookProvider,
+		NotebookLinks: notebookModelLinkRepo,
+		Engine:        eng,
+		DuckDB:        deps.DuckDB,
+		Logger:        deps.Logger.With("component", "model"),
+	})
 	notebookSvc.SetPublishRepositories(modelRepo, notebookModelLinkRepo)
 
 	// === Semantic ===

@@ -35,30 +35,39 @@ type Service struct {
 	runCancels    sync.Map
 }
 
+// ServiceDeps defines the collaborators required to construct a model service.
+type ServiceDeps struct {
+	Models        domain.ModelRepository
+	Runs          domain.ModelRunRepository
+	Tests         domain.ModelTestRepository
+	TestResults   domain.ModelTestResultRepository
+	Audit         domain.AuditRepository
+	Lineage       domain.LineageRepository
+	ColumnLineage domain.ColumnLineageRepository
+	Macros        domain.MacroRepository
+	Notebooks     domain.NotebookProvider
+	NotebookLinks domain.NotebookModelLinkRepository
+	Engine        domain.SessionEngine
+	DuckDB        *sql.DB
+	Logger        *slog.Logger
+}
+
 // NewService creates a new model Service.
-func NewService(
-	models domain.ModelRepository,
-	runs domain.ModelRunRepository,
-	tests domain.ModelTestRepository,
-	testResults domain.ModelTestResultRepository,
-	audit domain.AuditRepository,
-	lineage domain.LineageRepository,
-	colLineage domain.ColumnLineageRepository,
-	engine domain.SessionEngine,
-	duckDB *sql.DB,
-	logger *slog.Logger,
-) *Service {
+func NewService(deps ServiceDeps) *Service {
 	return &Service{
-		models:      models,
-		runs:        runs,
-		tests:       tests,
-		testResults: testResults,
-		audit:       audit,
-		lineage:     lineage,
-		colLineage:  colLineage,
-		engine:      engine,
-		duckDB:      duckDB,
-		logger:      logger,
+		models:        deps.Models,
+		runs:          deps.Runs,
+		tests:         deps.Tests,
+		testResults:   deps.TestResults,
+		audit:         deps.Audit,
+		lineage:       deps.Lineage,
+		colLineage:    deps.ColumnLineage,
+		macros:        deps.Macros,
+		notebooks:     deps.Notebooks,
+		notebookLinks: deps.NotebookLinks,
+		engine:        deps.Engine,
+		duckDB:        deps.DuckDB,
+		logger:        deps.Logger,
 	}
 }
 
@@ -446,28 +455,6 @@ func (s *Service) CancelRun(ctx context.Context, principal, runID string) error 
 
 	s.logAudit(ctx, principal, "cancel_model_run", runID)
 	return nil
-}
-
-// SetTestRepos sets the test and test result repositories on the service.
-// This allows injecting these optional dependencies after construction.
-func (s *Service) SetTestRepos(tests domain.ModelTestRepository, testResults domain.ModelTestResultRepository) {
-	s.tests = tests
-	s.testResults = testResults
-}
-
-// SetMacroRepo sets the macro repository for loading macros during model runs.
-func (s *Service) SetMacroRepo(macros domain.MacroRepository) {
-	s.macros = macros
-}
-
-// SetNotebookProvider sets the notebook provider for notebook-to-model promotion.
-func (s *Service) SetNotebookProvider(notebooks domain.NotebookProvider) {
-	s.notebooks = notebooks
-}
-
-// SetNotebookModelLinkRepo configures notebook-model link persistence for notebook promotion.
-func (s *Service) SetNotebookModelLinkRepo(links domain.NotebookModelLinkRepository) {
-	s.notebookLinks = links
 }
 
 // CreateTest creates a new test assertion for a model.
