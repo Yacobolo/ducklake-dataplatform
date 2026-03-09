@@ -178,6 +178,12 @@ tasks:
       - npm ci --prefix docs
       - npm run docs:build --prefix docs
 
+  docs:check:
+    desc: Build docs and verify generated reference pages are up to date
+    cmds:
+      - task docs:build
+      - task verify:docs-generated
+
   ui:assets:
     desc: Install web deps and build UI CSS assets
     cmds:
@@ -292,7 +298,7 @@ tasks:
       - |
         failed=0
         results=""
-        for step in lint:go lint:api verify:apigen-generated verify:declarative-schema verify:docs-generated test:arch test:unit test:integration; do
+        for step in lint:go lint:api verify:apigen-generated verify:declarative-schema docs:check test:arch test:unit test:integration; do
           if task "$step" > /dev/null 2>&1; then
             results="${results}  ${step} ... ok\n"
           else
