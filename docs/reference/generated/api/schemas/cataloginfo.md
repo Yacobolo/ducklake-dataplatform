@@ -2,9 +2,8 @@
 
 # Schema: `CatalogInfo`
 
-Top-level catalog containing schemas, tables, and other data objects.
-
 - Type: `object`
+- Required fields: `name`
 
 ## Properties
 
@@ -12,7 +11,7 @@ Top-level catalog containing schemas, tables, and other data objects.
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
 | `created_at` | `string` | `false` | - |
-| `name` | `string` | `false` | - |
-| `system_managed` | `boolean` | `false` | True when the catalog is platform-managed and read-only. |
+| `name` | `string` | `true` | - |
+| `system_managed` | `boolean` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 

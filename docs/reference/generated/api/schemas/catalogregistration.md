@@ -2,10 +2,8 @@
 
 # Schema: `CatalogRegistration`
 
-Registration details for a DuckLake catalog.
-
 - Type: `object`
-- Required fields: `data_path`, `dsn`, `metastore_type`, `name`, `status`
+- Required fields: `id`, `name`
 
 ## Properties
 
@@ -13,14 +11,13 @@ Registration details for a DuckLake catalog.
 | --- | --- | --- | --- |
 | `comment` | `string` | `false` | - |
 | `created_at` | `string` | `false` | - |
-| `data_path` | `string` | `true` | Data path (s3://bucket/path/ or local path) |
-| `dsn` | `string` | `true` | File path (sqlite) or connection string (postgres) |
-| `id` | `string` | `false` | - |
+| `data_path` | `string` | `false` | - |
+| `dsn` | `string` | `false` | - |
+| `id` | `string` | `true` | - |
 | `is_default` | `boolean` | `false` | - |
-| `metastore_type` | `string` | `true` | Type of metastore backend |
-| `name` | `string` | `true` | DuckDB catalog alias, used in SQL as catalog.schema.table |
-| `status` | `string` | `true` | - |
-| `status_message` | `string` | `false` | - |
-| `system_managed` | `boolean` | `false` | True when the catalog is platform-managed and read-only. |
+| `metastore_type` | `string` | `false` | - |
+| `name` | `string` | `true` | - |
+| `status` | `string` | `false` | - |
+| `system_managed` | `boolean` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 
