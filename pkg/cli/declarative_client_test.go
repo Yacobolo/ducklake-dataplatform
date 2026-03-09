@@ -1784,6 +1784,20 @@ func TestValidateApplyCapabilities_AssetEndpointRequired(t *testing.T) {
 	assert.Contains(t, err.Error(), "/assets endpoint is unavailable")
 }
 
+func TestValidateApplyCapabilities_GroupUpdateUnsupported(t *testing.T) {
+	t.Parallel()
+
+	sc := setupReadStateClient(t, http.NewServeMux())
+	err := sc.ValidateApplyCapabilities(context.Background(), []declarative.Action{{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindGroup,
+		ResourceName: "viewers",
+	}})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "group updates are not supported by the API")
+	assert.Contains(t, err.Error(), "viewers")
+}
+
 // === ReadState helper ===
 
 // setupReadStateClient creates an APIStateClient backed by a test server with the given mux.
