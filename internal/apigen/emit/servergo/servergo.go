@@ -568,6 +568,11 @@ func schemaTypeName(schema ir.SchemaRef) string {
 		return "float64"
 	case "boolean", "bool":
 		return "bool"
+	case "array":
+		if schema.Items != nil {
+			return "[]" + schemaTypeName(*schema.Items)
+		}
+		return "[]any"
 	case "string":
 		if schemaFormat == "date-time" {
 			return "time.Time"

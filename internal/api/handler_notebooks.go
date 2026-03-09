@@ -543,21 +543,17 @@ func (h *APIHandler) SyncGitRepo(ctx context.Context, req GenSyncGitRepoRequest)
 // === Notebook Mappers ===
 
 func notebookToAPI(nb domain.Notebook) Notebook {
-	ct := nb.CreatedAt
-	ut := nb.UpdatedAt
 	return Notebook{
 		Id:          &nb.ID,
 		Name:        &nb.Name,
 		Description: nb.Description,
 		Owner:       &nb.Owner,
-		CreatedAt:   &ct,
-		UpdatedAt:   &ut,
+		CreatedAt:   formatTimePtr(&nb.CreatedAt),
+		UpdatedAt:   formatTimePtr(&nb.UpdatedAt),
 	}
 }
 
 func cellToAPI(c domain.Cell) Cell {
-	ct := c.CreatedAt
-	ut := c.UpdatedAt
 	cellType := CellCellType(c.CellType)
 	pos := int32(c.Position) //nolint:gosec // positions are small ints
 	return Cell{
@@ -567,32 +563,30 @@ func cellToAPI(c domain.Cell) Cell {
 		Content:    &c.Content,
 		Position:   &pos,
 		LastResult: c.LastResult,
-		CreatedAt:  &ct,
-		UpdatedAt:  &ut,
+		CreatedAt:  formatTimePtr(&c.CreatedAt),
+		UpdatedAt:  formatTimePtr(&c.UpdatedAt),
 	}
 }
 
 func sessionToAPI(s domain.NotebookSession) NotebookSession {
-	ct := s.CreatedAt
-	lu := s.LastUsedAt
 	state := NotebookSessionState(s.State)
 	return NotebookSession{
 		Id:         &s.ID,
 		NotebookId: &s.NotebookID,
 		Principal:  &s.Principal,
 		State:      &state,
-		CreatedAt:  &ct,
-		LastUsedAt: &lu,
+		CreatedAt:  formatTimePtr(&s.CreatedAt),
+		LastUsedAt: formatTimePtr(&s.LastUsedAt),
 	}
 }
 
 func cellExecutionResultToAPI(r domain.CellExecutionResult) CellExecutionResult {
-	durationMs := r.Duration.Milliseconds()
+	durationMs := safeInt64ToInt32(r.Duration.Milliseconds())
 	rowCount := int32(r.RowCount) //nolint:gosec // row counts are small
 	return CellExecutionResult{
 		CellId:     &r.CellID,
 		Columns:    &r.Columns,
-		Rows:       &r.Rows,
+		Rows:       rowsToStringMatrix(r.Rows),
 		RowCount:   &rowCount,
 		Error:      r.Error,
 		DurationMs: &durationMs,
@@ -600,7 +594,7 @@ func cellExecutionResultToAPI(r domain.CellExecutionResult) CellExecutionResult 
 }
 
 func runAllResultToAPI(r domain.RunAllResult) RunAllResult {
-	totalMs := r.TotalDuration.Milliseconds()
+	totalMs := safeInt64ToInt32(r.TotalDuration.Milliseconds())
 	results := make([]CellExecutionResult, len(r.Results))
 	for i, cr := range r.Results {
 		results[i] = cellExecutionResultToAPI(cr)
@@ -613,8 +607,6 @@ func runAllResultToAPI(r domain.RunAllResult) RunAllResult {
 }
 
 func notebookJobToAPI(j domain.NotebookJob) NotebookJob {
-	ct := j.CreatedAt
-	ut := j.UpdatedAt
 	state := NotebookJobState(j.State)
 	return NotebookJob{
 		Id:         &j.ID,
@@ -623,23 +615,21 @@ func notebookJobToAPI(j domain.NotebookJob) NotebookJob {
 		State:      &state,
 		Result:     j.Result,
 		Error:      j.Error,
-		CreatedAt:  &ct,
-		UpdatedAt:  &ut,
+		CreatedAt:  formatTimePtr(&j.CreatedAt),
+		UpdatedAt:  formatTimePtr(&j.UpdatedAt),
 	}
 }
 
 func gitRepoToAPI(r domain.GitRepo) GitRepo {
-	ct := r.CreatedAt
-	ut := r.UpdatedAt
 	return GitRepo{
 		Id:         &r.ID,
 		Url:        &r.URL,
 		Branch:     &r.Branch,
 		Path:       &r.Path,
 		Owner:      &r.Owner,
-		LastSyncAt: r.LastSyncAt,
+		LastSyncAt: formatTimePtr(r.LastSyncAt),
 		LastCommit: r.LastCommit,
-		CreatedAt:  &ct,
-		UpdatedAt:  &ut,
+		CreatedAt:  formatTimePtr(&r.CreatedAt),
+		UpdatedAt:  formatTimePtr(&r.UpdatedAt),
 	}
 }

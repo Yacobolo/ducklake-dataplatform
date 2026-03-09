@@ -500,7 +500,7 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 	}
 
 	basis := append([]string(nil), plan.FreshnessBasis...)
-	checkedAt := time.Now().UTC()
+	checkedAt := time.Now().UTC().Format(time.RFC3339)
 	return GenCheckMetricFreshness200JSONResponse{Body: MetricFreshnessStatus{
 		MetricName:             &req.MetricName,
 		ProjectName:            &match.projectName,
@@ -548,10 +548,11 @@ func (h *APIHandler) RunMetricQuery(ctx context.Context, req GenRunMetricQueryRe
 	}
 
 	apiPlan := metricQueryPlanToAPI(result.Plan)
+	rowCount := safeIntToInt32(result.Result.RowCount)
 	apiResult := QueryResult{
 		Columns:  result.Result.Columns,
-		Rows:     &result.Result.Rows,
-		RowCount: ptrInt64(int64(result.Result.RowCount)),
+		Rows:     rowsToStringMatrix(result.Result.Rows),
+		RowCount: &rowCount,
 	}
 	return RunMetricQuery200JSONResponse{Body: MetricQueryRunResponse{Plan: &apiPlan, Result: &apiResult}, Headers: RunMetricQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
@@ -725,12 +726,11 @@ func intOrZero(v *int32) int {
 	return int(*v)
 }
 
-func optTime(t time.Time) *time.Time {
+func optTime(t time.Time) *string {
 	if t.IsZero() {
 		return nil
 	}
-	t = t.UTC()
-	return &t
+	return formatTimePtr(&t)
 }
 
 func ptrI32(v int32) *int32 {

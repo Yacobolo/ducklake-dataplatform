@@ -148,6 +148,10 @@ func TestEmitStandaloneCompatibilityTypes_EmitsConcreteCanonicalTypes(t *testing
 
 	doc := ir.Document{
 		Schemas: map[string]ir.Schema{
+			"WidgetState": {
+				Type: "string",
+				Enum: []string{"draft", "published"},
+			},
 			"CreateWidgetRequest": {
 				Type: "object",
 				Properties: map[string]ir.SchemaProperty{
@@ -172,10 +176,25 @@ func TestEmitStandaloneCompatibilityTypes_EmitsConcreteCanonicalTypes(t *testing
 				},
 				Required: []string{"id"},
 			},
+			"AuditWidget": {
+				Type: "object",
+				Properties: map[string]ir.SchemaProperty{
+					"state": {Schema: ir.SchemaRef{Ref: "WidgetState"}},
+				},
+			},
 		},
 		Endpoints: []ir.Endpoint{
-			{OperationID: "createWidget", RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "CreateWidgetRequest"}}},
-			{OperationID: "listWidgets", Responses: []ir.Response{{StatusCode: 200, Schema: &ir.SchemaRef{Ref: "PaginatedWidgets"}}}},
+			{
+				OperationID: "createWidget",
+				RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "CreateWidgetRequest"}},
+			},
+			{
+				OperationID: "listWidgets",
+				Parameters: []ir.Parameter{
+					{Name: "max_results", In: "query", Schema: ir.SchemaRef{Type: "integer", Format: "int32"}},
+				},
+				Responses: []ir.Response{{StatusCode: 200, Schema: &ir.SchemaRef{Ref: "PaginatedWidgets"}}},
+			},
 		},
 	}
 
@@ -188,6 +207,40 @@ func TestEmitStandaloneCompatibilityTypes_EmitsConcreteCanonicalTypes(t *testing
 	require.Contains(t, content, "type Widget struct")
 	require.Contains(t, content, "type WidgetList []Widget")
 	require.Contains(t, content, "type PaginatedWidgets struct")
-	require.Contains(t, content, "type GenSchemaCreateWidgetRequest = CreateWidgetRequest")
-	require.Contains(t, content, "type GenSchemaPaginatedWidgets = PaginatedWidgets")
+	require.Contains(t, content, "type WidgetState string")
+	require.Contains(t, content, "type AuditWidget struct")
+	require.Contains(t, content, "type ListWidgetsParams = GenListWidgetsParams")
+	require.Contains(t, content, "type CreateWidgetJSONRequestBody = GenCreateWidgetJSONBody")
+}
+
+func TestEmitStandaloneCompatibilityTypes_EmitsManualRequestBodyAliasesWhenSchemasExist(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		Schemas: map[string]ir.Schema{
+			"LocalLoginRequest": {
+				Type: "object",
+				Properties: map[string]ir.SchemaProperty{
+					"email": {Schema: ir.SchemaRef{Type: "string"}},
+				},
+			},
+		},
+	}
+
+	b, err := EmitStandaloneCompatibilityTypes(doc, "")
+	require.NoError(t, err)
+	require.Contains(t, string(b), "type LocalLoginJSONRequestBody = LocalLoginRequest")
+}
+
+func TestEmitStandaloneCompatibilityTypes_EmitsLegacyGenericPlaceholders(t *testing.T) {
+	t.Helper()
+
+	b, err := EmitStandaloneCompatibilityTypes(ir.Document{}, "")
+	require.NoError(t, err)
+	content := string(b)
+
+	require.Contains(t, content, "type GenericRequest struct")
+	require.Contains(t, content, "Payload *map[string]string `json:\"payload,omitempty\"`")
+	require.Contains(t, content, "type GenericResponse struct")
+	require.Contains(t, content, "Data *map[string]string `json:\"data,omitempty\"`")
 }

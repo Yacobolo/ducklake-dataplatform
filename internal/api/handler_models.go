@@ -354,8 +354,6 @@ func (h *APIHandler) CancelModelRun(ctx context.Context, req GenCancelModelRunRe
 // === Model Mappers ===
 
 func modelToAPI(m domain.Model) Model {
-	ct := m.CreatedAt
-	ut := m.UpdatedAt
 	mat := ModelMaterialization(m.Materialization)
 	resp := Model{
 		Id:              &m.ID,
@@ -366,8 +364,8 @@ func modelToAPI(m domain.Model) Model {
 		Description:     &m.Description,
 		Owner:           &m.Owner,
 		CreatedBy:       &m.CreatedBy,
-		CreatedAt:       &ct,
-		UpdatedAt:       &ut,
+		CreatedAt:       formatTimePtr(&m.CreatedAt),
+		UpdatedAt:       formatTimePtr(&m.UpdatedAt),
 	}
 	if len(m.DependsOn) > 0 {
 		resp.DependsOn = &m.DependsOn
@@ -391,13 +389,12 @@ func modelToAPI(m domain.Model) Model {
 }
 
 func modelRunToAPI(r domain.ModelRun) ModelRun {
-	ct := r.CreatedAt
 	resp := ModelRun{
 		Id:          &r.ID,
 		Status:      strPtrIfNonEmpty(r.Status),
 		TriggerType: strPtrIfNonEmpty(r.TriggerType),
 		TriggeredBy: &r.TriggeredBy,
-		CreatedAt:   &ct,
+		CreatedAt:   formatTimePtr(&r.CreatedAt),
 	}
 	if r.TargetSchema != "" {
 		resp.ProjectName = &r.TargetSchema
@@ -421,10 +418,10 @@ func modelRunToAPI(r domain.ModelRun) ModelRun {
 		resp.ModelNames = &names
 	}
 	if r.StartedAt != nil {
-		resp.StartedAt = r.StartedAt
+		resp.StartedAt = formatTimePtr(r.StartedAt)
 	}
 	if r.FinishedAt != nil {
-		resp.FinishedAt = r.FinishedAt
+		resp.FinishedAt = formatTimePtr(r.FinishedAt)
 	}
 	if r.ErrorMessage != nil {
 		resp.ErrorMessage = r.ErrorMessage
@@ -476,13 +473,12 @@ func selectorToModelNames(selector string) []string {
 }
 
 func modelRunStepToAPI(s domain.ModelRunStep) ModelRunStep {
-	ct := s.CreatedAt
 	resp := ModelRunStep{
 		Id:        &s.ID,
 		RunId:     &s.RunID,
 		ModelName: &s.ModelName,
 		Status:    strPtrIfNonEmpty(s.Status),
-		CreatedAt: &ct,
+		CreatedAt: formatTimePtr(&s.CreatedAt),
 	}
 	if s.CompiledSQL != nil {
 		resp.CompiledSql = s.CompiledSQL
@@ -500,13 +496,13 @@ func modelRunStepToAPI(s domain.ModelRunStep) ModelRunStep {
 		resp.MacrosUsed = &s.MacrosUsed
 	}
 	if s.RowsAffected != nil {
-		resp.RowsAffected = s.RowsAffected
+		resp.RowsAffected = safeInt64ToInt32Ptr(s.RowsAffected)
 	}
 	if s.StartedAt != nil {
-		resp.StartedAt = s.StartedAt
+		resp.StartedAt = formatTimePtr(s.StartedAt)
 	}
 	if s.FinishedAt != nil {
-		resp.FinishedAt = s.FinishedAt
+		resp.FinishedAt = formatTimePtr(s.FinishedAt)
 	}
 	if s.ErrorMessage != nil {
 		resp.ErrorMessage = s.ErrorMessage
@@ -672,14 +668,13 @@ func (h *APIHandler) ListModelTestResults(ctx context.Context, req GenListModelT
 // === Model Test Mappers ===
 
 func modelTestToAPI(t domain.ModelTest) ModelTest {
-	ct := t.CreatedAt
 	tt := ModelTestTestType(t.TestType)
 	resp := ModelTest{
 		Id:        &t.ID,
 		ModelId:   &t.ModelID,
 		Name:      &t.Name,
 		TestType:  &tt,
-		CreatedAt: &ct,
+		CreatedAt: formatTimePtr(&t.CreatedAt),
 	}
 	if t.Column != "" {
 		resp.Column = &t.Column
@@ -692,7 +687,6 @@ func modelTestToAPI(t domain.ModelTest) ModelTest {
 }
 
 func modelTestResultToAPI(r domain.ModelTestResult) ModelTestResult {
-	ct := r.CreatedAt
 	status := ModelTestResultStatus(r.Status)
 	resp := ModelTestResult{
 		Id:        &r.ID,
@@ -700,10 +694,10 @@ func modelTestResultToAPI(r domain.ModelTestResult) ModelTestResult {
 		TestId:    &r.TestID,
 		TestName:  &r.TestName,
 		Status:    &status,
-		CreatedAt: &ct,
+		CreatedAt: formatTimePtr(&r.CreatedAt),
 	}
 	if r.RowsReturned != nil {
-		resp.RowsReturned = r.RowsReturned
+		resp.RowsReturned = safeInt64ToInt32Ptr(r.RowsReturned)
 	}
 	if r.ErrorMessage != nil {
 		resp.ErrorMessage = r.ErrorMessage
@@ -784,7 +778,8 @@ func domainModelContract(c GenSchemaModelContract) domain.ModelContract {
 func apiFreshnessPolicy(f domain.FreshnessPolicy) FreshnessPolicy {
 	resp := FreshnessPolicy{}
 	if f.MaxLagSeconds != 0 {
-		resp.MaxLagSeconds = &f.MaxLagSeconds
+		value := safeInt64ToInt32(f.MaxLagSeconds)
+		resp.MaxLagSeconds = &value
 	}
 	if f.CronSchedule != "" {
 		resp.CronSchedule = &f.CronSchedule
@@ -795,7 +790,7 @@ func apiFreshnessPolicy(f domain.FreshnessPolicy) FreshnessPolicy {
 func domainFreshnessPolicy(f GenSchemaFreshnessPolicy) domain.FreshnessPolicy {
 	resp := domain.FreshnessPolicy{}
 	if f.MaxLagSeconds != nil {
-		resp.MaxLagSeconds = *f.MaxLagSeconds
+		resp.MaxLagSeconds = int64(*f.MaxLagSeconds)
 	}
 	if f.CronSchedule != nil {
 		resp.CronSchedule = *f.CronSchedule
@@ -825,13 +820,13 @@ func (h *APIHandler) CheckModelFreshness(ctx context.Context, req GenCheckModelF
 func freshnessStatusToAPI(s domain.FreshnessStatus) FreshnessStatus {
 	resp := FreshnessStatus{
 		IsFresh:       &s.IsFresh,
-		MaxLagSeconds: &s.MaxLagSeconds,
+		MaxLagSeconds: safeInt64ToInt32Ptr(&s.MaxLagSeconds),
 	}
 	if s.LastRunAt != nil {
-		resp.LastRunAt = s.LastRunAt
+		resp.LastRunAt = formatTimePtr(s.LastRunAt)
 	}
 	if s.StaleSince != nil {
-		resp.StaleSince = s.StaleSince
+		resp.StaleSince = formatTimePtr(s.StaleSince)
 	}
 	return resp
 }
@@ -873,16 +868,16 @@ func sourceFreshnessStatusToAPI(s domain.SourceFreshnessStatus) SourceFreshnessS
 		IsFresh:       &s.IsFresh,
 		SourceSchema:  &s.SourceSchema,
 		SourceTable:   &s.SourceTable,
-		MaxLagSeconds: &s.MaxLagSeconds,
+		MaxLagSeconds: safeInt64ToInt32Ptr(&s.MaxLagSeconds),
 	}
 	if s.TimestampCol != "" {
 		resp.TimestampColumn = &s.TimestampCol
 	}
 	if s.LastLoadedAt != nil {
-		resp.LastLoadedAt = s.LastLoadedAt
+		resp.LastLoadedAt = formatTimePtr(s.LastLoadedAt)
 	}
 	if s.StaleSince != nil {
-		resp.StaleSince = s.StaleSince
+		resp.StaleSince = formatTimePtr(s.StaleSince)
 	}
 	return resp
 }

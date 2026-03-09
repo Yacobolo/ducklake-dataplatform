@@ -53,7 +53,7 @@ func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req GenCreateCom
 		domReq.Size = string(*req.Body.Size)
 	}
 	if req.Body.MaxMemoryGb != nil {
-		domReq.MaxMemoryGB = req.Body.MaxMemoryGb
+		domReq.MaxMemoryGB = int32PtrToInt64Ptr(req.Body.MaxMemoryGb)
 	}
 	if req.Body.AuthToken != nil {
 		domReq.AuthToken = *req.Body.AuthToken
@@ -102,7 +102,7 @@ func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GenGetComputeEn
 func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req GenUpdateComputeEndpointRequest) (GenUpdateComputeEndpointResponse, error) {
 	domReq := domain.UpdateComputeEndpointRequest{
 		URL:         req.Body.Url,
-		MaxMemoryGB: req.Body.MaxMemoryGb,
+		MaxMemoryGB: int32PtrToInt64Ptr(req.Body.MaxMemoryGb),
 		AuthToken:   req.Body.AuthToken,
 	}
 	if req.Body.Size != nil {
@@ -296,7 +296,7 @@ func computeEndpointToAPI(ep domain.ComputeEndpoint) ComputeEndpoint {
 		resp.Size = &s
 	}
 	if ep.MaxMemoryGB != nil {
-		resp.MaxMemoryGb = ep.MaxMemoryGB
+		resp.MaxMemoryGb = safeInt64ToInt32Ptr(ep.MaxMemoryGB)
 	}
 	return resp
 }

@@ -5,9 +5,11 @@ import path from "node:path";
 import test from "node:test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
 const execFileAsync = promisify(execFile);
-const specDir = path.resolve("/Users/yacobolo/dev/duck-demo/agent-2/api/spec");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const specDir = path.join(repoRoot, "api", "spec");
 
 test("emits exact response status codes and operation extensions", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "typespec-ir-emitter-"));
@@ -46,6 +48,13 @@ test("emits exact response status codes and operation extensions", async () => {
     );
     assert.equal(byOperationID.get("createSchema").extensions["x-authz"].mode, "privilege");
     assert.equal(byOperationID.has("bootstrapComplete"), false);
+    assert.deepEqual(ir.schemas.PaginatedGroupMembers.properties.data.schema, {
+      type: "array",
+      items: { ref: "GroupMember" },
+    });
+    assert.deepEqual(ir.schemas.ComputeEndpointStatus.enum, ["ACTIVE", "INACTIVE", "STARTING", "STOPPING", "ERROR"]);
+    assert.equal(ir.schemas.LocalLoginRequest.type, "object");
+    assert.equal(ir.schemas.BootstrapTokenRequest.type, "object");
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }

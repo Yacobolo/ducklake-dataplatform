@@ -243,8 +243,9 @@ func (h *APIHandler) PurgeLineage(ctx context.Context, req GenPurgeLineageReques
 			return GenPurgeLineage500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 500, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
+	deletedCount := safeInt64ToInt32(deleted)
 	return PurgeLineage200JSONResponse{
-		Body:    PurgeLineageResponse{DeletedCount: &deleted},
+		Body:    PurgeLineageResponse{DeletedCount: &deletedCount},
 		Headers: PurgeLineage200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

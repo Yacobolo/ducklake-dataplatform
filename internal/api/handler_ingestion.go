@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"time"
 
 	"duck-demo/internal/domain"
 )
@@ -40,7 +41,7 @@ func (h *APIHandler) CreateUploadUrl(ctx context.Context, request GenCreateUploa
 		}
 	}
 
-	t := result.ExpiresAt
+	t := result.ExpiresAt.UTC().Format(time.RFC3339)
 	return CreateUploadUrl200JSONResponse{
 		Body: UploadUrlResponse{
 			UploadUrl: result.UploadURL,
@@ -82,12 +83,10 @@ func (h *APIHandler) CommitTableIngestion(ctx context.Context, request GenCommit
 		}
 	}
 
-	filesRegistered := int64(result.FilesRegistered)
-	filesSkipped := int64(result.FilesSkipped)
 	return CommitTableIngestion200JSONResponse{
 		Body: IngestionResult{
-			FilesRegistered: filesRegistered,
-			FilesSkipped:    filesSkipped,
+			FilesRegistered: safeIntToInt32(result.FilesRegistered),
+			FilesSkipped:    safeIntToInt32(result.FilesSkipped),
 			Schema:          result.Schema,
 			Table:           result.Table,
 		},
@@ -126,12 +125,10 @@ func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, request GenLoad
 		}
 	}
 
-	filesRegistered := int64(result.FilesRegistered)
-	filesSkipped := int64(result.FilesSkipped)
 	return LoadTableExternalFiles200JSONResponse{
 		Body: IngestionResult{
-			FilesRegistered: filesRegistered,
-			FilesSkipped:    filesSkipped,
+			FilesRegistered: safeIntToInt32(result.FilesRegistered),
+			FilesSkipped:    safeIntToInt32(result.FilesSkipped),
 			Schema:          result.Schema,
 			Table:           result.Table,
 		},

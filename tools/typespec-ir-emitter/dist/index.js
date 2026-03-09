@@ -77,13 +77,14 @@ function appendOperation(context, operation, schemas, endpoints) {
     if (!routePath) {
         return;
     }
+    const [httpOperation] = getHttpOperation(context.program, operation);
+    const bodySchema = getBodySchema(context, operation, schemas);
+    const parameters = getParameters(context, operation, routePath, schemas);
+    const responses = buildResponses(context, httpOperation, operation.name, schemas);
     const operationExtensions = getIRCompatibleExtensions(getExtensions(context.program, operation));
     if (operationExtensions["x-apigen-manual"] === true || isManuallyMountedOperation(operation.name)) {
         return;
     }
-    const [httpOperation] = getHttpOperation(context.program, operation);
-    const bodySchema = getBodySchema(context, operation, schemas);
-    const parameters = getParameters(context, operation, routePath, schemas);
     const authzMetadata = authzMetadataForOperation(operationExtensions, operation.name);
     const isAuthenticated = authzMetadata.mode !== "public";
     const operationDoc = cleanText(getDoc(context.program, operation));
@@ -95,7 +96,7 @@ function appendOperation(context, operation, schemas, endpoints) {
         summary: humanizeOperationName(operation.name),
         ...(operationDoc ? { description: operationDoc } : {}),
         tags: tagsForRoute(routePath),
-        responses: buildResponses(context, httpOperation, operation.name, schemas),
+        responses,
     };
     if (parameters.length > 0) {
         endpoint.parameters = parameters;
@@ -639,6 +640,9 @@ function toSchemaRef(type, schemas) {
             return { type: "number" };
         case "Boolean":
             return { type: "boolean" };
+        case "Enum":
+            ensureEnumSchema(type, schemas);
+            return { ref: type.name };
         case "Scalar": {
             const scalarName = type.name.toLowerCase();
             if (scalarName.includes("int32")) {
@@ -660,7 +664,7 @@ function toSchemaRef(type, schemas) {
         }
         case "Model": {
             if (type.name === "Array" && type.indexer?.value) {
-                return { type: "array" };
+                return { type: "array", items: toSchemaRef(type.indexer.value, schemas) };
             }
             ensureModelSchema(type, schemas);
             return { ref: type.name };
@@ -671,6 +675,19 @@ function toSchemaRef(type, schemas) {
         default:
             return { type: "string" };
     }
+}
+function ensureEnumSchema(enumType, schemas) {
+    if (!enumType.name || schemas[enumType.name]) {
+        return;
+    }
+    const values = [];
+    for (const member of enumType.members.values()) {
+        values.push(String(member.value ?? member.name));
+    }
+    schemas[enumType.name] = {
+        type: "string",
+        enum: values,
+    };
 }
 function ensureModelSchema(model, schemas) {
     if (!model.name || schemas[model.name]) {

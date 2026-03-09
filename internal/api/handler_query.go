@@ -49,18 +49,13 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryReques
 		}
 	}
 
-	rows := make([][]interface{}, len(result.Rows))
-	for i, row := range result.Rows {
-		mapped := make([]interface{}, len(row))
-		copy(mapped, row)
-		rows[i] = mapped
-	}
-	rowCount := int64(result.RowCount)
+	rows := rowsToStringMatrix(result.Rows)
+	rowCount := safeIntToInt32(result.RowCount)
 
 	return ExecuteQuery200JSONResponse{
 		Body: QueryResult{
 			Columns:  result.Columns,
-			Rows:     &rows,
+			Rows:     rows,
 			RowCount: &rowCount,
 		},
 		Headers: ExecuteQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
@@ -170,8 +165,8 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResults
 		nextPageToken = domain.EncodePageToken(end)
 	}
 
-	result := QueryResult{Columns: job.Columns, Rows: &rows}
-	rowCount := int64(job.RowCount)
+	result := QueryResult{Columns: job.Columns, Rows: rowsToStringMatrix(rows)}
+	rowCount := safeIntToInt32(job.RowCount)
 	result.RowCount = &rowCount
 	if nextPageToken != "" {
 		result.NextPageToken = &nextPageToken
@@ -259,22 +254,22 @@ func (h *APIHandler) lookupAsyncJob(ctx context.Context, queryID string) (*domai
 
 func queryJobToAPI(job *domain.QueryJob) QueryJob {
 	status := string(job.Status)
-	rowCount := int64(job.RowCount)
+	rowCount := safeIntToInt32(job.RowCount)
 	resp := QueryJob{
 		QueryId:   job.ID,
 		Status:    QueryJobStatus(status),
 		RowCount:  rowCount,
 		RequestId: &job.RequestID,
-		CreatedAt: &job.CreatedAt,
+		CreatedAt: formatTimePtr(&job.CreatedAt),
 	}
 	if job.ErrorMessage != nil {
 		resp.Error = job.ErrorMessage
 	}
 	if job.StartedAt != nil {
-		resp.StartedAt = job.StartedAt
+		resp.StartedAt = formatTimePtr(job.StartedAt)
 	}
 	if job.CompletedAt != nil {
-		resp.CompletedAt = job.CompletedAt
+		resp.CompletedAt = formatTimePtr(job.CompletedAt)
 	}
 	return resp
 }
@@ -317,7 +312,7 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 			Columns:     &cols,
 			Files:       &result.Files,
 			RowFilters:  &result.RowFilters,
-			ColumnMasks: &result.ColumnMasks,
+			ColumnMasks: stringMapToRecord(result.ColumnMasks),
 			ExpiresAt:   formatTimePtr(&result.ExpiresAt),
 		},
 		Headers: CreateManifest200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"time"
@@ -132,7 +133,7 @@ func auditEntryToAPI(e domain.AuditEntry) AuditEntry {
 		TablesAccessed: &e.TablesAccessed,
 		Status:         &e.Status,
 		ErrorMessage:   e.ErrorMessage,
-		DurationMs:     e.DurationMs,
+		DurationMs:     safeInt64ToInt32Ptr(e.DurationMs),
 		CreatedAt:      formatTimePtr(&e.CreatedAt),
 	}
 }
@@ -158,7 +159,7 @@ func schemaDetailToAPI(s domain.SchemaDetail) SchemaDetail {
 		Comment:     &s.Comment,
 		Tags:        &tags,
 		Owner:       &s.Owner,
-		Properties:  &s.Properties,
+		Properties:  stringMapToRecord(s.Properties),
 		CreatedAt:   formatTimePtr(&s.CreatedAt),
 		UpdatedAt:   formatTimePtr(&s.UpdatedAt),
 	}
@@ -181,7 +182,7 @@ func tableDetailToAPI(t domain.TableDetail) TableDetail {
 		TableType:   &t.TableType,
 		Columns:     &cols,
 		Comment:     &t.Comment,
-		Properties:  &t.Properties,
+		Properties:  stringMapToRecord(t.Properties),
 		Owner:       &t.Owner,
 		Tags:        &tags,
 		Statistics:  tableStatisticsPtr(t.Statistics),
@@ -212,8 +213,8 @@ func queryHistoryEntryToAPI(e domain.QueryHistoryEntry) QueryHistoryEntry {
 		TablesAccessed: &e.TablesAccessed,
 		Status:         &e.Status,
 		ErrorMessage:   e.ErrorMessage,
-		DurationMs:     e.DurationMs,
-		RowsReturned:   e.RowsReturned,
+		DurationMs:     safeInt64ToInt32Ptr(e.DurationMs),
+		RowsReturned:   safeInt64ToInt32Ptr(e.RowsReturned),
 		CreatedAt:      formatTimePtr(&e.CreatedAt),
 	}
 }
@@ -230,7 +231,6 @@ func searchResultToAPI(r domain.SearchResult) SearchResult {
 }
 
 func lineageEdgeToAPI(e domain.LineageEdge) LineageEdge {
-	t := e.CreatedAt
 	return LineageEdge{
 		Id:            &e.ID,
 		SourceTable:   &e.SourceTable,
@@ -239,14 +239,15 @@ func lineageEdgeToAPI(e domain.LineageEdge) LineageEdge {
 		TargetSchema:  strPtrIfNonEmpty(e.TargetSchema),
 		EdgeType:      strPtrIfNonEmpty(e.EdgeType),
 		PrincipalName: &e.PrincipalName,
-		CreatedAt:     &t,
+		CreatedAt:     formatTimePtr(&e.CreatedAt),
 	}
 }
 
 func columnLineageEdgeToAPI(e domain.ColumnLineageEdge) ColumnLineageEdge {
 	tt := ColumnLineageEdgeTransformType(e.TransformType)
+	id := safeInt64ToInt32(e.ID)
 	return ColumnLineageEdge{
-		Id:            &e.ID,
+		Id:            &id,
 		LineageEdgeId: &e.LineageEdgeID,
 		TargetColumn:  &e.TargetColumn,
 		SourceSchema:  strPtrIfNonEmpty(e.SourceSchema),
@@ -290,19 +291,71 @@ func safeInt64ToInt32Ptr(v *int64) *int32 {
 	return &out
 }
 
+func int32PtrToInt64Ptr(v *int32) *int64 {
+	if v == nil {
+		return nil
+	}
+	out := int64(*v)
+	return &out
+}
+
+func stringMapToRecord(m map[string]string) *Record {
+	if len(m) == 0 {
+		return nil
+	}
+	record := make(Record, len(m))
+	for k, v := range m {
+		record[k] = v
+	}
+	return &record
+}
+
+func recordToStringMap(record *Record) map[string]string {
+	if record == nil {
+		return nil
+	}
+	out := make(map[string]string, len(*record))
+	for k, v := range *record {
+		switch typed := v.(type) {
+		case string:
+			out[k] = typed
+		default:
+			out[k] = fmt.Sprint(typed)
+		}
+	}
+	return out
+}
+
+func rowsToStringMatrix(rows [][]interface{}) *[][]string {
+	if len(rows) == 0 {
+		return nil
+	}
+	out := make([][]string, len(rows))
+	for i, row := range rows {
+		converted := make([]string, len(row))
+		for j, value := range row {
+			if value == nil {
+				converted[j] = ""
+				continue
+			}
+			converted[j] = fmt.Sprint(value)
+		}
+		out[i] = converted
+	}
+	return &out
+}
+
 func tagToAPI(t domain.Tag) Tag {
-	ct := t.CreatedAt
 	return Tag{
 		Id:        &t.ID,
 		Key:       &t.Key,
 		Value:     t.Value,
 		CreatedBy: &t.CreatedBy,
-		CreatedAt: &ct,
+		CreatedAt: formatTimePtr(&t.CreatedAt),
 	}
 }
 
 func tagAssignmentToAPI(a domain.TagAssignment) TagAssignment {
-	t := a.AssignedAt
 	st := TagAssignmentSecurableType(a.SecurableType)
 	return TagAssignment{
 		Id:            &a.ID,
@@ -311,7 +364,7 @@ func tagAssignmentToAPI(a domain.TagAssignment) TagAssignment {
 		SecurableId:   &a.SecurableID,
 		ColumnName:    a.ColumnName,
 		AssignedBy:    &a.AssignedBy,
-		AssignedAt:    &t,
+		AssignedAt:    formatTimePtr(&a.AssignedAt),
 	}
 }
 
@@ -336,8 +389,8 @@ func tableStatisticsToAPI(s *domain.TableStatistics) TableStatistics {
 		return TableStatistics{}
 	}
 	return TableStatistics{
-		RowCount:       s.RowCount,
-		SizeBytes:      s.SizeBytes,
+		RowCount:       safeInt64ToInt32Ptr(s.RowCount),
+		SizeBytes:      safeInt64ToInt32Ptr(s.SizeBytes),
 		ColumnCount:    safeInt64ToInt32Ptr(s.ColumnCount),
 		LastProfiledAt: formatTimePtr(s.LastProfiledAt),
 		ProfiledBy:     &s.ProfiledBy,

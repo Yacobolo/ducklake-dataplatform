@@ -156,6 +156,9 @@ func schemaRefMap(ref ir.SchemaRef) map[string]any {
 	if ref.Format != "" {
 		entry["format"] = ref.Format
 	}
+	if ref.Items != nil {
+		entry["items"] = schemaRefMap(*ref.Items)
+	}
 	return entry
 }
 

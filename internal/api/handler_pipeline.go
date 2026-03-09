@@ -190,7 +190,7 @@ func (h *APIHandler) CreatePipelineJob(ctx context.Context, req GenCreatePipelin
 		domReq.DependsOn = *req.Body.DependsOn
 	}
 	if req.Body.TimeoutSeconds != nil {
-		domReq.TimeoutSeconds = req.Body.TimeoutSeconds
+		domReq.TimeoutSeconds = int32PtrToInt64Ptr(req.Body.TimeoutSeconds)
 	}
 	if req.Body.RetryCount != nil {
 		domReq.RetryCount = int(*req.Body.RetryCount)
@@ -253,7 +253,7 @@ func (h *APIHandler) DeletePipelineJob(ctx context.Context, req GenDeletePipelin
 func (h *APIHandler) TriggerPipelineRun(ctx context.Context, req GenTriggerPipelineRunRequest) (GenTriggerPipelineRunResponse, error) {
 	var params map[string]string
 	if req.Body != nil && req.Body.Parameters != nil {
-		params = *req.Body.Parameters
+		params = recordToStringMap(req.Body.Parameters)
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -385,8 +385,6 @@ func (h *APIHandler) ListPipelineJobRuns(ctx context.Context, req GenListPipelin
 // === Pipeline Mappers ===
 
 func pipelineToAPI(p domain.Pipeline) Pipeline {
-	ct := p.CreatedAt
-	ut := p.UpdatedAt
 	isPaused := p.IsPaused
 	concLimit := int32(p.ConcurrencyLimit) //nolint:gosec // ConcurrencyLimit is validated to be non-negative and small
 	return Pipeline{
@@ -397,13 +395,12 @@ func pipelineToAPI(p domain.Pipeline) Pipeline {
 		IsPaused:         &isPaused,
 		ConcurrencyLimit: &concLimit,
 		CreatedBy:        &p.CreatedBy,
-		CreatedAt:        &ct,
-		UpdatedAt:        &ut,
+		CreatedAt:        formatTimePtr(&p.CreatedAt),
+		UpdatedAt:        formatTimePtr(&p.UpdatedAt),
 	}
 }
 
 func pipelineJobToAPI(j domain.PipelineJob) PipelineJob {
-	ct := j.CreatedAt
 	order := int32(j.JobOrder)        //nolint:gosec // JobOrder is a small non-negative index
 	retryCount := int32(j.RetryCount) //nolint:gosec // RetryCount is a small non-negative integer
 	resp := PipelineJob{
@@ -412,7 +409,7 @@ func pipelineJobToAPI(j domain.PipelineJob) PipelineJob {
 		Name:       &j.Name,
 		JobOrder:   &order,
 		RetryCount: &retryCount,
-		CreatedAt:  &ct,
+		CreatedAt:  formatTimePtr(&j.CreatedAt),
 	}
 	if j.NotebookID != "" {
 		resp.NotebookId = &j.NotebookID
@@ -431,13 +428,12 @@ func pipelineJobToAPI(j domain.PipelineJob) PipelineJob {
 		resp.DependsOn = &j.DependsOn
 	}
 	if j.TimeoutSeconds != nil {
-		resp.TimeoutSeconds = j.TimeoutSeconds
+		resp.TimeoutSeconds = safeInt64ToInt32Ptr(j.TimeoutSeconds)
 	}
 	return resp
 }
 
 func pipelineRunToAPI(r domain.PipelineRun) PipelineRun {
-	ct := r.CreatedAt
 	status := PipelineRunStatus(r.Status)
 	triggerType := PipelineRunTriggerType(r.TriggerType)
 	resp := PipelineRun{
@@ -446,19 +442,19 @@ func pipelineRunToAPI(r domain.PipelineRun) PipelineRun {
 		Status:      &status,
 		TriggerType: &triggerType,
 		TriggeredBy: &r.TriggeredBy,
-		CreatedAt:   &ct,
+		CreatedAt:   formatTimePtr(&r.CreatedAt),
 	}
 	if len(r.Parameters) > 0 {
-		resp.Parameters = &r.Parameters
+		resp.Parameters = stringMapToRecord(r.Parameters)
 	}
 	if r.GitCommitHash != nil {
 		resp.GitCommitHash = r.GitCommitHash
 	}
 	if r.StartedAt != nil {
-		resp.StartedAt = r.StartedAt
+		resp.StartedAt = formatTimePtr(r.StartedAt)
 	}
 	if r.FinishedAt != nil {
-		resp.FinishedAt = r.FinishedAt
+		resp.FinishedAt = formatTimePtr(r.FinishedAt)
 	}
 	if r.ErrorMessage != nil {
 		resp.ErrorMessage = r.ErrorMessage
@@ -467,7 +463,6 @@ func pipelineRunToAPI(r domain.PipelineRun) PipelineRun {
 }
 
 func pipelineJobRunToAPI(jr domain.PipelineJobRun) PipelineJobRun {
-	ct := jr.CreatedAt
 	status := PipelineJobRunStatus(jr.Status)
 	retryAttempt := int32(jr.RetryAttempt) //nolint:gosec // RetryAttempt is a small non-negative integer
 	resp := PipelineJobRun{
@@ -477,13 +472,13 @@ func pipelineJobRunToAPI(jr domain.PipelineJobRun) PipelineJobRun {
 		JobName:      &jr.JobName,
 		Status:       &status,
 		RetryAttempt: &retryAttempt,
-		CreatedAt:    &ct,
+		CreatedAt:    formatTimePtr(&jr.CreatedAt),
 	}
 	if jr.StartedAt != nil {
-		resp.StartedAt = jr.StartedAt
+		resp.StartedAt = formatTimePtr(jr.StartedAt)
 	}
 	if jr.FinishedAt != nil {
-		resp.FinishedAt = jr.FinishedAt
+		resp.FinishedAt = formatTimePtr(jr.FinishedAt)
 	}
 	if jr.ErrorMessage != nil {
 		resp.ErrorMessage = jr.ErrorMessage

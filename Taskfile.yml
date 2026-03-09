@@ -43,8 +43,7 @@ tasks:
     deps: [typespec:compile]
     cmds:
       - find pkg/cli/gen -maxdepth 1 -type f -name '*.gen.go' ! -name 'apigen_registry.gen.go' -delete
-      - go run ./cmd/apigen all -ir api/gen/json-ir.json
-      - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1 -generate types,skip-prune -package api -o internal/api/types.gen.go api/gen/openapi.yaml
+      - go run ./cmd/apigen all -ir api/gen/json-ir.json -compat-types-out internal/api/types.gen.go
     sources:
       - api/gen/json-ir.json
       - cmd/apigen/**/*.go

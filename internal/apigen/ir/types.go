@@ -89,9 +89,10 @@ type ResponseShape struct {
 
 // SchemaRef references or describes a schema.
 type SchemaRef struct {
-	Ref    string `json:"ref,omitempty"`
-	Type   string `json:"type,omitempty"`
-	Format string `json:"format,omitempty"`
+	Ref    string     `json:"ref,omitempty"`
+	Type   string     `json:"type,omitempty"`
+	Format string     `json:"format,omitempty"`
+	Items  *SchemaRef `json:"items,omitempty"`
 }
 
 // Schema is a JSON schema subset used by apigen.

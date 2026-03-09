@@ -80,7 +80,7 @@ func (h *APIHandler) CreateMacro(ctx context.Context, req GenCreateMacroRequest)
 		domReq.Owner = *req.Body.Owner
 	}
 	if req.Body.Properties != nil {
-		domReq.Properties = map[string]string(*req.Body.Properties)
+		domReq.Properties = recordToStringMap(req.Body.Properties)
 	}
 	if req.Body.Tags != nil {
 		domReq.Tags = *req.Body.Tags
@@ -282,7 +282,7 @@ func (h *APIHandler) UpdateMacro(ctx context.Context, req GenUpdateMacroRequest)
 		domReq.Owner = req.Body.Owner
 	}
 	if req.Body.Properties != nil {
-		domReq.Properties = map[string]string(*req.Body.Properties)
+		domReq.Properties = recordToStringMap(req.Body.Properties)
 	}
 	if req.Body.Tags != nil {
 		domReq.Tags = *req.Body.Tags
@@ -331,8 +331,6 @@ func (h *APIHandler) DeleteMacro(ctx context.Context, req GenDeleteMacroRequest)
 // === Macro Mappers ===
 
 func macroToAPI(m domain.Macro) Macro {
-	ct := m.CreatedAt
-	ut := m.UpdatedAt
 	resp := Macro{
 		Id:          &m.ID,
 		Name:        &m.Name,
@@ -340,8 +338,8 @@ func macroToAPI(m domain.Macro) Macro {
 		Body:        &m.Body,
 		Description: &m.Description,
 		CreatedBy:   &m.CreatedBy,
-		CreatedAt:   &ct,
-		UpdatedAt:   &ut,
+		CreatedAt:   formatTimePtr(&m.CreatedAt),
+		UpdatedAt:   formatTimePtr(&m.UpdatedAt),
 	}
 	if m.CatalogName != "" {
 		resp.CatalogName = &m.CatalogName
@@ -356,8 +354,7 @@ func macroToAPI(m domain.Macro) Macro {
 		resp.Owner = &m.Owner
 	}
 	if len(m.Properties) > 0 {
-		props := map[string]string(m.Properties)
-		resp.Properties = &props
+		resp.Properties = stringMapToRecord(m.Properties)
 	}
 	if len(m.Tags) > 0 {
 		resp.Tags = &m.Tags
@@ -372,7 +369,6 @@ func macroToAPI(m domain.Macro) Macro {
 }
 
 func macroRevisionToAPI(r domain.MacroRevision) MacroRevision {
-	ct := r.CreatedAt
 	version := safeInt32(r.Version)
 	resp := MacroRevision{
 		Id:          &r.ID,
@@ -382,7 +378,7 @@ func macroRevisionToAPI(r domain.MacroRevision) MacroRevision {
 		Body:        &r.Body,
 		Description: &r.Description,
 		CreatedBy:   &r.CreatedBy,
-		CreatedAt:   &ct,
+		CreatedAt:   formatTimePtr(&r.CreatedAt),
 	}
 	if len(r.Parameters) > 0 {
 		resp.Parameters = &r.Parameters
@@ -563,8 +559,7 @@ func macroImpactModelToAPI(m macroImpactModel) MacroImpactModel {
 		resp.TargetSchema = &m.TargetSchema
 	}
 	if !m.LastSeenAt.IsZero() {
-		lastSeen := m.LastSeenAt
-		resp.LastSeenAt = &lastSeen
+		resp.LastSeenAt = formatTimePtr(&m.LastSeenAt)
 	}
 	return resp
 }

@@ -1,4 +1,4 @@
-import type { EmitContext, Model, ModelProperty, Namespace, Operation, Type } from "@typespec/compiler";
+import type { EmitContext, Enum, Model, ModelProperty, Namespace, Operation, Type } from "@typespec/compiler";
 import { getDoc, resolvePath } from "@typespec/compiler";
 import { getExtensions } from "@typespec/openapi";
 import { getHttpOperation, getOperationVerb, getRoutePath } from "@typespec/http";
@@ -11,10 +11,12 @@ type IRSchemaRef = {
   ref?: string;
   type?: string;
   format?: string;
+  items?: IRSchemaRef;
 };
 
 type IRSchema = {
   type: string;
+  enum?: string[];
   properties?: Record<string, { description?: string; schema: IRSchemaRef }>;
   required?: string[];
   items?: IRSchemaRef;
@@ -169,14 +171,15 @@ function appendOperation(
     return;
   }
 
+  const [httpOperation] = getHttpOperation(context.program, operation);
+  const bodySchema = getBodySchema(context, operation, schemas);
+  const parameters = getParameters(context, operation, routePath, schemas);
+  const responses = buildResponses(context, httpOperation, operation.name, schemas);
   const operationExtensions = getIRCompatibleExtensions(getExtensions(context.program, operation));
   if (operationExtensions["x-apigen-manual"] === true || isManuallyMountedOperation(operation.name)) {
     return;
   }
 
-  const [httpOperation] = getHttpOperation(context.program, operation);
-  const bodySchema = getBodySchema(context, operation, schemas);
-  const parameters = getParameters(context, operation, routePath, schemas);
   const authzMetadata = authzMetadataForOperation(operationExtensions, operation.name);
   const isAuthenticated = authzMetadata.mode !== "public";
   const operationDoc = cleanText(getDoc(context.program, operation));
@@ -189,7 +192,7 @@ function appendOperation(
     summary: humanizeOperationName(operation.name),
     ...(operationDoc ? { description: operationDoc } : {}),
     tags: tagsForRoute(routePath),
-    responses: buildResponses(context, httpOperation, operation.name, schemas),
+    responses,
   };
 
   if (parameters.length > 0) {
@@ -799,6 +802,9 @@ function toSchemaRef(type: Type, schemas: Record<string, IRSchema>): IRSchemaRef
       return { type: "number" };
     case "Boolean":
       return { type: "boolean" };
+    case "Enum":
+      ensureEnumSchema(type, schemas);
+      return { ref: type.name };
     case "Scalar": {
       const scalarName = type.name.toLowerCase();
       if (scalarName.includes("int32")) {
@@ -820,7 +826,7 @@ function toSchemaRef(type: Type, schemas: Record<string, IRSchema>): IRSchemaRef
     }
     case "Model": {
       if (type.name === "Array" && type.indexer?.value) {
-        return { type: "array" };
+        return { type: "array", items: toSchemaRef(type.indexer.value, schemas) };
       }
       ensureModelSchema(type, schemas);
       return { ref: type.name };
@@ -831,6 +837,22 @@ function toSchemaRef(type: Type, schemas: Record<string, IRSchema>): IRSchemaRef
     default:
       return { type: "string" };
   }
+}
+
+function ensureEnumSchema(enumType: Enum, schemas: Record<string, IRSchema>): void {
+  if (!enumType.name || schemas[enumType.name]) {
+    return;
+  }
+
+  const values: string[] = [];
+  for (const member of enumType.members.values()) {
+    values.push(String(member.value ?? member.name));
+  }
+
+  schemas[enumType.name] = {
+    type: "string",
+    enum: values,
+  };
 }
 
 function ensureModelSchema(model: Model, schemas: Record<string, IRSchema>): void {
