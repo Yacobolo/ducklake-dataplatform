@@ -958,7 +958,7 @@ func TestExecute_UnimplementedKindReturnsError(t *testing.T) {
 
 	action := declarative.Action{
 		Operation:    declarative.OpCreate,
-		ResourceKind: declarative.KindVolume,
+		ResourceKind: declarative.ResourceKind(-1),
 		ResourceName: "demo.analytics.stage",
 	}
 

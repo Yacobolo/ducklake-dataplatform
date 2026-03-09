@@ -173,14 +173,6 @@ func TestHandler_CreateManifest(t *testing.T) {
 				require.NotNil(t, ok200.Body.Files)
 				require.Len(t, *ok200.Body.Files, 1)
 				assert.Equal(t, "s3://bucket/data/file.parquet", (*ok200.Body.Files)[0])
-				require.NotNil(t, ok200.Body.BrowserRuntime)
-				assert.Equal(t, query.BrowserRuntimeContractVersion, *ok200.Body.BrowserRuntime.ContractVersion)
-				assert.Equal(t, query.BrowserRuntimeEngineDuckDBWASM, *ok200.Body.BrowserRuntime.Engine)
-				assert.Equal(t, query.BrowserRuntimeAdapterDuckAccess, *ok200.Body.BrowserRuntime.Adapter)
-				assert.Equal(t, "PREVIEW", *ok200.Body.BrowserRuntime.Status)
-				require.NotNil(t, ok200.Body.BrowserRuntime.RequiredAuthModes)
-				assert.Contains(t, *ok200.Body.BrowserRuntime.RequiredAuthModes, "BEARER_TOKEN")
-				assert.Contains(t, *ok200.Body.BrowserRuntime.RequiredAuthModes, "WEB_SESSION")
 			},
 		},
 		{

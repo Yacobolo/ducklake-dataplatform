@@ -275,24 +275,6 @@ func queryJobToAPI(job *domain.QueryJob) QueryJob {
 		RequestId: &job.RequestID,
 		CreatedAt: formatTimePtr(&job.CreatedAt),
 	}
-	if job.ComputeMode != "" {
-		mode := QueryJobComputeMode(job.ComputeMode)
-		resp.ComputeMode = &mode
-	}
-	if job.EndpointName != nil {
-		resp.EndpointName = job.EndpointName
-	}
-	if job.ResolvedMode != nil {
-		mode := QueryJobResolvedMode(*job.ResolvedMode)
-		resp.ResolvedMode = &mode
-	}
-	if job.ResolvedEndpointName != nil {
-		resp.ResolvedEndpointName = job.ResolvedEndpointName
-	}
-	if job.WorkloadType != "" {
-		workloadType := QueryJobWorkloadType(job.WorkloadType)
-		resp.WorkloadType = &workloadType
-	}
 	if job.ErrorMessage != nil {
 		resp.Error = job.ErrorMessage
 	}
@@ -306,37 +288,11 @@ func queryJobToAPI(job *domain.QueryJob) QueryJob {
 }
 
 func computeExecutionRequestFromQueryBody(body *QueryRequest) domain.ComputeExecutionRequest {
-	if body == nil {
-		return domain.ComputeExecutionRequest{}
-	}
-	req := domain.ComputeExecutionRequest{}
-	if body.ComputeMode != nil {
-		req.Mode = string(*body.ComputeMode)
-	}
-	if body.EndpointName != nil {
-		req.EndpointName = *body.EndpointName
-	}
-	if body.WorkloadType != nil {
-		req.WorkloadType = string(*body.WorkloadType)
-	}
-	return req
+	return domain.ComputeExecutionRequest{}
 }
 
 func computeExecutionRequestFromSubmitBody(body *SubmitQueryRequest) domain.ComputeExecutionRequest {
-	if body == nil {
-		return domain.ComputeExecutionRequest{}
-	}
-	req := domain.ComputeExecutionRequest{}
-	if body.ComputeMode != nil {
-		req.Mode = string(*body.ComputeMode)
-	}
-	if body.EndpointName != nil {
-		req.EndpointName = *body.EndpointName
-	}
-	if body.WorkloadType != nil {
-		req.WorkloadType = string(*body.WorkloadType)
-	}
-	return req
+	return domain.ComputeExecutionRequest{}
 }
 
 func withComputeRequestDefaults(ctx context.Context, svc computeEndpointService, principal string, req domain.ComputeExecutionRequest) (context.Context, error) {
@@ -397,39 +353,18 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 
 	cols := make([]ManifestColumn, len(result.Columns))
 	for i, c := range result.Columns {
-		name := c.Name
-		typ := c.Type
-		cols[i] = ManifestColumn{Name: &name, Type: &typ}
-	}
-	browserRuntime := result.BrowserRuntime
-	if browserRuntime.ContractVersion == "" {
-		browserRuntime = query.DefaultManifestBrowserRuntimeSpec()
+		cols[i] = ManifestColumn{Name: c.Name, Type: c.Type}
 	}
 
 	return CreateManifest200JSONResponse{
 		Body: ManifestResponse{
-			ManifestVersion: &result.ManifestVersion,
-			Table:           &result.Table,
-			Schema:          &result.Schema,
-			Columns:         &cols,
-			Files:           &result.Files,
-			RowFilters:      &result.RowFilters,
-			ColumnMasks:     &result.ColumnMasks,
-			ExpiresAt:       &result.ExpiresAt,
-			BrowserRuntime: &ManifestBrowserRuntime{
-				Adapter:                &browserRuntime.Adapter,
-				ContractVersion:        &browserRuntime.ContractVersion,
-				Engine:                 &browserRuntime.Engine,
-				RecommendedMaxRows:     intPtrToInt32Ptr(&browserRuntime.RecommendedMaxRows),
-				RecommendedMemoryMb:    intPtrToInt32Ptr(&browserRuntime.RecommendedMemoryMB),
-				RequiredAuthModes:      &browserRuntime.RequiredAuthModes,
-				RequiredRuntimeVersion: &browserRuntime.RequiredRuntimeVersion,
-				RequiresCors:           &browserRuntime.RequiresCORS,
-				Status:                 &browserRuntime.Status,
-				StatusReason:           &browserRuntime.StatusReason,
-				Supported:              &browserRuntime.Supported,
-				SupportedFileUrlTypes:  &browserRuntime.SupportedFileURLTypes,
-			},
+			Table:       result.Table,
+			Schema:      &result.Schema,
+			Columns:     &cols,
+			Files:       &result.Files,
+			RowFilters:  &result.RowFilters,
+			ColumnMasks: stringMapToRecord(result.ColumnMasks),
+			ExpiresAt:   formatTimePtr(&result.ExpiresAt),
 		},
 		Headers: CreateManifest200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil

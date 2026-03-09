@@ -52,32 +52,11 @@ func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req GenCreateCom
 		URL:  req.Body.Url,
 		Type: string(req.Body.Type),
 	}
-	if req.Body.SelectionPolicy != nil {
-		domReq.SelectionPolicy = string(*req.Body.SelectionPolicy)
-	}
-	if req.Body.WorkloadClass != nil {
-		domReq.WorkloadClass = string(*req.Body.WorkloadClass)
-	}
-	if req.Body.ReadinessStatus != nil {
-		domReq.ReadinessStatus = string(*req.Body.ReadinessStatus)
-	}
 	if req.Body.Size != nil {
 		domReq.Size = string(*req.Body.Size)
 	}
 	if req.Body.MaxMemoryGb != nil {
 		domReq.MaxMemoryGB = int32PtrToInt64Ptr(req.Body.MaxMemoryGb)
-	}
-	if req.Body.MaxConcurrency != nil {
-		domReq.MaxConcurrency = req.Body.MaxConcurrency
-	}
-	if req.Body.MaxResultSizeMb != nil {
-		domReq.MaxResultSizeMB = req.Body.MaxResultSizeMb
-	}
-	if req.Body.RecommendedForLargeQueries != nil {
-		domReq.RecommendedForLargeQueries = *req.Body.RecommendedForLargeQueries
-	}
-	if req.Body.IsDraining != nil {
-		domReq.IsDraining = *req.Body.IsDraining
 	}
 	if req.Body.AuthToken != nil {
 		domReq.AuthToken = *req.Body.AuthToken
@@ -125,33 +104,13 @@ func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GenGetComputeEn
 // UpdateComputeEndpoint implements the endpoint for updating a compute endpoint.
 func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req GenUpdateComputeEndpointRequest) (GenUpdateComputeEndpointResponse, error) {
 	domReq := domain.UpdateComputeEndpointRequest{
-		URL:             req.Body.Url,
-		MaxMemoryGB:     int32PtrToInt64Ptr(req.Body.MaxMemoryGb),
-		MaxConcurrency:  req.Body.MaxConcurrency,
-		MaxResultSizeMB: req.Body.MaxResultSizeMb,
-		AuthToken:       req.Body.AuthToken,
+		URL:         req.Body.Url,
+		MaxMemoryGB: int32PtrToInt64Ptr(req.Body.MaxMemoryGb),
+		AuthToken:   req.Body.AuthToken,
 	}
 	if req.Body.Size != nil {
 		s := string(*req.Body.Size)
 		domReq.Size = &s
-	}
-	if req.Body.SelectionPolicy != nil {
-		s := string(*req.Body.SelectionPolicy)
-		domReq.SelectionPolicy = &s
-	}
-	if req.Body.WorkloadClass != nil {
-		s := string(*req.Body.WorkloadClass)
-		domReq.WorkloadClass = &s
-	}
-	if req.Body.ReadinessStatus != nil {
-		s := string(*req.Body.ReadinessStatus)
-		domReq.ReadinessStatus = &s
-	}
-	if req.Body.RecommendedForLargeQueries != nil {
-		domReq.RecommendedForLargeQueries = req.Body.RecommendedForLargeQueries
-	}
-	if req.Body.IsDraining != nil {
-		domReq.IsDraining = req.Body.IsDraining
 	}
 	if req.Body.Status != nil {
 		s := string(*req.Body.Status)
@@ -175,60 +134,6 @@ func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req GenUpdateCom
 		Body:    computeEndpointToAPI(*result),
 		Headers: GenUpdateComputeEndpoint200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
-}
-
-// GetComputeEndpointStatusSummary returns persisted operational summary for a compute endpoint.
-func (h *APIHandler) GetComputeEndpointStatusSummary(ctx context.Context, req GetComputeEndpointStatusSummaryRequestObject) (GetComputeEndpointStatusSummaryResponseObject, error) {
-	principal := principalFromCtx(ctx)
-	result, err := h.computeEndpoints.GetByName(ctx, principal, req.EndpointName)
-	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GetComputeEndpointStatusSummary404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
-		}
-	}
-	return GetComputeEndpointStatusSummary200JSONResponse{
-		Body:    computeEndpointStatusSummaryToAPI(*result),
-		Headers: GetComputeEndpointStatusSummary200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
-	}, nil
-}
-
-// DrainComputeEndpoint marks an endpoint as draining.
-func (h *APIHandler) DrainComputeEndpoint(ctx context.Context, req DrainComputeEndpointRequestObject) (DrainComputeEndpointResponseObject, error) {
-	principal := principalFromCtx(ctx)
-	draining := true
-	result, err := h.computeEndpoints.Update(ctx, principal, req.EndpointName, domain.UpdateComputeEndpointRequest{IsDraining: &draining})
-	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DrainComputeEndpoint403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DrainComputeEndpoint404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
-		}
-	}
-	return DrainComputeEndpoint200JSONResponse{Body: computeEndpointToAPI(*result), Headers: DrainComputeEndpoint200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
-}
-
-// ResumeComputeEndpoint clears drain state on an endpoint.
-func (h *APIHandler) ResumeComputeEndpoint(ctx context.Context, req ResumeComputeEndpointRequestObject) (ResumeComputeEndpointResponseObject, error) {
-	principal := principalFromCtx(ctx)
-	draining := false
-	result, err := h.computeEndpoints.Update(ctx, principal, req.EndpointName, domain.UpdateComputeEndpointRequest{IsDraining: &draining})
-	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return ResumeComputeEndpoint403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return ResumeComputeEndpoint404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
-		}
-	}
-	return ResumeComputeEndpoint200JSONResponse{Body: computeEndpointToAPI(*result), Headers: ResumeComputeEndpoint200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // DeleteComputeEndpoint implements the endpoint for deleting a compute endpoint.
@@ -341,115 +246,14 @@ func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GenGetCom
 	}
 	return GenGetComputeEndpointHealth200JSONResponse{
 		Body: ComputeEndpointHealth{
-			Status:                result.Status,
-			UptimeSeconds:         uptimeSeconds,
-			DuckdbVersion:         result.DuckdbVersion,
-			MemoryUsedMb:          memoryUsedMb,
-			MaxMemoryGb:           maxMemoryGb,
-			ActiveQueries:         result.ActiveQueries,
-			QueuedJobs:            result.QueuedJobs,
-			RunningJobs:           result.RunningJobs,
-			CompletedJobs:         result.CompletedJobs,
-			StoredJobs:            result.StoredJobs,
-			CleanedJobs:           result.CleanedJobs,
-			QueryResultTtlSeconds: intPtrToInt32Ptr(result.QueryResultTTLSeconds),
-			EndpointName:          &req.EndpointName,
+			Status:        result.Status,
+			UptimeSeconds: uptimeSeconds,
+			DuckdbVersion: result.DuckdbVersion,
+			MemoryUsedMb:  memoryUsedMb,
+			MaxMemoryGb:   maxMemoryGb,
+			EndpointName:  &req.EndpointName,
 		},
 		Headers: GenGetComputeEndpointHealth200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
-	}, nil
-}
-
-// ListComputeTargets implements the endpoint for listing principal-visible compute targets.
-func (h *APIHandler) ListComputeTargets(ctx context.Context, req ListComputeTargetsRequestObject) (ListComputeTargetsResponseObject, error) {
-	principal := principalFromCtx(ctx)
-	workloadType := ""
-	if req.Params.WorkloadType != nil {
-		workloadType = string(*req.Params.WorkloadType)
-	}
-
-	targets, listErr := h.computeEndpoints.ListAvailableTargets(ctx, principal, workloadType)
-	if listErr != nil {
-		message := listErr.Error()
-		//nolint:nilerr // Strict handlers return typed error responses with a nil Go error.
-		return ListComputeTargets500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: message}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-	}
-
-	data := make([]ComputeTarget, 0, len(targets))
-	for _, target := range targets {
-		item := ComputeTarget{
-			DisplayName:              target.DisplayName,
-			IsDefault:                target.IsDefault,
-			Mode:                     ComputeTargetMode(target.Mode),
-			SelectableForInteractive: target.SelectableForInteractive,
-			SelectableForScheduled:   target.SelectableForScheduled,
-			Status:                   target.Status,
-			SuitabilityLabels:        &target.SuitabilityLabels,
-		}
-		item.AvailabilityReason = target.AvailabilityReason
-		if target.EndpointName != nil {
-			item.EndpointName = target.EndpointName
-		}
-		if target.EndpointType != nil {
-			endpointType := ComputeTargetEndpointType(*target.EndpointType)
-			item.EndpointType = &endpointType
-		}
-		data = append(data, item)
-	}
-
-	return ListComputeTargets200JSONResponse{
-		Body:    ComputeTargetList{Data: &data},
-		Headers: ListComputeTargets200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
-	}, nil
-}
-
-// GetComputeRoutingDefaults implements the endpoint for reading routing defaults.
-func (h *APIHandler) GetComputeRoutingDefaults(ctx context.Context, _ GetComputeRoutingDefaultsRequestObject) (GetComputeRoutingDefaultsResponseObject, error) {
-	principal := principalFromCtx(ctx)
-	defaults, err := h.computeEndpoints.GetRoutingDefaults(ctx, principal)
-	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GetComputeRoutingDefaults403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return GetComputeRoutingDefaults500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		}
-	}
-
-	return GetComputeRoutingDefaults200JSONResponse{
-		Body:    computeRoutingDefaultsToAPI(*defaults),
-		Headers: GetComputeRoutingDefaults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
-	}, nil
-}
-
-// UpdateComputeRoutingDefaults implements the endpoint for updating routing defaults.
-func (h *APIHandler) UpdateComputeRoutingDefaults(ctx context.Context, req UpdateComputeRoutingDefaultsRequestObject) (UpdateComputeRoutingDefaultsResponseObject, error) {
-	principal := principalFromCtx(ctx)
-	defaults := domain.ComputeRoutingDefaults{}
-	if req.Body.InteractiveMode != nil {
-		defaults.InteractiveMode = string(*req.Body.InteractiveMode)
-	}
-	if req.Body.ScheduledMode != nil {
-		defaults.ScheduledMode = string(*req.Body.ScheduledMode)
-	}
-	if req.Body.NotebookMode != nil {
-		defaults.NotebookMode = string(*req.Body.NotebookMode)
-	}
-
-	updated, err := h.computeEndpoints.UpdateRoutingDefaults(ctx, principal, defaults)
-	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateComputeRoutingDefaults403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return UpdateComputeRoutingDefaults400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return UpdateComputeRoutingDefaults500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		}
-	}
-
-	return UpdateComputeRoutingDefaults200JSONResponse{
-		Body:    computeRoutingDefaultsToAPI(*updated),
-		Headers: UpdateComputeRoutingDefaults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -490,12 +294,6 @@ func computeEndpointToAPI(ep domain.ComputeEndpoint) ComputeEndpoint {
 		CreatedAt:  formatTimePtr(&ct),
 		UpdatedAt:  formatTimePtr(&ut),
 	}
-	policy := ComputeEndpointSelectionPolicy(ep.SelectionPolicy)
-	workloadClass := ComputeEndpointWorkloadClass(ep.WorkloadClass)
-	readinessStatus := ComputeEndpointReadinessStatus(ep.ReadinessStatus)
-	resp.SelectionPolicy = &policy
-	resp.WorkloadClass = &workloadClass
-	resp.ReadinessStatus = &readinessStatus
 	if ep.Size != "" {
 		s := ComputeEndpointSize(ep.Size)
 		resp.Size = &s
@@ -503,28 +301,7 @@ func computeEndpointToAPI(ep domain.ComputeEndpoint) ComputeEndpoint {
 	if ep.MaxMemoryGB != nil {
 		resp.MaxMemoryGb = safeInt64ToInt32Ptr(ep.MaxMemoryGB)
 	}
-	if ep.MaxConcurrency != nil {
-		resp.MaxConcurrency = ep.MaxConcurrency
-	}
-	if ep.MaxResultSizeMB != nil {
-		resp.MaxResultSizeMb = ep.MaxResultSizeMB
-	}
-	resp.RecommendedForLargeQueries = &ep.RecommendedForLargeQueries
-	resp.IsDraining = &ep.IsDraining
-	resp.LastHealthStatus = ep.LastHealthStatus
-	resp.LastHealthCheckedAt = ep.LastHealthCheckedAt
-	resp.ActiveQueries = ep.ActiveQueries
-	resp.QueuedJobs = ep.QueuedJobs
-	resp.RunningJobs = ep.RunningJobs
-	resp.CompletedJobs = ep.CompletedJobs
-	resp.StoredJobs = ep.StoredJobs
-	resp.CleanedJobs = ep.CleanedJobs
-	resp.QueryResultTtlSeconds = ep.QueryResultTTLSeconds
 	return resp
-}
-
-func computeEndpointStatusSummaryToAPI(ep domain.ComputeEndpoint) ComputeEndpointStatusSummary {
-	return ComputeEndpointStatusSummary(computeEndpointToAPI(ep))
 }
 
 func computeAssignmentToAPI(a domain.ComputeAssignment) ComputeAssignment {
@@ -539,14 +316,6 @@ func computeAssignmentToAPI(a domain.ComputeAssignment) ComputeAssignment {
 		IsDefault:     &a.IsDefault,
 		FallbackLocal: &a.FallbackLocal,
 		CreatedAt:     formatTimePtr(&ct),
-	}
-}
-
-func computeRoutingDefaultsToAPI(defaults domain.ComputeRoutingDefaults) ComputeRoutingDefaults {
-	return ComputeRoutingDefaults{
-		InteractiveMode: ComputeRoutingDefaultsInteractiveMode(defaults.InteractiveMode),
-		ScheduledMode:   ComputeRoutingDefaultsScheduledMode(defaults.ScheduledMode),
-		NotebookMode:    ComputeRoutingDefaultsNotebookMode(defaults.NotebookMode),
 	}
 }
 

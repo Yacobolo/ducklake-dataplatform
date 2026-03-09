@@ -13,7 +13,7 @@ import (
 	// Register the embedded DuckDB driver used by CLI local BYOC execution.
 	_ "github.com/duckdb/duckdb-go/v2"
 
-	"duck-demo/pkg/cli/gen"
+	"duck-demo/pkg/cli/apiruntime"
 )
 
 const (
@@ -62,7 +62,7 @@ func shouldExecuteLocally(cmd *cobra.Command) bool {
 	}
 }
 
-func executeLocalQuery(cmd *cobra.Command, client *gen.Client, sqlQuery string) error {
+func executeLocalQuery(cmd *cobra.Command, client *apiruntime.Client, sqlQuery string) error {
 	cfg, err := resolveLocalQueryConfig(cmd, client)
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func executeLocalQuery(cmd *cobra.Command, client *gen.Client, sqlQuery string) 
 	return printLocalQueryResult(cmd, result)
 }
 
-func resolveLocalQueryConfig(cmd *cobra.Command, client *gen.Client) (localQueryConfig, error) {
+func resolveLocalQueryConfig(cmd *cobra.Command, client *apiruntime.Client) (localQueryConfig, error) {
 	if strings.TrimSpace(client.APIKey) == "" {
 		return localQueryConfig{}, fmt.Errorf("local BYOC execution requires an API key because duck_access secrets do not support bearer tokens")
 	}
