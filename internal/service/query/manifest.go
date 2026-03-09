@@ -10,6 +10,7 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// ManifestVersion is the current manifest response contract version.
 const ManifestVersion = "v1"
 
 // ManifestColumn describes a column in the manifest response.

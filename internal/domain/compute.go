@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// Compute routing, selection-policy, workload, and readiness constants.
 const (
 	ComputeModeAuto           = "AUTO"
 	ComputeModeByocLocal      = "BYOC_LOCAL"

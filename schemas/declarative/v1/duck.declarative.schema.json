@@ -58,6 +58,9 @@
       "$ref": "kinds/compute-assignment-list.schema.json"
     },
     {
+      "$ref": "kinds/compute-routing-defaults.schema.json"
+    },
+    {
       "$ref": "kinds/notebook.schema.json"
     },
     {

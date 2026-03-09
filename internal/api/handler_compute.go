@@ -367,9 +367,11 @@ func (h *APIHandler) ListComputeTargets(ctx context.Context, req ListComputeTarg
 		workloadType = string(*req.Params.WorkloadType)
 	}
 
-	targets, err := h.computeEndpoints.ListAvailableTargets(ctx, principal, workloadType)
-	if err != nil {
-		return ListComputeTargets500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: err.Error()}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	targets, listErr := h.computeEndpoints.ListAvailableTargets(ctx, principal, workloadType)
+	if listErr != nil {
+		message := listErr.Error()
+		//nolint:nilerr // Strict handlers return typed error responses with a nil Go error.
+		return ListComputeTargets500JSONResponse{InternalErrorJSONResponse{Body: Error{Code: 500, Message: message}, Headers: InternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	data := make([]ComputeTarget, 0, len(targets))
