@@ -12137,20 +12137,6 @@ components:
         stale_since:
           type: string
           format: date-time
-    GenericRequest:
-      type: object
-      properties:
-        payload:
-          type: object
-          additionalProperties:
-            type: string
-    GenericResponse:
-      type: object
-      properties:
-        data:
-          type: object
-          additionalProperties:
-            type: string
     GitRepo:
       type: object
       properties:
