@@ -32,6 +32,7 @@ import (
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
+	"duck-demo/internal/service/storage"
 )
 
 // ctx is a package-level background context used by setup helpers.
@@ -153,8 +154,9 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	searchSvc := catalog.NewSearchService(repository.NewSearchRepo(metaDB, metaDB), nil)
 	tagSvc := governance.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), catalogRepoFactory, cat, auditRepo)
+	volumeSvc := storage.NewVolumeService(repository.NewVolumeRepo(metaDB), cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, volumeSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
 	// Lookup principal to get admin status for context injection
@@ -435,8 +437,9 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	searchSvc := catalog.NewSearchService(repository.NewSearchRepo(metaDB, metaDB), nil)
 	tagSvc := governance.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), mockFactory, cat, auditRepo)
+	volumeSvc := storage.NewVolumeService(repository.NewVolumeRepo(metaDB), cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, volumeSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	strictHandler := NewStrictHandler(handler, nil)
 
 	// Lookup principal to get admin status for context injection
@@ -1470,6 +1473,9 @@ func TestAPI_APIKey_CRUD(t *testing.T) {
 	item := (*listResp.Data)[0]
 	require.NotNil(t, item.Name)
 	require.Equal(t, "test-key", *item.Name)
+	require.NotNil(t, keyResp.KeyPrefix)
+	require.NotNil(t, item.KeyPrefix)
+	require.Equal(t, *keyResp.KeyPrefix, *item.KeyPrefix)
 
 	// Delete API key.
 	deleteURL := fmt.Sprintf("%s/api-keys/%s", srv.URL, *keyResp.Id)
@@ -1483,6 +1489,74 @@ func TestAPI_APIKey_CRUD(t *testing.T) {
 	if listResp2.Data != nil {
 		require.Empty(t, *listResp2.Data)
 	}
+}
+
+func TestAPI_ViewCreatePersists(t *testing.T) {
+	mock := newMockCatalogRepo()
+	mock.addSchema("main")
+	srv := setupCatalogTestServer(t, "admin_user", mock)
+	defer srv.Close()
+
+	resp := doRequest(t, http.MethodPost, srv.URL+"/catalogs/lake/schemas/main/views", `{"name":"active_passengers","view_definition":"SELECT * FROM titanic LIMIT 1"}`)
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	created := decodeJSON[ViewDetail](t, resp)
+	require.NotNil(t, created.Name)
+	require.Equal(t, "active_passengers", *created.Name)
+
+	getResp := doRequest(t, http.MethodGet, srv.URL+"/catalogs/lake/schemas/main/views/active_passengers", "")
+	require.Equal(t, http.StatusOK, getResp.StatusCode)
+	got := decodeJSON[ViewDetail](t, getResp)
+	require.NotNil(t, got.Name)
+	require.Equal(t, "active_passengers", *got.Name)
+
+	listResp := doRequest(t, http.MethodGet, srv.URL+"/catalogs/lake/schemas/main/views", "")
+	require.Equal(t, http.StatusOK, listResp.StatusCode)
+	views := decodeJSON[PaginatedViewDetails](t, listResp)
+	require.NotNil(t, views.Data)
+	require.NotEmpty(t, *views.Data)
+
+	found := false
+	for _, view := range *views.Data {
+		if view.Name != nil && *view.Name == "active_passengers" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "created view should be returned by list")
+}
+
+func TestAPI_VolumeCreatePersists(t *testing.T) {
+	mock := newMockCatalogRepo()
+	mock.addSchema("main")
+	srv := setupCatalogTestServer(t, "admin_user", mock)
+	defer srv.Close()
+
+	resp := doRequest(t, http.MethodPost, srv.URL+"/catalogs/lake/schemas/main/volumes", `{"name":"landing_zone","volume_type":"EXTERNAL","storage_location":"s3://bucket/landing_zone/"}`)
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	created := decodeJSON[VolumeDetail](t, resp)
+	require.NotNil(t, created.Name)
+	require.Equal(t, "landing_zone", *created.Name)
+
+	getResp := doRequest(t, http.MethodGet, srv.URL+"/catalogs/lake/schemas/main/volumes/landing_zone", "")
+	require.Equal(t, http.StatusOK, getResp.StatusCode)
+	got := decodeJSON[VolumeDetail](t, getResp)
+	require.NotNil(t, got.Name)
+	require.Equal(t, "landing_zone", *got.Name)
+
+	listResp := doRequest(t, http.MethodGet, srv.URL+"/catalogs/lake/schemas/main/volumes", "")
+	require.Equal(t, http.StatusOK, listResp.StatusCode)
+	volumes := decodeJSON[PaginatedVolumes](t, listResp)
+	require.NotNil(t, volumes.Data)
+	require.NotEmpty(t, *volumes.Data)
+
+	found := false
+	for _, volume := range *volumes.Data {
+		if volume.Name != nil && *volume.Name == "landing_zone" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "created volume should be returned by list")
 }
 
 func TestAPI_ReadEndpoints_NonAdminAccess(t *testing.T) {

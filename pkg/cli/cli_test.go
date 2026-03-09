@@ -696,6 +696,42 @@ func TestCLI_ProfileAPIKeyOverridesStaleProfileToken(t *testing.T) {
 	assert.Empty(t, captured.Headers.Get("Authorization"))
 }
 
+func TestCLI_ModelCommandsRejectMalformedConfigJSON(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "models create",
+			args: []string{"models", "models", "create", "--project-name", "cfg-proj", "--name", "cfg-model", "--sql", "SELECT 1", "--config", "{target_catalog:main}"},
+		},
+		{
+			name: "models tests create",
+			args: []string{"models", "tests", "create", "cfg-proj", "cfg-model", "--name", "cfg-test", "--test-type", "not_null", "--column", "id", "--config", "{strict:true}"},
+		},
+		{
+			name: "models update",
+			args: []string{"models", "models", "update", "cfg-proj", "cfg-model", "--config", "{owner:ops}"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := &requestRecorder{}
+			srv := httptest.NewServer(jsonHandler(rec, 200, `{}`))
+			defer srv.Close()
+
+			rootCmd := newTestRootCmd(t, srv)
+			rootCmd.SetArgs(append([]string{"--host", srv.URL}, tt.args...))
+
+			err := rootCmd.Execute()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "parse --config as JSON object")
+			assert.Empty(t, rec.requests, "malformed config should fail before issuing an HTTP request")
+		})
+	}
+}
+
 func TestCLI_ZeroArgCommandsRejectUnexpectedArgs(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)

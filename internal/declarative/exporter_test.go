@@ -137,6 +137,18 @@ func TestExporter_EmptyState(t *testing.T) {
 	assert.Empty(t, entries, "empty state should produce no files")
 }
 
+func TestExporter_CreatesMissingOutputDirectory(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "nested", "duck-config")
+
+	err := ExportDirectory(dir, &DesiredState{
+		Principals: []PrincipalSpec{{Name: "user1", Type: "user"}},
+	}, false)
+	require.NoError(t, err)
+
+	assertFileExists(t, filepath.Join(dir, "security", "principals.yaml"))
+}
+
 func TestExporter_OverwriteProtection(t *testing.T) {
 	dir := t.TempDir()
 	// Write something first
