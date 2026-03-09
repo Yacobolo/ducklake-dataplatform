@@ -92,6 +92,11 @@ rules:
   owasp-define-error-responses-401: warn
   owasp-define-error-responses-429: warn
   owasp-define-error-responses-500: warn
+  # Suppressed: this flags explicit public operations under global security
+  # as `security: [{}]`. We intentionally use that pattern for manual auth
+  # endpoints such as bootstrap/login, and validate the public/authenticated
+  # boundary via x-authz metadata plus architecture tests.
+  owasp-protection-global-unsafe-strict: off
 
   # Suppressed: integer IDs are deliberate (SQLite autoincrement + DuckDB introspection).
   # TODO: Migrate to string UUIDs in a future project.

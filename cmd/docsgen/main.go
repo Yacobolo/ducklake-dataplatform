@@ -14,7 +14,7 @@ func main() {
 	openapiPath := flag.String("openapi", "api/gen/openapi.yaml", "path to OpenAPI spec")
 	declIndexPath := flag.String("declarative-index", "schemas/declarative/v1/index.json", "path to declarative schema manifest")
 	declDir := flag.String("declarative-dir", "schemas/declarative/v1", "path to declarative schema directory")
-	outDir := flag.String("outdir", "docs/reference/generated", "output directory for generated docs")
+	outDir := flag.String("outdir", "docs/reference/generated", "output directory for derived reference docs")
 	flag.Parse()
 
 	apiOut := fmt.Sprintf("%s/api", *outDir)

@@ -364,6 +364,23 @@ paths:
 	assert.Empty(t, vs)
 }
 
+func TestCheckPostCreateStatus_CancelQueryExcluded(t *testing.T) {
+	spec := specHeader + `
+paths:
+  /queries/{queryId}/cancel:
+    post:
+      operationId: cancelQuery
+      tags: [Query]
+      summary: Cancel query
+      description: Cancel an in-flight query.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-post-create-status")
+	assert.Empty(t, vs)
+}
+
 // ============================================================
 // Custom rule: check-mutating-ops-403 (OAL014)
 // ============================================================

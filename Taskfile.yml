@@ -10,8 +10,8 @@ tasks:
   dev:
     desc: Build and start the local dev server with worktree-specific ports and inline env
     preconditions:
-      - sh: test -f internal/api/types.gen.go && test -f internal/api/server.gen.go && test -f internal/db/dbstore/db.go && test -f internal/db/dbstore/models.go
-        msg: "Generated files missing. Run 'task generate-api sqlc' first."
+      - sh: test -f internal/api/types.gen.go && test -f internal/api/server.apigen.gen.go && test -f internal/db/dbstore/db.go && test -f internal/db/dbstore/models.go
+        msg: "Generated files missing. Run 'task generate:api sqlc' first."
     cmds:
       - |
         worktree_path="$(pwd -P)"

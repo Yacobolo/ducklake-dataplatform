@@ -68,6 +68,7 @@ Dependency direction: `api` → `service` → `domain` ← `repository`. Never i
 
 - `api/gen/openapi.yaml` — tracked TypeSpec output from `api/spec/main.tsp` via `task typespec:compile`
 - `api/gen/json-ir.json` — local APIGen intermediate from `api/spec/main.tsp` via `task typespec:compile` (generated, not committed)
-- `internal/api/gen_request_models.gen.go`, `internal/api/server.apigen.gen.go`, `pkg/cli/gen/apigen_registry.gen.go` — from JSON IR (`api/gen/json-ir.json`) via `cmd/apigen`
+- `internal/api/gen_request_models.gen.go`, `internal/api/server.apigen.gen.go`, `internal/api/types.gen.go`, `pkg/cli/gen/apigen_registry.gen.go` — APIGen outputs from JSON IR (`api/gen/json-ir.json`) via `cmd/apigen`
+- `pkg/cli/gen/` is primarily generated CLI metadata; do not assume it is the active handwritten CLI runtime boundary
 - `internal/db/dbstore/*.sql.go` — from `internal/db/queries/*.sql` via sqlc
 - `internal/duckdbsql/catalog/*_gen.go` — from DuckDB introspection via `scripts/genduckdb`
