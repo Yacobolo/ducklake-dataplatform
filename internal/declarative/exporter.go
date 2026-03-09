@@ -284,6 +284,17 @@ func exportCompute(dir string, state *DesiredState) error {
 		}
 	}
 
+	if state.ComputeDefaults != nil {
+		doc := ComputeRoutingDefaultsDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameComputeRoutingDefaults,
+			Defaults:   *state.ComputeDefaults,
+		}
+		if err := writeYAMLFile(filepath.Join(dir, "compute", "defaults.yaml"), doc); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

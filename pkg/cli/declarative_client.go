@@ -59,6 +59,7 @@ type resourceIndex struct {
 	locationIDByName      map[string]string // "external_location_name" → UUID
 	credentialIDByName    map[string]string // "storage_credential_name" → UUID
 	computeIDByName       map[string]string // "local" → UUID
+	computeAssignIDByKey  map[string]string // "endpoint/principalType/principal" → UUID
 	tagIDByKey            map[string]string // "pii" or "pii:value" → UUID
 	rowFilterIDByPath     map[string]string // "cat.sch.tbl/filterName" → UUID
 	columnMaskIDByPath    map[string]string // "cat.sch.tbl/maskName" → UUID
@@ -77,6 +78,7 @@ func newResourceIndex() *resourceIndex {
 		locationIDByName:      make(map[string]string),
 		credentialIDByName:    make(map[string]string),
 		computeIDByName:       make(map[string]string),
+		computeAssignIDByKey:  make(map[string]string),
 		tagIDByKey:            make(map[string]string),
 		rowFilterIDByPath:     make(map[string]string),
 		columnMaskIDByPath:    make(map[string]string),
@@ -769,19 +771,32 @@ func (c *APIStateClient) readExternalLocations(ctx context.Context, state *decla
 // --- Compute resources ---
 
 type apiComputeEndpoint struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	URL  string `json:"url"`
-	Type string `json:"type"`
-	Size string `json:"size"`
+	ID                         string `json:"id"`
+	Name                       string `json:"name"`
+	URL                        string `json:"url"`
+	Type                       string `json:"type"`
+	SelectionPolicy            string `json:"selection_policy"`
+	WorkloadClass              string `json:"workload_class"`
+	ReadinessStatus            string `json:"readiness_status"`
+	Size                       string `json:"size"`
+	MaxMemoryGB                *int   `json:"max_memory_gb"`
+	MaxConcurrency             *int   `json:"max_concurrency"`
+	MaxResultSizeMB            *int   `json:"max_result_size_mb"`
+	RecommendedForLargeQueries bool   `json:"recommended_for_large_queries"`
+	IsDraining                 bool   `json:"is_draining"`
 }
 
 type apiComputeAssignment struct {
+	ID            string `json:"id"`
 	Endpoint      string `json:"endpoint"`
 	Principal     string `json:"principal"`
 	PrincipalType string `json:"principal_type"`
 	IsDefault     bool   `json:"is_default"`
 	FallbackLocal bool   `json:"fallback_local"`
+}
+
+func computeAssignmentKey(endpoint, principalType, principal string) string {
+	return endpoint + "|" + principalType + "|" + principal
 }
 
 func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declarative.DesiredState) error {
@@ -800,10 +815,18 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 
 	for _, ep := range items {
 		state.ComputeEndpoints = append(state.ComputeEndpoints, declarative.ComputeEndpointSpec{
-			Name: ep.Name,
-			URL:  ep.URL,
-			Type: ep.Type,
-			Size: ep.Size,
+			Name:                       ep.Name,
+			URL:                        ep.URL,
+			Type:                       ep.Type,
+			SelectionPolicy:            ep.SelectionPolicy,
+			WorkloadClass:              ep.WorkloadClass,
+			ReadinessStatus:            ep.ReadinessStatus,
+			Size:                       ep.Size,
+			MaxMemoryGB:                ep.MaxMemoryGB,
+			MaxConcurrency:             ep.MaxConcurrency,
+			MaxResultSizeMB:            ep.MaxResultSizeMB,
+			RecommendedForLargeQueries: ep.RecommendedForLargeQueries,
+			IsDraining:                 ep.IsDraining,
 		})
 		if ep.ID != "" && c.index != nil {
 			c.index.computeIDByName[ep.Name] = ep.ID
@@ -827,6 +850,26 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 					IsDefault:     a.IsDefault,
 					FallbackLocal: a.FallbackLocal,
 				})
+				if a.ID != "" && c.index != nil {
+					c.index.computeAssignIDByKey[computeAssignmentKey(ep.Name, a.PrincipalType, a.Principal)] = a.ID
+				}
+			}
+		}
+	}
+
+	defaultsPage, err := c.client.Do(http.MethodGet, "/compute-defaults", nil, nil)
+	if err == nil && defaultsPage.StatusCode >= 200 && defaultsPage.StatusCode < 300 {
+		var defaults struct {
+			InteractiveMode string `json:"interactive_mode"`
+			ScheduledMode   string `json:"scheduled_mode"`
+			NotebookMode    string `json:"notebook_mode"`
+		}
+		body, readErr := apiruntime.ReadBody(defaultsPage)
+		if readErr == nil && json.Unmarshal(body, &defaults) == nil {
+			state.ComputeDefaults = &declarative.ComputeRoutingDefaultsSpec{
+				InteractiveMode: defaults.InteractiveMode,
+				ScheduledMode:   defaults.ScheduledMode,
+				NotebookMode:    defaults.NotebookMode,
 			}
 		}
 	}
@@ -1813,10 +1856,20 @@ func (c *APIStateClient) lookupColumnMaskIDBySpec(ctx context.Context, tablePath
 // Execute applies a single planned action to the server via the API.
 func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action) error {
 	switch action.ResourceKind {
+	case declarative.KindStorageCredential:
+		return c.executeStorageCredential(ctx, action)
 	case declarative.KindPrincipal:
 		return c.executePrincipal(ctx, action)
 	case declarative.KindGroup:
 		return c.executeGroup(ctx, action)
+	case declarative.KindExternalLocation:
+		return c.executeExternalLocation(ctx, action)
+	case declarative.KindComputeEndpoint:
+		return c.executeComputeEndpoint(ctx, action)
+	case declarative.KindComputeRoutingDefaults:
+		return c.executeComputeRoutingDefaults(ctx, action)
+	case declarative.KindComputeAssignment:
+		return c.executeComputeAssignment(ctx, action)
 	case declarative.KindGroupMembership:
 		return c.executeGroupMembership(ctx, action)
 	case declarative.KindPrivilegeGrant:
@@ -1829,6 +1882,8 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeTable(ctx, action)
 	case declarative.KindView:
 		return c.executeView(ctx, action)
+	case declarative.KindVolume:
+		return c.executeVolume(ctx, action)
 	case declarative.KindTag:
 		return c.executeTag(ctx, action)
 	case declarative.KindTagAssignment:
@@ -2918,6 +2973,362 @@ func (c *APIStateClient) executeModel(ctx context.Context, action declarative.Ac
 	}
 }
 
+func (c *APIStateClient) executeStorageCredential(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		spec := action.Desired.(declarative.StorageCredentialSpec)
+		body := map[string]interface{}{
+			"name":            spec.Name,
+			"credential_type": spec.CredentialType,
+		}
+		if spec.Comment != "" {
+			body["comment"] = spec.Comment
+		}
+		resp, err := c.client.Do(http.MethodPost, "/storage-credentials", nil, body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			return nil
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.credentialIDByName[spec.Name] = id
+		}
+		return nil
+	case declarative.OpUpdate:
+		spec := action.Desired.(declarative.StorageCredentialSpec)
+		body := map[string]interface{}{
+			"comment": spec.Comment,
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/storage-credentials/"+spec.Name, nil, body)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	case declarative.OpDelete:
+		name := action.ResourceName
+		if actual, ok := action.Actual.(declarative.StorageCredentialSpec); ok && actual.Name != "" {
+			name = actual.Name
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/storage-credentials/"+name, nil, nil)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for storage-credential", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeExternalLocation(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		spec := action.Desired.(declarative.ExternalLocationSpec)
+		body := map[string]interface{}{
+			"name":            spec.Name,
+			"url":             spec.URL,
+			"credential_name": spec.CredentialName,
+		}
+		if spec.StorageType != "" {
+			body["storage_type"] = spec.StorageType
+		}
+		if spec.Comment != "" {
+			body["comment"] = spec.Comment
+		}
+		body["read_only"] = spec.ReadOnly
+		resp, err := c.client.Do(http.MethodPost, "/external-locations", nil, body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			return nil
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.locationIDByName[spec.Name] = id
+		}
+		return nil
+	case declarative.OpUpdate:
+		spec := action.Desired.(declarative.ExternalLocationSpec)
+		body := map[string]interface{}{
+			"url":             spec.URL,
+			"credential_name": spec.CredentialName,
+			"storage_type":    spec.StorageType,
+			"comment":         spec.Comment,
+			"read_only":       spec.ReadOnly,
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/external-locations/"+spec.Name, nil, body)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	case declarative.OpDelete:
+		name := action.ResourceName
+		if actual, ok := action.Actual.(declarative.ExternalLocationSpec); ok && actual.Name != "" {
+			name = actual.Name
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/external-locations/"+name, nil, nil)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for external-location", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeComputeEndpoint(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		spec := action.Desired.(declarative.ComputeEndpointSpec)
+		body := map[string]interface{}{
+			"name": spec.Name,
+			"type": spec.Type,
+		}
+		if spec.URL != "" {
+			body["url"] = spec.URL
+		}
+		if spec.Size != "" {
+			body["size"] = spec.Size
+		}
+		if spec.SelectionPolicy != "" {
+			body["selection_policy"] = spec.SelectionPolicy
+		}
+		if spec.WorkloadClass != "" {
+			body["workload_class"] = spec.WorkloadClass
+		}
+		if spec.ReadinessStatus != "" {
+			body["readiness_status"] = spec.ReadinessStatus
+		}
+		if spec.MaxMemoryGB != nil {
+			body["max_memory_gb"] = *spec.MaxMemoryGB
+		}
+		if spec.MaxConcurrency != nil {
+			body["max_concurrency"] = *spec.MaxConcurrency
+		}
+		if spec.MaxResultSizeMB != nil {
+			body["max_result_size_mb"] = *spec.MaxResultSizeMB
+		}
+		if spec.RecommendedForLargeQueries {
+			body["recommended_for_large_queries"] = spec.RecommendedForLargeQueries
+		}
+		if spec.IsDraining {
+			body["is_draining"] = spec.IsDraining
+		}
+		resp, err := c.client.Do(http.MethodPost, "/compute-endpoints", nil, body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			return nil
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.computeIDByName[spec.Name] = id
+		}
+		return nil
+	case declarative.OpUpdate:
+		spec := action.Desired.(declarative.ComputeEndpointSpec)
+		body := map[string]interface{}{
+			"url":  spec.URL,
+			"size": spec.Size,
+		}
+		if spec.SelectionPolicy != "" {
+			body["selection_policy"] = spec.SelectionPolicy
+		}
+		if spec.WorkloadClass != "" {
+			body["workload_class"] = spec.WorkloadClass
+		}
+		if spec.ReadinessStatus != "" {
+			body["readiness_status"] = spec.ReadinessStatus
+		}
+		if spec.MaxMemoryGB != nil {
+			body["max_memory_gb"] = *spec.MaxMemoryGB
+		}
+		if spec.MaxConcurrency != nil {
+			body["max_concurrency"] = *spec.MaxConcurrency
+		}
+		if spec.MaxResultSizeMB != nil {
+			body["max_result_size_mb"] = *spec.MaxResultSizeMB
+		}
+		body["recommended_for_large_queries"] = spec.RecommendedForLargeQueries
+		body["is_draining"] = spec.IsDraining
+		resp, err := c.client.Do(http.MethodPatch, "/compute-endpoints/"+spec.Name, nil, body)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	case declarative.OpDelete:
+		name := action.ResourceName
+		if actual, ok := action.Actual.(declarative.ComputeEndpointSpec); ok && actual.Name != "" {
+			name = actual.Name
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/compute-endpoints/"+name, nil, nil)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for compute-endpoint", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeComputeRoutingDefaults(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate, declarative.OpUpdate:
+		spec := action.Desired.(declarative.ComputeRoutingDefaultsSpec)
+		body := map[string]interface{}{}
+		if spec.InteractiveMode != "" {
+			body["interactive_mode"] = spec.InteractiveMode
+		}
+		if spec.ScheduledMode != "" {
+			body["scheduled_mode"] = spec.ScheduledMode
+		}
+		if spec.NotebookMode != "" {
+			body["notebook_mode"] = spec.NotebookMode
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/compute-defaults", nil, body)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	case declarative.OpDelete:
+		resp, err := c.client.Do(http.MethodPatch, "/compute-defaults", nil, map[string]interface{}{
+			"interactive_mode": "BYOC_LOCAL",
+			"scheduled_mode":   "SHARED_ENDPOINT",
+			"notebook_mode":    "SHARED_ENDPOINT",
+		})
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for compute-routing-defaults", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeComputeAssignment(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		spec := action.Desired.(declarative.ComputeAssignmentSpec)
+		principalID, err := c.resolvePrincipalID(spec.Principal, spec.PrincipalType)
+		if err != nil {
+			return fmt.Errorf("resolve principal for compute assignment: %w", err)
+		}
+		body := map[string]interface{}{
+			"principal_id":   principalID,
+			"principal_type": spec.PrincipalType,
+			"is_default":     spec.IsDefault,
+			"fallback_local": spec.FallbackLocal,
+		}
+		resp, err := c.client.Do(http.MethodPost, "/compute-endpoints/"+spec.Endpoint+"/assignments", nil, body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			return nil
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.computeAssignIDByKey[computeAssignmentKey(spec.Endpoint, spec.PrincipalType, spec.Principal)] = id
+		}
+		return nil
+	case declarative.OpUpdate:
+		spec := action.Desired.(declarative.ComputeAssignmentSpec)
+		actual := action.Actual.(declarative.ComputeAssignmentSpec)
+		deleteAction := declarative.Action{Operation: declarative.OpDelete, Actual: actual, ResourceName: action.ResourceName}
+		if err := c.executeComputeAssignment(context.TODO(), deleteAction); err != nil {
+			return err
+		}
+		createAction := declarative.Action{Operation: declarative.OpCreate, Desired: spec, ResourceName: action.ResourceName}
+		return c.executeComputeAssignment(context.TODO(), createAction)
+	case declarative.OpDelete:
+		spec := action.Actual.(declarative.ComputeAssignmentSpec)
+		assignmentID := spec.AssignmentID
+		if assignmentID == "" && c.index != nil {
+			assignmentID = c.index.computeAssignIDByKey[computeAssignmentKey(spec.Endpoint, spec.PrincipalType, spec.Principal)]
+		}
+		if assignmentID == "" {
+			return fmt.Errorf("compute assignment %s has no assignment id", action.ResourceName)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/compute-endpoints/"+spec.Endpoint+"/assignments/"+assignmentID, nil, nil)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for compute-assignment", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeVolume(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		volume := action.Desired.(declarative.VolumeResource)
+		body := map[string]interface{}{
+			"name": volume.VolumeName,
+		}
+		if volume.Spec.VolumeType != "" {
+			body["volume_type"] = volume.Spec.VolumeType
+		}
+		if volume.Spec.StorageLocation != "" {
+			body["storage_location"] = volume.Spec.StorageLocation
+		}
+		if volume.Spec.Comment != "" {
+			body["comment"] = volume.Spec.Comment
+		}
+		resp, err := c.client.Do(http.MethodPost, "/catalogs/"+volume.CatalogName+"/schemas/"+volume.SchemaName+"/volumes", nil, body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == http.StatusConflict {
+			return nil
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.volumeIDByPath[volume.CatalogName+"."+volume.SchemaName+"."+volume.VolumeName] = id
+		}
+		return nil
+	case declarative.OpUpdate:
+		volume := action.Desired.(declarative.VolumeResource)
+		body := map[string]interface{}{
+			"comment": volume.Spec.Comment,
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+volume.CatalogName+"/schemas/"+volume.SchemaName+"/volumes/"+volume.VolumeName, nil, body)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	case declarative.OpDelete:
+		parts := strings.SplitN(action.ResourceName, ".", 3)
+		if len(parts) != 3 {
+			return fmt.Errorf("invalid volume resource name: %s", action.ResourceName)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/catalogs/"+parts[0]+"/schemas/"+parts[1]+"/volumes/"+parts[2], nil, nil)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	default:
+		return fmt.Errorf("unsupported operation %s for volume", action.Operation)
+	}
+}
 // --- Security resource execution ---
 
 func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.Action) error {

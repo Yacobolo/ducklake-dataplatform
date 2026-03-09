@@ -202,6 +202,7 @@ type QueryJobRepository interface {
 	GetByID(ctx context.Context, id string) (*QueryJob, error)
 	ListByPrincipal(ctx context.Context, principalName string, page PageRequest) ([]QueryJob, int64, error)
 	GetByRequestID(ctx context.Context, principalName, requestID string) (*QueryJob, error)
+	SetResolvedCompute(ctx context.Context, id string, mode string, endpointName *string) error
 	MarkRunning(ctx context.Context, id string, attempt int) error
 	MarkRetrying(ctx context.Context, id string, attempt int, nextRetryAt time.Time, message string) error
 	Heartbeat(ctx context.Context, id string, at time.Time) error
@@ -326,11 +327,18 @@ type ComputeEndpointRepository interface {
 	Update(ctx context.Context, id string, req UpdateComputeEndpointRequest) (*ComputeEndpoint, error)
 	Delete(ctx context.Context, id string) error
 	UpdateStatus(ctx context.Context, id string, status string) error
+	UpdateHealth(ctx context.Context, id string, health ComputeEndpointHealthResult) error
 	Assign(ctx context.Context, a *ComputeAssignment) (*ComputeAssignment, error)
 	Unassign(ctx context.Context, id string) error
 	ListAssignments(ctx context.Context, endpointID string, page PageRequest) ([]ComputeAssignment, int64, error)
 	GetDefaultForPrincipal(ctx context.Context, principalID string, principalType string) (*ComputeEndpoint, error)
 	GetAssignmentsForPrincipal(ctx context.Context, principalID string, principalType string) ([]ComputeEndpoint, error)
+}
+
+// ComputeRoutingRepository stores global compute routing defaults.
+type ComputeRoutingRepository interface {
+	GetDefaults(ctx context.Context) (*ComputeRoutingDefaults, error)
+	UpdateDefaults(ctx context.Context, defaults ComputeRoutingDefaults) (*ComputeRoutingDefaults, error)
 }
 
 // NotebookRepository provides CRUD operations for notebooks and cells.

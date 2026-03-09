@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/query"
@@ -35,6 +36,12 @@ type manifestService interface {
 func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryRequest) (GenExecuteQueryResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
+	var err error
+	ctx, err = withComputeRequestDefaults(ctx, h.computeEndpoints, principal, computeExecutionRequestFromQueryBody(req.Body))
+	if err != nil {
+		code := errorCodeFromError(err)
+		return ExecuteQuery400JSONResponse{BadRequestJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
 	if err != nil {
 		code := errorCodeFromError(err)
@@ -66,6 +73,12 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryReques
 func (h *APIHandler) SubmitQuery(ctx context.Context, req GenSubmitQueryRequest) (GenSubmitQueryResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
+	var err error
+	ctx, err = withComputeRequestDefaults(ctx, h.computeEndpoints, principal, computeExecutionRequestFromSubmitBody(req.Body))
+	if err != nil {
+		code := errorCodeFromError(err)
+		return SubmitQuery400JSONResponse{BadRequestJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
 
 	asyncSvc, ok := h.query.(queryAsyncService)
 	if !ok {
@@ -262,6 +275,24 @@ func queryJobToAPI(job *domain.QueryJob) QueryJob {
 		RequestId: &job.RequestID,
 		CreatedAt: formatTimePtr(&job.CreatedAt),
 	}
+	if job.ComputeMode != "" {
+		mode := QueryJobComputeMode(job.ComputeMode)
+		resp.ComputeMode = &mode
+	}
+	if job.EndpointName != nil {
+		resp.EndpointName = job.EndpointName
+	}
+	if job.ResolvedMode != nil {
+		mode := QueryJobResolvedMode(*job.ResolvedMode)
+		resp.ResolvedMode = &mode
+	}
+	if job.ResolvedEndpointName != nil {
+		resp.ResolvedEndpointName = job.ResolvedEndpointName
+	}
+	if job.WorkloadType != "" {
+		workloadType := QueryJobWorkloadType(job.WorkloadType)
+		resp.WorkloadType = &workloadType
+	}
 	if job.ErrorMessage != nil {
 		resp.Error = job.ErrorMessage
 	}
@@ -272,6 +303,70 @@ func queryJobToAPI(job *domain.QueryJob) QueryJob {
 		resp.CompletedAt = formatTimePtr(job.CompletedAt)
 	}
 	return resp
+}
+
+func computeExecutionRequestFromQueryBody(body *QueryRequest) domain.ComputeExecutionRequest {
+	if body == nil {
+		return domain.ComputeExecutionRequest{}
+	}
+	req := domain.ComputeExecutionRequest{}
+	if body.ComputeMode != nil {
+		req.Mode = string(*body.ComputeMode)
+	}
+	if body.EndpointName != nil {
+		req.EndpointName = *body.EndpointName
+	}
+	if body.WorkloadType != nil {
+		req.WorkloadType = string(*body.WorkloadType)
+	}
+	return req
+}
+
+func computeExecutionRequestFromSubmitBody(body *SubmitQueryRequest) domain.ComputeExecutionRequest {
+	if body == nil {
+		return domain.ComputeExecutionRequest{}
+	}
+	req := domain.ComputeExecutionRequest{}
+	if body.ComputeMode != nil {
+		req.Mode = string(*body.ComputeMode)
+	}
+	if body.EndpointName != nil {
+		req.EndpointName = *body.EndpointName
+	}
+	if body.WorkloadType != nil {
+		req.WorkloadType = string(*body.WorkloadType)
+	}
+	return req
+}
+
+func withComputeRequestDefaults(ctx context.Context, svc computeEndpointService, principal string, req domain.ComputeExecutionRequest) (context.Context, error) {
+	req = req.Normalize()
+	if req.WorkloadType == "" {
+		req.WorkloadType = domain.ComputeWorkloadInteractive
+	}
+
+	if req.Mode == "" && svc != nil {
+		defaults, err := svc.GetRoutingDefaults(ctx, principal)
+		if err == nil && defaults != nil {
+			switch strings.ToUpper(req.WorkloadType) {
+			case domain.ComputeWorkloadScheduled, domain.ComputeWorkloadHeavy:
+				req.Mode = defaults.ScheduledMode
+			case domain.ComputeWorkloadNotebook:
+				req.Mode = defaults.NotebookMode
+			default:
+				req.Mode = defaults.InteractiveMode
+			}
+		}
+	}
+
+	if req.Mode == "" {
+		req.Mode = domain.ComputeModeAuto
+	}
+
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	return domain.WithComputeExecutionRequest(ctx, req), nil
 }
 
 // CreateManifest implements the endpoint for generating a table read manifest.
@@ -302,18 +397,21 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 
 	cols := make([]ManifestColumn, len(result.Columns))
 	for i, c := range result.Columns {
-		cols[i] = ManifestColumn{Name: c.Name, Type: c.Type}
+		name := c.Name
+		typ := c.Type
+		cols[i] = ManifestColumn{Name: &name, Type: &typ}
 	}
 
 	return CreateManifest200JSONResponse{
 		Body: ManifestResponse{
-			Table:       result.Table,
-			Schema:      &result.Schema,
-			Columns:     &cols,
-			Files:       &result.Files,
-			RowFilters:  &result.RowFilters,
-			ColumnMasks: stringMapToRecord(result.ColumnMasks),
-			ExpiresAt:   formatTimePtr(&result.ExpiresAt),
+			ManifestVersion: &result.ManifestVersion,
+			Table:           &result.Table,
+			Schema:          &result.Schema,
+			Columns:         &cols,
+			Files:           &result.Files,
+			RowFilters:      &result.RowFilters,
+			ColumnMasks:     &result.ColumnMasks,
+			ExpiresAt:       &result.ExpiresAt,
 		},
 		Headers: CreateManifest200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil

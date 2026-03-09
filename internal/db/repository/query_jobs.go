@@ -35,9 +35,14 @@ func (r *QueryJobRepo) Create(ctx context.Context, job *domain.QueryJob) (*domai
 	}
 
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO query_jobs (id, principal_name, request_id, sql_text, status, attempt_count, max_attempts)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, job.ID, job.PrincipalName, job.RequestID, job.SQLText, string(job.Status), job.AttemptCount, job.MaxAttempts)
+		INSERT INTO query_jobs (
+			id, principal_name, request_id, sql_text, compute_mode, endpoint_name,
+			resolved_mode, resolved_endpoint_name, workload_type, status, attempt_count, max_attempts
+		)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, job.ID, job.PrincipalName, job.RequestID, job.SQLText, job.ComputeMode, nullStringPtr(job.EndpointName),
+		nullStringPtr(job.ResolvedMode), nullStringPtr(job.ResolvedEndpointName), job.WorkloadType,
+		string(job.Status), job.AttemptCount, job.MaxAttempts)
 	if err != nil {
 		return nil, mapDBError(err)
 	}
@@ -49,7 +54,8 @@ func (r *QueryJobRepo) Create(ctx context.Context, job *domain.QueryJob) (*domai
 func (r *QueryJobRepo) GetByID(ctx context.Context, id string) (*domain.QueryJob, error) {
 	return r.getOne(ctx, `
 		SELECT id, principal_name, request_id, sql_text, status, columns_json, rows_json, row_count,
-		       error_message, attempt_count, max_attempts, last_heartbeat_at, next_retry_at,
+		       error_message, compute_mode, endpoint_name, resolved_mode, resolved_endpoint_name, workload_type,
+		       attempt_count, max_attempts, last_heartbeat_at, next_retry_at,
 		       created_at, started_at, completed_at, updated_at
 		FROM query_jobs WHERE id = ?
 	`, id)
@@ -63,7 +69,8 @@ func (r *QueryJobRepo) ListByPrincipal(ctx context.Context, principalName string
 
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT id, principal_name, request_id, sql_text, status, columns_json, rows_json, row_count,
-		       error_message, attempt_count, max_attempts, last_heartbeat_at, next_retry_at,
+		       error_message, compute_mode, endpoint_name, resolved_mode, resolved_endpoint_name, workload_type,
+		       attempt_count, max_attempts, last_heartbeat_at, next_retry_at,
 		       created_at, started_at, completed_at, updated_at
 		FROM query_jobs
 		WHERE principal_name = ?
@@ -97,11 +104,25 @@ func (r *QueryJobRepo) ListByPrincipal(ctx context.Context, principalName string
 func (r *QueryJobRepo) GetByRequestID(ctx context.Context, principalName, requestID string) (*domain.QueryJob, error) {
 	return r.getOne(ctx, `
 		SELECT id, principal_name, request_id, sql_text, status, columns_json, rows_json, row_count,
-		       error_message, attempt_count, max_attempts, last_heartbeat_at, next_retry_at,
+		       error_message, compute_mode, endpoint_name, resolved_mode, resolved_endpoint_name, workload_type,
+		       attempt_count, max_attempts, last_heartbeat_at, next_retry_at,
 		       created_at, started_at, completed_at, updated_at
 		FROM query_jobs
 		WHERE principal_name = ? AND request_id = ?
 	`, principalName, requestID)
+}
+
+// SetResolvedCompute records how a queued/running job was ultimately routed.
+func (r *QueryJobRepo) SetResolvedCompute(ctx context.Context, id string, mode string, endpointName *string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE query_jobs
+		SET resolved_mode = ?, resolved_endpoint_name = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, mode, nullStringPtr(endpointName), id)
+	if err != nil {
+		return mapDBError(err)
+	}
+	return nil
 }
 
 // MarkRunning updates a queued job to running.
@@ -224,6 +245,8 @@ func (r *QueryJobRepo) scanRow(scanner interface {
 		job                                                  domain.QueryJob
 		status                                               string
 		columnsJSON, rowsJSON, errorMessage                  sql.NullString
+		computeMode, workloadType                            string
+		endpointName, resolvedMode, resolvedEndpointName     sql.NullString
 		startedAt, completedAt, lastHeartbeatAt, nextRetryAt sql.NullTime
 		createdAt, updatedAt                                 time.Time
 	)
@@ -238,6 +261,11 @@ func (r *QueryJobRepo) scanRow(scanner interface {
 		&rowsJSON,
 		&job.RowCount,
 		&errorMessage,
+		&computeMode,
+		&endpointName,
+		&resolvedMode,
+		&resolvedEndpointName,
+		&workloadType,
 		&job.AttemptCount,
 		&job.MaxAttempts,
 		&lastHeartbeatAt,
@@ -252,6 +280,8 @@ func (r *QueryJobRepo) scanRow(scanner interface {
 	}
 
 	job.Status = domain.QueryJobStatus(status)
+	job.ComputeMode = computeMode
+	job.WorkloadType = workloadType
 	job.CreatedAt = createdAt
 	job.UpdatedAt = updatedAt
 	if errorMessage.Valid {
@@ -283,6 +313,15 @@ func (r *QueryJobRepo) scanRow(scanner interface {
 		if err := json.Unmarshal([]byte(rowsJSON.String), &job.Rows); err != nil {
 			return nil, fmt.Errorf("unmarshal rows: %w", err)
 		}
+	}
+	if endpointName.Valid {
+		job.EndpointName = &endpointName.String
+	}
+	if resolvedMode.Valid {
+		job.ResolvedMode = &resolvedMode.String
+	}
+	if resolvedEndpointName.Valid {
+		job.ResolvedEndpointName = &resolvedEndpointName.String
 	}
 
 	return &job, nil

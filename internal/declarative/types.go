@@ -344,12 +344,19 @@ type ComputeEndpointListDoc struct {
 
 // ComputeEndpointSpec describes a single compute endpoint.
 type ComputeEndpointSpec struct {
-	Name             string `yaml:"name"`
-	URL              string `yaml:"url,omitempty"`
-	Type             string `yaml:"type"` // LOCAL or REMOTE
-	Size             string `yaml:"size,omitempty"`
-	MaxMemoryGB      *int   `yaml:"max_memory_gb,omitempty"`
-	AuthTokenFromEnv string `yaml:"auth_token_from_env,omitempty"`
+	Name                       string `yaml:"name"`
+	URL                        string `yaml:"url,omitempty"`
+	Type                       string `yaml:"type"` // LOCAL or REMOTE
+	SelectionPolicy            string `yaml:"selection_policy,omitempty"`
+	WorkloadClass              string `yaml:"workload_class,omitempty"`
+	ReadinessStatus            string `yaml:"readiness_status,omitempty"`
+	Size                       string `yaml:"size,omitempty"`
+	MaxMemoryGB                *int   `yaml:"max_memory_gb,omitempty"`
+	MaxConcurrency             *int   `yaml:"max_concurrency,omitempty"`
+	MaxResultSizeMB            *int   `yaml:"max_result_size_mb,omitempty"`
+	RecommendedForLargeQueries bool   `yaml:"recommended_for_large_queries,omitempty"`
+	IsDraining                 bool   `yaml:"is_draining,omitempty"`
+	AuthTokenFromEnv           string `yaml:"auth_token_from_env,omitempty"`
 }
 
 // ComputeAssignmentListDoc declares compute endpoint assignments to principals.
@@ -367,6 +374,20 @@ type ComputeAssignmentSpec struct {
 	IsDefault     bool   `yaml:"is_default,omitempty"`
 	FallbackLocal bool   `yaml:"fallback_local,omitempty"`
 	AssignmentID  string `yaml:"-" json:"-"`
+}
+
+// ComputeRoutingDefaultsDoc declares global compute routing defaults.
+type ComputeRoutingDefaultsDoc struct {
+	APIVersion string                     `yaml:"apiVersion"`
+	Kind       string                     `yaml:"kind"`
+	Defaults   ComputeRoutingDefaultsSpec `yaml:"defaults"`
+}
+
+// ComputeRoutingDefaultsSpec declares global defaults for compute routing.
+type ComputeRoutingDefaultsSpec struct {
+	InteractiveMode string `yaml:"interactive_mode,omitempty"`
+	ScheduledMode   string `yaml:"scheduled_mode,omitempty"`
+	NotebookMode    string `yaml:"notebook_mode,omitempty"`
 }
 
 // === Workflows ===
@@ -503,6 +524,7 @@ type DesiredState struct {
 	ExternalLocations  []ExternalLocationSpec
 	ComputeEndpoints   []ComputeEndpointSpec
 	ComputeAssignments []ComputeAssignmentSpec
+	ComputeDefaults    *ComputeRoutingDefaultsSpec
 	APIKeys            []APIKeySpec
 	Notebooks          []NotebookResource
 	Assets             []AssetResource

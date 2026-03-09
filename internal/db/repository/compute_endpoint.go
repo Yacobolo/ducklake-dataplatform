@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -35,15 +37,22 @@ func (r *ComputeEndpointRepo) Create(ctx context.Context, ep *domain.ComputeEndp
 	}
 
 	row, err := r.q.CreateComputeEndpoint(ctx, dbstore.CreateComputeEndpointParams{
-		ID:          newID(),
-		ExternalID:  uuid.New().String(),
-		Name:        ep.Name,
-		Url:         ep.URL,
-		Type:        ep.Type,
-		Size:        ep.Size,
-		MaxMemoryGb: nullInt64Ptr(ep.MaxMemoryGB),
-		AuthToken:   encToken,
-		Owner:       ep.Owner,
+		ID:                         newID(),
+		ExternalID:                 uuid.New().String(),
+		Name:                       ep.Name,
+		Url:                        ep.URL,
+		Type:                       ep.Type,
+		SelectionPolicy:            defaultString(ep.SelectionPolicy, domain.ComputeSelectionPolicyAllowedOnly),
+		WorkloadClass:              defaultString(ep.WorkloadClass, domain.ComputeEndpointWorkloadMixed),
+		ReadinessStatus:            defaultString(ep.ReadinessStatus, domain.ComputeReadinessReady),
+		Size:                       ep.Size,
+		MaxMemoryGb:                nullInt64Ptr(ep.MaxMemoryGB),
+		MaxConcurrency:             nullInt64Ptr(ep.MaxConcurrency),
+		MaxResultSizeMb:            nullInt64Ptr(ep.MaxResultSizeMB),
+		RecommendedForLargeQueries: boolToInt64(ep.RecommendedForLargeQueries),
+		IsDraining:                 boolToInt64(ep.IsDraining),
+		AuthToken:                  encToken,
+		Owner:                      ep.Owner,
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -114,6 +123,34 @@ func (r *ComputeEndpointRepo) Update(ctx context.Context, id string, req domain.
 	if req.MaxMemoryGB != nil {
 		maxMem = req.MaxMemoryGB
 	}
+	maxConcurrency := current.MaxConcurrency
+	if req.MaxConcurrency != nil {
+		maxConcurrency = req.MaxConcurrency
+	}
+	maxResultSizeMB := current.MaxResultSizeMB
+	if req.MaxResultSizeMB != nil {
+		maxResultSizeMB = req.MaxResultSizeMB
+	}
+	selectionPolicy := current.SelectionPolicy
+	if req.SelectionPolicy != nil {
+		selectionPolicy = *req.SelectionPolicy
+	}
+	workloadClass := current.WorkloadClass
+	if req.WorkloadClass != nil {
+		workloadClass = *req.WorkloadClass
+	}
+	readinessStatus := current.ReadinessStatus
+	if req.ReadinessStatus != nil {
+		readinessStatus = *req.ReadinessStatus
+	}
+	recommendedForLargeQueries := current.RecommendedForLargeQueries
+	if req.RecommendedForLargeQueries != nil {
+		recommendedForLargeQueries = *req.RecommendedForLargeQueries
+	}
+	isDraining := current.IsDraining
+	if req.IsDraining != nil {
+		isDraining = *req.IsDraining
+	}
 	authToken := current.AuthToken
 	if req.AuthToken != nil {
 		authToken = *req.AuthToken
@@ -125,11 +162,18 @@ func (r *ComputeEndpointRepo) Update(ctx context.Context, id string, req domain.
 	}
 
 	err = r.q.UpdateComputeEndpoint(ctx, dbstore.UpdateComputeEndpointParams{
-		Url:         url,
-		Size:        size,
-		MaxMemoryGb: nullInt64Ptr(maxMem),
-		AuthToken:   encToken,
-		ID:          id,
+		Url:                        url,
+		Size:                       size,
+		MaxMemoryGb:                nullInt64Ptr(maxMem),
+		MaxConcurrency:             nullInt64Ptr(maxConcurrency),
+		MaxResultSizeMb:            nullInt64Ptr(maxResultSizeMB),
+		SelectionPolicy:            selectionPolicy,
+		WorkloadClass:              workloadClass,
+		ReadinessStatus:            readinessStatus,
+		RecommendedForLargeQueries: boolToInt64(recommendedForLargeQueries),
+		IsDraining:                 boolToInt64(isDraining),
+		AuthToken:                  encToken,
+		ID:                         id,
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -147,6 +191,32 @@ func (r *ComputeEndpointRepo) UpdateStatus(ctx context.Context, id string, statu
 	return mapDBError(r.q.UpdateComputeEndpointStatus(ctx, dbstore.UpdateComputeEndpointStatusParams{
 		Status: status,
 		ID:     id,
+	}))
+}
+
+// UpdateHealth persists the latest endpoint health and queue metrics.
+func (r *ComputeEndpointRepo) UpdateHealth(ctx context.Context, id string, health domain.ComputeEndpointHealthResult) error {
+	readinessStatus := domain.ComputeReadinessUnavailable
+	if health.Status != nil {
+		switch strings.ToUpper(strings.TrimSpace(*health.Status)) {
+		case "OK", "ACTIVE", "READY":
+			readinessStatus = domain.ComputeReadinessReady
+		case "DEGRADED", "WARN", "WARNING":
+			readinessStatus = domain.ComputeReadinessDegraded
+		}
+	}
+
+	return mapDBError(r.q.UpdateComputeEndpointHealth(ctx, dbstore.UpdateComputeEndpointHealthParams{
+		LastHealthStatus:      nullStrFromPtr(health.Status),
+		ActiveQueries:         nullInt64FromPtr(health.ActiveQueries),
+		QueuedJobs:            nullInt64FromPtr(health.QueuedJobs),
+		RunningJobs:           nullInt64FromPtr(health.RunningJobs),
+		CompletedJobs:         nullInt64FromPtr(health.CompletedJobs),
+		StoredJobs:            nullInt64FromPtr(health.StoredJobs),
+		CleanedJobs:           nullInt64FromPtr(health.CleanedJobs),
+		QueryResultTtlSeconds: nullInt64FromIntPtr(health.QueryResultTTLSeconds),
+		ReadinessStatus:       readinessStatus,
+		ID:                    id,
 	}))
 }
 
@@ -240,18 +310,34 @@ func (r *ComputeEndpointRepo) endpointFromDB(row dbstore.ComputeEndpoint) (*doma
 	}
 
 	return &domain.ComputeEndpoint{
-		ID:          row.ID,
-		ExternalID:  row.ExternalID,
-		Name:        row.Name,
-		URL:         row.Url,
-		Type:        row.Type,
-		Status:      row.Status,
-		Size:        row.Size,
-		MaxMemoryGB: maxMem,
-		AuthToken:   authToken,
-		Owner:       row.Owner,
-		CreatedAt:   row.CreatedAt,
-		UpdatedAt:   row.UpdatedAt,
+		ID:                         row.ID,
+		ExternalID:                 row.ExternalID,
+		Name:                       row.Name,
+		URL:                        row.Url,
+		Type:                       row.Type,
+		Status:                     row.Status,
+		SelectionPolicy:            row.SelectionPolicy,
+		WorkloadClass:              row.WorkloadClass,
+		ReadinessStatus:            row.ReadinessStatus,
+		Size:                       row.Size,
+		MaxMemoryGB:                maxMem,
+		MaxConcurrency:             int64PtrFromNull(row.MaxConcurrency),
+		MaxResultSizeMB:            int64PtrFromNull(row.MaxResultSizeMb),
+		RecommendedForLargeQueries: row.RecommendedForLargeQueries != 0,
+		IsDraining:                 row.IsDraining != 0,
+		LastHealthStatus:           strPtrFromNull(row.LastHealthStatus),
+		LastHealthCheckedAt:        timePtrFromNull(row.LastHealthCheckedAt),
+		ActiveQueries:              int64PtrFromNull(row.ActiveQueries),
+		QueuedJobs:                 int64PtrFromNull(row.QueuedJobs),
+		RunningJobs:                int64PtrFromNull(row.RunningJobs),
+		CompletedJobs:              int64PtrFromNull(row.CompletedJobs),
+		StoredJobs:                 int64PtrFromNull(row.StoredJobs),
+		CleanedJobs:                int64PtrFromNull(row.CleanedJobs),
+		QueryResultTTLSeconds:      int64PtrFromNull(row.QueryResultTtlSeconds),
+		AuthToken:                  authToken,
+		Owner:                      row.Owner,
+		CreatedAt:                  row.CreatedAt,
+		UpdatedAt:                  row.UpdatedAt,
 	}, nil
 }
 
@@ -274,4 +360,46 @@ func nullInt64Ptr(p *int64) sql.NullInt64 {
 		return sql.NullInt64{}
 	}
 	return sql.NullInt64{Int64: *p, Valid: true}
+}
+
+func nullInt64FromPtr(p *int64) sql.NullInt64 {
+	if p == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: *p, Valid: true}
+}
+
+func nullInt64FromIntPtr(p *int) sql.NullInt64 {
+	if p == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: int64(*p), Valid: true}
+}
+
+func int64PtrFromNull(v sql.NullInt64) *int64 {
+	if !v.Valid {
+		return nil
+	}
+	return &v.Int64
+}
+
+func strPtrFromNull(v sql.NullString) *string {
+	if !v.Valid {
+		return nil
+	}
+	return &v.String
+}
+
+func timePtrFromNull(v sql.NullTime) *time.Time {
+	if !v.Valid {
+		return nil
+	}
+	return &v.Time
+}
+
+func defaultString(value, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
 }

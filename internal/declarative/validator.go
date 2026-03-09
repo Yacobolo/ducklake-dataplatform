@@ -361,6 +361,9 @@ func Validate(state *DesiredState) []ValidationError {
 	// 18. Validate compute assignments.
 	validateComputeAssignments(state.ComputeAssignments, endpointNames, principalNames, groupNames, &errs)
 
+	// 18a. Validate compute routing defaults.
+	validateComputeRoutingDefaults(state.ComputeDefaults, &errs)
+
 	// 19. Validate API keys.
 	validateAPIKeys(state.APIKeys, principalNames, &errs)
 
@@ -1316,12 +1319,48 @@ func validateComputeEndpoints(endpoints []ComputeEndpointSpec, errs *[]Validatio
 		if e.Type == "REMOTE" && e.URL == "" {
 			addErr(errs, path, "url is required for REMOTE compute endpoints")
 		}
+		if e.SelectionPolicy != "" && e.SelectionPolicy != "ADMIN_ONLY" && e.SelectionPolicy != "ALLOWED_USERS" && e.SelectionPolicy != "SELF_SERVICE" {
+			addErr(errs, path, "selection_policy must be ADMIN_ONLY, ALLOWED_USERS, or SELF_SERVICE")
+		}
+		if e.WorkloadClass != "" && e.WorkloadClass != "INTERACTIVE" && e.WorkloadClass != "SCHEDULED" && e.WorkloadClass != "HEAVY" && e.WorkloadClass != "MIXED" {
+			addErr(errs, path, "workload_class must be INTERACTIVE, SCHEDULED, HEAVY, or MIXED")
+		}
+		if e.ReadinessStatus != "" && e.ReadinessStatus != "READY" && e.ReadinessStatus != "DEGRADED" && e.ReadinessStatus != "UNAVAILABLE" {
+			addErr(errs, path, "readiness_status must be READY, DEGRADED, or UNAVAILABLE")
+		}
+		if e.MaxConcurrency != nil && *e.MaxConcurrency <= 0 {
+			addErr(errs, path, "max_concurrency must be greater than zero")
+		}
+		if e.MaxResultSizeMB != nil && *e.MaxResultSizeMB <= 0 {
+			addErr(errs, path, "max_result_size_mb must be greater than zero")
+		}
 		if e.Name != "" {
 			if seen[e.Name] {
 				addErr(errs, path, "duplicate compute endpoint name %q", e.Name)
 			}
 			seen[e.Name] = true
 		}
+	}
+}
+
+func validateComputeRoutingDefaults(defaults *ComputeRoutingDefaultsSpec, errs *[]ValidationError) {
+	if defaults == nil {
+		return
+	}
+	validModes := map[string]bool{
+		"":                true,
+		"AUTO":            true,
+		"BYOC_LOCAL":      true,
+		"SHARED_ENDPOINT": true,
+	}
+	if !validModes[defaults.InteractiveMode] {
+		addErr(errs, "compute_defaults.interactive_mode", "interactive_mode must be AUTO, BYOC_LOCAL, or SHARED_ENDPOINT")
+	}
+	if !validModes[defaults.ScheduledMode] {
+		addErr(errs, "compute_defaults.scheduled_mode", "scheduled_mode must be AUTO, BYOC_LOCAL, or SHARED_ENDPOINT")
+	}
+	if !validModes[defaults.NotebookMode] {
+		addErr(errs, "compute_defaults.notebook_mode", "notebook_mode must be AUTO, BYOC_LOCAL, or SHARED_ENDPOINT")
 	}
 }
 

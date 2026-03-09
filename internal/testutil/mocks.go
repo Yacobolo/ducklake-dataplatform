@@ -659,6 +659,7 @@ type MockComputeEndpointRepo struct {
 	UpdateFn                     func(ctx context.Context, id string, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error)
 	DeleteFn                     func(ctx context.Context, id string) error
 	UpdateStatusFn               func(ctx context.Context, id string, status string) error
+	UpdateHealthFn               func(ctx context.Context, id string, health domain.ComputeEndpointHealthResult) error
 	AssignFn                     func(ctx context.Context, a *domain.ComputeAssignment) (*domain.ComputeAssignment, error)
 	UnassignFn                   func(ctx context.Context, id string) error
 	ListAssignmentsFn            func(ctx context.Context, endpointID string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
@@ -720,6 +721,14 @@ func (m *MockComputeEndpointRepo) UpdateStatus(ctx context.Context, id string, s
 		return m.UpdateStatusFn(ctx, id, status)
 	}
 	panic("unexpected call to MockComputeEndpointRepo.UpdateStatus")
+}
+
+// UpdateHealth implements the interface method for testing.
+func (m *MockComputeEndpointRepo) UpdateHealth(ctx context.Context, id string, health domain.ComputeEndpointHealthResult) error {
+	if m.UpdateHealthFn != nil {
+		return m.UpdateHealthFn(ctx, id, health)
+	}
+	return nil
 }
 
 // Assign implements the interface method for testing.

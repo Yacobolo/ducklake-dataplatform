@@ -24,9 +24,12 @@ import (
 //
 //nolint:revive // Name chosen for clarity across package boundaries
 type ComputeEndpointService struct {
-	repo  domain.ComputeEndpointRepository
-	auth  domain.AuthorizationService
-	audit domain.AuditRepository
+	repo        domain.ComputeEndpointRepository
+	routingRepo domain.ComputeRoutingRepository
+	principals  domain.PrincipalRepository
+	groups      domain.GroupRepository
+	auth        domain.AuthorizationService
+	audit       domain.AuditRepository
 }
 
 // NewComputeEndpointService creates a new ComputeEndpointService.
@@ -42,6 +45,21 @@ func NewComputeEndpointService(
 	}
 }
 
+// SetRoutingRepository configures compute routing defaults storage.
+func (s *ComputeEndpointService) SetRoutingRepository(repo domain.ComputeRoutingRepository) {
+	s.routingRepo = repo
+}
+
+// SetPrincipalRepository configures principal lookup for principal-facing compute APIs.
+func (s *ComputeEndpointService) SetPrincipalRepository(repo domain.PrincipalRepository) {
+	s.principals = repo
+}
+
+// SetGroupRepository configures group lookup for principal-facing compute APIs.
+func (s *ComputeEndpointService) SetGroupRepository(repo domain.GroupRepository) {
+	s.groups = repo
+}
+
 // Create validates and persists a new compute endpoint.
 // Requires MANAGE_COMPUTE on catalog.
 func (s *ComputeEndpointService) Create(ctx context.Context, principal string, req domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
@@ -54,13 +72,20 @@ func (s *ComputeEndpointService) Create(ctx context.Context, principal string, r
 	}
 
 	ep := &domain.ComputeEndpoint{
-		Name:        req.Name,
-		URL:         req.URL,
-		Type:        req.Type,
-		Size:        req.Size,
-		MaxMemoryGB: req.MaxMemoryGB,
-		AuthToken:   req.AuthToken,
-		Owner:       principal,
+		Name:                       req.Name,
+		URL:                        req.URL,
+		Type:                       req.Type,
+		SelectionPolicy:            normalizeSelectionPolicy(req.SelectionPolicy),
+		WorkloadClass:              normalizeEndpointWorkloadClass(req.WorkloadClass),
+		ReadinessStatus:            normalizeReadinessStatus(req.ReadinessStatus),
+		Size:                       req.Size,
+		MaxMemoryGB:                req.MaxMemoryGB,
+		MaxConcurrency:             req.MaxConcurrency,
+		MaxResultSizeMB:            req.MaxResultSizeMB,
+		RecommendedForLargeQueries: req.RecommendedForLargeQueries,
+		IsDraining:                 req.IsDraining,
+		AuthToken:                  req.AuthToken,
+		Owner:                      principal,
 	}
 
 	result, err := s.repo.Create(ctx, ep)
@@ -115,6 +140,21 @@ func (s *ComputeEndpointService) Update(ctx context.Context, principal string, n
 	}
 	if req.URL != nil {
 		if err := domain.ValidateComputeEndpointURL(*req.URL, existing.Type); err != nil {
+			return nil, err
+		}
+	}
+	if req.SelectionPolicy != nil {
+		if err := validateSelectionPolicy(*req.SelectionPolicy); err != nil {
+			return nil, err
+		}
+	}
+	if req.WorkloadClass != nil {
+		if err := validateEndpointWorkloadClass(*req.WorkloadClass); err != nil {
+			return nil, err
+		}
+	}
+	if req.ReadinessStatus != nil {
+		if err := validateReadinessStatus(*req.ReadinessStatus); err != nil {
 			return nil, err
 		}
 	}
@@ -291,10 +331,17 @@ func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal stri
 
 	if ep.Type == "LOCAL" {
 		status := "ok"
-		return &domain.ComputeEndpointHealthResult{Status: &status}, nil
+		result := &domain.ComputeEndpointHealthResult{Status: &status}
+		_ = s.repo.UpdateHealth(ctx, ep.ID, *result)
+		return result, nil
 	}
 
-	return s.grpcHealthCheck(ctx, ep.URL, ep.AuthToken)
+	result, err := s.grpcHealthCheck(ctx, ep.URL, ep.AuthToken)
+	if err != nil {
+		return nil, err
+	}
+	_ = s.repo.UpdateHealth(ctx, ep.ID, *result)
+	return result, nil
 }
 
 func (s *ComputeEndpointService) grpcHealthCheck(ctx context.Context, endpointURL, authToken string) (*domain.ComputeEndpointHealthResult, error) {
@@ -337,12 +384,75 @@ func (s *ComputeEndpointService) grpcHealthCheck(ctx context.Context, endpointUR
 	maxMemoryGB := int(resp.MaxMemoryGb)
 
 	return &domain.ComputeEndpointHealthResult{
-		Status:        &status,
-		UptimeSeconds: &uptime,
-		DuckdbVersion: &duckDBVersion,
-		MemoryUsedMb:  &memoryUsedMB,
-		MaxMemoryGb:   &maxMemoryGB,
+		Status:                &status,
+		UptimeSeconds:         &uptime,
+		DuckdbVersion:         &duckDBVersion,
+		MemoryUsedMb:          &memoryUsedMB,
+		MaxMemoryGb:           &maxMemoryGB,
+		ActiveQueries:         &resp.ActiveQueries,
+		QueuedJobs:            &resp.QueuedJobs,
+		RunningJobs:           &resp.RunningJobs,
+		CompletedJobs:         &resp.CompletedJobs,
+		StoredJobs:            &resp.StoredJobs,
+		CleanedJobs:           &resp.CleanedJobs,
+		QueryResultTTLSeconds: int32PtrToIntPtr(resp.ResultTtlSecs),
 	}, nil
+}
+
+func normalizeSelectionPolicy(policy string) string {
+	policy = strings.ToUpper(strings.TrimSpace(policy))
+	if policy == "" {
+		return domain.ComputeSelectionPolicyAllowedOnly
+	}
+	return policy
+}
+
+func normalizeEndpointWorkloadClass(workload string) string {
+	workload = strings.ToUpper(strings.TrimSpace(workload))
+	if workload == "" {
+		return domain.ComputeEndpointWorkloadMixed
+	}
+	return workload
+}
+
+func normalizeReadinessStatus(status string) string {
+	status = strings.ToUpper(strings.TrimSpace(status))
+	if status == "" {
+		return domain.ComputeReadinessReady
+	}
+	return status
+}
+
+func validateSelectionPolicy(policy string) error {
+	switch normalizeSelectionPolicy(policy) {
+	case domain.ComputeSelectionPolicyAdminOnly, domain.ComputeSelectionPolicyAllowedOnly, domain.ComputeSelectionPolicySelfService:
+		return nil
+	default:
+		return domain.ErrValidation("invalid selection_policy %q", policy)
+	}
+}
+
+func validateEndpointWorkloadClass(workload string) error {
+	switch normalizeEndpointWorkloadClass(workload) {
+	case domain.ComputeEndpointWorkloadInteractive, domain.ComputeEndpointWorkloadScheduled, domain.ComputeEndpointWorkloadHeavy, domain.ComputeEndpointWorkloadMixed:
+		return nil
+	default:
+		return domain.ErrValidation("invalid workload_class %q", workload)
+	}
+}
+
+func validateReadinessStatus(status string) error {
+	switch normalizeReadinessStatus(status) {
+	case domain.ComputeReadinessReady, domain.ComputeReadinessDegraded, domain.ComputeReadinessUnavailable:
+		return nil
+	default:
+		return domain.ErrValidation("invalid readiness_status %q", status)
+	}
+}
+
+func int32PtrToIntPtr(value int32) *int {
+	v := int(value)
+	return &v
 }
 
 // requirePrivilege checks that the principal has the given privilege on the catalog.

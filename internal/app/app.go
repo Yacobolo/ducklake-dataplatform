@@ -120,6 +120,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	volumeRepo := repository.NewVolumeRepo(deps.WriteDB)
 	storageCredRepo := repository.NewStorageCredentialRepo(deps.WriteDB, encryptor)
 	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
+	computeRoutingRepo := repository.NewComputeRoutingRepo(deps.WriteDB)
 	catalogRegRepo := repository.NewCatalogRegistrationRepo(deps.WriteDB)
 	queryJobRepo := repository.NewQueryJobRepo(deps.WriteDB)
 	authIdentityRepo := repository.NewAuthIdentityRepo(deps.WriteDB)
@@ -249,6 +250,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	catalogSvc := catalog.NewCatalogService(catalogRepoFactory, authSvc, auditRepo, tagRepo, tableStatsRepo, externalLocRepo)
 	storageCredSvc := storage.NewStorageCredentialService(storageCredRepo, authSvc, auditRepo)
 	computeEndpointSvc := svccompute.NewComputeEndpointService(computeEndpointRepo, authSvc, auditRepo)
+	computeEndpointSvc.SetRoutingRepository(computeRoutingRepo)
+	computeEndpointSvc.SetPrincipalRepository(principalRepo)
+	computeEndpointSvc.SetGroupRepository(groupRepo)
 	volumeSvc := storage.NewVolumeService(volumeRepo, authSvc, auditRepo)
 
 	secretMgr := engine.NewDuckDBSecretManager(deps.DuckDB)

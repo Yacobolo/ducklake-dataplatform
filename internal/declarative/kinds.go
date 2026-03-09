@@ -6,31 +6,32 @@ type ResourceKind int
 // Resource kind constants identify each type of managed resource.
 // They are ordered by dependency layer (0-9) for correct apply/delete sequencing.
 const (
-	KindStorageCredential   ResourceKind = iota // layer 0
-	KindPrincipal                               // layer 0
-	KindTag                                     // layer 0
-	KindMacro                                   // layer 0
-	KindGroup                                   // layer 1
-	KindExternalLocation                        // layer 1
-	KindComputeEndpoint                         // layer 1
-	KindGroupMembership                         // layer 2
-	KindCatalogRegistration                     // layer 2
-	KindSchema                                  // layer 3
-	KindComputeAssignment                       // layer 3
-	KindTable                                   // layer 4
-	KindView                                    // layer 4
-	KindVolume                                  // layer 4
-	KindPrivilegeGrant                          // layer 5
-	KindTagAssignment                           // layer 5
-	KindRowFilter                               // layer 5
-	KindColumnMask                              // layer 5
-	KindRowFilterBinding                        // layer 6
-	KindColumnMaskBinding                       // layer 6
-	KindAPIKey                                  // layer 6
-	KindNotebook                                // layer 6
-	KindAsset                                   // layer 7
-	KindModel                                   // layer 8
-	KindSemanticModel                           // layer 9
+	KindStorageCredential      ResourceKind = iota // layer 0
+	KindPrincipal                                  // layer 0
+	KindTag                                        // layer 0
+	KindMacro                                      // layer 0
+	KindGroup                                      // layer 1
+	KindExternalLocation                           // layer 1
+	KindComputeEndpoint                            // layer 1
+	KindComputeRoutingDefaults                     // layer 1
+	KindGroupMembership                            // layer 2
+	KindCatalogRegistration                        // layer 2
+	KindSchema                                     // layer 3
+	KindComputeAssignment                          // layer 3
+	KindTable                                      // layer 4
+	KindView                                       // layer 4
+	KindVolume                                     // layer 4
+	KindPrivilegeGrant                             // layer 5
+	KindTagAssignment                              // layer 5
+	KindRowFilter                                  // layer 5
+	KindColumnMask                                 // layer 5
+	KindRowFilterBinding                           // layer 6
+	KindColumnMaskBinding                          // layer 6
+	KindAPIKey                                     // layer 6
+	KindNotebook                                   // layer 6
+	KindAsset                                      // layer 7
+	KindModel                                      // layer 8
+	KindSemanticModel                              // layer 9
 )
 
 // String returns a human-readable kebab-case name for the resource kind.
@@ -50,6 +51,8 @@ func (k ResourceKind) String() string {
 		return "external-location"
 	case KindComputeEndpoint:
 		return "compute-endpoint"
+	case KindComputeRoutingDefaults:
+		return "compute-routing-defaults"
 	case KindGroupMembership:
 		return "group-membership"
 	case KindCatalogRegistration:
@@ -97,7 +100,7 @@ func (k ResourceKind) Layer() int {
 	switch k {
 	case KindStorageCredential, KindPrincipal, KindTag, KindMacro:
 		return 0
-	case KindGroup, KindExternalLocation, KindComputeEndpoint:
+	case KindGroup, KindExternalLocation, KindComputeEndpoint, KindComputeRoutingDefaults:
 		return 1
 	case KindGroupMembership, KindCatalogRegistration:
 		return 2
@@ -151,29 +154,30 @@ func (o Operation) String() string {
 
 // Known Kind strings used in YAML documents.
 const (
-	KindNamePrincipalList         = "PrincipalList"
-	KindNameGroupList             = "GroupList"
-	KindNameGrantList             = "GrantList"
-	KindNamePrivilegePresetList   = "PrivilegePresetList"
-	KindNameBindingList           = "BindingList"
-	KindNameAPIKeyList            = "APIKeyList"
-	KindNameCatalog               = "Catalog"
-	KindNameSchema                = "Schema"
-	KindNameTable                 = "Table"
-	KindNameView                  = "View"
-	KindNameVolume                = "Volume"
-	KindNameRowFilterList         = "RowFilterList"
-	KindNameColumnMaskList        = "ColumnMaskList"
-	KindNameTagConfig             = "TagConfig"
-	KindNameStorageCredentialList = "StorageCredentialList"
-	KindNameExternalLocationList  = "ExternalLocationList"
-	KindNameComputeEndpointList   = "ComputeEndpointList"
-	KindNameComputeAssignmentList = "ComputeAssignmentList"
-	KindNameNotebook              = "Notebook"
-	KindNameAsset                 = "Asset"
-	KindNameModel                 = "Model"
-	KindNameSemanticModel         = "SemanticModel"
-	KindNameMacro                 = "Macro"
+	KindNamePrincipalList          = "PrincipalList"
+	KindNameGroupList              = "GroupList"
+	KindNameGrantList              = "GrantList"
+	KindNamePrivilegePresetList    = "PrivilegePresetList"
+	KindNameBindingList            = "BindingList"
+	KindNameAPIKeyList             = "APIKeyList"
+	KindNameCatalog                = "Catalog"
+	KindNameSchema                 = "Schema"
+	KindNameTable                  = "Table"
+	KindNameView                   = "View"
+	KindNameVolume                 = "Volume"
+	KindNameRowFilterList          = "RowFilterList"
+	KindNameColumnMaskList         = "ColumnMaskList"
+	KindNameTagConfig              = "TagConfig"
+	KindNameStorageCredentialList  = "StorageCredentialList"
+	KindNameExternalLocationList   = "ExternalLocationList"
+	KindNameComputeEndpointList    = "ComputeEndpointList"
+	KindNameComputeAssignmentList  = "ComputeAssignmentList"
+	KindNameComputeRoutingDefaults = "ComputeRoutingDefaults"
+	KindNameNotebook               = "Notebook"
+	KindNameAsset                  = "Asset"
+	KindNameModel                  = "Model"
+	KindNameSemanticModel          = "SemanticModel"
+	KindNameMacro                  = "Macro"
 )
 
 // SupportedAPIVersion is the current API version for YAML documents.

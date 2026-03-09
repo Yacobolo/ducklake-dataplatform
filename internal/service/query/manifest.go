@@ -10,6 +10,8 @@ import (
 	"duck-demo/internal/domain"
 )
 
+const ManifestVersion = "v1"
+
 // ManifestColumn describes a column in the manifest response.
 type ManifestColumn struct {
 	Name string `json:"name"`
@@ -20,13 +22,14 @@ type ManifestColumn struct {
 // It contains presigned URLs, RLS filters, and column masks
 // that the client-side DuckDB extension uses to construct secure queries.
 type ManifestResult struct {
-	Table       string            `json:"table"`
-	Schema      string            `json:"schema"`
-	Columns     []ManifestColumn  `json:"columns"`
-	Files       []string          `json:"files"`
-	RowFilters  []string          `json:"row_filters"`
-	ColumnMasks map[string]string `json:"column_masks"`
-	ExpiresAt   time.Time         `json:"expires_at"`
+	ManifestVersion string            `json:"manifest_version"`
+	Table           string            `json:"table"`
+	Schema          string            `json:"schema"`
+	Columns         []ManifestColumn  `json:"columns"`
+	Files           []string          `json:"files"`
+	RowFilters      []string          `json:"row_filters"`
+	ColumnMasks     map[string]string `json:"column_masks"`
+	ExpiresAt       time.Time         `json:"expires_at"`
 }
 
 // FilePresigner generates accessible URLs or paths for data files.
@@ -170,13 +173,14 @@ func (s *ManifestService) GetManifest(
 	s.logManifestAudit(ctx, principalName, lookupName, "ALLOWED", "", time.Since(start))
 
 	return &ManifestResult{
-		Table:       tableName,
-		Schema:      schemaName,
-		Columns:     manifestCols,
-		Files:       presignedURLs,
-		RowFilters:  rowFilters,
-		ColumnMasks: columnMasks,
-		ExpiresAt:   time.Now().Add(expiry),
+		ManifestVersion: ManifestVersion,
+		Table:           tableName,
+		Schema:          schemaName,
+		Columns:         manifestCols,
+		Files:           presignedURLs,
+		RowFilters:      rowFilters,
+		ColumnMasks:     columnMasks,
+		ExpiresAt:       time.Now().Add(expiry),
 	}, nil
 }
 
