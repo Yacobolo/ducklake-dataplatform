@@ -63,6 +63,9 @@ func (s *CatalogRegistrationService) Register(ctx context.Context, req domain.Cr
 	if reserved[strings.ToLower(req.Name)] {
 		return nil, domain.ErrValidation("catalog name %q is reserved by DuckDB", req.Name)
 	}
+	if domain.IsSystemManagedCatalog(req.Name) {
+		return nil, domain.ErrValidation("catalog name %q is reserved for platform-managed sample data", req.Name)
+	}
 
 	// Validate catalog name as a safe SQL identifier
 	if err := ddl.ValidateIdentifier(req.Name); err != nil {
@@ -140,6 +143,9 @@ func (s *CatalogRegistrationService) Get(ctx context.Context, name string) (*dom
 
 // Update updates a catalog registration's metadata.
 func (s *CatalogRegistrationService) Update(ctx context.Context, name string, req domain.UpdateCatalogRegistrationRequest) (*domain.CatalogRegistration, error) {
+	if domain.IsSystemManagedCatalog(name) {
+		return nil, domain.ErrValidation("catalog %q is system managed and cannot be updated", name)
+	}
 	existing, err := s.repo.GetByName(ctx, name)
 	if err != nil {
 		return nil, err
@@ -156,6 +162,9 @@ func (s *CatalogRegistrationService) Update(ctx context.Context, name string, re
 // Delete detaches and removes a catalog registration.
 // Blocks deletion of the default catalog.
 func (s *CatalogRegistrationService) Delete(ctx context.Context, name string) error {
+	if domain.IsSystemManagedCatalog(name) {
+		return domain.ErrValidation("catalog %q is system managed and cannot be deleted", name)
+	}
 	existing, err := s.repo.GetByName(ctx, name)
 	if err != nil {
 		return err
@@ -195,6 +204,9 @@ func (s *CatalogRegistrationService) Delete(ctx context.Context, name string) er
 
 // SetDefault sets the given catalog as the default and executes USE on DuckDB.
 func (s *CatalogRegistrationService) SetDefault(ctx context.Context, name string) (*domain.CatalogRegistration, error) {
+	if domain.IsSystemManagedCatalog(name) {
+		return nil, domain.ErrValidation("catalog %q is system managed and cannot be set as default", name)
+	}
 	existing, err := s.repo.GetByName(ctx, name)
 	if err != nil {
 		return nil, err

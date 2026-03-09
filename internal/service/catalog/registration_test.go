@@ -135,3 +135,44 @@ func TestCatalogRegistrationService_Register_RejectsReservedNames(t *testing.T) 
 		})
 	}
 }
+
+func TestCatalogRegistrationService_SystemManagedCatalogGuards(t *testing.T) {
+	t.Parallel()
+
+	repo := &mockRegistrationRepo{
+		GetByNameFn: func(_ context.Context, name string) (*domain.CatalogRegistration, error) {
+			return &domain.CatalogRegistration{
+				ID:     "sample-id",
+				Name:   name,
+				Status: domain.CatalogStatusActive,
+			}, nil
+		},
+	}
+
+	svc := NewCatalogRegistrationService(RegistrationServiceDeps{
+		Repo:               repo,
+		Attacher:           noopAttacher{},
+		ControlPlaneDBPath: "/tmp/ctrl.db",
+		Logger:             slog.Default(),
+	})
+
+	_, err := svc.Register(context.Background(), domain.CreateCatalogRequest{
+		Name:          domain.SampleDataCatalogName,
+		MetastoreType: "sqlite",
+		DSN:           "/tmp/sample.sqlite",
+		DataPath:      "/tmp/sample-data",
+	})
+	require.Error(t, err)
+
+	_, err = svc.Update(context.Background(), domain.SampleDataCatalogName, domain.UpdateCatalogRegistrationRequest{})
+	require.Error(t, err)
+
+	err = svc.Delete(context.Background(), domain.SampleDataCatalogName)
+	require.Error(t, err)
+
+	_, err = svc.SetDefault(context.Background(), domain.SampleDataCatalogName)
+	require.Error(t, err)
+
+	var validationErr *domain.ValidationError
+	assert.ErrorAs(t, err, &validationErr)
+}

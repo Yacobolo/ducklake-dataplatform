@@ -92,7 +92,7 @@ func newInitCmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Bootstrap an opinionated medallion setup",
-		Long:  "Creates or verifies an opinionated medallion baseline (landing + bronze/silver/gold, storage bindings, and RBAC presets).",
+		Long:  "Creates or verifies an opinionated writable medallion baseline (landing + bronze/silver/gold, storage bindings, and RBAC presets). Built-in read-only sample data lives in the platform-managed sample_data catalog.",
 	}
 
 	cmd.AddCommand(newInitPlanCmd(client))
@@ -770,6 +770,424 @@ func applyDesiredState(client *apiruntime.Client, desired initDesiredState, exis
 	return nil
 }
 
+func applyShowcaseState(client *gen.Client, desired initDesiredState) error {
+	rawRef := qualifiedName(desired.CatalogName, "landing", desired.Showcase.RawTableName)
+	bronzeRef := qualifiedName(desired.CatalogName, "bronze", desired.Showcase.BronzeTableName)
+	silverRef := qualifiedName(desired.CatalogName, "silver", desired.Showcase.SilverTableName)
+	goldRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.GoldTableName)
+	qualityRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.QualityTableName)
+	sandboxRef := qualifiedName(desired.CatalogName, "sandbox", desired.Showcase.SandboxSmokeTable)
+
+	if err := deleteViewIfExists(client, desired.CatalogName, "bronze", desired.Showcase.BronzeTableName); err != nil {
+		return err
+	}
+	if err := deleteViewIfExists(client, desired.CatalogName, "silver", desired.Showcase.SilverTableName); err != nil {
+		return err
+	}
+	if err := deleteViewIfExists(client, desired.CatalogName, "gold", desired.Showcase.GoldTableName); err != nil {
+		return err
+	}
+	if err := deleteViewIfExists(client, desired.CatalogName, "gold", desired.Showcase.QualityTableName); err != nil {
+		return err
+	}
+
+	if err := ensureManagedTable(client, desired.CatalogName, "landing", desired.Showcase.RawTableName, []map[string]string{
+		{"name": "ride_id", "type": "BIGINT"},
+		{"name": "pickup_ts", "type": "TIMESTAMP"},
+		{"name": "dropoff_ts", "type": "TIMESTAMP"},
+		{"name": "pickup_zone", "type": "VARCHAR"},
+		{"name": "dropoff_zone", "type": "VARCHAR"},
+		{"name": "passenger_count", "type": "INTEGER"},
+		{"name": "trip_distance_mi", "type": "DOUBLE"},
+		{"name": "fare_amount", "type": "DOUBLE"},
+		{"name": "tip_amount", "type": "DOUBLE"},
+		{"name": "total_amount", "type": "DOUBLE"},
+	}); err != nil {
+		return fmt.Errorf("ensure showcase table: %w", err)
+	}
+	if err := ensureManagedTable(client, desired.CatalogName, "bronze", desired.Showcase.BronzeTableName, []map[string]string{
+		{"name": "ride_id", "type": "BIGINT"},
+		{"name": "pickup_ts", "type": "TIMESTAMP"},
+		{"name": "dropoff_ts", "type": "TIMESTAMP"},
+		{"name": "pickup_zone", "type": "VARCHAR"},
+		{"name": "dropoff_zone", "type": "VARCHAR"},
+		{"name": "passenger_count", "type": "INTEGER"},
+		{"name": "trip_distance_mi", "type": "DOUBLE"},
+		{"name": "fare_amount", "type": "DOUBLE"},
+		{"name": "tip_amount", "type": "DOUBLE"},
+		{"name": "total_amount", "type": "DOUBLE"},
+	}); err != nil {
+		return fmt.Errorf("ensure bronze showcase table: %w", err)
+	}
+	if err := ensureManagedTable(client, desired.CatalogName, "silver", desired.Showcase.SilverTableName, []map[string]string{
+		{"name": "ride_id", "type": "BIGINT"},
+		{"name": "pickup_ts", "type": "TIMESTAMP"},
+		{"name": "dropoff_ts", "type": "TIMESTAMP"},
+		{"name": "pickup_zone", "type": "VARCHAR"},
+		{"name": "dropoff_zone", "type": "VARCHAR"},
+		{"name": "passenger_count", "type": "INTEGER"},
+		{"name": "trip_distance_mi", "type": "DOUBLE"},
+		{"name": "fare_amount", "type": "DOUBLE"},
+		{"name": "tip_amount", "type": "DOUBLE"},
+		{"name": "total_amount", "type": "DOUBLE"},
+		{"name": "tip_rate", "type": "DOUBLE"},
+	}); err != nil {
+		return fmt.Errorf("ensure silver showcase table: %w", err)
+	}
+	if err := ensureManagedTable(client, desired.CatalogName, "gold", desired.Showcase.GoldTableName, []map[string]string{
+		{"name": "trip_date", "type": "DATE"},
+		{"name": "ride_count", "type": "BIGINT"},
+		{"name": "gross_revenue", "type": "DOUBLE"},
+		{"name": "avg_fare", "type": "DOUBLE"},
+		{"name": "avg_distance_mi", "type": "DOUBLE"},
+	}); err != nil {
+		return fmt.Errorf("ensure gold showcase table: %w", err)
+	}
+	if err := ensureManagedTable(client, desired.CatalogName, "gold", desired.Showcase.QualityTableName, []map[string]string{
+		{"name": "check_name", "type": "VARCHAR"},
+		{"name": "passed", "type": "BOOLEAN"},
+	}); err != nil {
+		return fmt.Errorf("ensure quality showcase table: %w", err)
+	}
+	if err := ensureManagedTable(client, desired.CatalogName, "sandbox", desired.Showcase.SandboxSmokeTable, []map[string]string{
+		{"name": "id", "type": "BIGINT"},
+		{"name": "note", "type": "VARCHAR"},
+	}); err != nil {
+		return fmt.Errorf("create sandbox smoke table: %w", err)
+	}
+
+	rowCount, err := queryScalarInt64(client, fmt.Sprintf("SELECT COUNT(*) FROM %s", rawRef))
+	if err != nil {
+		return fmt.Errorf("query showcase row count: %w", err)
+	}
+	if rowCount == 0 {
+		seedSQL := fmt.Sprintf(`INSERT INTO %s (ride_id, pickup_ts, dropoff_ts, pickup_zone, dropoff_zone, passenger_count, trip_distance_mi, fare_amount, tip_amount, total_amount) VALUES
+		(1, '2026-02-01 08:05:00', '2026-02-01 08:22:00', 'Midtown East', 'Chelsea', 1, 3.2, 14.50, 3.20, 20.70),
+		(2, '2026-02-01 09:10:00', '2026-02-01 09:31:00', 'SoHo', 'Upper West Side', 2, 5.8, 22.40, 5.10, 31.00),
+		(3, '2026-02-01 11:48:00', '2026-02-01 12:03:00', 'Lower East Side', 'Financial District', 1, 2.4, 11.80, 2.40, 17.70),
+		(4, '2026-02-02 07:25:00', '2026-02-02 07:55:00', 'Harlem', 'LaGuardia Airport', 3, 8.9, 35.10, 7.00, 47.60),
+		(5, '2026-02-02 18:15:00', '2026-02-02 18:36:00', 'Chelsea', 'Brooklyn Heights', 1, 4.1, 17.20, 3.80, 24.30),
+		(6, '2026-02-03 14:02:00', '2026-02-03 14:28:00', 'Union Square', 'Long Island City', 2, 6.5, 24.70, 5.60, 33.90),
+		(7, '2026-02-03 21:41:00', '2026-02-03 22:05:00', 'West Village', 'JFK Airport', 1, 7.1, 38.20, 9.00, 51.70),
+		(8, '2026-02-04 10:33:00', '2026-02-04 10:49:00', 'Tribeca', 'Midtown West', 1, 2.9, 13.60, 2.90, 19.00),
+		(9, '2026-02-04 16:05:00', '2026-02-04 16:44:00', 'Upper East Side', 'Coney Island', 2, 9.7, 41.90, 8.30, 55.45),
+		(10, '2026-02-05 06:50:00', '2026-02-05 07:12:00', 'Astoria', 'Times Square', 1, 4.6, 18.70, 4.20, 25.40)`, rawRef)
+		if err := executeSQL(client, seedSQL); err != nil {
+			return fmt.Errorf("seed showcase table: %w", err)
+		}
+	}
+
+	refreshSQL := []string{
+		fmt.Sprintf("DELETE FROM %s", bronzeRef),
+		fmt.Sprintf(`INSERT INTO %s (ride_id, pickup_ts, dropoff_ts, pickup_zone, dropoff_zone, passenger_count, trip_distance_mi, fare_amount, tip_amount, total_amount)
+		SELECT ride_id, pickup_ts, dropoff_ts, pickup_zone, dropoff_zone, COALESCE(passenger_count, 1), trip_distance_mi, fare_amount, tip_amount, total_amount
+		FROM %s`, bronzeRef, rawRef),
+		fmt.Sprintf("DELETE FROM %s", silverRef),
+		fmt.Sprintf(`INSERT INTO %s (ride_id, pickup_ts, dropoff_ts, pickup_zone, dropoff_zone, passenger_count, trip_distance_mi, fare_amount, tip_amount, total_amount, tip_rate)
+		SELECT ride_id, pickup_ts, dropoff_ts, pickup_zone, dropoff_zone, passenger_count, trip_distance_mi, fare_amount, tip_amount, total_amount,
+		       ROUND(CASE WHEN total_amount > 0 THEN tip_amount / total_amount ELSE 0 END, 4)
+		FROM %s
+		WHERE trip_distance_mi > 0 AND total_amount > 0`, silverRef, bronzeRef),
+		fmt.Sprintf("DELETE FROM %s", goldRef),
+		fmt.Sprintf(`INSERT INTO %s (trip_date, ride_count, gross_revenue, avg_fare, avg_distance_mi)
+		SELECT CAST(date_trunc('day', pickup_ts) AS DATE),
+		       COUNT(*),
+		       ROUND(SUM(total_amount), 2),
+		       ROUND(AVG(total_amount), 2),
+		       ROUND(AVG(trip_distance_mi), 2)
+		FROM %s
+		GROUP BY 1`, goldRef, silverRef),
+		fmt.Sprintf("DELETE FROM %s", qualityRef),
+		fmt.Sprintf(`INSERT INTO %s (check_name, passed)
+		SELECT 'silver_positive_distance', SUM(CASE WHEN trip_distance_mi <= 0 THEN 1 ELSE 0 END) = 0 FROM %s
+		UNION ALL
+		SELECT 'silver_non_null_pickup', SUM(CASE WHEN pickup_ts IS NULL THEN 1 ELSE 0 END) = 0 FROM %s
+		UNION ALL
+		SELECT 'gold_non_empty', COUNT(*) > 0 FROM %s`, qualityRef, silverRef, silverRef, goldRef),
+		fmt.Sprintf(`INSERT INTO %s (id, note)
+		SELECT 1, 'safe playground' WHERE NOT EXISTS (SELECT 1 FROM %s WHERE id = 1)`, sandboxRef, sandboxRef),
+	}
+	for _, sql := range refreshSQL {
+		if err := executeSQL(client, sql); err != nil {
+			return fmt.Errorf("materialize showcase data: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func applyShowcaseAssets(client *gen.Client, desired initDesiredState, existing initExistingState) error {
+	for _, asset := range desired.Showcase.Assets {
+		body := map[string]interface{}{
+			"asset_type":          asset.AssetType,
+			"owner":               asset.Owner,
+			"description":         asset.Description,
+			"tags":                asset.Tags,
+			"io_profile":          asset.IOProfile,
+			"is_active":           asset.IsActive,
+			"upstream_asset_keys": asset.UpstreamAssetKey,
+			"checks":              assetChecksBody(asset.Checks),
+		}
+
+		if _, ok := existing.Assets[asset.AssetKey]; ok {
+			path := fmt.Sprintf("/assets/%s", url.PathEscape(asset.AssetKey))
+			if err := doNoContentOrJSON(client, "PUT", path, body); err != nil {
+				return fmt.Errorf("update asset %q: %w", asset.AssetKey, err)
+			}
+			continue
+		}
+
+		body["asset_key"] = asset.AssetKey
+		if err := doNoContentOrJSON(client, "POST", "/assets", body); err != nil {
+			return fmt.Errorf("create asset %q: %w", asset.AssetKey, err)
+		}
+	}
+
+	return nil
+}
+
+func assetChecksBody(checks []initAssetCheckSpec) []map[string]interface{} {
+	if len(checks) == 0 {
+		return []map[string]interface{}{}
+	}
+	body := make([]map[string]interface{}, 0, len(checks))
+	for _, check := range checks {
+		body = append(body, map[string]interface{}{
+			"name":       check.Name,
+			"check_type": check.CheckType,
+			"severity":   check.Severity,
+			"enabled":    check.Enabled,
+		})
+	}
+	return body
+}
+
+func assetStateMatches(desired initAssetSpec, existing initAssetState) bool {
+	return desired.AssetType == existing.AssetType &&
+		desired.Owner == existing.Owner &&
+		desired.Description == existing.Description &&
+		desired.IOProfile == existing.IOProfile &&
+		desired.IsActive == existing.IsActive &&
+		stringSlicesEqual(desired.Tags, existing.Tags)
+}
+
+func assetChecksEqual(desired, existing []initAssetCheckSpec) bool {
+	if len(desired) != len(existing) {
+		return false
+	}
+	left := append([]initAssetCheckSpec{}, desired...)
+	right := append([]initAssetCheckSpec{}, existing...)
+	sort.Slice(left, func(i, j int) bool { return left[i].Name < left[j].Name })
+	sort.Slice(right, func(i, j int) bool { return right[i].Name < right[j].Name })
+	for i := range left {
+		if left[i] != right[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func stringSlicesEqual(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	lcopy := append([]string{}, left...)
+	rcopy := append([]string{}, right...)
+	sort.Strings(lcopy)
+	sort.Strings(rcopy)
+	for i := range lcopy {
+		if lcopy[i] != rcopy[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func runInitHealthChecks(client *gen.Client, desired initDesiredState) ([]string, error) {
+	issues := make([]string, 0)
+
+	existing, err := fetchExistingState(client, desired)
+	if err != nil {
+		issues = append(issues, fmt.Sprintf("unable to inspect asset bootstrap state: %v", err))
+		return issues, nil
+	}
+	issues = append(issues, assetHealthIssues(desired.Showcase.Assets, existing.Assets)...)
+
+	rawRef := qualifiedName(desired.CatalogName, "landing", desired.Showcase.RawTableName)
+	goldRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.GoldTableName)
+	qualityRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.QualityTableName)
+
+	rawCount, err := queryScalarInt64(client, fmt.Sprintf("SELECT COUNT(*) FROM %s", rawRef))
+	if err != nil {
+		issues = append(issues, fmt.Sprintf("unable to query showcase table %q: %v", rawRef, err))
+		return issues, nil
+	}
+	if rawCount == 0 {
+		issues = append(issues, fmt.Sprintf("showcase table %q is empty", rawRef))
+	}
+
+	goldCount, err := queryScalarInt64(client, fmt.Sprintf("SELECT COUNT(*) FROM %s", goldRef))
+	if err != nil {
+		issues = append(issues, fmt.Sprintf("unable to query gold output %q: %v", goldRef, err))
+		return issues, nil
+	}
+	if goldCount == 0 {
+		issues = append(issues, fmt.Sprintf("gold output %q has no rows", goldRef))
+	}
+
+	failingChecks, err := queryScalarInt64(client, fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE passed = false", qualityRef))
+	if err != nil {
+		issues = append(issues, fmt.Sprintf("unable to query quality checks %q: %v", qualityRef, err))
+		return issues, nil
+	}
+	if failingChecks > 0 {
+		issues = append(issues, fmt.Sprintf("%d quality checks failed in %q", failingChecks, qualityRef))
+	}
+
+	return issues, nil
+}
+
+func assetHealthIssues(desiredAssets []initAssetSpec, existingAssets map[string]initAssetState) []string {
+	issues := make([]string, 0)
+	for _, asset := range desiredAssets {
+		existing, ok := existingAssets[asset.AssetKey]
+		if !ok {
+			issues = append(issues, fmt.Sprintf("asset %q is missing", asset.AssetKey))
+			continue
+		}
+		if !assetStateMatches(asset, existing) {
+			issues = append(issues, fmt.Sprintf("asset %q metadata drifted", asset.AssetKey))
+		}
+		if !stringSlicesEqual(asset.UpstreamAssetKey, existing.UpstreamAssetKey) {
+			issues = append(issues, fmt.Sprintf("asset %q graph drifted", asset.AssetKey))
+		}
+		if !assetChecksEqual(asset.Checks, existing.Checks) {
+			issues = append(issues, fmt.Sprintf("asset %q checks drifted", asset.AssetKey))
+		}
+	}
+	return issues
+}
+
+func destroyDesiredState(client *gen.Client, desired initDesiredState) error {
+	for _, asset := range desired.Showcase.Assets {
+		path := fmt.Sprintf("/assets/%s", url.PathEscape(asset.AssetKey))
+		if err := doNoContentOrJSONAllowNotFound(client, "DELETE", path, nil); err != nil {
+			return fmt.Errorf("delete asset %q: %w", asset.AssetKey, err)
+		}
+	}
+
+	if err := deleteTable(client, desired.CatalogName, "gold", desired.Showcase.QualityTableName); err != nil {
+		return err
+	}
+	if err := deleteTable(client, desired.CatalogName, "gold", desired.Showcase.GoldTableName); err != nil {
+		return err
+	}
+	if err := deleteTable(client, desired.CatalogName, "silver", desired.Showcase.SilverTableName); err != nil {
+		return err
+	}
+	if err := deleteTable(client, desired.CatalogName, "bronze", desired.Showcase.BronzeTableName); err != nil {
+		return err
+	}
+	if err := deleteTable(client, desired.CatalogName, "landing", desired.Showcase.RawTableName); err != nil {
+		return err
+	}
+	if err := deleteTable(client, desired.CatalogName, "sandbox", desired.Showcase.SandboxSmokeTable); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func printInitRunbook(desired initDesiredState) {
+	goldRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.GoldTableName)
+	qualityRef := qualifiedName(desired.CatalogName, "gold", desired.Showcase.QualityTableName)
+	sandboxRef := qualifiedName(desired.CatalogName, "sandbox", desired.Showcase.SandboxSmokeTable)
+
+	_, _ = fmt.Fprintln(os.Stdout, "")
+	_, _ = fmt.Fprintln(os.Stdout, "Next steps:")
+	_, _ = fmt.Fprintln(os.Stdout, "  1) Explore built-in sample data: duck query execute --sql \"SELECT pickup_date, trip_count, gross_revenue FROM sample_data.nyc_taxi.daily_metrics ORDER BY pickup_date LIMIT 5\"")
+	_, _ = fmt.Fprintln(os.Stdout, "  2) Inspect asset graph: duck assets list")
+	_, _ = fmt.Fprintln(os.Stdout, "  3) Inspect one asset: duck assets get showcase.rides.gold")
+	_, _ = fmt.Fprintf(os.Stdout, "  4) Query gold output: duck query execute --sql \"SELECT * FROM %s ORDER BY trip_date LIMIT 10\"\n", goldRef)
+	_, _ = fmt.Fprintf(os.Stdout, "  5) Check data quality: duck query execute --sql \"SELECT * FROM %s\"\n", qualityRef)
+	_, _ = fmt.Fprintf(os.Stdout, "  6) Use sandbox safely: duck query execute --sql \"SELECT COUNT(*) FROM %s\"\n", sandboxRef)
+	_, _ = fmt.Fprintln(os.Stdout, "  7) Tear down demo assets: duck init destroy")
+}
+
+func executeSQL(client *gen.Client, sql string) error {
+	resp, err := client.Do("POST", "/query", nil, map[string]interface{}{"sql": sql})
+	if err != nil {
+		return err
+	}
+	if err := gen.CheckError(resp); err != nil {
+		return err
+	}
+	_, err = gen.ReadBody(resp)
+	if err != nil {
+		return fmt.Errorf("read response: %w", err)
+	}
+	return nil
+}
+
+func ensureManagedTable(client *gen.Client, catalogName, schemaName, tableName string, columns []map[string]string) error {
+	path := fmt.Sprintf("/catalogs/%s/schemas/%s/tables", catalogName, schemaName)
+	body := map[string]interface{}{
+		"name":       tableName,
+		"table_type": "MANAGED",
+		"columns":    columns,
+	}
+	if err := doNoContentOrJSON(client, "POST", path, body); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deleteTable(client *gen.Client, catalogName, schemaName, tableName string) error {
+	path := fmt.Sprintf("/catalogs/%s/schemas/%s/tables/%s", catalogName, schemaName, tableName)
+	if err := doNoContentOrJSONAllowNotFound(client, "DELETE", path, nil); err != nil {
+		return fmt.Errorf("delete table %q.%q: %w", schemaName, tableName, err)
+	}
+	return nil
+}
+
+func deleteViewIfExists(client *gen.Client, catalogName, schemaName, viewName string) error {
+	path := fmt.Sprintf("/catalogs/%s/schemas/%s/views/%s", catalogName, schemaName, viewName)
+	if err := doNoContentOrJSONAllowNotFound(client, "DELETE", path, nil); err != nil {
+		return fmt.Errorf("delete legacy view %q.%q: %w", schemaName, viewName, err)
+	}
+	return nil
+}
+
+func queryScalarInt64(client *gen.Client, sql string) (int64, error) {
+	var payload struct {
+		Rows [][]interface{} `json:"rows"`
+	}
+	if err := doJSON(client, "POST", "/query", nil, map[string]interface{}{"sql": sql}, &payload); err != nil {
+		return 0, err
+	}
+	if len(payload.Rows) == 0 || len(payload.Rows[0]) == 0 {
+		return 0, fmt.Errorf("empty result set")
+	}
+	value := payload.Rows[0][0]
+	switch v := value.(type) {
+	case float64:
+		return int64(v), nil
+	case int64:
+		return v, nil
+	case int:
+		return int64(v), nil
+	default:
+		return 0, fmt.Errorf("unexpected scalar type %T", value)
+	}
+}
+
+func qualifiedName(parts ...string) string {
+	quoted := make([]string, 0, len(parts))
+	for _, part := range parts {
+		quoted = append(quoted, `"`+strings.ReplaceAll(part, `"`, `""`)+`"`)
+	}
+	return strings.Join(quoted, ".")
+}
 func principalIDForGrant(state initExistingState, grant initGrantSpec) (string, bool) {
 	if grant.PrincipalType == "group" {
 		id, ok := state.Groups[grant.PrincipalName]

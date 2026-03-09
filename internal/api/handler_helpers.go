@@ -139,11 +139,13 @@ func auditEntryToAPI(e domain.AuditEntry) AuditEntry {
 }
 
 func catalogInfoToAPI(c domain.CatalogInfo) CatalogInfo {
+	systemManaged := domain.IsSystemManagedCatalog(c.Name)
 	return CatalogInfo{
-		Name:      c.Name,
-		Comment:   &c.Comment,
-		CreatedAt: formatTimePtr(&c.CreatedAt),
-		UpdatedAt: formatTimePtr(&c.UpdatedAt),
+		Name:          &c.Name,
+		Comment:       &c.Comment,
+		CreatedAt:     &c.CreatedAt,
+		UpdatedAt:     &c.UpdatedAt,
+		SystemManaged: &systemManaged,
 	}
 }
 
