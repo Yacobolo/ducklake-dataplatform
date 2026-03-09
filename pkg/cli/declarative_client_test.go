@@ -397,6 +397,174 @@ func TestExecuteRowFilter_Delete(t *testing.T) {
 	assert.Contains(t, req.Path, "/row-filters/rf-id-first")
 }
 
+func TestExecuteReplaceUpdatesUseDeleteThenCreate(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		prepareClient func(*APIStateClient)
+		action        declarative.Action
+		wantMethods   []string
+		wantPaths     []string
+	}{
+		{
+			name: "compute assignment",
+			prepareClient: func(sc *APIStateClient) {
+				sc.index.principalIDByName["alice"] = "principal-id-alice"
+			},
+			action: declarative.Action{
+				Operation:    declarative.OpUpdate,
+				ResourceKind: declarative.KindComputeAssignment,
+				ResourceName: "local|user|alice",
+				Desired: declarative.ComputeAssignmentSpec{
+					Endpoint:      "local",
+					Principal:     "alice",
+					PrincipalType: "user",
+					IsDefault:     true,
+					FallbackLocal: true,
+				},
+				Actual: declarative.ComputeAssignmentSpec{
+					Endpoint:      "local",
+					Principal:     "alice",
+					PrincipalType: "user",
+					AssignmentID:  "assignment-id-1",
+				},
+			},
+			wantMethods: []string{http.MethodDelete, http.MethodPost},
+			wantPaths: []string{
+				"/v1/compute-endpoints/local/assignments/assignment-id-1",
+				"/v1/compute-endpoints/local/assignments",
+			},
+		},
+		{
+			name:          "row filter",
+			prepareClient: func(sc *APIStateClient) { withTestIndex(sc) },
+			action: declarative.Action{
+				Operation:    declarative.OpUpdate,
+				ResourceKind: declarative.KindRowFilter,
+				ResourceName: "demo.titanic.passengers/first_class",
+				Desired: declarative.RowFilterSpec{
+					Name:      "first_class",
+					FilterSQL: `"Pclass" = 2`,
+				},
+				Actual: declarative.RowFilterSpec{
+					Name:      "first_class",
+					FilterSQL: `"Pclass" = 1`,
+				},
+			},
+			wantMethods: []string{http.MethodDelete, http.MethodPost},
+			wantPaths: []string{
+				"/v1/row-filters/rf-id-first",
+				"/v1/tables/table-id-passengers/row-filters",
+			},
+		},
+		{
+			name:          "row filter binding",
+			prepareClient: func(sc *APIStateClient) { withTestIndex(sc) },
+			action: declarative.Action{
+				Operation:    declarative.OpUpdate,
+				ResourceKind: declarative.KindRowFilterBinding,
+				ResourceName: "demo.titanic.passengers/first_class->user:alice",
+				Desired: declarative.FilterBindingRef{
+					Principal:     "alice",
+					PrincipalType: "user",
+				},
+			},
+			wantMethods: []string{http.MethodDelete, http.MethodPost},
+			wantPaths: []string{
+				"/v1/row-filters/rf-id-first/bindings",
+				"/v1/row-filters/rf-id-first/bindings",
+			},
+		},
+		{
+			name:          "column mask",
+			prepareClient: func(sc *APIStateClient) { withTestIndex(sc) },
+			action: declarative.Action{
+				Operation:    declarative.OpUpdate,
+				ResourceKind: declarative.KindColumnMask,
+				ResourceName: "demo.titanic.passengers/mask_name",
+				Desired: declarative.ColumnMaskSpec{
+					Name:           "mask_name",
+					ColumnName:     "Name",
+					MaskExpression: "'hidden'",
+				},
+				Actual: declarative.ColumnMaskSpec{
+					Name:           "mask_name",
+					ColumnName:     "Name",
+					MaskExpression: "'***'",
+				},
+			},
+			wantMethods: []string{http.MethodDelete, http.MethodPost},
+			wantPaths: []string{
+				"/v1/column-masks/cm-id-name",
+				"/v1/tables/table-id-passengers/column-masks",
+			},
+		},
+		{
+			name:          "column mask binding",
+			prepareClient: func(sc *APIStateClient) { withTestIndex(sc) },
+			action: declarative.Action{
+				Operation:    declarative.OpUpdate,
+				ResourceKind: declarative.KindColumnMaskBinding,
+				ResourceName: "demo.titanic.passengers/mask_name->user:alice",
+				Desired: declarative.MaskBindingRef{
+					Principal:     "alice",
+					PrincipalType: "user",
+					SeeOriginal:   true,
+				},
+			},
+			wantMethods: []string{http.MethodDelete, http.MethodPost},
+			wantPaths: []string{
+				"/v1/column-masks/cm-id-name/bindings",
+				"/v1/column-masks/cm-id-name/bindings",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var (
+				mu       sync.Mutex
+				captured []execCapture
+			)
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mu.Lock()
+				captured = append(captured, execCapture{
+					Method: r.Method,
+					Path:   r.URL.Path,
+					Query:  r.URL.Query(),
+				})
+				mu.Unlock()
+
+				w.Header().Set("Content-Type", "application/json")
+				if r.Method == http.MethodPost {
+					w.WriteHeader(http.StatusCreated)
+					_, _ = w.Write([]byte(`{"id":"generated-uuid-123"}`))
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+				_, _ = w.Write([]byte(`{}`))
+			}))
+			t.Cleanup(srv.Close)
+
+			sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+			sc.index = newResourceIndex()
+			tt.prepareClient(sc)
+
+			err := sc.Execute(context.Background(), tt.action)
+			require.NoError(t, err)
+
+			mu.Lock()
+			defer mu.Unlock()
+			require.Len(t, captured, 2)
+			assert.Equal(t, tt.wantMethods, []string{captured[0].Method, captured[1].Method})
+			assert.Equal(t, tt.wantPaths, []string{captured[0].Path, captured[1].Path})
+		})
+	}
+}
+
 // === Row filter binding execution tests (#128) ===
 
 func TestExecuteRowFilterBinding_Create(t *testing.T) {
@@ -553,6 +721,65 @@ func TestExecuteColumnMaskBinding_Delete(t *testing.T) {
 	assert.Contains(t, req.Path, "/column-masks/cm-id-name/bindings")
 	assert.Equal(t, "principal-id-alice", queryStr(req, "principal_id"))
 	assert.Equal(t, "user", queryStr(req, "principal_type"))
+}
+
+func TestExecuteReplaceUpdateRespectsCallerContext(t *testing.T) {
+	t.Parallel()
+
+	deleteStarted := make(chan struct{})
+	serverObservedCancel := make(chan struct{})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete && strings.HasSuffix(r.URL.Path, "/compute-endpoints/local/assignments/assignment-id-1") {
+			close(deleteStarted)
+			<-r.Context().Done()
+			close(serverObservedCancel)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"id":"generated-uuid-123"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	sc := NewAPIStateClient(gen.NewClient(srv.URL, "", "test-token"))
+	sc.index = newResourceIndex()
+	sc.index.principalIDByName["alice"] = "principal-id-alice"
+
+	action := declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindComputeAssignment,
+		ResourceName: "local|user|alice",
+		Desired: declarative.ComputeAssignmentSpec{
+			Endpoint:      "local",
+			Principal:     "alice",
+			PrincipalType: "user",
+			IsDefault:     true,
+		},
+		Actual: declarative.ComputeAssignmentSpec{
+			Endpoint:      "local",
+			Principal:     "alice",
+			PrincipalType: "user",
+			AssignmentID:  "assignment-id-1",
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- sc.Execute(ctx, action)
+	}()
+
+	<-deleteStarted
+	cancel()
+
+	<-serverObservedCancel
+	err := <-errCh
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "context canceled")
 }
 
 // === Principal execution tests (ID capture) ===
