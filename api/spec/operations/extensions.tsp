@@ -79,6 +79,14 @@ op createTag(@body body: CreateTagRequest): Created<Tag> | MutatingErrorResponse
 op deleteTag(tagId: string): NoContent | MutatingErrorResponses;
 
 @route("/tags/{tagId}/assignments")
+@get
+op listTagAssignments(
+  tagId: string,
+  @query max_results?: int32,
+  @query page_token?: string,
+): Ok<PaginatedTagAssignments> | ResourceErrorResponses;
+
+@route("/tags/{tagId}/assignments")
 @post
 op createTagAssignment(tagId: string, @body body: CreateTagAssignmentRequest): Created<TagAssignment> | MutatingErrorResponses;
 

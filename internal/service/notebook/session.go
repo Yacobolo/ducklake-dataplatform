@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -251,6 +253,23 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 	if cell.CellType != domain.CellTypeSQL {
 		return nil, domain.ErrValidation("cannot execute non-SQL cell (type: %s)", string(cell.CellType))
 	}
+	if cell.Disabled {
+		return nil, domain.ErrValidation("cannot execute disabled cell")
+	}
+	cells, err := m.repo.ListCells(ctx, cell.NotebookID)
+	if err != nil {
+		return nil, fmt.Errorf("list cells for compile: %w", err)
+	}
+	if needsNotebookCompile(cell, cells) {
+		compiled, err := CompileNotebookCellSQL(cells, cellID, false)
+		if err != nil {
+			if !errors.As(err, new(*domain.NotFoundError)) {
+				return nil, err
+			}
+			compiled = cell.Content
+		}
+		cell.Content = compiled
+	}
 
 	// Serialize execution per session
 	s.mu.Lock()
@@ -295,11 +314,38 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 	result.Rows = data
 	result.RowCount = len(data)
 
+	if cell.Role == domain.CellRoleTest {
+		severity := domain.NotebookTestSeverityError
+		if cell.Test != nil && cell.Test.Severity != "" {
+			severity = cell.Test.Severity
+		}
+		if len(data) > 0 && severity == domain.NotebookTestSeverityError {
+			errMsg := fmt.Sprintf("test cell failed: expected zero rows, got %d", len(data))
+			result.Error = &errMsg
+		}
+	}
+
 	if err := m.persistCellResult(ctx, cellID, result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
+}
+
+func needsNotebookCompile(cell *domain.Cell, cells []domain.Cell) bool {
+	if cell.Role == domain.CellRoleOutput {
+		return true
+	}
+	if strings.Contains(cell.Content, "{{") || strings.Contains(cell.Content, "{%") {
+		return true
+	}
+	for _, c := range cells {
+		if c.CellType != domain.CellTypeSQL || c.Disabled || c.Name == nil || *c.Name == "" {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 // RunAll executes all SQL cells in a notebook sequentially.
@@ -328,7 +374,7 @@ func (m *SessionManager) RunAll(ctx context.Context, sessionID string, principal
 	var results []domain.CellExecutionResult
 
 	for _, cell := range cells {
-		if cell.CellType != domain.CellTypeSQL {
+		if cell.CellType != domain.CellTypeSQL || cell.Disabled {
 			continue
 		}
 

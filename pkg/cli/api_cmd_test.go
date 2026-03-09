@@ -203,6 +203,39 @@ func TestAPI_Curl_WithAPIKeyAuth(t *testing.T) {
 		"curl should include X-API-Key auth header")
 }
 
+func TestAPI_Curl_ProfileTokenOverriddenByExplicitAPIKey(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	require.NoError(t, SaveUserConfig(&UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {
+				Host:  "http://localhost:8080",
+				Token: "stale-profile-token",
+			},
+		},
+	}))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--output", "json",
+		"--api-key", "fresh-api-key",
+		"api", "curl", "listSchemas",
+		"--param", "catalogName=main",
+	})
+
+	old := captureStdout(t)
+	err := rootCmd.Execute()
+	output := old()
+	require.NoError(t, err)
+
+	var result map[string]string
+	require.NoError(t, json.Unmarshal([]byte(output), &result))
+	assert.Contains(t, result["curl"], "X-API-Key: fresh-api-key")
+	assert.NotContains(t, result["curl"], "Authorization: Bearer stale-profile-token")
+}
+
 func TestAPI_Curl_WithBodyParams(t *testing.T) {
 	// createSchema has path param catalogName and body fields (name, comment, etc.)
 	dir := t.TempDir()

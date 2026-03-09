@@ -368,6 +368,46 @@ func tagAssignmentToAPI(a domain.TagAssignment) TagAssignment {
 	}
 }
 
+func catalogVersionSummaryToAPI(summary domain.CatalogVersionSummary) CatalogVersionSummary {
+	return CatalogVersionSummary{
+		CatalogName:      &summary.CatalogName,
+		Version:          &summary.Version,
+		CreatedBy:        &summary.CreatedBy,
+		Encrypted:        summary.Encrypted,
+		DataPath:         &summary.DataPath,
+		LatestSnapshotId: safeInt64ToInt32Ptr(summary.LatestSnapshotID),
+		Schemas:          versionedObjectSummaryPtr(summary.Schemas),
+		Tables:           versionedObjectSummaryPtr(summary.Tables),
+		Columns:          versionedObjectSummaryPtr(summary.Columns),
+	}
+}
+
+func versionedObjectSummaryPtr(summary domain.VersionedObjectSummary) *VersionedObjectSummary {
+	return &VersionedObjectSummary{
+		TotalCount:       safeInt64ToInt32Ptr(&summary.TotalCount),
+		ActiveCount:      safeInt64ToInt32Ptr(&summary.ActiveCount),
+		HistoricalCount:  safeInt64ToInt32Ptr(&summary.HistoricalCount),
+		HasHistory:       &summary.HasHistory,
+		LatestSnapshotId: safeInt64ToInt32Ptr(summary.LatestSnapshotID),
+	}
+}
+
+func catalogHistoryEntryToAPI(entry domain.CatalogHistoryEntry) CatalogHistoryEntry {
+	return CatalogHistoryEntry{
+		EntityType:       &entry.EntityType,
+		SchemaName:       optStr(entry.SchemaName),
+		TableName:        optStr(entry.TableName),
+		ColumnName:       optStr(entry.ColumnName),
+		ObjectName:       &entry.ObjectName,
+		ObjectId:         &entry.ObjectID,
+		BeginSnapshotId:  safeInt64ToInt32Ptr(entry.BeginSnapshotID),
+		EndSnapshotId:    safeInt64ToInt32Ptr(entry.EndSnapshotID),
+		LatestSnapshotId: safeInt64ToInt32Ptr(entry.LatestSnapshotID),
+		IsActive:         &entry.IsActive,
+		HasHistory:       &entry.HasHistory,
+	}
+}
+
 func viewDetailToAPI(v domain.ViewDetail) ViewDetail {
 	return ViewDetail{
 		Id:             v.ID,

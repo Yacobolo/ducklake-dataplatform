@@ -71,8 +71,6 @@ func withTestIndex(sc *APIStateClient) *APIStateClient {
 	sc.index.rowFilterIDByPath["demo.titanic.passengers/first_class"] = "rf-id-first"
 	sc.index.columnMaskIDByPath["demo.titanic.passengers/mask_name"] = "cm-id-name"
 	sc.index.notebookIDByName["nb1"] = "notebook-id-1"
-	sc.index.pipelineIDByName["pipe1"] = "pipeline-id-1"
-	sc.index.jobIDByPath["pipe1/job1"] = "job-id-1"
 	sc.index.computeIDByName["local"] = "compute-id-local"
 	return sc
 }
@@ -1006,40 +1004,6 @@ func TestExecuteNotebook_CreateCreatesCells(t *testing.T) {
 	assert.Equal(t, "sql", bodyStr(captured[3], "cell_type"))
 }
 
-func TestExecutePipelineJob_CreateResolvesNotebookAndComputeIDs(t *testing.T) {
-	var captured []execCapture
-	sc := withTestIndex(newTestExecuteClient(t, &captured))
-
-	timeout := 300
-	retries := 2
-	order := 1
-	action := declarative.Action{
-		Operation:    declarative.OpCreate,
-		ResourceKind: declarative.KindPipelineJob,
-		ResourceName: "pipe1/job1",
-		Desired: declarative.PipelineJobSpec{
-			Name:            "job1",
-			Notebook:        "nb1",
-			ComputeEndpoint: "local",
-			DependsOn:       []string{"job0"},
-			TimeoutSeconds:  &timeout,
-			RetryCount:      &retries,
-			Order:           &order,
-		},
-	}
-
-	err := sc.Execute(context.Background(), action)
-	require.NoError(t, err)
-	require.Len(t, captured, 1)
-
-	req := captured[0]
-	assert.Equal(t, http.MethodPost, req.Method)
-	assert.Contains(t, req.Path, "/pipelines/pipe1/jobs")
-	assert.Equal(t, "notebook-id-1", bodyStr(req, "notebook_id"))
-	assert.Equal(t, "compute-id-local", bodyStr(req, "compute_endpoint_id"))
-	assert.Equal(t, "job1", bodyStr(req, "name"))
-}
-
 func TestExecuteMacro_CreateUpdateDelete(t *testing.T) {
 	var captured []execCapture
 	sc := newTestExecuteClient(t, &captured)
@@ -1682,7 +1646,8 @@ func TestReadState_ConnectionErrorsLegacyModeAreOptionalForModelMacro(t *testing
 	require.NoError(t, err)
 	assert.Empty(t, state.Models)
 	assert.Empty(t, state.Macros)
-	assert.Len(t, sc.OptionalReadWarnings(), 2)
+	assert.Len(t, sc.OptionalReadWarnings(), 3)
+	assert.Contains(t, sc.OptionalReadWarnings()[0], "assets")
 }
 
 func TestValidateApplyCapabilities_ModelEndpointRequired(t *testing.T) {
@@ -1768,7 +1733,6 @@ func TestReadState_EmptyState(t *testing.T) {
 	assert.Empty(t, state.ExternalLocations)
 	assert.Empty(t, state.ComputeEndpoints)
 	assert.Empty(t, state.Notebooks)
-	assert.Empty(t, state.Pipelines)
 	assert.Empty(t, state.APIKeys)
 }
 
@@ -2210,7 +2174,7 @@ func TestReadState_ComputeEndpointsWithAssignments(t *testing.T) {
 	assert.True(t, state.ComputeAssignments[0].IsDefault)
 }
 
-func TestReadState_NotebooksAndPipelines(t *testing.T) {
+func TestReadState_Notebooks(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
@@ -2239,40 +2203,6 @@ func TestReadState_NotebooksAndPipelines(t *testing.T) {
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
-	mux.HandleFunc("/v1/pipelines", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		resp := map[string]interface{}{
-			"data": []map[string]interface{}{
-				{
-					"id":                "pipe-id-1",
-					"name":              "pipe1",
-					"description":       "ETL pipeline",
-					"schedule_cron":     "0 0 * * *",
-					"is_paused":         true,
-					"concurrency_limit": 1,
-				},
-			},
-		}
-		_ = json.NewEncoder(w).Encode(resp)
-	})
-	mux.HandleFunc("/v1/pipelines/pipe1/jobs", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		resp := map[string]interface{}{
-			"data": []map[string]interface{}{
-				{
-					"id":                  "job-id-1",
-					"name":                "daily-kpi",
-					"notebook_id":         "nb-id-1",
-					"compute_endpoint_id": "",
-					"depends_on":          []string{},
-					"timeout_seconds":     300,
-					"retry_count":         1,
-					"job_order":           0,
-				},
-			},
-		}
-		_ = json.NewEncoder(w).Encode(resp)
-	})
 	mux.HandleFunc("/", emptyListHandler())
 
 	sc := setupReadStateClient(t, mux)
@@ -2287,17 +2217,6 @@ func TestReadState_NotebooksAndPipelines(t *testing.T) {
 	require.Len(t, state.Notebooks[0].Spec.Cells, 2)
 	assert.Equal(t, "markdown", state.Notebooks[0].Spec.Cells[0].Type)
 	assert.Equal(t, "SELECT 1", state.Notebooks[0].Spec.Cells[1].Content)
-
-	require.Len(t, state.Pipelines, 1)
-	assert.Equal(t, "pipe1", state.Pipelines[0].Name)
-	assert.Equal(t, "ETL pipeline", state.Pipelines[0].Spec.Description)
-	assert.Equal(t, "0 0 * * *", state.Pipelines[0].Spec.ScheduleCron)
-	assert.True(t, state.Pipelines[0].Spec.IsPaused)
-	require.NotNil(t, state.Pipelines[0].Spec.ConcurrencyLimit)
-	assert.Equal(t, 1, *state.Pipelines[0].Spec.ConcurrencyLimit)
-	require.Len(t, state.Pipelines[0].Spec.Jobs, 1)
-	assert.Equal(t, "daily-kpi", state.Pipelines[0].Spec.Jobs[0].Name)
-	assert.Equal(t, "nb1", state.Pipelines[0].Spec.Jobs[0].Notebook)
 }
 
 func TestReadState_APIKeys(t *testing.T) {

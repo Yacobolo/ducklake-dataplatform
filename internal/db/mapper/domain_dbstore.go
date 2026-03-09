@@ -192,6 +192,7 @@ func RowFilterFromDB(f dbstore.RowFilter) *domain.RowFilter {
 	return &domain.RowFilter{
 		ID:          f.ID,
 		TableID:     f.TableID,
+		Name:        f.Name.String,
 		FilterSQL:   f.FilterSql,
 		Description: f.Description.String,
 		CreatedAt:   parseTime(f.CreatedAt),
@@ -233,6 +234,7 @@ func ColumnMaskFromDB(m dbstore.ColumnMask) *domain.ColumnMask {
 	return &domain.ColumnMask{
 		ID:             m.ID,
 		TableID:        m.TableID,
+		Name:           m.Name.String,
 		ColumnName:     m.ColumnName,
 		MaskExpression: m.MaskExpression,
 		Description:    m.Description.String,
@@ -421,15 +423,38 @@ func NotebooksFromDB(ns []dbstore.Notebook) []domain.Notebook {
 
 // CellFromDB converts a dbstore.Cell to a domain.Cell.
 func CellFromDB(c dbstore.Cell) *domain.Cell {
+	var testCfg *domain.NotebookCellTestConfig
+	if c.TestConfig != "" && c.TestConfig != "{}" {
+		parsed := &domain.NotebookCellTestConfig{}
+		if err := json.Unmarshal([]byte(c.TestConfig), parsed); err == nil {
+			testCfg = parsed
+		}
+	}
 	return &domain.Cell{
 		ID:         c.ID,
 		NotebookID: c.NotebookID,
 		CellType:   domain.CellType(c.CellType),
+		Name:       ptrStr(c.Name),
+		Role:       domain.CellRole(c.Role),
+		Disabled:   c.Disabled != 0,
+		Test:       testCfg,
 		Content:    c.Content,
 		Position:   int(c.Position),
 		LastResult: ptrStr(c.LastResult),
 		CreatedAt:  parseTime(c.CreatedAt),
 		UpdatedAt:  parseTime(c.UpdatedAt),
+	}
+}
+
+// NotebookModelLinkFromDB converts a dbstore.NotebookModelLink to a domain.NotebookModelLink.
+func NotebookModelLinkFromDB(l dbstore.NotebookModelLink) *domain.NotebookModelLink {
+	return &domain.NotebookModelLink{
+		ID:           l.ID,
+		NotebookID:   l.NotebookID,
+		ModelID:      l.ModelID,
+		OutputCellID: l.OutputCellID,
+		CreatedAt:    parseTime(l.CreatedAt),
+		UpdatedAt:    parseTime(l.UpdatedAt),
 	}
 }
 

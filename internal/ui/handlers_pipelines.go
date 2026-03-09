@@ -42,19 +42,12 @@ func (h *Handler) PipelinesDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jobs, _ := h.Pipeline.ListJobs(r.Context(), name)
-	runs, _, _ := h.Pipeline.ListRuns(r.Context(), name, domain.PipelineRunFilter{Page: domain.PageRequest{MaxResults: 20}})
 
 	jobRows := make([]pipelineJobRowData, 0, len(jobs))
 	for i := range jobs {
 		j := jobs[i]
 		jobRows = append(jobRows, pipelineJobRowData{Name: j.Name, JobType: j.JobType, Selector: j.ModelSelector, Notebook: j.NotebookID, DeleteURL: "/ui/pipelines/" + name + "/jobs/" + j.ID + "/delete"})
 	}
-	runRows := make([]pipelineRunRowData, 0, len(runs))
-	for i := range runs {
-		run := runs[i]
-		runRows = append(runRows, pipelineRunRowData{ID: run.ID, Status: run.Status, Trigger: run.TriggerType, Started: formatTimePtr(run.StartedAt), Finished: formatTimePtr(run.FinishedAt), CancelURL: "/ui/pipelines/runs/" + run.ID + "/cancel"})
-	}
-
 	renderHTML(w, http.StatusOK, pipelineDetailPage(pipelineDetailPageData{
 		Principal:     principalFromContext(r.Context()),
 		Name:          pipe.Name,
@@ -63,10 +56,8 @@ func (h *Handler) PipelinesDetail(w http.ResponseWriter, r *http.Request) {
 		Schedule:      strOrDash(pipe.ScheduleCron),
 		EditURL:       "/ui/pipelines/" + name + "/edit",
 		DeleteURL:     "/ui/pipelines/" + name + "/delete",
-		TriggerURL:    "/ui/pipelines/" + name + "/runs/trigger",
 		NewJobURL:     "/ui/pipelines/" + name + "/jobs/new",
 		Jobs:          jobRows,
-		Runs:          runRows,
 		CSRFFieldFunc: csrfFieldProvider(r),
 	}))
 }
@@ -179,24 +170,4 @@ func (h *Handler) PipelineJobsDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/ui/pipelines/"+name, http.StatusSeeOther)
-}
-
-func (h *Handler) PipelineRunsTrigger(w http.ResponseWriter, r *http.Request) {
-	name := chi.URLParam(r, "pipelineName")
-	principal, _ := principalLabel(r.Context())
-	if _, err := h.Pipeline.TriggerRun(r.Context(), principal, name, nil, domain.TriggerTypeManual); err != nil {
-		h.renderServiceError(w, r, err)
-		return
-	}
-	http.Redirect(w, r, "/ui/pipelines/"+name, http.StatusSeeOther)
-}
-
-func (h *Handler) PipelineRunsCancel(w http.ResponseWriter, r *http.Request) {
-	runID := chi.URLParam(r, "runID")
-	principal, _ := principalLabel(r.Context())
-	if err := h.Pipeline.CancelRun(r.Context(), principal, runID); err != nil {
-		h.renderServiceError(w, r, err)
-		return
-	}
-	http.Redirect(w, r, "/ui/pipelines", http.StatusSeeOther)
 }

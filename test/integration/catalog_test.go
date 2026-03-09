@@ -12,6 +12,8 @@ import (
 	"duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // ---------------------------------------------------------------------------
@@ -545,6 +547,78 @@ func TestCatalog_MetastoreSummary(t *testing.T) {
 
 	for _, s := range steps {
 		t.Run(s.name, s.fn)
+	}
+}
+
+func TestCatalog_CatalogVersionSummary(t *testing.T) {
+	env := requireCatalogEnv(t)
+	repo := repository.NewCatalogRepo(env.MetaDB, env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	ctx := context.Background()
+	before, err := repo.GetCatalogVersionSummary(ctx)
+	require.NoError(t, err)
+
+	_, err = env.MetaDB.ExecContext(ctx, `
+		INSERT INTO ducklake_schema VALUES (99001, 'schema-historical', 1, 3, 'archive', 'archive/', 1);
+		INSERT INTO ducklake_table VALUES (99002, 'table-historical', 2, 4, 0, 'users_v1', 'users_v1/', 1);
+		INSERT INTO ducklake_column VALUES (99003, 2, 5, 1, 99, 'legacy_name', 'varchar', NULL, NULL, 1, NULL);
+	`)
+	require.NoError(t, err)
+
+	summary, err := repo.GetCatalogVersionSummary(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, summary)
+
+	require.Equal(t, "lake", summary.CatalogName)
+	assert.Equal(t, "0.3", summary.Version)
+	assert.Equal(t, "DuckDB 6ddac802ff", summary.CreatedBy)
+	if assert.NotNil(t, summary.Encrypted) {
+		assert.False(t, *summary.Encrypted)
+	}
+	assert.NotEmpty(t, summary.DataPath)
+	if assert.NotNil(t, summary.LatestSnapshotID) {
+		assert.GreaterOrEqual(t, *summary.LatestSnapshotID, int64(5))
+	}
+
+	assert.EqualValues(t, before.Schemas.TotalCount+1, summary.Schemas.TotalCount)
+	assert.EqualValues(t, before.Schemas.HistoricalCount+1, summary.Schemas.HistoricalCount)
+	assert.True(t, summary.Schemas.HasHistory)
+
+	assert.EqualValues(t, before.Tables.TotalCount+1, summary.Tables.TotalCount)
+	assert.EqualValues(t, before.Tables.HistoricalCount+1, summary.Tables.HistoricalCount)
+	assert.True(t, summary.Tables.HasHistory)
+
+	assert.EqualValues(t, before.Columns.TotalCount+1, summary.Columns.TotalCount)
+	assert.EqualValues(t, before.Columns.HistoricalCount+1, summary.Columns.HistoricalCount)
+	assert.True(t, summary.Columns.HasHistory)
+	if assert.NotNil(t, summary.Columns.LatestSnapshotID) {
+		assert.GreaterOrEqual(t, *summary.Columns.LatestSnapshotID, int64(5))
+	}
+}
+
+func TestCatalog_ListCatalogHistory(t *testing.T) {
+	env := requireCatalogEnv(t)
+	repo := repository.NewCatalogRepo(env.MetaDB, env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	ctx := context.Background()
+
+	_, err := env.MetaDB.ExecContext(ctx, `
+		INSERT INTO ducklake_schema VALUES (99101, 'schema-historical-2', 1, 3, 'archive_2', 'archive_2/', 1);
+		INSERT INTO ducklake_table VALUES (99102, 'table-historical-2', 2, 4, 0, 'users_v2', 'users_v2/', 1);
+		INSERT INTO ducklake_column VALUES (99103, 2, 5, 1, 99, 'legacy_name_2', 'varchar', NULL, NULL, 1, NULL);
+	`)
+	require.NoError(t, err)
+
+	entries, err := repo.ListCatalogHistory(ctx, domain.CatalogHistoryFilter{EntityType: "table", Limit: 10})
+	require.NoError(t, err)
+	require.NotEmpty(t, entries)
+	assert.Equal(t, "table", entries[0].EntityType)
+	assert.NotNil(t, entries[0].LatestSnapshotID)
+
+	columnEntries, err := repo.ListCatalogHistory(ctx, domain.CatalogHistoryFilter{EntityType: "column", Limit: 20})
+	require.NoError(t, err)
+	require.NotEmpty(t, columnEntries)
+	for _, entry := range columnEntries {
+		assert.Equal(t, "column", entry.EntityType)
+		assert.NotNil(t, entry.LatestSnapshotID)
 	}
 }
 

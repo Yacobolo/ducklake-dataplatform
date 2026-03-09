@@ -1,6 +1,10 @@
 package cli
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,4 +23,45 @@ func TestPlanCmd_InvalidOutputFormat(t *testing.T) {
 	err := rootCmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported output format \"yaml\": use 'text' or 'json'")
+}
+func TestApplyCmd_AssetActionsExecute(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	requestCount := 0
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost && r.URL.Path == "/v1/assets" {
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"asset_key":"daily_kpi","asset_type":"table"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"data":[]}`))
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	configDir := t.TempDir()
+	assetPath := filepath.Join(configDir, "assets", "daily_kpi.yaml")
+	require.NoError(t, os.MkdirAll(filepath.Dir(assetPath), 0o755))
+	require.NoError(t, os.WriteFile(assetPath, []byte(`apiVersion: duck/v1
+kind: Asset
+metadata:
+  name: daily_kpi
+spec:
+  asset_type: table
+`), 0o600))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"apply",
+		"--config-dir", configDir,
+		"--auto-approve",
+	})
+
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+	assert.Positive(t, requestCount)
 }

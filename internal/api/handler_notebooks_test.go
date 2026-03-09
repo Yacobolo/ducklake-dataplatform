@@ -22,15 +22,16 @@ import (
 
 // mockNotebookService implements notebookService using function fields.
 type mockNotebookService struct {
-	createNotebookFn func(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error)
-	getNotebookFn    func(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error)
-	listNotebooksFn  func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
-	updateNotebookFn func(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
-	deleteNotebookFn func(ctx context.Context, principal string, isAdmin bool, id string) error
-	createCellFn     func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error)
-	updateCellFn     func(ctx context.Context, principal string, isAdmin bool, cellID string, req domain.UpdateCellRequest) (*domain.Cell, error)
-	deleteCellFn     func(ctx context.Context, principal string, isAdmin bool, cellID string) error
-	reorderCellsFn   func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.ReorderCellsRequest) ([]domain.Cell, error)
+	createNotebookFn  func(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error)
+	getNotebookFn     func(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error)
+	getPublishModelFn func(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error)
+	listNotebooksFn   func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
+	updateNotebookFn  func(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
+	deleteNotebookFn  func(ctx context.Context, principal string, isAdmin bool, id string) error
+	createCellFn      func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error)
+	updateCellFn      func(ctx context.Context, principal string, isAdmin bool, cellID string, req domain.UpdateCellRequest) (*domain.Cell, error)
+	deleteCellFn      func(ctx context.Context, principal string, isAdmin bool, cellID string) error
+	reorderCellsFn    func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.ReorderCellsRequest) ([]domain.Cell, error)
 }
 
 func (m *mockNotebookService) CreateNotebook(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error) {
@@ -44,6 +45,12 @@ func (m *mockNotebookService) GetNotebook(ctx context.Context, id string) (*doma
 		return m.getNotebookFn(ctx, id)
 	}
 	panic("GetNotebook not implemented")
+}
+func (m *mockNotebookService) GetPublishModel(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error) {
+	if m.getPublishModelFn != nil {
+		return m.getPublishModelFn(ctx, notebookID)
+	}
+	return nil, nil
 }
 func (m *mockNotebookService) ListNotebooks(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error) {
 	if m.listNotebooksFn != nil {
@@ -192,8 +199,10 @@ func setupNotebookTestServer(t *testing.T, nb notebookService, sess sessionServi
 		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, // query..catalogRegistration
 		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, // queryHistory..computeEndpoints
 		nil, // apiKeys
-		nb, sess, git,
 		nil, // pipelineSvc
+		nb, sess, git,
+		nil, // assetSvc
+		nil, // assetBackfillSvc
 		nil, // modelSvc
 		nil, // macroSvc
 		nil, // semanticSvc
@@ -335,6 +344,18 @@ func TestAPI_NotebookCRUD(t *testing.T) {
 		cell := (*detail.Cells)[0]
 		assert.Equal(t, "cell-001", *cell.Id)
 		assert.Equal(t, "SELECT 1", *cell.Content)
+	})
+
+	t.Run("get notebook publish model lookup error is ignored", func(t *testing.T) {
+		notebookSvc.getPublishModelFn = func(_ context.Context, _ string) (*domain.NotebookPublishModel, error) {
+			return nil, fmt.Errorf("publish lookup failed")
+		}
+
+		resp := nbDoRequest(t, http.MethodGet, srv.URL+"/notebooks/"+nbID, "")
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		notebookSvc.getPublishModelFn = nil
 	})
 
 	t.Run("list notebooks", func(t *testing.T) {

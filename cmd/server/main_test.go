@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"duck-demo/internal/api"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCurlHostForListenAddr(t *testing.T) {
@@ -148,4 +150,21 @@ type executeQueryStrictStub struct {
 func (s *executeQueryStrictStub) ExecuteQuery(_ context.Context, _ api.GenExecuteQueryRequest) (api.GenExecuteQueryResponse, error) {
 	s.called = true
 	return api.GenExecuteQuery200JSONResponse{}, nil
+}
+
+func TestWantsServerHelp(t *testing.T) {
+	t.Parallel()
+
+	assert.True(t, wantsServerHelp([]string{"--help"}))
+	assert.True(t, wantsServerHelp([]string{"-h"}))
+	assert.True(t, wantsServerHelp([]string{"help"}))
+	assert.False(t, wantsServerHelp(nil))
+	assert.False(t, wantsServerHelp([]string{"admin"}))
+}
+
+func TestRunAdmin_Help(t *testing.T) {
+	t.Parallel()
+
+	err := runAdmin([]string{"--help"})
+	require.ErrorIs(t, err, flag.ErrHelp)
 }

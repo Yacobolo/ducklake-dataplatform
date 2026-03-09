@@ -50,12 +50,14 @@ type catalogWorkspaceCatalogLinkData struct {
 }
 
 type catalogWorkspaceObjectNodeData struct {
-	Name    string
-	URL     string
-	Active  bool
-	Owner   string
-	Created string
-	Kind    string
+	Name     string
+	URL      string
+	AssetURL string
+	AssetKey string
+	Active   bool
+	Owner    string
+	Created  string
+	Kind     string
 }
 
 type catalogWorkspaceSchemaNodeData struct {
@@ -90,6 +92,12 @@ type catalogWorkspacePanelData struct {
 	Columns          []tableColumnRowData
 	Definition       string
 	ColumnsAvailable bool
+	AssetURL         string
+	AssetKey         string
+	VersionSummary   *domain.CatalogVersionSummary
+	VersionError     string
+	HistoryEntries   []domain.CatalogHistoryEntry
+	HistoryEntity    string
 }
 
 type catalogWorkspacePageData struct {
@@ -171,6 +179,10 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 	if d.Panel.EditURL != "" {
 		panelActions = append(panelActions, A(Href(d.Panel.EditURL), Class(secondaryButtonClass()), Text("Edit")))
 	}
+	if d.Panel.AssetURL != "" {
+		label := fallbackString(d.Panel.AssetKey, "Open asset")
+		panelActions = append(panelActions, A(Href(d.Panel.AssetURL), Class(secondaryButtonClass()), Text(label)))
+	}
 	if d.Panel.SetDefaultURL != "" {
 		panelActions = append(panelActions,
 			Form(Method("post"), Action(d.Panel.SetDefaultURL), d.CSRFField(), Button(Type("submit"), Class("btn"), Text("Set default"))),
@@ -230,7 +242,7 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 	permissionsContent := catalogPlaceholderTab("Permissions", "Permissions for this "+d.Panel.Mode+" will appear here.")
 	policiesContent := catalogPlaceholderTab("Policies", "Policies for this "+d.Panel.Mode+" will appear here.")
 	workspacesContent := catalogPlaceholderTab("Workspaces", "Workspace assignments for this catalog will appear here.")
-	historyContent := catalogPlaceholderTab("History", "History for this "+d.Panel.Mode+" will appear here.")
+	historyContent := catalogHistoryContent(d)
 	lineageContent := catalogPlaceholderTab("Lineage", "Lineage for this "+d.Panel.Mode+" will appear here.")
 	insightsContent := catalogPlaceholderTab("Insights", "Insights for this "+d.Panel.Mode+" will appear here.")
 	qualityContent := catalogPlaceholderTab("Quality", "Quality rules and checks for this table will appear here.")
@@ -342,9 +354,9 @@ func catalogTabLabel(tab string) string {
 func catalogTabsForType(mode string) []string {
 	switch mode {
 	case "catalog":
-		return []string{"overview", "details", "permissions", "policies", "workspaces"}
+		return []string{"overview", "details", "history", "permissions", "policies", "workspaces"}
 	case "schema":
-		return []string{"overview", "details", "permissions", "policies"}
+		return []string{"overview", "details", "history", "permissions", "policies"}
 	case "table":
 		return []string{"overview", "sample-data", "details", "permissions", "policies", "history", "lineage", "insights", "quality"}
 	case "view":
@@ -365,6 +377,160 @@ func isCatalogTabAllowed(mode, tab string) bool {
 
 func catalogPlaceholderTab(title, text string) Node {
 	return Div(Class("catalog-section catalog-section-inline"), H3(Class("catalog-section-title"), Text(title)), P(Class("catalog-muted"), Text(text)))
+}
+
+func catalogHistoryContent(d catalogWorkspacePageData) Node {
+	if d.Panel.Mode == "view" {
+		return catalogPlaceholderTab("History", "History for this "+d.Panel.Mode+" will appear here.")
+	}
+	if d.Panel.VersionError != "" {
+		return Div(
+			Class("catalog-section catalog-section-inline"),
+			H3(Class("catalog-section-title"), Text("History")),
+			P(Class("catalog-muted"), Text(d.Panel.VersionError)),
+		)
+	}
+	if d.Panel.Mode != "catalog" {
+		return catalogHistoryEntriesSection(d, false)
+	}
+	if d.Panel.VersionSummary == nil {
+		return Div(
+			Class("catalog-section catalog-section-inline"),
+			H3(Class("catalog-section-title"), Text("History")),
+			P(Class("catalog-muted"), Text("Version metadata is not available for this catalog.")),
+		)
+	}
+	filterLinks := []struct {
+		label string
+		value string
+	}{
+		{label: "All", value: ""},
+		{label: "Schemas", value: "schema"},
+		{label: "Tables", value: "table"},
+		{label: "Columns", value: "column"},
+	}
+	filterNodes := make([]Node, 0, len(filterLinks))
+	for i := range filterLinks {
+		item := filterLinks[i]
+		className := "catalog-history-filter"
+		if d.Panel.HistoryEntity == item.value {
+			className += " active"
+		}
+		filterNodes = append(filterNodes, A(Href(catalogHistoryURL(d, item.value)), Class(className), Text(item.label)))
+	}
+
+	summary := d.Panel.VersionSummary
+	metaItems := []catalogWorkspaceMetaItemData{
+		{Label: "Catalog version", Value: summary.Version},
+		{Label: "Created by", Value: summary.CreatedBy},
+		{Label: "Encrypted", Value: boolPtrLabel(summary.Encrypted)},
+		{Label: "Data path", Value: summary.DataPath},
+		{Label: "Latest snapshot", Value: snapshotIDLabel(summary.LatestSnapshotID)},
+	}
+	metaNodes := make([]Node, 0, len(metaItems))
+	for i := range metaItems {
+		item := metaItems[i]
+		metaNodes = append(metaNodes,
+			Div(Class("catalog-meta-row"),
+				Dt(Class("catalog-meta-label"), Text(item.Label)),
+				Dd(Class("catalog-meta-value"), Text(dashIfEmpty(item.Value))),
+			),
+		)
+	}
+
+	entityRows := []struct {
+		name    string
+		summary domain.VersionedObjectSummary
+	}{
+		{name: "Schemas", summary: summary.Schemas},
+		{name: "Tables", summary: summary.Tables},
+		{name: "Columns", summary: summary.Columns},
+	}
+	rows := make([]Node, 0, len(entityRows))
+	for i := range entityRows {
+		row := entityRows[i]
+		rows = append(rows,
+			Tr(
+				Td(Text(row.name)),
+				Td(Text(strconv.FormatInt(row.summary.ActiveCount, 10))),
+				Td(Text(strconv.FormatInt(row.summary.HistoricalCount, 10))),
+				Td(Text(strconv.FormatInt(row.summary.TotalCount, 10))),
+				Td(Text(snapshotIDLabel(row.summary.LatestSnapshotID))),
+			),
+		)
+	}
+
+	return Div(
+		Class("catalog-section catalog-section-inline catalog-history"),
+		Div(Class("catalog-history-intro"),
+			H3(Class("catalog-section-title"), Text("Version metadata")),
+			P(Class("catalog-muted"), Text("DuckLake metastore metadata and snapshot-aware counts for this catalog.")),
+		),
+		Dl(Class("catalog-meta catalog-history-meta"), Group(metaNodes)),
+		Div(
+			Class("catalog-section"),
+			H3(Class("catalog-section-title"), Text("Metadata tables")),
+			Div(Class("table-wrap catalog-history-table"),
+				Table(
+					Class("data-table"),
+					THead(Tr(Th(Text("Entity")), Th(Text("Active")), Th(Text("Historical")), Th(Text("Total")), Th(Text("Latest snapshot")))),
+					TBody(Group(rows)),
+				),
+			),
+		),
+		Div(
+			Class("catalog-section"),
+			H3(Class("catalog-section-title"), Text("Recent history")),
+			Div(Class("catalog-history-filters"), Group(filterNodes)),
+			catalogHistoryEntriesTable(d.Panel.HistoryEntries),
+		),
+	)
+}
+
+func catalogHistoryEntriesSection(d catalogWorkspacePageData, showFilters bool) Node {
+	filters := Node(nil)
+	if showFilters {
+		filterLinks := []struct {
+			label string
+			value string
+		}{{"All", ""}, {"Schemas", "schema"}, {"Tables", "table"}, {"Columns", "column"}}
+		filterNodes := make([]Node, 0, len(filterLinks))
+		for i := range filterLinks {
+			item := filterLinks[i]
+			className := "catalog-history-filter"
+			if d.Panel.HistoryEntity == item.value {
+				className += " active"
+			}
+			filterNodes = append(filterNodes, A(Href(catalogHistoryURL(d, item.value)), Class(className), Text(item.label)))
+		}
+		filters = Div(Class("catalog-history-filters"), Group(filterNodes))
+	}
+	return Div(
+		Class("catalog-section catalog-section-inline catalog-history"),
+		H3(Class("catalog-section-title"), Text("Recent history")),
+		filters,
+		catalogHistoryEntriesTable(d.Panel.HistoryEntries),
+	)
+}
+
+func catalogHistoryEntriesTable(entries []domain.CatalogHistoryEntry) Node {
+	historyRows := make([]Node, 0, len(entries))
+	for i := range entries {
+		entry := entries[i]
+		historyRows = append(historyRows,
+			Tr(
+				Td(Text(historyEntityLabel(entry.EntityType))),
+				Td(Text(dashIfEmpty(entry.ObjectName))),
+				Td(Text(snapshotIDLabel(entry.BeginSnapshotID))),
+				Td(Text(snapshotIDLabel(entry.EndSnapshotID))),
+				Td(Text(historyStatusLabel(entry))),
+			),
+		)
+	}
+	if len(historyRows) == 0 {
+		return P(Class("catalog-muted"), Text("No history entries match the current filter."))
+	}
+	return Div(Class("table-wrap catalog-history-table"), Table(Class("data-table"), THead(Tr(Th(Text("Entity")), Th(Text("Object")), Th(Text("Begin snapshot")), Th(Text("End snapshot")), Th(Text("Status")))), TBody(Group(historyRows))))
 }
 
 func catalogOverviewContent(d catalogWorkspacePageData) Node {
@@ -400,23 +566,33 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 			}
 			for j := range schema.Tables {
 				table := schema.Tables[j]
+				assetNode := Node(Text("-"))
+				if table.AssetURL != "" {
+					assetNode = A(Href(table.AssetURL), Text(fallbackString(table.AssetKey, "Open asset")))
+				}
 				childRows = append(childRows,
 					Tr(
 						data.Show(containsExprSignal(table.Name+" "+table.Owner+" "+table.Created+" "+table.Kind, "childq")),
 						Td(A(Href(table.URL), Text(table.Name))),
 						Td(Text(dashIfEmpty(table.Owner))),
 						Td(Text(dashIfEmpty(table.Created))),
+						Td(assetNode),
 					),
 				)
 			}
 			for j := range schema.Views {
 				view := schema.Views[j]
+				assetNode := Node(Text("-"))
+				if view.AssetURL != "" {
+					assetNode = A(Href(view.AssetURL), Text(fallbackString(view.AssetKey, "Open asset")))
+				}
 				childRows = append(childRows,
 					Tr(
 						data.Show(containsExprSignal(view.Name+" "+view.Owner+" "+view.Created+" "+view.Kind, "childq")),
 						Td(A(Href(view.URL), Text(view.Name))),
 						Td(Text(dashIfEmpty(view.Owner))),
 						Td(Text(dashIfEmpty(view.Created))),
+						Td(assetNode),
 					),
 				)
 			}
@@ -445,8 +621,11 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 	}
 
 	headers := []Node{Th(Text("Name")), Th(Text("Owner")), Th(Text("Created at"))}
-	if d.Panel.Mode == "table" || d.Panel.Mode == "view" {
+	switch d.Panel.Mode {
+	case "table", "view":
 		headers = []Node{Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable"))}
+	case "schema":
+		headers = []Node{Th(Text("Name")), Th(Text("Owner")), Th(Text("Created at")), Th(Text("Asset"))}
 	}
 
 	childTable := Node(P(Class("catalog-muted"), Text("No child elements.")))
@@ -457,6 +636,13 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 	return Div(
 		Class("catalog-section catalog-section-inline"),
 		descriptionNode,
+		If(d.Panel.AssetURL != "",
+			Div(Class("catalog-section"),
+				H3(Class("catalog-section-title"), Text("Linked asset")),
+				P(Class("catalog-muted"), Text("This object is already represented in the orchestration graph and asset workspace.")),
+				A(Href(d.Panel.AssetURL), Class(secondaryButtonClass()), Text(fallbackString(d.Panel.AssetKey, "Open asset"))),
+			),
+		),
 		Div(Class("catalog-overview-toolbar"),
 			Div(Class("catalog-overview-filter"),
 				I(Class("nav-icon"), Attr("data-lucide", "search"), Attr("aria-hidden", "true")),
@@ -528,6 +714,52 @@ func panelMetaValue(panel catalogWorkspacePanelData, label string) string {
 		}
 	}
 	return ""
+}
+
+func snapshotIDLabel(value *int64) string {
+	if value == nil {
+		return "-"
+	}
+	return strconv.FormatInt(*value, 10)
+}
+
+func boolPtrLabel(value *bool) string {
+	if value == nil {
+		return "-"
+	}
+	return strconv.FormatBool(*value)
+}
+
+func catalogHistoryURL(d catalogWorkspacePageData, entityType string) string {
+	parsed, err := url.Parse(catalogWorkspaceTabURL(d, "history"))
+	if err != nil {
+		return catalogWorkspaceTabURL(d, "history")
+	}
+	q := parsed.Query()
+	if entityType == "" {
+		q.Del("history_entity")
+	} else {
+		q.Set("history_entity", entityType)
+	}
+	parsed.RawQuery = q.Encode()
+	return parsed.String()
+}
+
+func historyStatusLabel(entry domain.CatalogHistoryEntry) string {
+	if entry.IsActive {
+		return "Active"
+	}
+	if entry.HasHistory {
+		return "Historical"
+	}
+	return "Inactive"
+}
+
+func historyEntityLabel(entityType string) string {
+	if entityType == "" {
+		return "-"
+	}
+	return strings.ToUpper(entityType[:1]) + entityType[1:]
 }
 
 func catalogsNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {

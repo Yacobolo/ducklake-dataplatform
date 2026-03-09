@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -170,15 +171,26 @@ func TestOpenSQLite_ForeignKeysEnabled(t *testing.T) {
 }
 
 func TestOpenSQLite_InvalidPath(t *testing.T) {
-	_, err := OpenSQLite("/nonexistent/dir/test.db", "write", 0)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "ping sqlite")
+	path := filepath.Join(t.TempDir(), "nested", "dir", "test.db")
+	db, err := OpenSQLite(path, "write", 0)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	_, statErr := os.Stat(filepath.Dir(path))
+	require.NoError(t, statErr)
 }
 
 func TestOpenSQLitePair_WriteFailClosesNothing(t *testing.T) {
-	// If the write pool fails to open, readDB should not be attempted
-	_, _, err := OpenSQLitePair("/nonexistent/dir/test.db", 4)
-	require.Error(t, err)
+	path := filepath.Join(t.TempDir(), "nested", "pair", "test.db")
+	writeDB, readDB, err := OpenSQLitePair(path, 4)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = writeDB.Close()
+		_ = readDB.Close()
+	})
+
+	_, statErr := os.Stat(filepath.Dir(path))
+	require.NoError(t, statErr)
 }
 
 // TestOpenSQLite_BusyTimeoutPreventsErrors verifies that the busy_timeout

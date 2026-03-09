@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"sort"
 	"testing"
@@ -22,6 +23,26 @@ func (passthroughSessionEngine) Query(ctx context.Context, _ string, sqlQuery st
 }
 
 func (passthroughSessionEngine) QueryOnConn(ctx context.Context, conn *sql.Conn, _ string, sqlQuery string) (*sql.Rows, error) {
+	return conn.QueryContext(ctx, sqlQuery)
+}
+
+type ddlRejectingSessionEngine struct {
+	queries []string
+}
+
+func (*ddlRejectingSessionEngine) Query(context.Context, string, string) (*sql.Rows, error) {
+	panic("unexpected Query call in executor tests")
+}
+
+func (e *ddlRejectingSessionEngine) QueryOnConn(ctx context.Context, conn *sql.Conn, _ string, sqlQuery string) (*sql.Rows, error) {
+	e.queries = append(e.queries, sqlQuery)
+	stmtType, err := sqlrewrite.ClassifyStatement(sqlQuery)
+	if err != nil {
+		return nil, err
+	}
+	if stmtType == sqlrewrite.StmtDDL {
+		return nil, fmt.Errorf("DDL statements are not allowed through the query engine")
+	}
 	return conn.QueryContext(ctx, sqlQuery)
 }
 
@@ -63,6 +84,61 @@ func TestCanDirectExecOnConn(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := canDirectExecOnConn(tt.stmtType, tt.query)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestExecuteSingleModel_DDLBypassesQueryEngine(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name            string
+		materialization string
+		wantQueryCount  int
+	}{
+		{name: "view", materialization: domain.MaterializationView, wantQueryCount: 0},
+		{name: "table", materialization: domain.MaterializationTable, wantQueryCount: 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			engine := &ddlRejectingSessionEngine{}
+			db, err := sql.Open("duckdb", "")
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = db.Close() })
+
+			_, err = db.ExecContext(context.Background(), "CREATE SCHEMA analytics")
+			require.NoError(t, err)
+
+			svc := &Service{
+				engine: engine,
+				duckDB: db,
+				logger: slog.New(slog.DiscardHandler),
+			}
+
+			rowsAffected, err := svc.executeSingleModel(
+				context.Background(),
+				&domain.Model{
+					ProjectName:     "analytics",
+					Name:            "orders",
+					SQL:             "SELECT 1 AS id",
+					Materialization: tc.materialization,
+				},
+				ExecutionConfig{TargetSchema: "analytics"},
+				"admin",
+				slog.New(slog.DiscardHandler),
+			)
+			require.NoError(t, err)
+
+			if tc.materialization == domain.MaterializationTable {
+				require.NotNil(t, rowsAffected)
+				assert.EqualValues(t, 1, *rowsAffected)
+			} else {
+				assert.Nil(t, rowsAffected)
+			}
+
+			require.Len(t, engine.queries, tc.wantQueryCount)
+			for _, query := range engine.queries {
+				assert.NotContains(t, query, "CREATE OR REPLACE")
+			}
 		})
 	}
 }

@@ -65,12 +65,18 @@ type catalogExplorerPanelData struct {
 
 var navItems = []navItem{
 	{Label: "Overview", Href: "/ui", Key: "home", Icon: "house"},
+	{Label: "Components", Href: "/ui/components", Key: "components", Icon: "layout-grid"},
 	{Label: "SQL Editor", Href: "/ui/sql", Key: "sql", Icon: "square-terminal"},
 	{Label: "Catalogs", Href: "/ui/catalogs", Key: "catalogs", Icon: "database"},
-	{Label: "Pipelines", Href: "/ui/pipelines", Key: "pipelines", Icon: "workflow"},
+	{Label: "Security", Href: "/ui/security", Key: "security", Icon: "shield"},
+	{Label: "Storage", Href: "/ui/storage", Key: "storage", Icon: "hard-drive"},
+	{Label: "Compute", Href: "/ui/compute", Key: "compute", Icon: "server"},
+	{Label: "Governance", Href: "/ui/governance", Key: "governance", Icon: "scan-search"},
+	{Label: "Assets", Href: "/ui/assets", Key: "assets", Icon: "git-fork"},
 	{Label: "Notebooks", Href: "/ui/notebooks", Key: "notebooks", Icon: "notebook-text"},
 	{Label: "Macros", Href: "/ui/macros", Key: "macros", Icon: "braces"},
 	{Label: "Models", Href: "/ui/models", Key: "models", Icon: "boxes"},
+	{Label: "Semantic", Href: "/ui/semantic", Key: "semantic", Icon: "waypoints"},
 }
 
 func appPage(title, active string, principal domain.ContextPrincipal, body ...Node) Node {
@@ -561,15 +567,35 @@ func containsExpr(value string) string {
 }
 
 func paginationCard(basePath string, page domain.PageRequest, total int64) Node {
+	shown := min(page.Limit(), int(total))
+	summary := fmt.Sprintf("Showing %d of %d entries.", shown, total)
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
-		return Div(Class(cardClass()), P(Class(mutedClass()), Text(fmt.Sprintf("Showing %d of %d entries.", min(page.Limit(), int(total)), total))))
+		return Div(
+			Class(cardClass("PaginationCard")),
+			Div(
+				Class("PaginationCard-row"),
+				Div(
+					Class("PaginationCard-meta"),
+					P(Class("PaginationCard-title"), Text("Pagination")),
+					P(Class("PaginationCard-summary"), Text(summary)),
+				),
+				Span(Class("btn btn-sm PaginationCard-button is-disabled"), Attr("aria-disabled", "true"), Text("Next")),
+			),
+		)
 	}
 	url := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
 	return Div(
-		Class(cardClass()),
-		P(Class(mutedClass()), Text(fmt.Sprintf("Showing up to %d of %d entries.", page.Limit(), total))),
-		A(Href(url), Text("Next page ->")),
+		Class(cardClass("PaginationCard")),
+		Div(
+			Class("PaginationCard-row"),
+			Div(
+				Class("PaginationCard-meta"),
+				P(Class("PaginationCard-title"), Text("Pagination")),
+				P(Class("PaginationCard-summary"), Text(summary)),
+			),
+			A(Href(url), Class("btn btn-sm"), Text("Next page")),
+		),
 	)
 }
 
@@ -599,27 +625,61 @@ func secondaryButtonClass() string {
 }
 
 func quickFilterCard(placeholder string, extraControls ...Node) Node {
+	return quickFilterCardWithValue(placeholder, "", extraControls...)
+}
+
+func quickFilterCardWithValue(placeholder, initialValue string, extraControls ...Node) Node {
 	controls := []Node{
 		Div(
-			Class("d-flex flex-items-center gap-2 flex-1"),
+			Class("ToolbarCard-search"),
 			Label(Class("sr-only"), Text("Quick filter")),
-			Input(Type("search"), Class("form-control"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off")),
+			Input(Type("search"), Class("form-control"), Name("q"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off"), Attr("data-quick-filter-input", "true")),
 		),
 	}
 	controls = append(controls, extraControls...)
+	syncScript := `(function(){
+  var input=document.querySelector('[data-quick-filter-input="true"]');
+  if(!(input instanceof HTMLInputElement)){ return; }
+
+  function syncURL(value){
+    var url=new URL(window.location.href);
+    if(value){
+      url.searchParams.set('q', value);
+    } else {
+      url.searchParams.delete('q');
+    }
+    url.searchParams.delete('page_token');
+    var next=url.pathname;
+    var query=url.searchParams.toString();
+    if(query){ next+='?'+query; }
+    if(next!==window.location.pathname+window.location.search){
+      window.history.replaceState({}, '', next);
+    }
+  }
+
+  input.addEventListener('input', function(){
+    syncURL(input.value.trim());
+  });
+})();`
+
 	return Div(
-		Class(cardClass("toolbar")),
-		data.Signals(map[string]any{"q": ""}),
-		Div(Class("d-flex flex-wrap flex-items-center gap-2"), Group(controls)),
+		Class(cardClass("toolbar ToolbarCard ToolbarCard-filter")),
+		data.Signals(map[string]any{"q": initialValue}),
+		Div(Class("ToolbarCard-controls"), Group(controls)),
+		Script(Raw(syncScript)),
 	)
 }
 
 func pageToolbar(newHref, newLabel string) Node {
 	return Div(
-		Class(cardClass("toolbar")),
+		Class(cardClass("toolbar ToolbarCard")),
 		Div(
-			Class("d-flex flex-justify-between flex-items-center flex-wrap gap-2"),
-			P(Class("color-fg-muted text-small mb-0"), Text("Browse and manage resources.")),
+			Class("ToolbarCard-row"),
+			Div(
+				Class("ToolbarCard-copy"),
+				Span(Class("Label"), Text("Workspace")),
+				P(Class("color-fg-muted text-small mb-0"), Text("Browse and manage resources.")),
+			),
 			A(Href(newHref), Class(primaryButtonClass()), Text(newLabel)),
 		),
 	)
@@ -631,9 +691,17 @@ func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 		cta = A(Href(ctaHref), Class(primaryButtonClass()), Text(ctaLabel))
 	}
 	return Div(
-		Class(cardClass("blankslate")),
-		P(Class("color-fg-muted mb-2"), Text(message)),
-		cta,
+		Class(cardClass("blankslate BlankslateCard")),
+		Div(
+			Class("BlankslateCard-icon"),
+			I(Class("nav-icon"), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true")),
+		),
+		Div(
+			Class("BlankslateCard-body"),
+			P(Class("BlankslateCard-title"), Text("No results yet")),
+			P(Class("color-fg-muted mb-2"), Text(message)),
+			cta,
+		),
 	)
 }
 

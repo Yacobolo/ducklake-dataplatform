@@ -173,6 +173,845 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Duck
+  /assets:
+    get:
+      operationId: listAssets
+      parameters:
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssets'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+    post:
+      operationId: createAsset
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssetRequest'
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_ASSET_DEFINITIONS
+            securable_id_source: catalog_sentinel
+  /assets/{assetKey}:
+    get:
+      operationId: getAsset
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+    put:
+      operationId: updateAsset
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssetRequest'
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_ASSET_DEFINITIONS
+            securable_id_source: catalog_sentinel
+    delete:
+      operationId: deleteAsset
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: MANAGE_ASSET_DEFINITIONS
+            securable_id_source: catalog_sentinel
+  /assets/{assetKey}/backfills:
+    get:
+      operationId: listAssetBackfills
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBackfillRequests'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+    post:
+      operationId: createAssetBackfill
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAssetBackfillResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssetBackfillRequest'
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: EXECUTE_ASSET_MATERIALIZATION
+            securable_id_source: catalog_sentinel
+  /assets/{assetKey}/backfills/{backfillId}:
+    get:
+      operationId: getAssetBackfill
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: backfillId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetBackfillDetails'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+  /assets/{assetKey}/check-results:
+    get:
+      operationId: listAssetCheckResults
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssetCheckResults'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+  /assets/{assetKey}/checks:
+    get:
+      operationId: listAssetChecks
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetCheckList'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+  /assets/{assetKey}/graph:
+    get:
+      operationId: getAssetGraph
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetGraph'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+  /assets/{assetKey}/materializations:
+    get:
+      operationId: listAssetMaterializations
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssetMaterializations'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+  /assets/{assetKey}/materialize:
+    post:
+      operationId: triggerAssetMaterialization
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetTriggerResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriggerAssetMaterializationRequest'
+      x-authz:
+        mode: privilege
+        checks:
+          - securable_type: catalog
+            privilege: EXECUTE_ASSET_MATERIALIZATION
+            securable_id_source: catalog_sentinel
+  /assets/{assetKey}/partitions:
+    get:
+      operationId: listAssetPartitions
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssetPartitions'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+  /assets/{assetKey}/runs:
+    get:
+      operationId: listAssetRuns
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssetRuns'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
   /audit-logs:
     get:
       operationId: listAuditLogs
@@ -788,6 +1627,79 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
+  /catalogs/{catalogName}/history:
+    get:
+      operationId: listCatalogHistory
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: entity_type
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: schema_name
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: table_name
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogHistoryResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -2507,6 +3419,54 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetDefaultCatalogRequest'
+  /catalogs/{catalogName}/version-summary:
+    get:
+      operationId: getCatalogVersionSummary
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogVersionSummary'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
   /classifications:
     get:
       operationId: listClassifications
@@ -2590,6 +3550,66 @@ paths:
       tags:
         - Duck
   /column-masks/{columnMaskId}/bindings:
+    get:
+      operationId: listColumnMaskBindings
+      parameters:
+        - name: columnMaskId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedColumnMaskBindings'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
     post:
       operationId: bindColumnMask
       parameters:
@@ -7857,6 +8877,66 @@ paths:
       tags:
         - Duck
   /row-filters/{rowFilterId}/bindings:
+    get:
+      operationId: listRowFilterBindings
+      parameters:
+        - name: rowFilterId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRowFilterBindings'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
     post:
       operationId: bindRowFilter
       parameters:
@@ -9522,6 +10602,66 @@ paths:
       tags:
         - Duck
   /tags/{tagId}/assignments:
+    get:
+      operationId: listTagAssignments
+      parameters:
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTagAssignments'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Duck
     post:
       operationId: createTagAssignment
       parameters:
@@ -9593,6 +10733,212 @@ components:
           type: string
         created_at:
           type: string
+    Asset:
+      type: object
+      properties:
+        id:
+          type: string
+        asset_key:
+          type: string
+        asset_type:
+          type: string
+        owner:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        io_profile:
+          type: string
+        is_active:
+          type: boolean
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AssetBackfillDetails:
+      type: object
+      properties:
+        request:
+          $ref: '#/components/schemas/BackfillRequest'
+        slices:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackfillSlice'
+    AssetCheck:
+      type: object
+      properties:
+        id:
+          type: string
+        asset_id:
+          type: string
+        name:
+          type: string
+        check_type:
+          type: string
+        severity:
+          type: string
+        enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AssetCheckInput:
+      type: object
+      required:
+        - name
+        - check_type
+      properties:
+        name:
+          type: string
+        check_type:
+          type: string
+        severity:
+          type: string
+        enabled:
+          type: boolean
+        config_json:
+          type: object
+          additionalProperties: {}
+    AssetCheckList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetCheck'
+    AssetCheckResult:
+      type: object
+      properties:
+        id:
+          type: string
+        check_id:
+          type: string
+        run_id:
+          type: string
+        partition_key:
+          type: string
+        status:
+          type: string
+        message:
+          type: string
+        metrics_json:
+          type: object
+          additionalProperties: {}
+        created_at:
+          type: string
+          format: date-time
+    AssetGraph:
+      type: object
+      properties:
+        asset_key:
+          type: string
+        upstream_asset_keys:
+          type: array
+          items:
+            type: string
+        downstream_asset_keys:
+          type: array
+          items:
+            type: string
+    AssetMaterialization:
+      type: object
+      properties:
+        id:
+          type: string
+        asset_id:
+          type: string
+        run_id:
+          type: string
+        partition_key:
+          type: string
+        row_count:
+          type: integer
+          format: int64
+        schema_hash:
+          type: string
+        materialized_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    AssetPartition:
+      type: object
+      properties:
+        id:
+          type: string
+        asset_id:
+          type: string
+        partition_key:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AssetRun:
+      type: object
+      properties:
+        id:
+          type: string
+        asset_id:
+          type: string
+        run_group_id:
+          type: string
+        partition_key:
+          type: string
+        partition_from:
+          type: string
+        partition_to:
+          type: string
+        status:
+          type: string
+        trigger_type:
+          type: string
+        triggered_by:
+          type: string
+        attempt_count:
+          type: integer
+          format: int32
+        max_attempts:
+          type: integer
+          format: int32
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AssetTriggerResponse:
+      type: object
+      properties:
+        event_id:
+          type: string
+        status:
+          type: string
     AuditEntry:
       type: object
       required:
@@ -9646,6 +10992,67 @@ components:
           type: string
         is_admin:
           type: boolean
+    BackfillRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        asset_id:
+          type: string
+        partition_from:
+          type: string
+        partition_to:
+          type: string
+        status:
+          type: string
+        requested_by:
+          type: string
+        max_parallelism:
+          type: integer
+          format: int32
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+        error_message:
+          type: string
+    BackfillSlice:
+      type: object
+      properties:
+        id:
+          type: string
+        request_id:
+          type: string
+        asset_id:
+          type: string
+        partition_key:
+          type: string
+        status:
+          type: string
+        run_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+        error_message:
+          type: string
+        attempt_count:
+          type: integer
+          format: int32
+        max_attempts:
+          type: integer
+          format: int32
     BootstrapCompleteRequest:
       type: object
       required:
@@ -9687,6 +11094,43 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/QueryJobStatus'
+    CatalogHistoryEntry:
+      type: object
+      properties:
+        entity_type:
+          type: string
+        schema_name:
+          type: string
+        table_name:
+          type: string
+        column_name:
+          type: string
+        object_name:
+          type: string
+        object_id:
+          type: string
+        begin_snapshot_id:
+          type: integer
+          format: int64
+        end_snapshot_id:
+          type: integer
+          format: int64
+        latest_snapshot_id:
+          type: integer
+          format: int64
+        is_active:
+          type: boolean
+        has_history:
+          type: boolean
+    CatalogHistoryResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogHistoryEntry'
     CatalogInfo:
       type: object
       required:
@@ -9740,6 +11184,28 @@ components:
         total_count:
           type: integer
           format: int32
+    CatalogVersionSummary:
+      type: object
+      properties:
+        catalog_name:
+          type: string
+        version:
+          type: string
+        created_by:
+          type: string
+        encrypted:
+          type: boolean
+        data_path:
+          type: string
+        latest_snapshot_id:
+          type: integer
+          format: int64
+        schemas:
+          $ref: '#/components/schemas/VersionedObjectSummary'
+        tables:
+          $ref: '#/components/schemas/VersionedObjectSummary'
+        columns:
+          $ref: '#/components/schemas/VersionedObjectSummary'
     Cell:
       type: object
       properties:
@@ -9749,6 +11215,14 @@ components:
           type: string
         cell_type:
           $ref: '#/components/schemas/CellCellType'
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/CellRole'
+        disabled:
+          type: boolean
+        test:
+          $ref: '#/components/schemas/NotebookCellTestConfig'
         content:
           type: string
         position:
@@ -9798,6 +11272,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Cell'
+    CellRole:
+      type: string
+      enum:
+        - transform
+        - output
+        - test
+        - markdown
     CleanupAPIKeysResponse:
       type: object
       required:
@@ -9868,6 +11349,19 @@ components:
           type: string
         created_at:
           type: string
+    ColumnMaskBinding:
+      type: object
+      properties:
+        id:
+          type: string
+        column_mask_id:
+          type: string
+        principal_id:
+          type: string
+        principal_type:
+          type: string
+        see_original:
+          type: boolean
     ColumnMaskBindingRequest:
       type: object
       required:
@@ -10007,6 +11501,59 @@ components:
           type: string
         created_at:
           type: string
+    CreateAssetBackfillRequest:
+      type: object
+      required:
+        - partition_from
+        - partition_to
+      properties:
+        partition_from:
+          type: string
+        partition_to:
+          type: string
+        max_parallelism:
+          type: integer
+          format: int32
+    CreateAssetBackfillResponse:
+      type: object
+      properties:
+        request:
+          $ref: '#/components/schemas/BackfillRequest'
+        slices:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackfillSlice'
+    CreateAssetRequest:
+      type: object
+      required:
+        - asset_key
+        - asset_type
+        - owner
+      properties:
+        asset_key:
+          type: string
+        asset_type:
+          type: string
+        owner:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        io_profile:
+          type: string
+        is_active:
+          type: boolean
+        upstream_asset_keys:
+          type: array
+          items:
+            type: string
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetCheckInput'
     CreateCatalogRequest:
       type: object
       required:
@@ -10029,6 +11576,14 @@ components:
       properties:
         cell_type:
           $ref: '#/components/schemas/CellCellType'
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/CellRole'
+        disabled:
+          type: boolean
+        test:
+          $ref: '#/components/schemas/NotebookCellTestConfig'
         content:
           type: string
         position:
@@ -10037,9 +11592,12 @@ components:
     CreateColumnMaskRequest:
       type: object
       required:
+        - name
         - column_name
         - mask_expression
       properties:
+        name:
+          type: string
         column_name:
           type: string
         mask_expression:
@@ -10310,9 +11868,12 @@ components:
     CreateRowFilterRequest:
       type: object
       required:
+        - name
         - filter_sql
       properties:
         table_id:
+          type: string
+        name:
           type: string
         filter_sql:
           type: string
@@ -11380,6 +12941,11 @@ components:
         updated_at:
           type: string
           format: date-time
+    NotebookCellTestConfig:
+      type: object
+      properties:
+        severity:
+          $ref: '#/components/schemas/NotebookTestSeverity'
     NotebookDetail:
       type: object
       properties:
@@ -11389,6 +12955,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Cell'
+        publish_model:
+          $ref: '#/components/schemas/NotebookPublishModel'
     NotebookJob:
       type: object
       properties:
@@ -11417,6 +12985,17 @@ components:
         - running
         - complete
         - failed
+    NotebookPublishModel:
+      type: object
+      properties:
+        project_name:
+          type: string
+        name:
+          type: string
+        materialization:
+          $ref: '#/components/schemas/ModelMaterialization'
+        output_cell_id:
+          type: string
     NotebookSession:
       type: object
       properties:
@@ -11439,6 +13018,11 @@ components:
       enum:
         - active
         - closed
+    NotebookTestSeverity:
+      type: string
+      enum:
+        - error
+        - warn
     OIDCProviderRequest:
       type: object
       required:
@@ -11491,6 +13075,61 @@ components:
             $ref: '#/components/schemas/APIKeyInfo'
         next_page_token:
           type: string
+    PaginatedAssetCheckResults:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetCheckResult'
+        next_page_token:
+          type: string
+    PaginatedAssetMaterializations:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetMaterialization'
+        next_page_token:
+          type: string
+    PaginatedAssetPartitions:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetPartition'
+        next_page_token:
+          type: string
+    PaginatedAssetRuns:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetRun'
+        next_page_token:
+          type: string
+    PaginatedAssets:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Asset'
+        next_page_token:
+          type: string
     PaginatedAuditLogs:
       type: object
       required:
@@ -11500,6 +13139,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuditEntry'
+        next_page_token:
+          type: string
+    PaginatedBackfillRequests:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackfillRequest'
         next_page_token:
           type: string
     PaginatedColumnDetails:
@@ -11522,6 +13172,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ColumnLineageEdge'
+        next_page_token:
+          type: string
+    PaginatedColumnMaskBindings:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnMaskBinding'
         next_page_token:
           type: string
     PaginatedColumnMasks:
@@ -11722,6 +13383,17 @@ components:
             $ref: '#/components/schemas/QueryHistoryEntry'
         next_page_token:
           type: string
+    PaginatedRowFilterBindings:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RowFilterBinding'
+        next_page_token:
+          type: string
     PaginatedRowFilters:
       type: object
       required:
@@ -11797,6 +13469,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TableDetail'
+        next_page_token:
+          type: string
+    PaginatedTagAssignments:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagAssignment'
         next_page_token:
           type: string
     PaginatedTags:
@@ -12193,6 +13876,17 @@ components:
           type: string
         created_at:
           type: string
+    RowFilterBinding:
+      type: object
+      properties:
+        id:
+          type: string
+        row_filter_id:
+          type: string
+        principal_id:
+          type: string
+        principal_type:
+          type: string
     RowFilterBindingRequest:
       type: object
       required:
@@ -12585,6 +14279,16 @@ components:
         - table
         - column
         - macro
+    TriggerAssetMaterializationRequest:
+      type: object
+      properties:
+        partition_key:
+          type: string
+        idempotency_key:
+          type: string
+        payload:
+          type: object
+          additionalProperties: {}
     TriggerModelRunRequest:
       type: object
       required:
@@ -12609,6 +14313,34 @@ components:
           type: object
           additionalProperties:
             type: string
+    UpdateAssetRequest:
+      type: object
+      required:
+        - asset_type
+        - owner
+      properties:
+        asset_type:
+          type: string
+        owner:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        io_profile:
+          type: string
+        is_active:
+          type: boolean
+        upstream_asset_keys:
+          type: array
+          items:
+            type: string
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetCheckInput'
     UpdateCatalogRegistrationRequest:
       type: object
       properties:
@@ -12619,6 +14351,14 @@ components:
     UpdateCellRequest:
       type: object
       properties:
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/CellRole'
+        disabled:
+          type: boolean
+        test:
+          $ref: '#/components/schemas/NotebookCellTestConfig'
         content:
           type: string
         position:
@@ -12868,6 +14608,23 @@ components:
         expires_at:
           type: string
           format: date-time
+    VersionedObjectSummary:
+      type: object
+      properties:
+        total_count:
+          type: integer
+          format: int64
+        active_count:
+          type: integer
+          format: int64
+        historical_count:
+          type: integer
+          format: int64
+        has_history:
+          type: boolean
+        latest_snapshot_id:
+          type: integer
+          format: int64
     ViewDetail:
       type: object
       required:

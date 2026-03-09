@@ -886,11 +886,32 @@ func sourceFreshnessStatusToAPI(s domain.SourceFreshnessStatus) SourceFreshnessS
 
 // PromoteNotebookToModel implements the endpoint for promoting a notebook cell to a model.
 func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req GenPromoteNotebookToModelRequest) (GenPromoteNotebookToModelResponse, error) {
+	_, cells, err := h.notebooks.GetNotebook(ctx, req.Body.NotebookId)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.NotFoundError)):
+			return PromoteNotebookToModel404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	var outputCellID string
+	for i := range cells {
+		if cells[i].Position == int(req.Body.CellIndex) {
+			outputCellID = cells[i].ID
+			break
+		}
+	}
+	if outputCellID == "" {
+		return PromoteNotebookToModel400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "output cell not found for requested cell_index"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
 	domReq := domain.PromoteNotebookRequest{
-		NotebookID:  req.Body.NotebookId,
-		CellIndex:   int(req.Body.CellIndex),
-		ProjectName: req.Body.ProjectName,
-		Name:        req.Body.Name,
+		NotebookID:   req.Body.NotebookId,
+		OutputCellID: outputCellID,
+		ProjectName:  req.Body.ProjectName,
+		Name:         req.Body.Name,
 	}
 	if req.Body.Materialization != nil {
 		domReq.Materialization = string(*req.Body.Materialization)

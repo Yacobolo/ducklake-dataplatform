@@ -5,12 +5,13 @@ metadata:
 spec:
   table_type: MANAGED
   comment: Raw ratings fact loaded through ingestion API
+  owner: ml_admin
   columns:
     - name: user_id
-      type: BIGINT
+      type: int64
     - name: movie_id
-      type: BIGINT
+      type: int64
     - name: rating
-      type: DOUBLE
+      type: float64
     - name: rating_ts
-      type: BIGINT
+      type: int64

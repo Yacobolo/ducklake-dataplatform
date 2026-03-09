@@ -17,6 +17,7 @@ import (
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
 	"duck-demo/internal/db/repository"
+	"duck-demo/internal/domain"
 	authsvc "duck-demo/internal/service/auth"
 )
 
@@ -91,6 +92,79 @@ func TestUIAuth_TokenCookieIgnored(t *testing.T) {
 	assert.Equal(t, "/ui/login", w.Header().Get("Location"))
 }
 
+func TestUIAuth_UIDevBypassLoopbackAllowsHome(t *testing.T) {
+	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, config.AuthConfig{UIDevBypass: true}, false)
+	r := chi.NewRouter()
+	r.Route("/ui", func(r chi.Router) {
+		MountRoutes(r, h)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/ui/", nil)
+	req.RemoteAddr = "127.0.0.1:12345"
+	resp := httptest.NewRecorder()
+	r.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+}
+
+func TestUIAuth_UIDevBypassNonLoopbackStillRedirects(t *testing.T) {
+	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, config.AuthConfig{UIDevBypass: true}, false)
+	r := chi.NewRouter()
+	r.Route("/ui", func(r chi.Router) {
+		MountRoutes(r, h)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/ui/", nil)
+	req.RemoteAddr = "10.0.0.1:12345"
+	resp := httptest.NewRecorder()
+	r.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusSeeOther, resp.Code)
+	assert.Equal(t, "/ui/login", resp.Header().Get("Location"))
+}
+
+func TestUIAuth_LegacyPipelinesRouteNotMounted(t *testing.T) {
+	router, _ := newUITestRouter(t)
+	sessionCookie := loginSessionCookie(t, router)
+
+	r := httptest.NewRequest(http.MethodGet, "/ui/pipelines", nil)
+	r.AddCookie(sessionCookie)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestUIAuth_UIDevBypassUsesPrincipalResolverWhenAvailable(t *testing.T) {
+	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, &stubPrincipalResolver{principal: &domain.Principal{ID: "p-dev", Name: "resolver-admin", Type: "user", IsAdmin: true}}, config.AuthConfig{UIDevBypass: true}, false)
+	r := chi.NewRouter()
+	r.Route("/ui", func(r chi.Router) {
+		MountRoutes(r, h)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/ui/", nil)
+	req.RemoteAddr = "127.0.0.1:23456"
+	resp := httptest.NewRecorder()
+	r.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+	body := resp.Body.String()
+	assert.Contains(t, body, "resolver-admin")
+	assert.Contains(t, body, "admin")
+}
+
+type stubPrincipalResolver struct {
+	principal *domain.Principal
+	err       error
+}
+
+func (s *stubPrincipalResolver) ResolveOrProvision(_ context.Context, _ domain.ResolveOrProvisionRequest) (*domain.Principal, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	return s.principal, nil
+}
+
 func newUITestRouter(t *testing.T) (*chi.Mux, string) {
 	t.Helper()
 
@@ -113,7 +187,7 @@ func newUITestRouter(t *testing.T) (*chi.Mux, string) {
 
 	webSessionService := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, 30*time.Minute, 24*time.Hour)
 	authCfg := config.AuthConfig{WebSessionCookieName: "ui_session"}
-	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, authService, webSessionService, nil, authCfg, false)
+	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, authService, webSessionService, nil, authCfg, false)
 
 	r := chi.NewRouter()
 	r.Route("/ui", func(r chi.Router) {

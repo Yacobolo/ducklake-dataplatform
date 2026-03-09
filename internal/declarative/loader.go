@@ -2,13 +2,17 @@ package declarative
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+var errLegacyPipelines = errors.New("legacy pipelines/ configs are no longer supported; migrate pipeline definitions to assets/ and remove pipelines/")
 
 // LoadOptions configures YAML loading behavior.
 type LoadOptions struct {
@@ -34,6 +38,10 @@ func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, erro
 	}
 	if !info.IsDir() {
 		return nil, fmt.Errorf("config directory: %s is not a directory", dir)
+	}
+
+	if err := failIfLegacyPipelinesPresent(dir); err != nil {
+		return nil, err
 	}
 
 	// Load each section. Missing directories are OK (partial configs).
@@ -68,8 +76,8 @@ func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, erro
 		return nil, err
 	}
 
-	// 7. pipelines/
-	if err := loadPipelines(dir, state, opts); err != nil {
+	// 7. assets/
+	if err := loadAssets(dir, state, opts); err != nil {
 		return nil, err
 	}
 
@@ -89,6 +97,35 @@ func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, erro
 	}
 
 	return state, nil
+}
+
+func failIfLegacyPipelinesPresent(root string) error {
+	pipelinesDir := filepath.Join(root, "pipelines")
+	if !dirExists(pipelinesDir) {
+		return nil
+	}
+
+	err := filepath.WalkDir(pipelinesDir, func(_ string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			return nil
+		}
+		name := strings.ToLower(d.Name())
+		if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
+			return errLegacyPipelines
+		}
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, errLegacyPipelines) {
+			return err
+		}
+		return fmt.Errorf("scan pipelines directory %s: %w", pipelinesDir, err)
+	}
+
+	return nil
 }
 
 // loadYAMLFile reads and unmarshals a YAML file into the given target.
@@ -652,16 +689,16 @@ func loadNotebooks(root string, state *DesiredState, opts LoadOptions) error {
 	return nil
 }
 
-// loadPipelines walks the pipelines/ directory. Each .yaml file is a pipeline.
-func loadPipelines(root string, state *DesiredState, opts LoadOptions) error {
-	plDir := filepath.Join(root, "pipelines")
-	if !dirExists(plDir) {
+// loadAssets walks the assets/ directory. Each .yaml file is an asset.
+func loadAssets(root string, state *DesiredState, opts LoadOptions) error {
+	assetDir := filepath.Join(root, "assets")
+	if !dirExists(assetDir) {
 		return nil
 	}
 
-	entries, err := os.ReadDir(plDir)
+	entries, err := os.ReadDir(assetDir)
 	if err != nil {
-		return fmt.Errorf("read pipelines directory: %w", err)
+		return fmt.Errorf("read assets directory: %w", err)
 	}
 
 	for _, entry := range entries {
@@ -669,11 +706,11 @@ func loadPipelines(root string, state *DesiredState, opts LoadOptions) error {
 			continue
 		}
 
-		plName := strings.TrimSuffix(entry.Name(), ".yaml")
-		plFile := filepath.Join(plDir, entry.Name())
+		assetName := strings.TrimSuffix(entry.Name(), ".yaml")
+		assetFile := filepath.Join(assetDir, entry.Name())
 
-		var plDoc PipelineDoc
-		found, err := loadYAMLFile(plFile, &plDoc, opts)
+		var assetDoc AssetDoc
+		found, err := loadYAMLFile(assetFile, &assetDoc, opts)
 		if err != nil {
 			return err
 		}
@@ -681,16 +718,13 @@ func loadPipelines(root string, state *DesiredState, opts LoadOptions) error {
 			continue
 		}
 
-		if err := validateDocument(plFile, plDoc.APIVersion, plDoc.Kind, KindNamePipeline); err != nil {
+		if err := validateDocument(assetFile, assetDoc.APIVersion, assetDoc.Kind, KindNameAsset); err != nil {
 			return err
 		}
-		if plDoc.Metadata.Name != plName {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", plFile, plDoc.Metadata.Name, plName)
+		if assetDoc.Metadata.Name != assetName {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", assetFile, assetDoc.Metadata.Name, assetName)
 		}
-		state.Pipelines = append(state.Pipelines, PipelineResource{
-			Name: plName,
-			Spec: plDoc.Spec,
-		})
+		state.Assets = append(state.Assets, AssetResource{Name: assetName, Spec: assetDoc.Spec})
 	}
 
 	return nil

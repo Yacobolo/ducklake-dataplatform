@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -30,6 +31,7 @@ func newConfigShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "show",
 		Short: "Display current configuration",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, err := LoadUserConfig()
 			if err != nil {
@@ -42,6 +44,10 @@ func newConfigShowCmd() *cobra.Command {
 			if getOutputFormat(cmd) == "json" {
 				return apiruntime.PrintJSON(os.Stdout, cfg)
 			}
+			if getOutputFormat(cmd) == "table" {
+				return printConfigTable(cmd, cfg)
+			}
+
 			data, err := yaml.Marshal(cfg)
 			if err != nil {
 				return fmt.Errorf("marshal config: %w", err)
@@ -86,22 +92,28 @@ func maskSecret(s string) string {
 
 func newConfigSetProfileCmd() *cobra.Command {
 	var (
-		name   string
-		host   string
-		apiKey string
-		token  string
-		output string
+		name          string
+		host          string
+		apiKey        string
+		token         string
+		defaultOutput string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "set-profile",
 		Short: "Create or update a configuration profile",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if name == "" {
 				return fmt.Errorf("--name is required")
 			}
-			if cmd.Flags().Changed("output") {
-				if err := validateOutputFormat(output); err != nil {
+			if cmd.Flags().Changed("default-output") {
+				if err := validateOutputFormat(defaultOutput); err != nil {
+					return err
+				}
+			}
+			if cmd.Flags().Changed("host") {
+				if err := validateHostURL(host); err != nil {
 					return err
 				}
 			}
@@ -124,8 +136,8 @@ func newConfigSetProfileCmd() *cobra.Command {
 			if cmd.Flags().Changed("token") {
 				p.Token = token
 			}
-			if cmd.Flags().Changed("output") {
-				p.Output = output
+			if cmd.Flags().Changed("default-output") {
+				p.Output = defaultOutput
 			}
 			cfg.Profiles[name] = p
 
@@ -148,7 +160,7 @@ func newConfigSetProfileCmd() *cobra.Command {
 	cmd.Flags().StringVar(&host, "host", "", "API host URL")
 	cmd.Flags().StringVar(&apiKey, "api-key", "", "API key")
 	cmd.Flags().StringVar(&token, "token", "", "JWT token")
-	cmd.Flags().StringVar(&output, "output", "", "Default output format")
+	cmd.Flags().StringVar(&defaultOutput, "default-output", "", "Default output format for the saved profile")
 	_ = cmd.MarkFlagRequired("name")
 
 	return cmd
@@ -182,4 +194,33 @@ func newConfigUseProfileCmd() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func printConfigTable(_ *cobra.Command, cfg *UserConfig) error {
+	columns := []string{"profile", "active", "host", "auth", "default_output"}
+	rows := make([][]string, 0, len(cfg.Profiles))
+
+	for name, p := range cfg.Profiles {
+		auth := ""
+		switch {
+		case strings.TrimSpace(p.APIKey) != "":
+			auth = "api-key"
+		case strings.TrimSpace(p.Token) != "":
+			auth = "token"
+		}
+
+		active := ""
+		if cfg.CurrentProfile == name {
+			active = "yes"
+		}
+
+		rows = append(rows, []string{name, active, p.Host, auth, p.Output})
+	}
+
+	if len(rows) == 0 {
+		rows = append(rows, []string{"", "", "", "", ""})
+	}
+
+	apiruntime.PrintTable(os.Stdout, columns, rows)
+	return nil
 }

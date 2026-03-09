@@ -2,6 +2,7 @@ package notebook
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"duck-demo/internal/domain"
@@ -9,13 +10,21 @@ import (
 
 // Service provides business logic for notebook and cell operations.
 type Service struct {
-	repo  domain.NotebookRepository
-	audit domain.AuditRepository
+	repo   domain.NotebookRepository
+	audit  domain.AuditRepository
+	models domain.ModelRepository
+	links  domain.NotebookModelLinkRepository
 }
 
 // New creates a new Service.
 func New(repo domain.NotebookRepository, audit domain.AuditRepository) *Service {
 	return &Service{repo: repo, audit: audit}
+}
+
+// SetPublishRepositories configures optional repositories for notebook publish metadata lookups.
+func (s *Service) SetPublishRepositories(models domain.ModelRepository, links domain.NotebookModelLinkRepository) {
+	s.models = models
+	s.links = links
 }
 
 // CreateNotebook creates a new notebook owned by the given principal.
@@ -38,6 +47,7 @@ func (s *Service) CreateNotebook(ctx context.Context, principal string, req doma
 			ID:         domain.NewID(),
 			NotebookID: result.ID,
 			CellType:   domain.CellTypeSQL,
+			Role:       domain.CellRoleTransform,
 			Content:    *req.Source,
 			Position:   0,
 		}
@@ -65,6 +75,36 @@ func (s *Service) GetNotebook(ctx context.Context, id string) (*domain.Notebook,
 		return nil, nil, fmt.Errorf("list cells: %w", err)
 	}
 	return nb, cells, nil
+}
+
+// GetPublishModel resolves model publish metadata for a notebook.
+func (s *Service) GetPublishModel(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error) {
+	if s.models == nil || s.links == nil {
+		return nil, nil
+	}
+
+	link, err := s.links.GetByNotebookID(ctx, notebookID)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	model, err := s.models.GetByID(ctx, link.ModelID)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &domain.NotebookPublishModel{
+		ProjectName:     model.ProjectName,
+		Name:            model.Name,
+		Materialization: model.Materialization,
+		OutputCellID:    link.OutputCellID,
+	}, nil
 }
 
 // ListNotebooks lists notebooks, optionally filtered by owner.
@@ -141,8 +181,19 @@ func (s *Service) CreateCell(ctx context.Context, principal string, isAdmin bool
 		ID:         domain.NewID(),
 		NotebookID: notebookID,
 		CellType:   req.CellType,
+		Name:       req.Name,
+		Disabled:   req.Disabled,
+		Test:       req.Test,
 		Content:    req.Content,
 		Position:   pos,
+	}
+	switch {
+	case req.Role != nil:
+		cell.Role = *req.Role
+	case req.CellType == domain.CellTypeMarkdown:
+		cell.Role = domain.CellRoleMarkdown
+	default:
+		cell.Role = domain.CellRoleTransform
 	}
 
 	result, err := s.repo.CreateCell(ctx, cell)
@@ -165,12 +216,39 @@ func (s *Service) UpdateCell(ctx context.Context, principal string, isAdmin bool
 	if err != nil {
 		return nil, err
 	}
+
 	nb, err := s.repo.GetNotebook(ctx, cell.NotebookID)
 	if err != nil {
 		return nil, err
 	}
 	if nb.Owner != principal && !isAdmin {
 		return nil, domain.ErrAccessDenied("only the notebook owner or admin can update cells")
+	}
+
+	newRole := cell.Role
+	if newRole == "" {
+		if cell.CellType == domain.CellTypeMarkdown {
+			newRole = domain.CellRoleMarkdown
+		} else {
+			newRole = domain.CellRoleTransform
+		}
+	}
+	if req.Role != nil {
+		newRole = *req.Role
+	}
+	if req.Test != nil {
+		if newRole != domain.CellRoleTest {
+			return nil, domain.ErrValidation("test config is only allowed for test cells")
+		}
+		if err := req.Test.Validate(); err != nil {
+			return nil, err
+		}
+	}
+	if newRole == domain.CellRoleTest && req.Test == nil && cell.Test == nil {
+		return nil, domain.ErrValidation("test config is required for test cells")
+	}
+	if err := validateRoleForCellType(newRole, cell.CellType); err != nil {
+		return nil, err
 	}
 	result, err := s.repo.UpdateCell(ctx, cellID, req)
 	if err != nil {
@@ -184,6 +262,25 @@ func (s *Service) UpdateCell(ctx context.Context, principal string, isAdmin bool
 	})
 
 	return result, nil
+}
+
+func validateRoleForCellType(role domain.CellRole, cellType domain.CellType) error {
+	if cellType == "" {
+		return nil
+	}
+	switch role {
+	case domain.CellRoleTransform, domain.CellRoleOutput, domain.CellRoleTest:
+		if cellType != domain.CellTypeSQL {
+			return domain.ErrValidation("role %q requires cell_type 'sql'", string(role))
+		}
+	case domain.CellRoleMarkdown:
+		if cellType != domain.CellTypeMarkdown {
+			return domain.ErrValidation("role %q requires cell_type 'markdown'", string(role))
+		}
+	default:
+		return domain.ErrValidation("invalid cell role %q", string(role))
+	}
+	return nil
 }
 
 // DeleteCell removes a cell. Owner or admin required.

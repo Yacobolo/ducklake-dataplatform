@@ -65,3 +65,7 @@ docs/.vitepress/cache/
 web/node_modules/
 api/spec/node_modules/
 tools/typespec-ir-emitter/node_modules/
+.playwright-cli/
+
+# macOS Finder metadata
+.DS_Store

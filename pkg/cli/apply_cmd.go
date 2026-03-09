@@ -14,11 +14,10 @@ import (
 
 func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 	var (
-		configDir                string
-		autoApprove              bool
-		noColor                  bool
-		allowUnknownFields       bool
-		legacyOptionalReadErrors bool
+		configDir          string
+		autoApprove        bool
+		noColor            bool
+		allowUnknownFields bool
 	)
 
 	cmd := &cobra.Command{
@@ -27,11 +26,6 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 		Long:  "Reads YAML configuration files, compares with the current server state, and applies the changes.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			isJSON := getOutputFormat(cmd) == "json"
-
-			compatMode := CapabilityCompatibilityStrict
-			if legacyOptionalReadErrors {
-				compatMode = CapabilityCompatibilityLegacy
-			}
 
 			// 1. Load desired state from YAML files.
 			desired, err := declarative.LoadDirectoryWithOptions(configDir, declarative.LoadOptions{
@@ -62,7 +56,7 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 			}
 
 			// 3. Read current state from server.
-			stateClient := NewAPIStateClientWithOptions(client, APIStateClientOptions{CompatibilityMode: compatMode})
+			stateClient := NewAPIStateClient(client)
 			actual, err := stateClient.ReadState(cmd.Context())
 			if err != nil {
 				return fmt.Errorf("read server state: %w", err)
@@ -206,7 +200,6 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive confirmation prompt")
 	cmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	cmd.Flags().BoolVar(&allowUnknownFields, "allow-unknown-fields", false, "Allow unknown YAML fields in declarative config")
-	cmd.Flags().BoolVar(&legacyOptionalReadErrors, "legacy-optional-read-errors", false, "Treat transport errors as optional for model/macro capability checks")
 
 	return cmd
 }

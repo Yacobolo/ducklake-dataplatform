@@ -1,0 +1,165 @@
+.SelectionControl {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  color: var(--fgColor-default);
+  font-size: var(--text-body-size-small);
+  line-height: var(--text-caption-lineHeight);
+  font-weight: var(--base-text-weight-medium);
+}
+
+.SelectionControl > input[type="checkbox"],
+.SelectionControl > input[type="radio"] {
+  appearance: none;
+  width: var(--control-small-size);
+  height: var(--control-small-size);
+  margin: 0;
+  flex: 0 0 auto;
+  border: var(--borderWidth-default) solid var(--borderColor-muted);
+  background: var(--bgColor-default);
+  display: inline-grid;
+  place-content: center;
+  transition:
+    border-color var(--base-duration-100) var(--base-easing-easeOut),
+    background-color var(--base-duration-100) var(--base-easing-easeOut),
+    box-shadow var(--base-duration-100) var(--base-easing-easeOut);
+}
+
+.SelectionControl > input[type="checkbox"] {
+  width: var(--control-minTarget-fine);
+  height: var(--control-minTarget-fine);
+  border-radius: var(--borderRadius-medium);
+}
+
+.SelectionControl > input[type="radio"] {
+  border-radius: var(--borderRadius-full);
+}
+
+.SelectionControl > input[type="checkbox"]::after {
+  content: "";
+  width: calc(var(--control-minTarget-fine) * 0.28);
+  height: calc(var(--control-minTarget-fine) * 0.52);
+  border-right: var(--borderWidth-thicker) solid var(--fgColor-onEmphasis);
+  border-bottom: var(--borderWidth-thicker) solid var(--fgColor-onEmphasis);
+  transform: rotate(45deg) scale(0);
+  transform-origin: center;
+  transition: transform var(--base-duration-100) var(--base-easing-easeOut);
+}
+
+.SelectionControl > input[type="radio"]::after {
+  content: "";
+  width: calc(var(--control-xsmall-size) * 0.45);
+  height: calc(var(--control-xsmall-size) * 0.45);
+  border-radius: var(--borderRadius-full);
+  background: var(--fgColor-onEmphasis);
+  transform: scale(0);
+  transition: transform var(--base-duration-100) var(--base-easing-easeOut);
+}
+
+.SelectionControl > input:checked {
+  border-color: var(--control-checked-borderColor-rest);
+  background: var(--control-checked-bgColor-rest);
+}
+
+.SelectionControl > input[type="radio"]:checked {
+  border-color: var(--control-checked-borderColor-rest);
+  background: var(--bgColor-default);
+}
+
+.SelectionControl > input:checked::after {
+  transform: rotate(45deg) scale(1);
+}
+
+.SelectionControl > input[type="radio"]:checked::after {
+  transform: scale(1);
+  background: var(--control-checked-bgColor-rest);
+}
+
+.SelectionControl > input:hover {
+  border-color: var(--control-borderColor-emphasis);
+}
+
+.SelectionControl > input:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 0;
+}
+
+.SelectionControl > input:disabled {
+  border-color: var(--control-borderColor-disabled);
+  background: var(--control-bgColor-disabled);
+  cursor: not-allowed;
+}
+
+.ToggleSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--fgColor-default);
+  font-size: var(--text-body-size-small);
+  line-height: var(--text-caption-lineHeight);
+  font-weight: var(--base-text-weight-medium);
+}
+
+.ToggleSwitch > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ToggleSwitch-track {
+  width: calc(var(--control-medium-size) + var(--control-small-size));
+  height: var(--control-small-size);
+  border-radius: var(--borderRadius-full);
+  border: var(--borderWidth-default) solid var(--controlTrack-borderColor-rest);
+  background: var(--controlTrack-bgColor-rest);
+  padding: var(--control-xsmall-gap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.ToggleSwitch-knob {
+  width: var(--control-xsmall-size);
+  height: var(--control-xsmall-size);
+  border-radius: var(--borderRadius-full);
+  border: 0;
+  background: var(--controlKnob-bgColor-rest);
+  box-shadow: var(--shadow-resting-xsmall);
+  transition: transform var(--base-duration-100) var(--base-easing-easeOut);
+}
+
+.ToggleSwitch > input:checked ~ .ToggleSwitch-track {
+  border-color: var(--control-checked-borderColor-rest);
+  background: var(--control-checked-bgColor-rest);
+}
+
+.ToggleSwitch > input:checked ~ .ToggleSwitch-track .ToggleSwitch-knob {
+  transform: translateX(calc(var(--control-medium-size) - var(--control-xsmall-gap)));
+  background: var(--bgColor-default);
+}
+
+.ToggleSwitch > input:focus-visible ~ .ToggleSwitch-track {
+  outline: var(--focus-outline);
+  outline-offset: 0;
+}
+
+.ToggleSwitch-label {
+  color: var(--fgColor-default);
+}
+
+.ToggleSwitch-state {
+  color: var(--fgColor-muted);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-lineHeight);
+  font-weight: var(--base-text-weight-medium);
+  min-width: var(--control-small-size);
+  text-align: right;
+}

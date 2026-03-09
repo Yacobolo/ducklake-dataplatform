@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -102,4 +105,52 @@ func TestApplyKindConstraints_MacroAddsVisibilityRules(t *testing.T) {
 	rules, ok := macroSpec["allOf"].([]interface{})
 	require.True(t, ok)
 	assert.GreaterOrEqual(t, len(rules), 3)
+}
+
+func TestRun_RemovesStaleKindSchemasBeforeGeneration(t *testing.T) {
+	outDir := t.TempDir()
+	kindsDir := filepath.Join(outDir, "kinds")
+	require.NoError(t, os.MkdirAll(kindsDir, 0o755))
+
+	staleSchema := filepath.Join(kindsDir, "pipeline.schema.json")
+	require.NoError(t, os.WriteFile(staleSchema, []byte(`{"stale":true}`), 0o644))
+
+	require.NoError(t, run(outDir))
+
+	_, err := os.Stat(staleSchema)
+	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
+func TestRun_IndexMatchesGeneratedSchemaArtifacts(t *testing.T) {
+	outDir := t.TempDir()
+	require.NoError(t, run(outDir))
+
+	indexPath := filepath.Join(outDir, "index.json")
+	data, err := os.ReadFile(indexPath)
+	require.NoError(t, err)
+
+	var index struct {
+		Files map[string]string `json:"files"`
+	}
+	require.NoError(t, json.Unmarshal(data, &index))
+	require.NotEmpty(t, index.Files)
+
+	for relPath := range index.Files {
+		if filepath.Ext(relPath) != ".json" {
+			continue
+		}
+		_, err := os.Stat(filepath.Join(outDir, relPath))
+		require.NoError(t, err, "indexed artifact should exist: %s", relPath)
+	}
+
+	kindEntries, err := os.ReadDir(filepath.Join(outDir, "kinds"))
+	require.NoError(t, err)
+	for _, entry := range kindEntries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		relPath := filepath.ToSlash(filepath.Join("kinds", entry.Name()))
+		_, ok := index.Files[relPath]
+		assert.True(t, ok, "schema artifact should be indexed: %s", relPath)
+	}
 }

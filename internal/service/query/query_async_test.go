@@ -44,6 +44,25 @@ func (r *memQueryJobRepo) GetByID(_ context.Context, id string) (*domain.QueryJo
 	return &copyJob, nil
 }
 
+func (r *memQueryJobRepo) ListByPrincipal(_ context.Context, principalName string, page domain.PageRequest) ([]domain.QueryJob, int64, error) {
+	items := make([]domain.QueryJob, 0)
+	for _, job := range r.jobs {
+		if job.PrincipalName == principalName {
+			items = append(items, *job)
+		}
+	}
+	total := int64(len(items))
+	start := page.Offset()
+	if start > len(items) {
+		start = len(items)
+	}
+	end := start + page.Limit()
+	if end > len(items) {
+		end = len(items)
+	}
+	return items[start:end], total, nil
+}
+
 func (r *memQueryJobRepo) GetByRequestID(_ context.Context, principalName, requestID string) (*domain.QueryJob, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

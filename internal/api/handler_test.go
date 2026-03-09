@@ -137,7 +137,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	lineageRepo := repository.NewLineageRepo(metaDB)
 	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -154,7 +154,7 @@ func setupTestServer(t *testing.T, principalName string) *httptest.Server {
 	tagSvc := governance.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), catalogRepoFactory, cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Lookup principal to get admin status for context injection
 	p, err := principalRepo.GetByName(context.Background(), principalName)
@@ -416,7 +416,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	lineageRepo2 := repository.NewLineageRepo(metaDB)
 	querySvc := query.NewQueryService(eng, auditRepo, lineageRepo2)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -433,7 +433,7 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	tagSvc := governance.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), mockFactory, cat, auditRepo)
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Lookup principal to get admin status for context injection
 	p2, err := principalRepo.GetByName(context.Background(), principalName)
@@ -1238,12 +1238,12 @@ func setupSecurityTestServer(t *testing.T, principalName string, isAdmin bool) *
 	apiKeyRepo := repository.NewAPIKeyRepo(metaDB)
 
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
 	auditSvc := governance.NewAuditService(auditRepo)
-	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
+	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, principalRepo, auditRepo)
 
 	handler := NewHandler(
 		nil, // querySvc (not needed for security tests)
@@ -1252,8 +1252,9 @@ func setupSecurityTestServer(t *testing.T, principalName string, isAdmin bool) *
 		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
 		nil, // computeEndpointSvc
 		apiKeySvc,
+		nil,           // pipelineSvc
 		nil, nil, nil, // notebook, session, gitRepo services
-		nil, // pipelineSvc
+		nil, nil, // asset and asset backfill services
 		nil, // modelSvc
 		nil, // macroSvc
 		nil, // semanticSvc
@@ -1442,7 +1443,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 	tableID := "test-table-id"
 
 	t.Run("create row filter", func(t *testing.T) {
-		body := `{"filter_sql":"\"Pclass\" = 1","description":"First class only"}`
+		body := `{"name":"first_class","filter_sql":"\"Pclass\" = 1","description":"First class only"}`
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
@@ -1450,7 +1451,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 	})
 
 	t.Run("create row filter invalid SQL", func(t *testing.T) {
-		body := `{"filter_sql":"NOT VALID ((("}`
+		body := `{"name":"invalid_filter","filter_sql":"NOT VALID ((("}`
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
@@ -1465,7 +1466,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 
 	t.Run("bind and unbind row filter", func(t *testing.T) {
 		// Create a filter.
-		body := `{"filter_sql":"\"Age\" > 18"}`
+		body := `{"name":"adults_only","filter_sql":"\"Age\" > 18"}`
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
@@ -1486,7 +1487,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 
 	t.Run("delete row filter", func(t *testing.T) {
 		// Create a filter to delete.
-		body := `{"filter_sql":"\"Fare\" > 100"}`
+		body := `{"name":"high_fare","filter_sql":"\"Fare\" > 100"}`
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
@@ -1508,7 +1509,7 @@ func TestAPI_RowFilter_NonAdminDenied(t *testing.T) {
 	defer srv.Close()
 
 	t.Run("create denied", func(t *testing.T) {
-		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/t1/row-filters", `{"filter_sql":"x = 1"}`)
+		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/t1/row-filters", `{"name":"deny_me","filter_sql":"x = 1"}`)
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusForbidden, resp.StatusCode)
 	})

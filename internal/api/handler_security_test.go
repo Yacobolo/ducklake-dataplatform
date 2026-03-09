@@ -160,6 +160,7 @@ func (m *mockGrantService) Revoke(ctx context.Context, principal string, grantID
 
 type mockColumnMaskService struct {
 	getForTableFn func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
+	listBindingsFn func(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error)
 	createFn      func(ctx context.Context, req domain.CreateColumnMaskRequest) (*domain.ColumnMask, error)
 	deleteFn      func(ctx context.Context, id string) error
 	bindFn        func(ctx context.Context, req domain.BindColumnMaskRequest) error
@@ -178,6 +179,13 @@ func (m *mockColumnMaskService) Create(ctx context.Context, req domain.CreateCol
 		panic("mockColumnMaskService.Create called but not configured")
 	}
 	return m.createFn(ctx, req)
+}
+
+func (m *mockColumnMaskService) ListBindings(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error) {
+	if m.listBindingsFn == nil {
+		return nil, nil
+	}
+	return m.listBindingsFn(ctx, maskID)
 }
 
 func (m *mockColumnMaskService) Delete(ctx context.Context, id string) error {

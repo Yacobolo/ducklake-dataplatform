@@ -325,6 +325,7 @@ model PaginatedRowFilters {
 
 model CreateRowFilterRequest {
   table_id?: string;
+  name: string;
   filter_sql: string;
   description?: string;
 }
@@ -332,6 +333,18 @@ model CreateRowFilterRequest {
 model RowFilterBindingRequest {
   principal_id: string;
   principal_type: string;
+}
+
+model RowFilterBinding {
+  id?: string;
+  row_filter_id?: string;
+  principal_id?: string;
+  principal_type?: string;
+}
+
+model PaginatedRowFilterBindings {
+  data: RowFilterBinding[];
+  next_page_token?: string;
 }
 
 model ColumnMask {
@@ -349,6 +362,7 @@ model PaginatedColumnMasks {
 }
 
 model CreateColumnMaskRequest {
+  name: string;
   column_name: string;
   mask_expression: string;
   description?: string;
@@ -358,6 +372,19 @@ model ColumnMaskBindingRequest {
   principal_id: string;
   principal_type: string;
   see_original?: boolean;
+}
+
+model ColumnMaskBinding {
+  id?: string;
+  column_mask_id?: string;
+  principal_id?: string;
+  principal_type?: string;
+  see_original?: boolean;
+}
+
+model PaginatedColumnMaskBindings {
+  data: ColumnMaskBinding[];
+  next_page_token?: string;
 }
 
 model ManifestRequest {
@@ -466,6 +493,44 @@ model CatalogInfo {
   comment?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+model VersionedObjectSummary {
+  total_count?: int64;
+  active_count?: int64;
+  historical_count?: int64;
+  has_history?: boolean;
+  latest_snapshot_id?: int64;
+}
+
+model CatalogVersionSummary {
+  catalog_name?: string;
+  version?: string;
+  created_by?: string;
+  encrypted?: boolean;
+  data_path?: string;
+  latest_snapshot_id?: int64;
+  schemas?: VersionedObjectSummary;
+  tables?: VersionedObjectSummary;
+  columns?: VersionedObjectSummary;
+}
+
+model CatalogHistoryEntry {
+  entity_type?: string;
+  schema_name?: string;
+  table_name?: string;
+  column_name?: string;
+  object_name?: string;
+  object_id?: string;
+  begin_snapshot_id?: int64;
+  end_snapshot_id?: int64;
+  latest_snapshot_id?: int64;
+  is_active?: boolean;
+  has_history?: boolean;
+}
+
+model CatalogHistoryResponse {
+  data: CatalogHistoryEntry[];
 }
 
 model SchemaDetail {
@@ -934,13 +999,37 @@ enum CellCellType {
   markdown,
 }
 
+enum CellRole {
+  transform,
+  output,
+  test,
+  markdown,
+}
+
+enum NotebookTestSeverity {
+  error,
+  warn,
+}
+
+model NotebookCellTestConfig {
+  severity?: NotebookTestSeverity;
+}
+
 model CreateCellRequest {
   cell_type: CellCellType;
+  name?: string;
+  role?: CellRole;
+  disabled?: boolean;
+  test?: NotebookCellTestConfig;
   content?: string;
   position?: int32;
 }
 
 model UpdateCellRequest {
+  name?: string;
+  role?: CellRole;
+  disabled?: boolean;
+  test?: NotebookCellTestConfig;
   content?: string;
   position?: int32;
 }
@@ -949,6 +1038,10 @@ model Cell {
   id?: string;
   notebook_id?: string;
   cell_type?: CellCellType;
+  name?: string;
+  role?: CellRole;
+  disabled?: boolean;
+  test?: NotebookCellTestConfig;
   content?: string;
   position?: int32;
   last_result?: string;
@@ -967,6 +1060,14 @@ model ReorderCellsRequest {
 model NotebookDetail {
   notebook?: Notebook;
   cells?: Cell[];
+  publish_model?: NotebookPublishModel;
+}
+
+model NotebookPublishModel {
+  project_name?: string;
+  name?: string;
+  materialization?: ModelMaterialization;
+  output_cell_id?: string;
 }
 
 enum NotebookSessionState {
@@ -1539,6 +1640,11 @@ model TagAssignment {
   column_name?: string;
   assigned_by?: string;
   assigned_at?: utcDateTime;
+}
+
+model PaginatedTagAssignments {
+  data: TagAssignment[];
+  next_page_token?: string;
 }
 
 model CreateTagAssignmentRequest {

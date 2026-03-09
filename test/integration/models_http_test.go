@@ -167,6 +167,84 @@ func TestHTTP_ModelCRUD(t *testing.T) {
 	}
 }
 
+func TestHTTP_NotebookPromotion_CreateOrUpdateWithPublishLink(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithModels: true})
+
+	createNotebookResp := doRequest(t, "POST", env.Server.URL+"/v1/notebooks", env.Keys.Admin, map[string]interface{}{
+		"name":        "publish_notebook",
+		"description": "integration notebook publish flow",
+	})
+	require.Equal(t, 201, createNotebookResp.StatusCode)
+
+	var notebook map[string]interface{}
+	decodeJSON(t, createNotebookResp, &notebook)
+	notebookID, ok := notebook["id"].(string)
+	require.True(t, ok)
+	require.NotEmpty(t, notebookID)
+
+	createOutputCellResp := doRequest(t, "POST", env.Server.URL+"/v1/notebooks/"+notebookID+"/cells", env.Keys.Admin, map[string]interface{}{
+		"cell_type": "sql",
+		"name":      "final_output",
+		"role":      "output",
+		"content":   "SELECT 1 AS id",
+	})
+	require.Equal(t, 201, createOutputCellResp.StatusCode)
+
+	var outputCell map[string]interface{}
+	decodeJSON(t, createOutputCellResp, &outputCell)
+	outputCellID, ok := outputCell["id"].(string)
+	require.True(t, ok)
+	require.NotEmpty(t, outputCellID)
+
+	promoteBody := map[string]interface{}{
+		"notebook_id":     notebookID,
+		"cell_index":      0,
+		"project_name":    "analytics",
+		"name":            "nb_promoted_model",
+		"materialization": "TABLE",
+	}
+
+	firstPromoteResp := doRequest(t, "POST", env.Server.URL+"/v1/models/from-notebook", env.Keys.Admin, promoteBody)
+	require.Equal(t, 201, firstPromoteResp.StatusCode)
+
+	var firstModel map[string]interface{}
+	decodeJSON(t, firstPromoteResp, &firstModel)
+	modelID, ok := firstModel["id"].(string)
+	require.True(t, ok)
+	require.NotEmpty(t, modelID)
+	firstSQL, ok := firstModel["sql"].(string)
+	require.True(t, ok)
+	assert.Contains(t, strings.ToUpper(firstSQL), "SELECT 1 AS ID")
+
+	updateOutputCellResp := doRequest(t, "PATCH", env.Server.URL+"/v1/notebooks/"+notebookID+"/cells/"+outputCellID, env.Keys.Admin, map[string]interface{}{
+		"content": "SELECT 2 AS id",
+	})
+	require.Equal(t, 200, updateOutputCellResp.StatusCode)
+	_ = updateOutputCellResp.Body.Close()
+
+	secondPromoteResp := doRequest(t, "POST", env.Server.URL+"/v1/models/from-notebook", env.Keys.Admin, promoteBody)
+	require.Equal(t, 201, secondPromoteResp.StatusCode)
+
+	var secondModel map[string]interface{}
+	decodeJSON(t, secondPromoteResp, &secondModel)
+	assert.Equal(t, modelID, secondModel["id"])
+	secondSQL, ok := secondModel["sql"].(string)
+	require.True(t, ok)
+	assert.Contains(t, strings.ToUpper(secondSQL), "SELECT 2 AS ID")
+
+	getNotebookResp := doRequest(t, "GET", env.Server.URL+"/v1/notebooks/"+notebookID, env.Keys.Admin, nil)
+	require.Equal(t, 200, getNotebookResp.StatusCode)
+
+	var notebookDetail map[string]interface{}
+	decodeJSON(t, getNotebookResp, &notebookDetail)
+	publishModel, ok := notebookDetail["publish_model"].(map[string]interface{})
+	require.True(t, ok, "publish_model should be present in notebook detail")
+	assert.Equal(t, "analytics", publishModel["project_name"])
+	assert.Equal(t, "nb_promoted_model", publishModel["name"])
+	assert.Equal(t, "TABLE", publishModel["materialization"])
+	assert.Equal(t, outputCellID, publishModel["output_cell_id"])
+}
+
 // ---------------------------------------------------------------------------
 // Model Dependencies + DAG
 // ---------------------------------------------------------------------------
@@ -1385,16 +1463,11 @@ func TestHTTP_ModelRunEndpoints(t *testing.T) {
 		require.Equal(t, 404, resp.StatusCode)
 	})
 
-	t.Run("list_run_steps_empty_for_nonexistent_run", func(t *testing.T) {
+	t.Run("list_run_steps_not_found_for_nonexistent_run", func(t *testing.T) {
 		resp := doRequest(t, "GET",
 			env.Server.URL+"/v1/model-runs/00000000-0000-0000-0000-000000000000/steps",
 			env.Keys.Admin, nil)
-		require.Equal(t, 200, resp.StatusCode)
-
-		var result map[string]interface{}
-		decodeJSON(t, resp, &result)
-		data := result["data"].([]interface{})
-		assert.Equal(t, 0, len(data), "steps should be empty for nonexistent run")
+		require.Equal(t, 404, resp.StatusCode)
 	})
 }
 

@@ -20,7 +20,7 @@ func setupGroupService(t *testing.T) (*GroupService, *PrincipalService) {
 	groupRepo := repository.NewGroupRepo(db)
 	principalRepo := repository.NewPrincipalRepo(db)
 	auditRepo := repository.NewAuditRepo(db)
-	return NewGroupService(groupRepo, auditRepo), NewPrincipalService(principalRepo, auditRepo)
+	return NewGroupService(groupRepo, principalRepo, auditRepo), NewPrincipalService(principalRepo, auditRepo)
 }
 
 func TestGroupService_Create_AdminRequired(t *testing.T) {
@@ -108,6 +108,38 @@ func TestGroupService_AddMember_AdminAllowed(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestGroupService_AddMember_RejectsMissingMember(t *testing.T) {
+	svc, _ := setupGroupService(t)
+
+	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "team"})
+	require.NoError(t, err)
+
+	err = svc.AddMember(adminCtx(), domain.AddGroupMemberRequest{
+		GroupID:    g.ID,
+		MemberID:   "00000000-0000-0000-0000-000000000000",
+		MemberType: "user",
+	})
+	require.Error(t, err)
+	var notFound *domain.NotFoundError
+	assert.ErrorAs(t, err, &notFound)
+}
+
+func TestGroupService_AddMember_RejectsSelfCycle(t *testing.T) {
+	svc, _ := setupGroupService(t)
+
+	g, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "team"})
+	require.NoError(t, err)
+
+	err = svc.AddMember(adminCtx(), domain.AddGroupMemberRequest{
+		GroupID:    g.ID,
+		MemberID:   g.ID,
+		MemberType: "group",
+	})
+	require.Error(t, err)
+	var validationErr *domain.ValidationError
+	assert.ErrorAs(t, err, &validationErr)
+}
+
 func TestGroupService_RemoveMember_AdminRequired(t *testing.T) {
 	svc, principalSvc := setupGroupService(t)
 
@@ -159,6 +191,15 @@ func TestGroupService_ListMembers_AdminAllowed(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), total)
 	assert.Empty(t, members)
+}
+
+func TestGroupService_ListMembers_MissingGroup(t *testing.T) {
+	svc, _ := setupGroupService(t)
+
+	_, _, err := svc.ListMembers(adminCtx(), "00000000-0000-0000-0000-000000000000", domain.PageRequest{})
+	require.Error(t, err)
+	var notFound *domain.NotFoundError
+	assert.ErrorAs(t, err, &notFound)
 }
 
 func TestGroupService_List_RequiresAdmin(t *testing.T) {

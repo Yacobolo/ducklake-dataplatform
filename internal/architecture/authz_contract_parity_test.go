@@ -46,6 +46,24 @@ func TestAuthzContractParity_CriticalEndpoints(t *testing.T) {
 	authzByOperation := loadAuthzByOperation(t)
 
 	expects := map[string]authzContractExpectation{
+		"createAssetBackfill": {
+			mode:                "privilege",
+			securableType:       "catalog",
+			privilege:           "EXECUTE_ASSET_MATERIALIZATION",
+			securableIDSource:   "catalog_sentinel",
+			serviceFile:         "internal/service/orchestration/backfill_service.go",
+			serviceMethod:       "Create",
+			serviceBodySnippets: []string{"domain.PrivExecuteAssetMaterialization", "s.requirePrivilege("},
+		},
+		"triggerAssetMaterialization": {
+			mode:                "privilege",
+			securableType:       "catalog",
+			privilege:           "EXECUTE_ASSET_MATERIALIZATION",
+			securableIDSource:   "catalog_sentinel",
+			serviceFile:         "internal/service/asset/service.go",
+			serviceMethod:       "TriggerMaterialization",
+			serviceBodySnippets: []string{"domain.PrivExecuteAssetMaterialization", "s.requirePrivilege("},
+		},
 		"createSchema": {
 			mode:                "privilege",
 			securableType:       "catalog",

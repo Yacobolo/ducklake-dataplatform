@@ -35,6 +35,7 @@ func ParseMarkdown(content string) (name string, description string, cells []dom
 			} else {
 				cells = append(cells, domain.Cell{
 					CellType: domain.CellTypeMarkdown,
+					Role:     domain.CellRoleMarkdown,
 					Content:  text,
 					Position: position,
 				})
@@ -71,8 +72,13 @@ func ParseMarkdown(content string) (name string, description string, cells []dom
 				cellType = domain.CellTypeSQL
 			}
 			if text != "" || cellType == domain.CellTypeSQL {
+				role := domain.CellRoleTransform
+				if cellType == domain.CellTypeMarkdown {
+					role = domain.CellRoleMarkdown
+				}
 				cells = append(cells, domain.Cell{
 					CellType: cellType,
+					Role:     role,
 					Content:  text,
 					Position: position,
 				})

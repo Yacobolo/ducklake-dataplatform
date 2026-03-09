@@ -164,6 +164,38 @@ func TestCLI_MissingArgs(t *testing.T) {
 	assert.Contains(t, err.Error(), "accepts 1 arg(s)")
 }
 
+func TestCLI_APIKeyFlagOverridesProfileToken(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 200, `{"data":[]}`))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	require.NoError(t, SaveUserConfig(&UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {
+				Host:  srv.URL,
+				Token: "profile-token",
+			},
+		},
+	}))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"--api-key", "api-key-123",
+		"catalog", "schemas", "list", "test",
+	})
+
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	captured := rec.last()
+	assert.Equal(t, "api-key-123", captured.Headers.Get("X-API-Key"))
+	assert.Empty(t, captured.Headers.Get("Authorization"))
+}
+
 // === Path Parameter Substitution Tests (issue #100) ===
 
 func TestCLI_PathParamSubstitution(t *testing.T) {
@@ -567,7 +599,7 @@ func TestCLI_CommandTree(t *testing.T) {
 
 	expectedCommands := []string{
 		"catalog", "security", "query", "compute", "storage",
-		"pipelines", "notebooks", "governance", "observability",
+		"assets", "notebooks", "governance", "observability",
 		"lineage", "manifest", "ingestion",
 		"version", "config", "auth",
 		"plan", "apply", "export", "validate",
@@ -668,6 +700,99 @@ func TestCLI_InvalidOutputFormat(t *testing.T) {
 	err := rootCmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported output format")
+}
+
+func TestCLI_ProfileAPIKeyOverridesStaleProfileToken(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 200, `{"data":[]}`))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	require.NoError(t, SaveUserConfig(&UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {
+				Host:   srv.URL,
+				Token:  "stale-token",
+				APIKey: "",
+			},
+		},
+	}))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--api-key", "fresh-api-key",
+		"catalog", "schemas", "list", "test",
+	})
+
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	captured := rec.last()
+	assert.Equal(t, "fresh-api-key", captured.Headers.Get("X-API-Key"))
+	assert.Empty(t, captured.Headers.Get("Authorization"))
+}
+
+func TestCLI_ModelCommandsRejectMalformedConfigJSON(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "models create",
+			args: []string{"models", "models", "create", "--project-name", "cfg-proj", "--name", "cfg-model", "--sql", "SELECT 1", "--config", "{target_catalog:main}"},
+		},
+		{
+			name: "models tests create",
+			args: []string{"models", "tests", "create", "cfg-proj", "cfg-model", "--name", "cfg-test", "--test-type", "not_null", "--column", "id", "--config", "{strict:true}"},
+		},
+		{
+			name: "models update",
+			args: []string{"models", "models", "update", "cfg-proj", "cfg-model", "--config", "{owner:ops}"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := &requestRecorder{}
+			srv := httptest.NewServer(jsonHandler(rec, 200, `{}`))
+			defer srv.Close()
+
+			rootCmd := newTestRootCmd(t, srv)
+			rootCmd.SetArgs(append([]string{"--host", srv.URL}, tt.args...))
+
+			err := rootCmd.Execute()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "parse --config as JSON object")
+			assert.Empty(t, rec.requests, "malformed config should fail before issuing an HTTP request")
+		})
+	}
+}
+
+func TestCLI_ZeroArgCommandsRejectUnexpectedArgs(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "version", args: []string{"version", "extra"}},
+		{name: "commands", args: []string{"commands", "extra"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rootCmd := newRootCmd()
+			rootCmd.SetArgs(tt.args)
+
+			err := rootCmd.Execute()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "unknown command")
+		})
+	}
 }
 
 // === Additional Edge Cases ===

@@ -41,6 +41,7 @@ func newCommandsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "commands",
 		Short: "List all available CLI commands with their flags and descriptions",
+		Args:  cobra.NoArgs,
 		Long: `Introspects the command tree and lists all commands with their paths,
 descriptions, flags, and examples. Works offline (no API calls needed).
 

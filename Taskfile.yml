@@ -7,6 +7,48 @@ vars:
   MIGRATIONS_DIR: internal/db/migrations
 
 tasks:
+  dev:
+    desc: Build and start the local dev server with worktree-specific ports and inline env
+    preconditions:
+      - sh: test -f internal/api/types.gen.go && test -f internal/api/server.gen.go && test -f internal/db/dbstore/db.go && test -f internal/db/dbstore/models.go
+        msg: "Generated files missing. Run 'task generate-api sqlc' first."
+    cmds:
+      - |
+        worktree_path="$(pwd -P)"
+        checksum="$(printf '%s' "$worktree_path" | cksum | awk '{print $1}')"
+        offset=$((checksum % 1000))
+        http_port=$((8080 + offset))
+        flight_port=$((32010 + offset))
+        pg_port=$((5433 + offset))
+        meta_db_dir=".codex/dev"
+        meta_db_path="${meta_db_dir}/ducklake_meta_${offset}.sqlite"
+        server_bin="${meta_db_dir}/server_${offset}"
+        jwt_secret="$(printf 'dev-jwt-%s' "$checksum")"
+
+        mkdir -p "$meta_db_dir"
+
+        echo "Building dev server for ${worktree_path}"
+        go build -o "${server_bin}" ./cmd/server
+
+        echo "Starting dev server for ${worktree_path}"
+        echo "  HTTP:       http://localhost:${http_port}"
+        echo "  Flight SQL: localhost:${flight_port}"
+        echo "  PG wire:    localhost:${pg_port}"
+        echo "  Meta DB:    ${meta_db_path}"
+        echo "  Binary:     ${server_bin}"
+
+        ENV=development \
+        AUTH_MODE=local_only \
+        AUTH_UI_DEV_BYPASS=true \
+        AUTH_API_KEY_ENABLED=true \
+        JWT_SECRET="${jwt_secret}" \
+        ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000 \
+        LISTEN_ADDR=":${http_port}" \
+        FLIGHT_SQL_LISTEN_ADDR=":${flight_port}" \
+        PG_WIRE_LISTEN_ADDR=":${pg_port}" \
+        META_DB_PATH="${meta_db_path}" \
+        "${server_bin}"
+
   migrate-up:
     desc: Run database migrations up
     cmds:

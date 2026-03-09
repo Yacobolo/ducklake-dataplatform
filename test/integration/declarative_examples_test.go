@@ -25,8 +25,6 @@ type exampleExpectation struct {
 	MinModelCreates       int `yaml:"min_model_creates"`
 	MinMacroCreates       int `yaml:"min_macro_creates"`
 	MinNotebookCreates    int `yaml:"min_notebook_creates"`
-	MinPipelineCreates    int `yaml:"min_pipeline_creates"`
-	MinPipelineJobCreates int `yaml:"min_pipeline_job_creates"`
 }
 
 type exampleAssertionsDoc struct {
@@ -82,8 +80,6 @@ func TestDeclarativeExamples_Lifecycle(t *testing.T) {
 			modelCreates := actionsOfKindAndOp(plan, declarative.KindModel, declarative.OpCreate)
 			macroCreates := actionsOfKindAndOp(plan, declarative.KindMacro, declarative.OpCreate)
 			notebookCreates := actionsOfKindAndOp(plan, declarative.KindNotebook, declarative.OpCreate)
-			pipelineCreates := actionsOfKindAndOp(plan, declarative.KindPipeline, declarative.OpCreate)
-			pipelineJobCreates := actionsOfKindAndOp(plan, declarative.KindPipelineJob, declarative.OpCreate)
 
 			expectation, hasExpectation, expErr := loadExampleExpectation(assertionsPath, exampleName)
 			require.NoError(t, expErr)
@@ -95,8 +91,6 @@ func TestDeclarativeExamples_Lifecycle(t *testing.T) {
 				assert.GreaterOrEqual(t, len(modelCreates), expectation.MinModelCreates, "expected model creates for %s", exampleName)
 				assert.GreaterOrEqual(t, len(macroCreates), expectation.MinMacroCreates, "expected macro creates for %s", exampleName)
 				assert.GreaterOrEqual(t, len(notebookCreates), expectation.MinNotebookCreates, "expected notebook creates for %s", exampleName)
-				assert.GreaterOrEqual(t, len(pipelineCreates), expectation.MinPipelineCreates, "expected pipeline creates for %s", exampleName)
-				assert.GreaterOrEqual(t, len(pipelineJobCreates), expectation.MinPipelineJobCreates, "expected pipeline job creates for %s", exampleName)
 			}
 
 			actions := filterExampleApplyActions(plan.Actions)
@@ -110,8 +104,6 @@ func TestDeclarativeExamples_Lifecycle(t *testing.T) {
 			assertNoCreateOrUpdate(t, replan, declarative.KindModel, "model", exampleName)
 			assertNoCreateOrUpdate(t, replan, declarative.KindMacro, "macro", exampleName)
 			assertNoNotebookDrift(t, replan, exampleName)
-			assertNoCreateOrUpdate(t, replan, declarative.KindPipeline, "pipeline", exampleName)
-			assertNoCreateOrUpdate(t, replan, declarative.KindPipelineJob, "pipeline job", exampleName)
 		})
 	}
 }
@@ -121,8 +113,6 @@ func filterExampleApplyActions(actions []declarative.Action) []declarative.Actio
 	for _, action := range actions {
 		switch action.ResourceKind {
 		case declarative.KindNotebook,
-			declarative.KindPipeline,
-			declarative.KindPipelineJob,
 			declarative.KindModel,
 			declarative.KindMacro:
 			filtered = append(filtered, action)

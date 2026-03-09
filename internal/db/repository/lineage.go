@@ -12,12 +12,13 @@ import (
 
 // LineageRepo implements domain.LineageRepository using SQLite.
 type LineageRepo struct {
-	q *dbstore.Queries
+	q  *dbstore.Queries
+	db *sql.DB
 }
 
 // NewLineageRepo creates a new LineageRepo.
 func NewLineageRepo(db *sql.DB) *LineageRepo {
-	return &LineageRepo{q: dbstore.New(db)}
+	return &LineageRepo{q: dbstore.New(db), db: db}
 }
 
 // InsertEdge records a new lineage edge between tables.
@@ -88,8 +89,18 @@ func (r *LineageRepo) GetDownstream(ctx context.Context, tableName string, page 
 
 // DeleteEdge removes a lineage edge by ID.
 func (r *LineageRepo) DeleteEdge(ctx context.Context, id string) error {
-	// sqlc DeleteLineageEdge doesn't return rows affected, so we need to check existence
-	return r.q.DeleteLineageEdge(ctx, id)
+	result, err := r.db.ExecContext(ctx, "DELETE FROM lineage_edges WHERE id = ?", id)
+	if err != nil {
+		return mapDBError(err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return domain.ErrNotFound("lineage edge %s not found", id)
+	}
+	return nil
 }
 
 // PurgeOlderThan removes lineage edges created before the given time.

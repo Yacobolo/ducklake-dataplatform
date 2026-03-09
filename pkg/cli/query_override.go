@@ -18,8 +18,8 @@ import (
 
 func init() {
 	apiruntime.RegisterRunOverride("executeQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
-		return func(cmd *cobra.Command, _ []string) error {
-			sql, err := readSQLInput(cmd)
+		return func(cmd *cobra.Command, args []string) error {
+			sql, err := readSQLInput(cmd, args)
 			if err != nil {
 				return err
 			}
@@ -36,10 +36,13 @@ func init() {
 			return printQueryResult(cmd, resp)
 		}
 	})
+	apiruntime.RegisterOverride("executeQuery", func(c *cobra.Command) {
+		c.Args = cobra.MaximumNArgs(1)
+	})
 
 	apiruntime.RegisterRunOverride("submitQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
-		return func(cmd *cobra.Command, _ []string) error {
-			sql, err := readSQLInput(cmd)
+		return func(cmd *cobra.Command, args []string) error {
+			sql, err := readSQLInput(cmd, args)
 			if err != nil {
 				return err
 			}
@@ -211,8 +214,12 @@ func init() {
 	})
 }
 
-func readSQLInput(cmd *cobra.Command) (string, error) {
+func readSQLInput(cmd *cobra.Command, args []string) (string, error) {
 	sql, _ := cmd.Flags().GetString("sql")
+
+	if sql == "" && len(args) > 0 {
+		sql = args[0]
+	}
 
 	if sql == "" {
 		stat, _ := os.Stdin.Stat()

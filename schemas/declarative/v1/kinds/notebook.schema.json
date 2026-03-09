@@ -6,6 +6,18 @@
         "content": {
           "type": "string"
         },
+        "disabled": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "test": {
+          "$ref": "#/$defs/NotebookTestSpec"
+        },
         "type": {
           "type": "string"
         }
@@ -46,6 +58,38 @@
       ],
       "type": "object"
     },
+    "NotebookPublishModelSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "materialization": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "output_cell": {
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "output_cell",
+        "project"
+      ],
+      "type": "object"
+    },
+    "NotebookPublishSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "$ref": "#/$defs/NotebookPublishModelSpec"
+        }
+      },
+      "type": "object"
+    },
     "NotebookSpec": {
       "additionalProperties": false,
       "properties": {
@@ -59,6 +103,18 @@
           "type": "string"
         },
         "owner": {
+          "type": "string"
+        },
+        "publish": {
+          "$ref": "#/$defs/NotebookPublishSpec"
+        }
+      },
+      "type": "object"
+    },
+    "NotebookTestSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "severity": {
           "type": "string"
         }
       },

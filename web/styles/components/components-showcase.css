@@ -1,0 +1,189 @@
+.components-showcase {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.component-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.component-section h2 {
+  margin: 0;
+  font-size: var(--text-title-size-medium);
+  line-height: var(--text-title-lineHeight-medium);
+}
+
+.component-section p {
+  margin: 0;
+}
+
+.component-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.component-stack {
+  display: grid;
+  gap: var(--space-2);
+  max-width: var(--overlay-width-small);
+}
+
+.component-stack-wide {
+  max-width: none;
+}
+
+.component-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.metric-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: var(--borderWidth-default) solid var(--borderColor-default);
+  border-radius: var(--borderRadius-medium);
+  background: var(--bgColor-default);
+  box-shadow: var(--shadow-resting-small);
+}
+
+.metric-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--borderWidth-thicker);
+  background: var(--borderColor-accent-emphasis);
+}
+
+.metric-card-accent {
+  border-color: var(--borderColor-default);
+  background:
+    linear-gradient(135deg, var(--bgColor-accent-muted) 0%, var(--bgColor-default) 45%),
+    var(--bgColor-default);
+}
+
+.metric-card-success {
+  border-color: var(--borderColor-default);
+  background:
+    linear-gradient(135deg, var(--bgColor-success-muted) 0%, var(--bgColor-default) 45%),
+    var(--bgColor-default);
+}
+
+.metric-card-success::before {
+  background: var(--borderColor-success-emphasis);
+}
+
+.metric-card-attention {
+  border-color: var(--borderColor-default);
+  background:
+    linear-gradient(135deg, var(--bgColor-attention-muted) 0%, var(--bgColor-default) 45%),
+    var(--bgColor-default);
+}
+
+.metric-card-attention::before {
+  background: var(--borderColor-attention-emphasis);
+}
+
+.metric-label {
+  margin: 0;
+  color: var(--fgColor-default);
+  font-size: var(--text-caption-size);
+  font-weight: var(--base-text-weight-semibold);
+}
+
+.metric-value {
+  margin: var(--space-1) 0;
+  color: var(--fgColor-default);
+  font-size: var(--text-title-size-large);
+  line-height: var(--text-title-lineHeight-medium);
+  font-weight: var(--base-text-weight-semibold);
+}
+
+.component-form-limited {
+  max-width: var(--overlay-width-small);
+}
+
+.component-embed-flat .Box {
+  margin-bottom: 0;
+  border: 0;
+  background: var(--bgColor-transparent);
+  box-shadow: none;
+  padding: 0;
+}
+
+.component-section .ToolbarCard,
+.component-section .BlankslateCard,
+.component-section .PaginationCard,
+.component-section .ActionBar {
+  margin-bottom: 0;
+}
+
+.token-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--overlay-width-xxsmall) + var(--space-5)), 1fr));
+  gap: var(--space-2);
+}
+
+.token-swatch-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: var(--borderWidth-default) solid var(--borderColor-default);
+  border-radius: var(--borderRadius-medium);
+  background: var(--bgColor-default);
+}
+
+.token-swatch {
+  height: var(--control-large-size);
+  border-radius: var(--borderRadius-medium);
+  border: var(--borderWidth-default) solid var(--borderColor-default);
+}
+
+.token-swatch-accent {
+  background: var(--bgColor-accent-emphasis);
+}
+
+.token-swatch-success {
+  background: var(--bgColor-success-emphasis);
+}
+
+.token-swatch-attention {
+  background: var(--bgColor-attention-emphasis);
+}
+
+.token-swatch-danger {
+  background: var(--bgColor-danger-emphasis);
+}
+
+.token-swatch-surface {
+  background: var(--bgColor-muted);
+}
+
+@media (max-width: var(--breakpoint-medium)) {
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .component-stack {
+    max-width: 100%;
+  }
+
+  .component-columns {
+    grid-template-columns: 1fr;
+  }
+}

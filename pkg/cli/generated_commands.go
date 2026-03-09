@@ -589,6 +589,19 @@ func getFlagValue(cmd *cobra.Command, flagName, typ string) (interface{}, error)
 			return nil, err
 		}
 		return v, nil
+	case "object":
+		v, err := cmd.Flags().GetString(flagName)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(v) == "" {
+			return map[string]interface{}{}, nil
+		}
+		var obj map[string]interface{}
+		if err := json.Unmarshal([]byte(v), &obj); err != nil {
+			return nil, fmt.Errorf("parse --%s as JSON object: %w", flagName, err)
+		}
+		return obj, nil
 	default:
 		v, err := cmd.Flags().GetString(flagName)
 		if err != nil {

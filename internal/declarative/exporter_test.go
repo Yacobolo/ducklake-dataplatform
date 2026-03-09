@@ -73,6 +73,9 @@ func TestExporter_RoundTrip(t *testing.T) {
 		Tags: []TagSpec{
 			{Key: "env", Value: strPtr("prod")},
 		},
+		Assets: []AssetResource{
+			{Name: "daily_kpi", Spec: AssetSpec{AssetType: "table", Description: "Daily KPI asset"}},
+		},
 	}
 
 	// Export to temp dir
@@ -88,6 +91,7 @@ func TestExporter_RoundTrip(t *testing.T) {
 	assertFileExists(t, filepath.Join(dir, "catalogs", "main", "schemas", "analytics", "schema.yaml"))
 	assertFileExists(t, filepath.Join(dir, "catalogs", "main", "schemas", "analytics", "tables", "orders", "table.yaml"))
 	assertFileExists(t, filepath.Join(dir, "catalogs", "main", "schemas", "analytics", "views", "summary.yaml"))
+	assertFileExists(t, filepath.Join(dir, "assets", "daily_kpi.yaml"))
 
 	// Load back
 	loaded, err := LoadDirectory(dir)
@@ -119,6 +123,9 @@ func TestExporter_RoundTrip(t *testing.T) {
 
 	require.Len(t, loaded.Volumes, 1)
 	assert.Equal(t, "raw", loaded.Volumes[0].VolumeName)
+
+	require.Len(t, loaded.Assets, 1)
+	assert.Equal(t, "daily_kpi", loaded.Assets[0].Name)
 }
 
 func TestExporter_EmptyState(t *testing.T) {
@@ -128,6 +135,18 @@ func TestExporter_EmptyState(t *testing.T) {
 	// Should not create any files for empty state
 	entries, _ := os.ReadDir(dir)
 	assert.Empty(t, entries, "empty state should produce no files")
+}
+
+func TestExporter_CreatesMissingOutputDirectory(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "nested", "duck-config")
+
+	err := ExportDirectory(dir, &DesiredState{
+		Principals: []PrincipalSpec{{Name: "user1", Type: "user"}},
+	}, false)
+	require.NoError(t, err)
+
+	assertFileExists(t, filepath.Join(dir, "security", "principals.yaml"))
 }
 
 func TestExporter_OverwriteProtection(t *testing.T) {

@@ -44,7 +44,9 @@ var (
 		"READ_FILES",
 		"WRITE_FILES",
 		"MANAGE_COMPUTE",
-		"MANAGE_PIPELINES",
+		"MANAGE_ASSET_DEFINITIONS",
+		"EXECUTE_ASSET_MATERIALIZATION",
+		"MANAGE_ASSET_POLICIES",
 	}
 )
 
@@ -278,15 +280,85 @@ func encodeCanonicalJSON(path string, content interface{}) (string, error) {
 	return hex.EncodeToString(hash[:]), nil
 }
 
-func main() {
-	var outDir string
-	flag.StringVar(&outDir, "outdir", "schemas/declarative/v1", "Output schema directory")
-	flag.Parse()
+func clearKindSchemaArtifacts(kindsDir string) error {
+	entries, err := os.ReadDir(kindsDir)
+	if err != nil {
+		return fmt.Errorf("read kinds directory %s: %w", kindsDir, err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if !strings.HasSuffix(entry.Name(), ".schema.json") {
+			continue
+		}
+		path := filepath.Join(kindsDir, entry.Name())
+		if err := os.Remove(path); err != nil {
+			return fmt.Errorf("remove stale kind schema %s: %w", path, err)
+		}
+	}
+
+	return nil
+}
+
+func verifyIndexedSchemaArtifacts(outDir string, checksums map[string]string) error {
+	indexed := make(map[string]struct{}, len(checksums))
+	for relPath := range checksums {
+		indexed[filepath.ToSlash(relPath)] = struct{}{}
+	}
+
+	actualSchemaFiles := make(map[string]struct{})
+
+	rootEntries, err := os.ReadDir(outDir)
+	if err != nil {
+		return fmt.Errorf("read schema output directory %s: %w", outDir, err)
+	}
+	for _, entry := range rootEntries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schema.json") {
+			continue
+		}
+		actualSchemaFiles[entry.Name()] = struct{}{}
+	}
 
 	kindsDir := filepath.Join(outDir, "kinds")
+	kindEntries, err := os.ReadDir(kindsDir)
+	if err != nil {
+		return fmt.Errorf("read kinds directory %s: %w", kindsDir, err)
+	}
+	for _, entry := range kindEntries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".schema.json") {
+			continue
+		}
+		relPath := filepath.ToSlash(filepath.Join("kinds", entry.Name()))
+		actualSchemaFiles[relPath] = struct{}{}
+	}
+
+	for relPath := range actualSchemaFiles {
+		if _, ok := indexed[relPath]; !ok {
+			return fmt.Errorf("schema artifact %q is not indexed in index.json", relPath)
+		}
+	}
+
+	for relPath := range indexed {
+		if !strings.HasSuffix(relPath, ".schema.json") {
+			continue
+		}
+		if _, ok := actualSchemaFiles[relPath]; !ok {
+			return fmt.Errorf("index.json references missing schema artifact %q", relPath)
+		}
+	}
+
+	return nil
+}
+
+func run(outDir string) error {
+	kindsDir := filepath.Join(outDir, "kinds")
 	if err := os.MkdirAll(kindsDir, 0o750); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "create output directories: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("create output directories: %w", err)
+	}
+	if err := clearKindSchemaArtifacts(kindsDir); err != nil {
+		return err
 	}
 
 	registry := declarative.SchemaDocumentTypes()
@@ -322,8 +394,7 @@ func main() {
 		fullPath := filepath.Join(outDir, relPath)
 		hash, err := encodeCanonicalJSON(fullPath, schema)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
-			os.Exit(1)
+			return err
 		}
 		checksums[relPath] = hash
 
@@ -342,10 +413,13 @@ func main() {
 	rootPath := filepath.Join(outDir, "duck.declarative.schema.json")
 	rootHash, err := encodeCanonicalJSON(rootPath, rootSchema)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		return err
 	}
 	checksums["duck.declarative.schema.json"] = rootHash
+
+	if err := verifyIndexedSchemaArtifacts(outDir, checksums); err != nil {
+		return err
+	}
 
 	manifest := map[string]interface{}{
 		"version":    "v1",
@@ -353,6 +427,18 @@ func main() {
 		"files":      checksums,
 	}
 	if _, err := encodeCanonicalJSON(filepath.Join(outDir, "index.json"), manifest); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func main() {
+	var outDir string
+	flag.StringVar(&outDir, "outdir", "schemas/declarative/v1", "Output schema directory")
+	flag.Parse()
+
+	if err := run(outDir); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}

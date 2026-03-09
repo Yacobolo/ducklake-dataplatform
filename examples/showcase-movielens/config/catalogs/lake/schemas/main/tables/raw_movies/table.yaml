@@ -5,10 +5,11 @@ metadata:
 spec:
   table_type: MANAGED
   comment: Raw movie dimension loaded through ingestion API
+  owner: ml_admin
   columns:
     - name: movie_id
-      type: BIGINT
+      type: int64
     - name: title
-      type: VARCHAR
+      type: varchar
     - name: genres
-      type: VARCHAR
+      type: varchar

@@ -132,39 +132,3 @@ type UpdateMacroRequest struct {
 	Properties  map[string]string
 	Tags        []string
 }
-
-// PromoteNotebookRequest holds parameters for promoting a notebook cell to a model.
-type PromoteNotebookRequest struct {
-	NotebookID      string
-	CellIndex       int
-	ProjectName     string
-	Name            string
-	Materialization string
-}
-
-// Validate checks that the request is well-formed.
-func (r *PromoteNotebookRequest) Validate() error {
-	if r.NotebookID == "" {
-		return ErrValidation("notebook_id is required")
-	}
-	if r.ProjectName == "" {
-		return ErrValidation("project_name is required")
-	}
-	if r.Name == "" {
-		return ErrValidation("name is required")
-	}
-	if r.CellIndex < 0 {
-		return ErrValidation("cell_index must be non-negative")
-	}
-	if r.Materialization == "" {
-		r.Materialization = MaterializationTable
-	}
-	validMat := map[string]bool{
-		MaterializationView: true, MaterializationTable: true,
-		MaterializationIncremental: true, MaterializationEphemeral: true,
-	}
-	if !validMat[r.Materialization] {
-		return ErrValidation("materialization must be VIEW, TABLE, INCREMENTAL, or EPHEMERAL")
-	}
-	return nil
-}

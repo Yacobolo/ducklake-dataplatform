@@ -46,3 +46,8 @@ namespace Duck;
 @@extension(createStorageCredential, "x-authz", #{ mode: "privilege", checks: #[#{ securable_type: "catalog", privilege: "CREATE_STORAGE_CREDENTIAL", securable_id_source: "catalog_sentinel" }] });
 @@extension(updateStorageCredential, "x-authz", #{ mode: "privilege", checks: #[#{ securable_type: "storage_credential", privilege: "CREATE_STORAGE_CREDENTIAL", securable_id_source: "runtime_resolved_object_id" }] });
 @@extension(deleteStorageCredential, "x-authz", #{ mode: "privilege", checks: #[#{ securable_type: "storage_credential", privilege: "CREATE_STORAGE_CREDENTIAL", securable_id_source: "runtime_resolved_object_id" }] });
+@@extension(createAsset, "x-authz", #{ mode: "privilege", checks: #[#{ securable_type: "catalog", privilege: "MANAGE_ASSET_DEFINITIONS", securable_id_source: "catalog_sentinel" }] });
+@@extension(updateAsset, "x-authz", #{ mode: "privilege", checks: #[#{ securable_type: "catalog", privilege: "MANAGE_ASSET_DEFINITIONS", securable_id_source: "catalog_sentinel" }] });
+@@extension(deleteAsset, "x-authz", #{ mode: "privilege", checks: #[#{ securable_type: "catalog", privilege: "MANAGE_ASSET_DEFINITIONS", securable_id_source: "catalog_sentinel" }] });
+@@extension(triggerAssetMaterialization, "x-authz", #{ mode: "privilege", checks: #[#{ securable_type: "catalog", privilege: "EXECUTE_ASSET_MATERIALIZATION", securable_id_source: "catalog_sentinel" }] });
+@@extension(createAssetBackfill, "x-authz", #{ mode: "privilege", checks: #[#{ securable_type: "catalog", privilege: "EXECUTE_ASSET_MATERIALIZATION", securable_id_source: "catalog_sentinel" }] });

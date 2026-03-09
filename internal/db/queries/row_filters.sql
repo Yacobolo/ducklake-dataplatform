@@ -1,6 +1,6 @@
 -- name: CreateRowFilter :one
-INSERT INTO row_filters (id, table_id, filter_sql, description)
-VALUES (?, ?, ?, ?)
+INSERT INTO row_filters (id, table_id, name, filter_sql, description)
+VALUES (?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetRowFiltersForTable :many

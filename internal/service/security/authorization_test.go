@@ -634,6 +634,43 @@ func TestLookupTableID_CatalogQualified(t *testing.T) {
 	assert.False(t, isExternal)
 }
 
+func TestCheckPrivilege_CatalogQualifiedTableUsesCanonicalManagedID(t *testing.T) {
+	cat, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
+		Name: "catalog_qualified_reader", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "0",
+		Privilege: PrivUsage,
+	})
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableTable, SecurableID: "1",
+		Privilege: PrivSelect,
+	})
+	require.NoError(t, err)
+
+	cat.SetCatalogTableLookup(func(_ context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error) {
+		require.Equal(t, "demo", catalogName)
+		require.Equal(t, "main", schemaName)
+		require.Equal(t, "titanic", tableName)
+		return &domain.TableDetail{TableID: "table-42", TableType: domain.TableTypeManaged}, nil
+	})
+
+	tableID, _, isExternal, err := cat.LookupTableID(ctx, "demo.main.titanic")
+	require.NoError(t, err)
+	assert.False(t, isExternal)
+
+	allowed, err := cat.CheckPrivilege(ctx, "catalog_qualified_reader", SecurableTable, tableID, PrivSelect)
+	require.NoError(t, err)
+	assert.True(t, allowed)
+}
+
 func TestLookupTableID_ViewSchemaQualified(t *testing.T) {
 	cat, q, ctx := setupTestService(t)
 

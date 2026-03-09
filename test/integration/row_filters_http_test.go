@@ -31,6 +31,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 	steps := []step{
 		{"create", func(t *testing.T) {
 			body := map[string]interface{}{
+				"name":        "age-over-30",
 				"filter_sql":  `"Age" > 30`,
 				"description": "age filter",
 			}
@@ -107,6 +108,7 @@ func TestHTTP_RowFilterMultiple(t *testing.T) {
 	// Create two filters
 	for i, sql := range []string{`"Survived" = 1`, `"Sex" = 'female'`} {
 		body := map[string]interface{}{
+			"name":        fmt.Sprintf("filter-%d", i),
 			"filter_sql":  sql,
 			"description": fmt.Sprintf("filter %d", i),
 		}

@@ -1,0 +1,36 @@
+.Spinner {
+  width: var(--spinner-size-medium);
+  height: var(--spinner-size-medium);
+  border-radius: var(--borderRadius-full);
+  border: var(--spinner-strokeWidth-default) solid var(--borderColor-muted);
+  border-top-color: var(--borderColor-accent-emphasis);
+  animation: spin var(--base-duration-500) linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ProgressBar {
+  width: 100%;
+  height: var(--size-2);
+  border-radius: var(--borderRadius-full);
+  background: var(--bgColor-muted);
+  overflow: hidden;
+}
+
+.ProgressBar-indicator {
+  height: 100%;
+  background: var(--bgColor-accent-emphasis);
+  transition: width var(--base-duration-100) var(--base-easing-easeOut);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .Spinner,
+  .ProgressBar-indicator {
+    animation: none;
+    transition: none;
+  }
+}

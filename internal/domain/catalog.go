@@ -10,6 +10,51 @@ type CatalogInfo struct {
 	UpdatedAt time.Time
 }
 
+// VersionedObjectSummary provides high-level snapshot/version counts for a metastore entity type.
+type VersionedObjectSummary struct {
+	TotalCount       int64
+	ActiveCount      int64
+	HistoricalCount  int64
+	HasHistory       bool
+	LatestSnapshotID *int64
+}
+
+// CatalogVersionSummary provides additive DuckLake version metadata for a catalog.
+type CatalogVersionSummary struct {
+	CatalogName      string
+	Version          string
+	CreatedBy        string
+	Encrypted        *bool
+	DataPath         string
+	LatestSnapshotID *int64
+	Schemas          VersionedObjectSummary
+	Tables           VersionedObjectSummary
+	Columns          VersionedObjectSummary
+}
+
+// CatalogHistoryFilter scopes metastore history reads.
+type CatalogHistoryFilter struct {
+	EntityType string
+	SchemaName string
+	TableName  string
+	Limit      int
+}
+
+// CatalogHistoryEntry represents a snapshot-scoped schema, table, or column record.
+type CatalogHistoryEntry struct {
+	EntityType       string
+	SchemaName       string
+	TableName        string
+	ColumnName       string
+	ObjectName       string
+	ObjectID         string
+	BeginSnapshotID  *int64
+	EndSnapshotID    *int64
+	LatestSnapshotID *int64
+	IsActive         bool
+	HasHistory       bool
+}
+
 // SchemaDetail is an enriched schema representation for the catalog API.
 type SchemaDetail struct {
 	SchemaID    string

@@ -5,10 +5,11 @@ metadata:
 spec:
   table_type: MANAGED
   comment: Raw user dimension with policy-controlled access
+  owner: ml_admin
   columns:
     - name: user_id
-      type: BIGINT
+      type: int64
     - name: age_group
-      type: VARCHAR
+      type: varchar
     - name: region
-      type: VARCHAR
+      type: varchar

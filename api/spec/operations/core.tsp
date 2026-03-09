@@ -106,6 +106,14 @@ op createRowFilter(tableId: string, @body body: CreateRowFilterRequest): Created
 op deleteRowFilter(rowFilterId: string): NoContent | MutatingErrorResponses;
 
 @route("/row-filters/{rowFilterId}/bindings")
+@get
+op listRowFilterBindings(
+  rowFilterId: string,
+  @query max_results?: int32,
+  @query page_token?: string,
+): Ok<PaginatedRowFilterBindings> | ResourceErrorResponses;
+
+@route("/row-filters/{rowFilterId}/bindings")
 @post
 op bindRowFilter(rowFilterId: string, @body body: RowFilterBindingRequest): CreatedEmpty | MutatingErrorResponses;
 
@@ -124,6 +132,14 @@ op createColumnMask(tableId: string, @body body: CreateColumnMaskRequest): Creat
 @route("/column-masks/{columnMaskId}")
 @delete
 op deleteColumnMask(columnMaskId: string): NoContent | MutatingErrorResponses;
+
+@route("/column-masks/{columnMaskId}/bindings")
+@get
+op listColumnMaskBindings(
+  columnMaskId: string,
+  @query max_results?: int32,
+  @query page_token?: string,
+): Ok<PaginatedColumnMaskBindings> | ResourceErrorResponses;
 
 @route("/column-masks/{columnMaskId}/bindings")
 @post
@@ -189,6 +205,20 @@ op setDefaultCatalog(catalogName: string, @body body: SetDefaultCatalogRequest):
 @route("/catalogs/{catalogName}/info")
 @get
 op getCatalog(catalogName: string): Ok<CatalogInfo> | ResourceErrorResponses;
+
+@route("/catalogs/{catalogName}/version-summary")
+@get
+op getCatalogVersionSummary(catalogName: string): Ok<CatalogVersionSummary> | ResourceErrorResponses;
+
+@route("/catalogs/{catalogName}/history")
+@get
+op listCatalogHistory(
+  catalogName: string,
+  @query entity_type?: string,
+  @query schema_name?: string,
+  @query table_name?: string,
+  @query limit?: int32,
+): Ok<CatalogHistoryResponse> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas")
 @get

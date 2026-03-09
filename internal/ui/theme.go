@@ -109,18 +109,27 @@ const shellBehaviorScript = `(function(){
     if(overlay){ overlay.setAttribute('aria-hidden', open ? 'false' : 'true'); }
   }
 
-  function setCompact(enabled){
+  function setCompact(enabled, persist){
     shell.classList.toggle('sidebar-compact', !!enabled);
-    try { localStorage.setItem(compactKey, enabled ? '1' : '0'); } catch (_) {}
+    if(persist){
+      try { localStorage.setItem(compactKey, enabled ? '1' : '0'); } catch (_) {}
+    }
   }
 
   try {
-    setCompact(localStorage.getItem(compactKey)==='1');
+    setCompact(localStorage.getItem(compactKey)==='1', false);
+  } catch (_) {}
+
+  try {
+    var hasCompactPreference=localStorage.getItem(compactKey)!==null;
+    if(!hasCompactPreference && window.matchMedia('(max-width: 48rem)').matches){
+      setCompact(true, false);
+    }
   } catch (_) {}
 
   if(sidebarToggle){
     sidebarToggle.addEventListener('click', function(){
-      setCompact(!shell.classList.contains('sidebar-compact'));
+      setCompact(!shell.classList.contains('sidebar-compact'), true);
     });
   }
 

@@ -40,6 +40,7 @@ type tagService interface {
 	DeleteTag(ctx context.Context, principal string, id string) error
 	AssignTag(ctx context.Context, principal string, req domain.AssignTagRequest) (*domain.TagAssignment, error)
 	UnassignTag(ctx context.Context, principal string, id string) error
+	ListAssignmentsForTag(ctx context.Context, tagID string) ([]domain.TagAssignment, error)
 }
 
 // === Audit Logs ===
@@ -380,6 +381,32 @@ func (h *APIHandler) CreateTagAssignment(ctx context.Context, req GenCreateTagAs
 	return GenCreateTagAssignment201JSONResponse{
 		Body:    tagAssignmentToAPI(*result),
 		Headers: GenCreateTagAssignment201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// ListTagAssignments implements the endpoint for listing assignments for a tag.
+func (h *APIHandler) ListTagAssignments(ctx context.Context, req GenListTagAssignmentsRequest) (GenListTagAssignmentsResponse, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	assignments, err := h.tags.ListAssignmentsForTag(ctx, req.TagId)
+	if err != nil {
+		return nil, err
+	}
+	start := page.Offset()
+	if start > len(assignments) {
+		start = len(assignments)
+	}
+	end := start + page.Limit()
+	if end > len(assignments) {
+		end = len(assignments)
+	}
+	data := make([]TagAssignment, 0, end-start)
+	for _, assignment := range assignments[start:end] {
+		data = append(data, tagAssignmentToAPI(assignment))
+	}
+	next := domain.NextPageToken(start, page.Limit(), int64(len(assignments)))
+	return ListTagAssignments200JSONResponse{
+		Body:    PaginatedTagAssignments{Data: data, NextPageToken: optStr(next)},
+		Headers: ListTagAssignments200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

@@ -170,6 +170,8 @@ type IntrospectionRepository interface {
 type CatalogRepository interface {
 	GetCatalogInfo(ctx context.Context) (*CatalogInfo, error)
 	GetMetastoreSummary(ctx context.Context) (*MetastoreSummary, error)
+	GetCatalogVersionSummary(ctx context.Context) (*CatalogVersionSummary, error)
+	ListCatalogHistory(ctx context.Context, filter CatalogHistoryFilter) ([]CatalogHistoryEntry, error)
 
 	CreateSchema(ctx context.Context, name, comment, owner string) (*SchemaDetail, error)
 	GetSchema(ctx context.Context, name string) (*SchemaDetail, error)
@@ -198,6 +200,7 @@ type QueryHistoryRepository interface {
 type QueryJobRepository interface {
 	Create(ctx context.Context, job *QueryJob) (*QueryJob, error)
 	GetByID(ctx context.Context, id string) (*QueryJob, error)
+	ListByPrincipal(ctx context.Context, principalName string, page PageRequest) ([]QueryJob, int64, error)
 	GetByRequestID(ctx context.Context, principalName, requestID string) (*QueryJob, error)
 	MarkRunning(ctx context.Context, id string, attempt int) error
 	MarkRetrying(ctx context.Context, id string, attempt int, nextRetryAt time.Time, message string) error
@@ -356,6 +359,14 @@ type NotebookJobRepository interface {
 	UpdateJobState(ctx context.Context, id string, state JobState, result *string, errMsg *string) error
 }
 
+// NotebookModelLinkRepository provides CRUD operations for notebook-model links.
+type NotebookModelLinkRepository interface {
+	Upsert(ctx context.Context, link *NotebookModelLink) error
+	GetByNotebookID(ctx context.Context, notebookID string) (*NotebookModelLink, error)
+	GetByModelID(ctx context.Context, modelID string) (*NotebookModelLink, error)
+	DeleteByNotebookID(ctx context.Context, notebookID string) error
+}
+
 // GitRepoRepository provides CRUD operations for registered Git repositories.
 type GitRepoRepository interface {
 	Create(ctx context.Context, repo *GitRepo) (*GitRepo, error)
@@ -399,9 +410,82 @@ type PipelineRunRepository interface {
 	UpdateJobRunFinished(ctx context.Context, id string, status string, errorMsg *string) error
 }
 
+// DataAssetRepository provides CRUD operations for data assets.
+type DataAssetRepository interface {
+	Create(ctx context.Context, a *DataAsset) (*DataAsset, error)
+	GetByID(ctx context.Context, id string) (*DataAsset, error)
+	GetByKey(ctx context.Context, assetKey string) (*DataAsset, error)
+	List(ctx context.Context, filter AssetFilter) ([]DataAsset, int64, error)
+	Update(ctx context.Context, id string, a *DataAsset) (*DataAsset, error)
+	Delete(ctx context.Context, id string) error
+}
+
+// AssetDependencyRepository provides CRUD operations for asset dependencies.
+type AssetDependencyRepository interface {
+	Create(ctx context.Context, d *AssetDependency) (*AssetDependency, error)
+	ListUpstream(ctx context.Context, assetID string) ([]AssetDependency, error)
+	ListDownstream(ctx context.Context, upstreamAssetID string) ([]AssetDependency, error)
+	Delete(ctx context.Context, id string) error
+	DeleteByAsset(ctx context.Context, assetID string) error
+}
+
+// AssetPartitionRepository provides CRUD operations for asset partitions.
+type AssetPartitionRepository interface {
+	Upsert(ctx context.Context, p *AssetPartition) (*AssetPartition, error)
+	GetByKey(ctx context.Context, assetID, partitionKey string) (*AssetPartition, error)
+	ListByAsset(ctx context.Context, assetID string, page PageRequest) ([]AssetPartition, int64, error)
+	UpdateStatus(ctx context.Context, assetID, partitionKey, status string, metadata map[string]any, materializedAt *time.Time) error
+}
+
+// AssetRunRepository provides operations for asset runs, events, and materializations.
+type AssetRunRepository interface {
+	CreateRun(ctx context.Context, run *AssetRun) (*AssetRun, error)
+	GetRunByID(ctx context.Context, id string) (*AssetRun, error)
+	ListRuns(ctx context.Context, filter AssetRunFilter) ([]AssetRun, int64, error)
+	UpdateRunStarted(ctx context.Context, id string) error
+	UpdateRunFinished(ctx context.Context, id string, status string, errMsg *string) error
+	UpdateRunRetrying(ctx context.Context, id string, attempt int, errMsg *string) error
+	CreateRunEvent(ctx context.Context, event *AssetRunEvent) (*AssetRunEvent, error)
+	ListRunEvents(ctx context.Context, runID string, page PageRequest) ([]AssetRunEvent, int64, error)
+	CreateMaterialization(ctx context.Context, m *AssetMaterialization) (*AssetMaterialization, error)
+	ListMaterializationsByAsset(ctx context.Context, assetID string, page PageRequest) ([]AssetMaterialization, int64, error)
+}
+
+// AssetCheckRepository provides CRUD operations for asset checks and results.
+type AssetCheckRepository interface {
+	CreateCheck(ctx context.Context, c *AssetCheck) (*AssetCheck, error)
+	GetCheckByID(ctx context.Context, id string) (*AssetCheck, error)
+	ListChecksByAsset(ctx context.Context, assetID string) ([]AssetCheck, error)
+	UpdateCheck(ctx context.Context, id string, c *AssetCheck) (*AssetCheck, error)
+	DeleteCheck(ctx context.Context, id string) error
+	CreateCheckResult(ctx context.Context, r *AssetCheckResult) (*AssetCheckResult, error)
+	ListCheckResults(ctx context.Context, checkID string, page PageRequest) ([]AssetCheckResult, int64, error)
+}
+
+// OrchestrationEventRepository provides durable event-inbox operations.
+type OrchestrationEventRepository interface {
+	Enqueue(ctx context.Context, event *OrchestrationEvent) (*OrchestrationEvent, error)
+	ClaimNextPending(ctx context.Context, now time.Time) (*OrchestrationEvent, error)
+	MarkProcessed(ctx context.Context, id string) error
+	MarkFailed(ctx context.Context, id string, errMsg string, retryAt *time.Time) error
+	List(ctx context.Context, filter OrchestrationEventFilter) ([]OrchestrationEvent, int64, error)
+}
+
+// BackfillRepository provides request/slice persistence for partition backfills.
+type BackfillRepository interface {
+	CreateRequest(ctx context.Context, req *BackfillRequest) (*BackfillRequest, error)
+	GetRequestByID(ctx context.Context, id string) (*BackfillRequest, error)
+	ListRequests(ctx context.Context, filter BackfillFilter) ([]BackfillRequest, int64, error)
+	UpdateRequestStatus(ctx context.Context, id string, status string, errMsg *string) error
+	CreateSlice(ctx context.Context, slice *BackfillSlice) (*BackfillSlice, error)
+	ListSlicesByRequest(ctx context.Context, requestID string) ([]BackfillSlice, error)
+	UpdateSliceStatus(ctx context.Context, id string, status string, runID *string, errMsg *string) error
+}
+
 // ModelRepository provides CRUD operations for transformation models.
 type ModelRepository interface {
 	Create(ctx context.Context, m *Model) (*Model, error)
+	CreateWithNotebookLink(ctx context.Context, m *Model, notebookID, outputCellID string) (*Model, error)
 	GetByID(ctx context.Context, id string) (*Model, error)
 	GetByName(ctx context.Context, projectName, name string) (*Model, error)
 	List(ctx context.Context, projectName *string, page PageRequest) ([]Model, int64, error)

@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -73,7 +74,7 @@ func (s *QueryService) Execute(ctx context.Context, principalName, sqlQuery stri
 	if err != nil {
 		// Log failed query
 		s.logAudit(ctx, principalName, "QUERY", &sqlQuery, nil, nil, "DENIED", err.Error(), duration, nil)
-		return nil, err
+		return nil, normalizeQueryError(err)
 	}
 	defer rows.Close() //nolint:errcheck
 
@@ -247,4 +248,24 @@ func (s *QueryService) logAudit(ctx context.Context, principal, action string, o
 // TablesAccessedStr returns a comma-separated list of tables for display.
 func TablesAccessedStr(tables []string) string {
 	return strings.Join(tables, ",")
+}
+
+func normalizeQueryError(err error) error {
+	var accessDenied *domain.AccessDeniedError
+	var validation *domain.ValidationError
+	if errors.As(err, &accessDenied) || errors.As(err, &validation) {
+		return err
+	}
+
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "classify statement:"),
+		strings.Contains(msg, "parse SQL:"),
+		strings.Contains(msg, "DDL statements are not allowed through the query engine"),
+		strings.Contains(msg, "unsupported statement type"),
+		strings.Contains(msg, "catalog lookup for") && strings.Contains(msg, "no such table"):
+		return domain.ErrValidation("%s", msg)
+	default:
+		return err
+	}
 }

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net"
@@ -35,9 +36,17 @@ import (
 )
 
 func main() {
+	if wantsServerHelp(os.Args[1:]) {
+		printServerUsage()
+		return
+	}
+
 	// Handle admin subcommands before starting the server.
 	if len(os.Args) >= 2 && os.Args[1] == "admin" {
 		if err := runAdmin(os.Args[2:]); err != nil {
+			if errors.Is(err, flag.ErrHelp) {
+				return
+			}
 			fmt.Fprintf(os.Stderr, "fatal: %v\n", err)
 			os.Exit(1)
 		}
@@ -169,11 +178,31 @@ func run() error {
 		logger.Warn("catalog AttachAll failed", "error", err)
 	}
 
-	// Start pipeline scheduler
-	if err := application.Scheduler.Start(ctx); err != nil {
-		logger.Warn("pipeline scheduler failed to start", "error", err)
+	if application.Reconciler != nil {
+		reconcilerStop := make(chan struct{})
+		go func() {
+			ticker := time.NewTicker(750 * time.Millisecond)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					close(reconcilerStop)
+					return
+				case <-ticker.C:
+					if err := application.Reconciler.Tick(ctx); err != nil {
+						logger.Warn("asset reconciler tick failed", "error", err)
+					}
+				}
+			}
+		}()
+		defer func() {
+			select {
+			case <-reconcilerStop:
+			case <-time.After(2 * time.Second):
+				logger.Warn("timed out waiting for reconciler shutdown")
+			}
+		}()
 	}
-	defer application.Scheduler.Stop()
 
 	// Create API handler.
 	svc := application.Services
@@ -187,10 +216,12 @@ func run() error {
 		svc.Volume,
 		svc.ComputeEndpoint,
 		svc.APIKey,
+		svc.Pipeline,
 		svc.Notebook,
 		svc.SessionManager,
 		svc.GitService,
-		svc.Pipeline,
+		svc.Asset,
+		svc.Backfill,
 		svc.Model,
 		svc.Macro,
 		svc.Semantic,
@@ -215,6 +246,7 @@ func run() error {
 		RequestsPerSecond: cfg.RateLimitRPS,
 		Burst:             cfg.RateLimitBurst,
 	}))
+	r.Use(api.RequestValidationMiddleware)
 
 	// Consistent JSON error responses for unknown routes and wrong methods
 	r.NotFound(func(w http.ResponseWriter, _ *http.Request) {
@@ -341,6 +373,8 @@ func run() error {
 		svc.Query,
 		svc.View,
 		svc.Pipeline,
+		svc.Asset,
+		svc.Backfill,
 		svc.Notebook,
 		svc.SessionManager,
 		svc.Macro,
@@ -351,6 +385,24 @@ func run() error {
 		cfg.Auth,
 		cfg.IsProduction(),
 	)
+	uiHandler.Principal = svc.Principal
+	uiHandler.Group = svc.Group
+	uiHandler.Grant = svc.Grant
+	uiHandler.RowFilter = svc.RowFilter
+	uiHandler.ColumnMask = svc.ColumnMask
+	uiHandler.APIKey = svc.APIKey
+	uiHandler.StorageCredential = svc.StorageCredential
+	uiHandler.ExternalLocation = svc.ExternalLocation
+	uiHandler.Volume = svc.Volume
+	uiHandler.ComputeEndpoint = svc.ComputeEndpoint
+	uiHandler.Search = svc.Search
+	uiHandler.Tag = svc.Tag
+	uiHandler.Audit = svc.Audit
+	uiHandler.QueryHistory = svc.QueryHistory
+	uiHandler.Lineage = svc.Lineage
+	uiHandler.Manifest = svc.Manifest
+	uiHandler.GitService = svc.GitService
+	uiHandler.Semantic = svc.Semantic
 	r.Route("/ui", func(r chi.Router) {
 		ui.MountRoutes(r, uiHandler)
 	})
@@ -440,16 +492,19 @@ func curlHostForListenAddr(listenAddr string) string {
 	return trimmed
 }
 
-// runAdmin handles "admin promote" and "admin demote" subcommands.
-// These operate directly on the SQLite metastore without starting the server.
+// runAdmin handles one-shot admin subcommands.
 //
 // Usage:
 //
 //	go run ./cmd/server admin promote --principal=<name> [--create]
-//	go run ./cmd/server admin demote  --principal=<name>
+//	go run ./cmd/server admin demote --principal=<name>
 func runAdmin(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: server admin <promote|demote> --principal=<name> [--create]")
+		return fmt.Errorf("usage: server admin <promote|demote> [flags]")
+	}
+	if isHelpFlag(args[0]) {
+		printAdminUsage()
+		return flag.ErrHelp
 	}
 	action := args[0]
 	if action != "promote" && action != "demote" {
@@ -531,4 +586,34 @@ func runAdmin(args []string) error {
 
 	fmt.Printf("principal %q %sd successfully\n", principalName, action)
 	return nil
+}
+
+func wantsServerHelp(args []string) bool {
+	return len(args) > 0 && isHelpFlag(args[0])
+}
+
+func isHelpFlag(arg string) bool {
+	return arg == "--help" || arg == "-h" || arg == "help"
+}
+
+func printServerUsage() {
+	_, _ = fmt.Fprintln(os.Stdout, "DuckDB Data Platform server")
+	_, _ = fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintln(os.Stdout, "Usage:")
+	_, _ = fmt.Fprintln(os.Stdout, "  server")
+	_, _ = fmt.Fprintln(os.Stdout, "  server admin <promote|demote> [flags]")
+	_, _ = fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintln(os.Stdout, "Environment:")
+	_, _ = fmt.Fprintln(os.Stdout, "  LISTEN_ADDR              HTTP listen address (default :8080)")
+	_, _ = fmt.Fprintln(os.Stdout, "  META_DB_PATH             SQLite metastore path")
+	_, _ = fmt.Fprintln(os.Stdout, "  FLIGHT_SQL_LISTEN_ADDR   Flight SQL listen address")
+	_, _ = fmt.Fprintln(os.Stdout, "  PG_WIRE_LISTEN_ADDR      PG-wire listen address")
+	_, _ = fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintln(os.Stdout, "Use `server admin --help` for admin subcommand usage.")
+}
+
+func printAdminUsage() {
+	_, _ = fmt.Fprintln(os.Stdout, "Usage:")
+	_, _ = fmt.Fprintln(os.Stdout, "  server admin promote --principal=<name> [--create]")
+	_, _ = fmt.Fprintln(os.Stdout, "  server admin demote --principal=<name>")
 }

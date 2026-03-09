@@ -11,6 +11,7 @@ import (
 type notebookService interface {
 	CreateNotebook(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error)
 	GetNotebook(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error)
+	GetPublishModel(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error)
 	ListNotebooks(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
 	UpdateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
 	DeleteNotebook(ctx context.Context, principal string, isAdmin bool, id string) error
@@ -105,8 +106,12 @@ func (h *APIHandler) GetNotebook(ctx context.Context, req GenGetNotebookRequest)
 	for i, c := range cells {
 		apiCells[i] = cellToAPI(c)
 	}
+	var publishModel *NotebookPublishModel
+	if model, err := h.notebooks.GetPublishModel(ctx, req.NotebookId); err == nil && model != nil {
+		publishModel = notebookPublishModelToAPI(model)
+	}
 	return GenGetNotebook200JSONResponse{
-		Body:    NotebookDetail{Notebook: &apiNb, Cells: &apiCells},
+		Body:    NotebookDetail{Notebook: &apiNb, Cells: &apiCells, PublishModel: publishModel},
 		Headers: GenGetNotebook200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -167,6 +172,19 @@ func (h *APIHandler) CreateCell(ctx context.Context, req GenCreateCellRequest) (
 	domReq := domain.CreateCellRequest{
 		CellType: domain.CellType(req.Body.CellType),
 	}
+	if req.Body.Name != nil {
+		domReq.Name = req.Body.Name
+	}
+	if req.Body.Role != nil {
+		role := domain.CellRole(*req.Body.Role)
+		domReq.Role = &role
+	}
+	if req.Body.Disabled != nil {
+		domReq.Disabled = *req.Body.Disabled
+	}
+	if req.Body.Test != nil {
+		domReq.Test = notebookCellTestConfigFromAPI(req.Body.Test)
+	}
 	if req.Body.Content != nil {
 		domReq.Content = *req.Body.Content
 	}
@@ -202,6 +220,19 @@ func (h *APIHandler) CreateCell(ctx context.Context, req GenCreateCellRequest) (
 func (h *APIHandler) UpdateCell(ctx context.Context, req GenUpdateCellRequest) (GenUpdateCellResponse, error) {
 	domReq := domain.UpdateCellRequest{
 		Content: req.Body.Content,
+	}
+	if req.Body.Name != nil {
+		domReq.Name = req.Body.Name
+	}
+	if req.Body.Role != nil {
+		role := domain.CellRole(*req.Body.Role)
+		domReq.Role = &role
+	}
+	if req.Body.Disabled != nil {
+		domReq.Disabled = req.Body.Disabled
+	}
+	if req.Body.Test != nil {
+		domReq.Test = notebookCellTestConfigFromAPI(req.Body.Test)
 	}
 	if req.Body.Position != nil {
 		pos := int(*req.Body.Position)
@@ -556,16 +587,66 @@ func notebookToAPI(nb domain.Notebook) Notebook {
 func cellToAPI(c domain.Cell) Cell {
 	cellType := CellCellType(c.CellType)
 	pos := int32(c.Position) //nolint:gosec // positions are small ints
+	var role *CellRole
+	if c.Role != "" {
+		r := CellRole(c.Role)
+		role = &r
+	}
+	var disabled *bool
+	if c.Disabled {
+		disabledValue := true
+		disabled = &disabledValue
+	}
 	return Cell{
 		Id:         &c.ID,
 		NotebookId: &c.NotebookID,
 		CellType:   &cellType,
+		Name:       c.Name,
+		Role:       role,
+		Disabled:   disabled,
+		Test:       notebookCellTestConfigToAPI(c.Test),
 		Content:    &c.Content,
 		Position:   &pos,
 		LastResult: c.LastResult,
 		CreatedAt:  formatTimePtr(&c.CreatedAt),
 		UpdatedAt:  formatTimePtr(&c.UpdatedAt),
 	}
+}
+
+func notebookPublishModelToAPI(model *domain.NotebookPublishModel) *NotebookPublishModel {
+	if model == nil {
+		return nil
+	}
+	materialization := ModelMaterialization(model.Materialization)
+	return &NotebookPublishModel{
+		ProjectName:     &model.ProjectName,
+		Name:            &model.Name,
+		Materialization: &materialization,
+		OutputCellId:    &model.OutputCellID,
+	}
+}
+
+func notebookCellTestConfigFromAPI(cfg *NotebookCellTestConfig) *domain.NotebookCellTestConfig {
+	if cfg == nil {
+		return nil
+	}
+	out := &domain.NotebookCellTestConfig{}
+	if cfg.Severity != nil {
+		out.Severity = domain.NotebookTestSeverity(*cfg.Severity)
+	}
+	return out
+}
+
+func notebookCellTestConfigToAPI(cfg *domain.NotebookCellTestConfig) *NotebookCellTestConfig {
+	if cfg == nil {
+		return nil
+	}
+	out := &NotebookCellTestConfig{}
+	if cfg.Severity != "" {
+		severity := NotebookTestSeverity(cfg.Severity)
+		out.Severity = &severity
+	}
+	return out
 }
 
 func sessionToAPI(s domain.NotebookSession) NotebookSession {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -18,45 +19,55 @@ import (
 
 // Service provides business logic for model management.
 type Service struct {
-	models      domain.ModelRepository
-	runs        domain.ModelRunRepository
-	tests       domain.ModelTestRepository
-	testResults domain.ModelTestResultRepository
-	audit       domain.AuditRepository
-	lineage     domain.LineageRepository
-	colLineage  domain.ColumnLineageRepository
-	macros      domain.MacroRepository
-	notebooks   domain.NotebookProvider
-	engine      domain.SessionEngine
-	duckDB      *sql.DB
-	logger      *slog.Logger
-	runCancels  sync.Map
+	models        domain.ModelRepository
+	runs          domain.ModelRunRepository
+	tests         domain.ModelTestRepository
+	testResults   domain.ModelTestResultRepository
+	audit         domain.AuditRepository
+	lineage       domain.LineageRepository
+	colLineage    domain.ColumnLineageRepository
+	macros        domain.MacroRepository
+	notebooks     domain.NotebookProvider
+	notebookLinks domain.NotebookModelLinkRepository
+	engine        domain.SessionEngine
+	duckDB        *sql.DB
+	logger        *slog.Logger
+	runCancels    sync.Map
+}
+
+// ServiceDeps defines the collaborators required to construct a model service.
+type ServiceDeps struct {
+	Models        domain.ModelRepository
+	Runs          domain.ModelRunRepository
+	Tests         domain.ModelTestRepository
+	TestResults   domain.ModelTestResultRepository
+	Audit         domain.AuditRepository
+	Lineage       domain.LineageRepository
+	ColumnLineage domain.ColumnLineageRepository
+	Macros        domain.MacroRepository
+	Notebooks     domain.NotebookProvider
+	NotebookLinks domain.NotebookModelLinkRepository
+	Engine        domain.SessionEngine
+	DuckDB        *sql.DB
+	Logger        *slog.Logger
 }
 
 // NewService creates a new model Service.
-func NewService(
-	models domain.ModelRepository,
-	runs domain.ModelRunRepository,
-	tests domain.ModelTestRepository,
-	testResults domain.ModelTestResultRepository,
-	audit domain.AuditRepository,
-	lineage domain.LineageRepository,
-	colLineage domain.ColumnLineageRepository,
-	engine domain.SessionEngine,
-	duckDB *sql.DB,
-	logger *slog.Logger,
-) *Service {
+func NewService(deps ServiceDeps) *Service {
 	return &Service{
-		models:      models,
-		runs:        runs,
-		tests:       tests,
-		testResults: testResults,
-		audit:       audit,
-		lineage:     lineage,
-		colLineage:  colLineage,
-		engine:      engine,
-		duckDB:      duckDB,
-		logger:      logger,
+		models:        deps.Models,
+		runs:          deps.Runs,
+		tests:         deps.Tests,
+		testResults:   deps.TestResults,
+		audit:         deps.Audit,
+		lineage:       deps.Lineage,
+		colLineage:    deps.ColumnLineage,
+		macros:        deps.Macros,
+		notebooks:     deps.Notebooks,
+		notebookLinks: deps.NotebookLinks,
+		engine:        deps.Engine,
+		duckDB:        deps.DuckDB,
+		logger:        deps.Logger,
 	}
 }
 
@@ -417,6 +428,9 @@ func (s *Service) ListRuns(ctx context.Context, filter domain.ModelRunFilter) ([
 
 // ListRunSteps returns the steps for a model run.
 func (s *Service) ListRunSteps(ctx context.Context, runID string) ([]domain.ModelRunStep, error) {
+	if _, err := s.runs.GetRunByID(ctx, runID); err != nil {
+		return nil, err
+	}
 	return s.runs.ListStepsByRun(ctx, runID)
 }
 
@@ -441,23 +455,6 @@ func (s *Service) CancelRun(ctx context.Context, principal, runID string) error 
 
 	s.logAudit(ctx, principal, "cancel_model_run", runID)
 	return nil
-}
-
-// SetTestRepos sets the test and test result repositories on the service.
-// This allows injecting these optional dependencies after construction.
-func (s *Service) SetTestRepos(tests domain.ModelTestRepository, testResults domain.ModelTestResultRepository) {
-	s.tests = tests
-	s.testResults = testResults
-}
-
-// SetMacroRepo sets the macro repository for loading macros during model runs.
-func (s *Service) SetMacroRepo(macros domain.MacroRepository) {
-	s.macros = macros
-}
-
-// SetNotebookProvider sets the notebook provider for notebook-to-model promotion.
-func (s *Service) SetNotebookProvider(notebooks domain.NotebookProvider) {
-	s.notebooks = notebooks
 }
 
 // CreateTest creates a new test assertion for a model.
@@ -508,11 +505,14 @@ func (s *Service) DeleteTest(ctx context.Context, principal, projectName, modelN
 }
 
 // ListTestResults returns all test results for a model run step.
-func (s *Service) ListTestResults(ctx context.Context, _, stepID string) ([]domain.ModelTestResult, error) {
+func (s *Service) ListTestResults(ctx context.Context, runID, stepID string) ([]domain.ModelTestResult, error) {
+	if _, err := s.runs.GetRunByID(ctx, runID); err != nil {
+		return nil, err
+	}
 	return s.testResults.ListByStep(ctx, stepID)
 }
 
-// PromoteNotebook promotes a notebook cell to a transformation model.
+// PromoteNotebook promotes a notebook output cell to a transformation model.
 func (s *Service) PromoteNotebook(ctx context.Context, principal string, req domain.PromoteNotebookRequest) (*domain.Model, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
@@ -522,28 +522,68 @@ func (s *Service) PromoteNotebook(ctx context.Context, principal string, req dom
 		return nil, domain.ErrValidation("notebook provider not configured")
 	}
 
-	// Get SQL blocks from the notebook.
-	blocks, err := s.notebooks.GetSQLBlocks(ctx, req.NotebookID)
+	// Compile SQL from selected output cell (graph-aware, tree-shaken).
+	sqlBody, err := s.notebooks.CompileOutputCellSQL(ctx, req.NotebookID, req.OutputCellID)
 	if err != nil {
-		return nil, fmt.Errorf("get notebook SQL: %w", err)
+		return nil, fmt.Errorf("compile notebook output SQL: %w", err)
 	}
 
-	if req.CellIndex >= len(blocks) {
-		return nil, domain.ErrValidation("cell_index %d out of range (notebook has %d SQL cells)", req.CellIndex, len(blocks))
+	// Compute dependencies from compiled SQL.
+	allModels, err := s.models.ListAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list models for dep extraction: %w", err)
+	}
+	deps, err := ExtractDependencies(sqlBody, req.ProjectName, allModels)
+	if err != nil {
+		s.logger.Warn("dependency extraction failed", "project", req.ProjectName, "model", req.Name, "error", err)
+		deps = []string{}
 	}
 
-	sqlBody := blocks[req.CellIndex]
-	if sqlBody == "" {
-		return nil, domain.ErrValidation("selected cell has empty SQL")
+	if existing, err := s.models.GetByName(ctx, req.ProjectName, req.Name); err == nil {
+		updateReq := domain.UpdateModelRequest{
+			SQL:             &sqlBody,
+			Materialization: &req.Materialization,
+		}
+		updated, err := s.models.Update(ctx, existing.ID, updateReq)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.models.UpdateDependencies(ctx, updated.ID, deps); err != nil {
+			return nil, fmt.Errorf("update dependencies for %s: %w", updated.QualifiedName(), err)
+		}
+		updated.DependsOn = deps
+
+		if s.notebookLinks == nil {
+			return nil, domain.ErrValidation("notebook-model link repository not configured")
+		}
+		if err := s.notebookLinks.Upsert(ctx, &domain.NotebookModelLink{
+			NotebookID:   req.NotebookID,
+			ModelID:      updated.ID,
+			OutputCellID: req.OutputCellID,
+		}); err != nil {
+			return nil, fmt.Errorf("upsert notebook-model link: %w", err)
+		}
+
+		s.logAudit(ctx, principal, "update_model", updated.QualifiedName())
+		return updated, nil
+	} else if !errors.As(err, new(*domain.NotFoundError)) {
+		return nil, err
 	}
 
-	// Create the model with the extracted SQL.
-	return s.CreateModel(ctx, principal, domain.CreateModelRequest{
+	created, err := s.models.CreateWithNotebookLink(ctx, &domain.Model{
 		ProjectName:     req.ProjectName,
 		Name:            req.Name,
 		SQL:             sqlBody,
 		Materialization: req.Materialization,
-	})
+		DependsOn:       deps,
+		CreatedBy:       principal,
+	}, req.NotebookID, req.OutputCellID)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logAudit(ctx, principal, "create_model", created.QualifiedName())
+	return created, nil
 }
 
 func (s *Service) logAudit(ctx context.Context, principal, action, _ string) {

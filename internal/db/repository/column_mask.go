@@ -26,6 +26,7 @@ func (r *ColumnMaskRepo) Create(ctx context.Context, m *domain.ColumnMask) (*dom
 	row, err := r.q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
 		ID:             newID(),
 		TableID:        m.TableID,
+		Name:           sql.NullString{String: m.Name, Valid: m.Name != ""},
 		ColumnName:     m.ColumnName,
 		MaskExpression: m.MaskExpression,
 		Description:    sql.NullString{String: m.Description, Valid: m.Description != ""},

@@ -349,23 +349,25 @@ var _ domain.SearchRepository = (*MockSearchRepo)(nil)
 // MockCatalogRepo implements domain.CatalogRepository for testing.
 // Uses function fields so tests only need to set the methods they care about.
 type MockCatalogRepo struct {
-	GetCatalogInfoFn       func(ctx context.Context) (*domain.CatalogInfo, error)
-	GetMetastoreSummaryFn  func(ctx context.Context) (*domain.MetastoreSummary, error)
-	CreateSchemaFn         func(ctx context.Context, name, comment, owner string) (*domain.SchemaDetail, error)
-	GetSchemaFn            func(ctx context.Context, name string) (*domain.SchemaDetail, error)
-	ListSchemasFn          func(ctx context.Context, page domain.PageRequest) ([]domain.SchemaDetail, int64, error)
-	UpdateSchemaFn         func(ctx context.Context, name string, comment *string, props map[string]string) (*domain.SchemaDetail, error)
-	DeleteSchemaFn         func(ctx context.Context, name string, force bool) error
-	CreateTableFn          func(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error)
-	CreateExternalTableFn  func(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error)
-	GetTableFn             func(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error)
-	ListTablesFn           func(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error)
-	DeleteTableFn          func(ctx context.Context, schemaName, tableName string) error
-	UpdateTableFn          func(ctx context.Context, schemaName, tableName string, comment *string, props map[string]string, owner *string) (*domain.TableDetail, error)
-	UpdateCatalogFn        func(ctx context.Context, comment *string) (*domain.CatalogInfo, error)
-	UpdateColumnFn         func(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*domain.ColumnDetail, error)
-	ListColumnsFn          func(ctx context.Context, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error)
-	SetSchemaStoragePathFn func(ctx context.Context, schemaID string, path string) error
+	GetCatalogInfoFn           func(ctx context.Context) (*domain.CatalogInfo, error)
+	GetMetastoreSummaryFn      func(ctx context.Context) (*domain.MetastoreSummary, error)
+	GetCatalogVersionSummaryFn func(ctx context.Context) (*domain.CatalogVersionSummary, error)
+	ListCatalogHistoryFn       func(ctx context.Context, filter domain.CatalogHistoryFilter) ([]domain.CatalogHistoryEntry, error)
+	CreateSchemaFn             func(ctx context.Context, name, comment, owner string) (*domain.SchemaDetail, error)
+	GetSchemaFn                func(ctx context.Context, name string) (*domain.SchemaDetail, error)
+	ListSchemasFn              func(ctx context.Context, page domain.PageRequest) ([]domain.SchemaDetail, int64, error)
+	UpdateSchemaFn             func(ctx context.Context, name string, comment *string, props map[string]string) (*domain.SchemaDetail, error)
+	DeleteSchemaFn             func(ctx context.Context, name string, force bool) error
+	CreateTableFn              func(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error)
+	CreateExternalTableFn      func(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error)
+	GetTableFn                 func(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error)
+	ListTablesFn               func(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error)
+	DeleteTableFn              func(ctx context.Context, schemaName, tableName string) error
+	UpdateTableFn              func(ctx context.Context, schemaName, tableName string, comment *string, props map[string]string, owner *string) (*domain.TableDetail, error)
+	UpdateCatalogFn            func(ctx context.Context, comment *string) (*domain.CatalogInfo, error)
+	UpdateColumnFn             func(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*domain.ColumnDetail, error)
+	ListColumnsFn              func(ctx context.Context, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error)
+	SetSchemaStoragePathFn     func(ctx context.Context, schemaID string, path string) error
 }
 
 // GetCatalogInfo implements the interface method for testing.
@@ -382,6 +384,22 @@ func (m *MockCatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.Meta
 		return m.GetMetastoreSummaryFn(ctx)
 	}
 	panic("unexpected call to MockCatalogRepo.GetMetastoreSummary")
+}
+
+// GetCatalogVersionSummary implements the interface method for testing.
+func (m *MockCatalogRepo) GetCatalogVersionSummary(ctx context.Context) (*domain.CatalogVersionSummary, error) {
+	if m.GetCatalogVersionSummaryFn != nil {
+		return m.GetCatalogVersionSummaryFn(ctx)
+	}
+	panic("unexpected call to MockCatalogRepo.GetCatalogVersionSummary")
+}
+
+// ListCatalogHistory implements the interface method for testing.
+func (m *MockCatalogRepo) ListCatalogHistory(ctx context.Context, filter domain.CatalogHistoryFilter) ([]domain.CatalogHistoryEntry, error) {
+	if m.ListCatalogHistoryFn != nil {
+		return m.ListCatalogHistoryFn(ctx, filter)
+	}
+	panic("unexpected call to MockCatalogRepo.ListCatalogHistory")
 }
 
 // CreateSchema implements the interface method for testing.
@@ -960,7 +978,7 @@ func (m *MockNotebookRepo) ListCells(ctx context.Context, notebookID string) ([]
 	if m.ListCellsFn != nil {
 		return m.ListCellsFn(ctx, notebookID)
 	}
-	panic("unexpected call to MockNotebookRepo.ListCells")
+	return []domain.Cell{}, nil
 }
 
 // UpdateCell implements the interface method for testing.
@@ -1356,7 +1374,11 @@ var _ domain.PipelineRunRepository = (*MockPipelineRunRepo)(nil)
 
 // MockNotebookProvider implements domain.NotebookProvider for testing.
 type MockNotebookProvider struct {
-	GetSQLBlocksFn func(ctx context.Context, notebookID string) ([]string, error)
+	GetSQLBlocksFn         func(ctx context.Context, notebookID string) ([]string, error)
+	GetExecutableCellsFn   func(ctx context.Context, notebookID string) ([]domain.NotebookExecutableCell, error)
+	GetSQLBlockByCellIDFn  func(ctx context.Context, notebookID, cellID string) (string, error)
+	CompileOutputCellSQLFn func(ctx context.Context, notebookID, outputCellID string) (string, error)
+	ListCellsFn            func(ctx context.Context, notebookID string) ([]domain.Cell, error)
 }
 
 // GetSQLBlocks implements the interface method for testing.
@@ -1365,6 +1387,38 @@ func (m *MockNotebookProvider) GetSQLBlocks(ctx context.Context, notebookID stri
 		return m.GetSQLBlocksFn(ctx, notebookID)
 	}
 	panic("unexpected call to MockNotebookProvider.GetSQLBlocks")
+}
+
+// GetExecutableCells implements the interface method for testing.
+func (m *MockNotebookProvider) GetExecutableCells(ctx context.Context, notebookID string) ([]domain.NotebookExecutableCell, error) {
+	if m.GetExecutableCellsFn != nil {
+		return m.GetExecutableCellsFn(ctx, notebookID)
+	}
+	return nil, domain.ErrNotImplemented("GetExecutableCells not configured")
+}
+
+// GetSQLBlockByCellID implements the interface method for testing.
+func (m *MockNotebookProvider) GetSQLBlockByCellID(ctx context.Context, notebookID, cellID string) (string, error) {
+	if m.GetSQLBlockByCellIDFn != nil {
+		return m.GetSQLBlockByCellIDFn(ctx, notebookID, cellID)
+	}
+	panic("unexpected call to MockNotebookProvider.GetSQLBlockByCellID")
+}
+
+// CompileOutputCellSQL implements the interface method for testing.
+func (m *MockNotebookProvider) CompileOutputCellSQL(ctx context.Context, notebookID, outputCellID string) (string, error) {
+	if m.CompileOutputCellSQLFn != nil {
+		return m.CompileOutputCellSQLFn(ctx, notebookID, outputCellID)
+	}
+	panic("unexpected call to MockNotebookProvider.CompileOutputCellSQL")
+}
+
+// ListCells implements the interface method for testing.
+func (m *MockNotebookProvider) ListCells(ctx context.Context, notebookID string) ([]domain.Cell, error) {
+	if m.ListCellsFn != nil {
+		return m.ListCellsFn(ctx, notebookID)
+	}
+	panic("unexpected call to MockNotebookProvider.ListCells")
 }
 
 var _ domain.NotebookProvider = (*MockNotebookProvider)(nil)

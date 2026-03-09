@@ -31,6 +31,7 @@ func (s *ColumnMaskService) Create(ctx context.Context, req domain.CreateColumnM
 	}
 	m := &domain.ColumnMask{
 		TableID:        req.TableID,
+		Name:           req.Name,
 		ColumnName:     req.ColumnName,
 		MaskExpression: req.MaskExpression,
 		Description:    req.Description,

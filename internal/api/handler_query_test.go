@@ -127,6 +127,12 @@ func (m *mockCatalogServiceForQuery) ProfileTable(ctx context.Context, catalogNa
 func (m *mockCatalogServiceForQuery) GetMetastoreSummary(_ context.Context, _ string) (*domain.MetastoreSummary, error) {
 	panic("not implemented")
 }
+func (m *mockCatalogServiceForQuery) GetCatalogVersionSummary(_ context.Context, _ string) (*domain.CatalogVersionSummary, error) {
+	panic("not implemented")
+}
+func (m *mockCatalogServiceForQuery) ListCatalogHistory(_ context.Context, _ string, _ domain.CatalogHistoryFilter) ([]domain.CatalogHistoryEntry, error) {
+	panic("not implemented")
+}
 
 // === CreateManifest Tests ===
 

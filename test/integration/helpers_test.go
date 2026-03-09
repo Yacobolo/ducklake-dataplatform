@@ -42,6 +42,7 @@ import (
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
 	"duck-demo/internal/middleware"
+	assetsvc "duck-demo/internal/service/asset"
 	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
@@ -49,6 +50,7 @@ import (
 	"duck-demo/internal/service/macro"
 	svcmodel "duck-demo/internal/service/model"
 	svcnotebook "duck-demo/internal/service/notebook"
+	"duck-demo/internal/service/orchestration"
 	svcpipeline "duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
@@ -677,7 +679,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	// Remaining services (querySvc gets nil engine — we never hit /v1/query)
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -697,8 +699,10 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                     // ingestionSvc
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
-		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // pipelineSvc
+		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
+		nil, // assetSvc
+		nil, // assetBackfillSvc
 		nil, // modelSvc
 		nil, // macroSvc
 		nil, // semanticSvc
@@ -811,7 +815,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 	// Remaining services (querySvc gets nil engine — we never hit /v1/query)
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -831,8 +835,10 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                     // ingestionSvc
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
-		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // pipelineSvc
+		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
+		nil, // assetSvc
+		nil, // assetBackfillSvc
 		nil, // modelSvc
 		nil, // macroSvc
 		nil, // semanticSvc
@@ -1126,6 +1132,8 @@ type httpTestOpts struct {
 	// APIKeyEnabled overrides whether API key auth is enabled in middleware.
 	// Nil means default true.
 	APIKeyEnabled *bool
+	// WithAssets wires asset orchestration services and reconciler into the API.
+	WithAssets bool
 }
 
 // httpTestEnv bundles the test server, API keys, and direct DB access.
@@ -1135,6 +1143,13 @@ type httpTestEnv struct {
 	MetaDB         *sql.DB
 	DuckDB         *sql.DB                          // nil unless WithDuckLake
 	ExtLocationSvc *storage.ExternalLocationService // nil unless WithStorageCredentials
+	Reconciler     *orchestration.Reconciler
+}
+
+type integrationNoopAssetStepper struct{}
+
+func (integrationNoopAssetStepper) Execute(context.Context, string, orchestration.IOManager) (map[string]any, error) {
+	return map[string]any{"status": "noop"}, nil
 }
 
 type integrationSessionEngine struct{}
@@ -1208,7 +1223,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 
 	// Build services
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -1280,7 +1295,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			nil,
 		)
 		principalSvc = security.NewPrincipalService(principalRepo, auditRepo)
-		groupSvc = security.NewGroupService(groupRepo, auditRepo)
+		groupSvc = security.NewGroupService(groupRepo, principalRepo, auditRepo)
 		grantSvc = security.NewGrantService(grantRepo, auditRepo)
 		rowFilterSvc = security.NewRowFilterService(rowFilterRepo, auditRepo)
 		columnMaskSvc = security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -1335,6 +1350,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			extLocationRepo, storageCredRepo, authSvc, auditRepo,
 			secretMgr, slog.New(slog.NewTextHandler(io.Discard, nil)),
 		)
+		catalogSvc = catalog.NewCatalogService(catalogRepoFactory, authSvc, auditRepo, tagRepo, tableStatsRepo, extLocationRepo)
 	}
 
 	// Optionally wire compute endpoints with full resolver + engine
@@ -1397,9 +1413,46 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
 	)
 
+	var (
+		assetSvc    *assetsvc.Service
+		backfillSvc *orchestration.BackfillService
+		reconciler  *orchestration.Reconciler
+	)
+	if opts.WithAssets {
+		assetRepo := repository.NewDataAssetRepo(metaDB)
+		assetDepRepo := repository.NewAssetDependencyRepo(metaDB)
+		assetPartitionRepo := repository.NewAssetPartitionRepo(metaDB)
+		assetRunRepo := repository.NewAssetRunRepo(metaDB)
+		assetCheckRepo := repository.NewAssetCheckRepo(metaDB)
+		eventRepo := repository.NewOrchestrationEventRepo(metaDB)
+		backfillRepo := repository.NewBackfillRepo(metaDB)
+
+		assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
+		assetExecutor := orchestration.NewAssetExecutor(
+			assetRunRepo,
+			orchestration.NewAssetRunStateMachine(),
+			orchestration.NewInMemoryIOManager(),
+			orchestration.NewConcurrencyLimiter(8, 2),
+			integrationNoopAssetStepper{},
+		)
+		triggerRouter := orchestration.NewTriggerRouter(eventRepo)
+		backfillSvc = orchestration.NewBackfillService(backfillRepo, triggerRouter, auditRepo, authSvc)
+		backfillRunner := orchestration.NewBackfillRunner(backfillRepo, assetDepRepo, assetRunRepo, assetScheduler, assetExecutor)
+		reconciler = orchestration.NewReconciler(
+			eventRepo,
+			assetRepo,
+			assetRunRepo,
+			assetScheduler,
+			assetExecutor,
+			backfillRunner,
+			false,
+		)
+		assetSvc = assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, eventRepo, auditRepo, authSvc)
+	}
+
 	// Wire APIKeyService by default so API key endpoints are always available
 	// in integration test servers.
-	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, auditRepo)
+	apiKeySvc := security.NewAPIKeyService(apiKeyRepo, principalRepo, auditRepo)
 	authService := authsvc.NewService(principalRepo, localCredentialRepo, authLoginAttemptRepo, setupStateRepo, authProviderRepo, auditRepo, string(jwtSecret))
 	webSessionAuth := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, 30*time.Minute, 24*time.Hour)
 	authHandler := api.NewAuthHTTPHandler(authService, webSessionAuth)
@@ -1421,19 +1474,29 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		}
 
 		modelRepo := repository.NewModelRepo(metaDB)
+		notebookModelLinkRepo := repository.NewNotebookModelLinkRepo(metaDB)
 		modelRunRepo := repository.NewModelRunRepo(metaDB)
 		modelTestRepo := repository.NewModelTestRepo(metaDB)
 		modelTestResultRepo := repository.NewModelTestResultRepo(metaDB)
 		colLineageRepo := repository.NewColumnLineageRepo(metaDB)
-		modelSvc = svcmodel.NewService(
-			modelRepo, modelRunRepo, modelTestRepo, modelTestResultRepo, auditRepo,
-			lineageRepo, colLineageRepo,
-			integrationSessionEngine{}, duckDB,
-			slog.New(slog.NewTextHandler(io.Discard, nil)),
-		)
 		macroRepo := repository.NewMacroRepo(metaDB)
 		macroSvc = macro.NewService(macroRepo, auditRepo)
-		modelSvc.SetMacroRepo(macroRepo)
+		modelSvc = svcmodel.NewService(svcmodel.ServiceDeps{
+			Models:        modelRepo,
+			Runs:          modelRunRepo,
+			Tests:         modelTestRepo,
+			TestResults:   modelTestResultRepo,
+			Audit:         auditRepo,
+			Lineage:       lineageRepo,
+			ColumnLineage: colLineageRepo,
+			Macros:        macroRepo,
+			Notebooks:     notebookProvider,
+			NotebookLinks: notebookModelLinkRepo,
+			Engine:        integrationSessionEngine{},
+			DuckDB:        duckDB,
+			Logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
+		})
+		notebookSvc.SetPublishRepositories(modelRepo, notebookModelLinkRepo)
 	}
 
 	// Optionally wire Semantic service.
@@ -1461,8 +1524,10 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		storageCredSvc, extLocationSvc, nil, // volumeSvc
 		computeEndpointSvc,
 		apiKeySvc,
+		nil, // pipelineSvc
 		notebookSvc, nil, gitRepoSvc,
-		pipelineSvc,
+		assetSvc, // assetSvc
+		backfillSvc,
 		modelSvc, // modelSvc
 		macroSvc, // macroSvc
 		semanticSvc,
@@ -1525,6 +1590,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		querySvc,
 		viewSvc,
 		pipelineSvc,
+		assetSvc,
+		backfillSvc,
 		notebookSvc,
 		nil,
 		macroSvc,
@@ -1548,6 +1615,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		MetaDB:         metaDB,
 		DuckDB:         duckDB,
 		ExtLocationSvc: extLocationSvc,
+		Reconciler:     reconciler,
 	}
 }
 
@@ -2188,7 +2256,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
-	groupSvc := security.NewGroupService(groupRepo, auditRepo)
+	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
 	columnMaskSvc := security.NewColumnMaskService(columnMaskRepo, auditRepo)
@@ -2208,8 +2276,10 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,
 		nil, nil, nil, nil, nil,
-		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // pipelineSvc
+		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
+		nil, // assetSvc
+		nil, // assetBackfillSvc
 		nil, // modelSvc
 		nil, // macroSvc
 		nil, // semanticSvc

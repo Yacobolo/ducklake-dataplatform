@@ -13,12 +13,13 @@ var _ domain.GrantRepository = (*GrantRepo)(nil)
 
 // GrantRepo implements domain.GrantRepository using SQLite.
 type GrantRepo struct {
-	q *dbstore.Queries
+	q  *dbstore.Queries
+	db *sql.DB
 }
 
 // NewGrantRepo creates a new GrantRepo.
 func NewGrantRepo(db *sql.DB) *GrantRepo {
-	return &GrantRepo{q: dbstore.New(db)}
+	return &GrantRepo{q: dbstore.New(db), db: db}
 }
 
 // Grant creates a new privilege grant.
@@ -55,7 +56,18 @@ func (r *GrantRepo) Revoke(ctx context.Context, g *domain.PrivilegeGrant) error 
 
 // RevokeByID removes a privilege grant by its ID.
 func (r *GrantRepo) RevokeByID(ctx context.Context, id string) error {
-	return r.q.RevokePrivilegeByID(ctx, id)
+	result, err := r.db.ExecContext(ctx, "DELETE FROM privilege_grants WHERE id = ?", id)
+	if err != nil {
+		return mapDBError(err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return domain.ErrNotFound("grant %s not found", id)
+	}
+	return nil
 }
 
 // ListAll returns a paginated list of all grants.

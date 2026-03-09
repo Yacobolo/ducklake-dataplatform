@@ -46,6 +46,9 @@ func newRootCmd() *cobra.Command {
 		output  string
 		profile string
 		quiet   bool
+
+		apiKeyPriority int
+		tokenPriority  int
 	)
 
 	rootCmd := &cobra.Command{
@@ -55,6 +58,9 @@ func newRootCmd() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			apiKeyPriority = 0
+			tokenPriority = 0
+
 			// Load config from profile if flags/env not set
 			cfg, err := LoadUserConfig()
 			if err != nil {
@@ -81,22 +87,38 @@ func newRootCmd() *cobra.Command {
 			if !cmd.Flags().Changed("api-key") {
 				if v := os.Getenv("DUCK_API_KEY"); v != "" {
 					apiKey = v
+					apiKeyPriority = 30
 				} else if p.APIKey != "" {
 					apiKey = p.APIKey
+					apiKeyPriority = 10
 				}
+			} else if apiKey != "" {
+				apiKeyPriority = 50
 			}
 			if !cmd.Flags().Changed("token") {
 				if v := os.Getenv("DUCK_TOKEN"); v != "" {
 					token = v
+					tokenPriority = 40
 				} else if p.Token != "" {
 					token = p.Token
+					tokenPriority = 20
 				}
+			} else if token != "" {
+				tokenPriority = 60
 			}
 			if !cmd.Flags().Changed("output") {
 				if v := os.Getenv("DUCK_OUTPUT"); v != "" {
 					output = v
 				} else if p.Output != "" {
 					output = p.Output
+				}
+			}
+
+			if apiKey != "" && token != "" {
+				if tokenPriority > apiKeyPriority {
+					apiKey = ""
+				} else {
+					token = ""
 				}
 			}
 

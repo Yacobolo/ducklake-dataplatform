@@ -34,6 +34,7 @@ func (s *RowFilterService) Create(ctx context.Context, req domain.CreateRowFilte
 	}
 	f := &domain.RowFilter{
 		TableID:     req.TableID,
+		Name:        req.Name,
 		FilterSQL:   req.FilterSQL,
 		Description: req.Description,
 	}

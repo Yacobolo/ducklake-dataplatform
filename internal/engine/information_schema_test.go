@@ -27,6 +27,12 @@ func (m *mockEngineCatalog) GetCatalogInfo(_ context.Context) (*domain.CatalogIn
 func (m *mockEngineCatalog) GetMetastoreSummary(_ context.Context) (*domain.MetastoreSummary, error) {
 	panic("unexpected call")
 }
+func (m *mockEngineCatalog) GetCatalogVersionSummary(_ context.Context) (*domain.CatalogVersionSummary, error) {
+	panic("unexpected call")
+}
+func (m *mockEngineCatalog) ListCatalogHistory(_ context.Context, _ domain.CatalogHistoryFilter) ([]domain.CatalogHistoryEntry, error) {
+	panic("unexpected call")
+}
 func (m *mockEngineCatalog) CreateSchema(_ context.Context, _, _, _ string) (*domain.SchemaDetail, error) {
 	panic("unexpected call")
 }

@@ -21,7 +21,7 @@ func setupAPIKeyService(t *testing.T) (*APIKeyService, *PrincipalService) {
 	apiKeyRepo := repository.NewAPIKeyRepo(db)
 	principalRepo := repository.NewPrincipalRepo(db)
 	auditRepo := repository.NewAuditRepo(db)
-	return NewAPIKeyService(apiKeyRepo, auditRepo), NewPrincipalService(principalRepo, auditRepo)
+	return NewAPIKeyService(apiKeyRepo, principalRepo, auditRepo), NewPrincipalService(principalRepo, auditRepo)
 }
 
 func TestAPIKeyService_Create(t *testing.T) {
@@ -58,6 +58,18 @@ func TestAPIKeyService_Create_EmptyName(t *testing.T) {
 	require.Error(t, err)
 	var validationErr *domain.ValidationError
 	assert.ErrorAs(t, err, &validationErr)
+}
+
+func TestAPIKeyService_Create_UnknownPrincipal(t *testing.T) {
+	svc, _ := setupAPIKeyService(t)
+
+	_, _, err := svc.Create(adminCtx(), domain.CreateAPIKeyRequest{
+		PrincipalID: "00000000-0000-0000-0000-000000000000",
+		Name:        "missing-owner",
+	})
+	require.Error(t, err)
+	var notFound *domain.NotFoundError
+	assert.ErrorAs(t, err, &notFound)
 }
 
 func TestAPIKeyService_Create_Unauthenticated(t *testing.T) {

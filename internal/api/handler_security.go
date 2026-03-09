@@ -43,6 +43,7 @@ type rowFilterService interface {
 	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, req domain.BindRowFilterRequest) error
 	Unbind(ctx context.Context, req domain.BindRowFilterRequest) error
+	ListBindings(ctx context.Context, filterID string) ([]domain.RowFilterBinding, error)
 }
 
 // columnMaskService defines the column mask operations used by the API handler.
@@ -52,6 +53,7 @@ type columnMaskService interface {
 	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, req domain.BindColumnMaskRequest) error
 	Unbind(ctx context.Context, req domain.BindColumnMaskRequest) error
+	ListBindings(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error)
 }
 
 // === Principals ===
@@ -192,6 +194,10 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req GenCreateGroupRequest)
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return CreateGroup403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateGroup400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ConflictError)):
+			return CreateGroup409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -238,8 +244,12 @@ func (h *APIHandler) ListGroupMembers(ctx context.Context, req GenListGroupMembe
 	ms, total, err := h.groups.ListMembers(ctx, req.GroupId, page)
 	if err != nil {
 		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return ListGroupMembers400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return ListGroupMembers403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return ListGroupMembers404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -263,8 +273,12 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req GenCreateGroupMe
 		MemberID:   req.Body.MemberId,
 	}); err != nil {
 		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return CreateGroupMember400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return CreateGroupMember403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return CreateGroupMember404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -280,8 +294,12 @@ func (h *APIHandler) DeleteGroupMember(ctx context.Context, req GenDeleteGroupMe
 		MemberID:   req.Params.MemberId,
 	}); err != nil {
 		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return DeleteGroupMember400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return DeleteGroupMember403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return DeleteGroupMember404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -396,6 +414,7 @@ func (h *APIHandler) ListRowFilters(ctx context.Context, req GenListRowFiltersRe
 func (h *APIHandler) CreateRowFilter(ctx context.Context, req GenCreateRowFilterRequest) (GenCreateRowFilterResponse, error) {
 	domReq := domain.CreateRowFilterRequest{
 		TableID:   req.TableId,
+		Name:      req.Body.Name,
 		FilterSQL: req.Body.FilterSql,
 	}
 	if req.Body.Description != nil {
@@ -452,6 +471,37 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req GenBindRowFilterRequ
 	return BindRowFilter204Response{}, nil
 }
 
+// ListRowFilterBindings implements the endpoint for listing bindings for a row filter.
+func (h *APIHandler) ListRowFilterBindings(ctx context.Context, req GenListRowFilterBindingsRequest) (GenListRowFilterBindingsResponse, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	bindings, err := h.rowFilters.ListBindings(ctx, req.RowFilterId)
+	if err != nil {
+		return nil, err
+	}
+	start := page.Offset()
+	if start > len(bindings) {
+		start = len(bindings)
+	}
+	end := start + page.Limit()
+	if end > len(bindings) {
+		end = len(bindings)
+	}
+	data := make([]RowFilterBinding, 0, end-start)
+	for _, binding := range bindings[start:end] {
+		data = append(data, RowFilterBinding{
+			Id:            &binding.ID,
+			RowFilterId:   &binding.RowFilterID,
+			PrincipalId:   &binding.PrincipalID,
+			PrincipalType: &binding.PrincipalType,
+		})
+	}
+	next := domain.NextPageToken(start, page.Limit(), int64(len(bindings)))
+	return ListRowFilterBindings200JSONResponse{
+		Body:    PaginatedRowFilterBindings{Data: data, NextPageToken: optStr(next)},
+		Headers: ListRowFilterBindings200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
 // UnbindRowFilter implements the endpoint for unbinding a row filter from a principal.
 func (h *APIHandler) UnbindRowFilter(ctx context.Context, req GenUnbindRowFilterRequest) (GenUnbindRowFilterResponse, error) {
 	if err := h.rowFilters.Unbind(ctx, domain.BindRowFilterRequest{
@@ -494,6 +544,7 @@ func (h *APIHandler) ListColumnMasks(ctx context.Context, req GenListColumnMasks
 // CreateColumnMask implements the endpoint for creating a column mask on a table.
 func (h *APIHandler) CreateColumnMask(ctx context.Context, req GenCreateColumnMaskRequest) (GenCreateColumnMaskResponse, error) {
 	domReq := domain.CreateColumnMaskRequest{
+		Name:           req.Body.Name,
 		TableID:        req.TableId,
 		ColumnName:     req.Body.ColumnName,
 		MaskExpression: req.Body.MaskExpression,
@@ -555,6 +606,38 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req GenBindColumnMaskRe
 		}
 	}
 	return BindColumnMask204Response{}, nil
+}
+
+// ListColumnMaskBindings implements the endpoint for listing bindings for a column mask.
+func (h *APIHandler) ListColumnMaskBindings(ctx context.Context, req GenListColumnMaskBindingsRequest) (GenListColumnMaskBindingsResponse, error) {
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	bindings, err := h.columnMasks.ListBindings(ctx, req.ColumnMaskId)
+	if err != nil {
+		return nil, err
+	}
+	start := page.Offset()
+	if start > len(bindings) {
+		start = len(bindings)
+	}
+	end := start + page.Limit()
+	if end > len(bindings) {
+		end = len(bindings)
+	}
+	data := make([]ColumnMaskBinding, 0, end-start)
+	for _, binding := range bindings[start:end] {
+		data = append(data, ColumnMaskBinding{
+			Id:            &binding.ID,
+			ColumnMaskId:  &binding.ColumnMaskID,
+			PrincipalId:   &binding.PrincipalID,
+			PrincipalType: &binding.PrincipalType,
+			SeeOriginal:   &binding.SeeOriginal,
+		})
+	}
+	next := domain.NextPageToken(start, page.Limit(), int64(len(bindings)))
+	return ListColumnMaskBindings200JSONResponse{
+		Body:    PaginatedColumnMaskBindings{Data: data, NextPageToken: optStr(next)},
+		Headers: ListColumnMaskBindings200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // UnbindColumnMask implements the endpoint for unbinding a column mask from a principal.

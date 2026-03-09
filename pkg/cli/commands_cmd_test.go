@@ -177,3 +177,57 @@ func TestCommands_TableOutput(t *testing.T) {
 	assert.Contains(t, output, "DESCRIPTION", "table output should have DESCRIPTION column header")
 	assert.Contains(t, output, "api ", "should show api commands in table output")
 }
+
+func TestCommands_IncludesInheritedFlags(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "commands"})
+
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	var entries []CommandEntry
+	require.NoError(t, json.Unmarshal([]byte(output), &entries))
+
+	var versionEntry *CommandEntry
+	var findColumnsEntry *CommandEntry
+	for i := range entries {
+		switch entries[i].Path {
+		case "version":
+			versionEntry = &entries[i]
+		case "find columns":
+			findColumnsEntry = &entries[i]
+		}
+	}
+
+	require.NotNil(t, versionEntry)
+	require.NotNil(t, findColumnsEntry)
+	assert.Contains(t, flagNames(versionEntry.Flags), "output")
+	assert.Contains(t, flagNames(findColumnsEntry.Flags), "host")
+	assert.Contains(t, flagNames(findColumnsEntry.Flags), "catalog")
+	assert.Contains(t, flagNames(findColumnsEntry.Flags), "max-results")
+}
+
+func TestCommands_RejectUnexpectedArgs(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"commands", "extra"})
+
+	err := rootCmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown command")
+}
+
+func flagNames(flags []FlagEntry) []string {
+	names := make([]string, 0, len(flags))
+	for _, f := range flags {
+		names = append(names, f.Name)
+	}
+	return names
+}
