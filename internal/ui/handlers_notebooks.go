@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/service/query"
 )
 
 func (h *Handler) NotebooksList(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +100,16 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 		selectedSchema = schemas[0].Name
 	}
 
+	computeReq := domain.ComputeExecutionRequest{WorkloadType: domain.ComputeWorkloadInteractive}
+	computeTargets := []sqlComputeTarget{}
+	if h.ComputeEndpoint != nil {
+		principal, _ := principalLabel(r.Context())
+		if targets, err := h.ComputeEndpoint.ListAvailableTargets(r.Context(), principal, domain.ComputeWorkloadInteractive); err == nil {
+			computeTargets = sqlComputeTargetsFromDomain(targets)
+		}
+	}
+	computeReq = sqlApplyDefaultComputeTarget(computeReq, computeTargets).Normalize()
+
 	explorerCatalogs := make([]catalogExplorerCatalogItem, 0, len(catalogs))
 	for i := range catalogs {
 		catalog := catalogs[i]
@@ -125,24 +136,29 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderHTML(w, http.StatusOK, notebookDetailPage(notebookDetailPageData{
-		Principal:     principalFromContext(r.Context()),
-		NotebookID:    id,
-		Name:          nb.Name,
-		Owner:         nb.Owner,
-		Description:   stringPtr(nb.Description),
-		EditURL:       "/ui/notebooks/" + id + "/edit",
-		DeleteURL:     "/ui/notebooks/" + id + "/delete",
-		NewCellURL:    "/ui/notebooks/" + id + "/cells/new",
-		RunAllURL:     "/ui/notebooks/" + id + "/run-all",
+		Principal:      principalFromContext(r.Context()),
+		NotebookID:     id,
+		Name:           nb.Name,
+		Owner:          nb.Owner,
+		Description:    stringPtr(nb.Description),
+		SelectedCatalog: selectedCatalog,
+		SelectedSchema:  selectedSchema,
+		BrowserRuntime:  query.DefaultManifestBrowserRuntimeSpec(),
+		ComputeTargets:  computeTargets,
+		ComputeRequest:  computeReq,
+		EditURL:        "/ui/notebooks/" + id + "/edit",
+		DeleteURL:      "/ui/notebooks/" + id + "/delete",
+		NewCellURL:     "/ui/notebooks/" + id + "/cells/new",
+		RunAllURL:      "/ui/notebooks/" + id + "/run-all",
 		RunAllAsyncURL: "/ui/notebooks/" + id + "/run-all-async",
-		ReorderURL:    "/ui/notebooks/" + id + "/cells/reorder",
-		JobsURL:       "/ui/notebooks/" + id + "/jobs",
-		GitRepoURL:    gitRepoURL,
-		PromoteURL:    "/ui/models/promote",
-		Jobs:          jobRows,
-		Cells:         cellNodes,
-		Explorer:      explorerCatalogs,
-		CSRFFieldFunc: csrfFieldProvider(r),
+		ReorderURL:     "/ui/notebooks/" + id + "/cells/reorder",
+		JobsURL:        "/ui/notebooks/" + id + "/jobs",
+		GitRepoURL:     gitRepoURL,
+		PromoteURL:     "/ui/models/promote",
+		Jobs:           jobRows,
+		Cells:          cellNodes,
+		Explorer:       explorerCatalogs,
+		CSRFFieldFunc:  csrfFieldProvider(r),
 	}))
 }
 
@@ -320,14 +336,20 @@ func (h *Handler) NotebookCellsRun(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	session, err := h.SessionManager.CreateSession(r.Context(), notebookID, principal)
+	ctx, err := h.sqlComputeContext(r.Context(), sqlComputeExecutionRequestFromForm(r.Form))
 	if err != nil {
 		h.renderServiceError(w, r, err)
 		return
 	}
-	defer func() { _ = h.SessionManager.CloseSession(r.Context(), session.ID, principal) }()
 
-	if _, err := h.SessionManager.ExecuteCell(r.Context(), session.ID, cellID, principal); err != nil {
+	session, err := h.SessionManager.CreateSession(ctx, notebookID, principal)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	defer func() { _ = h.SessionManager.CloseSession(ctx, session.ID, principal) }()
+
+	if _, err := h.SessionManager.ExecuteCell(ctx, session.ID, cellID, principal); err != nil {
 		h.renderServiceError(w, r, err)
 		return
 	}
@@ -339,14 +361,28 @@ func (h *Handler) NotebookRunAll(w http.ResponseWriter, r *http.Request) {
 	notebookID := chi.URLParam(r, "notebookID")
 	principal, _ := principalLabel(r.Context())
 
-	session, err := h.SessionManager.CreateSession(r.Context(), notebookID, principal)
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	ctx, err := h.sqlComputeContext(r.Context(), sqlComputeExecutionRequestFromForm(r.Form))
 	if err != nil {
 		h.renderServiceError(w, r, err)
 		return
 	}
-	defer func() { _ = h.SessionManager.CloseSession(r.Context(), session.ID, principal) }()
+	execReq, _ := domain.ComputeExecutionRequestFromContext(ctx)
+	if strings.EqualFold(execReq.Mode, domain.ComputeModeByocLocal) {
+		renderHTML(w, http.StatusBadRequest, errorPage("Invalid Request", "Browser-local BYOC is only supported for single interactive SQL cell runs. Use Shared Endpoint or Auto for Run all."))
+		return
+	}
 
-	if _, err := h.SessionManager.RunAll(r.Context(), session.ID, principal); err != nil {
+	session, err := h.SessionManager.CreateSession(ctx, notebookID, principal)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	defer func() { _ = h.SessionManager.CloseSession(ctx, session.ID, principal) }()
+
+	if _, err := h.SessionManager.RunAll(ctx, session.ID, principal); err != nil {
 		h.renderServiceError(w, r, err)
 		return
 	}
@@ -358,15 +394,29 @@ func (h *Handler) NotebookRunAllAsync(w http.ResponseWriter, r *http.Request) {
 	notebookID := chi.URLParam(r, "notebookID")
 	principal, _ := principalLabel(r.Context())
 
-	session, err := h.SessionManager.CreateSession(r.Context(), notebookID, principal)
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	ctx, err := h.sqlComputeContext(r.Context(), sqlComputeExecutionRequestFromForm(r.Form))
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	execReq, _ := domain.ComputeExecutionRequestFromContext(ctx)
+	if strings.EqualFold(execReq.Mode, domain.ComputeModeByocLocal) {
+		renderHTML(w, http.StatusBadRequest, errorPage("Invalid Request", "Browser-local BYOC is only supported for single interactive SQL cell runs. Use Shared Endpoint or Auto for async notebook runs."))
+		return
+	}
+
+	session, err := h.SessionManager.CreateSession(ctx, notebookID, principal)
 	if err != nil {
 		h.renderServiceError(w, r, err)
 		return
 	}
 
-	job, err := h.SessionManager.RunAllAsync(r.Context(), session.ID, principal)
+	job, err := h.SessionManager.RunAllAsync(ctx, session.ID, principal)
 	if err != nil {
-		_ = h.SessionManager.CloseSession(r.Context(), session.ID, principal)
+		_ = h.SessionManager.CloseSession(ctx, session.ID, principal)
 		h.renderServiceError(w, r, err)
 		return
 	}

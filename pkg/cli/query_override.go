@@ -24,6 +24,10 @@ func init() {
 				return err
 			}
 
+			if shouldExecuteLocally(cmd) {
+				return executeLocalQuery(cmd, client, sql)
+			}
+
 			body := map[string]interface{}{"sql": sql}
 			addComputeSelectionToBody(cmd, body)
 			resp, err := client.Do("POST", "/query", nil, body)
@@ -55,6 +59,9 @@ func init() {
 				body["request_id"] = requestID
 			}
 			addComputeSelectionToBody(cmd, body)
+			if mode, _ := cmd.Flags().GetString("compute-mode"); strings.EqualFold(strings.TrimSpace(mode), computeModeBYOCLocal) {
+				return fmt.Errorf("BYOC_LOCAL is only supported for interactive execution; use `duck query execute` for local queries")
+			}
 
 			resp, err := client.Do("POST", "/queries", nil, body)
 			if err != nil {
@@ -301,7 +308,18 @@ func printQueryResult(cmd *cobra.Command, resp *http.Response) error {
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
+	return printQueryResultBody(cmd, respBody)
+}
 
+func printLocalQueryResult(cmd *cobra.Command, result *localQueryResult) error {
+	respBody, err := json.Marshal(result)
+	if err != nil {
+		return fmt.Errorf("marshal local query result: %w", err)
+	}
+	return printQueryResultBody(cmd, respBody)
+}
+
+func printQueryResultBody(cmd *cobra.Command, respBody []byte) error {
 	var result struct {
 		Columns       []string        `json:"columns"`
 		Rows          [][]interface{} `json:"rows"`

@@ -47,8 +47,25 @@ func strOrDash(v *string) string {
 }
 
 func (h *Handler) renderServiceError(w http.ResponseWriter, r *http.Request, err error) {
-	status := http.StatusInternalServerError
+	status, message := serviceErrorStatus(err)
 	title := "Unexpected Error"
+	switch status {
+	case http.StatusNotFound:
+		title = "Not Found"
+	case http.StatusForbidden:
+		title = "Access Denied"
+	case http.StatusBadRequest:
+		title = "Invalid Request"
+	case http.StatusConflict:
+		title = "Conflict"
+	}
+
+	_ = r
+	renderHTML(w, status, errorPage(title, message))
+}
+
+func serviceErrorStatus(err error) (int, string) {
+	status := http.StatusInternalServerError
 	message := "An unexpected error occurred while loading this page."
 
 	var notFound *domain.NotFoundError
@@ -56,23 +73,16 @@ func (h *Handler) renderServiceError(w http.ResponseWriter, r *http.Request, err
 	var validation *domain.ValidationError
 	var conflict *domain.ConflictError
 	if errors.As(err, &notFound) {
-		status = http.StatusNotFound
-		title = "Not Found"
-		message = notFound.Error()
-	} else if errors.As(err, &accessDenied) {
-		status = http.StatusForbidden
-		title = "Access Denied"
-		message = accessDenied.Error()
-	} else if errors.As(err, &validation) {
-		status = http.StatusBadRequest
-		title = "Invalid Request"
-		message = validation.Error()
-	} else if errors.As(err, &conflict) {
-		status = http.StatusConflict
-		title = "Conflict"
-		message = conflict.Error()
+		return http.StatusNotFound, notFound.Error()
 	}
-
-	_ = r
-	renderHTML(w, status, errorPage(title, message))
+	if errors.As(err, &accessDenied) {
+		return http.StatusForbidden, accessDenied.Error()
+	}
+	if errors.As(err, &validation) {
+		return http.StatusBadRequest, validation.Error()
+	}
+	if errors.As(err, &conflict) {
+		return http.StatusConflict, conflict.Error()
+	}
+	return status, message
 }

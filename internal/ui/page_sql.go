@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/query"
@@ -12,6 +13,19 @@ import (
 	data "maragu.dev/gomponents-datastar"
 	. "maragu.dev/gomponents/html"
 )
+
+type sqlComputeOption struct {
+	Label       string
+	Description string
+	Active      bool
+}
+
+func sqlComputeModeOption(value, label, selected string) Node {
+	if value == selected {
+		return Option(Value(value), Selected(), Text(label))
+	}
+	return Option(Value(value), Text(label))
+}
 
 func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *query.QueryResult, runError string, state sqlEditorContext, csrfFieldProvider func() Node) Node {
 	csvActionNode := Node(nil)
@@ -192,6 +206,127 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 		EmptyCatalogsText: "No catalogs found.",
 	})
 
+	computeOptions := []sqlComputeOption{
+		{Label: "Local", Description: "Recommended for interactive queries. DuckDB runs in the client runtime.", Active: true},
+		{Label: "Shared Endpoint", Description: "Use managed compute for heavier or unattended workloads."},
+	}
+	runtimeTone := "attention"
+	if strings.EqualFold(state.BrowserRuntime.Status, "READY") && state.BrowserRuntime.Supported {
+		runtimeTone = "success"
+	}
+	browserRuntimeCard := Div(
+		Class(cardClass("sql-compute-card")),
+		Attr("data-sql-browser-runtime", "true"),
+		Attr("data-runtime-manifest-endpoint", "/ui/sql/runtime/manifest"),
+		H2(Class("sql-results-title"), Text("Compute")),
+		P(Class(mutedClass()), Text("Interactive UI will default to local compute once the browser DuckDB WASM runner is enabled. The browser will use the same manifest and duck_access contract as the CLI.")),
+		segmentedTabs(func() []segmentedTabItem {
+			items := make([]segmentedTabItem, 0, len(computeOptions))
+			for i := range computeOptions {
+				items = append(items, segmentedTabItem{Label: computeOptions[i].Label, Active: computeOptions[i].Active})
+			}
+			return items
+		}()),
+		P(Class(mutedClass()), Text(computeOptions[0].Description)),
+		Div(
+			Class("Banner Banner-"+runtimeTone),
+			Attr("data-sql-runtime-banner", "true"),
+			I(Class("nav-icon"), Attr("data-lucide", "cpu"), Attr("aria-hidden", "true")),
+			Div(
+				Strong(Attr("data-sql-browser-runtime-title", "true"), Text("Browser runtime")),
+				P(Attr("data-sql-browser-runtime-message", "true"), Text(state.BrowserRuntime.StatusReason)),
+			),
+		),
+		Div(
+			Class("sql-compute-meta"),
+			Div(
+				Class("sql-compute-meta-item"),
+				P(Class("sql-compute-meta-label"), Text("Contract")),
+				Code(Text(state.BrowserRuntime.ContractVersion)),
+			),
+			Div(
+				Class("sql-compute-meta-item"),
+				P(Class("sql-compute-meta-label"), Text("Engine")),
+				Code(Text(state.BrowserRuntime.Engine)),
+			),
+			Div(
+				Class("sql-compute-meta-item"),
+				P(Class("sql-compute-meta-label"), Text("Adapter")),
+				Code(Text(state.BrowserRuntime.Adapter)),
+			),
+			Div(
+				Class("sql-compute-meta-item"),
+				P(Class("sql-compute-meta-label"), Text("Auth")),
+				Code(Text(strings.Join(state.BrowserRuntime.RequiredAuthModes, ", "))),
+			),
+			Div(
+				Class("sql-compute-meta-item"),
+				P(Class("sql-compute-meta-label"), Text("Files")),
+				Code(Text(strings.Join(state.BrowserRuntime.SupportedFileURLTypes, ", "))),
+			),
+			Div(
+				Class("sql-compute-meta-item"),
+				P(Class("sql-compute-meta-label"), Text("Guidance")),
+				Span(Text(fmt.Sprintf("~%d rows / %d MB browser memory", state.BrowserRuntime.RecommendedMaxRows, state.BrowserRuntime.RecommendedMemoryMB))),
+			),
+		),
+		Ul(
+			Class("color-fg-muted text-small"),
+			Li(Text("Local browser execution supports a bounded read-only subset, including multi-table queries over up to four manifest-backed tables.")),
+			Li(Text("Use an explicit LIMIT within the browser guidance before running locally.")),
+			Li(Text("Auto will prefer local browser execution when the query and runtime satisfy guardrails, otherwise it will fall through to managed compute.")),
+			Li(Text("If the browser runtime or query shape is unsupported, switch to Shared Endpoint or Auto and rerun.")),
+		),
+		Div(
+			Class("button-row"),
+			Button(
+				Type("button"),
+				ID("sql-reset-local-runtime"),
+				Class(secondaryButtonClass()),
+				I(Class("btn-icon-glyph"), Attr("data-lucide", "rotate-ccw"), Attr("aria-hidden", "true")),
+				Span(Text("Reset local runtime")),
+			),
+			Button(
+				Type("button"),
+				ID("sql-cancel-local-run"),
+				Class(secondaryButtonClass()),
+				Disabled(),
+				I(Class("btn-icon-glyph"), Attr("data-lucide", "square"), Attr("aria-hidden", "true")),
+				Span(Text("Cancel local run")),
+			),
+		),
+		P(Class(mutedClass()), Attr("data-sql-browser-runtime-preflight", "true"), Text("")),
+	)
+	modeOptions := []Node{
+		sqlComputeModeOption(domain.ComputeModeAuto, "Auto", state.ComputeRequest.Mode),
+		sqlComputeModeOption(domain.ComputeModeByocLocal, "Local (BYOC)", state.ComputeRequest.Mode),
+		sqlComputeModeOption(domain.ComputeModeSharedEndpoint, "Shared endpoint", state.ComputeRequest.Mode),
+	}
+	endpointOptions := []Node{
+		Option(Value(""), Text("Platform default")),
+	}
+	for i := range state.ComputeTargets {
+		target := state.ComputeTargets[i]
+		if target.Mode != domain.ComputeModeSharedEndpoint || target.EndpointName == "" {
+			continue
+		}
+		label := target.Label
+		if target.Default {
+			label += " (default)"
+		}
+		if !target.Selectable && target.AvailabilityReason != "" {
+			label += " - " + target.AvailabilityReason
+		}
+		optionAttrs := []Node{Value(target.EndpointName)}
+		if state.ComputeRequest.EndpointName == target.EndpointName {
+			optionAttrs = append(optionAttrs, Selected())
+		}
+		if !target.Selectable {
+			optionAttrs = append(optionAttrs, Disabled())
+		}
+		endpointOptions = append(endpointOptions, Option(Group(optionAttrs), Text(label)))
+	}
+
 	return appPage(
 		"SQL Editor",
 		"sql",
@@ -247,13 +382,16 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 							),
 						),
 					),
+					browserRuntimeCard,
 					Form(
 						Method("post"),
 						Action("/ui/sql/run"),
 						Class("sql-editor-frame"),
+						Attr("data-sql-editor-form", "true"),
 						csrfFieldProvider(),
 						Input(Type("hidden"), Name("catalog"), Value(state.SelectedCatalog)),
 						Input(Type("hidden"), Name("schema"), Value(state.SelectedSchema)),
+						Input(Type("hidden"), Name("workload_type"), Value(state.ComputeRequest.WorkloadType)),
 						Div(
 							Class("sql-editor-toolbar"),
 							Div(
@@ -268,6 +406,7 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 								Button(
 									Type("submit"),
 									FormAction("/ui/sql/run-async"),
+									ID("sql-run-query-async"),
 									Class(secondaryButtonClass()),
 									I(Class("btn-icon-glyph"), Attr("data-lucide", "timer-reset"), Attr("aria-hidden", "true")),
 									Span(Text("Run async")),
@@ -281,6 +420,31 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 								),
 								A(Href("/ui/sql/jobs"), Class(secondaryButtonClass()), Text("Jobs")),
 								Span(Class("sr-only"), Text("Shortcuts: Run Cmd or Ctrl plus Enter. Format Cmd or Ctrl plus Shift plus F.")),
+							),
+							Div(
+								Class("sql-compute-controls"),
+								Label(
+									Class("sr-only"),
+									Attr("for", "sql-compute-mode"),
+									Text("Compute mode"),
+								),
+								Select(
+									ID("sql-compute-mode"),
+									Name("compute_mode"),
+									Class("form-select sql-compute-select"),
+									Group(modeOptions),
+								),
+								Label(
+									Class("sr-only"),
+									Attr("for", "sql-compute-endpoint"),
+									Text("Compute endpoint"),
+								),
+								Select(
+									ID("sql-compute-endpoint"),
+									Name("endpoint_name"),
+									Class("form-select sql-compute-select"),
+									Group(endpointOptions),
+								),
 							),
 						),
 						Div(
@@ -300,6 +464,7 @@ func sqlEditorPage(principal domain.ContextPrincipal, sqlText string, result *qu
 				),
 				Div(
 					Class("sql-results-panel"),
+					Attr("data-sql-results-panel", "true"),
 					resultNode,
 				),
 			),

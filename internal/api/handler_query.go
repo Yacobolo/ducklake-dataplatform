@@ -401,6 +401,10 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 		typ := c.Type
 		cols[i] = ManifestColumn{Name: &name, Type: &typ}
 	}
+	browserRuntime := result.BrowserRuntime
+	if browserRuntime.ContractVersion == "" {
+		browserRuntime = query.DefaultManifestBrowserRuntimeSpec()
+	}
 
 	return CreateManifest200JSONResponse{
 		Body: ManifestResponse{
@@ -412,6 +416,20 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 			RowFilters:      &result.RowFilters,
 			ColumnMasks:     &result.ColumnMasks,
 			ExpiresAt:       &result.ExpiresAt,
+			BrowserRuntime: &ManifestBrowserRuntime{
+				Adapter:                &browserRuntime.Adapter,
+				ContractVersion:        &browserRuntime.ContractVersion,
+				Engine:                 &browserRuntime.Engine,
+				RecommendedMaxRows:     intPtrToInt32Ptr(&browserRuntime.RecommendedMaxRows),
+				RecommendedMemoryMb:    intPtrToInt32Ptr(&browserRuntime.RecommendedMemoryMB),
+				RequiredAuthModes:      &browserRuntime.RequiredAuthModes,
+				RequiredRuntimeVersion: &browserRuntime.RequiredRuntimeVersion,
+				RequiresCors:           &browserRuntime.RequiresCORS,
+				Status:                 &browserRuntime.Status,
+				StatusReason:           &browserRuntime.StatusReason,
+				Supported:              &browserRuntime.Supported,
+				SupportedFileUrlTypes:  &browserRuntime.SupportedFileURLTypes,
+			},
 		},
 		Headers: CreateManifest200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
