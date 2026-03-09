@@ -221,9 +221,9 @@ func (h *APIHandler) CancelQuery(ctx context.Context, req GenCancelQueryRequest)
 		status = string(domain.QueryJobStatusCanceled)
 	}
 	apiStatus := QueryJobStatus(status)
-	return CancelQuery200JSONResponse{
+	return CancelQuery202JSONResponse{
 		Body:    CancelQueryResponse{QueryId: job.ID, Status: apiStatus},
-		Headers: CancelQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: CancelQuery202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -287,11 +287,11 @@ func queryJobToAPI(job *domain.QueryJob) QueryJob {
 	return resp
 }
 
-func computeExecutionRequestFromQueryBody(body *QueryRequest) domain.ComputeExecutionRequest {
+func computeExecutionRequestFromQueryBody(_ *QueryRequest) domain.ComputeExecutionRequest {
 	return domain.ComputeExecutionRequest{}
 }
 
-func computeExecutionRequestFromSubmitBody(body *SubmitQueryRequest) domain.ComputeExecutionRequest {
+func computeExecutionRequestFromSubmitBody(_ *SubmitQueryRequest) domain.ComputeExecutionRequest {
 	return domain.ComputeExecutionRequest{}
 }
 

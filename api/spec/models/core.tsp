@@ -781,10 +781,6 @@ model ComputeEndpointHealth {
   duckdb_version?: string;
 }
 
-model GenericRequest {
-  payload?: Record<string>;
-}
-
 model SubmitQueryRequest {
   sql: string;
   request_id?: string;
@@ -1250,10 +1246,6 @@ model PipelineJobRun {
 
 model PipelineJobRunList {
   data: PipelineJobRun[];
-}
-
-model GenericResponse {
-  data?: Record<string>;
 }
 
 model SearchResult {

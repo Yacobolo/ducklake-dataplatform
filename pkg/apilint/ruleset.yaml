@@ -104,6 +104,11 @@ rules:
   # These are legitimate dynamic key-value maps, not unconstrained objects.
   owasp-no-additionalProperties: off
   owasp-constrained-additionalProperties: off
+  # Some auth bootstrap/login operations are intentionally public entrypoints.
+  # The project models that with x-authz metadata rather than fake security
+  # requirements, so these two OWASP checks are too strict for this spec.
+  owasp-protection-global-unsafe: off
+  owasp-protection-global-unsafe-strict: off
 
   # Downgraded: lineage endpoints use pagination params for edge depth control, not list pagination.
   check-pagination-schema-match: off

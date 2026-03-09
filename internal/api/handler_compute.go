@@ -318,11 +318,3 @@ func computeAssignmentToAPI(a domain.ComputeAssignment) ComputeAssignment {
 		CreatedAt:     formatTimePtr(&ct),
 	}
 }
-
-func intPtrToInt32Ptr(value *int) *int32 {
-	if value == nil {
-		return nil
-	}
-	v := safeIntToInt32(*value)
-	return &v
-}
