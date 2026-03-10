@@ -51,6 +51,7 @@ func normalizeCompatibilityMode(mode CapabilityCompatibilityMode) CapabilityComp
 type resourceIndex struct {
 	principalIDByName     map[string]string // "alice" → UUID
 	groupIDByName         map[string]string // "admins" → UUID
+	grantIDByIdentity     map[string]string // effective grant identity → UUID
 	catalogIDByName       map[string]string // "demo" → UUID
 	semanticModelIDByPath map[string]string // "project.model" → UUID
 	schemaIDByPath        map[string]string // "catalog.schema" → UUID
@@ -70,6 +71,7 @@ func newResourceIndex() *resourceIndex {
 	return &resourceIndex{
 		principalIDByName:     make(map[string]string),
 		groupIDByName:         make(map[string]string),
+		grantIDByIdentity:     make(map[string]string),
 		catalogIDByName:       make(map[string]string),
 		semanticModelIDByPath: make(map[string]string),
 		schemaIDByPath:        make(map[string]string),
@@ -350,6 +352,7 @@ func (c *APIStateClient) readGroups(ctx context.Context, state *declarative.Desi
 }
 
 type apiGrant struct {
+	ID            string `json:"id"`
 	PrincipalID   string `json:"principal_id"`
 	PrincipalType string `json:"principal_type"`
 	SecurableType string `json:"securable_type"`
@@ -397,6 +400,15 @@ func (c *APIStateClient) readGrants(ctx context.Context, state *declarative.Desi
 			Securable:     securablePath,
 			Privilege:     g.Privilege,
 		})
+		if g.ID != "" && c.index != nil {
+			c.index.grantIDByIdentity[grantIdentity(declarative.GrantSpec{
+				Principal:     principalName,
+				PrincipalType: g.PrincipalType,
+				SecurableType: g.SecurableType,
+				Securable:     securablePath,
+				Privilege:     g.Privilege,
+			})] = g.ID
+		}
 	}
 
 	_ = unresolved
@@ -699,6 +711,9 @@ type apiStorageCredential struct {
 	Name           string `json:"name"`
 	CredentialType string `json:"credential_type"`
 	Comment        string `json:"comment"`
+	Endpoint       string `json:"endpoint"`
+	Region         string `json:"region"`
+	URLStyle       string `json:"url_style"`
 }
 
 func (c *APIStateClient) readStorageCredentials(ctx context.Context, state *declarative.DesiredState) error {
@@ -716,11 +731,30 @@ func (c *APIStateClient) readStorageCredentials(ctx context.Context, state *decl
 	}
 
 	for _, sc := range items {
-		state.StorageCredentials = append(state.StorageCredentials, declarative.StorageCredentialSpec{
+		spec := declarative.StorageCredentialSpec{
 			Name:           sc.Name,
 			CredentialType: sc.CredentialType,
 			Comment:        sc.Comment,
-		})
+		}
+		switch sc.CredentialType {
+		case "S3":
+			spec.S3 = &declarative.S3CredentialSpec{
+				KeyIDFromEnv:  "REPLACE_ME",
+				SecretFromEnv: "REPLACE_ME",
+				Endpoint:      sc.Endpoint,
+				Region:        sc.Region,
+				URLStyle:      sc.URLStyle,
+			}
+		case "AZURE":
+			spec.Azure = &declarative.AzureCredentialSpec{
+				AccountNameFromEnv: "REPLACE_ME",
+			}
+		case "GCS":
+			spec.GCS = &declarative.GCSCredentialSpec{
+				KeyFilePath: "REPLACE_ME",
+			}
+		}
+		state.StorageCredentials = append(state.StorageCredentials, spec)
 		if sc.ID != "" && c.index != nil {
 			c.index.credentialIDByName[sc.Name] = sc.ID
 		}
@@ -928,15 +962,31 @@ type apiNotebook struct {
 }
 
 type apiNotebookCell struct {
-	ID       string `json:"id"`
-	CellType string `json:"cell_type"`
-	Content  string `json:"content"`
-	Position int    `json:"position"`
+	ID       string               `json:"id"`
+	CellType string               `json:"cell_type"`
+	Name     string               `json:"name"`
+	Role     string               `json:"role"`
+	Disabled bool                 `json:"disabled"`
+	Test     *apiNotebookCellTest `json:"test"`
+	Content  string               `json:"content"`
+	Position int                  `json:"position"`
+}
+
+type apiNotebookCellTest struct {
+	Severity string `json:"severity"`
+}
+
+type apiNotebookPublishModel struct {
+	ProjectName     string `json:"project_name"`
+	Name            string `json:"name"`
+	Materialization string `json:"materialization"`
+	OutputCellID    string `json:"output_cell_id"`
 }
 
 type apiNotebookDetail struct {
-	Notebook apiNotebook       `json:"notebook"`
-	Cells    []apiNotebookCell `json:"cells"`
+	Notebook     apiNotebook              `json:"notebook"`
+	Cells        []apiNotebookCell        `json:"cells"`
+	PublishModel *apiNotebookPublishModel `json:"publish_model"`
 }
 
 type apiAsset struct {
@@ -991,12 +1041,40 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 				return detail.Cells[i].Position < detail.Cells[j].Position
 			})
 			cells = make([]declarative.CellSpec, 0, len(detail.Cells))
+			publish := buildNotebookPublishSpec(detail.PublishModel, detail.Cells)
 			for _, cell := range detail.Cells {
-				cells = append(cells, declarative.CellSpec{
+				name := cell.Name
+				if publish != nil && publish.Model != nil && publish.Model.OutputCell == cell.ID && name == "" {
+					name = cell.ID
+				}
+				spec := declarative.CellSpec{
 					Type:    cell.CellType,
 					Content: cell.Content,
-				})
+				}
+				if name != "" {
+					spec.Name = name
+				}
+				if cell.Role != "" && cell.Role != defaultNotebookCellRole(cell.CellType) {
+					spec.Role = cell.Role
+				}
+				if cell.Disabled {
+					spec.Disabled = true
+				}
+				if cell.Test != nil {
+					spec.Test = toDeclarativeNotebookTest(cell.Test)
+				}
+				cells = append(cells, spec)
 			}
+			state.Notebooks = append(state.Notebooks, declarative.NotebookResource{
+				Name: nb.Name,
+				Spec: declarative.NotebookSpec{
+					Description: nb.Description,
+					Owner:       nb.Owner,
+					Cells:       cells,
+					Publish:     publish,
+				},
+			})
+			continue
 		}
 
 		state.Notebooks = append(state.Notebooks, declarative.NotebookResource{
@@ -1329,6 +1407,44 @@ func toDeclarativeFreshness(freshness *apiModelFreshness) *declarative.Freshness
 	}
 }
 
+func toDeclarativeNotebookTest(test *apiNotebookCellTest) *declarative.NotebookTestSpec {
+	if test == nil {
+		return nil
+	}
+	return &declarative.NotebookTestSpec{Severity: test.Severity}
+}
+
+func buildNotebookPublishSpec(model *apiNotebookPublishModel, cells []apiNotebookCell) *declarative.NotebookPublishSpec {
+	if model == nil {
+		return nil
+	}
+	outputCellRef := model.OutputCellID
+	for _, cell := range cells {
+		if cell.ID != model.OutputCellID {
+			continue
+		}
+		if cell.Name != "" {
+			outputCellRef = cell.Name
+		}
+		break
+	}
+	return &declarative.NotebookPublishSpec{
+		Model: &declarative.NotebookPublishModelSpec{
+			Project:         model.ProjectName,
+			Name:            model.Name,
+			Materialization: model.Materialization,
+			OutputCell:      outputCellRef,
+		},
+	}
+}
+
+func defaultNotebookCellRole(cellType string) string {
+	if cellType == "markdown" {
+		return "markdown"
+	}
+	return "transform"
+}
+
 func (c *APIStateClient) readModels(ctx context.Context, state *declarative.DesiredState) error {
 	pages, err := c.fetchAllPages(ctx, "/models")
 	if err != nil {
@@ -1343,7 +1459,18 @@ func (c *APIStateClient) readModels(ctx context.Context, state *declarative.Desi
 		return err
 	}
 
+	publishedNotebookModels := make(map[string]struct{}, len(state.Notebooks))
+	for _, notebook := range state.Notebooks {
+		if notebook.Spec.Publish == nil || notebook.Spec.Publish.Model == nil {
+			continue
+		}
+		publishedNotebookModels[modelPath(notebook.Spec.Publish.Model.Project, notebook.Spec.Publish.Model.Name)] = struct{}{}
+	}
+
 	for _, m := range items {
+		if _, published := publishedNotebookModels[modelPath(m.ProjectName, m.Name)]; published {
+			continue
+		}
 		tests, _, err := c.listModelTests(ctx, m.ProjectName, m.Name)
 		if err != nil {
 			return fmt.Errorf("list tests for model %s.%s: %w", m.ProjectName, m.Name, err)
@@ -1622,6 +1749,53 @@ func (c *APIStateClient) resolvePrincipalID(name, principalType string) (string,
 		return "", fmt.Errorf("principal %q not found in index", name)
 	}
 	return id, nil
+}
+
+func grantIdentity(grant declarative.GrantSpec) string {
+	return strings.Join([]string{
+		grant.Principal,
+		grant.PrincipalType,
+		grant.SecurableType,
+		grant.Securable,
+		grant.Privilege,
+	}, "|")
+}
+
+func (c *APIStateClient) resolveGrantID(ctx context.Context, grant declarative.GrantSpec) (string, error) {
+	if c.index != nil {
+		if id, ok := c.index.grantIDByIdentity[grantIdentity(grant)]; ok {
+			return id, nil
+		}
+	}
+	principalID, err := c.resolvePrincipalID(grant.Principal, grant.PrincipalType)
+	if err != nil {
+		return "", err
+	}
+	securableID, err := c.resolveSecurableID(ctx, grant.SecurableType, grant.Securable)
+	if err != nil {
+		return "", err
+	}
+	pages, err := c.fetchAllPages(ctx, "/grants?principal_id="+url.QueryEscape(principalID)+"&principal_type="+url.QueryEscape(grant.PrincipalType))
+	if err != nil {
+		return "", err
+	}
+	var items []apiGrant
+	if err := mergePages(pages, &items); err != nil {
+		return "", err
+	}
+	for _, item := range items {
+		if item.SecurableType != grant.SecurableType || item.SecurableID != securableID || item.Privilege != grant.Privilege {
+			continue
+		}
+		if item.ID == "" {
+			continue
+		}
+		if c.index != nil {
+			c.index.grantIDByIdentity[grantIdentity(grant)] = item.ID
+		}
+		return item.ID, nil
+	}
+	return "", fmt.Errorf("grant %q not found", grantIdentity(grant))
 }
 
 // resolveSecurableID looks up a securable UUID by type and dot-path.
@@ -1914,6 +2088,10 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 }
 
 func semanticModelPath(projectName, modelName string) string {
+	return projectName + "." + modelName
+}
+
+func modelPath(projectName, modelName string) string {
 	return projectName + "." + modelName
 }
 
@@ -2314,7 +2492,10 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if c.index != nil {
 			c.index.notebookIDByName[nb.Name] = notebookID
 		}
-		return c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells)
+		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
+			return err
+		}
+		return c.reconcileNotebookPublish(ctx, notebookID, nb.Spec)
 
 	case declarative.OpUpdate:
 		nb := action.Desired.(declarative.NotebookResource)
@@ -2333,7 +2514,10 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
-		return c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells)
+		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
+			return err
+		}
+		return c.reconcileNotebookPublish(ctx, notebookID, nb.Spec)
 
 	case declarative.OpDelete:
 		notebookName := action.ResourceName
@@ -2441,8 +2625,53 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 	if err != nil {
 		return err
 	}
+	sort.Slice(detail.Cells, func(i, j int) bool {
+		return detail.Cells[i].Position < detail.Cells[j].Position
+	})
+	protectedOutputCellID := ""
+	if detail.PublishModel != nil {
+		protectedOutputCellID = detail.PublishModel.OutputCellID
+	}
 
-	for _, cell := range detail.Cells {
+	for i, existing := range detail.Cells {
+		if i >= len(desired) {
+			if existing.ID == protectedOutputCellID {
+				return fmt.Errorf("cannot delete published output cell %q from notebook %q during declarative sync", existing.ID, notebookID)
+			}
+			continue
+		}
+		if existing.CellType != desired[i].Type && existing.ID == protectedOutputCellID {
+			return fmt.Errorf("cannot replace published output cell %q in notebook %q because cell_type changed", existing.ID, notebookID)
+		}
+	}
+
+	for i := 0; i < len(detail.Cells) && i < len(desired); i++ {
+		existing := detail.Cells[i]
+		cell := desired[i]
+		if existing.CellType != cell.Type {
+			continue
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/notebooks/"+notebookID+"/cells/"+existing.ID, nil, notebookCellBody(cell, i, false))
+		if err != nil {
+			return err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
+	}
+
+	for i := len(detail.Cells); i < len(desired); i++ {
+		resp, err := c.client.Do(http.MethodPost, "/notebooks/"+notebookID+"/cells", nil, notebookCellBody(desired[i], i, true))
+		if err != nil {
+			return err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
+	}
+
+	for i := len(detail.Cells) - 1; i >= len(desired); i-- {
+		cell := detail.Cells[i]
 		resp, err := c.client.Do(http.MethodDelete, "/notebooks/"+notebookID+"/cells/"+cell.ID, nil, nil)
 		if err != nil {
 			return err
@@ -2452,15 +2681,20 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 		}
 	}
 
-	for i, cell := range desired {
-		body := map[string]interface{}{
-			"cell_type": cell.Type,
-			"position":  i,
+	for i := 0; i < len(detail.Cells) && i < len(desired); i++ {
+		existing := detail.Cells[i]
+		cell := desired[i]
+		if existing.CellType == cell.Type {
+			continue
 		}
-		if cell.Content != "" {
-			body["content"] = cell.Content
+		resp, err := c.client.Do(http.MethodDelete, "/notebooks/"+notebookID+"/cells/"+existing.ID, nil, nil)
+		if err != nil {
+			return err
 		}
-		resp, err := c.client.Do(http.MethodPost, "/notebooks/"+notebookID+"/cells", nil, body)
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
+		resp, err = c.client.Do(http.MethodPost, "/notebooks/"+notebookID+"/cells", nil, notebookCellBody(cell, i, true))
 		if err != nil {
 			return err
 		}
@@ -2470,6 +2704,61 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 	}
 
 	return nil
+}
+
+func notebookCellBody(cell declarative.CellSpec, position int, includeCellType bool) map[string]interface{} {
+	body := map[string]interface{}{
+		"content":  cell.Content,
+		"position": position,
+	}
+	if includeCellType {
+		body["cell_type"] = cell.Type
+	}
+	if cell.Name != "" {
+		body["name"] = cell.Name
+	}
+	if cell.Role != "" {
+		body["role"] = cell.Role
+	}
+	if cell.Disabled {
+		body["disabled"] = true
+	}
+	if cell.Test != nil {
+		body["test"] = map[string]interface{}{
+			"severity": cell.Test.Severity,
+		}
+	}
+	return body
+}
+
+func (c *APIStateClient) reconcileNotebookPublish(_ context.Context, notebookID string, spec declarative.NotebookSpec) error {
+	if spec.Publish == nil || spec.Publish.Model == nil {
+		return nil
+	}
+	outputIndex := -1
+	for i, cell := range spec.Cells {
+		if cell.Name == spec.Publish.Model.OutputCell {
+			outputIndex = i
+			break
+		}
+	}
+	if outputIndex < 0 {
+		return fmt.Errorf("published output cell %q not found in notebook %q", spec.Publish.Model.OutputCell, notebookID)
+	}
+	body := map[string]interface{}{
+		"notebook_id":  notebookID,
+		"cell_index":   outputIndex,
+		"project_name": spec.Publish.Model.Project,
+		"name":         spec.Publish.Model.Name,
+	}
+	if spec.Publish.Model.Materialization != "" {
+		body["materialization"] = spec.Publish.Model.Materialization
+	}
+	resp, err := c.client.Do(http.MethodPost, "/models/from-notebook", nil, body)
+	if err != nil {
+		return err
+	}
+	return apiruntime.CheckError(resp)
 }
 
 func (c *APIStateClient) resolveNotebookID(ctx context.Context, notebookName string) (string, error) {
@@ -3416,7 +3705,15 @@ func (c *APIStateClient) executeGroup(_ context.Context, action declarative.Acti
 		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodDelete, "/groups/"+action.ResourceName, nil, nil)
+		groupName := action.ResourceName
+		if actual, ok := action.Actual.(declarative.GroupSpec); ok && actual.Name != "" {
+			groupName = actual.Name
+		}
+		groupID, err := c.resolvePrincipalID(groupName, "group")
+		if err != nil {
+			return fmt.Errorf("resolve group for delete: %w", err)
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/groups/"+groupID, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -3454,22 +3751,11 @@ func (c *APIStateClient) executeGrant(ctx context.Context, action declarative.Ac
 
 	case declarative.OpDelete:
 		grant := action.Actual.(declarative.GrantSpec)
-		principalID, err := c.resolvePrincipalID(grant.Principal, grant.PrincipalType)
+		grantID, err := c.resolveGrantID(ctx, grant)
 		if err != nil {
-			return fmt.Errorf("resolve principal for grant delete: %w", err)
+			return fmt.Errorf("resolve grant for delete: %w", err)
 		}
-		securableID, err := c.resolveSecurableID(ctx, grant.SecurableType, grant.Securable)
-		if err != nil {
-			return fmt.Errorf("resolve securable for grant delete: %w", err)
-		}
-		body := map[string]interface{}{
-			"principal_id":   principalID,
-			"principal_type": grant.PrincipalType,
-			"securable_id":   securableID,
-			"securable_type": grant.SecurableType,
-			"privilege":      grant.Privilege,
-		}
-		resp, err := c.client.Do(http.MethodDelete, "/grants", nil, body)
+		resp, err := c.client.Do(http.MethodDelete, "/grants/"+grantID, nil, nil)
 		if err != nil {
 			return err
 		}
