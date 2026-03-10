@@ -378,7 +378,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	semanticMetricRepo := repository.NewSemanticMetricRepo(deps.WriteDB)
 	semanticRelRepo := repository.NewSemanticRelationshipRepo(deps.WriteDB)
 	semanticPreAggRepo := repository.NewSemanticPreAggregationRepo(deps.WriteDB)
-	semanticSvc := semantic.NewService(semanticModelRepo, semanticMetricRepo, semanticRelRepo, semanticPreAggRepo)
+	semanticSvc := semantic.NewService(semanticModelRepo, semanticMetricRepo, semanticRelRepo, semanticPreAggRepo, modelRepo)
 	semanticSvc.SetQueryExecutor(querySvc)
 	dashboardRepo := repository.NewDashboardRepo(deps.WriteDB)
 	dashboardWidgetRepo := repository.NewDashboardWidgetRepo(deps.WriteDB)

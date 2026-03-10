@@ -149,6 +149,72 @@ func (h *Handler) DashboardWidgetsCreate(w http.ResponseWriter, r *http.Request)
 	http.Redirect(w, r, "/ui/dashboards/"+dashboardID, http.StatusSeeOther)
 }
 
+func (h *Handler) DashboardWidgetsEdit(w http.ResponseWriter, r *http.Request) {
+	dashboardID := chi.URLParam(r, "dashboardID")
+	widgetID := chi.URLParam(r, "widgetID")
+
+	dashboard, widgets, err := h.Dashboard.GetDashboard(r.Context(), dashboardID)
+	if err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+
+	var widget *domain.DashboardWidget
+	for i := range widgets {
+		if widgets[i].ID == widgetID {
+			widget = &widgets[i]
+			break
+		}
+	}
+	if widget == nil {
+		h.renderServiceError(w, r, domain.ErrNotFound("dashboard widget not found"))
+		return
+	}
+
+	renderHTML(w, http.StatusOK, dashboardWidgetEditPage(principalFromContext(r.Context()), dashboard, widget, csrfFieldProvider(r)))
+}
+
+func (h *Handler) DashboardWidgetsUpdate(w http.ResponseWriter, r *http.Request) {
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+
+	dashboardID := chi.URLParam(r, "dashboardID")
+	widgetID := chi.URLParam(r, "widgetID")
+	principal, isAdmin := principalLabel(r.Context())
+
+	spec, err := visualSpecFromForm(r.Form)
+	if err != nil {
+		renderHTML(w, http.StatusBadRequest, errorPage("Invalid Request", err.Error()))
+		return
+	}
+	source, err := dashboardWidgetSourceFromForm(r.Form)
+	if err != nil {
+		renderHTML(w, http.StatusBadRequest, errorPage("Invalid Request", err.Error()))
+		return
+	}
+	name := formString(r.Form, "name")
+	description := formString(r.Form, "description")
+
+	req := domain.UpdateDashboardWidgetRequest{
+		Name:        &name,
+		Description: &description,
+		Source:      &source,
+		VisualSpec:  spec,
+		Layout: &domain.DashboardWidgetLayout{
+			X: parseIntWithDefault(formString(r.Form, "layout_x"), 0),
+			Y: parseIntWithDefault(formString(r.Form, "layout_y"), 0),
+			W: parseIntWithDefault(formString(r.Form, "layout_w"), 4),
+			H: parseIntWithDefault(formString(r.Form, "layout_h"), 3),
+		},
+	}
+	if _, err := h.Dashboard.UpdateWidget(r.Context(), principal, isAdmin, widgetID, req); err != nil {
+		h.renderServiceError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/dashboards/"+dashboardID, http.StatusSeeOther)
+}
+
 func (h *Handler) DashboardWidgetsDelete(w http.ResponseWriter, r *http.Request) {
 	widgetID := chi.URLParam(r, "widgetID")
 	dashboardID := chi.URLParam(r, "dashboardID")

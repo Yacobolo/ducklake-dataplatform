@@ -149,6 +149,8 @@ func MountRoutes(r chi.Router, h *Handler) {
 		r.Post("/dashboards/{dashboardID}/update", h.DashboardsUpdate)
 		r.Post("/dashboards/{dashboardID}/delete", h.DashboardsDelete)
 		r.Post("/dashboards/{dashboardID}/widgets", h.DashboardWidgetsCreate)
+		r.Get("/dashboards/{dashboardID}/widgets/{widgetID}/edit", h.DashboardWidgetsEdit)
+		r.Post("/dashboards/{dashboardID}/widgets/{widgetID}/update", h.DashboardWidgetsUpdate)
 		r.Post("/dashboards/{dashboardID}/widgets/{widgetID}/delete", h.DashboardWidgetsDelete)
 		r.Get("/notebooks/git-repos", h.NotebookGitReposList)
 		r.Get("/notebooks/git-repos/new", h.NotebookGitReposNew)

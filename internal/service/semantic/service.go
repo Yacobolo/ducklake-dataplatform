@@ -12,6 +12,7 @@ type Service struct {
 	metrics       domain.SemanticMetricRepository
 	relationships domain.SemanticRelationshipRepository
 	preAggs       domain.SemanticPreAggregationRepository
+	modelDefs     domain.ModelRepository
 	queryExec     queryExecutor
 }
 
@@ -21,12 +22,18 @@ func NewService(
 	metrics domain.SemanticMetricRepository,
 	relationships domain.SemanticRelationshipRepository,
 	preAggs domain.SemanticPreAggregationRepository,
+	modelDefs ...domain.ModelRepository,
 ) *Service {
+	var modelRepo domain.ModelRepository
+	if len(modelDefs) > 0 {
+		modelRepo = modelDefs[0]
+	}
 	return &Service{
 		models:        models,
 		metrics:       metrics,
 		relationships: relationships,
 		preAggs:       preAggs,
+		modelDefs:     modelRepo,
 	}
 }
 
@@ -86,6 +93,9 @@ func (s *Service) CreateMetric(ctx context.Context, principal, projectName, sema
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
+	if err := validateMetricFilterSQL(req.FilterSQL); err != nil {
+		return nil, err
+	}
 
 	return s.metrics.Create(ctx, &domain.SemanticMetric{
 		SemanticModelID:    semanticModel.ID,
@@ -117,6 +127,11 @@ func (s *Service) UpdateMetric(ctx context.Context, projectName, semanticModelNa
 	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
 	if err != nil {
 		return nil, err
+	}
+	if req.FilterSQL != nil {
+		if err := validateMetricFilterSQL(*req.FilterSQL); err != nil {
+			return nil, err
+		}
 	}
 	existing, err := s.metrics.GetByName(ctx, semanticModel.ID, metricName)
 	if err != nil {

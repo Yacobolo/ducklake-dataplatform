@@ -26,16 +26,24 @@ func (f *fakeQueryExecutor) Execute(_ context.Context, _ string, sqlQuery string
 	return &query.QueryResult{Columns: []string{"ok"}, Rows: [][]interface{}{{"ok"}}, RowCount: 1}, nil
 }
 
-func setupSemanticService(t *testing.T) *Service {
+func setupSemanticServiceDeps(t *testing.T) (*Service, *repository.ModelRepo) {
 	t.Helper()
 	writeDB, _ := internaldb.OpenTestSQLite(t)
+	modelRepo := repository.NewModelRepo(writeDB)
 
 	return NewService(
 		repository.NewSemanticModelRepo(writeDB),
 		repository.NewSemanticMetricRepo(writeDB),
 		repository.NewSemanticRelationshipRepo(writeDB),
 		repository.NewSemanticPreAggregationRepo(writeDB),
-	)
+		modelRepo,
+	), modelRepo
+}
+
+func setupSemanticService(t *testing.T) *Service {
+	t.Helper()
+	svc, _ := setupSemanticServiceDeps(t)
+	return svc
 }
 
 func TestService_CreateAndListSemanticModelResources(t *testing.T) {
@@ -279,6 +287,102 @@ func TestService_ExplainMetricQuery_RejectsDangerousSQLFragments(t *testing.T) {
 	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "forbidden token")
+}
+
+func TestService_ExplainMetricQuery_FilterSQLApplied(t *testing.T) {
+	svc := setupSemanticService(t)
+	ctx := context.Background()
+
+	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.fct_sales",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "placeholder",
+		Name:            "high_value_revenue",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(sales.amount)",
+		FilterSQL:       "sales.amount > 100",
+	})
+	require.NoError(t, err)
+
+	plan, err := svc.ExplainMetricQuery(ctx, MetricQueryRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		Metrics:           []string{"high_value_revenue"},
+	})
+	require.NoError(t, err)
+	assert.Contains(t, plan.GeneratedSQL, "SUM(CASE WHEN sales.amount > 100 THEN sales.amount END)")
+}
+
+func TestService_ExplainMetricQuery_UnsafeJoinUsesBaseUniqueKey(t *testing.T) {
+	svc, modelRepo := setupSemanticServiceDeps(t)
+	ctx := context.Background()
+
+	_, err := modelRepo.Create(ctx, &domain.Model{
+		ProjectName:     "analytics",
+		Name:            "sales",
+		SQL:             "select 1 as sale_id, 42 as amount, 7 as customer_id",
+		Materialization: domain.MaterializationView,
+		Config:          domain.ModelConfig{UniqueKey: []string{"sale_id"}},
+		CreatedBy:       "admin",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.sales",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales_tags",
+		BaseModelRef: "analytics.sales_tags",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "placeholder",
+		Name:            "total_revenue",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(sales.amount)",
+	})
+	require.NoError(t, err)
+
+	models, _, err := svc.ListSemanticModels(ctx, ptr("analytics"), domain.PageRequest{MaxResults: 100})
+	require.NoError(t, err)
+	modelIDs := map[string]string{}
+	for _, m := range models {
+		modelIDs[m.Name] = m.ID
+	}
+
+	_, err = svc.CreateRelationship(ctx, "admin", domain.CreateSemanticRelationshipRequest{
+		Name:             "sales_to_tags",
+		FromSemanticID:   modelIDs["sales"],
+		ToSemanticID:     modelIDs["sales_tags"],
+		RelationshipType: domain.RelationshipTypeOneToMany,
+		JoinSQL:          "sales.sale_id = sales_tags.sale_id",
+	})
+	require.NoError(t, err)
+
+	plan, err := svc.ExplainMetricQuery(ctx, MetricQueryRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		Metrics:           []string{"total_revenue"},
+		Dimensions:        []string{"sales_tags.tag_name"},
+	})
+	require.NoError(t, err)
+	assert.Contains(t, plan.GeneratedSQL, `WITH __metric_base AS`)
+	assert.Contains(t, plan.GeneratedSQL, `GROUP BY sales.sale_id`)
+	assert.Contains(t, plan.GeneratedSQL, `LEFT JOIN analytics.sales_tags AS sales_tags ON __metric_base.sale_id = sales_tags.sale_id`)
+	assert.Contains(t, plan.GeneratedSQL, `SUM("__metric_total_revenue") AS "total_revenue"`)
 }
 
 func ptr(s string) *string {
