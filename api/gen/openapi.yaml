@@ -1129,7 +1129,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/BootstrapCompleteRequest'
-      security: []
+      security:
+        - {}
       x-authz:
         mode: none
       x-apigen-manual: true
@@ -1234,7 +1235,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LocalLoginRequest'
-      security: []
+      security:
+        - {}
       x-authz:
         mode: none
       x-apigen-manual: true
