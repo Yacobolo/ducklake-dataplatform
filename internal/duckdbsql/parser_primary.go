@@ -129,6 +129,12 @@ func (p *Parser) parseIdentifierExpr() Expr {
 	name := p.token.Literal
 	p.nextToken()
 
+	if p.check(TOKEN_STRING) && isTypedStringLiteralKeyword(name) {
+		lit := &Literal{Type: LiteralString, Value: p.token.Literal}
+		p.nextToken()
+		return &CastExpr{Expr: lit, TypeName: strings.ToUpper(name)}
+	}
+
 	// MAP {'key': value} literal
 	if strings.EqualFold(name, "MAP") && p.check(TOKEN_LBRACE) {
 		structLit := p.parseStructLiteral()
@@ -165,6 +171,15 @@ func (p *Parser) parseIdentifierExpr() Expr {
 
 	// Simple column reference
 	return &ColumnRef{Column: name}
+}
+
+func isTypedStringLiteralKeyword(name string) bool {
+	switch strings.ToUpper(name) {
+	case "DATE", "TIME", "TIMESTAMP":
+		return true
+	default:
+		return false
+	}
 }
 
 // parseQualifiedRef parses a qualified name (table.column, schema.table.column, or table.*).
