@@ -40,7 +40,10 @@ func NewS3Presigner(cfg *config.Config) (*S3Presigner, error) {
 		return nil, fmt.Errorf("S3 config is incomplete")
 	}
 
-	endpoint := fmt.Sprintf("https://%s", *cfg.S3Endpoint)
+	endpoint, err := normalizeS3Endpoint(*cfg.S3Endpoint)
+	if err != nil {
+		return nil, err
+	}
 
 	s3Client := s3.New(s3.Options{
 		Region: *cfg.S3Region,
@@ -111,7 +114,10 @@ func NewS3PresignerFromCredential(cred *domain.StorageCredential, bucket string)
 		return nil, fmt.Errorf("credential is nil")
 	}
 
-	endpoint := fmt.Sprintf("https://%s", cred.Endpoint)
+	endpoint, err := normalizeS3Endpoint(cred.Endpoint)
+	if err != nil {
+		return nil, err
+	}
 	usePathStyle := cred.URLStyle != "vhost"
 
 	s3Client := s3.New(s3.Options{
@@ -127,6 +133,29 @@ func NewS3PresignerFromCredential(cred *domain.StorageCredential, bucket string)
 		presignClient: s3.NewPresignClient(s3Client),
 		bucket:        bucket,
 	}, nil
+}
+
+func normalizeS3Endpoint(endpoint string) (string, error) {
+	trimmed := strings.TrimSpace(endpoint)
+	if trimmed == "" {
+		return "", fmt.Errorf("S3 endpoint is required")
+	}
+
+	if !strings.Contains(trimmed, "://") {
+		return "https://" + strings.TrimRight(trimmed, "/"), nil
+	}
+
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return "", fmt.Errorf("parse S3 endpoint %q: %w", endpoint, err)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return "", fmt.Errorf("unsupported S3 endpoint scheme %q", parsed.Scheme)
+	}
+	if parsed.Host == "" {
+		return "", fmt.Errorf("S3 endpoint %q must include a host", endpoint)
+	}
+	return strings.TrimRight(parsed.String(), "/"), nil
 }
 
 // ParseS3Path extracts bucket and key from an "s3://bucket/path/to/file" URI.
