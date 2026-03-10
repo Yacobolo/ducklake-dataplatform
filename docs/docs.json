@@ -64,7 +64,7 @@
           "reference/api"
         ],
         "openapi": {
-          "source": "https://raw.githubusercontent.com/Yacobolo/ducklake-dataplatform/main/api/gen/openapi.yaml"
+          "source": "https://raw.githubusercontent.com/Yacobolo/ducklake-dataplatform/codex/ai/fix/mintlify-docs-config/api/gen/openapi.yaml"
         }
       }
     ]
