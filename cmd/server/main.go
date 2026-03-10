@@ -235,6 +235,7 @@ func run() error {
 		svc.Model,
 		svc.Macro,
 		svc.Semantic,
+		svc.Dashboard,
 	)
 
 	authHandler := api.NewAuthHTTPHandler(svc.Auth, svc.WebSessionAuth)
@@ -413,6 +414,7 @@ func run() error {
 	uiHandler.Manifest = svc.Manifest
 	uiHandler.GitService = svc.GitService
 	uiHandler.Semantic = svc.Semantic
+	uiHandler.Dashboard = svc.Dashboard
 	r.Route("/ui", func(r chi.Router) {
 		ui.MountRoutes(r, uiHandler)
 	})

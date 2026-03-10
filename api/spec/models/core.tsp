@@ -992,6 +992,46 @@ model PaginatedNotebooks {
   next_page_token?: string;
 }
 
+enum VisualOutputKind {
+  table,
+  metric,
+  chart,
+}
+
+enum VisualChartType {
+  bar,
+  line,
+  area,
+  pie,
+  doughnut,
+  scatter,
+  stacked_bar,
+}
+
+model VisualFieldBinding {
+  field: string;
+}
+
+model VisualEncodings {
+  x?: VisualFieldBinding;
+  y?: VisualFieldBinding;
+  series?: VisualFieldBinding;
+  label?: VisualFieldBinding;
+  value?: VisualFieldBinding;
+  secondary?: VisualFieldBinding;
+}
+
+model VisualSpec {
+  kind: VisualOutputKind;
+  chart_type?: VisualChartType;
+  encodings?: VisualEncodings;
+  title?: string;
+  subtitle?: string;
+  legend?: boolean;
+  stacked?: boolean;
+  color_palette?: string;
+}
+
 enum CellCellType {
   sql,
   markdown,
@@ -1019,6 +1059,7 @@ model CreateCellRequest {
   role?: CellRole;
   disabled?: boolean;
   test?: NotebookCellTestConfig;
+  visual_spec?: VisualSpec;
   content?: string;
   position?: int32;
 }
@@ -1028,6 +1069,7 @@ model UpdateCellRequest {
   role?: CellRole;
   disabled?: boolean;
   test?: NotebookCellTestConfig;
+  visual_spec?: VisualSpec;
   content?: string;
   position?: int32;
 }
@@ -1040,6 +1082,7 @@ model Cell {
   role?: CellRole;
   disabled?: boolean;
   test?: NotebookCellTestConfig;
+  visual_spec?: VisualSpec;
   content?: string;
   position?: int32;
   last_result?: string;
@@ -1326,9 +1369,11 @@ alias SemanticMetricCertificationState = CreateSemanticMetricRequestCertificatio
 model CreateSemanticMetricRequest {
   name: string;
   description?: string;
+  label?: string;
   metric_type: SemanticMetricMetricType;
   expression_mode?: SemanticMetricExpressionMode;
   expression: string;
+  filter_sql?: string;
   default_time_grain?: string;
   format?: string;
   certification_state?: CreateSemanticMetricRequestCertificationState;
@@ -1336,9 +1381,11 @@ model CreateSemanticMetricRequest {
 
 model UpdateSemanticMetricRequest {
   description?: string;
+  label?: string;
   metric_type?: SemanticMetricMetricType;
   expression_mode?: SemanticMetricExpressionMode;
   expression?: string;
+  filter_sql?: string;
   default_time_grain?: string;
   format?: string;
   owner?: string;
@@ -1350,9 +1397,11 @@ model SemanticMetric {
   semantic_model_id?: string;
   name?: string;
   description?: string;
+  label?: string;
   metric_type?: SemanticMetricMetricType;
   expression_mode?: SemanticMetricExpressionMode;
   expression?: string;
+  filter_sql?: string;
   default_time_grain?: string;
   format?: string;
   owner?: string;
@@ -1510,12 +1559,14 @@ model MetricQueryRequest {
   filters?: string[];
   order_by?: string[];
   limit?: int32;
+  time_grain?: string;
 }
 
 model MetricQueryJoinStep {
   relationship_name?: string;
   from_model?: string;
   to_model?: string;
+  relationship_type?: string;
   join_sql?: string;
 }
 
@@ -1524,6 +1575,7 @@ model MetricQueryPlan {
   base_relation?: string;
   metrics?: string[];
   dimensions?: string[];
+  time_grain?: string;
   join_path?: MetricQueryJoinStep[];
   selected_pre_aggregation?: string;
   generated_sql?: string;
@@ -1548,6 +1600,105 @@ model MetricFreshnessStatus {
   freshness_basis?: string[];
   selected_pre_aggregation?: string;
   checked_at?: utcDateTime;
+}
+
+model Dashboard {
+  id?: string;
+  name?: string;
+  description?: string;
+  owner?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedDashboards {
+  data: Dashboard[];
+  next_page_token?: string;
+}
+
+enum DashboardWidgetSourceKind {
+  sql_query,
+  notebook_cell,
+  semantic_query,
+}
+
+model DashboardWidgetLayout {
+  x: int32;
+  y: int32;
+  w: int32;
+  h: int32;
+}
+
+model DashboardSQLQuerySource {
+  sql: string;
+  catalog?: string;
+  schema?: string;
+}
+
+model DashboardNotebookCellSource {
+  notebook_id: string;
+  cell_id: string;
+}
+
+model DashboardSemanticQuerySource {
+  project_name: string;
+  semantic_model_name: string;
+  metrics: string[];
+  dimensions?: string[];
+  filters?: string[];
+  order_by?: string[];
+  limit?: int32;
+  time_grain?: string;
+}
+
+model DashboardWidgetSource {
+  kind: DashboardWidgetSourceKind;
+  sql_query?: DashboardSQLQuerySource;
+  notebook_cell?: DashboardNotebookCellSource;
+  semantic_query?: DashboardSemanticQuerySource;
+}
+
+model DashboardWidget {
+  id?: string;
+  dashboard_id?: string;
+  name?: string;
+  description?: string;
+  source?: DashboardWidgetSource;
+  visual_spec?: VisualSpec;
+  layout?: DashboardWidgetLayout;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model DashboardDetail {
+  dashboard?: Dashboard;
+  widgets?: DashboardWidget[];
+}
+
+model CreateDashboardRequest {
+  name: string;
+  description?: string;
+}
+
+model UpdateDashboardRequest {
+  name?: string;
+  description?: string;
+}
+
+model CreateDashboardWidgetRequest {
+  name: string;
+  description?: string;
+  source: DashboardWidgetSource;
+  visual_spec?: VisualSpec;
+  layout: DashboardWidgetLayout;
+}
+
+model UpdateDashboardWidgetRequest {
+  name?: string;
+  description?: string;
+  source?: DashboardWidgetSource;
+  visual_spec?: VisualSpec;
+  layout?: DashboardWidgetLayout;
 }
 
 model PurgeLineageRequest {

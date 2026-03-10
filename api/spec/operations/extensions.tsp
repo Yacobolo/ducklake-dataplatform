@@ -238,6 +238,38 @@ op listNotebookJobs(notebookId: string, @query max_results?: int32, @query page_
 @get
 op getNotebookJob(notebookId: string, jobId: string): Ok<NotebookJob> | ResourceErrorResponses;
 
+@route("/dashboards")
+@get
+op listDashboards(@query owner?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedDashboards> | StandardErrorResponses;
+
+@route("/dashboards")
+@post
+op createDashboard(@body body: CreateDashboardRequest): Created<Dashboard> | MutatingErrorResponses;
+
+@route("/dashboards/{dashboardId}")
+@get
+op getDashboard(dashboardId: string): Ok<DashboardDetail> | ResourceErrorResponses;
+
+@route("/dashboards/{dashboardId}")
+@patch(#{ implicitOptionality: true })
+op updateDashboard(dashboardId: string, @body body: UpdateDashboardRequest): Ok<Dashboard> | MutatingErrorResponses;
+
+@route("/dashboards/{dashboardId}")
+@delete
+op deleteDashboard(dashboardId: string): NoContent | MutatingErrorResponses;
+
+@route("/dashboards/{dashboardId}/widgets")
+@post
+op createDashboardWidget(dashboardId: string, @body body: CreateDashboardWidgetRequest): Created<DashboardWidget> | MutatingErrorResponses;
+
+@route("/dashboards/{dashboardId}/widgets/{widgetId}")
+@patch(#{ implicitOptionality: true })
+op updateDashboardWidget(dashboardId: string, widgetId: string, @body body: UpdateDashboardWidgetRequest): Ok<DashboardWidget> | MutatingErrorResponses;
+
+@route("/dashboards/{dashboardId}/widgets/{widgetId}")
+@delete
+op deleteDashboardWidget(dashboardId: string, widgetId: string): NoContent | MutatingErrorResponses;
+
 @route("/git-repos")
 @get
 op listGitRepos(@query max_results?: int32, @query page_token?: string): Ok<PaginatedGitRepos> | StandardErrorResponses;

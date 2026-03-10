@@ -184,6 +184,7 @@ func (s *Service) CreateCell(ctx context.Context, principal string, isAdmin bool
 		Name:       req.Name,
 		Disabled:   req.Disabled,
 		Test:       req.Test,
+		VisualSpec: req.VisualSpec,
 		Content:    req.Content,
 		Position:   pos,
 	}
@@ -246,6 +247,14 @@ func (s *Service) UpdateCell(ctx context.Context, principal string, isAdmin bool
 	}
 	if newRole == domain.CellRoleTest && req.Test == nil && cell.Test == nil {
 		return nil, domain.ErrValidation("test config is required for test cells")
+	}
+	if req.VisualSpec != nil {
+		if cell.CellType != domain.CellTypeSQL {
+			return nil, domain.ErrValidation("visual_spec is only allowed for sql cells")
+		}
+		if err := req.VisualSpec.Validate(); err != nil {
+			return nil, err
+		}
 	}
 	if err := validateRoleForCellType(newRole, cell.CellType); err != nil {
 		return nil, err

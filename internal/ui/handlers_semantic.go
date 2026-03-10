@@ -117,21 +117,21 @@ func (h *Handler) SemanticModelsDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderHTML(w, http.StatusOK, semanticModelDetailPage(semanticModelDetailPageData{
-		Principal:          principalFromContext(r.Context()),
-		ProjectName:        projectName,
-		ModelName:          semanticModelName,
-		BaseModelRef:       item.BaseModelRef,
-		DefaultTimeDim:     valueOrDash(item.DefaultTimeDimension),
-		Description:        item.Description,
-		EditURL:            "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/edit",
-		DeleteURL:          "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/delete",
-		MetricsCreateURL:   "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics",
-		PreAggCreateURL:    "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/pre-aggregations",
-		QueryExplainURL:    "/ui/semantic/query/explain",
-		QueryRunURL:        "/ui/semantic/query/run",
-		Metrics:            metricRows,
-		PreAggregations:    preAggRows,
-		CSRFFieldProvider:  csrfFieldProvider(r),
+		Principal:         principalFromContext(r.Context()),
+		ProjectName:       projectName,
+		ModelName:         semanticModelName,
+		BaseModelRef:      item.BaseModelRef,
+		DefaultTimeDim:    valueOrDash(item.DefaultTimeDimension),
+		Description:       item.Description,
+		EditURL:           "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/edit",
+		DeleteURL:         "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/delete",
+		MetricsCreateURL:  "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics",
+		PreAggCreateURL:   "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/pre-aggregations",
+		QueryExplainURL:   "/ui/semantic/query/explain",
+		QueryRunURL:       "/ui/semantic/query/run",
+		Metrics:           metricRows,
+		PreAggregations:   preAggRows,
+		CSRFFieldProvider: csrfFieldProvider(r),
 	}))
 }
 
@@ -187,10 +187,12 @@ func (h *Handler) SemanticMetricsCreate(w http.ResponseWriter, r *http.Request) 
 	}
 	_, err := h.Semantic.CreateMetric(r.Context(), principal, projectName, semanticModelName, domain.CreateSemanticMetricRequest{
 		Name:               formString(r.Form, "name"),
+		Label:              formString(r.Form, "label"),
 		Description:        formString(r.Form, "description"),
 		MetricType:         formString(r.Form, "metric_type"),
 		ExpressionMode:     formString(r.Form, "expression_mode"),
 		Expression:         formString(r.Form, "expression"),
+		FilterSQL:          formString(r.Form, "filter_sql"),
 		DefaultTimeGrain:   formString(r.Form, "default_time_grain"),
 		Format:             formString(r.Form, "format"),
 		CertificationState: formString(r.Form, "certification_state"),
@@ -239,17 +241,21 @@ func (h *Handler) SemanticMetricsUpdate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	description := formString(r.Form, "description")
+	label := formString(r.Form, "label")
 	metricType := formString(r.Form, "metric_type")
 	expressionMode := formString(r.Form, "expression_mode")
 	expression := formString(r.Form, "expression")
+	filterSQL := formString(r.Form, "filter_sql")
 	defaultTimeGrain := formString(r.Form, "default_time_grain")
 	format := formString(r.Form, "format")
 	certificationState := formString(r.Form, "certification_state")
 	_, err := h.Semantic.UpdateMetric(r.Context(), projectName, semanticModelName, metricName, domain.UpdateSemanticMetricRequest{
+		Label:              &label,
 		Description:        &description,
 		MetricType:         &metricType,
 		ExpressionMode:     &expressionMode,
 		Expression:         &expression,
+		FilterSQL:          &filterSQL,
 		DefaultTimeGrain:   &defaultTimeGrain,
 		Format:             &format,
 		CertificationState: &certificationState,
@@ -501,6 +507,9 @@ func (h *Handler) semanticQueryRender(w http.ResponseWriter, r *http.Request, ex
 		Dimensions:        formCSV(r.Form, "dimensions"),
 		Filters:           formCSV(r.Form, "filters"),
 		OrderBy:           formCSV(r.Form, "order_by"),
+	}
+	if rawTimeGrain := formString(r.Form, "time_grain"); rawTimeGrain != "" {
+		req.TimeGrain = &rawTimeGrain
 	}
 	if rawLimit := formString(r.Form, "limit"); rawLimit != "" {
 		parsed, err := strconv.Atoi(rawLimit)

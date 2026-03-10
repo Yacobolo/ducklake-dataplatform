@@ -158,6 +158,8 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				d.CSRFFieldProvider(),
 				Label(Text("Name")),
 				Input(Name("name"), Required()),
+				Label(Text("Label")),
+				Input(Name("label")),
 				Label(Text("Description")),
 				Input(Name("description")),
 				Label(Text("Metric type")),
@@ -166,6 +168,8 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				Select(Name("expression_mode"), Option(Value("DSL"), Text("DSL")), Option(Value("SQL"), Text("SQL"))),
 				Label(Text("Expression")),
 				Textarea(Name("expression"), Required()),
+				Label(Text("Metric filter SQL")),
+				Input(Name("filter_sql")),
 				Label(Text("Default time grain")),
 				Input(Name("default_time_grain")),
 				Label(Text("Format")),
@@ -331,6 +335,7 @@ func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string
 	filters := ""
 	orderBy := ""
 	limit := ""
+	timeGrain := ""
 	if req != nil {
 		metrics = csvValues(req.Metrics)
 		dimensions = csvValues(req.Dimensions)
@@ -338,6 +343,9 @@ func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string
 		orderBy = csvValues(req.OrderBy)
 		if req.Limit != nil {
 			limit = strconv.Itoa(*req.Limit)
+		}
+		if req.TimeGrain != nil {
+			timeGrain = *req.TimeGrain
 		}
 	}
 	return Div(
@@ -361,6 +369,8 @@ func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string
 			Input(Name("order_by"), Value(orderBy)),
 			Label(Text("Limit")),
 			Input(Name("limit"), Value(limit)),
+			Label(Text("Time grain")),
+			Input(Name("time_grain"), Value(timeGrain)),
 			Div(Class("BtnGroup"),
 				Button(Type("submit"), Class(primaryButtonClass()), Text("Explain query")),
 				Button(Type("submit"), FormAction(runURL), Class(secondaryButtonClass()), Text("Run query")),
@@ -384,6 +394,8 @@ func semanticModelsEditPage(principal domain.ContextPrincipal, projectName, sema
 
 func semanticMetricEditPage(principal domain.ContextPrincipal, projectName, semanticModelName string, metric *domain.SemanticMetric, csrfFieldProvider func() Node) Node {
 	return formPage(principal, "Edit Semantic Metric", "semantic", "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/metrics/"+metric.Name+"/update", csrfFieldProvider,
+		Label(Text("Label")),
+		Input(Name("label"), Value(metric.Label)),
 		Label(Text("Description")),
 		Textarea(Name("description"), Text(metric.Description)),
 		Label(Text("Metric type")),
@@ -392,6 +404,8 @@ func semanticMetricEditPage(principal domain.ContextPrincipal, projectName, sema
 		Select(Name("expression_mode"), optionSelected("DSL", metric.ExpressionMode), optionSelected("SQL", metric.ExpressionMode)),
 		Label(Text("Expression")),
 		Textarea(Name("expression"), Text(metric.Expression), Required()),
+		Label(Text("Metric filter SQL")),
+		Input(Name("filter_sql"), Value(metric.FilterSQL)),
 		Label(Text("Default time grain")),
 		Input(Name("default_time_grain"), Value(metric.DefaultTimeGrain)),
 		Label(Text("Format")),

@@ -11,6 +11,7 @@ type MetricQueryRequest struct {
 	Filters           []string
 	OrderBy           []string
 	Limit             *int
+	TimeGrain         *string
 }
 
 // JoinStep describes one relationship step selected by the planner.
@@ -18,6 +19,7 @@ type JoinStep struct {
 	RelationshipName string
 	FromModel        string
 	ToModel          string
+	RelationshipType string
 	JoinSQL          string
 }
 
@@ -27,6 +29,7 @@ type MetricQueryPlan struct {
 	BaseRelation           string
 	Metrics                []string
 	Dimensions             []string
+	TimeGrain              *string
 	JoinPath               []JoinStep
 	SelectedPreAggregation *string
 	GeneratedSQL           string

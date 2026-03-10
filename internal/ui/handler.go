@@ -12,6 +12,7 @@ import (
 	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
+	"duck-demo/internal/service/dashboard"
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/macro"
 	"duck-demo/internal/service/model"
@@ -41,6 +42,7 @@ type Handler struct {
 	Macro               *macro.Service
 	Model               *model.Service
 	Semantic            *semantic.Service
+	Dashboard           *dashboard.Service
 	Principal           *security.PrincipalService
 	Group               *security.GroupService
 	Grant               *security.GrantService

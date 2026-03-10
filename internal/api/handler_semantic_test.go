@@ -229,6 +229,7 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 	dimensions := []string{"order_date"}
 	filters := []string{"region = 'us'"}
 	orderBy := []string{"order_date desc"}
+	timeGrain := "day"
 
 	preAgg := "analytics.agg_daily_sales"
 	h := &APIHandler{
@@ -242,12 +243,15 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 				assert.Equal(t, orderBy, req.OrderBy)
 				require.NotNil(t, req.Limit)
 				assert.Equal(t, int(limit), *req.Limit)
+				require.NotNil(t, req.TimeGrain)
+				assert.Equal(t, timeGrain, *req.TimeGrain)
 				return &semantic.MetricQueryPlan{
 					BaseModelName:          "sales",
 					BaseRelation:           "analytics.fct_sales",
 					Metrics:                req.Metrics,
 					Dimensions:             req.Dimensions,
-					JoinPath:               []semantic.JoinStep{{RelationshipName: "sales_to_customers", FromModel: "sales", ToModel: "customers", JoinSQL: "sales.customer_id = customers.id"}},
+					TimeGrain:              &timeGrain,
+					JoinPath:               []semantic.JoinStep{{RelationshipName: "sales_to_customers", FromModel: "sales", ToModel: "customers", RelationshipType: domain.RelationshipTypeManyToOne, JoinSQL: "sales.customer_id = customers.id"}},
 					SelectedPreAggregation: &preAgg,
 					GeneratedSQL:           "select ...",
 					FreshnessStatus:        "fresh",
@@ -265,6 +269,7 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 		Filters:           &filters,
 		OrderBy:           &orderBy,
 		Limit:             &limit,
+		TimeGrain:         &timeGrain,
 	}})
 	require.NoError(t, err)
 
@@ -275,6 +280,12 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 	assert.Equal(t, "select ...", *okResp.Body.Plan.GeneratedSql)
 	require.NotNil(t, okResp.Body.Plan.SelectedPreAggregation)
 	assert.Equal(t, preAgg, *okResp.Body.Plan.SelectedPreAggregation)
+	require.NotNil(t, okResp.Body.Plan.TimeGrain)
+	assert.Equal(t, timeGrain, *okResp.Body.Plan.TimeGrain)
+	require.NotNil(t, okResp.Body.Plan.JoinPath)
+	require.Len(t, *okResp.Body.Plan.JoinPath, 1)
+	require.NotNil(t, (*okResp.Body.Plan.JoinPath)[0].RelationshipType)
+	assert.Equal(t, domain.RelationshipTypeManyToOne, *(*okResp.Body.Plan.JoinPath)[0].RelationshipType)
 }
 
 func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {

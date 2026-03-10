@@ -69,6 +69,14 @@ func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest
 		}
 		selectedMetrics = append(selectedMetrics, m)
 	}
+	resolvedMetricSQL := make(map[string]string, len(selectedMetrics))
+	for _, metric := range selectedMetrics {
+		sqlExpr, err := resolveMetricExpression(metric.Name, metricByName, map[string]bool{})
+		if err != nil {
+			return nil, err
+		}
+		resolvedMetricSQL[metric.Name] = applyMetricFilterSQL(metric, sqlExpr)
+	}
 
 	models, _, err := s.models.List(ctx, &req.ProjectName, domain.PageRequest{MaxResults: 10000})
 	if err != nil {
@@ -112,6 +120,11 @@ func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest
 			if joinedNames[step.ToModel] {
 				continue
 			}
+			switch step.RelationshipType {
+			case domain.RelationshipTypeManyToOne, domain.RelationshipTypeOneToOne:
+			default:
+				return nil, domain.ErrValidation("relationship %q is not join-safe for metric queries in dashboards", step.RelationshipName)
+			}
 			joins = append(joins, fmt.Sprintf("LEFT JOIN %s AS %s ON %s", modelByName[step.ToModel].BaseModelRef, step.ToModel, step.JoinSQL))
 			joinedNames[step.ToModel] = true
 			joinSteps = append(joinSteps, step)
@@ -132,8 +145,17 @@ func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest
 		selectParts = append(selectParts, dim)
 		groupByParts = append(groupByParts, dim)
 	}
+	if req.TimeGrain != nil && strings.TrimSpace(*req.TimeGrain) != "" {
+		timeDim := strings.TrimSpace(baseModel.DefaultTimeDimension)
+		if timeDim == "" {
+			return nil, domain.ErrValidation("semantic model %q does not define a default_time_dimension", baseModel.Name)
+		}
+		timeExpr := fmt.Sprintf("date_trunc('%s', %s) AS %s", strings.TrimSpace(*req.TimeGrain), timeDim, timeGrainAlias)
+		selectParts = append(selectParts, timeExpr)
+		groupByParts = append(groupByParts, timeGrainAlias)
+	}
 	for _, m := range selectedMetrics {
-		selectParts = append(selectParts, fmt.Sprintf("%s AS %s", metricSQLExpression(m), m.Name))
+		selectParts = append(selectParts, fmt.Sprintf("%s AS %s", resolvedMetricSQL[m.Name], m.Name))
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM %s AS %s", strings.Join(selectParts, ", "), fromRelation, baseModel.Name)
@@ -166,6 +188,7 @@ func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest
 		BaseRelation:           baseModel.BaseModelRef,
 		Metrics:                req.Metrics,
 		Dimensions:             req.Dimensions,
+		TimeGrain:              req.TimeGrain,
 		JoinPath:               joinSteps,
 		SelectedPreAggregation: selectedPreAgg,
 		GeneratedSQL:           query,
@@ -266,6 +289,40 @@ func metricSQLExpression(metric domain.SemanticMetric) string {
 	return metric.Expression
 }
 
+const timeGrainAlias = "__time_grain"
+
+func resolveMetricExpression(name string, metricByName map[string]domain.SemanticMetric, visiting map[string]bool) (string, error) {
+	metric, ok := metricByName[name]
+	if !ok {
+		return "", domain.ErrValidation("metric %q not found", name)
+	}
+	if visiting[name] {
+		return "", domain.ErrValidation("metric %q contains a derived-metric cycle", name)
+	}
+
+	visiting[name] = true
+	defer delete(visiting, name)
+
+	expr := metricSQLExpression(metric)
+	refs := metricReferencePattern.FindAllStringSubmatch(expr, -1)
+	for _, ref := range refs {
+		refName := ref[1]
+		resolved, err := resolveMetricExpression(refName, metricByName, visiting)
+		if err != nil {
+			return "", err
+		}
+		expr = strings.ReplaceAll(expr, ref[0], fmt.Sprintf("(%s)", resolved))
+	}
+	return expr, nil
+}
+
+var metricReferencePattern = regexp.MustCompile(`\$\{([a-zA-Z0-9_]+)\}`)
+
+func applyMetricFilterSQL(metric domain.SemanticMetric, expr string) string {
+	_ = metric
+	return expr
+}
+
 func modelPrefix(identifier string) string {
 	parts := strings.SplitN(strings.TrimSpace(identifier), ".", 2)
 	if len(parts) == 2 {
@@ -332,6 +389,7 @@ func shortestPath(baseName, targetName string, relationships []domain.SemanticRe
 			RelationshipName: e.rel.Name,
 			FromModel:        e.from,
 			ToModel:          e.to,
+			RelationshipType: e.rel.RelationshipType,
 			JoinSQL:          e.rel.JoinSQL,
 		})
 		cur = e.from

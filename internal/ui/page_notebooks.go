@@ -48,6 +48,7 @@ type notebookCellRowData struct {
 	ID           string
 	Title        string
 	CellType     string
+	VisualSpec   *domain.VisualSpec
 	Content      string
 	Position     int
 	LastRunAt    *time.Time
@@ -63,6 +64,7 @@ type notebookCellRowData struct {
 
 type notebookCellResultData struct {
 	Columns    []string
+	RawRows    [][]interface{}
 	Rows       [][]string
 	RowCount   int
 	Error      string
@@ -92,7 +94,7 @@ type notebookDetailPageData struct {
 	DeleteURL       string
 	NewCellURL      string
 	RunAllURL       string
-	RunAllAsyncURL string
+	RunAllAsyncURL  string
 	ReorderURL      string
 	JobsURL         string
 	GitRepoURL      string
@@ -624,6 +626,38 @@ func notebookResultNode(c notebookCellRowData) Node {
 		)
 	}
 
+	if c.VisualSpec != nil && c.VisualSpec.Kind != domain.VisualOutputTable {
+		switch c.VisualSpec.Kind {
+		case domain.VisualOutputMetric:
+			field := ""
+			if c.VisualSpec.Encodings.Value != nil {
+				field = c.VisualSpec.Encodings.Value.Field
+			}
+			value, secondary := metricValueFromResult(c.LastResult, field)
+			return Div(
+				Class("notebook-output"),
+				Attr("data-notebook-cell-output", "true"),
+				visualMetricCard(defaultVisualTitle(c.VisualSpec, "Metric"), value, secondary),
+				notebookResultDataDetails(c),
+			)
+		case domain.VisualOutputChart:
+			return Div(
+				Class("notebook-output"),
+				Attr("data-notebook-cell-output", "true"),
+				chartHost(c.LastResult.Columns, c.LastResult.RawRows, c.VisualSpec),
+				notebookResultDataDetails(c),
+			)
+		}
+	}
+
+	return notebookTableResultNode(c)
+}
+
+func notebookTableResultNode(c notebookCellRowData) Node {
+	if c.LastResult == nil {
+		return Div(Class("notebook-output"), Attr("data-notebook-cell-output", "true"), P(Class(mutedClass()), Text("Run this cell to see output.")))
+	}
+
 	headers := make([]Node, 0, len(c.LastResult.Columns))
 	for i := range c.LastResult.Columns {
 		headers = append(headers, Th(Text(c.LastResult.Columns[i])))
@@ -669,6 +703,40 @@ func notebookResultNode(c notebookCellRowData) Node {
 		P(Class(mutedClass()), Text(meta)),
 		Table(Class("data-table"), THead(Tr(Group(headers))), TBody(Group(rows))),
 	)
+}
+
+func notebookResultDataDetails(c notebookCellRowData) Node {
+	return Details(
+		Class("notebook-output-data"),
+		Summary(Text("View data")),
+		notebookTableResultNode(c),
+	)
+}
+
+func metricValueFromResult(result *notebookCellResultData, field string) (string, string) {
+	if result == nil || len(result.RawRows) == 0 || len(result.Columns) == 0 {
+		return "-", "No rows"
+	}
+	colIdx := 0
+	if field != "" {
+		for i := range result.Columns {
+			if result.Columns[i] == field {
+				colIdx = i
+				break
+			}
+		}
+	}
+	if len(result.RawRows[0]) <= colIdx {
+		return "-", "No metric value"
+	}
+	return fmt.Sprint(result.RawRows[0][colIdx]), fmt.Sprintf("%d row(s)", result.RowCount)
+}
+
+func defaultVisualTitle(spec *domain.VisualSpec, fallback string) string {
+	if spec == nil || strings.TrimSpace(spec.Title) == "" {
+		return fallback
+	}
+	return spec.Title
 }
 
 func notebookJobTone(state string) string {
@@ -949,10 +1017,77 @@ func notebookCellsNewPage(principal domain.ContextPrincipal, notebookID string, 
 }
 
 func notebookCellsEditPage(principal domain.ContextPrincipal, notebookID, cellID string, cell *domain.Cell, csrfFieldProvider func() Node) Node {
-	return formPage(principal, "Edit Notebook Cell", "notebooks", "/ui/notebooks/"+notebookID+"/cells/"+cellID+"/update", csrfFieldProvider,
+	nodes := []Node{
 		Label(Text("Content")),
 		Textarea(Name("content"), Text(cell.Content), Required()),
 		Label(Text("Position")),
 		Input(Name("position"), Value(strconv.Itoa(cell.Position))),
-	)
+	}
+	if cell.CellType == domain.CellTypeSQL {
+		visualKind := "table"
+		chartType := ""
+		title := ""
+		subtitle := ""
+		xField := ""
+		yField := ""
+		seriesField := ""
+		labelField := ""
+		valueField := ""
+		if cell.VisualSpec != nil {
+			visualKind = string(cell.VisualSpec.Kind)
+			title = cell.VisualSpec.Title
+			subtitle = cell.VisualSpec.Subtitle
+			if cell.VisualSpec.ChartType != nil {
+				chartType = string(*cell.VisualSpec.ChartType)
+			}
+			if cell.VisualSpec.Encodings.X != nil {
+				xField = cell.VisualSpec.Encodings.X.Field
+			}
+			if cell.VisualSpec.Encodings.Y != nil {
+				yField = cell.VisualSpec.Encodings.Y.Field
+			}
+			if cell.VisualSpec.Encodings.Series != nil {
+				seriesField = cell.VisualSpec.Encodings.Series.Field
+			}
+			if cell.VisualSpec.Encodings.Label != nil {
+				labelField = cell.VisualSpec.Encodings.Label.Field
+			}
+			if cell.VisualSpec.Encodings.Value != nil {
+				valueField = cell.VisualSpec.Encodings.Value.Field
+			}
+		}
+		nodes = append(nodes,
+			Label(Text("Visual kind")),
+			Select(Name("visual_kind"),
+				optionSelected("table", visualKind),
+				optionSelected("metric", visualKind),
+				optionSelected("chart", visualKind),
+			),
+			Label(Text("Chart type")),
+			Select(Name("chart_type"),
+				optionSelected("bar", chartType),
+				optionSelected("line", chartType),
+				optionSelected("area", chartType),
+				optionSelected("pie", chartType),
+				optionSelected("doughnut", chartType),
+				optionSelected("scatter", chartType),
+				optionSelected("stacked_bar", chartType),
+			),
+			Label(Text("Visual title")),
+			Input(Name("visual_title"), Value(title)),
+			Label(Text("Visual subtitle")),
+			Input(Name("visual_subtitle"), Value(subtitle)),
+			Label(Text("X field")),
+			Input(Name("visual_x"), Value(xField)),
+			Label(Text("Y field")),
+			Input(Name("visual_y"), Value(yField)),
+			Label(Text("Series field")),
+			Input(Name("visual_series"), Value(seriesField)),
+			Label(Text("Label field")),
+			Input(Name("visual_label"), Value(labelField)),
+			Label(Text("Value field")),
+			Input(Name("visual_value"), Value(valueField)),
+		)
+	}
+	return formPage(principal, "Edit Notebook Cell", "notebooks", "/ui/notebooks/"+notebookID+"/cells/"+cellID+"/update", csrfFieldProvider, nodes...)
 }

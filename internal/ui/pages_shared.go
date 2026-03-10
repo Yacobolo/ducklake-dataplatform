@@ -74,6 +74,7 @@ var navItems = []navItem{
 	{Label: "Governance", Href: "/ui/governance", Key: "governance", Icon: "scan-search"},
 	{Label: "Assets", Href: "/ui/assets", Key: "assets", Icon: "git-fork"},
 	{Label: "Notebooks", Href: "/ui/notebooks", Key: "notebooks", Icon: "notebook-text"},
+	{Label: "Dashboards", Href: "/ui/dashboards", Key: "dashboards", Icon: "chart-column"},
 	{Label: "Macros", Href: "/ui/macros", Key: "macros", Icon: "braces"},
 	{Label: "Models", Href: "/ui/models", Key: "models", Icon: "boxes"},
 	{Label: "Semantic", Href: "/ui/semantic", Key: "semantic", Icon: "waypoints"},

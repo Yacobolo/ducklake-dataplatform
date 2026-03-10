@@ -19,6 +19,7 @@ import (
 	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
+	"duck-demo/internal/service/dashboard"
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/ingestion"
 	"duck-demo/internal/service/macro"
@@ -77,6 +78,7 @@ type Services struct {
 	Model               *svcmodel.Service
 	Macro               *macro.Service
 	Semantic            *semantic.Service
+	Dashboard           *dashboard.Service
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -378,6 +380,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	semanticPreAggRepo := repository.NewSemanticPreAggregationRepo(deps.WriteDB)
 	semanticSvc := semantic.NewService(semanticModelRepo, semanticMetricRepo, semanticRelRepo, semanticPreAggRepo)
 	semanticSvc.SetQueryExecutor(querySvc)
+	dashboardRepo := repository.NewDashboardRepo(deps.WriteDB)
+	dashboardWidgetRepo := repository.NewDashboardWidgetRepo(deps.WriteDB)
+	dashboardSvc := dashboard.NewService(dashboardRepo, dashboardWidgetRepo, notebookRepo, auditRepo, querySvc, semanticSvc)
 
 	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)
@@ -417,6 +422,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			Model:               modelSvc,
 			Macro:               macroSvc,
 			Semantic:            semanticSvc,
+			Dashboard:           dashboardSvc,
 		},
 		Engine:        eng,
 		APIKeyRepo:    apiKeyRepo,

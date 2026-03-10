@@ -170,8 +170,10 @@ func (h *APIHandler) CreateSemanticMetric(ctx context.Context, req GenCreateSema
 		SemanticModelID:    "",
 		Name:               req.Body.Name,
 		Description:        valOrEmpty(req.Body.Description),
+		Label:              valOrEmpty(req.Body.Label),
 		MetricType:         string(req.Body.MetricType),
 		Expression:         req.Body.Expression,
+		FilterSQL:          valOrEmpty(req.Body.FilterSql),
 		DefaultTimeGrain:   valOrEmpty(req.Body.DefaultTimeGrain),
 		Format:             valOrEmpty(req.Body.Format),
 		CertificationState: certificationOrDefault(req.Body.CertificationState),
@@ -203,7 +205,9 @@ func (h *APIHandler) CreateSemanticMetric(ctx context.Context, req GenCreateSema
 func (h *APIHandler) UpdateSemanticMetric(ctx context.Context, req GenUpdateSemanticMetricRequest) (GenUpdateSemanticMetricResponse, error) {
 	domReq := domain.UpdateSemanticMetricRequest{
 		Description:      req.Body.Description,
+		Label:            req.Body.Label,
 		Expression:       req.Body.Expression,
+		FilterSQL:        req.Body.FilterSql,
 		DefaultTimeGrain: req.Body.DefaultTimeGrain,
 		Format:           req.Body.Format,
 		Owner:            req.Body.Owner,
@@ -579,9 +583,11 @@ func semanticMetricToAPI(m domain.SemanticMetric) SemanticMetric {
 		SemanticModelId:    optStr(m.SemanticModelID),
 		Name:               optStr(m.Name),
 		Description:        optStr(m.Description),
+		Label:              optStr(m.Label),
 		MetricType:         metricTypePtr(m.MetricType),
 		ExpressionMode:     expressionModePtr(m.ExpressionMode),
 		Expression:         optStr(m.Expression),
+		FilterSql:          optStr(m.FilterSQL),
 		DefaultTimeGrain:   optStr(m.DefaultTimeGrain),
 		Format:             optStr(m.Format),
 		Owner:              optStr(m.Owner),
@@ -656,6 +662,7 @@ func metricQueryPlanToAPI(plan semantic.MetricQueryPlan) MetricQueryPlan {
 			RelationshipName: optStr(step.RelationshipName),
 			FromModel:        optStr(step.FromModel),
 			ToModel:          optStr(step.ToModel),
+			RelationshipType: optStr(step.RelationshipType),
 			JoinSql:          optStr(step.JoinSQL),
 		})
 	}
@@ -665,6 +672,7 @@ func metricQueryPlanToAPI(plan semantic.MetricQueryPlan) MetricQueryPlan {
 		BaseRelation:           optStr(plan.BaseRelation),
 		Metrics:                &plan.Metrics,
 		Dimensions:             &plan.Dimensions,
+		TimeGrain:              plan.TimeGrain,
 		JoinPath:               &joinPath,
 		SelectedPreAggregation: plan.SelectedPreAggregation,
 		GeneratedSql:           optStr(plan.GeneratedSQL),
@@ -695,6 +703,7 @@ func semanticReqToService(req *GenSchemaMetricQueryRequest) semantic.MetricQuery
 		v := int(*req.Limit)
 		out.Limit = &v
 	}
+	out.TimeGrain = req.TimeGrain
 	return out
 }
 

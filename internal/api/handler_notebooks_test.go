@@ -402,10 +402,17 @@ func TestAPI_CellCRUD(t *testing.T) {
 
 	notebookSvc := &mockNotebookService{
 		createCellFn: func(_ context.Context, _ string, _ bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error) {
+			require.NotNil(t, req.VisualSpec)
+			assert.Equal(t, domain.VisualOutputChart, req.VisualSpec.Kind)
+			require.NotNil(t, req.VisualSpec.ChartType)
+			assert.Equal(t, domain.VisualChartBar, *req.VisualSpec.ChartType)
+			require.NotNil(t, req.VisualSpec.Encodings.X)
+			assert.Equal(t, "region", req.VisualSpec.Encodings.X.Field)
 			return &domain.Cell{
 				ID:         cellID,
 				NotebookID: notebookID,
 				CellType:   req.CellType,
+				VisualSpec: req.VisualSpec,
 				Content:    req.Content,
 				Position:   0,
 				CreatedAt:  now,
@@ -417,10 +424,15 @@ func TestAPI_CellCRUD(t *testing.T) {
 			if req.Content != nil {
 				content = *req.Content
 			}
+			require.NotNil(t, req.VisualSpec)
+			assert.Equal(t, domain.VisualOutputMetric, req.VisualSpec.Kind)
+			require.NotNil(t, req.VisualSpec.Encodings.Value)
+			assert.Equal(t, "total_revenue", req.VisualSpec.Encodings.Value.Field)
 			return &domain.Cell{
 				ID:         id,
 				NotebookID: nbID,
 				CellType:   domain.CellTypeSQL,
+				VisualSpec: req.VisualSpec,
 				Content:    content,
 				Position:   0,
 				CreatedAt:  now,
@@ -451,7 +463,7 @@ func TestAPI_CellCRUD(t *testing.T) {
 	defer srv.Close()
 
 	t.Run("create cell", func(t *testing.T) {
-		body := `{"cell_type":"sql","content":"SELECT 1"}`
+		body := `{"cell_type":"sql","content":"SELECT 1","visual_spec":{"kind":"chart","chart_type":"bar","encodings":{"x":{"field":"region"},"y":{"field":"revenue"}}}}`
 		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/"+nbID+"/cells", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 
@@ -461,10 +473,12 @@ func TestAPI_CellCRUD(t *testing.T) {
 		assert.Equal(t, nbID, *cell.NotebookId)
 		assert.Equal(t, "SELECT 1", *cell.Content)
 		assert.Equal(t, CellCellType("sql"), *cell.CellType)
+		require.NotNil(t, cell.VisualSpec)
+		assert.Equal(t, VisualOutputKindChart, cell.VisualSpec.Kind)
 	})
 
 	t.Run("update cell", func(t *testing.T) {
-		body := `{"content":"SELECT 2"}`
+		body := `{"content":"SELECT 2","visual_spec":{"kind":"metric","encodings":{"value":{"field":"total_revenue"}}}}`
 		resp := nbDoRequest(t, http.MethodPatch, srv.URL+"/notebooks/"+nbID+"/cells/"+cellID, body)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 

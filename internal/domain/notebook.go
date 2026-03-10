@@ -78,6 +78,7 @@ type Cell struct {
 	Role       CellRole
 	Disabled   bool
 	Test       *NotebookCellTestConfig
+	VisualSpec *VisualSpec
 	Content    string
 	Position   int
 	LastResult *string
@@ -116,13 +117,14 @@ type UpdateNotebookRequest struct {
 
 // CreateCellRequest holds parameters for creating a cell.
 type CreateCellRequest struct {
-	CellType CellType
-	Name     *string
-	Role     *CellRole
-	Disabled bool
-	Test     *NotebookCellTestConfig
-	Content  string
-	Position *int
+	CellType   CellType
+	Name       *string
+	Role       *CellRole
+	Disabled   bool
+	Test       *NotebookCellTestConfig
+	VisualSpec *VisualSpec
+	Content    string
+	Position   *int
 }
 
 // Validate validates the create cell request.
@@ -156,17 +158,26 @@ func (r *CreateCellRequest) Validate() error {
 	if role != CellRoleTest && r.Test != nil {
 		return ErrValidation("test config is only allowed for test cells")
 	}
+	if r.VisualSpec != nil {
+		if r.CellType != CellTypeSQL {
+			return ErrValidation("visual_spec is only allowed for sql cells")
+		}
+		if err := r.VisualSpec.Validate(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 // UpdateCellRequest holds partial-update parameters for a cell.
 type UpdateCellRequest struct {
-	Name     *string
-	Role     *CellRole
-	Disabled *bool
-	Test     *NotebookCellTestConfig
-	Content  *string
-	Position *int
+	Name       *string
+	Role       *CellRole
+	Disabled   *bool
+	Test       *NotebookCellTestConfig
+	VisualSpec *VisualSpec
+	Content    *string
+	Position   *int
 }
 
 // Validate validates notebook test cell config.
