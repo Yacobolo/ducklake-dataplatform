@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+	"net/url"
 	"strings"
 	"time"
 
@@ -76,7 +77,7 @@ func (r *CatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.Metastor
 	summary := &domain.MetastoreSummary{
 		CatalogName:    r.catalogName,
 		MetastoreType:  "DuckLake (SQLite)",
-		StorageBackend: "S3",
+		StorageBackend: "UNKNOWN",
 	}
 
 	// Read data_path (ducklake_metadata — not managed by sqlc)
@@ -85,6 +86,7 @@ func (r *CatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.Metastor
 		`SELECT value FROM ducklake_metadata WHERE key = 'data_path'`).Scan(&dataPath)
 	if dataPath.Valid {
 		summary.DataPath = dataPath.String
+		summary.StorageBackend = inferStorageBackend(dataPath.String)
 	}
 
 	// Count schemas (ducklake_schema — not managed by sqlc)
@@ -96,6 +98,29 @@ func (r *CatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.Metastor
 		`SELECT COUNT(*) FROM ducklake_table WHERE end_snapshot IS NULL`).Scan(&summary.TableCount)
 
 	return summary, nil
+}
+
+func inferStorageBackend(dataPath string) string {
+	trimmed := strings.TrimSpace(dataPath)
+	if trimmed == "" {
+		return "UNKNOWN"
+	}
+
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return "UNKNOWN"
+	}
+
+	switch strings.ToLower(parsed.Scheme) {
+	case "", "file":
+		return "FILE"
+	case "s3", "s3a", "s3n", "gs", "gcs":
+		return "S3"
+	case "az", "abfs", "abfss", "azure":
+		return "AZURE"
+	default:
+		return strings.ToUpper(parsed.Scheme)
+	}
 }
 
 // GetCatalogVersionSummary returns additive DuckLake version metadata for the catalog.
