@@ -245,6 +245,33 @@ func TestAPIKeyRepo_ExpiredKeyNotReturned(t *testing.T) {
 	}
 }
 
+func TestAPIKeyRepo_LookupUsesUTCForNearExpiryKeys(t *testing.T) {
+	apiKeyRepo, principalRepo := setupAPIKeyTest(t)
+	ctx := context.Background()
+
+	p, err := principalRepo.Create(ctx, &domain.Principal{Name: "utc-user", Type: "user"})
+	require.NoError(t, err)
+
+	rawKey := "utc-sensitive-key"
+	keyHash := hashTestKey(rawKey)
+	expiresAt := time.Now().UTC().Add(15 * time.Second)
+	err = apiKeyRepo.Create(ctx, &domain.APIKey{
+		PrincipalID: p.ID,
+		Name:        "utc-key",
+		KeyHash:     keyHash,
+		ExpiresAt:   &expiresAt,
+	})
+	require.NoError(t, err)
+
+	name, err := apiKeyRepo.LookupPrincipalByAPIKeyHash(ctx, keyHash)
+	require.NoError(t, err)
+	assert.Equal(t, "utc-user", name)
+
+	_, principal, err := apiKeyRepo.GetByHash(ctx, keyHash)
+	require.NoError(t, err)
+	assert.Equal(t, p.ID, principal.ID)
+}
+
 func TestAPIKeyRepo_GetByID(t *testing.T) {
 	apiKeyRepo, principalRepo := setupAPIKeyTest(t)
 	ctx := context.Background()

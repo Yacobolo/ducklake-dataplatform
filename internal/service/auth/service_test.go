@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"testing"
 	"time"
@@ -54,6 +56,36 @@ func TestService_BootstrapRequiresToken_AfterSetup(t *testing.T) {
 	assert.ErrorAs(t, err, &denied)
 }
 
+func TestService_BootstrapConsumesRecoveryTokenOnFirstUse(t *testing.T) {
+	deps := newServiceTestDeps()
+	expiry := time.Now().Add(time.Minute)
+	hash := sha256Sum("recovery-token")
+	deps.setupState.state.SetupCompleted = true
+	deps.setupState.state.BootstrapTokenHash = &hash
+	deps.setupState.state.BootstrapTokenExpiresAt = &expiry
+	svc := NewService(deps.principals, deps.credentials, deps.loginAttempts, deps.setupState, deps.providers, deps.audit, "unit-test-secret")
+
+	_, err := svc.Bootstrap(context.Background(), BootstrapRequest{
+		Username:       "rescue",
+		Password:       "super-secure-password",
+		PrincipalName:  "rescue-admin",
+		BootstrapToken: "recovery-token",
+	})
+	require.NoError(t, err)
+	assert.Nil(t, deps.setupState.state.BootstrapTokenHash)
+	assert.Nil(t, deps.setupState.state.BootstrapTokenExpiresAt)
+
+	_, err = svc.Bootstrap(context.Background(), BootstrapRequest{
+		Username:       "rescue-2",
+		Password:       "super-secure-password",
+		PrincipalName:  "rescue-admin-2",
+		BootstrapToken: "recovery-token",
+	})
+	require.Error(t, err)
+	var denied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &denied)
+}
+
 func TestService_LocalLogin_Success(t *testing.T) {
 	deps := newServiceTestDeps()
 	svc := NewService(deps.principals, deps.credentials, deps.loginAttempts, deps.setupState, deps.providers, deps.audit, "unit-test-secret")
@@ -102,6 +134,11 @@ func parseJWTClaims(t *testing.T, token string) jwt.MapClaims {
 	claims, ok := parsed.Claims.(jwt.MapClaims)
 	require.True(t, ok)
 	return claims
+}
+
+func sha256Sum(value string) string {
+	sum := sha256.Sum256([]byte(value))
+	return hex.EncodeToString(sum[:])
 }
 
 type serviceTestDeps struct {

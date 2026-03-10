@@ -136,6 +136,26 @@ func (r *GrantRepo) ListForSecurable(ctx context.Context, securableType string, 
 
 // HasPrivilege checks whether a principal has a specific privilege on a securable.
 func (r *GrantRepo) HasPrivilege(ctx context.Context, principalID string, principalType, securableType string, securableID string, privilege string) (bool, error) {
+	if securableType == domain.SecurableCatalog {
+		var cnt int64
+		err := r.db.QueryRowContext(ctx, `
+SELECT COUNT(*)
+FROM privilege_grants
+WHERE principal_id = ?
+  AND principal_type = ?
+  AND securable_type = ?
+  AND privilege = ?`,
+			principalID,
+			principalType,
+			securableType,
+			privilege,
+		).Scan(&cnt)
+		if err != nil {
+			return false, err
+		}
+		return cnt > 0, nil
+	}
+
 	cnt, err := r.q.CheckDirectGrantAny(ctx, dbstore.CheckDirectGrantAnyParams{
 		PrincipalID:   principalID,
 		PrincipalType: principalType,

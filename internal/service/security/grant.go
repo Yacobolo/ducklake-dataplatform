@@ -31,6 +31,9 @@ func (s *GrantService) Grant(ctx context.Context, req domain.CreateGrantRequest)
 	if err := requireAdmin(ctx); err != nil {
 		return nil, err
 	}
+	if req.SecurableType == domain.SecurableCatalog {
+		req.SecurableID = domain.CatalogID
+	}
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}

@@ -354,6 +354,69 @@ func TestAuth_JITBootstrapAdmin(t *testing.T) {
 	assert.True(t, cp.IsAdmin)
 }
 
+func TestAuth_LocalJWTResolvesExistingPrincipalWithoutProvisioning(t *testing.T) {
+	handler, getPrincipal := nextHandler()
+
+	prov := &stubProvisioner{
+		result: &domain.Principal{Name: "should-not-be-used", Type: "user"},
+	}
+	auth := NewAuthenticator(
+		&stubValidator{claims: &JWTClaims{
+			Subject: "admin",
+			Raw:     map[string]interface{}{"sub": "admin", "admin": true},
+		}},
+		nil,
+		&stubPrincipalLookup{principals: map[string]*domain.Principal{
+			"admin": {ID: "principal-1", Name: "admin", IsAdmin: false, Type: "user"},
+		}},
+		prov,
+		config.AuthConfig{NameClaim: "sub", Mode: "local_only"},
+		nil,
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer local-jwt")
+	w := httptest.NewRecorder()
+
+	auth.Middleware()(handler).ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.False(t, prov.called)
+	cp, found := getPrincipal()
+	require.True(t, found)
+	assert.Equal(t, "admin", cp.Name)
+	assert.Equal(t, "principal-1", cp.ID)
+	assert.True(t, cp.IsAdmin)
+}
+
+func TestAuth_LocalJWTMissingPrincipalIsRejectedWithoutProvisioning(t *testing.T) {
+	prov := &stubProvisioner{
+		result: &domain.Principal{Name: "recreated-user", Type: "user"},
+	}
+	auth := NewAuthenticator(
+		&stubValidator{claims: &JWTClaims{
+			Subject: "deleted-user",
+			Raw:     map[string]interface{}{"sub": "deleted-user"},
+		}},
+		nil,
+		&stubPrincipalLookup{principals: map[string]*domain.Principal{}},
+		prov,
+		config.AuthConfig{NameClaim: "sub", Mode: "local_only"},
+		nil,
+	)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer stale-local-jwt")
+	w := httptest.NewRecorder()
+
+	auth.Middleware()(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Fatal("handler should not be called")
+	})).ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.False(t, prov.called)
+}
+
 func TestAuth_JWTFallbackDeniesEmptyPrincipal(t *testing.T) {
 	// When no provisioner is configured and principal lookup fails,
 	// the middleware should return 401 instead of creating a principal with empty ID.
