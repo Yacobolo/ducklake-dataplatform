@@ -33,6 +33,9 @@ func NewViewService(
 
 // CreateView creates a new view in the given schema.
 func (s *ViewService) CreateView(ctx context.Context, catalogName string, principal string, schemaName string, req domain.CreateViewRequest) (*domain.ViewDetail, error) {
+	if err := ensureMutableCatalog(catalogName); err != nil {
+		return nil, err
+	}
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, catalogName, domain.PrivCreateTable)
 	if err != nil {
 		return nil, fmt.Errorf("check privilege: %w", err)
@@ -131,6 +134,9 @@ func (s *ViewService) ListViews(ctx context.Context, catalogName string, schemaN
 
 // DeleteView drops a view from the given schema.
 func (s *ViewService) DeleteView(ctx context.Context, catalogName string, principal string, schemaName, viewName string) error {
+	if err := ensureMutableCatalog(catalogName); err != nil {
+		return err
+	}
 	repo, err := s.catalogFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return err
@@ -167,6 +173,9 @@ func (s *ViewService) DeleteView(ctx context.Context, catalogName string, princi
 
 // UpdateView updates a view's metadata.
 func (s *ViewService) UpdateView(ctx context.Context, catalogName string, principal string, schemaName, viewName string, req domain.UpdateViewRequest) (*domain.ViewDetail, error) {
+	if err := ensureMutableCatalog(catalogName); err != nil {
+		return nil, err
+	}
 	repo, err := s.catalogFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err

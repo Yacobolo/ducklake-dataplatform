@@ -28,10 +28,10 @@ Most users think about Duck in terms of finding data and querying it. The exact 
 curl -X POST "https://your-duck-host/v1/query" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
-  -d '{"sql":"SELECT * FROM catalog.schema.table LIMIT 10"}'
+  -d '{"sql":"SELECT borough, pickup_zone, trip_count, gross_revenue FROM sample_data.nyc_taxi.zone_metrics ORDER BY gross_revenue DESC LIMIT 10"}'
 ```
 
-Expected result: a result set, or a permissions response that tells you additional access is required.
+Expected result: a result set from the built-in `sample_data` catalog, or a permissions response that tells you additional access is required.
 
 ### Understand access effects
 

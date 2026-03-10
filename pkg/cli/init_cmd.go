@@ -92,7 +92,7 @@ func newInitCmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Bootstrap an opinionated medallion setup",
-		Long:  "Creates or verifies an opinionated medallion baseline (landing + bronze/silver/gold, storage bindings, and RBAC presets).",
+		Long:  "Creates or verifies an opinionated medallion baseline (landing + bronze/silver/gold, storage bindings, and RBAC presets). Built-in read-only sample data lives in the platform-managed sample_data catalog.",
 	}
 
 	cmd.AddCommand(newInitPlanCmd(client))

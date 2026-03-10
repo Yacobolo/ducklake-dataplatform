@@ -11,22 +11,24 @@ import (
 )
 
 const syntheticViewIDPrefix = "__view__:"
+const syntheticCatalogTableIDPrefix = "__catalog_table__:"
 
 // AuthorizationService provides permission checking using domain repository interfaces.
 // It implements the domain.AuthorizationService interface.
 type AuthorizationService struct {
-	principals         domain.PrincipalRepository
-	groups             domain.GroupRepository
-	grants             domain.GrantRepository
-	rowFilters         domain.RowFilterRepository
-	columnMasks        domain.ColumnMaskRepository
-	introspection      domain.IntrospectionRepository
-	extTableRepo       domain.ExternalTableRepository
-	viewRepo           domain.ViewRepository
-	lookupCatalogTable func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)
-	lookupCatalogView  func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error)
-	cacheMu            sync.RWMutex
-	privilegeCache     map[string]bool
+	principals          domain.PrincipalRepository
+	groups              domain.GroupRepository
+	grants              domain.GrantRepository
+	rowFilters          domain.RowFilterRepository
+	columnMasks         domain.ColumnMaskRepository
+	introspection       domain.IntrospectionRepository
+	extTableRepo        domain.ExternalTableRepository
+	viewRepo            domain.ViewRepository
+	lookupCatalogTable  func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)
+	lookupCatalogSchema func(ctx context.Context, catalogName, schemaName string) (*domain.SchemaDetail, error)
+	lookupCatalogView   func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error)
+	cacheMu             sync.RWMutex
+	privilegeCache      map[string]bool
 }
 
 // NewAuthorizationService creates a new AuthorizationService backed by domain repositories.
@@ -62,6 +64,11 @@ func (s *AuthorizationService) InvalidatePrivilegeCache() {
 // table references (catalog.schema.table).
 func (s *AuthorizationService) SetCatalogTableLookup(lookup func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)) {
 	s.lookupCatalogTable = lookup
+}
+
+// SetCatalogSchemaLookup configures catalog-aware schema lookup for attached catalogs.
+func (s *AuthorizationService) SetCatalogSchemaLookup(lookup func(ctx context.Context, catalogName, schemaName string) (*domain.SchemaDetail, error)) {
+	s.lookupCatalogSchema = lookup
 }
 
 // SetCatalogViewLookup configures catalog-aware view lookup for three-part
@@ -104,6 +111,7 @@ func (s *AuthorizationService) resolveGroupIDs(ctx context.Context, principalID 
 	for id := range visited {
 		ids = append(ids, id)
 	}
+	ids = append(ids, domain.AllAuthenticatedGroupID)
 	return ids, nil
 }
 
@@ -117,14 +125,13 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 		if lookupErr == nil {
 			isExternal := strings.EqualFold(tbl.TableType, domain.TableTypeExternal)
 
-			if !isExternal {
-				if managed, managedErr := s.lookupManagedTableBySchema(ctx, schemaName, bareTableName); managedErr == nil {
-					return managed.ID, managed.SchemaID, false, nil
+			if s.lookupCatalogSchema != nil {
+				if schema, schemaErr := s.lookupCatalogSchema(ctx, catalogName, schemaName); schemaErr == nil {
+					if !isExternal {
+						return syntheticCatalogTableID(schema.SchemaID, tbl.TableID), schema.SchemaID, false, nil
+					}
+					return tbl.TableID, schema.SchemaID, true, nil
 				}
-			}
-
-			if sch, schErr := s.introspection.GetSchemaByName(ctx, schemaName); schErr == nil {
-				return tbl.TableID, sch.ID, isExternal, nil
 			}
 
 			return tbl.TableID, "", isExternal, nil
@@ -406,6 +413,15 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 		schemaID = parsedSchemaID
 		schemaResolved = true
 	}
+	if !schemaResolved {
+		if parsedSchemaID, parsedTableGrantID, ok := schemaIDFromSyntheticCatalogTableID(tableID); ok {
+			schemaID = parsedSchemaID
+			schemaResolved = true
+			if parsedTableGrantID != "" {
+				tableID = parsedTableGrantID
+			}
+		}
+	}
 
 	// Try managed table first.
 	if !schemaResolved {
@@ -491,6 +507,10 @@ func syntheticViewID(schemaID, viewName string) string {
 	return syntheticViewIDPrefix + schemaID + ":" + strings.ToLower(strings.TrimSpace(viewName))
 }
 
+func syntheticCatalogTableID(schemaID, tableID string) string {
+	return syntheticCatalogTableIDPrefix + schemaID + ":" + strings.TrimSpace(tableID)
+}
+
 func schemaIDFromSyntheticViewID(id string) (string, bool) {
 	if !strings.HasPrefix(id, syntheticViewIDPrefix) {
 		return "", false
@@ -501,6 +521,18 @@ func schemaIDFromSyntheticViewID(id string) (string, bool) {
 		return "", false
 	}
 	return parts[0], true
+}
+
+func schemaIDFromSyntheticCatalogTableID(id string) (schemaID, tableID string, ok bool) {
+	if !strings.HasPrefix(id, syntheticCatalogTableIDPrefix) {
+		return "", "", false
+	}
+	rest := strings.TrimPrefix(id, syntheticCatalogTableIDPrefix)
+	parts := strings.SplitN(rest, ":", 2)
+	if len(parts) != 2 || parts[0] == "" {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
 }
 
 func (s *AuthorizationService) checkSchemaPrivilege(ctx context.Context, principalID string, groupIDs []string, schemaID string, privilege string) (bool, error) {

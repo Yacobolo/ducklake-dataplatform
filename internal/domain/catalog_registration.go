@@ -1,6 +1,20 @@
 package domain
 
-import "time"
+import (
+	"strings"
+	"time"
+)
+
+const (
+	// SampleDataCatalogName is the reserved built-in catalog for platform-managed sample data.
+	SampleDataCatalogName = "sample_data"
+	// AllAuthenticatedGroupID is the synthetic group granted baseline access for all signed-in users.
+	AllAuthenticatedGroupID = "__all_authenticated_users__"
+	// AllAuthenticatedGroupName is the display name for the synthetic authenticated-users group.
+	AllAuthenticatedGroupName = "all-authenticated-users"
+	// SystemPrincipalName is the owner used for platform-managed resources.
+	SystemPrincipalName = "system"
+)
 
 // CatalogStatus represents the lifecycle state of a registered catalog.
 type CatalogStatus string
@@ -50,4 +64,9 @@ type UpdateCatalogRegistrationRequest struct {
 	Comment  *string
 	DataPath *string
 	DSN      *string
+}
+
+// IsSystemManagedCatalog reports whether a catalog name is reserved for platform-managed content.
+func IsSystemManagedCatalog(name string) bool {
+	return strings.EqualFold(strings.TrimSpace(name), SampleDataCatalogName)
 }
