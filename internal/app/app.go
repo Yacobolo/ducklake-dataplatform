@@ -376,6 +376,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	semanticPreAggRepo := repository.NewSemanticPreAggregationRepo(deps.WriteDB)
 	semanticSvc := semantic.NewService(semanticModelRepo, semanticMetricRepo, semanticRelRepo, semanticPreAggRepo)
 	semanticSvc.SetQueryExecutor(querySvc)
+	semanticSvc.SetModelRepository(modelRepo)
 
 	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)

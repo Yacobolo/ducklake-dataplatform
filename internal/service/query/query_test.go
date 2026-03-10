@@ -228,6 +228,25 @@ func TestQueryService_Execute_AuditDetails(t *testing.T) {
 	assert.GreaterOrEqual(t, *entry.DurationMs, int64(0))
 }
 
+func TestQueryService_Execute_NormalizesCatalogLookupSchemaNotFound(t *testing.T) {
+	t.Parallel()
+
+	eng := &testutil.MockSessionEngine{
+		QueryFn: func(_ context.Context, _, _ string) (*sql.Rows, error) {
+			return nil, fmt.Errorf("execute query: catalog lookup for \"analytics.revenue_daily\": table \"revenue_daily\" not found in schema \"analytics\"")
+		},
+	}
+	audit := &testutil.MockAuditRepo{}
+	svc := NewQueryService(eng, audit, nil)
+
+	result, err := svc.Execute(context.Background(), "alice", "select * from analytics.revenue_daily")
+	require.Error(t, err)
+	require.Nil(t, result)
+
+	var validationErr *domain.ValidationError
+	require.ErrorAs(t, err, &validationErr)
+}
+
 // === Execute — multiple rows ===
 
 func TestQueryService_Execute_MultipleRows(t *testing.T) {

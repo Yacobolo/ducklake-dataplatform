@@ -163,7 +163,7 @@ func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest
 
 	return &MetricQueryPlan{
 		BaseModelName:          baseModel.Name,
-		BaseRelation:           baseModel.BaseModelRef,
+		BaseRelation:           fromRelation,
 		Metrics:                req.Metrics,
 		Dimensions:             req.Dimensions,
 		JoinPath:               joinSteps,

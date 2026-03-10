@@ -12,6 +12,7 @@ type Service struct {
 	metrics       domain.SemanticMetricRepository
 	relationships domain.SemanticRelationshipRepository
 	preAggs       domain.SemanticPreAggregationRepository
+	modelRepo     domain.ModelRepository
 	queryExec     queryExecutor
 }
 
@@ -28,6 +29,11 @@ func NewService(
 		relationships: relationships,
 		preAggs:       preAggs,
 	}
+}
+
+// SetModelRepository wires transformation model lookup for semantic run error normalization.
+func (s *Service) SetModelRepository(repo domain.ModelRepository) {
+	s.modelRepo = repo
 }
 
 // CreateSemanticModel creates a semantic model.

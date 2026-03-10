@@ -263,7 +263,9 @@ func normalizeQueryError(err error) error {
 		strings.Contains(msg, "parse SQL:"),
 		strings.Contains(msg, "DDL statements are not allowed through the query engine"),
 		strings.Contains(msg, "unsupported statement type"),
-		strings.Contains(msg, "catalog lookup for") && strings.Contains(msg, "no such table"):
+		strings.Contains(msg, "catalog lookup for") && (strings.Contains(msg, "no such table") ||
+			strings.Contains(msg, "not found in schema") ||
+			strings.Contains(msg, "not found in catalog")):
 		return domain.ErrValidation("%s", msg)
 	default:
 		return err
