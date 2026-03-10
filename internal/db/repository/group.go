@@ -11,12 +11,13 @@ import (
 
 // GroupRepo implements domain.GroupRepository using SQLite.
 type GroupRepo struct {
-	q *dbstore.Queries
+	q  *dbstore.Queries
+	db *sql.DB
 }
 
 // NewGroupRepo creates a new GroupRepo.
 func NewGroupRepo(db *sql.DB) *GroupRepo {
-	return &GroupRepo{q: dbstore.New(db)}
+	return &GroupRepo{q: dbstore.New(db), db: db}
 }
 
 // Create inserts a new group into the database.
@@ -70,7 +71,32 @@ func (r *GroupRepo) List(ctx context.Context, page domain.PageRequest) ([]domain
 
 // Delete removes a group by ID.
 func (r *GroupRepo) Delete(ctx context.Context, id string) error {
-	return r.q.DeleteGroup(ctx, id)
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	if _, err := tx.ExecContext(ctx, "DELETE FROM privilege_grants WHERE principal_type = 'group' AND principal_id = ?", id); err != nil {
+		return mapDBError(err)
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM group_members WHERE member_type = 'group' AND member_id = ?", id); err != nil {
+		return mapDBError(err)
+	}
+	result, err := tx.ExecContext(ctx, "DELETE FROM groups WHERE id = ?", id)
+	if err != nil {
+		return mapDBError(err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return domain.ErrNotFound("group %s not found", id)
+	}
+	return tx.Commit()
 }
 
 // AddMember adds a principal to a group.
@@ -84,6 +110,28 @@ func (r *GroupRepo) AddMember(ctx context.Context, m *domain.GroupMember) error 
 
 // RemoveMember removes a principal from a group.
 func (r *GroupRepo) RemoveMember(ctx context.Context, m *domain.GroupMember) error {
+	result, err := r.db.ExecContext(ctx, `
+DELETE FROM group_members
+WHERE group_id = ? AND member_type = ? AND member_id = ?`,
+		m.GroupID,
+		m.MemberType,
+		m.MemberID,
+	)
+	if err != nil {
+		return mapDBError(err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return domain.ErrNotFound("group member %s/%s not found in group %s", m.MemberType, m.MemberID, m.GroupID)
+	}
+	return nil
+}
+
+// RemoveMemberLegacy preserves the sqlc-generated query shape for future regen compatibility.
+func (r *GroupRepo) RemoveMemberLegacy(ctx context.Context, m *domain.GroupMember) error {
 	return r.q.RemoveGroupMember(ctx, dbstore.RemoveGroupMemberParams{
 		GroupID:    m.GroupID,
 		MemberType: m.MemberType,

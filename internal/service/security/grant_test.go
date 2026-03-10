@@ -61,6 +61,23 @@ func TestGrantService_Grant_AdminAllowed(t *testing.T) {
 	assert.Equal(t, "admin-user", *grant.GrantedBy, "granted_by should be the caller's name")
 }
 
+func TestGrantService_Grant_NormalizesCatalogScope(t *testing.T) {
+	svc, principalSvc := setupGrantService(t)
+
+	p, err := principalSvc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "catalog-grantee", Type: "user"})
+	require.NoError(t, err)
+
+	grant, err := svc.Grant(adminCtx(), domain.CreateGrantRequest{
+		PrincipalID:   p.ID,
+		PrincipalType: "user",
+		Privilege:     domain.PrivUseCatalog,
+		SecurableType: domain.SecurableCatalog,
+		SecurableID:   "lake",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, domain.CatalogID, grant.SecurableID)
+}
+
 func TestGrantService_Revoke_AdminRequired(t *testing.T) {
 	svc, _ := setupGrantService(t)
 

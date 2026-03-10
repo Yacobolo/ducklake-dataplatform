@@ -87,6 +87,9 @@ func (s *Service) Bootstrap(ctx context.Context, req BootstrapRequest) (*LoginRe
 		if !s.validateBootstrapToken(state, req.BootstrapToken) {
 			return nil, domain.ErrAccessDenied("valid bootstrap token required")
 		}
+		if err := s.setupState.ClearBootstrapToken(ctx); err != nil {
+			return nil, fmt.Errorf("consume bootstrap token: %w", err)
+		}
 	}
 
 	ph, err := hashPassword(req.Password, s.passwordParms)
@@ -114,7 +117,6 @@ func (s *Service) Bootstrap(ctx context.Context, req BootstrapRequest) (*LoginRe
 	}
 
 	_ = s.setupState.Complete(ctx, p.ID)
-	_ = s.setupState.ClearBootstrapToken(ctx)
 
 	token, err := s.issueJWT(p)
 	if err != nil {
