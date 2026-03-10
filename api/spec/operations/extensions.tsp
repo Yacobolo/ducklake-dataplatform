@@ -124,6 +124,7 @@ op listExternalLocations(@query max_results?: int32, @query page_token?: string)
 
 @route("/external-locations")
 @post
+@doc("Creates a new external location and configures DuckDB with the associated credential. Catalog registrations are managed separately; creating a location does not attach or create a DuckLake catalog.")
 op createExternalLocation(@body body: CreateExternalLocationRequest): Created<ExternalLocation> | MutatingErrorResponses;
 
 @route("/external-locations/{locationName}")

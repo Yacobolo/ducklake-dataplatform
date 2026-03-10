@@ -41,9 +41,9 @@ func NewExternalLocationService(
 	}
 }
 
-// Create validates and persists a new external location, creates a DuckDB
-// secret for the associated credential, and attaches the DuckLake catalog
-// if this is the first location.
+// Create validates and persists a new external location and creates a DuckDB
+// secret for the associated credential. Catalog registration is managed
+// separately by CatalogRegistrationService.
 // Requires CREATE_EXTERNAL_LOCATION on catalog.
 func (s *ExternalLocationService) Create(ctx context.Context, principal string, req domain.CreateExternalLocationRequest) (*domain.ExternalLocation, error) {
 	if err := s.requirePrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, domain.PrivCreateExternalLocation, "CREATE_EXTERNAL_LOCATION", fmt.Sprintf("Denied create external location %q", req.Name)); err != nil {

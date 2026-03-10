@@ -4207,6 +4207,7 @@ paths:
         - Duck
     post:
       operationId: createExternalLocation
+      description: Creates a new external location and configures DuckDB with the associated credential. Catalog registrations are managed separately; creating a location does not attach or create a DuckLake catalog.
       parameters: []
       responses:
         '201':
@@ -11661,6 +11662,7 @@ components:
           $ref: '#/components/schemas/ComputeEndpointType'
         url:
           type: string
+          description: Endpoint URI. REMOTE endpoints must use grpc:// or grpcs://; LOCAL endpoints use local routing URLs.
         auth_token:
           type: string
         max_memory_gb:

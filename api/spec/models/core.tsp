@@ -766,6 +766,7 @@ model PaginatedComputeEndpoints {
 model CreateComputeEndpointRequest {
   name: string;
   type: ComputeEndpointType;
+  @doc("Endpoint URI. REMOTE endpoints must use grpc:// or grpcs://; LOCAL endpoints use local routing URLs.")
   url: string;
   auth_token?: string;
   max_memory_gb?: int64;
