@@ -80,6 +80,12 @@ model InternalServerErrorResponse {
   @body body: Error;
 }
 
+@error
+model BadGatewayResponse {
+  @statusCode statusCode: 502;
+  @body body: Error;
+}
+
 alias StandardErrorResponses = UnauthorizedResponse | TooManyRequestsResponse | InternalServerErrorResponse;
 alias MutatingErrorResponses = StandardErrorResponses | ForbiddenResponse;
 alias ResourceErrorResponses = MutatingErrorResponses | NotFoundResponse;
@@ -760,6 +766,7 @@ model PaginatedComputeEndpoints {
 model CreateComputeEndpointRequest {
   name: string;
   type: ComputeEndpointType;
+  @doc("Endpoint URI. REMOTE endpoints must use grpc:// or grpcs://; LOCAL endpoints use local routing URLs.")
   url: string;
   auth_token?: string;
   max_memory_gb?: int64;
@@ -1852,7 +1859,6 @@ model CreateExternalLocationRequest {
 model UpdateExternalLocationRequest {
   url?: string;
   credential_name?: string;
-  storage_type?: string;
   comment?: string;
   read_only?: boolean;
 }

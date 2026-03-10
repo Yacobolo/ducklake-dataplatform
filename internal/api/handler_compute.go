@@ -220,12 +220,14 @@ func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GenGetCom
 	result, err := h.computeEndpoints.HealthCheck(ctx, principal, req.EndpointName)
 	if err != nil {
 		switch {
+		case errors.As(err, new(*domain.ValidationError)):
+			return GetComputeEndpointHealth400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.AccessDeniedError)):
 			return GetComputeEndpointHealth403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return GenGetComputeEndpointHealth404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
-			return GetComputeEndpointHealth502JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 502, Message: err.Error()}, Headers: GetComputeEndpointHealth502ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GetComputeEndpointHealth502JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 502, Message: err.Error()}, Headers: GenGetComputeEndpointHealth502ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
 

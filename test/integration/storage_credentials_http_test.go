@@ -232,6 +232,23 @@ func TestHTTP_StorageCredentialValidation(t *testing.T) {
 	}
 }
 
+func TestHTTP_StorageCredentialPatchRejectsUnknownFields(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true})
+
+	resp := doRequest(t, "POST", env.Server.URL+"/v1/storage-credentials", env.Keys.Admin, validCredBody("patch-cred"))
+	require.Equal(t, 201, resp.StatusCode)
+	_ = resp.Body.Close()
+
+	resp = doRequest(t, "PATCH", env.Server.URL+"/v1/storage-credentials/patch-cred", env.Keys.Admin, map[string]interface{}{
+		"credential_type": "AZURE",
+	})
+	require.Equal(t, 400, resp.StatusCode)
+
+	var result map[string]interface{}
+	decodeJSON(t, resp, &result)
+	assert.Contains(t, result["message"], "unknown field")
+}
+
 // TestHTTP_StorageCredentialDuplicate verifies duplicate name returns 409.
 func TestHTTP_StorageCredentialDuplicate(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true})

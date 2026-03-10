@@ -411,7 +411,7 @@ func TestComputeEndpointService_ListAssignments(t *testing.T) {
 // === HealthCheck ===
 
 func TestComputeEndpointService_HealthCheck(t *testing.T) {
-	t.Run("local_endpoint_always_ok", func(t *testing.T) {
+	t.Run("local_endpoint_returns_validation_error", func(t *testing.T) {
 		repo := &mockComputeEndpointRepo{
 			GetByNameFn: func(_ context.Context, _ string) (*domain.ComputeEndpoint, error) {
 				return &domain.ComputeEndpoint{ID: "1", Name: "local-ep", Type: "LOCAL"}, nil
@@ -419,10 +419,11 @@ func TestComputeEndpointService_HealthCheck(t *testing.T) {
 		}
 		svc := newTestComputeEndpointService(repo, allowManageCompute(), &mockAuditRepo{})
 
-		result, err := svc.HealthCheck(context.Background(), "admin", "local-ep")
-		require.NoError(t, err)
-		require.NotNil(t, result.Status)
-		assert.Equal(t, "ok", *result.Status)
+		_, err := svc.HealthCheck(context.Background(), "admin", "local-ep")
+		require.Error(t, err)
+		var validationErr *domain.ValidationError
+		require.ErrorAs(t, err, &validationErr)
+		assert.Contains(t, err.Error(), "only supported for REMOTE")
 	})
 
 	t.Run("access_denied", func(t *testing.T) {
