@@ -75,6 +75,18 @@ func (r *memQueryJobRepo) GetByRequestID(_ context.Context, principalName, reque
 	return nil, domain.ErrNotFound("job not found")
 }
 
+func (r *memQueryJobRepo) SetResolvedCompute(_ context.Context, id string, mode string, endpointName *string) error {
+	job, ok := r.jobs[id]
+	if !ok {
+		return domain.ErrNotFound("job not found")
+	}
+	if mode != "" {
+		job.ResolvedMode = &mode
+	}
+	job.ResolvedEndpointName = endpointName
+	return nil
+}
+
 func (r *memQueryJobRepo) MarkRunning(_ context.Context, id string, attempt int) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

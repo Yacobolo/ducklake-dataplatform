@@ -40,12 +40,13 @@ func Execute() int {
 
 func newRootCmd() *cobra.Command {
 	var (
-		host    string
-		apiKey  string
-		token   string
-		output  string
-		profile string
-		quiet   bool
+		host                    string
+		apiKey                  string
+		token                   string
+		output                  string
+		profile                 string
+		quiet                   bool
+		duckAccessExtensionPath string
 
 		apiKeyPriority int
 		tokenPriority  int
@@ -113,6 +114,13 @@ func newRootCmd() *cobra.Command {
 					output = p.Output
 				}
 			}
+			if !cmd.Flags().Changed("duck-access-extension-path") {
+				if v := os.Getenv("DUCK_ACCESS_EXTENSION_PATH"); v != "" {
+					duckAccessExtensionPath = v
+				} else if p.DuckAccessExtensionPath != "" {
+					duckAccessExtensionPath = p.DuckAccessExtensionPath
+				}
+			}
 
 			if apiKey != "" && token != "" {
 				if tokenPriority > apiKeyPriority {
@@ -132,6 +140,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "table", "Output format (table, json, csv)")
 	rootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "", "Config profile to use")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Only output resource identifiers")
+	rootCmd.PersistentFlags().StringVar(&duckAccessExtensionPath, "duck-access-extension-path", "", "Path to duck_access.duckdb_extension for local BYOC execution")
 
 	// Create client using a lazy initializer
 	client := apiruntime.NewClient(host, apiKey, token)

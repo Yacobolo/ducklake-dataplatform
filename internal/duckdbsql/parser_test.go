@@ -20,6 +20,12 @@ func TestParse_MultiStatement(t *testing.T) {
 	assert.Contains(t, err.Error(), "multi-statement")
 }
 
+func TestParse_TrailingSemicolon(t *testing.T) {
+	stmt, err := Parse("SELECT 1;")
+	require.NoError(t, err)
+	require.IsType(t, &SelectStmt{}, stmt)
+}
+
 func TestParse_InvalidSQL(t *testing.T) {
 	_, err := Parse("SELEKT * FORM titanic")
 	require.Error(t, err)
@@ -140,6 +146,44 @@ func TestParse_Literals(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, tc.litType, lit.Type)
 			assert.Equal(t, tc.litVal, lit.Value)
+		})
+	}
+}
+
+func TestParse_TypedStringLiterals(t *testing.T) {
+	tests := []struct {
+		name     string
+		sql      string
+		typeName string
+		value    string
+	}{
+		{name: "date", sql: "INSERT INTO t VALUES (DATE '2026-03-10')", typeName: "DATE", value: "2026-03-10"},
+		{name: "timestamp", sql: "SELECT TIMESTAMP '2026-03-10 12:34:56';", typeName: "TIMESTAMP", value: "2026-03-10 12:34:56"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			stmt, err := Parse(tc.sql)
+			require.NoError(t, err)
+
+			var expr Expr
+			switch typed := stmt.(type) {
+			case *InsertStmt:
+				expr = typed.Values[0][0]
+			case *SelectStmt:
+				expr = typed.Body.Left.Columns[0].Expr
+			default:
+				t.Fatalf("unexpected statement type %T", stmt)
+			}
+
+			cast, ok := expr.(*CastExpr)
+			require.True(t, ok, "expected CastExpr")
+			assert.Equal(t, tc.typeName, cast.TypeName)
+
+			lit, ok := cast.Expr.(*Literal)
+			require.True(t, ok, "expected Literal")
+			assert.Equal(t, LiteralString, lit.Type)
+			assert.Equal(t, tc.value, lit.Value)
 		})
 	}
 }

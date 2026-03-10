@@ -28,6 +28,7 @@ func MountRoutes(r chi.Router, h *Handler) {
 		r.Get("/", h.Home)
 		r.Get("/components", h.ComponentsPage)
 		r.Get("/sql", h.SQLEditorPage)
+		r.Get("/sql/runtime/manifest", h.SQLEditorRuntimeManifest)
 		r.Post("/sql/run", h.SQLEditorRun)
 		r.Post("/sql/run-async", h.SQLEditorRunAsync)
 		r.Post("/sql/download.csv", h.SQLEditorDownloadCSV)

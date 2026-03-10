@@ -16,10 +16,11 @@ type UserConfig struct {
 
 // Profile represents a single named configuration profile.
 type Profile struct {
-	Host   string `yaml:"host,omitempty"`
-	APIKey string `yaml:"api-key,omitempty"`
-	Token  string `yaml:"token,omitempty"`
-	Output string `yaml:"output,omitempty"`
+	Host                    string `yaml:"host,omitempty"`
+	APIKey                  string `yaml:"api-key,omitempty"`
+	Token                   string `yaml:"token,omitempty"`
+	Output                  string `yaml:"output,omitempty"`
+	DuckAccessExtensionPath string `yaml:"duck-access-extension-path,omitempty"`
 }
 
 // ActiveProfile returns the profile to use based on the override or current-profile.

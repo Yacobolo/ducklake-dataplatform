@@ -17,6 +17,7 @@
     "esbuild": "0.25.10"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.30.0",
     "@primer/primitives": "11.4.0",
     "highlight.js": "11.11.1",
     "lit": "3.3.1",

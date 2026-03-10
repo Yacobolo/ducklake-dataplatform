@@ -10,6 +10,19 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// ManifestVersion is the current manifest response contract version.
+const ManifestVersion = "v1"
+
+// BrowserRuntimeContractVersion is the current browser-local execution contract version.
+const BrowserRuntimeContractVersion = "v1alpha1"
+
+const (
+	// BrowserRuntimeEngineDuckDBWASM identifies the in-browser DuckDB runtime.
+	BrowserRuntimeEngineDuckDBWASM = "duckdb-wasm"
+	// BrowserRuntimeAdapterDuckAccess identifies the local manifest adapter contract.
+	BrowserRuntimeAdapterDuckAccess = "duck_access"
+)
+
 // ManifestColumn describes a column in the manifest response.
 type ManifestColumn struct {
 	Name string `json:"name"`
@@ -20,13 +33,51 @@ type ManifestColumn struct {
 // It contains presigned URLs, RLS filters, and column masks
 // that the client-side DuckDB extension uses to construct secure queries.
 type ManifestResult struct {
-	Table       string            `json:"table"`
-	Schema      string            `json:"schema"`
-	Columns     []ManifestColumn  `json:"columns"`
-	Files       []string          `json:"files"`
-	RowFilters  []string          `json:"row_filters"`
-	ColumnMasks map[string]string `json:"column_masks"`
-	ExpiresAt   time.Time         `json:"expires_at"`
+	ManifestVersion string                     `json:"manifest_version"`
+	Table           string                     `json:"table"`
+	Schema          string                     `json:"schema"`
+	Columns         []ManifestColumn           `json:"columns"`
+	Files           []string                   `json:"files"`
+	RowFilters      []string                   `json:"row_filters"`
+	ColumnMasks     map[string]string          `json:"column_masks"`
+	ExpiresAt       time.Time                  `json:"expires_at"`
+	BrowserRuntime  ManifestBrowserRuntimeSpec `json:"browser_runtime"`
+}
+
+// ManifestBrowserRuntimeSpec describes whether and how a browser client can
+// execute the manifest locally with DuckDB WASM.
+type ManifestBrowserRuntimeSpec struct {
+	Supported              bool     `json:"supported"`
+	ContractVersion        string   `json:"contract_version"`
+	Engine                 string   `json:"engine"`
+	Adapter                string   `json:"adapter"`
+	RequiredAuthModes      []string `json:"required_auth_modes"`
+	SupportedFileURLTypes  []string `json:"supported_file_url_types"`
+	RecommendedMaxRows     int      `json:"recommended_max_rows"`
+	RecommendedMemoryMB    int      `json:"recommended_memory_mb"`
+	RequiresCORS           bool     `json:"requires_cors"`
+	Status                 string   `json:"status"`
+	StatusReason           string   `json:"status_reason"`
+	RequiredRuntimeVersion string   `json:"required_runtime_version"`
+}
+
+// DefaultManifestBrowserRuntimeSpec returns the current browser-local
+// execution contract advertised by the server.
+func DefaultManifestBrowserRuntimeSpec() ManifestBrowserRuntimeSpec {
+	return ManifestBrowserRuntimeSpec{
+		Supported:              true,
+		ContractVersion:        BrowserRuntimeContractVersion,
+		Engine:                 BrowserRuntimeEngineDuckDBWASM,
+		Adapter:                BrowserRuntimeAdapterDuckAccess,
+		RequiredAuthModes:      []string{"WEB_SESSION", "BEARER_TOKEN"},
+		SupportedFileURLTypes:  []string{"HTTPS_PRESIGNED_URL"},
+		RecommendedMaxRows:     50000,
+		RecommendedMemoryMB:    512,
+		RequiresCORS:           true,
+		Status:                 "PREVIEW",
+		StatusReason:           "Browser-local DuckDB WASM execution is available for constrained read-only SELECT queries, including a bounded multi-table subset.",
+		RequiredRuntimeVersion: "duckdb-wasm/v1alpha1",
+	}
 }
 
 // FilePresigner generates accessible URLs or paths for data files.
@@ -181,13 +232,15 @@ func (s *ManifestService) GetManifest(
 	s.logManifestAudit(ctx, principalName, lookupName, "ALLOWED", "", time.Since(start))
 
 	return &ManifestResult{
-		Table:       tableName,
-		Schema:      schemaName,
-		Columns:     manifestCols,
-		Files:       presignedURLs,
-		RowFilters:  rowFilters,
-		ColumnMasks: columnMasks,
-		ExpiresAt:   time.Now().Add(expiry),
+		ManifestVersion: ManifestVersion,
+		Table:           tableName,
+		Schema:          schemaName,
+		Columns:         manifestCols,
+		Files:           presignedURLs,
+		RowFilters:      rowFilters,
+		ColumnMasks:     columnMasks,
+		ExpiresAt:       time.Now().Add(expiry),
+		BrowserRuntime:  DefaultManifestBrowserRuntimeSpec(),
 	}, nil
 }
 

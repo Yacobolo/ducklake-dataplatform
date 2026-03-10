@@ -48,6 +48,13 @@ func NewCatalogService(
 	}
 }
 
+func ensureMutableCatalog(catalogName string) error {
+	if domain.IsSystemManagedCatalog(catalogName) {
+		return domain.ErrValidation("catalog %q is system managed and read-only", catalogName)
+	}
+	return nil
+}
+
 // GetCatalogInfo returns information about a catalog.
 func (s *CatalogService) GetCatalogInfo(ctx context.Context, catalogName string) (*domain.CatalogInfo, error) {
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
@@ -116,6 +123,9 @@ func (s *CatalogService) ListSchemas(ctx context.Context, catalogName string, pa
 // If LocationName is specified, the schema's storage path is set to the
 // external location's URL, enabling per-schema data paths in DuckLake.
 func (s *CatalogService) CreateSchema(ctx context.Context, catalogName string, principal string, req domain.CreateSchemaRequest) (*domain.SchemaDetail, error) {
+	if err := ensureMutableCatalog(catalogName); err != nil {
+		return nil, err
+	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
@@ -175,6 +185,9 @@ func (s *CatalogService) GetSchema(ctx context.Context, catalogName string, name
 
 // UpdateSchema updates schema metadata.
 func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, principal string, name string, req domain.UpdateSchemaRequest) (*domain.SchemaDetail, error) {
+	if err := ensureMutableCatalog(catalogName); err != nil {
+		return nil, err
+	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
@@ -211,6 +224,9 @@ func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, p
 
 // DeleteSchema drops a schema, checking authorization.
 func (s *CatalogService) DeleteSchema(ctx context.Context, catalogName string, principal string, name string, force bool) error {
+	if err := ensureMutableCatalog(catalogName); err != nil {
+		return err
+	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return err
@@ -264,6 +280,9 @@ func (s *CatalogService) ListTables(ctx context.Context, catalogName string, sch
 // CreateTable creates a new table, checking CREATE_TABLE privilege on the schema.
 // If req.TableType is "EXTERNAL", delegates to createExternalTable.
 func (s *CatalogService) CreateTable(ctx context.Context, catalogName string, principal string, schemaName string, req domain.CreateTableRequest) (*domain.TableDetail, error) {
+	if err := ensureMutableCatalog(catalogName); err != nil {
+		return nil, err
+	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
@@ -351,6 +370,9 @@ func (s *CatalogService) GetTable(ctx context.Context, catalogName string, schem
 
 // DeleteTable drops a table, checking authorization.
 func (s *CatalogService) DeleteTable(ctx context.Context, catalogName string, principal string, schemaName, tableName string) error {
+	if err := ensureMutableCatalog(catalogName); err != nil {
+		return err
+	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return err
@@ -394,6 +416,9 @@ func (s *CatalogService) ListColumns(ctx context.Context, catalogName string, sc
 
 // UpdateTable updates table metadata, checking CREATE_TABLE privilege.
 func (s *CatalogService) UpdateTable(ctx context.Context, catalogName string, principal string, schemaName, tableName string, req domain.UpdateTableRequest) (*domain.TableDetail, error) {
+	if err := ensureMutableCatalog(catalogName); err != nil {
+		return nil, err
+	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err
@@ -431,6 +456,9 @@ func (s *CatalogService) UpdateTable(ctx context.Context, catalogName string, pr
 
 // UpdateCatalog updates catalog-level metadata (admin only).
 func (s *CatalogService) UpdateCatalog(ctx context.Context, catalogName string, principal string, req domain.UpdateCatalogRequest) (*domain.CatalogInfo, error) {
+	if err := ensureMutableCatalog(catalogName); err != nil {
+		return nil, err
+	}
 
 	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, catalogName, domain.PrivManage)
 	if err != nil {
@@ -456,6 +484,9 @@ func (s *CatalogService) UpdateCatalog(ctx context.Context, catalogName string, 
 
 // UpdateColumn updates column metadata, checking CREATE_TABLE privilege.
 func (s *CatalogService) UpdateColumn(ctx context.Context, catalogName string, principal string, schemaName, tableName, columnName string, req domain.UpdateColumnRequest) (*domain.ColumnDetail, error) {
+	if err := ensureMutableCatalog(catalogName); err != nil {
+		return nil, err
+	}
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
 	if err != nil {
 		return nil, err

@@ -31,6 +31,11 @@ func (s *QueryService) SubmitAsync(ctx context.Context, principalName, sqlQuery,
 	if requestID == "" {
 		requestID = uuid.NewString()
 	}
+	execReq, _ := domain.ComputeExecutionRequestFromContext(ctx)
+	execReq = execReq.Normalize()
+	if execReq.WorkloadType == "" {
+		execReq.WorkloadType = domain.ComputeWorkloadInteractive
+	}
 
 	existing, err := s.jobRepo.GetByRequestID(ctx, principalName, requestID)
 	if err == nil {
@@ -45,6 +50,9 @@ func (s *QueryService) SubmitAsync(ctx context.Context, principalName, sqlQuery,
 		PrincipalName: principalName,
 		RequestID:     requestID,
 		SQLText:       sqlQuery,
+		ComputeMode:   execReq.Mode,
+		EndpointName:  stringPtrOrNil(execReq.EndpointName),
+		WorkloadType:  execReq.WorkloadType,
 		Status:        domain.QueryJobStatusQueued,
 		MaxAttempts:   defaultMaxAsyncAttempts,
 	})
@@ -52,7 +60,7 @@ func (s *QueryService) SubmitAsync(ctx context.Context, principalName, sqlQuery,
 		return nil, fmt.Errorf("create query job: %w", err)
 	}
 
-	go s.runAsyncJob(job.ID, principalName, sqlQuery, job.MaxAttempts)
+	go s.runAsyncJob(job.ID, principalName, sqlQuery, job.MaxAttempts, execReq)
 	return job, nil
 }
 
@@ -131,7 +139,7 @@ func (s *QueryService) DeleteAsyncJob(ctx context.Context, principalName, jobID 
 	return nil
 }
 
-func (s *QueryService) runAsyncJob(jobID, principalName, sqlQuery string, maxAttempts int) {
+func (s *QueryService) runAsyncJob(jobID, principalName, sqlQuery string, maxAttempts int, execReq domain.ComputeExecutionRequest) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.jobCancels.Store(jobID, cancel)
 	defer s.jobCancels.Delete(jobID)
@@ -149,7 +157,12 @@ func (s *QueryService) runAsyncJob(jobID, principalName, sqlQuery string, maxAtt
 		hbDone := make(chan struct{})
 		go s.heartbeatLoop(ctx, jobID, hbDone)
 
-		result, err := s.Execute(ctx, principalName, sqlQuery)
+		jobCtx := domain.WithComputeExecutionRequest(ctx, execReq)
+		jobCtx, resolution := domain.WithComputeResolutionTracker(jobCtx)
+		result, err := s.Execute(jobCtx, principalName, sqlQuery)
+		if resolution.ResolvedMode != "" {
+			_ = s.jobRepo.SetResolvedCompute(context.Background(), jobID, resolution.ResolvedMode, stringPtrOrNil(resolution.ResolvedEndpoint))
+		}
 		close(hbDone)
 
 		if err == nil {
@@ -177,6 +190,14 @@ func (s *QueryService) runAsyncJob(jobID, principalName, sqlQuery string, maxAtt
 		case <-time.After(time.Until(nextRetryAt)):
 		}
 	}
+}
+
+func stringPtrOrNil(value string) *string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	return &value
 }
 
 func (s *QueryService) heartbeatLoop(ctx context.Context, jobID string, done <-chan struct{}) {

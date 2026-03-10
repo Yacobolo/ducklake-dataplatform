@@ -159,6 +159,7 @@ func (h *APIHandler) SetDefaultCatalog(ctx context.Context, request GenSetDefaul
 
 // catalogRegistrationToAPI converts a domain CatalogRegistration to the API type.
 func catalogRegistrationToAPI(r domain.CatalogRegistration) CatalogRegistration {
+	systemManaged := domain.IsSystemManagedCatalog(r.Name)
 	return CatalogRegistration{
 		Id:            r.ID,
 		Name:          r.Name,
@@ -167,6 +168,7 @@ func catalogRegistrationToAPI(r domain.CatalogRegistration) CatalogRegistration 
 		DataPath:      strPtrIfNonEmpty(r.DataPath),
 		Status:        strPtrIfNonEmpty(string(r.Status)),
 		IsDefault:     &r.IsDefault,
+		SystemManaged: &systemManaged,
 		Comment:       optStr(r.Comment),
 		CreatedAt:     formatTimePtr(&r.CreatedAt),
 		UpdatedAt:     formatTimePtr(&r.UpdatedAt),

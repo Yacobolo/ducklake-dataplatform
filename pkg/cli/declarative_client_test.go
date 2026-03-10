@@ -63,6 +63,13 @@ func withTestIndex(sc *APIStateClient) *APIStateClient {
 	sc.index.principalIDByName["bob"] = "principal-id-bob"
 	sc.index.groupIDByName["admins"] = "group-id-admins"
 	sc.index.groupIDByName["analysts"] = "group-id-analysts"
+	sc.index.grantIDByIdentity[grantIdentity(declarative.GrantSpec{
+		Principal:     "admins",
+		PrincipalType: "group",
+		SecurableType: "schema",
+		Securable:     "demo.titanic",
+		Privilege:     "ALL_PRIVILEGES",
+	})] = "grant-id-admins-schema"
 	sc.index.catalogIDByName["demo"] = "catalog-id-demo"
 	sc.index.schemaIDByPath["demo.titanic"] = "schema-id-titanic"
 	sc.index.tableIDByPath["demo.titanic.passengers"] = "table-id-passengers"
@@ -214,7 +221,7 @@ func TestExecuteGrant_Delete(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodDelete, req.Method)
-	assert.Equal(t, "group-id-admins", bodyStr(req, "principal_id"))
+	assert.Equal(t, "/v1/grants/grant-id-admins-schema", req.Path)
 }
 
 // === Group membership execution tests (#128) ===
@@ -958,7 +965,7 @@ func TestExecute_UnimplementedKindReturnsError(t *testing.T) {
 
 	action := declarative.Action{
 		Operation:    declarative.OpCreate,
-		ResourceKind: declarative.KindVolume,
+		ResourceKind: declarative.ResourceKind(-1),
 		ResourceName: "demo.analytics.stage",
 	}
 
@@ -2076,7 +2083,7 @@ func TestReadState_StorageCredentials(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
-				{"name": "aws-creds", "credential_type": "S3", "comment": "AWS access"},
+				{"name": "aws-creds", "credential_type": "S3", "comment": "AWS access", "endpoint": "s3.example.com", "region": "ap-southeast-2", "url_style": "path"},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -2091,6 +2098,9 @@ func TestReadState_StorageCredentials(t *testing.T) {
 	assert.Equal(t, "aws-creds", state.StorageCredentials[0].Name)
 	assert.Equal(t, "S3", state.StorageCredentials[0].CredentialType)
 	assert.Equal(t, "AWS access", state.StorageCredentials[0].Comment)
+	require.NotNil(t, state.StorageCredentials[0].S3)
+	assert.Equal(t, "REPLACE_ME", state.StorageCredentials[0].S3.KeyIDFromEnv)
+	assert.Equal(t, "s3.example.com", state.StorageCredentials[0].S3.Endpoint)
 }
 
 func TestReadState_ExternalLocations(t *testing.T) {
@@ -2197,8 +2207,14 @@ func TestReadState_Notebooks(t *testing.T) {
 				"owner":       "alice",
 			},
 			"cells": []map[string]interface{}{
-				{"id": "cell-1", "cell_type": "markdown", "content": "# Intro", "position": 0},
-				{"id": "cell-2", "cell_type": "sql", "content": "SELECT 1", "position": 1},
+				{"id": "cell-1", "cell_type": "markdown", "name": "intro", "role": "markdown", "content": "# Intro", "position": 0},
+				{"id": "cell-2", "cell_type": "sql", "name": "published_output", "role": "output", "content": "SELECT 1", "position": 1},
+			},
+			"publish_model": map[string]interface{}{
+				"project_name":    "analytics",
+				"name":            "fct_revenue",
+				"materialization": "VIEW",
+				"output_cell_id":  "cell-2",
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -2216,7 +2232,14 @@ func TestReadState_Notebooks(t *testing.T) {
 	assert.Equal(t, "alice", state.Notebooks[0].Spec.Owner)
 	require.Len(t, state.Notebooks[0].Spec.Cells, 2)
 	assert.Equal(t, "markdown", state.Notebooks[0].Spec.Cells[0].Type)
+	assert.Equal(t, "intro", state.Notebooks[0].Spec.Cells[0].Name)
+	assert.Equal(t, "published_output", state.Notebooks[0].Spec.Cells[1].Name)
+	assert.Equal(t, "output", state.Notebooks[0].Spec.Cells[1].Role)
 	assert.Equal(t, "SELECT 1", state.Notebooks[0].Spec.Cells[1].Content)
+	require.NotNil(t, state.Notebooks[0].Spec.Publish)
+	require.NotNil(t, state.Notebooks[0].Spec.Publish.Model)
+	assert.Equal(t, "analytics", state.Notebooks[0].Spec.Publish.Model.Project)
+	assert.Equal(t, "published_output", state.Notebooks[0].Spec.Publish.Model.OutputCell)
 }
 
 func TestReadState_APIKeys(t *testing.T) {
@@ -2666,7 +2689,7 @@ func TestExecuteGroup_Delete(t *testing.T) {
 	t.Parallel()
 
 	var captured []execCapture
-	sc := newTestExecuteClient(t, &captured)
+	sc := withTestIndex(newTestExecuteClient(t, &captured))
 
 	action := declarative.Action{
 		Operation:    declarative.OpDelete,
@@ -2680,7 +2703,7 @@ func TestExecuteGroup_Delete(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodDelete, req.Method)
-	assert.Contains(t, req.Path, "/groups/analysts")
+	assert.Contains(t, req.Path, "/groups/group-id-analysts")
 }
 
 func TestExecuteTable_Create(t *testing.T) {

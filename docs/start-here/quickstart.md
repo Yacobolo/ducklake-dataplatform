@@ -38,16 +38,16 @@ For a deeper overview, go to [Access the Platform](/how-to/authentication).
 curl -X POST "https://your-duck-host/v1/query" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
-  -d '{"sql":"SELECT 1 AS ok"}'
+  -d '{"sql":"SELECT pickup_date, trip_count, gross_revenue FROM sample_data.nyc_taxi.daily_metrics ORDER BY pickup_date LIMIT 5"}'
 ```
 
 Expected result:
 
 ```json
-{"columns":["ok"],"rows":[[1]]}
+{"columns":["pickup_date","trip_count","gross_revenue"],"rows":[["2024-01-01",8000,219862.25],["2024-01-02",8000,277281.32]]}
 ```
 
-The exact JSON shape may include metadata fields, but you should see a single `ok` column with value `1`.
+The exact JSON shape may include metadata fields, but you should see rows coming back from the built-in `sample_data` catalog with no extra setup.
 
 ## 4. Explore the platform
 
@@ -57,6 +57,7 @@ Once the first query succeeds, your next user actions are usually:
 - inspect table and view structure
 - discover what objects you are allowed to query
 - confirm whether any masking or row filtering applies to your role
+- when you are ready for a writable environment, use `duck init` to bootstrap a medallion catalog
 
 ## Troubleshooting
 

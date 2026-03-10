@@ -465,6 +465,7 @@ model CatalogRegistration {
   comment?: string;
   created_at?: string;
   updated_at?: string;
+  system_managed?: boolean;
 }
 
 model CatalogRegistrationList {
@@ -493,6 +494,7 @@ model CatalogInfo {
   comment?: string;
   created_at?: string;
   updated_at?: string;
+  system_managed?: boolean;
 }
 
 model VersionedObjectSummary {

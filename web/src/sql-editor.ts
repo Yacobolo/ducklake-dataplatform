@@ -3,6 +3,8 @@ import hljs from "highlight.js/lib/core";
 import sql from "highlight.js/lib/languages/sql";
 import { format as formatSQL } from "sql-formatter";
 
+import { initializeSqlComputeController } from "./sql-runtime/sql-compute-controller";
+
 hljs.registerLanguage("sql", sql);
 
 class SqlEditorSurface extends LitElement {
@@ -424,3 +426,5 @@ class SqlEditorSurface extends LitElement {
 if (!customElements.get("sql-editor-surface")) {
   customElements.define("sql-editor-surface", SqlEditorSurface);
 }
+
+initializeSqlComputeController();

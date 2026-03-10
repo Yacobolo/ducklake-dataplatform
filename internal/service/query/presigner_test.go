@@ -9,6 +9,54 @@ import (
 	"duck-demo/internal/domain"
 )
 
+func TestNormalizeS3Endpoint(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    string
+		want     string
+		wantErr  string
+	}{
+		{
+			name:  "adds_https_to_bare_host",
+			input: "s3.example.com",
+			want:  "https://s3.example.com",
+		},
+		{
+			name:  "preserves_http_scheme",
+			input: "http://127.0.0.1:9000",
+			want:  "http://127.0.0.1:9000",
+		},
+		{
+			name:  "trims_trailing_slash",
+			input: "https://s3.example.com/",
+			want:  "https://s3.example.com",
+		},
+		{
+			name:    "rejects_unsupported_scheme",
+			input:   "ftp://s3.example.com",
+			wantErr: "unsupported S3 endpoint scheme",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := normalizeS3Endpoint(tt.input)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestParseS3Path(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -155,6 +203,22 @@ func TestParseGCSPath(t *testing.T) {
 			assert.Equal(t, tt.wantKey, key)
 		})
 	}
+}
+
+func TestNewS3PresignerFromCredential_AllowsSchemeInEndpoint(t *testing.T) {
+	t.Parallel()
+
+	presigner, err := NewS3PresignerFromCredential(&domain.StorageCredential{
+		CredentialType: domain.CredentialTypeS3,
+		KeyID:          "AKID",
+		Secret:         "secret",
+		Endpoint:       "http://127.0.0.1:9000",
+		Region:         "us-east-1",
+		URLStyle:       "path",
+	}, "demo-bucket")
+	require.NoError(t, err)
+	require.NotNil(t, presigner)
+	assert.Equal(t, "demo-bucket", presigner.Bucket())
 }
 
 // === Factory dispatch: NewPresignerFromCredential ===

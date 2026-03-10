@@ -311,7 +311,7 @@ func loadStorage(root string, state *DesiredState, opts LoadOptions) error {
 	return nil
 }
 
-// loadCompute reads compute/endpoints.yaml and compute/assignments.yaml.
+// loadCompute reads compute/endpoints.yaml, compute/assignments.yaml, and compute/defaults.yaml.
 func loadCompute(root string, state *DesiredState, opts LoadOptions) error {
 	compDir := filepath.Join(root, "compute")
 	if !dirExists(compDir) {
@@ -340,6 +340,18 @@ func loadCompute(root string, state *DesiredState, opts LoadOptions) error {
 			return err
 		}
 		state.ComputeAssignments = assignDoc.Assignments
+	}
+
+	// defaults.yaml
+	defaultsPath := filepath.Join(compDir, "defaults.yaml")
+	var defaultsDoc ComputeRoutingDefaultsDoc
+	if found, err := loadYAMLFile(defaultsPath, &defaultsDoc, opts); err != nil {
+		return err
+	} else if found {
+		if err := validateDocument(defaultsPath, defaultsDoc.APIVersion, defaultsDoc.Kind, KindNameComputeRoutingDefaults); err != nil {
+			return err
+		}
+		state.ComputeDefaults = &defaultsDoc.Defaults
 	}
 
 	return nil

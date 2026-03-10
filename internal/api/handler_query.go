@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/query"
@@ -35,6 +36,12 @@ type manifestService interface {
 func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryRequest) (GenExecuteQueryResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
+	var err error
+	ctx, err = withComputeRequestDefaults(ctx, h.computeEndpoints, principal, computeExecutionRequestFromQueryBody(req.Body))
+	if err != nil {
+		code := errorCodeFromError(err)
+		return ExecuteQuery400JSONResponse{BadRequestJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
 	result, err := h.query.Execute(ctx, principal, req.Body.Sql)
 	if err != nil {
 		code := errorCodeFromError(err)
@@ -66,6 +73,12 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryReques
 func (h *APIHandler) SubmitQuery(ctx context.Context, req GenSubmitQueryRequest) (GenSubmitQueryResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
+	var err error
+	ctx, err = withComputeRequestDefaults(ctx, h.computeEndpoints, principal, computeExecutionRequestFromSubmitBody(req.Body))
+	if err != nil {
+		code := errorCodeFromError(err)
+		return SubmitQuery400JSONResponse{BadRequestJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
 
 	asyncSvc, ok := h.query.(queryAsyncService)
 	if !ok {
@@ -208,9 +221,9 @@ func (h *APIHandler) CancelQuery(ctx context.Context, req GenCancelQueryRequest)
 		status = string(domain.QueryJobStatusCanceled)
 	}
 	apiStatus := QueryJobStatus(status)
-	return CancelQuery200JSONResponse{
+	return CancelQuery202JSONResponse{
 		Body:    CancelQueryResponse{QueryId: job.ID, Status: apiStatus},
-		Headers: CancelQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: CancelQuery202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -272,6 +285,44 @@ func queryJobToAPI(job *domain.QueryJob) QueryJob {
 		resp.CompletedAt = formatTimePtr(job.CompletedAt)
 	}
 	return resp
+}
+
+func computeExecutionRequestFromQueryBody(_ *QueryRequest) domain.ComputeExecutionRequest {
+	return domain.ComputeExecutionRequest{}
+}
+
+func computeExecutionRequestFromSubmitBody(_ *SubmitQueryRequest) domain.ComputeExecutionRequest {
+	return domain.ComputeExecutionRequest{}
+}
+
+func withComputeRequestDefaults(ctx context.Context, svc computeEndpointService, principal string, req domain.ComputeExecutionRequest) (context.Context, error) {
+	req = req.Normalize()
+	if req.WorkloadType == "" {
+		req.WorkloadType = domain.ComputeWorkloadInteractive
+	}
+
+	if req.Mode == "" && svc != nil {
+		defaults, err := svc.GetRoutingDefaults(ctx, principal)
+		if err == nil && defaults != nil {
+			switch strings.ToUpper(req.WorkloadType) {
+			case domain.ComputeWorkloadScheduled, domain.ComputeWorkloadHeavy:
+				req.Mode = defaults.ScheduledMode
+			case domain.ComputeWorkloadNotebook:
+				req.Mode = defaults.NotebookMode
+			default:
+				req.Mode = defaults.InteractiveMode
+			}
+		}
+	}
+
+	if req.Mode == "" {
+		req.Mode = domain.ComputeModeAuto
+	}
+
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	return domain.WithComputeExecutionRequest(ctx, req), nil
 }
 
 // CreateManifest implements the endpoint for generating a table read manifest.

@@ -80,11 +80,16 @@ func (r *DefaultResolver) SetCanaryUsers(users []string) {
 //  2. Group assignments (check each group the user belongs to)
 //  3. nil (local fallback)
 func (r *DefaultResolver) Resolve(ctx context.Context, principalName string) (domain.ComputeExecutor, error) {
+	execReq, _ := domain.ComputeExecutionRequestFromContext(ctx)
+	execReq = execReq.Normalize()
+
 	if !r.routingEnabled {
+		domain.RecordComputeResolution(ctx, domain.ComputeResolution{ResolvedMode: domain.ComputeModeByocLocal})
 		return nil, nil
 	}
 	if len(r.canaryUsers) > 0 {
 		if _, ok := r.canaryUsers[principalName]; !ok {
+			domain.RecordComputeResolution(ctx, domain.ComputeResolution{ResolvedMode: domain.ComputeModeByocLocal})
 			return nil, nil
 		}
 	}
@@ -93,21 +98,41 @@ func (r *DefaultResolver) Resolve(ctx context.Context, principalName string) (do
 		return nil, fmt.Errorf("compute resolver is not fully configured")
 	}
 
+	if execReq.Mode == domain.ComputeModeByocLocal {
+		domain.RecordComputeResolution(ctx, domain.ComputeResolution{
+			RequestedMode:     execReq.Mode,
+			RequestedEndpoint: execReq.EndpointName,
+			ResolvedMode:      domain.ComputeModeByocLocal,
+		})
+		return nil, nil
+	}
+
 	// 1. Look up principal
 	principal, err := r.principalRepo.GetByName(ctx, principalName)
 	if err != nil {
 		// If principal not found, fall back to local
 		var notFound *domain.NotFoundError
 		if errors.As(err, &notFound) {
+			domain.RecordComputeResolution(ctx, domain.ComputeResolution{ResolvedMode: domain.ComputeModeByocLocal})
 			return nil, nil
 		}
 		return nil, fmt.Errorf("resolve principal %q: %w", principalName, err)
 	}
 
+	if execReq.EndpointName != "" {
+		selected, err := r.resolveRequestedEndpoint(ctx, principal.ID, execReq.EndpointName)
+		if err != nil {
+			return nil, err
+		}
+		return r.resolveEndpoint(ctx, selected, execReq)
+	}
+
 	// 2. Check direct user assignment
 	ep, err := r.computeRepo.GetDefaultForPrincipal(ctx, principal.ID, "user")
 	if err == nil && ep != nil {
-		return r.resolveEndpoint(ctx, ep)
+		if endpointEligibleForRequest(*ep, execReq) {
+			return r.resolveEndpoint(ctx, ep, execReq)
+		}
 	}
 	// Ignore not-found errors — continue to group lookup
 	var notFound *domain.NotFoundError
@@ -124,35 +149,38 @@ func (r *DefaultResolver) Resolve(ctx context.Context, principalName string) (do
 		for _, g := range groups {
 			ep, err := r.computeRepo.GetDefaultForPrincipal(ctx, g.ID, "group")
 			if err == nil && ep != nil {
-				return r.resolveEndpoint(ctx, ep)
+				if endpointEligibleForRequest(*ep, execReq) {
+					return r.resolveEndpoint(ctx, ep, execReq)
+				}
 			}
 			if err != nil && !errors.As(err, &notFound) {
 				return nil, fmt.Errorf("resolve group assignment: %w", err)
 			}
 		}
 
-		selected, err := r.selectFromAssignments(ctx, principal.ID, groups)
+		selected, err := r.selectFromAssignments(ctx, principal.ID, groups, execReq)
 		if err != nil {
 			return nil, err
 		}
 		if selected != nil {
-			return r.resolveEndpoint(ctx, selected)
+			return r.resolveEndpoint(ctx, selected, execReq)
 		}
 	} else {
-		selected, err := r.selectFromAssignments(ctx, principal.ID, nil)
+		selected, err := r.selectFromAssignments(ctx, principal.ID, nil, execReq)
 		if err != nil {
 			return nil, err
 		}
 		if selected != nil {
-			return r.resolveEndpoint(ctx, selected)
+			return r.resolveEndpoint(ctx, selected, execReq)
 		}
 	}
 
 	// 4. Default: local fallback
+	domain.RecordComputeResolution(ctx, domain.ComputeResolution{ResolvedMode: domain.ComputeModeByocLocal})
 	return nil, nil
 }
 
-func (r *DefaultResolver) selectFromAssignments(ctx context.Context, principalID string, groups []domain.Group) (*domain.ComputeEndpoint, error) {
+func (r *DefaultResolver) selectFromAssignments(ctx context.Context, principalID string, groups []domain.Group, req domain.ComputeExecutionRequest) (*domain.ComputeEndpoint, error) {
 	if r.computeRepo == nil {
 		return nil, fmt.Errorf("compute repository is not configured")
 	}
@@ -166,6 +194,9 @@ func (r *DefaultResolver) selectFromAssignments(ctx context.Context, principalID
 				continue
 			}
 			seen[ep.ID] = struct{}{}
+			if !endpointEligibleForRequest(ep, req) {
+				continue
+			}
 			candidates = append(candidates, ep)
 		}
 	}
@@ -195,11 +226,48 @@ func (r *DefaultResolver) selectFromAssignments(ctx context.Context, principalID
 	return r.selector.Select(ctx, candidates)
 }
 
+func endpointEligibleForRequest(ep domain.ComputeEndpoint, req domain.ComputeExecutionRequest) bool {
+	if ep.Status != "ACTIVE" {
+		return false
+	}
+	readinessStatus := strings.ToUpper(strings.TrimSpace(ep.ReadinessStatus))
+	if readinessStatus == "" {
+		readinessStatus = domain.ComputeReadinessReady
+	}
+	if readinessStatus == domain.ComputeReadinessUnavailable {
+		return false
+	}
+	if ep.IsDraining {
+		return false
+	}
+	workloadClass := strings.ToUpper(strings.TrimSpace(ep.WorkloadClass))
+	if workloadClass == "" {
+		workloadClass = domain.ComputeEndpointWorkloadMixed
+	}
+
+	switch req.WorkloadType {
+	case domain.ComputeWorkloadScheduled:
+		return workloadClass == domain.ComputeEndpointWorkloadScheduled || workloadClass == domain.ComputeEndpointWorkloadMixed
+	case domain.ComputeWorkloadHeavy:
+		return workloadClass == domain.ComputeEndpointWorkloadHeavy || workloadClass == domain.ComputeEndpointWorkloadMixed
+	case domain.ComputeWorkloadNotebook:
+		return workloadClass != domain.ComputeEndpointWorkloadInteractive || workloadClass == domain.ComputeEndpointWorkloadMixed
+	default:
+		return workloadClass == domain.ComputeEndpointWorkloadInteractive || workloadClass == domain.ComputeEndpointWorkloadMixed
+	}
+}
+
 // resolveEndpoint returns a ComputeExecutor for the given endpoint.
 // For LOCAL endpoints, returns the local executor.
 // For REMOTE endpoints, returns a cached RemoteExecutor after a health check.
-func (r *DefaultResolver) resolveEndpoint(ctx context.Context, ep *domain.ComputeEndpoint) (domain.ComputeExecutor, error) {
+func (r *DefaultResolver) resolveEndpoint(ctx context.Context, ep *domain.ComputeEndpoint, req domain.ComputeExecutionRequest) (domain.ComputeExecutor, error) {
 	if ep.Type == "LOCAL" {
+		domain.RecordComputeResolution(ctx, domain.ComputeResolution{
+			RequestedMode:     req.Mode,
+			RequestedEndpoint: req.EndpointName,
+			ResolvedMode:      domain.ComputeModeByocLocal,
+			ResolvedEndpoint:  ep.Name,
+		})
 		return r.localExec, nil
 	}
 
@@ -221,13 +289,57 @@ func (r *DefaultResolver) resolveEndpoint(ctx context.Context, ep *domain.Comput
 		}
 
 		if fallbackLocal {
+			domain.RecordComputeResolution(ctx, domain.ComputeResolution{
+				RequestedMode:     req.Mode,
+				RequestedEndpoint: req.EndpointName,
+				ResolvedMode:      domain.ComputeModeByocLocal,
+				ResolvedEndpoint:  ep.Name,
+			})
 			return nil, nil
 		}
 
 		return nil, fmt.Errorf("remote agent %q unhealthy: %w", ep.Name, err)
 	}
 
+	domain.RecordComputeResolution(ctx, domain.ComputeResolution{
+		RequestedMode:     req.Mode,
+		RequestedEndpoint: req.EndpointName,
+		ResolvedMode:      domain.ComputeModeSharedEndpoint,
+		ResolvedEndpoint:  ep.Name,
+	})
 	return remote, nil
+}
+
+func (r *DefaultResolver) resolveRequestedEndpoint(ctx context.Context, principalID, endpointName string) (*domain.ComputeEndpoint, error) {
+	endpoints, err := r.computeRepo.GetAssignmentsForPrincipal(ctx, principalID, "user")
+	if err != nil {
+		return nil, fmt.Errorf("resolve requested user assignments: %w", err)
+	}
+	for _, ep := range endpoints {
+		if ep.Name == endpointName {
+			return &ep, nil
+		}
+	}
+
+	if r.groupRepo != nil {
+		groups, err := r.groupRepo.GetGroupsForMember(ctx, "user", principalID)
+		if err != nil {
+			return nil, fmt.Errorf("resolve requested group membership: %w", err)
+		}
+		for _, group := range groups {
+			groupEndpoints, err := r.computeRepo.GetAssignmentsForPrincipal(ctx, group.ID, "group")
+			if err != nil {
+				return nil, fmt.Errorf("resolve requested group assignments: %w", err)
+			}
+			for _, ep := range groupEndpoints {
+				if ep.Name == endpointName {
+					return &ep, nil
+				}
+			}
+		}
+	}
+
+	return nil, domain.ErrAccessDenied("compute endpoint %q is not assigned to the principal", endpointName)
 }
 
 func (r *DefaultResolver) fallbackLocalEnabled(ctx context.Context, ep *domain.ComputeEndpoint) (bool, error) {

@@ -679,7 +679,12 @@ func TestCheckPrivilege_CatalogQualifiedTableUsesCanonicalManagedID(t *testing.T
 		require.Equal(t, "demo", catalogName)
 		require.Equal(t, "main", schemaName)
 		require.Equal(t, "titanic", tableName)
-		return &domain.TableDetail{TableID: "table-42", TableType: domain.TableTypeManaged}, nil
+		return &domain.TableDetail{TableID: "1", TableType: domain.TableTypeManaged}, nil
+	})
+	cat.SetCatalogSchemaLookup(func(_ context.Context, catalogName, schemaName string) (*domain.SchemaDetail, error) {
+		require.Equal(t, "demo", catalogName)
+		require.Equal(t, "main", schemaName)
+		return &domain.SchemaDetail{SchemaID: "0", Name: "main", CatalogName: "demo"}, nil
 	})
 
 	tableID, _, isExternal, err := cat.LookupTableID(ctx, "demo.main.titanic")
