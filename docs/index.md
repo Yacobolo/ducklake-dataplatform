@@ -1,40 +1,27 @@
 ---
-layout: home
-
-hero:
-  name: Duck Data Platform
-  text: Query, build, and govern data products
-  tagline: Product documentation for people using Duck across querying, governance, and data product workflows
-  image:
-    src: /favicon.svg
-    alt: Duck logo
-  actions:
-    - theme: brand
-      text: Open Guide
-      link: /start-here/
-    - theme: alt
-      text: Quickstart
-      link: /start-here/quickstart
-    - theme: alt
-      text: Open Reference
-      link: /reference/
-
-features:
-  - title: Get to first query
-    details: Learn how users access Duck, authenticate, and run a first secure query.
-    link: /start-here/quickstart
-  - title: Query and explore
-    details: Find catalogs, inspect objects, and understand what governance means for the data you see.
-    link: /how-to/
-  - title: Build governed assets
-    details: Use platform objects, declarative workflows, and compute concepts to build reusable data products.
-    link: /core-concepts/
-  - title: Govern and administer
-    details: Manage access, security posture, and platform settings for shared use.
-    link: /operations/
-  - title: Advanced reference
-    details: Use API, declarative, and CLI reference only when deeper technical detail is required. Generated reference pages derive from the canonical OpenAPI contract and declarative schemas.
-    link: /reference/
+title: Duck Data Platform
+description: Product documentation for people using Duck across querying, governance, and data product workflows.
 ---
 
+# Duck Data Platform
+
 Duck helps teams query governed data, build reusable data products, and manage access safely from one platform.
+
+## Start Here
+
+- [Getting Started](/start-here/) for an overview of the platform and the recommended reading order.
+- [Quickstart](/start-here/quickstart) to get access, authenticate, and run a first governed query.
+- [Ways to Access Duck](/start-here/deployment-modes) to choose the right access path for analysts, builders, and admins.
+
+## What You Can Do
+
+- Query governed data with RBAC, row-level security, and column masking enforced centrally.
+- Build reusable data products with platform objects, declarative workflows, and managed compute paths.
+- Operate the platform safely with configuration, security, and distributed compute guidance.
+
+## Documentation Paths
+
+- [Use Duck](/how-to/) for common product tasks and operator-friendly workflows.
+- [Build Data Products](/core-concepts/) for the platform concepts behind reusable assets.
+- [Administration](/operations/) for platform configuration, security, and compute operations.
+- [Reference](/reference/) for glossary material and advanced API, declarative, and CLI reference.

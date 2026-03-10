@@ -1,3 +1,8 @@
+---
+title: Architecture Governance
+description: Understand the enforced architecture boundaries and governance checks used in the project.
+---
+
 # Architecture Governance
 
 This project enforces hexagonal architecture boundaries with automated governance checks.

@@ -41,4 +41,4 @@ The CLI is an advanced access surface for users and admins who need scripted wor
 ## Next Steps
 
 - [Query and Explore Data](/how-to/use-the-cli)
-- [Generated API Reference](/reference/generated/api/index)
+- [Advanced API Reference](/reference/api)

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Duck Data Platform",
+  "description": "Product documentation for querying, building, and governing data on Duck.",
+  "colors": {
+    "primary": "#1F7A5A",
+    "light": "#4FB28B",
+    "dark": "#155741"
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Start Here",
+        "pages": [
+          "index",
+          "start-here/index",
+          "start-here/quickstart",
+          "start-here/deployment-modes"
+        ]
+      },
+      {
+        "group": "Core Concepts",
+        "pages": [
+          "core-concepts/index",
+          "core-concepts/access-control",
+          "core-concepts/declarative",
+          "core-concepts/compute-and-query"
+        ]
+      },
+      {
+        "group": "How-To",
+        "pages": [
+          "how-to/index",
+          "how-to/authentication",
+          "how-to/use-the-cli",
+          "how-to/access-control",
+          "how-to/catalog-and-ingestion",
+          "how-to/declarative-workflows"
+        ]
+      },
+      {
+        "group": "Operations",
+        "pages": [
+          "operations/index",
+          "operations/configuration",
+          "operations/security-checklist",
+          "operations/distributed-compute"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "reference/index",
+          "reference/glossary",
+          "reference/declarative",
+          "reference/generated/declarative/index",
+          "reference/cli"
+        ]
+      },
+      {
+        "group": "API Reference",
+        "pages": [
+          "reference/api"
+        ],
+        "openapi": {
+          "source": "https://raw.githubusercontent.com/Yacobolo/ducklake-dataplatform/main/api/gen/openapi.yaml"
+        }
+      }
+    ]
+  }
+}

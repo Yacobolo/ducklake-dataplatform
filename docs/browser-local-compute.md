@@ -1,3 +1,8 @@
+---
+title: Browser-Local Compute Runbook
+description: Operational guidance for the browser-local DuckDB WASM execution path.
+---
+
 # Browser-Local Compute Runbook
 
 This runbook describes the current browser-local DuckDB WASM execution model and the limits that matter for rollout and support.

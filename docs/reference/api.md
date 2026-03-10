@@ -5,24 +5,24 @@ description: Use the generated API reference when you need exact interface detai
 
 # Advanced API Reference
 
-The generated API reference is the source of truth for request and response details. Use this page when you need to choose the right endpoint group before diving into operation-level detail.
+The API reference in Mintlify is generated directly from the canonical OpenAPI contract. Use this page when you need to decide which endpoint group to inspect before diving into operation-level detail.
 
 ## Best Entry Points
 
-- [Platform Features](/reference/generated/api/features) for capability discovery
-- [Generated API Reference](/reference/generated/api/index) for complete operation and schema detail
+- The `API Reference` section in the navigation for complete endpoint and schema detail
+- [Use Duck](/how-to/) when you need task-oriented workflows before raw API detail
 
 ## Recommended Starting Groups
 
-| Need | Start here |
+| Need | Start here in the API Reference nav |
 | --- | --- |
-| Query execution | [Duck Endpoint Index](/reference/generated/api/endpoints/duck) |
-| Identity and access | [Duck Endpoint Index](/reference/generated/api/endpoints/duck) |
-| Catalog and object management | [Duck Endpoint Index](/reference/generated/api/endpoints/duck) |
-| Data load paths | [Duck Endpoint Index](/reference/generated/api/endpoints/duck) |
-| Remote execution | [Duck Endpoint Index](/reference/generated/api/endpoints/duck) |
+| Query execution | Duck endpoints and related request/response schemas |
+| Identity and access | Auth, access control, and policy-oriented endpoints |
+| Catalog and object management | Catalog, schema, and governed object endpoints |
+| Data load paths | Ingestion and data movement endpoints |
+| Remote execution | Compute routing and execution endpoints |
 
-## When To Use Generated API Reference
+## When To Use API Reference
 
 Use it when you need:
 
@@ -41,5 +41,5 @@ Use the product guides first when you are deciding:
 
 ## Next Steps
 
-- [Generated API Reference](/reference/generated/api/index)
+- Open the `API Reference` section in the navigation
 - [Use the Platform](/how-to/)
