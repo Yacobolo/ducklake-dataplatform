@@ -121,7 +121,7 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 	// Resolve principal name from configured claim chain.
 	displayName := a.resolveDisplayName(claims)
 
-	if a.shouldResolveJWTLocally(claims) {
+	if a.shouldResolveJWTLocally() {
 		if a.principalRepo == nil {
 			return nil, fmt.Errorf("principal lookup unavailable for local JWT")
 		}
@@ -181,7 +181,7 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 	return nil, fmt.Errorf("principal resolution unavailable: provisioner or principal repository required")
 }
 
-func (a *Authenticator) shouldResolveJWTLocally(claims *JWTClaims) bool {
+func (a *Authenticator) shouldResolveJWTLocally() bool {
 	return strings.EqualFold(strings.TrimSpace(a.cfg.Mode), "local_only")
 }
 
