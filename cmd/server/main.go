@@ -27,11 +27,13 @@ import (
 	"duck-demo/internal/app"
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
+	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"
 	"duck-demo/internal/flightsql"
 	"duck-demo/internal/middleware"
 	"duck-demo/internal/pgwire"
+	"duck-demo/internal/sampledata"
 	"duck-demo/internal/ui"
 )
 
@@ -123,6 +125,11 @@ func run() error {
 		return fmt.Errorf("migration: %w", err)
 	}
 
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(writeDB)
+	if _, err := sampledata.EnsureCatalogRegistration(ctx, catalogRegRepo, cfg.MetaDBPath); err != nil {
+		return fmt.Errorf("ensure sample catalog registration: %w", err)
+	}
+
 	// Wire application dependencies
 	application, err := app.New(ctx, app.Deps{
 		Cfg:     cfg,
@@ -176,6 +183,9 @@ func run() error {
 	// Attach all registered catalogs (concurrent, bounded parallelism)
 	if err := application.Services.CatalogRegistration.AttachAll(ctx); err != nil {
 		logger.Warn("catalog AttachAll failed", "error", err)
+	}
+	if err := sampledata.Bootstrap(ctx, writeDB, duckDB, logger.With("component", "sample-data")); err != nil {
+		return fmt.Errorf("bootstrap sample data: %w", err)
 	}
 
 	if application.Reconciler != nil {

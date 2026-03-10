@@ -208,6 +208,21 @@ func TestViewService_CreateView(t *testing.T) {
 	})
 }
 
+func TestViewService_CreateView_RejectsSystemManagedCatalog(t *testing.T) {
+	t.Parallel()
+
+	svc := newTestViewService(&mockViewRepo{}, &mockCatalogRepo{}, &mockAuthService{}, &mockAuditRepo{})
+	_, err := svc.CreateView(context.Background(), domain.SampleDataCatalogName, "alice", "nyc_taxi", domain.CreateViewRequest{
+		Name:           "daily_metrics",
+		ViewDefinition: "SELECT 1",
+	})
+	require.Error(t, err)
+
+	var validationErr *domain.ValidationError
+	require.ErrorAs(t, err, &validationErr)
+	assert.Contains(t, err.Error(), "system managed")
+}
+
 // === GetView ===
 
 func TestViewService_GetView(t *testing.T) {

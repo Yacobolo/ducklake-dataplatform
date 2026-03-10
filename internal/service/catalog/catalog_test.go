@@ -283,6 +283,19 @@ func TestCatalogService_CreateSchema(t *testing.T) {
 	}
 }
 
+func TestCatalogService_CreateSchema_RejectsSystemManagedCatalog(t *testing.T) {
+	t.Parallel()
+
+	svc := newTestCatalogService(&mockCatalogRepo{}, &mockAuthService{}, &mockAuditRepo{}, &mockTagRepo{}, &mockStatsRepo{}, nil)
+
+	_, err := svc.CreateSchema(context.Background(), domain.SampleDataCatalogName, "alice", domain.CreateSchemaRequest{Name: "blocked"})
+	require.Error(t, err)
+
+	var validationErr *domain.ValidationError
+	require.ErrorAs(t, err, &validationErr)
+	assert.Contains(t, err.Error(), "system managed")
+}
+
 // === DeleteSchema ===
 
 func TestCatalogService_DeleteSchema(t *testing.T) {

@@ -171,6 +171,13 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		}
 		return repo.GetTable(ctx, schemaName, tableName)
 	})
+	authSvc.SetCatalogSchemaLookup(func(ctx context.Context, catalogName, schemaName string) (*domain.SchemaDetail, error) {
+		repo, err := catalogRepoFactory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			return nil, err
+		}
+		return repo.GetSchema(ctx, schemaName)
+	})
 	authSvc.SetViewRepository(viewRepo)
 	authSvc.SetCatalogViewLookup(func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error) {
 		repo, err := catalogRepoFactory.ForCatalog(ctx, catalogName)
