@@ -11,6 +11,7 @@ import (
 
 	"duck-demo/internal/domain"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
@@ -115,7 +116,7 @@ func TestServer_ExtendedQueryProtocol_UnnamedStatementPortal(t *testing.T) {
 	_, err = conn.Write(describePortalPacket(t))
 	require.NoError(t, err)
 	typeByte, _ = readPGMessage(t, conn)
-	require.Equal(t, byte('n'), typeByte)
+	require.Equal(t, byte('T'), typeByte)
 
 	_, err = conn.Write(executePacket(t))
 	require.NoError(t, err)
@@ -254,6 +255,55 @@ func TestServer_StartupRequiresUser(t *testing.T) {
 	require.Contains(t, string(payload), "startup user is required")
 }
 
+func TestServer_StartupRejectsUnknownDatabase(t *testing.T) {
+	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, _ string, _ string) (*QueryResult, error) {
+		return &QueryResult{}, nil
+	})
+	require.NoError(t, srv.Start())
+	t.Cleanup(func() {
+		_ = srv.Shutdown(context.Background())
+	})
+
+	conn, err := net.DialTimeout("tcp", srv.Addr(), time.Second)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+
+	_, err = conn.Write(startupPacketWithDatabase(t, "missing"))
+	require.NoError(t, err)
+
+	typeByte, payload := readPGMessage(t, conn)
+	require.Equal(t, byte('E'), typeByte)
+	require.Contains(t, string(payload), "3D000")
+	require.Contains(t, string(payload), `database "missing" does not exist`)
+}
+
+func TestServer_PGXExtendedProtocolQuery(t *testing.T) {
+	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, principal string, sqlQuery string) (*QueryResult, error) {
+		require.Equal(t, "duck", principal)
+		require.Equal(t, "SELECT 42 AS answer", sqlQuery)
+		return &QueryResult{
+			Columns: []string{"answer"},
+			Rows:    [][]interface{}{{"42"}},
+		}, nil
+	})
+	require.NoError(t, srv.Start())
+	t.Cleanup(func() {
+		_ = srv.Shutdown(context.Background())
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	conn, err := pgx.Connect(ctx, "postgres://duck@"+srv.Addr()+"/duck?sslmode=disable")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close(context.Background()) })
+
+	var answer string
+	err = conn.QueryRow(ctx, "SELECT 42 AS answer").Scan(&answer)
+	require.NoError(t, err)
+	require.Equal(t, "42", answer)
+}
+
 func TestServer_QueryError_MapsDomainSQLState(t *testing.T) {
 	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, _ string, _ string) (*QueryResult, error) {
 		return nil, domain.ErrAccessDenied("denied")
@@ -369,7 +419,13 @@ func TestDecodeBinaryBindValue_CommonScalarTypes(t *testing.T) {
 func startupPacket(t *testing.T) []byte {
 	t.Helper()
 
-	params := []byte("user\x00duck\x00database\x00duck\x00\x00")
+	return startupPacketWithDatabase(t, "duck")
+}
+
+func startupPacketWithDatabase(t *testing.T, database string) []byte {
+	t.Helper()
+
+	params := []byte("user\x00duck\x00database\x00" + database + "\x00\x00")
 	buf := bytes.NewBuffer(make([]byte, 0, 8+len(params)))
 	require.NoError(t, binary.Write(buf, binary.BigEndian, int32(8+len(params))))
 	require.NoError(t, binary.Write(buf, binary.BigEndian, pgProtocolVersion3))

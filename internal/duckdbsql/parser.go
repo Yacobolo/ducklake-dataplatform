@@ -44,8 +44,11 @@ func Parse(sql string) (Stmt, error) {
 		return nil, p.errors[0]
 	}
 
+	for p.match(TOKEN_SEMICOLON) {
+	}
+
 	// Multi-statement rejection: after parsing one statement,
-	// ensure we're at EOF (semicolons are consumed by parser).
+	// ensure we're at EOF after consuming optional trailing semicolons.
 	if p.token.Type != TOKEN_EOF {
 		return nil, fmt.Errorf("multi-statement queries are not allowed")
 	}
