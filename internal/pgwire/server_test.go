@@ -296,7 +296,7 @@ func TestServer_PGXExtendedProtocolQuery(t *testing.T) {
 
 	conn, err := pgx.Connect(ctx, "postgres://duck@"+srv.Addr()+"/duck?sslmode=disable")
 	require.NoError(t, err)
-	t.Cleanup(func() { conn.Close(context.Background()) })
+	t.Cleanup(func() { _ = conn.Close(context.Background()) })
 
 	var answer string
 	err = conn.QueryRow(ctx, "SELECT 42 AS answer").Scan(&answer)
