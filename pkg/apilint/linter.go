@@ -143,6 +143,7 @@ func buildRuleSet(cfg *Config) *rulesets.RuleSet {
 	// Merge with defaults (resolves extends, etc.).
 	defaultRS := rulesets.BuildDefaultRuleSets()
 	rs := defaultRS.GenerateRuleSetFromSuppliedRuleSet(parsed)
+	applyProjectRuleOverrides(rs)
 
 	// Apply "off" overrides from config by removing rules from the set.
 	if cfg != nil {
@@ -176,6 +177,7 @@ func buildCustomOnlyRuleSet(cfg *Config) *rulesets.RuleSet {
 
 	defaultRS := rulesets.BuildDefaultRuleSets()
 	rs := defaultRS.GenerateRuleSetFromSuppliedRuleSet(parsed)
+	applyProjectRuleOverrides(rs)
 
 	// Remove any built-in rules that were pulled in (should be none since
 	// extends was stripped, but be defensive). Keep only rules backed by a
@@ -197,6 +199,18 @@ func buildCustomOnlyRuleSet(cfg *Config) *rulesets.RuleSet {
 	}
 
 	return rs
+}
+
+func applyProjectRuleOverrides(rs *rulesets.RuleSet) {
+	if rs == nil {
+		return
+	}
+
+	// These auth bootstrap/login operations are intentionally public entrypoints.
+	// The project models that with x-authz metadata rather than fake security
+	// requirements, so these OWASP rules are disabled for this spec.
+	delete(rs.Rules, "owasp-protection-global-unsafe")
+	delete(rs.Rules, "owasp-protection-global-unsafe-strict")
 }
 
 // stripExtends removes the top-level "extends" key from ruleset YAML so the
