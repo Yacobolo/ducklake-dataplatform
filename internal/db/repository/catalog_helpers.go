@@ -27,6 +27,11 @@ func (r *CatalogRepo) resolveSchemaID(ctx context.Context, schemaName string) (i
 	return schemaID, nil
 }
 
+func (r *CatalogRepo) lockCatalogWrites() func() {
+	r.writeMu.Lock()
+	return r.writeMu.Unlock
+}
+
 // cascadeDeleteTableGrants removes row filters, column masks, and tag
 // assignments for a single table. It logs warnings on failure but does not
 // return errors (best-effort cascade cleanup).

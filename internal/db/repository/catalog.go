@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	dbstore "duck-demo/internal/db/dbstore"
@@ -22,6 +23,7 @@ type CatalogRepo struct {
 	extRepo     *ExternalTableRepo
 	catalogName string // DuckDB catalog alias (e.g., "lake")
 	logger      *slog.Logger
+	writeMu     sync.Mutex
 }
 
 // NewCatalogRepo creates a new CatalogRepo.

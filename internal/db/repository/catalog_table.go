@@ -15,6 +15,9 @@ import (
 
 // CreateTable creates a new table via DuckDB DDL and reads it back.
 func (r *CatalogRepo) CreateTable(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error) {
+	unlock := r.lockCatalogWrites()
+	defer unlock()
+
 	if err := ddl.ValidateIdentifier(schemaName); err != nil {
 		return nil, domain.ErrValidation("%s", err.Error())
 	}
@@ -213,6 +216,9 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 
 // DeleteTable drops a table via DuckDB DDL and cascades governance cleanup.
 func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName string) error {
+	unlock := r.lockCatalogWrites()
+	defer unlock()
+
 	if err := ddl.ValidateIdentifier(schemaName); err != nil {
 		return domain.ErrValidation("%s", err.Error())
 	}

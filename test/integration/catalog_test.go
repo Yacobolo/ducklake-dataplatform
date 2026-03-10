@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"sync"
 	"testing"
 
 	"duck-demo/internal/db/dbstore"
@@ -136,6 +137,74 @@ func TestCatalog_SchemaCRUD(t *testing.T) {
 
 	for _, s := range steps {
 		t.Run(s.name, s.fn)
+	}
+}
+
+func TestCatalog_ConcurrentSchemaCreationSerializesSQLiteWrites(t *testing.T) {
+	env := requireCatalogEnv(t)
+	repo := repository.NewCatalogRepo(env.MetaDB, env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	ctx := context.Background()
+
+	names := []string{"concurrent_raw", "concurrent_analytics"}
+	errs := make(chan error, len(names))
+	var wg sync.WaitGroup
+
+	for _, name := range names {
+		wg.Add(1)
+		go func(schemaName string) {
+			defer wg.Done()
+			_, err := repo.CreateSchema(ctx, schemaName, "", "admin")
+			errs <- err
+		}(name)
+	}
+
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
+	}
+
+	for _, name := range names {
+		_, err := repo.GetSchema(ctx, name)
+		require.NoError(t, err)
+	}
+}
+
+func TestCatalog_ConcurrentTableCreationSerializesSQLiteWrites(t *testing.T) {
+	env := requireCatalogEnv(t)
+	repo := repository.NewCatalogRepo(env.MetaDB, env.MetaDB, dbstore.New(env.MetaDB), env.DuckDB, "lake", nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	ctx := context.Background()
+
+	_, err := repo.CreateSchema(ctx, "concurrent_tables", "", "admin")
+	require.NoError(t, err)
+
+	reqs := []domain.CreateTableRequest{
+		{Name: "orders", Columns: []domain.CreateColumnDef{{Name: "id", Type: "INTEGER"}}},
+		{Name: "customers", Columns: []domain.CreateColumnDef{{Name: "id", Type: "INTEGER"}}},
+	}
+	errs := make(chan error, len(reqs))
+	var wg sync.WaitGroup
+
+	for _, req := range reqs {
+		wg.Add(1)
+		go func(createReq domain.CreateTableRequest) {
+			defer wg.Done()
+			_, createErr := repo.CreateTable(ctx, "concurrent_tables", createReq, "admin")
+			errs <- createErr
+		}(req)
+	}
+
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
+	}
+
+	for _, req := range reqs {
+		_, err := repo.GetTable(ctx, "concurrent_tables", req.Name)
+		require.NoError(t, err)
 	}
 }
 
