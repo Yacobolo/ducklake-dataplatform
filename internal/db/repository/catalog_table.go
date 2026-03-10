@@ -164,6 +164,15 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 		t.SchemaName = schemaName
 		t.CatalogName = r.catalogName
 		t.TableType = "MANAGED"
+		cols, loadErr := r.loadColumns(ctx, t.TableID)
+		if loadErr != nil {
+			return nil, 0, loadErr
+		}
+		t.Columns = cols
+		securableName := schemaName + "." + t.Name
+		for i := range t.Columns {
+			r.enrichColumnMetadata(ctx, securableName, &t.Columns[i])
+		}
 		allTables = append(allTables, t)
 	}
 	if err := rows.Err(); err != nil {

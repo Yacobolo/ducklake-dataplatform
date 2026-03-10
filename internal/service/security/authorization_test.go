@@ -572,6 +572,26 @@ func TestLookupTableID_SchemaQualified(t *testing.T) {
 	assert.Equal(t, "0", schemaID)
 }
 
+func TestLookupTableID_DefaultCatalogSchemaQualified(t *testing.T) {
+	cat, _, ctx := setupTestService(t)
+
+	cat.SetDefaultCatalogTableLookup(func(_ context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
+		require.Equal(t, "raw", schemaName)
+		require.Equal(t, "customers", tableName)
+		return &domain.TableDetail{TableID: "42", TableType: domain.TableTypeManaged}, nil
+	})
+	cat.SetDefaultCatalogSchemaLookup(func(_ context.Context, schemaName string) (*domain.Schema, error) {
+		require.Equal(t, "raw", schemaName)
+		return &domain.Schema{ID: "9", Name: schemaName}, nil
+	})
+
+	tableID, schemaID, isExternal, err := cat.LookupTableID(ctx, "raw.customers")
+	require.NoError(t, err)
+	assert.Equal(t, "42", tableID)
+	assert.Equal(t, "9", schemaID)
+	assert.False(t, isExternal)
+}
+
 func TestLookupTableID_AmbiguousUnqualified(t *testing.T) {
 	db, _ := internaldb.OpenTestSQLite(t)
 
@@ -667,6 +687,50 @@ func TestCheckPrivilege_CatalogQualifiedTableUsesCanonicalManagedID(t *testing.T
 	assert.False(t, isExternal)
 
 	allowed, err := cat.CheckPrivilege(ctx, "catalog_qualified_reader", SecurableTable, tableID, PrivSelect)
+	require.NoError(t, err)
+	assert.True(t, allowed)
+}
+
+func TestCheckPrivilege_DefaultCatalogTableUsesDefaultCatalogTableIDLookup(t *testing.T) {
+	cat, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
+		Name: "default_catalog_reader", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableSchema, SecurableID: "9",
+		Privilege: PrivUsage,
+	})
+	require.NoError(t, err)
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableTable, SecurableID: "42",
+		Privilege: PrivSelect,
+	})
+	require.NoError(t, err)
+
+	cat.SetDefaultCatalogTableLookup(func(_ context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
+		require.Equal(t, "raw", schemaName)
+		require.Equal(t, "customers", tableName)
+		return &domain.TableDetail{TableID: "42", TableType: domain.TableTypeManaged}, nil
+	})
+	cat.SetDefaultCatalogSchemaLookup(func(_ context.Context, schemaName string) (*domain.Schema, error) {
+		require.Equal(t, "raw", schemaName)
+		return &domain.Schema{ID: "9", Name: schemaName}, nil
+	})
+	cat.SetDefaultCatalogTableByIDLookup(func(_ context.Context, tableID string) (*domain.Table, error) {
+		require.Equal(t, "42", tableID)
+		return &domain.Table{ID: "42", SchemaID: "9", Name: "customers"}, nil
+	})
+
+	tableID, _, isExternal, err := cat.LookupTableID(ctx, "raw.customers")
+	require.NoError(t, err)
+	assert.False(t, isExternal)
+
+	allowed, err := cat.CheckPrivilege(ctx, "default_catalog_reader", SecurableTable, tableID, PrivSelect)
 	require.NoError(t, err)
 	assert.True(t, allowed)
 }

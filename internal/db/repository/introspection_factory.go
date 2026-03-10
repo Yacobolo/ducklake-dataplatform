@@ -32,8 +32,26 @@ func NewIntrospectionRepoFactory(catalogRegRepo domain.CatalogRegistrationReposi
 	}
 }
 
+// ForDefault returns an IntrospectionRepo for the current default catalog.
+func (f *IntrospectionRepoFactory) ForDefault(ctx context.Context) (domain.IntrospectionRepository, error) {
+	reg, err := f.catalogRegRepo.GetDefault(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("no default catalog configured: %w", err)
+	}
+	return f.ForCatalog(ctx, reg.Name)
+}
+
+// DefaultCatalogName returns the current default catalog name.
+func (f *IntrospectionRepoFactory) DefaultCatalogName(ctx context.Context) (string, error) {
+	reg, err := f.catalogRegRepo.GetDefault(ctx)
+	if err != nil {
+		return "", fmt.Errorf("no default catalog configured: %w", err)
+	}
+	return reg.Name, nil
+}
+
 // ForCatalog returns an IntrospectionRepo for the given catalog name.
-func (f *IntrospectionRepoFactory) ForCatalog(ctx context.Context, catalogName string) (*IntrospectionRepo, error) {
+func (f *IntrospectionRepoFactory) ForCatalog(ctx context.Context, catalogName string) (domain.IntrospectionRepository, error) {
 	f.mu.RLock()
 	if entry, ok := f.cache[catalogName]; ok {
 		f.mu.RUnlock()

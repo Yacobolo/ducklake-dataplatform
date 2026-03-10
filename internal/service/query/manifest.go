@@ -35,6 +35,13 @@ type FilePresigner interface {
 	PresignGetObject(ctx context.Context, path string, expiry time.Duration) (string, error)
 }
 
+// IntrospectionRepoFactory resolves per-catalog introspection repositories.
+type IntrospectionRepoFactory interface {
+	ForCatalog(ctx context.Context, catalogName string) (domain.IntrospectionRepository, error)
+	ForDefault(ctx context.Context) (domain.IntrospectionRepository, error)
+	DefaultCatalogName(ctx context.Context) (string, error)
+}
+
 // ManifestService resolves table names to presigned Parquet URLs with
 // security policies (RLS filters, column masks) applied. It serves as
 // the bridge between the client-side DuckDB extension and the server-side
@@ -44,7 +51,7 @@ type ManifestService struct {
 	metastoreFactory domain.MetastoreQuerierFactory // per-catalog metastore access
 	authSvc          domain.AuthorizationService
 	presigner        FilePresigner
-	introRepo        domain.IntrospectionRepository
+	introFactory     IntrospectionRepoFactory
 	auditRepo        domain.AuditRepository
 	credRepo         domain.StorageCredentialRepository // for credential-aware presigning
 	locRepo          domain.ExternalLocationRepository  // for resolving schema locations
@@ -55,7 +62,7 @@ func NewManifestService(
 	metastoreFactory domain.MetastoreQuerierFactory,
 	authSvc domain.AuthorizationService,
 	presigner FilePresigner,
-	introRepo domain.IntrospectionRepository,
+	introFactory IntrospectionRepoFactory,
 	auditRepo domain.AuditRepository,
 	credRepo domain.StorageCredentialRepository,
 	locRepo domain.ExternalLocationRepository,
@@ -64,7 +71,7 @@ func NewManifestService(
 		metastoreFactory: metastoreFactory,
 		authSvc:          authSvc,
 		presigner:        presigner,
-		introRepo:        introRepo,
+		introFactory:     introFactory,
 		auditRepo:        auditRepo,
 		credRepo:         credRepo,
 		locRepo:          locRepo,
@@ -127,7 +134,11 @@ func (s *ManifestService) GetManifest(
 	}
 
 	// 5. Get column metadata (fetch all columns with large page size)
-	columns, _, err := s.introRepo.ListColumns(ctx, tableID, domain.PageRequest{MaxResults: 10000})
+	introRepo, resolvedCatalogName, err := s.resolveIntrospectionRepo(ctx, catalogName)
+	if err != nil {
+		return nil, fmt.Errorf("resolve introspection repo: %w", err)
+	}
+	columns, _, err := introRepo.ListColumns(ctx, tableID, domain.PageRequest{MaxResults: 10000})
 	if err != nil {
 		return nil, fmt.Errorf("list columns: %w", err)
 	}
@@ -137,7 +148,7 @@ func (s *ManifestService) GetManifest(
 	}
 
 	// 6. Resolve Parquet file paths from DuckLake metastore
-	s3Paths, schemaPath, err := s.resolveDataFiles(ctx, catalogName, tableID, schemaName)
+	s3Paths, schemaPath, err := s.resolveDataFiles(ctx, resolvedCatalogName, tableID, schemaName)
 	if err != nil {
 		return nil, fmt.Errorf("resolve files: %w", err)
 	}
@@ -188,6 +199,26 @@ func qualifiedTableName(catalogName, schemaName, tableName string) string {
 		return schemaName + "." + tableName
 	}
 	return tableName
+}
+
+func (s *ManifestService) resolveIntrospectionRepo(ctx context.Context, catalogName string) (domain.IntrospectionRepository, string, error) {
+	if catalogName != "" {
+		repo, err := s.introFactory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			return nil, "", err
+		}
+		return repo, catalogName, nil
+	}
+
+	repo, err := s.introFactory.ForDefault(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	defaultCatalogName, err := s.introFactory.DefaultCatalogName(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	return repo, defaultCatalogName, nil
 }
 
 // resolveDataFiles queries the DuckLake metastore for Parquet file
