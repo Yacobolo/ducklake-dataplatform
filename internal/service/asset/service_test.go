@@ -71,6 +71,34 @@ func TestService_UpdateAsset_ReplacesChecks(t *testing.T) {
 	assert.Equal(t, "gold_non_empty", checks.checksByAsset[asset.ID][0].Name)
 }
 
+func TestService_CreateAsset_RollsBackWhenUpstreamResolutionFails(t *testing.T) {
+	t.Parallel()
+
+	assets := &fakeAssetRepo{assetsByID: map[string]domain.DataAsset{}, idsByKey: map[string]string{}}
+	deps := &fakeAssetDependencyRepo{}
+	checks := &fakeAssetCheckRepo{checksByAsset: map[string][]domain.AssetCheck{}}
+
+	svc := &Service{assets: assets, deps: deps, checks: checks}
+	created, err := svc.CreateAsset(adminCtx(), domain.CreateAssetRequest{
+		AssetKey:          "showcase.rides.failed",
+		AssetType:         domain.AssetTypeTable,
+		Owner:             "data-engineers",
+		IsActive:          true,
+		UpstreamAssetKeys: []string{"showcase.rides.missing"},
+		Checks:            []domain.AssetCheckInput{{Name: "will_be_rolled_back", CheckType: "SQL_ASSERT", Enabled: true}},
+	})
+	require.Error(t, err)
+	require.Nil(t, created)
+	assert.Contains(t, err.Error(), "resolve upstream asset")
+
+	_, getErr := assets.GetByKey(adminCtx(), "showcase.rides.failed")
+	require.Error(t, getErr)
+	var notFoundErr *domain.NotFoundError
+	require.ErrorAs(t, getErr, &notFoundErr)
+	assert.Empty(t, deps.byAsset)
+	assert.Empty(t, checks.checksByAsset)
+}
+
 func adminCtx() context.Context {
 	return domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "tester", IsAdmin: true, Type: "user"})
 }

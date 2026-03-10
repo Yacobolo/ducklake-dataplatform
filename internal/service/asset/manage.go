@@ -37,9 +37,11 @@ func (s *Service) CreateAsset(ctx context.Context, req domain.CreateAssetRequest
 		return nil, fmt.Errorf("create asset: %w", err)
 	}
 	if err := s.reconcileAssetDependencies(ctx, created.ID, created.AssetKey, req.UpstreamAssetKeys); err != nil {
+		s.rollbackCreatedAsset(ctx, created.ID)
 		return nil, err
 	}
 	if err := s.reconcileAssetChecks(ctx, created.ID, req.Checks); err != nil {
+		s.rollbackCreatedAsset(ctx, created.ID)
 		return nil, err
 	}
 	if s.audit != nil {
@@ -256,4 +258,25 @@ func cloneMap(in map[string]any) map[string]any {
 func principalName(ctx context.Context) string {
 	principal, _ := domain.PrincipalFromContext(ctx)
 	return principal.Name
+}
+
+func (s *Service) rollbackCreatedAsset(ctx context.Context, assetID string) {
+	if s == nil {
+		return
+	}
+
+	if s.checks != nil {
+		checks, err := s.checks.ListChecksByAsset(ctx, assetID)
+		if err == nil {
+			for i := range checks {
+				_ = s.checks.DeleteCheck(ctx, checks[i].ID)
+			}
+		}
+	}
+	if s.deps != nil {
+		_ = s.deps.DeleteByAsset(ctx, assetID)
+	}
+	if s.assets != nil {
+		_ = s.assets.Delete(ctx, assetID)
+	}
 }
