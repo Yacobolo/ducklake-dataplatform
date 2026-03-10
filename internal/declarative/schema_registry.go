@@ -32,6 +32,7 @@ func SchemaDocumentTypes() []SchemaDocumentType {
 		{Kind: KindNameExternalLocationList, FileName: "external-location-list", Type: reflect.TypeOf(ExternalLocationListDoc{})},
 		{Kind: KindNameComputeEndpointList, FileName: "compute-endpoint-list", Type: reflect.TypeOf(ComputeEndpointListDoc{})},
 		{Kind: KindNameComputeAssignmentList, FileName: "compute-assignment-list", Type: reflect.TypeOf(ComputeAssignmentListDoc{})},
+		{Kind: KindNameComputeRoutingDefaults, FileName: "compute-routing-defaults", Type: reflect.TypeOf(ComputeRoutingDefaultsDoc{})},
 		{Kind: KindNameNotebook, FileName: "notebook", Type: reflect.TypeOf(NotebookDoc{})},
 		{Kind: KindNameAsset, FileName: "asset", Type: reflect.TypeOf(AssetDoc{})},
 		{Kind: KindNameModel, FileName: "model", Type: reflect.TypeOf(ModelDoc{})},

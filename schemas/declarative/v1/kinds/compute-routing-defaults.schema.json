@@ -1,0 +1,53 @@
+{
+  "$defs": {
+    "ComputeRoutingDefaultsDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "defaults": {
+          "$ref": "#/$defs/ComputeRoutingDefaultsSpec"
+        },
+        "kind": {
+          "enum": [
+            "ComputeRoutingDefaults"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "defaults",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "ComputeRoutingDefaultsSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "interactive_mode": {
+          "type": "string"
+        },
+        "notebook_mode": {
+          "type": "string"
+        },
+        "scheduled_mode": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/compute-routing-defaults.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/ComputeRoutingDefaultsDoc"
+    }
+  ],
+  "title": "Duck declarative ComputeRoutingDefaults"
+}

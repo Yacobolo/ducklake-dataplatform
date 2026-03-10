@@ -20,7 +20,7 @@ op getQueryResults(queryId: string, @query max_results?: int32, @query page_toke
 
 @route("/queries/{queryId}/cancel")
 @post
-op cancelQuery(queryId: string): Ok<CancelQueryResponse> | ResourceErrorResponses;
+op cancelQuery(queryId: string): Accepted<CancelQueryResponse> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url")
 @post

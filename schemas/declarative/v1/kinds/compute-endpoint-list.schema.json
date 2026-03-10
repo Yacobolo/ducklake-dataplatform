@@ -34,10 +34,28 @@
         "auth_token_from_env": {
           "type": "string"
         },
+        "is_draining": {
+          "type": "boolean"
+        },
+        "max_concurrency": {
+          "type": "integer"
+        },
         "max_memory_gb": {
           "type": "integer"
         },
+        "max_result_size_mb": {
+          "type": "integer"
+        },
         "name": {
+          "type": "string"
+        },
+        "readiness_status": {
+          "type": "string"
+        },
+        "recommended_for_large_queries": {
+          "type": "boolean"
+        },
+        "selection_policy": {
           "type": "string"
         },
         "size": {
@@ -47,6 +65,9 @@
           "type": "string"
         },
         "url": {
+          "type": "string"
+        },
+        "workload_class": {
           "type": "string"
         }
       },

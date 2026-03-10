@@ -118,6 +118,7 @@ type mockComputeRepo struct {
 	updateFn                     func(ctx context.Context, id string, req domain.UpdateComputeEndpointRequest) (*domain.ComputeEndpoint, error)
 	deleteFn                     func(ctx context.Context, id string) error
 	updateStatusFn               func(ctx context.Context, id string, status string) error
+	updateHealthFn               func(ctx context.Context, id string, health domain.ComputeEndpointHealthResult) error
 	assignFn                     func(ctx context.Context, a *domain.ComputeAssignment) (*domain.ComputeAssignment, error)
 	unassignFn                   func(ctx context.Context, id string) error
 	listAssignmentsFn            func(ctx context.Context, endpointID string, page domain.PageRequest) ([]domain.ComputeAssignment, int64, error)
@@ -165,6 +166,12 @@ func (m *mockComputeRepo) UpdateStatus(ctx context.Context, id string, status st
 		return m.updateStatusFn(ctx, id, status)
 	}
 	panic("unexpected")
+}
+func (m *mockComputeRepo) UpdateHealth(ctx context.Context, id string, health domain.ComputeEndpointHealthResult) error {
+	if m.updateHealthFn != nil {
+		return m.updateHealthFn(ctx, id, health)
+	}
+	return nil
 }
 func (m *mockComputeRepo) Assign(ctx context.Context, a *domain.ComputeAssignment) (*domain.ComputeAssignment, error) {
 	if m.assignFn != nil {
@@ -249,7 +256,9 @@ func TestResolver_DirectUserAssignment_Local(t *testing.T) {
 
 	executor, err := resolver.Resolve(context.Background(), "alice")
 	require.NoError(t, err)
-	assert.Same(t, localExec, executor) // LOCAL type returns the local executor
+	require.NotNil(t, executor)
+	_, isLocal := executor.(*LocalExecutor)
+	assert.True(t, isLocal)
 }
 
 func TestResolver_DirectUserAssignment_Remote(t *testing.T) {

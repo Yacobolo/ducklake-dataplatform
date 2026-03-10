@@ -16,21 +16,26 @@ const (
 
 // QueryJob stores durable state for asynchronous query execution.
 type QueryJob struct {
-	ID            string
-	PrincipalName string
-	RequestID     string
-	SQLText       string
-	Status        QueryJobStatus
-	Columns       []string
-	Rows          [][]interface{}
-	RowCount      int
-	ErrorMessage  *string
-	AttemptCount  int
-	MaxAttempts   int
-	LastHeartbeat *time.Time
-	NextRetryAt   *time.Time
-	CreatedAt     time.Time
-	StartedAt     *time.Time
-	CompletedAt   *time.Time
-	UpdatedAt     time.Time
+	ID                   string
+	PrincipalName        string
+	RequestID            string
+	SQLText              string
+	ComputeMode          string
+	EndpointName         *string
+	ResolvedMode         *string
+	ResolvedEndpointName *string
+	WorkloadType         string
+	Status               QueryJobStatus
+	Columns              []string
+	Rows                 [][]interface{}
+	RowCount             int
+	ErrorMessage         *string
+	AttemptCount         int
+	MaxAttempts          int
+	LastHeartbeat        *time.Time
+	NextRetryAt          *time.Time
+	CreatedAt            time.Time
+	StartedAt            *time.Time
+	CompletedAt          *time.Time
+	UpdatedAt            time.Time
 }

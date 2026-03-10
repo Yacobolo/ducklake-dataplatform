@@ -109,7 +109,6 @@ rules:
   # These are legitimate dynamic key-value maps, not unconstrained objects.
   owasp-no-additionalProperties: off
   owasp-constrained-additionalProperties: off
-
   # Downgraded: lineage endpoints use pagination params for edge depth control, not list pagination.
   check-pagination-schema-match: off
   # Custom response/status checks are defined in the custom-rule section below.

@@ -13,6 +13,8 @@ type sqlAsyncJobPageData struct {
 	Principal         domain.ContextPrincipal
 	JobID             string
 	Status            string
+	RequestedCompute  string
+	ResolvedCompute   string
 	RequestID         string
 	SQLText           string
 	Columns           []string
@@ -36,6 +38,7 @@ type sqlAsyncJobRowData struct {
 	JobID       string
 	URL         string
 	Status      string
+	Compute     string
 	RequestID   string
 	RowCount    string
 	CreatedAt   string
@@ -56,6 +59,7 @@ func sqlAsyncJobsListPage(d sqlAsyncJobsListPageData) Node {
 		rows = append(rows, Tr(
 			Td(A(Href(row.URL), Text(row.JobID))),
 			Td(statusLabel(row.Status, sqlAsyncJobTone(row.Status))),
+			Td(Text(row.Compute)),
 			Td(Text(row.RequestID)),
 			Td(Text(row.RowCount)),
 			Td(Text(row.CreatedAt)),
@@ -64,7 +68,7 @@ func sqlAsyncJobsListPage(d sqlAsyncJobsListPageData) Node {
 	}
 	tableNode := Node(emptyStateCard("No async query jobs yet.", "Open SQL editor", "/ui/sql"))
 	if len(rows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Job ID")), Th(Text("Status")), Th(Text("Request ID")), Th(Text("Rows")), Th(Text("Created")), Th(Text("Completed")))), TBody(Group(rows))))
+		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Job ID")), Th(Text("Status")), Th(Text("Compute")), Th(Text("Request ID")), Th(Text("Rows")), Th(Text("Created")), Th(Text("Completed")))), TBody(Group(rows))))
 	}
 	return appPage("Async Query Jobs", "sql", d.Principal, pageToolbar("/ui/sql", "Open SQL editor"), tableNode, paginationCard("/ui/sql/jobs", d.Page, d.Total))
 }
@@ -101,6 +105,8 @@ func sqlAsyncJobPage(d sqlAsyncJobPageData) Node {
 			Class(cardClass()),
 			P(Text("Job ID: "+d.JobID)),
 			P(Text("Status: "), statusLabel(d.Status, sqlAsyncJobTone(d.Status))),
+			P(Text("Requested compute: "+d.RequestedCompute)),
+			P(Text("Resolved compute: "+d.ResolvedCompute)),
 			P(Text("Request ID: "+d.RequestID)),
 			P(Text("Attempts: "+strconv.Itoa(d.AttemptCount)+"/"+strconv.Itoa(d.MaxAttempts))),
 			P(Text("Last heartbeat: "+d.LastHeartbeatText)),

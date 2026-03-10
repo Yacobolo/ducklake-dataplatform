@@ -1,3 +1,5 @@
+import { initializeNotebookComputeController } from "./sql-runtime/notebook-compute-controller";
+
 (() => {
   const workspace = document.querySelector("[data-reorder-url]");
   const reorderURL = workspace instanceof HTMLElement ? workspace.dataset.reorderUrl || "" : "";
@@ -400,3 +402,5 @@
     });
   });
 })();
+
+initializeNotebookComputeController();

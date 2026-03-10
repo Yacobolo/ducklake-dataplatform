@@ -31,6 +31,7 @@ func Diff(desired, actual *DesiredState) *Plan {
 	diffExternalLocations(plan, desired.ExternalLocations, actual.ExternalLocations)
 	diffComputeEndpoints(plan, desired.ComputeEndpoints, actual.ComputeEndpoints)
 	diffComputeAssignments(plan, desired.ComputeAssignments, actual.ComputeAssignments)
+	diffComputeRoutingDefaults(plan, desired.ComputeDefaults, actual.ComputeDefaults)
 	diffAPIKeys(plan, desired.APIKeys, actual.APIKeys)
 	diffNotebooks(plan, desired.Notebooks, actual.Notebooks)
 	diffAssets(plan, desired.Assets, actual.Assets)
@@ -957,8 +958,15 @@ func diffComputeEndpoints(plan *Plan, desired, actual []ComputeEndpointSpec) {
 		var changes []FieldDiff
 		diffField(&changes, "url", a.URL, d.URL)
 		diffField(&changes, "type", a.Type, d.Type)
+		diffField(&changes, "selection_policy", a.SelectionPolicy, d.SelectionPolicy)
+		diffField(&changes, "workload_class", a.WorkloadClass, d.WorkloadClass)
+		diffField(&changes, "readiness_status", a.ReadinessStatus, d.ReadinessStatus)
 		diffField(&changes, "size", a.Size, d.Size)
 		diffIntPtrField(&changes, "max_memory_gb", a.MaxMemoryGB, d.MaxMemoryGB)
+		diffIntPtrField(&changes, "max_concurrency", a.MaxConcurrency, d.MaxConcurrency)
+		diffIntPtrField(&changes, "max_result_size_mb", a.MaxResultSizeMB, d.MaxResultSizeMB)
+		diffBoolField(&changes, "recommended_for_large_queries", a.RecommendedForLargeQueries, d.RecommendedForLargeQueries)
+		diffBoolField(&changes, "is_draining", a.IsDraining, d.IsDraining)
 		if len(changes) > 0 {
 			addUpdate(plan, KindComputeEndpoint, d.Name, "", d, a, changes)
 		}
@@ -968,6 +976,28 @@ func diffComputeEndpoints(plan *Plan, desired, actual []ComputeEndpointSpec) {
 		if !seen[a.Name] {
 			addDelete(plan, KindComputeEndpoint, a.Name, a)
 		}
+	}
+}
+
+func diffComputeRoutingDefaults(plan *Plan, desired, actual *ComputeRoutingDefaultsSpec) {
+	if desired == nil && actual == nil {
+		return
+	}
+	if desired != nil && actual == nil {
+		addCreate(plan, KindComputeRoutingDefaults, "global", "", *desired)
+		return
+	}
+	if desired == nil && actual != nil {
+		addDelete(plan, KindComputeRoutingDefaults, "global", *actual)
+		return
+	}
+
+	var changes []FieldDiff
+	diffField(&changes, "interactive_mode", actual.InteractiveMode, desired.InteractiveMode)
+	diffField(&changes, "scheduled_mode", actual.ScheduledMode, desired.ScheduledMode)
+	diffField(&changes, "notebook_mode", actual.NotebookMode, desired.NotebookMode)
+	if len(changes) > 0 {
+		addUpdate(plan, KindComputeRoutingDefaults, "global", "", *desired, *actual, changes)
 	}
 }
 

@@ -23,6 +23,9 @@ type mockComputeEndpointService struct {
 	assignFn          func(ctx context.Context, principal string, endpointName string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error)
 	unassignFn        func(ctx context.Context, principal string, assignmentID string) error
 	healthCheckFn     func(ctx context.Context, principal string, endpointName string) (*domain.ComputeEndpointHealthResult, error)
+	listTargetsFn     func(ctx context.Context, principal string, workloadType string) ([]domain.ComputeTarget, error)
+	getDefaultsFn     func(ctx context.Context, principal string) (*domain.ComputeRoutingDefaults, error)
+	updateDefaultsFn  func(ctx context.Context, principal string, defaults domain.ComputeRoutingDefaults) (*domain.ComputeRoutingDefaults, error)
 }
 
 func (m *mockComputeEndpointService) List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
@@ -86,6 +89,28 @@ func (m *mockComputeEndpointService) HealthCheck(ctx context.Context, principal 
 		panic("mockComputeEndpointService.HealthCheck called but not configured")
 	}
 	return m.healthCheckFn(ctx, principal, endpointName)
+}
+
+func (m *mockComputeEndpointService) ListAvailableTargets(ctx context.Context, principal string, workloadType string) ([]domain.ComputeTarget, error) {
+	if m.listTargetsFn == nil {
+		panic("mockComputeEndpointService.ListAvailableTargets called but not configured")
+	}
+	return m.listTargetsFn(ctx, principal, workloadType)
+}
+
+func (m *mockComputeEndpointService) GetRoutingDefaults(ctx context.Context, principal string) (*domain.ComputeRoutingDefaults, error) {
+	if m.getDefaultsFn == nil {
+		defaults := domain.ComputeRoutingDefaults{}.Normalize()
+		return &defaults, nil
+	}
+	return m.getDefaultsFn(ctx, principal)
+}
+
+func (m *mockComputeEndpointService) UpdateRoutingDefaults(ctx context.Context, principal string, defaults domain.ComputeRoutingDefaults) (*domain.ComputeRoutingDefaults, error) {
+	if m.updateDefaultsFn == nil {
+		panic("mockComputeEndpointService.UpdateRoutingDefaults called but not configured")
+	}
+	return m.updateDefaultsFn(ctx, principal, defaults)
 }
 
 // === Helpers ===

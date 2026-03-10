@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/service/query"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -77,24 +78,29 @@ type notebookJobRowData struct {
 }
 
 type notebookDetailPageData struct {
-	Principal     domain.ContextPrincipal
-	NotebookID    string
-	Name          string
-	Owner         string
-	Description   string
-	EditURL       string
-	DeleteURL     string
-	NewCellURL    string
-	RunAllURL     string
+	Principal       domain.ContextPrincipal
+	NotebookID      string
+	Name            string
+	Owner           string
+	Description     string
+	SelectedCatalog string
+	SelectedSchema  string
+	BrowserRuntime  query.ManifestBrowserRuntimeSpec
+	ComputeTargets  []sqlComputeTarget
+	ComputeRequest  domain.ComputeExecutionRequest
+	EditURL         string
+	DeleteURL       string
+	NewCellURL      string
+	RunAllURL       string
 	RunAllAsyncURL string
-	ReorderURL    string
-	JobsURL       string
-	GitRepoURL    string
-	PromoteURL    string
-	Jobs          []notebookJobRowData
-	Cells         []notebookCellRowData
-	Explorer      []catalogExplorerCatalogItem
-	CSRFFieldFunc func() Node
+	ReorderURL      string
+	JobsURL         string
+	GitRepoURL      string
+	PromoteURL      string
+	Jobs            []notebookJobRowData
+	Cells           []notebookCellRowData
+	Explorer        []catalogExplorerCatalogItem
+	CSRFFieldFunc   func() Node
 }
 
 func notebookDetailPage(d notebookDetailPageData) Node {
@@ -113,6 +119,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				FormAction(c.RunURL),
 				Class("btn btn-sm btn-icon notebook-cell-gutter-run"),
 				Attr("data-run-cell", "true"),
+				Attr("data-notebook-run-cell", "true"),
 				Title("Run cell"),
 				Attr("aria-label", "Run cell"),
 				I(Class("btn-icon-glyph"), Attr("data-lucide", "play"), Attr("aria-hidden", "true")),
@@ -154,7 +161,13 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			ID(formID),
 			Class(editorFormClass),
 			Action(c.UpdateURL),
+			Attr("data-notebook-cell-form", "true"),
 			d.CSRFFieldFunc(),
+			Input(Type("hidden"), Name("catalog"), Value(d.SelectedCatalog)),
+			Input(Type("hidden"), Name("schema"), Value(d.SelectedSchema)),
+			Input(Type("hidden"), Name("workload_type"), Value(domain.ComputeWorkloadInteractive)),
+			Input(Type("hidden"), Name("compute_mode"), Value(d.ComputeRequest.Mode)),
+			Input(Type("hidden"), Name("endpoint_name"), Value(d.ComputeRequest.EndpointName)),
 			editorInput,
 		)
 
@@ -371,8 +384,26 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				),
 			),
 			Div(Class("button-row notebook-toolbar-actions"),
-				Form(Method("post"), Action(d.RunAllURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(primaryButtonClass()), Text("Run all"))),
-				Form(Method("post"), Action(d.RunAllAsyncURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(secondaryButtonClass()), Text("Run async"))),
+				Form(
+					Method("post"),
+					Action(d.RunAllURL),
+					Attr("data-notebook-run-all-form", "true"),
+					d.CSRFFieldFunc(),
+					Input(Type("hidden"), Name("compute_mode"), Value(d.ComputeRequest.Mode)),
+					Input(Type("hidden"), Name("endpoint_name"), Value(d.ComputeRequest.EndpointName)),
+					Input(Type("hidden"), Name("workload_type"), Value(domain.ComputeWorkloadInteractive)),
+					Button(Type("submit"), ID("notebook-run-all"), Class(primaryButtonClass()), Text("Run all")),
+				),
+				Form(
+					Method("post"),
+					Action(d.RunAllAsyncURL),
+					Attr("data-notebook-run-all-async-form", "true"),
+					d.CSRFFieldFunc(),
+					Input(Type("hidden"), Name("compute_mode"), Value(d.ComputeRequest.Mode)),
+					Input(Type("hidden"), Name("endpoint_name"), Value(d.ComputeRequest.EndpointName)),
+					Input(Type("hidden"), Name("workload_type"), Value(domain.ComputeWorkloadInteractive)),
+					Button(Type("submit"), ID("notebook-run-all-async"), Class(secondaryButtonClass()), Text("Run async")),
+				),
 				A(Href(d.NewCellURL), Class(secondaryButtonClass()), Text("New cell")),
 				A(Href(d.JobsURL), Class(secondaryButtonClass()), Text("Jobs")),
 				A(Href(d.GitRepoURL), Class(secondaryButtonClass()), Text("Git repos")),
@@ -410,9 +441,12 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		Div(
 			Class("notebook-main"),
 			toolbarNode,
+			notebookComputeCard(d),
 			notebookPromoteCard(d),
 			Div(
 				Class("notebook-cells"),
+				Attr("data-notebook-selected-catalog", d.SelectedCatalog),
+				Attr("data-notebook-selected-schema", d.SelectedSchema),
 				Attr("data-reorder-url", d.ReorderURL),
 				Group(cellNodes),
 			),
@@ -476,6 +510,74 @@ func notebookPromoteCard(d notebookDetailPageData) Node {
 	)
 }
 
+func notebookComputeCard(d notebookDetailPageData) Node {
+	modeOptions := []Node{
+		sqlComputeModeOption(domain.ComputeModeAuto, "Auto", d.ComputeRequest.Mode),
+		sqlComputeModeOption(domain.ComputeModeByocLocal, "Local (BYOC)", d.ComputeRequest.Mode),
+		sqlComputeModeOption(domain.ComputeModeSharedEndpoint, "Shared endpoint", d.ComputeRequest.Mode),
+	}
+	endpointOptions := []Node{Option(Value(""), Text("Platform default"))}
+	for i := range d.ComputeTargets {
+		target := d.ComputeTargets[i]
+		if target.Mode != domain.ComputeModeSharedEndpoint || target.EndpointName == "" {
+			continue
+		}
+		label := target.Label
+		if target.Default {
+			label += " (default)"
+		}
+		if !target.Selectable && target.AvailabilityReason != "" {
+			label += " - " + target.AvailabilityReason
+		}
+		optionAttrs := []Node{Value(target.EndpointName)}
+		if d.ComputeRequest.EndpointName == target.EndpointName {
+			optionAttrs = append(optionAttrs, Selected())
+		}
+		if !target.Selectable {
+			optionAttrs = append(optionAttrs, Disabled())
+		}
+		endpointOptions = append(endpointOptions, Option(Group(optionAttrs), Text(label)))
+	}
+
+	return Div(
+		Class(cardClass("sql-compute-card")),
+		Attr("data-notebook-browser-runtime", "true"),
+		Attr("data-runtime-manifest-endpoint", "/ui/sql/runtime/manifest"),
+		H2(Class("sql-results-title"), Text("Compute")),
+		P(Class(mutedClass()), Text("Interactive SQL cell runs can use the browser-local DuckDB runtime. Notebook Run all and async runs stay on managed compute.")),
+		Div(
+			Class("button-row"),
+			Select(ID("notebook-compute-mode"), Name("notebook_compute_mode"), Class("form-select sql-compute-select"), Group(modeOptions)),
+			Select(ID("notebook-compute-endpoint"), Name("notebook_endpoint_name"), Class("form-select sql-compute-select"), Group(endpointOptions)),
+			Button(
+				Type("button"),
+				ID("notebook-reset-local-runtime"),
+				Class(secondaryButtonClass()),
+				I(Class("btn-icon-glyph"), Attr("data-lucide", "rotate-ccw"), Attr("aria-hidden", "true")),
+				Span(Text("Reset local runtime")),
+			),
+			Button(
+				Type("button"),
+				ID("notebook-cancel-local-run"),
+				Class(secondaryButtonClass()),
+				Disabled(),
+				I(Class("btn-icon-glyph"), Attr("data-lucide", "square"), Attr("aria-hidden", "true")),
+				Span(Text("Cancel local run")),
+			),
+		),
+		Div(
+			Class("Banner Banner-attention"),
+			Attr("data-notebook-runtime-banner", "true"),
+			I(Class("nav-icon"), Attr("data-lucide", "cpu"), Attr("aria-hidden", "true")),
+			Div(
+				Strong(Attr("data-notebook-browser-runtime-title", "true"), Text("Browser runtime")),
+				P(Attr("data-notebook-browser-runtime-message", "true"), Text(d.BrowserRuntime.StatusReason)),
+			),
+		),
+		P(Class(mutedClass()), Attr("data-notebook-browser-runtime-preflight", "true"), Text("")),
+	)
+}
+
 func notebookInsertRail(notebookID string, position int, csrfField func() Node) Node {
 	return Div(
 		Class("notebook-insert-rail"),
@@ -505,16 +607,17 @@ func notebookInsertRail(notebookID string, position int, csrfField func() Node) 
 
 func notebookResultNode(c notebookCellRowData) Node {
 	if c.CellType != string(domain.CellTypeSQL) {
-		return Div(Class("notebook-output"), P(Class(mutedClass()), Text("Markdown cell output is rendered by your markdown consumer.")))
+		return Div(Class("notebook-output"), Attr("data-notebook-cell-output", "true"), P(Class(mutedClass()), Text("Markdown cell output is rendered by your markdown consumer.")))
 	}
 
 	if c.LastResult == nil {
-		return Div(Class("notebook-output"), P(Class(mutedClass()), Text("Run this cell to see output.")))
+		return Div(Class("notebook-output"), Attr("data-notebook-cell-output", "true"), P(Class(mutedClass()), Text("Run this cell to see output.")))
 	}
 
 	if c.LastResult.Error != "" {
 		return Div(
 			Class("notebook-output flash flash-error"),
+			Attr("data-notebook-cell-output", "true"),
 			H4(Text("Query Error")),
 			P(Class(mutedClass()), Text("Last runtime: "+humanDuration(c.LastResult.Duration))),
 			Pre(Text(c.LastResult.Error)),
@@ -549,6 +652,7 @@ func notebookResultNode(c notebookCellRowData) Node {
 
 	return Div(
 		Class("notebook-output table-wrap"),
+		Attr("data-notebook-cell-output", "true"),
 		Div(Class("d-flex flex-justify-between flex-wrap flex-items-center gap-2"),
 			H4(Text("Output")),
 			Div(Class("button-row"),

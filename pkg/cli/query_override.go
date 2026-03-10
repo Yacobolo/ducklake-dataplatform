@@ -24,7 +24,12 @@ func init() {
 				return err
 			}
 
+			if shouldExecuteLocally(cmd) {
+				return executeLocalQuery(cmd, client, sql)
+			}
+
 			body := map[string]interface{}{"sql": sql}
+			addComputeSelectionToBody(cmd, body)
 			resp, err := client.Do("POST", "/query", nil, body)
 			if err != nil {
 				return err
@@ -38,6 +43,7 @@ func init() {
 	})
 	apiruntime.RegisterOverride("executeQuery", func(c *cobra.Command) {
 		c.Args = cobra.MaximumNArgs(1)
+		addComputeSelectionFlags(c)
 	})
 
 	apiruntime.RegisterRunOverride("submitQuery", func(client *apiruntime.Client) func(*cobra.Command, []string) error {
@@ -51,6 +57,10 @@ func init() {
 			body := map[string]interface{}{"sql": sql}
 			if requestID != "" {
 				body["request_id"] = requestID
+			}
+			addComputeSelectionToBody(cmd, body)
+			if mode, _ := cmd.Flags().GetString("compute-mode"); strings.EqualFold(strings.TrimSpace(mode), computeModeBYOCLocal) {
+				return fmt.Errorf("BYOC_LOCAL is only supported for interactive execution; use `duck query execute` for local queries")
 			}
 
 			resp, err := client.Do("POST", "/queries", nil, body)
@@ -206,12 +216,37 @@ func init() {
 	})
 
 	apiruntime.RegisterOverride("submitQuery", func(c *cobra.Command) {
+		addComputeSelectionFlags(c)
 		c.Flags().Bool("wait", false, "Wait for query completion")
 		c.Flags().Duration("poll-interval", time.Second, "Status polling interval when --wait is enabled")
 		c.Flags().Duration("wait-timeout", 0, "Max wait duration (0 means wait indefinitely)")
 		c.Flags().Bool("results", false, "Fetch first page of results when query succeeds and --wait is enabled")
 		c.Flags().Int64("max-results", 100, "Maximum rows to fetch when --results is enabled")
 	})
+}
+
+func addComputeSelectionFlags(cmd *cobra.Command) {
+	if cmd.Flags().Lookup("compute-mode") == nil {
+		cmd.Flags().String("compute-mode", "", "Compute routing mode: AUTO, BYOC_LOCAL, or SHARED_ENDPOINT")
+	}
+	if cmd.Flags().Lookup("compute-endpoint") == nil {
+		cmd.Flags().String("compute-endpoint", "", "Explicit compute endpoint name when using SHARED_ENDPOINT")
+	}
+	if cmd.Flags().Lookup("workload-type") == nil {
+		cmd.Flags().String("workload-type", "", "Workload type: INTERACTIVE, SCHEDULED, NOTEBOOK, or HEAVY")
+	}
+}
+
+func addComputeSelectionToBody(cmd *cobra.Command, body map[string]interface{}) {
+	if mode, _ := cmd.Flags().GetString("compute-mode"); strings.TrimSpace(mode) != "" {
+		body["compute_mode"] = strings.TrimSpace(mode)
+	}
+	if endpoint, _ := cmd.Flags().GetString("compute-endpoint"); strings.TrimSpace(endpoint) != "" {
+		body["endpoint_name"] = strings.TrimSpace(endpoint)
+	}
+	if workload, _ := cmd.Flags().GetString("workload-type"); strings.TrimSpace(workload) != "" {
+		body["workload_type"] = strings.TrimSpace(workload)
+	}
 }
 
 func readSQLInput(cmd *cobra.Command, args []string) (string, error) {
@@ -273,7 +308,18 @@ func printQueryResult(cmd *cobra.Command, resp *http.Response) error {
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
+	return printQueryResultBody(cmd, respBody)
+}
 
+func printLocalQueryResult(cmd *cobra.Command, result *localQueryResult) error {
+	respBody, err := json.Marshal(result)
+	if err != nil {
+		return fmt.Errorf("marshal local query result: %w", err)
+	}
+	return printQueryResultBody(cmd, respBody)
+}
+
+func printQueryResultBody(cmd *cobra.Command, respBody []byte) error {
 	var result struct {
 		Columns       []string        `json:"columns"`
 		Rows          [][]interface{} `json:"rows"`

@@ -1,7 +1,9 @@
 -- name: CreateComputeEndpoint :one
 INSERT INTO compute_endpoints (
-    id, external_id, name, url, type, status, size, max_memory_gb, auth_token, owner
-) VALUES (?, ?, ?, ?, ?, 'INACTIVE', ?, ?, ?, ?)
+    id, external_id, name, url, type, status, selection_policy, workload_class, readiness_status,
+    size, max_memory_gb, max_concurrency, max_result_size_mb, recommended_for_large_queries,
+    is_draining, auth_token, owner
+) VALUES (?, ?, ?, ?, ?, 'INACTIVE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetComputeEndpoint :one
@@ -18,16 +20,38 @@ SELECT COUNT(*) FROM compute_endpoints;
 
 -- name: UpdateComputeEndpoint :exec
 UPDATE compute_endpoints
-SET url = COALESCE(?, url),
-    size = COALESCE(?, size),
-    max_memory_gb = COALESCE(?, max_memory_gb),
-    auth_token = COALESCE(?, auth_token),
+SET url = ?,
+    size = ?,
+    max_memory_gb = ?,
+    max_concurrency = ?,
+    max_result_size_mb = ?,
+    selection_policy = ?,
+    workload_class = ?,
+    readiness_status = ?,
+    recommended_for_large_queries = ?,
+    is_draining = ?,
+    auth_token = ?,
     updated_at = datetime('now')
 WHERE id = ?;
 
 -- name: UpdateComputeEndpointStatus :exec
 UPDATE compute_endpoints
 SET status = ?,
+    updated_at = datetime('now')
+WHERE id = ?;
+
+-- name: UpdateComputeEndpointHealth :exec
+UPDATE compute_endpoints
+SET last_health_status = ?,
+    last_health_checked_at = datetime('now'),
+    active_queries = ?,
+    queued_jobs = ?,
+    running_jobs = ?,
+    completed_jobs = ?,
+    stored_jobs = ?,
+    cleaned_jobs = ?,
+    query_result_ttl_seconds = ?,
+    readiness_status = ?,
     updated_at = datetime('now')
 WHERE id = ?;
 

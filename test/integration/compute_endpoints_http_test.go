@@ -394,7 +394,11 @@ func TestHTTP_ComputeRemoteAgentDown(t *testing.T) {
 	assignToEndpoint(t, env, "dead-agent", adminID, "user")
 
 	// Query should fail (resolver health check fails → error propagated)
-	queryBody := map[string]interface{}{"sql": "SELECT 1"}
+	queryBody := map[string]interface{}{
+		"sql":           "SELECT 1",
+		"compute_mode":  "SHARED_ENDPOINT",
+		"endpoint_name": "dead-agent",
+	}
 	resp = doRequest(t, "POST", env.Server.URL+"/v1/query", env.Keys.Admin, queryBody)
 	// The engine error gets mapped to 403 by the query handler (see handler.go)
 	assert.NotEqual(t, 200, resp.StatusCode)

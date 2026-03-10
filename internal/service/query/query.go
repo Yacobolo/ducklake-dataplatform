@@ -66,6 +66,7 @@ func (s *QueryService) Execute(ctx context.Context, principalName, sqlQuery stri
 		return nil, domain.ErrValidation("sql query is required")
 	}
 
+	ctx, resolution := domain.WithComputeResolutionTracker(ctx)
 	start := time.Now()
 
 	rows, err := s.engine.Query(ctx, principalName, sqlQuery)
@@ -86,6 +87,7 @@ func (s *QueryService) Execute(ctx context.Context, principalName, sqlQuery stri
 
 	rowCount := int64(result.RowCount)
 	s.logAudit(ctx, principalName, "QUERY", &sqlQuery, nil, nil, "ALLOWED", "", duration, &rowCount)
+	_ = resolution
 
 	// Best-effort lineage emission
 	s.emitLineage(ctx, principalName, sqlQuery)

@@ -18,6 +18,9 @@ type computeEndpointService interface {
 	Assign(ctx context.Context, principal string, endpointName string, req domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error)
 	Unassign(ctx context.Context, principal string, assignmentID string) error
 	HealthCheck(ctx context.Context, principal string, endpointName string) (*domain.ComputeEndpointHealthResult, error)
+	ListAvailableTargets(ctx context.Context, principal string, workloadType string) ([]domain.ComputeTarget, error)
+	GetRoutingDefaults(ctx context.Context, principal string) (*domain.ComputeRoutingDefaults, error)
+	UpdateRoutingDefaults(ctx context.Context, principal string, defaults domain.ComputeRoutingDefaults) (*domain.ComputeRoutingDefaults, error)
 }
 
 // === Compute Endpoints ===

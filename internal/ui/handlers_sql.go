@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -29,6 +30,16 @@ type queryAsyncUI interface {
 	DeleteAsyncJob(ctx context.Context, principalName, jobID string) error
 }
 
+type sqlComputeTarget struct {
+	Label              string
+	Mode               string
+	EndpointName       string
+	Status             string
+	AvailabilityReason string
+	Default            bool
+	Selectable         bool
+}
+
 func (h *Handler) SQLEditorPage(w http.ResponseWriter, r *http.Request) {
 	state := h.sqlEditorState(r, nil)
 	sqlText := strings.TrimSpace(r.URL.Query().Get("sql"))
@@ -46,7 +57,12 @@ func (h *Handler) SQLEditorRun(w http.ResponseWriter, r *http.Request) {
 	sqlText := strings.TrimSpace(r.Form.Get("sql"))
 	state := h.sqlEditorState(r, r.Form)
 	principal, _ := principalLabel(r.Context())
-	result, err := h.Query.Execute(r.Context(), principal, sqlText)
+	ctx, err := h.sqlComputeContext(r.Context(), state.ComputeRequest)
+	if err != nil {
+		h.renderSQLEditor(w, r, sqlText, nil, err.Error(), state)
+		return
+	}
+	result, err := h.Query.Execute(ctx, principal, sqlText)
 	if err != nil {
 		h.renderSQLEditor(w, r, sqlText, nil, err.Error(), state)
 		return
@@ -63,7 +79,12 @@ func (h *Handler) SQLEditorDownloadCSV(w http.ResponseWriter, r *http.Request) {
 	sqlText := strings.TrimSpace(r.Form.Get("sql"))
 	state := h.sqlEditorState(r, r.Form)
 	principal, _ := principalLabel(r.Context())
-	result, err := h.Query.Execute(r.Context(), principal, sqlText)
+	ctx, err := h.sqlComputeContext(r.Context(), state.ComputeRequest)
+	if err != nil {
+		h.renderSQLEditor(w, r, sqlText, nil, err.Error(), state)
+		return
+	}
+	result, err := h.Query.Execute(ctx, principal, sqlText)
 	if err != nil {
 		h.renderSQLEditor(w, r, sqlText, nil, err.Error(), state)
 		return
@@ -122,14 +143,59 @@ func (h *Handler) SQLEditorRunAsync(w http.ResponseWriter, r *http.Request) {
 
 	sqlText := strings.TrimSpace(r.Form.Get("sql"))
 	principal, _ := principalLabel(r.Context())
-	job, err := asyncSvc.SubmitAsync(r.Context(), principal, sqlText, strings.TrimSpace(r.Form.Get("request_id")))
+	state := h.sqlEditorState(r, r.Form)
+	if strings.EqualFold(state.ComputeRequest.Mode, domain.ComputeModeByocLocal) {
+		h.renderSQLEditor(w, r, sqlText, nil, "BYOC local execution is interactive only. Switch compute mode to Shared Endpoint or Auto for async jobs.", state)
+		return
+	}
+	ctx, err := h.sqlComputeContext(r.Context(), state.ComputeRequest)
 	if err != nil {
-		state := h.sqlEditorState(r, r.Form)
+		h.renderSQLEditor(w, r, sqlText, nil, err.Error(), state)
+		return
+	}
+	job, err := asyncSvc.SubmitAsync(ctx, principal, sqlText, strings.TrimSpace(r.Form.Get("request_id")))
+	if err != nil {
 		h.renderSQLEditor(w, r, sqlText, nil, err.Error(), state)
 		return
 	}
 
 	http.Redirect(w, r, "/ui/sql/jobs/"+job.ID, http.StatusSeeOther)
+}
+
+func (h *Handler) SQLEditorRuntimeManifest(w http.ResponseWriter, r *http.Request) {
+	if h.Manifest == nil {
+		writeJSONError(w, http.StatusInternalServerError, "manifest service is not configured")
+		return
+	}
+
+	catalogName := strings.TrimSpace(r.URL.Query().Get("catalog"))
+	schemaName := strings.TrimSpace(r.URL.Query().Get("schema"))
+	tableName := strings.TrimSpace(r.URL.Query().Get("table"))
+	if schemaName == "" {
+		schemaName = "main"
+	}
+	if tableName == "" {
+		writeJSONError(w, http.StatusBadRequest, "table is required")
+		return
+	}
+
+	principal, _ := principalLabel(r.Context())
+	result, err := h.Manifest.GetManifest(r.Context(), principal, catalogName, schemaName, tableName)
+	if err != nil {
+		status, message := serviceErrorStatus(err)
+		writeJSONError(w, status, message)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(result)
+}
+
+func writeJSONError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
 func (h *Handler) SQLEditorJobsList(w http.ResponseWriter, r *http.Request) {
@@ -154,6 +220,7 @@ func (h *Handler) SQLEditorJobsList(w http.ResponseWriter, r *http.Request) {
 			JobID:       job.ID,
 			URL:         "/ui/sql/jobs/" + job.ID,
 			Status:      string(job.Status),
+			Compute:     sqlComputeSummary(job.ComputeMode, job.EndpointName, job.ResolvedMode, job.ResolvedEndpointName),
 			RequestID:   job.RequestID,
 			RowCount:    strconv.Itoa(job.RowCount),
 			CreatedAt:   formatTime(job.CreatedAt),
@@ -193,6 +260,8 @@ func (h *Handler) SQLEditorJobDetail(w http.ResponseWriter, r *http.Request) {
 		Columns:           job.Columns,
 		Rows:              job.Rows,
 		RowCount:          job.RowCount,
+		RequestedCompute:  sqlRequestedComputeSummary(job.ComputeMode, job.EndpointName, job.WorkloadType),
+		ResolvedCompute:   sqlResolvedComputeSummary(job.ResolvedMode, job.ResolvedEndpointName),
 		ErrorText:         strOrDash(job.ErrorMessage),
 		AttemptCount:      job.AttemptCount,
 		MaxAttempts:       job.MaxAttempts,
@@ -247,6 +316,9 @@ type sqlEditorContext struct {
 	SelectedSchema  string
 	Catalogs        []domain.CatalogRegistration
 	Schemas         []domain.SchemaDetail
+	BrowserRuntime  query.ManifestBrowserRuntimeSpec
+	ComputeTargets  []sqlComputeTarget
+	ComputeRequest  domain.ComputeExecutionRequest
 }
 
 func (h *Handler) sqlEditorState(r *http.Request, form url.Values) sqlEditorContext {
@@ -280,12 +352,126 @@ func (h *Handler) sqlEditorState(r *http.Request, form url.Values) sqlEditorCont
 		selectedSchema = schemas[0].Name
 	}
 
+	computeReq := sqlComputeExecutionRequestFromForm(form)
+	computeTargets := []sqlComputeTarget{}
+	if h.ComputeEndpoint != nil {
+		principal, _ := principalLabel(r.Context())
+		if targets, err := h.ComputeEndpoint.ListAvailableTargets(r.Context(), principal, domain.ComputeWorkloadInteractive); err == nil {
+			computeTargets = sqlComputeTargetsFromDomain(targets)
+		}
+	}
+	if computeReq.WorkloadType == "" {
+		computeReq.WorkloadType = domain.ComputeWorkloadInteractive
+	}
+	if computeReq.Mode == "" {
+		computeReq = sqlApplyDefaultComputeTarget(computeReq, computeTargets)
+	}
+	computeReq = computeReq.Normalize()
+
 	return sqlEditorContext{
 		SelectedCatalog: selectedCatalog,
 		SelectedSchema:  selectedSchema,
 		Catalogs:        catalogs,
 		Schemas:         schemas,
+		BrowserRuntime:  query.DefaultManifestBrowserRuntimeSpec(),
+		ComputeTargets:  computeTargets,
+		ComputeRequest:  computeReq,
 	}
+}
+
+func (h *Handler) sqlComputeContext(ctx context.Context, req domain.ComputeExecutionRequest) (context.Context, error) {
+	req = req.Normalize()
+	if req.WorkloadType == "" {
+		req.WorkloadType = domain.ComputeWorkloadInteractive
+	}
+	if req.Mode == "" {
+		req.Mode = domain.ComputeModeByocLocal
+	}
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	return domain.WithComputeExecutionRequest(ctx, req), nil
+}
+
+func sqlComputeExecutionRequestFromForm(form url.Values) domain.ComputeExecutionRequest {
+	if form == nil {
+		return domain.ComputeExecutionRequest{}
+	}
+	return domain.ComputeExecutionRequest{
+		Mode:         strings.TrimSpace(form.Get("compute_mode")),
+		EndpointName: strings.TrimSpace(form.Get("endpoint_name")),
+		WorkloadType: strings.TrimSpace(form.Get("workload_type")),
+	}
+}
+
+func sqlComputeTargetsFromDomain(targets []domain.ComputeTarget) []sqlComputeTarget {
+	items := make([]sqlComputeTarget, 0, len(targets))
+	for _, target := range targets {
+		endpointName := ""
+		if target.EndpointName != nil {
+			endpointName = *target.EndpointName
+		}
+		reason := ""
+		if target.AvailabilityReason != nil {
+			reason = *target.AvailabilityReason
+		}
+		items = append(items, sqlComputeTarget{
+			Label:              target.DisplayName,
+			Mode:               target.Mode,
+			EndpointName:       endpointName,
+			Status:             target.Status,
+			AvailabilityReason: reason,
+			Default:            target.IsDefault,
+			Selectable:         target.SelectableForInteractive,
+		})
+	}
+	return items
+}
+
+func sqlApplyDefaultComputeTarget(req domain.ComputeExecutionRequest, targets []sqlComputeTarget) domain.ComputeExecutionRequest {
+	for _, target := range targets {
+		if !target.Default {
+			continue
+		}
+		req.Mode = target.Mode
+		req.EndpointName = target.EndpointName
+		return req
+	}
+	req.Mode = domain.ComputeModeByocLocal
+	return req
+}
+
+func sqlRequestedComputeSummary(mode string, endpointName *string, workloadType string) string {
+	mode = strings.TrimSpace(mode)
+	if mode == "" {
+		mode = domain.ComputeModeAuto
+	}
+	parts := []string{mode}
+	if endpointName != nil && strings.TrimSpace(*endpointName) != "" {
+		parts = append(parts, *endpointName)
+	}
+	if strings.TrimSpace(workloadType) != "" {
+		parts = append(parts, strings.TrimSpace(workloadType))
+	}
+	return strings.Join(parts, " · ")
+}
+
+func sqlResolvedComputeSummary(mode, endpointName *string) string {
+	if mode == nil || strings.TrimSpace(*mode) == "" {
+		return "Pending"
+	}
+	parts := []string{strings.TrimSpace(*mode)}
+	if endpointName != nil && strings.TrimSpace(*endpointName) != "" {
+		parts = append(parts, strings.TrimSpace(*endpointName))
+	}
+	return strings.Join(parts, " · ")
+}
+
+func sqlComputeSummary(requestedMode string, endpointName, resolvedMode, resolvedEndpointName *string) string {
+	if resolvedMode != nil && strings.TrimSpace(*resolvedMode) != "" {
+		return sqlResolvedComputeSummary(resolvedMode, resolvedEndpointName)
+	}
+	return sqlRequestedComputeSummary(requestedMode, endpointName, "")
 }
 
 func defaultSQLSnippet(snippetID, catalogName, schemaName string) string {
