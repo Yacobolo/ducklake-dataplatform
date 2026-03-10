@@ -182,13 +182,7 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 }
 
 func (a *Authenticator) shouldResolveJWTLocally(claims *JWTClaims) bool {
-	if claims == nil {
-		return false
-	}
-	if strings.EqualFold(strings.TrimSpace(a.cfg.Mode), "local_only") {
-		return true
-	}
-	return strings.TrimSpace(claims.Issuer) == ""
+	return strings.EqualFold(strings.TrimSpace(a.cfg.Mode), "local_only")
 }
 
 // authenticateAPIKey validates an API key and resolves the principal.
