@@ -458,7 +458,7 @@ func TestHTTP_ComputeUnassignReverts(t *testing.T) {
 	assert.Equal(t, "99", fmt.Sprintf("%v", row[0]))
 }
 
-// === Health Check: LOCAL always ok ===
+// === Health Check: LOCAL rejected ===
 
 func TestHTTP_ComputeLocalHealthCheck(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithComputeEndpoints: true})
@@ -471,12 +471,12 @@ func TestHTTP_ComputeLocalHealthCheck(t *testing.T) {
 	require.Equal(t, 201, resp.StatusCode)
 	_ = resp.Body.Close()
 
-	// Health check should return 200 with status "ok"
+	// Health check should reject LOCAL endpoints instead of returning a misleading success.
 	resp = doRequest(t, "GET", env.Server.URL+"/v1/compute-endpoints/health-local/health",
 		env.Keys.Admin, nil)
-	require.Equal(t, 200, resp.StatusCode)
+	require.Equal(t, 400, resp.StatusCode)
 
 	var result map[string]interface{}
 	decodeJSON(t, resp, &result)
-	assert.Equal(t, "ok", result["status"])
+	assert.Contains(t, result["message"], "only supported for REMOTE")
 }

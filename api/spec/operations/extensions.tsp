@@ -168,7 +168,7 @@ op createComputeAssignment(endpointName: string, @body body: CreateComputeAssign
 
 @route("/compute-endpoints/{endpointName}/health")
 @get
-op getComputeEndpointHealth(endpointName: string): Ok<ComputeEndpointHealth> | ResourceErrorResponses;
+op getComputeEndpointHealth(endpointName: string): Ok<ComputeEndpointHealth> | BadRequestResponse | ResourceErrorResponses | BadGatewayResponse;
 
 @route("/compute-endpoints/{endpointName}/assignments/{assignmentId}")
 @delete

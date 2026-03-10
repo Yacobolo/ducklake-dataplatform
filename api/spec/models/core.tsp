@@ -80,6 +80,12 @@ model InternalServerErrorResponse {
   @body body: Error;
 }
 
+@error
+model BadGatewayResponse {
+  @statusCode statusCode: 502;
+  @body body: Error;
+}
+
 alias StandardErrorResponses = UnauthorizedResponse | TooManyRequestsResponse | InternalServerErrorResponse;
 alias MutatingErrorResponses = StandardErrorResponses | ForbiddenResponse;
 alias ResourceErrorResponses = MutatingErrorResponses | NotFoundResponse;
@@ -1852,7 +1858,6 @@ model CreateExternalLocationRequest {
 model UpdateExternalLocationRequest {
   url?: string;
   credential_name?: string;
-  storage_type?: string;
   comment?: string;
   read_only?: boolean;
 }
