@@ -60,11 +60,14 @@ enum URLStyle {
   vhost,
 }
 
+@summary("Metadata for a result-set column.")
 model TabularColumn {
   name: string;
 }
 
 @error
+@summary("Standard API error response.")
+@doc("Errors use a shared schema across the API so clients can handle failure responses consistently.")
 model Error {
   code: int32;
   message: string;
@@ -152,14 +155,19 @@ alias StandardErrorResponses = UnauthorizedResponse | TooManyRequestsResponse | 
 alias MutatingErrorResponses = StandardErrorResponses | ForbiddenResponse;
 alias ResourceErrorResponses = MutatingErrorResponses | NotFoundResponse;
 
+@summary("Service health status.")
 model HealthResponse {
   status: string;
 }
 
+@summary("Synchronous SQL query request.")
+@doc("Submits a SQL statement for immediate execution and returns a tabular result when the request completes.")
 model QueryRequest {
   sql: string;
 }
 
+@summary("Tabular SQL query result.")
+@doc("Contains result-set columns, row data, and an optional continuation token when additional rows are available.")
 model QueryResult {
   columns: TabularColumn[];
   rows: JsonObject[];
@@ -196,6 +204,7 @@ model CancelQueryResponse {
   status: QueryJobStatus;
 }
 
+@summary("Authenticated principal.")
 model Principal {
   id: string;
   name: string;
@@ -345,6 +354,8 @@ model CreateGrantRequest {
   privilege: string;
 }
 
+@summary("API key metadata.")
+@doc("Represents a stored API key without returning the full secret value.")
 model APIKeyInfo {
   id: string;
   principal_id: string;
