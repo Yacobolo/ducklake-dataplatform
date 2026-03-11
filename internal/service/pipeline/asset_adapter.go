@@ -317,6 +317,17 @@ func BuildSemanticAssetGraph(
 				UpstreamAssetID: semanticModel.ID,
 				DependencyType:  domain.DependencyTypeHard,
 			})
+			for _, preAgg := range preAggsByModel[semanticModel.ID] {
+				if !preAggregationSupportsMetric(preAgg, metric.Name) {
+					continue
+				}
+				deps = append(deps, domain.AssetDependency{
+					ID:              domain.NewID(),
+					AssetID:         metric.ID,
+					UpstreamAssetID: preAgg.ID,
+					DependencyType:  domain.DependencyTypeSoft,
+				})
+			}
 		}
 
 		for _, preAgg := range preAggsByModel[semanticModel.ID] {
@@ -783,6 +794,19 @@ func metricNaturalKey(projectName, semanticModelName, metricName string) string 
 
 func notebookOutputAssetKey(notebookID, outputCellID string) string {
 	return "notebook_output." + notebookID + "." + outputCellID
+}
+
+func preAggregationSupportsMetric(preAgg domain.SemanticPreAggregation, metricName string) bool {
+	metricName = strings.TrimSpace(metricName)
+	if metricName == "" {
+		return false
+	}
+	for _, candidate := range preAgg.MetricSet {
+		if strings.TrimSpace(candidate) == metricName {
+			return true
+		}
+	}
+	return false
 }
 
 func matchingPreAggregationAssetID(preAggs []domain.SemanticPreAggregation, query *domain.DashboardSemanticQuerySource) string {

@@ -75,21 +75,26 @@ func (s *Service) explainFreshnessByID(ctx context.Context, assetID string, requ
 		return nil, fmt.Errorf("list upstream dependencies for %s: %w", asset.AssetKey, err)
 	}
 
+	hardUpstream := make([]domain.AssetFreshnessNode, 0, len(upstreamDeps))
+	softUpstream := make([]domain.AssetFreshnessNode, 0, len(upstreamDeps))
 	for _, dep := range upstreamDeps {
-		if dep.DependencyType == domain.DependencyTypeSoft {
-			continue
-		}
 		child, childErr := s.explainFreshnessByID(ctx, dep.UpstreamAssetID, effectiveLag, stack)
 		if childErr != nil {
 			return nil, childErr
 		}
-		node.Upstream = append(node.Upstream, *child)
+		if dep.DependencyType == domain.DependencyTypeSoft {
+			softUpstream = append(softUpstream, *child)
+			continue
+		}
+		hardUpstream = append(hardUpstream, *child)
 	}
+	node.Upstream = append(node.Upstream, hardUpstream...)
+	node.Upstream = append(node.Upstream, softUpstream...)
 
 	if assetTypeSupportsExecution(asset.AssetType) {
 		s.populateExecutableFreshness(ctx, asset, node)
 	} else {
-		s.populateLogicalFreshness(node)
+		s.populateLogicalFreshness(node, hardUpstream, softUpstream)
 	}
 
 	node.Basis = dedupeBasis(node.Basis)
@@ -145,47 +150,24 @@ func (s *Service) populateExecutableFreshness(ctx context.Context, asset *domain
 	node.FreshnessStatus = domain.AssetFreshnessStatusFresh
 }
 
-func (s *Service) populateLogicalFreshness(node *domain.AssetFreshnessNode) {
+func (s *Service) populateLogicalFreshness(node *domain.AssetFreshnessNode, hardUpstream []domain.AssetFreshnessNode, softUpstream []domain.AssetFreshnessNode) {
 	if node == nil {
 		return
 	}
 
-	if len(node.Upstream) == 0 {
+	if len(hardUpstream) == 0 && len(softUpstream) == 0 {
 		node.FreshnessStatus = domain.AssetFreshnessStatusUnknown
 		node.Reason = "no upstream freshness basis found"
 		node.Basis = append(node.Basis, node.AssetKey)
 		return
 	}
 
-	for _, child := range node.Upstream {
-		node.Basis = append(node.Basis, child.Basis...)
-	}
-
-	status := domain.AssetFreshnessStatusFresh
-	reason := ""
-	for _, child := range node.Upstream {
-		switch child.FreshnessStatus {
-		case domain.AssetFreshnessStatusRefreshing:
-			status = domain.AssetFreshnessStatusRefreshing
-			reason = fmt.Sprintf("upstream %s is refreshing", child.AssetKey)
-			goto done
-		case domain.AssetFreshnessStatusBlocked:
-			status = domain.AssetFreshnessStatusBlocked
-			reason = fmt.Sprintf("upstream %s is blocked", child.AssetKey)
-			goto done
-		case domain.AssetFreshnessStatusStale:
-			status = domain.AssetFreshnessStatusStale
-			reason = fmt.Sprintf("upstream %s is stale", child.AssetKey)
-			goto done
-		case domain.AssetFreshnessStatusUnknown:
-			status = domain.AssetFreshnessStatusUnknown
-			reason = fmt.Sprintf("upstream %s freshness is unknown", child.AssetKey)
-		}
-	}
-
-done:
-	node.FreshnessStatus = status
-	node.Reason = reason
+	hardStatus, hardReason, hardBasis := aggregateLogicalUpstream(hardUpstream)
+	softStatus, softReason, softBasis := bestServingStatus(softUpstream)
+	selectedStatus, selectedReason, selectedBasis := chooseLogicalFreshness(hardStatus, hardReason, hardBasis, softStatus, softReason, softBasis)
+	node.FreshnessStatus = selectedStatus
+	node.Reason = selectedReason
+	node.Basis = append(node.Basis, selectedBasis...)
 }
 
 func (s *Service) latestMaterializationAt(ctx context.Context, assetID string) (time.Time, bool, error) {
@@ -235,6 +217,92 @@ func strictestMaxLag(a int64, b int64) int64 {
 		return a
 	default:
 		return b
+	}
+}
+
+func aggregateLogicalUpstream(children []domain.AssetFreshnessNode) (string, string, []string) {
+	if len(children) == 0 {
+		return domain.AssetFreshnessStatusUnknown, "no upstream freshness basis found", nil
+	}
+
+	basis := make([]string, 0)
+	status := domain.AssetFreshnessStatusFresh
+	reason := ""
+	for _, child := range children {
+		basis = append(basis, child.Basis...)
+		switch child.FreshnessStatus {
+		case domain.AssetFreshnessStatusRefreshing:
+			return domain.AssetFreshnessStatusRefreshing, fmt.Sprintf("upstream %s is refreshing", child.AssetKey), basis
+		case domain.AssetFreshnessStatusBlocked:
+			return domain.AssetFreshnessStatusBlocked, fmt.Sprintf("upstream %s is blocked", child.AssetKey), basis
+		case domain.AssetFreshnessStatusStale:
+			return domain.AssetFreshnessStatusStale, fmt.Sprintf("upstream %s is stale", child.AssetKey), basis
+		case domain.AssetFreshnessStatusUnknown:
+			if status == domain.AssetFreshnessStatusFresh {
+				status = domain.AssetFreshnessStatusUnknown
+				reason = fmt.Sprintf("upstream %s freshness is unknown", child.AssetKey)
+			}
+		}
+	}
+	return status, reason, basis
+}
+
+func bestServingStatus(children []domain.AssetFreshnessNode) (string, string, []string) {
+	if len(children) == 0 {
+		return "", "", nil
+	}
+
+	best := children[0]
+	for _, child := range children[1:] {
+		if freshnessPriority(child.FreshnessStatus) > freshnessPriority(best.FreshnessStatus) {
+			best = child
+		}
+	}
+
+	reason := ""
+	switch best.FreshnessStatus {
+	case domain.AssetFreshnessStatusFresh:
+		reason = fmt.Sprintf("served by fresh upstream %s", best.AssetKey)
+	case domain.AssetFreshnessStatusRefreshing:
+		reason = fmt.Sprintf("serving upstream %s is refreshing", best.AssetKey)
+	case domain.AssetFreshnessStatusStale:
+		reason = fmt.Sprintf("serving upstream %s is stale", best.AssetKey)
+	case domain.AssetFreshnessStatusBlocked:
+		reason = fmt.Sprintf("serving upstream %s is blocked", best.AssetKey)
+	case domain.AssetFreshnessStatusUnknown:
+		reason = fmt.Sprintf("serving upstream %s freshness is unknown", best.AssetKey)
+	}
+	return best.FreshnessStatus, reason, append([]string(nil), best.Basis...)
+}
+
+func chooseLogicalFreshness(
+	hardStatus string,
+	hardReason string,
+	hardBasis []string,
+	softStatus string,
+	softReason string,
+	softBasis []string,
+) (string, string, []string) {
+	if freshnessPriority(softStatus) > freshnessPriority(hardStatus) {
+		return softStatus, softReason, softBasis
+	}
+	return hardStatus, hardReason, hardBasis
+}
+
+func freshnessPriority(status string) int {
+	switch status {
+	case domain.AssetFreshnessStatusFresh:
+		return 5
+	case domain.AssetFreshnessStatusRefreshing:
+		return 4
+	case domain.AssetFreshnessStatusStale:
+		return 3
+	case domain.AssetFreshnessStatusBlocked:
+		return 2
+	case domain.AssetFreshnessStatusUnknown:
+		return 1
+	default:
+		return 0
 	}
 }
 

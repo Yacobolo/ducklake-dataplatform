@@ -115,7 +115,7 @@ func TestBuildSemanticAssetGraph(t *testing.T) {
 		"sem-1": {{ID: "metric-1", Name: "revenue", CreatedBy: "alice"}},
 	}
 	preAggsByModel := map[string][]domain.SemanticPreAggregation{
-		"sem-1": {{ID: "preagg-1", Name: "daily_revenue", CreatedBy: "alice", TargetRelation: "analytics.daily_revenue"}},
+		"sem-1": {{ID: "preagg-1", Name: "daily_revenue", CreatedBy: "alice", TargetRelation: "analytics.daily_revenue", MetricSet: []string{"revenue"}}},
 	}
 
 	adapted, err := BuildSemanticAssetGraph(semanticModels, metricsByModel, preAggsByModel, models)
@@ -128,7 +128,7 @@ func TestBuildSemanticAssetGraph(t *testing.T) {
 	assert.Equal(t, "semantic_pre_aggregation.sales.orders.daily_revenue", adapted.Assets[2].AssetKey)
 	assert.Equal(t, domain.AssetTypeSemanticPreAggregation, adapted.Assets[2].AssetType)
 
-	assert.ElementsMatch(t, []string{"sem-1->model-1", "metric-1->sem-1", "preagg-1->sem-1"}, dependencyPairs(adapted.Dependencies))
+	assert.ElementsMatch(t, []string{"sem-1->model-1", "metric-1->sem-1", "metric-1->preagg-1", "preagg-1->sem-1"}, dependencyPairs(adapted.Dependencies))
 }
 
 func TestBuildDashboardAssetGraph(t *testing.T) {

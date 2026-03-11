@@ -207,6 +207,71 @@ func TestService_ReconcileFreshnessPolicies_DedupesSharedTargetEvents(t *testing
 	assert.True(t, strings.HasPrefix(*events.events[0].IdempotencyKey, "freshness:model-1:"))
 }
 
+func TestService_ReconcileFreshness_SkipsStaleLineageWhenServingPreAggregationIsFresh(t *testing.T) {
+	t.Parallel()
+
+	assets := &fakeAssetRepo{assetsByID: map[string]domain.DataAsset{}, idsByKey: map[string]string{}}
+	deps := &fakeAssetDependencyRepo{}
+	runs := &fakeAssetRunRepo{
+		materializationsByAsset: map[string][]domain.AssetMaterialization{
+			"preagg-1": {{
+				AssetID:        "preagg-1",
+				MaterializedAt: time.Now().UTC().Add(-5 * time.Minute),
+			}},
+		},
+	}
+	events := &fakeOrchestrationEventRepo{}
+
+	metric, err := assets.Create(adminCtx(), &domain.DataAsset{
+		ID:        "metric-1",
+		AssetKey:  "metric.exec.revenue",
+		AssetType: domain.AssetTypeMetric,
+		Owner:     "alice",
+		FreshnessPolicy: &domain.AssetFreshnessPolicy{
+			MaxLagSeconds: 1800,
+		},
+		SchemaJSON: map[string]any{},
+	})
+	require.NoError(t, err)
+	semanticModel, err := assets.Create(adminCtx(), &domain.DataAsset{
+		ID:         "semantic-model-1",
+		AssetKey:   "semantic_model.exec.orders",
+		AssetType:  domain.AssetTypeSemanticModel,
+		Owner:      "alice",
+		SchemaJSON: map[string]any{},
+	})
+	require.NoError(t, err)
+	model, err := assets.Create(adminCtx(), &domain.DataAsset{
+		ID:         "model-1",
+		AssetKey:   "model.exec.orders",
+		AssetType:  domain.AssetTypeModel,
+		Owner:      "alice",
+		SchemaJSON: map[string]any{},
+	})
+	require.NoError(t, err)
+	preAgg, err := assets.Create(adminCtx(), &domain.DataAsset{
+		ID:         "preagg-1",
+		AssetKey:   "semantic_pre_aggregation.exec.orders.daily_revenue",
+		AssetType:  domain.AssetTypeSemanticPreAggregation,
+		Owner:      "alice",
+		SchemaJSON: map[string]any{},
+	})
+	require.NoError(t, err)
+
+	_, err = deps.Create(adminCtx(), &domain.AssetDependency{AssetID: metric.ID, UpstreamAssetID: semanticModel.ID, DependencyType: domain.DependencyTypeHard})
+	require.NoError(t, err)
+	_, err = deps.Create(adminCtx(), &domain.AssetDependency{AssetID: semanticModel.ID, UpstreamAssetID: model.ID, DependencyType: domain.DependencyTypeHard})
+	require.NoError(t, err)
+	_, err = deps.Create(adminCtx(), &domain.AssetDependency{AssetID: metric.ID, UpstreamAssetID: preAgg.ID, DependencyType: domain.DependencyTypeSoft})
+	require.NoError(t, err)
+
+	svc := &Service{assets: assets, deps: deps, runs: runs, events: events}
+	result, err := svc.ReconcileFreshness(context.Background(), metric.AssetKey)
+	require.NoError(t, err)
+	assert.Empty(t, result.Targets)
+	assert.Empty(t, events.events)
+}
+
 func adminCtx() context.Context {
 	return domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "tester", IsAdmin: true, Type: "user"})
 }

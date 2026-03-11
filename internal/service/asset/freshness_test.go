@@ -89,6 +89,80 @@ func TestService_ExplainFreshness_LogicalStaleFromUpstream(t *testing.T) {
 	assert.Equal(t, domain.AssetFreshnessStatusStale, node.Upstream[0].FreshnessStatus)
 }
 
+func TestService_ExplainFreshness_LogicalPrefersFreshSoftServingAsset(t *testing.T) {
+	t.Parallel()
+
+	assetRepo := &fakeAssetRepo{assetsByID: map[string]domain.DataAsset{}, idsByKey: map[string]string{}}
+	depRepo := &fakeAssetDependencyRepo{}
+	runRepo := &fakeAssetRunRepo{
+		materializationsByAsset: map[string][]domain.AssetMaterialization{
+			"preagg-1": {{
+				AssetID:        "preagg-1",
+				MaterializedAt: time.Now().UTC().Add(-5 * time.Minute),
+			}},
+		},
+	}
+
+	_, err := assetRepo.Create(context.Background(), &domain.DataAsset{
+		ID:        "metric-1",
+		AssetKey:  "metric.sales.orders.revenue",
+		AssetType: domain.AssetTypeMetric,
+		Owner:     "alice",
+		FreshnessPolicy: &domain.AssetFreshnessPolicy{
+			MaxLagSeconds: 1800,
+		},
+	})
+	require.NoError(t, err)
+	_, err = assetRepo.Create(context.Background(), &domain.DataAsset{
+		ID:        "semantic-model-1",
+		AssetKey:  "semantic_model.sales.orders",
+		AssetType: domain.AssetTypeSemanticModel,
+		Owner:     "alice",
+	})
+	require.NoError(t, err)
+	_, err = assetRepo.Create(context.Background(), &domain.DataAsset{
+		ID:        "preagg-1",
+		AssetKey:  "semantic_pre_aggregation.sales.orders.daily_revenue",
+		AssetType: domain.AssetTypeSemanticPreAggregation,
+		Owner:     "alice",
+	})
+	require.NoError(t, err)
+	_, err = assetRepo.Create(context.Background(), &domain.DataAsset{
+		ID:        "model-1",
+		AssetKey:  "model.sales.fct_orders",
+		AssetType: domain.AssetTypeModel,
+		Owner:     "alice",
+	})
+	require.NoError(t, err)
+
+	_, err = depRepo.Create(context.Background(), &domain.AssetDependency{
+		AssetID:         "metric-1",
+		UpstreamAssetID: "semantic-model-1",
+		DependencyType:  domain.DependencyTypeHard,
+	})
+	require.NoError(t, err)
+	_, err = depRepo.Create(context.Background(), &domain.AssetDependency{
+		AssetID:         "semantic-model-1",
+		UpstreamAssetID: "model-1",
+		DependencyType:  domain.DependencyTypeHard,
+	})
+	require.NoError(t, err)
+	_, err = depRepo.Create(context.Background(), &domain.AssetDependency{
+		AssetID:         "metric-1",
+		UpstreamAssetID: "preagg-1",
+		DependencyType:  domain.DependencyTypeSoft,
+	})
+	require.NoError(t, err)
+
+	svc := &Service{assets: assetRepo, deps: depRepo, runs: runRepo}
+	node, err := svc.ExplainFreshness(context.Background(), "metric.sales.orders.revenue")
+	require.NoError(t, err)
+	assert.Equal(t, domain.AssetFreshnessStatusFresh, node.FreshnessStatus)
+	assert.Equal(t, "served by fresh upstream semantic_pre_aggregation.sales.orders.daily_revenue", node.Reason)
+	assert.Contains(t, node.Basis, "semantic_pre_aggregation.sales.orders.daily_revenue")
+	require.Len(t, node.Upstream, 2)
+}
+
 type fakeAssetRunRepo struct {
 	materializationsByAsset map[string][]domain.AssetMaterialization
 	runsByAsset             map[string][]domain.AssetRun
