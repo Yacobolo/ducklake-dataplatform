@@ -17,7 +17,10 @@ type mockSemanticService struct {
 	createSemanticModelFn func(ctx context.Context, principal string, req domain.CreateSemanticModelRequest) (*domain.SemanticModel, error)
 	listSemanticModelsFn  func(ctx context.Context, projectName *string, page domain.PageRequest) ([]domain.SemanticModel, int64, error)
 	getSemanticModelFn    func(ctx context.Context, projectName, name string) (*domain.SemanticModel, error)
+	createMetricFn        func(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error)
 	listMetricsFn         func(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error)
+	updateMetricFn        func(ctx context.Context, projectName, semanticModelName, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error)
+	deleteMetricFn        func(ctx context.Context, projectName, semanticModelName, metricName string) error
 	explainMetricQueryFn  func(ctx context.Context, req semantic.MetricQueryRequest) (*semantic.MetricQueryPlan, error)
 	runMetricQueryFn      func(ctx context.Context, principal string, req semantic.MetricQueryRequest) (*semantic.MetricQueryResult, error)
 }
@@ -51,7 +54,10 @@ func (m *mockSemanticService) DeleteSemanticModel(context.Context, string, strin
 	panic("DeleteSemanticModel not implemented")
 }
 
-func (m *mockSemanticService) CreateMetric(context.Context, string, string, string, domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+func (m *mockSemanticService) CreateMetric(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+	if m.createMetricFn != nil {
+		return m.createMetricFn(ctx, principal, projectName, semanticModelName, req)
+	}
 	panic("CreateMetric not implemented")
 }
 
@@ -62,11 +68,17 @@ func (m *mockSemanticService) ListMetrics(ctx context.Context, projectName, sema
 	panic("ListMetrics not implemented")
 }
 
-func (m *mockSemanticService) UpdateMetric(context.Context, string, string, string, domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+func (m *mockSemanticService) UpdateMetric(ctx context.Context, projectName, semanticModelName, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+	if m.updateMetricFn != nil {
+		return m.updateMetricFn(ctx, projectName, semanticModelName, metricName, req)
+	}
 	panic("UpdateMetric not implemented")
 }
 
-func (m *mockSemanticService) DeleteMetric(context.Context, string, string, string) error {
+func (m *mockSemanticService) DeleteMetric(ctx context.Context, projectName, semanticModelName, metricName string) error {
+	if m.deleteMetricFn != nil {
+		return m.deleteMetricFn(ctx, projectName, semanticModelName, metricName)
+	}
 	panic("DeleteMetric not implemented")
 }
 
@@ -220,6 +232,241 @@ func TestHandler_ListSemanticModels_PassesFiltersAndPagination(t *testing.T) {
 	require.Len(t, okResp.Body.Data, 1)
 	require.NotNil(t, okResp.Body.NextPageToken)
 	assert.NotEmpty(t, *okResp.Body.NextPageToken)
+}
+
+func TestHandler_ListSemanticMetrics_MapsDashboardFields(t *testing.T) {
+	t.Parallel()
+
+	h := &APIHandler{
+		semantics: &mockSemanticService{
+			listMetricsFn: func(_ context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error) {
+				assert.Equal(t, "analytics", projectName)
+				assert.Equal(t, "sales", semanticModelName)
+				return []domain.SemanticMetric{{
+					ID:                 "metric-1",
+					SemanticModelID:    "sm-1",
+					Name:               "net_revenue",
+					Description:        "Net revenue after discounts",
+					Label:              "Net Revenue",
+					MetricType:         domain.MetricTypeRatio,
+					ExpressionMode:     domain.MetricExpressionModeSQL,
+					Expression:         "SUM(net_revenue) / SUM(orders)",
+					FilterSQL:          "region = 'apac'",
+					DefaultTimeGrain:   "day",
+					Format:             "currency",
+					Owner:              "alice",
+					CertificationState: domain.CertificationCertified,
+				}}, nil
+			},
+		},
+	}
+
+	resp, err := h.ListSemanticMetrics(context.Background(), GenListSemanticMetricsRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+	})
+	require.NoError(t, err)
+
+	okResp, ok := resp.(GenListSemanticMetrics200JSONResponse)
+	require.True(t, ok, "expected 200 response, got %T", resp)
+	require.Len(t, okResp.Body.Data, 1)
+	metric := okResp.Body.Data[0]
+	require.NotNil(t, metric.Name)
+	assert.Equal(t, "net_revenue", *metric.Name)
+	require.NotNil(t, metric.FilterSql)
+	assert.Equal(t, "region = 'apac'", *metric.FilterSql)
+	require.NotNil(t, metric.DefaultTimeGrain)
+	assert.Equal(t, "day", *metric.DefaultTimeGrain)
+	require.NotNil(t, metric.Format)
+	assert.Equal(t, "currency", *metric.Format)
+	require.NotNil(t, metric.ExpressionMode)
+	assert.Equal(t, SemanticMetricExpressionModeSQL, *metric.ExpressionMode)
+	require.NotNil(t, metric.MetricType)
+	assert.Equal(t, SemanticMetricMetricTypeRATIO, *metric.MetricType)
+	require.NotNil(t, metric.CertificationState)
+	assert.Equal(t, CreateSemanticMetricRequestCertificationStateCERTIFIED, *metric.CertificationState)
+}
+
+func TestHandler_CreateSemanticMetric_MapsDashboardFields(t *testing.T) {
+	t.Parallel()
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true, Type: "user"})
+	filterSQL := "region = 'apac'"
+	defaultTimeGrain := "day"
+	format := "currency"
+	label := "Net Revenue"
+	description := "Net revenue after discounts"
+	expressionMode := SemanticMetricExpressionModeSQL
+	certification := CreateSemanticMetricRequestCertificationStateCERTIFIED
+
+	h := &APIHandler{
+		semantics: &mockSemanticService{
+			createMetricFn: func(_ context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+				assert.Equal(t, "alice", principal)
+				assert.Equal(t, "analytics", projectName)
+				assert.Equal(t, "sales", semanticModelName)
+				assert.Equal(t, "net_revenue", req.Name)
+				assert.Equal(t, "Net Revenue", req.Label)
+				assert.Equal(t, domain.MetricTypeRatio, req.MetricType)
+				assert.Equal(t, domain.MetricExpressionModeSQL, req.ExpressionMode)
+				assert.Equal(t, "SUM(net_revenue) / SUM(orders)", req.Expression)
+				assert.Equal(t, filterSQL, req.FilterSQL)
+				assert.Equal(t, defaultTimeGrain, req.DefaultTimeGrain)
+				assert.Equal(t, format, req.Format)
+				assert.Equal(t, domain.CertificationCertified, req.CertificationState)
+				return &domain.SemanticMetric{
+					ID:                 "metric-1",
+					SemanticModelID:    "sm-1",
+					Name:               req.Name,
+					Description:        req.Description,
+					Label:              req.Label,
+					MetricType:         req.MetricType,
+					ExpressionMode:     req.ExpressionMode,
+					Expression:         req.Expression,
+					FilterSQL:          req.FilterSQL,
+					DefaultTimeGrain:   req.DefaultTimeGrain,
+					Format:             req.Format,
+					CertificationState: req.CertificationState,
+				}, nil
+			},
+		},
+	}
+
+	resp, err := h.CreateSemanticMetric(ctx, GenCreateSemanticMetricRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		Body: &GenCreateSemanticMetricJSONBody{
+			Name:               "net_revenue",
+			Description:        &description,
+			Label:              &label,
+			MetricType:         SemanticMetricMetricTypeRATIO,
+			ExpressionMode:     &expressionMode,
+			Expression:         "SUM(net_revenue) / SUM(orders)",
+			FilterSql:          &filterSQL,
+			DefaultTimeGrain:   &defaultTimeGrain,
+			Format:             &format,
+			CertificationState: &certification,
+		},
+	})
+	require.NoError(t, err)
+
+	okResp, ok := resp.(GenCreateSemanticMetric201JSONResponse)
+	require.True(t, ok, "expected 201 response, got %T", resp)
+	require.NotNil(t, okResp.Body.FilterSql)
+	assert.Equal(t, filterSQL, *okResp.Body.FilterSql)
+	require.NotNil(t, okResp.Body.DefaultTimeGrain)
+	assert.Equal(t, defaultTimeGrain, *okResp.Body.DefaultTimeGrain)
+	require.NotNil(t, okResp.Body.Format)
+	assert.Equal(t, format, *okResp.Body.Format)
+}
+
+func TestHandler_UpdateSemanticMetric_MapsDashboardFields(t *testing.T) {
+	t.Parallel()
+
+	filterSQL := "region = 'emea'"
+	defaultTimeGrain := "week"
+	format := "percent"
+	owner := "finance-team"
+	label := "Margin Rate"
+	description := "Margin rate"
+	metricType := SemanticMetricMetricTypeRATIO
+	expressionMode := SemanticMetricExpressionModeSQL
+	certification := CreateSemanticMetricRequestCertificationStateDEPRECATED
+
+	h := &APIHandler{
+		semantics: &mockSemanticService{
+			updateMetricFn: func(_ context.Context, projectName, semanticModelName, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+				assert.Equal(t, "analytics", projectName)
+				assert.Equal(t, "sales", semanticModelName)
+				assert.Equal(t, "margin_rate", metricName)
+				require.NotNil(t, req.Description)
+				assert.Equal(t, description, *req.Description)
+				require.NotNil(t, req.Label)
+				assert.Equal(t, label, *req.Label)
+				require.NotNil(t, req.MetricType)
+				assert.Equal(t, domain.MetricTypeRatio, *req.MetricType)
+				require.NotNil(t, req.ExpressionMode)
+				assert.Equal(t, domain.MetricExpressionModeSQL, *req.ExpressionMode)
+				require.NotNil(t, req.FilterSQL)
+				assert.Equal(t, filterSQL, *req.FilterSQL)
+				require.NotNil(t, req.DefaultTimeGrain)
+				assert.Equal(t, defaultTimeGrain, *req.DefaultTimeGrain)
+				require.NotNil(t, req.Format)
+				assert.Equal(t, format, *req.Format)
+				require.NotNil(t, req.Owner)
+				assert.Equal(t, owner, *req.Owner)
+				require.NotNil(t, req.CertificationState)
+				assert.Equal(t, domain.CertificationDeprecated, *req.CertificationState)
+
+				return &domain.SemanticMetric{
+					ID:                 "metric-1",
+					SemanticModelID:    "sm-1",
+					Name:               metricName,
+					Description:        *req.Description,
+					Label:              *req.Label,
+					MetricType:         *req.MetricType,
+					ExpressionMode:     *req.ExpressionMode,
+					Expression:         "SUM(profit) / SUM(revenue)",
+					FilterSQL:          *req.FilterSQL,
+					DefaultTimeGrain:   *req.DefaultTimeGrain,
+					Format:             *req.Format,
+					Owner:              *req.Owner,
+					CertificationState: *req.CertificationState,
+				}, nil
+			},
+		},
+	}
+
+	expression := "SUM(profit) / SUM(revenue)"
+	resp, err := h.UpdateSemanticMetric(context.Background(), GenUpdateSemanticMetricRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		MetricName:        "margin_rate",
+		Body: &GenUpdateSemanticMetricJSONBody{
+			Description:        &description,
+			Label:              &label,
+			MetricType:         &metricType,
+			ExpressionMode:     &expressionMode,
+			Expression:         &expression,
+			FilterSql:          &filterSQL,
+			DefaultTimeGrain:   &defaultTimeGrain,
+			Format:             &format,
+			Owner:              &owner,
+			CertificationState: &certification,
+		},
+	})
+	require.NoError(t, err)
+
+	okResp, ok := resp.(GenUpdateSemanticMetric200JSONResponse)
+	require.True(t, ok, "expected 200 response, got %T", resp)
+	require.NotNil(t, okResp.Body.Owner)
+	assert.Equal(t, owner, *okResp.Body.Owner)
+	require.NotNil(t, okResp.Body.CertificationState)
+	assert.Equal(t, CreateSemanticMetricRequestCertificationStateDEPRECATED, *okResp.Body.CertificationState)
+}
+
+func TestHandler_DeleteSemanticMetric_MapsRequest(t *testing.T) {
+	t.Parallel()
+
+	h := &APIHandler{
+		semantics: &mockSemanticService{
+			deleteMetricFn: func(_ context.Context, projectName, semanticModelName, metricName string) error {
+				assert.Equal(t, "analytics", projectName)
+				assert.Equal(t, "sales", semanticModelName)
+				assert.Equal(t, "margin_rate", metricName)
+				return nil
+			},
+		},
+	}
+
+	resp, err := h.DeleteSemanticMetric(context.Background(), GenDeleteSemanticMetricRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		MetricName:        "margin_rate",
+	})
+	require.NoError(t, err)
+	_, ok := resp.(GenDeleteSemanticMetric204Response)
+	require.True(t, ok, "expected 204 response, got %T", resp)
 }
 
 func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {

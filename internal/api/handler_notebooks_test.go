@@ -268,6 +268,7 @@ func TestAPI_NotebookCRUD(t *testing.T) {
 	now := fixedTime
 	nbID := "nb-001"
 	desc := "Test notebook description"
+	chartType := domain.VisualChartBar
 
 	notebookSvc := &mockNotebookService{
 		createNotebookFn: func(_ context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error) {
@@ -290,7 +291,23 @@ func TestAPI_NotebookCRUD(t *testing.T) {
 						CreatedAt:   now,
 						UpdatedAt:   now,
 					}, []domain.Cell{
-						{ID: "cell-001", NotebookID: nbID, CellType: domain.CellTypeSQL, Content: "SELECT 1", Position: 0, CreatedAt: now, UpdatedAt: now},
+						{
+							ID:         "cell-001",
+							NotebookID: nbID,
+							CellType:   domain.CellTypeSQL,
+							Content:    "SELECT 1",
+							VisualSpec: &domain.VisualSpec{
+								Kind:      domain.VisualOutputChart,
+								ChartType: &chartType,
+								Encodings: domain.VisualEncodings{
+									X: &domain.VisualFieldBinding{Field: "region"},
+									Y: &domain.VisualFieldBinding{Field: "revenue"},
+								},
+							},
+							Position:  0,
+							CreatedAt: now,
+							UpdatedAt: now,
+						},
 					}, nil
 			}
 			return nil, nil, domain.ErrNotFound("notebook %s not found", id)
@@ -344,6 +361,13 @@ func TestAPI_NotebookCRUD(t *testing.T) {
 		cell := (*detail.Cells)[0]
 		assert.Equal(t, "cell-001", *cell.Id)
 		assert.Equal(t, "SELECT 1", *cell.Content)
+		require.NotNil(t, cell.VisualSpec)
+		assert.Equal(t, VisualOutputKindChart, cell.VisualSpec.Kind)
+		require.NotNil(t, cell.VisualSpec.ChartType)
+		assert.Equal(t, VisualChartTypeBar, *cell.VisualSpec.ChartType)
+		require.NotNil(t, cell.VisualSpec.Encodings)
+		require.NotNil(t, cell.VisualSpec.Encodings.X)
+		assert.Equal(t, "region", cell.VisualSpec.Encodings.X.Field)
 	})
 
 	t.Run("get notebook publish model lookup error is ignored", func(t *testing.T) {
