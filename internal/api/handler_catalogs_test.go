@@ -76,6 +76,7 @@ func catTestCtx() context.Context {
 var catFixedTime = time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
 
 func catStrPtr(s string) *string { return &s }
+func catMetastoreTypePtr(v MetastoreType) *MetastoreType { return &v }
 
 func catSampleRegistration() domain.CatalogRegistration {
 	return domain.CatalogRegistration{
@@ -164,7 +165,7 @@ func TestHandler_RegisterCatalog(t *testing.T) {
 			handler := &APIHandler{catalogRegistration: svc}
 			body := GenRegisterCatalogJSONBody{
 				Name:          "cat",
-				MetastoreType: catStrPtr("ducklake"),
+				MetastoreType: catMetastoreTypePtr(MetastoreType("ducklake")),
 				Dsn:           catStrPtr("sqlite:test.db"),
 				DataPath:      catStrPtr("/data"),
 			}

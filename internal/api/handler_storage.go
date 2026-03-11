@@ -78,7 +78,7 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req GenCreateS
 		domReq.Region = *req.Body.Region
 	}
 	if req.Body.UrlStyle != nil {
-		domReq.URLStyle = *req.Body.UrlStyle
+		domReq.URLStyle = string(*req.Body.UrlStyle)
 	}
 	if req.Body.Comment != nil {
 		domReq.Comment = *req.Body.Comment
@@ -134,8 +134,11 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req GenUpdateS
 		Secret:   req.Body.Secret,
 		Endpoint: req.Body.Endpoint,
 		Region:   req.Body.Region,
-		URLStyle: req.Body.UrlStyle,
 		Comment:  req.Body.Comment,
+	}
+	if req.Body.UrlStyle != nil {
+		urlStyle := string(*req.Body.UrlStyle)
+		domReq.URLStyle = &urlStyle
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -318,11 +321,11 @@ func storageCredentialToAPI(c domain.StorageCredential) StorageCredential {
 	resp := StorageCredential{
 		Id:             c.ID,
 		Name:           c.Name,
-		CredentialType: strPtrIfNonEmpty(string(c.CredentialType)),
+		CredentialType: ptrStorageCredentialType(string(c.CredentialType)),
 		// S3 fields (non-sensitive)
 		Endpoint:  &c.Endpoint,
 		Region:    &c.Region,
-		UrlStyle:  &c.URLStyle,
+		UrlStyle:  ptrURLStyle(c.URLStyle),
 		Comment:   optStr(c.Comment),
 		Owner:     &c.Owner,
 		CreatedAt: formatTimePtr(&c.CreatedAt),
@@ -332,13 +335,12 @@ func storageCredentialToAPI(c domain.StorageCredential) StorageCredential {
 }
 
 func externalLocationToAPI(l domain.ExternalLocation) ExternalLocation {
-	st := string(l.StorageType)
 	return ExternalLocation{
 		Id:             l.ID,
 		Name:           l.Name,
 		Url:            l.URL,
 		CredentialName: &l.CredentialName,
-		StorageType:    &st,
+		StorageType:    ptrStorageType(string(l.StorageType)),
 		Comment:        optStr(l.Comment),
 		Owner:          &l.Owner,
 		ReadOnly:       &l.ReadOnly,

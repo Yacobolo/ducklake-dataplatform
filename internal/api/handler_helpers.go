@@ -62,10 +62,11 @@ func errorCodeFromError(err error) int32 {
 // === Mapping helpers ===
 
 func principalToAPI(p domain.Principal) Principal {
+	principalType := PrincipalType(p.Type)
 	return Principal{
 		Id:        p.ID,
 		Name:      p.Name,
-		Type:      p.Type,
+		Type:      principalType,
 		IsAdmin:   p.IsAdmin,
 		CreatedAt: formatTimePtr(&p.CreatedAt),
 	}
@@ -81,18 +82,20 @@ func groupToAPI(g domain.Group) Group {
 }
 
 func groupMemberToAPI(m domain.GroupMember, groupID string) GroupMember {
+	memberType := PrincipalType(m.MemberType)
 	return GroupMember{
 		GroupId:    groupID,
-		MemberType: m.MemberType,
+		MemberType: memberType,
 		MemberId:   m.MemberID,
 	}
 }
 
 func grantToAPI(g domain.PrivilegeGrant) PrivilegeGrant {
+	principalType := PrincipalType(g.PrincipalType)
 	return PrivilegeGrant{
 		Id:            g.ID,
 		PrincipalId:   g.PrincipalID,
-		PrincipalType: g.PrincipalType,
+		PrincipalType: principalType,
 		SecurableType: g.SecurableType,
 		SecurableId:   g.SecurableID,
 		Privilege:     g.Privilege,
@@ -123,6 +126,7 @@ func columnMaskToAPI(m domain.ColumnMask) ColumnMask {
 }
 
 func auditEntryToAPI(e domain.AuditEntry) AuditEntry {
+	status := AuditDecisionStatus(e.Status)
 	return AuditEntry{
 		Id:             e.ID,
 		PrincipalName:  &e.PrincipalName,
@@ -131,7 +135,7 @@ func auditEntryToAPI(e domain.AuditEntry) AuditEntry {
 		OriginalSql:    e.OriginalSQL,
 		RewrittenSql:   e.RewrittenSQL,
 		TablesAccessed: &e.TablesAccessed,
-		Status:         &e.Status,
+		Status:         &status,
 		ErrorMessage:   e.ErrorMessage,
 		DurationMs:     safeInt64ToInt32Ptr(e.DurationMs),
 		CreatedAt:      formatTimePtr(&e.CreatedAt),
@@ -206,6 +210,7 @@ func columnDetailToAPI(c domain.ColumnDetail) ColumnDetail {
 }
 
 func queryHistoryEntryToAPI(e domain.QueryHistoryEntry) QueryHistoryEntry {
+	status := AuditDecisionStatus(e.Status)
 	return QueryHistoryEntry{
 		Id:             e.ID,
 		PrincipalName:  &e.PrincipalName,
@@ -213,7 +218,7 @@ func queryHistoryEntryToAPI(e domain.QueryHistoryEntry) QueryHistoryEntry {
 		RewrittenSql:   e.RewrittenSQL,
 		StatementType:  e.StatementType,
 		TablesAccessed: &e.TablesAccessed,
-		Status:         &e.Status,
+		Status:         &status,
 		ErrorMessage:   e.ErrorMessage,
 		DurationMs:     safeInt64ToInt32Ptr(e.DurationMs),
 		RowsReturned:   safeInt64ToInt32Ptr(e.RowsReturned),
@@ -328,23 +333,176 @@ func recordToStringMap(record *Record) map[string]string {
 	return out
 }
 
-func rowsToStringMatrix(rows [][]interface{}) *[][]string {
+func tabularColumns(columns []string, rows [][]interface{}) []TabularColumn {
+	names := normalizedColumnNames(columns, rows)
+	out := make([]TabularColumn, len(names))
+	for i, name := range names {
+		out[i] = TabularColumn{Name: name}
+	}
+	return out
+}
+
+func ptrPrincipalType(value string) *PrincipalType {
+	if value == "" {
+		return nil
+	}
+	typed := PrincipalType(value)
+	return &typed
+}
+
+func ptrMetastoreType(value string) *MetastoreType {
+	if value == "" {
+		return nil
+	}
+	typed := MetastoreType(value)
+	return &typed
+}
+
+func ptrCatalogStatus(value string) *CatalogStatus {
+	if value == "" {
+		return nil
+	}
+	typed := CatalogStatus(value)
+	return &typed
+}
+
+func ptrAssetRunStatus(value string) *AssetRunStatus {
+	if value == "" {
+		return nil
+	}
+	typed := AssetRunStatus(value)
+	return &typed
+}
+
+func ptrAssetTriggerType(value string) *AssetTriggerType {
+	if value == "" {
+		return nil
+	}
+	typed := AssetTriggerType(value)
+	return &typed
+}
+
+func ptrAssetCheckSeverity(value string) *AssetCheckSeverity {
+	if value == "" {
+		return nil
+	}
+	typed := AssetCheckSeverity(value)
+	return &typed
+}
+
+func ptrMacroType(value string) *MacroType {
+	if value == "" {
+		return nil
+	}
+	typed := MacroType(value)
+	return &typed
+}
+
+func ptrMacroVisibility(value string) *MacroVisibility {
+	if value == "" {
+		return nil
+	}
+	typed := MacroVisibility(value)
+	return &typed
+}
+
+func ptrMacroStatus(value string) *MacroStatus {
+	if value == "" {
+		return nil
+	}
+	typed := MacroStatus(value)
+	return &typed
+}
+
+func ptrStorageCredentialType(value string) *StorageCredentialType {
+	if value == "" {
+		return nil
+	}
+	typed := StorageCredentialType(value)
+	return &typed
+}
+
+func ptrStorageType(value string) *StorageType {
+	if value == "" {
+		return nil
+	}
+	typed := StorageType(value)
+	return &typed
+}
+
+func ptrURLStyle(value string) *URLStyle {
+	if value == "" {
+		return nil
+	}
+	typed := URLStyle(value)
+	return &typed
+}
+
+func rowsToRecords(columns []string, rows [][]interface{}) []Record {
+	if len(rows) == 0 {
+		return []Record{}
+	}
+	names := normalizedColumnNames(columns, rows)
+	out := make([]Record, len(rows))
+	for i, row := range rows {
+		record := make(Record, len(names))
+		for j, name := range names {
+			if j < len(row) {
+				record[name] = row[j]
+				continue
+			}
+			record[name] = nil
+		}
+		out[i] = record
+	}
+	return out
+}
+
+func ptrTabularColumns(columns []TabularColumn) *[]TabularColumn {
+	if len(columns) == 0 {
+		return nil
+	}
+	return &columns
+}
+
+func ptrRecords(rows []Record) *[]Record {
 	if len(rows) == 0 {
 		return nil
 	}
-	out := make([][]string, len(rows))
-	for i, row := range rows {
-		converted := make([]string, len(row))
-		for j, value := range row {
-			if value == nil {
-				converted[j] = ""
-				continue
-			}
-			converted[j] = fmt.Sprint(value)
+	return &rows
+}
+
+func normalizedColumnNames(columns []string, rows [][]interface{}) []string {
+	width := len(columns)
+	for _, row := range rows {
+		if len(row) > width {
+			width = len(row)
 		}
-		out[i] = converted
 	}
-	return &out
+	if width == 0 {
+		return []string{}
+	}
+
+	names := make([]string, width)
+	used := make(map[string]int, width)
+	for i := 0; i < width; i++ {
+		name := ""
+		if i < len(columns) {
+			name = columns[i]
+		}
+		if name == "" {
+			name = fmt.Sprintf("column_%d", i+1)
+		}
+		if count, exists := used[name]; exists {
+			count++
+			used[name] = count
+			name = fmt.Sprintf("%s_%d", name, count)
+		} else {
+			used[name] = 1
+		}
+		names[i] = name
+	}
+	return names
 }
 
 func tagToAPI(t domain.Tag) Tag {

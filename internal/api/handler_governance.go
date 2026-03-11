@@ -51,8 +51,11 @@ func (h *APIHandler) ListAuditLogs(ctx context.Context, req GenListAuditLogsRequ
 	filter := domain.AuditFilter{
 		PrincipalName: req.Params.PrincipalName,
 		Action:        req.Params.Action,
-		Status:        req.Params.Status,
 		Page:          page,
+	}
+	if req.Params.Status != nil {
+		status := string(*req.Params.Status)
+		filter.Status = &status
 	}
 
 	entries, total, err := h.audit.List(ctx, filter)
@@ -84,10 +87,13 @@ func (h *APIHandler) ListQueryHistory(ctx context.Context, req GenListQueryHisto
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	filter := domain.QueryHistoryFilter{
 		PrincipalName: req.Params.PrincipalName,
-		Status:        req.Params.Status,
 		From:          req.Params.From,
 		To:            req.Params.To,
 		Page:          page,
+	}
+	if req.Params.Status != nil {
+		status := string(*req.Params.Status)
+		filter.Status = &status
 	}
 
 	entries, total, err := h.queryHistory.List(ctx, filter)

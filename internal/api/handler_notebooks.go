@@ -668,8 +668,8 @@ func cellExecutionResultToAPI(r domain.CellExecutionResult) CellExecutionResult 
 	rowCount := int32(r.RowCount) //nolint:gosec // row counts are small
 	return CellExecutionResult{
 		CellId:     &r.CellID,
-		Columns:    &r.Columns,
-		Rows:       rowsToStringMatrix(r.Rows),
+		Columns:    ptrTabularColumns(tabularColumns(r.Columns, r.Rows)),
+		Rows:       ptrRecords(rowsToRecords(r.Columns, r.Rows)),
 		RowCount:   &rowCount,
 		Error:      r.Error,
 		DurationMs: &durationMs,

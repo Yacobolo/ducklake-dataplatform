@@ -610,7 +610,7 @@ func TestAPI_Sessions(t *testing.T) {
 		assert.Equal(t, cellID, *result.CellId)
 		assert.Equal(t, int32(1), *result.RowCount)
 		require.NotNil(t, result.Columns)
-		assert.Equal(t, []string{"count"}, *result.Columns)
+		assert.Equal(t, []TabularColumn{{Name: "count"}}, *result.Columns)
 		assert.Equal(t, int32(150), *result.DurationMs)
 	})
 

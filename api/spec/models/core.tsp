@@ -2,11 +2,73 @@ using TypeSpec.Http;
 
 namespace Duck;
 
+alias MetadataMap = Record<string>;
+alias JsonObject = Record<unknown>;
+
+enum PrincipalType {
+  user,
+  group,
+}
+
+enum AuditDecisionStatus {
+  ALLOWED,
+  DENIED,
+  ERROR,
+}
+
+enum CatalogStatus {
+  ACTIVE,
+  ERROR,
+  DETACHED,
+}
+
+enum MetastoreType {
+  sqlite,
+  postgres,
+}
+
+enum MacroType {
+  SCALAR,
+  TABLE,
+}
+
+enum MacroVisibility {
+  project,
+  catalog_global,
+  system,
+}
+
+enum MacroStatus {
+  ACTIVE,
+  DEPRECATED,
+}
+
+enum StorageCredentialType {
+  S3,
+  AZURE,
+  GCS,
+}
+
+enum StorageType {
+  S3,
+  AZURE,
+  GCS,
+}
+
+enum URLStyle {
+  path,
+  vhost,
+}
+
+model TabularColumn {
+  name: string;
+}
+
 @error
 model Error {
   code: int32;
   message: string;
-  details?: Record<string>;
+  details?: MetadataMap;
 }
 
 model Ok<T> {
@@ -99,8 +161,8 @@ model QueryRequest {
 }
 
 model QueryResult {
-  columns: string[];
-  rows?: unknown[][];
+  columns: TabularColumn[];
+  rows: JsonObject[];
   row_count?: int64;
   next_page_token?: string;
 }
@@ -137,9 +199,9 @@ model CancelQueryResponse {
 model Principal {
   id: string;
   name: string;
-  type: string;
+  type: PrincipalType;
   is_admin: boolean;
-  created_at?: string;
+  created_at?: utcDateTime;
 }
 
 model PaginatedPrincipals {
@@ -149,7 +211,7 @@ model PaginatedPrincipals {
 
 model CreatePrincipalRequest {
   name: string;
-  type?: string;
+  type?: PrincipalType;
   is_admin?: boolean;
 }
 
@@ -206,7 +268,7 @@ model OIDCProviderResponse {
   audience?: string;
   client_id?: string;
   scopes?: string;
-  updated_at?: string;
+  updated_at?: utcDateTime;
   secret_stored: boolean;
 }
 
@@ -230,7 +292,7 @@ model Group {
   id: string;
   name: string;
   description?: string;
-  created_at?: string;
+  created_at?: utcDateTime;
 }
 
 model PaginatedGroups {
@@ -245,7 +307,7 @@ model CreateGroupRequest {
 
 model GroupMember {
   group_id: string;
-  member_type: string;
+  member_type: PrincipalType;
   member_id: string;
 }
 
@@ -255,19 +317,19 @@ model PaginatedGroupMembers {
 }
 
 model CreateGroupMemberRequest {
-  member_type: string;
+  member_type: PrincipalType;
   member_id: string;
 }
 
 model PrivilegeGrant {
   id: string;
   principal_id: string;
-  principal_type: string;
+  principal_type: PrincipalType;
   securable_type: string;
   securable_id: string;
   privilege: string;
   granted_by?: string;
-  granted_at?: string;
+  granted_at?: utcDateTime;
 }
 
 model PaginatedGrants {
@@ -277,7 +339,7 @@ model PaginatedGrants {
 
 model CreateGrantRequest {
   principal_id: string;
-  principal_type: string;
+  principal_type: PrincipalType;
   securable_type: string;
   securable_id: string;
   privilege: string;
@@ -288,8 +350,8 @@ model APIKeyInfo {
   principal_id: string;
   name: string;
   key_prefix?: string;
-  expires_at?: string;
-  created_at?: string;
+  expires_at?: utcDateTime;
+  created_at?: utcDateTime;
 }
 
 model PaginatedAPIKeys {
@@ -300,7 +362,7 @@ model PaginatedAPIKeys {
 model CreateAPIKeyRequest {
   principal_id: string;
   name?: string;
-  expires_at?: string;
+  expires_at?: utcDateTime;
 }
 
 model CreateAPIKeyResponse {
@@ -308,8 +370,8 @@ model CreateAPIKeyResponse {
   key: string;
   name?: string;
   key_prefix?: string;
-  expires_at?: string;
-  created_at?: string;
+  expires_at?: utcDateTime;
+  created_at?: utcDateTime;
 }
 
 model CleanupAPIKeysResponse {
@@ -321,7 +383,7 @@ model RowFilter {
   table_id: string;
   filter_sql: string;
   description?: string;
-  created_at?: string;
+  created_at?: utcDateTime;
 }
 
 model PaginatedRowFilters {
@@ -338,14 +400,14 @@ model CreateRowFilterRequest {
 
 model RowFilterBindingRequest {
   principal_id: string;
-  principal_type: string;
+  principal_type: PrincipalType;
 }
 
 model RowFilterBinding {
   id?: string;
   row_filter_id?: string;
   principal_id?: string;
-  principal_type?: string;
+  principal_type?: PrincipalType;
 }
 
 model PaginatedRowFilterBindings {
@@ -359,7 +421,7 @@ model ColumnMask {
   column_name: string;
   mask_expression: string;
   description?: string;
-  created_at?: string;
+  created_at?: utcDateTime;
 }
 
 model PaginatedColumnMasks {
@@ -376,7 +438,7 @@ model CreateColumnMaskRequest {
 
 model ColumnMaskBindingRequest {
   principal_id: string;
-  principal_type: string;
+  principal_type: PrincipalType;
   see_original?: boolean;
 }
 
@@ -384,7 +446,7 @@ model ColumnMaskBinding {
   id?: string;
   column_mask_id?: string;
   principal_id?: string;
-  principal_type?: string;
+  principal_type?: PrincipalType;
   see_original?: boolean;
 }
 
@@ -409,8 +471,8 @@ model ManifestResponse {
   columns?: ManifestColumn[];
   files?: string[];
   row_filters?: string[];
-  column_masks?: Record<string>;
-  expires_at?: string;
+  column_masks?: MetadataMap;
+  expires_at?: utcDateTime;
 }
 
 model AuditEntry {
@@ -421,10 +483,10 @@ model AuditEntry {
   original_sql?: string;
   rewritten_sql?: string;
   tables_accessed?: string[];
-  status?: string;
+  status?: AuditDecisionStatus;
   error_message?: string;
   duration_ms?: int64;
-  created_at?: string;
+  created_at?: utcDateTime;
 }
 
 model PaginatedAuditLogs {
@@ -439,11 +501,11 @@ model QueryHistoryEntry {
   rewritten_sql?: string;
   statement_type?: string;
   tables_accessed?: string[];
-  status?: string;
+  status?: AuditDecisionStatus;
   error_message?: string;
   duration_ms?: int64;
   rows_returned?: int64;
-  created_at?: string;
+  created_at?: utcDateTime;
 }
 
 model PaginatedQueryHistoryEntries {
@@ -463,14 +525,14 @@ model MetastoreSummary {
 model CatalogRegistration {
   id: string;
   name: string;
-  metastore_type?: string;
+  metastore_type?: MetastoreType;
   dsn?: string;
   data_path?: string;
-  status?: string;
+  status?: CatalogStatus;
   is_default?: boolean;
   comment?: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
   system_managed?: boolean;
 }
 
@@ -482,7 +544,7 @@ model CatalogRegistrationList {
 
 model CreateCatalogRequest {
   name: string;
-  metastore_type?: string;
+  metastore_type?: MetastoreType;
   dsn?: string;
   data_path?: string;
   comment?: string;
@@ -498,8 +560,8 @@ model SetDefaultCatalogRequest {}
 model CatalogInfo {
   name: string;
   comment?: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
   system_managed?: boolean;
 }
 
@@ -546,11 +608,11 @@ model SchemaDetail {
   name: string;
   catalog_name: string;
   comment?: string;
-  properties?: Record<string>;
+  properties?: MetadataMap;
   tags?: Tag[];
   owner?: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
 }
 
 model PaginatedSchemaDetails {
@@ -562,12 +624,12 @@ model CreateSchemaRequest {
   name: string;
   comment?: string;
   location_name?: string;
-  properties?: Record<string>;
+  properties?: MetadataMap;
 }
 
 model UpdateSchemaRequest {
   comment?: string;
-  properties?: Record<string>;
+  properties?: MetadataMap;
 }
 
 model ColumnDetail {
@@ -598,12 +660,12 @@ model TableDetail {
   table_type?: string;
   columns?: ColumnDetail[];
   comment?: string;
-  properties?: Record<string>;
+  properties?: MetadataMap;
   owner?: string;
   tags?: Tag[];
   statistics?: TableStatistics;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
 }
 
 model PaginatedTableDetails {
@@ -619,7 +681,7 @@ model CreateTableRequest {
 
 model UpdateTableRequest {
   comment?: string;
-  properties?: Record<string>;
+  properties?: MetadataMap;
   owner?: string;
 }
 
@@ -632,7 +694,7 @@ model TableStatistics {
   row_count?: int64;
   size_bytes?: int64;
   column_count?: int32;
-  last_profiled_at?: string;
+  last_profiled_at?: utcDateTime;
   profiled_by?: string;
 }
 
@@ -646,8 +708,8 @@ model ViewDetail {
   comment?: string;
   owner?: string;
   source_tables?: string[];
-  created_at?: string;
-  updated_at?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
 }
 
 model PaginatedViewDetails {
@@ -675,8 +737,8 @@ model VolumeDetail {
   storage_location?: string;
   comment?: string;
   owner?: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
 }
 
 model PaginatedVolumes {
@@ -729,7 +791,7 @@ model ComputeAssignment {
   principal_type?: ComputeAssignmentPrincipalType;
   fallback_local?: boolean;
   is_default?: boolean;
-  created_at?: string;
+  created_at?: utcDateTime;
 }
 
 model PaginatedComputeAssignments {
@@ -754,8 +816,8 @@ model ComputeEndpoint {
   external_id?: string;
   max_memory_gb?: int64;
   owner?: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
 }
 
 model PaginatedComputeEndpoints {
@@ -1091,8 +1153,8 @@ model NotebookSession {
 
 model CellExecutionResult {
   cell_id?: string;
-  columns?: string[];
-  rows?: unknown[][];
+  columns?: TabularColumn[];
+  rows?: JsonObject[];
   row_count?: int32;
   error?: string;
   duration_ms?: int64;
@@ -1209,7 +1271,7 @@ enum PipelineRunTriggerType {
 }
 
 model TriggerPipelineRunRequest {
-  parameters?: Record<string>;
+  parameters?: MetadataMap;
 }
 
 model PipelineRun {
@@ -1218,7 +1280,7 @@ model PipelineRun {
   status?: PipelineRunStatus;
   trigger_type?: PipelineRunTriggerType;
   triggered_by?: string;
-  parameters?: Record<string>;
+  parameters?: MetadataMap;
   git_commit_hash?: string;
   started_at?: utcDateTime;
   finished_at?: utcDateTime;
@@ -1688,17 +1750,17 @@ model GitSyncResult {
 model Macro {
   id?: string;
   name?: string;
-  macro_type?: string;
+  macro_type?: MacroType;
   parameters?: string[];
   body?: string;
   description?: string;
   catalog_name?: string;
   project_name?: string;
-  visibility?: string;
+  visibility?: MacroVisibility;
   owner?: string;
-  properties?: Record<string>;
+  properties?: MetadataMap;
   tags?: string[];
-  status?: string;
+  status?: MacroStatus;
   created_by?: string;
   created_at?: utcDateTime;
   updated_at?: utcDateTime;
@@ -1712,28 +1774,28 @@ model PaginatedMacros {
 model CreateMacroRequest {
   name: string;
   body: string;
-  macro_type?: string;
+  macro_type?: MacroType;
   parameters?: string[];
   description?: string;
   catalog_name?: string;
   project_name?: string;
-  visibility?: string;
+  visibility?: MacroVisibility;
   owner?: string;
-  properties?: Record<string>;
+  properties?: MetadataMap;
   tags?: string[];
-  status?: string;
+  status?: MacroStatus;
 }
 
 model UpdateMacroRequest {
   body?: string;
   description?: string;
   parameters?: string[];
-  status?: string;
+  status?: MacroStatus;
   catalog_name?: string;
   project_name?: string;
-  visibility?: string;
+  visibility?: MacroVisibility;
   owner?: string;
-  properties?: Record<string>;
+  properties?: MetadataMap;
   tags?: string[];
 }
 
@@ -1745,7 +1807,7 @@ model MacroRevision {
   parameters?: string[];
   body?: string;
   description?: string;
-  status?: string;
+  status?: MacroStatus;
   created_by?: string;
   created_at?: utcDateTime;
 }
@@ -1783,8 +1845,8 @@ model MacroRevisionDiff {
   to_body?: string;
   from_description?: string;
   to_description?: string;
-  from_status?: string;
-  to_status?: string;
+  from_status?: MacroStatus;
+  to_status?: MacroStatus;
   impact_changed?: boolean;
   impacted_models_added?: MacroImpactModel[];
   impacted_models_removed?: MacroImpactModel[];
@@ -1794,14 +1856,14 @@ model MacroRevisionDiff {
 model StorageCredential {
   id: string;
   name: string;
-  credential_type?: string;
+  credential_type?: StorageCredentialType;
   endpoint?: string;
   region?: string;
-  url_style?: string;
+  url_style?: URLStyle;
   comment?: string;
   owner?: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
 }
 
 model PaginatedStorageCredentials {
@@ -1811,12 +1873,12 @@ model PaginatedStorageCredentials {
 
 model CreateStorageCredentialRequest {
   name: string;
-  credential_type?: string;
+  credential_type?: StorageCredentialType;
   key_id?: string;
   secret?: string;
   endpoint?: string;
   region?: string;
-  url_style?: string;
+  url_style?: URLStyle;
   comment?: string;
 }
 
@@ -1825,7 +1887,7 @@ model UpdateStorageCredentialRequest {
   secret?: string;
   endpoint?: string;
   region?: string;
-  url_style?: string;
+  url_style?: URLStyle;
   comment?: string;
 }
 
@@ -1834,12 +1896,12 @@ model ExternalLocation {
   name: string;
   url: string;
   credential_name?: string;
-  storage_type?: string;
+  storage_type?: StorageType;
   comment?: string;
   owner?: string;
   read_only?: boolean;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
 }
 
 model PaginatedExternalLocations {
@@ -1851,7 +1913,7 @@ model CreateExternalLocationRequest {
   name: string;
   url: string;
   credential_name?: string;
-  storage_type?: string;
+  storage_type?: StorageType;
   comment?: string;
   read_only?: boolean;
 }

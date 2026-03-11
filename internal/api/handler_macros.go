@@ -334,7 +334,7 @@ func macroToAPI(m domain.Macro) Macro {
 	resp := Macro{
 		Id:          &m.ID,
 		Name:        &m.Name,
-		MacroType:   strPtrIfNonEmpty(m.MacroType),
+		MacroType:   ptrMacroType(m.MacroType),
 		Body:        &m.Body,
 		Description: &m.Description,
 		CreatedBy:   &m.CreatedBy,
@@ -348,7 +348,7 @@ func macroToAPI(m domain.Macro) Macro {
 		resp.ProjectName = &m.ProjectName
 	}
 	if m.Visibility != "" {
-		resp.Visibility = &m.Visibility
+		resp.Visibility = ptrMacroVisibility(m.Visibility)
 	}
 	if m.Owner != "" {
 		resp.Owner = &m.Owner
@@ -360,7 +360,7 @@ func macroToAPI(m domain.Macro) Macro {
 		resp.Tags = &m.Tags
 	}
 	if m.Status != "" {
-		resp.Status = &m.Status
+		resp.Status = ptrMacroStatus(m.Status)
 	}
 	if len(m.Parameters) > 0 {
 		resp.Parameters = &m.Parameters
@@ -384,7 +384,7 @@ func macroRevisionToAPI(r domain.MacroRevision) MacroRevision {
 		resp.Parameters = &r.Parameters
 	}
 	if r.Status != "" {
-		resp.Status = &r.Status
+		resp.Status = ptrMacroStatus(r.Status)
 	}
 	return resp
 }
@@ -415,10 +415,10 @@ func macroRevisionDiffToAPI(d domain.MacroRevisionDiff) MacroRevisionDiff {
 		resp.ToParameters = &d.ToParameters
 	}
 	if d.FromStatus != "" {
-		resp.FromStatus = &d.FromStatus
+		resp.FromStatus = ptrMacroStatus(d.FromStatus)
 	}
 	if d.ToStatus != "" {
-		resp.ToStatus = &d.ToStatus
+		resp.ToStatus = ptrMacroStatus(d.ToStatus)
 	}
 	return resp
 }

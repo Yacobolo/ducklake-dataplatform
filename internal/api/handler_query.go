@@ -56,13 +56,12 @@ func (h *APIHandler) ExecuteQuery(ctx context.Context, req GenExecuteQueryReques
 		}
 	}
 
-	rows := rowsToStringMatrix(result.Rows)
 	rowCount := safeIntToInt32(result.RowCount)
 
 	return ExecuteQuery200JSONResponse{
 		Body: QueryResult{
-			Columns:  result.Columns,
-			Rows:     rows,
+			Columns:  tabularColumns(result.Columns, result.Rows),
+			Rows:     rowsToRecords(result.Columns, result.Rows),
 			RowCount: &rowCount,
 		},
 		Headers: ExecuteQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
@@ -178,7 +177,10 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResults
 		nextPageToken = domain.EncodePageToken(end)
 	}
 
-	result := QueryResult{Columns: job.Columns, Rows: rowsToStringMatrix(rows)}
+	result := QueryResult{
+		Columns: tabularColumns(job.Columns, rows),
+		Rows:    rowsToRecords(job.Columns, rows),
+	}
 	rowCount := safeIntToInt32(job.RowCount)
 	result.RowCount = &rowCount
 	if nextPageToken != "" {
