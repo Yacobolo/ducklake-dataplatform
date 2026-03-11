@@ -6,6 +6,7 @@ import (
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/auditutil"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 // VolumeService provides CRUD operations for volumes
@@ -126,13 +127,9 @@ func (s *VolumeService) Delete(ctx context.Context, principal, catalogName, sche
 
 // requirePrivilege checks that the principal has the given privilege on a securable.
 func (s *VolumeService) requirePrivilege(ctx context.Context, principal, securableType, securableID, privilege, action, detail string) error {
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, securableType, securableID, privilege)
-	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
+	if err := servicepolicy.RequireSecurablePrivilege(ctx, s.auth, principal, securableType, securableID, privilege); err != nil {
 		s.logAuditDenied(ctx, principal, action, detail)
-		return domain.ErrAccessDenied("%q lacks %s on %s %q", principal, privilege, securableType, securableID)
+		return err
 	}
 	return nil
 }

@@ -289,6 +289,62 @@ func TestRequireCatalogPrivilege(t *testing.T) {
 	})
 }
 
+func TestRequireSecurablePrivilege(t *testing.T) {
+	t.Parallel()
+
+	t.Run("missing principal denied", func(t *testing.T) {
+		t.Parallel()
+
+		err := RequireSecurablePrivilege(context.Background(), stubAuthorizationService{}, "", domain.SecurableComputeEndpoint, "endpoint-1", domain.PrivManageCompute)
+		require.Error(t, err)
+		assert.EqualError(t, err, "principal context is required")
+	})
+
+	t.Run("authorization service denial returns access denied", func(t *testing.T) {
+		t.Parallel()
+
+		auth := stubAuthorizationService{
+			checkPrivilegeFn: func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error) {
+				assert.Equal(t, "alice", principal)
+				assert.Equal(t, domain.SecurableComputeEndpoint, securableType)
+				assert.Equal(t, "endpoint-1", securableID)
+				assert.Equal(t, domain.PrivManageCompute, privilege)
+				return false, nil
+			},
+		}
+
+		err := RequireSecurablePrivilege(context.Background(), auth, "alice", domain.SecurableComputeEndpoint, "endpoint-1", domain.PrivManageCompute)
+		require.Error(t, err)
+		assert.EqualError(t, err, "\"alice\" lacks MANAGE_COMPUTE on compute_endpoint \"endpoint-1\"")
+	})
+
+	t.Run("authorization service errors are wrapped", func(t *testing.T) {
+		t.Parallel()
+
+		auth := stubAuthorizationService{
+			checkPrivilegeFn: func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error) {
+				return false, errors.New("boom")
+			},
+		}
+
+		err := RequireSecurablePrivilege(context.Background(), auth, "alice", domain.SecurableComputeEndpoint, "endpoint-1", domain.PrivManageCompute)
+		require.Error(t, err)
+		assert.EqualError(t, err, "check privilege: boom")
+	})
+
+	t.Run("authorization service allow passes", func(t *testing.T) {
+		t.Parallel()
+
+		auth := stubAuthorizationService{
+			checkPrivilegeFn: func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error) {
+				return true, nil
+			},
+		}
+
+		require.NoError(t, RequireSecurablePrivilege(context.Background(), auth, "alice", domain.SecurableComputeEndpoint, "endpoint-1", domain.PrivManageCompute))
+	})
+}
+
 func TestCanReadOwnedResource(t *testing.T) {
 	t.Parallel()
 

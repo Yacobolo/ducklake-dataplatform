@@ -70,6 +70,14 @@ func TestServicePolicyHelpers_DelegateToSharedPolicyPackage(t *testing.T) {
 			file:     "internal/service/orchestration/backfill_service.go",
 			snippets: []string{"internal/service/policy", "servicepolicy.RequirePrincipalName(ctx)", "servicepolicy.RequireCatalogPrivilege(ctx, s.auth, principalName, privilege, \"asset orchestration requires %s on catalog\")"},
 		},
+		{
+			file:     "internal/service/compute/endpoint.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.RequireCatalogPrivilege(ctx, s.auth, principal, privilege, \"%s on catalog is required\")", "servicepolicy.RequireSecurablePrivilege(ctx, s.auth, principal, domain.SecurableComputeEndpoint, endpointID, privilege)"},
+		},
+		{
+			file:     "internal/service/storage/volume.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.RequireSecurablePrivilege(ctx, s.auth, principal, securableType, securableID, privilege)"},
+		},
 	}
 
 	for _, exp := range expects {

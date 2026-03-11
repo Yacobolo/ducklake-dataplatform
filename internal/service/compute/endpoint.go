@@ -12,6 +12,7 @@ import (
 	computeproto "duck-demo/internal/compute/proto"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/auditutil"
+	servicepolicy "duck-demo/internal/service/policy"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -454,26 +455,15 @@ func int32PtrToIntPtr(value int32) *int {
 
 // requirePrivilege checks that the principal has the given privilege on the catalog.
 func (s *ComputeEndpointService) requirePrivilege(ctx context.Context, principal string, privilege, action, detail string) error {
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, domain.CatalogID, privilege)
-	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
+	if err := servicepolicy.RequireCatalogPrivilege(ctx, s.auth, principal, privilege, "%s on catalog is required"); err != nil {
 		s.logAuditDenied(ctx, principal, action, detail)
-		return domain.ErrAccessDenied("%q lacks %s on catalog", principal, privilege)
+		return err
 	}
 	return nil
 }
 
 func (s *ComputeEndpointService) requireEndpointPrivilege(ctx context.Context, principal, endpointID, privilege string) error {
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableComputeEndpoint, endpointID, privilege)
-	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		return domain.ErrAccessDenied("%q lacks %s on compute endpoint", principal, privilege)
-	}
-	return nil
+	return servicepolicy.RequireSecurablePrivilege(ctx, s.auth, principal, domain.SecurableComputeEndpoint, endpointID, privilege)
 }
 
 func (s *ComputeEndpointService) logAudit(ctx context.Context, principal, action, detail string) {

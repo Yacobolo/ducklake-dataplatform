@@ -100,6 +100,21 @@ func RequireCatalogPrivilege(ctx context.Context, auth domain.AuthorizationServi
 	return nil
 }
 
+// RequireSecurablePrivilege validates that the principal can perform the given action on a securable.
+func RequireSecurablePrivilege(ctx context.Context, auth domain.AuthorizationService, principalName, securableType, securableID, privilege string) error {
+	if strings.TrimSpace(principalName) == "" {
+		return domain.ErrAccessDenied("principal context is required")
+	}
+	allowed, err := auth.CheckPrivilege(ctx, principalName, securableType, securableID, privilege)
+	if err != nil {
+		return fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		return domain.ErrAccessDenied("%q lacks %s on %s %q", principalName, privilege, securableType, securableID)
+	}
+	return nil
+}
+
 // IsAdmin reports whether the authenticated caller has admin rights.
 func IsAdmin(ctx context.Context) bool {
 	principal, ok := domain.PrincipalFromContext(ctx)
