@@ -198,3 +198,35 @@ func TestViewHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatal("governance: internal/api/handler_views.go must not use ad hoc errors.As domain error switches")
 	}
 }
+
+func TestQueryHandlers_UseSharedDomainErrorResponder(t *testing.T) {
+	t.Helper()
+
+	body, err := os.ReadFile(filepath.Join(repoRootDir(), "internal/api/handler_query.go"))
+	if err != nil {
+		t.Fatalf("read internal/api/handler_query.go: %v", err)
+	}
+	source := string(body)
+	if !containsAny(source, []string{"respondDomainError["}) {
+		t.Fatal("governance: internal/api/handler_query.go must use respondDomainError for domain error mapping")
+	}
+	if containsAny(source, []string{"case errors.As(err, new(*domain.NotFoundError)):", "case errors.As(err, new(*domain.AccessDeniedError)):", "case errors.As(err, new(*domain.ValidationError)):"}) {
+		t.Fatal("governance: internal/api/handler_query.go must not use ad hoc domain error switches")
+	}
+}
+
+func TestCatalogRegistrationHandlers_UseSharedDomainErrorResponder(t *testing.T) {
+	t.Helper()
+
+	body, err := os.ReadFile(filepath.Join(repoRootDir(), "internal/api/handler_catalogs.go"))
+	if err != nil {
+		t.Fatalf("read internal/api/handler_catalogs.go: %v", err)
+	}
+	source := string(body)
+	if !containsAny(source, []string{"respondDomainError["}) {
+		t.Fatal("governance: internal/api/handler_catalogs.go must use respondDomainError for domain error mapping")
+	}
+	if containsAny(source, []string{"errors.As(err,"}) {
+		t.Fatal("governance: internal/api/handler_catalogs.go must not use ad hoc errors.As domain error switches")
+	}
+}
