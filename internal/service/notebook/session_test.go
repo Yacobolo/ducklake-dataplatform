@@ -110,6 +110,20 @@ func TestSessionManager_CreateSession(t *testing.T) {
 
 		assert.NotEqual(t, s1.ID, s2.ID, "each session should have a unique ID")
 	})
+
+	t.Run("secure create denies non-owner", func(t *testing.T) {
+		sm, repo, _, _, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+
+		_, err := sm.CreateSessionForNotebook(ctx, "nb-1", "bob", false)
+		require.Error(t, err)
+		var accessDenied *domain.AccessDeniedError
+		assert.ErrorAs(t, err, &accessDenied)
+	})
 }
 
 // === CloseSession ===
@@ -604,6 +618,23 @@ func TestSessionManager_JobDelegation(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, jobs, 1)
 		assert.Equal(t, int64(1), total)
+	})
+
+	t.Run("secure job lookup rejects wrong notebook", func(t *testing.T) {
+		sm, repo, jobRepo, _, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Owner: "alice"}, nil
+		}
+		jobRepo.GetJobFn = func(_ context.Context, id string) (*domain.NotebookJob, error) {
+			return &domain.NotebookJob{ID: id, NotebookID: "nb-other"}, nil
+		}
+
+		_, err := sm.GetNotebookJob(ctx, "nb-1", "job-1", "alice", false)
+		require.Error(t, err)
+		var notFound *domain.NotFoundError
+		assert.ErrorAs(t, err, &notFound)
 	})
 }
 

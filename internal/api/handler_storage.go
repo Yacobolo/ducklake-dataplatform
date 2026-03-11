@@ -42,7 +42,12 @@ func (h *APIHandler) ListStorageCredentials(ctx context.Context, req GenListStor
 	principal := principalFromCtx(ctx)
 	creds, total, err := h.storageCreds.List(ctx, principal, page)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return GenListStorageCredentials403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
 	}
 
 	data := make([]StorageCredential, len(creds))
@@ -114,6 +119,8 @@ func (h *APIHandler) GetStorageCredential(ctx context.Context, req GenGetStorage
 	result, err := h.storageCreds.GetByName(ctx, principal, req.CredentialName)
 	if err != nil {
 		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return GenGetStorageCredential403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return GenGetStorageCredential404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
@@ -185,7 +192,12 @@ func (h *APIHandler) ListExternalLocations(ctx context.Context, req GenListExter
 	principal := principalFromCtx(ctx)
 	locs, total, err := h.externalLocations.List(ctx, principal, page)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return GenListExternalLocations403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
 	}
 
 	data := make([]ExternalLocation, len(locs))
@@ -252,6 +264,8 @@ func (h *APIHandler) GetExternalLocation(ctx context.Context, req GenGetExternal
 	result, err := h.externalLocations.GetByName(ctx, principal, req.LocationName)
 	if err != nil {
 		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return GenGetExternalLocation403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return GenGetExternalLocation404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:

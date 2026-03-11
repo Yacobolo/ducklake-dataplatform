@@ -357,6 +357,22 @@ func TestHandler_SubmitQuery(t *testing.T) {
 	assert.Equal(t, QueryJobStatus("QUEUED"), ok.Body.Status)
 }
 
+func TestHandler_SubmitQuery_RequestIDConflictReturns409(t *testing.T) {
+	t.Parallel()
+
+	handler := &APIHandler{query: &mockQueryAsyncService{submitFn: func(_ context.Context, _, _, _ string) (*domain.QueryJob, error) {
+		return nil, domain.ErrConflict("request_id already used")
+	}}}
+
+	body := GenSubmitQueryJSONBody{Sql: "SELECT 1", RequestId: queryTestStrPtr("req-1")}
+	resp, err := handler.SubmitQuery(queryTestCtx(), GenSubmitQueryRequest{Body: &body})
+	require.NoError(t, err)
+
+	conflict, ok := resp.(SubmitQuery409JSONResponse)
+	require.True(t, ok, "expected 409 response, got %T", resp)
+	assert.Equal(t, int32(409), conflict.Body.Code)
+}
+
 func TestHandler_GetQueryResults_Paged(t *testing.T) {
 	t.Parallel()
 
@@ -384,4 +400,44 @@ func TestHandler_GetQueryResults_Paged(t *testing.T) {
 	require.NotNil(t, ok.Body.Rows)
 	require.Len(t, ok.Body.Rows, 1)
 	require.NotNil(t, ok.Body.NextPageToken)
+}
+
+func TestHandler_GetQueryResults_InvalidOrOutOfRangePageTokenReturns400(t *testing.T) {
+	t.Parallel()
+
+	handler := &APIHandler{query: &mockQueryAsyncService{getFn: func(_ context.Context, principalName, jobID string) (*domain.QueryJob, error) {
+		require.Equal(t, "test-user", principalName)
+		require.Equal(t, "job-1", jobID)
+		return &domain.QueryJob{
+			ID:       "job-1",
+			Status:   domain.QueryJobStatusSucceeded,
+			Columns:  []string{"id"},
+			Rows:     [][]interface{}{{1}},
+			RowCount: 1,
+		}, nil
+	}}}
+
+	t.Run("invalid cursor", func(t *testing.T) {
+		token := "not-base64"
+		resp, err := handler.GetQueryResults(queryTestCtx(), GenGetQueryResultsRequest{
+			QueryId: "job-1",
+			Params:  GenGetQueryResultsParams{PageToken: &token},
+		})
+		require.NoError(t, err)
+		badReq, ok := resp.(GetQueryResults400JSONResponse)
+		require.True(t, ok, "expected 400 response, got %T", resp)
+		assert.Equal(t, int32(400), badReq.Body.Code)
+	})
+
+	t.Run("cursor past end", func(t *testing.T) {
+		token := domain.EncodePageToken(10)
+		resp, err := handler.GetQueryResults(queryTestCtx(), GenGetQueryResultsRequest{
+			QueryId: "job-1",
+			Params:  GenGetQueryResultsParams{PageToken: &token},
+		})
+		require.NoError(t, err)
+		badReq, ok := resp.(GetQueryResults400JSONResponse)
+		require.True(t, ok, "expected 400 response, got %T", resp)
+		assert.Equal(t, int32(400), badReq.Body.Code)
+	})
 }

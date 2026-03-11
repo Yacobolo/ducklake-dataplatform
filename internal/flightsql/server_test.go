@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"duck-demo/internal/domain"
 	"github.com/apache/arrow-go/v18/arrow/array"
 	arrowflight "github.com/apache/arrow-go/v18/arrow/flight"
 	arrowflightsql "github.com/apache/arrow-go/v18/arrow/flight/flightsql"
@@ -15,10 +16,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	grpcHealthV1 "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestServer_StartAndShutdown(t *testing.T) {
-	srv := NewServer("127.0.0.1:0", nil, nil)
+	srv := NewServer("127.0.0.1:0", nil, nil, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -47,13 +49,13 @@ func TestServer_StartAndShutdown(t *testing.T) {
 
 func TestServer_ExecuteStatementQuery(t *testing.T) {
 	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, principal string, sqlQuery string) (*QueryResult, error) {
-		require.Equal(t, "anonymous", principal)
+		require.Equal(t, "duck", principal)
 		require.Equal(t, "SELECT 1", sqlQuery)
 		return &QueryResult{
 			Columns: []string{"value"},
 			Rows:    [][]interface{}{{"1"}},
 		}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -74,6 +76,7 @@ func TestServer_ExecuteStatementQuery(t *testing.T) {
 		_ = client.Close()
 	})
 
+	ctx = authenticatedContext(ctx)
 	info, err := client.Execute(ctx, "SELECT 1")
 	require.NoError(t, err)
 	require.Len(t, info.Endpoint, 1)
@@ -99,7 +102,7 @@ func TestServer_ExecuteStatementQuery(t *testing.T) {
 func TestServer_GetSqlInfo(t *testing.T) {
 	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, _ string, _ string) (*QueryResult, error) {
 		return &QueryResult{}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -120,6 +123,7 @@ func TestServer_GetSqlInfo(t *testing.T) {
 		_ = client.Close()
 	})
 
+	ctx = authenticatedContext(ctx)
 	info, err := client.GetSqlInfo(ctx, []arrowflightsql.SqlInfo{arrowflightsql.SqlInfoFlightSqlServerName, arrowflightsql.SqlInfoFlightSqlServerSql})
 	require.NoError(t, err)
 	require.NotEmpty(t, info.Endpoint)
@@ -140,7 +144,7 @@ func TestServer_CancelStatementQuery(t *testing.T) {
 			Columns: []string{"value"},
 			Rows:    [][]interface{}{{"1"}},
 		}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -161,6 +165,7 @@ func TestServer_CancelStatementQuery(t *testing.T) {
 		_ = client.Close()
 	})
 
+	ctx = authenticatedContext(ctx)
 	info, err := client.Execute(ctx, "SELECT 1")
 	require.NoError(t, err)
 
@@ -185,7 +190,7 @@ func TestServer_MetadataDiscovery(t *testing.T) {
 		default:
 			return &QueryResult{}, nil
 		}
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -206,6 +211,7 @@ func TestServer_MetadataDiscovery(t *testing.T) {
 		_ = client.Close()
 	})
 
+	ctx = authenticatedContext(ctx)
 	catalogs, err := client.GetCatalogs(ctx)
 	require.NoError(t, err)
 	require.NotEmpty(t, catalogs.Endpoint)
@@ -239,7 +245,7 @@ func TestServer_MetadataDiscovery(t *testing.T) {
 
 func TestServer_GetTables(t *testing.T) {
 	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, principal string, sqlQuery string) (*QueryResult, error) {
-		require.Equal(t, "anonymous", principal)
+		require.Equal(t, "duck", principal)
 		if strings.Contains(sqlQuery, "information_schema.tables") {
 			return &QueryResult{
 				Columns: []string{"table_catalog", "table_schema", "table_name", "table_type"},
@@ -260,7 +266,7 @@ func TestServer_GetTables(t *testing.T) {
 			Columns: nil,
 			Rows:    nil,
 		}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -281,6 +287,7 @@ func TestServer_GetTables(t *testing.T) {
 		_ = client.Close()
 	})
 
+	ctx = authenticatedContext(ctx)
 	info, err := client.GetTables(ctx, &arrowflightsql.GetTablesOpts{IncludeSchema: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, info.Endpoint)
@@ -351,7 +358,7 @@ func TestServer_GetTables(t *testing.T) {
 func TestServer_GetSchemaTables(t *testing.T) {
 	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, _ string, _ string) (*QueryResult, error) {
 		return &QueryResult{}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -372,6 +379,7 @@ func TestServer_GetSchemaTables(t *testing.T) {
 		_ = client.Close()
 	})
 
+	ctx = authenticatedContext(ctx)
 	schemaResp, err := client.GetTablesSchema(ctx, &arrowflightsql.GetTablesOpts{IncludeSchema: true})
 	require.NoError(t, err)
 	schema, err := arrowflight.DeserializeSchema(schemaResp.Schema, memory.DefaultAllocator)
@@ -408,7 +416,7 @@ func TestServer_GetTables_RemarksFallbackQuery(t *testing.T) {
 			}, nil
 		}
 		return &QueryResult{}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -429,6 +437,7 @@ func TestServer_GetTables_RemarksFallbackQuery(t *testing.T) {
 		_ = client.Close()
 	})
 
+	ctx = authenticatedContext(ctx)
 	info, err := client.GetTables(ctx, &arrowflightsql.GetTablesOpts{IncludeSchema: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, info.Endpoint)
@@ -440,4 +449,48 @@ func TestServer_GetTables_RemarksFallbackQuery(t *testing.T) {
 	})
 	require.True(t, rdr.Next())
 	require.Equal(t, 1, remarksQueryAttempts)
+}
+
+func TestServer_RejectsUnauthenticatedQueries(t *testing.T) {
+	srv := NewServer("127.0.0.1:0", nil, func(context.Context, string, string) (*QueryResult, error) {
+		t.Fatal("query executor should not run without transport auth")
+		return nil, nil
+	}, testAuthenticator())
+	require.NoError(t, srv.Start())
+	t.Cleanup(func() {
+		_ = srv.Shutdown(context.Background())
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	client, err := arrowflightsql.NewClient(
+		srv.Addr(),
+		nil,
+		nil,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = client.Close()
+	})
+
+	_, err = client.Execute(ctx, "SELECT 1")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "Unauthenticated")
+}
+
+func testAuthenticator() Authenticator {
+	return func(ctx context.Context) (*domain.ContextPrincipal, error) {
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok || metadataValue(md, "authorization") != "Bearer test-token" {
+			return nil, fmt.Errorf("unauthorized")
+		}
+		return &domain.ContextPrincipal{Name: "duck", Type: "user"}, nil
+	}
+}
+
+func authenticatedContext(ctx context.Context) context.Context {
+	return metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer test-token")
 }

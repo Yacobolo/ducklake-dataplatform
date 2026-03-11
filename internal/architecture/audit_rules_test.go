@@ -54,6 +54,14 @@ var auditRuleExceptions = map[string]string{
 	"internal/service/semantic/service.go:Service.UpdateSemanticModel":              "semantic control-plane auditing not yet wired",
 }
 
+var auditDelegationAllowlist = map[string][]string{
+	"internal/service/notebook/session.go:SessionManager.CreateSessionForNotebook": {"CreateSession"},
+	"internal/service/notebook/session.go:SessionManager.CloseNotebookSession":     {"CloseSession"},
+	"internal/service/notebook/session.go:SessionManager.ExecuteNotebookCell":      {"ExecuteCell"},
+	"internal/service/notebook/session.go:SessionManager.RunAllNotebook":           {"RunAll"},
+	"internal/service/notebook/session.go:SessionManager.RunAllNotebookAsync":      {"RunAllAsync"},
+}
+
 func TestServiceMutations_AreAudited(t *testing.T) {
 	t.Helper()
 
@@ -95,7 +103,7 @@ func TestServiceMutations_AreAudited(t *testing.T) {
 				continue
 			}
 
-			if !containsAuditCall(fn.Body) {
+			if !containsAuditCall(fn.Body) && !containsDelegatedAuditedCall(key, fn.Body) {
 				violations = append(violations, key)
 			}
 		}
@@ -194,6 +202,51 @@ func containsAuditCall(body *ast.BlockStmt) bool {
 	})
 
 	return found
+}
+
+func containsDelegatedAuditedCall(key string, body *ast.BlockStmt) bool {
+	allowedCalls, ok := auditDelegationAllowlist[key]
+	if !ok {
+		return false
+	}
+
+	found := false
+	ast.Inspect(body, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		call, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+
+		switch fun := call.Fun.(type) {
+		case *ast.Ident:
+			if stringInSlice(fun.Name, allowedCalls) {
+				found = true
+				return false
+			}
+		case *ast.SelectorExpr:
+			if stringInSlice(fun.Sel.Name, allowedCalls) {
+				found = true
+				return false
+			}
+		}
+
+		return true
+	})
+
+	return found
+}
+
+func stringInSlice(value string, values []string) bool {
+	for _, candidate := range values {
+		if value == candidate {
+			return true
+		}
+	}
+	return false
 }
 
 func expressionContainsAudit(expr ast.Expr) bool {

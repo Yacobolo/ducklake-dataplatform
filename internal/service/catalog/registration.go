@@ -56,8 +56,23 @@ func NewCatalogRegistrationService(deps RegistrationServiceDeps) *CatalogRegistr
 	}
 }
 
+func (s *CatalogRegistrationService) requireAdmin(ctx context.Context, action string) error {
+	principal, ok := domain.PrincipalFromContext(ctx)
+	if !ok {
+		return nil
+	}
+	if principal.IsAdmin {
+		return nil
+	}
+	return domain.ErrAccessDenied("%s requires admin privileges", action)
+}
+
 // Register validates and persists a new catalog, then attempts to ATTACH it.
 func (s *CatalogRegistrationService) Register(ctx context.Context, req domain.CreateCatalogRequest) (*domain.CatalogRegistration, error) {
+	if err := s.requireAdmin(ctx, "register catalog"); err != nil {
+		return nil, err
+	}
+
 	// Block reserved DuckDB catalog names that would conflict with internal catalogs.
 	reserved := map[string]bool{"main": true, "memory": true, "system": true, "temp": true}
 	if reserved[strings.ToLower(req.Name)] {
@@ -133,11 +148,17 @@ func (s *CatalogRegistrationService) Register(ctx context.Context, req domain.Cr
 
 // List returns all catalog registrations.
 func (s *CatalogRegistrationService) List(ctx context.Context, page domain.PageRequest) ([]domain.CatalogRegistration, int64, error) {
+	if err := s.requireAdmin(ctx, "list catalog registrations"); err != nil {
+		return nil, 0, err
+	}
 	return s.repo.List(ctx, page)
 }
 
 // Get returns a catalog registration by name.
 func (s *CatalogRegistrationService) Get(ctx context.Context, name string) (*domain.CatalogRegistration, error) {
+	if err := s.requireAdmin(ctx, "get catalog registration"); err != nil {
+		return nil, err
+	}
 	return s.repo.GetByName(ctx, name)
 }
 
@@ -145,6 +166,9 @@ func (s *CatalogRegistrationService) Get(ctx context.Context, name string) (*dom
 func (s *CatalogRegistrationService) Update(ctx context.Context, name string, req domain.UpdateCatalogRegistrationRequest) (*domain.CatalogRegistration, error) {
 	if domain.IsSystemManagedCatalog(name) {
 		return nil, domain.ErrValidation("catalog %q is system managed and cannot be updated", name)
+	}
+	if err := s.requireAdmin(ctx, "update catalog registration"); err != nil {
+		return nil, err
 	}
 	existing, err := s.repo.GetByName(ctx, name)
 	if err != nil {
@@ -164,6 +188,9 @@ func (s *CatalogRegistrationService) Update(ctx context.Context, name string, re
 func (s *CatalogRegistrationService) Delete(ctx context.Context, name string) error {
 	if domain.IsSystemManagedCatalog(name) {
 		return domain.ErrValidation("catalog %q is system managed and cannot be deleted", name)
+	}
+	if err := s.requireAdmin(ctx, "delete catalog registration"); err != nil {
+		return err
 	}
 	existing, err := s.repo.GetByName(ctx, name)
 	if err != nil {
@@ -206,6 +233,9 @@ func (s *CatalogRegistrationService) Delete(ctx context.Context, name string) er
 func (s *CatalogRegistrationService) SetDefault(ctx context.Context, name string) (*domain.CatalogRegistration, error) {
 	if domain.IsSystemManagedCatalog(name) {
 		return nil, domain.ErrValidation("catalog %q is system managed and cannot be set as default", name)
+	}
+	if err := s.requireAdmin(ctx, "set default catalog"); err != nil {
+		return nil, err
 	}
 	existing, err := s.repo.GetByName(ctx, name)
 	if err != nil {

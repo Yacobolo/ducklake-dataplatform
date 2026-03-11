@@ -102,6 +102,55 @@ func (a *Authenticator) MiddlewareWithUnauthorized(unauthorized func(http.Respon
 	}
 }
 
+// AuthenticateCredentials authenticates transport-provided credentials.
+// Bearer tokens take precedence; invalid bearer credentials fall back to API keys when present.
+func (a *Authenticator) AuthenticateCredentials(ctx context.Context, authorizationHeader, apiKey string) (*domain.ContextPrincipal, error) {
+	if auth := strings.TrimSpace(authorizationHeader); strings.HasPrefix(auth, "Bearer ") {
+		tokenStr := strings.TrimPrefix(auth, "Bearer ")
+		if principal, err := a.authenticateJWT(ctx, tokenStr); err == nil {
+			return principal, nil
+		}
+	}
+
+	if a.cfg.APIKeyEnabled {
+		if apiKey = strings.TrimSpace(apiKey); apiKey != "" && a.apiKeyLookup != nil {
+			if principal, err := a.authenticateAPIKey(ctx, apiKey); err == nil {
+				return principal, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("unauthorized: provide a valid JWT Bearer token or API key")
+}
+
+// AuthenticatePassword authenticates a transport secret and enforces the requested principal name.
+// The secret may be a raw JWT, a `Bearer <jwt>` value, or a raw API key.
+func (a *Authenticator) AuthenticatePassword(ctx context.Context, requestedPrincipal, secret string) (*domain.ContextPrincipal, error) {
+	secret = strings.TrimSpace(secret)
+	if secret == "" {
+		return nil, fmt.Errorf("password is required")
+	}
+
+	authorizationHeader := secret
+	if !strings.HasPrefix(authorizationHeader, "Bearer ") {
+		authorizationHeader = "Bearer " + secret
+	}
+
+	principal, err := a.AuthenticateCredentials(ctx, authorizationHeader, secret)
+	if err != nil {
+		return nil, err
+	}
+
+	expected := sanitizePrincipalName(requestedPrincipal)
+	if expected == "" {
+		return nil, fmt.Errorf("startup user is required")
+	}
+	if principal.Name != expected {
+		return nil, fmt.Errorf("authenticated principal %q does not match startup user %q", principal.Name, requestedPrincipal)
+	}
+	return principal, nil
+}
+
 // authenticateJWT validates the JWT and resolves the principal.
 func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*domain.ContextPrincipal, error) {
 	if a.jwtValidator == nil {

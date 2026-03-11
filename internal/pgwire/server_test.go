@@ -23,7 +23,7 @@ func TestServer_StartAndShutdown(t *testing.T) {
 			Columns: []string{"value"},
 			Rows:    [][]interface{}{{"1"}},
 		}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -33,8 +33,7 @@ func TestServer_StartAndShutdown(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
 
-	_, err = conn.Write(startupPacket(t))
-	require.NoError(t, err)
+	authenticateConn(t, conn, "duck", "test-token")
 
 	typeByte, payload := readPGMessage(t, conn)
 	require.Equal(t, byte('R'), typeByte)
@@ -84,7 +83,7 @@ func TestServer_ExtendedQueryProtocol_UnnamedStatementPortal(t *testing.T) {
 			Columns: []string{"value"},
 			Rows:    [][]interface{}{{"7"}},
 		}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -94,9 +93,7 @@ func TestServer_ExtendedQueryProtocol_UnnamedStatementPortal(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
 
-	_, err = conn.Write(startupPacket(t))
-	require.NoError(t, err)
-
+	authenticateConn(t, conn, "duck", "test-token")
 	for i := 0; i < 5; i++ {
 		_, _ = readPGMessage(t, conn)
 	}
@@ -143,7 +140,7 @@ func TestServer_ExtendedQueryProtocol_WithTextParameter(t *testing.T) {
 			Columns: []string{"value"},
 			Rows:    [][]interface{}{{"7"}},
 		}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -153,8 +150,7 @@ func TestServer_ExtendedQueryProtocol_WithTextParameter(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
 
-	_, err = conn.Write(startupPacket(t))
-	require.NoError(t, err)
+	authenticateConn(t, conn, "duck", "test-token")
 	for i := 0; i < 5; i++ {
 		_, _ = readPGMessage(t, conn)
 	}
@@ -192,7 +188,7 @@ func TestServer_ExtendedQueryProtocol_WithBinaryIntParameter(t *testing.T) {
 			Columns: []string{"value"},
 			Rows:    [][]interface{}{{"7"}},
 		}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -202,8 +198,7 @@ func TestServer_ExtendedQueryProtocol_WithBinaryIntParameter(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
 
-	_, err = conn.Write(startupPacket(t))
-	require.NoError(t, err)
+	authenticateConn(t, conn, "duck", "test-token")
 	for i := 0; i < 5; i++ {
 		_, _ = readPGMessage(t, conn)
 	}
@@ -236,7 +231,7 @@ func TestServer_ExtendedQueryProtocol_WithBinaryIntParameter(t *testing.T) {
 func TestServer_StartupRequiresUser(t *testing.T) {
 	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, _ string, _ string) (*QueryResult, error) {
 		return &QueryResult{}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -307,7 +302,7 @@ func TestServer_PGXExtendedProtocolQuery(t *testing.T) {
 func TestServer_QueryError_MapsDomainSQLState(t *testing.T) {
 	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, _ string, _ string) (*QueryResult, error) {
 		return nil, domain.ErrAccessDenied("denied")
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -317,8 +312,7 @@ func TestServer_QueryError_MapsDomainSQLState(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
 
-	_, err = conn.Write(startupPacket(t))
-	require.NoError(t, err)
+	authenticateConn(t, conn, "duck", "test-token")
 	for i := 0; i < 5; i++ {
 		_, _ = readPGMessage(t, conn)
 	}
@@ -340,7 +334,7 @@ func TestServer_CancelRequest_CancelsInFlightQuery(t *testing.T) {
 		queryStarted <- struct{}{}
 		<-ctx.Done()
 		return nil, ctx.Err()
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -350,9 +344,7 @@ func TestServer_CancelRequest_CancelsInFlightQuery(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
 
-	_, err = conn.Write(startupPacket(t))
-	require.NoError(t, err)
-
+	authenticateConn(t, conn, "duck", "test-token")
 	for i := 0; i < 3; i++ {
 		_, _ = readPGMessage(t, conn)
 	}
@@ -386,6 +378,37 @@ func TestServer_CancelRequest_CancelsInFlightQuery(t *testing.T) {
 	require.Equal(t, byte('Z'), typeByte)
 }
 
+func TestServer_StartupRejectsPrincipalMismatch(t *testing.T) {
+	srv := NewServer("127.0.0.1:0", nil, func(context.Context, string, string) (*QueryResult, error) {
+		t.Fatal("query executor should not run on auth failure")
+		return nil, nil
+	}, testAuthenticator())
+	require.NoError(t, srv.Start())
+	t.Cleanup(func() {
+		_ = srv.Shutdown(context.Background())
+	})
+
+	conn, err := net.DialTimeout("tcp", srv.Addr(), time.Second)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+
+	_, err = conn.Write(startupPacketForUser(t, "other-user"))
+	require.NoError(t, err)
+
+	typeByte, payload := readPGMessage(t, conn)
+	require.Equal(t, byte('R'), typeByte)
+	require.Len(t, payload, 4)
+	require.Equal(t, uint32(3), binary.BigEndian.Uint32(payload))
+
+	_, err = conn.Write(passwordPacket(t, "test-token"))
+	require.NoError(t, err)
+
+	typeByte, payload = readPGMessage(t, conn)
+	require.Equal(t, byte('E'), typeByte)
+	require.Contains(t, string(payload), "28000")
+	require.Contains(t, string(payload), "does not match startup user")
+}
+
 func TestDecodeBinaryBindValue_CommonScalarTypes(t *testing.T) {
 	t.Run("uuid", func(t *testing.T) {
 		value, err := decodeBinaryBindValue(2950, []byte{0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff})
@@ -417,9 +440,18 @@ func TestDecodeBinaryBindValue_CommonScalarTypes(t *testing.T) {
 }
 
 func startupPacket(t *testing.T) []byte {
-	t.Helper()
+	return startupPacketForUser(t, "duck")
+}
 
-	return startupPacketWithDatabase(t, "duck")
+func startupPacketForUser(t *testing.T, user string) []byte {
+	t.Helper()
+	params := []byte("user\x00" + user + "\x00database\x00duck\x00\x00")
+	buf := bytes.NewBuffer(make([]byte, 0, 8+len(params)))
+	require.NoError(t, binary.Write(buf, binary.BigEndian, int32(8+len(params))))
+	require.NoError(t, binary.Write(buf, binary.BigEndian, pgProtocolVersion3))
+	_, err := buf.Write(params)
+	require.NoError(t, err)
+	return buf.Bytes()
 }
 
 func startupPacketWithDatabase(t *testing.T, database string) []byte {
@@ -444,6 +476,43 @@ func startupPacketWithoutUser(t *testing.T) []byte {
 	_, err := buf.Write(params)
 	require.NoError(t, err)
 	return buf.Bytes()
+}
+
+func passwordPacket(t *testing.T, secret string) []byte {
+	t.Helper()
+	payload := append([]byte(secret), 0)
+	buf := bytes.NewBuffer(make([]byte, 0, 1+4+len(payload)))
+	require.NoError(t, buf.WriteByte('p'))
+	require.NoError(t, binary.Write(buf, binary.BigEndian, int32(4+len(payload))))
+	_, err := buf.Write(payload)
+	require.NoError(t, err)
+	return buf.Bytes()
+}
+
+func authenticateConn(t *testing.T, conn net.Conn, user, secret string) {
+	t.Helper()
+	_, err := conn.Write(startupPacketForUser(t, user))
+	require.NoError(t, err)
+
+	typeByte, payload := readPGMessage(t, conn)
+	require.Equal(t, byte('R'), typeByte)
+	require.Len(t, payload, 4)
+	require.Equal(t, uint32(3), binary.BigEndian.Uint32(payload))
+
+	_, err = conn.Write(passwordPacket(t, secret))
+	require.NoError(t, err)
+}
+
+func testAuthenticator() Authenticator {
+	return func(_ context.Context, requestedPrincipal, secret string) (*domain.ContextPrincipal, error) {
+		if secret != "test-token" {
+			return nil, domain.ErrAccessDenied("invalid credentials")
+		}
+		if requestedPrincipal != "duck" {
+			return nil, domain.ErrAccessDenied("authenticated principal %q does not match startup user %q", "duck", requestedPrincipal)
+		}
+		return &domain.ContextPrincipal{Name: "duck", Type: "user"}, nil
+	}
 }
 
 func simpleQueryPacket(t *testing.T, q string) []byte {

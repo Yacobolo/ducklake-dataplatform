@@ -9,13 +9,16 @@ import (
 	"strings"
 	"sync"
 
+	"duck-demo/internal/domain"
 	"github.com/apache/arrow-go/v18/arrow"
 	"github.com/apache/arrow-go/v18/arrow/array"
 	arrowflight "github.com/apache/arrow-go/v18/arrow/flight"
 	arrowflightsql "github.com/apache/arrow-go/v18/arrow/flight/flightsql"
 	"github.com/apache/arrow-go/v18/arrow/memory"
 	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type QueryResult struct {
@@ -29,6 +32,7 @@ type queryServer struct {
 	arrowflightsql.BaseServer
 
 	query QueryExecutor
+	auth  Authenticator
 
 	mu      sync.Mutex
 	tickets map[string]*statementTicket
@@ -39,8 +43,8 @@ type statementTicket struct {
 	canceled bool
 }
 
-func newQueryServer(_ string, _ *slog.Logger, query QueryExecutor) *queryServer {
-	srv := &queryServer{query: query, tickets: make(map[string]*statementTicket)}
+func newQueryServer(_ string, _ *slog.Logger, query QueryExecutor, auth Authenticator) *queryServer {
+	srv := &queryServer{query: query, auth: auth, tickets: make(map[string]*statementTicket)}
 	_ = srv.RegisterSqlInfo(arrowflightsql.SqlInfoFlightSqlServerName, "duck-demo")
 	_ = srv.RegisterSqlInfo(arrowflightsql.SqlInfoFlightSqlServerVersion, "dev")
 	_ = srv.RegisterSqlInfo(arrowflightsql.SqlInfoFlightSqlServerArrowVersion, "18")
@@ -51,7 +55,10 @@ func newQueryServer(_ string, _ *slog.Logger, query QueryExecutor) *queryServer 
 }
 
 func (s *queryServer) GetFlightInfoStatement(ctx context.Context, stmt arrowflightsql.StatementQuery, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
-	principal := principalFromContext(ctx)
+	ctx, principal, err := s.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
 	result, err := s.query(ctx, principal, stmt.GetQuery())
 	if err != nil {
 		return nil, err
@@ -83,7 +90,10 @@ func (s *queryServer) GetFlightInfoStatement(ctx context.Context, stmt arrowflig
 	}, nil
 }
 
-func (s *queryServer) GetFlightInfoCatalogs(_ context.Context, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
+func (s *queryServer) GetFlightInfoCatalogs(ctx context.Context, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
+	if _, _, err := s.authenticate(ctx); err != nil {
+		return nil, err
+	}
 	schema := catalogsSchema()
 	return &arrowflight.FlightInfo{
 		Schema:           arrowflight.SerializeSchema(schema, memory.DefaultAllocator),
@@ -101,7 +111,10 @@ func (s *queryServer) GetFlightInfoCatalogs(_ context.Context, desc *arrowflight
 }
 
 func (s *queryServer) DoGetCatalogs(ctx context.Context) (*arrow.Schema, <-chan arrowflight.StreamChunk, error) {
-	principal := principalFromContext(ctx)
+	ctx, principal, err := s.authenticate(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	result, err := s.query(ctx, principal, "SELECT DISTINCT table_catalog FROM information_schema.tables ORDER BY table_catalog")
 	if err != nil {
 		return nil, nil, err
@@ -115,7 +128,10 @@ func (s *queryServer) DoGetCatalogs(ctx context.Context) (*arrow.Schema, <-chan 
 	return streamSingleRecord(ctx, schema, record)
 }
 
-func (s *queryServer) GetFlightInfoSchemas(_ context.Context, req arrowflightsql.GetDBSchemas, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
+func (s *queryServer) GetFlightInfoSchemas(ctx context.Context, req arrowflightsql.GetDBSchemas, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
+	if _, _, err := s.authenticate(ctx); err != nil {
+		return nil, err
+	}
 	schema := dbSchemasSchema()
 	_ = req
 	return &arrowflight.FlightInfo{
@@ -134,7 +150,10 @@ func (s *queryServer) GetFlightInfoSchemas(_ context.Context, req arrowflightsql
 }
 
 func (s *queryServer) DoGetDBSchemas(ctx context.Context, req arrowflightsql.GetDBSchemas) (*arrow.Schema, <-chan arrowflight.StreamChunk, error) {
-	principal := principalFromContext(ctx)
+	ctx, principal, err := s.authenticate(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	result, err := s.query(ctx, principal, buildDBSchemasQuery(req))
 	if err != nil {
 		return nil, nil, err
@@ -148,7 +167,10 @@ func (s *queryServer) DoGetDBSchemas(ctx context.Context, req arrowflightsql.Get
 	return streamSingleRecord(ctx, schema, record)
 }
 
-func (s *queryServer) GetFlightInfoTableTypes(_ context.Context, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
+func (s *queryServer) GetFlightInfoTableTypes(ctx context.Context, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
+	if _, _, err := s.authenticate(ctx); err != nil {
+		return nil, err
+	}
 	schema := tableTypesSchema()
 	return &arrowflight.FlightInfo{
 		Schema:           arrowflight.SerializeSchema(schema, memory.DefaultAllocator),
@@ -166,7 +188,10 @@ func (s *queryServer) GetFlightInfoTableTypes(_ context.Context, desc *arrowflig
 }
 
 func (s *queryServer) DoGetTableTypes(ctx context.Context) (*arrow.Schema, <-chan arrowflight.StreamChunk, error) {
-	principal := principalFromContext(ctx)
+	ctx, principal, err := s.authenticate(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	result, err := s.query(ctx, principal, "SELECT DISTINCT table_type FROM information_schema.tables ORDER BY table_type")
 	if err != nil {
 		return nil, nil, err
@@ -180,7 +205,10 @@ func (s *queryServer) DoGetTableTypes(ctx context.Context) (*arrow.Schema, <-cha
 	return streamSingleRecord(ctx, schema, record)
 }
 
-func (s *queryServer) GetFlightInfoTables(_ context.Context, req arrowflightsql.GetTables, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
+func (s *queryServer) GetFlightInfoTables(ctx context.Context, req arrowflightsql.GetTables, desc *arrowflight.FlightDescriptor) (*arrowflight.FlightInfo, error) {
+	if _, _, err := s.authenticate(ctx); err != nil {
+		return nil, err
+	}
 	schema := tablesSchema(req.GetIncludeSchema())
 	return &arrowflight.FlightInfo{
 		Schema:           arrowflight.SerializeSchema(schema, memory.DefaultAllocator),
@@ -197,12 +225,18 @@ func (s *queryServer) GetFlightInfoTables(_ context.Context, req arrowflightsql.
 	}, nil
 }
 
-func (s *queryServer) GetSchemaTables(_ context.Context, req arrowflightsql.GetTables, _ *arrowflight.FlightDescriptor) (*arrowflight.SchemaResult, error) {
+func (s *queryServer) GetSchemaTables(ctx context.Context, req arrowflightsql.GetTables, _ *arrowflight.FlightDescriptor) (*arrowflight.SchemaResult, error) {
+	if _, _, err := s.authenticate(ctx); err != nil {
+		return nil, err
+	}
 	return &arrowflight.SchemaResult{Schema: arrowflight.SerializeSchema(tablesSchema(req.GetIncludeSchema()), memory.DefaultAllocator)}, nil
 }
 
 func (s *queryServer) DoGetTables(ctx context.Context, req arrowflightsql.GetTables) (*arrow.Schema, <-chan arrowflight.StreamChunk, error) {
-	principal := principalFromContext(ctx)
+	ctx, principal, err := s.authenticate(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	result, err := s.query(ctx, principal, buildTablesQuery(req))
 	if err != nil {
 		return nil, nil, err
@@ -224,7 +258,10 @@ func (s *queryServer) DoGetTables(ctx context.Context, req arrowflightsql.GetTab
 }
 
 func (s *queryServer) GetSchemaStatement(ctx context.Context, stmt arrowflightsql.StatementQuery, _ *arrowflight.FlightDescriptor) (*arrowflight.SchemaResult, error) {
-	principal := principalFromContext(ctx)
+	ctx, principal, err := s.authenticate(ctx)
+	if err != nil {
+		return nil, err
+	}
 	result, err := s.query(ctx, principal, stmt.GetQuery())
 	if err != nil {
 		return nil, err
@@ -235,6 +272,9 @@ func (s *queryServer) GetSchemaStatement(ctx context.Context, stmt arrowflightsq
 }
 
 func (s *queryServer) DoGetStatement(ctx context.Context, queryTicket arrowflightsql.StatementQueryTicket) (*arrow.Schema, <-chan arrowflight.StreamChunk, error) {
+	if _, _, err := s.authenticate(ctx); err != nil {
+		return nil, nil, err
+	}
 	handle := string(queryTicket.GetStatementHandle())
 
 	s.mu.Lock()
@@ -258,7 +298,10 @@ func (s *queryServer) DoGetStatement(ctx context.Context, queryTicket arrowfligh
 	return streamSingleRecord(ctx, schema, record)
 }
 
-func (s *queryServer) CancelQuery(_ context.Context, req arrowflightsql.ActionCancelQueryRequest) (arrowflightsql.CancelResult, error) {
+func (s *queryServer) CancelQuery(ctx context.Context, req arrowflightsql.ActionCancelQueryRequest) (arrowflightsql.CancelResult, error) {
+	if _, _, err := s.authenticate(ctx); err != nil {
+		return arrowflightsql.CancelResultUnspecified, err
+	}
 	if req == nil || req.GetInfo() == nil {
 		return arrowflightsql.CancelResultNotCancellable, nil
 	}
@@ -746,16 +789,21 @@ func quoteSQLLiteral(value string) string {
 	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
 }
 
-func principalFromContext(ctx context.Context) string {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return "anonymous"
+func (s *queryServer) authenticate(ctx context.Context) (context.Context, string, error) {
+	if s.auth == nil {
+		return ctx, "", status.Error(codes.Unauthenticated, "transport authentication is not configured")
 	}
-	for _, key := range []string{"x-duck-principal", "x-principal", "user"} {
-		values := md.Get(key)
-		if len(values) > 0 && values[0] != "" {
-			return values[0]
-		}
+	principal, err := s.auth(ctx)
+	if err != nil {
+		return ctx, "", status.Error(codes.Unauthenticated, "unauthenticated")
 	}
-	return "anonymous"
+	return domain.WithPrincipal(ctx, *principal), principal.Name, nil
+}
+
+func metadataValue(md metadata.MD, key string) string {
+	values := md.Get(strings.ToLower(key))
+	if len(values) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(values[0])
 }

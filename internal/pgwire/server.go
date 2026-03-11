@@ -34,12 +34,14 @@ type QueryResult struct {
 }
 
 type QueryExecutor func(ctx context.Context, principal string, sqlQuery string) (*QueryResult, error)
+type Authenticator func(ctx context.Context, requestedPrincipal, secret string) (*domain.ContextPrincipal, error)
 
 // Server is a guarded PostgreSQL wire listener with preview-level simple-query support.
 type Server struct {
 	addr   string
 	logger *slog.Logger
 	query  QueryExecutor
+	auth   Authenticator
 
 	mu            sync.Mutex
 	ln            net.Listener
@@ -83,7 +85,7 @@ func (e *invalidCatalogError) Error() string {
 	return e.message
 }
 
-func NewServer(addr string, logger *slog.Logger, query QueryExecutor) *Server {
+func NewServer(addr string, logger *slog.Logger, query QueryExecutor, auth Authenticator) *Server {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -92,7 +94,7 @@ func NewServer(addr string, logger *slog.Logger, query QueryExecutor) *Server {
 			return nil, fmt.Errorf("pgwire query executor is not configured")
 		}
 	}
-	return &Server{addr: addr, logger: logger, query: query, activeQueries: make(map[cancelKey]context.CancelFunc)}
+	return &Server{addr: addr, logger: logger, query: query, auth: auth, activeQueries: make(map[cancelKey]context.CancelFunc)}
 }
 
 func (s *Server) Start() error {
@@ -220,7 +222,21 @@ func (s *Server) handleConn(conn net.Conn) {
 				_ = writePGQueryError(conn, err)
 				return
 			}
-			principal = strings.TrimSpace(u)
+			password, err := readPasswordMessage(conn)
+			if err != nil {
+				_ = writePGErrorCode(conn, err.Error(), "28000")
+				return
+			}
+			if s.auth == nil {
+				_ = writePGErrorCode(conn, "transport authentication is not configured", "28000")
+				return
+			}
+			authenticated, err := s.auth(context.Background(), strings.TrimSpace(u), password)
+			if err != nil {
+				_ = writePGErrorCode(conn, err.Error(), "28000")
+				return
+			}
+			principal = authenticated.Name
 			if err := writeAuthenticationOK(conn); err != nil {
 				return
 			}
@@ -243,6 +259,38 @@ func (s *Server) handleConn(conn net.Conn) {
 			return
 		}
 	}
+}
+
+func readPasswordMessage(conn net.Conn) (string, error) {
+	if err := writeAuthenticationCleartextPassword(conn); err != nil {
+		return "", err
+	}
+
+	msgType := make([]byte, 1)
+	if _, err := io.ReadFull(conn, msgType); err != nil {
+		return "", err
+	}
+	if msgType[0] != 'p' {
+		return "", fmt.Errorf("password is required")
+	}
+
+	var lenBuf [4]byte
+	if _, err := io.ReadFull(conn, lenBuf[:]); err != nil {
+		return "", err
+	}
+	length := int(binary.BigEndian.Uint32(lenBuf[:]))
+	if length < 5 {
+		return "", fmt.Errorf("invalid password message")
+	}
+
+	payload := make([]byte, length-4)
+	if _, err := io.ReadFull(conn, payload); err != nil {
+		return "", err
+	}
+	if payload[len(payload)-1] != 0 {
+		return "", fmt.Errorf("invalid password message")
+	}
+	return strings.TrimSpace(string(payload[:len(payload)-1])), nil
 }
 
 func (s *Server) serveSimpleQueryLoop(conn net.Conn, principal string, key backendKey) {
@@ -658,6 +706,15 @@ func writeAuthenticationOK(conn net.Conn) error {
 	packet[0] = 'R'
 	binary.BigEndian.PutUint32(packet[1:5], 8)
 	binary.BigEndian.PutUint32(packet[5:9], 0)
+	_, err := conn.Write(packet)
+	return err
+}
+
+func writeAuthenticationCleartextPassword(conn net.Conn) error {
+	packet := make([]byte, 1+4+4)
+	packet[0] = 'R'
+	binary.BigEndian.PutUint32(packet[1:5], 8)
+	binary.BigEndian.PutUint32(packet[5:9], 3)
 	_, err := conn.Write(packet)
 	return err
 }

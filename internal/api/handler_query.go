@@ -94,6 +94,8 @@ func (h *APIHandler) SubmitQuery(ctx context.Context, req GenSubmitQueryRequest)
 		switch int(code) {
 		case http.StatusBadRequest:
 			return SubmitQuery400JSONResponse{BadRequestJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case http.StatusConflict:
+			return SubmitQuery409JSONResponse{ConflictJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return GenSubmitQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
@@ -154,12 +156,18 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResults
 	pageToken := ""
 	if req.Params.PageToken != nil {
 		pageToken = *req.Params.PageToken
+		if _, err := decodePageToken(pageToken); err != nil {
+			return GetQueryResults400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
 	}
 
 	offset := domain.PageRequest{PageToken: pageToken}.Offset()
 	limit := int(maxResults)
 	if limit <= 0 {
 		limit = 100
+	}
+	if offset > len(job.Rows) {
+		return GetQueryResults400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "page_token points past the available results"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	end := offset + limit

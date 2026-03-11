@@ -59,7 +59,12 @@ func (h *APIHandler) ListCatalogs(ctx context.Context, request GenListCatalogsRe
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	catalogs, total, err := h.catalogRegistration.List(ctx, page)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return GenListCatalogs403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
 	}
 
 	data := make([]CatalogRegistration, len(catalogs))
@@ -83,6 +88,8 @@ func (h *APIHandler) GetCatalogRegistration(ctx context.Context, request GenGetC
 	result, err := h.catalogRegistration.Get(ctx, string(request.CatalogName))
 	if err != nil {
 		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return GenGetCatalogRegistration403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return GenGetCatalogRegistration404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:

@@ -296,6 +296,33 @@ func TestAPI_Curl_WithBodyParams(t *testing.T) {
 	assert.Contains(t, curl, "name", "body should contain name field")
 }
 
+func TestAPI_Curl_TypedBodyParams(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--output", "json",
+		"api", "curl", "createPipeline",
+		"--param", "name=nightly",
+		"--param", "concurrency_limit=3",
+		"--param", "is_paused=false",
+	})
+
+	old := captureStdout(t)
+	err := rootCmd.Execute()
+	output := old()
+	require.NoError(t, err)
+
+	var result map[string]string
+	require.NoError(t, json.Unmarshal([]byte(output), &result))
+	curl := result["curl"]
+	assert.Contains(t, curl, `"concurrency_limit":3`)
+	assert.Contains(t, curl, `"is_paused":false`)
+	assert.NotContains(t, curl, `"concurrency_limit":"3"`)
+	assert.NotContains(t, curl, `"is_paused":"false"`)
+}
+
 func TestAPI_Curl_WithQueryParams(t *testing.T) {
 	// listQueryHistory has multiple query params
 	dir := t.TempDir()

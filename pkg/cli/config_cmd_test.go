@@ -95,6 +95,34 @@ func TestConfigShow_TableOutput(t *testing.T) {
 	assert.Contains(t, output, "api-key")
 }
 
+func TestConfigShow_TablePrefersTokenOverAPIKey(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	cfg := &UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {
+				Host:   "http://localhost:8080",
+				APIKey: "secret-api-key",
+				Token:  "secret-token",
+			},
+		},
+	}
+	require.NoError(t, SaveUserConfig(cfg))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"config", "show", "--output", "table"})
+
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+
+	require.NoError(t, err)
+	assert.Contains(t, output, "token")
+	assert.NotContains(t, output, "api-key")
+}
+
 func TestConfigSetProfile_GlobalJSONOutputNotShadowed(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)

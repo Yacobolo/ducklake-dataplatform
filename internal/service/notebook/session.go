@@ -117,6 +117,47 @@ func (m *SessionManager) CreateSession(ctx context.Context, notebookID, principa
 	}, nil
 }
 
+func (m *SessionManager) requireNotebookAccess(ctx context.Context, notebookID, principal string, isAdmin bool) (*domain.Notebook, error) {
+	nb, err := m.repo.GetNotebook(ctx, notebookID)
+	if err != nil {
+		return nil, err
+	}
+	if !isAdmin && nb.Owner != principal {
+		return nil, domain.ErrAccessDenied("only the notebook owner or admin can access notebook %q", notebookID)
+	}
+	return nb, nil
+}
+
+func (m *SessionManager) requireSessionAccess(ctx context.Context, notebookID, sessionID, principal string, isAdmin bool) (*session, error) {
+	s, err := m.getSession(sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if s.notebookID != notebookID {
+		return nil, domain.ErrNotFound("session %s not found", sessionID)
+	}
+	if !isAdmin {
+		if err := checkPrincipal(s, principal); err != nil {
+			return nil, err
+		}
+	}
+	if _, err := m.requireNotebookAccess(ctx, notebookID, principal, isAdmin); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func (m *SessionManager) requireCellForNotebook(ctx context.Context, notebookID, cellID string) (*domain.Cell, error) {
+	cell, err := m.repo.GetCell(ctx, cellID)
+	if err != nil {
+		return nil, err
+	}
+	if cell.NotebookID != notebookID {
+		return nil, domain.ErrNotFound("cell %s not found", cellID)
+	}
+	return cell, nil
+}
+
 // checkPrincipal verifies that the caller matches the session owner.
 // If principalName is empty, the check is skipped (backward compatible).
 func checkPrincipal(s *session, principalName string) error {
@@ -168,6 +209,25 @@ func (m *SessionManager) CloseSession(_ context.Context, sessionID string, princ
 	})
 
 	return nil
+}
+
+// CreateSessionForNotebook creates a session only when the caller can access the notebook.
+func (m *SessionManager) CreateSessionForNotebook(ctx context.Context, notebookID, principal string, isAdmin bool) (*domain.NotebookSession, error) {
+	if _, err := m.requireNotebookAccess(ctx, notebookID, principal, isAdmin); err != nil {
+		return nil, err
+	}
+	return m.CreateSession(ctx, notebookID, principal)
+}
+
+// CloseNotebookSession closes a session after validating the notebook/session relationship.
+func (m *SessionManager) CloseNotebookSession(ctx context.Context, notebookID, sessionID, principal string, isAdmin bool) error {
+	if _, err := m.requireSessionAccess(ctx, notebookID, sessionID, principal, isAdmin); err != nil {
+		return err
+	}
+	if isAdmin {
+		return m.CloseSession(ctx, sessionID)
+	}
+	return m.CloseSession(ctx, sessionID, principal)
 }
 
 func (m *SessionManager) persistCellResult(ctx context.Context, cellID string, result *domain.CellExecutionResult) error {
@@ -332,6 +392,25 @@ func (m *SessionManager) ExecuteCell(ctx context.Context, sessionID, cellID stri
 	return result, nil
 }
 
+// ExecuteNotebookCell executes a cell after validating notebook/session/cell relationships.
+func (m *SessionManager) ExecuteNotebookCell(ctx context.Context, notebookID, sessionID, cellID, principal string, isAdmin bool) (*domain.CellExecutionResult, error) {
+	s, err := m.requireSessionAccess(ctx, notebookID, sessionID, principal, isAdmin)
+	if err != nil {
+		return nil, err
+	}
+	cell, err := m.requireCellForNotebook(ctx, notebookID, cellID)
+	if err != nil {
+		return nil, err
+	}
+	if cell.NotebookID != s.notebookID {
+		return nil, domain.ErrNotFound("cell %s not found", cellID)
+	}
+	if isAdmin {
+		return m.ExecuteCell(ctx, sessionID, cellID)
+	}
+	return m.ExecuteCell(ctx, sessionID, cellID, principal)
+}
+
 func needsNotebookCompile(cell *domain.Cell, cells []domain.Cell) bool {
 	if cell.Role == domain.CellRoleOutput {
 		return true
@@ -405,6 +484,17 @@ func (m *SessionManager) RunAll(ctx context.Context, sessionID string, principal
 		Results:       results,
 		TotalDuration: time.Since(start),
 	}, nil
+}
+
+// RunAllNotebook executes all notebook cells only after validating notebook/session ownership.
+func (m *SessionManager) RunAllNotebook(ctx context.Context, notebookID, sessionID, principal string, isAdmin bool) (*domain.RunAllResult, error) {
+	if _, err := m.requireSessionAccess(ctx, notebookID, sessionID, principal, isAdmin); err != nil {
+		return nil, err
+	}
+	if isAdmin {
+		return m.RunAll(ctx, sessionID)
+	}
+	return m.RunAll(ctx, sessionID, principal)
 }
 
 // RunAllAsync starts an async execution of all cells and returns a job.
@@ -504,8 +594,31 @@ func (m *SessionManager) GetJob(ctx context.Context, jobID string) (*domain.Note
 	return m.jobRepo.GetJob(ctx, jobID)
 }
 
+// GetNotebookJob returns a notebook job after validating its parent notebook and caller access.
+func (m *SessionManager) GetNotebookJob(ctx context.Context, notebookID, jobID, principal string, isAdmin bool) (*domain.NotebookJob, error) {
+	if _, err := m.requireNotebookAccess(ctx, notebookID, principal, isAdmin); err != nil {
+		return nil, err
+	}
+	job, err := m.jobRepo.GetJob(ctx, jobID)
+	if err != nil {
+		return nil, err
+	}
+	if job.NotebookID != notebookID {
+		return nil, domain.ErrNotFound("job %s not found", jobID)
+	}
+	return job, nil
+}
+
 // ListJobs lists jobs for a notebook.
 func (m *SessionManager) ListJobs(ctx context.Context, notebookID string, page domain.PageRequest) ([]domain.NotebookJob, int64, error) {
+	return m.jobRepo.ListJobs(ctx, notebookID, page)
+}
+
+// ListNotebookJobs lists jobs for a notebook only when the caller can access that notebook.
+func (m *SessionManager) ListNotebookJobs(ctx context.Context, notebookID, principal string, isAdmin bool, page domain.PageRequest) ([]domain.NotebookJob, int64, error) {
+	if _, err := m.requireNotebookAccess(ctx, notebookID, principal, isAdmin); err != nil {
+		return nil, 0, err
+	}
 	return m.jobRepo.ListJobs(ctx, notebookID, page)
 }
 

@@ -75,14 +75,35 @@ func (s *StorageCredentialService) Create(ctx context.Context, principal string,
 
 // GetByName returns a storage credential by name.
 func (s *StorageCredentialService) GetByName(ctx context.Context, principal, name string) (*domain.StorageCredential, error) {
-	_ = principal
-	return s.repo.GetByName(ctx, name)
+	cred, err := s.repo.GetByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	if !canReadOwnedResource(ctx, principal, cred.Owner) {
+		s.logAuditDenied(ctx, principal, "GET_STORAGE_CREDENTIAL", fmt.Sprintf("Denied read credential %q", name))
+		return nil, domain.ErrAccessDenied("only the credential owner or admin can access %q", name)
+	}
+	return cred, nil
 }
 
 // List returns a paginated list of storage credentials.
 func (s *StorageCredentialService) List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.StorageCredential, int64, error) {
-	_ = principal
-	return s.repo.List(ctx, page)
+	if isAdmin(ctx) {
+		return s.repo.List(ctx, page)
+	}
+
+	creds, _, err := s.repo.List(ctx, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+	if err != nil {
+		return nil, 0, err
+	}
+	filtered := make([]domain.StorageCredential, 0, len(creds))
+	for _, cred := range creds {
+		if cred.Owner == principal {
+			filtered = append(filtered, cred)
+		}
+	}
+	window, total := paginateSlice(filtered, page)
+	return window, total, nil
 }
 
 // Update updates a storage credential by name.

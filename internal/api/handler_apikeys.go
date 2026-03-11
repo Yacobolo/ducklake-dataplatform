@@ -97,6 +97,8 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req GenListAPIKeysRequest)
 func (h *APIHandler) DeleteAPIKey(ctx context.Context, req GenDeleteAPIKeyRequest) (GenDeleteAPIKeyResponse, error) {
 	if err := h.apiKeys.Delete(ctx, req.ApiKeyId); err != nil {
 		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return DeleteAPIKey403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return DeleteAPIKey404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
