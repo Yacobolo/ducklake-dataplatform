@@ -30,6 +30,26 @@ enum AssetCheckSeverity {
   WARN,
 }
 
+model AssetFreshnessPolicy {
+  max_lag_seconds?: int64;
+  cron_schedule?: string;
+}
+
+model AssetMaterializationPolicy {
+  mode?: string;
+  allow_concurrent?: boolean;
+}
+
+model AssetAutoMaterializePolicy {
+  mode?: string;
+  min_interval_seconds?: int64;
+  require_all_upstreams?: boolean;
+  on_freshness_breach?: boolean;
+  on_upstream_materialized?: boolean;
+  respect_downtime_windows?: boolean;
+  downtime_windows_cron_expr?: string[];
+}
+
 model Asset {
   id?: string;
   asset_key?: string;
@@ -37,6 +57,9 @@ model Asset {
   owner?: string;
   description?: string;
   tags?: string[];
+  freshness_policy?: AssetFreshnessPolicy;
+  materialization_policy?: AssetMaterializationPolicy;
+  auto_materialize_policy?: AssetAutoMaterializePolicy;
   io_profile?: string;
   is_active?: boolean;
   created_by?: string;
@@ -125,6 +148,9 @@ model CreateAssetRequest {
   owner: string;
   description?: string;
   tags?: string[];
+  freshness_policy?: AssetFreshnessPolicy;
+  materialization_policy?: AssetMaterializationPolicy;
+  auto_materialize_policy?: AssetAutoMaterializePolicy;
   io_profile?: string;
   is_active?: boolean;
   upstream_asset_keys?: string[];
@@ -136,6 +162,9 @@ model UpdateAssetRequest {
   owner: string;
   description?: string;
   tags?: string[];
+  freshness_policy?: AssetFreshnessPolicy;
+  materialization_policy?: AssetMaterializationPolicy;
+  auto_materialize_policy?: AssetAutoMaterializePolicy;
   io_profile?: string;
   is_active?: boolean;
   upstream_asset_keys?: string[];

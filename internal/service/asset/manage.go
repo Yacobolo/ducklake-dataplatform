@@ -21,15 +21,18 @@ func (s *Service) CreateAsset(ctx context.Context, req domain.CreateAssetRequest
 
 	principal, _ := domain.PrincipalFromContext(ctx)
 	asset := &domain.DataAsset{
-		AssetKey:    strings.TrimSpace(req.AssetKey),
-		AssetType:   strings.TrimSpace(req.AssetType),
-		Owner:       strings.TrimSpace(req.Owner),
-		Description: strings.TrimSpace(req.Description),
-		Tags:        normalizedTags(req.Tags),
-		IOProfile:   strings.TrimSpace(req.IOProfile),
-		IsActive:    req.IsActive,
-		CreatedBy:   principal.Name,
-		SchemaJSON:  map[string]any{},
+		AssetKey:              strings.TrimSpace(req.AssetKey),
+		AssetType:             strings.TrimSpace(req.AssetType),
+		Owner:                 strings.TrimSpace(req.Owner),
+		Description:           strings.TrimSpace(req.Description),
+		Tags:                  normalizedTags(req.Tags),
+		FreshnessPolicy:       req.FreshnessPolicy,
+		MaterializationPolicy: req.MaterializationPolicy,
+		AutoMaterializePolicy: req.AutoMaterializePolicy,
+		IOProfile:             strings.TrimSpace(req.IOProfile),
+		IsActive:              req.IsActive,
+		CreatedBy:             principal.Name,
+		SchemaJSON:            map[string]any{},
 	}
 
 	created, err := s.assets.Create(ctx, asset)
@@ -72,16 +75,20 @@ func (s *Service) UpdateAsset(ctx context.Context, assetKey string, req domain.U
 	}
 
 	updated, err := s.assets.Update(ctx, existing.ID, &domain.DataAsset{
-		ID:          existing.ID,
-		AssetKey:    existing.AssetKey,
-		AssetType:   strings.TrimSpace(req.AssetType),
-		Owner:       strings.TrimSpace(req.Owner),
-		Description: strings.TrimSpace(req.Description),
-		Tags:        normalizedTags(req.Tags),
-		SchemaJSON:  existing.SchemaJSON,
-		IOProfile:   strings.TrimSpace(req.IOProfile),
-		IsActive:    req.IsActive,
-		CreatedBy:   existing.CreatedBy,
+		ID:                    existing.ID,
+		AssetKey:              existing.AssetKey,
+		AssetType:             strings.TrimSpace(req.AssetType),
+		Owner:                 strings.TrimSpace(req.Owner),
+		Description:           strings.TrimSpace(req.Description),
+		Tags:                  normalizedTags(req.Tags),
+		SchemaJSON:            existing.SchemaJSON,
+		PartitionDefinition:   existing.PartitionDefinition,
+		FreshnessPolicy:       req.FreshnessPolicy,
+		MaterializationPolicy: req.MaterializationPolicy,
+		AutoMaterializePolicy: req.AutoMaterializePolicy,
+		IOProfile:             strings.TrimSpace(req.IOProfile),
+		IsActive:              req.IsActive,
+		CreatedBy:             existing.CreatedBy,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("update asset: %w", err)

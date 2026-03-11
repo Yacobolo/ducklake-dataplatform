@@ -327,6 +327,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	backfillRepo := repository.NewBackfillRepo(deps.WriteDB)
 	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
 	var pipelineSvc *pipeline.Service
+	if err := pipeline.SyncNotebooksToAssets(ctx, notebookRepo, assetRepo, assetDepRepo); err != nil {
+		return nil, fmt.Errorf("sync notebooks to assets: %w", err)
+	}
 	assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
 	ioManager, err := newOrchestrationIOManager(cfg)
 	if err != nil {
@@ -393,6 +396,12 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	dashboardRepo := repository.NewDashboardRepo(deps.WriteDB)
 	dashboardWidgetRepo := repository.NewDashboardWidgetRepo(deps.WriteDB)
 	dashboardSvc := dashboard.NewService(dashboardRepo, dashboardWidgetRepo, notebookRepo, auditRepo, querySvc, semanticSvc)
+	if err := pipeline.SyncSemanticResourcesToAssets(ctx, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, modelRepo, assetRepo, assetDepRepo); err != nil {
+		return nil, fmt.Errorf("sync semantic resources to assets: %w", err)
+	}
+	if err := pipeline.SyncDashboardsToAssets(ctx, dashboardRepo, dashboardWidgetRepo, notebookRepo, semanticModelRepo, semanticMetricRepo, assetRepo, assetDepRepo); err != nil {
+		return nil, fmt.Errorf("sync dashboards to assets: %w", err)
+	}
 
 	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)

@@ -138,16 +138,41 @@ func TestHandler_CreateAsset(t *testing.T) {
 		require.Equal(t, domain.AssetTypeTable, req.AssetType)
 		require.Equal(t, []string{"showcase.rides.silver"}, req.UpstreamAssetKeys)
 		require.Len(t, req.Checks, 1)
+		require.NotNil(t, req.FreshnessPolicy)
+		assert.EqualValues(t, 1800, req.FreshnessPolicy.MaxLagSeconds)
+		require.NotNil(t, req.MaterializationPolicy)
+		assert.Equal(t, "TABLE", req.MaterializationPolicy.Mode)
+		require.NotNil(t, req.AutoMaterializePolicy)
+		assert.True(t, req.AutoMaterializePolicy.OnFreshnessBreach)
 		assert.True(t, req.IsActive)
-		return &domain.DataAsset{ID: "asset-1", AssetKey: req.AssetKey, AssetType: req.AssetType, Owner: req.Owner, CreatedAt: createdAt, UpdatedAt: createdAt}, nil
+		return &domain.DataAsset{
+			ID:                    "asset-1",
+			AssetKey:              req.AssetKey,
+			AssetType:             req.AssetType,
+			Owner:                 req.Owner,
+			FreshnessPolicy:       req.FreshnessPolicy,
+			MaterializationPolicy: req.MaterializationPolicy,
+			AutoMaterializePolicy: req.AutoMaterializePolicy,
+			CreatedAt:             createdAt,
+			UpdatedAt:             createdAt,
+		}, nil
 	}}}
 
 	resp, err := h.CreateAsset(assetTestCtx(true), GenCreateAssetRequest{Body: &CreateAssetJSONRequestBody{
-		AssetKey:          "showcase.rides.gold",
-		AssetType:         domain.AssetTypeTable,
-		Owner:             "platform-admins",
-		Description:       assetStrPtr("Gold showcase asset"),
-		Tags:              &[]string{"showcase", "gold"},
+		AssetKey:        "showcase.rides.gold",
+		AssetType:       domain.AssetTypeTable,
+		Owner:           "platform-admins",
+		Description:     assetStrPtr("Gold showcase asset"),
+		Tags:            &[]string{"showcase", "gold"},
+		FreshnessPolicy: &AssetFreshnessPolicy{MaxLagSeconds: assetInt32Ptr(1800), CronSchedule: assetStrPtr("*/30 * * * *")},
+		MaterializationPolicy: &AssetMaterializationPolicy{
+			Mode: assetStrPtr("TABLE"),
+		},
+		AutoMaterializePolicy: &AssetAutoMaterializePolicy{
+			Mode:               assetStrPtr("AUTO"),
+			OnFreshnessBreach:  assetBoolPtr(true),
+			MinIntervalSeconds: assetInt32Ptr(900),
+		},
 		IoProfile:         assetStrPtr("duckdb"),
 		IsActive:          assetBoolPtr(true),
 		UpstreamAssetKeys: &[]string{"showcase.rides.silver"},
@@ -161,6 +186,8 @@ func TestHandler_CreateAsset(t *testing.T) {
 	created, ok := resp.(CreateAsset201JSONResponse)
 	require.True(t, ok)
 	assert.Equal(t, "showcase.rides.gold", *created.Body.AssetKey)
+	require.NotNil(t, created.Body.FreshnessPolicy)
+	assert.EqualValues(t, 1800, *created.Body.FreshnessPolicy.MaxLagSeconds)
 }
 
 func TestHandler_GetAsset_NotFound(t *testing.T) {
@@ -180,7 +207,17 @@ func TestHandler_GetAsset(t *testing.T) {
 	createdAt := time.Now().UTC()
 	h := &APIHandler{assets: &mockAssetService{getAssetFn: func(_ context.Context, key string) (*domain.DataAsset, error) {
 		require.Equal(t, "sales.daily", key)
-		return &domain.DataAsset{ID: "asset-1", AssetKey: key, AssetType: domain.AssetTypeModel, Owner: "analytics", CreatedAt: createdAt, UpdatedAt: createdAt}, nil
+		return &domain.DataAsset{
+			ID:        "asset-1",
+			AssetKey:  key,
+			AssetType: domain.AssetTypeModel,
+			Owner:     "analytics",
+			CreatedAt: createdAt,
+			UpdatedAt: createdAt,
+			FreshnessPolicy: &domain.AssetFreshnessPolicy{
+				MaxLagSeconds: 300,
+			},
+		}, nil
 	}}}
 
 	resp, err := h.GetAsset(assetTestCtx(true), GenGetAssetRequest{AssetKey: "sales.daily"})
@@ -190,6 +227,8 @@ func TestHandler_GetAsset(t *testing.T) {
 	assert.Equal(t, "sales.daily", *ok.Body.AssetKey)
 	assert.Equal(t, domain.AssetTypeModel, *ok.Body.AssetType)
 	assert.Equal(t, "analytics", *ok.Body.Owner)
+	require.NotNil(t, ok.Body.FreshnessPolicy)
+	assert.EqualValues(t, 300, *ok.Body.FreshnessPolicy.MaxLagSeconds)
 }
 
 func TestHandler_UpdateAsset(t *testing.T) {
@@ -199,13 +238,29 @@ func TestHandler_UpdateAsset(t *testing.T) {
 		require.Equal(t, "showcase.rides.silver", assetKey)
 		require.Equal(t, "analytics", req.Owner)
 		require.Equal(t, []string{"showcase.rides.bronze"}, req.UpstreamAssetKeys)
-		return &domain.DataAsset{ID: "asset-1", AssetKey: assetKey, AssetType: req.AssetType, Owner: req.Owner, CreatedAt: updatedAt, UpdatedAt: updatedAt}, nil
+		require.NotNil(t, req.FreshnessPolicy)
+		require.NotNil(t, req.AutoMaterializePolicy)
+		return &domain.DataAsset{
+			ID:                    "asset-1",
+			AssetKey:              assetKey,
+			AssetType:             req.AssetType,
+			Owner:                 req.Owner,
+			FreshnessPolicy:       req.FreshnessPolicy,
+			AutoMaterializePolicy: req.AutoMaterializePolicy,
+			CreatedAt:             updatedAt,
+			UpdatedAt:             updatedAt,
+		}, nil
 	}}}
 
 	resp, err := h.UpdateAsset(assetTestCtx(true), GenUpdateAssetRequest{AssetKey: "showcase.rides.silver", Body: &UpdateAssetJSONRequestBody{
-		AssetType:         domain.AssetTypeTable,
-		Owner:             "analytics",
-		Description:       assetStrPtr("Silver showcase asset"),
+		AssetType:       domain.AssetTypeTable,
+		Owner:           "analytics",
+		Description:     assetStrPtr("Silver showcase asset"),
+		FreshnessPolicy: &AssetFreshnessPolicy{MaxLagSeconds: assetInt32Ptr(600)},
+		AutoMaterializePolicy: &AssetAutoMaterializePolicy{
+			Mode:                   assetStrPtr("AUTO"),
+			OnUpstreamMaterialized: assetBoolPtr(true),
+		},
 		IsActive:          assetBoolPtr(true),
 		UpstreamAssetKeys: &[]string{"showcase.rides.bronze"},
 	}})
@@ -213,6 +268,8 @@ func TestHandler_UpdateAsset(t *testing.T) {
 	updated, ok := resp.(UpdateAsset200JSONResponse)
 	require.True(t, ok)
 	assert.Equal(t, "analytics", *updated.Body.Owner)
+	require.NotNil(t, updated.Body.FreshnessPolicy)
+	assert.EqualValues(t, 600, *updated.Body.FreshnessPolicy.MaxLagSeconds)
 }
 
 func TestHandler_DeleteAsset(t *testing.T) {
@@ -420,6 +477,10 @@ func assetBoolPtr(v bool) *bool {
 }
 
 func assetStrPtr(v string) *string {
+	return &v
+}
+
+func assetInt32Ptr(v int32) *int32 {
 	return &v
 }
 

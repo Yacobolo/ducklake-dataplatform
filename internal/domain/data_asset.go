@@ -4,11 +4,16 @@ package domain
 import "time"
 
 const (
-	AssetTypeTable    = "TABLE"
-	AssetTypeView     = "VIEW"
-	AssetTypeModel    = "MODEL"
-	AssetTypeNotebook = "NOTEBOOK"
-	AssetTypeOutput   = "OUTPUT"
+	AssetTypeTable                  = "TABLE"
+	AssetTypeView                   = "VIEW"
+	AssetTypeModel                  = "MODEL"
+	AssetTypeNotebook               = "NOTEBOOK"
+	AssetTypeOutput                 = "OUTPUT"
+	AssetTypeDashboard              = "DASHBOARD"
+	AssetTypeSemanticModel          = "SEMANTIC_MODEL"
+	AssetTypeMetric                 = "METRIC"
+	AssetTypeSemanticPreAggregation = "SEMANTIC_PRE_AGGREGATION"
+	AssetTypeNotebookOutput         = "NOTEBOOK_OUTPUT"
 )
 
 const (

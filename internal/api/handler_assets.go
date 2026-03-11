@@ -4,6 +4,7 @@ package api
 import (
 	"context"
 	"errors"
+	"math"
 
 	"duck-demo/internal/domain"
 )
@@ -451,17 +452,20 @@ func (h *APIHandler) GetAssetBackfill(ctx context.Context, req GenGetAssetBackfi
 
 func assetToAPI(a domain.DataAsset) Asset {
 	return Asset{
-		Id:          &a.ID,
-		AssetKey:    &a.AssetKey,
-		AssetType:   &a.AssetType,
-		Owner:       &a.Owner,
-		Description: &a.Description,
-		Tags:        &a.Tags,
-		IoProfile:   &a.IOProfile,
-		IsActive:    &a.IsActive,
-		CreatedBy:   &a.CreatedBy,
-		CreatedAt:   formatTimePtr(&a.CreatedAt),
-		UpdatedAt:   formatTimePtr(&a.UpdatedAt),
+		Id:                    &a.ID,
+		AssetKey:              &a.AssetKey,
+		AssetType:             &a.AssetType,
+		Owner:                 &a.Owner,
+		Description:           &a.Description,
+		Tags:                  &a.Tags,
+		FreshnessPolicy:       assetFreshnessPolicyToAPI(a.FreshnessPolicy),
+		MaterializationPolicy: assetMaterializationPolicyToAPI(a.MaterializationPolicy),
+		AutoMaterializePolicy: assetAutoMaterializePolicyToAPI(a.AutoMaterializePolicy),
+		IoProfile:             &a.IOProfile,
+		IsActive:              &a.IsActive,
+		CreatedBy:             &a.CreatedBy,
+		CreatedAt:             formatTimePtr(&a.CreatedAt),
+		UpdatedAt:             formatTimePtr(&a.UpdatedAt),
 	}
 }
 
@@ -470,15 +474,18 @@ func domainCreateAssetRequest(req *CreateAssetJSONRequestBody) domain.CreateAsse
 		return domain.CreateAssetRequest{}
 	}
 	return domain.CreateAssetRequest{
-		AssetKey:          req.AssetKey,
-		AssetType:         req.AssetType,
-		Owner:             req.Owner,
-		Description:       derefString(req.Description),
-		Tags:              derefStringSlice(req.Tags),
-		IOProfile:         derefString(req.IoProfile),
-		IsActive:          derefBoolDefault(req.IsActive, true),
-		UpstreamAssetKeys: derefStringSlice(req.UpstreamAssetKeys),
-		Checks:            domainAssetChecks(req.Checks),
+		AssetKey:              req.AssetKey,
+		AssetType:             req.AssetType,
+		Owner:                 req.Owner,
+		Description:           derefString(req.Description),
+		Tags:                  derefStringSlice(req.Tags),
+		FreshnessPolicy:       domainAssetFreshnessPolicy(req.FreshnessPolicy),
+		MaterializationPolicy: domainAssetMaterializationPolicy(req.MaterializationPolicy),
+		AutoMaterializePolicy: domainAssetAutoMaterializePolicy(req.AutoMaterializePolicy),
+		IOProfile:             derefString(req.IoProfile),
+		IsActive:              derefBoolDefault(req.IsActive, true),
+		UpstreamAssetKeys:     derefStringSlice(req.UpstreamAssetKeys),
+		Checks:                domainAssetChecks(req.Checks),
 	}
 }
 
@@ -487,15 +494,104 @@ func domainUpdateAssetRequest(req *UpdateAssetJSONRequestBody) domain.UpdateAsse
 		return domain.UpdateAssetRequest{}
 	}
 	return domain.UpdateAssetRequest{
-		AssetType:         req.AssetType,
-		Owner:             req.Owner,
-		Description:       derefString(req.Description),
-		Tags:              derefStringSlice(req.Tags),
-		IOProfile:         derefString(req.IoProfile),
-		IsActive:          derefBoolDefault(req.IsActive, true),
-		UpstreamAssetKeys: derefStringSlice(req.UpstreamAssetKeys),
-		Checks:            domainAssetChecks(req.Checks),
+		AssetType:             req.AssetType,
+		Owner:                 req.Owner,
+		Description:           derefString(req.Description),
+		Tags:                  derefStringSlice(req.Tags),
+		FreshnessPolicy:       domainAssetFreshnessPolicy(req.FreshnessPolicy),
+		MaterializationPolicy: domainAssetMaterializationPolicy(req.MaterializationPolicy),
+		AutoMaterializePolicy: domainAssetAutoMaterializePolicy(req.AutoMaterializePolicy),
+		IOProfile:             derefString(req.IoProfile),
+		IsActive:              derefBoolDefault(req.IsActive, true),
+		UpstreamAssetKeys:     derefStringSlice(req.UpstreamAssetKeys),
+		Checks:                domainAssetChecks(req.Checks),
 	}
+}
+
+func domainAssetFreshnessPolicy(policy *AssetFreshnessPolicy) *domain.AssetFreshnessPolicy {
+	if policy == nil {
+		return nil
+	}
+	result := &domain.AssetFreshnessPolicy{}
+	if policy.MaxLagSeconds != nil {
+		result.MaxLagSeconds = int64(*policy.MaxLagSeconds)
+	}
+	result.CronSchedule = derefString(policy.CronSchedule)
+	return result
+}
+
+func domainAssetMaterializationPolicy(policy *AssetMaterializationPolicy) *domain.AssetMaterializationPolicy {
+	if policy == nil {
+		return nil
+	}
+	return &domain.AssetMaterializationPolicy{
+		Mode:            derefString(policy.Mode),
+		AllowConcurrent: derefBoolDefault(policy.AllowConcurrent, false),
+	}
+}
+
+func domainAssetAutoMaterializePolicy(policy *AssetAutoMaterializePolicy) *domain.AssetAutoMaterializePolicy {
+	if policy == nil {
+		return nil
+	}
+	result := &domain.AssetAutoMaterializePolicy{
+		Mode:                   derefString(policy.Mode),
+		RequireAllUpstreams:    derefBoolDefault(policy.RequireAllUpstreams, false),
+		OnFreshnessBreach:      derefBoolDefault(policy.OnFreshnessBreach, false),
+		OnUpstreamMaterialized: derefBoolDefault(policy.OnUpstreamMaterialized, false),
+		RespectDowntimeWindows: derefBoolDefault(policy.RespectDowntimeWindows, false),
+		DowntimeWindowsCronExpr: derefStringSlice(
+			policy.DowntimeWindowsCronExpr,
+		),
+	}
+	if policy.MinIntervalSeconds != nil {
+		result.MinIntervalSeconds = int64(*policy.MinIntervalSeconds)
+	}
+	return result
+}
+
+func assetFreshnessPolicyToAPI(policy *domain.AssetFreshnessPolicy) *AssetFreshnessPolicy {
+	if policy == nil {
+		return nil
+	}
+	return &AssetFreshnessPolicy{
+		MaxLagSeconds: safeAssetInt32Ptr(policy.MaxLagSeconds),
+		CronSchedule:  optStr(policy.CronSchedule),
+	}
+}
+
+func assetMaterializationPolicyToAPI(policy *domain.AssetMaterializationPolicy) *AssetMaterializationPolicy {
+	if policy == nil {
+		return nil
+	}
+	return &AssetMaterializationPolicy{
+		Mode:            optStr(policy.Mode),
+		AllowConcurrent: &policy.AllowConcurrent,
+	}
+}
+
+func assetAutoMaterializePolicyToAPI(policy *domain.AssetAutoMaterializePolicy) *AssetAutoMaterializePolicy {
+	if policy == nil {
+		return nil
+	}
+	downtime := append([]string(nil), policy.DowntimeWindowsCronExpr...)
+	return &AssetAutoMaterializePolicy{
+		Mode:                    optStr(policy.Mode),
+		MinIntervalSeconds:      safeAssetInt32Ptr(policy.MinIntervalSeconds),
+		RequireAllUpstreams:     &policy.RequireAllUpstreams,
+		OnFreshnessBreach:       &policy.OnFreshnessBreach,
+		OnUpstreamMaterialized:  &policy.OnUpstreamMaterialized,
+		RespectDowntimeWindows:  &policy.RespectDowntimeWindows,
+		DowntimeWindowsCronExpr: &downtime,
+	}
+}
+
+func safeAssetInt32Ptr(value int64) *int32 {
+	if value < math.MinInt32 || value > math.MaxInt32 {
+		return nil
+	}
+	v := int32(value)
+	return &v
 }
 
 func domainAssetChecks(checks *[]AssetCheckInput) []domain.AssetCheckInput {

@@ -23,18 +23,25 @@ func TestService_CreateAsset_ReconcilesDependenciesAndChecks(t *testing.T) {
 
 	svc := &Service{assets: assets, deps: deps, checks: checks}
 	created, err := svc.CreateAsset(adminCtx(), domain.CreateAssetRequest{
-		AssetKey:          "showcase.rides.bronze",
-		AssetType:         domain.AssetTypeTable,
-		Owner:             "data-engineers",
-		Description:       "Bronze showcase asset",
-		Tags:              []string{"showcase", "bronze"},
-		IOProfile:         "duckdb",
-		IsActive:          true,
-		UpstreamAssetKeys: []string{"showcase.rides.raw"},
-		Checks:            []domain.AssetCheckInput{{Name: "bronze_non_empty", CheckType: "SQL_ASSERT", Enabled: true}},
+		AssetKey:              "showcase.rides.bronze",
+		AssetType:             domain.AssetTypeTable,
+		Owner:                 "data-engineers",
+		Description:           "Bronze showcase asset",
+		Tags:                  []string{"showcase", "bronze"},
+		FreshnessPolicy:       &domain.AssetFreshnessPolicy{MaxLagSeconds: 1800},
+		MaterializationPolicy: &domain.AssetMaterializationPolicy{Mode: "TABLE"},
+		AutoMaterializePolicy: &domain.AssetAutoMaterializePolicy{Mode: "AUTO", OnFreshnessBreach: true},
+		IOProfile:             "duckdb",
+		IsActive:              true,
+		UpstreamAssetKeys:     []string{"showcase.rides.raw"},
+		Checks:                []domain.AssetCheckInput{{Name: "bronze_non_empty", CheckType: "SQL_ASSERT", Enabled: true}},
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "showcase.rides.bronze", created.AssetKey)
+	require.NotNil(t, created.FreshnessPolicy)
+	assert.EqualValues(t, 1800, created.FreshnessPolicy.MaxLagSeconds)
+	require.NotNil(t, created.MaterializationPolicy)
+	assert.Equal(t, "TABLE", created.MaterializationPolicy.Mode)
 	require.Len(t, deps.byAsset[created.ID], 1)
 	assert.Equal(t, assets.idsByKey["showcase.rides.raw"], deps.byAsset[created.ID][0].UpstreamAssetID)
 	require.Len(t, checks.checksByAsset[created.ID], 1)
@@ -55,8 +62,10 @@ func TestService_UpdateAsset_ReplacesChecks(t *testing.T) {
 
 	svc := &Service{assets: assets, deps: deps, checks: checks}
 	updated, err := svc.UpdateAsset(adminCtx(), "showcase.rides.gold", domain.UpdateAssetRequest{
-		AssetType: domain.AssetTypeTable,
-		Owner:     "analytics",
+		AssetType:             domain.AssetTypeTable,
+		Owner:                 "analytics",
+		FreshnessPolicy:       &domain.AssetFreshnessPolicy{MaxLagSeconds: 600},
+		AutoMaterializePolicy: &domain.AssetAutoMaterializePolicy{Mode: "AUTO", OnUpstreamMaterialized: true},
 		Checks: []domain.AssetCheckInput{{
 			Name:      "gold_non_empty",
 			CheckType: "SQL_ASSERT",
@@ -67,6 +76,8 @@ func TestService_UpdateAsset_ReplacesChecks(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, updated.ID, asset.ID)
+	require.NotNil(t, updated.FreshnessPolicy)
+	assert.EqualValues(t, 600, updated.FreshnessPolicy.MaxLagSeconds)
 	require.Len(t, checks.checksByAsset[asset.ID], 1)
 	assert.Equal(t, "gold_non_empty", checks.checksByAsset[asset.ID][0].Name)
 }

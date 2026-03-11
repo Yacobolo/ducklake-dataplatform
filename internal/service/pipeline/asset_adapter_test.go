@@ -77,6 +77,88 @@ func TestBuildModelAssetGraph(t *testing.T) {
 	assert.Equal(t, domain.DependencyTypeHard, dep.DependencyType)
 }
 
+func TestBuildNotebookAssetGraph(t *testing.T) {
+	notebooks := []domain.Notebook{
+		{ID: "nb-1", Name: "Exec Summary", Owner: "alice"},
+	}
+
+	adapted, err := BuildNotebookAssetGraph(notebooks)
+	require.NoError(t, err)
+	require.Len(t, adapted.Assets, 1)
+	assert.Equal(t, "notebook.nb-1", adapted.Assets[0].AssetKey)
+	assert.Equal(t, domain.AssetTypeNotebook, adapted.Assets[0].AssetType)
+}
+
+func TestBuildSemanticAssetGraph(t *testing.T) {
+	models := []domain.Model{
+		{ID: "model-1", ProjectName: "sales", Name: "fct_orders", CreatedBy: "alice"},
+	}
+	semanticModels := []domain.SemanticModel{
+		{ID: "sem-1", ProjectName: "sales", Name: "orders", BaseModelRef: "sales.fct_orders", CreatedBy: "alice"},
+	}
+	metricsByModel := map[string][]domain.SemanticMetric{
+		"sem-1": {{ID: "metric-1", Name: "revenue", CreatedBy: "alice"}},
+	}
+	preAggsByModel := map[string][]domain.SemanticPreAggregation{
+		"sem-1": {{ID: "preagg-1", Name: "daily_revenue", CreatedBy: "alice", TargetRelation: "analytics.daily_revenue"}},
+	}
+
+	adapted, err := BuildSemanticAssetGraph(semanticModels, metricsByModel, preAggsByModel, models)
+	require.NoError(t, err)
+	require.Len(t, adapted.Assets, 3)
+	assert.Equal(t, "semantic_model.sales.orders", adapted.Assets[0].AssetKey)
+	assert.Equal(t, domain.AssetTypeSemanticModel, adapted.Assets[0].AssetType)
+	assert.Equal(t, "metric.sales.orders.revenue", adapted.Assets[1].AssetKey)
+	assert.Equal(t, domain.AssetTypeMetric, adapted.Assets[1].AssetType)
+	assert.Equal(t, "semantic_pre_aggregation.sales.orders.daily_revenue", adapted.Assets[2].AssetKey)
+	assert.Equal(t, domain.AssetTypeSemanticPreAggregation, adapted.Assets[2].AssetType)
+
+	assert.ElementsMatch(t, []string{"sem-1->model-1", "metric-1->sem-1", "preagg-1->sem-1"}, dependencyPairs(adapted.Dependencies))
+}
+
+func TestBuildDashboardAssetGraph(t *testing.T) {
+	dashboards := []domain.Dashboard{
+		{ID: "dash-1", Name: "Revenue", Owner: "alice"},
+	}
+	widgetsByDashboard := map[string][]domain.DashboardWidget{
+		"dash-1": {
+			{
+				ID: "widget-1",
+				Source: domain.DashboardWidgetSource{
+					Kind: domain.DashboardWidgetSourceSemanticQuery,
+					SemanticQuery: &domain.DashboardSemanticQuerySource{
+						ProjectName:       "sales",
+						SemanticModelName: "orders",
+						Metrics:           []string{"revenue"},
+					},
+				},
+			},
+			{
+				ID: "widget-2",
+				Source: domain.DashboardWidgetSource{
+					Kind: domain.DashboardWidgetSourceNotebookCell,
+					NotebookCell: &domain.DashboardNotebookCellSource{
+						NotebookID: "nb-1",
+						CellID:     "cell-1",
+					},
+				},
+			},
+		},
+	}
+	notebooks := []domain.Notebook{{ID: "nb-1", Name: "Notebook", Owner: "alice"}}
+	semanticModels := []domain.SemanticModel{{ID: "sem-1", ProjectName: "sales", Name: "orders"}}
+	metricsByModel := map[string][]domain.SemanticMetric{
+		"sem-1": {{ID: "metric-1", Name: "revenue"}},
+	}
+
+	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, notebooks, semanticModels, metricsByModel)
+	require.NoError(t, err)
+	require.Len(t, adapted.Assets, 1)
+	assert.Equal(t, "dashboard.dash-1", adapted.Assets[0].AssetKey)
+	assert.Equal(t, domain.AssetTypeDashboard, adapted.Assets[0].AssetType)
+	assert.ElementsMatch(t, []string{"dash-1->metric-1", "dash-1->nb-1"}, dependencyPairs(adapted.Dependencies))
+}
+
 func TestSyncModelsToAssets(t *testing.T) {
 	modelRepo := &mockModelRepo{
 		listAllFn: func(context.Context) ([]domain.Model, error) {
@@ -241,4 +323,12 @@ func (m *mockAssetDependencyRepo) Delete(context.Context, string) error {
 func (m *mockAssetDependencyRepo) DeleteByAsset(_ context.Context, assetID string) error {
 	m.deletedByAsset = append(m.deletedByAsset, assetID)
 	return nil
+}
+
+func dependencyPairs(deps []domain.AssetDependency) []string {
+	out := make([]string, 0, len(deps))
+	for _, dep := range deps {
+		out = append(out, dep.AssetID+"->"+dep.UpstreamAssetID)
+	}
+	return out
 }

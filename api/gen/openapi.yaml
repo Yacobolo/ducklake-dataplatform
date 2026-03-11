@@ -11449,6 +11449,12 @@ components:
           type: array
           items:
             type: string
+        freshness_policy:
+          $ref: '#/components/schemas/AssetFreshnessPolicy'
+        materialization_policy:
+          $ref: '#/components/schemas/AssetMaterializationPolicy'
+        auto_materialize_policy:
+          $ref: '#/components/schemas/AssetAutoMaterializePolicy'
         io_profile:
           type: string
         is_active:
@@ -11461,6 +11467,26 @@ components:
         updated_at:
           type: string
           format: date-time
+    AssetAutoMaterializePolicy:
+      type: object
+      properties:
+        mode:
+          type: string
+        min_interval_seconds:
+          type: integer
+          format: int64
+        require_all_upstreams:
+          type: boolean
+        on_freshness_breach:
+          type: boolean
+        on_upstream_materialized:
+          type: boolean
+        respect_downtime_windows:
+          type: boolean
+        downtime_windows_cron_expr:
+          type: array
+          items:
+            type: string
     AssetBackfillDetails:
       type: object
       properties:
@@ -11543,6 +11569,14 @@ components:
       enum:
         - ERROR
         - WARN
+    AssetFreshnessPolicy:
+      type: object
+      properties:
+        max_lag_seconds:
+          type: integer
+          format: int64
+        cron_schedule:
+          type: string
     AssetGraph:
       type: object
       properties:
@@ -11578,6 +11612,13 @@ components:
         created_at:
           type: string
           format: date-time
+    AssetMaterializationPolicy:
+      type: object
+      properties:
+        mode:
+          type: string
+        allow_concurrent:
+          type: boolean
     AssetPartition:
       type: object
       properties:
@@ -12299,6 +12340,12 @@ components:
           type: array
           items:
             type: string
+        freshness_policy:
+          $ref: '#/components/schemas/AssetFreshnessPolicy'
+        materialization_policy:
+          $ref: '#/components/schemas/AssetMaterializationPolicy'
+        auto_materialize_policy:
+          $ref: '#/components/schemas/AssetAutoMaterializePolicy'
         io_profile:
           type: string
         is_active:
@@ -15443,6 +15490,12 @@ components:
           type: array
           items:
             type: string
+        freshness_policy:
+          $ref: '#/components/schemas/AssetFreshnessPolicy'
+        materialization_policy:
+          $ref: '#/components/schemas/AssetMaterializationPolicy'
+        auto_materialize_policy:
+          $ref: '#/components/schemas/AssetAutoMaterializePolicy'
         io_profile:
           type: string
         is_active:
