@@ -1,6 +1,22 @@
 ---
 title: Advanced CLI Reference
 description: Use the CLI when your organization exposes command-line workflows and you need command-level detail.
+doc_kind: reference
+audiences: [ai-agents, builders, admins]
+product_areas: [cli, reference]
+surfaces: [cli, docs]
+tasks: [inspect command surfaces, find command groups, script workflows]
+prerequisites: [cli availability, target environment]
+permissions: [cli access]
+cli_commands: [commands, docs search, api search, find tables]
+command_groups: ["*"]
+operation_ids: []
+api_tags: []
+declarative_kinds: []
+related_docs: [how-to/use-the-cli, reference/index, reference/feature-models-and-pipelines]
+keywords: [cli reference, command groups, scripting]
+last_verified: 2026-03-12
+source_of_truth: [docs]
 ---
 
 # Advanced CLI Reference

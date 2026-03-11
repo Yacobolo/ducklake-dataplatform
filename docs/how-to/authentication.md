@@ -1,11 +1,27 @@
 ---
 title: Access the Platform
 description: Understand the main sign-in and credential paths available to platform users.
+doc_kind: task
+audiences: [ai-agents, end-users, admins]
+product_areas: [auth, identity]
+surfaces: [browser, api, cli]
+tasks: [authenticate, choose credential path, troubleshoot access]
+prerequisites: [deployment URL, valid identity or API key]
+permissions: [approved auth method]
+cli_commands: [auth login, auth whoami, config show]
+command_groups: [auth, config]
+operation_ids: [localLogin, createAPIKey, listAPIKeys]
+api_tags: [Auth, Identity]
+declarative_kinds: []
+related_docs: [start-here/quickstart, how-to/access-control, reference/feature-identity-and-auth]
+keywords: [bearer token, api key, browser sign-in]
+last_verified: 2026-03-12
+source_of_truth: [docs, api/gen/openapi.yaml]
 ---
 
 # Access the Platform
 
-Duck supports browser-backed identity flows, bearer tokens, and API keys. The right path depends on whether you are an interactive user, an admin, or an automation client.
+Duck supports browser-backed identity flows, bearer tokens, and API keys. Use this guide when an AI agent or end user needs to authenticate with a bearer token or API key before calling Duck.
 
 ## Inputs
 
@@ -20,6 +36,10 @@ Duck supports browser-backed identity flows, bearer tokens, and API keys. The ri
 | Interactive platform use | browser or bearer-token sign-in |
 | Scripted automation | API keys |
 | Admin workflows | organization-approved admin credentials |
+
+## API Key Authentication
+
+Use API key authentication when an automation client needs to authenticate with Duck through the API or CLI. The intended workflow is explicit API key authentication for a service or approved agent, not a shared human credential.
 
 ## Interactive User Path
 

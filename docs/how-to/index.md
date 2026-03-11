@@ -1,6 +1,22 @@
 ---
 title: Use Duck
 description: Complete common product tasks with expected outcomes and next steps.
+doc_kind: overview
+audiences: [ai-agents, end-users, builders]
+product_areas: [queries, governance, ingestion, declarative]
+surfaces: [docs, api, cli, browser, sql]
+tasks: [pick task guide, navigate workflows, choose operating surface]
+prerequisites: [deployment URL, valid identity]
+permissions: [authenticated platform access]
+cli_commands: [docs search, docs list, find tables]
+command_groups: [docs, find]
+operation_ids: []
+api_tags: []
+declarative_kinds: []
+related_docs: [how-to/authentication, how-to/use-the-cli, how-to/declarative-workflows]
+keywords: [task guides, workflows, how-to]
+last_verified: 2026-03-12
+source_of_truth: [docs]
 ---
 
 # Use Duck

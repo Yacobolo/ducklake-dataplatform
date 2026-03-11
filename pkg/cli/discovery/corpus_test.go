@@ -14,7 +14,7 @@ func TestCorpus_Search_PrioritizesCommandThenOperation(t *testing.T) {
 		{Path: "catalog schemas create", Short: "Create a schema"},
 	}, gen.ReferenceIndex{
 		Docs: []gen.ReferenceDoc{
-			{ID: "how-to/schemas", Path: "how-to/schemas.md", Section: "how-to", Title: "Create Schemas", Description: "Create and manage schemas safely."},
+			{ID: "how-to/schemas", Path: "how-to/schemas.md", Section: "how-to", Title: "Create Schemas", Description: "Create and manage schemas safely.", DocKind: "task", ProductAreas: []string{"catalogs"}, Tasks: []string{"create schemas"}},
 		},
 		Operations: []gen.ReferenceOperation{
 			{OperationID: "createSchema", Path: "/catalogs/{catalogName}/schemas", Summary: "Create a schema", CLICommand: "catalog schemas create"},
@@ -39,6 +39,19 @@ func TestCorpus_Search_PrioritizesCommandThenOperation(t *testing.T) {
 		}
 	}
 	assert.True(t, sawOperation)
+}
+
+func TestCorpus_ListDocs_AppliesFilters(t *testing.T) {
+	corpus := NewCorpus(nil, gen.ReferenceIndex{
+		Docs: []gen.ReferenceDoc{
+			{ID: "how-to/authentication", Path: "how-to/authentication.md", Section: "how-to", Title: "Access the Platform", Audiences: []string{"ai-agents"}, ProductAreas: []string{"auth"}, Surfaces: []string{"api"}, Tasks: []string{"authenticate"}, DocKind: "task"},
+			{ID: "reference/api", Path: "reference/api.md", Section: "reference", Title: "Advanced API Reference", Audiences: []string{"builders"}, ProductAreas: []string{"api"}, Surfaces: []string{"api"}, Tasks: []string{"inspect contracts"}, DocKind: "reference"},
+		},
+	})
+
+	docs := corpus.ListDocs(SearchOptions{Audience: "ai-agents", ProductArea: "auth", DocKind: "task"})
+	require.Len(t, docs, 1)
+	assert.Equal(t, "how-to/authentication", docs[0].ID)
 }
 
 func TestCorpus_Search_UsesFuzzyFallback(t *testing.T) {

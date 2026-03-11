@@ -1,0 +1,1672 @@
+# Duck Data Platform Full Docs Export
+
+## Architecture Governance
+
+- Path: /architecture-governance
+- Doc kind: runbook
+- Audiences: ai-agents, builders
+- Product areas: engineering, governance
+- Surfaces: docs, cli
+- Tasks: understand architecture checks, follow engineering governance, locate enforcement commands
+- Last verified: 2026-03-12
+
+# Architecture Governance
+
+This project enforces hexagonal architecture boundaries with automated governance checks.
+
+## Why
+
+- Keep dependency direction stable as the codebase grows.
+- Make AI-generated changes safer by failing fast on layer violations.
+- Keep architecture policy in CI, not only in code review.
+
+## Enforcement model
+
+- `golangci-lint` (`depguard`) provides fast local and CI feedback.
+- `go test` in `internal/architecture` provides explicit governance failures and richer checks.
+- Governance failures include the `governance:` prefix for easy filtering.
+
+## Import boundary rules
+
+- `internal/domain/**`
+  - may import: `internal/domain/**`
+  - must not import: `internal/api/**`, `internal/service/**`, `internal/db/**`, `internal/engine/**`, `internal/middleware/**`, `internal/declarative/**`, `cmd/**`, `pkg/cli/**`
+
+- `internal/service/**`
+  - may import: `internal/domain/**`, `internal/service/**`
+  - must not import: `internal/api/**`, `internal/db/**`, `internal/engine/**`, `internal/middleware/**`, `cmd/**`, `pkg/cli/**`
+
+- `internal/api/**`
+  - may import: `internal/service/**`, `internal/domain/**`, `internal/api/**`
+  - must not import: `internal/db/**`, `internal/engine/**`, `internal/declarative/**`, `cmd/**`, `pkg/cli/**`
+
+- `internal/db/**`
+  - may import: `internal/domain/**`, `internal/db/**`
+  - must not import: `internal/api/**`, `internal/service/**`, `internal/engine/**`, `internal/middleware/**`, `cmd/**`, `pkg/cli/**`
+
+- `internal/engine/**`
+  - may import: `internal/domain/**`, `internal/engine/**`
+  - must not import: `internal/api/**`, `internal/service/**`, `cmd/**`, `pkg/cli/**`
+
+- `internal/middleware/**`
+  - may import: `internal/domain/**`, `internal/middleware/**`
+  - must not import: `internal/service/**`, `internal/db/**`, `internal/engine/**`
+
+Generated files are excluded from governance checks.
+
+## Test policy
+
+- Production files are strict.
+- Unit test files under `internal/**` are also governed by import boundaries.
+- Cross-layer composition is allowed only in integration-tagged tests (`//go:build integration`).
+- Integration tests are primarily under `test/integration/**`, and a small number of package-local integration-tagged tests live under `internal/**` where package-private helpers are needed.
+- No external allowlist file is used.
+
+## Typical refactor direction
+
+- If service code imports infrastructure (`internal/engine`, `internal/db`), extract and inject a domain port.
+- If one service package imports another service package for shared contracts, move shared contracts to `internal/domain`.
+- Keep handlers translating API DTOs to domain contracts at the boundary.
+
+## Commands
+
+- `task lint:go`
+- `task test:arch`
+- `task check`
+
+## Next phase
+
+After import governance stabilizes:
+
+- enforce service signature and handler boundary contracts
+- prevent concrete `internal/service/<feature>` type leakage across layers
+
+## Browser-Local Compute Runbook
+
+- Path: /browser-local-compute
+- Doc kind: runbook
+- Audiences: ai-agents, admins, builders
+- Product areas: compute, browser-runtime
+- Surfaces: browser, docs
+- Tasks: understand browser-local execution, assess rollout risks, troubleshoot runtime limitations
+- Last verified: 2026-03-12
+
+# Browser-Local Compute Runbook
+
+This runbook describes the current browser-local DuckDB WASM execution model and the limits that matter for rollout and support.
+
+## Product Model
+
+- `BYOC_LOCAL` is a product mode, not a single runtime.
+- CLI local compute uses native DuckDB plus `duck_access`.
+- Browser local compute uses DuckDB WASM with the same manifest-driven policy contract.
+- `SHARED_ENDPOINT` remains the managed path for heavier interactive work and unattended execution.
+- `AUTO` prefers browser-local execution only when the runtime and query satisfy guardrails; otherwise it falls through to managed compute.
+
+## Current UI Scope
+
+- SQL editor:
+  - local browser execution supported
+  - `AUTO` can resolve to local or managed compute
+- Notebook SQL cells:
+  - single interactive cell runs can resolve locally
+  - notebook `Run all` and async notebook runs remain managed-only
+
+## Browser Runtime Guardrails
+
+Browser-local execution currently requires:
+
+- read-only `SELECT` or `WITH` SQL
+- explicit `LIMIT`
+- manifest-backed base tables only
+- HTTPS presigned file URLs
+- a compatible browser runtime contract version
+- `WEB_SESSION` manifest auth support
+
+The current bounded local subset also enforces:
+
+- up to 4 referenced manifest-backed base tables
+- no DDL/DML statements
+- browser guidance row limit from the manifest contract
+- browser guidance memory limit from the manifest contract
+
+If these checks fail:
+
+- `BYOC_LOCAL` fails explicitly in the UI
+- `AUTO` falls through explicitly to managed compute
+
+## Cancellation and Reset
+
+- Local cancel currently works by resetting the DuckDB WASM runtime.
+- This is a runtime-level stop, not a fine-grained query interrupt.
+- If local execution appears stuck or enters a bad state, use the runtime reset control and rerun.
+
+## Support Expectations
+
+Operators should expect:
+
+- some browsers or environments to fail WASM initialization
+- large result sets to require managed compute
+- presigned object-store URLs to require valid CORS behavior
+
+Recommended user guidance:
+
+- use local mode for interactive exploration and smaller bounded queries
+- use shared endpoints for large joins, long-running work, and background execution
+- use `AUTO` when the user wants policy-driven routing with explicit fallback behavior
+
+## Validation Checklist
+
+Before rollout or merge, confirm:
+
+- SQL editor local execution works on a supported browser
+- SQL editor `AUTO` resolves locally for an eligible query
+- SQL editor `AUTO` falls through to managed compute for an ineligible query
+- notebook SQL cell local execution works on a supported browser
+- notebook `Run all` rejects local mode and stays managed-only
+- manifest endpoint returns JSON errors for browser clients
+
+## Remaining Future Hardening
+
+- true query-scoped interrupt for WASM execution
+- committed browser E2E coverage in the repo
+- broader browser support matrix and operator troubleshooting docs
+
+## Platform Objects and Governance
+
+- Path: /core-concepts/access-control
+- Doc kind: concept
+- Audiences: ai-agents, end-users, builders, admins
+- Product areas: catalogs, governance, identity
+- Surfaces: api, cli, declarative
+- Tasks: understand securables, model access, reason about policy effects
+- Last verified: 2026-03-12
+
+# Platform Objects and Governance
+
+Duck data products live inside a governed object hierarchy. Users query catalogs, schemas, tables, and views, while admins and builders shape visibility with grants, row filters, and column masks.
+
+## Core Objects
+
+### Catalogs, schemas, tables, and views
+
+- catalogs are the top-level container users browse first
+- schemas group related objects
+- tables hold data
+- views expose reusable logic over data
+
+### Principals, groups, and grants
+
+- principals represent users or services
+- groups simplify access management at team scale
+- grants determine whether a principal can reach an object
+
+### Row filters and column masks
+
+- row filters limit which rows are visible to a given principal or group
+- column masks rewrite or obfuscate sensitive values for selected audiences
+- both are useful when broad object access is allowed but full data exposure is not
+
+## Mental Model
+
+Think of enforcement as layers:
+
+1. authentication establishes identity
+2. grants decide whether the object can be accessed
+3. row filters narrow the result set
+4. column masks redact or transform sensitive values
+
+## Why This Matters
+
+This layered model is the platform's core safety mechanism. Builders and admins should treat grants, row filters, and masks as part of the data product contract for every sensitive dataset.
+
+## Next Steps
+
+- [Manage Access](/how-to/access-control)
+- [Security Checklist](/operations/security-checklist)
+
+## Related Reference
+
+- [Glossary](/reference/glossary)
+
+## Query and Compute
+
+- Path: /core-concepts/compute-and-query
+- Doc kind: concept
+- Audiences: ai-agents, end-users, builders, admins
+- Product areas: queries, compute
+- Surfaces: api, cli, sql, remote-compute
+- Tasks: understand query path, reason about compute routing, plan remote execution
+- Last verified: 2026-03-12
+
+# Query and Compute
+
+Queries enter through the control plane and are executed as the authenticated principal. Enforcement remains centralized even when compute is delegated to remote workers.
+
+## Query Flow
+
+1. the request is authenticated
+2. grants and policy context are resolved
+3. SQL is executed with RBAC, row filters, and column masking applied
+4. results are returned through the control-plane interface
+
+## Local vs Remote Execution
+
+- Local execution is the default for standard platform usage and simple deployments.
+- Remote compute endpoints add worker isolation and lifecycle-based execution.
+- Fallback policies can keep the system available while rolling out remote routing.
+
+## Why Users and Admins Should Care
+
+Compute routing changes performance and failure boundaries, but it should not change who can see what. Treat policy enforcement as a control-plane responsibility and worker health as an execution concern.
+
+## Next Steps
+
+- [Quickstart](/start-here/quickstart)
+- [Distributed Compute](/operations/distributed-compute)
+
+## Related Reference
+
+- [Advanced API Reference](/reference/api)
+- [Glossary](/reference/glossary)
+
+## Declarative Workflows
+
+- Path: /core-concepts/declarative
+- Doc kind: concept
+- Audiences: ai-agents, builders, admins
+- Product areas: declarative, governance, catalogs
+- Surfaces: cli, declarative
+- Tasks: understand declarative model, distinguish validation types, plan declarative workflows
+- Last verified: 2026-03-12
+
+# Declarative Workflows
+
+Duck can manage catalogs, security, governance, models, and related resources as YAML documents. The declarative layer gives teams a repeatable path for review, promotion, and drift detection.
+
+## What the Declarative Layer Does
+
+- defines desired state as versioned config files
+- validates document structure against generated JSON Schema
+- validates cross-resource semantics through the CLI
+- supports `validate`, `plan`, and `apply` workflows
+
+## Schema vs Semantic Validation
+
+- JSON Schema checks document shape and field-level rules
+- CLI validation checks references, conflicts, privilege rules, and other platform semantics
+
+Both are necessary. Passing schema validation alone does not mean a config is safe to apply.
+
+## Practical Workflow
+
+1. edit config files in a dedicated directory
+2. run `duck validate --config-dir <path>`
+3. run `duck plan --config-dir <path>`
+4. review drift
+5. run `duck apply --config-dir <path>`
+
+## Next Steps
+
+- [Work Declaratively](/how-to/declarative-workflows)
+- [Advanced Declarative Reference](/reference/declarative)
+
+## Related Reference
+
+- [Glossary](/reference/glossary)
+- [Advanced Reference](/reference/)
+
+## Build Data Products
+
+- Path: /core-concepts/index
+- Doc kind: overview
+- Audiences: ai-agents, builders, admins
+- Product areas: catalogs, governance, declarative, compute
+- Surfaces: docs, api, cli, declarative
+- Tasks: understand data product model, choose concept guide, plan build workflows
+- Last verified: 2026-03-12
+
+# Build Data Products
+
+Duck combines governed data objects, policy enforcement, and flexible execution. To build effectively on the platform, separate what users consume from how builders define and govern it.
+
+## Concept Map
+
+- Objects live in catalogs, schemas, tables, views, volumes, models, notebooks, assets, and related resources.
+- Identity and governance decide who can see which outputs.
+- Declarative workflows help builders manage state safely over time.
+- Query and compute routing decide where work runs, but governance remains centralized.
+
+## Read These First
+
+- [Platform Objects](/core-concepts/access-control)
+- [Declarative Workflows](/core-concepts/declarative)
+- [Query and Compute](/core-concepts/compute-and-query)
+
+## Related How-To Guides
+
+- [Manage Access](/how-to/access-control)
+- [Work Declaratively](/how-to/declarative-workflows)
+- [Load Data and Build Assets](/how-to/catalog-and-ingestion)
+
+## Related Reference
+
+- [Glossary](/reference/glossary)
+- [Advanced Reference](/reference/)
+
+## Manage Access
+
+- Path: /how-to/access-control
+- Doc kind: task
+- Audiences: ai-agents, admins, builders
+- Product areas: governance, identity, security
+- Surfaces: api, cli, declarative
+- Tasks: grant access, manage groups, apply row filters, apply column masks
+- Last verified: 2026-03-12
+
+# Manage Access
+
+Use this flow when the platform is available and you need to make sure the right users can see the right data safely.
+
+## Inputs
+
+- a Duck environment
+- an admin-authenticated path
+- target catalog, schema, or table names
+- the principal or group you want to manage
+
+## Workflow
+
+1. create or identify the principal
+2. create a group if access will be shared
+3. grant minimum required privileges
+4. add row filters for scoped visibility
+5. add column masks for sensitive fields
+6. verify with a principal-scoped query
+
+## Why This Sequence Matters
+
+Grants define reachability. Filters and masks refine visibility. If you skip verification at the end, you risk believing the policy is correct without testing the actual query path.
+
+## What Good Access Management Looks Like
+
+- analysts can find and query the data they need
+- service accounts have only the minimum required privileges
+- sensitive rows and columns stay protected without breaking legitimate workflows
+
+## Expected Result
+
+- the target principal can query only the intended object scope
+- restricted rows stay hidden
+- sensitive columns are masked as designed
+
+## Verification
+
+Run a query as the target principal or service identity and compare the result set against your expected policy outcome.
+
+## Next Steps
+
+- [Security Checklist](/operations/security-checklist)
+- [Platform Objects](/core-concepts/access-control)
+
+## Related Reference
+
+- [Advanced API Reference](/reference/api)
+- [Glossary](/reference/glossary)
+
+## Access the Platform
+
+- Path: /how-to/authentication
+- Doc kind: task
+- Audiences: ai-agents, end-users, admins
+- Product areas: auth, identity
+- Surfaces: browser, api, cli
+- Tasks: authenticate, choose credential path, troubleshoot access
+- Last verified: 2026-03-12
+
+# Access the Platform
+
+Duck supports browser-backed identity flows, bearer tokens, and API keys. Use this guide when an AI agent or end user needs to authenticate with a bearer token or API key before calling Duck.
+
+## Inputs
+
+- a Duck deployment URL
+- a credential or sign-in method provided by your organization
+- enough permissions for the workflow you want to perform
+
+## Recommended Modes
+
+| Scenario | Recommended access path |
+| --- | --- |
+| Interactive platform use | browser or bearer-token sign-in |
+| Scripted automation | API keys |
+| Admin workflows | organization-approved admin credentials |
+
+## API Key Authentication
+
+Use API key authentication when an automation client needs to authenticate with Duck through the API or CLI. The intended workflow is explicit API key authentication for a service or approved agent, not a shared human credential.
+
+## Interactive User Path
+
+Use a bearer token when working directly with the API:
+
+```bash
+curl -X POST "https://your-duck-host/v1/query" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"sql":"SELECT current_timestamp AS now"}'
+```
+
+Expected result: a successful query response instead of `401` or `403`.
+
+## Automation Path
+
+Use API keys only when your platform admins allow them for service or scripted usage:
+
+```bash
+curl -X POST "https://your-duck-host/v1/query" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: <key>" \
+  -d '{"sql":"SELECT current_timestamp AS now"}'
+```
+
+## Production Guidance
+
+::: warning Security
+Do not share personal tokens or over-broad admin API keys across people or systems. Use the smallest credential scope that supports the job.
+:::
+
+Admins should prefer identity-provider-backed access for people and keep API keys limited to explicit automation use cases.
+
+## Troubleshooting
+
+- `401 Unauthorized`: verify the credential type and expiration
+- `403 Forbidden`: auth worked, but your principal lacks the required grants
+- browser sign-in loops or failures: confirm the deployment's identity configuration with your admin
+
+## Next Steps
+
+- [Manage Access](/how-to/access-control)
+- [Govern & Administer](/operations/)
+
+## Related Reference
+
+- [Glossary](/reference/glossary)
+- [Advanced API Reference](/reference/api)
+
+## Load Data and Build Assets
+
+- Path: /how-to/catalog-and-ingestion
+- Doc kind: task
+- Audiences: ai-agents, builders, admins
+- Product areas: catalogs, storage, assets, ingestion
+- Surfaces: api, cli, declarative
+- Tasks: create catalog hierarchy, ingest data, register governed assets
+- Last verified: 2026-03-12
+
+# Load Data and Build Assets
+
+This flow is for teams moving from raw data access toward reusable, governed data products.
+
+## Inputs
+
+- a Duck environment
+- storage or source data available to load
+- a builder or admin path with object-management permissions
+
+## Typical Lifecycle
+
+1. define or choose the target catalog and schema
+2. register the objects you want users to see
+3. load or ingest source data
+4. build downstream tables, views, models, notebooks, or assets
+5. apply governance controls before broad access
+
+## Expected Result
+
+At the end of this flow:
+
+- the target objects exist in the intended catalog and schema
+- source data is ingested or registered
+- downstream consumers can discover the governed outputs they are allowed to use
+
+## What This Covers
+
+- catalog and schema structure
+- ingestion into managed tables
+- creation of views, models, assets, notebooks, and pipelines
+- governance before broad consumption
+
+## Next Steps
+
+- [Query and Explore Data](/how-to/use-the-cli)
+- [Govern & Administer](/operations/)
+
+## Related Reference
+
+- [Advanced API Reference](/reference/api)
+- [Build Data Products](/core-concepts/)
+
+## Work Declaratively
+
+- Path: /how-to/declarative-workflows
+- Doc kind: task
+- Audiences: ai-agents, builders, admins
+- Product areas: declarative, governance, catalogs
+- Surfaces: cli, declarative
+- Tasks: validate config, plan changes, apply desired state, detect drift
+- Last verified: 2026-03-12
+
+# Work Declaratively
+
+This is the standard path for teams that manage platform state as code instead of making one-off manual changes.
+
+## Inputs
+
+- a config directory representing desired platform state
+- an authenticated admin path
+- a CLI or automation path approved for your environment
+
+## Workflow
+
+### 1. Validate desired state
+
+```bash
+duck validate --config-dir <path>
+```
+
+Expected result: validation succeeds with no schema or semantic errors.
+
+### 2. Plan changes
+
+```bash
+duck plan --config-dir <path>
+```
+
+Expected result:
+
+- exit code `0` when no changes are required
+- exit code `2` when drift is detected and changes are ready to apply
+
+### 3. Apply changes
+
+```bash
+duck apply --config-dir <path>
+```
+
+Expected result: the desired state is applied successfully.
+
+### 4. Re-run plan
+
+```bash
+duck plan --config-dir <path>
+```
+
+Expected result: no further declarative changes are required.
+
+## Editor Integration
+
+Use the generated JSON Schema artifacts for editor completion and early feedback. See [Advanced Declarative Reference](/reference/declarative) for the schema mapping path.
+
+## Troubleshooting
+
+- schema validation passes, semantic validation fails: check cross-resource references and privilege combinations
+- `plan` returns `2`: treat it as drift detected, not a crash
+- apply errors after a long drift period: compare the live environment with the config history before retrying
+
+## Next Steps
+
+- [Load Data and Build Assets](/how-to/catalog-and-ingestion)
+- [Declarative Workflows](/core-concepts/declarative)
+
+## Related Reference
+
+- [Advanced Declarative Reference](/reference/declarative)
+- [Glossary](/reference/glossary)
+
+## Use Duck
+
+- Path: /how-to/index
+- Doc kind: overview
+- Audiences: ai-agents, end-users, builders
+- Product areas: queries, governance, ingestion, declarative
+- Surfaces: docs, api, cli, browser, sql
+- Tasks: pick task guide, navigate workflows, choose operating surface
+- Last verified: 2026-03-12
+
+# Use Duck
+
+These guides focus on the tasks platform users actually perform: getting access, finding data, querying it, loading new assets, and working within governance controls.
+
+## Common Tasks
+
+- [Access the Platform](/how-to/authentication)
+- [Query and Explore Data](/how-to/use-the-cli)
+- [Manage Access](/how-to/access-control)
+- [Load Data and Build Assets](/how-to/catalog-and-ingestion)
+- [Work Declaratively](/how-to/declarative-workflows)
+
+## Before You Start
+
+If you are new to Duck, start with [Quickstart](/start-here/quickstart) first.
+
+## Related Reference
+
+- [Glossary](/reference/glossary)
+- [Advanced Reference](/reference/)
+
+## Query and Explore Data
+
+- Path: /how-to/use-the-cli
+- Doc kind: task
+- Audiences: ai-agents, end-users, builders
+- Product areas: queries, catalogs, governance
+- Surfaces: cli, api, sql
+- Tasks: discover data, inspect objects, run secure queries
+- Last verified: 2026-03-12
+
+# Query and Explore Data
+
+Most users think about Duck in terms of finding data and querying it. The exact surface can vary by organization, but the workflow is consistent.
+
+## Common Access Surfaces
+
+- browser-based product experiences
+- SQL-compatible clients
+- API-backed tools and scripted clients
+- CLI workflows for advanced users
+
+## Core Workflows
+
+### Find what you can use
+
+- search for catalogs, schemas, tables, and views
+- inspect object names and schemas
+- confirm whether an object is appropriate for your use case
+
+### Run a query safely
+
+```bash
+curl -X POST "https://your-duck-host/v1/query" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"sql":"SELECT borough, pickup_zone, trip_count, gross_revenue FROM sample_data.nyc_taxi.zone_metrics ORDER BY gross_revenue DESC LIMIT 10"}'
+```
+
+Expected result: a result set from the built-in `sample_data` catalog, or a permissions response that tells you additional access is required.
+
+### Understand access effects
+
+- if rows are filtered, you may see only a restricted subset
+- if columns are masked, sensitive values may be transformed or hidden
+- if the query is denied, request access instead of assuming the object is broken
+
+## Expected Result
+
+You should be able to find relevant data, query it through an approved access path, and understand whether governance policies affect what you see.
+
+## Next Steps
+
+- [Manage Access](/how-to/access-control)
+- [Build Data Products](/core-concepts/)
+
+## Related Reference
+
+- [Glossary](/reference/glossary)
+- [Advanced Reference](/reference/)
+
+## Duck Data Platform
+
+- Path: /index
+- Doc kind: landing
+- Audiences: ai-agents, end-users, builders, admins
+- Product areas: platform, documentation
+- Surfaces: docs
+- Tasks: discover documentation, choose workflow, route to product area
+- Last verified: 2026-03-12
+
+Duck helps teams query governed data, build reusable data products, and manage access safely from one platform.
+
+## Platform Settings
+
+- Path: /operations/configuration
+- Doc kind: task
+- Audiences: ai-agents, admins
+- Product areas: operations, auth, security, compute
+- Surfaces: api, cli, deployment
+- Tasks: review production baseline, configure runtime settings, harden platform posture
+- Last verified: 2026-03-12
+
+# Platform Settings
+
+Duck is configured through environment variables and deployment settings. Treat the platform configuration surface as part of your operating model.
+
+## Required Production Baseline
+
+Before a production deployment, confirm:
+
+- `ENV=production`
+- `ENCRYPTION_KEY` or `ENCRYPTION_KEY_FILE` is configured
+- at least one real authentication path is enabled
+- listener addresses match your network boundaries
+
+## Important Configuration Areas
+
+### Auth and identity
+
+- `AUTH_MODE`
+- `AUTH_ISSUER_URL`
+- `AUTH_AUDIENCE`
+- `JWT_SECRET` or `JWT_SECRET_FILE`
+- `AUTH_API_KEY_ENABLED`
+
+### Runtime and networking
+
+- `LISTEN_ADDR`
+- `FLIGHT_SQL_LISTEN_ADDR`
+- `PG_WIRE_LISTEN_ADDR`
+- `TRUST_DOWNSTREAM_PROXY`
+
+### Security and encryption
+
+- `ENCRYPTION_KEY`
+- `ENCRYPTION_KEY_FILE`
+- rate-limit settings
+
+### Feature gates and compute
+
+- `FEATURE_INTERNAL_GRPC`
+- `FEATURE_FLIGHT_SQL`
+- `FEATURE_PG_WIRE`
+- remote compute feature flags as needed
+
+## Recommended Practice
+
+- use deployment templates as a starting point, not as production truth
+- prefer file-based secret injection in managed environments
+- keep environment definitions versioned alongside deployment artifacts
+
+## Next Steps
+
+- [Security Checklist](/operations/security-checklist)
+- [Ways to Access Duck](/start-here/deployment-modes)
+
+## Related Reference
+
+- [Get Started](/start-here/)
+- [Distributed Compute](/operations/distributed-compute)
+
+## Distributed Compute
+
+- Path: /operations/distributed-compute
+- Doc kind: task
+- Audiences: ai-agents, admins
+- Product areas: compute, operations
+- Surfaces: api, cli, remote-compute
+- Tasks: plan compute rollout, configure workers, troubleshoot compute health
+- Last verified: 2026-03-12
+
+# Distributed Compute
+
+This runbook describes how to roll out and operate remote compute without weakening the platform's security model.
+
+## Architecture Boundaries
+
+- the gateway remains the single policy enforcement point
+- workers execute already-rewritten SQL
+- gateway-to-worker transport uses internal gRPC
+
+## When to Use Remote Compute
+
+- you need worker isolation or a separate execution fleet
+- you want lifecycle-style async execution
+- you need a staged rollout with local fallback
+
+## Admin Checklist
+
+- confirm the gateway feature flags match the intended rollout
+- set worker auth and listen addresses explicitly
+- start with fallback enabled on assignments
+- canary a small set of users or groups before widening traffic
+
+## Worker Settings
+
+- `AGENT_TOKEN`
+- `LISTEN_ADDR`
+- `GRPC_LISTEN_ADDR`
+- `MAX_MEMORY_GB`
+- `QUERY_RESULT_TTL`
+- `QUERY_CLEANUP_INTERVAL`
+
+## Gateway Settings
+
+- `FEATURE_REMOTE_ROUTING`
+- `FEATURE_ASYNC_QUEUE`
+- `FEATURE_CURSOR_MODE`
+- `FEATURE_INTERNAL_GRPC`
+- `REMOTE_CANARY_USERS`
+
+## Health and Failure Handling
+
+- monitor `GET /health` and `GET /metrics`
+- expect fallback behavior when worker health degrades and assignments allow local execution
+- use retention settings to control in-memory lifecycle result pressure
+
+## Rollout Sequence
+
+1. enable remote support with local fallback
+2. route a limited audience
+3. observe queue latency and completion behavior
+4. widen scope only after representative success
+
+## Next Steps
+
+- [Platform Settings](/operations/configuration)
+- [Security Checklist](/operations/security-checklist)
+
+## Related Reference
+
+- [Advanced API Reference](/reference/api)
+- [Glossary](/reference/glossary)
+
+## Administration
+
+- Path: /operations/index
+- Doc kind: overview
+- Audiences: ai-agents, admins
+- Product areas: operations, security, compute
+- Surfaces: docs, api, cli, declarative
+- Tasks: choose admin guide, assess platform posture, plan rollout
+- Last verified: 2026-03-12
+
+# Administration
+
+Use this section when you are responsible for shared access, platform posture, or advanced compute behavior.
+
+## Read In Order
+
+1. [Platform Settings](/operations/configuration)
+2. [Security Checklist](/operations/security-checklist)
+3. [Distributed Compute](/operations/distributed-compute)
+
+## What This Section Covers
+
+- platform settings and environment choices
+- auth and secret-management posture
+- remote compute rollout concerns
+- governance and access posture
+
+## Related Reference
+
+- [Glossary](/reference/glossary)
+- [Advanced Reference](/reference/)
+
+## Security Checklist
+
+- Path: /operations/security-checklist
+- Doc kind: task
+- Audiences: ai-agents, admins
+- Product areas: security, auth, governance
+- Surfaces: api, cli, deployment, declarative
+- Tasks: audit security posture, review auth controls, review governance controls
+- Last verified: 2026-03-12
+
+# Security Checklist
+
+Use this as a release gate before exposing the platform to shared users or sensitive data.
+
+## Identity and auth
+
+- OIDC is configured for user-facing environments, or the non-OIDC choice is explicitly justified
+- API keys are limited to service or automation use cases
+- local-only auth conveniences are disabled outside development
+
+## Secrets and encryption
+
+- `ENCRYPTION_KEY` is set from a managed secret source
+- local JWT secrets are not reused in production
+- secret values are not committed into config files or example artifacts
+
+## Access policy
+
+- grants follow least privilege
+- row filters are in place where tenant or geography scoping is required
+- column masks cover sensitive fields that should not be returned verbatim
+
+## Runtime posture
+
+- the correct listener addresses are exposed
+- rate limits are configured for the intended load profile
+- proxy trust is enabled only when a trusted reverse proxy is actually in front of the service
+
+## Operations
+
+- health and metrics endpoints are monitored
+- distributed compute rollout uses fallback intentionally
+- upgrade and drift procedures are documented for the team
+
+## Warning Signs
+
+- a shared environment depends on development auth shortcuts
+- one admin API key is reused broadly across people and systems
+- policy changes are applied without query-path verification
+
+## Next Steps
+
+- [Manage Access](/how-to/access-control)
+- [Distributed Compute](/operations/distributed-compute)
+
+## Related Reference
+
+- [Platform Objects](/core-concepts/access-control)
+- [Advanced API Reference](/reference/api)
+
+## Advanced API Reference
+
+- Path: /reference/api
+- Doc kind: reference
+- Audiences: ai-agents, builders, admins
+- Product areas: api, reference
+- Surfaces: api, docs
+- Tasks: inspect endpoint contracts, find operation IDs, locate schema detail
+- Last verified: 2026-03-12
+
+# Advanced API Reference
+
+The generated API reference is the source of truth for request and response details. Use this page when you need to choose the right endpoint group before diving into operation-level detail.
+
+## Best Entry Points
+
+- [Platform Features](/reference/generated/api/features) for capability discovery
+- [Generated API Reference](/reference/generated/api/index) for complete operation and schema detail
+
+## Recommended Starting Groups
+
+| Need | Start here |
+| --- | --- |
+| Query execution | [Queries Endpoint Index](/reference/generated/api/endpoints/queries) |
+| Identity and access | [Identity Endpoint Index](/reference/generated/api/endpoints/identity) and [Auth Endpoint Index](/reference/generated/api/endpoints/auth) |
+| Catalog and object management | [Catalogs Endpoint Index](/reference/generated/api/endpoints/catalogs) |
+| Data load paths | [Storage Endpoint Index](/reference/generated/api/endpoints/storage) |
+| Remote execution | [Compute Endpoint Index](/reference/generated/api/endpoints/compute) |
+
+## When To Use Generated API Reference
+
+Use it when you need:
+
+- exact paths and parameters
+- payload schema detail
+- operation IDs for automation or codegen work
+
+## When To Use Product Guides First
+
+Use the product guides first when you are deciding:
+
+- how users access the platform
+- how access policy should be designed
+- what declarative workflow fits your team
+- how to operate remote compute safely
+
+## Next Steps
+
+- [Generated API Reference](/reference/generated/api/index)
+- [Use the Platform](/how-to/)
+
+## Advanced CLI Reference
+
+- Path: /reference/cli
+- Doc kind: reference
+- Audiences: ai-agents, builders, admins
+- Product areas: cli, reference
+- Surfaces: cli, docs
+- Tasks: inspect command surfaces, find command groups, script workflows
+- Last verified: 2026-03-12
+
+# Advanced CLI Reference
+
+The CLI is an advanced access surface for users and admins who need scripted workflows, discovery, or declarative change management.
+
+## Core Command Families
+
+| Area | Commands to start with |
+| --- | --- |
+| Declarative workflows | `validate`, `plan`, `apply`, `export` |
+| Auth and profiles | `auth`, `config` |
+| Discovery | `commands`, `api`, `find`, `describe` |
+| Generated resource management | command families under `catalog`, `security`, `models`, `storage`, and others |
+
+## High-Value Commands
+
+```bash
+./bin/duck version
+./bin/duck commands --filter query
+./bin/duck api search "grant"
+./bin/duck config show
+./bin/duck find tables movie
+```
+
+## Output and Auth Defaults
+
+- `--output` supports machine-friendly and human-friendly modes
+- host, token, and API key can be resolved from flags, environment, or profiles
+- profile-based setup is useful for shared or multi-environment work
+
+## Best Use Cases
+
+- declarative validation and apply workflows
+- discovery of command surfaces
+- scripting against API-backed operations without hand-writing HTTP
+
+## Next Steps
+
+- [Query and Explore Data](/how-to/use-the-cli)
+- [Generated API Reference](/reference/generated/api/index)
+
+## Advanced Declarative Reference
+
+- Path: /reference/declarative
+- Doc kind: reference
+- Audiences: ai-agents, builders, admins
+- Product areas: declarative, reference
+- Surfaces: declarative, cli, docs
+- Tasks: inspect declarative kinds, confirm schema fields, map editor schema support
+- Last verified: 2026-03-12
+
+# Advanced Declarative Reference
+
+The generated declarative reference documents the versioned JSON Schema artifacts that define supported document shapes. Treat it as the field-level companion to the declarative workflow.
+
+## Best Entry Points
+
+- [Generated Declarative Reference](/reference/generated/declarative/index)
+- [Work Declaratively](/how-to/declarative-workflows)
+
+## What the Generated Pages Are Best For
+
+- checking supported kinds
+- confirming field names and types
+- understanding per-kind schema files
+- wiring editor schema mappings
+
+## Editor Integration
+
+Map the union schema:
+
+`schemas/declarative/v1/duck.declarative.schema.json`
+
+to your config file patterns in your editor.
+
+## When To Use Product Guides First
+
+Use product guides first when you need:
+
+- a safe rollout workflow
+- an explanation of schema vs semantic validation
+- examples of expected CLI behavior and exit codes
+
+## Next Steps
+
+- [Generated Declarative Reference](/reference/generated/declarative/index)
+- [Declarative Workflows](/core-concepts/declarative)
+
+## Assets and Lineage
+
+- Path: /reference/feature-assets-and-lineage
+- Doc kind: overview
+- Audiences: ai-agents, builders, admins
+- Product areas: assets, lineage
+- Surfaces: api, cli, declarative
+- Tasks: define assets, run checks, inspect lineage, reason about downstream impact
+- Last verified: 2026-03-12
+
+# Assets and Lineage
+
+## When to use
+
+Use this guide when the workflow is about governed asset definitions, data quality checks, backfills, or dependency visibility between upstream and downstream data products.
+
+## Primary tasks
+
+- define and materialize governed assets
+- inspect asset graphs and quality checks
+- understand upstream and downstream lineage before rollout
+
+## Exact entry points
+
+- Start with [Load Data and Build Assets](/how-to/catalog-and-ingestion) for ingestion and governed output creation.
+- Use [Build Data Products](/core-concepts/) for the concept model.
+- Use [Advanced API Reference](/reference/api) for exact lineage and asset operations.
+
+## Generated reference
+
+- [Assets endpoints](/reference/generated/api/endpoints/assets)
+- [Lineage endpoints](/reference/generated/api/endpoints/lineage)
+
+## Catalogs and Governance
+
+- Path: /reference/feature-catalogs-and-governance
+- Doc kind: overview
+- Audiences: ai-agents, admins, builders
+- Product areas: catalogs, governance
+- Surfaces: api, cli, declarative, sql
+- Tasks: create object hierarchy, grant access, enforce policy, inspect securables
+- Last verified: 2026-03-12
+
+# Catalogs and Governance
+
+## When to use
+
+Use this guide when the workflow changes object structure, object visibility, or the policy envelope around data access.
+
+## Primary tasks
+
+- create and evolve catalogs, schemas, tables, views, and volumes
+- model grants on securables
+- attach row filters and column masks
+- connect governance workflows to declarative state management
+
+## Exact entry points
+
+- Start with [Manage Access](/how-to/access-control) for end-to-end permission changes.
+- Use [Load Data and Build Assets](/how-to/catalog-and-ingestion) for catalog creation plus ingestion.
+- Use [Platform Objects and Governance](/core-concepts/access-control) for the mental model.
+
+## Generated reference
+
+- [Catalogs endpoints](/reference/generated/api/endpoints/catalogs)
+- [Governance endpoints](/reference/generated/api/endpoints/governance)
+- [Generated declarative reference](/reference/generated/declarative/index)
+
+## Identity and Authentication
+
+- Path: /reference/feature-identity-and-auth
+- Doc kind: overview
+- Audiences: ai-agents, admins, builders
+- Product areas: auth, identity
+- Surfaces: api, cli, browser, declarative
+- Tasks: authenticate users, manage principals, manage groups, manage api keys
+- Last verified: 2026-03-12
+
+# Identity and Authentication
+
+## When to use
+
+Use this guide when the workflow starts with who can sign in, which identity is acting, or how a human or service proves access.
+
+## Primary tasks
+
+- authenticate a user through browser sign-in or bearer token flow
+- issue and rotate API keys for approved automation
+- create principals and groups for shared access
+- connect access-management guides to the exact API and CLI surfaces
+
+## Exact entry points
+
+- Start with [Access the Platform](/how-to/authentication) for auth-path selection.
+- Use [Manage Access](/how-to/access-control) when identity changes must be paired with grants or policy controls.
+- Use [Advanced API Reference](/reference/api) for exact `Auth` and `Identity` operation detail.
+
+## Generated reference
+
+- [Auth endpoints](/reference/generated/api/endpoints/auth)
+- [Identity endpoints](/reference/generated/api/endpoints/identity)
+- [Generated API reference](/reference/generated/api/index)
+- [Generated declarative reference](/reference/generated/declarative/index)
+
+## Models and Pipelines
+
+- Path: /reference/feature-models-and-pipelines
+- Doc kind: overview
+- Audiences: ai-agents, builders, admins
+- Product areas: models, pipelines
+- Surfaces: api, cli, declarative
+- Tasks: define models, run transformations, inspect run status, orchestrate pipelines
+- Last verified: 2026-03-12
+
+# Models and Pipelines
+
+## When to use
+
+Use this guide when the workflow manages transformation logic, model tests, or multi-step orchestration that publishes governed outputs.
+
+## Primary tasks
+
+- create and revise models and macros
+- run and inspect model runs plus model tests
+- define pipelines and inspect pipeline job runs
+
+## Exact entry points
+
+- Start with [Load Data and Build Assets](/how-to/catalog-and-ingestion) when the pipeline produces reusable outputs.
+- Use [Advanced CLI Reference](/reference/cli) if the workflow is automation-heavy.
+- Use [Advanced API Reference](/reference/api) for exact run and orchestration contracts.
+
+## Generated reference
+
+- [Models endpoints](/reference/generated/api/endpoints/models)
+- [Pipelines endpoints](/reference/generated/api/endpoints/pipelines)
+
+## Notebooks and Dashboards
+
+- Path: /reference/feature-notebooks-and-dashboards
+- Doc kind: overview
+- Audiences: ai-agents, builders, end-users, admins
+- Product areas: notebooks, dashboards
+- Surfaces: api, browser, cli
+- Tasks: author notebooks, run notebook jobs, publish dashboards, inspect dashboard sources
+- Last verified: 2026-03-12
+
+# Notebooks and Dashboards
+
+## When to use
+
+Use this guide when the workflow depends on interactive authoring, notebook execution state, or dashboard publication over notebook, SQL, or semantic sources.
+
+## Primary tasks
+
+- create and revise notebooks and notebook cells
+- track notebook sessions and scheduled jobs
+- create dashboards and inspect widget sources
+
+## Exact entry points
+
+- Use [Advanced API Reference](/reference/api) for notebook session and dashboard widget contract details.
+- Use [Load Data and Build Assets](/how-to/catalog-and-ingestion) when notebooks or dashboards sit downstream of governed tables and models.
+
+## Generated reference
+
+- [Notebooks endpoints](/reference/generated/api/endpoints/notebooks)
+- [Dashboards endpoints](/reference/generated/api/endpoints/dashboards)
+
+## Query and Compute
+
+- Path: /reference/feature-query-and-compute
+- Doc kind: overview
+- Audiences: ai-agents, end-users, admins, builders
+- Product areas: queries, compute
+- Surfaces: api, cli, sql, remote-compute
+- Tasks: run queries, route execution, inspect compute health, reason about failure domains
+- Last verified: 2026-03-12
+
+# Query and Compute
+
+## When to use
+
+Use this guide when the workflow is about running SQL, choosing where it runs, or understanding how compute topology affects execution without changing policy enforcement.
+
+## Primary tasks
+
+- submit synchronous and asynchronous queries
+- inspect query history and failure states
+- manage compute endpoints and assignments
+- verify health and rollout posture for remote execution
+
+## Exact entry points
+
+- Start with [Quickstart](/start-here/quickstart) for the first secure query.
+- Use [Query and Explore Data](/how-to/use-the-cli) for discovery and querying.
+- Use [Distributed Compute](/operations/distributed-compute) for rollout and operating guidance.
+
+## Generated reference
+
+- [Queries endpoints](/reference/generated/api/endpoints/queries)
+- [Compute endpoints](/reference/generated/api/endpoints/compute)
+- [Health endpoints](/reference/generated/api/endpoints/health)
+
+## Semantic Layer
+
+- Path: /reference/feature-semantic-layer
+- Doc kind: overview
+- Audiences: ai-agents, builders, end-users, admins
+- Product areas: semantic-layer
+- Surfaces: api, docs, declarative
+- Tasks: define semantic models, manage metrics, inspect relationships, run metric queries
+- Last verified: 2026-03-12
+
+# Semantic Layer
+
+## When to use
+
+Use this guide when the workflow turns governed model outputs into reusable business metrics and semantic query paths.
+
+## Primary tasks
+
+- define semantic models and metrics
+- manage semantic relationships and pre-aggregations
+- run metric queries and inspect query plans
+
+## Exact entry points
+
+- Use [Build Data Products](/core-concepts/) for the broader governed data product context.
+- Use [Advanced API Reference](/reference/api) for exact semantic-layer payloads and operations.
+
+## Generated reference
+
+- [Semantic Layer endpoints](/reference/generated/api/endpoints/semantic-layer)
+
+## Storage and Integrations
+
+- Path: /reference/feature-storage-and-integrations
+- Doc kind: overview
+- Audiences: ai-agents, admins, builders
+- Product areas: storage, integrations
+- Surfaces: api, cli, declarative
+- Tasks: configure storage access, register external locations, connect repositories and integrations
+- Last verified: 2026-03-12
+
+# Storage and Integrations
+
+## When to use
+
+Use this guide when workflows depend on object storage, external locations, or external system connectivity that must be governed centrally.
+
+## Primary tasks
+
+- create and rotate storage credentials
+- register external locations used by ingestion or managed assets
+- connect Git or other integration surfaces to the control plane
+
+## Exact entry points
+
+- Start with [Load Data and Build Assets](/how-to/catalog-and-ingestion) when storage setup is part of an ingestion workflow.
+- Use [Platform Settings](/operations/configuration) when integration setup changes deployment posture.
+- Use [Advanced Declarative Reference](/reference/declarative) for field-level schema details.
+
+## Generated reference
+
+- [Storage endpoints](/reference/generated/api/endpoints/storage)
+- [Integrations endpoints](/reference/generated/api/endpoints/integrations)
+
+## Glossary
+
+- Path: /reference/glossary
+- Doc kind: reference
+- Audiences: ai-agents, end-users, builders, admins
+- Product areas: reference, governance, queries, declarative
+- Surfaces: docs, api, cli, declarative
+- Tasks: resolve platform terminology, normalize concepts for retrieval, disambiguate product language
+- Last verified: 2026-03-12
+
+# Glossary
+
+## API key
+
+A credential presented in `X-API-Key` for authenticated API or CLI access.
+
+## Catalog
+
+The top-level container for schemas and related database objects.
+
+## Column mask
+
+A policy that rewrites or obfuscates a column value for selected principals or groups.
+
+## Declarative config
+
+YAML documents that define desired platform state and are applied through validate-plan-apply workflows.
+
+## Grant
+
+A privilege assignment on a securable object.
+
+## Group
+
+A collection of principals used to manage access in bulk.
+
+## Principal
+
+A user or service identity recognized by the platform.
+
+## Row filter
+
+A policy that restricts which rows are visible during query execution.
+
+## Secure query path
+
+The end-to-end request path where authentication, grants, row filters, and column masks are applied before results are returned.
+
+## Semantic validation
+
+Cross-resource validation performed by the CLI after basic schema validation passes.
+
+## Reference
+
+- Path: /reference/index
+- Doc kind: reference
+- Audiences: ai-agents, builders, admins
+- Product areas: reference, api, cli, declarative
+- Surfaces: docs, api, cli, declarative
+- Tasks: locate exact contract detail, route to feature reference, retrieve generated artifacts
+- Last verified: 2026-03-12
+
+# Reference
+
+This section exists for advanced users and admins who need technical detail beyond the product guides.
+
+## Advanced Reference Areas
+
+- [Advanced API Reference](/reference/api) for exact endpoint behavior, payload shapes, and operation-level detail.
+- [Advanced Declarative Reference](/reference/declarative) for field-level schema detail in declarative workflows.
+- [Advanced CLI Reference](/reference/cli) for command-level detail where CLI workflows are available.
+
+## Feature Guides
+
+- [Identity and Authentication](/reference/feature-identity-and-auth)
+- [Catalogs and Governance](/reference/feature-catalogs-and-governance)
+- [Query and Compute](/reference/feature-query-and-compute)
+- [Storage and Integrations](/reference/feature-storage-and-integrations)
+- [Assets and Lineage](/reference/feature-assets-and-lineage)
+- [Models and Pipelines](/reference/feature-models-and-pipelines)
+- [Notebooks and Dashboards](/reference/feature-notebooks-and-dashboards)
+- [Semantic Layer](/reference/feature-semantic-layer)
+
+## Supporting Material
+
+- [Glossary](/reference/glossary)
+
+## Ways to Access Duck
+
+- Path: /start-here/deployment-modes
+- Doc kind: overview
+- Audiences: ai-agents, end-users, builders, admins
+- Product areas: auth, compute, integrations
+- Surfaces: browser, sql, api, cli, remote-compute
+- Tasks: choose access path, map workflow to surface, plan access mode
+- Last verified: 2026-03-12
+
+# Ways to Access Duck
+
+Duck supports multiple access paths so different users can work in the way that fits them best. Most end users should think about access in terms of product experience, not infrastructure.
+
+## Browser Access
+
+Use this when:
+
+- you are exploring the platform interactively
+- your organization uses browser-based sign-in
+- you want a guided product experience
+
+## SQL and BI Access
+
+Use this when:
+
+- you want to connect query tools or BI clients
+- your team works directly in SQL
+- you need a familiar database-style experience
+
+## API and Automation Access
+
+Use this when:
+
+- you are automating workflows
+- you need repeatable scripted access
+- you are integrating Duck into a larger platform flow
+
+## Remote Compute Access
+
+Use this when:
+
+- your admins have enabled remote execution
+- you need worker isolation or a separate compute fleet
+- execution topology matters for scale or control
+
+Read [Distributed Compute](/operations/distributed-compute) before rollout.
+
+## Decision Guide
+
+| Need | Recommended path |
+| --- | --- |
+| Guided product experience | Browser access |
+| Direct query workflows | SQL or BI access |
+| Automation and integrations | API access |
+| Isolated or scaled execution | Remote compute |
+
+## Next Steps
+
+- [Quickstart](/start-here/quickstart)
+- [Use the Platform](/how-to/)
+- [Govern & Administer](/operations/)
+
+## Getting Started
+
+- Path: /start-here/index
+- Doc kind: overview
+- Audiences: ai-agents, end-users, builders, admins
+- Product areas: platform, onboarding
+- Surfaces: docs, browser, api, cli, sql
+- Tasks: understand product scope, choose first workflow, start onboarding
+- Last verified: 2026-03-12
+
+# Getting Started
+
+Duck is a secure data platform for teams that want governed analytics, reusable data products, and flexible execution without losing control over access and data exposure.
+
+## Who This Site Is For
+
+- analysts and data users who need governed query access
+- builders creating reusable data products and workflows
+- admins managing access, governance, and platform settings
+
+## Start Here
+
+- [Quickstart](/start-here/quickstart) to get access, run a first query, and learn the basics.
+- [Query and Explore Data](/how-to/use-the-cli) to find objects, inspect data, and work within governance controls.
+- [Administration](/operations/) to manage access, security controls, and advanced platform settings.
+
+## What You Get
+
+- Secure query execution with RBAC, row filters, and column masking
+- Platform objects such as catalogs, schemas, tables, views, models, and assets
+- Declarative workflows for teams that manage data products as code
+- Advanced integrations and remote compute when the platform grows
+
+## Recommended Reading Order
+
+1. [Quickstart](/start-here/quickstart)
+2. [Query and Explore Data](/how-to/use-the-cli)
+3. [Build Data Products](/core-concepts/)
+4. [Administration](/operations/)
+
+## Related Reference
+
+- [Glossary](/reference/glossary)
+- [Advanced API Reference](/reference/api)
+
+## Next Step
+
+Start with the [Quickstart](/start-here/quickstart), then continue to [Use Duck](/how-to/).
+
+## Quickstart
+
+- Path: /start-here/quickstart
+- Doc kind: task
+- Audiences: ai-agents, end-users
+- Product areas: auth, queries, onboarding
+- Surfaces: api, browser, cli, sql
+- Tasks: authenticate, run first query, verify access
+- Last verified: 2026-03-12
+
+# Quickstart
+
+This path is the fastest way for a platform user to understand how access works and what "first value" looks like in Duck.
+
+## Prerequisites
+
+- a Duck deployment URL
+- a user account, bearer token, or API key provided by your organization
+- an approved access path such as browser, SQL client, API, or CLI
+
+## 1. Confirm how you access the platform
+
+Most users enter Duck through one of these paths:
+
+- browser-based product surfaces
+- SQL-compatible clients
+- API-backed tools or scripts
+- CLI workflows for advanced users
+
+## 2. Choose an authentication path
+
+Common user paths are:
+
+- browser sign-in backed by your identity provider
+- bearer tokens in `Authorization: Bearer <token>`
+- API keys in `X-API-Key: <key>` for approved automation use cases
+
+For a deeper overview, go to [Access the Platform](/how-to/authentication).
+
+## 3. Run your first secure query
+
+```bash
+curl -X POST "https://your-duck-host/v1/query" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"sql":"SELECT pickup_date, trip_count, gross_revenue FROM sample_data.nyc_taxi.daily_metrics ORDER BY pickup_date LIMIT 5"}'
+```
+
+Expected result:
+
+```json
+{"columns":["pickup_date","trip_count","gross_revenue"],"rows":[["2024-01-01",8000,219862.25],["2024-01-02",8000,277281.32]]}
+```
+
+The exact JSON shape may include metadata fields, but you should see rows coming back from the built-in `sample_data` catalog with no extra setup.
+
+## 4. Explore the platform
+
+Once the first query succeeds, your next user actions are usually:
+
+- browse available catalogs and schemas
+- inspect table and view structure
+- discover what objects you are allowed to query
+- confirm whether any masking or row filtering applies to your role
+- when you are ready for a writable environment, use `duck init` to bootstrap a medallion catalog
+
+## Troubleshooting
+
+### `curl` cannot connect
+
+- verify the deployment URL with your admin
+- confirm you are on the correct network path or VPN
+
+### Query returns auth errors
+
+- verify whether your team expects browser sign-in, bearer tokens, or API keys
+- confirm the credential is still valid
+- see [Access the Platform](/how-to/authentication) for auth-path details
+
+### Query returns `403 Forbidden`
+
+Authentication worked, but your current principal does not have the required grants or policy-compatible access.
+
+## Next Steps
+
+- [Ways to Access Duck](/start-here/deployment-modes)
+- [Query and Explore Data](/how-to/use-the-cli)
+- [Manage Access](/how-to/access-control)
+
+## Related Reference
+
+- [Glossary](/reference/glossary)
+- [Advanced API Reference](/reference/api)
+

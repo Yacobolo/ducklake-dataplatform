@@ -1,6 +1,22 @@
 ---
 title: Glossary
 description: Shared terminology for the platform, API, declarative config, and operations guides.
+doc_kind: reference
+audiences: [ai-agents, end-users, builders, admins]
+product_areas: [reference, governance, queries, declarative]
+surfaces: [docs, api, cli, declarative]
+tasks: [resolve platform terminology, normalize concepts for retrieval, disambiguate product language]
+prerequisites: [documentation access]
+permissions: [documentation access]
+cli_commands: [docs show reference/glossary]
+command_groups: [docs]
+operation_ids: []
+api_tags: []
+declarative_kinds: []
+related_docs: [reference/index, core-concepts/access-control, core-concepts/declarative]
+keywords: [terminology, definitions, vocabulary]
+last_verified: 2026-03-12
+source_of_truth: [docs]
 ---
 
 # Glossary

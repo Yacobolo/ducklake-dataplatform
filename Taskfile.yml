@@ -153,12 +153,21 @@ tasks:
       - api/gen/openapi.yaml
       - schemas/declarative/v1/index.json
       - schemas/declarative/v1/kinds/*.schema.json
+      - docs/*.md
+      - docs/start-here/*.md
+      - docs/how-to/*.md
+      - docs/core-concepts/*.md
+      - docs/operations/*.md
+      - docs/reference/*.md
       - cmd/docsgen/*.go
       - internal/docsgen/**/*.go
     generates:
       - docs/reference/generated/api/index.md
       - docs/reference/generated/api/features.md
       - docs/reference/generated/declarative/index.md
+      - docs/public/llms.txt
+      - docs/public/llms-full.txt
+      - docs/public/agent-index.json
       - pkg/cli/gen/discovery_index.gen.go
 
   docs:generate:generated:
@@ -196,12 +205,9 @@ tasks:
   verify:docs-generated:
     desc: Verify docs reference pages can be generated from canonical artifacts
     cmds:
-      - task docs:generate
-      - test -f docs/reference/generated/api/index.md
-      - test -f docs/reference/generated/api/features.md
-      - test -f docs/reference/generated/declarative/index.md
-      - test -f pkg/cli/gen/discovery_index.gen.go
-      - git diff --exit-code -- docs/reference/generated pkg/cli/gen/discovery_index.gen.go
+      - bash ./scripts/verify_docs_generated.sh
+      - go test ./internal/docsgen/discovery ./pkg/cli/discovery ./pkg/cli -run 'TestDocs|TestCorpus|TestGenerate'
+      - node ./docs/scripts/check-local-search.mjs
 
   generate:
     desc: Run all code generation

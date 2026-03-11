@@ -1,6 +1,22 @@
 ---
 title: Work Declaratively
 description: Use validate-plan-apply workflows to manage platform state as code.
+doc_kind: task
+audiences: [ai-agents, builders, admins]
+product_areas: [declarative, governance, catalogs]
+surfaces: [cli, declarative]
+tasks: [validate config, plan changes, apply desired state, detect drift]
+prerequisites: [declarative config files, cli access, target environment]
+permissions: [apply privileges for targeted resources]
+cli_commands: [validate, plan, apply, export]
+command_groups: [validate, plan, apply, export]
+operation_ids: []
+api_tags: []
+declarative_kinds: ["*"]
+related_docs: [core-concepts/declarative, reference/declarative, how-to/catalog-and-ingestion]
+keywords: [desired state, plan apply, drift detection]
+last_verified: 2026-03-12
+source_of_truth: [docs, schemas/declarative/v1/index.json]
 ---
 
 # Work Declaratively

@@ -1,3 +1,24 @@
+---
+title: Browser-Local Compute Runbook
+description: Current browser-local DuckDB WASM execution model, limitations, and support expectations.
+doc_kind: runbook
+audiences: [ai-agents, admins, builders]
+product_areas: [compute, browser-runtime]
+surfaces: [browser, docs]
+tasks: [understand browser-local execution, assess rollout risks, troubleshoot runtime limitations]
+prerequisites: [browser surface availability]
+permissions: [feature access]
+cli_commands: [docs show browser-local-compute]
+command_groups: [docs]
+operation_ids: []
+api_tags: [Compute]
+declarative_kinds: []
+related_docs: [operations/distributed-compute, core-concepts/compute-and-query, reference/feature-query-and-compute]
+keywords: [browser local compute, duckdb wasm, client-side execution]
+last_verified: 2026-03-12
+source_of_truth: [docs]
+---
+
 # Browser-Local Compute Runbook
 
 This runbook describes the current browser-local DuckDB WASM execution model and the limits that matter for rollout and support.

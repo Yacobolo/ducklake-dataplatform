@@ -1,6 +1,22 @@
 ---
 title: Advanced Declarative Reference
 description: Use the generated declarative schema reference when you need field-level schema detail.
+doc_kind: reference
+audiences: [ai-agents, builders, admins]
+product_areas: [declarative, reference]
+surfaces: [declarative, cli, docs]
+tasks: [inspect declarative kinds, confirm schema fields, map editor schema support]
+prerequisites: [declarative workflow context]
+permissions: [documentation access]
+cli_commands: [validate, plan, export]
+command_groups: [validate, plan, export]
+operation_ids: []
+api_tags: []
+declarative_kinds: ["*"]
+related_docs: [core-concepts/declarative, how-to/declarative-workflows, reference/index]
+keywords: [declarative reference, json schema, kinds]
+last_verified: 2026-03-12
+source_of_truth: [docs, schemas/declarative/v1/index.json]
 ---
 
 # Advanced Declarative Reference

@@ -70,6 +70,19 @@ export default defineConfig({
           ]
         },
         {
+          text: "Feature Guides",
+          items: [
+            { text: "Identity and Authentication", link: "/reference/feature-identity-and-auth" },
+            { text: "Catalogs and Governance", link: "/reference/feature-catalogs-and-governance" },
+            { text: "Query and Compute", link: "/reference/feature-query-and-compute" },
+            { text: "Storage and Integrations", link: "/reference/feature-storage-and-integrations" },
+            { text: "Assets and Lineage", link: "/reference/feature-assets-and-lineage" },
+            { text: "Models and Pipelines", link: "/reference/feature-models-and-pipelines" },
+            { text: "Notebooks and Dashboards", link: "/reference/feature-notebooks-and-dashboards" },
+            { text: "Semantic Layer", link: "/reference/feature-semantic-layer" }
+          ]
+        },
+        {
           text: "Generated Reference",
           items: [
             { text: "API Features", link: "/reference/generated/api/features" },

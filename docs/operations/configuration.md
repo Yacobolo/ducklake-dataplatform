@@ -1,6 +1,22 @@
 ---
 title: Platform Settings
 description: Use Duck's platform settings safely in shared and production environments.
+doc_kind: task
+audiences: [ai-agents, admins]
+product_areas: [operations, auth, security, compute]
+surfaces: [api, cli, deployment]
+tasks: [review production baseline, configure runtime settings, harden platform posture]
+prerequisites: [admin role, deployment access]
+permissions: [environment configuration access]
+cli_commands: [config show]
+command_groups: [config]
+operation_ids: [getOIDCProvider, listComputeEndpoints]
+api_tags: [Auth, Compute]
+declarative_kinds: [compute-endpoint-list, compute-routing-defaults]
+related_docs: [operations/security-checklist, operations/distributed-compute, reference/feature-identity-and-auth]
+keywords: [platform configuration, auth settings, runtime settings]
+last_verified: 2026-03-12
+source_of_truth: [docs, api/gen/openapi.yaml, schemas/declarative/v1/index.json]
 ---
 
 # Platform Settings

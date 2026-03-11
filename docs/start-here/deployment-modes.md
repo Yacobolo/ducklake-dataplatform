@@ -1,6 +1,22 @@
 ---
 title: Ways to Access Duck
 description: Understand the main access paths for users, builders, and admins.
+doc_kind: overview
+audiences: [ai-agents, end-users, builders, admins]
+product_areas: [auth, compute, integrations]
+surfaces: [browser, sql, api, cli, remote-compute]
+tasks: [choose access path, map workflow to surface, plan access mode]
+prerequisites: [deployment URL, organization guidance]
+permissions: [approved access path]
+cli_commands: [auth login, docs search]
+command_groups: [auth, docs]
+operation_ids: [localLogin, getComputeEndpointHealth]
+api_tags: [Auth, Compute]
+declarative_kinds: []
+related_docs: [start-here/quickstart, how-to/authentication, operations/distributed-compute]
+keywords: [deployment modes, access modes, sql clients]
+last_verified: 2026-03-12
+source_of_truth: [docs, api/gen/openapi.yaml]
 ---
 
 # Ways to Access Duck

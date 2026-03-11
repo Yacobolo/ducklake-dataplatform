@@ -1,6 +1,22 @@
 ---
 title: Quickstart
 description: Access Duck, choose an auth path, and run a first secure query.
+doc_kind: task
+audiences: [ai-agents, end-users]
+product_areas: [auth, queries, onboarding]
+surfaces: [api, browser, cli, sql]
+tasks: [authenticate, run first query, verify access]
+prerequisites: [deployment URL, valid credential, approved network access]
+permissions: [query access to sample data]
+cli_commands: [auth login, docs show]
+command_groups: [auth, docs]
+operation_ids: [submitQuery]
+api_tags: [Auth, Queries]
+declarative_kinds: []
+related_docs: [start-here/deployment-modes, how-to/authentication, how-to/use-the-cli]
+keywords: [quickstart, first query, secure query]
+last_verified: 2026-03-12
+source_of_truth: [docs, api/gen/openapi.yaml]
 ---
 
 # Quickstart

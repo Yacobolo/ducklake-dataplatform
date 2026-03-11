@@ -1,6 +1,22 @@
 ---
 title: Getting Started
 description: Understand what Duck is, who it is for, and how platform users begin.
+doc_kind: overview
+audiences: [ai-agents, end-users, builders, admins]
+product_areas: [platform, onboarding]
+surfaces: [docs, browser, api, cli, sql]
+tasks: [understand product scope, choose first workflow, start onboarding]
+prerequisites: [deployment URL, organization access path]
+permissions: [account access]
+cli_commands: [docs search, docs show]
+command_groups: [docs]
+operation_ids: []
+api_tags: []
+declarative_kinds: []
+related_docs: [start-here/quickstart, start-here/deployment-modes, how-to/index]
+keywords: [getting started, onboarding, overview]
+last_verified: 2026-03-12
+source_of_truth: [docs]
 ---
 
 # Getting Started

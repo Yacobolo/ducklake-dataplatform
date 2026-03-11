@@ -18,24 +18,52 @@ import (
 )
 
 type frontMatter struct {
-	Title       string   `yaml:"title"`
-	Description string   `yaml:"description"`
-	Keywords    []string `yaml:"keywords"`
-	CLICommands []string `yaml:"cli_commands"`
-	OperationID []string `yaml:"operation_ids"`
-	APITags     []string `yaml:"api_tags"`
+	Title            string   `yaml:"title"`
+	Description      string   `yaml:"description"`
+	DocKind          string   `yaml:"doc_kind"`
+	Audiences        []string `yaml:"audiences"`
+	ProductAreas     []string `yaml:"product_areas"`
+	Surfaces         []string `yaml:"surfaces"`
+	Tasks            []string `yaml:"tasks"`
+	Prerequisites    []string `yaml:"prerequisites"`
+	Permissions      []string `yaml:"permissions"`
+	CLICommands      []string `yaml:"cli_commands"`
+	CommandGroups    []string `yaml:"command_groups"`
+	OperationIDs     []string `yaml:"operation_ids"`
+	APITags          []string `yaml:"api_tags"`
+	DeclarativeKinds []string `yaml:"declarative_kinds"`
+	RelatedDocs      []string `yaml:"related_docs"`
+	Keywords         []string `yaml:"keywords"`
+	LastVerified     string   `yaml:"last_verified"`
+	SourceOfTruth    []string `yaml:"source_of_truth"`
 }
 
 type referenceDoc struct {
-	ID           string
-	Path         string
-	Section      string
-	Title        string
-	Description  string
-	Headings     []string
-	Excerpt      string
-	CodeExamples []string
-	Keywords     []string
+	ID               string
+	Path             string
+	Section          string
+	Title            string
+	Description      string
+	DocKind          string
+	Audiences        []string
+	ProductAreas     []string
+	Surfaces         []string
+	Tasks            []string
+	Prerequisites    []string
+	Permissions      []string
+	CLICommands      []string
+	CommandGroups    []string
+	OperationIDs     []string
+	APITags          []string
+	DeclarativeKinds []string
+	RelatedDocs      []string
+	Headings         []string
+	Excerpt          string
+	CodeExamples     []string
+	Keywords         []string
+	LastVerified     string
+	SourceOfTruth    []string
+	Body             string
 }
 
 type referenceOperation struct {
@@ -77,9 +105,9 @@ type referenceLink struct {
 	Confidence int
 }
 
-// Generate renders discovery metadata into a generated Go file.
-func Generate(docsDir, specPath, outPath string) error {
-	docs, frontMatterByDocID, err := loadDocs(docsDir)
+// Generate renders discovery metadata into a generated Go file and agent artifacts.
+func Generate(docsDir, specPath, declarativeIndexPath, outPath string) error {
+	docs, err := loadDocs(docsDir)
 	if err != nil {
 		return err
 	}
@@ -89,7 +117,16 @@ func Generate(docsDir, specPath, outPath string) error {
 		return err
 	}
 
-	links := buildLinks(docs, frontMatterByDocID, operations)
+	declarativeKinds, err := loadDeclarativeKinds(declarativeIndexPath)
+	if err != nil {
+		return err
+	}
+
+	if err := validateDocs(docs, operations, declarativeKinds); err != nil {
+		return err
+	}
+
+	links := buildLinks(docs, operations)
 	sortDocs(docs)
 	sortOperations(operations)
 	sortLinks(links)
@@ -110,12 +147,16 @@ func Generate(docsDir, specPath, outPath string) error {
 	if err := os.WriteFile(outPath, payload, 0o600); err != nil {
 		return fmt.Errorf("write discovery index: %w", err)
 	}
+
+	coverage := buildCoverage(docs, operations, declarativeKinds)
+	if err := writeAgentArtifacts(filepath.Join(docsDir, "public"), docs, operations, links, coverage); err != nil {
+		return err
+	}
 	return nil
 }
 
-func loadDocs(root string) ([]referenceDoc, map[string]frontMatter, error) {
+func loadDocs(root string) ([]referenceDoc, error) {
 	var docs []referenceDoc
-	frontMatterByDocID := make(map[string]frontMatter)
 
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -137,34 +178,33 @@ func loadDocs(root string) ([]referenceDoc, map[string]frontMatter, error) {
 			return nil
 		}
 
-		doc, fm, parseErr := parseDoc(root, path)
+		doc, parseErr := parseDoc(root, path)
 		if parseErr != nil {
 			return parseErr
 		}
 		docs = append(docs, doc)
-		frontMatterByDocID[doc.ID] = fm
 		return nil
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("walk docs: %w", err)
+		return nil, fmt.Errorf("walk docs: %w", err)
 	}
-	return docs, frontMatterByDocID, nil
+	return docs, nil
 }
 
-func parseDoc(root, path string) (referenceDoc, frontMatter, error) {
+func parseDoc(root, path string) (referenceDoc, error) {
 	bytes, err := os.ReadFile(filepath.Clean(path)) // #nosec G304 -- trusted local docs tree
 	if err != nil {
-		return referenceDoc{}, frontMatter{}, fmt.Errorf("read doc %q: %w", path, err)
+		return referenceDoc{}, fmt.Errorf("read doc %q: %w", path, err)
 	}
 
 	fm, body, err := splitFrontMatter(string(bytes))
 	if err != nil {
-		return referenceDoc{}, frontMatter{}, fmt.Errorf("parse front matter %q: %w", path, err)
+		return referenceDoc{}, fmt.Errorf("parse front matter %q: %w", path, err)
 	}
 
 	relPath, err := filepath.Rel(root, path)
 	if err != nil {
-		return referenceDoc{}, frontMatter{}, fmt.Errorf("relative doc path %q: %w", path, err)
+		return referenceDoc{}, fmt.Errorf("relative doc path %q: %w", path, err)
 	}
 	relPath = filepath.ToSlash(relPath)
 	id := strings.TrimSuffix(relPath, filepath.Ext(relPath))
@@ -186,16 +226,32 @@ func parseDoc(root, path string) (referenceDoc, frontMatter, error) {
 	keywords := docKeywords(id, title, headings, fm)
 
 	return referenceDoc{
-		ID:           id,
-		Path:         relPath,
-		Section:      section,
-		Title:        title,
-		Description:  description,
-		Headings:     headings,
-		Excerpt:      excerpt,
-		CodeExamples: codeExamples,
-		Keywords:     keywords,
-	}, fm, nil
+		ID:               id,
+		Path:             relPath,
+		Section:          section,
+		Title:            title,
+		Description:      description,
+		DocKind:          strings.TrimSpace(fm.DocKind),
+		Audiences:        dedupeStrings(fm.Audiences),
+		ProductAreas:     dedupeStrings(fm.ProductAreas),
+		Surfaces:         dedupeStrings(fm.Surfaces),
+		Tasks:            dedupeStrings(fm.Tasks),
+		Prerequisites:    dedupeStrings(fm.Prerequisites),
+		Permissions:      dedupeStrings(fm.Permissions),
+		CLICommands:      dedupeStrings(fm.CLICommands),
+		CommandGroups:    dedupeStrings(fm.CommandGroups),
+		OperationIDs:     dedupeStrings(fm.OperationIDs),
+		APITags:          dedupeStrings(fm.APITags),
+		DeclarativeKinds: dedupeStrings(fm.DeclarativeKinds),
+		RelatedDocs:      dedupeStrings(fm.RelatedDocs),
+		Headings:         headings,
+		Excerpt:          excerpt,
+		CodeExamples:     codeExamples,
+		Keywords:         keywords,
+		LastVerified:     strings.TrimSpace(fm.LastVerified),
+		SourceOfTruth:    dedupeStrings(fm.SourceOfTruth),
+		Body:             strings.TrimSpace(body),
+	}, nil
 }
 
 func splitFrontMatter(content string) (frontMatter, string, error) {
@@ -292,11 +348,35 @@ func docKeywords(id, title string, headings []string, fm frontMatter) []string {
 	for _, keyword := range fm.Keywords {
 		words = append(words, tokenize(keyword)...)
 	}
+	for _, audience := range fm.Audiences {
+		words = append(words, tokenize(audience)...)
+	}
+	for _, productArea := range fm.ProductAreas {
+		words = append(words, tokenize(productArea)...)
+	}
+	for _, surface := range fm.Surfaces {
+		words = append(words, tokenize(surface)...)
+	}
+	for _, task := range fm.Tasks {
+		words = append(words, tokenize(task)...)
+	}
+	for _, permission := range fm.Permissions {
+		words = append(words, tokenize(permission)...)
+	}
 	for _, tag := range fm.APITags {
 		words = append(words, tokenize(tag)...)
 	}
-	for _, opID := range fm.OperationID {
+	for _, opID := range fm.OperationIDs {
 		words = append(words, tokenize(opID)...)
+	}
+	for _, command := range fm.CLICommands {
+		words = append(words, tokenize(command)...)
+	}
+	for _, group := range fm.CommandGroups {
+		words = append(words, tokenize(group)...)
+	}
+	for _, kind := range fm.DeclarativeKinds {
+		words = append(words, tokenize(kind)...)
 	}
 	return dedupeStrings(words)
 }
@@ -405,12 +485,16 @@ func collectBodyFields(schemaRef *openapi3.SchemaRef) []referenceField {
 	return fields
 }
 
-func buildLinks(docs []referenceDoc, fmByDocID map[string]frontMatter, operations []referenceOperation) []referenceLink {
+func buildLinks(docs []referenceDoc, operations []referenceOperation) []referenceLink {
 	links := make([]referenceLink, 0)
-	docByID := make(map[string]referenceDoc, len(docs))
 	opByID := make(map[string]referenceOperation, len(operations))
 	for _, doc := range docs {
-		docByID[doc.ID] = doc
+		for _, relatedDoc := range doc.RelatedDocs {
+			links = append(links,
+				referenceLink{SourceKind: "doc", SourceID: doc.ID, TargetKind: "doc", TargetID: relatedDoc, Reason: "frontmatter", Confidence: 100},
+				referenceLink{SourceKind: "doc", SourceID: relatedDoc, TargetKind: "doc", TargetID: doc.ID, Reason: "frontmatter", Confidence: 100},
+			)
+		}
 	}
 	for _, op := range operations {
 		opByID[op.OperationID] = op
@@ -427,8 +511,7 @@ func buildLinks(docs []referenceDoc, fmByDocID map[string]frontMatter, operation
 	}
 
 	for _, doc := range docs {
-		fm := fmByDocID[doc.ID]
-		for _, opID := range fm.OperationID {
+		for _, opID := range doc.OperationIDs {
 			if _, ok := opByID[opID]; !ok {
 				continue
 			}
@@ -437,7 +520,7 @@ func buildLinks(docs []referenceDoc, fmByDocID map[string]frontMatter, operation
 				referenceLink{SourceKind: "operation", SourceID: opID, TargetKind: "doc", TargetID: doc.ID, Reason: "frontmatter", Confidence: 100},
 			)
 		}
-		for _, command := range fm.CLICommands {
+		for _, command := range doc.CLICommands {
 			command = strings.TrimSpace(command)
 			if command == "" {
 				continue
@@ -461,12 +544,12 @@ func buildLinks(docs []referenceDoc, fmByDocID map[string]frontMatter, operation
 				continue
 			}
 			confidence := 60 + minInt(sharedTokens*5, 25)
-			if tagOverlap(fmByDocID[doc.ID].APITags, op.Tags) {
+			if tagOverlap(doc.APITags, op.Tags) {
 				confidence = 85
 			}
 			links = append(links,
-				referenceLink{SourceKind: "doc", SourceID: doc.ID, TargetKind: "operation", TargetID: op.OperationID, Reason: keywordReason(fmByDocID[doc.ID], op), Confidence: confidence},
-				referenceLink{SourceKind: "operation", SourceID: op.OperationID, TargetKind: "doc", TargetID: doc.ID, Reason: keywordReason(fmByDocID[doc.ID], op), Confidence: confidence},
+				referenceLink{SourceKind: "doc", SourceID: doc.ID, TargetKind: "operation", TargetID: op.OperationID, Reason: keywordReason(doc.APITags, op), Confidence: confidence},
+				referenceLink{SourceKind: "operation", SourceID: op.OperationID, TargetKind: "doc", TargetID: doc.ID, Reason: keywordReason(doc.APITags, op), Confidence: confidence},
 			)
 		}
 	}
@@ -474,8 +557,8 @@ func buildLinks(docs []referenceDoc, fmByDocID map[string]frontMatter, operation
 	return dedupeLinks(links)
 }
 
-func keywordReason(fm frontMatter, op referenceOperation) string {
-	if tagOverlap(fm.APITags, op.Tags) {
+func keywordReason(docTags []string, op referenceOperation) string {
+	if tagOverlap(docTags, op.Tags) {
 		return "tag-match"
 	}
 	return "keyword-match"
@@ -503,7 +586,7 @@ func renderGo(docs []referenceDoc, operations []referenceOperation, links []refe
 	b.WriteString("// Code generated by cmd/docsgen. DO NOT EDIT.\n")
 	b.WriteString("\npackage gen\n\n")
 	b.WriteString("type ReferenceIndex struct {\n\tDocs []ReferenceDoc\n\tOperations []ReferenceOperation\n\tLinks []ReferenceLink\n\tOpenAPISpecYAML string\n}\n\n")
-	b.WriteString("type ReferenceDoc struct {\n\tID string\n\tPath string\n\tSection string\n\tTitle string\n\tDescription string\n\tHeadings []string\n\tExcerpt string\n\tCodeExamples []string\n\tKeywords []string\n}\n\n")
+	b.WriteString("type ReferenceDoc struct {\n\tID string\n\tPath string\n\tSection string\n\tTitle string\n\tDescription string\n\tDocKind string\n\tAudiences []string\n\tProductAreas []string\n\tSurfaces []string\n\tTasks []string\n\tPrerequisites []string\n\tPermissions []string\n\tCLICommands []string\n\tCommandGroups []string\n\tOperationIDs []string\n\tAPITags []string\n\tDeclarativeKinds []string\n\tRelatedDocs []string\n\tHeadings []string\n\tExcerpt string\n\tCodeExamples []string\n\tKeywords []string\n\tLastVerified string\n\tSourceOfTruth []string\n}\n\n")
 	b.WriteString("type ReferenceOperation struct {\n\tOperationID string\n\tMethod string\n\tPath string\n\tTags []string\n\tSummary string\n\tDescription string\n\tParameters []ReferenceParam\n\tBodyFields []ReferenceField\n\tCLICommand string\n\tContentTypes []string\n}\n\n")
 	b.WriteString("type ReferenceParam struct {\n\tName string\n\tIn string\n\tType string\n\tDescription string\n\tRequired bool\n\tEnum []string\n}\n\n")
 	b.WriteString("type ReferenceField struct {\n\tName string\n\tType string\n\tDescription string\n\tRequired bool\n\tEnum []string\n}\n\n")
@@ -511,9 +594,12 @@ func renderGo(docs []referenceDoc, operations []referenceOperation, links []refe
 	b.WriteString("var CLIReferenceIndex = ReferenceIndex{\n")
 	b.WriteString("\tDocs: []ReferenceDoc{\n")
 	for _, doc := range docs {
-		fmt.Fprintf(&b, "\t\t{ID: %s, Path: %s, Section: %s, Title: %s, Description: %s, Headings: %s, Excerpt: %s, CodeExamples: %s, Keywords: %s},\n",
-			goString(doc.ID), goString(doc.Path), goString(doc.Section), goString(doc.Title), goString(doc.Description),
-			goStringSlice(doc.Headings), goString(doc.Excerpt), goStringSlice(doc.CodeExamples), goStringSlice(doc.Keywords))
+		fmt.Fprintf(&b, "\t\t{ID: %s, Path: %s, Section: %s, Title: %s, Description: %s, DocKind: %s, Audiences: %s, ProductAreas: %s, Surfaces: %s, Tasks: %s, Prerequisites: %s, Permissions: %s, CLICommands: %s, CommandGroups: %s, OperationIDs: %s, APITags: %s, DeclarativeKinds: %s, RelatedDocs: %s, Headings: %s, Excerpt: %s, CodeExamples: %s, Keywords: %s, LastVerified: %s, SourceOfTruth: %s},\n",
+			goString(doc.ID), goString(doc.Path), goString(doc.Section), goString(doc.Title), goString(doc.Description), goString(doc.DocKind),
+			goStringSlice(doc.Audiences), goStringSlice(doc.ProductAreas), goStringSlice(doc.Surfaces), goStringSlice(doc.Tasks), goStringSlice(doc.Prerequisites),
+			goStringSlice(doc.Permissions), goStringSlice(doc.CLICommands), goStringSlice(doc.CommandGroups), goStringSlice(doc.OperationIDs), goStringSlice(doc.APITags),
+			goStringSlice(doc.DeclarativeKinds), goStringSlice(doc.RelatedDocs), goStringSlice(doc.Headings), goString(doc.Excerpt), goStringSlice(doc.CodeExamples),
+			goStringSlice(doc.Keywords), goString(doc.LastVerified), goStringSlice(doc.SourceOfTruth))
 	}
 	b.WriteString("\t},\n\tOperations: []ReferenceOperation{\n")
 	for _, op := range operations {

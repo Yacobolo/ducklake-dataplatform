@@ -1,3 +1,24 @@
+---
+title: Architecture Governance
+description: Engineering governance rules for the codebase and architecture boundaries.
+doc_kind: runbook
+audiences: [ai-agents, builders]
+product_areas: [engineering, governance]
+surfaces: [docs, cli]
+tasks: [understand architecture checks, follow engineering governance, locate enforcement commands]
+prerequisites: [repository access]
+permissions: [engineering access]
+cli_commands: [task test:arch, task check]
+command_groups: [commands]
+operation_ids: []
+api_tags: []
+declarative_kinds: []
+related_docs: [reference/index, core-concepts/index]
+keywords: [architecture governance, boundaries, engineering checks]
+last_verified: 2026-03-12
+source_of_truth: [docs]
+---
+
 # Architecture Governance
 
 This project enforces hexagonal architecture boundaries with automated governance checks.

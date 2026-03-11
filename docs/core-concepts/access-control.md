@@ -1,6 +1,22 @@
 ---
 title: Platform Objects and Governance
 description: Understand the objects users consume and the governance layers that shape visibility.
+doc_kind: concept
+audiences: [ai-agents, end-users, builders, admins]
+product_areas: [catalogs, governance, identity]
+surfaces: [api, cli, declarative]
+tasks: [understand securables, model access, reason about policy effects]
+prerequisites: [basic platform familiarity]
+permissions: [documentation access]
+cli_commands: [security grants list, find tables]
+command_groups: [security, find]
+operation_ids: [listGrants, listCatalogs, listSchemas]
+api_tags: [Catalogs, Governance, Identity]
+declarative_kinds: [catalog, schema, grant-list, group-list, row-filter-list, column-mask-list]
+related_docs: [how-to/access-control, reference/feature-catalogs-and-governance, reference/glossary]
+keywords: [securables, governance model, principals]
+last_verified: 2026-03-12
+source_of_truth: [docs, api/gen/openapi.yaml, schemas/declarative/v1/index.json]
 ---
 
 # Platform Objects and Governance

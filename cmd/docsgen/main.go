@@ -32,7 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := discovery.Generate(*docsDir, *openapiPath, *cliIndexOut); err != nil {
+	if err := discovery.Generate(*docsDir, *openapiPath, *declIndexPath, *cliIndexOut); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error: generate CLI discovery index: %v\n", err)
 		os.Exit(1)
 	}

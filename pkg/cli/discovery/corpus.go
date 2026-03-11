@@ -26,8 +26,14 @@ type CommandInfo struct {
 
 // SearchOptions controls corpus search behavior.
 type SearchOptions struct {
-	Kind  string
-	Limit int
+	Kind        string
+	Limit       int
+	Section     string
+	Audience    string
+	ProductArea string
+	Surface     string
+	Task        string
+	DocKind     string
 }
 
 // SearchResult is a single ranked discovery result.
@@ -37,6 +43,13 @@ type SearchResult struct {
 	Title             string   `json:"title"`
 	Summary           string   `json:"summary"`
 	Path              string   `json:"path,omitempty"`
+	DocKind           string   `json:"doc_kind,omitempty"`
+	Audiences         []string `json:"audiences,omitempty"`
+	ProductAreas      []string `json:"product_areas,omitempty"`
+	Surfaces          []string `json:"surfaces,omitempty"`
+	Tasks             []string `json:"tasks,omitempty"`
+	Permissions       []string `json:"permissions,omitempty"`
+	LastVerified      string   `json:"last_verified,omitempty"`
 	Score             int      `json:"score"`
 	MatchedFields     []string `json:"matched_fields,omitempty"`
 	RelatedCommands   []string `json:"related_commands,omitempty"`
@@ -54,6 +67,7 @@ type Corpus struct {
 	commandToDocs   map[string][]string
 	docToCommands   map[string][]string
 	docToOps        map[string][]string
+	docToDocs       map[string][]string
 	opToCommands    map[string][]string
 	opToDocs        map[string][]string
 	fuzzyCandidates []fuzzyCandidate
@@ -77,6 +91,7 @@ func NewCorpus(commands []CommandInfo, index gen.ReferenceIndex) Corpus {
 		commandToDocs:   map[string][]string{},
 		docToCommands:   map[string][]string{},
 		docToOps:        map[string][]string{},
+		docToDocs:       map[string][]string{},
 		opToCommands:    map[string][]string{},
 		opToDocs:        map[string][]string{},
 		fuzzyCandidates: make([]fuzzyCandidate, 0, len(commands)+len(index.Docs)+len(index.Operations)),
@@ -110,6 +125,12 @@ func NewCorpus(commands []CommandInfo, index gen.ReferenceIndex) Corpus {
 				if _, ok := corpus.operations[link.TargetID]; ok {
 					corpus.docToOps[link.SourceID] = appendUnique(corpus.docToOps[link.SourceID], link.TargetID)
 					corpus.opToDocs[link.TargetID] = appendUnique(corpus.opToDocs[link.TargetID], link.SourceID)
+				}
+			}
+		case link.SourceKind == "doc" && link.TargetKind == "doc":
+			if _, ok := corpus.docs[link.SourceID]; ok {
+				if _, ok := corpus.docs[link.TargetID]; ok {
+					corpus.docToDocs[link.SourceID] = appendUnique(corpus.docToDocs[link.SourceID], link.TargetID)
 				}
 			}
 		case link.SourceKind == "doc" && link.TargetKind == "command":
@@ -179,11 +200,10 @@ func (c Corpus) FindOperation(opID string) (*gen.ReferenceOperation, bool) {
 }
 
 // ListDocs returns all docs, optionally filtered by top-level section.
-func (c Corpus) ListDocs(section string) []gen.ReferenceDoc {
-	section = strings.TrimSpace(section)
+func (c Corpus) ListDocs(opts SearchOptions) []gen.ReferenceDoc {
 	out := make([]gen.ReferenceDoc, 0, len(c.docs))
 	for _, doc := range c.docs {
-		if section != "" && doc.Section != section {
+		if !matchesDocFilters(doc, opts) {
 			continue
 		}
 		out = append(out, doc)
@@ -205,6 +225,11 @@ func (c Corpus) RelatedCommandsForDoc(docID string) []string {
 // RelatedOperationsForDoc returns operation IDs linked to the given document.
 func (c Corpus) RelatedOperationsForDoc(docID string) []string {
 	return append([]string(nil), c.docToOps[docID]...)
+}
+
+// RelatedDocsForDoc returns doc IDs linked to the given document.
+func (c Corpus) RelatedDocsForDoc(docID string) []string {
+	return append([]string(nil), c.docToDocs[docID]...)
 }
 
 // RelatedDocsForOperation returns doc IDs linked to the given operation.
@@ -229,6 +254,7 @@ func (c Corpus) Search(query string, opts SearchOptions) []SearchResult {
 		results = c.mergeFuzzy(results, query, opts.Kind)
 	}
 	sortResults(results)
+	results = filterResults(results, c, opts)
 	if opts.Limit > 0 && len(results) > opts.Limit {
 		results = results[:opts.Limit]
 	}
@@ -257,7 +283,7 @@ func (c Corpus) exactSearch(query string, queryTokens []string, kind string) []S
 		if !matchKind("doc", kind) {
 			continue
 		}
-		if result, ok := scoreDoc(query, queryTokens, doc, c.docToCommands[id], c.docToOps[id]); ok {
+		if result, ok := scoreDoc(query, queryTokens, doc, c.docToCommands[id], c.docToOps[id], c.docToDocs[id]); ok {
 			results = append(results, result)
 		}
 	}
@@ -314,10 +340,18 @@ func (c Corpus) mergeFuzzy(results []SearchResult, query, kind string) []SearchR
 				Title:             doc.Title,
 				Summary:           firstNonEmpty(doc.Description, doc.Excerpt),
 				Path:              doc.Path,
+				DocKind:           doc.DocKind,
+				Audiences:         append([]string(nil), doc.Audiences...),
+				ProductAreas:      append([]string(nil), doc.ProductAreas...),
+				Surfaces:          append([]string(nil), doc.Surfaces...),
+				Tasks:             append([]string(nil), doc.Tasks...),
+				Permissions:       append([]string(nil), doc.Permissions...),
+				LastVerified:      doc.LastVerified,
 				Score:             35,
 				MatchedFields:     []string{"fuzzy"},
 				RelatedCommands:   append([]string(nil), c.docToCommands[candidate.ID]...),
 				RelatedOperations: append([]string(nil), c.docToOps[candidate.ID]...),
+				RelatedDocs:       append([]string(nil), c.docToDocs[candidate.ID]...),
 			})
 		}
 	}
@@ -391,10 +425,11 @@ func scoreOperation(query string, queryTokens []string, op gen.ReferenceOperatio
 	}, true
 }
 
-func scoreDoc(query string, queryTokens []string, doc gen.ReferenceDoc, relatedCommands, relatedOps []string) (SearchResult, bool) {
+func scoreDoc(query string, queryTokens []string, doc gen.ReferenceDoc, relatedCommands, relatedOps, relatedDocs []string) (SearchResult, bool) {
 	fields := []weightedField{
 		{name: "title", value: doc.Title, weight: 100},
 		{name: "path", value: doc.Path, weight: 100},
+		{name: "doc_kind", value: doc.DocKind, weight: 25},
 		{name: "summary", value: doc.Description, weight: 50},
 		{name: "excerpt", value: doc.Excerpt, weight: 10},
 	}
@@ -403,6 +438,21 @@ func scoreDoc(query string, queryTokens []string, doc gen.ReferenceDoc, relatedC
 	}
 	for _, keyword := range doc.Keywords {
 		fields = append(fields, weightedField{name: "keyword", value: keyword, weight: 30})
+	}
+	for _, audience := range doc.Audiences {
+		fields = append(fields, weightedField{name: "audience", value: audience, weight: 20})
+	}
+	for _, productArea := range doc.ProductAreas {
+		fields = append(fields, weightedField{name: "product_area", value: productArea, weight: 25})
+	}
+	for _, surface := range doc.Surfaces {
+		fields = append(fields, weightedField{name: "surface", value: surface, weight: 20})
+	}
+	for _, task := range doc.Tasks {
+		fields = append(fields, weightedField{name: "task", value: task, weight: 25})
+	}
+	for _, permission := range doc.Permissions {
+		fields = append(fields, weightedField{name: "permission", value: permission, weight: 10})
 	}
 	for _, example := range doc.CodeExamples {
 		fields = append(fields, weightedField{name: "example", value: example, weight: 10})
@@ -419,10 +469,18 @@ func scoreDoc(query string, queryTokens []string, doc gen.ReferenceDoc, relatedC
 		Title:             doc.Title,
 		Summary:           firstNonEmpty(doc.Description, doc.Excerpt),
 		Path:              doc.Path,
+		DocKind:           doc.DocKind,
+		Audiences:         append([]string(nil), doc.Audiences...),
+		ProductAreas:      append([]string(nil), doc.ProductAreas...),
+		Surfaces:          append([]string(nil), doc.Surfaces...),
+		Tasks:             append([]string(nil), doc.Tasks...),
+		Permissions:       append([]string(nil), doc.Permissions...),
+		LastVerified:      doc.LastVerified,
 		Score:             score,
 		MatchedFields:     matched,
 		RelatedCommands:   append([]string(nil), relatedCommands...),
 		RelatedOperations: append([]string(nil), relatedOps...),
+		RelatedDocs:       append([]string(nil), relatedDocs...),
 	}, true
 }
 
@@ -475,7 +533,7 @@ func linkedBoost(count int) int {
 	if count <= 0 {
 		return 0
 	}
-	return count * 15
+	return minInt(count, 4) * 15
 }
 
 func sortResults(results []SearchResult) {
@@ -509,6 +567,66 @@ func dedupeResults(results []SearchResult) []SearchResult {
 func matchKind(candidate, filter string) bool {
 	filter = strings.TrimSpace(filter)
 	return filter == "" || filter == "all" || filter == candidate
+}
+
+func filterResults(results []SearchResult, corpus Corpus, opts SearchOptions) []SearchResult {
+	if strings.TrimSpace(opts.Section) == "" &&
+		strings.TrimSpace(opts.Audience) == "" &&
+		strings.TrimSpace(opts.ProductArea) == "" &&
+		strings.TrimSpace(opts.Surface) == "" &&
+		strings.TrimSpace(opts.Task) == "" &&
+		strings.TrimSpace(opts.DocKind) == "" {
+		return results
+	}
+
+	filtered := results[:0]
+	for _, result := range results {
+		if result.Kind != "doc" {
+			continue
+		}
+		doc, ok := corpus.FindDoc(result.ID)
+		if !ok || !matchesDocFilters(*doc, opts) {
+			continue
+		}
+		filtered = append(filtered, result)
+	}
+	return filtered
+}
+
+func matchesDocFilters(doc gen.ReferenceDoc, opts SearchOptions) bool {
+	if opts.Section != "" && doc.Section != opts.Section {
+		return false
+	}
+	if opts.DocKind != "" && !listContains(doc.DocKind, opts.DocKind) {
+		return false
+	}
+	if opts.Audience != "" && !sliceContains(doc.Audiences, opts.Audience) {
+		return false
+	}
+	if opts.ProductArea != "" && !sliceContains(doc.ProductAreas, opts.ProductArea) {
+		return false
+	}
+	if opts.Surface != "" && !sliceContains(doc.Surfaces, opts.Surface) {
+		return false
+	}
+	if opts.Task != "" && !sliceContains(doc.Tasks, opts.Task) {
+		return false
+	}
+	return true
+}
+
+func sliceContains(values []string, target string) bool {
+	target = normalizeID(target)
+	for _, value := range values {
+		if normalizeID(value) == target {
+			return true
+		}
+	}
+	return false
+}
+
+func listContains(value, target string) bool {
+	return normalizeID(value) == normalizeID(target)
 }
 
 func kindRank(kind string) int {
@@ -592,6 +710,13 @@ func lowerCandidateLabels(values []fuzzyCandidate) []string {
 
 func maxInt(a, b int) int {
 	if a > b {
+		return a
+	}
+	return b
+}
+
+func minInt(a, b int) int {
+	if a < b {
 		return a
 	}
 	return b

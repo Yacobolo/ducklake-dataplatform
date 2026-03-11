@@ -1,6 +1,22 @@
 ---
 title: Build Data Products
 description: Learn the objects and workflows behind governed data products in Duck.
+doc_kind: overview
+audiences: [ai-agents, builders, admins]
+product_areas: [catalogs, governance, declarative, compute]
+surfaces: [docs, api, cli, declarative]
+tasks: [understand data product model, choose concept guide, plan build workflows]
+prerequisites: [basic platform familiarity]
+permissions: [documentation access]
+cli_commands: [docs search, commands --group catalog]
+command_groups: [docs, commands]
+operation_ids: []
+api_tags: []
+declarative_kinds: []
+related_docs: [core-concepts/access-control, core-concepts/declarative, core-concepts/compute-and-query]
+keywords: [data products, concepts, governed assets]
+last_verified: 2026-03-12
+source_of_truth: [docs]
 ---
 
 # Build Data Products

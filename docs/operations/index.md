@@ -1,6 +1,22 @@
 ---
 title: Administration
 description: Manage access, security, platform settings, and distributed compute safely.
+doc_kind: overview
+audiences: [ai-agents, admins]
+product_areas: [operations, security, compute]
+surfaces: [docs, api, cli, declarative]
+tasks: [choose admin guide, assess platform posture, plan rollout]
+prerequisites: [admin role, environment context]
+permissions: [admin access]
+cli_commands: [config show, docs search]
+command_groups: [config, docs]
+operation_ids: [getHealth]
+api_tags: [Health]
+declarative_kinds: []
+related_docs: [operations/configuration, operations/security-checklist, operations/distributed-compute]
+keywords: [operations, administration, rollout]
+last_verified: 2026-03-12
+source_of_truth: [docs, api/gen/openapi.yaml]
 ---
 
 # Administration

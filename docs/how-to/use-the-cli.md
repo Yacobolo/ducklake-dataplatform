@@ -1,6 +1,22 @@
 ---
 title: Query and Explore Data
 description: Discover catalogs, inspect objects, and query data through Duck's available access surfaces.
+doc_kind: task
+audiences: [ai-agents, end-users, builders]
+product_areas: [queries, catalogs, governance]
+surfaces: [cli, api, sql]
+tasks: [discover data, inspect objects, run secure queries]
+prerequisites: [deployment URL, valid credential, query access]
+permissions: [catalog visibility, query access]
+cli_commands: [find tables, describe table, query run, api search]
+command_groups: [find, describe, query, api]
+operation_ids: [listCatalogs, listSchemas, getTable, submitQuery]
+api_tags: [Catalogs, Queries]
+declarative_kinds: []
+related_docs: [start-here/quickstart, how-to/access-control, reference/feature-query-and-compute]
+keywords: [cli query, explore data, discover objects]
+last_verified: 2026-03-12
+source_of_truth: [docs, api/gen/openapi.yaml]
 ---
 
 # Query and Explore Data

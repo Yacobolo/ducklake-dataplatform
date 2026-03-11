@@ -1,6 +1,22 @@
 ---
 title: Declarative Workflows
 description: Understand the declarative model, schema validation, and desired-state workflows.
+doc_kind: concept
+audiences: [ai-agents, builders, admins]
+product_areas: [declarative, governance, catalogs]
+surfaces: [cli, declarative]
+tasks: [understand declarative model, distinguish validation types, plan declarative workflows]
+prerequisites: [basic platform familiarity]
+permissions: [documentation access]
+cli_commands: [validate, plan, apply]
+command_groups: [validate, plan, apply]
+operation_ids: []
+api_tags: []
+declarative_kinds: ["*"]
+related_docs: [how-to/declarative-workflows, reference/declarative, how-to/catalog-and-ingestion]
+keywords: [declarative model, schema validation, semantic validation]
+last_verified: 2026-03-12
+source_of_truth: [docs, schemas/declarative/v1/index.json]
 ---
 
 # Declarative Workflows

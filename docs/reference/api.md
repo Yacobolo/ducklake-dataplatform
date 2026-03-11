@@ -1,6 +1,22 @@
 ---
 title: Advanced API Reference
 description: Use the generated API reference when you need exact interface detail.
+doc_kind: reference
+audiences: [ai-agents, builders, admins]
+product_areas: [api, reference]
+surfaces: [api, docs]
+tasks: [inspect endpoint contracts, find operation IDs, locate schema detail]
+prerequisites: [target workflow or feature area]
+permissions: [documentation access]
+cli_commands: [api search, api show]
+command_groups: [api]
+operation_ids: []
+api_tags: ["*"]
+declarative_kinds: []
+related_docs: [reference/index, reference/feature-query-and-compute, reference/feature-catalogs-and-governance]
+keywords: [api reference, operation ids, endpoint docs]
+last_verified: 2026-03-12
+source_of_truth: [docs, api/gen/openapi.yaml]
 ---
 
 # Advanced API Reference

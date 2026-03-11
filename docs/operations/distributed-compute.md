@@ -1,6 +1,22 @@
 ---
 title: Distributed Compute
 description: Operate remote compute while keeping control-plane enforcement centralized.
+doc_kind: task
+audiences: [ai-agents, admins]
+product_areas: [compute, operations]
+surfaces: [api, cli, remote-compute]
+tasks: [plan compute rollout, configure workers, troubleshoot compute health]
+prerequisites: [admin role, worker infrastructure]
+permissions: [compute administration]
+cli_commands: [api search compute, config show]
+command_groups: [api, config]
+operation_ids: [listComputeEndpoints, getComputeEndpointHealth, createComputeEndpoint]
+api_tags: [Compute, Health]
+declarative_kinds: [compute-endpoint-list, compute-assignment-list, compute-routing-defaults]
+related_docs: [core-concepts/compute-and-query, operations/configuration, reference/feature-query-and-compute]
+keywords: [distributed compute, workers, routing]
+last_verified: 2026-03-12
+source_of_truth: [docs, api/gen/openapi.yaml, schemas/declarative/v1/index.json]
 ---
 
 # Distributed Compute

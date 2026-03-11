@@ -1,0 +1,49 @@
+# Duck Data Platform Docs
+
+> AI-first product documentation for users, admins, builders, and agents.
+
+## Core docs
+
+- [Architecture Governance](/architecture-governance): Engineering governance rules for the codebase and architecture boundaries.
+- [Browser-Local Compute Runbook](/browser-local-compute): Current browser-local DuckDB WASM execution model, limitations, and support expectations.
+- [Platform Objects and Governance](/core-concepts/access-control): Understand the objects users consume and the governance layers that shape visibility.
+- [Query and Compute](/core-concepts/compute-and-query): Understand how query execution, routing, and worker boundaries fit together for platform users.
+- [Declarative Workflows](/core-concepts/declarative): Understand the declarative model, schema validation, and desired-state workflows.
+- [Build Data Products](/core-concepts/index): Learn the objects and workflows behind governed data products in Duck.
+- [Manage Access](/how-to/access-control): Create secure access paths with groups, grants, row filters, and column masks.
+- [Access the Platform](/how-to/authentication): Understand the main sign-in and credential paths available to platform users.
+- [Load Data and Build Assets](/how-to/catalog-and-ingestion): Bring data into Duck and build tables, models, views, and other reusable assets.
+- [Work Declaratively](/how-to/declarative-workflows): Use validate-plan-apply workflows to manage platform state as code.
+- [Use Duck](/how-to/index): Complete common product tasks with expected outcomes and next steps.
+- [Query and Explore Data](/how-to/use-the-cli): Discover catalogs, inspect objects, and query data through Duck's available access surfaces.
+- [Duck Data Platform](/index): Product documentation for people and AI agents using Duck across querying, governance, and data product workflows.
+- [Platform Settings](/operations/configuration): Use Duck's platform settings safely in shared and production environments.
+- [Distributed Compute](/operations/distributed-compute): Operate remote compute while keeping control-plane enforcement centralized.
+- [Administration](/operations/index): Manage access, security, platform settings, and distributed compute safely.
+- [Security Checklist](/operations/security-checklist): Review the minimum controls to run Duck in a shared or production environment.
+- [Advanced API Reference](/reference/api): Use the generated API reference when you need exact interface detail.
+- [Advanced CLI Reference](/reference/cli): Use the CLI when your organization exposes command-line workflows and you need command-level detail.
+- [Advanced Declarative Reference](/reference/declarative): Use the generated declarative schema reference when you need field-level schema detail.
+- [Assets and Lineage](/reference/feature-assets-and-lineage): Use this feature guide for governed assets, checks, runs, and lineage inspection.
+- [Catalogs and Governance](/reference/feature-catalogs-and-governance): Use this feature guide for catalogs, schemas, views, grants, row filters, and column masks.
+- [Identity and Authentication](/reference/feature-identity-and-auth): Use this feature guide for sign-in, principals, groups, and API key workflows.
+- [Models and Pipelines](/reference/feature-models-and-pipelines): Use this feature guide for models, macros, model runs, and pipeline orchestration workflows.
+- [Notebooks and Dashboards](/reference/feature-notebooks-and-dashboards): Use this feature guide for notebook authoring, notebook jobs, and dashboard publishing workflows.
+- [Query and Compute](/reference/feature-query-and-compute): Use this feature guide for query execution, async queries, compute endpoints, and health checks.
+- [Semantic Layer](/reference/feature-semantic-layer): Use this feature guide for semantic models, metrics, relationships, and metric query execution.
+- [Storage and Integrations](/reference/feature-storage-and-integrations): Use this feature guide for storage credentials, external locations, and external system integrations.
+- [Glossary](/reference/glossary): Shared terminology for the platform, API, declarative config, and operations guides.
+- [Reference](/reference/index): Start with product guidance and use advanced reference only when necessary.
+- [Ways to Access Duck](/start-here/deployment-modes): Understand the main access paths for users, builders, and admins.
+- [Getting Started](/start-here/index): Understand what Duck is, who it is for, and how platform users begin.
+- [Quickstart](/start-here/quickstart): Access Duck, choose an auth path, and run a first secure query.
+
+## Machine-readable artifacts
+
+- [/agent-index.json](/agent-index.json): structured documentation graph for agent retrieval.
+- [/llms-full.txt](/llms-full.txt): concatenated markdown corpus for long-context ingestion.
+
+## Coverage summary
+
+- API tags covered: 16/16
+- Declarative kinds covered: 24/24

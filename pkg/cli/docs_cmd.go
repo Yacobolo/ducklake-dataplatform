@@ -26,8 +26,7 @@ func newDocsCmd() *cobra.Command {
 
 func newDocsSearchCmd() *cobra.Command {
 	var (
-		section string
-		limit   int
+		opts clipkg.SearchOptions
 	)
 
 	cmd := &cobra.Command{
@@ -36,17 +35,8 @@ func newDocsSearchCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			corpus := loadDiscoveryCorpus(cmd.Root())
-			results := corpus.Search(args[0], clipkg.SearchOptions{Kind: "doc", Limit: limit})
-			if section != "" {
-				filtered := results[:0]
-				for _, result := range results {
-					doc, ok := corpus.FindDoc(result.ID)
-					if ok && doc.Section == section {
-						filtered = append(filtered, result)
-					}
-				}
-				results = filtered
-			}
+			opts.Kind = "doc"
+			results := corpus.Search(args[0], opts)
 
 			if getOutputFormat(cmd) == "json" {
 				return apiruntime.PrintJSON(os.Stdout, map[string]any{"results": results})
@@ -61,8 +51,13 @@ func newDocsSearchCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&section, "section", "", "Filter by docs section")
-	cmd.Flags().IntVar(&limit, "limit", 10, "Maximum number of results")
+	cmd.Flags().StringVar(&opts.Section, "section", "", "Filter by docs section")
+	cmd.Flags().StringVar(&opts.Audience, "audience", "", "Filter by audience")
+	cmd.Flags().StringVar(&opts.ProductArea, "product-area", "", "Filter by product area")
+	cmd.Flags().StringVar(&opts.Surface, "surface", "", "Filter by access surface")
+	cmd.Flags().StringVar(&opts.Task, "task", "", "Filter by task")
+	cmd.Flags().StringVar(&opts.DocKind, "doc-kind", "", "Filter by doc kind")
+	cmd.Flags().IntVar(&opts.Limit, "limit", 10, "Maximum number of results")
 	return cmd
 }
 
@@ -80,6 +75,7 @@ func newDocsShowCmd() *cobra.Command {
 
 			payload := map[string]any{
 				"doc":                doc,
+				"related_docs":       corpus.RelatedDocsForDoc(doc.ID),
 				"related_commands":   corpus.RelatedCommandsForDoc(doc.ID),
 				"related_operations": corpus.RelatedOperationsForDoc(doc.ID),
 			}
@@ -91,6 +87,25 @@ func newDocsShowCmd() *cobra.Command {
 			_, _ = fmt.Fprintf(os.Stdout, "id:          %s\n", doc.ID)
 			_, _ = fmt.Fprintf(os.Stdout, "path:        %s\n", doc.Path)
 			_, _ = fmt.Fprintf(os.Stdout, "section:     %s\n", doc.Section)
+			_, _ = fmt.Fprintf(os.Stdout, "doc_kind:    %s\n", doc.DocKind)
+			if len(doc.Audiences) > 0 {
+				_, _ = fmt.Fprintf(os.Stdout, "audiences:   %s\n", strings.Join(doc.Audiences, ", "))
+			}
+			if len(doc.ProductAreas) > 0 {
+				_, _ = fmt.Fprintf(os.Stdout, "areas:       %s\n", strings.Join(doc.ProductAreas, ", "))
+			}
+			if len(doc.Surfaces) > 0 {
+				_, _ = fmt.Fprintf(os.Stdout, "surfaces:    %s\n", strings.Join(doc.Surfaces, ", "))
+			}
+			if len(doc.Tasks) > 0 {
+				_, _ = fmt.Fprintf(os.Stdout, "tasks:       %s\n", strings.Join(doc.Tasks, ", "))
+			}
+			if len(doc.Permissions) > 0 {
+				_, _ = fmt.Fprintf(os.Stdout, "permissions: %s\n", strings.Join(doc.Permissions, ", "))
+			}
+			if doc.LastVerified != "" {
+				_, _ = fmt.Fprintf(os.Stdout, "verified:    %s\n", doc.LastVerified)
+			}
 			if doc.Description != "" {
 				_, _ = fmt.Fprintf(os.Stdout, "description: %s\n", doc.Description)
 			}
@@ -111,13 +126,19 @@ func newDocsShowCmd() *cobra.Command {
 					_, _ = fmt.Fprintln(os.Stdout, "```")
 				}
 			}
+			if relatedDocs := corpus.RelatedDocsForDoc(doc.ID); len(relatedDocs) > 0 {
+				_, _ = fmt.Fprintln(os.Stdout, "\nRELATED DOCS:")
+				for _, relatedDoc := range relatedDocs {
+					_, _ = fmt.Fprintf(os.Stdout, "- %s\n", relatedDoc)
+				}
+			}
 			return nil
 		},
 	}
 }
 
 func newDocsListCmd() *cobra.Command {
-	var section string
+	var opts clipkg.SearchOptions
 
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -125,7 +146,7 @@ func newDocsListCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			corpus := loadDiscoveryCorpus(cmd.Root())
-			docs := corpus.ListDocs(section)
+			docs := corpus.ListDocs(opts)
 
 			if getOutputFormat(cmd) == "json" {
 				return apiruntime.PrintJSON(os.Stdout, docs)
@@ -140,6 +161,11 @@ func newDocsListCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&section, "section", "", "Filter by docs section")
+	cmd.Flags().StringVar(&opts.Section, "section", "", "Filter by docs section")
+	cmd.Flags().StringVar(&opts.Audience, "audience", "", "Filter by audience")
+	cmd.Flags().StringVar(&opts.ProductArea, "product-area", "", "Filter by product area")
+	cmd.Flags().StringVar(&opts.Surface, "surface", "", "Filter by access surface")
+	cmd.Flags().StringVar(&opts.Task, "task", "", "Filter by task")
+	cmd.Flags().StringVar(&opts.DocKind, "doc-kind", "", "Filter by doc kind")
 	return cmd
 }

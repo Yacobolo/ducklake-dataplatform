@@ -1,6 +1,22 @@
 ---
 title: Security Checklist
 description: Review the minimum controls to run Duck in a shared or production environment.
+doc_kind: task
+audiences: [ai-agents, admins]
+product_areas: [security, auth, governance]
+surfaces: [api, cli, deployment, declarative]
+tasks: [audit security posture, review auth controls, review governance controls]
+prerequisites: [admin role, environment access]
+permissions: [security administration]
+cli_commands: [auth whoami, security grants list, config show]
+command_groups: [auth, security, config]
+operation_ids: [listAPIKeys, listGrants, getHealth]
+api_tags: [Auth, Governance, Identity, Health]
+declarative_kinds: [api-key-list, grant-list, row-filter-list, column-mask-list, principal-list]
+related_docs: [operations/configuration, how-to/access-control, reference/feature-catalogs-and-governance]
+keywords: [security checklist, hardening, credential hygiene]
+last_verified: 2026-03-12
+source_of_truth: [docs, api/gen/openapi.yaml, schemas/declarative/v1/index.json]
 ---
 
 # Security Checklist

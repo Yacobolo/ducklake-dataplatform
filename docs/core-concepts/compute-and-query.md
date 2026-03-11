@@ -1,6 +1,22 @@
 ---
 title: Query and Compute
 description: Understand how query execution, routing, and worker boundaries fit together for platform users.
+doc_kind: concept
+audiences: [ai-agents, end-users, builders, admins]
+product_areas: [queries, compute]
+surfaces: [api, cli, sql, remote-compute]
+tasks: [understand query path, reason about compute routing, plan remote execution]
+prerequisites: [basic platform familiarity]
+permissions: [documentation access]
+cli_commands: [query run, api show submitQuery]
+command_groups: [query, api]
+operation_ids: [submitQuery, executeQuery, getComputeEndpointHealth]
+api_tags: [Queries, Compute, Health]
+declarative_kinds: [compute-endpoint-list, compute-assignment-list, compute-routing-defaults]
+related_docs: [how-to/use-the-cli, operations/distributed-compute, reference/feature-query-and-compute]
+keywords: [query path, control plane, remote compute]
+last_verified: 2026-03-12
+source_of_truth: [docs, api/gen/openapi.yaml, schemas/declarative/v1/index.json]
 ---
 
 # Query and Compute
