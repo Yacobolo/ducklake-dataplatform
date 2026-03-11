@@ -26,6 +26,11 @@ type AdaptedNotebookAssets struct {
 	Dependencies []domain.AssetDependency
 }
 
+type AdaptedNotebookOutputAssets struct {
+	Assets       []domain.DataAsset
+	Dependencies []domain.AssetDependency
+}
+
 type AdaptedSemanticAssets struct {
 	Assets       []domain.DataAsset
 	Dependencies []domain.AssetDependency
@@ -83,7 +88,7 @@ func BuildPipelineAssetGraph(pipeline *domain.Pipeline, jobs []domain.PipelineJo
 	return &AdaptedPipelineAssets{Assets: assets, Dependencies: deps}, nil
 }
 
-func BuildModelAssetGraph(models []domain.Model) (*AdaptedModelAssets, error) {
+func BuildModelAssetGraph(models []domain.Model, linksByModelID map[string]domain.NotebookModelLink) (*AdaptedModelAssets, error) {
 	if len(models) == 0 {
 		return &AdaptedModelAssets{Assets: []domain.DataAsset{}, Dependencies: []domain.AssetDependency{}}, nil
 	}
@@ -141,6 +146,19 @@ func BuildModelAssetGraph(models []domain.Model) (*AdaptedModelAssets, error) {
 				DependencyType:  domain.DependencyTypeHard,
 			})
 		}
+
+		if link, ok := linksByModelID[model.ID]; ok && strings.TrimSpace(link.OutputCellID) != "" {
+			key := model.ID + "->" + link.OutputCellID
+			if _, exists := seen[key]; !exists {
+				seen[key] = struct{}{}
+				deps = append(deps, domain.AssetDependency{
+					ID:              domain.NewID(),
+					AssetID:         model.ID,
+					UpstreamAssetID: link.OutputCellID,
+					DependencyType:  domain.DependencyTypeHard,
+				})
+			}
+		}
 	}
 
 	return &AdaptedModelAssets{Assets: assets, Dependencies: deps}, nil
@@ -174,6 +192,51 @@ func BuildNotebookAssetGraph(notebooks []domain.Notebook) (*AdaptedNotebookAsset
 	}
 
 	return &AdaptedNotebookAssets{Assets: assets, Dependencies: []domain.AssetDependency{}}, nil
+}
+
+func BuildNotebookOutputAssetGraph(notebooks []domain.Notebook, links []domain.NotebookModelLink) (*AdaptedNotebookOutputAssets, error) {
+	if len(links) == 0 {
+		return &AdaptedNotebookOutputAssets{Assets: []domain.DataAsset{}, Dependencies: []domain.AssetDependency{}}, nil
+	}
+
+	notebooksByID := make(map[string]domain.Notebook, len(notebooks))
+	for _, notebook := range notebooks {
+		notebooksByID[notebook.ID] = notebook
+	}
+
+	assets := make([]domain.DataAsset, 0, len(links))
+	deps := make([]domain.AssetDependency, 0, len(links))
+	for _, link := range links {
+		if strings.TrimSpace(link.NotebookID) == "" {
+			return nil, domain.ErrValidation("notebook link notebook_id is required")
+		}
+		if strings.TrimSpace(link.OutputCellID) == "" {
+			return nil, domain.ErrValidation("notebook link output_cell_id is required")
+		}
+
+		notebook, ok := notebooksByID[link.NotebookID]
+		if !ok {
+			return nil, domain.ErrValidation("notebook output link references unknown notebook %q", link.NotebookID)
+		}
+
+		assets = append(assets, domain.DataAsset{
+			ID:          link.OutputCellID,
+			AssetKey:    notebookOutputAssetKey(link.NotebookID, link.OutputCellID),
+			AssetType:   domain.AssetTypeNotebookOutput,
+			Owner:       notebook.Owner,
+			Description: fmt.Sprintf("Published output for notebook %s", notebook.Name),
+			Tags:        []string{"notebook_output", "notebook"},
+			IsActive:    true,
+		})
+		deps = append(deps, domain.AssetDependency{
+			ID:              domain.NewID(),
+			AssetID:         link.OutputCellID,
+			UpstreamAssetID: link.NotebookID,
+			DependencyType:  domain.DependencyTypeHard,
+		})
+	}
+
+	return &AdaptedNotebookOutputAssets{Assets: assets, Dependencies: dedupeDependencies(deps)}, nil
 }
 
 func BuildSemanticAssetGraph(
@@ -292,6 +355,7 @@ func BuildDashboardAssetGraph(
 	dashboards []domain.Dashboard,
 	widgetsByDashboard map[string][]domain.DashboardWidget,
 	notebooks []domain.Notebook,
+	linksByNotebookID map[string]domain.NotebookModelLink,
 	semanticModels []domain.SemanticModel,
 	metricsByModel map[string][]domain.SemanticMetric,
 	preAggsByModel map[string][]domain.SemanticPreAggregation,
@@ -338,6 +402,15 @@ func BuildDashboardAssetGraph(
 			switch widget.Source.Kind {
 			case domain.DashboardWidgetSourceNotebookCell:
 				if widget.Source.NotebookCell == nil {
+					continue
+				}
+				if link, ok := linksByNotebookID[widget.Source.NotebookCell.NotebookID]; ok && link.OutputCellID == widget.Source.NotebookCell.CellID {
+					deps = append(deps, domain.AssetDependency{
+						ID:              domain.NewID(),
+						AssetID:         dashboard.ID,
+						UpstreamAssetID: link.OutputCellID,
+						DependencyType:  domain.DependencyTypeHard,
+					})
 					continue
 				}
 				if _, ok := notebookIDs[widget.Source.NotebookCell.NotebookID]; ok {
@@ -397,6 +470,7 @@ func BuildDashboardAssetGraph(
 func SyncModelsToAssets(
 	ctx context.Context,
 	modelRepo domain.ModelRepository,
+	notebookLinkRepo domain.NotebookModelLinkRepository,
 	assetRepo domain.DataAssetRepository,
 	assetDepRepo domain.AssetDependencyRepository,
 ) error {
@@ -409,9 +483,61 @@ func SyncModelsToAssets(
 		return fmt.Errorf("list models: %w", err)
 	}
 
-	adapted, err := BuildModelAssetGraph(models)
+	linksByModelID := make(map[string]domain.NotebookModelLink)
+	if notebookLinkRepo != nil {
+		for _, model := range models {
+			link, linkErr := notebookLinkRepo.GetByModelID(ctx, model.ID)
+			if linkErr != nil {
+				var notFoundErr *domain.NotFoundError
+				if errors.As(linkErr, &notFoundErr) {
+					continue
+				}
+				return fmt.Errorf("get notebook output link for model %s: %w", model.ID, linkErr)
+			}
+			linksByModelID[model.ID] = *link
+		}
+	}
+
+	adapted, err := BuildModelAssetGraph(models, linksByModelID)
 	if err != nil {
 		return fmt.Errorf("build model asset graph: %w", err)
+	}
+
+	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo)
+}
+
+func SyncNotebookOutputsToAssets(
+	ctx context.Context,
+	notebookRepo domain.NotebookRepository,
+	notebookLinkRepo domain.NotebookModelLinkRepository,
+	assetRepo domain.DataAssetRepository,
+	assetDepRepo domain.AssetDependencyRepository,
+) error {
+	if notebookRepo == nil || notebookLinkRepo == nil || assetRepo == nil || assetDepRepo == nil {
+		return nil
+	}
+
+	notebooks, err := listAllNotebooks(ctx, notebookRepo)
+	if err != nil {
+		return fmt.Errorf("list notebooks: %w", err)
+	}
+
+	links := make([]domain.NotebookModelLink, 0)
+	for _, notebook := range notebooks {
+		link, linkErr := notebookLinkRepo.GetByNotebookID(ctx, notebook.ID)
+		if linkErr != nil {
+			var notFoundErr *domain.NotFoundError
+			if errors.As(linkErr, &notFoundErr) {
+				continue
+			}
+			return fmt.Errorf("get notebook output link for notebook %s: %w", notebook.ID, linkErr)
+		}
+		links = append(links, *link)
+	}
+
+	adapted, err := BuildNotebookOutputAssetGraph(notebooks, links)
+	if err != nil {
+		return fmt.Errorf("build notebook output asset graph: %w", err)
 	}
 
 	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo)
@@ -489,6 +615,7 @@ func SyncDashboardsToAssets(
 	dashboardRepo domain.DashboardRepository,
 	widgetRepo domain.DashboardWidgetRepository,
 	notebookRepo domain.NotebookRepository,
+	notebookLinkRepo domain.NotebookModelLinkRepository,
 	semanticModelRepo domain.SemanticModelRepository,
 	semanticMetricRepo domain.SemanticMetricRepository,
 	semanticPreAggRepo domain.SemanticPreAggregationRepository,
@@ -506,6 +633,20 @@ func SyncDashboardsToAssets(
 	notebooks, err := listAllNotebooks(ctx, notebookRepo)
 	if err != nil {
 		return fmt.Errorf("list notebooks: %w", err)
+	}
+	linksByNotebookID := make(map[string]domain.NotebookModelLink)
+	if notebookLinkRepo != nil {
+		for _, notebook := range notebooks {
+			link, linkErr := notebookLinkRepo.GetByNotebookID(ctx, notebook.ID)
+			if linkErr != nil {
+				var notFoundErr *domain.NotFoundError
+				if errors.As(linkErr, &notFoundErr) {
+					continue
+				}
+				return fmt.Errorf("get notebook output link for notebook %s: %w", notebook.ID, linkErr)
+			}
+			linksByNotebookID[notebook.ID] = *link
+		}
 	}
 	semanticModels, err := semanticModelRepo.ListAll(ctx)
 	if err != nil {
@@ -535,7 +676,7 @@ func SyncDashboardsToAssets(
 		widgetsByDashboard[dashboard.ID] = widgets
 	}
 
-	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, notebooks, semanticModels, metricsByModel, preAggsByModel)
+	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, notebooks, linksByNotebookID, semanticModels, metricsByModel, preAggsByModel)
 	if err != nil {
 		return fmt.Errorf("build dashboard asset graph: %w", err)
 	}
@@ -638,6 +779,10 @@ func semanticModelNaturalKey(projectName, modelName string) string {
 
 func metricNaturalKey(projectName, semanticModelName, metricName string) string {
 	return projectName + "." + semanticModelName + "." + metricName
+}
+
+func notebookOutputAssetKey(notebookID, outputCellID string) string {
+	return "notebook_output." + notebookID + "." + outputCellID
 }
 
 func matchingPreAggregationAssetID(preAggs []domain.SemanticPreAggregation, query *domain.DashboardSemanticQuerySource) string {

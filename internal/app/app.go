@@ -316,6 +316,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	sessionMgr := notebook.NewSessionManager(deps.DuckDB, eng, notebookRepo, notebookJobRepo, auditRepo)
 	gitRepoRepo := repository.NewGitRepoRepo(deps.WriteDB)
 	gitSvc := notebook.NewGitService(gitRepoRepo, auditRepo)
+	notebookModelLinkRepo := repository.NewNotebookModelLinkRepo(deps.WriteDB)
 
 	// === Asset orchestration ===
 	assetRepo := repository.NewDataAssetRepo(deps.WriteDB)
@@ -329,6 +330,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	var pipelineSvc *pipeline.Service
 	if err := pipeline.SyncNotebooksToAssets(ctx, notebookRepo, assetRepo, assetDepRepo); err != nil {
 		return nil, fmt.Errorf("sync notebooks to assets: %w", err)
+	}
+	if err := pipeline.SyncNotebookOutputsToAssets(ctx, notebookRepo, notebookModelLinkRepo, assetRepo, assetDepRepo); err != nil {
+		return nil, fmt.Errorf("sync notebook outputs to assets: %w", err)
 	}
 	assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
 	ioManager, err := newOrchestrationIOManager(cfg)
@@ -358,10 +362,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	// === Model ===
 	modelRepo := repository.NewModelRepo(deps.WriteDB)
-	if err := pipeline.SyncModelsToAssets(ctx, modelRepo, assetRepo, assetDepRepo); err != nil {
+	if err := pipeline.SyncModelsToAssets(ctx, modelRepo, notebookModelLinkRepo, assetRepo, assetDepRepo); err != nil {
 		return nil, fmt.Errorf("sync models to assets: %w", err)
 	}
-	notebookModelLinkRepo := repository.NewNotebookModelLinkRepo(deps.WriteDB)
 	modelRunRepo := repository.NewModelRunRepo(deps.WriteDB)
 	modelTestRepo := repository.NewModelTestRepo(deps.WriteDB)
 	modelTestResultRepo := repository.NewModelTestResultRepo(deps.WriteDB)
@@ -399,7 +402,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	if err := pipeline.SyncSemanticResourcesToAssets(ctx, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, modelRepo, assetRepo, assetDepRepo); err != nil {
 		return nil, fmt.Errorf("sync semantic resources to assets: %w", err)
 	}
-	if err := pipeline.SyncDashboardsToAssets(ctx, dashboardRepo, dashboardWidgetRepo, notebookRepo, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, assetRepo, assetDepRepo); err != nil {
+	if err := pipeline.SyncDashboardsToAssets(ctx, dashboardRepo, dashboardWidgetRepo, notebookRepo, notebookModelLinkRepo, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, assetRepo, assetDepRepo); err != nil {
 		return nil, fmt.Errorf("sync dashboards to assets: %w", err)
 	}
 

@@ -61,20 +61,19 @@ func TestBuildModelAssetGraph(t *testing.T) {
 		},
 	}
 
-	adapted, err := BuildModelAssetGraph(models)
+	adapted, err := BuildModelAssetGraph(models, map[string]domain.NotebookModelLink{
+		"m2": {NotebookID: "nb-1", OutputCellID: "cell-out"},
+	})
 	require.NoError(t, err)
 	require.Len(t, adapted.Assets, 2)
-	require.Len(t, adapted.Dependencies, 1)
+	require.Len(t, adapted.Dependencies, 2)
 
 	assert.Equal(t, "model.sales.stg_orders", adapted.Assets[0].AssetKey)
 	assert.Equal(t, "alice", adapted.Assets[0].Owner)
 	assert.Equal(t, "model.sales.fct_orders", adapted.Assets[1].AssetKey)
 	assert.Equal(t, "analytics", adapted.Assets[1].Owner)
 
-	dep := adapted.Dependencies[0]
-	assert.Equal(t, "m2", dep.AssetID)
-	assert.Equal(t, "m1", dep.UpstreamAssetID)
-	assert.Equal(t, domain.DependencyTypeHard, dep.DependencyType)
+	assert.ElementsMatch(t, []string{"m2->m1", "m2->cell-out"}, dependencyPairs(adapted.Dependencies))
 }
 
 func TestBuildNotebookAssetGraph(t *testing.T) {
@@ -87,6 +86,22 @@ func TestBuildNotebookAssetGraph(t *testing.T) {
 	require.Len(t, adapted.Assets, 1)
 	assert.Equal(t, "notebook.nb-1", adapted.Assets[0].AssetKey)
 	assert.Equal(t, domain.AssetTypeNotebook, adapted.Assets[0].AssetType)
+}
+
+func TestBuildNotebookOutputAssetGraph(t *testing.T) {
+	notebooks := []domain.Notebook{
+		{ID: "nb-1", Name: "Exec Summary", Owner: "alice"},
+	}
+	links := []domain.NotebookModelLink{
+		{NotebookID: "nb-1", ModelID: "model-1", OutputCellID: "cell-out"},
+	}
+
+	adapted, err := BuildNotebookOutputAssetGraph(notebooks, links)
+	require.NoError(t, err)
+	require.Len(t, adapted.Assets, 1)
+	assert.Equal(t, "notebook_output.nb-1.cell-out", adapted.Assets[0].AssetKey)
+	assert.Equal(t, domain.AssetTypeNotebookOutput, adapted.Assets[0].AssetType)
+	assert.ElementsMatch(t, []string{"cell-out->nb-1"}, dependencyPairs(adapted.Dependencies))
 }
 
 func TestBuildSemanticAssetGraph(t *testing.T) {
@@ -146,6 +161,9 @@ func TestBuildDashboardAssetGraph(t *testing.T) {
 		},
 	}
 	notebooks := []domain.Notebook{{ID: "nb-1", Name: "Notebook", Owner: "alice"}}
+	linksByNotebookID := map[string]domain.NotebookModelLink{
+		"nb-1": {NotebookID: "nb-1", OutputCellID: "cell-1", ModelID: "model-1"},
+	}
 	semanticModels := []domain.SemanticModel{{ID: "sem-1", ProjectName: "sales", Name: "orders"}}
 	metricsByModel := map[string][]domain.SemanticMetric{
 		"sem-1": {{ID: "metric-1", Name: "revenue"}},
@@ -159,12 +177,12 @@ func TestBuildDashboardAssetGraph(t *testing.T) {
 		}},
 	}
 
-	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, notebooks, semanticModels, metricsByModel, preAggsByModel)
+	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, notebooks, linksByNotebookID, semanticModels, metricsByModel, preAggsByModel)
 	require.NoError(t, err)
 	require.Len(t, adapted.Assets, 1)
 	assert.Equal(t, "dashboard.dash-1", adapted.Assets[0].AssetKey)
 	assert.Equal(t, domain.AssetTypeDashboard, adapted.Assets[0].AssetType)
-	assert.ElementsMatch(t, []string{"dash-1->preagg-1", "dash-1->nb-1"}, dependencyPairs(adapted.Dependencies))
+	assert.ElementsMatch(t, []string{"dash-1->preagg-1", "dash-1->cell-1"}, dependencyPairs(adapted.Dependencies))
 }
 
 func TestSyncModelsToAssets(t *testing.T) {
@@ -179,7 +197,7 @@ func TestSyncModelsToAssets(t *testing.T) {
 	assetRepo := &mockDataAssetRepo{existing: map[string]domain.DataAsset{"m1": {ID: "m1"}}}
 	depRepo := &mockAssetDependencyRepo{}
 
-	err := SyncModelsToAssets(context.Background(), modelRepo, assetRepo, depRepo)
+	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, assetRepo, depRepo)
 	require.NoError(t, err)
 
 	assert.Len(t, assetRepo.created, 1)
@@ -198,7 +216,7 @@ func TestSyncModelsToAssets_ListModelsError(t *testing.T) {
 		return nil, errors.New("boom")
 	}}
 
-	err := SyncModelsToAssets(context.Background(), modelRepo, &mockDataAssetRepo{}, &mockAssetDependencyRepo{})
+	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, &mockDataAssetRepo{}, &mockAssetDependencyRepo{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "list models")
 }
@@ -211,11 +229,33 @@ func TestSyncModelsToAssets_GetAssetUnexpectedError(t *testing.T) {
 	}
 	assetRepo := &mockDataAssetRepo{getByIDErr: errors.New("db unavailable")}
 
-	err := SyncModelsToAssets(context.Background(), modelRepo, assetRepo, &mockAssetDependencyRepo{})
+	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, assetRepo, &mockAssetDependencyRepo{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get asset")
 	assert.Empty(t, assetRepo.created)
 	assert.Empty(t, assetRepo.updated)
+}
+
+func TestSyncNotebookOutputsToAssets(t *testing.T) {
+	notebookRepo := &mockNotebookRepo{
+		notebooks: []domain.Notebook{
+			{ID: "nb-1", Name: "Exec Summary", Owner: "alice"},
+		},
+	}
+	linkRepo := &mockNotebookModelLinkRepo{
+		byNotebookID: map[string]domain.NotebookModelLink{
+			"nb-1": {NotebookID: "nb-1", ModelID: "model-1", OutputCellID: "cell-out"},
+		},
+	}
+	assetRepo := &mockDataAssetRepo{}
+	depRepo := &mockAssetDependencyRepo{}
+
+	err := SyncNotebookOutputsToAssets(context.Background(), notebookRepo, linkRepo, assetRepo, depRepo)
+	require.NoError(t, err)
+	require.Len(t, assetRepo.created, 1)
+	assert.Equal(t, "cell-out", assetRepo.created[0].ID)
+	assert.Equal(t, domain.AssetTypeNotebookOutput, assetRepo.created[0].AssetType)
+	assert.ElementsMatch(t, []string{"cell-out->nb-1"}, dependencyPairs(depRepo.created))
 }
 
 type mockModelRepo struct {
@@ -258,6 +298,91 @@ func (m *mockModelRepo) ListAll(ctx context.Context) ([]domain.Model, error) {
 }
 
 func (m *mockModelRepo) UpdateDependencies(context.Context, string, []string) error {
+	panic("unexpected call")
+}
+
+type mockNotebookModelLinkRepo struct {
+	byNotebookID map[string]domain.NotebookModelLink
+	byModelID    map[string]domain.NotebookModelLink
+}
+
+func (m *mockNotebookModelLinkRepo) Upsert(context.Context, *domain.NotebookModelLink) error {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookModelLinkRepo) GetByNotebookID(_ context.Context, notebookID string) (*domain.NotebookModelLink, error) {
+	link, ok := m.byNotebookID[notebookID]
+	if !ok {
+		return nil, domain.ErrNotFound("notebook link %s not found", notebookID)
+	}
+	return &link, nil
+}
+
+func (m *mockNotebookModelLinkRepo) GetByModelID(_ context.Context, modelID string) (*domain.NotebookModelLink, error) {
+	link, ok := m.byModelID[modelID]
+	if !ok {
+		return nil, domain.ErrNotFound("notebook link for model %s not found", modelID)
+	}
+	return &link, nil
+}
+
+func (m *mockNotebookModelLinkRepo) DeleteByNotebookID(context.Context, string) error {
+	panic("unexpected call")
+}
+
+type mockNotebookRepo struct {
+	notebooks []domain.Notebook
+}
+
+func (m *mockNotebookRepo) CreateNotebook(context.Context, *domain.Notebook) (*domain.Notebook, error) {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) GetNotebook(context.Context, string) (*domain.Notebook, error) {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) ListNotebooks(_ context.Context, _ *string, _ domain.PageRequest) ([]domain.Notebook, int64, error) {
+	return append([]domain.Notebook(nil), m.notebooks...), int64(len(m.notebooks)), nil
+}
+
+func (m *mockNotebookRepo) UpdateNotebook(context.Context, string, domain.UpdateNotebookRequest) (*domain.Notebook, error) {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) DeleteNotebook(context.Context, string) error {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) CreateCell(context.Context, *domain.Cell) (*domain.Cell, error) {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) GetCell(context.Context, string) (*domain.Cell, error) {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) ListCells(context.Context, string) ([]domain.Cell, error) {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) UpdateCell(context.Context, string, domain.UpdateCellRequest) (*domain.Cell, error) {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) DeleteCell(context.Context, string) error {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) UpdateCellResult(context.Context, string, *string) error {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) ReorderCells(context.Context, string, []string) error {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) GetMaxPosition(context.Context, string) (int, error) {
 	panic("unexpected call")
 }
 
