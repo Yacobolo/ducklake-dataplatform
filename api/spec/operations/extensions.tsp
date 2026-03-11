@@ -250,6 +250,10 @@ op createDashboard(@body body: CreateDashboardRequest): Created<Dashboard> | Mut
 @get
 op getDashboard(dashboardId: string): Ok<DashboardDetail> | ResourceErrorResponses;
 
+@route("/dashboards/{dashboardId}/resolved")
+@get
+op getResolvedDashboard(dashboardId: string): Ok<ResolvedDashboardDetail> | ResourceErrorResponses;
+
 @route("/dashboards/{dashboardId}")
 @patch(#{ implicitOptionality: true })
 op updateDashboard(dashboardId: string, @body body: UpdateDashboardRequest): Ok<Dashboard> | MutatingErrorResponses;

@@ -1675,6 +1675,19 @@ model DashboardDetail {
   widgets?: DashboardWidget[];
 }
 
+model ResolvedDashboardWidget {
+  widget?: DashboardWidget;
+  columns: string[];
+  rows?: unknown[][];
+  row_count?: int64;
+  generated_sql?: string;
+}
+
+model ResolvedDashboardDetail {
+  dashboard?: Dashboard;
+  widgets?: ResolvedDashboardWidget[];
+}
+
 model CreateDashboardRequest {
   name: string;
   description?: string;

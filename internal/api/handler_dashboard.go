@@ -5,12 +5,14 @@ import (
 	"errors"
 
 	"duck-demo/internal/domain"
+	dashboardsvc "duck-demo/internal/service/dashboard"
 )
 
 type dashboardService interface {
 	CreateDashboard(ctx context.Context, owner string, req domain.CreateDashboardRequest) (*domain.Dashboard, error)
 	ListDashboards(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Dashboard, int64, error)
 	GetDashboard(ctx context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error)
+	ResolveWidgets(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error)
 	UpdateDashboard(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateDashboardRequest) (*domain.Dashboard, error)
 	DeleteDashboard(ctx context.Context, principal string, isAdmin bool, id string) error
 	CreateWidget(ctx context.Context, principal string, isAdmin bool, dashboardID string, req domain.CreateDashboardWidgetRequest) (*domain.DashboardWidget, error)
@@ -87,6 +89,46 @@ func (h *APIHandler) GetDashboard(ctx context.Context, req GenGetDashboardReques
 	return GenGetDashboard200JSONResponse{
 		Body:    body,
 		Headers: GenGetDashboard200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetResolvedDashboard implements the endpoint for retrieving a dashboard and its resolved widgets.
+func (h *APIHandler) GetResolvedDashboard(ctx context.Context, req GenGetResolvedDashboardRequest) (GenGetResolvedDashboardResponse, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	item, widgets, err := h.dashboards.GetDashboard(ctx, req.DashboardId)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return GenGetResolvedDashboard404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return nil, err
+	}
+	resolved, err := h.dashboards.ResolveWidgets(ctx, cp.Name, widgets)
+	if err != nil {
+		switch {
+		case errors.As(err, new(*domain.AccessDeniedError)):
+			return GetResolvedDashboard403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.NotFoundError)):
+			return GenGetResolvedDashboard404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return GetResolvedDashboard400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return nil, err
+		}
+	}
+
+	apiWidgets := make([]ResolvedDashboardWidget, len(resolved))
+	for i, widget := range resolved {
+		apiWidgets[i] = resolvedDashboardWidgetToAPI(widget)
+	}
+
+	body := ResolvedDashboardDetail{Dashboard: ptrDashboard(dashboardToAPI(*item))}
+	if len(apiWidgets) > 0 {
+		body.Widgets = &apiWidgets
+	}
+
+	return GenGetResolvedDashboard200JSONResponse{
+		Body:    body,
+		Headers: GenGetResolvedDashboard200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -326,6 +368,19 @@ func dashboardWidgetLayoutToAPI(layout domain.DashboardWidgetLayout) DashboardWi
 }
 
 func ptrDashboard(v Dashboard) *Dashboard { return &v }
+
+func resolvedDashboardWidgetToAPI(item dashboardsvc.ResolvedWidget) ResolvedDashboardWidget {
+	rowCount := int64(item.RowCount)
+	return ResolvedDashboardWidget{
+		Widget:       ptrDashboardWidget(dashboardWidgetToAPI(item.Widget)),
+		Columns:      append([]string(nil), item.Columns...),
+		Rows:         rowsToStringMatrix(item.Rows),
+		RowCount:     safeInt64ToInt32Ptr(&rowCount),
+		GeneratedSql: optStr(item.GeneratedSQL),
+	}
+}
+
+func ptrDashboardWidget(v DashboardWidget) *DashboardWidget { return &v }
 
 func ptrDashboardWidgetSource(v DashboardWidgetSource) *DashboardWidgetSource { return &v }
 
