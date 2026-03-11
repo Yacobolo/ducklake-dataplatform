@@ -584,45 +584,140 @@ type unsafeMetricPlan struct {
 }
 
 func buildUnsafeMetricPlan(metric domain.SemanticMetric, expr string) (*unsafeMetricPlan, error) {
-	fn, arg, _, err := extractAggregateCall(expr)
-	if err != nil {
-		return nil, domain.ErrValidation("metric %q cannot be planned across unsafe joins: %v", metric.Name, err)
-	}
-	alias := "__metric_" + metric.Name
 	switch metric.MetricType {
-	case domain.MetricTypeSum, domain.MetricTypeCount:
+	case domain.MetricTypeRatio:
+		left, right, ok := splitTopLevelDivision(expr)
+		if !ok {
+			return nil, domain.ErrValidation("metric %q with type %q requires a top-level division of aggregate expressions", metric.Name, metric.MetricType)
+		}
+		leftPlan, err := buildUnsafeAggregateExprPlan(metric.Name+"_lhs", left)
+		if err != nil {
+			return nil, domain.ErrValidation("metric %q cannot plan ratio numerator across unsafe joins: %v", metric.Name, err)
+		}
+		rightPlan, err := buildUnsafeAggregateExprPlan(metric.Name+"_rhs", right)
+		if err != nil {
+			return nil, domain.ErrValidation("metric %q cannot plan ratio denominator across unsafe joins: %v", metric.Name, err)
+		}
 		return &unsafeMetricPlan{
-			InnerSelects: []string{fmt.Sprintf("%s AS %s", expr, quoteIdent(alias))},
-			OuterSelect:  fmt.Sprintf("SUM(%s) AS %s", quoteIdent(alias), quoteIdent(metric.Name)),
+			InnerSelects: append(leftPlan.InnerSelects, rightPlan.InnerSelects...),
+			OuterSelect:  fmt.Sprintf("(%s) / NULLIF((%s), 0) AS %s", leftPlan.OuterExpr, rightPlan.OuterExpr, quoteIdent(metric.Name)),
 		}, nil
-	case domain.MetricTypeMin:
+	default:
+		plan, err := buildUnsafeAggregateExprPlan(metric.Name, expr)
+		if err != nil {
+			return nil, domain.ErrValidation("metric %q cannot be planned across unsafe joins: %v", metric.Name, err)
+		}
 		return &unsafeMetricPlan{
-			InnerSelects: []string{fmt.Sprintf("%s AS %s", expr, quoteIdent(alias))},
-			OuterSelect:  fmt.Sprintf("MIN(%s) AS %s", quoteIdent(alias), quoteIdent(metric.Name)),
+			InnerSelects: plan.InnerSelects,
+			OuterSelect:  fmt.Sprintf("%s AS %s", plan.OuterExpr, quoteIdent(metric.Name)),
 		}, nil
-	case domain.MetricTypeMax:
-		return &unsafeMetricPlan{
-			InnerSelects: []string{fmt.Sprintf("%s AS %s", expr, quoteIdent(alias))},
-			OuterSelect:  fmt.Sprintf("MAX(%s) AS %s", quoteIdent(alias), quoteIdent(metric.Name)),
+	}
+}
+
+type unsafeAggregateExprPlan struct {
+	InnerSelects []string
+	OuterExpr    string
+}
+
+func buildUnsafeAggregateExprPlan(aliasBase, expr string) (*unsafeAggregateExprPlan, error) {
+	fn, arg, distinct, err := extractAggregateCall(trimOuterParens(expr))
+	if err != nil {
+		return nil, err
+	}
+	alias := "__metric_" + aliasBase
+	switch {
+	case strings.EqualFold(fn, "SUM"):
+		return &unsafeAggregateExprPlan{
+			InnerSelects: []string{fmt.Sprintf("%s AS %s", trimOuterParens(expr), quoteIdent(alias))},
+			OuterExpr:    fmt.Sprintf("SUM(%s)", quoteIdent(alias)),
 		}, nil
-	case domain.MetricTypeAverage:
+	case strings.EqualFold(fn, "COUNT") && distinct:
+		distinctAlias := alias + "_distinct"
+		return &unsafeAggregateExprPlan{
+			InnerSelects: []string{fmt.Sprintf("ANY_VALUE(%s) AS %s", arg, quoteIdent(distinctAlias))},
+			OuterExpr:    fmt.Sprintf("COUNT(DISTINCT %s)", quoteIdent(distinctAlias)),
+		}, nil
+	case strings.EqualFold(fn, "COUNT"):
+		return &unsafeAggregateExprPlan{
+			InnerSelects: []string{fmt.Sprintf("%s AS %s", trimOuterParens(expr), quoteIdent(alias))},
+			OuterExpr:    fmt.Sprintf("SUM(%s)", quoteIdent(alias)),
+		}, nil
+	case strings.EqualFold(fn, "MIN"):
+		return &unsafeAggregateExprPlan{
+			InnerSelects: []string{fmt.Sprintf("%s AS %s", trimOuterParens(expr), quoteIdent(alias))},
+			OuterExpr:    fmt.Sprintf("MIN(%s)", quoteIdent(alias)),
+		}, nil
+	case strings.EqualFold(fn, "MAX"):
+		return &unsafeAggregateExprPlan{
+			InnerSelects: []string{fmt.Sprintf("%s AS %s", trimOuterParens(expr), quoteIdent(alias))},
+			OuterExpr:    fmt.Sprintf("MAX(%s)", quoteIdent(alias)),
+		}, nil
+	case strings.EqualFold(fn, "AVG"):
 		sumAlias := alias + "_sum"
 		countAlias := alias + "_count"
-		return &unsafeMetricPlan{
+		return &unsafeAggregateExprPlan{
 			InnerSelects: []string{
 				fmt.Sprintf("SUM(%s) AS %s", arg, quoteIdent(sumAlias)),
 				fmt.Sprintf("COUNT(%s) AS %s", arg, quoteIdent(countAlias)),
 			},
-			OuterSelect: fmt.Sprintf("SUM(%s) / NULLIF(SUM(%s), 0) AS %s", quoteIdent(sumAlias), quoteIdent(countAlias), quoteIdent(metric.Name)),
+			OuterExpr: fmt.Sprintf("SUM(%s) / NULLIF(SUM(%s), 0)", quoteIdent(sumAlias), quoteIdent(countAlias)),
 		}, nil
-	case domain.MetricTypeCountDistinct, domain.MetricTypeRatio:
-		return nil, domain.ErrValidation("metric %q with type %q is not supported across unsafe joins", metric.Name, metric.MetricType)
 	default:
-		if !strings.EqualFold(fn, "SUM") && !strings.EqualFold(fn, "COUNT") && !strings.EqualFold(fn, "AVG") && !strings.EqualFold(fn, "MIN") && !strings.EqualFold(fn, "MAX") {
-			return nil, domain.ErrValidation("metric %q cannot be planned across unsafe joins", metric.Name)
-		}
-		return nil, domain.ErrValidation("metric %q with type %q is not supported across unsafe joins", metric.Name, metric.MetricType)
+		return nil, fmt.Errorf("unsupported aggregate expression %q", expr)
 	}
+}
+
+func splitTopLevelDivision(expr string) (string, string, bool) {
+	trimmed := trimOuterParens(expr)
+	depth := 0
+	for i, r := range trimmed {
+		switch r {
+		case '(':
+			depth++
+		case ')':
+			if depth > 0 {
+				depth--
+			}
+		case '/':
+			if depth == 0 {
+				left := strings.TrimSpace(trimmed[:i])
+				right := strings.TrimSpace(trimmed[i+1:])
+				if left == "" || right == "" {
+					return "", "", false
+				}
+				return trimOuterParens(left), trimOuterParens(right), true
+			}
+		}
+	}
+	return "", "", false
+}
+
+func trimOuterParens(expr string) string {
+	trimmed := strings.TrimSpace(expr)
+	for len(trimmed) >= 2 && trimmed[0] == '(' && trimmed[len(trimmed)-1] == ')' {
+		depth := 0
+		wrapped := true
+		for i, r := range trimmed {
+			switch r {
+			case '(':
+				depth++
+			case ')':
+				depth--
+				if depth == 0 && i < len(trimmed)-1 {
+					wrapped = false
+				}
+			}
+			if depth < 0 {
+				wrapped = false
+				break
+			}
+		}
+		if !wrapped || depth != 0 {
+			break
+		}
+		trimmed = strings.TrimSpace(trimmed[1 : len(trimmed)-1])
+	}
+	return trimmed
 }
 
 func (s *Service) baseModelUniqueKeys(ctx context.Context, baseModel *domain.SemanticModel) ([]string, error) {
