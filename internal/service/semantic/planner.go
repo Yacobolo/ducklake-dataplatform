@@ -607,6 +607,30 @@ func buildUnsafeScalarExprPlan(aliasBase, expr string) (*unsafeScalarExprPlan, e
 	if idx, op, ok := findTopLevelBinaryOp(trimmed, "*/"); ok {
 		return combineUnsafeScalarPlans(aliasBase, trimmed, idx, op)
 	}
+	if fnName, args, ok := parseTopLevelFunctionCall(trimmed); ok {
+		if isAggregateFunctionName(fnName) {
+			goto aggregate
+		}
+		plannedArgs := make([]string, 0, len(args))
+		innerSelects := make([]string, 0, len(args))
+		for i, arg := range args {
+			if isLiteralScalarArg(arg) {
+				plannedArgs = append(plannedArgs, strings.TrimSpace(arg))
+				continue
+			}
+			argPlan, err := buildUnsafeScalarExprPlan(fmt.Sprintf("%s_arg_%d", aliasBase, i), arg)
+			if err != nil {
+				return nil, err
+			}
+			innerSelects = append(innerSelects, argPlan.InnerSelects...)
+			plannedArgs = append(plannedArgs, argPlan.OuterExpr)
+		}
+		return &unsafeScalarExprPlan{
+			InnerSelects: innerSelects,
+			OuterExpr:    fmt.Sprintf("%s(%s)", fnName, strings.Join(plannedArgs, ", ")),
+		}, nil
+	}
+aggregate:
 	plan, err := buildUnsafeAggregateExprPlan(aliasBase, trimmed)
 	if err != nil {
 		return nil, err
@@ -753,6 +777,84 @@ func previousNonSpace(expr string, idx int) int {
 		}
 	}
 	return -1
+}
+
+func parseTopLevelFunctionCall(expr string) (string, []string, bool) {
+	trimmed := strings.TrimSpace(expr)
+	openIdx := strings.Index(trimmed, "(")
+	if openIdx <= 0 || trimmed[len(trimmed)-1] != ')' {
+		return "", nil, false
+	}
+	name := strings.TrimSpace(trimmed[:openIdx])
+	if name == "" || strings.ContainsAny(name, " \t\n\r") {
+		return "", nil, false
+	}
+	argsBody := trimmed[openIdx+1 : len(trimmed)-1]
+	args, ok := splitTopLevelArgs(argsBody)
+	if !ok {
+		return "", nil, false
+	}
+	return name, args, true
+}
+
+func isAggregateFunctionName(name string) bool {
+	switch strings.ToUpper(strings.TrimSpace(name)) {
+	case "SUM", "COUNT", "AVG", "MIN", "MAX":
+		return true
+	default:
+		return false
+	}
+}
+
+func splitTopLevelArgs(expr string) ([]string, bool) {
+	depth := 0
+	start := 0
+	args := []string{}
+	for i, r := range expr {
+		switch r {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth < 0 {
+				return nil, false
+			}
+		case ',':
+			if depth == 0 {
+				args = append(args, strings.TrimSpace(expr[start:i]))
+				start = i + 1
+			}
+		}
+	}
+	if depth != 0 {
+		return nil, false
+	}
+	last := strings.TrimSpace(expr[start:])
+	if last == "" && len(args) == 0 {
+		return []string{}, true
+	}
+	if last == "" {
+		return nil, false
+	}
+	args = append(args, last)
+	return args, true
+}
+
+func isLiteralScalarArg(expr string) bool {
+	trimmed := strings.TrimSpace(expr)
+	if trimmed == "" {
+		return false
+	}
+	if regexp.MustCompile(`(?is)^null$`).MatchString(trimmed) {
+		return true
+	}
+	if regexp.MustCompile(`(?is)^-?\d+(\.\d+)?$`).MatchString(trimmed) {
+		return true
+	}
+	if len(trimmed) >= 2 && trimmed[0] == '\'' && trimmed[len(trimmed)-1] == '\'' {
+		return true
+	}
+	return false
 }
 
 func (s *Service) baseModelUniqueKeys(ctx context.Context, baseModel *domain.SemanticModel) ([]string, error) {
