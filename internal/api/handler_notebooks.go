@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 
 	"duck-demo/internal/domain"
 )
@@ -60,12 +59,12 @@ func (h *APIHandler) ListNotebooks(ctx context.Context, req GenListNotebooksRequ
 	cp, _ := domain.PrincipalFromContext(ctx)
 	nbs, total, err := h.notebooks.ListNotebooksForPrincipal(ctx, cp.Name, cp.IsAdmin, req.Params.Owner, page)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return ListNotebooks403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListNotebooksResponse](err, domainErrorResponder[GenListNotebooksResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebooksResponse { return ListNotebooks403JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]Notebook, len(nbs))
@@ -91,14 +90,15 @@ func (h *APIHandler) CreateNotebook(ctx context.Context, req GenCreateNotebookRe
 	principal := cp.Name
 	result, err := h.notebooks.CreateNotebook(ctx, principal, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreateNotebook400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return CreateNotebook409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreateNotebook400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateNotebookResponse](err, domainErrorResponder[GenCreateNotebookResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateNotebookResponse {
+				return CreateNotebook400JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenCreateNotebookResponse { return CreateNotebook409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return CreateNotebook400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenCreateNotebook201JSONResponse{
 		Body:    notebookToAPI(*result),
@@ -111,14 +111,13 @@ func (h *APIHandler) GetNotebook(ctx context.Context, req GenGetNotebookRequest)
 	cp, _ := domain.PrincipalFromContext(ctx)
 	nb, cells, err := h.notebooks.GetNotebookForPrincipal(ctx, cp.Name, cp.IsAdmin, req.NotebookId)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GenGetNotebook403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetNotebook404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetNotebookResponse](err, domainErrorResponder[GenGetNotebookResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetNotebookResponse { return GenGetNotebook403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenGetNotebookResponse { return GenGetNotebook404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	apiNb := notebookToAPI(*nb)
@@ -149,16 +148,16 @@ func (h *APIHandler) UpdateNotebook(ctx context.Context, req GenUpdateNotebookRe
 
 	result, err := h.notebooks.UpdateNotebook(ctx, principal, isAdmin, req.NotebookId, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateNotebook403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateNotebook404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return UpdateNotebook400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenUpdateNotebookResponse](err, domainErrorResponder[GenUpdateNotebookResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateNotebookResponse {
+				return UpdateNotebook400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateNotebookResponse { return UpdateNotebook403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenUpdateNotebookResponse { return UpdateNotebook404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenUpdateNotebook200JSONResponse{
 		Body:    notebookToAPI(*result),
@@ -173,14 +172,13 @@ func (h *APIHandler) DeleteNotebook(ctx context.Context, req GenDeleteNotebookRe
 	isAdmin := cp.IsAdmin
 
 	if err := h.notebooks.DeleteNotebook(ctx, principal, isAdmin, req.NotebookId); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteNotebook403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteNotebook404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteNotebookResponse](err, domainErrorResponder[GenDeleteNotebookResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteNotebookResponse { return DeleteNotebook403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenDeleteNotebookResponse { return DeleteNotebook404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteNotebook204Response{}, nil
 }
@@ -222,16 +220,14 @@ func (h *APIHandler) CreateCell(ctx context.Context, req GenCreateCellRequest) (
 
 	result, err := h.notebooks.CreateCell(ctx, principal, isAdmin, req.NotebookId, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateCell403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return CreateCell404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreateCell400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreateCell400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateCellResponse](err, domainErrorResponder[GenCreateCellResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateCellResponse { return CreateCell400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateCellResponse { return CreateCell403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenCreateCellResponse { return CreateCell404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return CreateCell400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenCreateCell201JSONResponse{
 		Body:    cellToAPI(*result),
@@ -271,16 +267,14 @@ func (h *APIHandler) UpdateCell(ctx context.Context, req GenUpdateCellRequest) (
 
 	result, err := h.notebooks.UpdateCell(ctx, principal, isAdmin, req.CellId, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateCell403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateCell404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return UpdateCell400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenUpdateCellResponse](err, domainErrorResponder[GenUpdateCellResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateCellResponse { return UpdateCell400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenUpdateCellResponse { return UpdateCell403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenUpdateCellResponse { return UpdateCell404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenUpdateCell200JSONResponse{
 		Body:    cellToAPI(*result),
@@ -295,16 +289,14 @@ func (h *APIHandler) DeleteCell(ctx context.Context, req GenDeleteCellRequest) (
 	isAdmin := cp.IsAdmin
 
 	if err := h.notebooks.DeleteCell(ctx, principal, isAdmin, req.CellId); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteCell403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteCell404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return DeleteCell400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteCellResponse](err, domainErrorResponder[GenDeleteCellResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenDeleteCellResponse { return DeleteCell400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenDeleteCellResponse { return DeleteCell403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenDeleteCellResponse { return DeleteCell404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteCell204Response{}, nil
 }
@@ -321,16 +313,14 @@ func (h *APIHandler) ReorderCells(ctx context.Context, req GenReorderCellsReques
 
 	cells, err := h.notebooks.ReorderCells(ctx, principal, isAdmin, req.NotebookId, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return ReorderCells403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return ReorderCells404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return ReorderCells400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenReorderCellsResponse](err, domainErrorResponder[GenReorderCellsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenReorderCellsResponse { return ReorderCells400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenReorderCellsResponse { return ReorderCells403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenReorderCellsResponse { return ReorderCells404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]Cell, len(cells))
@@ -352,14 +342,17 @@ func (h *APIHandler) CreateNotebookSession(ctx context.Context, req GenCreateNot
 
 	result, err := h.sessions.CreateSessionForNotebook(ctx, req.NotebookId, principal, cp.IsAdmin)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateNotebookSession403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return CreateNotebookSession404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenCreateNotebookSessionResponse](err, domainErrorResponder[GenCreateNotebookSessionResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateNotebookSessionResponse {
+				return CreateNotebookSession403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenCreateNotebookSessionResponse {
+				return CreateNotebookSession404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenCreateNotebookSession201JSONResponse{
 		Body:    sessionToAPI(*result),
@@ -372,14 +365,17 @@ func (h *APIHandler) CloseNotebookSession(ctx context.Context, req GenCloseNoteb
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.sessions.CloseNotebookSession(ctx, req.NotebookId, req.SessionId, principal, cp.IsAdmin); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CloseNotebookSession403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return CloseNotebookSession404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenCloseNotebookSessionResponse](err, domainErrorResponder[GenCloseNotebookSessionResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenCloseNotebookSessionResponse {
+				return CloseNotebookSession403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenCloseNotebookSessionResponse {
+				return CloseNotebookSession404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenCloseNotebookSession204Response{}, nil
 }
@@ -390,16 +386,14 @@ func (h *APIHandler) ExecuteCell(ctx context.Context, req GenExecuteCellRequest)
 	principal := cp.Name
 	result, err := h.sessions.ExecuteNotebookCell(ctx, req.NotebookId, req.SessionId, req.CellId, principal, cp.IsAdmin)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return ExecuteCell403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return ExecuteCell404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return ExecuteCell400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenExecuteCellResponse](err, domainErrorResponder[GenExecuteCellResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenExecuteCellResponse { return ExecuteCell400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenExecuteCellResponse { return ExecuteCell403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenExecuteCellResponse { return ExecuteCell404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return ExecuteCell200JSONResponse{
 		Body:    cellExecutionResultToAPI(*result),
@@ -413,14 +407,13 @@ func (h *APIHandler) RunAllCells(ctx context.Context, req GenRunAllCellsRequest)
 	principal := cp.Name
 	result, err := h.sessions.RunAllNotebook(ctx, req.NotebookId, req.SessionId, principal, cp.IsAdmin)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return RunAllCells403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return RunAllCells404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenRunAllCellsResponse](err, domainErrorResponder[GenRunAllCellsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenRunAllCellsResponse { return RunAllCells403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenRunAllCellsResponse { return RunAllCells404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return RunAllCells200JSONResponse{
 		Body:    runAllResultToAPI(*result),
@@ -434,14 +427,17 @@ func (h *APIHandler) RunAllCellsAsync(ctx context.Context, req GenRunAllCellsAsy
 	principal := cp.Name
 	result, err := h.sessions.RunAllNotebookAsync(ctx, req.NotebookId, req.SessionId, principal, cp.IsAdmin)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return RunAllCellsAsync403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return RunAllCellsAsync404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenRunAllCellsAsyncResponse](err, domainErrorResponder[GenRunAllCellsAsyncResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenRunAllCellsAsyncResponse {
+				return RunAllCellsAsync403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenRunAllCellsAsyncResponse {
+				return RunAllCellsAsync404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return RunAllCellsAsync202JSONResponse{
 		Body:    notebookJobToAPI(*result),
@@ -457,14 +453,17 @@ func (h *APIHandler) ListNotebookJobs(ctx context.Context, req GenListNotebookJo
 	cp, _ := domain.PrincipalFromContext(ctx)
 	jobs, total, err := h.sessions.ListNotebookJobs(ctx, req.NotebookId, cp.Name, cp.IsAdmin, page)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GenListNotebookJobs403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenListNotebookJobs404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListNotebookJobsResponse](err, domainErrorResponder[GenListNotebookJobsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookJobsResponse {
+				return GenListNotebookJobs403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListNotebookJobsResponse {
+				return GenListNotebookJobs404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]NotebookJob, len(jobs))
@@ -483,14 +482,17 @@ func (h *APIHandler) GetNotebookJob(ctx context.Context, req GenGetNotebookJobRe
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.sessions.GetNotebookJob(ctx, req.NotebookId, req.JobId, cp.Name, cp.IsAdmin)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GenGetNotebookJob403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetNotebookJob404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetNotebookJobResponse](err, domainErrorResponder[GenGetNotebookJobResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetNotebookJobResponse {
+				return GenGetNotebookJob403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetNotebookJobResponse {
+				return GenGetNotebookJob404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenGetNotebookJob200JSONResponse{
 		Body:    notebookJobToAPI(*result),
@@ -506,12 +508,12 @@ func (h *APIHandler) ListGitRepos(ctx context.Context, req GenListGitReposReques
 	cp, _ := domain.PrincipalFromContext(ctx)
 	repos, total, err := h.gitRepos.ListGitReposForPrincipal(ctx, cp.Name, cp.IsAdmin, page)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GenListGitRepos403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListGitReposResponse](err, domainErrorResponder[GenListGitReposResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListGitReposResponse { return GenListGitRepos403JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]GitRepo, len(repos))
@@ -542,14 +544,13 @@ func (h *APIHandler) CreateGitRepo(ctx context.Context, req GenCreateGitRepoRequ
 	principal := cp.Name
 	result, err := h.gitRepos.CreateGitRepo(ctx, principal, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreateGitRepo400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return CreateGitRepo409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreateGitRepo400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateGitRepoResponse](err, domainErrorResponder[GenCreateGitRepoResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateGitRepoResponse { return CreateGitRepo400JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenCreateGitRepoResponse { return CreateGitRepo409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return CreateGitRepo400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenCreateGitRepo201JSONResponse{
 		Body:    gitRepoToAPI(*result),
@@ -562,14 +563,13 @@ func (h *APIHandler) GetGitRepo(ctx context.Context, req GenGetGitRepoRequest) (
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.gitRepos.GetGitRepoForPrincipal(ctx, cp.Name, cp.IsAdmin, req.GitRepoId)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GenGetGitRepo403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetGitRepo404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetGitRepoResponse](err, domainErrorResponder[GenGetGitRepoResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetGitRepoResponse { return GenGetGitRepo403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenGetGitRepoResponse { return GenGetGitRepo404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenGetGitRepo200JSONResponse{
 		Body:    gitRepoToAPI(*result),
@@ -584,14 +584,13 @@ func (h *APIHandler) DeleteGitRepo(ctx context.Context, req GenDeleteGitRepoRequ
 	isAdmin := cp.IsAdmin
 
 	if err := h.gitRepos.DeleteGitRepo(ctx, principal, isAdmin, req.GitRepoId); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteGitRepo403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteGitRepo404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteGitRepoResponse](err, domainErrorResponder[GenDeleteGitRepoResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteGitRepoResponse { return DeleteGitRepo403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenDeleteGitRepoResponse { return DeleteGitRepo404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteGitRepo204Response{}, nil
 }
@@ -600,14 +599,15 @@ func (h *APIHandler) DeleteGitRepo(ctx context.Context, req GenDeleteGitRepoRequ
 func (h *APIHandler) SyncGitRepo(ctx context.Context, req GenSyncGitRepoRequest) (GenSyncGitRepoResponse, error) {
 	result, err := h.gitRepos.SyncGitRepo(ctx, req.GitRepoId)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotImplementedError)):
-			return GenSyncGitRepo500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 501, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return SyncGitRepo404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenSyncGitRepoResponse](err, domainErrorResponder[GenSyncGitRepoResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo404JSONResponse{resp} },
+			Internal: func(resp InternalErrorJSONResponse) GenSyncGitRepoResponse {
+				return GenSyncGitRepo500JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	created := int32(min(result.NotebooksCreated, int(^uint32(0)>>1))) //nolint:gosec // bounded by min

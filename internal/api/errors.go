@@ -13,6 +13,7 @@ func httpStatusFromDomainError(err error) int {
 	var accessDenied *domain.AccessDeniedError
 	var validation *domain.ValidationError
 	var conflict *domain.ConflictError
+	var notImplemented *domain.NotImplementedError
 
 	switch {
 	case errors.As(err, &notFound):
@@ -23,6 +24,8 @@ func httpStatusFromDomainError(err error) int {
 		return http.StatusBadRequest
 	case errors.As(err, &conflict):
 		return http.StatusConflict
+	case errors.As(err, &notImplemented):
+		return http.StatusNotImplemented
 	default:
 		return http.StatusInternalServerError
 	}

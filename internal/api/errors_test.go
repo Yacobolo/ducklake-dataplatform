@@ -49,6 +49,15 @@ func TestDefaultErrorResponses(t *testing.T) {
 		assert.Equal(t, int32(defaultRateLimitLimit), resp.Headers.XRateLimitLimit)
 	})
 
+	t.Run("not implemented", func(t *testing.T) {
+		t.Parallel()
+
+		resp := internalErrorResponse(domain.ErrNotImplemented("later"))
+		assert.Equal(t, int32(501), resp.Body.Code)
+		assert.Equal(t, "later", resp.Body.Message)
+		assert.Equal(t, int64(defaultRateLimitReset), resp.Headers.XRateLimitReset)
+	})
+
 	t.Run("internal", func(t *testing.T) {
 		t.Parallel()
 
@@ -96,5 +105,17 @@ func TestRespondDomainError(t *testing.T) {
 		})
 		require.True(t, ok)
 		assert.Equal(t, 500, resp)
+	})
+
+	t.Run("not implemented can map to internal response type", func(t *testing.T) {
+		t.Parallel()
+
+		resp, ok := respondDomainError[int](domain.ErrNotImplemented("later"), domainErrorResponder[int]{
+			Internal: func(resp InternalErrorJSONResponse) int {
+				return int(resp.Body.Code)
+			},
+		})
+		require.True(t, ok)
+		assert.Equal(t, 501, resp)
 	})
 }
