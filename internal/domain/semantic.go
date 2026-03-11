@@ -87,9 +87,11 @@ type SemanticMetric struct {
 	SemanticModelID    string
 	Name               string
 	Description        string
+	Label              string
 	MetricType         string
 	ExpressionMode     string
 	Expression         string
+	FilterSQL          string
 	DefaultTimeGrain   string
 	Format             string
 	Owner              string
@@ -104,9 +106,11 @@ type CreateSemanticMetricRequest struct {
 	SemanticModelID    string
 	Name               string
 	Description        string
+	Label              string
 	MetricType         string
 	ExpressionMode     string
 	Expression         string
+	FilterSQL          string
 	DefaultTimeGrain   string
 	Format             string
 	CertificationState string
@@ -151,9 +155,11 @@ func (r *CreateSemanticMetricRequest) Validate() error {
 // UpdateSemanticMetricRequest holds partial-update parameters.
 type UpdateSemanticMetricRequest struct {
 	Description        *string
+	Label              *string
 	MetricType         *string
 	ExpressionMode     *string
 	Expression         *string
+	FilterSQL          *string
 	DefaultTimeGrain   *string
 	Format             *string
 	Owner              *string

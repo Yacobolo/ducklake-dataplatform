@@ -54,6 +54,7 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 			ID:           cell.ID,
 			Title:        fmt.Sprintf("Cell %d", cell.Position),
 			CellType:     string(cell.CellType),
+			VisualSpec:   cell.VisualSpec,
 			Content:      cell.Content,
 			Position:     cell.Position,
 			LastRunAt:    lastRunAt,
@@ -136,29 +137,29 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderHTML(w, http.StatusOK, notebookDetailPage(notebookDetailPageData{
-		Principal:      principalFromContext(r.Context()),
-		NotebookID:     id,
-		Name:           nb.Name,
-		Owner:          nb.Owner,
-		Description:    stringPtr(nb.Description),
+		Principal:       principalFromContext(r.Context()),
+		NotebookID:      id,
+		Name:            nb.Name,
+		Owner:           nb.Owner,
+		Description:     stringPtr(nb.Description),
 		SelectedCatalog: selectedCatalog,
 		SelectedSchema:  selectedSchema,
 		BrowserRuntime:  query.DefaultManifestBrowserRuntimeSpec(),
 		ComputeTargets:  computeTargets,
 		ComputeRequest:  computeReq,
-		EditURL:        "/ui/notebooks/" + id + "/edit",
-		DeleteURL:      "/ui/notebooks/" + id + "/delete",
-		NewCellURL:     "/ui/notebooks/" + id + "/cells/new",
-		RunAllURL:      "/ui/notebooks/" + id + "/run-all",
-		RunAllAsyncURL: "/ui/notebooks/" + id + "/run-all-async",
-		ReorderURL:     "/ui/notebooks/" + id + "/cells/reorder",
-		JobsURL:        "/ui/notebooks/" + id + "/jobs",
-		GitRepoURL:     gitRepoURL,
-		PromoteURL:     "/ui/models/promote",
-		Jobs:           jobRows,
-		Cells:          cellNodes,
-		Explorer:       explorerCatalogs,
-		CSRFFieldFunc:  csrfFieldProvider(r),
+		EditURL:         "/ui/notebooks/" + id + "/edit",
+		DeleteURL:       "/ui/notebooks/" + id + "/delete",
+		NewCellURL:      "/ui/notebooks/" + id + "/cells/new",
+		RunAllURL:       "/ui/notebooks/" + id + "/run-all",
+		RunAllAsyncURL:  "/ui/notebooks/" + id + "/run-all-async",
+		ReorderURL:      "/ui/notebooks/" + id + "/cells/reorder",
+		JobsURL:         "/ui/notebooks/" + id + "/jobs",
+		GitRepoURL:      gitRepoURL,
+		PromoteURL:      "/ui/models/promote",
+		Jobs:            jobRows,
+		Cells:           cellNodes,
+		Explorer:        explorerCatalogs,
+		CSRFFieldFunc:   csrfFieldProvider(r),
 	}))
 }
 
@@ -298,9 +299,15 @@ func (h *Handler) NotebookCellsUpdate(w http.ResponseWriter, r *http.Request) {
 		renderHTML(w, http.StatusBadRequest, errorPage("Invalid Request", "position must be an integer."))
 		return
 	}
+	visualSpec, err := visualSpecFromForm(r.Form)
+	if err != nil {
+		renderHTML(w, http.StatusBadRequest, errorPage("Invalid Request", err.Error()))
+		return
+	}
 	_, err = h.Notebook.UpdateCell(r.Context(), principal, isAdmin, cellID, domain.UpdateCellRequest{
-		Content:  formOptionalString(r.Form, "content"),
-		Position: pos,
+		Content:    formOptionalString(r.Form, "content"),
+		VisualSpec: visualSpec,
+		Position:   pos,
 	})
 	if err != nil {
 		h.renderServiceError(w, r, err)
@@ -742,6 +749,7 @@ func parseNotebookCellResult(raw *string) *notebookCellResultData {
 
 	out := &notebookCellResultData{
 		Columns:    parsed.Columns,
+		RawRows:    parsed.Rows,
 		Rows:       rows,
 		RowCount:   parsed.RowCount,
 		Duration:   parsed.Duration,

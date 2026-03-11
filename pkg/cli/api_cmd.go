@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -304,9 +306,20 @@ func newAPICurlCmd() *cobra.Command {
 			// Body from remaining params
 			if len(found.BodyFields) > 0 && len(paramMap) > 0 {
 				curlParts = append(curlParts, "-H", "'Content-Type: application/json'")
-				bodyParts := make([]string, 0, len(paramMap))
-				for k, v := range paramMap {
-					bodyParts = append(bodyParts, fmt.Sprintf("%q:%q", k, v))
+				bodyFieldTypes := make(map[string]string, len(found.BodyFields))
+				for _, field := range found.BodyFields {
+					bodyFieldTypes[field.Name] = field.Type
+				}
+				keys := make([]string, 0, len(paramMap))
+				for k := range paramMap {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+
+				bodyParts := make([]string, 0, len(keys))
+				for _, k := range keys {
+					v := paramMap[k]
+					bodyParts = append(bodyParts, fmt.Sprintf("%q:%s", k, apiCurlJSONValue(v, bodyFieldTypes[k])))
 				}
 				curlParts = append(curlParts, "-d", fmt.Sprintf("'{%s}'", strings.Join(bodyParts, ",")))
 			}
@@ -378,9 +391,56 @@ func allAPIEndpoints() []gen.APIGenEndpoint {
 			continue
 		}
 		seen[generated.OperationID] = struct{}{}
-		combined = append(combined, generated)
+		combined = append(combined, applyEndpointOverrides(generated))
 	}
 	return combined
+}
+
+func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
+	switch endpoint.OperationID {
+	case "listDashboards":
+		endpoint.CLICommand = "dashboards list"
+	case "createDashboard":
+		endpoint.CLICommand = "dashboards create"
+	case "getDashboard":
+		endpoint.CLICommand = "dashboards get"
+	case "getResolvedDashboard":
+		endpoint.CLICommand = "dashboards get-resolved"
+	case "updateDashboard":
+		endpoint.CLICommand = "dashboards update"
+	case "deleteDashboard":
+		endpoint.CLICommand = "dashboards delete"
+	case "createDashboardWidget":
+		endpoint.CLICommand = "dashboards widgets create"
+	case "updateDashboardWidget":
+		endpoint.CLICommand = "dashboards widgets update"
+	case "deleteDashboardWidget":
+		endpoint.CLICommand = "dashboards widgets delete"
+	}
+	return endpoint
+}
+
+func apiCurlJSONValue(raw string, fieldType string) string {
+	switch fieldType {
+	case "object", "array":
+		if json.Valid([]byte(raw)) {
+			return raw
+		}
+	case "boolean":
+		if _, err := strconv.ParseBool(raw); err == nil {
+			return strings.ToLower(raw)
+		}
+	case "integer", "number":
+		if _, err := strconv.ParseFloat(raw, 64); err == nil {
+			return raw
+		}
+	}
+
+	encoded, err := json.Marshal(raw)
+	if err != nil {
+		return fmt.Sprintf("%q", raw)
+	}
+	return string(encoded)
 }
 
 func apiContentTypes(operationID string) []string {

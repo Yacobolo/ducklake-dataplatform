@@ -4,6 +4,7 @@ info:
   version: 0.1.0
   description: Duck Data Platform exposes a secure SQL query layer over DuckDB together with metadata management, RBAC, row-level security, column masking, lineage, orchestration, and semantic modeling APIs backed by SQLite metadata.
 tags:
+  - name: Dashboards
   - name: Semantic Layer
     description: Semantic models, metrics, relationships, and metric query execution.
   - name: Models
@@ -4273,6 +4274,430 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Compute
+  /dashboards:
+    get:
+      operationId: listDashboards
+      summary: List dashboards
+      parameters:
+        - name: owner
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDashboards'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
+    post:
+      operationId: createDashboard
+      summary: Create dashboard
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDashboardRequest'
+  /dashboards/{dashboardId}:
+    get:
+      operationId: getDashboard
+      summary: Get dashboard
+      parameters:
+        - name: dashboardId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardDetail'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
+    patch:
+      operationId: updateDashboard
+      summary: Update dashboard
+      parameters:
+        - name: dashboardId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDashboardRequest'
+    delete:
+      operationId: deleteDashboard
+      summary: Delete dashboard
+      parameters:
+        - name: dashboardId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
+  /dashboards/{dashboardId}/resolved:
+    get:
+      operationId: getResolvedDashboard
+      summary: Get resolved dashboard
+      parameters:
+        - name: dashboardId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolvedDashboardDetail'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
+  /dashboards/{dashboardId}/widgets:
+    post:
+      operationId: createDashboardWidget
+      summary: Create dashboard widget
+      parameters:
+        - name: dashboardId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardWidget'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDashboardWidgetRequest'
+  /dashboards/{dashboardId}/widgets/{widgetId}:
+    patch:
+      operationId: updateDashboardWidget
+      summary: Update dashboard widget
+      parameters:
+        - name: dashboardId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: widgetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardWidget'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDashboardWidgetRequest'
+    delete:
+      operationId: deleteDashboardWidget
+      summary: Delete dashboard widget
+      parameters:
+        - name: dashboardId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: widgetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
   /external-locations:
     get:
       operationId: listExternalLocations
@@ -11546,6 +11971,8 @@ components:
           type: boolean
         test:
           $ref: '#/components/schemas/NotebookCellTestConfig'
+        visual_spec:
+          $ref: '#/components/schemas/VisualSpec'
         content:
           type: string
         position:
@@ -11914,6 +12341,8 @@ components:
           type: boolean
         test:
           $ref: '#/components/schemas/NotebookCellTestConfig'
+        visual_spec:
+          $ref: '#/components/schemas/VisualSpec'
         content:
           type: string
         position:
@@ -11983,6 +12412,32 @@ components:
           format: int64
         size:
           $ref: '#/components/schemas/ComputeEndpointSize'
+    CreateDashboardRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    CreateDashboardWidgetRequest:
+      type: object
+      required:
+        - name
+        - source
+        - layout
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        source:
+          $ref: '#/components/schemas/DashboardWidgetSource'
+        visual_spec:
+          $ref: '#/components/schemas/VisualSpec'
+        layout:
+          $ref: '#/components/schemas/DashboardWidgetLayout'
     CreateExternalLocationRequest:
       type: object
       required:
@@ -12236,11 +12691,15 @@ components:
           type: string
         description:
           type: string
+        label:
+          type: string
         metric_type:
           $ref: '#/components/schemas/SemanticMetricMetricType'
         expression_mode:
           $ref: '#/components/schemas/SemanticMetricExpressionMode'
         expression:
+          type: string
+        filter_sql:
           type: string
         default_time_grain:
           type: string
@@ -12404,6 +12863,217 @@ components:
           type: string
         comment:
           type: string
+    Dashboard:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        owner:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    DashboardDetail:
+      type: object
+      properties:
+        dashboard:
+          $ref: '#/components/schemas/Dashboard'
+        widgets:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardWidget'
+    DashboardNotebookCellSource:
+      type: object
+      required:
+        - notebook_id
+        - cell_id
+      properties:
+        notebook_id:
+          type: string
+        cell_id:
+          type: string
+    DashboardNotebookCellSourceUpdate:
+      type: object
+      properties:
+        notebook_id:
+          type: string
+        cell_id:
+          type: string
+    DashboardSQLQuerySource:
+      type: object
+      required:
+        - sql
+      properties:
+        sql:
+          type: string
+        catalog:
+          type: string
+        schema:
+          type: string
+    DashboardSQLQuerySourceUpdate:
+      type: object
+      properties:
+        sql:
+          type: string
+        catalog:
+          type: string
+        schema:
+          type: string
+    DashboardSemanticQuerySource:
+      type: object
+      required:
+        - project_name
+        - semantic_model_name
+        - metrics
+      properties:
+        project_name:
+          type: string
+        semantic_model_name:
+          type: string
+        metrics:
+          type: array
+          items:
+            type: string
+        dimensions:
+          type: array
+          items:
+            type: string
+        filters:
+          type: array
+          items:
+            type: string
+        order_by:
+          type: array
+          items:
+            type: string
+        limit:
+          type: integer
+          format: int32
+        time_grain:
+          type: string
+    DashboardSemanticQuerySourceUpdate:
+      type: object
+      properties:
+        project_name:
+          type: string
+        semantic_model_name:
+          type: string
+        metrics:
+          type: array
+          items:
+            type: string
+        dimensions:
+          type: array
+          items:
+            type: string
+        filters:
+          type: array
+          items:
+            type: string
+        order_by:
+          type: array
+          items:
+            type: string
+        limit:
+          type: integer
+          format: int32
+        time_grain:
+          type: string
+    DashboardWidget:
+      type: object
+      properties:
+        id:
+          type: string
+        dashboard_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        source:
+          $ref: '#/components/schemas/DashboardWidgetSource'
+        visual_spec:
+          $ref: '#/components/schemas/VisualSpec'
+        layout:
+          $ref: '#/components/schemas/DashboardWidgetLayout'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    DashboardWidgetLayout:
+      type: object
+      required:
+        - x
+        - 'y'
+        - w
+        - h
+      properties:
+        x:
+          type: integer
+          format: int32
+        'y':
+          type: integer
+          format: int32
+        w:
+          type: integer
+          format: int32
+        h:
+          type: integer
+          format: int32
+    DashboardWidgetLayoutUpdate:
+      type: object
+      properties:
+        x:
+          type: integer
+          format: int32
+        'y':
+          type: integer
+          format: int32
+        w:
+          type: integer
+          format: int32
+        h:
+          type: integer
+          format: int32
+    DashboardWidgetSource:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          $ref: '#/components/schemas/DashboardWidgetSourceKind'
+        sql_query:
+          $ref: '#/components/schemas/DashboardSQLQuerySource'
+        notebook_cell:
+          $ref: '#/components/schemas/DashboardNotebookCellSource'
+        semantic_query:
+          $ref: '#/components/schemas/DashboardSemanticQuerySource'
+    DashboardWidgetSourceKind:
+      type: string
+      enum:
+        - sql_query
+        - notebook_cell
+        - semantic_query
+    DashboardWidgetSourceUpdate:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/DashboardWidgetSourceKind'
+        sql_query:
+          $ref: '#/components/schemas/DashboardSQLQuerySourceUpdate'
+        notebook_cell:
+          $ref: '#/components/schemas/DashboardNotebookCellSourceUpdate'
+        semantic_query:
+          $ref: '#/components/schemas/DashboardSemanticQuerySourceUpdate'
     Error:
       type: object
       required:
@@ -12907,6 +13577,8 @@ components:
           type: string
         to_model:
           type: string
+        relationship_type:
+          type: string
         join_sql:
           type: string
     MetricQueryPlan:
@@ -12924,6 +13596,8 @@ components:
           type: array
           items:
             type: string
+        time_grain:
+          type: string
         join_path:
           type: array
           items:
@@ -12968,6 +13642,8 @@ components:
         limit:
           type: integer
           format: int32
+        time_grain:
+          type: string
     MetricQueryRunResponse:
       type: object
       properties:
@@ -13562,6 +14238,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ComputeEndpoint'
+        next_page_token:
+          type: string
+    PaginatedDashboards:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Dashboard'
         next_page_token:
           type: string
     PaginatedExternalLocations:
@@ -14212,6 +14899,36 @@ components:
           type: array
           items:
             type: string
+    ResolvedDashboardDetail:
+      type: object
+      properties:
+        dashboard:
+          $ref: '#/components/schemas/Dashboard'
+        widgets:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResolvedDashboardWidget'
+    ResolvedDashboardWidget:
+      type: object
+      required:
+        - columns
+      properties:
+        widget:
+          $ref: '#/components/schemas/DashboardWidget'
+        columns:
+          type: array
+          items:
+            type: string
+        rows:
+          type: array
+          items:
+            type: array
+            items: {}
+        row_count:
+          type: integer
+          format: int64
+        generated_sql:
+          type: string
     RevokeWebSessionsRequest:
       type: object
       required:
@@ -14327,11 +15044,15 @@ components:
           type: string
         description:
           type: string
+        label:
+          type: string
         metric_type:
           $ref: '#/components/schemas/SemanticMetricMetricType'
         expression_mode:
           $ref: '#/components/schemas/SemanticMetricExpressionMode'
         expression:
+          type: string
+        filter_sql:
           type: string
         default_time_grain:
           type: string
@@ -14752,6 +15473,8 @@ components:
           type: boolean
         test:
           $ref: '#/components/schemas/NotebookCellTestConfig'
+        visual_spec:
+          $ref: '#/components/schemas/VisualSpecUpdate'
         content:
           type: string
         position:
@@ -14778,6 +15501,26 @@ components:
           $ref: '#/components/schemas/ComputeEndpointStatus'
         url:
           type: string
+    UpdateDashboardRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    UpdateDashboardWidgetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        source:
+          $ref: '#/components/schemas/DashboardWidgetSourceUpdate'
+        visual_spec:
+          $ref: '#/components/schemas/VisualSpecUpdate'
+        layout:
+          $ref: '#/components/schemas/DashboardWidgetLayoutUpdate'
     UpdateExternalLocationRequest:
       type: object
       properties:
@@ -14877,11 +15620,15 @@ components:
       properties:
         description:
           type: string
+        label:
+          type: string
         metric_type:
           $ref: '#/components/schemas/SemanticMetricMetricType'
         expression_mode:
           $ref: '#/components/schemas/SemanticMetricExpressionMode'
         expression:
+          type: string
+        filter_sql:
           type: string
         default_time_grain:
           type: string
@@ -15050,6 +15797,104 @@ components:
         updated_at:
           type: string
           format: date-time
+    VisualChartType:
+      type: string
+      enum:
+        - bar
+        - line
+        - area
+        - pie
+        - doughnut
+        - scatter
+        - stacked_bar
+    VisualEncodings:
+      type: object
+      properties:
+        x:
+          $ref: '#/components/schemas/VisualFieldBinding'
+        'y':
+          $ref: '#/components/schemas/VisualFieldBinding'
+        series:
+          $ref: '#/components/schemas/VisualFieldBinding'
+        label:
+          $ref: '#/components/schemas/VisualFieldBinding'
+        value:
+          $ref: '#/components/schemas/VisualFieldBinding'
+        secondary:
+          $ref: '#/components/schemas/VisualFieldBinding'
+    VisualEncodingsUpdate:
+      type: object
+      properties:
+        x:
+          $ref: '#/components/schemas/VisualFieldBindingUpdate'
+        'y':
+          $ref: '#/components/schemas/VisualFieldBindingUpdate'
+        series:
+          $ref: '#/components/schemas/VisualFieldBindingUpdate'
+        label:
+          $ref: '#/components/schemas/VisualFieldBindingUpdate'
+        value:
+          $ref: '#/components/schemas/VisualFieldBindingUpdate'
+        secondary:
+          $ref: '#/components/schemas/VisualFieldBindingUpdate'
+    VisualFieldBinding:
+      type: object
+      required:
+        - field
+      properties:
+        field:
+          type: string
+    VisualFieldBindingUpdate:
+      type: object
+      properties:
+        field:
+          type: string
+    VisualOutputKind:
+      type: string
+      enum:
+        - table
+        - metric
+        - chart
+    VisualSpec:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          $ref: '#/components/schemas/VisualOutputKind'
+        chart_type:
+          $ref: '#/components/schemas/VisualChartType'
+        encodings:
+          $ref: '#/components/schemas/VisualEncodings'
+        title:
+          type: string
+        subtitle:
+          type: string
+        legend:
+          type: boolean
+        stacked:
+          type: boolean
+        color_palette:
+          type: string
+    VisualSpecUpdate:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/VisualOutputKind'
+        chart_type:
+          $ref: '#/components/schemas/VisualChartType'
+        encodings:
+          $ref: '#/components/schemas/VisualEncodingsUpdate'
+        title:
+          type: string
+        subtitle:
+          type: string
+        legend:
+          type: boolean
+        stacked:
+          type: boolean
+        color_palette:
+          type: string
     VolumeDetail:
       type: object
       required:

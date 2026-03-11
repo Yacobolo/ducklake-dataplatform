@@ -430,6 +430,13 @@ func CellFromDB(c dbstore.Cell) *domain.Cell {
 			testCfg = parsed
 		}
 	}
+	var visualSpec *domain.VisualSpec
+	if c.VisualSpec != "" {
+		parsed := &domain.VisualSpec{}
+		if err := json.Unmarshal([]byte(c.VisualSpec), parsed); err == nil {
+			visualSpec = parsed
+		}
+	}
 	return &domain.Cell{
 		ID:         c.ID,
 		NotebookID: c.NotebookID,
@@ -438,6 +445,7 @@ func CellFromDB(c dbstore.Cell) *domain.Cell {
 		Role:       domain.CellRole(c.Role),
 		Disabled:   c.Disabled != 0,
 		Test:       testCfg,
+		VisualSpec: visualSpec,
 		Content:    c.Content,
 		Position:   int(c.Position),
 		LastResult: ptrStr(c.LastResult),

@@ -1,4 +1,5 @@
 import { initializeNotebookComputeController } from "./sql-runtime/notebook-compute-controller";
+import "./chart";
 
 (() => {
   const workspace = document.querySelector("[data-reorder-url]");

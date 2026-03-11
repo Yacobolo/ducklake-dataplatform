@@ -12,6 +12,7 @@ const webDir = join(rootDir, "web");
 const entryFiles = [
   join(webDir, "src", "sql-editor.ts"),
   join(webDir, "src", "notebook.ts"),
+  join(webDir, "src", "dashboard.ts"),
 ];
 
 const outputDir = join(rootDir, "internal", "ui", "assets", "static", "js");

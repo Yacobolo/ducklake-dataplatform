@@ -205,6 +205,35 @@ func TestAPI_Curl_WithAPIKeyAuth(t *testing.T) {
 		"curl should include X-API-Key auth header")
 }
 
+func TestAPI_Curl_EmbedsObjectBodyFieldsAsJSON(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--output", "json",
+		"--token", "my-secret-token",
+		"api", "curl", "createDashboardWidget",
+		"--param", "dashboardId=dash-1",
+		"--param", "name=Top Vendors",
+		"--param", `layout={"x":0,"y":0,"w":6,"h":4}`,
+		"--param", `source={"kind":"sql_query","sql_query":{"sql":"select 1"}}`,
+		"--param", `visual_spec={"kind":"chart","chart_type":"bar"}`,
+	})
+
+	old := captureStdout(t)
+	err := rootCmd.Execute()
+	output := old()
+	require.NoError(t, err)
+
+	var result map[string]string
+	require.NoError(t, json.Unmarshal([]byte(output), &result))
+	assert.Contains(t, result["curl"], `"layout":{"x":0,"y":0,"w":6,"h":4}`)
+	assert.Contains(t, result["curl"], `"source":{"kind":"sql_query"`)
+	assert.Contains(t, result["curl"], `"visual_spec":{"kind":"chart","chart_type":"bar"}`)
+	assert.NotContains(t, result["curl"], `"layout":"{`)
+}
+
 func TestAPI_Curl_ProfileTokenOverriddenByExplicitAPIKey(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)

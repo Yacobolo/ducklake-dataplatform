@@ -11,7 +11,7 @@
     "build:js:dev": "node ./scripts/build-js.mjs --mode=dev",
     "build:js:prod": "node ./scripts/build-js.mjs --mode=prod",
     "watch:css": "npm run sync:tokens && esbuild ./styles/app.css --bundle --sourcemap --outfile=../internal/ui/assets/static/css/app.css --watch",
-    "watch:js": "esbuild ./src/sql-editor.ts ./src/notebook.ts --bundle --format=iife --outdir=../internal/ui/assets/static/js --sourcemap --watch"
+    "watch:js": "esbuild ./src/sql-editor.ts ./src/notebook.ts ./src/dashboard.ts --bundle --format=iife --outdir=../internal/ui/assets/static/js --sourcemap --watch"
   },
   "devDependencies": {
     "esbuild": "0.25.10"
@@ -19,6 +19,7 @@
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.30.0",
     "@primer/primitives": "11.4.0",
+    "echarts": "^6.0.0",
     "highlight.js": "11.11.1",
     "lit": "3.3.1",
     "sql-formatter": "15.6.10"

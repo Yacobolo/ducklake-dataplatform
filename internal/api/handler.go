@@ -33,6 +33,7 @@ type APIHandler struct {
 	models              modelService
 	macros              macroService
 	semantics           semanticService
+	dashboards          dashboardService
 }
 
 // NewHandler creates a new APIHandler with all required service dependencies.
@@ -67,7 +68,12 @@ func NewHandler(
 	models modelService,
 	macros macroService,
 	semantics semanticService,
+	dashboards ...dashboardService,
 ) *APIHandler {
+	var dashboardSvc dashboardService
+	if len(dashboards) > 0 {
+		dashboardSvc = dashboards[0]
+	}
 	return &APIHandler{
 		query:               query,
 		principals:          principals,
@@ -99,6 +105,7 @@ func NewHandler(
 		models:              models,
 		macros:              macros,
 		semantics:           semantics,
+		dashboards:          dashboardSvc,
 	}
 }
 

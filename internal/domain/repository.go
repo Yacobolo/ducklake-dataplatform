@@ -359,6 +359,24 @@ type NotebookRepository interface {
 	GetMaxPosition(ctx context.Context, notebookID string) (int, error)
 }
 
+// DashboardRepository provides CRUD operations for dashboards.
+type DashboardRepository interface {
+	Create(ctx context.Context, d *Dashboard) (*Dashboard, error)
+	GetByID(ctx context.Context, id string) (*Dashboard, error)
+	List(ctx context.Context, owner *string, page PageRequest) ([]Dashboard, int64, error)
+	Update(ctx context.Context, id string, req UpdateDashboardRequest) (*Dashboard, error)
+	Delete(ctx context.Context, id string) error
+}
+
+// DashboardWidgetRepository provides CRUD operations for dashboard widgets.
+type DashboardWidgetRepository interface {
+	Create(ctx context.Context, w *DashboardWidget) (*DashboardWidget, error)
+	GetByID(ctx context.Context, id string) (*DashboardWidget, error)
+	ListByDashboard(ctx context.Context, dashboardID string) ([]DashboardWidget, error)
+	Update(ctx context.Context, id string, req UpdateDashboardWidgetRequest) (*DashboardWidget, error)
+	Delete(ctx context.Context, id string) error
+}
+
 // NotebookJobRepository provides CRUD operations for async notebook jobs.
 type NotebookJobRepository interface {
 	CreateJob(ctx context.Context, job *NotebookJob) (*NotebookJob, error)

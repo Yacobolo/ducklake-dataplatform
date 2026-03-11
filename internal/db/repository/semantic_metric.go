@@ -31,6 +31,8 @@ func (r *SemanticMetricRepo) Create(ctx context.Context, m *domain.SemanticMetri
 		MetricType:         m.MetricType,
 		ExpressionMode:     m.ExpressionMode,
 		Expression:         m.Expression,
+		Label:              m.Label,
+		FilterSql:          m.FilterSQL,
 		DefaultTimeGrain:   m.DefaultTimeGrain,
 		Format:             m.Format,
 		Owner:              m.Owner,
@@ -89,6 +91,10 @@ func (r *SemanticMetricRepo) Update(ctx context.Context, id string, req domain.U
 	if req.Description != nil {
 		description = *req.Description
 	}
+	label := current.Label
+	if req.Label != nil {
+		label = *req.Label
+	}
 	metricType := current.MetricType
 	if req.MetricType != nil {
 		metricType = *req.MetricType
@@ -100,6 +106,10 @@ func (r *SemanticMetricRepo) Update(ctx context.Context, id string, req domain.U
 	expression := current.Expression
 	if req.Expression != nil {
 		expression = *req.Expression
+	}
+	filterSQL := current.FilterSQL
+	if req.FilterSQL != nil {
+		filterSQL = *req.FilterSQL
 	}
 	defaultGrain := current.DefaultTimeGrain
 	if req.DefaultTimeGrain != nil {
@@ -120,9 +130,11 @@ func (r *SemanticMetricRepo) Update(ctx context.Context, id string, req domain.U
 
 	err = r.q.UpdateSemanticMetric(ctx, dbstore.UpdateSemanticMetricParams{
 		Description:        description,
+		Label:              label,
 		MetricType:         metricType,
 		ExpressionMode:     expressionMode,
 		Expression:         expression,
+		FilterSql:          filterSQL,
 		DefaultTimeGrain:   defaultGrain,
 		Format:             format,
 		Owner:              owner,

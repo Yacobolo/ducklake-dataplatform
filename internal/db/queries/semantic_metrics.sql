@@ -1,9 +1,9 @@
 -- name: CreateSemanticMetric :one
 INSERT INTO semantic_metrics (
     id, semantic_model_id, name, description, metric_type, expression_mode,
-    expression, default_time_grain, format, owner, certification_state, created_by
+    expression, label, filter_sql, default_time_grain, format, owner, certification_state, created_by
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetSemanticMetricByID :one
@@ -20,9 +20,11 @@ ORDER BY name;
 -- name: UpdateSemanticMetric :exec
 UPDATE semantic_metrics
 SET description = COALESCE(?, description),
+    label = COALESCE(?, label),
     metric_type = COALESCE(?, metric_type),
     expression_mode = COALESCE(?, expression_mode),
     expression = COALESCE(?, expression),
+    filter_sql = COALESCE(?, filter_sql),
     default_time_grain = COALESCE(?, default_time_grain),
     format = COALESCE(?, format),
     owner = COALESCE(?, owner),

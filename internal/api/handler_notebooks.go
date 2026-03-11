@@ -185,6 +185,9 @@ func (h *APIHandler) CreateCell(ctx context.Context, req GenCreateCellRequest) (
 	if req.Body.Test != nil {
 		domReq.Test = notebookCellTestConfigFromAPI(req.Body.Test)
 	}
+	if req.Body.VisualSpec != nil {
+		domReq.VisualSpec = visualSpecFromAPI(req.Body.VisualSpec)
+	}
 	if req.Body.Content != nil {
 		domReq.Content = *req.Body.Content
 	}
@@ -233,6 +236,9 @@ func (h *APIHandler) UpdateCell(ctx context.Context, req GenUpdateCellRequest) (
 	}
 	if req.Body.Test != nil {
 		domReq.Test = notebookCellTestConfigFromAPI(req.Body.Test)
+	}
+	if req.Body.VisualSpec != nil {
+		domReq.VisualSpec = visualSpecFromAPI(req.Body.VisualSpec)
 	}
 	if req.Body.Position != nil {
 		pos := int(*req.Body.Position)
@@ -607,6 +613,7 @@ func cellToAPI(c domain.Cell) Cell {
 		Role:       role,
 		Disabled:   disabled,
 		Test:       notebookCellTestConfigToAPI(c.Test),
+		VisualSpec: visualSpecToAPI(c.VisualSpec),
 		Content:    &c.Content,
 		Position:   &pos,
 		LastResult: c.LastResult,

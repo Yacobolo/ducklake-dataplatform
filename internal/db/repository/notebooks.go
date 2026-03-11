@@ -120,6 +120,14 @@ func (r *NotebookRepo) CreateCell(ctx context.Context, cell *domain.Cell) (*doma
 		}
 		testCfg = string(b)
 	}
+	visualSpec := ""
+	if cell.VisualSpec != nil {
+		b, err := json.Marshal(cell.VisualSpec)
+		if err != nil {
+			return nil, fmt.Errorf("marshal visual spec: %w", err)
+		}
+		visualSpec = string(b)
+	}
 
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -149,6 +157,7 @@ func (r *NotebookRepo) CreateCell(ctx context.Context, cell *domain.Cell) (*doma
 		Role:       string(role),
 		Disabled:   boolToInt64(cell.Disabled),
 		TestConfig: testCfg,
+		VisualSpec: visualSpec,
 		Content:    cell.Content,
 		Position:   position,
 	})
@@ -223,6 +232,14 @@ func (r *NotebookRepo) UpdateCell(ctx context.Context, id string, req domain.Upd
 	} else if req.Role != nil && *req.Role != domain.CellRoleTest {
 		testConfig = "{}"
 	}
+	visualSpec := existing.VisualSpec
+	if req.VisualSpec != nil {
+		b, err := json.Marshal(req.VisualSpec)
+		if err != nil {
+			return nil, fmt.Errorf("marshal visual spec: %w", err)
+		}
+		visualSpec = string(b)
+	}
 
 	position := existing.Position
 	if req.Position != nil {
@@ -240,6 +257,7 @@ func (r *NotebookRepo) UpdateCell(ctx context.Context, id string, req domain.Upd
 		Role:       role,
 		Disabled:   disabled,
 		TestConfig: testConfig,
+		VisualSpec: visualSpec,
 		Content:    content,
 		Position:   position,
 		ID:         id,
