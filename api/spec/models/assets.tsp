@@ -127,6 +127,7 @@ model AssetFreshnessStatus {
 model AssetFreshnessEdge {
   from_asset_key?: string;
   to_asset_key?: string;
+  dependency_type?: string;
 }
 
 model AssetFreshnessExplanation {

@@ -82,6 +82,7 @@ func (s *Service) explainFreshnessByID(ctx context.Context, assetID string, requ
 		if childErr != nil {
 			return nil, childErr
 		}
+		child.UpstreamDependencyType = dep.DependencyType
 		if dep.DependencyType == domain.DependencyTypeSoft {
 			softUpstream = append(softUpstream, *child)
 			continue

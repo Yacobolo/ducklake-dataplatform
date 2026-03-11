@@ -823,8 +823,9 @@ func flattenAssetFreshnessTree(root domain.AssetFreshnessNode, nodes *[]AssetFre
 		fromKey := root.AssetKey
 		toKey := child.AssetKey
 		*edges = append(*edges, AssetFreshnessEdge{
-			FromAssetKey: &fromKey,
-			ToAssetKey:   &toKey,
+			FromAssetKey:   &fromKey,
+			ToAssetKey:     &toKey,
+			DependencyType: optStr(child.UpstreamDependencyType),
 		})
 		flattenAssetFreshnessTree(child, nodes, edges)
 	}

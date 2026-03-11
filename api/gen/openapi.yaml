@@ -11723,6 +11723,8 @@ components:
           type: string
         to_asset_key:
           type: string
+        dependency_type:
+          type: string
     AssetFreshnessExplanation:
       type: object
       properties:

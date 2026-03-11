@@ -4,15 +4,15 @@ import "time"
 
 const (
 	// AssetFreshnessStatusFresh indicates the asset satisfies its effective freshness requirement.
-	AssetFreshnessStatusFresh      = "FRESH"
+	AssetFreshnessStatusFresh = "FRESH"
 	// AssetFreshnessStatusStale indicates the asset is older than its effective freshness requirement.
-	AssetFreshnessStatusStale      = "STALE"
+	AssetFreshnessStatusStale = "STALE"
 	// AssetFreshnessStatusRefreshing indicates the asset or one of its upstreams is actively refreshing.
 	AssetFreshnessStatusRefreshing = "REFRESHING"
 	// AssetFreshnessStatusBlocked indicates the asset cannot currently satisfy freshness because an upstream is blocked.
-	AssetFreshnessStatusBlocked    = "BLOCKED"
+	AssetFreshnessStatusBlocked = "BLOCKED"
 	// AssetFreshnessStatusUnknown indicates the platform cannot currently determine freshness.
-	AssetFreshnessStatusUnknown    = "UNKNOWN"
+	AssetFreshnessStatusUnknown = "UNKNOWN"
 )
 
 // AssetFreshnessStatus is the flattened freshness state returned for an asset.
@@ -33,6 +33,7 @@ type AssetFreshnessNode struct {
 	AssetID                string
 	AssetKey               string
 	AssetType              string
+	UpstreamDependencyType string
 	FreshnessStatus        string
 	EffectiveMaxLagSeconds int64
 	LastMaterializedAt     *time.Time

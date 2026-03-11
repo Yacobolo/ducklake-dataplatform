@@ -365,10 +365,11 @@ func TestHandler_ExplainAssetFreshness(t *testing.T) {
 			Reason:          "upstream metric.sales.orders.revenue is stale",
 			Basis:           []string{"metric.sales.orders.revenue"},
 			Upstream: []domain.AssetFreshnessNode{{
-				AssetID:         "metric-1",
-				AssetKey:        "metric.sales.orders.revenue",
-				AssetType:       domain.AssetTypeMetric,
-				FreshnessStatus: domain.AssetFreshnessStatusStale,
+				AssetID:                "metric-1",
+				AssetKey:               "metric.sales.orders.revenue",
+				AssetType:              domain.AssetTypeMetric,
+				UpstreamDependencyType: domain.DependencyTypeSoft,
+				FreshnessStatus:        domain.AssetFreshnessStatusStale,
 			}},
 		}, nil
 	}}}
@@ -382,6 +383,8 @@ func TestHandler_ExplainAssetFreshness(t *testing.T) {
 	require.NotNil(t, ok.Body.Edges)
 	require.Len(t, *ok.Body.Edges, 1)
 	assert.Equal(t, "metric.sales.orders.revenue", *(*ok.Body.Edges)[0].ToAssetKey)
+	require.NotNil(t, (*ok.Body.Edges)[0].DependencyType)
+	assert.Equal(t, domain.DependencyTypeSoft, *(*ok.Body.Edges)[0].DependencyType)
 }
 
 func TestHandler_ReconcileAssetFreshness(t *testing.T) {
