@@ -321,6 +321,7 @@ func scoreCommand(query string, queryTokens []string, key string, command Comman
 		return SearchResult{}, false
 	}
 	score += 200
+	score += intentBoost(queryTokens, command.Path, 2200)
 	score += linkedBoost(len(relatedOps) + len(relatedDocs))
 	return SearchResult{
 		Kind:              "command",
@@ -339,6 +340,7 @@ func scoreOperation(query string, queryTokens []string, op gen.ReferenceOperatio
 	fields := []weightedField{
 		{name: "title", value: op.OperationID, weight: 100},
 		{name: "path", value: op.Path, weight: 100},
+		{name: "cli_command", value: op.CLICommand, weight: 100},
 		{name: "summary", value: op.Summary, weight: 50},
 		{name: "description", value: op.Description, weight: 10},
 	}
@@ -355,6 +357,9 @@ func scoreOperation(query string, queryTokens []string, op gen.ReferenceOperatio
 	if score == 0 {
 		return SearchResult{}, false
 	}
+	score += intentBoost(queryTokens, op.CLICommand, 700)
+	score += intentBoost(queryTokens, op.Path, 400)
+	score += intentBoost(queryTokens, op.OperationID+" "+op.Summary, 1200)
 	score += linkedBoost(len(relatedCommands) + len(relatedDocs))
 	return SearchResult{
 		Kind:            "operation",
@@ -389,6 +394,7 @@ func scoreDoc(query string, queryTokens []string, doc gen.ReferenceDoc, relatedC
 	if score == 0 {
 		return SearchResult{}, false
 	}
+	score += intentBoost(queryTokens, doc.Title+" "+doc.Path, 250)
 	score += linkedBoost(len(relatedCommands) + len(relatedOps))
 	return SearchResult{
 		Kind:              "doc",
@@ -572,6 +578,29 @@ func maxInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func intentBoost(queryTokens []string, candidate string, fullCoverageBoost int) int {
+	if len(queryTokens) < 2 {
+		return 0
+	}
+	candidateTokens := tokenize(candidate)
+	if len(candidateTokens) == 0 {
+		return 0
+	}
+	matches := 0
+	for _, queryToken := range queryTokens {
+		if containsToken(candidateTokens, queryToken) {
+			matches++
+		}
+	}
+	if matches == 0 {
+		return 0
+	}
+	if matches == len(queryTokens) {
+		return fullCoverageBoost
+	}
+	return matches * maxInt(fullCoverageBoost/5, 1)
 }
 
 func expandTokenVariants(tokens []string) []string {
