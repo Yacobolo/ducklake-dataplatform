@@ -32,7 +32,7 @@ op listAssetPartitions(assetKey: string, @query max_results?: int32, @query page
 
 @route("/assets/{assetKey}/runs")
 @get
-op listAssetRuns(assetKey: string, @query status?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedAssetRuns> | ResourceErrorResponses;
+op listAssetRuns(assetKey: string, @query status?: AssetRunStatus, @query max_results?: int32, @query page_token?: string): Ok<PaginatedAssetRuns> | ResourceErrorResponses;
 
 @route("/assets/{assetKey}/materialize")
 @post
@@ -52,7 +52,7 @@ op listAssetCheckResults(assetKey: string, @query max_results?: int32, @query pa
 
 @route("/assets/{assetKey}/backfills")
 @get
-op listAssetBackfills(assetKey: string, @query status?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedBackfillRequests> | ResourceErrorResponses;
+op listAssetBackfills(assetKey: string, @query status?: AssetRunStatus, @query max_results?: int32, @query page_token?: string): Ok<PaginatedBackfillRequests> | ResourceErrorResponses;
 
 @route("/assets/{assetKey}/backfills")
 @post

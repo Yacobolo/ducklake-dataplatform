@@ -23,7 +23,7 @@ type catalogRegistrationService interface {
 func (h *APIHandler) RegisterCatalog(ctx context.Context, request GenRegisterCatalogRequest) (GenRegisterCatalogResponse, error) {
 	domReq := domain.CreateCatalogRequest{Name: request.Body.Name}
 	if request.Body.MetastoreType != nil {
-		domReq.MetastoreType = *request.Body.MetastoreType
+		domReq.MetastoreType = string(*request.Body.MetastoreType)
 	}
 	if request.Body.Dsn != nil {
 		domReq.DSN = *request.Body.Dsn
@@ -163,10 +163,10 @@ func catalogRegistrationToAPI(r domain.CatalogRegistration) CatalogRegistration 
 	return CatalogRegistration{
 		Id:            r.ID,
 		Name:          r.Name,
-		MetastoreType: strPtrIfNonEmpty(string(r.MetastoreType)),
+		MetastoreType: ptrMetastoreType(string(r.MetastoreType)),
 		Dsn:           strPtrIfNonEmpty(r.DSN),
 		DataPath:      strPtrIfNonEmpty(r.DataPath),
-		Status:        strPtrIfNonEmpty(string(r.Status)),
+		Status:        ptrCatalogStatus(string(r.Status)),
 		IsDefault:     &r.IsDefault,
 		SystemManaged: &systemManaged,
 		Comment:       optStr(r.Comment),

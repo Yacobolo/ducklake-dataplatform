@@ -492,7 +492,7 @@ func (h *APIHandler) ListRowFilterBindings(ctx context.Context, req GenListRowFi
 			Id:            &binding.ID,
 			RowFilterId:   &binding.RowFilterID,
 			PrincipalId:   &binding.PrincipalID,
-			PrincipalType: &binding.PrincipalType,
+			PrincipalType: ptrPrincipalType(binding.PrincipalType),
 		})
 	}
 	next := domain.NextPageToken(start, page.Limit(), int64(len(bindings)))
@@ -629,7 +629,7 @@ func (h *APIHandler) ListColumnMaskBindings(ctx context.Context, req GenListColu
 			Id:            &binding.ID,
 			ColumnMaskId:  &binding.ColumnMaskID,
 			PrincipalId:   &binding.PrincipalID,
-			PrincipalType: &binding.PrincipalType,
+			PrincipalType: ptrPrincipalType(binding.PrincipalType),
 			SeeOriginal:   &binding.SeeOriginal,
 		})
 	}

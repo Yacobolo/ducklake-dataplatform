@@ -320,19 +320,27 @@ func printLocalQueryResult(cmd *cobra.Command, result *localQueryResult) error {
 }
 
 func printQueryResultBody(cmd *cobra.Command, respBody []byte) error {
-	var result struct {
-		Columns       []string        `json:"columns"`
-		Rows          [][]interface{} `json:"rows"`
+	var payload struct {
+		Columns       json.RawMessage `json:"columns"`
+		Rows          json.RawMessage `json:"rows"`
 		RowCount      int             `json:"row_count"`
 		NextPageToken string          `json:"next_page_token"`
 	}
-	if err := json.Unmarshal(respBody, &result); err != nil {
+	if err := json.Unmarshal(respBody, &payload); err != nil {
 		return fmt.Errorf("parse response: %w", err)
+	}
+	columnNames, err := decodeQueryColumns(payload.Columns)
+	if err != nil {
+		return err
+	}
+	rows, err := decodeQueryRows(payload.Rows, columnNames)
+	if err != nil {
+		return err
 	}
 
 	quiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
 	if quiet {
-		_, _ = fmt.Fprintln(os.Stdout, result.RowCount)
+		_, _ = fmt.Fprintln(os.Stdout, payload.RowCount)
 		return nil
 	}
 
@@ -350,32 +358,84 @@ func printQueryResultBody(cmd *cobra.Command, respBody []byte) error {
 		return apiruntime.PrintJSON(os.Stdout, pretty)
 	case apiruntime.OutputCSV:
 		w := csv.NewWriter(os.Stdout)
-		_ = w.Write(result.Columns)
-		for _, row := range result.Rows {
-			record := make([]string, len(row))
-			for i, v := range row {
-				record[i] = apiruntime.FormatValue(v)
+		_ = w.Write(columnNames)
+		for _, row := range rows {
+			record := make([]string, len(columnNames))
+			for i, name := range columnNames {
+				record[i] = apiruntime.FormatValue(row[name])
 			}
 			_ = w.Write(record)
 		}
 		w.Flush()
 		return w.Error()
 	default:
-		rows := make([][]string, len(result.Rows))
-		for i, row := range result.Rows {
-			rows[i] = make([]string, len(row))
-			for j, v := range row {
-				rows[i][j] = apiruntime.FormatValue(v)
+		tableRows := make([][]string, len(rows))
+		for i, row := range rows {
+			tableRows[i] = make([]string, len(columnNames))
+			for j, name := range columnNames {
+				tableRows[i][j] = apiruntime.FormatValue(row[name])
 			}
 		}
-		apiruntime.PrintTable(os.Stdout, result.Columns, rows)
-		if result.NextPageToken != "" {
-			fmt.Fprintf(os.Stderr, "\n(%d rows, more pages available: --page-token %s)\n", result.RowCount, result.NextPageToken)
+		apiruntime.PrintTable(os.Stdout, columnNames, tableRows)
+		if payload.NextPageToken != "" {
+			fmt.Fprintf(os.Stderr, "\n(%d rows, more pages available: --page-token %s)\n", payload.RowCount, payload.NextPageToken)
 		} else {
-			fmt.Fprintf(os.Stderr, "\n(%d rows)\n", result.RowCount)
+			fmt.Fprintf(os.Stderr, "\n(%d rows)\n", payload.RowCount)
 		}
 		return nil
 	}
+}
+
+func decodeQueryColumns(raw json.RawMessage) ([]string, error) {
+	var columnObjects []struct {
+		Name string `json:"name"`
+	}
+	if len(raw) == 0 || string(raw) == "null" {
+		return []string{}, nil
+	}
+	if err := json.Unmarshal(raw, &columnObjects); err == nil && len(columnObjects) > 0 {
+		out := make([]string, len(columnObjects))
+		for i, col := range columnObjects {
+			out[i] = col.Name
+		}
+		return out, nil
+	}
+
+	var columnNames []string
+	if err := json.Unmarshal(raw, &columnNames); err != nil {
+		return nil, fmt.Errorf("parse columns: %w", err)
+	}
+	return columnNames, nil
+}
+
+func decodeQueryRows(raw json.RawMessage, columnNames []string) ([]map[string]any, error) {
+	if len(raw) == 0 || string(raw) == "null" {
+		return []map[string]any{}, nil
+	}
+
+	var rowObjects []map[string]any
+	if err := json.Unmarshal(raw, &rowObjects); err == nil {
+		return rowObjects, nil
+	}
+
+	var rowMatrix [][]interface{}
+	if err := json.Unmarshal(raw, &rowMatrix); err != nil {
+		return nil, fmt.Errorf("parse rows: %w", err)
+	}
+
+	out := make([]map[string]any, len(rowMatrix))
+	for i, row := range rowMatrix {
+		record := make(map[string]any, len(columnNames))
+		for j, name := range columnNames {
+			if j < len(row) {
+				record[name] = row[j]
+			} else {
+				record[name] = nil
+			}
+		}
+		out[i] = record
+	}
+	return out, nil
 }
 
 type waitedStatus struct {

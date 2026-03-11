@@ -15,9 +15,9 @@
 | `dsn` | `string` | `false` | - |
 | `id` | `string` | `true` | - |
 | `is_default` | `boolean` | `false` | - |
-| `metastore_type` | `string` | `false` | - |
+| `metastore_type` | `MetastoreType` | `false` | - |
 | `name` | `string` | `true` | - |
-| `status` | `string` | `false` | - |
+| `status` | `CatalogStatus` | `false` | - |
 | `system_managed` | `boolean` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 

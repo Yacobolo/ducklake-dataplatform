@@ -136,7 +136,7 @@ func TestHelpers_principalToAPI(t *testing.T) {
 
 	assert.Equal(t, "p-1", result.Id)
 	assert.Equal(t, "alice", result.Name)
-	assert.Equal(t, "user", result.Type)
+	assert.Equal(t, PrincipalType("user"), result.Type)
 	assert.True(t, result.IsAdmin)
 	require.NotNil(t, result.CreatedAt)
 	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.CreatedAt)
@@ -166,7 +166,7 @@ func TestHelpers_grantToAPI(t *testing.T) {
 
 	assert.Equal(t, "gr-1", result.Id)
 	assert.Equal(t, "p-1", result.PrincipalId)
-	assert.Equal(t, "user", result.PrincipalType)
+	assert.Equal(t, PrincipalType("user"), result.PrincipalType)
 	assert.Equal(t, "table", result.SecurableType)
 	assert.Equal(t, "t-1", result.SecurableId)
 	assert.Equal(t, "SELECT", result.Privilege)

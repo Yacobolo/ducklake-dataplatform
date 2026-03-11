@@ -382,6 +382,6 @@ func TestHandler_GetQueryResults_Paged(t *testing.T) {
 	ok, okType := resp.(GenGetQueryResults200JSONResponse)
 	require.True(t, okType)
 	require.NotNil(t, ok.Body.Rows)
-	require.Len(t, *ok.Body.Rows, 1)
+	require.Len(t, ok.Body.Rows, 1)
 	require.NotNil(t, ok.Body.NextPageToken)
 }

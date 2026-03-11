@@ -550,8 +550,8 @@ func (h *APIHandler) RunMetricQuery(ctx context.Context, req GenRunMetricQueryRe
 	apiPlan := metricQueryPlanToAPI(result.Plan)
 	rowCount := safeIntToInt32(result.Result.RowCount)
 	apiResult := QueryResult{
-		Columns:  result.Result.Columns,
-		Rows:     rowsToStringMatrix(result.Result.Rows),
+		Columns:  tabularColumns(result.Result.Columns, result.Result.Rows),
+		Rows:     rowsToRecords(result.Result.Columns, result.Result.Rows),
 		RowCount: &rowCount,
 	}
 	return RunMetricQuery200JSONResponse{Body: MetricQueryRunResponse{Plan: &apiPlan, Result: &apiResult}, Headers: RunMetricQuery200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil

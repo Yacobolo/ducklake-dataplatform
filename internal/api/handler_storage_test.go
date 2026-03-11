@@ -154,6 +154,7 @@ func storageTestCtx() context.Context {
 var storageFixedTime = time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
 
 func storageStrPtr(s string) *string { return &s }
+func storageCredentialTypePtr(v StorageCredentialType) *StorageCredentialType { return &v }
 
 func sampleStorageCredential() domain.StorageCredential {
 	return domain.StorageCredential{
@@ -273,7 +274,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 	}{
 		{
 			name: "happy path returns 201",
-			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: storageStrPtr(ct)},
+			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: storageCredentialTypePtr(StorageCredentialType(ct))},
 			svcFn: func(_ context.Context, _ string, req domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
 				if req.URLStyle != "" {
 					return nil, domain.ErrValidation("url_style must be explicit")
@@ -293,7 +294,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 		},
 		{
 			name: "validation error returns 400",
-			body: GenCreateStorageCredentialJSONBody{Name: "", CredentialType: storageStrPtr(ct)},
+			body: GenCreateStorageCredentialJSONBody{Name: "", CredentialType: storageCredentialTypePtr(StorageCredentialType(ct))},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
 				return nil, domain.ErrValidation("credential name is required")
 			},
@@ -308,7 +309,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 		},
 		{
 			name: "access denied returns 403",
-			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: storageStrPtr(ct)},
+			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: storageCredentialTypePtr(StorageCredentialType(ct))},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
 				return nil, domain.ErrAccessDenied("only admins can create credentials")
 			},
@@ -322,7 +323,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 		},
 		{
 			name: "conflict error returns 409",
-			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: storageStrPtr(ct)},
+			body: GenCreateStorageCredentialJSONBody{Name: "my-s3-cred", CredentialType: storageCredentialTypePtr(StorageCredentialType(ct))},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
 				return nil, domain.ErrConflict("credential my-s3-cred already exists")
 			},
@@ -337,7 +338,7 @@ func TestHandler_CreateStorageCredential(t *testing.T) {
 		},
 		{
 			name: "unknown error falls through to 400",
-			body: GenCreateStorageCredentialJSONBody{Name: "fail", CredentialType: storageStrPtr(ct)},
+			body: GenCreateStorageCredentialJSONBody{Name: "fail", CredentialType: storageCredentialTypePtr(StorageCredentialType(ct))},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateStorageCredentialRequest) (*domain.StorageCredential, error) {
 				return nil, assert.AnError
 			},

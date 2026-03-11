@@ -507,7 +507,7 @@ func domainAssetChecks(checks *[]AssetCheckInput) []domain.AssetCheckInput {
 		out = append(out, domain.AssetCheckInput{
 			Name:       (*checks)[i].Name,
 			CheckType:  (*checks)[i].CheckType,
-			Severity:   derefString((*checks)[i].Severity),
+			Severity:   derefStringEnum((*checks)[i].Severity),
 			Enabled:    derefBoolDefault((*checks)[i].Enabled, true),
 			ConfigJSON: derefRecordMap((*checks)[i].ConfigJson),
 		})
@@ -520,6 +520,13 @@ func derefString(value *string) string {
 		return ""
 	}
 	return *value
+}
+
+func derefStringEnum[T ~string](value *T) string {
+	if value == nil {
+		return ""
+	}
+	return string(*value)
 }
 
 func derefStringSlice(value *[]string) []string {
@@ -566,8 +573,8 @@ func assetRunToAPI(r domain.AssetRun) AssetRun {
 		PartitionKey:  r.PartitionKey,
 		PartitionFrom: r.PartitionFrom,
 		PartitionTo:   r.PartitionTo,
-		Status:        &r.Status,
-		TriggerType:   &r.TriggerType,
+		Status:        ptrAssetRunStatus(r.Status),
+		TriggerType:   ptrAssetTriggerType(r.TriggerType),
 		TriggeredBy:   &r.TriggeredBy,
 		AttemptCount:  int32Ptr(safeIntToInt32(r.AttemptCount)),
 		MaxAttempts:   int32Ptr(safeIntToInt32(r.MaxAttempts)),
@@ -598,7 +605,7 @@ func assetCheckToAPI(c domain.AssetCheck) AssetCheck {
 		AssetId:   &c.AssetID,
 		Name:      &c.Name,
 		CheckType: &c.CheckType,
-		Severity:  &c.Severity,
+		Severity:  ptrAssetCheckSeverity(c.Severity),
 		Enabled:   &c.Enabled,
 		CreatedAt: formatTimePtr(&c.CreatedAt),
 		UpdatedAt: formatTimePtr(&c.UpdatedAt),

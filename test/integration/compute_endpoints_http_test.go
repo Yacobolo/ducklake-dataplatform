@@ -290,13 +290,13 @@ func TestHTTP_ComputeRemoteQueryE2E(t *testing.T) {
 
 		columns := result["columns"].([]interface{})
 		require.Len(t, columns, 1)
-		assert.Equal(t, "answer", columns[0])
+		assert.Equal(t, "answer", columns[0].(map[string]interface{})["name"])
 
 		rows := result["rows"].([]interface{})
 		require.Len(t, rows, 1)
-		row := rows[0].([]interface{})
+		row := rows[0].(map[string]interface{})
 		// Remote materializes as VARCHAR, so value is a string "42"
-		assert.Equal(t, "42", fmt.Sprintf("%v", row[0]))
+		assert.Equal(t, "42", fmt.Sprintf("%v", row["answer"]))
 
 		rowCount := result["row_count"].(float64)
 		assert.Equal(t, float64(1), rowCount)
@@ -363,8 +363,8 @@ func TestHTTP_ComputeLocalEndpointE2E(t *testing.T) {
 	decodeJSON(t, resp, &result)
 	rows := result["rows"].([]interface{})
 	require.Len(t, rows, 1)
-	row := rows[0].([]interface{})
-	assert.Equal(t, "42", fmt.Sprintf("%v", row[0]))
+	row := rows[0].(map[string]interface{})
+	assert.Equal(t, "42", fmt.Sprintf("%v", row["answer"]))
 }
 
 // === E2E: Agent Unreachable ===
@@ -452,10 +452,10 @@ func TestHTTP_ComputeUnassignReverts(t *testing.T) {
 	var result map[string]interface{}
 	decodeJSON(t, resp, &result)
 	columns := result["columns"].([]interface{})
-	assert.Equal(t, "local_answer", columns[0])
+	assert.Equal(t, "local_answer", columns[0].(map[string]interface{})["name"])
 	rows := result["rows"].([]interface{})
-	row := rows[0].([]interface{})
-	assert.Equal(t, "99", fmt.Sprintf("%v", row[0]))
+	row := rows[0].(map[string]interface{})
+	assert.Equal(t, "99", fmt.Sprintf("%v", row["local_answer"]))
 }
 
 // === Health Check: LOCAL rejected ===

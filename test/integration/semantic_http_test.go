@@ -158,9 +158,11 @@ func TestSemanticAPI_RunMetricQuery(t *testing.T) {
 			GeneratedSQL string `json:"generated_sql"`
 		} `json:"plan"`
 		Result struct {
-			Columns  []string        `json:"columns"`
-			Rows     [][]interface{} `json:"rows"`
-			RowCount int64           `json:"row_count"`
+			Columns []struct {
+				Name string `json:"name"`
+			} `json:"columns"`
+			Rows     []map[string]interface{} `json:"rows"`
+			RowCount int64                    `json:"row_count"`
 		} `json:"result"`
 	}
 	decodeJSON(t, runResp, &runBody)
@@ -168,6 +170,7 @@ func TestSemanticAPI_RunMetricQuery(t *testing.T) {
 	assert.NotEmpty(t, runBody.Plan.GeneratedSQL)
 	assert.EqualValues(t, 1, runBody.Result.RowCount)
 	require.GreaterOrEqual(t, len(runBody.Result.Columns), 1)
+	assert.Equal(t, "total_amount", runBody.Result.Columns[len(runBody.Result.Columns)-1].Name)
 	require.Len(t, runBody.Result.Rows, 1)
 }
 
@@ -216,16 +219,20 @@ func TestSemanticAPI_RunMetricQuery_RLSMaskParityWithRawSQL(t *testing.T) {
 
 	var semanticBody struct {
 		Result struct {
-			Columns  []string        `json:"columns"`
-			Rows     [][]interface{} `json:"rows"`
+			Columns  []struct {
+				Name string `json:"name"`
+			} `json:"columns"`
+			Rows     []map[string]interface{} `json:"rows"`
 			RowCount int64           `json:"row_count"`
 		} `json:"result"`
 	}
 	decodeJSON(t, semanticRunResp, &semanticBody)
 
 	var rawBody struct {
-		Columns  []string        `json:"columns"`
-		Rows     [][]interface{} `json:"rows"`
+		Columns  []struct {
+			Name string `json:"name"`
+		} `json:"columns"`
+		Rows     []map[string]interface{} `json:"rows"`
 		RowCount int64           `json:"row_count"`
 	}
 	decodeJSON(t, rawResp, &rawBody)
