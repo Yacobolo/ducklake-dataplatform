@@ -522,7 +522,7 @@ func TestHandler_DeleteGroupMember(t *testing.T) {
 				GroupId: "g-1",
 				Params: GenDeleteGroupMemberParams{
 					MemberId:   "p-1",
-					MemberType: "user",
+					MemberType: PrincipalType("user"),
 				},
 			})
 			tt.assertFn(t, resp, err)
@@ -534,7 +534,7 @@ func TestHandler_ListGrants(t *testing.T) {
 	t.Parallel()
 
 	principalID := "p-1"
-	pt := "user"
+	pt := PrincipalType("user")
 	securableType := "table"
 	securableID := "t-1"
 

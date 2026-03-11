@@ -581,7 +581,7 @@ func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
 	require.NotNil(t, okResp.Body.Result.RowCount)
 	assert.EqualValues(t, 1, *okResp.Body.Result.RowCount)
 	require.NotNil(t, okResp.Body.Result.Columns)
-	assert.Equal(t, []string{"order_date", "total_revenue"}, okResp.Body.Result.Columns)
+	assert.Equal(t, []TabularColumn{{Name: "order_date"}, {Name: "total_revenue"}}, okResp.Body.Result.Columns)
 }
 
 func TestHandler_CheckMetricFreshness_ResolvesMetricAndReturnsFreshness(t *testing.T) {

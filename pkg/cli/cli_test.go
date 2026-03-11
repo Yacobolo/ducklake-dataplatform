@@ -735,6 +735,89 @@ func TestCLI_ProfileAPIKeyOverridesStaleProfileToken(t *testing.T) {
 	assert.Empty(t, captured.Headers.Get("Authorization"))
 }
 
+func TestCLI_NotebooksCreateUsesSavedProfileToken(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 201, `{"id":"nb-1","name":"daily","owner":"admin"}`))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	require.NoError(t, SaveUserConfig(&UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {
+				Host:  srv.URL,
+				Token: "saved-profile-token",
+			},
+		},
+	}))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"notebooks", "notebooks", "create",
+		"--name", "daily",
+		"--description", "Daily checks",
+	})
+
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	captured := rec.last()
+	assert.Equal(t, "/v1/notebooks", captured.Path)
+	assert.Equal(t, "Bearer saved-profile-token", captured.Headers.Get("Authorization"))
+
+	var body map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(captured.Body), &body))
+	assert.Equal(t, "daily", body["name"])
+	assert.Equal(t, "Daily checks", body["description"])
+}
+
+func TestCLI_GroupMembersListIncludesNestedGroups(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 200, `{"data":[{"group_id":"parent-group","member_id":"child-group","member_type":"group"}]}`))
+	defer srv.Close()
+
+	rootCmd := newTestRootCmd(t, srv)
+	restore := captureStdout(t)
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"--output", "json",
+		"security", "members", "list", "parent-group",
+	})
+
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	captured := rec.last()
+	assert.Equal(t, "/v1/groups/parent-group/members", captured.Path)
+	assert.Contains(t, output, `"member_type": "group"`)
+	assert.Contains(t, output, `"member_id": "child-group"`)
+}
+
+func TestCLI_GroupMembersRemoveNestedGroupUsesMemberTypeQuery(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(jsonHandler(rec, 204, ``))
+	defer srv.Close()
+
+	rootCmd := newTestRootCmd(t, srv)
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"security", "members", "remove", "parent-group",
+		"--member-id", "child-group",
+		"--member-type", "group",
+		"--yes",
+	})
+
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	captured := rec.last()
+	assert.Equal(t, "/v1/groups/parent-group/members", captured.Path)
+	assert.Contains(t, captured.Query, "member_id=child-group")
+	assert.Contains(t, captured.Query, "member_type=group")
+}
+
 func TestCLI_ModelCommandsRejectMalformedConfigJSON(t *testing.T) {
 	tests := []struct {
 		name string

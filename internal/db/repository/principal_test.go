@@ -185,3 +185,42 @@ func TestPrincipalRepo_GetByExternalID_NotFound(t *testing.T) {
 	var notFound *domain.NotFoundError
 	assert.ErrorAs(t, err, &notFound)
 }
+
+func TestPrincipalRepo_DeleteCleansUpSecurityMetadata(t *testing.T) {
+	repo := setupPrincipalRepo(t)
+	ctx := context.Background()
+
+	p, err := repo.Create(ctx, &domain.Principal{Name: "cleanup-user", Type: "user"})
+	require.NoError(t, err)
+
+	groupRepo := NewGroupRepo(repo.db)
+	grantRepo := NewGrantRepo(repo.db)
+
+	group, err := groupRepo.Create(ctx, &domain.Group{Name: "cleanup-group"})
+	require.NoError(t, err)
+	require.NoError(t, groupRepo.AddMember(ctx, &domain.GroupMember{
+		GroupID:    group.ID,
+		MemberType: "user",
+		MemberID:   p.ID,
+	}))
+	_, err = grantRepo.Grant(ctx, &domain.PrivilegeGrant{
+		PrincipalID:   p.ID,
+		PrincipalType: "user",
+		SecurableType: "table",
+		SecurableID:   "tbl-1",
+		Privilege:     "SELECT",
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, repo.Delete(ctx, p.ID))
+
+	members, total, err := groupRepo.ListMembers(ctx, group.ID, domain.PageRequest{})
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), total)
+	assert.Empty(t, members)
+
+	grants, total, err := grantRepo.ListForPrincipal(ctx, p.ID, "user", domain.PageRequest{})
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), total)
+	assert.Empty(t, grants)
+}

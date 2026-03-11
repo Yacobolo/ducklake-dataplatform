@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"duck-demo/internal/domain"
 	dashboardsvc "duck-demo/internal/service/dashboard"
@@ -374,7 +375,7 @@ func resolvedDashboardWidgetToAPI(item dashboardsvc.ResolvedWidget) ResolvedDash
 	return ResolvedDashboardWidget{
 		Widget:       ptrDashboardWidget(dashboardWidgetToAPI(item.Widget)),
 		Columns:      append([]string(nil), item.Columns...),
-		Rows:         rowsToStringMatrix(item.Rows),
+		Rows:         rowsToStringGrid(item.Rows),
 		RowCount:     safeInt64ToInt32Ptr(&rowCount),
 		GeneratedSql: optStr(item.GeneratedSQL),
 	}
@@ -392,4 +393,18 @@ func slicePtr(items []string) *[]string {
 	}
 	copyItems := append([]string(nil), items...)
 	return &copyItems
+}
+
+func rowsToStringGrid(rows [][]interface{}) *[][]string {
+	if len(rows) == 0 {
+		return nil
+	}
+	out := make([][]string, len(rows))
+	for i, row := range rows {
+		out[i] = make([]string, len(row))
+		for j, cell := range row {
+			out[i][j] = fmt.Sprint(cell)
+		}
+	}
+	return &out
 }

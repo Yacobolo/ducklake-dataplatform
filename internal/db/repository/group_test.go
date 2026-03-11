@@ -165,3 +165,60 @@ func TestGroupRepo_ListMembers_Empty(t *testing.T) {
 	assert.Equal(t, int64(0), total)
 	assert.Empty(t, members)
 }
+
+func TestGroupRepo_DeleteCleansUpNestedMembershipsAndGrants(t *testing.T) {
+	groupRepo, principalRepo := setupGroupRepo(t)
+	ctx := context.Background()
+
+	parent, err := groupRepo.Create(ctx, &domain.Group{Name: "parent"})
+	require.NoError(t, err)
+	child, err := groupRepo.Create(ctx, &domain.Group{Name: "child"})
+	require.NoError(t, err)
+
+	require.NoError(t, groupRepo.AddMember(ctx, &domain.GroupMember{
+		GroupID:    parent.ID,
+		MemberType: "group",
+		MemberID:   child.ID,
+	}))
+
+	grantRepo := NewGrantRepo(groupRepo.db)
+	_, err = principalRepo.Create(ctx, &domain.Principal{Name: "auditor", Type: "user"})
+	require.NoError(t, err)
+	_, err = grantRepo.Grant(ctx, &domain.PrivilegeGrant{
+		PrincipalID:   child.ID,
+		PrincipalType: "group",
+		SecurableType: "schema",
+		SecurableID:   "schema-1",
+		Privilege:     "USE_SCHEMA",
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, groupRepo.Delete(ctx, child.ID))
+
+	members, total, err := groupRepo.ListMembers(ctx, parent.ID, domain.PageRequest{})
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), total)
+	assert.Empty(t, members)
+
+	grants, total, err := grantRepo.ListForPrincipal(ctx, child.ID, "group", domain.PageRequest{})
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), total)
+	assert.Empty(t, grants)
+}
+
+func TestGroupRepo_RemoveMemberReturnsNotFoundWhenNoRowDeleted(t *testing.T) {
+	groupRepo, _ := setupGroupRepo(t)
+	ctx := context.Background()
+
+	group, err := groupRepo.Create(ctx, &domain.Group{Name: "missing-member-group"})
+	require.NoError(t, err)
+
+	err = groupRepo.RemoveMember(ctx, &domain.GroupMember{
+		GroupID:    group.ID,
+		MemberType: "group",
+		MemberID:   "missing-child",
+	})
+	require.Error(t, err)
+	var notFound *domain.NotFoundError
+	assert.ErrorAs(t, err, &notFound)
+}

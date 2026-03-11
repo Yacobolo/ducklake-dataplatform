@@ -224,6 +224,45 @@ func TestHTTP_ExternalLocationValidation(t *testing.T) {
 	}
 }
 
+func TestHTTP_ExternalLocationPatchRejectsUnknownFields(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true, CatalogAttached: true})
+
+	credName := "patch-loc-cred"
+	createCredentialForLocation(t, env.Server.URL, env.Keys.Admin, credName)
+
+	resp := doRequest(t, "POST", env.Server.URL+"/v1/external-locations", env.Keys.Admin, validLocationBody("patch-loc", credName))
+	require.Equal(t, 201, resp.StatusCode)
+	_ = resp.Body.Close()
+
+	resp = doRequest(t, "PATCH", env.Server.URL+"/v1/external-locations/patch-loc", env.Keys.Admin, map[string]interface{}{
+		"storage_type": "AZURE",
+	})
+	require.Equal(t, 400, resp.StatusCode)
+
+	var result map[string]interface{}
+	decodeJSON(t, resp, &result)
+	assert.Contains(t, result["message"], "unknown field")
+}
+
+func TestHTTP_ExternalLocationCreateDoesNotRegisterCatalog(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true})
+
+	credName := "first-loc-cred"
+	createCredentialForLocation(t, env.Server.URL, env.Keys.Admin, credName)
+
+	resp := doRequest(t, "POST", env.Server.URL+"/v1/external-locations", env.Keys.Admin, validLocationBody("first-loc", credName))
+	require.Equal(t, 201, resp.StatusCode)
+	_ = resp.Body.Close()
+
+	resp = doRequest(t, "GET", env.Server.URL+"/v1/catalogs", env.Keys.Admin, nil)
+	require.Equal(t, 200, resp.StatusCode)
+
+	var result map[string]interface{}
+	decodeJSON(t, resp, &result)
+	assert.Equal(t, float64(0), result["total_count"])
+	assert.Empty(t, result["data"])
+}
+
 // TestHTTP_ExternalLocationDuplicate verifies duplicate name returns 409.
 func TestHTTP_ExternalLocationDuplicate(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithStorageCredentials: true, CatalogAttached: true})

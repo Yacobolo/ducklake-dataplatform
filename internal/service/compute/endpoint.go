@@ -330,10 +330,7 @@ func (s *ComputeEndpointService) HealthCheck(ctx context.Context, principal stri
 	}
 
 	if ep.Type == "LOCAL" {
-		status := "ok"
-		result := &domain.ComputeEndpointHealthResult{Status: &status}
-		_ = s.repo.UpdateHealth(ctx, ep.ID, *result)
-		return result, nil
+		return nil, domain.ErrValidation("health checks are only supported for REMOTE compute endpoints")
 	}
 
 	result, err := s.grpcHealthCheck(ctx, ep.URL, ep.AuthToken)

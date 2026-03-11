@@ -2,6 +2,34 @@ using TypeSpec.Http;
 
 namespace Duck;
 
+enum AssetRunStatus {
+  QUEUED,
+  PLANNING,
+  RUNNING,
+  RETRYING,
+  SUCCESS,
+  FAILED,
+  CANCELLED,
+  SKIPPED,
+  STALE,
+}
+
+enum AssetTriggerType {
+  MANUAL,
+  SCHEDULED,
+  UPSTREAM_UPDATE,
+  FRESHNESS_BREACH,
+  API_EVENT,
+  BACKFILL,
+  RECONCILER,
+  PIPELINE,
+}
+
+enum AssetCheckSeverity {
+  ERROR,
+  WARN,
+}
+
 model Asset {
   id?: string;
   asset_key?: string;
@@ -38,8 +66,8 @@ model AssetRun {
   partition_key?: string;
   partition_from?: string;
   partition_to?: string;
-  status?: string;
-  trigger_type?: string;
+  status?: AssetRunStatus;
+  trigger_type?: AssetTriggerType;
   triggered_by?: string;
   attempt_count?: int32;
   max_attempts?: int32;
@@ -66,7 +94,7 @@ model AssetCheck {
   asset_id?: string;
   name?: string;
   check_type?: string;
-  severity?: string;
+  severity?: AssetCheckSeverity;
   enabled?: boolean;
   created_at?: utcDateTime;
   updated_at?: utcDateTime;
@@ -79,16 +107,16 @@ model AssetCheckResult {
   partition_key?: string;
   status?: string;
   message?: string;
-  metrics_json?: Record<unknown>;
+  metrics_json?: JsonObject;
   created_at?: utcDateTime;
 }
 
 model AssetCheckInput {
   name: string;
   check_type: string;
-  severity?: string;
+  severity?: AssetCheckSeverity;
   enabled?: boolean;
-  config_json?: Record<unknown>;
+  config_json?: JsonObject;
 }
 
 model CreateAssetRequest {
@@ -146,7 +174,7 @@ model BackfillSlice {
 model TriggerAssetMaterializationRequest {
   partition_key?: string;
   idempotency_key?: string;
-  payload?: Record<unknown>;
+  payload?: JsonObject;
 }
 
 model AssetTriggerResponse {

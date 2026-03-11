@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -251,6 +252,14 @@ func nbDecodeJSON[T any](t *testing.T, resp *http.Response) T {
 	err := json.NewDecoder(resp.Body).Decode(&result)
 	require.NoError(t, err)
 	return result
+}
+
+func nbReadBody(t *testing.T, resp *http.Response) string {
+	t.Helper()
+	defer resp.Body.Close() //nolint:errcheck
+	data, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	return string(data)
 }
 
 // === Shared test fixtures ===
@@ -531,6 +540,19 @@ func TestAPI_CellCRUD(t *testing.T) {
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusNoContent, resp.StatusCode)
 	})
+
+	t.Run("delete cell validation error", func(t *testing.T) {
+		notebookSvc.deleteCellFn = func(_ context.Context, _ string, _ bool, _ string) error {
+			return domain.ErrValidation("cannot delete published output cell")
+		}
+		resp := nbDoRequest(t, http.MethodDelete, srv.URL+"/notebooks/"+nbID+"/cells/"+cellID, "")
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Contains(t, nbReadBody(t, resp), "cannot delete published output cell")
+		notebookSvc.deleteCellFn = func(_ context.Context, _ string, _ bool, _ string) error {
+			return nil
+		}
+	})
 }
 
 func TestAPI_Sessions(t *testing.T) {
@@ -626,7 +648,7 @@ func TestAPI_Sessions(t *testing.T) {
 		assert.Equal(t, cellID, *result.CellId)
 		assert.Equal(t, int32(1), *result.RowCount)
 		require.NotNil(t, result.Columns)
-		assert.Equal(t, []string{"count"}, *result.Columns)
+		assert.Equal(t, []TabularColumn{{Name: "count"}}, *result.Columns)
 		assert.Equal(t, int32(150), *result.DurationMs)
 	})
 

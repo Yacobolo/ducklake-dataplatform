@@ -28,11 +28,19 @@ var _ domain.APIKeyRepository = (*APIKeyRepo)(nil)
 // LookupPrincipalByAPIKeyHash returns the principal name associated with the given API key hash.
 // This implements the middleware.APIKeyLookup interface.
 func (r *APIKeyRepo) LookupPrincipalByAPIKeyHash(ctx context.Context, keyHash string) (string, error) {
-	row, err := r.q.GetAPIKeyByHash(ctx, keyHash)
+	var principalName string
+	err := r.db.QueryRowContext(ctx, `
+SELECT p.name
+FROM api_keys ak
+JOIN principals p ON ak.principal_id = p.id
+WHERE ak.key_hash = ?
+  AND (ak.expires_at IS NULL OR ak.expires_at > datetime('now'))`,
+		keyHash,
+	).Scan(&principalName)
 	if err != nil {
 		return "", mapDBError(err)
 	}
-	return row.PrincipalName, nil
+	return principalName, nil
 }
 
 // Create inserts a new API key into the database.
@@ -58,9 +66,9 @@ func (r *APIKeyRepo) Create(ctx context.Context, key *domain.APIKey) error {
 
 // GetByHash returns the API key and associated principal for a given hash.
 func (r *APIKeyRepo) GetByHash(ctx context.Context, hash string) (*domain.APIKey, *domain.Principal, error) {
-	row, err := r.q.GetAPIKeyByHash(ctx, hash)
+	row, err := r.lookupByHash(ctx, hash)
 	if err != nil {
-		return nil, nil, mapDBError(err)
+		return nil, nil, err
 	}
 	apiKey := apiKeyFromHashRow(row)
 	// We only have the principal name from the join; create a minimal principal.
@@ -140,7 +148,7 @@ func (r *APIKeyRepo) Delete(ctx context.Context, id string) error {
 
 // DeleteExpired removes all expired API keys and returns the count deleted.
 func (r *APIKeyRepo) DeleteExpired(ctx context.Context) (int64, error) {
-	result, err := r.q.DeleteExpiredKeys(ctx)
+	result, err := r.db.ExecContext(ctx, "DELETE FROM api_keys WHERE expires_at IS NOT NULL AND expires_at <= datetime('now')")
 	if err != nil {
 		return 0, err
 	}
@@ -149,6 +157,31 @@ func (r *APIKeyRepo) DeleteExpired(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 	return count, nil
+}
+
+func (r *APIKeyRepo) lookupByHash(ctx context.Context, hash string) (dbstore.GetAPIKeyByHashRow, error) {
+	var row dbstore.GetAPIKeyByHashRow
+	err := r.db.QueryRowContext(ctx, `
+SELECT ak.id, ak.key_hash, ak.key_prefix, ak.principal_id, ak.name, ak.expires_at, ak.created_at, p.name as principal_name
+FROM api_keys ak
+JOIN principals p ON ak.principal_id = p.id
+WHERE ak.key_hash = ?
+  AND (ak.expires_at IS NULL OR ak.expires_at > datetime('now'))`,
+		hash,
+	).Scan(
+		&row.ID,
+		&row.KeyHash,
+		&row.KeyPrefix,
+		&row.PrincipalID,
+		&row.Name,
+		&row.ExpiresAt,
+		&row.CreatedAt,
+		&row.PrincipalName,
+	)
+	if err != nil {
+		return dbstore.GetAPIKeyByHashRow{}, mapDBError(err)
+	}
+	return row, nil
 }
 
 // --- helpers ---

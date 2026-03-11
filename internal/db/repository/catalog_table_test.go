@@ -107,9 +107,12 @@ func TestCatalogRepo_ListTables(t *testing.T) {
 		ctx := context.Background()
 
 		schemaID := seedSchema(t, repo.metaDB, "public")
-		seedTable(t, repo.metaDB, schemaID, "orders")
-		seedTable(t, repo.metaDB, schemaID, "products")
-		seedTable(t, repo.metaDB, schemaID, "users")
+		ordersID := seedTable(t, repo.metaDB, schemaID, "orders")
+		productsID := seedTable(t, repo.metaDB, schemaID, "products")
+		usersID := seedTable(t, repo.metaDB, schemaID, "users")
+		seedColumn(t, repo.metaDB, ordersID, "order_id", "INTEGER", false)
+		seedColumn(t, repo.metaDB, productsID, "product_id", "INTEGER", false)
+		seedColumn(t, repo.metaDB, usersID, "user_id", "INTEGER", false)
 		// Soft-deleted table — should not appear.
 		_, err := repo.metaDB.ExecContext(ctx,
 			`INSERT INTO ducklake_table (schema_id, table_name, end_snapshot) VALUES (?, ?, ?)`,
@@ -130,6 +133,7 @@ func TestCatalogRepo_ListTables(t *testing.T) {
 			assert.Equal(t, "MANAGED", tbl.TableType)
 			assert.Equal(t, "lake", tbl.CatalogName)
 			assert.Equal(t, "public", tbl.SchemaName)
+			require.Len(t, tbl.Columns, 1)
 		}
 	})
 

@@ -11,12 +11,13 @@ import (
 
 // PrincipalRepo implements domain.PrincipalRepository using SQLite.
 type PrincipalRepo struct {
-	q *dbstore.Queries
+	q  *dbstore.Queries
+	db *sql.DB
 }
 
 // NewPrincipalRepo creates a new PrincipalRepo.
 func NewPrincipalRepo(db *sql.DB) *PrincipalRepo {
-	return &PrincipalRepo{q: dbstore.New(db)}
+	return &PrincipalRepo{q: dbstore.New(db), db: db}
 }
 
 // Create inserts a new principal into the database.
@@ -97,7 +98,32 @@ func (r *PrincipalRepo) List(ctx context.Context, page domain.PageRequest) ([]do
 
 // Delete removes a principal by ID.
 func (r *PrincipalRepo) Delete(ctx context.Context, id string) error {
-	return r.q.DeletePrincipal(ctx, id)
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	if _, err := tx.ExecContext(ctx, "DELETE FROM privilege_grants WHERE principal_type = 'user' AND principal_id = ?", id); err != nil {
+		return mapDBError(err)
+	}
+	if _, err := tx.ExecContext(ctx, "DELETE FROM group_members WHERE member_type = 'user' AND member_id = ?", id); err != nil {
+		return mapDBError(err)
+	}
+	result, err := tx.ExecContext(ctx, "DELETE FROM principals WHERE id = ?", id)
+	if err != nil {
+		return mapDBError(err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return domain.ErrNotFound("principal %s not found", id)
+	}
+	return tx.Commit()
 }
 
 // SetAdmin updates the admin status of a principal.

@@ -47,6 +47,8 @@ test("emits exact response status codes and operation extensions", async () => {
       [200, 401, 403, 404, 429, 500],
     );
     assert.equal(byOperationID.get("createSchema").extensions["x-authz"].mode, "privilege");
+    assert.equal(byOperationID.get("getCatalog").extensions["x-cli-command"], "catalog info");
+    assert.equal(byOperationID.get("getCatalogRegistration").extensions["x-cli-command"], "catalog get");
     assert.equal(byOperationID.has("bootstrapComplete"), false);
     assert.deepEqual(ir.schemas.PaginatedGroupMembers.properties.data.schema, {
       type: "array",

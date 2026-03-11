@@ -121,7 +121,24 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 	// Resolve principal name from configured claim chain.
 	displayName := a.resolveDisplayName(claims)
 
-	// If we have a provisioner, use JIT provisioning.
+	if a.shouldResolveJWTLocally() {
+		if a.principalRepo == nil {
+			return nil, fmt.Errorf("principal lookup unavailable for local JWT")
+		}
+		p, err := a.principalRepo.GetByName(ctx, displayName)
+		if err != nil {
+			a.logger.Warn("JWT principal not resolvable", "display_name", displayName, "error", err)
+			return nil, fmt.Errorf("principal %q not found", displayName)
+		}
+		return &domain.ContextPrincipal{
+			ID:      p.ID,
+			Name:    p.Name,
+			IsAdmin: p.IsAdmin || adminClaim,
+			Type:    p.Type,
+		}, nil
+	}
+
+	// If we have a provisioner, use JIT provisioning for external identities.
 	if a.provisioner != nil {
 		issuer := claims.Issuer
 		isBootstrap := a.cfg.BootstrapAdmin != "" && claims.Subject == a.cfg.BootstrapAdmin
@@ -162,6 +179,10 @@ func (a *Authenticator) authenticateJWT(ctx context.Context, tokenStr string) (*
 	}
 
 	return nil, fmt.Errorf("principal resolution unavailable: provisioner or principal repository required")
+}
+
+func (a *Authenticator) shouldResolveJWTLocally() bool {
+	return strings.EqualFold(strings.TrimSpace(a.cfg.Mode), "local_only")
 }
 
 // authenticateAPIKey validates an API key and resolves the principal.

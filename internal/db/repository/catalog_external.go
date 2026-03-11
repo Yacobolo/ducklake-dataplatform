@@ -13,6 +13,9 @@ import (
 
 // CreateExternalTable creates an external table backed by a DuckDB VIEW.
 func (r *CatalogRepo) CreateExternalTable(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error) {
+	unlock := r.lockCatalogWrites()
+	defer unlock()
+
 	if err := ddl.ValidateIdentifier(schemaName); err != nil {
 		return nil, domain.ErrValidation("%s", err.Error())
 	}

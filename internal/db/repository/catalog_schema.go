@@ -15,6 +15,9 @@ import (
 
 // CreateSchema creates a new schema via DuckDB DDL and reads it back.
 func (r *CatalogRepo) CreateSchema(ctx context.Context, name, comment, owner string) (*domain.SchemaDetail, error) {
+	unlock := r.lockCatalogWrites()
+	defer unlock()
+
 	if err := ddl.ValidateIdentifier(name); err != nil {
 		return nil, domain.ErrValidation("%s", err.Error())
 	}
@@ -140,6 +143,9 @@ func (r *CatalogRepo) UpdateSchema(ctx context.Context, name string, comment *st
 
 // DeleteSchema drops a schema via DuckDB DDL and cascades governance cleanup.
 func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool) error {
+	unlock := r.lockCatalogWrites()
+	defer unlock()
+
 	if err := ddl.ValidateIdentifier(name); err != nil {
 		return domain.ErrValidation("%s", err.Error())
 	}
@@ -269,6 +275,9 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 // This allows per-schema data paths pointing to different external locations.
 // NOTE: ducklake_schema is not managed by sqlc.
 func (r *CatalogRepo) SetSchemaStoragePath(ctx context.Context, schemaID string, path string) error {
+	unlock := r.lockCatalogWrites()
+	defer unlock()
+
 	_, err := r.metaDB.ExecContext(ctx,
 		`UPDATE ducklake_schema SET path = ?, path_is_relative = 0 WHERE schema_id = ?`,
 		path, schemaID)

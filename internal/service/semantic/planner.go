@@ -172,7 +172,7 @@ func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest
 
 	return &MetricQueryPlan{
 		BaseModelName:          baseModel.Name,
-		BaseRelation:           baseModel.BaseModelRef,
+		BaseRelation:           fromRelation,
 		Metrics:                req.Metrics,
 		Dimensions:             req.Dimensions,
 		TimeGrain:              req.TimeGrain,
@@ -858,14 +858,14 @@ func isLiteralScalarArg(expr string) bool {
 }
 
 func (s *Service) baseModelUniqueKeys(ctx context.Context, baseModel *domain.SemanticModel) ([]string, error) {
-	if s.modelDefs == nil {
+	if s.modelRepo == nil {
 		return nil, nil
 	}
 	projectName, modelName, ok := parseQualifiedModelRef(baseModel.BaseModelRef)
 	if !ok {
 		return nil, nil
 	}
-	model, err := s.modelDefs.GetByName(ctx, projectName, modelName)
+	model, err := s.modelRepo.GetByName(ctx, projectName, modelName)
 	if err != nil {
 		var notFound *domain.NotFoundError
 		if errors.As(err, &notFound) {

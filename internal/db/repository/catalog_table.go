@@ -15,6 +15,9 @@ import (
 
 // CreateTable creates a new table via DuckDB DDL and reads it back.
 func (r *CatalogRepo) CreateTable(ctx context.Context, schemaName string, req domain.CreateTableRequest, owner string) (*domain.TableDetail, error) {
+	unlock := r.lockCatalogWrites()
+	defer unlock()
+
 	if err := ddl.ValidateIdentifier(schemaName); err != nil {
 		return nil, domain.ErrValidation("%s", err.Error())
 	}
@@ -153,21 +156,44 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 	}
 	defer rows.Close() //nolint:errcheck
 
-	var allTables []domain.TableDetail
+	type baseTable struct {
+		id   int64
+		name string
+	}
+
+	var baseTables []baseTable
 	for rows.Next() {
-		var t domain.TableDetail
-		var tblID int64
-		if err := rows.Scan(&tblID, &t.Name); err != nil {
+		var base baseTable
+		if err := rows.Scan(&base.id, &base.name); err != nil {
 			return nil, 0, err
 		}
-		t.TableID = domain.DuckLakeIDToString(tblID)
-		t.SchemaName = schemaName
-		t.CatalogName = r.catalogName
-		t.TableType = "MANAGED"
-		allTables = append(allTables, t)
+		baseTables = append(baseTables, base)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, 0, err
+	}
+
+	allTables := make([]domain.TableDetail, 0, len(baseTables))
+	for _, base := range baseTables {
+		t := domain.TableDetail{
+			TableID:     domain.DuckLakeIDToString(base.id),
+			Name:        base.name,
+			SchemaName:  schemaName,
+			CatalogName: r.catalogName,
+			TableType:   "MANAGED",
+		}
+		t.SchemaName = schemaName
+		t.CatalogName = r.catalogName
+		cols, loadErr := r.loadColumns(ctx, t.TableID)
+		if loadErr != nil {
+			return nil, 0, loadErr
+		}
+		t.Columns = cols
+		securableName := schemaName + "." + t.Name
+		for i := range t.Columns {
+			r.enrichColumnMetadata(ctx, securableName, &t.Columns[i])
+		}
+		allTables = append(allTables, t)
 	}
 
 	// Append ALL external tables (no pagination) so we merge before slicing.
@@ -204,6 +230,9 @@ func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page do
 
 // DeleteTable drops a table via DuckDB DDL and cascades governance cleanup.
 func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName string) error {
+	unlock := r.lockCatalogWrites()
+	defer unlock()
+
 	if err := ddl.ValidateIdentifier(schemaName); err != nil {
 		return domain.ErrValidation("%s", err.Error())
 	}

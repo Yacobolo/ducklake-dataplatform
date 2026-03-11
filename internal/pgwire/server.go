@@ -18,12 +18,14 @@ import (
 	"time"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/duckdbsql"
 )
 
 const (
 	pgProtocolVersion3 int32 = 196608
 	pgSSLRequestCode   int32 = 80877103
 	pgCancelReqCode    int32 = 80877102
+	pgDatabaseName           = "duck"
 )
 
 type QueryResult struct {
@@ -47,10 +49,20 @@ type Server struct {
 }
 
 type extendedState struct {
-	unnamedStatement string
-	unnamedPortal    string
-	unnamedParams    []string
-	unnamedParamOIDs []uint32
+	statements map[string]preparedStatement
+	portals    map[string]boundPortal
+}
+
+type preparedStatement struct {
+	query     string
+	paramOIDs []uint32
+	columns   []string
+}
+
+type boundPortal struct {
+	query   string
+	params  []string
+	columns []string
 }
 
 type backendKey struct {
@@ -61,6 +73,14 @@ type backendKey struct {
 type cancelKey struct {
 	processID int32
 	secretKey int32
+}
+
+type invalidCatalogError struct {
+	message string
+}
+
+func (e *invalidCatalogError) Error() string {
+	return e.message
 }
 
 func NewServer(addr string, logger *slog.Logger, query QueryExecutor) *Server {
@@ -196,6 +216,10 @@ func (s *Server) handleConn(conn net.Conn) {
 				_ = writePGErrorCode(conn, "startup user is required", "28000")
 				return
 			}
+			if err := validateStartupDatabase(startupParams); err != nil {
+				_ = writePGQueryError(conn, err)
+				return
+			}
 			principal = strings.TrimSpace(u)
 			if err := writeAuthenticationOK(conn); err != nil {
 				return
@@ -222,7 +246,10 @@ func (s *Server) handleConn(conn net.Conn) {
 }
 
 func (s *Server) serveSimpleQueryLoop(conn net.Conn, principal string, key backendKey) {
-	state := &extendedState{}
+	state := &extendedState{
+		statements: map[string]preparedStatement{},
+		portals:    map[string]boundPortal{},
+	}
 
 	for {
 		msgType := make([]byte, 1)
@@ -284,10 +311,6 @@ func (s *Server) handleParse(conn net.Conn, state *extendedState, payload []byte
 		_ = writePGError(conn, "invalid Parse message")
 		return
 	}
-	if statementName != "" {
-		_ = writePGError(conn, "only unnamed prepared statement is supported")
-		return
-	}
 	if len(payload[offset:]) < 2 {
 		_ = writePGError(conn, "invalid Parse parameter metadata")
 		return
@@ -298,15 +321,18 @@ func (s *Server) handleParse(conn net.Conn, state *extendedState, payload []byte
 		_ = writePGError(conn, "invalid Parse parameter type list")
 		return
 	}
-	state.unnamedStatement = query
-	state.unnamedParamOIDs = nil
+	stmt := preparedStatement{
+		query:   query,
+		columns: describeResultColumns(query),
+	}
 	if numParamTypes > 0 {
-		state.unnamedParamOIDs = make([]uint32, numParamTypes)
+		stmt.paramOIDs = make([]uint32, numParamTypes)
 		for i := 0; i < numParamTypes; i++ {
 			start := offset + (i * 4)
-			state.unnamedParamOIDs[i] = binary.BigEndian.Uint32(payload[start : start+4])
+			stmt.paramOIDs[i] = binary.BigEndian.Uint32(payload[start : start+4])
 		}
 	}
+	state.statements[statementName] = stmt
 	_ = writeParseComplete(conn)
 }
 
@@ -322,11 +348,8 @@ func (s *Server) handleBind(conn net.Conn, state *extendedState, payload []byte)
 		_ = writePGError(conn, "invalid Bind message")
 		return
 	}
-	if portalName != "" || statementName != "" {
-		_ = writePGError(conn, "only unnamed portal and statement are supported")
-		return
-	}
-	if state.unnamedStatement == "" {
+	statement, ok := state.statements[statementName]
+	if !ok {
 		_ = writePGError(conn, "no prepared statement")
 		return
 	}
@@ -358,7 +381,7 @@ func (s *Server) handleBind(conn net.Conn, state *extendedState, payload []byte)
 		}
 	}
 
-	params, err := decodeBindParams(payload, &offset, numParams, formatCodes, state.unnamedParamOIDs)
+	params, err := decodeBindParams(payload, &offset, numParams, formatCodes, statement.paramOIDs)
 	if err != nil {
 		_ = writePGError(conn, err.Error())
 		return
@@ -375,8 +398,11 @@ func (s *Server) handleBind(conn net.Conn, state *extendedState, payload []byte)
 		return
 	}
 
-	state.unnamedPortal = state.unnamedStatement
-	state.unnamedParams = params
+	state.portals[portalName] = boundPortal{
+		query:   statement.query,
+		params:  params,
+		columns: statement.columns,
+	}
 	_ = writeBindComplete(conn)
 }
 
@@ -391,25 +417,30 @@ func (s *Server) handleDescribe(conn net.Conn, state *extendedState, payload []b
 		_ = writePGError(conn, "invalid Describe message")
 		return
 	}
-	if name != "" {
-		_ = writePGError(conn, "only unnamed statement and portal are supported")
-		return
-	}
-
 	switch payload[0] {
 	case 'S':
-		if state.unnamedStatement == "" {
+		statement, ok := state.statements[name]
+		if !ok {
 			_ = writePGError(conn, "no prepared statement")
 			return
 		}
-		_ = writeParameterDescription(conn, state.unnamedParamOIDs)
-		_ = writeNoData(conn)
+		_ = writeParameterDescription(conn, statement.paramOIDs)
+		if len(statement.columns) == 0 {
+			_ = writeNoData(conn)
+			return
+		}
+		_ = writeRowDescription(conn, statement.columns)
 	case 'P':
-		if state.unnamedPortal == "" {
+		portal, ok := state.portals[name]
+		if !ok {
 			_ = writePGError(conn, "no bound portal")
 			return
 		}
-		_ = writeNoData(conn)
+		if len(portal.columns) == 0 {
+			_ = writeNoData(conn)
+			return
+		}
+		_ = writeRowDescription(conn, portal.columns)
 	default:
 		_ = writePGError(conn, "unsupported Describe target")
 	}
@@ -422,20 +453,17 @@ func (s *Server) handleExecute(conn net.Conn, state *extendedState, principal st
 		_ = writePGError(conn, "invalid Execute message")
 		return
 	}
-	if portalName != "" {
-		_ = writePGError(conn, "only unnamed portal is supported")
-		return
-	}
 	if len(payload[offset:]) < 4 {
 		_ = writePGError(conn, "invalid Execute max rows")
 		return
 	}
-	if state.unnamedPortal == "" {
+	portal, ok := state.portals[portalName]
+	if !ok {
 		_ = writePGError(conn, "no bound portal")
 		return
 	}
 
-	query, err := substituteBindParams(state.unnamedPortal, state.unnamedParams)
+	query, err := substituteBindParams(portal.query, portal.params)
 	if err != nil {
 		_ = writePGError(conn, err.Error())
 		return
@@ -473,19 +501,11 @@ func (s *Server) handleClose(conn net.Conn, state *extendedState, payload []byte
 		_ = writePGError(conn, "invalid Close message")
 		return
 	}
-	if name != "" {
-		_ = writePGError(conn, "only unnamed statement and portal are supported")
-		return
-	}
-
 	switch payload[0] {
 	case 'S':
-		state.unnamedStatement = ""
-		state.unnamedParams = nil
-		state.unnamedParamOIDs = nil
+		delete(state.statements, name)
 	case 'P':
-		state.unnamedPortal = ""
-		state.unnamedParams = nil
+		delete(state.portals, name)
 	default:
 		_ = writePGError(conn, "unsupported Close target")
 		return
@@ -612,6 +632,10 @@ func sqlStateForError(err error) string {
 	var notFound *domain.NotFoundError
 	if errors.As(err, &notFound) {
 		return "42704"
+	}
+	var invalidCatalog *invalidCatalogError
+	if errors.As(err, &invalidCatalog) {
+		return "3D000"
 	}
 	var validation *domain.ValidationError
 	if errors.As(err, &validation) {
@@ -801,6 +825,55 @@ func parseStartupParams(payload []byte) map[string]string {
 		params[k] = v
 	}
 	return params
+}
+
+func validateStartupDatabase(params map[string]string) error {
+	database := strings.TrimSpace(params["database"])
+	if database == "" || strings.EqualFold(database, pgDatabaseName) {
+		return nil
+	}
+	return &invalidCatalogError{message: fmt.Sprintf("database %q does not exist", database)}
+}
+
+func describeResultColumns(query string) []string {
+	stmt, err := duckdbsql.Parse(query)
+	if err != nil {
+		return nil
+	}
+
+	selectStmt, ok := stmt.(*duckdbsql.SelectStmt)
+	if !ok || selectStmt.Body == nil || selectStmt.Body.Left == nil {
+		return nil
+	}
+
+	columns := make([]string, 0, len(selectStmt.Body.Left.Columns))
+	for _, item := range selectStmt.Body.Left.Columns {
+		columns = append(columns, describeSelectItem(item))
+	}
+	return columns
+}
+
+func describeSelectItem(item duckdbsql.SelectItem) string {
+	if item.Alias != "" {
+		return item.Alias
+	}
+	if item.Star {
+		return "*"
+	}
+	if item.Expr == nil {
+		return "?column?"
+	}
+
+	switch expr := item.Expr.(type) {
+	case *duckdbsql.ColumnRef:
+		return expr.Column
+	case *duckdbsql.FuncCall:
+		return expr.Name
+	case *duckdbsql.CastExpr:
+		return expr.TypeName
+	default:
+		return "?column?"
+	}
 }
 
 func readCString(payload []byte, offset *int) (string, bool) {

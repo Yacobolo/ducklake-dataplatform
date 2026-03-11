@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/mapper"
@@ -15,12 +16,13 @@ var _ domain.NotebookRepository = (*NotebookRepo)(nil)
 
 // NotebookRepo implements domain.NotebookRepository using sqlc-generated queries.
 type NotebookRepo struct {
-	q *dbstore.Queries
+	db *sql.DB
+	q  *dbstore.Queries
 }
 
 // NewNotebookRepo creates a new NotebookRepo.
 func NewNotebookRepo(db *sql.DB) *NotebookRepo {
-	return &NotebookRepo{q: dbstore.New(db)}
+	return &NotebookRepo{db: db, q: dbstore.New(db)}
 }
 
 // CreateNotebook inserts a new notebook.
@@ -102,15 +104,6 @@ func (r *NotebookRepo) DeleteNotebook(ctx context.Context, id string) error {
 // A position of -1 means "auto-assign to end". Any other value (including 0)
 // is treated as an explicit position.
 func (r *NotebookRepo) CreateCell(ctx context.Context, cell *domain.Cell) (*domain.Cell, error) {
-	position := int64(cell.Position)
-	if cell.Position < 0 {
-		maxPos, err := r.GetMaxPosition(ctx, cell.NotebookID)
-		if err != nil {
-			return nil, fmt.Errorf("get max position: %w", err)
-		}
-		position = int64(maxPos + 1)
-	}
-
 	role := cell.Role
 	if role == "" {
 		if cell.CellType == domain.CellTypeMarkdown {
@@ -136,7 +129,27 @@ func (r *NotebookRepo) CreateCell(ctx context.Context, cell *domain.Cell) (*doma
 		visualSpec = string(b)
 	}
 
-	row, err := r.q.CreateCell(ctx, dbstore.CreateCellParams{
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := r.q.WithTx(tx)
+	position := int64(cell.Position)
+	if cell.Position < 0 {
+		maxPos, err := r.getMaxPositionWithQuerier(ctx, qtx, cell.NotebookID)
+		if err != nil {
+			return nil, fmt.Errorf("get max position: %w", err)
+		}
+		position = int64(maxPos + 1)
+	} else {
+		if err := shiftPositionsForInsert(ctx, tx, cell.NotebookID, position); err != nil {
+			return nil, err
+		}
+	}
+
+	row, err := qtx.CreateCell(ctx, dbstore.CreateCellParams{
 		ID:         domain.NewID(),
 		NotebookID: cell.NotebookID,
 		CellType:   string(cell.CellType),
@@ -150,6 +163,9 @@ func (r *NotebookRepo) CreateCell(ctx context.Context, cell *domain.Cell) (*doma
 	})
 	if err != nil {
 		return nil, mapDBError(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit create cell: %w", err)
 	}
 	return mapper.CellFromDB(row), nil
 }
@@ -174,7 +190,14 @@ func (r *NotebookRepo) ListCells(ctx context.Context, notebookID string) ([]doma
 
 // UpdateCell applies partial updates to an existing cell.
 func (r *NotebookRepo) UpdateCell(ctx context.Context, id string, req domain.UpdateCellRequest) (*domain.Cell, error) {
-	existing, err := r.q.GetCell(ctx, id)
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := r.q.WithTx(tx)
+	existing, err := qtx.GetCell(ctx, id)
 	if err != nil {
 		return nil, mapDBError(err)
 	}
@@ -220,10 +243,16 @@ func (r *NotebookRepo) UpdateCell(ctx context.Context, id string, req domain.Upd
 
 	position := existing.Position
 	if req.Position != nil {
-		position = int64(*req.Position)
+		nextPosition := int64(*req.Position)
+		if nextPosition != existing.Position {
+			if err := shiftPositionsForMove(ctx, tx, existing.NotebookID, existing.ID, existing.Position, nextPosition); err != nil {
+				return nil, err
+			}
+			position = nextPosition
+		}
 	}
 
-	row, err := r.q.UpdateCell(ctx, dbstore.UpdateCellParams{
+	row, err := qtx.UpdateCell(ctx, dbstore.UpdateCellParams{
 		Name:       name,
 		Role:       role,
 		Disabled:   disabled,
@@ -236,12 +265,52 @@ func (r *NotebookRepo) UpdateCell(ctx context.Context, id string, req domain.Upd
 	if err != nil {
 		return nil, mapDBError(err)
 	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit update cell: %w", err)
+	}
 	return mapper.CellFromDB(row), nil
 }
 
 // DeleteCell removes a cell by ID.
 func (r *NotebookRepo) DeleteCell(ctx context.Context, id string) error {
-	return r.q.DeleteCell(ctx, id)
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := r.q.WithTx(tx)
+	cell, err := qtx.GetCell(ctx, id)
+	if err != nil {
+		return mapDBError(err)
+	}
+	if linked, err := isProtectedNotebookOutputCell(ctx, tx, id); err != nil {
+		return err
+	} else if linked {
+		return domain.ErrValidation("cannot delete notebook output cell %q while it is published to a model", id)
+	}
+
+	result, err := tx.ExecContext(ctx, "DELETE FROM cells WHERE id = ?", id)
+	if err != nil {
+		if strings.Contains(err.Error(), "FOREIGN KEY constraint failed") {
+			return domain.ErrValidation("cannot delete notebook cell %q because it is still referenced", id)
+		}
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("delete cell rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return domain.ErrNotFound("cell %s not found", id)
+	}
+	if _, err := tx.ExecContext(ctx, "UPDATE cells SET position = position - 1, updated_at = datetime('now') WHERE notebook_id = ? AND position > ?", cell.NotebookID, cell.Position); err != nil {
+		return fmt.Errorf("normalize positions after delete: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit delete cell: %w", err)
+	}
+	return nil
 }
 
 // UpdateCellResult updates the last_result field of a cell.
@@ -287,7 +356,11 @@ func (r *NotebookRepo) ReorderCells(ctx context.Context, notebookID string, cell
 // GetMaxPosition returns the maximum cell position in a notebook.
 // Returns -1 if the notebook has no cells.
 func (r *NotebookRepo) GetMaxPosition(ctx context.Context, notebookID string) (int, error) {
-	result, err := r.q.GetMaxCellPosition(ctx, notebookID)
+	return r.getMaxPositionWithQuerier(ctx, r.q, notebookID)
+}
+
+func (r *NotebookRepo) getMaxPositionWithQuerier(ctx context.Context, q maxCellPositionQuerier, notebookID string) (int, error) {
+	result, err := q.GetMaxCellPosition(ctx, notebookID)
 	if err != nil {
 		return 0, err
 	}
@@ -300,4 +373,37 @@ func (r *NotebookRepo) GetMaxPosition(ctx context.Context, notebookID string) (i
 	default:
 		return -1, nil
 	}
+}
+
+type maxCellPositionQuerier interface {
+	GetMaxCellPosition(ctx context.Context, notebookID string) (interface{}, error)
+}
+
+func shiftPositionsForInsert(ctx context.Context, tx *sql.Tx, notebookID string, position int64) error {
+	if _, err := tx.ExecContext(ctx, "UPDATE cells SET position = position + 1, updated_at = datetime('now') WHERE notebook_id = ? AND position >= ?", notebookID, position); err != nil {
+		return fmt.Errorf("shift positions for insert: %w", err)
+	}
+	return nil
+}
+
+func shiftPositionsForMove(ctx context.Context, tx *sql.Tx, notebookID, cellID string, fromPosition, toPosition int64) error {
+	if toPosition < fromPosition {
+		if _, err := tx.ExecContext(ctx, "UPDATE cells SET position = position + 1, updated_at = datetime('now') WHERE notebook_id = ? AND id <> ? AND position >= ? AND position < ?", notebookID, cellID, toPosition, fromPosition); err != nil {
+			return fmt.Errorf("shift positions up for move: %w", err)
+		}
+		return nil
+	}
+	if _, err := tx.ExecContext(ctx, "UPDATE cells SET position = position - 1, updated_at = datetime('now') WHERE notebook_id = ? AND id <> ? AND position > ? AND position <= ?", notebookID, cellID, fromPosition, toPosition); err != nil {
+		return fmt.Errorf("shift positions down for move: %w", err)
+	}
+	return nil
+}
+
+func isProtectedNotebookOutputCell(ctx context.Context, tx *sql.Tx, cellID string) (bool, error) {
+	row := tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM notebook_model_links WHERE output_cell_id = ?)", cellID)
+	var exists bool
+	if err := row.Scan(&exists); err != nil {
+		return false, fmt.Errorf("check notebook output links: %w", err)
+	}
+	return exists, nil
 }

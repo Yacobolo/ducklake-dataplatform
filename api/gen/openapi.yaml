@@ -440,7 +440,7 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            $ref: '#/components/schemas/AssetRunStatus'
           explode: false
         - name: max_results
           in: query
@@ -958,7 +958,7 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            $ref: '#/components/schemas/AssetRunStatus'
           explode: false
         - name: max_results
           in: query
@@ -1032,7 +1032,7 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            $ref: '#/components/schemas/AuditDecisionStatus'
           explode: false
         - name: max_results
           in: query
@@ -3671,7 +3671,7 @@ paths:
           in: query
           required: true
           schema:
-            type: string
+            $ref: '#/components/schemas/PrincipalType'
           explode: false
       responses:
         '204':
@@ -4117,6 +4117,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ComputeEndpointHealth'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4142,6 +4148,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
           description: Server error
           content:
             application/json:
@@ -4610,6 +4622,7 @@ paths:
         - Duck
     post:
       operationId: createExternalLocation
+      description: Creates a new external location and configures DuckDB with the associated credential. Catalog registrations are managed separately; creating a location does not attach or create a DuckLake catalog.
       parameters: []
       responses:
         '201':
@@ -5027,7 +5040,7 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            $ref: '#/components/schemas/PrincipalType'
           explode: false
         - name: securable_type
           in: query
@@ -5452,7 +5465,7 @@ paths:
           in: query
           required: true
           schema:
-            type: string
+            $ref: '#/components/schemas/PrincipalType'
           explode: false
         - name: member_id
           in: query
@@ -9199,7 +9212,7 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            $ref: '#/components/schemas/AuditDecisionStatus'
           explode: false
         - name: from
           in: query
@@ -9413,7 +9426,7 @@ paths:
           in: query
           required: true
           schema:
-            type: string
+            $ref: '#/components/schemas/PrincipalType'
           explode: false
       responses:
         '204':
@@ -11146,8 +11159,10 @@ components:
           type: string
         expires_at:
           type: string
+          format: date-time
         created_at:
           type: string
+          format: date-time
     Asset:
       type: object
       properties:
@@ -11198,7 +11213,7 @@ components:
         check_type:
           type: string
         severity:
-          type: string
+          $ref: '#/components/schemas/AssetCheckSeverity'
         enabled:
           type: boolean
         created_at:
@@ -11218,7 +11233,7 @@ components:
         check_type:
           type: string
         severity:
-          type: string
+          $ref: '#/components/schemas/AssetCheckSeverity'
         enabled:
           type: boolean
         config_json:
@@ -11254,6 +11269,11 @@ components:
         created_at:
           type: string
           format: date-time
+    AssetCheckSeverity:
+      type: string
+      enum:
+        - ERROR
+        - WARN
     AssetGraph:
       type: object
       properties:
@@ -11322,9 +11342,9 @@ components:
         partition_to:
           type: string
         status:
-          type: string
+          $ref: '#/components/schemas/AssetRunStatus'
         trigger_type:
-          type: string
+          $ref: '#/components/schemas/AssetTriggerType'
         triggered_by:
           type: string
         attempt_count:
@@ -11347,6 +11367,18 @@ components:
         updated_at:
           type: string
           format: date-time
+    AssetRunStatus:
+      type: string
+      enum:
+        - QUEUED
+        - PLANNING
+        - RUNNING
+        - RETRYING
+        - SUCCESS
+        - FAILED
+        - CANCELLED
+        - SKIPPED
+        - STALE
     AssetTriggerResponse:
       type: object
       properties:
@@ -11354,6 +11386,23 @@ components:
           type: string
         status:
           type: string
+    AssetTriggerType:
+      type: string
+      enum:
+        - MANUAL
+        - SCHEDULED
+        - UPSTREAM_UPDATE
+        - FRESHNESS_BREACH
+        - API_EVENT
+        - BACKFILL
+        - RECONCILER
+        - PIPELINE
+    AuditDecisionStatus:
+      type: string
+      enum:
+        - ALLOWED
+        - DENIED
+        - ERROR
     AuditEntry:
       type: object
       required:
@@ -11376,7 +11425,7 @@ components:
           items:
             type: string
         status:
-          type: string
+          $ref: '#/components/schemas/AuditDecisionStatus'
         error_message:
           type: string
         duration_ms:
@@ -11384,6 +11433,7 @@ components:
           format: int64
         created_at:
           type: string
+          format: date-time
     AuthLoginResponse:
       type: object
       required:
@@ -11557,8 +11607,10 @@ components:
           type: string
         created_at:
           type: string
+          format: date-time
         updated_at:
           type: string
+          format: date-time
         system_managed:
           type: boolean
     CatalogRegistration:
@@ -11572,21 +11624,23 @@ components:
         name:
           type: string
         metastore_type:
-          type: string
+          $ref: '#/components/schemas/MetastoreType'
         dsn:
           type: string
         data_path:
           type: string
         status:
-          type: string
+          $ref: '#/components/schemas/CatalogStatus'
         is_default:
           type: boolean
         comment:
           type: string
         created_at:
           type: string
+          format: date-time
         updated_at:
           type: string
+          format: date-time
         system_managed:
           type: boolean
     CatalogRegistrationList:
@@ -11603,6 +11657,12 @@ components:
         total_count:
           type: integer
           format: int32
+    CatalogStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - ERROR
+        - DETACHED
     CatalogVersionSummary:
       type: object
       properties:
@@ -11670,12 +11730,12 @@ components:
         columns:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/TabularColumn'
         rows:
           type: array
           items:
-            type: array
-            items: {}
+            type: object
+            additionalProperties: {}
         row_count:
           type: integer
           format: int32
@@ -11770,6 +11830,7 @@ components:
           type: string
         created_at:
           type: string
+          format: date-time
     ColumnMaskBinding:
       type: object
       properties:
@@ -11780,7 +11841,7 @@ components:
         principal_id:
           type: string
         principal_type:
-          type: string
+          $ref: '#/components/schemas/PrincipalType'
         see_original:
           type: boolean
     ColumnMaskBindingRequest:
@@ -11792,7 +11853,7 @@ components:
         principal_id:
           type: string
         principal_type:
-          type: string
+          $ref: '#/components/schemas/PrincipalType'
         see_original:
           type: boolean
     CommitIngestionRequest:
@@ -11825,6 +11886,7 @@ components:
           type: boolean
         created_at:
           type: string
+          format: date-time
     ComputeAssignmentPrincipalType:
       type: string
       enum:
@@ -11854,8 +11916,10 @@ components:
           type: string
         created_at:
           type: string
+          format: date-time
         updated_at:
           type: string
+          format: date-time
     ComputeEndpointHealth:
       type: object
       properties:
@@ -11904,6 +11968,7 @@ components:
           type: string
         expires_at:
           type: string
+          format: date-time
     CreateAPIKeyResponse:
       type: object
       required:
@@ -11920,8 +11985,10 @@ components:
           type: string
         expires_at:
           type: string
+          format: date-time
         created_at:
           type: string
+          format: date-time
     CreateAssetBackfillRequest:
       type: object
       required:
@@ -11983,7 +12050,7 @@ components:
         name:
           type: string
         metastore_type:
-          type: string
+          $ref: '#/components/schemas/MetastoreType'
         dsn:
           type: string
         data_path:
@@ -12068,6 +12135,7 @@ components:
           $ref: '#/components/schemas/ComputeEndpointType'
         url:
           type: string
+          description: Endpoint URI. REMOTE endpoints must use grpc:// or grpcs://; LOCAL endpoints use local routing URLs.
         auth_token:
           type: string
         max_memory_gb:
@@ -12114,7 +12182,7 @@ components:
         credential_name:
           type: string
         storage_type:
-          type: string
+          $ref: '#/components/schemas/StorageType'
         comment:
           type: string
         read_only:
@@ -12145,7 +12213,7 @@ components:
         principal_id:
           type: string
         principal_type:
-          type: string
+          $ref: '#/components/schemas/PrincipalType'
         securable_type:
           type: string
         securable_id:
@@ -12159,7 +12227,7 @@ components:
         - member_id
       properties:
         member_type:
-          type: string
+          $ref: '#/components/schemas/PrincipalType'
         member_id:
           type: string
     CreateGroupRequest:
@@ -12182,7 +12250,7 @@ components:
         body:
           type: string
         macro_type:
-          type: string
+          $ref: '#/components/schemas/MacroType'
         parameters:
           type: array
           items:
@@ -12194,7 +12262,7 @@ components:
         project_name:
           type: string
         visibility:
-          type: string
+          $ref: '#/components/schemas/MacroVisibility'
         owner:
           type: string
         properties:
@@ -12206,7 +12274,7 @@ components:
           items:
             type: string
         status:
-          type: string
+          $ref: '#/components/schemas/MacroStatus'
     CreateModelRequest:
       type: object
       required:
@@ -12311,7 +12379,7 @@ components:
         name:
           type: string
         type:
-          type: string
+          $ref: '#/components/schemas/PrincipalType'
         is_admin:
           type: boolean
     CreateRowFilterRequest:
@@ -12454,7 +12522,7 @@ components:
         name:
           type: string
         credential_type:
-          type: string
+          $ref: '#/components/schemas/StorageCredentialType'
         key_id:
           type: string
         secret:
@@ -12464,7 +12532,7 @@ components:
         region:
           type: string
         url_style:
-          type: string
+          $ref: '#/components/schemas/URLStyle'
         comment:
           type: string
     CreateTableRequest:
@@ -12768,7 +12836,7 @@ components:
         credential_name:
           type: string
         storage_type:
-          type: string
+          $ref: '#/components/schemas/StorageType'
         comment:
           type: string
         owner:
@@ -12777,8 +12845,10 @@ components:
           type: boolean
         created_at:
           type: string
+          format: date-time
         updated_at:
           type: string
+          format: date-time
     FreshnessPolicy:
       type: object
       properties:
@@ -12853,6 +12923,7 @@ components:
           type: string
         created_at:
           type: string
+          format: date-time
     GroupMember:
       type: object
       required:
@@ -12863,7 +12934,7 @@ components:
         group_id:
           type: string
         member_type:
-          type: string
+          $ref: '#/components/schemas/PrincipalType'
         member_id:
           type: string
     HealthResponse:
@@ -12960,7 +13031,7 @@ components:
         name:
           type: string
         macro_type:
-          type: string
+          $ref: '#/components/schemas/MacroType'
         parameters:
           type: array
           items:
@@ -12974,7 +13045,7 @@ components:
         project_name:
           type: string
         visibility:
-          type: string
+          $ref: '#/components/schemas/MacroVisibility'
         owner:
           type: string
         properties:
@@ -12986,7 +13057,7 @@ components:
           items:
             type: string
         status:
-          type: string
+          $ref: '#/components/schemas/MacroStatus'
         created_by:
           type: string
         created_at:
@@ -13039,7 +13110,7 @@ components:
         description:
           type: string
         status:
-          type: string
+          $ref: '#/components/schemas/MacroStatus'
         created_by:
           type: string
         created_at:
@@ -13087,9 +13158,9 @@ components:
         to_description:
           type: string
         from_status:
-          type: string
+          $ref: '#/components/schemas/MacroStatus'
         to_status:
-          type: string
+          $ref: '#/components/schemas/MacroStatus'
         impact_changed:
           type: boolean
         impacted_models_added:
@@ -13113,6 +13184,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MacroRevision'
+    MacroStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - DEPRECATED
+    MacroType:
+      type: string
+      enum:
+        - SCALAR
+        - TABLE
+    MacroVisibility:
+      type: string
+      enum:
+        - project
+        - catalog_global
+        - system
     ManifestColumn:
       type: object
       required:
@@ -13159,6 +13246,7 @@ components:
             type: string
         expires_at:
           type: string
+          format: date-time
     MetastoreSummary:
       type: object
       required:
@@ -13178,6 +13266,11 @@ components:
         table_count:
           type: integer
           format: int32
+    MetastoreType:
+      type: string
+      enum:
+        - sqlite
+        - postgres
     MetricFreshnessStatus:
       type: object
       properties:
@@ -13718,6 +13811,7 @@ components:
           type: string
         updated_at:
           type: string
+          format: date-time
         secret_stored:
           type: boolean
     PaginatedAPIKeys:
@@ -14354,11 +14448,17 @@ components:
         name:
           type: string
         type:
-          type: string
+          $ref: '#/components/schemas/PrincipalType'
         is_admin:
           type: boolean
         created_at:
           type: string
+          format: date-time
+    PrincipalType:
+      type: string
+      enum:
+        - user
+        - group
     PrivilegeGrant:
       type: object
       required:
@@ -14374,7 +14474,7 @@ components:
         principal_id:
           type: string
         principal_type:
-          type: string
+          $ref: '#/components/schemas/PrincipalType'
         securable_type:
           type: string
         securable_id:
@@ -14385,6 +14485,7 @@ components:
           type: string
         granted_at:
           type: string
+          format: date-time
     PromoteNotebookRequest:
       type: object
       required:
@@ -14438,7 +14539,7 @@ components:
           items:
             type: string
         status:
-          type: string
+          $ref: '#/components/schemas/AuditDecisionStatus'
         error_message:
           type: string
         duration_ms:
@@ -14449,6 +14550,7 @@ components:
           format: int64
         created_at:
           type: string
+          format: date-time
     QueryJob:
       type: object
       required:
@@ -14495,16 +14597,17 @@ components:
       type: object
       required:
         - columns
+        - rows
       properties:
         columns:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/TabularColumn'
         rows:
           type: array
           items:
-            type: array
-            items: {}
+            type: object
+            additionalProperties: {}
         row_count:
           type: integer
           format: int64
@@ -14573,6 +14676,7 @@ components:
           type: string
         created_at:
           type: string
+          format: date-time
     RowFilterBinding:
       type: object
       properties:
@@ -14583,7 +14687,7 @@ components:
         principal_id:
           type: string
         principal_type:
-          type: string
+          $ref: '#/components/schemas/PrincipalType'
     RowFilterBindingRequest:
       type: object
       required:
@@ -14593,7 +14697,7 @@ components:
         principal_id:
           type: string
         principal_type:
-          type: string
+          $ref: '#/components/schemas/PrincipalType'
     RunAllResult:
       type: object
       properties:
@@ -14633,8 +14737,10 @@ components:
           type: string
         created_at:
           type: string
+          format: date-time
         updated_at:
           type: string
+          format: date-time
     SearchResult:
       type: object
       properties:
@@ -14851,21 +14957,35 @@ components:
         name:
           type: string
         credential_type:
-          type: string
+          $ref: '#/components/schemas/StorageCredentialType'
         endpoint:
           type: string
         region:
           type: string
         url_style:
-          type: string
+          $ref: '#/components/schemas/URLStyle'
         comment:
           type: string
         owner:
           type: string
         created_at:
           type: string
+          format: date-time
         updated_at:
           type: string
+          format: date-time
+    StorageCredentialType:
+      type: string
+      enum:
+        - S3
+        - AZURE
+        - GCS
+    StorageType:
+      type: string
+      enum:
+        - S3
+        - AZURE
+        - GCS
     SubmitQueryRequest:
       type: object
       required:
@@ -14923,8 +15043,10 @@ components:
           $ref: '#/components/schemas/TableStatistics'
         created_at:
           type: string
+          format: date-time
         updated_at:
           type: string
+          format: date-time
     TableStatistics:
       type: object
       properties:
@@ -14939,7 +15061,15 @@ components:
           format: int32
         last_profiled_at:
           type: string
+          format: date-time
         profiled_by:
+          type: string
+    TabularColumn:
+      type: object
+      required:
+        - name
+      properties:
+        name:
           type: string
     Tag:
       type: object
@@ -15014,6 +15144,11 @@ components:
           type: object
           additionalProperties:
             type: string
+    URLStyle:
+      type: string
+      enum:
+        - path
+        - vhost
     UpdateAssetRequest:
       type: object
       required:
@@ -15115,8 +15250,6 @@ components:
           type: string
         credential_name:
           type: string
-        storage_type:
-          type: string
         comment:
           type: string
         read_only:
@@ -15133,13 +15266,13 @@ components:
           items:
             type: string
         status:
-          type: string
+          $ref: '#/components/schemas/MacroStatus'
         catalog_name:
           type: string
         project_name:
           type: string
         visibility:
-          type: string
+          $ref: '#/components/schemas/MacroVisibility'
         owner:
           type: string
         properties:
@@ -15286,7 +15419,7 @@ components:
         region:
           type: string
         url_style:
-          type: string
+          $ref: '#/components/schemas/URLStyle'
         comment:
           type: string
     UpdateTableRequest:
@@ -15382,8 +15515,10 @@ components:
             type: string
         created_at:
           type: string
+          format: date-time
         updated_at:
           type: string
+          format: date-time
     VisualChartType:
       type: string
       enum:
@@ -15508,8 +15643,10 @@ components:
           type: string
         created_at:
           type: string
+          format: date-time
         updated_at:
           type: string
+          format: date-time
     WebSessionStatsResponse:
       type: object
       required:

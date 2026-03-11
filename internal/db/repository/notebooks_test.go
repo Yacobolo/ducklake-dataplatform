@@ -387,3 +387,76 @@ func TestNotebookRepo_GetMaxPosition(t *testing.T) {
 		assert.Equal(t, 5, maxPos)
 	})
 }
+
+func TestNotebookRepo_CreateCell_ShiftsExistingPositions(t *testing.T) {
+	repo := setupNotebookRepo(t)
+	ctx := context.Background()
+
+	nb, err := repo.CreateNotebook(ctx, &domain.Notebook{Name: "ShiftInsertNB", Owner: "alice"})
+	require.NoError(t, err)
+
+	first, err := repo.CreateCell(ctx, &domain.Cell{NotebookID: nb.ID, CellType: domain.CellTypeSQL, Content: "SELECT 1", Position: 0})
+	require.NoError(t, err)
+	second, err := repo.CreateCell(ctx, &domain.Cell{NotebookID: nb.ID, CellType: domain.CellTypeSQL, Content: "SELECT 2", Position: 1})
+	require.NoError(t, err)
+
+	inserted, err := repo.CreateCell(ctx, &domain.Cell{NotebookID: nb.ID, CellType: domain.CellTypeSQL, Content: "SELECT 1.5", Position: 1})
+	require.NoError(t, err)
+	assert.Equal(t, 1, inserted.Position)
+
+	cells, err := repo.ListCells(ctx, nb.ID)
+	require.NoError(t, err)
+	require.Len(t, cells, 3)
+	assert.Equal(t, first.ID, cells[0].ID)
+	assert.Equal(t, inserted.ID, cells[1].ID)
+	assert.Equal(t, second.ID, cells[2].ID)
+	assert.Equal(t, 2, cells[2].Position)
+}
+
+func TestNotebookRepo_DeleteCell_ProtectsPublishedOutputAndNormalizesPositions(t *testing.T) {
+	repo := setupNotebookRepo(t)
+	ctx := context.Background()
+
+	nb, err := repo.CreateNotebook(ctx, &domain.Notebook{Name: "DeleteNB", Owner: "alice"})
+	require.NoError(t, err)
+	first, err := repo.CreateCell(ctx, &domain.Cell{NotebookID: nb.ID, CellType: domain.CellTypeSQL, Content: "SELECT 1", Position: 0})
+	require.NoError(t, err)
+	outputName := "published_output"
+	output, err := repo.CreateCell(ctx, &domain.Cell{
+		NotebookID: nb.ID,
+		CellType:   domain.CellTypeSQL,
+		Name:       &outputName,
+		Role:       domain.CellRoleOutput,
+		Content:    "SELECT 2",
+		Position:   1,
+	})
+	require.NoError(t, err)
+	tail, err := repo.CreateCell(ctx, &domain.Cell{NotebookID: nb.ID, CellType: domain.CellTypeSQL, Content: "SELECT 3", Position: 2})
+	require.NoError(t, err)
+
+	_, err = repo.db.ExecContext(ctx, "INSERT INTO models (id, project_name, name, sql_body, materialization) VALUES (?, ?, ?, ?, ?)", "model-1", "analytics", "published", "SELECT 2", "VIEW")
+	require.NoError(t, err)
+	_, err = repo.db.ExecContext(ctx, "INSERT INTO notebook_model_links (id, notebook_id, model_id, output_cell_id) VALUES (?, ?, ?, ?)", "link-1", nb.ID, "model-1", output.ID)
+	require.NoError(t, err)
+
+	err = repo.DeleteCell(ctx, output.ID)
+	require.Error(t, err)
+	var validationErr *domain.ValidationError
+	require.ErrorAs(t, err, &validationErr)
+
+	err = repo.DeleteCell(ctx, first.ID)
+	require.NoError(t, err)
+
+	cells, err := repo.ListCells(ctx, nb.ID)
+	require.NoError(t, err)
+	require.Len(t, cells, 2)
+	assert.Equal(t, output.ID, cells[0].ID)
+	assert.Equal(t, 0, cells[0].Position)
+	assert.Equal(t, tail.ID, cells[1].ID)
+	assert.Equal(t, 1, cells[1].Position)
+
+	_, err = repo.db.ExecContext(ctx, "DELETE FROM notebook_model_links WHERE id = ?", "link-1")
+	require.NoError(t, err)
+	err = repo.DeleteCell(ctx, output.ID)
+	require.NoError(t, err)
+}

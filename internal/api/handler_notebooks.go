@@ -280,6 +280,8 @@ func (h *APIHandler) DeleteCell(ctx context.Context, req GenDeleteCellRequest) (
 			return DeleteCell403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
 			return DeleteCell404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case errors.As(err, new(*domain.ValidationError)):
+			return DeleteCell400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -673,8 +675,8 @@ func cellExecutionResultToAPI(r domain.CellExecutionResult) CellExecutionResult 
 	rowCount := int32(r.RowCount) //nolint:gosec // row counts are small
 	return CellExecutionResult{
 		CellId:     &r.CellID,
-		Columns:    &r.Columns,
-		Rows:       rowsToStringMatrix(r.Rows),
+		Columns:    ptrTabularColumns(tabularColumns(r.Columns, r.Rows)),
+		Rows:       ptrRecords(rowsToRecords(r.Columns, r.Rows)),
 		RowCount:   &rowCount,
 		Error:      r.Error,
 		DurationMs: &durationMs,

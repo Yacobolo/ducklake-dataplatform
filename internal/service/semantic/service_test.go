@@ -4,6 +4,7 @@ package semantic
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -317,6 +318,96 @@ func TestService_ExplainMetricQuery_FilterSQLApplied(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Contains(t, plan.GeneratedSQL, "SUM(CASE WHEN sales.amount > 100 THEN sales.amount END)")
+}
+
+func TestService_RunMetricQuery_ReturnsPreAggregationReadinessError(t *testing.T) {
+	svc := setupSemanticService(t)
+	ctx := context.Background()
+
+	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.fct_sales",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "placeholder",
+		Name:            "total_revenue",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(revenue)",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreatePreAggregation(ctx, "admin", "analytics", "sales", domain.CreateSemanticPreAggregationRequest{
+		SemanticModelID: "ignored-by-service",
+		Name:            "revenue_daily",
+		MetricSet:       []string{"total_revenue"},
+		TargetRelation:  "analytics.revenue_daily",
+	})
+	require.NoError(t, err)
+
+	svc.SetQueryExecutor(&failingQueryExecutor{
+		err: fmt.Errorf("catalog lookup for \"analytics.revenue_daily\": table \"revenue_daily\" not found in schema \"analytics\""),
+	})
+
+	_, err = svc.RunMetricQuery(ctx, "alice", MetricQueryRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		Metrics:           []string{"total_revenue"},
+	})
+	require.Error(t, err)
+	var validationErr *domain.ValidationError
+	require.ErrorAs(t, err, &validationErr)
+	assert.Contains(t, err.Error(), "pre-aggregation")
+	assert.Contains(t, err.Error(), "not materialized yet")
+}
+
+func TestService_RunMetricQuery_ReturnsTransformationModelReadinessError(t *testing.T) {
+	svc := setupSemanticService(t)
+	ctx := context.Background()
+
+	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "customer_revenue",
+		BaseModelRef: "fct_customer_revenue",
+	})
+	require.NoError(t, err)
+
+	modelRepo := svc.modelRepo
+	_, err = modelRepo.Create(ctx, &domain.Model{
+		ProjectName:     "analytics",
+		Name:            "fct_customer_revenue",
+		SQL:             "select 1 as revenue",
+		Materialization: domain.MaterializationView,
+		CreatedBy:       "admin",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreateMetric(ctx, "admin", "analytics", "customer_revenue", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "placeholder",
+		Name:            "total_revenue",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(revenue)",
+	})
+	require.NoError(t, err)
+
+	svc.SetQueryExecutor(&failingQueryExecutor{
+		err: fmt.Errorf("catalog lookup for \"fct_customer_revenue\": lookup table \"fct_customer_revenue\": no such table: ducklake_table"),
+	})
+
+	_, err = svc.RunMetricQuery(ctx, "alice", MetricQueryRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "customer_revenue",
+		Metrics:           []string{"total_revenue"},
+	})
+	require.Error(t, err)
+	var validationErr *domain.ValidationError
+	require.ErrorAs(t, err, &validationErr)
+	assert.Contains(t, err.Error(), "transformation model")
+	assert.Contains(t, err.Error(), "run the model first")
 }
 
 func TestService_ExplainMetricQuery_UnsafeJoinUsesBaseUniqueKey(t *testing.T) {
@@ -647,4 +738,12 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsScalarWrappers(t *testing.
 
 func ptr(s string) *string {
 	return &s
+}
+
+type failingQueryExecutor struct {
+	err error
+}
+
+func (f *failingQueryExecutor) Execute(context.Context, string, string) (*query.QueryResult, error) {
+	return nil, f.err
 }

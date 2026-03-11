@@ -51,6 +51,23 @@ func TestNotebookService_CreateNotebook(t *testing.T) {
 		var validationErr *domain.ValidationError
 		assert.ErrorAs(t, err, &validationErr)
 	})
+
+	t.Run("source does not create synthetic initial cell", func(t *testing.T) {
+		svc, repo, _ := setupNotebookService(t)
+		ctx := context.Background()
+		source := "sql"
+
+		repo.CreateNotebookFn = func(_ context.Context, nb *domain.Notebook) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: "nb-2", Name: nb.Name, Owner: nb.Owner}, nil
+		}
+		repo.CreateCellFn = func(_ context.Context, _ *domain.Cell) (*domain.Cell, error) {
+			t.Fatal("CreateCell should not be called for notebook source metadata")
+			return nil, nil
+		}
+
+		_, err := svc.CreateNotebook(ctx, "alice", domain.CreateNotebookRequest{Name: "No Seed", Source: &source})
+		require.NoError(t, err)
+	})
 }
 
 // === GetNotebook ===

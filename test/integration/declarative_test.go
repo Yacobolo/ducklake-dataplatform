@@ -1182,11 +1182,16 @@ spec:
 
 	var runBody struct {
 		Result struct {
-			RowCount int64           `json:"row_count"`
-			Rows     [][]interface{} `json:"rows"`
+			Columns []struct {
+				Name string `json:"name"`
+			} `json:"columns"`
+			RowCount int64                    `json:"row_count"`
+			Rows     []map[string]interface{} `json:"rows"`
 		} `json:"result"`
 	}
 	decodeJSON(t, runResp, &runBody)
 	assert.EqualValues(t, 1, runBody.Result.RowCount)
+	require.Len(t, runBody.Result.Columns, 1)
+	assert.Equal(t, "total_fare", runBody.Result.Columns[0].Name)
 	require.Len(t, runBody.Result.Rows, 1)
 }

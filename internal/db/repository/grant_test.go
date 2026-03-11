@@ -167,3 +167,23 @@ func TestGrantRepo_HasPrivilege_False(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, has)
 }
+
+func TestGrantRepo_HasPrivilege_CatalogIgnoresLegacySecurableID(t *testing.T) {
+	grantRepo, principalRepo := setupGrantRepo(t)
+	ctx := context.Background()
+
+	p := createTestPrincipal(t, principalRepo, "catalog-user")
+
+	_, err := grantRepo.Grant(ctx, &domain.PrivilegeGrant{
+		PrincipalID:   p.ID,
+		PrincipalType: "user",
+		SecurableType: domain.SecurableCatalog,
+		SecurableID:   "legacy-catalog-id",
+		Privilege:     domain.PrivUseCatalog,
+	})
+	require.NoError(t, err)
+
+	has, err := grantRepo.HasPrivilege(ctx, p.ID, "user", domain.SecurableCatalog, domain.CatalogID, domain.PrivUseCatalog)
+	require.NoError(t, err)
+	assert.True(t, has)
+}

@@ -672,7 +672,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 	}
 
 	manifestSvc := query.NewManifestService(
-		nil, authSvc, presigner, introspectionRepo, auditRepo,
+		nil, authSvc, presigner, staticIntrospectionFactory{repo: introspectionRepo}, auditRepo,
 		nil, nil,
 	)
 
@@ -699,7 +699,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                     // ingestionSvc
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
-		nil, // pipelineSvc
+		nil,           // pipelineSvc
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // assetSvc
 		nil, // assetBackfillSvc
@@ -736,6 +736,22 @@ type localPresigner struct{}
 
 func (p *localPresigner) PresignGetObject(_ context.Context, path string, _ time.Duration) (string, error) {
 	return path, nil
+}
+
+type staticIntrospectionFactory struct {
+	repo domain.IntrospectionRepository
+}
+
+func (f staticIntrospectionFactory) ForCatalog(context.Context, string) (domain.IntrospectionRepository, error) {
+	return f.repo, nil
+}
+
+func (f staticIntrospectionFactory) ForDefault(context.Context) (domain.IntrospectionRepository, error) {
+	return f.repo, nil
+}
+
+func (f staticIntrospectionFactory) DefaultCatalogName(context.Context) (string, error) {
+	return "main", nil
 }
 
 // copyFile copies a file from src to dst. Fails the test on error.
@@ -808,7 +824,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 
 	// LOCAL presigner — returns paths as-is (no S3 presigning)
 	manifestSvc := query.NewManifestService(
-		nil, authSvc, &localPresigner{}, introspectionRepo, auditRepo,
+		nil, authSvc, &localPresigner{}, staticIntrospectionFactory{repo: introspectionRepo}, auditRepo,
 		nil, nil,
 	)
 
@@ -835,7 +851,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,                     // ingestionSvc
 		nil, nil, nil, nil, nil, // storageCredSvc, extLocationSvc, volumeSvc, computeEndpointSvc, apiKeySvc
-		nil, // pipelineSvc
+		nil,           // pipelineSvc
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // assetSvc
 		nil, // assetBackfillSvc
@@ -2250,7 +2266,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 	)
 
 	manifestSvc := query.NewManifestService(
-		nil, authSvc, &localPresigner{}, introspectionRepo, auditRepo,
+		nil, authSvc, &localPresigner{}, staticIntrospectionFactory{repo: introspectionRepo}, auditRepo,
 		nil, nil,
 	)
 
@@ -2276,7 +2292,7 @@ func setupMultiTableLocalServer(t *testing.T) *multiTableTestEnv {
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
 		nil,
 		nil, nil, nil, nil, nil,
-		nil, // pipelineSvc
+		nil,           // pipelineSvc
 		nil, nil, nil, // notebookSvc, sessionSvc, gitRepoSvc
 		nil, // assetSvc
 		nil, // assetBackfillSvc

@@ -16,19 +16,23 @@ const syntheticCatalogTableIDPrefix = "__catalog_table__:"
 // AuthorizationService provides permission checking using domain repository interfaces.
 // It implements the domain.AuthorizationService interface.
 type AuthorizationService struct {
-	principals          domain.PrincipalRepository
-	groups              domain.GroupRepository
-	grants              domain.GrantRepository
-	rowFilters          domain.RowFilterRepository
-	columnMasks         domain.ColumnMaskRepository
-	introspection       domain.IntrospectionRepository
-	extTableRepo        domain.ExternalTableRepository
-	viewRepo            domain.ViewRepository
-	lookupCatalogTable  func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)
-	lookupCatalogSchema func(ctx context.Context, catalogName, schemaName string) (*domain.SchemaDetail, error)
-	lookupCatalogView   func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error)
-	cacheMu             sync.RWMutex
-	privilegeCache      map[string]bool
+	principals             domain.PrincipalRepository
+	groups                 domain.GroupRepository
+	grants                 domain.GrantRepository
+	rowFilters             domain.RowFilterRepository
+	columnMasks            domain.ColumnMaskRepository
+	introspection          domain.IntrospectionRepository
+	extTableRepo           domain.ExternalTableRepository
+	viewRepo               domain.ViewRepository
+	lookupCatalogTable     func(ctx context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error)
+	lookupCatalogSchema    func(ctx context.Context, catalogName, schemaName string) (*domain.SchemaDetail, error)
+	lookupCatalogView      func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error)
+	lookupDefaultTable     func(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error)
+	lookupDefaultView      func(ctx context.Context, schemaName, viewName string) (*domain.ViewDetail, error)
+	lookupDefaultTableByID func(ctx context.Context, tableID string) (*domain.Table, error)
+	lookupDefaultSchema    func(ctx context.Context, schemaName string) (*domain.Schema, error)
+	cacheMu                sync.RWMutex
+	privilegeCache         map[string]bool
 }
 
 // NewAuthorizationService creates a new AuthorizationService backed by domain repositories.
@@ -75,6 +79,32 @@ func (s *AuthorizationService) SetCatalogSchemaLookup(lookup func(ctx context.Co
 // object references (catalog.schema.view).
 func (s *AuthorizationService) SetCatalogViewLookup(lookup func(ctx context.Context, catalogName, schemaName, viewName string) (*domain.ViewDetail, error)) {
 	s.lookupCatalogView = lookup
+}
+
+// SetDefaultCatalogTableLookup configures default-catalog table lookup for
+// two-part references (schema.table) when the local metastore cannot resolve
+// the object.
+func (s *AuthorizationService) SetDefaultCatalogTableLookup(lookup func(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error)) {
+	s.lookupDefaultTable = lookup
+}
+
+// SetDefaultCatalogViewLookup configures default-catalog view lookup for
+// two-part references (schema.view) when the local metastore cannot resolve
+// the object.
+func (s *AuthorizationService) SetDefaultCatalogViewLookup(lookup func(ctx context.Context, schemaName, viewName string) (*domain.ViewDetail, error)) {
+	s.lookupDefaultView = lookup
+}
+
+// SetDefaultCatalogSchemaLookup configures default-catalog schema lookup when
+// the local metastore cannot resolve the schema.
+func (s *AuthorizationService) SetDefaultCatalogSchemaLookup(lookup func(ctx context.Context, schemaName string) (*domain.Schema, error)) {
+	s.lookupDefaultSchema = lookup
+}
+
+// SetDefaultCatalogTableByIDLookup configures table lookup by ID in the
+// default catalog for privilege inheritance checks.
+func (s *AuthorizationService) SetDefaultCatalogTableByIDLookup(lookup func(ctx context.Context, tableID string) (*domain.Table, error)) {
+	s.lookupDefaultTableByID = lookup
 }
 
 // SetViewRepository configures direct view lookup support.
@@ -161,6 +191,21 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 			return t.ID, t.SchemaID, false, nil
 		}
 
+		if s.lookupDefaultTable != nil {
+			tbl, defaultErr := s.lookupDefaultTable(ctx, schemaName, bareTableName)
+			if defaultErr == nil {
+				if sch, schErr := s.lookupSchemaByName(ctx, schemaName); schErr == nil {
+					return tbl.TableID, sch.ID, strings.EqualFold(tbl.TableType, domain.TableTypeExternal), nil
+				}
+				return tbl.TableID, "", strings.EqualFold(tbl.TableType, domain.TableTypeExternal), nil
+			}
+
+			var notFoundErr *domain.NotFoundError
+			if !errors.As(defaultErr, &notFoundErr) {
+				return "", "", false, fmt.Errorf("lookup table %q in default catalog schema %q: %w", bareTableName, schemaName, defaultErr)
+			}
+		}
+
 		view, viewErr := s.lookupViewBySchema(ctx, schemaName, bareTableName)
 		if viewErr == nil {
 			return resolvedViewIdentity(view, bareTableName)
@@ -170,10 +215,22 @@ func (s *AuthorizationService) LookupTableID(ctx context.Context, tableName stri
 			return "", "", false, fmt.Errorf("lookup view %q in schema %q: %w", bareTableName, schemaName, viewErr)
 		}
 
+		if s.lookupDefaultView != nil {
+			view, defaultErr := s.lookupDefaultView(ctx, schemaName, bareTableName)
+			if defaultErr == nil {
+				return resolvedViewIdentity(view, bareTableName)
+			}
+
+			var notFoundErr *domain.NotFoundError
+			if !errors.As(defaultErr, &notFoundErr) {
+				return "", "", false, fmt.Errorf("lookup view %q in default catalog schema %q: %w", bareTableName, schemaName, defaultErr)
+			}
+		}
+
 		if s.extTableRepo != nil {
 			et, extErr := s.extTableRepo.GetByName(ctx, schemaName, bareTableName)
 			if extErr == nil {
-				sch, schErr := s.introspection.GetSchemaByName(ctx, et.SchemaName)
+				sch, schErr := s.lookupSchemaByName(ctx, et.SchemaName)
 				if schErr == nil {
 					return et.ID, sch.ID, true, nil
 				}
@@ -307,11 +364,29 @@ func splitTableReference(name string) (catalog, schema, table string) {
 
 // LookupSchemaID resolves a schema name to its DuckLake schema_id.
 func (s *AuthorizationService) LookupSchemaID(ctx context.Context, schemaName string) (string, error) {
-	sch, err := s.introspection.GetSchemaByName(ctx, schemaName)
+	sch, err := s.lookupSchemaByName(ctx, schemaName)
 	if err != nil {
 		return "", fmt.Errorf("schema %q not found in catalog", schemaName)
 	}
 	return sch.ID, nil
+}
+
+func (s *AuthorizationService) lookupSchemaByName(ctx context.Context, schemaName string) (*domain.Schema, error) {
+	schema, err := s.introspection.GetSchemaByName(ctx, schemaName)
+	if err == nil {
+		return schema, nil
+	}
+
+	var notFoundErr *domain.NotFoundError
+	if err != nil && !errors.As(err, &notFoundErr) {
+		return nil, err
+	}
+
+	if s.lookupDefaultSchema != nil {
+		return s.lookupDefaultSchema(ctx, schemaName)
+	}
+
+	return nil, err
 }
 
 // hasGrant checks if any of the given identities has a specific grant.
@@ -429,6 +504,13 @@ func (s *AuthorizationService) checkTablePrivilege(ctx context.Context, principa
 		if err == nil {
 			schemaID = table.SchemaID
 			schemaResolved = true
+		}
+		if !schemaResolved && s.lookupDefaultTableByID != nil {
+			table, defaultErr := s.lookupDefaultTableByID(ctx, tableID)
+			if defaultErr == nil {
+				schemaID = table.SchemaID
+				schemaResolved = true
+			}
 		}
 	}
 

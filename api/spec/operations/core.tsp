@@ -56,13 +56,13 @@ op createGroupMember(groupId: string, @body body: CreateGroupMemberRequest): Cre
 
 @route("/groups/{groupId}/members")
 @delete
-op deleteGroupMember(groupId: string, @query member_type: string, @query member_id: string): NoContent | MutatingErrorResponses;
+op deleteGroupMember(groupId: string, @query member_type: PrincipalType, @query member_id: string): NoContent | MutatingErrorResponses;
 
 @route("/grants")
 @get
 op listGrants(
   @query principal_id?: string,
-  @query principal_type?: string,
+  @query principal_type?: PrincipalType,
   @query securable_type?: string,
   @query securable_id?: string,
   @query max_results?: int32,
@@ -119,7 +119,7 @@ op bindRowFilter(rowFilterId: string, @body body: RowFilterBindingRequest): Crea
 
 @route("/row-filters/{rowFilterId}/bindings")
 @delete
-op unbindRowFilter(rowFilterId: string, @query principal_id: string, @query principal_type: string): NoContent | MutatingErrorResponses;
+op unbindRowFilter(rowFilterId: string, @query principal_id: string, @query principal_type: PrincipalType): NoContent | MutatingErrorResponses;
 
 @route("/tables/{tableId}/column-masks")
 @get
@@ -147,7 +147,7 @@ op bindColumnMask(columnMaskId: string, @body body: ColumnMaskBindingRequest): C
 
 @route("/column-masks/{columnMaskId}/bindings")
 @delete
-op unbindColumnMask(columnMaskId: string, @query principal_id: string, @query principal_type: string): NoContent | MutatingErrorResponses;
+op unbindColumnMask(columnMaskId: string, @query principal_id: string, @query principal_type: PrincipalType): NoContent | MutatingErrorResponses;
 
 @route("/manifest")
 @post
@@ -158,7 +158,7 @@ op createManifest(@body body: ManifestRequest): Ok<ManifestResponse> | MutatingE
 op listAuditLogs(
   @query principal_name?: string,
   @query action?: string,
-  @query status?: string,
+  @query status?: AuditDecisionStatus,
   @query max_results?: int32,
   @query page_token?: string,
 ): Ok<PaginatedAuditLogs> | StandardErrorResponses;
@@ -171,7 +171,7 @@ op getMetastoreSummary(catalogName: string): Ok<MetastoreSummary> | ResourceErro
 @get
 op listQueryHistory(
   @query principal_name?: string,
-  @query status?: string,
+  @query status?: AuditDecisionStatus,
   @query from?: string,
   @query to?: string,
   @query max_results?: int32,

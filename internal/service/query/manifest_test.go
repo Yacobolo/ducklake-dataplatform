@@ -71,6 +71,33 @@ func (m *mockPresigner) PresignGetObject(ctx context.Context, path string, expir
 
 var _ FilePresigner = (*mockPresigner)(nil)
 
+type mockIntrospectionRepoFactory struct {
+	ForCatalogFn         func(ctx context.Context, catalogName string) (domain.IntrospectionRepository, error)
+	ForDefaultFn         func(ctx context.Context) (domain.IntrospectionRepository, error)
+	DefaultCatalogNameFn func(ctx context.Context) (string, error)
+}
+
+func (m *mockIntrospectionRepoFactory) ForCatalog(ctx context.Context, catalogName string) (domain.IntrospectionRepository, error) {
+	if m.ForCatalogFn != nil {
+		return m.ForCatalogFn(ctx, catalogName)
+	}
+	panic("unexpected call to mockIntrospectionRepoFactory.ForCatalog")
+}
+
+func (m *mockIntrospectionRepoFactory) ForDefault(ctx context.Context) (domain.IntrospectionRepository, error) {
+	if m.ForDefaultFn != nil {
+		return m.ForDefaultFn(ctx)
+	}
+	panic("unexpected call to mockIntrospectionRepoFactory.ForDefault")
+}
+
+func (m *mockIntrospectionRepoFactory) DefaultCatalogName(ctx context.Context) (string, error) {
+	if m.DefaultCatalogNameFn != nil {
+		return m.DefaultCatalogNameFn(ctx)
+	}
+	panic("unexpected call to mockIntrospectionRepoFactory.DefaultCatalogName")
+}
+
 // newManifestService is a test helper that builds a ManifestService with the given mocks.
 func newManifestService(
 	msFactory domain.MetastoreQuerierFactory,
@@ -109,7 +136,18 @@ func newManifestService(
 			},
 		}
 	}
-	return NewManifestService(msFactory, auth, presigner, intro, audit, cred, loc)
+	introFactory := &mockIntrospectionRepoFactory{
+		ForCatalogFn: func(_ context.Context, _ string) (domain.IntrospectionRepository, error) {
+			return intro, nil
+		},
+		ForDefaultFn: func(_ context.Context) (domain.IntrospectionRepository, error) {
+			return intro, nil
+		},
+		DefaultCatalogNameFn: func(_ context.Context) (string, error) {
+			return "lake", nil
+		},
+	}
+	return NewManifestService(msFactory, auth, presigner, introFactory, audit, cred, loc)
 }
 
 // === GetManifest ===
@@ -459,6 +497,54 @@ func TestManifestService_GetManifest(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestManifestService_GetManifest_UsesDefaultCatalogFactories(t *testing.T) {
+	t.Parallel()
+
+	auth := &testutil.MockAuthService{
+		LookupTableIDFn: func(_ context.Context, tableName string) (string, string, bool, error) {
+			assert.Equal(t, "raw.orders", tableName)
+			return "42", "10", false, nil
+		},
+		CheckPrivilegeFn: func(_ context.Context, _, _, _, _ string) (bool, error) {
+			return true, nil
+		},
+		GetEffectiveRowFiltersFn: func(_ context.Context, _, _ string) ([]string, error) {
+			return nil, nil
+		},
+		GetEffectiveColumnMasksFn: func(_ context.Context, _, _ string) (map[string]string, error) {
+			return nil, nil
+		},
+	}
+	intro := &testutil.MockIntrospectionRepo{
+		ListColumnsFn: func(_ context.Context, tableID string, _ domain.PageRequest) ([]domain.Column, int64, error) {
+			assert.Equal(t, "42", tableID)
+			return []domain.Column{{Name: "id", Type: "INTEGER"}}, 1, nil
+		},
+	}
+	msFactory := &mockMetastoreQuerierFactory{
+		ForCatalogFn: func(_ context.Context, catalogName string) (domain.MetastoreQuerier, error) {
+			assert.Equal(t, "lake", catalogName)
+			return &mockMetastoreQuerier{
+				ReadDataPathFn: func(_ context.Context) (string, error) { return "s3://bucket/data/", nil },
+				ListDataFilesFn: func(_ context.Context, _ string) ([]string, []bool, error) {
+					return []string{"orders/part-0001.parquet"}, []bool{true}, nil
+				},
+			}, nil
+		},
+	}
+	presigner := &mockPresigner{
+		PresignGetObjectFn: func(_ context.Context, path string, _ time.Duration) (string, error) {
+			return "https://signed.example.com/" + path, nil
+		},
+	}
+
+	res, err := newManifestService(msFactory, auth, presigner, intro, &testutil.MockAuditRepo{}, nil, nil).
+		GetManifest(context.Background(), "alice", "", "raw", "orders")
+	require.NoError(t, err)
+	require.Len(t, res.Columns, 1)
+	assert.Equal(t, "id", res.Columns[0].Name)
 }
 
 func TestManifestService_GetManifest_UsesQualifiedLookupName(t *testing.T) {

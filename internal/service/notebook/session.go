@@ -470,10 +470,33 @@ func (m *SessionManager) RunAllAsync(ctx context.Context, sessionID string, prin
 			return
 		}
 		resultStr := string(resultJSON)
+		if runAllResultHasErrors(result) {
+			errStr := firstRunAllError(result)
+			_ = m.jobRepo.UpdateJobState(context.Background(), job.ID, domain.JobStateFailed, &resultStr, &errStr)
+			return
+		}
 		_ = m.jobRepo.UpdateJobState(context.Background(), job.ID, domain.JobStateComplete, &resultStr, nil)
 	}()
 
 	return job, nil
+}
+
+func runAllResultHasErrors(result *domain.RunAllResult) bool {
+	for i := range result.Results {
+		if result.Results[i].Error != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func firstRunAllError(result *domain.RunAllResult) string {
+	for i := range result.Results {
+		if result.Results[i].Error != nil {
+			return *result.Results[i].Error
+		}
+	}
+	return "notebook execution failed"
 }
 
 // GetJob returns a notebook job by ID.
