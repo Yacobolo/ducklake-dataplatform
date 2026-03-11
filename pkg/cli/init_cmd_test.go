@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -202,6 +203,110 @@ func TestComputeInitPlan_ExistingResources(t *testing.T) {
 	assert.Contains(t, plan.Exists, `principal "svc-bi"`)
 	assert.Contains(t, plan.Exists, `membership "analytics" <- "svc-bi"`)
 	assert.Contains(t, plan.Exists, `grant USAGE on schema "gold" to user "svc-bi"`)
+}
+
+func TestRunInitWorkflow_RefreshesAfterMarkedPhase(t *testing.T) {
+	t.Parallel()
+
+	createdCatalog := false
+	sawRefreshedState := false
+
+	initial := initExistingState{
+		Credentials: map[string]bool{},
+		Locations:   map[string]bool{},
+		Catalogs:    map[string]bool{},
+		Schemas:     map[string]string{},
+		Groups:      map[string]string{},
+		Principals:  map[string]string{},
+		Memberships: map[string]map[string]bool{},
+		Grants:      map[string]bool{},
+		GrantIDs:    map[string]string{},
+	}
+
+	err := runInitWorkflow(func() (initExistingState, error) {
+		next := initial
+		next.Catalogs = map[string]bool{}
+		if createdCatalog {
+			next.Catalogs["lake"] = true
+		}
+		return next, nil
+	}, initial, []initWorkflowPhase{
+		{
+			name:         "ensure_catalog",
+			refreshAfter: true,
+			run: func(current initExistingState) error {
+				assert.False(t, current.Catalogs["lake"])
+				createdCatalog = true
+				return nil
+			},
+		},
+		{
+			name: "ensure_schemas",
+			run: func(current initExistingState) error {
+				sawRefreshedState = current.Catalogs["lake"]
+				return nil
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	assert.True(t, sawRefreshedState)
+}
+
+func TestRunInitWorkflow_StopsAfterPhaseFailure(t *testing.T) {
+	t.Parallel()
+
+	ranLaterPhase := false
+
+	err := runInitWorkflow(func() (initExistingState, error) {
+		return initExistingState{}, nil
+	}, initExistingState{}, []initWorkflowPhase{
+		{
+			name: "ensure_catalog",
+			run: func(current initExistingState) error {
+				return nil
+			},
+		},
+		{
+			name: "ensure_schemas",
+			run: func(current initExistingState) error {
+				return errors.New("boom")
+			},
+		},
+		{
+			name: "ensure_security_identities",
+			run: func(current initExistingState) error {
+				ranLaterPhase = true
+				return nil
+			},
+		},
+	})
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "phase ensure_schemas")
+	require.ErrorContains(t, err, "boom")
+	assert.False(t, ranLaterPhase)
+}
+
+func TestRunInitWorkflow_RefreshFailureNamesPhase(t *testing.T) {
+	t.Parallel()
+
+	err := runInitWorkflow(func() (initExistingState, error) {
+		return initExistingState{}, errors.New("refresh failed")
+	}, initExistingState{}, []initWorkflowPhase{
+		{
+			name:         "ensure_catalog",
+			refreshAfter: true,
+			run: func(current initExistingState) error {
+				return nil
+			},
+		},
+	})
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "phase ensure_catalog")
+	require.ErrorContains(t, err, "refresh state")
+	require.ErrorContains(t, err, "refresh failed")
 }
 
 func TestApplyDesiredState_RetryResumesAfterPartialSchemaFailure(t *testing.T) {

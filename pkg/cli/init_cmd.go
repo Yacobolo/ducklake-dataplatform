@@ -89,6 +89,12 @@ type initExistingState struct {
 	GrantIDs    map[string]string
 }
 
+type initWorkflowPhase struct {
+	name         string
+	refreshAfter bool
+	run          func(current initExistingState) error
+}
+
 func newInitCmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -671,283 +677,346 @@ func countMissing(plan initPlan) int {
 }
 
 func applyDesiredState(client *apiruntime.Client, desired initDesiredState, existing initExistingState) error {
-	if !existing.Credentials[desired.Credential.Name] {
-		body := map[string]interface{}{
-			"name":            desired.Credential.Name,
-			"credential_type": desired.Credential.Type,
-			"endpoint":        desired.Credential.Endpoint,
-			"region":          desired.Credential.Region,
-			"key_id":          desired.Credential.KeyID,
-			"secret":          desired.Credential.Secret,
-			"url_style":       desired.Credential.URLStyle,
-		}
-		if err := doNoContentOrJSON(client, "POST", "/storage-credentials", body); err != nil {
-			return fmt.Errorf("create storage credential %q: %w", desired.Credential.Name, err)
-		}
+	phases := []initWorkflowPhase{
+		{
+			name: "ensure_storage_credential",
+			run: func(current initExistingState) error {
+				if current.Credentials[desired.Credential.Name] {
+					return nil
+				}
+				body := map[string]interface{}{
+					"name":            desired.Credential.Name,
+					"credential_type": desired.Credential.Type,
+					"endpoint":        desired.Credential.Endpoint,
+					"region":          desired.Credential.Region,
+					"key_id":          desired.Credential.KeyID,
+					"secret":          desired.Credential.Secret,
+					"url_style":       desired.Credential.URLStyle,
+				}
+				if err := doNoContentOrJSON(client, "POST", "/storage-credentials", body); err != nil {
+					return fmt.Errorf("create storage credential %q: %w", desired.Credential.Name, err)
+				}
+				return nil
+			},
+		},
+		{
+			name: "ensure_external_locations",
+			run: func(current initExistingState) error {
+				for _, loc := range desired.Locations {
+					if current.Locations[loc.Name] {
+						continue
+					}
+					body := map[string]interface{}{
+						"name":            loc.Name,
+						"credential_name": desired.Credential.Name,
+						"storage_type":    "S3",
+						"url":             loc.URL,
+					}
+					if err := doNoContentOrJSON(client, "POST", "/external-locations", body); err != nil {
+						return fmt.Errorf("create storage location %q: %w", loc.Name, err)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name:         "ensure_catalog",
+			refreshAfter: true,
+			run: func(current initExistingState) error {
+				if current.Catalogs[desired.CatalogName] {
+					return nil
+				}
+				body := map[string]interface{}{
+					"name":           desired.CatalogName,
+					"metastore_type": desired.MetastoreType,
+					"dsn":            desired.MetastoreDSN,
+					"data_path":      desired.DataPath,
+				}
+				if err := doNoContentOrJSON(client, "POST", "/catalogs", body); err != nil {
+					return fmt.Errorf("create catalog %q: %w", desired.CatalogName, err)
+				}
+				return nil
+			},
+		},
+		{
+			name:         "ensure_schemas",
+			refreshAfter: true,
+			run: func(current initExistingState) error {
+				for _, schema := range desired.Schemas {
+					if _, ok := current.Schemas[schema]; ok {
+						continue
+					}
+					path := fmt.Sprintf("/catalogs/%s/schemas", desired.CatalogName)
+					body := map[string]interface{}{"name": schema}
+					if locationName, ok := desired.SchemaLocation[schema]; ok && strings.TrimSpace(locationName) != "" {
+						body["location_name"] = locationName
+					}
+					if err := doNoContentOrJSON(client, "POST", path, body); err != nil {
+						return fmt.Errorf("create schema %q: %w", schema, err)
+					}
+				}
+				return nil
+			},
+		},
 	}
 
-	for _, loc := range desired.Locations {
-		if existing.Locations[loc.Name] {
-			continue
-		}
-		body := map[string]interface{}{
-			"name":            loc.Name,
-			"credential_name": desired.Credential.Name,
-			"storage_type":    "S3",
-			"url":             loc.URL,
-		}
-		if err := doNoContentOrJSON(client, "POST", "/external-locations", body); err != nil {
-			return fmt.Errorf("create storage location %q: %w", loc.Name, err)
-		}
+	if len(desired.Groups) > 0 || len(desired.Principals) > 0 {
+		phases = append(phases,
+			initWorkflowPhase{
+				name:         "ensure_security_identities",
+				refreshAfter: true,
+				run: func(current initExistingState) error {
+					for _, group := range desired.Groups {
+						if _, ok := current.Groups[group]; ok {
+							continue
+						}
+						if err := doNoContentOrJSON(client, "POST", "/groups", map[string]interface{}{"name": group}); err != nil {
+							return fmt.Errorf("create group %q: %w", group, err)
+						}
+					}
+
+					for _, principal := range desired.Principals {
+						if _, ok := current.Principals[principal]; ok {
+							continue
+						}
+						body := map[string]interface{}{"name": principal, "type": "user", "is_admin": false}
+						if err := doNoContentOrJSON(client, "POST", "/principals", body); err != nil {
+							return fmt.Errorf("create principal %q: %w", principal, err)
+						}
+					}
+					return nil
+				},
+			},
+			initWorkflowPhase{
+				name: "ensure_memberships",
+				run: func(current initExistingState) error {
+					for _, membership := range desired.Memberships {
+						groupID, ok := current.Groups[membership.GroupName]
+						if !ok {
+							continue
+						}
+						memberID, ok := current.Principals[membership.PrincipalName]
+						if !ok {
+							continue
+						}
+						if current.Memberships[groupID] != nil && current.Memberships[groupID][memberID] {
+							continue
+						}
+						path := fmt.Sprintf("/groups/%s/members", groupID)
+						body := map[string]interface{}{"member_id": memberID, "member_type": membership.PrincipalType}
+						if err := doNoContentOrJSON(client, "POST", path, body); err != nil {
+							return fmt.Errorf("add membership %q <- %q: %w", membership.GroupName, membership.PrincipalName, err)
+						}
+					}
+					return nil
+				},
+			},
+			initWorkflowPhase{
+				name: "ensure_schema_grants",
+				run: func(current initExistingState) error {
+					for _, grant := range append([]initGrantSpec{}, append(desired.SchemaGrants, desired.ServiceGrants...)...) {
+						principalID, ok := principalIDForGrant(current, grant)
+						if !ok {
+							continue
+						}
+						schemaID, ok := current.Schemas[grant.SchemaName]
+						if !ok {
+							continue
+						}
+						key := grantKey(principalID, grant.PrincipalType, schemaID, "schema", grant.Privilege)
+						if current.Grants[key] {
+							continue
+						}
+						body := map[string]interface{}{
+							"principal_id":   principalID,
+							"principal_type": grant.PrincipalType,
+							"securable_id":   schemaID,
+							"securable_type": "schema",
+							"privilege":      grant.Privilege,
+						}
+						if err := doNoContentOrJSON(client, "POST", "/grants", body); err != nil {
+							return fmt.Errorf("create grant on %q for %q: %w", grant.SchemaName, grant.PrincipalName, err)
+						}
+					}
+					return nil
+				},
+			},
+		)
 	}
 
-	if !existing.Catalogs[desired.CatalogName] {
-		body := map[string]interface{}{
-			"name":           desired.CatalogName,
-			"metastore_type": desired.MetastoreType,
-			"dsn":            desired.MetastoreDSN,
-			"data_path":      desired.DataPath,
-		}
-		if err := doNoContentOrJSON(client, "POST", "/catalogs", body); err != nil {
-			return fmt.Errorf("create catalog %q: %w", desired.CatalogName, err)
-		}
-	}
-
-	current, err := fetchExistingState(client, desired)
-	if err != nil {
-		return err
-	}
-
-	for _, schema := range desired.Schemas {
-		if _, ok := current.Schemas[schema]; ok {
-			continue
-		}
-		path := fmt.Sprintf("/catalogs/%s/schemas", desired.CatalogName)
-		body := map[string]interface{}{"name": schema}
-		if locationName, ok := desired.SchemaLocation[schema]; ok && strings.TrimSpace(locationName) != "" {
-			body["location_name"] = locationName
-		}
-		if err := doNoContentOrJSON(client, "POST", path, body); err != nil {
-			return fmt.Errorf("create schema %q: %w", schema, err)
-		}
-	}
-
-	if len(desired.Groups) == 0 && len(desired.Principals) == 0 {
-		return nil
-	}
-
-	current, err = fetchExistingState(client, desired)
-	if err != nil {
-		return err
-	}
-
-	for _, group := range desired.Groups {
-		if _, ok := current.Groups[group]; ok {
-			continue
-		}
-		if err := doNoContentOrJSON(client, "POST", "/groups", map[string]interface{}{"name": group}); err != nil {
-			return fmt.Errorf("create group %q: %w", group, err)
-		}
-	}
-
-	for _, principal := range desired.Principals {
-		if _, ok := current.Principals[principal]; ok {
-			continue
-		}
-		body := map[string]interface{}{"name": principal, "type": "user", "is_admin": false}
-		if err := doNoContentOrJSON(client, "POST", "/principals", body); err != nil {
-			return fmt.Errorf("create principal %q: %w", principal, err)
-		}
-	}
-
-	current, err = fetchExistingState(client, desired)
-	if err != nil {
-		return err
-	}
-
-	for _, membership := range desired.Memberships {
-		groupID, ok := current.Groups[membership.GroupName]
-		if !ok {
-			continue
-		}
-		memberID, ok := current.Principals[membership.PrincipalName]
-		if !ok {
-			continue
-		}
-		if current.Memberships[groupID] != nil && current.Memberships[groupID][memberID] {
-			continue
-		}
-		path := fmt.Sprintf("/groups/%s/members", groupID)
-		body := map[string]interface{}{"member_id": memberID, "member_type": membership.PrincipalType}
-		if err := doNoContentOrJSON(client, "POST", path, body); err != nil {
-			return fmt.Errorf("add membership %q <- %q: %w", membership.GroupName, membership.PrincipalName, err)
-		}
-	}
-
-	for _, grant := range append([]initGrantSpec{}, append(desired.SchemaGrants, desired.ServiceGrants...)...) {
-		principalID, ok := principalIDForGrant(current, grant)
-		if !ok {
-			continue
-		}
-		schemaID, ok := current.Schemas[grant.SchemaName]
-		if !ok {
-			continue
-		}
-		key := grantKey(principalID, grant.PrincipalType, schemaID, "schema", grant.Privilege)
-		if current.Grants[key] {
-			continue
-		}
-		body := map[string]interface{}{
-			"principal_id":   principalID,
-			"principal_type": grant.PrincipalType,
-			"securable_id":   schemaID,
-			"securable_type": "schema",
-			"privilege":      grant.Privilege,
-		}
-		if err := doNoContentOrJSON(client, "POST", "/grants", body); err != nil {
-			return fmt.Errorf("create grant on %q for %q: %w", grant.SchemaName, grant.PrincipalName, err)
-		}
-	}
-
-	return nil
+	return runInitWorkflow(func() (initExistingState, error) {
+		return fetchExistingState(client, desired)
+	}, existing, phases)
 }
 
 func destroyDesiredState(client *apiruntime.Client, desired initDesiredState, existing initExistingState) error {
-	current := existing
+	phases := []initWorkflowPhase{
+		{
+			name:         "delete_schema_grants",
+			refreshAfter: true,
+			run: func(current initExistingState) error {
+				for i := len(desired.SchemaGrants) + len(desired.ServiceGrants) - 1; i >= 0; i-- {
+					var grant initGrantSpec
+					if i < len(desired.SchemaGrants) {
+						grant = desired.SchemaGrants[i]
+					} else {
+						grant = desired.ServiceGrants[i-len(desired.SchemaGrants)]
+					}
+					principalID, ok := principalIDForGrant(current, grant)
+					if !ok {
+						continue
+					}
+					schemaID, ok := current.Schemas[grant.SchemaName]
+					if !ok {
+						continue
+					}
+					key := grantKey(principalID, grant.PrincipalType, schemaID, "schema", grant.Privilege)
+					grantID := current.GrantIDs[key]
+					if grantID == "" {
+						continue
+					}
+					if err := doDelete(client, "/grants/"+grantID, nil); err != nil {
+						return fmt.Errorf("delete grant on %q for %q: %w", grant.SchemaName, grant.PrincipalName, err)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name:         "delete_memberships",
+			refreshAfter: true,
+			run: func(current initExistingState) error {
+				for i := len(desired.Memberships) - 1; i >= 0; i-- {
+					membership := desired.Memberships[i]
+					groupID, ok := current.Groups[membership.GroupName]
+					if !ok {
+						continue
+					}
+					memberID, ok := current.Principals[membership.PrincipalName]
+					if !ok {
+						continue
+					}
+					if current.Memberships[groupID] == nil || !current.Memberships[groupID][memberID] {
+						continue
+					}
+					query := url.Values{}
+					query.Set("member_id", memberID)
+					query.Set("member_type", membership.PrincipalType)
+					if err := doDelete(client, "/groups/"+groupID+"/members", query); err != nil {
+						return fmt.Errorf("delete membership %q <- %q: %w", membership.GroupName, membership.PrincipalName, err)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name: "delete_security_identities",
+			run: func(current initExistingState) error {
+				for i := len(desired.Principals) - 1; i >= 0; i-- {
+					principal := desired.Principals[i]
+					principalID, ok := current.Principals[principal]
+					if !ok {
+						continue
+					}
+					if err := doDelete(client, "/principals/"+principalID, nil); err != nil {
+						return fmt.Errorf("delete principal %q: %w", principal, err)
+					}
+				}
 
-	for i := len(desired.SchemaGrants) + len(desired.ServiceGrants) - 1; i >= 0; i-- {
-		var grant initGrantSpec
-		if i < len(desired.SchemaGrants) {
-			grant = desired.SchemaGrants[i]
-		} else {
-			grant = desired.ServiceGrants[i-len(desired.SchemaGrants)]
+				for i := len(desired.Groups) - 1; i >= 0; i-- {
+					group := desired.Groups[i]
+					groupID, ok := current.Groups[group]
+					if !ok {
+						continue
+					}
+					if err := doDelete(client, "/groups/"+groupID, nil); err != nil {
+						return fmt.Errorf("delete group %q: %w", group, err)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name:         "delete_schemas",
+			refreshAfter: true,
+			run: func(current initExistingState) error {
+				for i := len(desired.Schemas) - 1; i >= 0; i-- {
+					schema := desired.Schemas[i]
+					if _, ok := current.Schemas[schema]; !ok {
+						continue
+					}
+					query := url.Values{}
+					query.Set("force", "true")
+					path := fmt.Sprintf("/catalogs/%s/schemas/%s", desired.CatalogName, schema)
+					if err := doDelete(client, path, query); err != nil {
+						return fmt.Errorf("delete schema %q: %w", schema, err)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name:         "delete_catalog",
+			refreshAfter: true,
+			run: func(current initExistingState) error {
+				if !current.Catalogs[desired.CatalogName] {
+					return nil
+				}
+				if err := doDelete(client, "/catalogs/"+desired.CatalogName, nil); err != nil {
+					return fmt.Errorf("delete catalog %q: %w", desired.CatalogName, err)
+				}
+				return nil
+			},
+		},
+		{
+			name: "delete_external_locations",
+			run: func(current initExistingState) error {
+				for i := len(desired.Locations) - 1; i >= 0; i-- {
+					loc := desired.Locations[i]
+					if !current.Locations[loc.Name] {
+						continue
+					}
+					if err := doDelete(client, "/external-locations/"+loc.Name, nil); err != nil {
+						return fmt.Errorf("delete storage location %q: %w", loc.Name, err)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name: "delete_storage_credential",
+			run: func(current initExistingState) error {
+				if !current.Credentials[desired.Credential.Name] {
+					return nil
+				}
+				if err := doDelete(client, "/storage-credentials/"+desired.Credential.Name, nil); err != nil {
+					return fmt.Errorf("delete storage credential %q: %w", desired.Credential.Name, err)
+				}
+				return nil
+			},
+		},
+	}
+
+	return runInitWorkflow(func() (initExistingState, error) {
+		return fetchExistingState(client, desired)
+	}, existing, phases)
+}
+
+func runInitWorkflow(fetch func() (initExistingState, error), initial initExistingState, phases []initWorkflowPhase) error {
+	current := initial
+	for _, phase := range phases {
+		if err := phase.run(current); err != nil {
+			return fmt.Errorf("phase %s: %w", phase.name, err)
 		}
-		principalID, ok := principalIDForGrant(current, grant)
-		if !ok {
+		if !phase.refreshAfter {
 			continue
 		}
-		schemaID, ok := current.Schemas[grant.SchemaName]
-		if !ok {
-			continue
+		next, err := fetch()
+		if err != nil {
+			return fmt.Errorf("phase %s: refresh state: %w", phase.name, err)
 		}
-		key := grantKey(principalID, grant.PrincipalType, schemaID, "schema", grant.Privilege)
-		grantID := current.GrantIDs[key]
-		if grantID == "" {
-			continue
-		}
-		if err := doDelete(client, "/grants/"+grantID, nil); err != nil {
-			return fmt.Errorf("delete grant on %q for %q: %w", grant.SchemaName, grant.PrincipalName, err)
-		}
+		current = next
 	}
-
-	currentState, err := fetchExistingState(client, desired)
-	if err != nil {
-		return err
-	}
-	current = currentState
-
-	for i := len(desired.Memberships) - 1; i >= 0; i-- {
-		membership := desired.Memberships[i]
-		groupID, ok := current.Groups[membership.GroupName]
-		if !ok {
-			continue
-		}
-		memberID, ok := current.Principals[membership.PrincipalName]
-		if !ok {
-			continue
-		}
-		if current.Memberships[groupID] == nil || !current.Memberships[groupID][memberID] {
-			continue
-		}
-		query := url.Values{}
-		query.Set("member_id", memberID)
-		query.Set("member_type", membership.PrincipalType)
-		if err := doDelete(client, "/groups/"+groupID+"/members", query); err != nil {
-			return fmt.Errorf("delete membership %q <- %q: %w", membership.GroupName, membership.PrincipalName, err)
-		}
-	}
-
-	currentState, err = fetchExistingState(client, desired)
-	if err != nil {
-		return err
-	}
-	current = currentState
-
-	for i := len(desired.Principals) - 1; i >= 0; i-- {
-		principal := desired.Principals[i]
-		principalID, ok := current.Principals[principal]
-		if !ok {
-			continue
-		}
-		if err := doDelete(client, "/principals/"+principalID, nil); err != nil {
-			return fmt.Errorf("delete principal %q: %w", principal, err)
-		}
-	}
-
-	for i := len(desired.Groups) - 1; i >= 0; i-- {
-		group := desired.Groups[i]
-		groupID, ok := current.Groups[group]
-		if !ok {
-			continue
-		}
-		if err := doDelete(client, "/groups/"+groupID, nil); err != nil {
-			return fmt.Errorf("delete group %q: %w", group, err)
-		}
-	}
-
-	currentState, err = fetchExistingState(client, desired)
-	if err != nil {
-		return err
-	}
-	current = currentState
-
-	for i := len(desired.Schemas) - 1; i >= 0; i-- {
-		schema := desired.Schemas[i]
-		if _, ok := current.Schemas[schema]; !ok {
-			continue
-		}
-		query := url.Values{}
-		query.Set("force", "true")
-		path := fmt.Sprintf("/catalogs/%s/schemas/%s", desired.CatalogName, schema)
-		if err := doDelete(client, path, query); err != nil {
-			return fmt.Errorf("delete schema %q: %w", schema, err)
-		}
-	}
-
-	currentState, err = fetchExistingState(client, desired)
-	if err != nil {
-		return err
-	}
-	current = currentState
-
-	if current.Catalogs[desired.CatalogName] {
-		if err := doDelete(client, "/catalogs/"+desired.CatalogName, nil); err != nil {
-			return fmt.Errorf("delete catalog %q: %w", desired.CatalogName, err)
-		}
-	}
-
-	currentState, err = fetchExistingState(client, desired)
-	if err != nil {
-		return err
-	}
-	current = currentState
-
-	for i := len(desired.Locations) - 1; i >= 0; i-- {
-		loc := desired.Locations[i]
-		if !current.Locations[loc.Name] {
-			continue
-		}
-		if err := doDelete(client, "/external-locations/"+loc.Name, nil); err != nil {
-			return fmt.Errorf("delete storage location %q: %w", loc.Name, err)
-		}
-	}
-
-	if current.Credentials[desired.Credential.Name] {
-		if err := doDelete(client, "/storage-credentials/"+desired.Credential.Name, nil); err != nil {
-			return fmt.Errorf("delete storage credential %q: %w", desired.Credential.Name, err)
-		}
-	}
-
 	return nil
 }
 
