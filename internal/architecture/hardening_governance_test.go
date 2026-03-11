@@ -35,6 +35,41 @@ func TestAuthorizationCoverage_SensitiveReadMethods(t *testing.T) {
 	}
 }
 
+func TestServicePolicyHelpers_DelegateToSharedPolicyPackage(t *testing.T) {
+	t.Helper()
+
+	expects := []struct {
+		file     string
+		snippets []string
+	}{
+		{
+			file:     "internal/service/security/helpers.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.RequireAdmin(ctx)", "servicepolicy.CallerName(ctx)"},
+		},
+		{
+			file:     "internal/service/governance/helpers.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.RequireAdmin(ctx)"},
+		},
+		{
+			file:     "internal/service/storage/access.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.IsAdmin(ctx)", "servicepolicy.CanReadOwnedResource(ctx, principal, owner)"},
+		},
+	}
+
+	for _, exp := range expects {
+		body, err := os.ReadFile(filepath.Join(repoRootDir(), exp.file))
+		if err != nil {
+			t.Fatalf("read %s: %v", exp.file, err)
+		}
+		source := string(body)
+		for _, snippet := range exp.snippets {
+			if !containsAny(source, []string{snippet}) {
+				t.Fatalf("governance: %s must contain %q", exp.file, snippet)
+			}
+		}
+	}
+}
+
 func TestNotebookHandlers_UseParentScopedAndPrincipalScopedMethods(t *testing.T) {
 	t.Helper()
 

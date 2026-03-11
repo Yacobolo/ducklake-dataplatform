@@ -4,18 +4,15 @@ import (
 	"context"
 
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 func isAdmin(ctx context.Context) bool {
-	principal, ok := domain.PrincipalFromContext(ctx)
-	return ok && principal.IsAdmin
+	return servicepolicy.IsAdmin(ctx)
 }
 
 func canReadOwnedResource(ctx context.Context, principal, owner string) bool {
-	if isAdmin(ctx) {
-		return true
-	}
-	return owner != "" && owner == principal
+	return servicepolicy.CanReadOwnedResource(ctx, principal, owner)
 }
 
 func paginateSlice[T any](items []T, page domain.PageRequest) ([]T, int64) {
