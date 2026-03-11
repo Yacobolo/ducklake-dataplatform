@@ -4,6 +4,7 @@ info:
   version: 0.1.0
   description: Duck Data Platform exposes a secure SQL query layer over DuckDB together with metadata management, RBAC, row-level security, column masking, lineage, orchestration, and semantic modeling APIs backed by SQLite metadata.
 tags:
+  - name: Dashboards
   - name: Semantic Layer
     description: Semantic models, metrics, relationships, and metric query execution.
   - name: Models
@@ -4276,6 +4277,7 @@ paths:
   /dashboards:
     get:
       operationId: listDashboards
+      summary: List dashboards
       parameters:
         - name: owner
           in: query
@@ -4321,8 +4323,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
     post:
       operationId: createDashboard
+      summary: Create dashboard
       parameters: []
       responses:
         '201':
@@ -4355,6 +4360,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
       requestBody:
         required: true
         content:
@@ -4364,6 +4371,7 @@ paths:
   /dashboards/{dashboardId}:
     get:
       operationId: getDashboard
+      summary: Get dashboard
       parameters:
         - name: dashboardId
           in: path
@@ -4407,8 +4415,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
     patch:
       operationId: updateDashboard
+      summary: Update dashboard
       parameters:
         - name: dashboardId
           in: path
@@ -4446,6 +4457,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
       requestBody:
         required: true
         content:
@@ -4454,6 +4467,7 @@ paths:
               $ref: '#/components/schemas/UpdateDashboardRequest'
     delete:
       operationId: deleteDashboard
+      summary: Delete dashboard
       parameters:
         - name: dashboardId
           in: path
@@ -4487,9 +4501,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
   /dashboards/{dashboardId}/resolved:
     get:
       operationId: getResolvedDashboard
+      summary: Get resolved dashboard
       parameters:
         - name: dashboardId
           in: path
@@ -4533,9 +4550,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
   /dashboards/{dashboardId}/widgets:
     post:
       operationId: createDashboardWidget
+      summary: Create dashboard widget
       parameters:
         - name: dashboardId
           in: path
@@ -4573,6 +4593,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
       requestBody:
         required: true
         content:
@@ -4582,6 +4604,7 @@ paths:
   /dashboards/{dashboardId}/widgets/{widgetId}:
     patch:
       operationId: updateDashboardWidget
+      summary: Update dashboard widget
       parameters:
         - name: dashboardId
           in: path
@@ -4624,6 +4647,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
       requestBody:
         required: true
         content:
@@ -4632,6 +4657,7 @@ paths:
               $ref: '#/components/schemas/UpdateDashboardWidgetRequest'
     delete:
       operationId: deleteDashboardWidget
+      summary: Delete dashboard widget
       parameters:
         - name: dashboardId
           in: path
@@ -4670,6 +4696,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
   /external-locations:
     get:
       operationId: listExternalLocations
