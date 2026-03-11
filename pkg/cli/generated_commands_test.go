@@ -41,3 +41,20 @@ func TestBuildGeneratedCommandSpecsFromEndpoints_PromotesSingleSegmentRoots(t *t
 	assert.Contains(t, paths, "query execute")
 	assert.Contains(t, paths, "query submit")
 }
+
+func TestAllAPIEndpoints_AddsDashboardCLICommands(t *testing.T) {
+	t.Helper()
+
+	endpoints := allAPIEndpoints()
+	commands := map[string]string{}
+	for _, ep := range endpoints {
+		switch ep.OperationID {
+		case "createDashboard", "getResolvedDashboard", "createDashboardWidget":
+			commands[ep.OperationID] = ep.CLICommand
+		}
+	}
+
+	assert.Equal(t, "dashboards create", commands["createDashboard"])
+	assert.Equal(t, "dashboards get-resolved", commands["getResolvedDashboard"])
+	assert.Equal(t, "dashboards widgets create", commands["createDashboardWidget"])
+}
