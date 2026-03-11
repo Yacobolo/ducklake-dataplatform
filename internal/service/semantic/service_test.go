@@ -514,6 +514,72 @@ func TestService_ExplainMetricQuery_UnsafeJoinSupportsRatio(t *testing.T) {
 	assert.Contains(t, plan.GeneratedSQL, `AS "revenue_per_customer"`)
 }
 
+func TestService_ExplainMetricQuery_UnsafeJoinSupportsDerivedArithmetic(t *testing.T) {
+	svc, modelRepo := setupSemanticServiceDeps(t)
+	ctx := context.Background()
+
+	_, err := modelRepo.Create(ctx, &domain.Model{
+		ProjectName:     "analytics",
+		Name:            "sales",
+		SQL:             "select 1 as sale_id, 42 as amount, 7 as customer_id, 2 as discount_amount",
+		Materialization: domain.MaterializationView,
+		Config:          domain.ModelConfig{UniqueKey: []string{"sale_id"}},
+		CreatedBy:       "admin",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.sales",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales_tags",
+		BaseModelRef: "analytics.sales_tags",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "placeholder",
+		Name:            "net_revenue_per_customer",
+		MetricType:      domain.MetricTypeRatio,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "((SUM(sales.amount) - SUM(sales.discount_amount)) / COUNT(DISTINCT sales.customer_id))",
+	})
+	require.NoError(t, err)
+
+	models, _, err := svc.ListSemanticModels(ctx, ptr("analytics"), domain.PageRequest{MaxResults: 100})
+	require.NoError(t, err)
+	modelIDs := map[string]string{}
+	for _, m := range models {
+		modelIDs[m.Name] = m.ID
+	}
+
+	_, err = svc.CreateRelationship(ctx, "admin", domain.CreateSemanticRelationshipRequest{
+		Name:             "sales_to_tags",
+		FromSemanticID:   modelIDs["sales"],
+		ToSemanticID:     modelIDs["sales_tags"],
+		RelationshipType: domain.RelationshipTypeOneToMany,
+		JoinSQL:          "sales.sale_id = sales_tags.sale_id",
+	})
+	require.NoError(t, err)
+
+	plan, err := svc.ExplainMetricQuery(ctx, MetricQueryRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		Metrics:           []string{"net_revenue_per_customer"},
+		Dimensions:        []string{"sales_tags.tag_name"},
+	})
+	require.NoError(t, err)
+	assert.Contains(t, plan.GeneratedSQL, `SUM("__metric_net_revenue_per_customer_lhs_lhs")`)
+	assert.Contains(t, plan.GeneratedSQL, `SUM("__metric_net_revenue_per_customer_lhs_rhs")`)
+	assert.Contains(t, plan.GeneratedSQL, `COUNT(DISTINCT "__metric_net_revenue_per_customer_rhs_distinct")`)
+	assert.Contains(t, plan.GeneratedSQL, `AS "net_revenue_per_customer"`)
+}
+
 func ptr(s string) *string {
 	return &s
 }

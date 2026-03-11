@@ -584,34 +584,61 @@ type unsafeMetricPlan struct {
 }
 
 func buildUnsafeMetricPlan(metric domain.SemanticMetric, expr string) (*unsafeMetricPlan, error) {
-	switch metric.MetricType {
-	case domain.MetricTypeRatio:
-		left, right, ok := splitTopLevelDivision(expr)
-		if !ok {
-			return nil, domain.ErrValidation("metric %q with type %q requires a top-level division of aggregate expressions", metric.Name, metric.MetricType)
-		}
-		leftPlan, err := buildUnsafeAggregateExprPlan(metric.Name+"_lhs", left)
-		if err != nil {
-			return nil, domain.ErrValidation("metric %q cannot plan ratio numerator across unsafe joins: %v", metric.Name, err)
-		}
-		rightPlan, err := buildUnsafeAggregateExprPlan(metric.Name+"_rhs", right)
-		if err != nil {
-			return nil, domain.ErrValidation("metric %q cannot plan ratio denominator across unsafe joins: %v", metric.Name, err)
-		}
-		return &unsafeMetricPlan{
-			InnerSelects: append(leftPlan.InnerSelects, rightPlan.InnerSelects...),
-			OuterSelect:  fmt.Sprintf("(%s) / NULLIF((%s), 0) AS %s", leftPlan.OuterExpr, rightPlan.OuterExpr, quoteIdent(metric.Name)),
-		}, nil
-	default:
-		plan, err := buildUnsafeAggregateExprPlan(metric.Name, expr)
-		if err != nil {
-			return nil, domain.ErrValidation("metric %q cannot be planned across unsafe joins: %v", metric.Name, err)
-		}
-		return &unsafeMetricPlan{
-			InnerSelects: plan.InnerSelects,
-			OuterSelect:  fmt.Sprintf("%s AS %s", plan.OuterExpr, quoteIdent(metric.Name)),
-		}, nil
+	plan, err := buildUnsafeScalarExprPlan(metric.Name, expr)
+	if err != nil {
+		return nil, domain.ErrValidation("metric %q cannot be planned across unsafe joins: %v", metric.Name, err)
 	}
+	return &unsafeMetricPlan{
+		InnerSelects: plan.InnerSelects,
+		OuterSelect:  fmt.Sprintf("%s AS %s", plan.OuterExpr, quoteIdent(metric.Name)),
+	}, nil
+}
+
+type unsafeScalarExprPlan struct {
+	InnerSelects []string
+	OuterExpr    string
+}
+
+func buildUnsafeScalarExprPlan(aliasBase, expr string) (*unsafeScalarExprPlan, error) {
+	trimmed := trimOuterParens(expr)
+	if idx, op, ok := findTopLevelBinaryOp(trimmed, "+-"); ok {
+		return combineUnsafeScalarPlans(aliasBase, trimmed, idx, op)
+	}
+	if idx, op, ok := findTopLevelBinaryOp(trimmed, "*/"); ok {
+		return combineUnsafeScalarPlans(aliasBase, trimmed, idx, op)
+	}
+	plan, err := buildUnsafeAggregateExprPlan(aliasBase, trimmed)
+	if err != nil {
+		return nil, err
+	}
+	return &unsafeScalarExprPlan{
+		InnerSelects: plan.InnerSelects,
+		OuterExpr:    plan.OuterExpr,
+	}, nil
+}
+
+func combineUnsafeScalarPlans(aliasBase, expr string, idx int, op rune) (*unsafeScalarExprPlan, error) {
+	leftExpr := strings.TrimSpace(expr[:idx])
+	rightExpr := strings.TrimSpace(expr[idx+1:])
+	if leftExpr == "" || rightExpr == "" {
+		return nil, fmt.Errorf("invalid arithmetic expression %q", expr)
+	}
+	leftPlan, err := buildUnsafeScalarExprPlan(aliasBase+"_lhs", leftExpr)
+	if err != nil {
+		return nil, err
+	}
+	rightPlan, err := buildUnsafeScalarExprPlan(aliasBase+"_rhs", rightExpr)
+	if err != nil {
+		return nil, err
+	}
+	outerExpr := fmt.Sprintf("(%s) %c (%s)", leftPlan.OuterExpr, op, rightPlan.OuterExpr)
+	if op == '/' {
+		outerExpr = fmt.Sprintf("(%s) / NULLIF((%s), 0)", leftPlan.OuterExpr, rightPlan.OuterExpr)
+	}
+	return &unsafeScalarExprPlan{
+		InnerSelects: append(leftPlan.InnerSelects, rightPlan.InnerSelects...),
+		OuterExpr:    outerExpr,
+	}, nil
 }
 
 type unsafeAggregateExprPlan struct {
@@ -667,31 +694,6 @@ func buildUnsafeAggregateExprPlan(aliasBase, expr string) (*unsafeAggregateExprP
 	}
 }
 
-func splitTopLevelDivision(expr string) (string, string, bool) {
-	trimmed := trimOuterParens(expr)
-	depth := 0
-	for i, r := range trimmed {
-		switch r {
-		case '(':
-			depth++
-		case ')':
-			if depth > 0 {
-				depth--
-			}
-		case '/':
-			if depth == 0 {
-				left := strings.TrimSpace(trimmed[:i])
-				right := strings.TrimSpace(trimmed[i+1:])
-				if left == "" || right == "" {
-					return "", "", false
-				}
-				return trimOuterParens(left), trimOuterParens(right), true
-			}
-		}
-	}
-	return "", "", false
-}
-
 func trimOuterParens(expr string) string {
 	trimmed := strings.TrimSpace(expr)
 	for len(trimmed) >= 2 && trimmed[0] == '(' && trimmed[len(trimmed)-1] == ')' {
@@ -718,6 +720,39 @@ func trimOuterParens(expr string) string {
 		trimmed = strings.TrimSpace(trimmed[1 : len(trimmed)-1])
 	}
 	return trimmed
+}
+
+func findTopLevelBinaryOp(expr string, operators string) (int, rune, bool) {
+	depth := 0
+	for i := len(expr) - 1; i >= 0; i-- {
+		switch expr[i] {
+		case ')':
+			depth++
+		case '(':
+			if depth > 0 {
+				depth--
+			}
+		default:
+			if depth != 0 || !strings.ContainsRune(operators, rune(expr[i])) {
+				continue
+			}
+			prev := previousNonSpace(expr, i)
+			if prev < 0 || strings.ContainsRune("+-*/(", rune(expr[prev])) {
+				continue
+			}
+			return i, rune(expr[i]), true
+		}
+	}
+	return 0, 0, false
+}
+
+func previousNonSpace(expr string, idx int) int {
+	for i := idx - 1; i >= 0; i-- {
+		if expr[i] != ' ' && expr[i] != '\t' && expr[i] != '\n' && expr[i] != '\r' {
+			return i
+		}
+	}
+	return -1
 }
 
 func (s *Service) baseModelUniqueKeys(ctx context.Context, baseModel *domain.SemanticModel) ([]string, error) {
