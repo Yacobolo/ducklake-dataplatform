@@ -41,3 +41,18 @@ type AssetFreshnessNode struct {
 	Basis                  []string
 	Upstream               []AssetFreshnessNode
 }
+
+// AssetFreshnessReconcileTarget describes an executable asset selected for freshness-driven refresh.
+type AssetFreshnessReconcileTarget struct {
+	AssetID         string
+	AssetKey        string
+	AssetType       string
+	FreshnessStatus string
+	EventID         string
+}
+
+// AssetFreshnessReconcileResult captures the outcome of reconciling freshness for a logical or executable asset.
+type AssetFreshnessReconcileResult struct {
+	Asset   AssetFreshnessStatus
+	Targets []AssetFreshnessReconcileTarget
+}

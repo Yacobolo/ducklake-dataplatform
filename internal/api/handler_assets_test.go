@@ -19,6 +19,7 @@ type mockAssetService struct {
 	deleteAssetFn            func(context.Context, string) error
 	checkFreshnessFn         func(context.Context, string) (*domain.AssetFreshnessStatus, error)
 	explainFreshnessFn       func(context.Context, string) (*domain.AssetFreshnessNode, error)
+	reconcileFreshnessFn     func(context.Context, string) (*domain.AssetFreshnessReconcileResult, error)
 	resolveAssetKeysFn       func(context.Context, []string) (map[string]string, error)
 	getGraphFn               func(context.Context, string) ([]domain.AssetDependency, []domain.AssetDependency, error)
 	listPartitionsFn         func(context.Context, string, domain.PageRequest) ([]domain.AssetPartition, int64, error)
@@ -51,6 +52,9 @@ func (m *mockAssetService) CheckFreshness(ctx context.Context, assetKey string) 
 }
 func (m *mockAssetService) ExplainFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessNode, error) {
 	return m.explainFreshnessFn(ctx, assetKey)
+}
+func (m *mockAssetService) ReconcileFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessReconcileResult, error) {
+	return m.reconcileFreshnessFn(ctx, assetKey)
 }
 func (m *mockAssetService) ResolveAssetKeys(ctx context.Context, assetIDs []string) (map[string]string, error) {
 	if m.resolveAssetKeysFn == nil {
@@ -378,6 +382,41 @@ func TestHandler_ExplainAssetFreshness(t *testing.T) {
 	require.NotNil(t, ok.Body.Edges)
 	require.Len(t, *ok.Body.Edges, 1)
 	assert.Equal(t, "metric.sales.orders.revenue", *(*ok.Body.Edges)[0].ToAssetKey)
+}
+
+func TestHandler_ReconcileAssetFreshness(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{reconcileFreshnessFn: func(_ context.Context, assetKey string) (*domain.AssetFreshnessReconcileResult, error) {
+		require.Equal(t, "dashboard.exec", assetKey)
+		return &domain.AssetFreshnessReconcileResult{
+			Asset: domain.AssetFreshnessStatus{
+				AssetID:         "dash-1",
+				AssetKey:        assetKey,
+				AssetType:       domain.AssetTypeDashboard,
+				FreshnessStatus: domain.AssetFreshnessStatusStale,
+				Reason:          "upstream model.exec.revenue is stale",
+			},
+			Targets: []domain.AssetFreshnessReconcileTarget{{
+				AssetID:         "model-1",
+				AssetKey:        "model.exec.revenue",
+				AssetType:       domain.AssetTypeModel,
+				FreshnessStatus: domain.AssetFreshnessStatusStale,
+				EventID:         "event-1",
+			}},
+		}, nil
+	}}}
+
+	resp, err := h.ReconcileAssetFreshness(assetTestCtx(true), GenReconcileAssetFreshnessRequest{AssetKey: "dashboard.exec"})
+	require.NoError(t, err)
+	ok, cast := resp.(ReconcileAssetFreshness202JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Body.Asset)
+	require.NotNil(t, ok.Body.Asset.FreshnessStatus)
+	assert.Equal(t, domain.AssetFreshnessStatusStale, *ok.Body.Asset.FreshnessStatus)
+	require.NotNil(t, ok.Body.Targets)
+	require.Len(t, *ok.Body.Targets, 1)
+	assert.Equal(t, "model.exec.revenue", *(*ok.Body.Targets)[0].AssetKey)
+	assert.Equal(t, "event-1", *(*ok.Body.Targets)[0].EventId)
 }
 
 func TestHandler_ListAssetPartitions(t *testing.T) {

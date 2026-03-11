@@ -60,6 +60,10 @@ func TestAssetExecutor_ExecutePlan(t *testing.T) {
 		assert.Equal(t, []int{1}, runs.retryAttempts)
 		assert.Equal(t, 2, runs.startCalls)
 		assert.Equal(t, 2, stepper.executeCalls["b"])
+		require.Len(t, runs.materialize["a"], 1)
+		require.Len(t, runs.materialize["b"], 1)
+		assert.Equal(t, runID, *runs.materialize["a"][0].RunID)
+		assert.Equal(t, runID, *runs.materialize["b"][0].RunID)
 		require.Len(t, runs.events, 3)
 		assert.Equal(t, "ASSET_EXECUTION_RETRY", runs.events[1].EventType)
 		assert.Equal(t, "b", runs.events[1].MetadataJSON["asset_id"])
@@ -260,8 +264,22 @@ func (f *fakeRunRepo) CreateRunEvent(_ context.Context, event *domain.AssetRunEv
 func (f *fakeRunRepo) ListRunEvents(context.Context, string, domain.PageRequest) ([]domain.AssetRunEvent, int64, error) {
 	panic("not implemented")
 }
-func (f *fakeRunRepo) CreateMaterialization(context.Context, *domain.AssetMaterialization) (*domain.AssetMaterialization, error) {
-	panic("not implemented")
+func (f *fakeRunRepo) CreateMaterialization(_ context.Context, m *domain.AssetMaterialization) (*domain.AssetMaterialization, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if f.materialize == nil {
+		f.materialize = map[string][]domain.AssetMaterialization{}
+	}
+	materialization := *m
+	if materialization.ID == "" {
+		materialization.ID = domain.NewID()
+	}
+	if materialization.CreatedAt.IsZero() {
+		materialization.CreatedAt = time.Now().UTC()
+	}
+	f.materialize[materialization.AssetID] = append([]domain.AssetMaterialization{materialization}, f.materialize[materialization.AssetID]...)
+	return &materialization, nil
 }
 func (f *fakeRunRepo) ListMaterializationsByAsset(_ context.Context, assetID string, page domain.PageRequest) ([]domain.AssetMaterialization, int64, error) {
 	f.mu.Lock()

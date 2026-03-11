@@ -132,6 +132,22 @@ func (e *AssetExecutor) executeAssetOnce(ctx context.Context, runID, assetID str
 		return fmt.Errorf("store output for asset %s: %w", assetID, err)
 	}
 
+	run, err := e.runs.GetRunByID(ctx, runID)
+	if err != nil {
+		return fmt.Errorf("get run for materialization %s: %w", runID, err)
+	}
+	materializedAt := time.Now().UTC()
+	if _, err := e.runs.CreateMaterialization(ctx, &domain.AssetMaterialization{
+		ID:             domain.NewID(),
+		AssetID:        assetID,
+		RunID:          &runID,
+		PartitionKey:   run.PartitionKey,
+		MetadataJSON:   result,
+		MaterializedAt: materializedAt,
+	}); err != nil {
+		return fmt.Errorf("record materialization for asset %s: %w", assetID, err)
+	}
+
 	_, _ = e.runs.CreateRunEvent(ctx, &domain.AssetRunEvent{
 		RunID:     runID,
 		EventType: "ASSET_EXECUTED",

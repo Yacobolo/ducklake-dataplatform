@@ -858,6 +858,55 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+  /assets/{assetKey}/freshness/reconcile:
+    post:
+      operationId: reconcileAssetFreshness
+      summary: Reconcile asset freshness
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetFreshnessReconcileResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Assets
   /assets/{assetKey}/graph:
     get:
       operationId: getAssetGraph
@@ -11694,6 +11743,28 @@ components:
           type: integer
           format: int64
         cron_schedule:
+          type: string
+    AssetFreshnessReconcileResponse:
+      type: object
+      properties:
+        asset:
+          $ref: '#/components/schemas/AssetFreshnessStatus'
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetFreshnessReconcileTarget'
+    AssetFreshnessReconcileTarget:
+      type: object
+      properties:
+        asset_id:
+          type: string
+        asset_key:
+          type: string
+        asset_type:
+          type: string
+        freshness_status:
+          type: string
+        event_id:
           type: string
     AssetFreshnessStatus:
       type: object

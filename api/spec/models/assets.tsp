@@ -135,6 +135,19 @@ model AssetFreshnessExplanation {
   edges?: AssetFreshnessEdge[];
 }
 
+model AssetFreshnessReconcileTarget {
+  asset_id?: string;
+  asset_key?: string;
+  asset_type?: string;
+  freshness_status?: string;
+  event_id?: string;
+}
+
+model AssetFreshnessReconcileResponse {
+  asset?: AssetFreshnessStatus;
+  targets?: AssetFreshnessReconcileTarget[];
+}
+
 model AssetCheck {
   id?: string;
   asset_id?: string;

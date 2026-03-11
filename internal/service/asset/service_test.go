@@ -2,6 +2,7 @@ package asset
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -108,6 +109,102 @@ func TestService_CreateAsset_RollsBackWhenUpstreamResolutionFails(t *testing.T) 
 	require.ErrorAs(t, getErr, &notFoundErr)
 	assert.Empty(t, deps.byAsset)
 	assert.Empty(t, checks.checksByAsset)
+}
+
+func TestService_ReconcileFreshness_EnqueuesNearestExecutableTarget(t *testing.T) {
+	t.Parallel()
+
+	assets := &fakeAssetRepo{assetsByID: map[string]domain.DataAsset{}, idsByKey: map[string]string{}}
+	deps := &fakeAssetDependencyRepo{}
+	runs := &fakeAssetRunRepo{materializationsByAsset: map[string][]domain.AssetMaterialization{}}
+	events := &fakeOrchestrationEventRepo{}
+
+	dashboard, err := assets.Create(adminCtx(), &domain.DataAsset{
+		ID:        "dashboard-1",
+		AssetKey:  "dashboard.exec",
+		AssetType: domain.AssetTypeDashboard,
+		Owner:     "alice",
+		FreshnessPolicy: &domain.AssetFreshnessPolicy{
+			MaxLagSeconds: 1800,
+		},
+		SchemaJSON: map[string]any{},
+	})
+	require.NoError(t, err)
+	metric, err := assets.Create(adminCtx(), &domain.DataAsset{
+		ID:         "metric-1",
+		AssetKey:   "metric.exec.revenue",
+		AssetType:  domain.AssetTypeMetric,
+		Owner:      "alice",
+		SchemaJSON: map[string]any{},
+	})
+	require.NoError(t, err)
+	model, err := assets.Create(adminCtx(), &domain.DataAsset{
+		ID:         "model-1",
+		AssetKey:   "model.exec.revenue",
+		AssetType:  domain.AssetTypeModel,
+		Owner:      "alice",
+		SchemaJSON: map[string]any{},
+	})
+	require.NoError(t, err)
+
+	_, err = deps.Create(adminCtx(), &domain.AssetDependency{AssetID: dashboard.ID, UpstreamAssetID: metric.ID, DependencyType: domain.DependencyTypeHard})
+	require.NoError(t, err)
+	_, err = deps.Create(adminCtx(), &domain.AssetDependency{AssetID: metric.ID, UpstreamAssetID: model.ID, DependencyType: domain.DependencyTypeHard})
+	require.NoError(t, err)
+
+	svc := &Service{assets: assets, deps: deps, runs: runs, events: events}
+	result, err := svc.ReconcileFreshness(context.Background(), dashboard.AssetKey)
+	require.NoError(t, err)
+	require.Len(t, result.Targets, 1)
+	assert.Equal(t, model.AssetKey, result.Targets[0].AssetKey)
+	require.Len(t, events.events, 1)
+	assert.Equal(t, domain.AssetTriggerTypeFreshnessBreach, events.events[0].EventType)
+	require.NotNil(t, events.events[0].AssetID)
+	assert.Equal(t, model.ID, *events.events[0].AssetID)
+}
+
+func TestService_ReconcileFreshnessPolicies_DedupesSharedTargetEvents(t *testing.T) {
+	t.Parallel()
+
+	assets := &fakeAssetRepo{assetsByID: map[string]domain.DataAsset{}, idsByKey: map[string]string{}}
+	deps := &fakeAssetDependencyRepo{}
+	runs := &fakeAssetRunRepo{materializationsByAsset: map[string][]domain.AssetMaterialization{}}
+	events := &fakeOrchestrationEventRepo{}
+
+	model, err := assets.Create(adminCtx(), &domain.DataAsset{
+		ID:         "model-1",
+		AssetKey:   "model.shared.base",
+		AssetType:  domain.AssetTypeModel,
+		Owner:      "alice",
+		SchemaJSON: map[string]any{},
+	})
+	require.NoError(t, err)
+	for _, key := range []string{"dashboard.a", "dashboard.b"} {
+		dash, createErr := assets.Create(adminCtx(), &domain.DataAsset{
+			AssetKey:  key,
+			AssetType: domain.AssetTypeDashboard,
+			Owner:     "alice",
+			FreshnessPolicy: &domain.AssetFreshnessPolicy{
+				MaxLagSeconds: 1800,
+			},
+			SchemaJSON: map[string]any{},
+		})
+		require.NoError(t, createErr)
+		_, createErr = deps.Create(adminCtx(), &domain.AssetDependency{
+			AssetID:         dash.ID,
+			UpstreamAssetID: model.ID,
+			DependencyType:  domain.DependencyTypeHard,
+		})
+		require.NoError(t, createErr)
+	}
+
+	svc := &Service{assets: assets, deps: deps, runs: runs, events: events}
+	count, err := svc.ReconcileFreshnessPolicies(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 2, count)
+	require.Len(t, events.events, 1)
+	require.NotNil(t, events.events[0].IdempotencyKey)
+	assert.True(t, strings.HasPrefix(*events.events[0].IdempotencyKey, "freshness:model-1:"))
 }
 
 func adminCtx() context.Context {
@@ -299,5 +396,49 @@ func (f *fakeAssetCheckRepo) CreateCheckResult(_ context.Context, _ *domain.Asse
 }
 
 func (f *fakeAssetCheckRepo) ListCheckResults(_ context.Context, _ string, _ domain.PageRequest) ([]domain.AssetCheckResult, int64, error) {
+	panic("not implemented")
+}
+
+type fakeOrchestrationEventRepo struct {
+	events []domain.OrchestrationEvent
+}
+
+func (f *fakeOrchestrationEventRepo) Enqueue(_ context.Context, event *domain.OrchestrationEvent) (*domain.OrchestrationEvent, error) {
+	if event.IdempotencyKey != nil {
+		key := strings.TrimSpace(*event.IdempotencyKey)
+		if key != "" {
+			for i := range f.events {
+				if f.events[i].IdempotencyKey != nil && *f.events[i].IdempotencyKey == key {
+					existing := f.events[i]
+					return &existing, nil
+				}
+			}
+		}
+	}
+
+	copyEvent := *event
+	if copyEvent.ID == "" {
+		copyEvent.ID = domain.NewID()
+	}
+	if copyEvent.AvailableAt.IsZero() {
+		copyEvent.AvailableAt = time.Now().UTC()
+	}
+	f.events = append(f.events, copyEvent)
+	return &copyEvent, nil
+}
+
+func (f *fakeOrchestrationEventRepo) ClaimNextPending(context.Context, time.Time) (*domain.OrchestrationEvent, error) {
+	panic("not implemented")
+}
+
+func (f *fakeOrchestrationEventRepo) MarkProcessed(context.Context, string) error {
+	panic("not implemented")
+}
+
+func (f *fakeOrchestrationEventRepo) MarkFailed(context.Context, string, string, *time.Time) error {
+	panic("not implemented")
+}
+
+func (f *fakeOrchestrationEventRepo) List(context.Context, domain.OrchestrationEventFilter) ([]domain.OrchestrationEvent, int64, error) {
 	panic("not implemented")
 }

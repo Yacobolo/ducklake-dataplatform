@@ -17,6 +17,7 @@ type assetService interface {
 	DeleteAsset(ctx context.Context, assetKey string) error
 	CheckFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessStatus, error)
 	ExplainFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessNode, error)
+	ReconcileFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessReconcileResult, error)
 	ResolveAssetKeys(ctx context.Context, assetIDs []string) (map[string]string, error)
 	GetGraph(ctx context.Context, assetID string) ([]domain.AssetDependency, []domain.AssetDependency, error)
 	ListPartitions(ctx context.Context, assetID string, page domain.PageRequest) ([]domain.AssetPartition, int64, error)
@@ -203,6 +204,25 @@ func (h *APIHandler) ExplainAssetFreshness(ctx context.Context, req GenExplainAs
 	return ExplainAssetFreshness200JSONResponse{
 		Body:    body,
 		Headers: ExplainAssetFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) ReconcileAssetFreshness(ctx context.Context, req GenReconcileAssetFreshnessRequest) (GenReconcileAssetFreshnessResponse, error) {
+	result, err := h.assets.ReconcileFreshness(ctx, req.AssetKey)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return ReconcileAssetFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		if errors.As(err, new(*domain.ValidationError)) {
+			return ReconcileAssetFreshness400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return nil, err
+	}
+
+	body := assetFreshnessReconcileResultToAPI(*result)
+	return ReconcileAssetFreshness202JSONResponse{
+		Body:    body,
+		Headers: ReconcileAssetFreshness202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -807,6 +827,24 @@ func flattenAssetFreshnessTree(root domain.AssetFreshnessNode, nodes *[]AssetFre
 			ToAssetKey:   &toKey,
 		})
 		flattenAssetFreshnessTree(child, nodes, edges)
+	}
+}
+
+func assetFreshnessReconcileResultToAPI(result domain.AssetFreshnessReconcileResult) AssetFreshnessReconcileResponse {
+	targets := make([]AssetFreshnessReconcileTarget, 0, len(result.Targets))
+	for _, target := range result.Targets {
+		targets = append(targets, AssetFreshnessReconcileTarget{
+			AssetId:         optStr(target.AssetID),
+			AssetKey:        optStr(target.AssetKey),
+			AssetType:       optStr(target.AssetType),
+			FreshnessStatus: optStr(target.FreshnessStatus),
+			EventId:         optStr(target.EventID),
+		})
+	}
+	asset := assetFreshnessStatusToAPI(result.Asset)
+	return AssetFreshnessReconcileResponse{
+		Asset:   &asset,
+		Targets: &targets,
 	}
 }
 
