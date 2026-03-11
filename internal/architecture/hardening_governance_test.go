@@ -78,6 +78,22 @@ func TestServicePolicyHelpers_DelegateToSharedPolicyPackage(t *testing.T) {
 			file:     "internal/service/storage/volume.go",
 			snippets: []string{"internal/service/policy", "servicepolicy.RequireSecurablePrivilege(ctx, s.auth, principal, securableType, securableID, privilege)"},
 		},
+		{
+			file:     "internal/service/asset/manage.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.CallerName(ctx)"},
+		},
+		{
+			file:     "internal/service/asset/service.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.CallerName(ctx)", "servicepolicy.RequirePrincipalName(ctx)"},
+		},
+		{
+			file:     "internal/service/catalog/registration.go",
+			snippets: []string{"servicepolicy.CallerNameOr(ctx, \"system\")"},
+		},
+		{
+			file:     "internal/service/governance/lineage.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.CallerNameOr(ctx, \"system\")"},
+		},
 	}
 
 	for _, exp := range expects {

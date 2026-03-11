@@ -258,13 +258,8 @@ func (s *CatalogRegistrationService) logAudit(ctx context.Context, action string
 		return
 	}
 
-	principal, ok := domain.PrincipalFromContext(ctx)
-	if !ok {
-		principal.Name = "system"
-	}
-
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
-		PrincipalName: principal.Name,
+		PrincipalName: servicepolicy.CallerNameOr(ctx, "system"),
 		Action:        action,
 		Status:        "ALLOWED",
 	})

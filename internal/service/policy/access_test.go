@@ -378,3 +378,12 @@ func TestCallerName(t *testing.T) {
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"})
 	assert.Equal(t, "alice", CallerName(ctx))
 }
+
+func TestCallerNameOr(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, "system", CallerNameOr(context.Background(), "system"))
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"})
+	assert.Equal(t, "alice", CallerNameOr(ctx, "system"))
+}

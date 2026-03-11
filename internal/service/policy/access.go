@@ -127,6 +127,15 @@ func CallerName(ctx context.Context) string {
 	return principal.Name
 }
 
+// CallerNameOr returns the authenticated principal name when present, otherwise the fallback.
+func CallerNameOr(ctx context.Context, fallback string) string {
+	name := CallerName(ctx)
+	if strings.TrimSpace(name) == "" {
+		return fallback
+	}
+	return name
+}
+
 // CanReadOwnedResource grants read access to admins and exact owners.
 func CanReadOwnedResource(ctx context.Context, principal, owner string) bool {
 	if IsAdmin(ctx) {

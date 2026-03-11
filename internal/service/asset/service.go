@@ -195,8 +195,6 @@ func (s *Service) TriggerMaterialization(ctx context.Context, assetID string, pa
 	if payload == nil {
 		payload = map[string]any{}
 	}
-	principal, _ := domain.PrincipalFromContext(ctx)
-
 	event, err := s.events.Enqueue(ctx, &domain.OrchestrationEvent{
 		ID:             domain.NewID(),
 		EventType:      domain.AssetTriggerTypeManual,
@@ -213,7 +211,7 @@ func (s *Service) TriggerMaterialization(ctx context.Context, assetID string, pa
 	if s.audit != nil {
 		_ = s.audit.Insert(ctx, &domain.AuditEntry{
 			ID:            domain.NewID(),
-			PrincipalName: principal.Name,
+			PrincipalName: servicepolicy.CallerName(ctx),
 			Action:        "asset.materialize.trigger",
 			Status:        "ALLOWED",
 			CreatedAt:     event.CreatedAt,
