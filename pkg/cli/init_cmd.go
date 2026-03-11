@@ -86,6 +86,7 @@ type initExistingState struct {
 	Principals  map[string]string
 	Memberships map[string]map[string]bool
 	Grants      map[string]bool
+	GrantIDs    map[string]string
 }
 
 func newInitCmd(client *apiruntime.Client) *cobra.Command {
@@ -97,6 +98,7 @@ func newInitCmd(client *apiruntime.Client) *cobra.Command {
 
 	cmd.AddCommand(newInitPlanCmd(client))
 	cmd.AddCommand(newInitApplyCmd(client))
+	cmd.AddCommand(newInitDestroyCmd(client))
 	cmd.AddCommand(newInitVerifyCmd(client))
 	return cmd
 }
@@ -164,6 +166,43 @@ func newInitApplyCmd(client *apiruntime.Client) *cobra.Command {
 		},
 	}
 	bindInitFlags(cmd, &opts)
+	return cmd
+}
+
+func newInitDestroyCmd(client *apiruntime.Client) *cobra.Command {
+	opts := defaultInitOptions()
+	var yes bool
+	cmd := &cobra.Command{
+		Use:   "destroy",
+		Short: "Destroy medallion bootstrap resources",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if !yes {
+				return fmt.Errorf("init destroy requires --yes")
+			}
+
+			resolved, err := resolveInitOptions(opts)
+			if err != nil {
+				return err
+			}
+			desired := buildDesiredState(resolved)
+			existing, err := fetchExistingState(client, desired)
+			if err != nil {
+				return err
+			}
+
+			if err := destroyDesiredState(client, desired, existing); err != nil {
+				return err
+			}
+
+			if getOutputFormat(cmd) == "json" {
+				return apiruntime.PrintJSON(os.Stdout, map[string]string{"status": "ok"})
+			}
+			_, _ = fmt.Fprintln(os.Stdout, "init destroy completed")
+			return nil
+		},
+	}
+	bindInitFlags(cmd, &opts)
+	cmd.Flags().BoolVar(&yes, "yes", false, "Confirm destruction without prompting")
 	return cmd
 }
 
@@ -399,6 +438,7 @@ func fetchExistingState(client *apiruntime.Client, desired initDesiredState) (in
 		Principals:  map[string]string{},
 		Memberships: map[string]map[string]bool{},
 		Grants:      map[string]bool{},
+		GrantIDs:    map[string]string{},
 	}
 
 	var creds struct {
@@ -515,6 +555,7 @@ func fetchExistingState(client *apiruntime.Client, desired initDesiredState) (in
 	if len(desired.SchemaGrants)+len(desired.ServiceGrants) > 0 {
 		var grants struct {
 			Data []struct {
+				ID            string `json:"id"`
 				PrincipalID   string `json:"principal_id"`
 				PrincipalType string `json:"principal_type"`
 				SecurableID   string `json:"securable_id"`
@@ -528,6 +569,7 @@ func fetchExistingState(client *apiruntime.Client, desired initDesiredState) (in
 		for _, g := range grants.Data {
 			key := grantKey(g.PrincipalID, g.PrincipalType, g.SecurableID, g.SecurableType, g.Privilege)
 			state.Grants[key] = true
+			state.GrantIDs[key] = g.ID
 		}
 	}
 
@@ -770,6 +812,145 @@ func applyDesiredState(client *apiruntime.Client, desired initDesiredState, exis
 	return nil
 }
 
+func destroyDesiredState(client *apiruntime.Client, desired initDesiredState, existing initExistingState) error {
+	current := existing
+
+	for i := len(desired.SchemaGrants) + len(desired.ServiceGrants) - 1; i >= 0; i-- {
+		var grant initGrantSpec
+		if i < len(desired.SchemaGrants) {
+			grant = desired.SchemaGrants[i]
+		} else {
+			grant = desired.ServiceGrants[i-len(desired.SchemaGrants)]
+		}
+		principalID, ok := principalIDForGrant(current, grant)
+		if !ok {
+			continue
+		}
+		schemaID, ok := current.Schemas[grant.SchemaName]
+		if !ok {
+			continue
+		}
+		key := grantKey(principalID, grant.PrincipalType, schemaID, "schema", grant.Privilege)
+		grantID := current.GrantIDs[key]
+		if grantID == "" {
+			continue
+		}
+		if err := doDelete(client, "/grants/"+grantID, nil); err != nil {
+			return fmt.Errorf("delete grant on %q for %q: %w", grant.SchemaName, grant.PrincipalName, err)
+		}
+	}
+
+	currentState, err := fetchExistingState(client, desired)
+	if err != nil {
+		return err
+	}
+	current = currentState
+
+	for i := len(desired.Memberships) - 1; i >= 0; i-- {
+		membership := desired.Memberships[i]
+		groupID, ok := current.Groups[membership.GroupName]
+		if !ok {
+			continue
+		}
+		memberID, ok := current.Principals[membership.PrincipalName]
+		if !ok {
+			continue
+		}
+		if current.Memberships[groupID] == nil || !current.Memberships[groupID][memberID] {
+			continue
+		}
+		query := url.Values{}
+		query.Set("member_id", memberID)
+		query.Set("member_type", membership.PrincipalType)
+		if err := doDelete(client, "/groups/"+groupID+"/members", query); err != nil {
+			return fmt.Errorf("delete membership %q <- %q: %w", membership.GroupName, membership.PrincipalName, err)
+		}
+	}
+
+	currentState, err = fetchExistingState(client, desired)
+	if err != nil {
+		return err
+	}
+	current = currentState
+
+	for i := len(desired.Principals) - 1; i >= 0; i-- {
+		principal := desired.Principals[i]
+		principalID, ok := current.Principals[principal]
+		if !ok {
+			continue
+		}
+		if err := doDelete(client, "/principals/"+principalID, nil); err != nil {
+			return fmt.Errorf("delete principal %q: %w", principal, err)
+		}
+	}
+
+	for i := len(desired.Groups) - 1; i >= 0; i-- {
+		group := desired.Groups[i]
+		groupID, ok := current.Groups[group]
+		if !ok {
+			continue
+		}
+		if err := doDelete(client, "/groups/"+groupID, nil); err != nil {
+			return fmt.Errorf("delete group %q: %w", group, err)
+		}
+	}
+
+	currentState, err = fetchExistingState(client, desired)
+	if err != nil {
+		return err
+	}
+	current = currentState
+
+	for i := len(desired.Schemas) - 1; i >= 0; i-- {
+		schema := desired.Schemas[i]
+		if _, ok := current.Schemas[schema]; !ok {
+			continue
+		}
+		query := url.Values{}
+		query.Set("force", "true")
+		path := fmt.Sprintf("/catalogs/%s/schemas/%s", desired.CatalogName, schema)
+		if err := doDelete(client, path, query); err != nil {
+			return fmt.Errorf("delete schema %q: %w", schema, err)
+		}
+	}
+
+	currentState, err = fetchExistingState(client, desired)
+	if err != nil {
+		return err
+	}
+	current = currentState
+
+	if current.Catalogs[desired.CatalogName] {
+		if err := doDelete(client, "/catalogs/"+desired.CatalogName, nil); err != nil {
+			return fmt.Errorf("delete catalog %q: %w", desired.CatalogName, err)
+		}
+	}
+
+	currentState, err = fetchExistingState(client, desired)
+	if err != nil {
+		return err
+	}
+	current = currentState
+
+	for i := len(desired.Locations) - 1; i >= 0; i-- {
+		loc := desired.Locations[i]
+		if !current.Locations[loc.Name] {
+			continue
+		}
+		if err := doDelete(client, "/external-locations/"+loc.Name, nil); err != nil {
+			return fmt.Errorf("delete storage location %q: %w", loc.Name, err)
+		}
+	}
+
+	if current.Credentials[desired.Credential.Name] {
+		if err := doDelete(client, "/storage-credentials/"+desired.Credential.Name, nil); err != nil {
+			return fmt.Errorf("delete storage credential %q: %w", desired.Credential.Name, err)
+		}
+	}
+
+	return nil
+}
+
 func principalIDForGrant(state initExistingState, grant initGrantSpec) (string, bool) {
 	if grant.PrincipalType == "group" {
 		id, ok := state.Groups[grant.PrincipalName]
@@ -809,6 +990,25 @@ func doNoContentOrJSON(client *apiruntime.Client, method, path string, body inte
 	if err := apiruntime.CheckError(resp); err != nil {
 		var apiErr *apiruntime.APIError
 		if errors.As(err, &apiErr) && apiErr.HTTPStatus == 409 {
+			return nil
+		}
+		return err
+	}
+	_, err = apiruntime.ReadBody(resp)
+	if err != nil {
+		return fmt.Errorf("read response: %w", err)
+	}
+	return nil
+}
+
+func doDelete(client *apiruntime.Client, path string, query url.Values) error {
+	resp, err := client.Do("DELETE", path, query, nil)
+	if err != nil {
+		return err
+	}
+	if err := apiruntime.CheckError(resp); err != nil {
+		var apiErr *apiruntime.APIError
+		if errors.As(err, &apiErr) && apiErr.HTTPStatus == 404 {
 			return nil
 		}
 		return err
