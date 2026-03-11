@@ -112,6 +112,29 @@ model AssetMaterialization {
   created_at?: utcDateTime;
 }
 
+model AssetFreshnessStatus {
+  asset_id?: string;
+  asset_key?: string;
+  asset_type?: string;
+  freshness_status?: string;
+  effective_max_lag_seconds?: int64;
+  last_materialized_at?: utcDateTime;
+  stale_since?: utcDateTime;
+  reason?: string;
+  basis?: string[];
+}
+
+model AssetFreshnessEdge {
+  from_asset_key?: string;
+  to_asset_key?: string;
+}
+
+model AssetFreshnessExplanation {
+  asset?: AssetFreshnessStatus;
+  nodes?: AssetFreshnessStatus[];
+  edges?: AssetFreshnessEdge[];
+}
+
 model AssetCheck {
   id?: string;
   asset_id?: string;

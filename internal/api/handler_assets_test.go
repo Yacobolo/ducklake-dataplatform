@@ -17,6 +17,8 @@ type mockAssetService struct {
 	getAssetFn               func(context.Context, string) (*domain.DataAsset, error)
 	updateAssetFn            func(context.Context, string, domain.UpdateAssetRequest) (*domain.DataAsset, error)
 	deleteAssetFn            func(context.Context, string) error
+	checkFreshnessFn         func(context.Context, string) (*domain.AssetFreshnessStatus, error)
+	explainFreshnessFn       func(context.Context, string) (*domain.AssetFreshnessNode, error)
 	resolveAssetKeysFn       func(context.Context, []string) (map[string]string, error)
 	getGraphFn               func(context.Context, string) ([]domain.AssetDependency, []domain.AssetDependency, error)
 	listPartitionsFn         func(context.Context, string, domain.PageRequest) ([]domain.AssetPartition, int64, error)
@@ -43,6 +45,12 @@ func (m *mockAssetService) UpdateAsset(ctx context.Context, assetKey string, req
 }
 func (m *mockAssetService) DeleteAsset(ctx context.Context, assetKey string) error {
 	return m.deleteAssetFn(ctx, assetKey)
+}
+func (m *mockAssetService) CheckFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessStatus, error) {
+	return m.checkFreshnessFn(ctx, assetKey)
+}
+func (m *mockAssetService) ExplainFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessNode, error) {
+	return m.explainFreshnessFn(ctx, assetKey)
 }
 func (m *mockAssetService) ResolveAssetKeys(ctx context.Context, assetIDs []string) (map[string]string, error) {
 	if m.resolveAssetKeysFn == nil {
@@ -313,6 +321,63 @@ func TestHandler_GetAssetGraph(t *testing.T) {
 	require.NotNil(t, ok.Body.DownstreamAssetKeys)
 	assert.Equal(t, []string{"raw.orders"}, *ok.Body.UpstreamAssetKeys)
 	assert.Equal(t, []string{"analytics.orders"}, *ok.Body.DownstreamAssetKeys)
+}
+
+func TestHandler_GetAssetFreshness(t *testing.T) {
+	t.Parallel()
+	lastMaterializedAt := time.Now().UTC()
+	h := &APIHandler{assets: &mockAssetService{checkFreshnessFn: func(_ context.Context, assetKey string) (*domain.AssetFreshnessStatus, error) {
+		require.Equal(t, "dashboard.exec", assetKey)
+		return &domain.AssetFreshnessStatus{
+			AssetID:                "dash-1",
+			AssetKey:               assetKey,
+			AssetType:              domain.AssetTypeDashboard,
+			FreshnessStatus:        domain.AssetFreshnessStatusFresh,
+			EffectiveMaxLagSeconds: 1800,
+			LastMaterializedAt:     &lastMaterializedAt,
+			Basis:                  []string{"metric.sales.orders.revenue"},
+		}, nil
+	}}}
+
+	resp, err := h.GetAssetFreshness(assetTestCtx(true), GenGetAssetFreshnessRequest{AssetKey: "dashboard.exec"})
+	require.NoError(t, err)
+	ok, cast := resp.(GetAssetFreshness200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Body.FreshnessStatus)
+	assert.Equal(t, domain.AssetFreshnessStatusFresh, *ok.Body.FreshnessStatus)
+	require.NotNil(t, ok.Body.EffectiveMaxLagSeconds)
+	assert.EqualValues(t, 1800, *ok.Body.EffectiveMaxLagSeconds)
+}
+
+func TestHandler_ExplainAssetFreshness(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{explainFreshnessFn: func(_ context.Context, assetKey string) (*domain.AssetFreshnessNode, error) {
+		require.Equal(t, "dashboard.exec", assetKey)
+		return &domain.AssetFreshnessNode{
+			AssetID:         "dash-1",
+			AssetKey:        assetKey,
+			AssetType:       domain.AssetTypeDashboard,
+			FreshnessStatus: domain.AssetFreshnessStatusStale,
+			Reason:          "upstream metric.sales.orders.revenue is stale",
+			Basis:           []string{"metric.sales.orders.revenue"},
+			Upstream: []domain.AssetFreshnessNode{{
+				AssetID:         "metric-1",
+				AssetKey:        "metric.sales.orders.revenue",
+				AssetType:       domain.AssetTypeMetric,
+				FreshnessStatus: domain.AssetFreshnessStatusStale,
+			}},
+		}, nil
+	}}}
+
+	resp, err := h.ExplainAssetFreshness(assetTestCtx(true), GenExplainAssetFreshnessRequest{AssetKey: "dashboard.exec"})
+	require.NoError(t, err)
+	ok, cast := resp.(ExplainAssetFreshness200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Body.Nodes)
+	require.Len(t, *ok.Body.Nodes, 2)
+	require.NotNil(t, ok.Body.Edges)
+	require.Len(t, *ok.Body.Edges, 1)
+	assert.Equal(t, "metric.sales.orders.revenue", *(*ok.Body.Edges)[0].ToAssetKey)
 }
 
 func TestHandler_ListAssetPartitions(t *testing.T) {

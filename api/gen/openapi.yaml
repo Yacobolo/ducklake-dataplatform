@@ -760,6 +760,104 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+  /assets/{assetKey}/freshness:
+    get:
+      operationId: getAssetFreshness
+      summary: Get asset freshness
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetFreshnessStatus'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Assets
+  /assets/{assetKey}/freshness/explain:
+    get:
+      operationId: explainAssetFreshness
+      summary: Explain asset freshness
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetFreshnessExplanation'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Assets
   /assets/{assetKey}/graph:
     get:
       operationId: getAssetGraph
@@ -11569,6 +11667,26 @@ components:
       enum:
         - ERROR
         - WARN
+    AssetFreshnessEdge:
+      type: object
+      properties:
+        from_asset_key:
+          type: string
+        to_asset_key:
+          type: string
+    AssetFreshnessExplanation:
+      type: object
+      properties:
+        asset:
+          $ref: '#/components/schemas/AssetFreshnessStatus'
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetFreshnessStatus'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetFreshnessEdge'
     AssetFreshnessPolicy:
       type: object
       properties:
@@ -11577,6 +11695,32 @@ components:
           format: int64
         cron_schedule:
           type: string
+    AssetFreshnessStatus:
+      type: object
+      properties:
+        asset_id:
+          type: string
+        asset_key:
+          type: string
+        asset_type:
+          type: string
+        freshness_status:
+          type: string
+        effective_max_lag_seconds:
+          type: integer
+          format: int64
+        last_materialized_at:
+          type: string
+          format: date-time
+        stale_since:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        basis:
+          type: array
+          items:
+            type: string
     AssetGraph:
       type: object
       properties:

@@ -15,6 +15,8 @@ type assetService interface {
 	GetAsset(ctx context.Context, key string) (*domain.DataAsset, error)
 	UpdateAsset(ctx context.Context, assetKey string, req domain.UpdateAssetRequest) (*domain.DataAsset, error)
 	DeleteAsset(ctx context.Context, assetKey string) error
+	CheckFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessStatus, error)
+	ExplainFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessNode, error)
 	ResolveAssetKeys(ctx context.Context, assetIDs []string) (map[string]string, error)
 	GetGraph(ctx context.Context, assetID string) ([]domain.AssetDependency, []domain.AssetDependency, error)
 	ListPartitions(ctx context.Context, assetID string, page domain.PageRequest) ([]domain.AssetPartition, int64, error)
@@ -163,6 +165,44 @@ func (h *APIHandler) GetAssetGraph(ctx context.Context, req GenGetAssetGraphRequ
 	return GetAssetGraph200JSONResponse{
 		Body:    graph,
 		Headers: GetAssetGraph200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) GetAssetFreshness(ctx context.Context, req GenGetAssetFreshnessRequest) (GenGetAssetFreshnessResponse, error) {
+	status, err := h.assets.CheckFreshness(ctx, req.AssetKey)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return GetAssetFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		if errors.As(err, new(*domain.ValidationError)) {
+			return GetAssetFreshness400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return nil, err
+	}
+
+	body := assetFreshnessStatusToAPI(*status)
+	return GetAssetFreshness200JSONResponse{
+		Body:    body,
+		Headers: GetAssetFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) ExplainAssetFreshness(ctx context.Context, req GenExplainAssetFreshnessRequest) (GenExplainAssetFreshnessResponse, error) {
+	node, err := h.assets.ExplainFreshness(ctx, req.AssetKey)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return ExplainAssetFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		if errors.As(err, new(*domain.ValidationError)) {
+			return ExplainAssetFreshness400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return nil, err
+	}
+
+	body := assetFreshnessExplanationToAPI(*node)
+	return ExplainAssetFreshness200JSONResponse{
+		Body:    body,
+		Headers: ExplainAssetFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -705,6 +745,68 @@ func assetCheckToAPI(c domain.AssetCheck) AssetCheck {
 		Enabled:   &c.Enabled,
 		CreatedAt: formatTimePtr(&c.CreatedAt),
 		UpdatedAt: formatTimePtr(&c.UpdatedAt),
+	}
+}
+
+func assetFreshnessStatusToAPI(status domain.AssetFreshnessStatus) AssetFreshnessStatus {
+	return AssetFreshnessStatus{
+		AssetId:                optStr(status.AssetID),
+		AssetKey:               optStr(status.AssetKey),
+		AssetType:              optStr(status.AssetType),
+		FreshnessStatus:        optStr(status.FreshnessStatus),
+		EffectiveMaxLagSeconds: safeInt64ToInt32Ptr(&status.EffectiveMaxLagSeconds),
+		LastMaterializedAt:     formatTimePtr(status.LastMaterializedAt),
+		StaleSince:             formatTimePtr(status.StaleSince),
+		Reason:                 optStr(status.Reason),
+		Basis:                  slicePtr(status.Basis),
+	}
+}
+
+func assetFreshnessExplanationToAPI(root domain.AssetFreshnessNode) AssetFreshnessExplanation {
+	nodes := make([]AssetFreshnessStatus, 0)
+	edges := make([]AssetFreshnessEdge, 0)
+	flattenAssetFreshnessTree(root, &nodes, &edges)
+	asset := assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+		AssetID:                root.AssetID,
+		AssetKey:               root.AssetKey,
+		AssetType:              root.AssetType,
+		FreshnessStatus:        root.FreshnessStatus,
+		EffectiveMaxLagSeconds: root.EffectiveMaxLagSeconds,
+		LastMaterializedAt:     root.LastMaterializedAt,
+		StaleSince:             root.StaleSince,
+		Reason:                 root.Reason,
+		Basis:                  root.Basis,
+	})
+	return AssetFreshnessExplanation{
+		Asset: &asset,
+		Nodes: &nodes,
+		Edges: &edges,
+	}
+}
+
+func flattenAssetFreshnessTree(root domain.AssetFreshnessNode, nodes *[]AssetFreshnessStatus, edges *[]AssetFreshnessEdge) {
+	if nodes == nil || edges == nil {
+		return
+	}
+	*nodes = append(*nodes, assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+		AssetID:                root.AssetID,
+		AssetKey:               root.AssetKey,
+		AssetType:              root.AssetType,
+		FreshnessStatus:        root.FreshnessStatus,
+		EffectiveMaxLagSeconds: root.EffectiveMaxLagSeconds,
+		LastMaterializedAt:     root.LastMaterializedAt,
+		StaleSince:             root.StaleSince,
+		Reason:                 root.Reason,
+		Basis:                  root.Basis,
+	}))
+	for _, child := range root.Upstream {
+		fromKey := root.AssetKey
+		toKey := child.AssetKey
+		*edges = append(*edges, AssetFreshnessEdge{
+			FromAssetKey: &fromKey,
+			ToAssetKey:   &toKey,
+		})
+		flattenAssetFreshnessTree(child, nodes, edges)
 	}
 }
 

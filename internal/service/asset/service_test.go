@@ -125,7 +125,10 @@ func (f *fakeAssetRepo) Create(_ context.Context, a *domain.DataAsset) (*domain.
 	if _, exists := f.idsByKey[a.AssetKey]; exists {
 		return nil, domain.ErrConflict("asset %q already exists", a.AssetKey)
 	}
-	id := domain.NewID()
+	id := a.ID
+	if id == "" {
+		id = domain.NewID()
+	}
 	now := time.Now().UTC()
 	assetCopy := *a
 	assetCopy.ID = id
