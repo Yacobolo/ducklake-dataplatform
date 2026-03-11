@@ -148,7 +148,7 @@ tasks:
     desc: Generate docs reference pages from generated API and schemas
     deps: [generate:api, generate:declarative-schema]
     cmds:
-      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated
+      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated -docs-dir docs -cli-index-out pkg/cli/gen/discovery_index.gen.go
     sources:
       - api/gen/openapi.yaml
       - schemas/declarative/v1/index.json
@@ -159,12 +159,13 @@ tasks:
       - docs/reference/generated/api/index.md
       - docs/reference/generated/api/features.md
       - docs/reference/generated/declarative/index.md
+      - pkg/cli/gen/discovery_index.gen.go
 
   docs:generate:generated:
     desc: Generate docs from canonical OpenAPI artifact and declarative schemas
     deps: [generate:api, generate:declarative-schema]
     cmds:
-      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated
+      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated -docs-dir docs -cli-index-out pkg/cli/gen/discovery_index.gen.go
 
   docs:dev:
     desc: Start VitePress docs dev server
@@ -199,10 +200,12 @@ tasks:
       - test -f docs/reference/generated/api/index.md
       - test -f docs/reference/generated/api/features.md
       - test -f docs/reference/generated/declarative/index.md
+      - test -f pkg/cli/gen/discovery_index.gen.go
+      - git diff --exit-code -- docs/reference/generated pkg/cli/gen/discovery_index.gen.go
 
   generate:
     desc: Run all code generation
-    deps: [generate:api, sqlc, genduckdb, generate:declarative-schema]
+    deps: [generate:api, sqlc, genduckdb, generate:declarative-schema, docs:generate]
 
   build:
     desc: Build all packages

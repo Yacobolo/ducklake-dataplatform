@@ -2,6 +2,8 @@ package cli
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -324,4 +326,77 @@ func TestAPI_Describe_TableOutput(t *testing.T) {
 	assert.Contains(t, output, "DESCRIPTION")
 	assert.Contains(t, output, "BODY FIELDS:")
 	assert.Contains(t, output, "name")
+}
+
+func TestAPI_Describe_JSONIncludesDiscoveryMetadata(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--output", "json", "api", "describe", "createSchema"})
+
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	assert.Equal(t, "createSchema", payload["operation_id"])
+	_, ok := payload["related_docs"]
+	assert.True(t, ok)
+	_, ok = payload["content_types"]
+	assert.True(t, ok)
+}
+
+func TestAPI_Spec_EmbeddedYAML(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"api", "spec"})
+
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+	assert.Contains(t, output, "openapi:")
+}
+
+func TestAPI_Spec_EmbeddedJSON(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"api", "spec", "--format", "json"})
+
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal([]byte(output), &payload))
+	assert.NotEmpty(t, payload["openapi"])
+}
+
+func TestAPI_Spec_Live(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/openapi.json", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"openapi":"3.1.0","info":{"title":"Duck","version":"test"}}`))
+	}))
+	defer srv.Close()
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--host", srv.URL, "api", "spec", "--source", "live"})
+
+	restore := captureStdout(t)
+	err := rootCmd.Execute()
+	output := restore()
+	require.NoError(t, err)
+	assert.Contains(t, output, "openapi: 3.1.0")
 }
