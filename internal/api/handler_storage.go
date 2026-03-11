@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 
 	"duck-demo/internal/domain"
 )
@@ -42,12 +41,14 @@ func (h *APIHandler) ListStorageCredentials(ctx context.Context, req GenListStor
 	principal := principalFromCtx(ctx)
 	creds, total, err := h.storageCreds.List(ctx, principal, page)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GenListStorageCredentials403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListStorageCredentialsResponse](err, domainErrorResponder[GenListStorageCredentialsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListStorageCredentialsResponse {
+				return GenListStorageCredentials403JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]StorageCredential, len(creds))
@@ -93,19 +94,20 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req GenCreateS
 	principal := cp.Name
 	result, err := h.storageCreds.Create(ctx, principal, domReq)
 	if err != nil {
-		var accessErr *domain.AccessDeniedError
-		var validErr *domain.ValidationError
-		var conflictErr *domain.ConflictError
-		switch {
-		case errors.As(err, &accessErr):
-			return CreateStorageCredential403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, &validErr):
-			return CreateStorageCredential400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, &conflictErr):
-			return CreateStorageCredential409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreateStorageCredential400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateStorageCredentialResponse](err, domainErrorResponder[GenCreateStorageCredentialResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateStorageCredentialResponse {
+				return CreateStorageCredential400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateStorageCredentialResponse {
+				return CreateStorageCredential403JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenCreateStorageCredentialResponse {
+				return CreateStorageCredential409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return CreateStorageCredential400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenCreateStorageCredential201JSONResponse{
 		Body:    storageCredentialToAPI(*result),
@@ -118,14 +120,17 @@ func (h *APIHandler) GetStorageCredential(ctx context.Context, req GenGetStorage
 	principal := principalFromCtx(ctx)
 	result, err := h.storageCreds.GetByName(ctx, principal, req.CredentialName)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GenGetStorageCredential403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetStorageCredential404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetStorageCredentialResponse](err, domainErrorResponder[GenGetStorageCredentialResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetStorageCredentialResponse {
+				return GenGetStorageCredential403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetStorageCredentialResponse {
+				return GenGetStorageCredential404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenGetStorageCredential200JSONResponse{
 		Body:    storageCredentialToAPI(*result),
@@ -152,14 +157,17 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req GenUpdateS
 	principal := cp.Name
 	result, err := h.storageCreds.Update(ctx, principal, req.CredentialName, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateStorageCredential403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateStorageCredential404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenUpdateStorageCredentialResponse](err, domainErrorResponder[GenUpdateStorageCredentialResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateStorageCredentialResponse {
+				return UpdateStorageCredential403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateStorageCredentialResponse {
+				return UpdateStorageCredential404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenUpdateStorageCredential200JSONResponse{
 		Body:    storageCredentialToAPI(*result),
@@ -172,14 +180,17 @@ func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req GenDeleteS
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.storageCreds.Delete(ctx, principal, req.CredentialName); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteStorageCredential403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteStorageCredential404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteStorageCredentialResponse](err, domainErrorResponder[GenDeleteStorageCredentialResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteStorageCredentialResponse {
+				return DeleteStorageCredential403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteStorageCredentialResponse {
+				return DeleteStorageCredential404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteStorageCredential204Response{}, nil
 }
@@ -192,12 +203,14 @@ func (h *APIHandler) ListExternalLocations(ctx context.Context, req GenListExter
 	principal := principalFromCtx(ctx)
 	locs, total, err := h.externalLocations.List(ctx, principal, page)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GenListExternalLocations403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListExternalLocationsResponse](err, domainErrorResponder[GenListExternalLocationsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListExternalLocationsResponse {
+				return GenListExternalLocations403JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]ExternalLocation, len(locs))
@@ -234,23 +247,23 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req GenCreateEx
 	principal := cp.Name
 	result, err := h.externalLocations.Create(ctx, principal, domReq)
 	if err != nil {
-		var accessErr *domain.AccessDeniedError
-		var validErr *domain.ValidationError
-		var conflictErr *domain.ConflictError
-		var notFoundErr *domain.NotFoundError
-		switch {
-		case errors.As(err, &accessErr):
-			return CreateExternalLocation403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, &validErr):
-			return CreateExternalLocation400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, &conflictErr):
-			return CreateExternalLocation409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, &notFoundErr):
-			// Referenced credential not found — report as 400 (bad request)
-			return CreateExternalLocation400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreateExternalLocation400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateExternalLocationResponse](err, domainErrorResponder[GenCreateExternalLocationResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateExternalLocationResponse {
+				return CreateExternalLocation400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateExternalLocationResponse {
+				return CreateExternalLocation403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenCreateExternalLocationResponse {
+				return CreateExternalLocation400JSONResponse{badRequestErrorResponse(err)}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenCreateExternalLocationResponse {
+				return CreateExternalLocation409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return CreateExternalLocation400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenCreateExternalLocation201JSONResponse{
 		Body:    externalLocationToAPI(*result),
@@ -263,14 +276,17 @@ func (h *APIHandler) GetExternalLocation(ctx context.Context, req GenGetExternal
 	principal := principalFromCtx(ctx)
 	result, err := h.externalLocations.GetByName(ctx, principal, req.LocationName)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GenGetExternalLocation403JSONResponse{GenForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: GenForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetExternalLocation404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetExternalLocationResponse](err, domainErrorResponder[GenGetExternalLocationResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetExternalLocationResponse {
+				return GenGetExternalLocation403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetExternalLocationResponse {
+				return GenGetExternalLocation404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenGetExternalLocation200JSONResponse{
 		Body:    externalLocationToAPI(*result),
@@ -295,14 +311,17 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req GenUpdateEx
 	principal := cp.Name
 	result, err := h.externalLocations.Update(ctx, principal, req.LocationName, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateExternalLocation403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateExternalLocation404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenUpdateExternalLocationResponse](err, domainErrorResponder[GenUpdateExternalLocationResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateExternalLocationResponse {
+				return UpdateExternalLocation403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateExternalLocationResponse {
+				return UpdateExternalLocation404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenUpdateExternalLocation200JSONResponse{
 		Body:    externalLocationToAPI(*result),
@@ -315,14 +334,17 @@ func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req GenDeleteEx
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.externalLocations.Delete(ctx, principal, req.LocationName); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteExternalLocation403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteExternalLocation404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteExternalLocationResponse](err, domainErrorResponder[GenDeleteExternalLocationResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteExternalLocationResponse {
+				return DeleteExternalLocation403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteExternalLocationResponse {
+				return DeleteExternalLocation404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteExternalLocation204Response{}, nil
 }
@@ -403,19 +425,20 @@ func (h *APIHandler) CreateVolume(ctx context.Context, request GenCreateVolumeRe
 	principal := principalFromCtx(ctx)
 	result, err := h.volumes.Create(ctx, principal, string(request.CatalogName), request.SchemaName, domReq)
 	if err != nil {
-		var accessErr *domain.AccessDeniedError
-		var validErr *domain.ValidationError
-		var conflictErr *domain.ConflictError
-		switch {
-		case errors.As(err, &accessErr):
-			return CreateVolume403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, &validErr):
-			return CreateVolume400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, &conflictErr):
-			return CreateVolume409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreateVolume400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateVolumeResponse](err, domainErrorResponder[GenCreateVolumeResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateVolumeResponse {
+				return CreateVolume400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateVolumeResponse {
+				return CreateVolume403JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenCreateVolumeResponse {
+				return CreateVolume409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return CreateVolume400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenCreateVolume201JSONResponse{
 		Body:    volumeToAPI(*result),
@@ -428,12 +451,14 @@ func (h *APIHandler) GetVolume(ctx context.Context, request GenGetVolumeRequest)
 	principal := principalFromCtx(ctx)
 	result, err := h.volumes.GetByName(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetVolume404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetVolumeResponse](err, domainErrorResponder[GenGetVolumeResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetVolumeResponse {
+				return GenGetVolume404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenGetVolume200JSONResponse{
 		Body:    volumeToAPI(*result),
@@ -451,14 +476,17 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, request GenUpdateVolumeRe
 	principal := principalFromCtx(ctx)
 	result, err := h.volumes.Update(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateVolume403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateVolume404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenUpdateVolumeResponse](err, domainErrorResponder[GenUpdateVolumeResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateVolumeResponse {
+				return UpdateVolume403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateVolumeResponse {
+				return UpdateVolume404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenUpdateVolume200JSONResponse{
 		Body:    volumeToAPI(*result),
@@ -470,14 +498,17 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, request GenUpdateVolumeRe
 func (h *APIHandler) DeleteVolume(ctx context.Context, request GenDeleteVolumeRequest) (GenDeleteVolumeResponse, error) {
 	principal := principalFromCtx(ctx)
 	if err := h.volumes.Delete(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteVolume403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteVolume404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteVolumeResponse](err, domainErrorResponder[GenDeleteVolumeResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteVolumeResponse {
+				return DeleteVolume403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteVolumeResponse {
+				return DeleteVolume404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteVolume204Response{}, nil
 }

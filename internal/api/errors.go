@@ -70,7 +70,7 @@ func respondDomainError[T any](err error, responder domainErrorResponder[T]) (T,
 
 func badRequestErrorResponse(err error) BadRequestJSONResponse {
 	return BadRequestJSONResponse{
-		Body:    defaultErrorBody(err),
+		Body:    errorBodyWithCode(http.StatusBadRequest, err),
 		Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}
 }
@@ -104,5 +104,9 @@ func internalErrorResponse(err error) InternalErrorJSONResponse {
 }
 
 func defaultErrorBody(err error) Error {
-	return Error{Code: errorCodeFromError(err), Message: err.Error()}
+	return errorBodyWithCode(httpStatusFromDomainError(err), err)
+}
+
+func errorBodyWithCode(code int, err error) Error {
+	return Error{Code: int32(code), Message: err.Error()} //nolint:gosec // HTTP/application error codes are bounded
 }
