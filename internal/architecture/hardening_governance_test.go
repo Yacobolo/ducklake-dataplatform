@@ -1,6 +1,10 @@
 package architecture_test
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestAuthorizationCoverage_SensitiveReadMethods(t *testing.T) {
 	t.Helper()
@@ -64,5 +68,21 @@ func TestNotebookHandlers_UseParentScopedAndPrincipalScopedMethods(t *testing.T)
 				t.Fatalf("governance: internal/api/handler_notebooks.go.%s must not contain %q", exp.method, snippet)
 			}
 		}
+	}
+}
+
+func TestSemanticHandlers_UseSharedDomainErrorResponder(t *testing.T) {
+	t.Helper()
+
+	body, err := os.ReadFile(filepath.Join(repoRootDir(), "internal/api/handler_semantic.go"))
+	if err != nil {
+		t.Fatalf("read internal/api/handler_semantic.go: %v", err)
+	}
+	source := string(body)
+	if !containsAny(source, []string{"respondDomainError["}) {
+		t.Fatal("governance: internal/api/handler_semantic.go must use respondDomainError for domain error mapping")
+	}
+	if containsAny(source, []string{"errors.As(err,"}) {
+		t.Fatal("governance: internal/api/handler_semantic.go must not use ad hoc errors.As domain error switches")
 	}
 }
