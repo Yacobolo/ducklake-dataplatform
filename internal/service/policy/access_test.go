@@ -38,6 +38,60 @@ func TestRequireAdmin(t *testing.T) {
 	})
 }
 
+func TestRequireAdminForAction(t *testing.T) {
+	t.Parallel()
+
+	t.Run("missing principal denied", func(t *testing.T) {
+		t.Parallel()
+
+		err := RequireAdminForAction(context.Background(), "list catalog registrations")
+		require.Error(t, err)
+		assert.EqualError(t, err, "authentication required")
+	})
+
+	t.Run("non admin denied with action message", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"})
+		err := RequireAdminForAction(ctx, "list catalog registrations")
+		require.Error(t, err)
+		assert.EqualError(t, err, "list catalog registrations requires admin privileges")
+	})
+
+	t.Run("admin allowed", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
+		require.NoError(t, RequireAdminForAction(ctx, "list catalog registrations"))
+	})
+}
+
+func TestRequireAdminIfPresentForAction(t *testing.T) {
+	t.Parallel()
+
+	t.Run("missing principal allowed", func(t *testing.T) {
+		t.Parallel()
+
+		require.NoError(t, RequireAdminIfPresentForAction(context.Background(), "attach catalogs"))
+	})
+
+	t.Run("non admin denied with action message", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"})
+		err := RequireAdminIfPresentForAction(ctx, "set default catalog")
+		require.Error(t, err)
+		assert.EqualError(t, err, "set default catalog requires admin privileges")
+	})
+
+	t.Run("admin allowed", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
+		require.NoError(t, RequireAdminIfPresentForAction(ctx, "set default catalog"))
+	})
+}
+
 func TestCanReadOwnedResource(t *testing.T) {
 	t.Parallel()
 

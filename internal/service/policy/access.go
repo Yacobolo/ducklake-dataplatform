@@ -18,6 +18,32 @@ func RequireAdmin(ctx context.Context) error {
 	return nil
 }
 
+// RequireAdminForAction validates that the caller is authenticated and has admin rights.
+// The returned access denied message includes the action for clearer API responses.
+func RequireAdminForAction(ctx context.Context, action string) error {
+	principal, ok := domain.PrincipalFromContext(ctx)
+	if !ok {
+		return domain.ErrAccessDenied("authentication required")
+	}
+	if !principal.IsAdmin {
+		return domain.ErrAccessDenied("%s requires admin privileges", action)
+	}
+	return nil
+}
+
+// RequireAdminIfPresentForAction validates admin rights when a principal is present.
+// Background/system flows may call this without an authenticated principal.
+func RequireAdminIfPresentForAction(ctx context.Context, action string) error {
+	principal, ok := domain.PrincipalFromContext(ctx)
+	if !ok {
+		return nil
+	}
+	if !principal.IsAdmin {
+		return domain.ErrAccessDenied("%s requires admin privileges", action)
+	}
+	return nil
+}
+
 // IsAdmin reports whether the authenticated caller has admin rights.
 func IsAdmin(ctx context.Context) bool {
 	principal, ok := domain.PrincipalFromContext(ctx)

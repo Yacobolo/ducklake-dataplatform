@@ -11,6 +11,7 @@ import (
 
 	"duck-demo/internal/ddl"
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 // CatalogRegistrationService manages the lifecycle of DuckLake catalog registrations:
@@ -57,14 +58,7 @@ func NewCatalogRegistrationService(deps RegistrationServiceDeps) *CatalogRegistr
 }
 
 func (s *CatalogRegistrationService) requireAdmin(ctx context.Context, action string) error {
-	principal, ok := domain.PrincipalFromContext(ctx)
-	if !ok {
-		return nil
-	}
-	if principal.IsAdmin {
-		return nil
-	}
-	return domain.ErrAccessDenied("%s requires admin privileges", action)
+	return servicepolicy.RequireAdminIfPresentForAction(ctx, action)
 }
 
 // Register validates and persists a new catalog, then attempts to ATTACH it.
