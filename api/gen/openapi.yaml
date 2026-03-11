@@ -1,14 +1,44 @@
 openapi: 3.0.0
 info:
   title: Duck Data Platform API
-  description: Secure SQL query layer over DuckDB with RBAC, row-level security, and column masking, backed by SQLite metadata.
-  version: 0.0.0
+  version: 0.1.0
+  description: Duck Data Platform exposes a secure SQL query layer over DuckDB together with metadata management, RBAC, row-level security, column masking, lineage, orchestration, and semantic modeling APIs backed by SQLite metadata.
 tags:
-  - name: Duck
+  - name: Semantic Layer
+    description: Semantic models, metrics, relationships, and metric query execution.
+  - name: Models
+    description: Model, macro, and model run management for transformation workflows.
+  - name: Pipelines
+    description: Pipeline definitions, jobs, runs, and orchestration controls.
+  - name: Integrations
+    description: Git repository and external integration lifecycle operations.
+  - name: Notebooks
+    description: Notebook authoring, sessions, cells, and job execution endpoints.
+  - name: Compute
+    description: Compute endpoint lifecycle, assignments, and health checks.
+  - name: Storage
+    description: Storage credentials and external location configuration for object storage access.
+  - name: Lineage
+    description: Table and column lineage inspection together with lineage maintenance operations.
+  - name: Queries
+    description: Synchronous and asynchronous SQL query execution, search, and query history endpoints.
+  - name: Assets
+    description: Data asset definitions, runs, checks, partitions, and materialization workflows.
+  - name: Catalogs
+    description: Catalog, schema, table, view, volume, and ingestion management APIs.
+  - name: Governance
+    description: Privileges, tags, classifications, row filters, and column masking controls.
+  - name: Identity
+    description: Principals, groups, and API key management for authenticated access.
+  - name: Auth
+    description: Authentication bootstrap, login, OIDC configuration, and web session administration.
+  - name: Health
+    description: Operational readiness and service health endpoints.
 paths:
   /api-keys:
     get:
       operationId: listAPIKeys
+      summary: List API keys
       parameters:
         - name: principal_id
           in: query
@@ -55,9 +85,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
     post:
       operationId: createAPIKey
+      summary: Create API key
       parameters: []
       responses:
         '201':
@@ -91,7 +122,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
       requestBody:
         required: true
         content:
@@ -101,6 +132,7 @@ paths:
   /api-keys/cleanup:
     post:
       operationId: cleanupExpiredAPIKeys
+      summary: Clean up expired API keys
       parameters: []
       responses:
         '200':
@@ -134,10 +166,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
   /api-keys/{apiKeyId}:
     delete:
       operationId: deleteAPIKey
+      summary: Delete API key
       parameters:
         - name: apiKeyId
           in: path
@@ -172,10 +205,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
   /assets:
     get:
       operationId: listAssets
+      summary: List assets
       parameters:
         - name: max_results
           in: query
@@ -216,9 +250,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
     post:
       operationId: createAsset
+      summary: Create asset
+      description: Creates a managed asset definition together with its ownership, checks, tags, and upstream lineage metadata.
       parameters: []
       responses:
         '201':
@@ -258,7 +294,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
       requestBody:
         required: true
         content:
@@ -274,6 +310,7 @@ paths:
   /assets/{assetKey}:
     get:
       operationId: getAsset
+      summary: Get asset
       parameters:
         - name: assetKey
           in: path
@@ -318,9 +355,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
     put:
       operationId: updateAsset
+      summary: Update asset
       parameters:
         - name: assetKey
           in: path
@@ -365,7 +403,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
       requestBody:
         required: true
         content:
@@ -380,6 +418,7 @@ paths:
             securable_id_source: catalog_sentinel
     delete:
       operationId: deleteAsset
+      summary: Delete asset
       parameters:
         - name: assetKey
           in: path
@@ -420,7 +459,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
       x-authz:
         mode: privilege
         checks:
@@ -430,6 +469,7 @@ paths:
   /assets/{assetKey}/backfills:
     get:
       operationId: listAssetBackfills
+      summary: List asset backfills
       parameters:
         - name: assetKey
           in: path
@@ -493,9 +533,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
     post:
       operationId: createAssetBackfill
+      summary: Create asset backfill
       parameters:
         - name: assetKey
           in: path
@@ -540,7 +581,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
       requestBody:
         required: true
         content:
@@ -556,6 +597,7 @@ paths:
   /assets/{assetKey}/backfills/{backfillId}:
     get:
       operationId: getAssetBackfill
+      summary: Get asset backfill
       parameters:
         - name: assetKey
           in: path
@@ -605,10 +647,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
   /assets/{assetKey}/check-results:
     get:
       operationId: listAssetCheckResults
+      summary: List asset check results
       parameters:
         - name: assetKey
           in: path
@@ -666,10 +709,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
   /assets/{assetKey}/checks:
     get:
       operationId: listAssetChecks
+      summary: List asset checks
       parameters:
         - name: assetKey
           in: path
@@ -714,10 +758,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
   /assets/{assetKey}/graph:
     get:
       operationId: getAssetGraph
+      summary: Get asset graph
       parameters:
         - name: assetKey
           in: path
@@ -762,10 +807,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
   /assets/{assetKey}/materializations:
     get:
       operationId: listAssetMaterializations
+      summary: List asset materializations
       parameters:
         - name: assetKey
           in: path
@@ -823,10 +869,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
   /assets/{assetKey}/materialize:
     post:
       operationId: triggerAssetMaterialization
+      summary: Trigger asset materialization
+      description: Starts a materialization run for the specified asset and returns the queued execution metadata.
       parameters:
         - name: assetKey
           in: path
@@ -871,7 +919,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
       requestBody:
         required: false
         content:
@@ -887,6 +935,7 @@ paths:
   /assets/{assetKey}/partitions:
     get:
       operationId: listAssetPartitions
+      summary: List asset partitions
       parameters:
         - name: assetKey
           in: path
@@ -944,10 +993,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
   /assets/{assetKey}/runs:
     get:
       operationId: listAssetRuns
+      summary: List asset runs
       parameters:
         - name: assetKey
           in: path
@@ -1011,10 +1061,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Assets
   /audit-logs:
     get:
       operationId: listAuditLogs
+      summary: List audit logs
       parameters:
         - name: principal_name
           in: query
@@ -1073,10 +1124,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Queries
   /auth/bootstrap/complete:
     post:
       operationId: bootstrapComplete
+      summary: Bootstrap complete
       parameters: []
       responses:
         '201':
@@ -1122,7 +1174,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Auth
       requestBody:
         required: true
         content:
@@ -1137,6 +1189,7 @@ paths:
   /auth/bootstrap/tokens:
     post:
       operationId: createBootstrapToken
+      summary: Create bootstrap token
       parameters: []
       responses:
         '201':
@@ -1176,7 +1229,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Auth
       requestBody:
         required: true
         content:
@@ -1189,6 +1242,8 @@ paths:
   /auth/local/login:
     post:
       operationId: localLogin
+      summary: Local login
+      description: Authenticates a local user with username and password and returns a bearer token for subsequent API calls.
       parameters: []
       responses:
         '201':
@@ -1228,7 +1283,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Auth
       requestBody:
         required: true
         content:
@@ -1243,6 +1298,7 @@ paths:
   /auth/provider/oidc:
     get:
       operationId: getOIDCProvider
+      summary: Get OIDC provider
       parameters: []
       responses:
         '200':
@@ -1276,12 +1332,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Auth
       x-authz:
         mode: admin_only
       x-apigen-manual: true
     put:
       operationId: upsertOIDCProvider
+      summary: Upsert OIDC provider
       parameters: []
       responses:
         '204':
@@ -1317,7 +1374,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Auth
       requestBody:
         required: true
         content:
@@ -1330,6 +1387,7 @@ paths:
   /auth/sessions/revoke-all:
     post:
       operationId: revokeAllWebSessions
+      summary: Revoke all web sessions
       parameters: []
       responses:
         '204':
@@ -1371,7 +1429,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Auth
       requestBody:
         required: true
         content:
@@ -1384,6 +1442,7 @@ paths:
   /auth/sessions/stats:
     get:
       operationId: getWebSessionStats
+      summary: Get web session stats
       parameters: []
       responses:
         '200':
@@ -1423,13 +1482,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Auth
       x-authz:
         mode: admin_only
       x-apigen-manual: true
   /catalogs:
     post:
       operationId: registerCatalog
+      summary: Register catalog
       parameters: []
       responses:
         '201':
@@ -1463,7 +1523,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -1472,6 +1532,8 @@ paths:
               $ref: '#/components/schemas/CreateCatalogRequest'
     get:
       operationId: listCatalogs
+      summary: List catalogs
+      description: Lists registered catalogs and returns a paginated catalog registration view for management clients.
       parameters:
         - name: max_results
           in: query
@@ -1512,10 +1574,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
   /catalogs/{catalogName}:
     get:
       operationId: getCatalogRegistration
+      summary: Get catalog registration
       parameters:
         - name: catalogName
           in: path
@@ -1560,9 +1623,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
     patch:
       operationId: updateCatalogRegistration
+      summary: Update catalog registration
       parameters:
         - name: catalogName
           in: path
@@ -1601,7 +1665,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -1610,6 +1674,7 @@ paths:
               $ref: '#/components/schemas/UpdateCatalogRegistrationRequest'
     delete:
       operationId: deleteCatalogRegistration
+      summary: Delete catalog registration
       parameters:
         - name: catalogName
           in: path
@@ -1644,10 +1709,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
   /catalogs/{catalogName}/history:
     get:
       operationId: listCatalogHistory
+      summary: List catalog history
       parameters:
         - name: catalogName
           in: path
@@ -1717,10 +1783,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
   /catalogs/{catalogName}/info:
     get:
       operationId: getCatalog
+      summary: Get catalog
+      description: Returns runtime catalog information, including metastore details and status for the named catalog.
       parameters:
         - name: catalogName
           in: path
@@ -1765,10 +1833,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
   /catalogs/{catalogName}/metastore/summary:
     get:
       operationId: getMetastoreSummary
+      summary: Get metastore summary
       parameters:
         - name: catalogName
           in: path
@@ -1813,10 +1882,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
   /catalogs/{catalogName}/schemas:
     get:
       operationId: listSchemas
+      summary: List schemas
       parameters:
         - name: catalogName
           in: path
@@ -1874,9 +1944,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
     post:
       operationId: createSchema
+      summary: Create schema
       parameters:
         - name: catalogName
           in: path
@@ -1915,7 +1986,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -1931,6 +2002,7 @@ paths:
   /catalogs/{catalogName}/schemas/{schemaName}:
     get:
       operationId: getSchema
+      summary: Get schema
       parameters:
         - name: catalogName
           in: path
@@ -1980,9 +2052,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
     patch:
       operationId: updateSchema
+      summary: Update schema
       parameters:
         - name: catalogName
           in: path
@@ -2026,7 +2099,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -2041,6 +2114,7 @@ paths:
             securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteSchema
+      summary: Delete schema
       parameters:
         - name: catalogName
           in: path
@@ -2086,7 +2160,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       x-authz:
         mode: privilege
         checks:
@@ -2096,6 +2170,7 @@ paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables:
     get:
       operationId: listTables
+      summary: List tables
       parameters:
         - name: catalogName
           in: path
@@ -2158,9 +2233,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
     post:
       operationId: createTable
+      summary: Create table
       parameters:
         - name: catalogName
           in: path
@@ -2204,7 +2280,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -2220,6 +2296,7 @@ paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}:
     get:
       operationId: getTable
+      summary: Get table
       parameters:
         - name: catalogName
           in: path
@@ -2274,9 +2351,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
     patch:
       operationId: updateTable
+      summary: Update table
       parameters:
         - name: catalogName
           in: path
@@ -2325,7 +2403,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -2340,6 +2418,7 @@ paths:
             securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteTable
+      summary: Delete table
       parameters:
         - name: catalogName
           in: path
@@ -2384,7 +2463,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       x-authz:
         mode: privilege
         checks:
@@ -2394,6 +2473,7 @@ paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns:
     get:
       operationId: listTableColumns
+      summary: List table columns
       parameters:
         - name: catalogName
           in: path
@@ -2461,10 +2541,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
     patch:
       operationId: updateColumn
+      summary: Update column
       parameters:
         - name: catalogName
           in: path
@@ -2518,7 +2599,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -2534,6 +2615,7 @@ paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit:
     post:
       operationId: commitTableIngestion
+      summary: Commit table ingestion
       parameters:
         - name: catalogName
           in: path
@@ -2582,7 +2664,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -2598,6 +2680,7 @@ paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load:
     post:
       operationId: loadTableExternalFiles
+      summary: Load table external files
       parameters:
         - name: catalogName
           in: path
@@ -2646,7 +2729,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -2662,6 +2745,7 @@ paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url:
     post:
       operationId: createUploadUrl
+      summary: Create upload URL
       parameters:
         - name: catalogName
           in: path
@@ -2710,7 +2794,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -2726,6 +2810,7 @@ paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile:
     post:
       operationId: profileTable
+      summary: Profile table
       parameters:
         - name: catalogName
           in: path
@@ -2774,10 +2859,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
   /catalogs/{catalogName}/schemas/{schemaName}/views:
     get:
       operationId: listViews
+      summary: List views
       parameters:
         - name: catalogName
           in: path
@@ -2840,9 +2926,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
     post:
       operationId: createView
+      summary: Create view
       parameters:
         - name: catalogName
           in: path
@@ -2886,7 +2973,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -2902,6 +2989,7 @@ paths:
   /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}:
     get:
       operationId: getView
+      summary: Get view
       parameters:
         - name: catalogName
           in: path
@@ -2956,9 +3044,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
     patch:
       operationId: updateView
+      summary: Update view
       parameters:
         - name: catalogName
           in: path
@@ -3007,7 +3096,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -3022,6 +3111,7 @@ paths:
             securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteView
+      summary: Delete view
       parameters:
         - name: catalogName
           in: path
@@ -3066,7 +3156,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       x-authz:
         mode: privilege
         checks:
@@ -3076,6 +3166,7 @@ paths:
   /catalogs/{catalogName}/schemas/{schemaName}/volumes:
     get:
       operationId: listVolumes
+      summary: List volumes
       parameters:
         - name: catalogName
           in: path
@@ -3138,9 +3229,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
     post:
       operationId: createVolume
+      summary: Create volume
       parameters:
         - name: catalogName
           in: path
@@ -3184,7 +3276,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -3200,6 +3292,7 @@ paths:
   /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}:
     get:
       operationId: getVolume
+      summary: Get volume
       parameters:
         - name: catalogName
           in: path
@@ -3254,9 +3347,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
     patch:
       operationId: updateVolume
+      summary: Update volume
       parameters:
         - name: catalogName
           in: path
@@ -3305,7 +3399,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -3320,6 +3414,7 @@ paths:
             securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteVolume
+      summary: Delete volume
       parameters:
         - name: catalogName
           in: path
@@ -3364,7 +3459,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       x-authz:
         mode: privilege
         checks:
@@ -3374,6 +3469,7 @@ paths:
   /catalogs/{catalogName}/set-default:
     post:
       operationId: setDefaultCatalog
+      summary: Set default catalog
       parameters:
         - name: catalogName
           in: path
@@ -3412,7 +3508,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -3422,6 +3518,7 @@ paths:
   /catalogs/{catalogName}/version-summary:
     get:
       operationId: getCatalogVersionSummary
+      summary: Get catalog version summary
       parameters:
         - name: catalogName
           in: path
@@ -3466,10 +3563,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
   /classifications:
     get:
       operationId: listClassifications
+      summary: List classifications
       parameters:
         - name: max_results
           in: query
@@ -3510,10 +3608,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
   /column-masks/{columnMaskId}:
     delete:
       operationId: deleteColumnMask
+      summary: Delete column mask
       parameters:
         - name: columnMaskId
           in: path
@@ -3548,10 +3647,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
   /column-masks/{columnMaskId}/bindings:
     get:
       operationId: listColumnMaskBindings
+      summary: List column mask bindings
       parameters:
         - name: columnMaskId
           in: path
@@ -3609,9 +3709,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
     post:
       operationId: bindColumnMask
+      summary: Bind column mask
       parameters:
         - name: columnMaskId
           in: path
@@ -3646,7 +3747,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
       requestBody:
         required: true
         content:
@@ -3655,6 +3756,7 @@ paths:
               $ref: '#/components/schemas/ColumnMaskBindingRequest'
     delete:
       operationId: unbindColumnMask
+      summary: Unbind column mask
       parameters:
         - name: columnMaskId
           in: path
@@ -3701,10 +3803,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
   /compute-endpoints:
     get:
       operationId: listComputeEndpoints
+      summary: List compute endpoints
       parameters:
         - name: max_results
           in: query
@@ -3745,9 +3848,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Compute
     post:
       operationId: createComputeEndpoint
+      summary: Create compute endpoint
+      description: Registers a compute endpoint that can execute remote workloads and accept assignment-based routing.
       parameters: []
       responses:
         '201':
@@ -3781,7 +3886,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Compute
       requestBody:
         required: true
         content:
@@ -3797,6 +3902,7 @@ paths:
   /compute-endpoints/{endpointName}:
     get:
       operationId: getComputeEndpoint
+      summary: Get compute endpoint
       parameters:
         - name: endpointName
           in: path
@@ -3841,9 +3947,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Compute
     patch:
       operationId: updateComputeEndpoint
+      summary: Update compute endpoint
       parameters:
         - name: endpointName
           in: path
@@ -3882,7 +3989,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Compute
       requestBody:
         required: true
         content:
@@ -3897,6 +4004,7 @@ paths:
             securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteComputeEndpoint
+      summary: Delete compute endpoint
       parameters:
         - name: endpointName
           in: path
@@ -3931,7 +4039,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Compute
       x-authz:
         mode: privilege
         checks:
@@ -3941,6 +4049,7 @@ paths:
   /compute-endpoints/{endpointName}/assignments:
     get:
       operationId: listComputeAssignments
+      summary: List compute assignments
       parameters:
         - name: endpointName
           in: path
@@ -3998,9 +4107,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Compute
     post:
       operationId: createComputeAssignment
+      summary: Create compute assignment
       parameters:
         - name: endpointName
           in: path
@@ -4039,7 +4149,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Compute
       requestBody:
         required: true
         content:
@@ -4055,6 +4165,7 @@ paths:
   /compute-endpoints/{endpointName}/assignments/{assignmentId}:
     delete:
       operationId: deleteComputeAssignment
+      summary: Delete compute assignment
       parameters:
         - name: endpointName
           in: path
@@ -4094,7 +4205,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Compute
       x-authz:
         mode: privilege
         checks:
@@ -4104,6 +4215,7 @@ paths:
   /compute-endpoints/{endpointName}/health:
     get:
       operationId: getComputeEndpointHealth
+      summary: Get compute endpoint health
       parameters:
         - name: endpointName
           in: path
@@ -4160,7 +4272,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Compute
   /dashboards:
     get:
       operationId: listDashboards
@@ -4209,8 +4321,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      tags:
-        - Duck
     post:
       operationId: createDashboard
       parameters: []
@@ -4245,8 +4355,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      tags:
-        - Duck
       requestBody:
         required: true
         content:
@@ -4299,8 +4407,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      tags:
-        - Duck
     patch:
       operationId: updateDashboard
       parameters:
@@ -4340,8 +4446,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      tags:
-        - Duck
       requestBody:
         required: true
         content:
@@ -4383,8 +4487,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      tags:
-        - Duck
   /dashboards/{dashboardId}/resolved:
     get:
       operationId: getResolvedDashboard
@@ -4431,8 +4533,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      tags:
-        - Duck
   /dashboards/{dashboardId}/widgets:
     post:
       operationId: createDashboardWidget
@@ -4473,8 +4573,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      tags:
-        - Duck
       requestBody:
         required: true
         content:
@@ -4526,8 +4624,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      tags:
-        - Duck
       requestBody:
         required: true
         content:
@@ -4574,11 +4670,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      tags:
-        - Duck
   /external-locations:
     get:
       operationId: listExternalLocations
+      summary: List external locations
       parameters:
         - name: max_results
           in: query
@@ -4619,9 +4714,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Storage
     post:
       operationId: createExternalLocation
+      summary: Create external location
       description: Creates a new external location and configures DuckDB with the associated credential. Catalog registrations are managed separately; creating a location does not attach or create a DuckLake catalog.
       parameters: []
       responses:
@@ -4656,7 +4752,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Storage
       requestBody:
         required: true
         content:
@@ -4672,6 +4768,7 @@ paths:
   /external-locations/{locationName}:
     get:
       operationId: getExternalLocation
+      summary: Get external location
       parameters:
         - name: locationName
           in: path
@@ -4716,9 +4813,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Storage
     patch:
       operationId: updateExternalLocation
+      summary: Update external location
       parameters:
         - name: locationName
           in: path
@@ -4757,7 +4855,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Storage
       requestBody:
         required: true
         content:
@@ -4772,6 +4870,7 @@ paths:
             securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteExternalLocation
+      summary: Delete external location
       parameters:
         - name: locationName
           in: path
@@ -4806,7 +4905,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Storage
       x-authz:
         mode: privilege
         checks:
@@ -4816,6 +4915,7 @@ paths:
   /git-repos:
     get:
       operationId: listGitRepos
+      summary: List git repos
       parameters:
         - name: max_results
           in: query
@@ -4856,9 +4956,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Integrations
     post:
       operationId: createGitRepo
+      summary: Create git repo
       parameters: []
       responses:
         '201':
@@ -4892,7 +4993,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Integrations
       requestBody:
         required: true
         content:
@@ -4902,6 +5003,7 @@ paths:
   /git-repos/{gitRepoId}:
     get:
       operationId: getGitRepo
+      summary: Get git repo
       parameters:
         - name: gitRepoId
           in: path
@@ -4946,9 +5048,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Integrations
     delete:
       operationId: deleteGitRepo
+      summary: Delete git repo
       parameters:
         - name: gitRepoId
           in: path
@@ -4983,10 +5086,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Integrations
   /git-repos/{gitRepoId}/sync:
     post:
       operationId: syncGitRepo
+      summary: Sync git repo
       parameters:
         - name: gitRepoId
           in: path
@@ -5025,10 +5129,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Integrations
   /grants:
     get:
       operationId: listGrants
+      summary: List grants
       parameters:
         - name: principal_id
           in: query
@@ -5093,9 +5198,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
     post:
       operationId: createGrant
+      summary: Create grant
       parameters: []
       responses:
         '201':
@@ -5129,7 +5235,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
       requestBody:
         required: true
         content:
@@ -5141,6 +5247,7 @@ paths:
   /grants/{grantId}:
     delete:
       operationId: deleteGrant
+      summary: Delete grant
       parameters:
         - name: grantId
           in: path
@@ -5175,12 +5282,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
       x-authz:
         mode: admin_only
   /groups:
     get:
       operationId: listGroups
+      summary: List groups
       parameters:
         - name: max_results
           in: query
@@ -5221,9 +5329,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
     post:
       operationId: createGroup
+      summary: Create group
       parameters: []
       responses:
         '201':
@@ -5257,7 +5366,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
       requestBody:
         required: true
         content:
@@ -5267,6 +5376,7 @@ paths:
   /groups/{groupId}:
     get:
       operationId: getGroup
+      summary: Get group
       parameters:
         - name: groupId
           in: path
@@ -5311,9 +5421,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
     delete:
       operationId: deleteGroup
+      summary: Delete group
       parameters:
         - name: groupId
           in: path
@@ -5348,10 +5459,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
   /groups/{groupId}/members:
     get:
       operationId: listGroupMembers
+      summary: List group members
       parameters:
         - name: groupId
           in: path
@@ -5409,9 +5521,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
     post:
       operationId: createGroupMember
+      summary: Create group member
       parameters:
         - name: groupId
           in: path
@@ -5446,7 +5559,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
       requestBody:
         required: true
         content:
@@ -5455,6 +5568,7 @@ paths:
               $ref: '#/components/schemas/CreateGroupMemberRequest'
     delete:
       operationId: deleteGroupMember
+      summary: Delete group member
       parameters:
         - name: groupId
           in: path
@@ -5501,10 +5615,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
   /healthz:
     get:
       operationId: getHealth
+      summary: Get health
       parameters: []
       responses:
         '200':
@@ -5532,10 +5647,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Health
+      security:
+        - {}
   /lineage/columns/{schemaName}/{tableName}:
     get:
       operationId: getColumnLineage
+      summary: Get column lineage
       parameters:
         - name: schemaName
           in: path
@@ -5598,10 +5716,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Lineage
   /lineage/columns/{schemaName}/{tableName}/{columnName}/impact:
     get:
       operationId: getColumnImpact
+      summary: Get column impact
       parameters:
         - name: schemaName
           in: path
@@ -5669,10 +5788,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Lineage
   /lineage/edges/{edgeId}:
     delete:
       operationId: deleteLineageEdge
+      summary: Delete lineage edge
       parameters:
         - name: edgeId
           in: path
@@ -5707,10 +5827,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Lineage
   /lineage/purge:
     post:
       operationId: purgeLineage
+      summary: Purge lineage
       parameters: []
       responses:
         '200':
@@ -5744,7 +5865,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Lineage
       requestBody:
         required: true
         content:
@@ -5754,6 +5875,7 @@ paths:
   /lineage/tables/{schemaName}/{tableName}:
     get:
       operationId: getTableLineage
+      summary: Get table lineage
       parameters:
         - name: schemaName
           in: path
@@ -5816,10 +5938,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Lineage
   /lineage/tables/{schemaName}/{tableName}/downstream:
     get:
       operationId: getDownstreamLineage
+      summary: Get downstream lineage
       parameters:
         - name: schemaName
           in: path
@@ -5882,10 +6005,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Lineage
   /lineage/tables/{schemaName}/{tableName}/upstream:
     get:
       operationId: getUpstreamLineage
+      summary: Get upstream lineage
       parameters:
         - name: schemaName
           in: path
@@ -5948,10 +6072,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Lineage
   /macros:
     get:
       operationId: listMacros
+      summary: List macros
       parameters:
         - name: max_results
           in: query
@@ -5992,9 +6117,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
     post:
       operationId: createMacro
+      summary: Create macro
       parameters: []
       responses:
         '201':
@@ -6028,7 +6154,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
       requestBody:
         required: true
         content:
@@ -6038,6 +6164,7 @@ paths:
   /macros/{macroName}:
     get:
       operationId: getMacro
+      summary: Get macro
       parameters:
         - name: macroName
           in: path
@@ -6082,9 +6209,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
     patch:
       operationId: updateMacro
+      summary: Update macro
       parameters:
         - name: macroName
           in: path
@@ -6123,7 +6251,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
       requestBody:
         required: true
         content:
@@ -6132,6 +6260,7 @@ paths:
               $ref: '#/components/schemas/UpdateMacroRequest'
     delete:
       operationId: deleteMacro
+      summary: Delete macro
       parameters:
         - name: macroName
           in: path
@@ -6166,10 +6295,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /macros/{macroName}/diff:
     get:
       operationId: diffMacroRevisions
+      summary: Diff macro revisions
       parameters:
         - name: macroName
           in: path
@@ -6228,10 +6358,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /macros/{macroName}/impact:
     get:
       operationId: getMacroImpact
+      summary: Get macro impact
       parameters:
         - name: macroName
           in: path
@@ -6289,10 +6420,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /macros/{macroName}/revisions:
     get:
       operationId: listMacroRevisions
+      summary: List macro revisions
       parameters:
         - name: macroName
           in: path
@@ -6337,10 +6469,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /manifest:
     post:
       operationId: createManifest
+      summary: Create manifest
       parameters: []
       responses:
         '200':
@@ -6374,7 +6507,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Catalogs
       requestBody:
         required: true
         content:
@@ -6384,6 +6517,7 @@ paths:
   /metric-queries:explain:
     post:
       operationId: explainMetricQuery
+      summary: Explain metric query
       parameters: []
       responses:
         '200':
@@ -6417,7 +6551,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
       requestBody:
         required: true
         content:
@@ -6427,6 +6561,7 @@ paths:
   /metric-queries:run:
     post:
       operationId: runMetricQuery
+      summary: Run metric query
       parameters: []
       responses:
         '200':
@@ -6460,7 +6595,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
       requestBody:
         required: true
         content:
@@ -6470,6 +6605,7 @@ paths:
   /metrics/{metricName}/freshness:
     get:
       operationId: checkMetricFreshness
+      summary: Check metric freshness
       parameters:
         - name: metricName
           in: path
@@ -6526,10 +6662,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
   /model-runs:
     post:
       operationId: triggerModelRun
+      summary: Trigger model run
       parameters: []
       responses:
         '201':
@@ -6563,7 +6700,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
       requestBody:
         required: true
         content:
@@ -6572,6 +6709,7 @@ paths:
               $ref: '#/components/schemas/TriggerModelRunRequest'
     get:
       operationId: listModelRuns
+      summary: List model runs
       parameters:
         - name: status
           in: query
@@ -6618,10 +6756,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /model-runs/{runId}:
     get:
       operationId: getModelRun
+      summary: Get model run
       parameters:
         - name: runId
           in: path
@@ -6666,10 +6805,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /model-runs/{runId}/cancel:
     post:
       operationId: cancelModelRun
+      summary: Cancel model run
       parameters:
         - name: runId
           in: path
@@ -6708,10 +6848,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /model-runs/{runId}/steps:
     get:
       operationId: listModelRunSteps
+      summary: List model run steps
       parameters:
         - name: runId
           in: path
@@ -6756,10 +6897,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /model-runs/{runId}/steps/{stepId}/test-results:
     get:
       operationId: listModelTestResults
+      summary: List model test results
       parameters:
         - name: runId
           in: path
@@ -6809,10 +6951,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /models:
     get:
       operationId: listModels
+      summary: List models
       parameters:
         - name: project_name
           in: query
@@ -6859,9 +7002,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
     post:
       operationId: createModel
+      summary: Create model
       parameters: []
       responses:
         '201':
@@ -6895,7 +7039,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
       requestBody:
         required: true
         content:
@@ -6905,6 +7049,7 @@ paths:
   /models/dag:
     get:
       operationId: getModelDAG
+      summary: Get model DAG
       parameters:
         - name: project_name
           in: query
@@ -6938,10 +7083,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /models/from-notebook:
     post:
       operationId: promoteNotebookToModel
+      summary: Promote notebook to model
       parameters: []
       responses:
         '201':
@@ -6975,7 +7121,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
       requestBody:
         required: true
         content:
@@ -6985,6 +7131,7 @@ paths:
   /models/{projectName}/{modelName}:
     get:
       operationId: getModel
+      summary: Get model
       parameters:
         - name: projectName
           in: path
@@ -7034,9 +7181,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
     patch:
       operationId: updateModel
+      summary: Update model
       parameters:
         - name: projectName
           in: path
@@ -7080,7 +7228,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
       requestBody:
         required: true
         content:
@@ -7089,6 +7237,7 @@ paths:
               $ref: '#/components/schemas/UpdateModelRequest'
     delete:
       operationId: deleteModel
+      summary: Delete model
       parameters:
         - name: projectName
           in: path
@@ -7128,10 +7277,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /models/{projectName}/{modelName}/freshness:
     get:
       operationId: checkModelFreshness
+      summary: Check model freshness
       parameters:
         - name: projectName
           in: path
@@ -7181,10 +7331,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /models/{projectName}/{modelName}/tests:
     post:
       operationId: createModelTest
+      summary: Create model test
       parameters:
         - name: projectName
           in: path
@@ -7228,7 +7379,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
       requestBody:
         required: true
         content:
@@ -7237,6 +7388,7 @@ paths:
               $ref: '#/components/schemas/CreateModelTestRequest'
     get:
       operationId: listModelTests
+      summary: List model tests
       parameters:
         - name: projectName
           in: path
@@ -7286,10 +7438,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /models/{projectName}/{modelName}/tests/{testId}:
     delete:
       operationId: deleteModelTest
+      summary: Delete model test
       parameters:
         - name: projectName
           in: path
@@ -7334,10 +7487,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Models
   /notebooks:
     get:
       operationId: listNotebooks
+      summary: List notebooks
       parameters:
         - name: owner
           in: query
@@ -7384,9 +7538,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
     post:
       operationId: createNotebook
+      summary: Create notebook
       parameters: []
       responses:
         '201':
@@ -7420,7 +7575,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
       requestBody:
         required: true
         content:
@@ -7430,6 +7585,7 @@ paths:
   /notebooks/{notebookId}:
     get:
       operationId: getNotebook
+      summary: Get notebook
       parameters:
         - name: notebookId
           in: path
@@ -7474,9 +7630,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
     patch:
       operationId: updateNotebook
+      summary: Update notebook
       parameters:
         - name: notebookId
           in: path
@@ -7515,7 +7672,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
       requestBody:
         required: true
         content:
@@ -7524,6 +7681,7 @@ paths:
               $ref: '#/components/schemas/UpdateNotebookRequest'
     delete:
       operationId: deleteNotebook
+      summary: Delete notebook
       parameters:
         - name: notebookId
           in: path
@@ -7558,10 +7716,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
   /notebooks/{notebookId}/cells:
     post:
       operationId: createCell
+      summary: Create cell
       parameters:
         - name: notebookId
           in: path
@@ -7600,7 +7759,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
       requestBody:
         required: true
         content:
@@ -7610,6 +7769,7 @@ paths:
   /notebooks/{notebookId}/cells/reorder:
     post:
       operationId: reorderCells
+      summary: Reorder cells
       parameters:
         - name: notebookId
           in: path
@@ -7648,7 +7808,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
       requestBody:
         required: true
         content:
@@ -7658,6 +7818,7 @@ paths:
   /notebooks/{notebookId}/cells/{cellId}:
     patch:
       operationId: updateCell
+      summary: Update cell
       parameters:
         - name: notebookId
           in: path
@@ -7701,7 +7862,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
       requestBody:
         required: true
         content:
@@ -7710,6 +7871,7 @@ paths:
               $ref: '#/components/schemas/UpdateCellRequest'
     delete:
       operationId: deleteCell
+      summary: Delete cell
       parameters:
         - name: notebookId
           in: path
@@ -7749,10 +7911,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
   /notebooks/{notebookId}/jobs:
     get:
       operationId: listNotebookJobs
+      summary: List notebook jobs
       parameters:
         - name: notebookId
           in: path
@@ -7810,10 +7973,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
   /notebooks/{notebookId}/jobs/{jobId}:
     get:
       operationId: getNotebookJob
+      summary: Get notebook job
       parameters:
         - name: notebookId
           in: path
@@ -7863,10 +8027,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
   /notebooks/{notebookId}/sessions:
     post:
       operationId: createNotebookSession
+      summary: Create notebook session
       parameters:
         - name: notebookId
           in: path
@@ -7905,10 +8070,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
   /notebooks/{notebookId}/sessions/{sessionId}:
     delete:
       operationId: closeNotebookSession
+      summary: Close notebook session
       parameters:
         - name: notebookId
           in: path
@@ -7948,10 +8114,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
   /notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}:
     post:
       operationId: executeCell
+      summary: Execute cell
       parameters:
         - name: notebookId
           in: path
@@ -8000,10 +8167,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
   /notebooks/{notebookId}/sessions/{sessionId}/run-all:
     post:
       operationId: runAllCells
+      summary: Run all cells
       parameters:
         - name: notebookId
           in: path
@@ -8047,10 +8215,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
   /notebooks/{notebookId}/sessions/{sessionId}/run-all-async:
     post:
       operationId: runAllCellsAsync
+      summary: Run all cells asynchronously
       parameters:
         - name: notebookId
           in: path
@@ -8094,10 +8263,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Notebooks
   /pipelines:
     get:
       operationId: listPipelines
+      summary: List pipelines
       parameters:
         - name: max_results
           in: query
@@ -8138,9 +8308,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
     post:
       operationId: createPipeline
+      summary: Create pipeline
       parameters: []
       responses:
         '201':
@@ -8174,7 +8345,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
       requestBody:
         required: true
         content:
@@ -8184,6 +8355,7 @@ paths:
   /pipelines/runs/{runId}:
     get:
       operationId: getPipelineRun
+      summary: Get pipeline run
       parameters:
         - name: runId
           in: path
@@ -8228,10 +8400,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
   /pipelines/runs/{runId}/cancel:
     post:
       operationId: cancelPipelineRun
+      summary: Cancel pipeline run
       parameters:
         - name: runId
           in: path
@@ -8270,10 +8443,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
   /pipelines/runs/{runId}/jobs:
     get:
       operationId: listPipelineJobRuns
+      summary: List pipeline job runs
       parameters:
         - name: runId
           in: path
@@ -8318,10 +8492,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
   /pipelines/{pipelineName}:
     get:
       operationId: getPipeline
+      summary: Get pipeline
       parameters:
         - name: pipelineName
           in: path
@@ -8366,9 +8541,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
     patch:
       operationId: updatePipeline
+      summary: Update pipeline
       parameters:
         - name: pipelineName
           in: path
@@ -8407,7 +8583,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
       requestBody:
         required: true
         content:
@@ -8416,6 +8592,7 @@ paths:
               $ref: '#/components/schemas/UpdatePipelineRequest'
     delete:
       operationId: deletePipeline
+      summary: Delete pipeline
       parameters:
         - name: pipelineName
           in: path
@@ -8450,10 +8627,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
   /pipelines/{pipelineName}/jobs:
     get:
       operationId: listPipelineJobs
+      summary: List pipeline jobs
       parameters:
         - name: pipelineName
           in: path
@@ -8498,9 +8676,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
     post:
       operationId: createPipelineJob
+      summary: Create pipeline job
       parameters:
         - name: pipelineName
           in: path
@@ -8539,7 +8718,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
       requestBody:
         required: true
         content:
@@ -8549,6 +8728,7 @@ paths:
   /pipelines/{pipelineName}/jobs/{jobId}:
     delete:
       operationId: deletePipelineJob
+      summary: Delete pipeline job
       parameters:
         - name: pipelineName
           in: path
@@ -8588,10 +8768,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
   /pipelines/{pipelineName}/runs:
     post:
       operationId: triggerPipelineRun
+      summary: Trigger pipeline run
       parameters:
         - name: pipelineName
           in: path
@@ -8630,7 +8811,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
       requestBody:
         required: false
         content:
@@ -8639,6 +8820,7 @@ paths:
               $ref: '#/components/schemas/TriggerPipelineRunRequest'
     get:
       operationId: listPipelineRuns
+      summary: List pipeline runs
       parameters:
         - name: pipelineName
           in: path
@@ -8702,10 +8884,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Pipelines
   /principals:
     get:
       operationId: listPrincipals
+      summary: List principals
       parameters:
         - name: max_results
           in: query
@@ -8746,9 +8929,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
     post:
       operationId: createPrincipal
+      summary: Create principal
       parameters: []
       responses:
         '201':
@@ -8782,7 +8966,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
       requestBody:
         required: true
         content:
@@ -8792,6 +8976,7 @@ paths:
   /principals/{principalId}:
     get:
       operationId: getPrincipal
+      summary: Get principal
       parameters:
         - name: principalId
           in: path
@@ -8836,9 +9021,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
     delete:
       operationId: deletePrincipal
+      summary: Delete principal
       parameters:
         - name: principalId
           in: path
@@ -8873,10 +9059,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
   /principals/{principalId}/admin:
     put:
       operationId: updatePrincipalAdmin
+      summary: Update principal admin
       parameters:
         - name: principalId
           in: path
@@ -8911,7 +9098,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Identity
       requestBody:
         required: true
         content:
@@ -8921,6 +9108,8 @@ paths:
   /queries:
     post:
       operationId: submitQuery
+      summary: Submit query
+      description: Submits a SQL query for asynchronous execution and returns a query job identifier for polling and result retrieval.
       parameters: []
       responses:
         '202':
@@ -8954,7 +9143,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Queries
       requestBody:
         required: true
         content:
@@ -8964,6 +9153,7 @@ paths:
   /queries/{queryId}:
     get:
       operationId: getQuery
+      summary: Get query
       parameters:
         - name: queryId
           in: path
@@ -9008,9 +9198,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Queries
     delete:
       operationId: deleteQuery
+      summary: Delete query
       parameters:
         - name: queryId
           in: path
@@ -9045,10 +9236,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Queries
   /queries/{queryId}/cancel:
     post:
       operationId: cancelQuery
+      summary: Cancel query
       parameters:
         - name: queryId
           in: path
@@ -9093,10 +9285,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Queries
   /queries/{queryId}/results:
     get:
       operationId: getQueryResults
+      summary: Get query results
+      description: Returns a page of rows for a previously submitted query using the stored query job identifier.
       parameters:
         - name: queryId
           in: path
@@ -9154,10 +9348,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Queries
   /query:
     post:
       operationId: executeQuery
+      summary: Execute query
+      description: Executes a SQL statement synchronously and returns the first page of results in the response body.
       parameters: []
       responses:
         '200':
@@ -9191,7 +9387,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Queries
       requestBody:
         required: true
         content:
@@ -9201,6 +9397,8 @@ paths:
   /query-history:
     get:
       operationId: listQueryHistory
+      summary: List query history
+      description: Lists recorded query executions and supports filtering by principal, decision status, and time window.
       parameters:
         - name: principal_name
           in: query
@@ -9219,12 +9417,14 @@ paths:
           required: false
           schema:
             type: string
+            format: date-time
           explode: false
         - name: to
           in: query
           required: false
           schema:
             type: string
+            format: date-time
           explode: false
         - name: max_results
           in: query
@@ -9265,10 +9465,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Queries
   /row-filters/{rowFilterId}:
     delete:
       operationId: deleteRowFilter
+      summary: Delete row filter
       parameters:
         - name: rowFilterId
           in: path
@@ -9303,10 +9504,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
   /row-filters/{rowFilterId}/bindings:
     get:
       operationId: listRowFilterBindings
+      summary: List row filter bindings
       parameters:
         - name: rowFilterId
           in: path
@@ -9364,9 +9566,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
     post:
       operationId: bindRowFilter
+      summary: Bind row filter
       parameters:
         - name: rowFilterId
           in: path
@@ -9401,7 +9604,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
       requestBody:
         required: true
         content:
@@ -9410,6 +9613,7 @@ paths:
               $ref: '#/components/schemas/RowFilterBindingRequest'
     delete:
       operationId: unbindRowFilter
+      summary: Unbind row filter
       parameters:
         - name: rowFilterId
           in: path
@@ -9456,10 +9660,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
   /search:
     get:
       operationId: searchCatalog
+      summary: Search catalog
       parameters:
         - name: query
           in: query
@@ -9518,10 +9723,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Queries
   /semantic-models:
     get:
       operationId: listSemanticModels
+      summary: List semantic models
       parameters:
         - name: project_name
           in: query
@@ -9568,9 +9774,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
     post:
       operationId: createSemanticModel
+      summary: Create semantic model
       parameters: []
       responses:
         '201':
@@ -9604,7 +9811,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
       requestBody:
         required: true
         content:
@@ -9614,6 +9821,7 @@ paths:
   /semantic-models/{projectName}/{semanticModelName}:
     get:
       operationId: getSemanticModel
+      summary: Get semantic model
       parameters:
         - name: projectName
           in: path
@@ -9663,9 +9871,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
     patch:
       operationId: updateSemanticModel
+      summary: Update semantic model
       parameters:
         - name: projectName
           in: path
@@ -9709,7 +9918,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
       requestBody:
         required: true
         content:
@@ -9718,6 +9927,7 @@ paths:
               $ref: '#/components/schemas/UpdateSemanticModelRequest'
     delete:
       operationId: deleteSemanticModel
+      summary: Delete semantic model
       parameters:
         - name: projectName
           in: path
@@ -9757,10 +9967,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
   /semantic-models/{projectName}/{semanticModelName}/metrics:
     get:
       operationId: listSemanticMetrics
+      summary: List semantic metrics
       parameters:
         - name: projectName
           in: path
@@ -9810,9 +10021,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
     post:
       operationId: createSemanticMetric
+      summary: Create semantic metric
       parameters:
         - name: projectName
           in: path
@@ -9856,7 +10068,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
       requestBody:
         required: true
         content:
@@ -9866,6 +10078,7 @@ paths:
   /semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}:
     patch:
       operationId: updateSemanticMetric
+      summary: Update semantic metric
       parameters:
         - name: projectName
           in: path
@@ -9914,7 +10127,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
       requestBody:
         required: true
         content:
@@ -9923,6 +10136,7 @@ paths:
               $ref: '#/components/schemas/UpdateSemanticMetricRequest'
     delete:
       operationId: deleteSemanticMetric
+      summary: Delete semantic metric
       parameters:
         - name: projectName
           in: path
@@ -9967,10 +10181,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
   /semantic-models/{projectName}/{semanticModelName}/pre-aggregations:
     get:
       operationId: listSemanticPreAggregations
+      summary: List semantic pre aggregations
       parameters:
         - name: projectName
           in: path
@@ -10020,9 +10235,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
     post:
       operationId: createSemanticPreAggregation
+      summary: Create semantic pre aggregation
       parameters:
         - name: projectName
           in: path
@@ -10066,7 +10282,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
       requestBody:
         required: true
         content:
@@ -10076,6 +10292,7 @@ paths:
   /semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}:
     patch:
       operationId: updateSemanticPreAggregation
+      summary: Update semantic pre aggregation
       parameters:
         - name: projectName
           in: path
@@ -10124,7 +10341,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
       requestBody:
         required: true
         content:
@@ -10133,6 +10350,7 @@ paths:
               $ref: '#/components/schemas/UpdateSemanticPreAggregationRequest'
     delete:
       operationId: deleteSemanticPreAggregation
+      summary: Delete semantic pre aggregation
       parameters:
         - name: projectName
           in: path
@@ -10177,10 +10395,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
   /semantic-relationships:
     get:
       operationId: listSemanticRelationships
+      summary: List semantic relationships
       parameters:
         - name: max_results
           in: query
@@ -10221,9 +10440,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
     post:
       operationId: createSemanticRelationship
+      summary: Create semantic relationship
       parameters: []
       responses:
         '201':
@@ -10257,7 +10477,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
       requestBody:
         required: true
         content:
@@ -10267,6 +10487,7 @@ paths:
   /semantic-relationships/{relationshipName}:
     patch:
       operationId: updateSemanticRelationship
+      summary: Update semantic relationship
       parameters:
         - name: relationshipName
           in: path
@@ -10305,7 +10526,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
       requestBody:
         required: true
         content:
@@ -10314,6 +10535,7 @@ paths:
               $ref: '#/components/schemas/UpdateSemanticRelationshipRequest'
     delete:
       operationId: deleteSemanticRelationship
+      summary: Delete semantic relationship
       parameters:
         - name: relationshipName
           in: path
@@ -10348,10 +10570,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
   /sources/{sourceSchema}/{sourceTable}/freshness:
     get:
       operationId: checkSourceFreshness
+      summary: Check source freshness
       parameters:
         - name: sourceSchema
           in: path
@@ -10414,10 +10637,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Semantic Layer
   /storage-credentials:
     get:
       operationId: listStorageCredentials
+      summary: List storage credentials
       parameters:
         - name: max_results
           in: query
@@ -10458,9 +10682,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Storage
     post:
       operationId: createStorageCredential
+      summary: Create storage credential
+      description: Creates a reusable storage credential that can be referenced by external locations and managed catalogs.
       parameters: []
       responses:
         '201':
@@ -10494,7 +10720,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Storage
       requestBody:
         required: true
         content:
@@ -10510,6 +10736,7 @@ paths:
   /storage-credentials/{credentialName}:
     get:
       operationId: getStorageCredential
+      summary: Get storage credential
       parameters:
         - name: credentialName
           in: path
@@ -10554,9 +10781,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Storage
     patch:
       operationId: updateStorageCredential
+      summary: Update storage credential
       parameters:
         - name: credentialName
           in: path
@@ -10595,7 +10823,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Storage
       requestBody:
         required: true
         content:
@@ -10610,6 +10838,7 @@ paths:
             securable_id_source: runtime_resolved_object_id
     delete:
       operationId: deleteStorageCredential
+      summary: Delete storage credential
       parameters:
         - name: credentialName
           in: path
@@ -10644,7 +10873,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Storage
       x-authz:
         mode: privilege
         checks:
@@ -10654,6 +10883,7 @@ paths:
   /tables/{tableId}/column-masks:
     get:
       operationId: listColumnMasks
+      summary: List column masks
       parameters:
         - name: tableId
           in: path
@@ -10711,9 +10941,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
     post:
       operationId: createColumnMask
+      summary: Create column mask
       parameters:
         - name: tableId
           in: path
@@ -10752,7 +10983,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
       requestBody:
         required: true
         content:
@@ -10762,6 +10993,7 @@ paths:
   /tables/{tableId}/row-filters:
     get:
       operationId: listRowFilters
+      summary: List row filters
       parameters:
         - name: tableId
           in: path
@@ -10819,9 +11051,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
     post:
       operationId: createRowFilter
+      summary: Create row filter
       parameters:
         - name: tableId
           in: path
@@ -10860,7 +11093,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
       requestBody:
         required: true
         content:
@@ -10870,6 +11103,7 @@ paths:
   /tag-assignments/{assignmentId}:
     delete:
       operationId: deleteTagAssignment
+      summary: Delete tag assignment
       parameters:
         - name: assignmentId
           in: path
@@ -10904,10 +11138,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
   /tags:
     get:
       operationId: listTags
+      summary: List tags
       parameters:
         - name: max_results
           in: query
@@ -10948,9 +11183,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
     post:
       operationId: createTag
+      summary: Create tag
       parameters: []
       responses:
         '201':
@@ -10984,7 +11220,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
       requestBody:
         required: true
         content:
@@ -10994,6 +11230,7 @@ paths:
   /tags/{tagId}:
     delete:
       operationId: deleteTag
+      summary: Delete tag
       parameters:
         - name: tagId
           in: path
@@ -11028,10 +11265,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
   /tags/{tagId}/assignments:
     get:
       operationId: listTagAssignments
+      summary: List tag assignments
       parameters:
         - name: tagId
           in: path
@@ -11089,9 +11327,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
     post:
       operationId: createTagAssignment
+      summary: Create tag assignment
       parameters:
         - name: tagId
           in: path
@@ -11130,7 +11369,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Duck
+        - Governance
       requestBody:
         required: true
         content:
@@ -11163,6 +11402,8 @@ components:
         created_at:
           type: string
           format: date-time
+      description: Represents a stored API key without returning the full secret value.
+      title: API key metadata.
     Asset:
       type: object
       properties:
@@ -12820,6 +13061,8 @@ components:
           type: object
           additionalProperties:
             type: string
+      description: Errors use a shared schema across the API so clients can handle failure responses consistently.
+      title: Standard API error response.
     ExternalLocation:
       type: object
       required:
@@ -12944,6 +13187,7 @@ components:
       properties:
         status:
           type: string
+      title: Service health status.
     IngestionOptions:
       type: object
       properties:
@@ -14454,6 +14698,7 @@ components:
         created_at:
           type: string
           format: date-time
+      title: Authenticated principal.
     PrincipalType:
       type: string
       enum:
@@ -14593,6 +14838,8 @@ components:
       properties:
         sql:
           type: string
+      description: Submits a SQL statement for immediate execution and returns a tabular result when the request completes.
+      title: Synchronous SQL query request.
     QueryResult:
       type: object
       required:
@@ -14613,6 +14860,8 @@ components:
           format: int64
         next_page_token:
           type: string
+      description: Contains result-set columns, row data, and an optional continuation token when additional rows are available.
+      title: Tabular SQL query result.
     ReorderCellsRequest:
       type: object
       required:
@@ -15071,6 +15320,7 @@ components:
       properties:
         name:
           type: string
+      title: Metadata for a result-set column.
     Tag:
       type: object
       properties:
@@ -15696,6 +15946,6 @@ components:
       in: header
       name: X-API-Key
 servers:
-  - url: https://api.example.com/v1
-    description: Primary API server
+  - url: https://localhost:8443/v1
+    description: HTTPS base URL for local and proxied deployments
     variables: {}

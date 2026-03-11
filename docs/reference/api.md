@@ -16,11 +16,11 @@ The generated API reference is the source of truth for request and response deta
 
 | Need | Start here |
 | --- | --- |
-| Query execution | [Duck Endpoint Index](/reference/generated/api/endpoints/duck) |
-| Identity and access | [Duck Endpoint Index](/reference/generated/api/endpoints/duck) |
-| Catalog and object management | [Duck Endpoint Index](/reference/generated/api/endpoints/duck) |
-| Data load paths | [Duck Endpoint Index](/reference/generated/api/endpoints/duck) |
-| Remote execution | [Duck Endpoint Index](/reference/generated/api/endpoints/duck) |
+| Query execution | [Queries Endpoint Index](/reference/generated/api/endpoints/queries) |
+| Identity and access | [Identity Endpoint Index](/reference/generated/api/endpoints/identity) and [Auth Endpoint Index](/reference/generated/api/endpoints/auth) |
+| Catalog and object management | [Catalogs Endpoint Index](/reference/generated/api/endpoints/catalogs) |
+| Data load paths | [Storage Endpoint Index](/reference/generated/api/endpoints/storage) |
+| Remote execution | [Compute Endpoint Index](/reference/generated/api/endpoints/compute) |
 
 ## When To Use Generated API Reference
 

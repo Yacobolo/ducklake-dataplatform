@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"sort"
@@ -10,12 +12,13 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 
 	"duck-demo/pkg/cli/apiruntime"
 	"duck-demo/pkg/cli/gen"
 )
 
-func newAPICmd() *cobra.Command {
+func newAPICmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "api",
 		Short: "Explore the platform API endpoints",
@@ -27,6 +30,7 @@ and generate curl commands. Designed as the agent's "ripgrep" for the API.`,
 	cmd.AddCommand(newAPISearchCmd())
 	cmd.AddCommand(newAPIDescribeCmd())
 	cmd.AddCommand(newAPICurlCmd())
+	cmd.AddCommand(newAPISpecCmd(client))
 
 	return cmd
 }
@@ -140,8 +144,29 @@ func newAPIDescribeCmd() *cobra.Command {
 				return fmt.Errorf("operation %q not found", opID)
 			}
 
+			corpus := loadDiscoveryCorpus(cmd.Root())
+			relatedDocs := corpus.RelatedDocsForOperation(found.OperationID)
+			relatedCommands := corpus.RelatedCommandsForOperation(found.OperationID)
+			contentTypes := apiContentTypes(found.OperationID)
+
 			if getOutputFormat(cmd) == "json" {
-				return apiruntime.PrintJSON(os.Stdout, found)
+				payload := map[string]any{
+					"operation_id":     found.OperationID,
+					"method":           found.Method,
+					"path":             found.Path,
+					"summary":          found.Summary,
+					"description":      found.Description,
+					"tags":             found.Tags,
+					"parameters":       found.Parameters,
+					"body_fields":      found.BodyFields,
+					"cli_command":      found.CLICommand,
+					"content_types":    contentTypes,
+					"parameter_count":  len(found.Parameters),
+					"body_field_count": len(found.BodyFields),
+					"related_docs":     relatedDocs,
+					"related_commands": relatedCommands,
+				}
+				return apiruntime.PrintJSON(os.Stdout, payload)
 			}
 
 			// Human-friendly detail
@@ -156,6 +181,17 @@ func newAPIDescribeCmd() *cobra.Command {
 			}
 			if found.CLICommand != "" {
 				_, _ = fmt.Fprintf(os.Stdout, "cli_command:   duck %s\n", found.CLICommand)
+			}
+			if len(contentTypes) > 0 {
+				_, _ = fmt.Fprintf(os.Stdout, "content_types: %s\n", strings.Join(contentTypes, ", "))
+			}
+			_, _ = fmt.Fprintf(os.Stdout, "parameters:    %d\n", len(found.Parameters))
+			_, _ = fmt.Fprintf(os.Stdout, "body_fields:   %d\n", len(found.BodyFields))
+			if len(relatedDocs) > 0 {
+				_, _ = fmt.Fprintf(os.Stdout, "related_docs:  %s\n", strings.Join(relatedDocs, ", "))
+			}
+			if len(relatedCommands) > 0 {
+				_, _ = fmt.Fprintf(os.Stdout, "related_cmds:  %s\n", strings.Join(relatedCommands, ", "))
 			}
 
 			if len(found.Parameters) > 0 {
@@ -306,6 +342,47 @@ func newAPICurlCmd() *cobra.Command {
 	return cmd
 }
 
+func newAPISpecCmd(client *apiruntime.Client) *cobra.Command {
+	var (
+		format string
+		source string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "spec",
+		Short: "Output the canonical OpenAPI spec",
+		Long:  "Outputs the embedded OpenAPI spec by default, or fetches the live server spec when requested.",
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			specBytes, err := loadAPISpecBytes(client, source)
+			if err != nil {
+				return err
+			}
+
+			switch format {
+			case "yaml":
+				_, _ = os.Stdout.Write(specBytes)
+				if len(specBytes) == 0 || specBytes[len(specBytes)-1] != '\n' {
+					_, _ = fmt.Fprintln(os.Stdout)
+				}
+				return nil
+			case "json":
+				var payload any
+				if err := yaml.Unmarshal(specBytes, &payload); err != nil {
+					return fmt.Errorf("decode spec yaml: %w", err)
+				}
+				return apiruntime.PrintJSON(os.Stdout, payload)
+			default:
+				return fmt.Errorf("unsupported spec format %q", format)
+			}
+		},
+	}
+
+	cmd.Flags().StringVar(&format, "format", "yaml", "Output format: yaml or json")
+	cmd.Flags().StringVar(&source, "source", "embedded", "Spec source: embedded or live")
+	return cmd
+}
+
 func allAPIEndpoints() []gen.APIGenEndpoint {
 	combined := make([]gen.APIGenEndpoint, 0, len(gen.APIGeneratedEndpoints))
 	seen := make(map[string]struct{}, len(gen.APIGeneratedEndpoints))
@@ -364,4 +441,49 @@ func apiCurlJSONValue(raw string, fieldType string) string {
 		return fmt.Sprintf("%q", raw)
 	}
 	return string(encoded)
+}
+
+func apiContentTypes(operationID string) []string {
+	for _, operation := range gen.CLIReferenceIndex.Operations {
+		if operation.OperationID == operationID {
+			return append([]string(nil), operation.ContentTypes...)
+		}
+	}
+	return nil
+}
+
+func loadAPISpecBytes(client *apiruntime.Client, source string) ([]byte, error) {
+	switch source {
+	case "", "embedded":
+		return []byte(gen.CLIReferenceIndex.OpenAPISpecYAML), nil
+	case "live":
+		reqURL := strings.TrimRight(client.BaseURL, "/") + "/openapi.json"
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("build live openapi request: %w", err)
+		}
+		resp, err := client.HTTPClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("fetch live openapi spec: %w", err)
+		}
+		body, err := apiruntime.ReadBody(resp)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return nil, fmt.Errorf("fetch live openapi spec: HTTP %d", resp.StatusCode)
+		}
+
+		var payload any
+		if err := json.Unmarshal(body, &payload); err != nil {
+			return nil, fmt.Errorf("decode live openapi spec: %w", err)
+		}
+		yamlBytes, err := yaml.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("encode live openapi spec as yaml: %w", err)
+		}
+		return yamlBytes, nil
+	default:
+		return nil, fmt.Errorf("unsupported spec source %q", source)
+	}
 }
