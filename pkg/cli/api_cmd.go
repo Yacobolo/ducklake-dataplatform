@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -147,20 +149,20 @@ func newAPIDescribeCmd() *cobra.Command {
 
 			if getOutputFormat(cmd) == "json" {
 				payload := map[string]any{
-					"operation_id":       found.OperationID,
-					"method":             found.Method,
-					"path":               found.Path,
-					"summary":            found.Summary,
-					"description":        found.Description,
-					"tags":               found.Tags,
-					"parameters":         found.Parameters,
-					"body_fields":        found.BodyFields,
-					"cli_command":        found.CLICommand,
-					"content_types":      contentTypes,
-					"parameter_count":    len(found.Parameters),
-					"body_field_count":   len(found.BodyFields),
-					"related_docs":       relatedDocs,
-					"related_commands":   relatedCommands,
+					"operation_id":     found.OperationID,
+					"method":           found.Method,
+					"path":             found.Path,
+					"summary":          found.Summary,
+					"description":      found.Description,
+					"tags":             found.Tags,
+					"parameters":       found.Parameters,
+					"body_fields":      found.BodyFields,
+					"cli_command":      found.CLICommand,
+					"content_types":    contentTypes,
+					"parameter_count":  len(found.Parameters),
+					"body_field_count": len(found.BodyFields),
+					"related_docs":     relatedDocs,
+					"related_commands": relatedCommands,
 				}
 				return apiruntime.PrintJSON(os.Stdout, payload)
 			}
@@ -338,7 +340,7 @@ func newAPISpecCmd(client *apiruntime.Client) *cobra.Command {
 		Short: "Output the canonical OpenAPI spec",
 		Long:  "Outputs the embedded OpenAPI spec by default, or fetches the live server spec when requested.",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			specBytes, err := loadAPISpecBytes(client, source)
 			if err != nil {
 				return err
@@ -396,7 +398,11 @@ func loadAPISpecBytes(client *apiruntime.Client, source string) ([]byte, error) 
 		return []byte(gen.CLIReferenceIndex.OpenAPISpecYAML), nil
 	case "live":
 		reqURL := strings.TrimRight(client.BaseURL, "/") + "/openapi.json"
-		resp, err := client.HTTPClient.Get(reqURL)
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, reqURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("build live openapi request: %w", err)
+		}
+		resp, err := client.HTTPClient.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("fetch live openapi spec: %w", err)
 		}

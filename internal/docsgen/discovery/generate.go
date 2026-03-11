@@ -125,7 +125,9 @@ func loadDocs(root string) ([]referenceDoc, map[string]frontMatter, error) {
 			rel, relErr := filepath.Rel(root, path)
 			if relErr == nil {
 				rel = filepath.ToSlash(rel)
-				if rel == "reference/generated" || strings.HasPrefix(rel, "reference/generated/") {
+				if rel == "reference/generated" || strings.HasPrefix(rel, "reference/generated/") ||
+					rel == "node_modules" || strings.HasPrefix(rel, "node_modules/") ||
+					rel == ".vitepress" || strings.HasPrefix(rel, ".vitepress/") {
 					return filepath.SkipDir
 				}
 			}
@@ -458,7 +460,7 @@ func buildLinks(docs []referenceDoc, fmByDocID map[string]frontMatter, operation
 			if sharedTokens < 2 {
 				continue
 			}
-			confidence := 60 + min(sharedTokens*5, 25)
+			confidence := 60 + minInt(sharedTokens*5, 25)
 			if tagOverlap(fmByDocID[doc.ID].APITags, op.Tags) {
 				confidence = 85
 			}
@@ -776,7 +778,7 @@ func sortedKeys[T any](m map[string]T) []string {
 	return keys
 }
 
-func min(a, b int) int {
+func minInt(a, b int) int {
 	if a < b {
 		return a
 	}

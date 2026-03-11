@@ -1,3 +1,5 @@
+// Package discovery provides a merged offline search corpus for CLI commands,
+// generated docs metadata, and API operation metadata.
 package discovery
 
 import (
@@ -10,6 +12,8 @@ import (
 	"duck-demo/pkg/cli/gen"
 )
 
+// CommandInfo is the subset of CLI command metadata used by the discovery
+// corpus.
 type CommandInfo struct {
 	Path    string   `json:"path"`
 	Group   string   `json:"group"`
@@ -20,11 +24,13 @@ type CommandInfo struct {
 	Flags   []string `json:"flags,omitempty"`
 }
 
+// SearchOptions controls corpus search behavior.
 type SearchOptions struct {
 	Kind  string
 	Limit int
 }
 
+// SearchResult is a single ranked discovery result.
 type SearchResult struct {
 	Kind              string   `json:"kind"`
 	ID                string   `json:"id"`
@@ -38,17 +44,18 @@ type SearchResult struct {
 	RelatedDocs       []string `json:"related_docs,omitempty"`
 }
 
+// Corpus is the merged search corpus used by discovery-oriented CLI commands.
 type Corpus struct {
-	index          gen.ReferenceIndex
-	commands       map[string]CommandInfo
-	docs           map[string]gen.ReferenceDoc
-	operations     map[string]gen.ReferenceOperation
-	commandToOps   map[string][]string
-	commandToDocs  map[string][]string
-	docToCommands  map[string][]string
-	docToOps       map[string][]string
-	opToCommands   map[string][]string
-	opToDocs       map[string][]string
+	index           gen.ReferenceIndex
+	commands        map[string]CommandInfo
+	docs            map[string]gen.ReferenceDoc
+	operations      map[string]gen.ReferenceOperation
+	commandToOps    map[string][]string
+	commandToDocs   map[string][]string
+	docToCommands   map[string][]string
+	docToOps        map[string][]string
+	opToCommands    map[string][]string
+	opToDocs        map[string][]string
 	fuzzyCandidates []fuzzyCandidate
 }
 
@@ -58,6 +65,8 @@ type fuzzyCandidate struct {
 	Label string
 }
 
+// NewCorpus constructs a merged discovery corpus from live Cobra command
+// metadata and generated docs/API metadata.
 func NewCorpus(commands []CommandInfo, index gen.ReferenceIndex) Corpus {
 	corpus := Corpus{
 		index:           index,
@@ -141,6 +150,7 @@ func NewCorpus(commands []CommandInfo, index gen.ReferenceIndex) Corpus {
 	return corpus
 }
 
+// FindDoc resolves a document by ID, path stem, or unique exact title.
 func (c Corpus) FindDoc(idOrPath string) (*gen.ReferenceDoc, bool) {
 	key := strings.TrimSpace(idOrPath)
 	if key == "" {
@@ -152,13 +162,14 @@ func (c Corpus) FindDoc(idOrPath string) (*gen.ReferenceDoc, bool) {
 	key = strings.TrimSuffix(key, ".md")
 	for _, doc := range c.docs {
 		if doc.Path == key || strings.TrimSuffix(doc.Path, ".md") == key || strings.EqualFold(doc.Title, idOrPath) {
-			copy := doc
-			return &copy, true
+			docCopy := doc
+			return &docCopy, true
 		}
 	}
 	return nil, false
 }
 
+// FindOperation resolves an API operation by operation ID.
 func (c Corpus) FindOperation(opID string) (*gen.ReferenceOperation, bool) {
 	op, ok := c.operations[strings.TrimSpace(opID)]
 	if !ok {
@@ -167,6 +178,7 @@ func (c Corpus) FindOperation(opID string) (*gen.ReferenceOperation, bool) {
 	return &op, true
 }
 
+// ListDocs returns all docs, optionally filtered by top-level section.
 func (c Corpus) ListDocs(section string) []gen.ReferenceDoc {
 	section = strings.TrimSpace(section)
 	out := make([]gen.ReferenceDoc, 0, len(c.docs))
@@ -185,22 +197,27 @@ func (c Corpus) ListDocs(section string) []gen.ReferenceDoc {
 	return out
 }
 
+// RelatedCommandsForDoc returns command IDs linked to the given document.
 func (c Corpus) RelatedCommandsForDoc(docID string) []string {
 	return append([]string(nil), c.docToCommands[docID]...)
 }
 
+// RelatedOperationsForDoc returns operation IDs linked to the given document.
 func (c Corpus) RelatedOperationsForDoc(docID string) []string {
 	return append([]string(nil), c.docToOps[docID]...)
 }
 
+// RelatedDocsForOperation returns doc IDs linked to the given operation.
 func (c Corpus) RelatedDocsForOperation(opID string) []string {
 	return append([]string(nil), c.opToDocs[opID]...)
 }
 
+// RelatedCommandsForOperation returns command IDs linked to the given operation.
 func (c Corpus) RelatedCommandsForOperation(opID string) []string {
 	return append([]string(nil), c.opToCommands[opID]...)
 }
 
+// Search performs ranked offline search across the merged discovery corpus.
 func (c Corpus) Search(query string, opts SearchOptions) []SearchResult {
 	query = strings.TrimSpace(query)
 	if query == "" {
@@ -279,15 +296,15 @@ func (c Corpus) mergeFuzzy(results []SearchResult, query, kind string) []SearchR
 		case "operation":
 			op := c.operations[candidate.ID]
 			results = append(results, SearchResult{
-				Kind:              "operation",
-				ID:                candidate.ID,
-				Title:             op.OperationID,
-				Summary:           op.Summary,
-				Path:              op.Path,
-				Score:             35,
-				MatchedFields:     []string{"fuzzy"},
-				RelatedCommands:   append([]string(nil), c.opToCommands[candidate.ID]...),
-				RelatedDocs:       append([]string(nil), c.opToDocs[candidate.ID]...),
+				Kind:            "operation",
+				ID:              candidate.ID,
+				Title:           op.OperationID,
+				Summary:         op.Summary,
+				Path:            op.Path,
+				Score:           35,
+				MatchedFields:   []string{"fuzzy"},
+				RelatedCommands: append([]string(nil), c.opToCommands[candidate.ID]...),
+				RelatedDocs:     append([]string(nil), c.opToDocs[candidate.ID]...),
 			})
 		case "doc":
 			doc := c.docs[candidate.ID]
