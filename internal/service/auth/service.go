@@ -13,6 +13,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 type Service struct {
@@ -295,9 +296,5 @@ func (s *Service) issueJWT(p *domain.Principal) (string, error) {
 }
 
 func callerName(ctx context.Context) string {
-	p, ok := domain.PrincipalFromContext(ctx)
-	if !ok || strings.TrimSpace(p.Name) == "" {
-		return "system"
-	}
-	return p.Name
+	return servicepolicy.CallerNameOr(ctx, "system")
 }
