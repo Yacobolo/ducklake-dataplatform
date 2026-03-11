@@ -122,6 +122,49 @@ func TestNotebookHandlers_UseParentScopedAndPrincipalScopedMethods(t *testing.T)
 	}
 }
 
+func TestNotebookSessionManager_UsesParentScopedChecks(t *testing.T) {
+	t.Helper()
+
+	expects := []struct {
+		method      string
+		mustContain []string
+	}{
+		{
+			method:      "CloseNotebookSession",
+			mustContain: []string{"requireSessionAccess(ctx, notebookID, sessionID, principal, isAdmin)"},
+		},
+		{
+			method:      "ExecuteNotebookCell",
+			mustContain: []string{"requireSessionAccess(ctx, notebookID, sessionID, principal, isAdmin)", "requireCellForNotebook(ctx, notebookID, cellID)"},
+		},
+		{
+			method:      "RunAllNotebook",
+			mustContain: []string{"requireSessionAccess(ctx, notebookID, sessionID, principal, isAdmin)"},
+		},
+		{
+			method:      "RunAllNotebookAsync",
+			mustContain: []string{"requireSessionAccess(ctx, notebookID, sessionID, principal, isAdmin)"},
+		},
+		{
+			method:      "GetNotebookJob",
+			mustContain: []string{"requireNotebookAccess(ctx, notebookID, principal, isAdmin)", "job.NotebookID != notebookID"},
+		},
+		{
+			method:      "ListNotebookJobs",
+			mustContain: []string{"requireNotebookAccess(ctx, notebookID, principal, isAdmin)", "m.jobRepo.ListJobs(ctx, notebookID, page)"},
+		},
+	}
+
+	for _, exp := range expects {
+		body := methodBody(t, "internal/service/notebook/session.go", exp.method)
+		for _, snippet := range exp.mustContain {
+			if !containsAny(body, []string{snippet}) {
+				t.Fatalf("governance: internal/service/notebook/session.go.%s must contain %q", exp.method, snippet)
+			}
+		}
+	}
+}
+
 func TestSemanticHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 	t.Helper()
 
