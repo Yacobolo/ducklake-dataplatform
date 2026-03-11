@@ -62,6 +62,14 @@ func TestServicePolicyHelpers_DelegateToSharedPolicyPackage(t *testing.T) {
 			file:     "internal/service/security/api_key.go",
 			snippets: []string{"internal/service/policy", "servicepolicy.RequireAuthenticatedPrincipal(ctx)", "servicepolicy.RequirePrincipalOrAdmin(ctx,"},
 		},
+		{
+			file:     "internal/service/asset/service.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.RequirePrincipalName(ctx)", "servicepolicy.RequireCatalogPrivilege(ctx, s.auth, principalName, privilege, \"asset orchestration requires %s on catalog\")"},
+		},
+		{
+			file:     "internal/service/orchestration/backfill_service.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.RequirePrincipalName(ctx)", "servicepolicy.RequireCatalogPrivilege(ctx, s.auth, principalName, privilege, \"asset orchestration requires %s on catalog\")"},
+		},
 	}
 
 	for _, exp := range expects {

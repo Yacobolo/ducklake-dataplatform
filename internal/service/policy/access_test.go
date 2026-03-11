@@ -2,6 +2,7 @@ package policy
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -58,6 +59,36 @@ func TestRequireAuthenticatedPrincipal(t *testing.T) {
 		principal, err := RequireAuthenticatedPrincipal(ctx)
 		require.NoError(t, err)
 		assert.Equal(t, expected, principal)
+	})
+}
+
+func TestRequirePrincipalName(t *testing.T) {
+	t.Parallel()
+
+	t.Run("missing principal denied", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := RequirePrincipalName(context.Background())
+		require.Error(t, err)
+		assert.EqualError(t, err, "principal context is required")
+	})
+
+	t.Run("empty principal name denied", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{ID: "alice-id"})
+		_, err := RequirePrincipalName(ctx)
+		require.Error(t, err)
+		assert.EqualError(t, err, "principal context is required")
+	})
+
+	t.Run("principal name returned", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{ID: "alice-id", Name: "alice"})
+		name, err := RequirePrincipalName(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, "alice", name)
 	})
 }
 
@@ -156,6 +187,105 @@ func TestRequirePrincipalOrAdmin(t *testing.T) {
 		_, err := RequirePrincipalOrAdmin(ctx, "owner-id", "can only list your own API keys")
 		require.Error(t, err)
 		assert.EqualError(t, err, "can only list your own API keys")
+	})
+}
+
+type stubAuthorizationService struct {
+	checkPrivilegeFn func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error)
+}
+
+func (s stubAuthorizationService) LookupTableID(ctx context.Context, tableName string) (string, string, bool, error) {
+	return "", "", false, errors.New("unexpected LookupTableID call")
+}
+
+func (s stubAuthorizationService) CheckPrivilege(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error) {
+	return s.checkPrivilegeFn(ctx, principal, securableType, securableID, privilege)
+}
+
+func (s stubAuthorizationService) GetEffectiveRowFilters(ctx context.Context, principalName string, tableID string) ([]string, error) {
+	return nil, errors.New("unexpected GetEffectiveRowFilters call")
+}
+
+func (s stubAuthorizationService) GetEffectiveColumnMasks(ctx context.Context, principalName string, tableID string) (map[string]string, error) {
+	return nil, errors.New("unexpected GetEffectiveColumnMasks call")
+}
+
+func (s stubAuthorizationService) GetTableColumnNames(ctx context.Context, tableID string) ([]string, error) {
+	return nil, errors.New("unexpected GetTableColumnNames call")
+}
+
+func TestRequireCatalogPrivilege(t *testing.T) {
+	t.Parallel()
+
+	t.Run("missing principal denied", func(t *testing.T) {
+		t.Parallel()
+
+		err := RequireCatalogPrivilege(context.Background(), nil, "", domain.PrivManageAssetDefinitions, "asset orchestration requires %s on catalog")
+		require.Error(t, err)
+		assert.EqualError(t, err, "principal context is required")
+	})
+
+	t.Run("admin allowed when auth is unavailable", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin", IsAdmin: true})
+		require.NoError(t, RequireCatalogPrivilege(ctx, nil, "admin", domain.PrivManageAssetDefinitions, "asset orchestration requires %s on catalog"))
+	})
+
+	t.Run("non admin denied when auth is unavailable", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"})
+		err := RequireCatalogPrivilege(ctx, nil, "alice", domain.PrivManageAssetDefinitions, "asset orchestration requires %s on catalog")
+		require.Error(t, err)
+		assert.EqualError(t, err, "asset orchestration requires MANAGE_ASSET_DEFINITIONS on catalog")
+	})
+
+	t.Run("authorization service denial returns access denied", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"})
+		auth := stubAuthorizationService{
+			checkPrivilegeFn: func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error) {
+				assert.Equal(t, "alice", principal)
+				assert.Equal(t, domain.SecurableCatalog, securableType)
+				assert.Equal(t, domain.CatalogID, securableID)
+				assert.Equal(t, domain.PrivManageAssetDefinitions, privilege)
+				return false, nil
+			},
+		}
+
+		err := RequireCatalogPrivilege(ctx, auth, "alice", domain.PrivManageAssetDefinitions, "asset orchestration requires %s on catalog")
+		require.Error(t, err)
+		assert.EqualError(t, err, "\"alice\" lacks MANAGE_ASSET_DEFINITIONS on catalog")
+	})
+
+	t.Run("authorization service errors are wrapped", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"})
+		auth := stubAuthorizationService{
+			checkPrivilegeFn: func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error) {
+				return false, errors.New("boom")
+			},
+		}
+
+		err := RequireCatalogPrivilege(ctx, auth, "alice", domain.PrivManageAssetDefinitions, "asset orchestration requires %s on catalog")
+		require.Error(t, err)
+		assert.EqualError(t, err, "check privilege: boom")
+	})
+
+	t.Run("authorization service allow passes", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"})
+		auth := stubAuthorizationService{
+			checkPrivilegeFn: func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error) {
+				return true, nil
+			},
+		}
+
+		require.NoError(t, RequireCatalogPrivilege(ctx, auth, "alice", domain.PrivManageAssetDefinitions, "asset orchestration requires %s on catalog"))
 	})
 }
 

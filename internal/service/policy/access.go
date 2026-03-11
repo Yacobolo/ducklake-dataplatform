@@ -2,6 +2,8 @@ package policy
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"duck-demo/internal/domain"
 )
@@ -13,6 +15,15 @@ func RequireAuthenticatedPrincipal(ctx context.Context) (domain.ContextPrincipal
 		return domain.ContextPrincipal{}, domain.ErrAccessDenied("authentication required")
 	}
 	return principal, nil
+}
+
+// RequirePrincipalName returns the authenticated principal name when present.
+func RequirePrincipalName(ctx context.Context) (string, error) {
+	principal, ok := domain.PrincipalFromContext(ctx)
+	if !ok || strings.TrimSpace(principal.Name) == "" {
+		return "", domain.ErrAccessDenied("principal context is required")
+	}
+	return principal.Name, nil
 }
 
 // RequireAdmin validates that the caller is authenticated and has admin rights.
@@ -63,6 +74,30 @@ func RequirePrincipalOrAdmin(ctx context.Context, principalID string, deniedMsg 
 		return domain.ContextPrincipal{}, domain.ErrAccessDenied("%s", deniedMsg)
 	}
 	return principal, nil
+}
+
+// RequireCatalogPrivilege validates that the principal can perform the given catalog-scoped action.
+// If the authorization service is unavailable, only admins are allowed.
+func RequireCatalogPrivilege(ctx context.Context, auth domain.AuthorizationService, principalName, privilege, authUnavailableMsgFmt string) error {
+	if strings.TrimSpace(principalName) == "" {
+		return domain.ErrAccessDenied("principal context is required")
+	}
+	principal, _ := domain.PrincipalFromContext(ctx)
+	if auth == nil {
+		if principal.IsAdmin {
+			return nil
+		}
+		return domain.ErrAccessDenied(authUnavailableMsgFmt, privilege)
+	}
+
+	allowed, err := auth.CheckPrivilege(ctx, principalName, domain.SecurableCatalog, domain.CatalogID, privilege)
+	if err != nil {
+		return fmt.Errorf("check privilege: %w", err)
+	}
+	if !allowed {
+		return domain.ErrAccessDenied("%q lacks %s on catalog", principalName, privilege)
+	}
+	return nil
 }
 
 // IsAdmin reports whether the authenticated caller has admin rights.

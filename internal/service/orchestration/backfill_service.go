@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 type BackfillService struct {
@@ -147,12 +148,7 @@ func (s *BackfillService) CanCreate(ctx context.Context, requestedBy string) (bo
 }
 
 func (s *BackfillService) principalNameFromContext(ctx context.Context) (string, error) {
-	principal, _ := domain.PrincipalFromContext(ctx)
-	principalName := strings.TrimSpace(principal.Name)
-	if principalName == "" {
-		return "", domain.ErrAccessDenied("principal context is required")
-	}
-	return principalName, nil
+	return servicepolicy.RequirePrincipalName(ctx)
 }
 
 func (s *BackfillService) ensurePrincipalBackfillQuota(ctx context.Context, principalName string) error {
@@ -207,25 +203,7 @@ func (s *BackfillService) failCreate(ctx context.Context, requestID string, slic
 }
 
 func (s *BackfillService) requirePrivilege(ctx context.Context, principalName string, privilege string) error {
-	if strings.TrimSpace(principalName) == "" {
-		return domain.ErrAccessDenied("principal context is required")
-	}
-	principal, _ := domain.PrincipalFromContext(ctx)
-	if s.auth == nil {
-		if principal.IsAdmin {
-			return nil
-		}
-		return domain.ErrAccessDenied("asset orchestration requires %s on catalog", privilege)
-	}
-
-	allowed, err := s.auth.CheckPrivilege(ctx, principalName, domain.SecurableCatalog, domain.CatalogID, privilege)
-	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		return domain.ErrAccessDenied("%q lacks %s on catalog", principalName, privilege)
-	}
-	return nil
+	return servicepolicy.RequireCatalogPrivilege(ctx, s.auth, principalName, privilege, "asset orchestration requires %s on catalog")
 }
 
 func partitionRange(from, to string) ([]string, error) {
