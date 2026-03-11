@@ -134,3 +134,19 @@ func TestAssetHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatal("governance: internal/api/handler_assets.go must not use ad hoc errors.As domain error switches")
 	}
 }
+
+func TestPipelineHandlers_UseSharedDomainErrorResponder(t *testing.T) {
+	t.Helper()
+
+	body, err := os.ReadFile(filepath.Join(repoRootDir(), "internal/api/handler_pipeline.go"))
+	if err != nil {
+		t.Fatalf("read internal/api/handler_pipeline.go: %v", err)
+	}
+	source := string(body)
+	if !containsAny(source, []string{"respondDomainError["}) {
+		t.Fatal("governance: internal/api/handler_pipeline.go must use respondDomainError for domain error mapping")
+	}
+	if containsAny(source, []string{"errors.As(err,"}) {
+		t.Fatal("governance: internal/api/handler_pipeline.go must not use ad hoc errors.As domain error switches")
+	}
+}

@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 
 	"duck-demo/internal/domain"
 )
@@ -67,16 +66,16 @@ func (h *APIHandler) CreatePipeline(ctx context.Context, req GenCreatePipelineRe
 	principal := cp.Name
 	result, err := h.pipelines.CreatePipeline(ctx, principal, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreatePipeline403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreatePipeline400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return CreatePipeline409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreatePipeline400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreatePipelineResponse](err, domainErrorResponder[GenCreatePipelineResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreatePipelineResponse {
+				return CreatePipeline400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreatePipelineResponse { return CreatePipeline403JSONResponse{resp} },
+			Conflict:  func(resp ConflictJSONResponse) GenCreatePipelineResponse { return CreatePipeline409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return CreatePipeline400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenCreatePipeline201JSONResponse{
 		Body:    pipelineToAPI(*result),
@@ -88,12 +87,14 @@ func (h *APIHandler) CreatePipeline(ctx context.Context, req GenCreatePipelineRe
 func (h *APIHandler) GetPipeline(ctx context.Context, req GenGetPipelineRequest) (GenGetPipelineResponse, error) {
 	result, err := h.pipelines.GetPipeline(ctx, req.PipelineName)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetPipeline404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetPipelineResponse](err, domainErrorResponder[GenGetPipelineResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetPipelineResponse {
+				return GenGetPipeline404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenGetPipeline200JSONResponse{
 		Body:    pipelineToAPI(*result),
@@ -117,14 +118,13 @@ func (h *APIHandler) UpdatePipeline(ctx context.Context, req GenUpdatePipelineRe
 	principal := cp.Name
 	result, err := h.pipelines.UpdatePipeline(ctx, principal, req.PipelineName, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdatePipeline403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdatePipeline404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenUpdatePipelineResponse](err, domainErrorResponder[GenUpdatePipelineResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdatePipelineResponse { return UpdatePipeline403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenUpdatePipelineResponse { return UpdatePipeline404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenUpdatePipeline200JSONResponse{
 		Body:    pipelineToAPI(*result),
@@ -137,14 +137,13 @@ func (h *APIHandler) DeletePipeline(ctx context.Context, req GenDeletePipelineRe
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.pipelines.DeletePipeline(ctx, principal, req.PipelineName); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeletePipeline403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeletePipeline404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeletePipelineResponse](err, domainErrorResponder[GenDeletePipelineResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeletePipelineResponse { return DeletePipeline403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenDeletePipelineResponse { return DeletePipeline404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeletePipeline204Response{
 		Headers: GenDeletePipeline204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
@@ -157,12 +156,14 @@ func (h *APIHandler) DeletePipeline(ctx context.Context, req GenDeletePipelineRe
 func (h *APIHandler) ListPipelineJobs(ctx context.Context, req GenListPipelineJobsRequest) (GenListPipelineJobsResponse, error) {
 	jobs, err := h.pipelines.ListJobs(ctx, req.PipelineName)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenListPipelineJobs404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListPipelineJobsResponse](err, domainErrorResponder[GenListPipelineJobsResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenListPipelineJobsResponse {
+				return GenListPipelineJobs404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]PipelineJob, len(jobs))
@@ -209,18 +210,23 @@ func (h *APIHandler) CreatePipelineJob(ctx context.Context, req GenCreatePipelin
 	principal := cp.Name
 	result, err := h.pipelines.CreateJob(ctx, principal, req.PipelineName, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreatePipelineJob403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreatePipelineJob400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return CreatePipelineJob400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return CreatePipelineJob409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreatePipelineJob400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreatePipelineJobResponse](err, domainErrorResponder[GenCreatePipelineJobResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreatePipelineJobResponse {
+				return CreatePipelineJob400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreatePipelineJobResponse {
+				return CreatePipelineJob403JSONResponse{resp}
+			},
+			NotFound: func(NotFoundJSONResponse) GenCreatePipelineJobResponse {
+				return CreatePipelineJob400JSONResponse{badRequestErrorResponse(err)}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenCreatePipelineJobResponse {
+				return CreatePipelineJob409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return CreatePipelineJob400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenCreatePipelineJob201JSONResponse{
 		Body:    pipelineJobToAPI(*result),
@@ -233,14 +239,17 @@ func (h *APIHandler) DeletePipelineJob(ctx context.Context, req GenDeletePipelin
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.pipelines.DeleteJob(ctx, principal, req.PipelineName, req.JobId); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeletePipelineJob403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeletePipelineJob404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeletePipelineJobResponse](err, domainErrorResponder[GenDeletePipelineJobResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeletePipelineJobResponse {
+				return DeletePipelineJob403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeletePipelineJobResponse {
+				return DeletePipelineJob404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeletePipelineJob204Response{
 		Headers: GenDeletePipelineJob204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
@@ -260,18 +269,23 @@ func (h *APIHandler) TriggerPipelineRun(ctx context.Context, req GenTriggerPipel
 	principal := cp.Name
 	result, err := h.pipelines.TriggerRun(ctx, principal, req.PipelineName, params, domain.TriggerTypeManual)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return TriggerPipelineRun403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return TriggerPipelineRun400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return TriggerPipelineRun404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return TriggerPipelineRun409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return TriggerPipelineRun400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenTriggerPipelineRunResponse](err, domainErrorResponder[GenTriggerPipelineRunResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenTriggerPipelineRunResponse {
+				return TriggerPipelineRun400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenTriggerPipelineRunResponse {
+				return TriggerPipelineRun403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenTriggerPipelineRunResponse {
+				return TriggerPipelineRun404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenTriggerPipelineRunResponse {
+				return TriggerPipelineRun409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return TriggerPipelineRun400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenTriggerPipelineRun200JSONResponse{
 		Body:    pipelineRunToAPI(*result),
@@ -292,12 +306,14 @@ func (h *APIHandler) ListPipelineRuns(ctx context.Context, req GenListPipelineRu
 
 	runs, total, err := h.pipelines.ListRuns(ctx, req.PipelineName, filter)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenListPipelineRuns404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListPipelineRunsResponse](err, domainErrorResponder[GenListPipelineRunsResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenListPipelineRunsResponse {
+				return GenListPipelineRuns404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]PipelineRun, len(runs))
@@ -315,12 +331,14 @@ func (h *APIHandler) ListPipelineRuns(ctx context.Context, req GenListPipelineRu
 func (h *APIHandler) GetPipelineRun(ctx context.Context, req GenGetPipelineRunRequest) (GenGetPipelineRunResponse, error) {
 	result, err := h.pipelines.GetRun(ctx, req.RunId)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetPipelineRun404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetPipelineRunResponse](err, domainErrorResponder[GenGetPipelineRunResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetPipelineRunResponse {
+				return GenGetPipelineRun404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenGetPipelineRun200JSONResponse{
 		Body:    pipelineRunToAPI(*result),
@@ -333,18 +351,23 @@ func (h *APIHandler) CancelPipelineRun(ctx context.Context, req GenCancelPipelin
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.pipelines.CancelRun(ctx, principal, req.RunId); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CancelPipelineRun403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return CancelPipelineRun400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return CancelPipelineRun404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return CancelPipelineRun409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenCancelPipelineRunResponse](err, domainErrorResponder[GenCancelPipelineRunResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCancelPipelineRunResponse {
+				return CancelPipelineRun400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCancelPipelineRunResponse {
+				return CancelPipelineRun403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenCancelPipelineRunResponse {
+				return CancelPipelineRun404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenCancelPipelineRunResponse {
+				return CancelPipelineRun409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	// Re-fetch the run to return updated state.
@@ -364,12 +387,14 @@ func (h *APIHandler) CancelPipelineRun(ctx context.Context, req GenCancelPipelin
 func (h *APIHandler) ListPipelineJobRuns(ctx context.Context, req GenListPipelineJobRunsRequest) (GenListPipelineJobRunsResponse, error) {
 	jobRuns, err := h.pipelines.ListJobRuns(ctx, req.RunId)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenListPipelineJobRuns404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListPipelineJobRunsResponse](err, domainErrorResponder[GenListPipelineJobRunsResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenListPipelineJobRunsResponse {
+				return GenListPipelineJobRuns404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]PipelineJobRun, len(jobRuns))
