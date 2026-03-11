@@ -150,13 +150,21 @@ func TestBuildDashboardAssetGraph(t *testing.T) {
 	metricsByModel := map[string][]domain.SemanticMetric{
 		"sem-1": {{ID: "metric-1", Name: "revenue"}},
 	}
+	preAggsByModel := map[string][]domain.SemanticPreAggregation{
+		"sem-1": {{
+			ID:           "preagg-1",
+			Name:         "revenue_by_day",
+			MetricSet:    []string{"revenue"},
+			DimensionSet: []string{},
+		}},
+	}
 
-	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, notebooks, semanticModels, metricsByModel)
+	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, notebooks, semanticModels, metricsByModel, preAggsByModel)
 	require.NoError(t, err)
 	require.Len(t, adapted.Assets, 1)
 	assert.Equal(t, "dashboard.dash-1", adapted.Assets[0].AssetKey)
 	assert.Equal(t, domain.AssetTypeDashboard, adapted.Assets[0].AssetType)
-	assert.ElementsMatch(t, []string{"dash-1->metric-1", "dash-1->nb-1"}, dependencyPairs(adapted.Dependencies))
+	assert.ElementsMatch(t, []string{"dash-1->preagg-1", "dash-1->nb-1"}, dependencyPairs(adapted.Dependencies))
 }
 
 func TestSyncModelsToAssets(t *testing.T) {

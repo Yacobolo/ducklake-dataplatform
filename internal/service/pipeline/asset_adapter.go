@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 
 	"duck-demo/internal/domain"
 )
@@ -292,6 +294,7 @@ func BuildDashboardAssetGraph(
 	notebooks []domain.Notebook,
 	semanticModels []domain.SemanticModel,
 	metricsByModel map[string][]domain.SemanticMetric,
+	preAggsByModel map[string][]domain.SemanticPreAggregation,
 ) (*AdaptedDashboardAssets, error) {
 	if len(dashboards) == 0 {
 		return &AdaptedDashboardAssets{Assets: []domain.DataAsset{}, Dependencies: []domain.AssetDependency{}}, nil
@@ -350,6 +353,17 @@ func BuildDashboardAssetGraph(
 					continue
 				}
 				query := widget.Source.SemanticQuery
+				if semanticModelID, ok := semanticModelIDsByNaturalKey[semanticModelNaturalKey(query.ProjectName, query.SemanticModelName)]; ok {
+					if preAggID := matchingPreAggregationAssetID(preAggsByModel[semanticModelID], query); preAggID != "" {
+						deps = append(deps, domain.AssetDependency{
+							ID:              domain.NewID(),
+							AssetID:         dashboard.ID,
+							UpstreamAssetID: preAggID,
+							DependencyType:  domain.DependencyTypeHard,
+						})
+						continue
+					}
+				}
 				depAdded := false
 				for _, metricName := range query.Metrics {
 					if upstreamID, ok := metricIDsByNaturalKey[metricNaturalKey(query.ProjectName, query.SemanticModelName, metricName)]; ok {
@@ -477,10 +491,11 @@ func SyncDashboardsToAssets(
 	notebookRepo domain.NotebookRepository,
 	semanticModelRepo domain.SemanticModelRepository,
 	semanticMetricRepo domain.SemanticMetricRepository,
+	semanticPreAggRepo domain.SemanticPreAggregationRepository,
 	assetRepo domain.DataAssetRepository,
 	assetDepRepo domain.AssetDependencyRepository,
 ) error {
-	if dashboardRepo == nil || widgetRepo == nil || notebookRepo == nil || semanticModelRepo == nil || semanticMetricRepo == nil || assetRepo == nil || assetDepRepo == nil {
+	if dashboardRepo == nil || widgetRepo == nil || notebookRepo == nil || semanticModelRepo == nil || semanticMetricRepo == nil || semanticPreAggRepo == nil || assetRepo == nil || assetDepRepo == nil {
 		return nil
 	}
 
@@ -497,12 +512,18 @@ func SyncDashboardsToAssets(
 		return fmt.Errorf("list semantic models: %w", err)
 	}
 	metricsByModel := make(map[string][]domain.SemanticMetric, len(semanticModels))
+	preAggsByModel := make(map[string][]domain.SemanticPreAggregation, len(semanticModels))
 	for _, semanticModel := range semanticModels {
 		metrics, listErr := semanticMetricRepo.ListByModel(ctx, semanticModel.ID)
 		if listErr != nil {
 			return fmt.Errorf("list semantic metrics for %s: %w", semanticModel.ID, listErr)
 		}
 		metricsByModel[semanticModel.ID] = metrics
+		preAggs, listErr := semanticPreAggRepo.ListByModel(ctx, semanticModel.ID)
+		if listErr != nil {
+			return fmt.Errorf("list semantic pre-aggregations for %s: %w", semanticModel.ID, listErr)
+		}
+		preAggsByModel[semanticModel.ID] = preAggs
 	}
 
 	widgetsByDashboard := make(map[string][]domain.DashboardWidget, len(dashboards))
@@ -514,7 +535,7 @@ func SyncDashboardsToAssets(
 		widgetsByDashboard[dashboard.ID] = widgets
 	}
 
-	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, notebooks, semanticModels, metricsByModel)
+	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, notebooks, semanticModels, metricsByModel, preAggsByModel)
 	if err != nil {
 		return fmt.Errorf("build dashboard asset graph: %w", err)
 	}
@@ -617,4 +638,31 @@ func semanticModelNaturalKey(projectName, modelName string) string {
 
 func metricNaturalKey(projectName, semanticModelName, metricName string) string {
 	return projectName + "." + semanticModelName + "." + metricName
+}
+
+func matchingPreAggregationAssetID(preAggs []domain.SemanticPreAggregation, query *domain.DashboardSemanticQuerySource) string {
+	if query == nil {
+		return ""
+	}
+
+	wantMetrics := append([]string(nil), query.Metrics...)
+	wantDims := append([]string(nil), query.Dimensions...)
+	sort.Strings(wantMetrics)
+	sort.Strings(wantDims)
+
+	for _, preAgg := range preAggs {
+		mset := append([]string(nil), preAgg.MetricSet...)
+		dset := append([]string(nil), preAgg.DimensionSet...)
+		sort.Strings(mset)
+		sort.Strings(dset)
+		if strings.Join(mset, "|") != strings.Join(wantMetrics, "|") {
+			continue
+		}
+		if strings.Join(dset, "|") != strings.Join(wantDims, "|") {
+			continue
+		}
+		return preAgg.ID
+	}
+
+	return ""
 }

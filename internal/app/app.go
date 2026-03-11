@@ -399,7 +399,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	if err := pipeline.SyncSemanticResourcesToAssets(ctx, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, modelRepo, assetRepo, assetDepRepo); err != nil {
 		return nil, fmt.Errorf("sync semantic resources to assets: %w", err)
 	}
-	if err := pipeline.SyncDashboardsToAssets(ctx, dashboardRepo, dashboardWidgetRepo, notebookRepo, semanticModelRepo, semanticMetricRepo, assetRepo, assetDepRepo); err != nil {
+	if err := pipeline.SyncDashboardsToAssets(ctx, dashboardRepo, dashboardWidgetRepo, notebookRepo, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, assetRepo, assetDepRepo); err != nil {
 		return nil, fmt.Errorf("sync dashboards to assets: %w", err)
 	}
 
