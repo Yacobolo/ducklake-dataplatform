@@ -58,6 +58,10 @@ func TestServicePolicyHelpers_DelegateToSharedPolicyPackage(t *testing.T) {
 			file:     "internal/service/catalog/registration.go",
 			snippets: []string{"internal/service/policy", "servicepolicy.RequireAdminIfPresentForAction(ctx, action)"},
 		},
+		{
+			file:     "internal/service/security/api_key.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.RequireAuthenticatedPrincipal(ctx)", "servicepolicy.RequirePrincipalOrAdmin(ctx,"},
+		},
 	}
 
 	for _, exp := range expects {

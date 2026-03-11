@@ -38,6 +38,29 @@ func TestRequireAdmin(t *testing.T) {
 	})
 }
 
+func TestRequireAuthenticatedPrincipal(t *testing.T) {
+	t.Parallel()
+
+	t.Run("missing principal denied", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := RequireAuthenticatedPrincipal(context.Background())
+		require.Error(t, err)
+		assert.EqualError(t, err, "authentication required")
+	})
+
+	t.Run("principal returned", func(t *testing.T) {
+		t.Parallel()
+
+		expected := domain.ContextPrincipal{ID: "alice-id", Name: "alice", IsAdmin: true}
+		ctx := domain.WithPrincipal(context.Background(), expected)
+
+		principal, err := RequireAuthenticatedPrincipal(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, expected, principal)
+	})
+}
+
 func TestRequireAdminForAction(t *testing.T) {
 	t.Parallel()
 
@@ -89,6 +112,50 @@ func TestRequireAdminIfPresentForAction(t *testing.T) {
 
 		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
 		require.NoError(t, RequireAdminIfPresentForAction(ctx, "set default catalog"))
+	})
+}
+
+func TestRequirePrincipalOrAdmin(t *testing.T) {
+	t.Parallel()
+
+	t.Run("missing principal denied", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := RequirePrincipalOrAdmin(context.Background(), "owner-id", "can only list your own API keys")
+		require.Error(t, err)
+		assert.EqualError(t, err, "authentication required")
+	})
+
+	t.Run("owner allowed", func(t *testing.T) {
+		t.Parallel()
+
+		expected := domain.ContextPrincipal{ID: "owner-id", Name: "alice"}
+		ctx := domain.WithPrincipal(context.Background(), expected)
+
+		principal, err := RequirePrincipalOrAdmin(ctx, "owner-id", "can only list your own API keys")
+		require.NoError(t, err)
+		assert.Equal(t, expected, principal)
+	})
+
+	t.Run("admin allowed", func(t *testing.T) {
+		t.Parallel()
+
+		expected := domain.ContextPrincipal{ID: "admin-id", Name: "admin", IsAdmin: true}
+		ctx := domain.WithPrincipal(context.Background(), expected)
+
+		principal, err := RequirePrincipalOrAdmin(ctx, "owner-id", "can only list your own API keys")
+		require.NoError(t, err)
+		assert.Equal(t, expected, principal)
+	})
+
+	t.Run("other principal denied", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{ID: "other-id", Name: "other"})
+
+		_, err := RequirePrincipalOrAdmin(ctx, "owner-id", "can only list your own API keys")
+		require.Error(t, err)
+		assert.EqualError(t, err, "can only list your own API keys")
 	})
 }
 

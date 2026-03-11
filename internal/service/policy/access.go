@@ -6,11 +6,20 @@ import (
 	"duck-demo/internal/domain"
 )
 
-// RequireAdmin validates that the caller is authenticated and has admin rights.
-func RequireAdmin(ctx context.Context) error {
+// RequireAuthenticatedPrincipal returns the caller identity or denies access.
+func RequireAuthenticatedPrincipal(ctx context.Context) (domain.ContextPrincipal, error) {
 	principal, ok := domain.PrincipalFromContext(ctx)
 	if !ok {
-		return domain.ErrAccessDenied("authentication required")
+		return domain.ContextPrincipal{}, domain.ErrAccessDenied("authentication required")
+	}
+	return principal, nil
+}
+
+// RequireAdmin validates that the caller is authenticated and has admin rights.
+func RequireAdmin(ctx context.Context) error {
+	principal, err := RequireAuthenticatedPrincipal(ctx)
+	if err != nil {
+		return err
 	}
 	if !principal.IsAdmin {
 		return domain.ErrAccessDenied("admin privileges required")
@@ -21,9 +30,9 @@ func RequireAdmin(ctx context.Context) error {
 // RequireAdminForAction validates that the caller is authenticated and has admin rights.
 // The returned access denied message includes the action for clearer API responses.
 func RequireAdminForAction(ctx context.Context, action string) error {
-	principal, ok := domain.PrincipalFromContext(ctx)
-	if !ok {
-		return domain.ErrAccessDenied("authentication required")
+	principal, err := RequireAuthenticatedPrincipal(ctx)
+	if err != nil {
+		return err
 	}
 	if !principal.IsAdmin {
 		return domain.ErrAccessDenied("%s requires admin privileges", action)
@@ -42,6 +51,18 @@ func RequireAdminIfPresentForAction(ctx context.Context, action string) error {
 		return domain.ErrAccessDenied("%s requires admin privileges", action)
 	}
 	return nil
+}
+
+// RequirePrincipalOrAdmin validates that the caller is authenticated and can act on the target principal.
+func RequirePrincipalOrAdmin(ctx context.Context, principalID string, deniedMsg string) (domain.ContextPrincipal, error) {
+	principal, err := RequireAuthenticatedPrincipal(ctx)
+	if err != nil {
+		return domain.ContextPrincipal{}, err
+	}
+	if !principal.IsAdmin && principal.ID != principalID {
+		return domain.ContextPrincipal{}, domain.ErrAccessDenied("%s", deniedMsg)
+	}
+	return principal, nil
 }
 
 // IsAdmin reports whether the authenticated caller has admin rights.
