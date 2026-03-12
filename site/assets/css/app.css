@@ -159,6 +159,49 @@
     @apply mb-2;
   }
 
+  .docs-nav-group,
+  .api-nav-group,
+  .site-nav-node {
+    @apply mb-3 rounded-2xl border;
+  }
+
+  .docs-nav-group,
+  .site-nav-node {
+    border-color: var(--site-border);
+    background: color-mix(in srgb, var(--site-surface-strong) 88%, transparent);
+  }
+
+  .docs-nav-group > summary,
+  .site-nav-node > summary,
+  .api-nav-group > summary {
+    @apply cursor-pointer list-none px-4 py-3 text-sm font-semibold;
+  }
+
+  .docs-nav-group > summary,
+  .site-nav-node > summary {
+    color: var(--site-ink);
+  }
+
+  .site-nav-tree {
+    @apply space-y-2 px-3 pb-3;
+  }
+
+  .site-nav-tree .site-nav-tree {
+    @apply ml-3 border-l pl-3;
+    border-color: color-mix(in srgb, var(--site-border) 80%, transparent);
+  }
+
+  .site-nav-tree a {
+    @apply block rounded-xl px-3 py-2 no-underline transition;
+    color: var(--site-muted);
+  }
+
+  .site-nav-tree a.is-active,
+  .site-nav-tree a:hover {
+    background: color-mix(in srgb, var(--site-brand) 9%, transparent);
+    color: var(--site-brand-strong);
+  }
+
   .site-sidebar a,
   .site-toc a {
     @apply no-underline;
@@ -297,20 +340,30 @@
   }
 
   .api-nav-group summary {
-    @apply cursor-pointer list-none text-sm font-semibold;
+    @apply cursor-pointer list-none text-sm font-semibold px-1 py-1;
     color: var(--api-ink);
   }
 
-  .api-nav-group ul {
-    @apply mt-3 space-y-2;
+  .api-nav-group .site-nav-node {
+    border-color: rgba(148, 163, 184, 0.14);
+    background: rgba(15, 23, 42, 0.35);
   }
 
-  .api-nav-group a {
+  .api-nav-group .site-nav-tree {
+    @apply mt-2 px-0 pb-0;
+  }
+
+  .api-nav-group .site-nav-tree .site-nav-tree {
+    border-color: rgba(148, 163, 184, 0.14);
+  }
+
+  .api-nav-group .site-nav-tree a {
     color: var(--api-muted);
   }
 
-  .api-nav-group a.is-active,
-  .api-nav-group a:hover {
+  .api-nav-group .site-nav-tree a.is-active,
+  .api-nav-group .site-nav-tree a:hover {
+    background: rgba(94, 234, 212, 0.08);
     color: white;
   }
 

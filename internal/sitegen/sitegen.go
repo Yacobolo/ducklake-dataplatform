@@ -56,10 +56,10 @@ type navGroupConfig struct {
 }
 
 type navEntryConfig struct {
-	Source   string `yaml:"source"`
-	Title    string `yaml:"title"`
-	AutoDir  string `yaml:"autogen_dir"`
-	Collpase bool   `yaml:"collapse"`
+	Source  string           `yaml:"source"`
+	Title   string           `yaml:"title"`
+	AutoDir string           `yaml:"autogen_dir"`
+	Items   []navEntryConfig `yaml:"items"`
 }
 
 type docFrontMatter struct {
@@ -135,8 +135,16 @@ type navItem struct {
 
 type navGroup struct {
 	Title string
-	Items []navItem
+	Nodes []navNode
 	Open  bool
+}
+
+type navNode struct {
+	Title    string
+	Path     string
+	Active   bool
+	Open     bool
+	Children []navNode
 }
 
 type searchItem struct {
@@ -733,36 +741,57 @@ func buildConfiguredGroups(configs []navGroupConfig, pageByRel map[string]page, 
 
 	for _, groupCfg := range configs {
 		group := navGroup{Title: groupCfg.Title}
-		for _, itemCfg := range groupCfg.Items {
-			switch {
-			case itemCfg.Source != "":
-				p, ok := pageByRel[itemCfg.Source]
-				if !ok {
-					return nil, nil, fmt.Errorf("navigation source not found: %s", itemCfg.Source)
-				}
-				title := p.Title
-				if strings.TrimSpace(itemCfg.Title) != "" {
-					title = itemCfg.Title
-				}
-				item := navItem{Title: title, Path: p.URLPath}
-				group.Items = append(group.Items, item)
-				flat = append(flat, item)
-			case itemCfg.AutoDir != "":
-				children := pagesInDir(pages, itemCfg.AutoDir)
-				if len(children) == 0 {
-					continue
-				}
-				for _, p := range children {
-					item := navItem{Title: p.Title, Path: p.URLPath}
-					group.Items = append(group.Items, item)
-					flat = append(flat, item)
-				}
-			}
+		nodes, nodeFlat, err := buildNavNodes(groupCfg.Items, pageByRel, pages)
+		if err != nil {
+			return nil, nil, err
 		}
+		group.Nodes = nodes
+		flat = append(flat, nodeFlat...)
 		groups = append(groups, group)
 	}
 
 	return groups, flat, nil
+}
+
+func buildNavNodes(configs []navEntryConfig, pageByRel map[string]page, pages []page) ([]navNode, []navItem, error) {
+	nodes := make([]navNode, 0)
+	flat := make([]navItem, 0)
+
+	for _, cfg := range configs {
+		switch {
+		case cfg.Source != "":
+			p, ok := pageByRel[cfg.Source]
+			if !ok {
+				return nil, nil, fmt.Errorf("navigation source not found: %s", cfg.Source)
+			}
+			title := p.Title
+			if strings.TrimSpace(cfg.Title) != "" {
+				title = cfg.Title
+			}
+			nodes = append(nodes, navNode{Title: title, Path: p.URLPath})
+			flat = append(flat, navItem{Title: title, Path: p.URLPath})
+		case cfg.AutoDir != "":
+			children := pagesInDir(pages, cfg.AutoDir)
+			if len(children) == 0 {
+				continue
+			}
+			node := navNode{Title: cfg.Title}
+			for _, p := range children {
+				node.Children = append(node.Children, navNode{Title: p.Title, Path: p.URLPath})
+				flat = append(flat, navItem{Title: p.Title, Path: p.URLPath})
+			}
+			nodes = append(nodes, node)
+		case len(cfg.Items) > 0:
+			children, childFlat, err := buildNavNodes(cfg.Items, pageByRel, pages)
+			if err != nil {
+				return nil, nil, err
+			}
+			nodes = append(nodes, navNode{Title: cfg.Title, Children: children})
+			flat = append(flat, childFlat...)
+		}
+	}
+
+	return nodes, flat, nil
 }
 
 func pagesInDir(pages []page, dir string) []page {
@@ -796,16 +825,32 @@ func activateGroups(groups []navGroup, currentPath string) []navGroup {
 	out := make([]navGroup, 0, len(groups))
 	for _, group := range groups {
 		next := navGroup{Title: group.Title}
-		for _, item := range group.Items {
-			item.Active = item.Path == currentPath
-			if item.Active {
-				next.Open = true
-			}
-			next.Items = append(next.Items, item)
-		}
+		next.Nodes, next.Open = activateNodes(group.Nodes, currentPath)
 		out = append(out, next)
 	}
 	return out
+}
+
+func activateNodes(nodes []navNode, currentPath string) ([]navNode, bool) {
+	out := make([]navNode, 0, len(nodes))
+	anyOpen := false
+	for _, node := range nodes {
+		next := node
+		if len(node.Children) == 0 {
+			next.Active = node.Path == currentPath
+			next.Open = next.Active
+		} else {
+			children, open := activateNodes(node.Children, currentPath)
+			next.Children = children
+			next.Open = open
+			next.Active = false
+		}
+		if next.Open || next.Active {
+			anyOpen = true
+		}
+		out = append(out, next)
+	}
+	return out, anyOpen
 }
 
 func buildBreadcrumbs(p page) []navItem {

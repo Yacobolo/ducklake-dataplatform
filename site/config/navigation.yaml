@@ -33,16 +33,22 @@ docs:
       - source: operations/distributed-compute.md
   - title: Reference
     items:
-      - source: reference/index.md
-      - source: reference/glossary.md
-      - source: reference/api.md
-      - source: reference/declarative.md
-      - source: reference/cli.md
-      - source: browser-local-compute.md
-      - source: architecture-governance.md
-      - source: reference/generated/declarative/index.md
-      - title: Declarative Kinds
-        autogen_dir: reference/generated/declarative/kinds
+      - title: Overview
+        items:
+          - source: reference/index.md
+          - source: reference/glossary.md
+          - source: reference/api.md
+          - source: reference/declarative.md
+          - source: reference/cli.md
+      - title: Deep Dives
+        items:
+          - source: browser-local-compute.md
+          - source: architecture-governance.md
+      - title: Declarative Reference
+        items:
+          - source: reference/generated/declarative/index.md
+          - title: Kinds
+            autogen_dir: reference/generated/declarative/kinds
 
 api:
   - title: Overview

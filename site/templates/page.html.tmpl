@@ -4,14 +4,10 @@
     <nav>
       <div class="mb-4 text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--site-muted-soft);">Documentation</div>
       {{ range .SidebarGroups }}
-        <div class="mb-6">
-          <div class="mb-3 text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--site-muted-soft);">{{ .Title }}</div>
-          <ul>
-            {{ range .Items }}
-              <li><a href="{{ .Path }}"{{ if .Active }} class="is-active"{{ end }}>{{ .Title }}</a></li>
-            {{ end }}
-          </ul>
-        </div>
+        <details class="docs-nav-group" {{ if .Open }}open{{ end }}>
+          <summary>{{ .Title }}</summary>
+          {{ template "nav-nodes" .Nodes }}
+        </details>
       {{ end }}
     </nav>
   </aside>
@@ -54,11 +50,7 @@
       {{ range .SidebarGroups }}
         <details class="api-nav-group" {{ if .Open }}open{{ end }}>
           <summary>{{ .Title }}</summary>
-          <ul>
-            {{ range .Items }}
-              <li><a href="{{ .Path }}"{{ if .Active }} class="is-active"{{ end }}>{{ .Title }}</a></li>
-            {{ end }}
-          </ul>
+          {{ template "nav-nodes" .Nodes }}
         </details>
       {{ end }}
     </nav>
@@ -88,4 +80,21 @@
     </div>
   </article>
 </main>
+{{- end }}
+
+{{ define "nav-nodes" -}}
+<ul class="site-nav-tree">
+  {{ range . }}
+    <li>
+      {{ if .Children }}
+        <details class="site-nav-node" {{ if .Open }}open{{ end }}>
+          <summary>{{ .Title }}</summary>
+          {{ template "nav-nodes" .Children }}
+        </details>
+      {{ else }}
+        <a href="{{ .Path }}"{{ if .Active }} class="is-active"{{ end }}>{{ .Title }}</a>
+      {{ end }}
+    </li>
+  {{ end }}
+</ul>
 {{- end }}
