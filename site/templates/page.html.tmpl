@@ -37,9 +37,11 @@
   <aside class="site-toc docs-toc">
     <nav>
       <div class="site-sidebar-label">On this page</div>
-      <ul>
+      <ul class="site-toc-list">
         {{ range .TOC }}
-          <li><a href="#{{ .ID }}" data-site-toc-link="{{ .ID }}">{{ .Title }}</a></li>
+          <li class="site-toc-item{{ if eq .Level 3 }} is-child{{ end }}">
+            <a href="#{{ .ID }}" data-site-toc-link="{{ .ID }}">{{ .Title }}</a>
+          </li>
         {{ end }}
       </ul>
     </nav>
