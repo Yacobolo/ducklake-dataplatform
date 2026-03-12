@@ -113,4 +113,86 @@
       } catch (_) {}
     });
   });
+
+  const tocLinks = Array.from(document.querySelectorAll("[data-site-toc-link]"));
+  if (tocLinks.length) {
+    const tocById = new Map();
+    tocLinks.forEach(function (link) {
+      const id = link.getAttribute("data-site-toc-link");
+      if (id) {
+        tocById.set(id, link);
+      }
+    });
+
+    let activeId = "";
+    function setActiveTOC(id) {
+      if (!id || id === activeId) {
+        return;
+      }
+      activeId = id;
+      tocLinks.forEach(function (link) {
+        link.classList.toggle("is-active", link.getAttribute("data-site-toc-link") === id);
+      });
+    }
+
+    const headings = Array.from(
+      document.querySelectorAll(".site-prose h2[id], .site-prose h3[id]")
+    ).filter(function (heading) {
+      return tocById.has(heading.id);
+    });
+
+    if (window.location.hash) {
+      setActiveTOC(window.location.hash.slice(1));
+    } else if (headings.length) {
+      setActiveTOC(headings[0].id);
+    }
+
+    if (headings.length && "IntersectionObserver" in window) {
+      const visible = new Map();
+      const observer = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              visible.set(entry.target.id, entry.target);
+            } else {
+              visible.delete(entry.target.id);
+            }
+          });
+
+          if (visible.size) {
+            const nextId = headings.find(function (heading) {
+              return visible.has(heading.id);
+            });
+            if (nextId) {
+              setActiveTOC(nextId.id);
+            }
+            return;
+          }
+
+          const current = headings
+            .filter(function (heading) {
+              return heading.getBoundingClientRect().top <= 140;
+            })
+            .pop();
+          if (current) {
+            setActiveTOC(current.id);
+          }
+        },
+        {
+          rootMargin: "-96px 0px -60% 0px",
+          threshold: [0, 1],
+        }
+      );
+
+      headings.forEach(function (heading) {
+        observer.observe(heading);
+      });
+    }
+
+    window.addEventListener("hashchange", function () {
+      if (window.location.hash) {
+        setActiveTOC(window.location.hash.slice(1));
+      }
+    });
+  }
 })();

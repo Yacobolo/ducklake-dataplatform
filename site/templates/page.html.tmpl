@@ -34,7 +34,7 @@
       <div class="mb-4 text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--site-muted-soft);">On this page</div>
       <ul>
         {{ range .TOC }}
-          <li><a href="#{{ .ID }}">{{ .Title }}</a></li>
+          <li><a href="#{{ .ID }}" data-site-toc-link="{{ .ID }}">{{ .Title }}</a></li>
         {{ end }}
       </ul>
     </nav>

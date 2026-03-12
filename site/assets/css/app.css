@@ -214,6 +214,11 @@
     color: var(--site-brand-strong);
   }
 
+  .site-toc a.is-active {
+    color: var(--site-brand-strong);
+    @apply font-semibold;
+  }
+
   .site-content {
     @apply min-w-0;
   }
@@ -230,6 +235,46 @@
     background: var(--site-surface-strong);
     border: 1px solid var(--site-border);
     @apply rounded-3xl p-6 shadow-card;
+  }
+
+  .site-codeblock {
+    border: 1px solid var(--site-border);
+    background: color-mix(in srgb, var(--site-surface-strong) 45%, var(--site-code-bg));
+    @apply overflow-hidden rounded-3xl;
+  }
+
+  .site-codeblock + .site-codeblock {
+    @apply mt-6;
+  }
+
+  .site-codeblock-bar {
+    border-bottom: 1px solid color-mix(in srgb, var(--site-border) 60%, transparent);
+    @apply flex items-center justify-between gap-4 px-4 py-3;
+  }
+
+  .site-codeblock-lang {
+    color: var(--site-code-ink);
+    @apply text-xs font-semibold uppercase tracking-[0.18em];
+  }
+
+  .site-codeblock-copy {
+    border: 1px solid color-mix(in srgb, var(--site-code-ink) 18%, transparent);
+    color: var(--site-code-ink);
+    background: rgba(15, 23, 42, 0.18);
+    @apply rounded-full px-3 py-1 text-xs font-semibold transition;
+  }
+
+  .site-codeblock-copy:hover {
+    background: rgba(15, 23, 42, 0.34);
+  }
+
+  .site-codeblock pre {
+    @apply m-0 rounded-none border-0;
+  }
+
+  .site-codeblock code {
+    background: transparent;
+    @apply p-0 text-inherit;
   }
 
   .site-hero {

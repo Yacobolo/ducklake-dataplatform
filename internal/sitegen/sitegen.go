@@ -397,6 +397,7 @@ func parsePage(root, path string) (page, error) {
 
 	rendered = addHeadingAnchors(rendered)
 	rendered = stripLeadingH1(rendered)
+	rendered = enhanceCodeBlocks(rendered)
 	if kind == pageKindAPI {
 		rendered = enhanceAPIHTML(rendered)
 	}
@@ -986,6 +987,57 @@ func addHeadingAnchors(htmlSource string) string {
 func enhanceAPIHTML(htmlSource string) string {
 	opRE := regexp.MustCompile(`<h2 id="([^"]+)"><code>(GET|POST|PUT|PATCH|DELETE) ([^<]+)</code></h2>`)
 	return opRE.ReplaceAllString(htmlSource, `<h2 id="$1"><span class="api-method">$2</span><span class="api-path">$3</span></h2>`)
+}
+
+func enhanceCodeBlocks(htmlSource string) string {
+	codeRE := regexp.MustCompile(`(?s)<pre><code(?: class="([^"]*)")?>(.*?)</code></pre>`)
+	index := 0
+
+	return codeRE.ReplaceAllStringFunc(htmlSource, func(match string) string {
+		parts := codeRE.FindStringSubmatch(match)
+		if len(parts) != 3 {
+			return match
+		}
+
+		language := codeBlockLanguage(parts[1])
+		codeID := fmt.Sprintf("site-codeblock-%d", index)
+		index++
+
+		var b strings.Builder
+		b.WriteString(`<div class="site-codeblock">`)
+		b.WriteString(`<div class="site-codeblock-bar">`)
+		b.WriteString(`<span class="site-codeblock-lang">`)
+		b.WriteString(html.EscapeString(language))
+		b.WriteString(`</span>`)
+		b.WriteString(`<button type="button" class="site-codeblock-copy" data-site-copy="#`)
+		b.WriteString(codeID)
+		b.WriteString(`">Copy</button>`)
+		b.WriteString(`</div>`)
+		b.WriteString(`<pre><code`)
+		if parts[1] != "" {
+			b.WriteString(` class="`)
+			b.WriteString(html.EscapeString(parts[1]))
+			b.WriteString(`"`)
+		}
+		b.WriteString(` id="`)
+		b.WriteString(codeID)
+		b.WriteString(`">`)
+		b.WriteString(parts[2])
+		b.WriteString(`</code></pre></div>`)
+		return b.String()
+	})
+}
+
+func codeBlockLanguage(className string) string {
+	for _, token := range strings.Fields(className) {
+		if strings.HasPrefix(token, "language-") {
+			value := strings.TrimPrefix(token, "language-")
+			if value != "" {
+				return strings.ToUpper(value)
+			}
+		}
+	}
+	return "TEXT"
 }
 
 func stripLeadingH1(htmlSource string) string {

@@ -62,3 +62,15 @@ func TestRewriteContentLinks_DocsAndAPIPaths(t *testing.T) {
 	assert.Contains(t, rewritten, "/docs/start-here/quickstart")
 	assert.Contains(t, rewritten, "/api-reference/endpoints/queries")
 }
+
+func TestEnhanceCodeBlocks_AddsChromeAndCopyTarget(t *testing.T) {
+	source := `<p>Example</p><pre><code class="language-bash">echo hi
+</code></pre>`
+
+	rendered := enhanceCodeBlocks(source)
+
+	assert.Contains(t, rendered, `class="site-codeblock"`)
+	assert.Contains(t, rendered, `class="site-codeblock-lang">BASH<`)
+	assert.Contains(t, rendered, `data-site-copy="#site-codeblock-0"`)
+	assert.Contains(t, rendered, `id="site-codeblock-0"`)
+}
