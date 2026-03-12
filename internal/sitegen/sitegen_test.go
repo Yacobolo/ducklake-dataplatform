@@ -74,3 +74,35 @@ func TestEnhanceCodeBlocks_AddsChromeAndCopyTarget(t *testing.T) {
 	assert.Contains(t, rendered, `data-site-copy="#site-codeblock-0"`)
 	assert.Contains(t, rendered, `id="site-codeblock-0"`)
 }
+
+func TestAPIOperationNodes_ExtractMethodRouteAndAnchor(t *testing.T) {
+	p := page{
+		URLPath: "/api-reference/endpoints/queries/",
+		BodyMarkdown: strings.TrimSpace(`
+## ` + "`GET /audit-logs`" + `
+
+List audit logs
+
+## ` + "`POST /queries`" + `
+
+Submit query
+`),
+	}
+
+	nodes := apiOperationNodes(p)
+	require.Len(t, nodes, 2)
+	assert.Equal(t, "GET", nodes[0].Method)
+	assert.Equal(t, "/audit-logs", nodes[0].RoutePath)
+	assert.Equal(t, "List audit logs", nodes[0].Description)
+	assert.Equal(t, "/api-reference/endpoints/queries/#get-audit-logs", nodes[0].Path)
+	assert.Equal(t, "/queries", nodes[1].RoutePath)
+}
+
+func TestEnhanceAPIHTML_AddsMethodDataAttribute(t *testing.T) {
+	source := `<h2 id="get-queries"><code>GET /queries</code></h2>`
+
+	rendered := enhanceAPIHTML(source)
+
+	assert.Contains(t, rendered, `class="api-method" data-api-method="GET"`)
+	assert.Contains(t, rendered, `class="api-path">/queries<`)
+}

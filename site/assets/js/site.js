@@ -219,4 +219,88 @@
       }
     });
   }
+
+  const apiNavLinks = Array.from(
+    document.querySelectorAll(".api-sidebar a[href*='#']")
+  );
+  if (apiNavLinks.length) {
+    const apiLinkById = new Map();
+    apiNavLinks.forEach(function (link) {
+      const href = link.getAttribute("href") || "";
+      const index = href.indexOf("#");
+      const id = index >= 0 ? href.slice(index + 1) : "";
+      if (id) {
+        apiLinkById.set(id, link);
+      }
+    });
+
+    let activeAPINavId = "";
+    function setActiveAPINav(id) {
+      if (!id || id === activeAPINavId) {
+        return;
+      }
+      activeAPINavId = id;
+      apiNavLinks.forEach(function (link) {
+        const href = link.getAttribute("href") || "";
+        const index = href.indexOf("#");
+        const currentId = index >= 0 ? href.slice(index + 1) : "";
+        const isOverviewLink = index < 0 && link.pathname === window.location.pathname;
+        link.classList.toggle("is-active", currentId === id && !isOverviewLink);
+      });
+    }
+
+    const apiSections = Array.from(document.querySelectorAll(".api-prose h2[id]")).filter(
+      function (heading) {
+        return apiLinkById.has(heading.id);
+      }
+    );
+
+    if (window.location.hash) {
+      setActiveAPINav(window.location.hash.slice(1));
+    } else if (apiSections.length) {
+      setActiveAPINav(apiSections[0].id);
+    }
+
+    if (apiSections.length && "IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(
+        function (entries) {
+          const visible = entries
+            .filter(function (entry) {
+              return entry.isIntersecting;
+            })
+            .sort(function (a, b) {
+              return a.target.getBoundingClientRect().top - b.target.getBoundingClientRect().top;
+            });
+
+          if (visible.length) {
+            setActiveAPINav(visible[0].target.id);
+            return;
+          }
+
+          const current = apiSections
+            .filter(function (heading) {
+              return heading.getBoundingClientRect().top <= 140;
+            })
+            .pop();
+          if (current) {
+            setActiveAPINav(current.id);
+          }
+        },
+        {
+          rootMargin: "-96px 0px -62% 0px",
+          threshold: [0, 1],
+        }
+      );
+
+      apiSections.forEach(function (heading) {
+        observer.observe(heading);
+      });
+    }
+
+    window.addEventListener("hashchange", function () {
+      if (window.location.hash) {
+        setActiveAPINav(window.location.hash.slice(1));
+      }
+    });
+  }
 })();

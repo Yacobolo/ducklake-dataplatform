@@ -214,6 +214,19 @@
     @apply space-y-2 px-3 pb-3;
   }
 
+  .site-nav-node-summary {
+    @apply flex min-w-0 flex-col gap-1 pr-6;
+  }
+
+  .site-nav-node-label {
+    @apply block;
+  }
+
+  .site-nav-node-meta {
+    color: var(--site-muted-soft);
+    @apply block text-xs font-normal leading-5;
+  }
+
   .site-nav-tree .site-nav-tree {
     @apply ml-3 border-l pl-3;
     border-color: color-mix(in srgb, var(--site-border) 80%, transparent);
@@ -407,37 +420,122 @@
   }
 
   .api-nav-group {
-    @apply mb-4 rounded-2xl border px-3 py-2;
+    @apply mb-4 rounded-[1.6rem] border px-3 py-2;
     border-color: rgba(148, 163, 184, 0.14);
     background: rgba(15, 23, 42, 0.4);
   }
 
   .api-nav-group summary {
-    @apply cursor-pointer list-none text-sm font-semibold px-1 py-1;
+    @apply cursor-pointer list-none px-2 py-2 text-sm font-semibold;
     color: var(--api-ink);
   }
 
   .api-nav-group .site-nav-node {
-    border-color: rgba(148, 163, 184, 0.14);
-    background: rgba(15, 23, 42, 0.35);
+    border-color: rgba(148, 163, 184, 0.1);
+    background: rgba(6, 12, 23, 0.46);
+    @apply mb-2 overflow-hidden rounded-[1.15rem];
   }
 
   .api-nav-group .site-nav-tree {
-    @apply mt-2 px-0 pb-0;
+    @apply mt-2 space-y-1 px-0 pb-0;
   }
 
   .api-nav-group .site-nav-tree .site-nav-tree {
-    border-color: rgba(148, 163, 184, 0.14);
+    border-color: rgba(148, 163, 184, 0.12);
+    @apply ml-0 border-l-0 pl-0;
   }
 
   .api-nav-group .site-nav-tree a {
     color: var(--api-muted);
+    @apply rounded-2xl px-3 py-2;
   }
 
   .api-nav-group .site-nav-tree a.is-active,
   .api-nav-group .site-nav-tree a:hover {
     background: rgba(94, 234, 212, 0.08);
     color: white;
+  }
+
+  .api-nav-group .site-nav-node > summary {
+    @apply relative px-3 py-3;
+  }
+
+  .api-nav-group .site-nav-node > summary::after {
+    content: "";
+    position: absolute;
+    right: 0.95rem;
+    top: 1.15rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-right: 1.5px solid rgba(226, 232, 240, 0.78);
+    border-bottom: 1.5px solid rgba(226, 232, 240, 0.78);
+    transform: rotate(45deg);
+    transition: transform 160ms ease;
+  }
+
+  .api-nav-group .site-nav-node[open] > summary::after {
+    transform: rotate(225deg);
+  }
+
+  .api-nav-group .site-nav-node .site-nav-node-label {
+    color: var(--api-ink);
+    @apply text-sm font-semibold;
+  }
+
+  .api-nav-group .site-nav-node .site-nav-node-meta {
+    color: var(--api-muted);
+  }
+
+  .api-nav-link {
+    @apply flex min-w-0 flex-col gap-1;
+  }
+
+  .api-nav-link-main {
+    @apply flex min-w-0 items-center gap-2;
+  }
+
+  .api-nav-method {
+    @apply inline-flex shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em];
+  }
+
+  .api-nav-method[data-api-method="GET"],
+  .api-prose .api-method[data-api-method="GET"] {
+    background: rgba(34, 197, 94, 0.16);
+    color: #86efac;
+  }
+
+  .api-nav-method[data-api-method="POST"],
+  .api-prose .api-method[data-api-method="POST"] {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd;
+  }
+
+  .api-nav-method[data-api-method="PUT"],
+  .api-prose .api-method[data-api-method="PUT"] {
+    background: rgba(234, 179, 8, 0.18);
+    color: #fde68a;
+  }
+
+  .api-nav-method[data-api-method="PATCH"],
+  .api-prose .api-method[data-api-method="PATCH"] {
+    background: rgba(168, 85, 247, 0.18);
+    color: #d8b4fe;
+  }
+
+  .api-nav-method[data-api-method="DELETE"],
+  .api-prose .api-method[data-api-method="DELETE"] {
+    background: rgba(248, 113, 113, 0.18);
+    color: #fca5a5;
+  }
+
+  .api-nav-route {
+    color: var(--api-ink);
+    @apply min-w-0 truncate font-mono text-[13px] font-medium;
+  }
+
+  .api-nav-description {
+    color: var(--api-muted);
+    @apply truncate text-xs;
   }
 
   .api-content {
@@ -488,8 +586,6 @@
 
   .api-prose h2 .api-method {
     @apply mr-3 inline-flex min-w-[4.5rem] items-center justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em];
-    background: rgba(94, 234, 212, 0.14);
-    color: #99f6e4;
   }
 
   .api-prose h2 .api-path {

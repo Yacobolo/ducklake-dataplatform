@@ -140,11 +140,14 @@ type navGroup struct {
 }
 
 type navNode struct {
-	Title    string
-	Path     string
-	Active   bool
-	Open     bool
-	Children []navNode
+	Title       string
+	Path        string
+	Active      bool
+	Open        bool
+	Children    []navNode
+	Method      string
+	RoutePath   string
+	Description string
 }
 
 type searchItem struct {
@@ -778,7 +781,11 @@ func buildNavNodes(configs []navEntryConfig, pageByRel map[string]page, pages []
 			}
 			node := navNode{Title: cfg.Title}
 			for _, p := range children {
-				node.Children = append(node.Children, navNode{Title: p.Title, Path: p.URLPath})
+				if p.Kind == pageKindAPI && strings.HasPrefix(p.RelPath, "reference/generated/api/endpoints/") {
+					node.Children = append(node.Children, apiEndpointNavNode(p))
+				} else {
+					node.Children = append(node.Children, navNode{Title: p.Title, Path: p.URLPath})
+				}
 				flat = append(flat, navItem{Title: p.Title, Path: p.URLPath})
 			}
 			nodes = append(nodes, node)
@@ -843,8 +850,8 @@ func activateNodes(nodes []navNode, currentPath string) ([]navNode, bool) {
 		} else {
 			children, open := activateNodes(node.Children, currentPath)
 			next.Children = children
-			next.Open = open
-			next.Active = false
+			next.Active = node.Path == currentPath
+			next.Open = open || next.Active
 		}
 		if next.Open || next.Active {
 			anyOpen = true
@@ -852,6 +859,52 @@ func activateNodes(nodes []navNode, currentPath string) ([]navNode, bool) {
 		out = append(out, next)
 	}
 	return out, anyOpen
+}
+
+func apiEndpointNavNode(p page) navNode {
+	children := []navNode{
+		{Title: "Overview", Path: p.URLPath},
+	}
+	children = append(children, apiOperationNodes(p)...)
+	return navNode{
+		Title:       trimAPINavTitle(p.Title),
+		Path:        p.URLPath,
+		Children:    children,
+		Description: p.Description,
+	}
+}
+
+func apiOperationNodes(p page) []navNode {
+	opRE := regexp.MustCompile("(?m)^## `([A-Z]+) ([^`]+)`\\n\\n([^\\n]+)")
+	matches := opRE.FindAllStringSubmatch(p.BodyMarkdown, -1)
+	nodes := make([]navNode, 0, len(matches))
+	for _, match := range matches {
+		if len(match) != 4 {
+			continue
+		}
+		method := strings.TrimSpace(match[1])
+		routePath := strings.TrimSpace(match[2])
+		description := strings.TrimSpace(match[3])
+		title := routePath
+		if description == "" {
+			title = method + " " + routePath
+		}
+		nodes = append(nodes, navNode{
+			Title:       title,
+			Path:        p.URLPath + "#" + slug(method+" "+routePath),
+			Method:      method,
+			RoutePath:   routePath,
+			Description: description,
+		})
+	}
+	return nodes
+}
+
+func trimAPINavTitle(title string) string {
+	title = strings.TrimSpace(title)
+	title = strings.TrimSuffix(title, " Endpoints")
+	title = strings.TrimSuffix(title, " Endpoint")
+	return strings.TrimSpace(title)
 }
 
 func buildBreadcrumbs(p page) []navItem {
@@ -986,7 +1039,15 @@ func addHeadingAnchors(htmlSource string) string {
 
 func enhanceAPIHTML(htmlSource string) string {
 	opRE := regexp.MustCompile(`<h2 id="([^"]+)"><code>(GET|POST|PUT|PATCH|DELETE) ([^<]+)</code></h2>`)
-	return opRE.ReplaceAllString(htmlSource, `<h2 id="$1"><span class="api-method">$2</span><span class="api-path">$3</span></h2>`)
+	return opRE.ReplaceAllStringFunc(htmlSource, func(match string) string {
+		parts := opRE.FindStringSubmatch(match)
+		if len(parts) != 4 {
+			return match
+		}
+		method := parts[2]
+		routePath := parts[3]
+		return `<h2 id="` + parts[1] + `"><span class="api-method" data-api-method="` + method + `">` + method + `</span><span class="api-path">` + routePath + `</span></h2>`
+	})
 }
 
 func enhanceCodeBlocks(htmlSource string) string {
