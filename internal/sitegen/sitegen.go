@@ -51,19 +51,19 @@ type navLinkConfig struct {
 }
 
 type navGroupConfig struct {
-	Title string           `yaml:"title"`
-	Icon  string           `yaml:"icon"`
-	Open  bool             `yaml:"open"`
-	Items []navEntryConfig `yaml:"items"`
+	Title    string           `yaml:"title"`
+	Icon     string           `yaml:"icon"`
+	Expanded bool             `yaml:"expanded"`
+	Items    []navEntryConfig `yaml:"items"`
 }
 
 type navEntryConfig struct {
-	Source  string           `yaml:"source"`
-	Title   string           `yaml:"title"`
-	Icon    string           `yaml:"icon"`
-	Open    bool             `yaml:"open"`
-	AutoDir string           `yaml:"autogen_dir"`
-	Items   []navEntryConfig `yaml:"items"`
+	Source   string           `yaml:"source"`
+	Title    string           `yaml:"title"`
+	Icon     string           `yaml:"icon"`
+	Expanded bool             `yaml:"expanded"`
+	AutoDir  string           `yaml:"autogen_dir"`
+	Items    []navEntryConfig `yaml:"items"`
 }
 
 type docFrontMatter struct {
@@ -754,7 +754,7 @@ func buildConfiguredGroups(configs []navGroupConfig, pageByRel map[string]page, 
 	flat := make([]navItem, 0)
 
 	for _, groupCfg := range configs {
-		group := navGroup{Title: groupCfg.Title, Icon: groupCfg.Icon, Open: groupCfg.Open}
+		group := navGroup{Title: groupCfg.Title, Icon: groupCfg.Icon, Open: groupCfg.Expanded}
 		nodes, nodeFlat, err := buildNavNodes(groupCfg.Items, pageByRel, pages)
 		if err != nil {
 			return nil, nil, err
@@ -782,14 +782,14 @@ func buildNavNodes(configs []navEntryConfig, pageByRel map[string]page, pages []
 			if strings.TrimSpace(cfg.Title) != "" {
 				title = cfg.Title
 			}
-			nodes = append(nodes, navNode{Title: title, Icon: cfg.Icon, Path: p.URLPath, ForceOpen: cfg.Open})
+			nodes = append(nodes, navNode{Title: title, Icon: cfg.Icon, Path: p.URLPath, ForceOpen: cfg.Expanded})
 			flat = append(flat, navItem{Title: title, Path: p.URLPath})
 		case cfg.AutoDir != "":
 			children := pagesInDir(pages, cfg.AutoDir)
 			if len(children) == 0 {
 				continue
 			}
-			node := navNode{Title: cfg.Title, Icon: cfg.Icon, ForceOpen: cfg.Open}
+			node := navNode{Title: cfg.Title, Icon: cfg.Icon, ForceOpen: cfg.Expanded}
 			for _, p := range children {
 				if p.Kind == pageKindAPI && strings.HasPrefix(p.RelPath, "reference/generated/api/endpoints/") {
 					node.Children = append(node.Children, apiEndpointNavNode(p))
@@ -811,7 +811,7 @@ func buildNavNodes(configs []navEntryConfig, pageByRel map[string]page, pages []
 			if strings.TrimSpace(cfg.Title) == "" {
 				nodes = append(nodes, children...)
 			} else {
-				nodes = append(nodes, navNode{Title: cfg.Title, Icon: cfg.Icon, ForceOpen: cfg.Open, Children: children})
+				nodes = append(nodes, navNode{Title: cfg.Title, Icon: cfg.Icon, ForceOpen: cfg.Expanded, Children: children})
 			}
 			flat = append(flat, childFlat...)
 		}

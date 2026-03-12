@@ -659,10 +659,6 @@
     @apply px-5 py-8;
   }
 
-  .docs-nav-group > summary {
-    @apply hover:bg-slate-100;
-  }
-
   .docs-nav-group .site-nav-node > summary:hover,
   .docs-nav-group .site-nav-tree a:hover {
     background: color-mix(in srgb, var(--site-brand) 7%, transparent);

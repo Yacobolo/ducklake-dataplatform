@@ -7,7 +7,7 @@ primary:
 docs:
   - title: Getting Started
     icon: rocket
-    open: true
+    expanded: true
     items:
       - source: start-here/index.md
         title: Overview
@@ -15,6 +15,7 @@ docs:
       - source: start-here/deployment-modes.md
   - title: Core Concepts
     icon: blocks
+    expanded: true
     items:
       - source: core-concepts/index.md
       - source: core-concepts/access-control.md
@@ -22,6 +23,7 @@ docs:
       - source: core-concepts/compute-and-query.md
   - title: How To
     icon: wrench
+    expanded: true
     items:
       - source: how-to/index.md
       - source: how-to/authentication.md
@@ -31,6 +33,7 @@ docs:
       - source: how-to/declarative-workflows.md
   - title: Operations
     icon: library
+    expanded: true
     items:
       - source: operations/index.md
       - source: operations/configuration.md
@@ -38,6 +41,7 @@ docs:
       - source: operations/distributed-compute.md
   - title: Reference
     icon: book-open
+    expanded: true
     items:
       - title: Overview
         icon: book-open
