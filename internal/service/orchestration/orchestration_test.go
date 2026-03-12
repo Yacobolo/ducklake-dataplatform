@@ -26,16 +26,18 @@ func TestAssetScheduler_BuildPlan(t *testing.T) {
 		"b": {ID: "b"},
 		"c": {ID: "c"},
 	}}
-	deps := &fakeDeps{downstream: map[string][]domain.AssetDependency{
-		"a": {{AssetID: "b", UpstreamAssetID: "a"}, {AssetID: "c", UpstreamAssetID: "a"}},
+	deps := &fakeDeps{upstream: map[string][]domain.AssetDependency{
+		"a": {},
+		"b": {{AssetID: "b", UpstreamAssetID: "a"}},
+		"c": {{AssetID: "c", UpstreamAssetID: "a"}},
 	}}
 
 	s := NewAssetScheduler(assets, deps, nil)
-	plan, err := s.BuildPlan(context.Background(), "a")
+	plan, err := s.BuildPlan(context.Background(), "b")
 	require.NoError(t, err)
 	require.Len(t, plan.Levels, 2)
 	assert.Equal(t, []string{"a"}, plan.Levels[0])
-	assert.ElementsMatch(t, []string{"b", "c"}, plan.Levels[1])
+	assert.Equal(t, []string{"b"}, plan.Levels[1])
 }
 
 func TestAssetExecutor_ExecutePlan(t *testing.T) {
@@ -307,6 +309,7 @@ type fakeStepper struct {
 	mu                sync.Mutex
 	failuresRemaining map[string]int
 	executeCalls      map[string]int
+	results           map[string]map[string]any
 }
 
 func (f *fakeStepper) Execute(_ context.Context, assetID string, _ IOManager) (map[string]any, error) {
@@ -321,6 +324,9 @@ func (f *fakeStepper) Execute(_ context.Context, assetID string, _ IOManager) (m
 	if f.failuresRemaining[assetID] > 0 {
 		f.failuresRemaining[assetID]--
 		return nil, errors.New("boom")
+	}
+	if result, ok := f.results[assetID]; ok {
+		return result, nil
 	}
 	return map[string]any{"asset": assetID, "row_count": 1}, nil
 }

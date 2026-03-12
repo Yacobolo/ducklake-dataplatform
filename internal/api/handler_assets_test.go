@@ -387,6 +387,71 @@ func TestHandler_ExplainAssetFreshness(t *testing.T) {
 	assert.Equal(t, domain.DependencyTypeSoft, *(*ok.Body.Edges)[0].DependencyType)
 }
 
+func TestHandler_ListAssetFreshnessRequirements(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{explainFreshnessFn: func(_ context.Context, assetKey string) (*domain.AssetFreshnessNode, error) {
+		require.Equal(t, "dashboard.exec", assetKey)
+		return &domain.AssetFreshnessNode{
+			AssetID:         "dash-1",
+			AssetKey:        assetKey,
+			AssetType:       domain.AssetTypeDashboard,
+			FreshnessStatus: domain.AssetFreshnessStatusStale,
+			Upstream: []domain.AssetFreshnessNode{{
+				AssetID:                "metric-1",
+				AssetKey:               "metric.sales.orders.revenue",
+				AssetType:              domain.AssetTypeMetric,
+				UpstreamDependencyType: domain.DependencyTypeHard,
+				FreshnessStatus:        domain.AssetFreshnessStatusStale,
+				EffectiveMaxLagSeconds: 1800,
+				Reason:                 "upstream model.sales.orders is stale",
+			}},
+		}, nil
+	}}}
+
+	resp, err := h.ListAssetFreshnessRequirements(assetTestCtx(true), GenListAssetFreshnessRequirementsRequest{AssetKey: "dashboard.exec"})
+	require.NoError(t, err)
+	ok, cast := resp.(ListAssetFreshnessRequirements200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Body.Requirements)
+	require.Len(t, *ok.Body.Requirements, 1)
+	require.NotNil(t, (*ok.Body.Requirements)[0].Asset)
+	assert.Equal(t, "metric.sales.orders.revenue", *(*ok.Body.Requirements)[0].Asset.AssetKey)
+	require.NotNil(t, (*ok.Body.Requirements)[0].DependencyType)
+	assert.Equal(t, domain.DependencyTypeHard, *(*ok.Body.Requirements)[0].DependencyType)
+}
+
+func TestHandler_ListAssetFreshnessBlockers(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{explainFreshnessFn: func(_ context.Context, assetKey string) (*domain.AssetFreshnessNode, error) {
+		require.Equal(t, "dashboard.exec", assetKey)
+		return &domain.AssetFreshnessNode{
+			AssetID:         "dash-1",
+			AssetKey:        assetKey,
+			AssetType:       domain.AssetTypeDashboard,
+			FreshnessStatus: domain.AssetFreshnessStatusStale,
+			Upstream: []domain.AssetFreshnessNode{{
+				AssetID:                "metric-1",
+				AssetKey:               "metric.sales.orders.revenue",
+				AssetType:              domain.AssetTypeMetric,
+				UpstreamDependencyType: domain.DependencyTypeHard,
+				FreshnessStatus:        domain.AssetFreshnessStatusStale,
+				Reason:                 "upstream model.sales.orders is stale",
+			}},
+		}, nil
+	}}}
+
+	resp, err := h.ListAssetFreshnessBlockers(assetTestCtx(true), GenListAssetFreshnessBlockersRequest{AssetKey: "dashboard.exec"})
+	require.NoError(t, err)
+	ok, cast := resp.(ListAssetFreshnessBlockers200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Body.Blockers)
+	require.Len(t, *ok.Body.Blockers, 1)
+	require.NotNil(t, (*ok.Body.Blockers)[0].Asset)
+	assert.Equal(t, "metric.sales.orders.revenue", *(*ok.Body.Blockers)[0].Asset.AssetKey)
+	require.NotNil(t, (*ok.Body.Blockers)[0].DependencyType)
+	assert.Equal(t, domain.DependencyTypeHard, *(*ok.Body.Blockers)[0].DependencyType)
+}
+
 func TestHandler_ReconcileAssetFreshness(t *testing.T) {
 	t.Parallel()
 	h := &APIHandler{assets: &mockAssetService{reconcileFreshnessFn: func(_ context.Context, assetKey string) (*domain.AssetFreshnessReconcileResult, error) {

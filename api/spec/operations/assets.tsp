@@ -51,6 +51,18 @@ op getAssetFreshness(assetKey: string): Ok<AssetFreshnessStatus> | ResourceError
 @summary("Explain asset freshness")
 op explainAssetFreshness(assetKey: string): Ok<AssetFreshnessExplanation> | ResourceErrorResponses;
 
+@route("/assets/{assetKey}/freshness/requirements")
+@get
+@tag("Assets")
+@summary("List asset freshness requirements")
+op listAssetFreshnessRequirements(assetKey: string): Ok<AssetFreshnessRequirementsResponse> | ResourceErrorResponses;
+
+@route("/assets/{assetKey}/freshness/blockers")
+@get
+@tag("Assets")
+@summary("List asset freshness blockers")
+op listAssetFreshnessBlockers(assetKey: string): Ok<AssetFreshnessBlockersResponse> | ResourceErrorResponses;
+
 @route("/assets/{assetKey}/freshness/reconcile")
 @post
 @tag("Assets")

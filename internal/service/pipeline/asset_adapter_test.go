@@ -222,6 +222,67 @@ func TestSyncModelsToAssets(t *testing.T) {
 	assert.Equal(t, "m1", depRepo.created[0].UpstreamAssetID)
 }
 
+func TestSyncModelsToAssets_PreservesManagedPolicies(t *testing.T) {
+	modelRepo := &mockModelRepo{
+		listAllFn: func(context.Context) ([]domain.Model, error) {
+			return []domain.Model{{
+				ID:          "m1",
+				ProjectName: "sales",
+				Name:        "orders",
+				CreatedBy:   "alice",
+			}}, nil
+		},
+	}
+	dynamicGroup := "tenant_id"
+	assetRepo := &mockDataAssetRepo{existing: map[string]domain.DataAsset{
+		"m1": {
+			ID:         "m1",
+			AssetKey:   "model.sales.orders",
+			AssetType:  domain.AssetTypeModel,
+			CreatedBy:  "alice",
+			IOProfile:  "warehouse",
+			SchemaJSON: map[string]any{"version": 1},
+			FreshnessPolicy: &domain.AssetFreshnessPolicy{
+				MaxLagSeconds: 1800,
+				CronSchedule:  "*/30 * * * *",
+			},
+			MaterializationPolicy: &domain.AssetMaterializationPolicy{
+				Mode:            "MANUAL",
+				AllowConcurrent: true,
+			},
+			AutoMaterializePolicy: &domain.AssetAutoMaterializePolicy{
+				Mode:                    "AUTO",
+				MinIntervalSeconds:      300,
+				OnFreshnessBreach:       true,
+				DowntimeWindowsCronExpr: []string{"0 0 * * 0"},
+			},
+			PartitionDefinition: &domain.PartitionDefinition{
+				Type:         domain.PartitionTypeDynamic,
+				DynamicGroup: &dynamicGroup,
+			},
+		},
+	}}
+	depRepo := &mockAssetDependencyRepo{}
+
+	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, assetRepo, depRepo)
+	require.NoError(t, err)
+	require.Len(t, assetRepo.updated, 1)
+
+	updated := assetRepo.updated[0]
+	require.NotNil(t, updated.FreshnessPolicy)
+	assert.EqualValues(t, 1800, updated.FreshnessPolicy.MaxLagSeconds)
+	require.NotNil(t, updated.MaterializationPolicy)
+	assert.Equal(t, "MANUAL", updated.MaterializationPolicy.Mode)
+	require.NotNil(t, updated.AutoMaterializePolicy)
+	assert.True(t, updated.AutoMaterializePolicy.OnFreshnessBreach)
+	assert.Equal(t, []string{"0 0 * * 0"}, updated.AutoMaterializePolicy.DowntimeWindowsCronExpr)
+	require.NotNil(t, updated.PartitionDefinition)
+	require.NotNil(t, updated.PartitionDefinition.DynamicGroup)
+	assert.Equal(t, "tenant_id", *updated.PartitionDefinition.DynamicGroup)
+	assert.Equal(t, "warehouse", updated.IOProfile)
+	assert.Equal(t, map[string]any{"version": 1}, updated.SchemaJSON)
+}
+
 func TestSyncModelsToAssets_ListModelsError(t *testing.T) {
 	modelRepo := &mockModelRepo{listAllFn: func(context.Context) ([]domain.Model, error) {
 		return nil, errors.New("boom")

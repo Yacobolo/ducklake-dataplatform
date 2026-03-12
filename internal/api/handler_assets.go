@@ -207,6 +207,44 @@ func (h *APIHandler) ExplainAssetFreshness(ctx context.Context, req GenExplainAs
 	}, nil
 }
 
+func (h *APIHandler) ListAssetFreshnessRequirements(ctx context.Context, req GenListAssetFreshnessRequirementsRequest) (GenListAssetFreshnessRequirementsResponse, error) {
+	node, err := h.assets.ExplainFreshness(ctx, req.AssetKey)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return ListAssetFreshnessRequirements404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		if errors.As(err, new(*domain.ValidationError)) {
+			return ListAssetFreshnessRequirements400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return nil, err
+	}
+
+	body := assetFreshnessRequirementsToAPI(*node)
+	return ListAssetFreshnessRequirements200JSONResponse{
+		Body:    body,
+		Headers: ListAssetFreshnessRequirements200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) ListAssetFreshnessBlockers(ctx context.Context, req GenListAssetFreshnessBlockersRequest) (GenListAssetFreshnessBlockersResponse, error) {
+	node, err := h.assets.ExplainFreshness(ctx, req.AssetKey)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return ListAssetFreshnessBlockers404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		if errors.As(err, new(*domain.ValidationError)) {
+			return ListAssetFreshnessBlockers400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return nil, err
+	}
+
+	body := assetFreshnessBlockersToAPI(*node)
+	return ListAssetFreshnessBlockers200JSONResponse{
+		Body:    body,
+		Headers: ListAssetFreshnessBlockers200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
 func (h *APIHandler) ReconcileAssetFreshness(ctx context.Context, req GenReconcileAssetFreshnessRequest) (GenReconcileAssetFreshnessResponse, error) {
 	result, err := h.assets.ReconcileFreshness(ctx, req.AssetKey)
 	if err != nil {
@@ -801,6 +839,100 @@ func assetFreshnessExplanationToAPI(root domain.AssetFreshnessNode) AssetFreshne
 		Asset: &asset,
 		Nodes: &nodes,
 		Edges: &edges,
+	}
+}
+
+func assetFreshnessRequirementsToAPI(root domain.AssetFreshnessNode) AssetFreshnessRequirementsResponse {
+	requirements := make([]AssetFreshnessRequirement, 0)
+	collectAssetFreshnessRequirements(root, &requirements)
+	asset := assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+		AssetID:                root.AssetID,
+		AssetKey:               root.AssetKey,
+		AssetType:              root.AssetType,
+		FreshnessStatus:        root.FreshnessStatus,
+		EffectiveMaxLagSeconds: root.EffectiveMaxLagSeconds,
+		LastMaterializedAt:     root.LastMaterializedAt,
+		StaleSince:             root.StaleSince,
+		Reason:                 root.Reason,
+		Basis:                  root.Basis,
+	})
+	return AssetFreshnessRequirementsResponse{
+		Asset:        &asset,
+		Requirements: &requirements,
+	}
+}
+
+func collectAssetFreshnessRequirements(root domain.AssetFreshnessNode, requirements *[]AssetFreshnessRequirement) {
+	if requirements == nil {
+		return
+	}
+	for _, child := range root.Upstream {
+		status := assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+			AssetID:                child.AssetID,
+			AssetKey:               child.AssetKey,
+			AssetType:              child.AssetType,
+			FreshnessStatus:        child.FreshnessStatus,
+			EffectiveMaxLagSeconds: child.EffectiveMaxLagSeconds,
+			LastMaterializedAt:     child.LastMaterializedAt,
+			StaleSince:             child.StaleSince,
+			Reason:                 child.Reason,
+			Basis:                  child.Basis,
+		})
+		*requirements = append(*requirements, AssetFreshnessRequirement{
+			Asset:          &status,
+			DependencyType: optStr(child.UpstreamDependencyType),
+		})
+		collectAssetFreshnessRequirements(child, requirements)
+	}
+}
+
+func assetFreshnessBlockersToAPI(root domain.AssetFreshnessNode) AssetFreshnessBlockersResponse {
+	blockers := make([]AssetFreshnessBlocker, 0)
+	seen := map[string]struct{}{}
+	collectAssetFreshnessBlockers(root, seen, &blockers)
+	asset := assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+		AssetID:                root.AssetID,
+		AssetKey:               root.AssetKey,
+		AssetType:              root.AssetType,
+		FreshnessStatus:        root.FreshnessStatus,
+		EffectiveMaxLagSeconds: root.EffectiveMaxLagSeconds,
+		LastMaterializedAt:     root.LastMaterializedAt,
+		StaleSince:             root.StaleSince,
+		Reason:                 root.Reason,
+		Basis:                  root.Basis,
+	})
+	return AssetFreshnessBlockersResponse{
+		Asset:    &asset,
+		Blockers: &blockers,
+	}
+}
+
+func collectAssetFreshnessBlockers(root domain.AssetFreshnessNode, seen map[string]struct{}, blockers *[]AssetFreshnessBlocker) {
+	if blockers == nil {
+		return
+	}
+	for _, child := range root.Upstream {
+		if child.FreshnessStatus != domain.AssetFreshnessStatusFresh {
+			if _, ok := seen[child.AssetID]; !ok {
+				seen[child.AssetID] = struct{}{}
+				status := assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+					AssetID:                child.AssetID,
+					AssetKey:               child.AssetKey,
+					AssetType:              child.AssetType,
+					FreshnessStatus:        child.FreshnessStatus,
+					EffectiveMaxLagSeconds: child.EffectiveMaxLagSeconds,
+					LastMaterializedAt:     child.LastMaterializedAt,
+					StaleSince:             child.StaleSince,
+					Reason:                 child.Reason,
+					Basis:                  child.Basis,
+				})
+				*blockers = append(*blockers, AssetFreshnessBlocker{
+					Asset:          &status,
+					DependencyType: optStr(child.UpstreamDependencyType),
+				})
+			}
+		}
+		collectAssetFreshnessBlockers(child, seen, blockers)
 	}
 }
 

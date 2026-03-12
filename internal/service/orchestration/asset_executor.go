@@ -9,6 +9,8 @@ import (
 	"duck-demo/internal/domain"
 )
 
+const assetExecutionSkipMaterializationKey = "_skip_materialization"
+
 type AssetStepExecutor interface {
 	Execute(ctx context.Context, assetID string, io IOManager) (map[string]any, error)
 }
@@ -128,6 +130,16 @@ func (e *AssetExecutor) executeAssetOnce(ctx context.Context, runID, assetID str
 		return fmt.Errorf("execute asset %s: %w", assetID, err)
 	}
 
+	if shouldSkipMaterialization(result) {
+		_, _ = e.runs.CreateRunEvent(ctx, &domain.AssetRunEvent{
+			RunID:     runID,
+			EventType: "ASSET_EXECUTED",
+			EventAt:   time.Now().UTC(),
+			StatsJSON: sanitizeExecutionResult(result),
+		})
+		return nil
+	}
+
 	if err := e.io.StoreOutput(ctx, assetID, result); err != nil {
 		return fmt.Errorf("store output for asset %s: %w", assetID, err)
 	}
@@ -156,6 +168,32 @@ func (e *AssetExecutor) executeAssetOnce(ctx context.Context, runID, assetID str
 	})
 
 	return nil
+}
+
+func shouldSkipMaterialization(result map[string]any) bool {
+	if len(result) == 0 {
+		return false
+	}
+	raw, ok := result[assetExecutionSkipMaterializationKey]
+	if !ok {
+		return false
+	}
+	flag, ok := raw.(bool)
+	return ok && flag
+}
+
+func sanitizeExecutionResult(result map[string]any) map[string]any {
+	if len(result) == 0 {
+		return result
+	}
+	out := make(map[string]any, len(result))
+	for k, v := range result {
+		if k == assetExecutionSkipMaterializationKey {
+			continue
+		}
+		out[k] = v
+	}
+	return out
 }
 
 func normalizeMaxAttempts(run *domain.AssetRun) int {

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"net/http"
 
 	"duck-demo/internal/domain"
@@ -65,10 +66,31 @@ func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 		h.renderServiceError(w, r, err)
 		return
 	}
+	var freshness *domain.AssetFreshnessStatus
+	var freshnessExplain *domain.AssetFreshnessNode
+	if h.Asset != nil {
+		assetKey := "dashboard." + dashboardID
+		var notFoundErr *domain.NotFoundError
+		if status, statusErr := h.Asset.CheckFreshness(r.Context(), assetKey); statusErr == nil {
+			freshness = status
+		} else if !errors.As(statusErr, &notFoundErr) {
+			h.renderServiceError(w, r, statusErr)
+			return
+		}
+		notFoundErr = nil
+		if explain, explainErr := h.Asset.ExplainFreshness(r.Context(), assetKey); explainErr == nil {
+			freshnessExplain = explain
+		} else if !errors.As(explainErr, &notFoundErr) {
+			h.renderServiceError(w, r, explainErr)
+			return
+		}
+	}
 	renderHTML(w, http.StatusOK, dashboardsDetailPage(dashboardDetailPageData{
 		Principal:         principalFromContext(r.Context()),
 		Dashboard:         item,
 		Widgets:           resolved,
+		Freshness:         freshness,
+		FreshnessExplain:  freshnessExplain,
 		BaseURL:           "/ui/dashboards/" + dashboardID,
 		EditURL:           "/ui/dashboards/" + dashboardID + "/edit",
 		DeleteURL:         "/ui/dashboards/" + dashboardID + "/delete",

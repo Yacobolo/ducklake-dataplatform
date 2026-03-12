@@ -136,6 +136,26 @@ model AssetFreshnessExplanation {
   edges?: AssetFreshnessEdge[];
 }
 
+model AssetFreshnessRequirement {
+  asset?: AssetFreshnessStatus;
+  dependency_type?: string;
+}
+
+model AssetFreshnessRequirementsResponse {
+  asset?: AssetFreshnessStatus;
+  requirements?: AssetFreshnessRequirement[];
+}
+
+model AssetFreshnessBlocker {
+  asset?: AssetFreshnessStatus;
+  dependency_type?: string;
+}
+
+model AssetFreshnessBlockersResponse {
+  asset?: AssetFreshnessStatus;
+  blockers?: AssetFreshnessBlocker[];
+}
+
 model AssetFreshnessReconcileTarget {
   asset_id?: string;
   asset_key?: string;

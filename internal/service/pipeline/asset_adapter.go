@@ -727,8 +727,9 @@ func syncAdaptedAssets(
 ) error {
 	for i := range assets {
 		asset := assets[i]
-		if _, getErr := assetRepo.GetByID(ctx, asset.ID); getErr == nil {
-			if _, updateErr := assetRepo.Update(ctx, asset.ID, &asset); updateErr != nil {
+		if existing, getErr := assetRepo.GetByID(ctx, asset.ID); getErr == nil {
+			merged := mergeAdaptedAsset(existing, asset)
+			if _, updateErr := assetRepo.Update(ctx, asset.ID, &merged); updateErr != nil {
 				return fmt.Errorf("update asset %s: %w", asset.AssetKey, updateErr)
 			}
 		} else {
@@ -757,6 +758,93 @@ func syncAdaptedAssets(
 	}
 
 	return nil
+}
+
+func mergeAdaptedAsset(existing *domain.DataAsset, adapted domain.DataAsset) domain.DataAsset {
+	if existing == nil {
+		return adapted
+	}
+
+	// Preserve operator-managed asset policies and execution metadata while
+	// refreshing graph-owned identity and dependency-facing fields.
+	adapted.SchemaJSON = cloneJSONMapOrFallback(adapted.SchemaJSON, existing.SchemaJSON)
+	if adapted.PartitionDefinition == nil {
+		adapted.PartitionDefinition = clonePartitionDefinition(existing.PartitionDefinition)
+	}
+	if strings.TrimSpace(adapted.IOProfile) == "" {
+		adapted.IOProfile = existing.IOProfile
+	}
+	adapted.FreshnessPolicy = cloneFreshnessPolicy(existing.FreshnessPolicy)
+	adapted.MaterializationPolicy = cloneMaterializationPolicy(existing.MaterializationPolicy)
+	adapted.AutoMaterializePolicy = cloneAutoMaterializePolicy(existing.AutoMaterializePolicy)
+	adapted.CreatedAt = existing.CreatedAt
+	adapted.UpdatedAt = existing.UpdatedAt
+	if strings.TrimSpace(adapted.CreatedBy) == "" {
+		adapted.CreatedBy = existing.CreatedBy
+	}
+	return adapted
+}
+
+func cloneJSONMapOrFallback(value, fallback map[string]any) map[string]any {
+	if len(value) > 0 {
+		return cloneJSONMap(value)
+	}
+	if len(fallback) > 0 {
+		return cloneJSONMap(fallback)
+	}
+	return value
+}
+
+func cloneJSONMap(in map[string]any) map[string]any {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]any, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
+}
+
+func clonePartitionDefinition(in *domain.PartitionDefinition) *domain.PartitionDefinition {
+	if in == nil {
+		return nil
+	}
+	out := &domain.PartitionDefinition{
+		Type:       in.Type,
+		Timezone:   in.Timezone,
+		StaticKeys: append([]string(nil), in.StaticKeys...),
+	}
+	if in.DynamicGroup != nil {
+		v := *in.DynamicGroup
+		out.DynamicGroup = &v
+	}
+	return out
+}
+
+func cloneFreshnessPolicy(in *domain.AssetFreshnessPolicy) *domain.AssetFreshnessPolicy {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	return &out
+}
+
+func cloneMaterializationPolicy(in *domain.AssetMaterializationPolicy) *domain.AssetMaterializationPolicy {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	return &out
+}
+
+func cloneAutoMaterializePolicy(in *domain.AssetAutoMaterializePolicy) *domain.AssetAutoMaterializePolicy {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	out.DowntimeWindowsCronExpr = append([]string(nil), in.DowntimeWindowsCronExpr...)
+	return &out
 }
 
 func listAllNotebooks(ctx context.Context, notebookRepo domain.NotebookRepository) ([]domain.Notebook, error) {

@@ -36,22 +36,21 @@ func (s *AssetScheduler) BuildPlan(ctx context.Context, rootAssetID string) (*As
 	inDegree := map[string]int{}
 	queue := []string{rootAssetID}
 	seen := map[string]bool{rootAssetID: true}
-	inDegree[rootAssetID] = 0
 
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
 
-		downstream, err := s.dependencies.ListDownstream(ctx, current)
+		upstream, err := s.dependencies.ListUpstream(ctx, current)
 		if err != nil {
-			return nil, fmt.Errorf("list downstream dependencies: %w", err)
+			return nil, fmt.Errorf("list upstream dependencies: %w", err)
 		}
-		for _, dep := range downstream {
-			adj[current] = append(adj[current], dep.AssetID)
+		for _, dep := range upstream {
+			adj[dep.UpstreamAssetID] = append(adj[dep.UpstreamAssetID], dep.AssetID)
 			inDegree[dep.AssetID]++
-			if !seen[dep.AssetID] {
-				seen[dep.AssetID] = true
-				queue = append(queue, dep.AssetID)
+			if !seen[dep.UpstreamAssetID] {
+				seen[dep.UpstreamAssetID] = true
+				queue = append(queue, dep.UpstreamAssetID)
 			}
 		}
 	}

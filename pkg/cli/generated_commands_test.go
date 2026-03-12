@@ -66,12 +66,14 @@ func TestAllAPIEndpoints_AddsAssetFreshnessCLICommands(t *testing.T) {
 	commands := map[string]string{}
 	for _, ep := range endpoints {
 		switch ep.OperationID {
-		case "getAssetFreshness", "explainAssetFreshness", "reconcileAssetFreshness":
+		case "getAssetFreshness", "explainAssetFreshness", "listAssetFreshnessRequirements", "listAssetFreshnessBlockers", "reconcileAssetFreshness":
 			commands[ep.OperationID] = ep.CLICommand
 		}
 	}
 
 	assert.Equal(t, "assets freshness get", commands["getAssetFreshness"])
 	assert.Equal(t, "assets freshness explain", commands["explainAssetFreshness"])
+	assert.Equal(t, "assets freshness requirements", commands["listAssetFreshnessRequirements"])
+	assert.Equal(t, "assets freshness blockers", commands["listAssetFreshnessBlockers"])
 	assert.Equal(t, "assets freshness reconcile", commands["reconcileAssetFreshness"])
 }
