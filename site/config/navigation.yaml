@@ -64,5 +64,6 @@ api:
   -
     items:
       - autogen_dir: reference/generated/api/endpoints
-      - icon: file-json
+      - title: Models
+        icon: file-json
         autogen_dir: reference/generated/api/schemas
