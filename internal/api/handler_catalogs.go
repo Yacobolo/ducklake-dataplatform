@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 
 	"duck-demo/internal/domain"
 )
@@ -37,16 +36,20 @@ func (h *APIHandler) RegisterCatalog(ctx context.Context, request GenRegisterCat
 
 	result, err := h.catalogRegistration.Register(ctx, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return RegisterCatalog403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return RegisterCatalog400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return RegisterCatalog409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return RegisterCatalog400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenRegisterCatalogResponse](err, domainErrorResponder[GenRegisterCatalogResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenRegisterCatalogResponse {
+				return RegisterCatalog400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenRegisterCatalogResponse {
+				return RegisterCatalog403JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenRegisterCatalogResponse {
+				return RegisterCatalog409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return RegisterCatalog400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenRegisterCatalog201JSONResponse{
 		Body:    catalogRegistrationToAPI(*result),
@@ -59,6 +62,13 @@ func (h *APIHandler) ListCatalogs(ctx context.Context, request GenListCatalogsRe
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	catalogs, total, err := h.catalogRegistration.List(ctx, page)
 	if err != nil {
+		if resp, ok := respondDomainError[GenListCatalogsResponse](err, domainErrorResponder[GenListCatalogsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListCatalogsResponse {
+				return GenListCatalogs403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
+		}
 		return nil, err
 	}
 
@@ -82,12 +92,17 @@ func (h *APIHandler) ListCatalogs(ctx context.Context, request GenListCatalogsRe
 func (h *APIHandler) GetCatalogRegistration(ctx context.Context, request GenGetCatalogRegistrationRequest) (GenGetCatalogRegistrationResponse, error) {
 	result, err := h.catalogRegistration.Get(ctx, string(request.CatalogName))
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetCatalogRegistration404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetCatalogRegistrationResponse](err, domainErrorResponder[GenGetCatalogRegistrationResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetCatalogRegistrationResponse {
+				return GenGetCatalogRegistration403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetCatalogRegistrationResponse {
+				return GenGetCatalogRegistration404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenGetCatalogRegistration200JSONResponse{
 		Body:    catalogRegistrationToAPI(*result),
@@ -104,14 +119,17 @@ func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request GenU
 
 	result, err := h.catalogRegistration.Update(ctx, string(request.CatalogName), domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateCatalogRegistration403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateCatalogRegistration404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenUpdateCatalogRegistrationResponse](err, domainErrorResponder[GenUpdateCatalogRegistrationResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateCatalogRegistrationResponse {
+				return UpdateCatalogRegistration403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateCatalogRegistrationResponse {
+				return UpdateCatalogRegistration404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenUpdateCatalogRegistration200JSONResponse{
 		Body:    catalogRegistrationToAPI(*result),
@@ -122,14 +140,17 @@ func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request GenU
 // DeleteCatalogRegistration implements the endpoint for deleting a catalog registration.
 func (h *APIHandler) DeleteCatalogRegistration(ctx context.Context, request GenDeleteCatalogRegistrationRequest) (GenDeleteCatalogRegistrationResponse, error) {
 	if err := h.catalogRegistration.Delete(ctx, string(request.CatalogName)); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteCatalogRegistration403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteCatalogRegistration404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteCatalogRegistrationResponse](err, domainErrorResponder[GenDeleteCatalogRegistrationResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteCatalogRegistrationResponse {
+				return DeleteCatalogRegistration403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteCatalogRegistrationResponse {
+				return DeleteCatalogRegistration404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteCatalogRegistration204Response{
 		Headers: GenDeleteCatalogRegistration204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
@@ -140,16 +161,20 @@ func (h *APIHandler) DeleteCatalogRegistration(ctx context.Context, request GenD
 func (h *APIHandler) SetDefaultCatalog(ctx context.Context, request GenSetDefaultCatalogRequest) (GenSetDefaultCatalogResponse, error) {
 	result, err := h.catalogRegistration.SetDefault(ctx, string(request.CatalogName))
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return SetDefaultCatalog403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return SetDefaultCatalog404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return SetDefaultCatalog400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenSetDefaultCatalogResponse](err, domainErrorResponder[GenSetDefaultCatalogResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenSetDefaultCatalogResponse {
+				return SetDefaultCatalog400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenSetDefaultCatalogResponse {
+				return SetDefaultCatalog403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenSetDefaultCatalogResponse {
+				return SetDefaultCatalog404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return SetDefaultCatalog200JSONResponse{
 		Body:    catalogRegistrationToAPI(*result),

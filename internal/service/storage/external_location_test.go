@@ -235,7 +235,7 @@ func TestExternalLocationService_GetByName(t *testing.T) {
 		}
 		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, allowAllAuth(), &mockAuditRepo{}, nil, discardLogger())
 
-		result, err := svc.GetByName(context.Background(), "admin_user", "my-loc")
+		result, err := svc.GetByName(ctxWithPrincipal("admin_user"), "admin_user", "my-loc")
 
 		require.NoError(t, err)
 		assert.Equal(t, "my-loc", result.Name)
@@ -249,7 +249,7 @@ func TestExternalLocationService_GetByName(t *testing.T) {
 		}
 		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, allowAllAuth(), &mockAuditRepo{}, nil, discardLogger())
 
-		_, err := svc.GetByName(context.Background(), "admin_user", "missing")
+		_, err := svc.GetByName(ctxWithPrincipal("admin_user"), "admin_user", "missing")
 
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
@@ -271,7 +271,7 @@ func TestExternalLocationService_List(t *testing.T) {
 		}
 		svc := NewExternalLocationService(repo, &mockStorageCredentialRepo{}, allowAllAuth(), &mockAuditRepo{}, nil, discardLogger())
 
-		locs, total, err := svc.List(context.Background(), "admin_user", domain.PageRequest{MaxResults: 100})
+		locs, total, err := svc.List(ctxWithPrincipal("admin_user"), "admin_user", domain.PageRequest{MaxResults: 100})
 
 		require.NoError(t, err)
 		assert.Equal(t, int64(2), total)

@@ -203,10 +203,10 @@ func printConfigTable(_ *cobra.Command, cfg *UserConfig) error {
 	for name, p := range cfg.Profiles {
 		auth := ""
 		switch {
-		case strings.TrimSpace(p.APIKey) != "":
-			auth = "api-key"
 		case strings.TrimSpace(p.Token) != "":
 			auth = "token"
+		case strings.TrimSpace(p.APIKey) != "":
+			auth = "api-key"
 		}
 
 		active := ""

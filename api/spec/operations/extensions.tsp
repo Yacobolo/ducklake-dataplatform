@@ -169,13 +169,13 @@ op getStorageCredential(credentialName: string): Ok<StorageCredential> | Resourc
 @patch(#{ implicitOptionality: true })
 @tag("Storage")
 @summary("Update storage credential")
-op updateStorageCredential(credentialName: string, @body body: UpdateStorageCredentialRequest): Ok<StorageCredential> | MutatingErrorResponses;
+op updateStorageCredential(credentialName: string, @body body: UpdateStorageCredentialRequest): Ok<StorageCredential> | ResourceErrorResponses;
 
 @route("/storage-credentials/{credentialName}")
 @delete
 @tag("Storage")
 @summary("Delete storage credential")
-op deleteStorageCredential(credentialName: string): NoContent | MutatingErrorResponses;
+op deleteStorageCredential(credentialName: string): NoContent | ResourceErrorResponses;
 
 @route("/external-locations")
 @get
@@ -200,13 +200,13 @@ op getExternalLocation(locationName: string): Ok<ExternalLocation> | ResourceErr
 @patch(#{ implicitOptionality: true })
 @tag("Storage")
 @summary("Update external location")
-op updateExternalLocation(locationName: string, @body body: UpdateExternalLocationRequest): Ok<ExternalLocation> | MutatingErrorResponses;
+op updateExternalLocation(locationName: string, @body body: UpdateExternalLocationRequest): Ok<ExternalLocation> | ResourceErrorResponses;
 
 @route("/external-locations/{locationName}")
 @delete
 @tag("Storage")
 @summary("Delete external location")
-op deleteExternalLocation(locationName: string): NoContent | MutatingErrorResponses;
+op deleteExternalLocation(locationName: string): NoContent | ResourceErrorResponses;
 
 @route("/compute-endpoints")
 @get
@@ -231,13 +231,13 @@ op getComputeEndpoint(endpointName: string): Ok<ComputeEndpoint> | ResourceError
 @patch(#{ implicitOptionality: true })
 @tag("Compute")
 @summary("Update compute endpoint")
-op updateComputeEndpoint(endpointName: string, @body body: UpdateComputeEndpointRequest): Ok<ComputeEndpoint> | MutatingErrorResponses;
+op updateComputeEndpoint(endpointName: string, @body body: UpdateComputeEndpointRequest): Ok<ComputeEndpoint> | ResourceErrorResponses;
 
 @route("/compute-endpoints/{endpointName}")
 @delete
 @tag("Compute")
 @summary("Delete compute endpoint")
-op deleteComputeEndpoint(endpointName: string): NoContent | MutatingErrorResponses;
+op deleteComputeEndpoint(endpointName: string): NoContent | ResourceErrorResponses;
 
 @route("/compute-endpoints/{endpointName}/assignments")
 @get
@@ -261,7 +261,7 @@ op getComputeEndpointHealth(endpointName: string): Ok<ComputeEndpointHealth> | B
 @delete
 @tag("Compute")
 @summary("Delete compute assignment")
-op deleteComputeAssignment(endpointName: string, assignmentId: string): NoContent | MutatingErrorResponses;
+op deleteComputeAssignment(endpointName: string, assignmentId: string): NoContent | ResourceErrorResponses;
 
 @route("/notebooks")
 @get
@@ -285,67 +285,67 @@ op getNotebook(notebookId: string): Ok<NotebookDetail> | ResourceErrorResponses;
 @patch(#{ implicitOptionality: true })
 @tag("Notebooks")
 @summary("Update notebook")
-op updateNotebook(notebookId: string, @body body: UpdateNotebookRequest): Ok<Notebook> | MutatingErrorResponses;
+op updateNotebook(notebookId: string, @body body: UpdateNotebookRequest): Ok<Notebook> | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}")
 @delete
 @tag("Notebooks")
 @summary("Delete notebook")
-op deleteNotebook(notebookId: string): NoContent | MutatingErrorResponses;
+op deleteNotebook(notebookId: string): NoContent | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/cells")
 @post
 @tag("Notebooks")
 @summary("Create cell")
-op createCell(notebookId: string, @body body: CreateCellRequest): Created<Cell> | MutatingErrorResponses;
+op createCell(notebookId: string, @body body: CreateCellRequest): Created<Cell> | ValidationResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/cells/reorder")
 @post
 @tag("Notebooks")
 @summary("Reorder cells")
-op reorderCells(notebookId: string, @body body: ReorderCellsRequest): Ok<CellList> | MutatingErrorResponses;
+op reorderCells(notebookId: string, @body body: ReorderCellsRequest): Ok<CellList> | ValidationResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/cells/{cellId}")
 @patch(#{ implicitOptionality: true })
 @tag("Notebooks")
 @summary("Update cell")
-op updateCell(notebookId: string, cellId: string, @body body: UpdateCellRequest): Ok<Cell> | MutatingErrorResponses;
+op updateCell(notebookId: string, cellId: string, @body body: UpdateCellRequest): Ok<Cell> | ValidationResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/cells/{cellId}")
 @delete
 @tag("Notebooks")
 @summary("Delete cell")
-op deleteCell(notebookId: string, cellId: string): NoContent | MutatingErrorResponses;
+op deleteCell(notebookId: string, cellId: string): NoContent | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions")
 @post
 @tag("Notebooks")
 @summary("Create notebook session")
-op createNotebookSession(notebookId: string): Created<NotebookSession> | MutatingErrorResponses;
+op createNotebookSession(notebookId: string): Created<NotebookSession> | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}")
 @delete
 @tag("Notebooks")
 @summary("Close notebook session")
-op closeNotebookSession(notebookId: string, sessionId: string): NoContent | MutatingErrorResponses;
+op closeNotebookSession(notebookId: string, sessionId: string): NoContent | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}")
 @post
 @tag("Notebooks")
 @summary("Execute cell")
-op executeCell(notebookId: string, sessionId: string, cellId: string): Ok<CellExecutionResult> | MutatingErrorResponses;
+op executeCell(notebookId: string, sessionId: string, cellId: string): Ok<CellExecutionResult> | ValidationResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}/run-all")
 @post
 @tag("Notebooks")
 @summary("Run all cells")
-op runAllCells(notebookId: string, sessionId: string): Ok<RunAllResult> | MutatingErrorResponses;
+op runAllCells(notebookId: string, sessionId: string): Ok<RunAllResult> | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/sessions/{sessionId}/run-all-async")
 @post
 @tag("Notebooks")
 @summary("Run all cells asynchronously")
-op runAllCellsAsync(notebookId: string, sessionId: string): Accepted<NotebookJob> | MutatingErrorResponses;
+op runAllCellsAsync(notebookId: string, sessionId: string): Accepted<NotebookJob> | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}/jobs")
 @get
@@ -435,13 +435,13 @@ op getGitRepo(gitRepoId: string): Ok<GitRepo> | ResourceErrorResponses;
 @delete
 @tag("Integrations")
 @summary("Delete git repo")
-op deleteGitRepo(gitRepoId: string): NoContent | MutatingErrorResponses;
+op deleteGitRepo(gitRepoId: string): NoContent | ResourceErrorResponses;
 
 @route("/git-repos/{gitRepoId}/sync")
 @post
 @tag("Integrations")
 @summary("Sync git repo")
-op syncGitRepo(gitRepoId: string): Ok<GitSyncResult> | MutatingErrorResponses;
+op syncGitRepo(gitRepoId: string): Ok<GitSyncResult> | LookupErrorResponses;
 
 @route("/pipelines")
 @get

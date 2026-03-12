@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 // ViewService provides view management operations.
@@ -36,9 +37,9 @@ func (s *ViewService) CreateView(ctx context.Context, catalogName string, princi
 	if err := ensureMutableCatalog(catalogName); err != nil {
 		return nil, err
 	}
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, catalogName, domain.PrivCreateTable)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableCatalog, catalogName, domain.PrivCreateTable)
 	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
+		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "CREATE_VIEW", fmt.Sprintf("Denied create view %q in schema %q", req.Name, schemaName))
@@ -54,15 +55,9 @@ func (s *ViewService) CreateView(ctx context.Context, catalogName string, princi
 		return nil, err
 	}
 
-	allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateView)
+	allowed, err = servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateView, domain.PrivCreateTable)
 	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
-		if err != nil {
-			return nil, fmt.Errorf("check privilege: %w", err)
-		}
+		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "CREATE_VIEW", fmt.Sprintf("Denied create view %q in schema %q", req.Name, schemaName))
@@ -145,18 +140,18 @@ func (s *ViewService) DeleteView(ctx context.Context, catalogName string, princi
 	if err != nil {
 		return err
 	}
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivManage)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivManage)
 	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
+		return err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "DROP_VIEW", fmt.Sprintf("Denied drop view %q.%q", schemaName, viewName))
 		return domain.ErrAccessDenied("%q lacks permission to delete view %q.%q", principal, schemaName, viewName)
 	}
 
-	allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
+	allowed, err = servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
 	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
+		return err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "DROP_VIEW", fmt.Sprintf("Denied delete view %q.%q", schemaName, viewName))
@@ -184,18 +179,18 @@ func (s *ViewService) UpdateView(ctx context.Context, catalogName string, princi
 	if err != nil {
 		return nil, err
 	}
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivModify)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivModify)
 	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
+		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "UPDATE_VIEW", fmt.Sprintf("Denied update view %q.%q", schemaName, viewName))
 		return nil, domain.ErrAccessDenied("%q lacks permission to update view %q.%q", principal, schemaName, viewName)
 	}
 
-	allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
+	allowed, err = servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
 	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
+		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "UPDATE_VIEW", fmt.Sprintf("Denied update view %q.%q", schemaName, viewName))

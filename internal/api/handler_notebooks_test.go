@@ -23,16 +23,18 @@ import (
 
 // mockNotebookService implements notebookService using function fields.
 type mockNotebookService struct {
-	createNotebookFn  func(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error)
-	getNotebookFn     func(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error)
-	getPublishModelFn func(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error)
-	listNotebooksFn   func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
-	updateNotebookFn  func(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
-	deleteNotebookFn  func(ctx context.Context, principal string, isAdmin bool, id string) error
-	createCellFn      func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error)
-	updateCellFn      func(ctx context.Context, principal string, isAdmin bool, cellID string, req domain.UpdateCellRequest) (*domain.Cell, error)
-	deleteCellFn      func(ctx context.Context, principal string, isAdmin bool, cellID string) error
-	reorderCellsFn    func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.ReorderCellsRequest) ([]domain.Cell, error)
+	createNotebookFn            func(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error)
+	getNotebookFn               func(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error)
+	getNotebookForPrincipalFn   func(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, []domain.Cell, error)
+	getPublishModelFn           func(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error)
+	listNotebooksFn             func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
+	listNotebooksForPrincipalFn func(ctx context.Context, principal string, isAdmin bool, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
+	updateNotebookFn            func(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
+	deleteNotebookFn            func(ctx context.Context, principal string, isAdmin bool, id string) error
+	createCellFn                func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error)
+	updateCellFn                func(ctx context.Context, principal string, isAdmin bool, cellID string, req domain.UpdateCellRequest) (*domain.Cell, error)
+	deleteCellFn                func(ctx context.Context, principal string, isAdmin bool, cellID string) error
+	reorderCellsFn              func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.ReorderCellsRequest) ([]domain.Cell, error)
 }
 
 func (m *mockNotebookService) CreateNotebook(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error) {
@@ -47,6 +49,12 @@ func (m *mockNotebookService) GetNotebook(ctx context.Context, id string) (*doma
 	}
 	panic("GetNotebook not implemented")
 }
+func (m *mockNotebookService) GetNotebookForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, []domain.Cell, error) {
+	if m.getNotebookForPrincipalFn != nil {
+		return m.getNotebookForPrincipalFn(ctx, principal, isAdmin, id)
+	}
+	return m.GetNotebook(ctx, id)
+}
 func (m *mockNotebookService) GetPublishModel(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error) {
 	if m.getPublishModelFn != nil {
 		return m.getPublishModelFn(ctx, notebookID)
@@ -58,6 +66,12 @@ func (m *mockNotebookService) ListNotebooks(ctx context.Context, owner *string, 
 		return m.listNotebooksFn(ctx, owner, page)
 	}
 	panic("ListNotebooks not implemented")
+}
+func (m *mockNotebookService) ListNotebooksForPrincipal(ctx context.Context, principal string, isAdmin bool, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error) {
+	if m.listNotebooksForPrincipalFn != nil {
+		return m.listNotebooksForPrincipalFn(ctx, principal, isAdmin, owner, page)
+	}
+	return m.ListNotebooks(ctx, owner, page)
 }
 func (m *mockNotebookService) UpdateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error) {
 	if m.updateNotebookFn != nil {
@@ -98,13 +112,20 @@ func (m *mockNotebookService) ReorderCells(ctx context.Context, principal string
 
 // mockSessionService implements sessionService using function fields.
 type mockSessionService struct {
-	createSessionFn func(ctx context.Context, notebookID, principal string) (*domain.NotebookSession, error)
-	closeSessionFn  func(ctx context.Context, sessionID string) error
-	executeCellFn   func(ctx context.Context, sessionID, cellID string) (*domain.CellExecutionResult, error)
-	runAllFn        func(ctx context.Context, sessionID string) (*domain.RunAllResult, error)
-	runAllAsyncFn   func(ctx context.Context, sessionID string) (*domain.NotebookJob, error)
-	getJobFn        func(ctx context.Context, jobID string) (*domain.NotebookJob, error)
-	listJobsFn      func(ctx context.Context, notebookID string, page domain.PageRequest) ([]domain.NotebookJob, int64, error)
+	createSessionFn            func(ctx context.Context, notebookID, principal string) (*domain.NotebookSession, error)
+	createSessionForNotebookFn func(ctx context.Context, notebookID, principal string, isAdmin bool) (*domain.NotebookSession, error)
+	closeSessionFn             func(ctx context.Context, sessionID string) error
+	closeNotebookSessionFn     func(ctx context.Context, notebookID, sessionID, principal string, isAdmin bool) error
+	executeCellFn              func(ctx context.Context, sessionID, cellID string) (*domain.CellExecutionResult, error)
+	executeNotebookCellFn      func(ctx context.Context, notebookID, sessionID, cellID, principal string, isAdmin bool) (*domain.CellExecutionResult, error)
+	runAllFn                   func(ctx context.Context, sessionID string) (*domain.RunAllResult, error)
+	runAllNotebookFn           func(ctx context.Context, notebookID, sessionID, principal string, isAdmin bool) (*domain.RunAllResult, error)
+	runAllAsyncFn              func(ctx context.Context, sessionID string) (*domain.NotebookJob, error)
+	runAllNotebookAsyncFn      func(ctx context.Context, notebookID, sessionID, principal string, isAdmin bool) (*domain.NotebookJob, error)
+	getJobFn                   func(ctx context.Context, jobID string) (*domain.NotebookJob, error)
+	getNotebookJobFn           func(ctx context.Context, notebookID, jobID, principal string, isAdmin bool) (*domain.NotebookJob, error)
+	listJobsFn                 func(ctx context.Context, notebookID string, page domain.PageRequest) ([]domain.NotebookJob, int64, error)
+	listNotebookJobsFn         func(ctx context.Context, notebookID, principal string, isAdmin bool, page domain.PageRequest) ([]domain.NotebookJob, int64, error)
 }
 
 func (m *mockSessionService) CreateSession(ctx context.Context, notebookID, principal string) (*domain.NotebookSession, error) {
@@ -113,11 +134,23 @@ func (m *mockSessionService) CreateSession(ctx context.Context, notebookID, prin
 	}
 	panic("CreateSession not implemented")
 }
+func (m *mockSessionService) CreateSessionForNotebook(ctx context.Context, notebookID, principal string, isAdmin bool) (*domain.NotebookSession, error) {
+	if m.createSessionForNotebookFn != nil {
+		return m.createSessionForNotebookFn(ctx, notebookID, principal, isAdmin)
+	}
+	return m.CreateSession(ctx, notebookID, principal)
+}
 func (m *mockSessionService) CloseSession(ctx context.Context, sessionID string, principalName ...string) error {
 	if m.closeSessionFn != nil {
 		return m.closeSessionFn(ctx, sessionID)
 	}
 	panic("CloseSession not implemented")
+}
+func (m *mockSessionService) CloseNotebookSession(ctx context.Context, notebookID, sessionID, principal string, isAdmin bool) error {
+	if m.closeNotebookSessionFn != nil {
+		return m.closeNotebookSessionFn(ctx, notebookID, sessionID, principal, isAdmin)
+	}
+	return m.CloseSession(ctx, sessionID)
 }
 func (m *mockSessionService) ExecuteCell(ctx context.Context, sessionID, cellID string, principalName ...string) (*domain.CellExecutionResult, error) {
 	if m.executeCellFn != nil {
@@ -125,11 +158,23 @@ func (m *mockSessionService) ExecuteCell(ctx context.Context, sessionID, cellID 
 	}
 	panic("ExecuteCell not implemented")
 }
+func (m *mockSessionService) ExecuteNotebookCell(ctx context.Context, notebookID, sessionID, cellID, principal string, isAdmin bool) (*domain.CellExecutionResult, error) {
+	if m.executeNotebookCellFn != nil {
+		return m.executeNotebookCellFn(ctx, notebookID, sessionID, cellID, principal, isAdmin)
+	}
+	return m.ExecuteCell(ctx, sessionID, cellID)
+}
 func (m *mockSessionService) RunAll(ctx context.Context, sessionID string, principalName ...string) (*domain.RunAllResult, error) {
 	if m.runAllFn != nil {
 		return m.runAllFn(ctx, sessionID)
 	}
 	panic("RunAll not implemented")
+}
+func (m *mockSessionService) RunAllNotebook(ctx context.Context, notebookID, sessionID, principal string, isAdmin bool) (*domain.RunAllResult, error) {
+	if m.runAllNotebookFn != nil {
+		return m.runAllNotebookFn(ctx, notebookID, sessionID, principal, isAdmin)
+	}
+	return m.RunAll(ctx, sessionID)
 }
 func (m *mockSessionService) RunAllAsync(ctx context.Context, sessionID string, principalName ...string) (*domain.NotebookJob, error) {
 	if m.runAllAsyncFn != nil {
@@ -137,11 +182,23 @@ func (m *mockSessionService) RunAllAsync(ctx context.Context, sessionID string, 
 	}
 	panic("RunAllAsync not implemented")
 }
+func (m *mockSessionService) RunAllNotebookAsync(ctx context.Context, notebookID, sessionID, principal string, isAdmin bool) (*domain.NotebookJob, error) {
+	if m.runAllNotebookAsyncFn != nil {
+		return m.runAllNotebookAsyncFn(ctx, notebookID, sessionID, principal, isAdmin)
+	}
+	return m.RunAllAsync(ctx, sessionID)
+}
 func (m *mockSessionService) GetJob(ctx context.Context, jobID string) (*domain.NotebookJob, error) {
 	if m.getJobFn != nil {
 		return m.getJobFn(ctx, jobID)
 	}
 	panic("GetJob not implemented")
+}
+func (m *mockSessionService) GetNotebookJob(ctx context.Context, notebookID, jobID, principal string, isAdmin bool) (*domain.NotebookJob, error) {
+	if m.getNotebookJobFn != nil {
+		return m.getNotebookJobFn(ctx, notebookID, jobID, principal, isAdmin)
+	}
+	return m.GetJob(ctx, jobID)
 }
 func (m *mockSessionService) ListJobs(ctx context.Context, notebookID string, page domain.PageRequest) ([]domain.NotebookJob, int64, error) {
 	if m.listJobsFn != nil {
@@ -149,14 +206,22 @@ func (m *mockSessionService) ListJobs(ctx context.Context, notebookID string, pa
 	}
 	panic("ListJobs not implemented")
 }
+func (m *mockSessionService) ListNotebookJobs(ctx context.Context, notebookID, principal string, isAdmin bool, page domain.PageRequest) ([]domain.NotebookJob, int64, error) {
+	if m.listNotebookJobsFn != nil {
+		return m.listNotebookJobsFn(ctx, notebookID, principal, isAdmin, page)
+	}
+	return m.ListJobs(ctx, notebookID, page)
+}
 
 // mockGitRepoService implements gitRepoService using function fields.
 type mockGitRepoService struct {
-	createGitRepoFn func(ctx context.Context, principal string, req domain.CreateGitRepoRequest) (*domain.GitRepo, error)
-	getGitRepoFn    func(ctx context.Context, id string) (*domain.GitRepo, error)
-	listGitReposFn  func(ctx context.Context, page domain.PageRequest) ([]domain.GitRepo, int64, error)
-	deleteGitRepoFn func(ctx context.Context, principal string, isAdmin bool, id string) error
-	syncGitRepoFn   func(ctx context.Context, id string) (*domain.GitSyncResult, error)
+	createGitRepoFn            func(ctx context.Context, principal string, req domain.CreateGitRepoRequest) (*domain.GitRepo, error)
+	getGitRepoFn               func(ctx context.Context, id string) (*domain.GitRepo, error)
+	getGitRepoForPrincipalFn   func(ctx context.Context, principal string, isAdmin bool, id string) (*domain.GitRepo, error)
+	listGitReposFn             func(ctx context.Context, page domain.PageRequest) ([]domain.GitRepo, int64, error)
+	listGitReposForPrincipalFn func(ctx context.Context, principal string, isAdmin bool, page domain.PageRequest) ([]domain.GitRepo, int64, error)
+	deleteGitRepoFn            func(ctx context.Context, principal string, isAdmin bool, id string) error
+	syncGitRepoFn              func(ctx context.Context, id string) (*domain.GitSyncResult, error)
 }
 
 func (m *mockGitRepoService) CreateGitRepo(ctx context.Context, principal string, req domain.CreateGitRepoRequest) (*domain.GitRepo, error) {
@@ -171,11 +236,23 @@ func (m *mockGitRepoService) GetGitRepo(ctx context.Context, id string) (*domain
 	}
 	panic("GetGitRepo not implemented")
 }
+func (m *mockGitRepoService) GetGitRepoForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.GitRepo, error) {
+	if m.getGitRepoForPrincipalFn != nil {
+		return m.getGitRepoForPrincipalFn(ctx, principal, isAdmin, id)
+	}
+	return m.GetGitRepo(ctx, id)
+}
 func (m *mockGitRepoService) ListGitRepos(ctx context.Context, page domain.PageRequest) ([]domain.GitRepo, int64, error) {
 	if m.listGitReposFn != nil {
 		return m.listGitReposFn(ctx, page)
 	}
 	panic("ListGitRepos not implemented")
+}
+func (m *mockGitRepoService) ListGitReposForPrincipal(ctx context.Context, principal string, isAdmin bool, page domain.PageRequest) ([]domain.GitRepo, int64, error) {
+	if m.listGitReposForPrincipalFn != nil {
+		return m.listGitReposForPrincipalFn(ctx, principal, isAdmin, page)
+	}
+	return m.ListGitRepos(ctx, page)
 }
 func (m *mockGitRepoService) DeleteGitRepo(ctx context.Context, principal string, isAdmin bool, id string) error {
 	if m.deleteGitRepoFn != nil {
@@ -858,5 +935,51 @@ func TestAPI_NotebookForbidden(t *testing.T) {
 		var errResp Error
 		_ = json.NewDecoder(resp.Body).Decode(&errResp)
 		assert.Equal(t, int32(403), errResp.Code)
+	})
+}
+
+func TestAPI_NotebookSecurityBoundaries(t *testing.T) {
+	notebookSvc := &mockNotebookService{
+		getNotebookForPrincipalFn: func(_ context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, []domain.Cell, error) {
+			require.Equal(t, "bob", principal)
+			require.False(t, isAdmin)
+			return nil, nil, domain.ErrAccessDenied("only the owner can access notebook")
+		},
+	}
+	sessionSvc := &mockSessionService{
+		executeNotebookCellFn: func(_ context.Context, notebookID, sessionID, cellID, principal string, isAdmin bool) (*domain.CellExecutionResult, error) {
+			require.Equal(t, "nb-wrong", notebookID)
+			require.Equal(t, "bob", principal)
+			require.False(t, isAdmin)
+			return nil, domain.ErrNotFound("cell %s not found", cellID)
+		},
+	}
+	gitSvc := &mockGitRepoService{
+		getGitRepoForPrincipalFn: func(_ context.Context, principal string, isAdmin bool, id string) (*domain.GitRepo, error) {
+			require.Equal(t, "bob", principal)
+			require.False(t, isAdmin)
+			return nil, domain.ErrAccessDenied("only the owner can access git repo")
+		},
+	}
+
+	srv := setupNotebookTestServer(t, notebookSvc, sessionSvc, gitSvc, "bob", false)
+	defer srv.Close()
+
+	t.Run("cross-user notebook read returns 403", func(t *testing.T) {
+		resp := nbDoRequest(t, http.MethodGet, srv.URL+"/notebooks/nb-1", "")
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusForbidden, resp.StatusCode)
+	})
+
+	t.Run("wrong notebook parent returns 404", func(t *testing.T) {
+		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/nb-wrong/sessions/sess-1/execute/cell-1", "")
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
+	t.Run("cross-user git repo read returns 403", func(t *testing.T) {
+		resp := nbDoRequest(t, http.MethodGet, srv.URL+"/git-repos/repo-1", "")
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusForbidden, resp.StatusCode)
 	})
 }

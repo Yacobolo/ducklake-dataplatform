@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 
@@ -94,6 +93,8 @@ func (h *APIHandler) SubmitQuery(ctx context.Context, req GenSubmitQueryRequest)
 		switch int(code) {
 		case http.StatusBadRequest:
 			return SubmitQuery400JSONResponse{BadRequestJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		case http.StatusConflict:
+			return SubmitQuery409JSONResponse{ConflictJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return GenSubmitQuery500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
@@ -154,12 +155,22 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResults
 	pageToken := ""
 	if req.Params.PageToken != nil {
 		pageToken = *req.Params.PageToken
+		pageTokenMessage := ""
+		if _, decodePageTokenErr := decodePageToken(pageToken); decodePageTokenErr != nil {
+			pageTokenMessage = decodePageTokenErr.Error()
+		}
+		if pageTokenMessage != "" {
+			return GetQueryResults400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: pageTokenMessage}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
 	}
 
 	offset := domain.PageRequest{PageToken: pageToken}.Offset()
 	limit := int(maxResults)
 	if limit <= 0 {
 		limit = 100
+	}
+	if offset > len(job.Rows) {
+		return GetQueryResults400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "page_token points past the available results"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	end := offset + limit
@@ -339,18 +350,19 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 
 	result, err := h.manifest.GetManifest(ctx, principal, "", schemaName, req.Body.Table)
 	if err != nil {
-		code := errorCodeFromError(err)
-		msg := err.Error()
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return CreateManifest404JSONResponse{NotFoundJSONResponse{Body: Error{Code: code, Message: msg}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateManifest403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: code, Message: msg}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreateManifest400JSONResponse{BadRequestJSONResponse{Body: Error{Code: code, Message: msg}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return GenCreateManifest500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: msg}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateManifestResponse](err, domainErrorResponder[GenCreateManifestResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateManifestResponse {
+				return CreateManifest400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateManifestResponse { return CreateManifest403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenCreateManifestResponse { return CreateManifest404JSONResponse{resp} },
+			Internal: func(resp InternalErrorJSONResponse) GenCreateManifestResponse {
+				return GenCreateManifest500JSONResponse{GenInternalErrorJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return GenCreateManifest500JSONResponse{GenInternalErrorJSONResponse(internalErrorResponse(err))}, nil
 	}
 
 	cols := make([]ManifestColumn, len(result.Columns))

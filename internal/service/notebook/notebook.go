@@ -50,9 +50,37 @@ func (s *Service) CreateNotebook(ctx context.Context, principal string, req doma
 	return result, nil
 }
 
+func canAccessNotebook(nb *domain.Notebook, principal string, isAdmin bool) bool {
+	return isAdmin || nb.Owner == principal
+}
+
+func (s *Service) requireNotebookAccess(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, error) {
+	nb, err := s.repo.GetNotebook(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if !canAccessNotebook(nb, principal, isAdmin) {
+		return nil, domain.ErrAccessDenied("only the notebook owner or admin can access notebook %q", id)
+	}
+	return nb, nil
+}
+
 // GetNotebook retrieves a notebook and its cells.
 func (s *Service) GetNotebook(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error) {
 	nb, err := s.repo.GetNotebook(ctx, id)
+	if err != nil {
+		return nil, nil, err
+	}
+	cells, err := s.repo.ListCells(ctx, id)
+	if err != nil {
+		return nil, nil, fmt.Errorf("list cells: %w", err)
+	}
+	return nb, cells, nil
+}
+
+// GetNotebookForPrincipal retrieves a notebook and its cells for the owner or an admin.
+func (s *Service) GetNotebookForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, []domain.Cell, error) {
+	nb, err := s.requireNotebookAccess(ctx, principal, isAdmin, id)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -98,14 +126,24 @@ func (s *Service) ListNotebooks(ctx context.Context, owner *string, page domain.
 	return s.repo.ListNotebooks(ctx, owner, page)
 }
 
+// ListNotebooksForPrincipal lists notebooks visible to the caller.
+func (s *Service) ListNotebooksForPrincipal(ctx context.Context, principal string, isAdmin bool, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error) {
+	if isAdmin {
+		return s.repo.ListNotebooks(ctx, owner, page)
+	}
+
+	if owner != nil && *owner != principal {
+		return nil, 0, domain.ErrAccessDenied("non-admin principals can only list their own notebooks")
+	}
+
+	ownerName := principal
+	return s.repo.ListNotebooks(ctx, &ownerName, page)
+}
+
 // UpdateNotebook updates notebook metadata. Only the owner or admin can update.
 func (s *Service) UpdateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error) {
-	nb, err := s.repo.GetNotebook(ctx, id)
-	if err != nil {
+	if _, err := s.requireNotebookAccess(ctx, principal, isAdmin, id); err != nil {
 		return nil, err
-	}
-	if nb.Owner != principal && !isAdmin {
-		return nil, domain.ErrAccessDenied("only the notebook owner or admin can update")
 	}
 	result, err := s.repo.UpdateNotebook(ctx, id, req)
 	if err != nil {
@@ -121,12 +159,8 @@ func (s *Service) UpdateNotebook(ctx context.Context, principal string, isAdmin 
 
 // DeleteNotebook deletes a notebook. Only the owner or admin can delete.
 func (s *Service) DeleteNotebook(ctx context.Context, principal string, isAdmin bool, id string) error {
-	nb, err := s.repo.GetNotebook(ctx, id)
-	if err != nil {
+	if _, err := s.requireNotebookAccess(ctx, principal, isAdmin, id); err != nil {
 		return err
-	}
-	if nb.Owner != principal && !isAdmin {
-		return domain.ErrAccessDenied("only the notebook owner or admin can delete")
 	}
 	if err := s.repo.DeleteNotebook(ctx, id); err != nil {
 		return fmt.Errorf("delete notebook: %w", err)
@@ -144,12 +178,8 @@ func (s *Service) CreateCell(ctx context.Context, principal string, isAdmin bool
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
-	nb, err := s.repo.GetNotebook(ctx, notebookID)
-	if err != nil {
+	if _, err := s.requireNotebookAccess(ctx, principal, isAdmin, notebookID); err != nil {
 		return nil, err
-	}
-	if nb.Owner != principal && !isAdmin {
-		return nil, domain.ErrAccessDenied("only the notebook owner or admin can add cells")
 	}
 
 	pos := 0

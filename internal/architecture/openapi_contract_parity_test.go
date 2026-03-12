@@ -18,6 +18,7 @@ type openAPICoreOperation struct {
 	Path           string
 	OperationID    string
 	HasRequestBody bool
+	ResponseCodes  []string
 }
 
 func TestOpenAPIContractParity_CoreOperationShape(t *testing.T) {
@@ -35,6 +36,56 @@ func TestOpenAPIContractParity_CoreOperationShape(t *testing.T) {
 		actual := generatedOps[key]
 		require.Equalf(t, expected.OperationID, actual.OperationID, "openapi parity: operationId drift for %s %s", expected.Method, expected.Path)
 		require.Equalf(t, expected.HasRequestBody, actual.HasRequestBody, "openapi parity: requestBody presence drift for %s %s", expected.Method, expected.Path)
+		require.Equalf(t, expected.ResponseCodes, actual.ResponseCodes, "openapi parity: response code drift for %s %s", expected.Method, expected.Path)
+	}
+}
+
+func TestCanonicalOpenAPI_HardeningEndpointsExposeExpectedDomainErrors(t *testing.T) {
+	t.Helper()
+
+	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
+	operations := collectOpenAPICoreOperations(t, doc)
+
+	expects := map[string][]string{
+		"deleteAPIKey":              {"403"},
+		"getNotebook":               {"403", "404"},
+		"updateNotebook":            {"403", "404"},
+		"deleteNotebook":            {"403", "404"},
+		"createCell":                {"400", "403", "404"},
+		"reorderCells":              {"400", "403", "404"},
+		"updateCell":                {"400", "403", "404"},
+		"deleteCell":                {"403", "404"},
+		"createNotebookSession":     {"403", "404"},
+		"closeNotebookSession":      {"403", "404"},
+		"executeCell":               {"400", "403", "404"},
+		"runAllCells":               {"403", "404"},
+		"runAllCellsAsync":          {"403", "404"},
+		"listNotebookJobs":          {"403", "404"},
+		"getNotebookJob":            {"403", "404"},
+		"getGitRepo":                {"403", "404"},
+		"deleteGitRepo":             {"403", "404"},
+		"syncGitRepo":               {"404"},
+		"getStorageCredential":      {"403", "404"},
+		"updateStorageCredential":   {"403", "404"},
+		"deleteStorageCredential":   {"403", "404"},
+		"getExternalLocation":       {"403", "404"},
+		"updateExternalLocation":    {"403", "404"},
+		"deleteExternalLocation":    {"403", "404"},
+		"updateComputeEndpoint":     {"403", "404"},
+		"deleteComputeEndpoint":     {"403", "404"},
+		"deleteComputeAssignment":   {"403", "404"},
+		"getCatalogRegistration":    {"403", "404"},
+		"updateCatalogRegistration": {"403", "404"},
+		"deleteCatalogRegistration": {"403", "404"},
+		"createManifest":            {"403"},
+	}
+
+	for operationID, requiredCodes := range expects {
+		operation, ok := findOpenAPIOperationByID(operations, operationID)
+		require.Truef(t, ok, "openapi parity: missing operationId %s", operationID)
+		for _, code := range requiredCodes {
+			require.Containsf(t, operation.ResponseCodes, code, "openapi parity: operationId %s must document response code %s", operationID, code)
+		}
 	}
 }
 
@@ -80,6 +131,7 @@ func collectOpenAPICoreOperations(t *testing.T, doc *openapi3.T) map[string]open
 				Path:           path,
 				OperationID:    operation.OperationID,
 				HasRequestBody: operation.RequestBody != nil,
+				ResponseCodes:  sortedResponseCodes(operation),
 			}
 
 			require.NotEmptyf(t, core.OperationID, "openapi parity: missing operationId for %s", key)
@@ -93,6 +145,28 @@ func collectOpenAPICoreOperations(t *testing.T, doc *openapi3.T) map[string]open
 	}
 
 	return operations
+}
+
+func findOpenAPIOperationByID(operations map[string]openAPICoreOperation, operationID string) (openAPICoreOperation, bool) {
+	for _, operation := range operations {
+		if operation.OperationID == operationID {
+			return operation, true
+		}
+	}
+	return openAPICoreOperation{}, false
+}
+
+func sortedResponseCodes(operation *openapi3.Operation) []string {
+	if operation == nil || operation.Responses == nil {
+		return nil
+	}
+
+	codes := make([]string, 0, len(operation.Responses.Map()))
+	for code := range operation.Responses.Map() {
+		codes = append(codes, code)
+	}
+	sort.Strings(codes)
+	return codes
 }
 
 func sortedOperationKeys(operations map[string]openAPICoreOperation) []string {

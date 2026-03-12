@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 
 	"duck-demo/internal/domain"
 )
@@ -60,12 +59,12 @@ func (h *APIHandler) ListAuditLogs(ctx context.Context, req GenListAuditLogsRequ
 
 	entries, total, err := h.audit.List(ctx, filter)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return ListAuditLogs403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListAuditLogsResponse](err, domainErrorResponder[GenListAuditLogsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListAuditLogsResponse { return ListAuditLogs403JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]AuditEntry, len(entries))
@@ -98,12 +97,14 @@ func (h *APIHandler) ListQueryHistory(ctx context.Context, req GenListQueryHisto
 
 	entries, total, err := h.queryHistory.List(ctx, filter)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return ListQueryHistory403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListQueryHistoryResponse](err, domainErrorResponder[GenListQueryHistoryResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListQueryHistoryResponse {
+				return ListQueryHistory403JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]QueryHistoryEntry, len(entries))
@@ -126,12 +127,15 @@ func (h *APIHandler) SearchCatalog(ctx context.Context, req GenSearchCatalogRequ
 
 	results, total, err := h.search.Search(ctx, req.Params.Query, req.Params.Type, req.Params.Catalog, page)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.ValidationError)):
-			return SearchCatalog400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return GenSearchCatalog500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 500, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenSearchCatalogResponse](err, domainErrorResponder[GenSearchCatalogResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenSearchCatalogResponse { return SearchCatalog400JSONResponse{resp} },
+			Internal: func(resp InternalErrorJSONResponse) GenSearchCatalogResponse {
+				return GenSearchCatalog500JSONResponse{GenInternalErrorJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return GenSearchCatalog500JSONResponse{GenInternalErrorJSONResponse(internalErrorResponse(err))}, nil
 	}
 
 	data := make([]SearchResult, len(results))
@@ -224,12 +228,14 @@ func (h *APIHandler) GetDownstreamLineage(ctx context.Context, req GenGetDownstr
 // DeleteLineageEdge implements the endpoint for deleting a lineage edge by ID.
 func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req GenDeleteLineageEdgeRequest) (GenDeleteLineageEdgeResponse, error) {
 	if err := h.lineage.DeleteEdge(ctx, req.EdgeId); err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteLineageEdge404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteLineageEdgeResponse](err, domainErrorResponder[GenDeleteLineageEdgeResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteLineageEdgeResponse {
+				return DeleteLineageEdge404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteLineageEdge204Response{}, nil
 }
@@ -243,12 +249,15 @@ func (h *APIHandler) PurgeLineage(ctx context.Context, req GenPurgeLineageReques
 
 	deleted, err := h.lineage.PurgeOlderThan(ctx, int(req.Body.OlderThanDays))
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return PurgeLineage403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return GenPurgeLineage500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 500, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenPurgeLineageResponse](err, domainErrorResponder[GenPurgeLineageResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenPurgeLineageResponse { return PurgeLineage403JSONResponse{resp} },
+			Internal: func(resp InternalErrorJSONResponse) GenPurgeLineageResponse {
+				return GenPurgeLineage500JSONResponse{GenInternalErrorJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return GenPurgeLineage500JSONResponse{GenInternalErrorJSONResponse(internalErrorResponse(err))}, nil
 	}
 	deletedCount := safeInt64ToInt32(deleted)
 	return PurgeLineage200JSONResponse{
@@ -331,14 +340,13 @@ func (h *APIHandler) CreateTag(ctx context.Context, req GenCreateTagRequest) (Ge
 	principal := caller.Name
 	result, err := h.tags.CreateTag(ctx, principal, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreateTag400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return CreateTag409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenCreateTagResponse](err, domainErrorResponder[GenCreateTagResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateTagResponse { return CreateTag400JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenCreateTagResponse { return CreateTag409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenCreateTag201JSONResponse{
 		Body:    tagToAPI(*result),
@@ -355,12 +363,12 @@ func (h *APIHandler) DeleteTag(ctx context.Context, req GenDeleteTagRequest) (Ge
 
 	principal := caller.Name
 	if err := h.tags.DeleteTag(ctx, principal, req.TagId); err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteTag404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteTagResponse](err, domainErrorResponder[GenDeleteTagResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteTagResponse { return DeleteTag404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteTag204Response{}, nil
 }
@@ -377,12 +385,14 @@ func (h *APIHandler) CreateTagAssignment(ctx context.Context, req GenCreateTagAs
 	principal := cp.Name
 	result, err := h.tags.AssignTag(ctx, principal, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.ConflictError)):
-			return CreateTagAssignment409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenCreateTagAssignmentResponse](err, domainErrorResponder[GenCreateTagAssignmentResponse]{
+			Conflict: func(resp ConflictJSONResponse) GenCreateTagAssignmentResponse {
+				return CreateTagAssignment409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenCreateTagAssignment201JSONResponse{
 		Body:    tagAssignmentToAPI(*result),
@@ -421,16 +431,23 @@ func (h *APIHandler) DeleteTagAssignment(ctx context.Context, req GenDeleteTagAs
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.tags.UnassignTag(ctx, principal, req.AssignmentId); err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteTagAssignment404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteTagAssignment403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return DeleteTagAssignment400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return GenDeleteTagAssignment500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 500, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenDeleteTagAssignmentResponse](err, domainErrorResponder[GenDeleteTagAssignmentResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenDeleteTagAssignmentResponse {
+				return DeleteTagAssignment400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteTagAssignmentResponse {
+				return DeleteTagAssignment403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteTagAssignmentResponse {
+				return DeleteTagAssignment404JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenDeleteTagAssignmentResponse {
+				return GenDeleteTagAssignment500JSONResponse{GenInternalErrorJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return GenDeleteTagAssignment500JSONResponse{GenInternalErrorJSONResponse(internalErrorResponse(err))}, nil
 	}
 	return GenDeleteTagAssignment204Response{}, nil
 }

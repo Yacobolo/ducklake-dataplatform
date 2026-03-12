@@ -3,7 +3,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"math"
 
 	"duck-demo/internal/domain"
@@ -37,16 +36,14 @@ type assetBackfillService interface {
 func (h *APIHandler) CreateAsset(ctx context.Context, req GenCreateAssetRequest) (GenCreateAssetResponse, error) {
 	created, err := h.assets.CreateAsset(ctx, domainCreateAssetRequest(req.Body))
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateAsset403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreateAsset400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return CreateAsset409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenCreateAssetResponse](err, domainErrorResponder[GenCreateAssetResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateAssetResponse { return CreateAsset400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateAssetResponse { return CreateAsset403JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenCreateAssetResponse { return CreateAsset409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	return CreateAsset201JSONResponse{
@@ -76,8 +73,10 @@ func (h *APIHandler) ListAssets(ctx context.Context, req GenListAssetsRequest) (
 func (h *APIHandler) GetAsset(ctx context.Context, req GenGetAssetRequest) (GenGetAssetResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return GetAsset404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenGetAssetResponse](err, domainErrorResponder[GenGetAssetResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetAssetResponse { return GetAsset404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -91,16 +90,14 @@ func (h *APIHandler) GetAsset(ctx context.Context, req GenGetAssetRequest) (GenG
 func (h *APIHandler) UpdateAsset(ctx context.Context, req GenUpdateAssetRequest) (GenUpdateAssetResponse, error) {
 	updated, err := h.assets.UpdateAsset(ctx, req.AssetKey, domainUpdateAssetRequest(req.Body))
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateAsset403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return UpdateAsset400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateAsset404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenUpdateAssetResponse](err, domainErrorResponder[GenUpdateAssetResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateAssetResponse { return UpdateAsset400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenUpdateAssetResponse { return UpdateAsset403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenUpdateAssetResponse { return UpdateAsset404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	return UpdateAsset200JSONResponse{
@@ -111,16 +108,14 @@ func (h *APIHandler) UpdateAsset(ctx context.Context, req GenUpdateAssetRequest)
 
 func (h *APIHandler) DeleteAsset(ctx context.Context, req GenDeleteAssetRequest) (GenDeleteAssetResponse, error) {
 	if err := h.assets.DeleteAsset(ctx, req.AssetKey); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteAsset403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return DeleteAsset400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteAsset404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteAssetResponse](err, domainErrorResponder[GenDeleteAssetResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenDeleteAssetResponse { return DeleteAsset400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenDeleteAssetResponse { return DeleteAsset403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenDeleteAssetResponse { return DeleteAsset404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	return DeleteAsset204Response{}, nil
@@ -129,8 +124,10 @@ func (h *APIHandler) DeleteAsset(ctx context.Context, req GenDeleteAssetRequest)
 func (h *APIHandler) GetAssetGraph(ctx context.Context, req GenGetAssetGraphRequest) (GenGetAssetGraphResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return GetAssetGraph404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenGetAssetGraphResponse](err, domainErrorResponder[GenGetAssetGraphResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetAssetGraphResponse { return GetAssetGraph404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -172,11 +169,15 @@ func (h *APIHandler) GetAssetGraph(ctx context.Context, req GenGetAssetGraphRequ
 func (h *APIHandler) GetAssetFreshness(ctx context.Context, req GenGetAssetFreshnessRequest) (GenGetAssetFreshnessResponse, error) {
 	status, err := h.assets.CheckFreshness(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return GetAssetFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		}
-		if errors.As(err, new(*domain.ValidationError)) {
-			return GetAssetFreshness400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenGetAssetFreshnessResponse](err, domainErrorResponder[GenGetAssetFreshnessResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenGetAssetFreshnessResponse {
+				return GetAssetFreshness400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetAssetFreshnessResponse {
+				return GetAssetFreshness404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -191,11 +192,15 @@ func (h *APIHandler) GetAssetFreshness(ctx context.Context, req GenGetAssetFresh
 func (h *APIHandler) ExplainAssetFreshness(ctx context.Context, req GenExplainAssetFreshnessRequest) (GenExplainAssetFreshnessResponse, error) {
 	node, err := h.assets.ExplainFreshness(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return ExplainAssetFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		}
-		if errors.As(err, new(*domain.ValidationError)) {
-			return ExplainAssetFreshness400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenExplainAssetFreshnessResponse](err, domainErrorResponder[GenExplainAssetFreshnessResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenExplainAssetFreshnessResponse {
+				return ExplainAssetFreshness400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenExplainAssetFreshnessResponse {
+				return ExplainAssetFreshness404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -210,11 +215,15 @@ func (h *APIHandler) ExplainAssetFreshness(ctx context.Context, req GenExplainAs
 func (h *APIHandler) ListAssetFreshnessRequirements(ctx context.Context, req GenListAssetFreshnessRequirementsRequest) (GenListAssetFreshnessRequirementsResponse, error) {
 	node, err := h.assets.ExplainFreshness(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return ListAssetFreshnessRequirements404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		}
-		if errors.As(err, new(*domain.ValidationError)) {
-			return ListAssetFreshnessRequirements400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenListAssetFreshnessRequirementsResponse](err, domainErrorResponder[GenListAssetFreshnessRequirementsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenListAssetFreshnessRequirementsResponse {
+				return ListAssetFreshnessRequirements400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListAssetFreshnessRequirementsResponse {
+				return ListAssetFreshnessRequirements404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -229,11 +238,15 @@ func (h *APIHandler) ListAssetFreshnessRequirements(ctx context.Context, req Gen
 func (h *APIHandler) ListAssetFreshnessBlockers(ctx context.Context, req GenListAssetFreshnessBlockersRequest) (GenListAssetFreshnessBlockersResponse, error) {
 	node, err := h.assets.ExplainFreshness(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return ListAssetFreshnessBlockers404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		}
-		if errors.As(err, new(*domain.ValidationError)) {
-			return ListAssetFreshnessBlockers400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenListAssetFreshnessBlockersResponse](err, domainErrorResponder[GenListAssetFreshnessBlockersResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenListAssetFreshnessBlockersResponse {
+				return ListAssetFreshnessBlockers400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListAssetFreshnessBlockersResponse {
+				return ListAssetFreshnessBlockers404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -248,11 +261,15 @@ func (h *APIHandler) ListAssetFreshnessBlockers(ctx context.Context, req GenList
 func (h *APIHandler) ReconcileAssetFreshness(ctx context.Context, req GenReconcileAssetFreshnessRequest) (GenReconcileAssetFreshnessResponse, error) {
 	result, err := h.assets.ReconcileFreshness(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return ReconcileAssetFreshness404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		}
-		if errors.As(err, new(*domain.ValidationError)) {
-			return ReconcileAssetFreshness400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenReconcileAssetFreshnessResponse](err, domainErrorResponder[GenReconcileAssetFreshnessResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenReconcileAssetFreshnessResponse {
+				return ReconcileAssetFreshness400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenReconcileAssetFreshnessResponse {
+				return ReconcileAssetFreshness404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -278,8 +295,12 @@ func dependencyAssetIDs(upstream []domain.AssetDependency, downstream []domain.A
 func (h *APIHandler) ListAssetPartitions(ctx context.Context, req GenListAssetPartitionsRequest) (GenListAssetPartitionsResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return ListAssetPartitions404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenListAssetPartitionsResponse](err, domainErrorResponder[GenListAssetPartitionsResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenListAssetPartitionsResponse {
+				return ListAssetPartitions404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -304,8 +325,10 @@ func (h *APIHandler) ListAssetPartitions(ctx context.Context, req GenListAssetPa
 func (h *APIHandler) ListAssetRuns(ctx context.Context, req GenListAssetRunsRequest) (GenListAssetRunsResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return ListAssetRuns404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenListAssetRunsResponse](err, domainErrorResponder[GenListAssetRunsResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenListAssetRunsResponse { return ListAssetRuns404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -335,8 +358,12 @@ func (h *APIHandler) ListAssetRuns(ctx context.Context, req GenListAssetRunsRequ
 func (h *APIHandler) TriggerAssetMaterialization(ctx context.Context, req GenTriggerAssetMaterializationRequest) (GenTriggerAssetMaterializationResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return TriggerAssetMaterialization404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenTriggerAssetMaterializationResponse](err, domainErrorResponder[GenTriggerAssetMaterializationResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenTriggerAssetMaterializationResponse {
+				return TriggerAssetMaterialization404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -356,11 +383,15 @@ func (h *APIHandler) TriggerAssetMaterialization(ctx context.Context, req GenTri
 
 	event, err := h.assets.TriggerMaterialization(ctx, asset.ID, partitionKey, payload, idempotencyKey)
 	if err != nil {
-		if errors.As(err, new(*domain.ValidationError)) {
-			return TriggerAssetMaterialization400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		}
-		if errors.As(err, new(*domain.AccessDeniedError)) {
-			return TriggerAssetMaterialization403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenTriggerAssetMaterializationResponse](err, domainErrorResponder[GenTriggerAssetMaterializationResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenTriggerAssetMaterializationResponse {
+				return TriggerAssetMaterialization400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenTriggerAssetMaterializationResponse {
+				return TriggerAssetMaterialization403JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -374,8 +405,12 @@ func (h *APIHandler) TriggerAssetMaterialization(ctx context.Context, req GenTri
 func (h *APIHandler) ListAssetMaterializations(ctx context.Context, req GenListAssetMaterializationsRequest) (GenListAssetMaterializationsResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return ListAssetMaterializations404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenListAssetMaterializationsResponse](err, domainErrorResponder[GenListAssetMaterializationsResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenListAssetMaterializationsResponse {
+				return ListAssetMaterializations404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -400,8 +435,12 @@ func (h *APIHandler) ListAssetMaterializations(ctx context.Context, req GenListA
 func (h *APIHandler) ListAssetChecks(ctx context.Context, req GenListAssetChecksRequest) (GenListAssetChecksResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return ListAssetChecks404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenListAssetChecksResponse](err, domainErrorResponder[GenListAssetChecksResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenListAssetChecksResponse {
+				return ListAssetChecks404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -424,8 +463,12 @@ func (h *APIHandler) ListAssetChecks(ctx context.Context, req GenListAssetChecks
 func (h *APIHandler) ListAssetCheckResults(ctx context.Context, req GenListAssetCheckResultsRequest) (GenListAssetCheckResultsResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return ListAssetCheckResults404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenListAssetCheckResultsResponse](err, domainErrorResponder[GenListAssetCheckResultsResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenListAssetCheckResultsResponse {
+				return ListAssetCheckResults404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -450,8 +493,12 @@ func (h *APIHandler) ListAssetCheckResults(ctx context.Context, req GenListAsset
 func (h *APIHandler) ListAssetBackfills(ctx context.Context, req GenListAssetBackfillsRequest) (GenListAssetBackfillsResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return ListAssetBackfills404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenListAssetBackfillsResponse](err, domainErrorResponder[GenListAssetBackfillsResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenListAssetBackfillsResponse {
+				return ListAssetBackfills404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -483,8 +530,12 @@ func (h *APIHandler) CreateAssetBackfill(ctx context.Context, req GenCreateAsset
 
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return CreateAssetBackfill404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateAssetBackfillResponse](err, domainErrorResponder[GenCreateAssetBackfillResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenCreateAssetBackfillResponse {
+				return CreateAssetBackfill404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -495,11 +546,15 @@ func (h *APIHandler) CreateAssetBackfill(ctx context.Context, req GenCreateAsset
 	}
 	created, slices, err := h.backfills.Create(ctx, asset.ID, principal.Name, req.Body.PartitionFrom, req.Body.PartitionTo, maxParallelism)
 	if err != nil {
-		if errors.As(err, new(*domain.ValidationError)) {
-			return CreateAssetBackfill400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		}
-		if errors.As(err, new(*domain.AccessDeniedError)) {
-			return CreateAssetBackfill403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateAssetBackfillResponse](err, domainErrorResponder[GenCreateAssetBackfillResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateAssetBackfillResponse {
+				return CreateAssetBackfill400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateAssetBackfillResponse {
+				return CreateAssetBackfill403JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
@@ -518,22 +573,29 @@ func (h *APIHandler) CreateAssetBackfill(ctx context.Context, req GenCreateAsset
 func (h *APIHandler) GetAssetBackfill(ctx context.Context, req GenGetAssetBackfillRequest) (GenGetAssetBackfillResponse, error) {
 	asset, err := h.assets.GetAsset(ctx, req.AssetKey)
 	if err != nil {
-		if errors.As(err, new(*domain.NotFoundError)) {
-			return GetAssetBackfill404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenGetAssetBackfillResponse](err, domainErrorResponder[GenGetAssetBackfillResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetAssetBackfillResponse {
+				return GetAssetBackfill404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
 		return nil, err
 	}
 
 	backfill, slices, err := h.assets.GetBackfill(ctx, asset.ID, req.BackfillId)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.ValidationError)):
-			return GetAssetBackfill400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GetAssetBackfill404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetAssetBackfillResponse](err, domainErrorResponder[GenGetAssetBackfillResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenGetAssetBackfillResponse {
+				return GetAssetBackfill400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetAssetBackfillResponse {
+				return GetAssetBackfill404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	apiSlices := make([]BackfillSlice, len(slices))

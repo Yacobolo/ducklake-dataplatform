@@ -105,6 +105,20 @@ func TestNotebookService_GetNotebook(t *testing.T) {
 		var notFound *domain.NotFoundError
 		assert.ErrorAs(t, err, &notFound)
 	})
+
+	t.Run("non-owner denied on secure read", func(t *testing.T) {
+		svc, repo, _ := setupNotebookService(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+
+		_, _, err := svc.GetNotebookForPrincipal(ctx, "bob", false, "nb-1")
+		require.Error(t, err)
+		var accessDenied *domain.AccessDeniedError
+		assert.ErrorAs(t, err, &accessDenied)
+	})
 }
 
 // === UpdateNotebook ===
@@ -388,15 +402,44 @@ func TestNotebookService_ReorderCells(t *testing.T) {
 // === ListNotebooks ===
 
 func TestNotebookService_ListNotebooks(t *testing.T) {
-	svc, repo, _ := setupNotebookService(t)
-	ctx := context.Background()
+	t.Run("base list", func(t *testing.T) {
+		svc, repo, _ := setupNotebookService(t)
+		ctx := context.Background()
 
-	repo.ListNotebooksFn = func(_ context.Context, owner *string, _ domain.PageRequest) ([]domain.Notebook, int64, error) {
-		return []domain.Notebook{{ID: "nb-1", Name: "NB"}}, 1, nil
-	}
+		repo.ListNotebooksFn = func(_ context.Context, owner *string, _ domain.PageRequest) ([]domain.Notebook, int64, error) {
+			return []domain.Notebook{{ID: "nb-1", Name: "NB"}}, 1, nil
+		}
 
-	nbs, total, err := svc.ListNotebooks(ctx, nil, domain.PageRequest{})
-	require.NoError(t, err)
-	assert.Equal(t, int64(1), total)
-	assert.Len(t, nbs, 1)
+		nbs, total, err := svc.ListNotebooks(ctx, nil, domain.PageRequest{})
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), total)
+		assert.Len(t, nbs, 1)
+	})
+
+	t.Run("non-admin list is scoped to caller", func(t *testing.T) {
+		svc, repo, _ := setupNotebookService(t)
+		ctx := context.Background()
+
+		repo.ListNotebooksFn = func(_ context.Context, owner *string, _ domain.PageRequest) ([]domain.Notebook, int64, error) {
+			require.NotNil(t, owner)
+			assert.Equal(t, "alice", *owner)
+			return []domain.Notebook{{ID: "nb-1", Name: "NB", Owner: "alice"}}, 1, nil
+		}
+
+		nbs, total, err := svc.ListNotebooksForPrincipal(ctx, "alice", false, nil, domain.PageRequest{})
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), total)
+		assert.Len(t, nbs, 1)
+	})
+
+	t.Run("non-admin cannot request another owner", func(t *testing.T) {
+		svc, _, _ := setupNotebookService(t)
+		ctx := context.Background()
+		owner := "bob"
+
+		_, _, err := svc.ListNotebooksForPrincipal(ctx, "alice", false, &owner, domain.PageRequest{})
+		require.Error(t, err)
+		var accessDenied *domain.AccessDeniedError
+		assert.ErrorAs(t, err, &accessDenied)
+	})
 }

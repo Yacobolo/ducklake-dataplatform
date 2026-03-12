@@ -13,6 +13,7 @@ import (
 
 type mockAPIKeyService struct {
 	createFn func(ctx context.Context, req domain.CreateAPIKeyRequest) (string, *domain.APIKey, error)
+	deleteFn func(ctx context.Context, id string) error
 }
 
 func (m *mockAPIKeyService) Create(ctx context.Context, req domain.CreateAPIKeyRequest) (string, *domain.APIKey, error) {
@@ -26,8 +27,11 @@ func (m *mockAPIKeyService) List(context.Context, *string, domain.PageRequest) (
 	panic("not implemented")
 }
 
-func (m *mockAPIKeyService) Delete(context.Context, string) error {
-	panic("not implemented")
+func (m *mockAPIKeyService) Delete(ctx context.Context, id string) error {
+	if m.deleteFn == nil {
+		panic("mockAPIKeyService.Delete called but not configured")
+	}
+	return m.deleteFn(ctx, id)
 }
 
 func (m *mockAPIKeyService) CleanupExpired(context.Context) (int64, error) {
@@ -81,4 +85,21 @@ func TestHandler_CreateAPIKey_CreatesResponse(t *testing.T) {
 	require.True(t, ok, "expected 201 response, got %T", resp)
 	assert.Equal(t, "raw-secret", created.Body.Key)
 	assert.Equal(t, "key-1", created.Body.Id)
+}
+
+func TestHandler_DeleteAPIKey_AccessDeniedReturns403(t *testing.T) {
+	t.Parallel()
+
+	handler := &APIHandler{apiKeys: &mockAPIKeyService{
+		deleteFn: func(_ context.Context, _ string) error {
+			return domain.ErrAccessDenied("cannot delete another principal's key")
+		},
+	}}
+
+	resp, err := handler.DeleteAPIKey(secTestCtx(), GenDeleteAPIKeyRequest{ApiKeyId: "key-1"})
+	require.NoError(t, err)
+
+	forbidden, ok := resp.(DeleteAPIKey403JSONResponse)
+	require.True(t, ok, "expected 403 response, got %T", resp)
+	assert.Equal(t, int32(403), forbidden.Body.Code)
 }

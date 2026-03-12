@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"math"
 	"sort"
 	"strings"
@@ -93,16 +92,14 @@ func (h *APIHandler) CreateMacro(ctx context.Context, req GenCreateMacroRequest)
 	principal := cp.Name
 	result, err := h.macros.Create(ctx, principal, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateMacro403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreateMacro400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return CreateMacro409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreateMacro400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateMacroResponse](err, domainErrorResponder[GenCreateMacroResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateMacroResponse { return CreateMacro400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateMacroResponse { return CreateMacro403JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenCreateMacroResponse { return CreateMacro409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return CreateMacro400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenCreateMacro201JSONResponse{
 		Body:    macroToAPI(*result),
@@ -114,12 +111,14 @@ func (h *APIHandler) CreateMacro(ctx context.Context, req GenCreateMacroRequest)
 func (h *APIHandler) ListMacroRevisions(ctx context.Context, req GenListMacroRevisionsRequest) (GenListMacroRevisionsResponse, error) {
 	revisions, err := h.macros.ListRevisions(ctx, req.MacroName)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenListMacroRevisions404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListMacroRevisionsResponse](err, domainErrorResponder[GenListMacroRevisionsResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenListMacroRevisionsResponse {
+				return GenListMacroRevisions404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	out := make([]MacroRevision, 0, len(revisions))
 	for _, r := range revisions {
@@ -135,38 +134,47 @@ func (h *APIHandler) ListMacroRevisions(ctx context.Context, req GenListMacroRev
 func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req GenDiffMacroRevisionsRequest) (GenDiffMacroRevisionsResponse, error) {
 	diff, err := h.macros.DiffRevisions(ctx, req.MacroName, int(req.Params.FromVersion), int(req.Params.ToVersion))
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenDiffMacroRevisions404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return DiffMacroRevisions400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDiffMacroRevisionsResponse](err, domainErrorResponder[GenDiffMacroRevisionsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenDiffMacroRevisionsResponse {
+				return DiffMacroRevisions400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDiffMacroRevisionsResponse {
+				return GenDiffMacroRevisions404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	fromRev, err := h.macros.GetRevisionByVersion(ctx, req.MacroName, int(req.Params.FromVersion))
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenDiffMacroRevisions404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return DiffMacroRevisions400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDiffMacroRevisionsResponse](err, domainErrorResponder[GenDiffMacroRevisionsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenDiffMacroRevisionsResponse {
+				return DiffMacroRevisions400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDiffMacroRevisionsResponse {
+				return GenDiffMacroRevisions404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	toRev, err := h.macros.GetRevisionByVersion(ctx, req.MacroName, int(req.Params.ToVersion))
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenDiffMacroRevisions404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return DiffMacroRevisions400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDiffMacroRevisionsResponse](err, domainErrorResponder[GenDiffMacroRevisionsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenDiffMacroRevisionsResponse {
+				return DiffMacroRevisions400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDiffMacroRevisionsResponse {
+				return GenDiffMacroRevisions404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	fromImpact, err := h.listMacroImpactAsOf(ctx, req.MacroName, &fromRev.CreatedAt)
@@ -204,12 +212,14 @@ func (h *APIHandler) GetMacroImpact(ctx context.Context, req GenGetMacroImpactRe
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 
 	if _, err := h.macros.Get(ctx, req.MacroName); err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetMacroImpact404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetMacroImpactResponse](err, domainErrorResponder[GenGetMacroImpactResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetMacroImpactResponse {
+				return GenGetMacroImpact404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	impacted, err := h.listMacroImpact(ctx, req.MacroName)
@@ -242,12 +252,14 @@ func (h *APIHandler) GetMacroImpact(ctx context.Context, req GenGetMacroImpactRe
 func (h *APIHandler) GetMacro(ctx context.Context, req GenGetMacroRequest) (GenGetMacroResponse, error) {
 	result, err := h.macros.Get(ctx, req.MacroName)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetMacro404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetMacroResponse](err, domainErrorResponder[GenGetMacroResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetMacroResponse {
+				return GenGetMacro404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenGetMacro200JSONResponse{
 		Body:    macroToAPI(*result),
@@ -292,16 +304,14 @@ func (h *APIHandler) UpdateMacro(ctx context.Context, req GenUpdateMacroRequest)
 	principal := cp.Name
 	result, err := h.macros.Update(ctx, principal, req.MacroName, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateMacro403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateMacro404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return UpdateMacro400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenUpdateMacroResponse](err, domainErrorResponder[GenUpdateMacroResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateMacroResponse { return UpdateMacro400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenUpdateMacroResponse { return UpdateMacro403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenUpdateMacroResponse { return UpdateMacro404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenUpdateMacro200JSONResponse{
 		Body:    macroToAPI(*result),
@@ -314,14 +324,13 @@ func (h *APIHandler) DeleteMacro(ctx context.Context, req GenDeleteMacroRequest)
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.macros.Delete(ctx, principal, req.MacroName); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteMacro403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteMacro404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteMacroResponse](err, domainErrorResponder[GenDeleteMacroResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteMacroResponse { return DeleteMacro403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenDeleteMacroResponse { return DeleteMacro404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteMacro204Response{
 		Headers: GenDeleteMacro204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},

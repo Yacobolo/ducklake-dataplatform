@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 // CreateAsset creates an asset definition and reconciles dependencies and checks.
@@ -19,7 +20,6 @@ func (s *Service) CreateAsset(ctx context.Context, req domain.CreateAssetRequest
 		return nil, err
 	}
 
-	principal, _ := domain.PrincipalFromContext(ctx)
 	asset := &domain.DataAsset{
 		AssetKey:              strings.TrimSpace(req.AssetKey),
 		AssetType:             strings.TrimSpace(req.AssetType),
@@ -31,7 +31,7 @@ func (s *Service) CreateAsset(ctx context.Context, req domain.CreateAssetRequest
 		AutoMaterializePolicy: req.AutoMaterializePolicy,
 		IOProfile:             strings.TrimSpace(req.IOProfile),
 		IsActive:              req.IsActive,
-		CreatedBy:             principal.Name,
+		CreatedBy:             servicepolicy.CallerName(ctx),
 		SchemaJSON:            map[string]any{},
 	}
 
@@ -50,7 +50,7 @@ func (s *Service) CreateAsset(ctx context.Context, req domain.CreateAssetRequest
 	if s.audit != nil {
 		_ = s.audit.Insert(ctx, &domain.AuditEntry{
 			ID:            domain.NewID(),
-			PrincipalName: principal.Name,
+			PrincipalName: servicepolicy.CallerName(ctx),
 			Action:        "asset.create",
 			Status:        "ALLOWED",
 			CreatedAt:     created.CreatedAt,
@@ -262,10 +262,7 @@ func cloneMap(in map[string]any) map[string]any {
 	return out
 }
 
-func principalName(ctx context.Context) string {
-	principal, _ := domain.PrincipalFromContext(ctx)
-	return principal.Name
-}
+func principalName(ctx context.Context) string { return servicepolicy.CallerName(ctx) }
 
 func (s *Service) rollbackCreatedAsset(ctx context.Context, assetID string) {
 	if s == nil {

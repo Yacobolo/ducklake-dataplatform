@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 type Service struct {
@@ -87,9 +89,6 @@ func (s *Service) Bootstrap(ctx context.Context, req BootstrapRequest) (*LoginRe
 		if !s.validateBootstrapToken(state, req.BootstrapToken) {
 			return nil, domain.ErrAccessDenied("valid bootstrap token required")
 		}
-		if err := s.setupState.ClearBootstrapToken(ctx); err != nil {
-			return nil, fmt.Errorf("consume bootstrap token: %w", err)
-		}
 	}
 
 	ph, err := hashPassword(req.Password, s.passwordParms)
@@ -113,10 +112,17 @@ func (s *Service) Bootstrap(ctx context.Context, req BootstrapRequest) (*LoginRe
 		MustChangePassword: false,
 	})
 	if err != nil {
-		return nil, err
+		return nil, s.failBootstrap(ctx, p.ID, "store bootstrap credential", err)
 	}
 
-	_ = s.setupState.Complete(ctx, p.ID)
+	// Clear the bootstrap token before marking setup complete so failures do not
+	// leave a reusable recovery token behind after creating credentials.
+	if err := s.setupState.ClearBootstrapToken(ctx); err != nil {
+		return nil, s.failBootstrap(ctx, p.ID, "clear bootstrap token", err)
+	}
+	if err := s.setupState.Complete(ctx, p.ID); err != nil {
+		return nil, s.failBootstrap(ctx, p.ID, "mark setup complete", err)
+	}
 
 	token, err := s.issueJWT(p)
 	if err != nil {
@@ -294,10 +300,27 @@ func (s *Service) issueJWT(p *domain.Principal) (string, error) {
 	return signed, nil
 }
 
-func callerName(ctx context.Context) string {
-	p, ok := domain.PrincipalFromContext(ctx)
-	if !ok || strings.TrimSpace(p.Name) == "" {
-		return "system"
+func (s *Service) failBootstrap(ctx context.Context, principalID, action string, cause error) error {
+	cleanupErr := s.rollbackBootstrap(ctx, principalID)
+	if cleanupErr != nil {
+		return fmt.Errorf("%s: %w", action, errors.Join(cause, fmt.Errorf("cleanup: %w", cleanupErr)))
 	}
-	return p.Name
+	return fmt.Errorf("%s: %w", action, cause)
+}
+
+func (s *Service) rollbackBootstrap(ctx context.Context, principalID string) error {
+	var cleanupErr error
+
+	if err := s.credentials.Delete(ctx, principalID); err != nil && !errors.As(err, new(*domain.NotFoundError)) {
+		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("delete bootstrap credential: %w", err))
+	}
+	if err := s.principals.Delete(ctx, principalID); err != nil && !errors.As(err, new(*domain.NotFoundError)) {
+		cleanupErr = errors.Join(cleanupErr, fmt.Errorf("delete bootstrap principal: %w", err))
+	}
+
+	return cleanupErr
+}
+
+func callerName(ctx context.Context) string {
+	return servicepolicy.CallerNameOr(ctx, "system")
 }

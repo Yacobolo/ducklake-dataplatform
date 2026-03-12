@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -17,6 +16,52 @@ import (
 	"duck-demo/pkg/cli/apiruntime"
 	"duck-demo/pkg/cli/gen"
 )
+
+func jsonLiteralForField(fieldType, raw string) (string, error) {
+	switch strings.ToLower(fieldType) {
+	case "bool", "boolean":
+		value, err := strconv.ParseBool(raw)
+		if err != nil {
+			return "", fmt.Errorf("parse boolean value %q: %w", raw, err)
+		}
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return "", err
+		}
+		return string(encoded), nil
+	case "int", "int32", "int64", "integer":
+		value, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil {
+			return "", fmt.Errorf("parse integer value %q: %w", raw, err)
+		}
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return "", err
+		}
+		return string(encoded), nil
+	case "float", "float32", "float64", "number":
+		value, err := strconv.ParseFloat(raw, 64)
+		if err != nil {
+			return "", fmt.Errorf("parse numeric value %q: %w", raw, err)
+		}
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return "", err
+		}
+		return string(encoded), nil
+	case "array", "object":
+		if !json.Valid([]byte(raw)) {
+			return "", fmt.Errorf("%s values must be valid JSON", fieldType)
+		}
+		return raw, nil
+	default:
+		encoded, err := json.Marshal(raw)
+		if err != nil {
+			return "", err
+		}
+		return string(encoded), nil
+	}
+}
 
 func newAPICmd(client *apiruntime.Client) *cobra.Command {
 	cmd := &cobra.Command{
@@ -306,20 +351,21 @@ func newAPICurlCmd() *cobra.Command {
 			// Body from remaining params
 			if len(found.BodyFields) > 0 && len(paramMap) > 0 {
 				curlParts = append(curlParts, "-H", "'Content-Type: application/json'")
-				bodyFieldTypes := make(map[string]string, len(found.BodyFields))
+				bodyParts := make([]string, 0, len(paramMap))
+				fieldByName := make(map[string]gen.APIGenField, len(found.BodyFields))
 				for _, field := range found.BodyFields {
-					bodyFieldTypes[field.Name] = field.Type
+					fieldByName[field.Name] = field
 				}
-				keys := make([]string, 0, len(paramMap))
-				for k := range paramMap {
-					keys = append(keys, k)
-				}
-				sort.Strings(keys)
-
-				bodyParts := make([]string, 0, len(keys))
-				for _, k := range keys {
-					v := paramMap[k]
-					bodyParts = append(bodyParts, fmt.Sprintf("%q:%s", k, apiCurlJSONValue(v, bodyFieldTypes[k])))
+				for k, v := range paramMap {
+					field, ok := fieldByName[k]
+					if !ok {
+						continue
+					}
+					literal, err := jsonLiteralForField(field.Type, v)
+					if err != nil {
+						return err
+					}
+					bodyParts = append(bodyParts, fmt.Sprintf("%q:%s", k, literal))
 				}
 				curlParts = append(curlParts, "-d", fmt.Sprintf("'{%s}'", strings.Join(bodyParts, ",")))
 			}
@@ -428,29 +474,6 @@ func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
 		endpoint.CLICommand = "assets freshness reconcile"
 	}
 	return endpoint
-}
-
-func apiCurlJSONValue(raw string, fieldType string) string {
-	switch fieldType {
-	case "object", "array":
-		if json.Valid([]byte(raw)) {
-			return raw
-		}
-	case "boolean":
-		if _, err := strconv.ParseBool(raw); err == nil {
-			return strings.ToLower(raw)
-		}
-	case "integer", "number":
-		if _, err := strconv.ParseFloat(raw, 64); err == nil {
-			return raw
-		}
-	}
-
-	encoded, err := json.Marshal(raw)
-	if err != nil {
-		return fmt.Sprintf("%q", raw)
-	}
-	return string(encoded)
 }
 
 func apiContentTypes(operationID string) []string {

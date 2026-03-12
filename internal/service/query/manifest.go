@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 // ManifestVersion is the current manifest response contract version.
@@ -150,7 +151,7 @@ func (s *ManifestService) GetManifest(
 	}
 
 	// 2. Check RBAC: principal needs SELECT on this table
-	allowed, err := s.authSvc.CheckPrivilege(ctx, principalName, domain.SecurableTable, tableID, domain.PrivSelect)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.authSvc, principalName, domain.SecurableTable, tableID, domain.PrivSelect)
 	if err != nil {
 		s.logManifestAudit(ctx, principalName, lookupName, "ERROR", err.Error(), time.Since(start))
 		return nil, fmt.Errorf("privilege check: %w", err)

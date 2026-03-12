@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 
 	"duck-demo/internal/domain"
 )
@@ -66,16 +65,20 @@ func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req GenCreateCom
 	principal := cp.Name
 	result, err := h.computeEndpoints.Create(ctx, principal, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateComputeEndpoint403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreateComputeEndpoint400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return CreateComputeEndpoint409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreateComputeEndpoint400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateComputeEndpointResponse](err, domainErrorResponder[GenCreateComputeEndpointResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateComputeEndpointResponse {
+				return CreateComputeEndpoint400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateComputeEndpointResponse {
+				return CreateComputeEndpoint403JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenCreateComputeEndpointResponse {
+				return CreateComputeEndpoint409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return CreateComputeEndpoint400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenCreateComputeEndpoint201JSONResponse{
 		Body:    computeEndpointToAPI(*result),
@@ -88,12 +91,14 @@ func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GenGetComputeEn
 	principal := principalFromCtx(ctx)
 	result, err := h.computeEndpoints.GetByName(ctx, principal, req.EndpointName)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetComputeEndpoint404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenGetComputeEndpointResponse](err, domainErrorResponder[GenGetComputeEndpointResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetComputeEndpointResponse {
+				return GenGetComputeEndpoint404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenGetComputeEndpoint200JSONResponse{
 		Body:    computeEndpointToAPI(*result),
@@ -121,14 +126,17 @@ func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req GenUpdateCom
 	principal := cp.Name
 	result, err := h.computeEndpoints.Update(ctx, principal, req.EndpointName, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return UpdateComputeEndpoint403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return UpdateComputeEndpoint404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenUpdateComputeEndpointResponse](err, domainErrorResponder[GenUpdateComputeEndpointResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateComputeEndpointResponse {
+				return UpdateComputeEndpoint403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateComputeEndpointResponse {
+				return UpdateComputeEndpoint404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenUpdateComputeEndpoint200JSONResponse{
 		Body:    computeEndpointToAPI(*result),
@@ -141,14 +149,17 @@ func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req GenDeleteCom
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.computeEndpoints.Delete(ctx, principal, req.EndpointName); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteComputeEndpoint403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteComputeEndpoint404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteComputeEndpointResponse](err, domainErrorResponder[GenDeleteComputeEndpointResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteComputeEndpointResponse {
+				return DeleteComputeEndpoint403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteComputeEndpointResponse {
+				return DeleteComputeEndpoint404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteComputeEndpoint204Response{}, nil
 }
@@ -159,12 +170,14 @@ func (h *APIHandler) ListComputeAssignments(ctx context.Context, req GenListComp
 	principal := principalFromCtx(ctx)
 	assignments, total, err := h.computeEndpoints.ListAssignments(ctx, principal, req.EndpointName, page)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenListComputeAssignments404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListComputeAssignmentsResponse](err, domainErrorResponder[GenListComputeAssignmentsResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenListComputeAssignmentsResponse {
+				return GenListComputeAssignments404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 
 	data := make([]ComputeAssignment, len(assignments))
@@ -195,16 +208,20 @@ func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req GenCreateC
 	principal := cp.Name
 	result, err := h.computeEndpoints.Assign(ctx, principal, req.EndpointName, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateComputeAssignment403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreateComputeAssignment400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ConflictError)):
-			return CreateComputeAssignment409JSONResponse{ConflictJSONResponse{Body: Error{Code: 409, Message: err.Error()}, Headers: ConflictResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreateComputeAssignment400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateComputeAssignmentResponse](err, domainErrorResponder[GenCreateComputeAssignmentResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateComputeAssignmentResponse {
+				return CreateComputeAssignment400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateComputeAssignmentResponse {
+				return CreateComputeAssignment403JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenCreateComputeAssignmentResponse {
+				return CreateComputeAssignment409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return CreateComputeAssignment400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 	return GenCreateComputeAssignment201JSONResponse{
 		Body:    computeAssignmentToAPI(*result),
@@ -219,16 +236,25 @@ func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GenGetCom
 
 	result, err := h.computeEndpoints.HealthCheck(ctx, principal, req.EndpointName)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.ValidationError)):
-			return GetComputeEndpointHealth400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GetComputeEndpointHealth403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetComputeEndpointHealth404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return GetComputeEndpointHealth502JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 502, Message: err.Error()}, Headers: GenGetComputeEndpointHealth502ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenGetComputeEndpointHealthResponse](err, domainErrorResponder[GenGetComputeEndpointHealthResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenGetComputeEndpointHealthResponse {
+				return GetComputeEndpointHealth400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetComputeEndpointHealthResponse {
+				return GetComputeEndpointHealth403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetComputeEndpointHealthResponse {
+				return GenGetComputeEndpointHealth404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return GetComputeEndpointHealth502JSONResponse{
+			GenInternalErrorJSONResponse{
+				Body:    errorBodyWithCode(502, err),
+				Headers: GenGetComputeEndpointHealth502ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+			},
+		}, nil
 	}
 
 	var uptimeSeconds *int32
@@ -264,14 +290,17 @@ func (h *APIHandler) DeleteComputeAssignment(ctx context.Context, req GenDeleteC
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.computeEndpoints.Unassign(ctx, principal, req.AssignmentId); err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return DeleteComputeAssignment403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteComputeAssignment404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteComputeAssignmentResponse](err, domainErrorResponder[GenDeleteComputeAssignmentResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteComputeAssignmentResponse {
+				return DeleteComputeAssignment403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteComputeAssignmentResponse {
+				return DeleteComputeAssignment404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteComputeAssignment204Response{}, nil
 }

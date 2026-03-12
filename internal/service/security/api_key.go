@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 // APIKeyService provides API key management operations.
@@ -27,18 +28,13 @@ func NewAPIKeyService(repo domain.APIKeyRepository, principals domain.PrincipalR
 // Non-admin users can only create keys for themselves.
 // Returns the raw key (shown once) and the created key metadata.
 func (s *APIKeyService) Create(ctx context.Context, req domain.CreateAPIKeyRequest) (string, *domain.APIKey, error) {
-	caller, ok := domain.PrincipalFromContext(ctx)
-	if !ok {
-		return "", nil, domain.ErrAccessDenied("authentication required")
+	caller, err := servicepolicy.RequirePrincipalOrAdmin(ctx, req.PrincipalID, "non-admin users can only create API keys for themselves")
+	if err != nil {
+		return "", nil, err
 	}
 
 	if err := req.Validate(); err != nil {
 		return "", nil, err
-	}
-
-	// Non-admin users can only create keys for themselves.
-	if !caller.IsAdmin && caller.ID != req.PrincipalID {
-		return "", nil, domain.ErrAccessDenied("non-admin users can only create API keys for themselves")
 	}
 	if _, err := s.principals.GetByID(ctx, req.PrincipalID); err != nil {
 		return "", nil, err
@@ -80,9 +76,9 @@ func (s *APIKeyService) Create(ctx context.Context, req domain.CreateAPIKeyReque
 // If principalID is nil or empty, defaults to the caller's own keys.
 // Non-admin users can only list their own keys.
 func (s *APIKeyService) List(ctx context.Context, principalID *string, page domain.PageRequest) ([]domain.APIKey, int64, error) {
-	caller, ok := domain.PrincipalFromContext(ctx)
-	if !ok {
-		return nil, 0, domain.ErrAccessDenied("authentication required")
+	caller, err := servicepolicy.RequireAuthenticatedPrincipal(ctx)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	// Default to caller's own keys
@@ -91,8 +87,8 @@ func (s *APIKeyService) List(ctx context.Context, principalID *string, page doma
 	}
 
 	// Non-admin can only list own keys
-	if !caller.IsAdmin && caller.ID != *principalID {
-		return nil, 0, domain.ErrAccessDenied("can only list your own API keys")
+	if _, err := servicepolicy.RequirePrincipalOrAdmin(ctx, *principalID, "can only list your own API keys"); err != nil {
+		return nil, 0, err
 	}
 
 	return s.repo.ListByPrincipal(ctx, *principalID, page)
@@ -101,9 +97,9 @@ func (s *APIKeyService) List(ctx context.Context, principalID *string, page doma
 // Delete removes an API key by ID.
 // The caller must be the key owner or an admin.
 func (s *APIKeyService) Delete(ctx context.Context, id string) error {
-	caller, ok := domain.PrincipalFromContext(ctx)
-	if !ok {
-		return domain.ErrAccessDenied("authentication required")
+	caller, err := servicepolicy.RequireAuthenticatedPrincipal(ctx)
+	if err != nil {
+		return err
 	}
 
 	// Look up the API key to verify ownership.
@@ -113,8 +109,8 @@ func (s *APIKeyService) Delete(ctx context.Context, id string) error {
 	}
 
 	// Allow deletion only if the caller owns the key or is an admin.
-	if !caller.IsAdmin && caller.ID != key.PrincipalID {
-		return domain.ErrAccessDenied("only the key owner or an admin can delete this API key")
+	if _, err := servicepolicy.RequirePrincipalOrAdmin(ctx, key.PrincipalID, "only the key owner or an admin can delete this API key"); err != nil {
+		return err
 	}
 
 	if err := s.repo.Delete(ctx, id); err != nil {
