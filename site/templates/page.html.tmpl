@@ -1,8 +1,8 @@
 {{ define "docs" -}}
 <main class="site-layout docs-layout section-layout">
-  <aside class="site-sidebar docs-sidebar section-sidebar">
+  <aside class="site-sidebar docs-sidebar section-sidebar"{{ if eq .Page.Kind "api" }} data-api-sidebar{{ end }}>
     <nav>
-      <div class="site-sidebar-label">Documentation</div>
+      <div class="site-sidebar-label">{{ if eq .Page.Kind "api" }}API Reference{{ else }}Documentation{{ end }}</div>
       {{ range .SidebarGroups }}
         <details class="docs-nav-group section-nav-group" {{ if .Open }}open{{ end }}>
           <summary>
@@ -17,12 +17,17 @@
     </nav>
   </aside>
   <article class="site-content docs-content section-content">
-    <div class="mb-8 flex flex-wrap items-center gap-3 text-sm" style="color: var(--site-muted);">
-      {{ range .Breadcrumbs }}
-        <a href="{{ .Path }}" class="no-underline">{{ .Title }}</a>
-        <span>/</span>
+    <div class="mb-8 flex flex-wrap items-center justify-between gap-4 text-sm" style="color: var(--site-muted);">
+      <div class="flex flex-wrap items-center gap-3">
+        {{ range .Breadcrumbs }}
+          <a href="{{ .Path }}" class="no-underline">{{ .Title }}</a>
+          <span>/</span>
+        {{ end }}
+        <span>{{ .Page.Title }}</span>
+      </div>
+      {{ if eq .Page.Kind "api" }}
+        <a class="site-button site-button-secondary" href="/llms/{{ .MirrorPath }}">Open Markdown</a>
       {{ end }}
-      <span>{{ .Page.Title }}</span>
     </div>
     <div class="site-prose">
       <h1>{{ .Page.Title }}</h1>
@@ -46,51 +51,6 @@
       </ul>
     </nav>
   </aside>
-</main>
-{{- end }}
-
-{{ define "api" -}}
-<main class="site-layout api-layout section-layout">
-  <aside class="site-sidebar api-sidebar section-sidebar">
-    <nav>
-      <div class="site-sidebar-label api-sidebar-label">API Reference</div>
-      {{ range .SidebarGroups }}
-        <details class="api-nav-group section-nav-group" {{ if .Open }}open{{ end }}>
-          <summary>
-            <span class="site-nav-summary-row">
-              {{ if .Icon }}<span class="site-nav-group-icon" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
-              <span>{{ .Title }}</span>
-            </span>
-          </summary>
-          {{ template "nav-nodes" .Nodes }}
-        </details>
-      {{ end }}
-    </nav>
-  </aside>
-  <article class="site-content api-content section-content">
-    <div class="mb-8 flex flex-wrap items-center gap-3 text-sm text-slate-400">
-      {{ range .Breadcrumbs }}
-        <a href="{{ .Path }}" class="no-underline text-slate-300">{{ .Title }}</a>
-        <span>/</span>
-      {{ end }}
-      <span>{{ .Page.Title }}</span>
-    </div>
-    <div class="api-hero">
-      <div>
-        <div class="api-eyebrow">Reference</div>
-        <h1>{{ .Page.Title }}</h1>
-        {{ if .Page.Description }}<p>{{ .Page.Description }}</p>{{ end }}
-      </div>
-      <a class="site-button site-button-secondary" href="/llms/{{ .MirrorPath }}">Open Markdown</a>
-    </div>
-    <div class="site-prose api-prose">
-      {{ .BodyHTML }}
-    </div>
-    <div class="mt-12 flex flex-wrap justify-between gap-4 border-t border-slate-800 pt-6">
-      {{ if .Prev }}<a class="site-button site-button-secondary" href="{{ .Prev.Path }}">← {{ .Prev.Title }}</a>{{ else }}<span></span>{{ end }}
-      {{ if .Next }}<a class="site-button site-button-secondary" href="{{ .Next.Path }}">{{ .Next.Title }} →</a>{{ end }}
-    </div>
-  </article>
 </main>
 {{- end }}
 

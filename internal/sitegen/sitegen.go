@@ -1040,7 +1040,7 @@ func buildBreadcrumbs(p page) []navItem {
 }
 
 func tocForPage(p page) []heading {
-	if p.Kind != pageKindDocs {
+	if p.Kind == pageKindHome {
 		return nil
 	}
 	filtered := make([]heading, 0)

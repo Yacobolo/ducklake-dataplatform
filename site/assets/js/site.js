@@ -221,7 +221,7 @@
   }
 
   const apiNavLinks = Array.from(
-    document.querySelectorAll(".api-sidebar a[href*='#']")
+    document.querySelectorAll("[data-api-sidebar] a[href*='#']")
   );
   if (apiNavLinks.length) {
     const apiLinkById = new Map();

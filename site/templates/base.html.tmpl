@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_site/site.css">
 </head>
 <body>
-  <div class="site-shell {{ if eq .Page.Kind `api` }}api-shell{{ end }}">
+  <div class="site-shell">
     <header class="site-header">
       <div class="site-header-inner">
         <a class="site-logo" href="/">
@@ -92,8 +92,6 @@
     </header>
     {{ if .Page.IsHome }}
       {{ template "home" . }}
-    {{ else if eq .Page.Kind "api" }}
-      {{ template "api" . }}
     {{ else }}
       {{ template "docs" . }}
     {{ end }}
