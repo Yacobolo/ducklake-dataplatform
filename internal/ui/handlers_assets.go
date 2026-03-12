@@ -143,6 +143,15 @@ func (h *Handler) AssetsDetail(w http.ResponseWriter, r *http.Request) {
 		h.renderServiceError(w, r, err)
 		return
 	}
+	productSlug := ""
+	productName := ""
+	if h.Product != nil {
+		product, productErr := h.Product.GetProductForAsset(r.Context(), asset.ID)
+		if productErr == nil {
+			productSlug = product.Product.Slug
+			productName = product.Product.Name
+		}
+	}
 	backfills, _, err := h.Asset.ListBackfills(r.Context(), domain.BackfillFilter{AssetID: &asset.ID, Page: domain.PageRequest{MaxResults: 20}})
 	if err != nil {
 		h.renderServiceError(w, r, err)
@@ -173,6 +182,8 @@ func (h *Handler) AssetsDetail(w http.ResponseWriter, r *http.Request) {
 
 	renderHTML(w, http.StatusOK, assetDetailPage(assetDetailPageData{
 		Principal:           principalFromContext(r.Context()),
+		ProductSlug:         productSlug,
+		ProductName:         productName,
 		AssetKey:            asset.AssetKey,
 		AssetType:           asset.AssetType,
 		Owner:               asset.Owner,

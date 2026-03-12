@@ -1,0 +1,66 @@
+{
+  "$defs": {
+    "DomainDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "Domain"
+          ],
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/$defs/DomainSpec"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "DomainSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ObjectMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "deletion_protection": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/domain.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/DomainDoc"
+    }
+  ],
+  "title": "Duck declarative Domain"
+}

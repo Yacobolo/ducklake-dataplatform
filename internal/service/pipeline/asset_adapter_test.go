@@ -208,13 +208,15 @@ func TestSyncModelsToAssets(t *testing.T) {
 	assetRepo := &mockDataAssetRepo{existing: map[string]domain.DataAsset{"m1": {ID: "m1"}}}
 	depRepo := &mockAssetDependencyRepo{}
 
-	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, assetRepo, depRepo)
+	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, assetRepo, depRepo, "prod-models")
 	require.NoError(t, err)
 
 	assert.Len(t, assetRepo.created, 1)
 	assert.Equal(t, "m2", assetRepo.created[0].ID)
+	assert.Equal(t, "prod-models", assetRepo.created[0].ProductID)
 	assert.Len(t, assetRepo.updated, 1)
 	assert.Equal(t, "m1", assetRepo.updated[0].ID)
+	assert.Equal(t, "prod-models", assetRepo.updated[0].ProductID)
 
 	assert.ElementsMatch(t, []string{"m1", "m2"}, depRepo.deletedByAsset)
 	require.Len(t, depRepo.created, 1)
@@ -264,7 +266,7 @@ func TestSyncModelsToAssets_PreservesManagedPolicies(t *testing.T) {
 	}}
 	depRepo := &mockAssetDependencyRepo{}
 
-	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, assetRepo, depRepo)
+	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, assetRepo, depRepo, "prod-models")
 	require.NoError(t, err)
 	require.Len(t, assetRepo.updated, 1)
 
@@ -288,7 +290,7 @@ func TestSyncModelsToAssets_ListModelsError(t *testing.T) {
 		return nil, errors.New("boom")
 	}}
 
-	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, &mockDataAssetRepo{}, &mockAssetDependencyRepo{})
+	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, &mockDataAssetRepo{}, &mockAssetDependencyRepo{}, "prod-models")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "list models")
 }
@@ -301,7 +303,7 @@ func TestSyncModelsToAssets_GetAssetUnexpectedError(t *testing.T) {
 	}
 	assetRepo := &mockDataAssetRepo{getByIDErr: errors.New("db unavailable")}
 
-	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, assetRepo, &mockAssetDependencyRepo{})
+	err := SyncModelsToAssets(context.Background(), modelRepo, &mockNotebookModelLinkRepo{}, assetRepo, &mockAssetDependencyRepo{}, "prod-models")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "get asset")
 	assert.Empty(t, assetRepo.created)
@@ -322,11 +324,12 @@ func TestSyncNotebookOutputsToAssets(t *testing.T) {
 	assetRepo := &mockDataAssetRepo{}
 	depRepo := &mockAssetDependencyRepo{}
 
-	err := SyncNotebookOutputsToAssets(context.Background(), notebookRepo, linkRepo, assetRepo, depRepo)
+	err := SyncNotebookOutputsToAssets(context.Background(), notebookRepo, linkRepo, assetRepo, depRepo, "prod-notebook-outputs")
 	require.NoError(t, err)
 	require.Len(t, assetRepo.created, 1)
 	assert.Equal(t, "cell-out", assetRepo.created[0].ID)
 	assert.Equal(t, domain.AssetTypeNotebookOutput, assetRepo.created[0].AssetType)
+	assert.Equal(t, "prod-notebook-outputs", assetRepo.created[0].ProductID)
 	assert.ElementsMatch(t, []string{"cell-out->nb-1"}, dependencyPairs(depRepo.created))
 }
 

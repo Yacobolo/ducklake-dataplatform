@@ -234,6 +234,21 @@ func Validate(state *DesiredState) []ValidationError {
 		groupNames[g.Name] = true
 	}
 
+	domainNames := make(map[string]bool, len(state.Domains))
+	for _, d := range state.Domains {
+		domainNames[d.Name] = true
+	}
+
+	teamNames := make(map[string]bool, len(state.Teams))
+	for _, team := range state.Teams {
+		teamNames[team.Name] = true
+	}
+
+	productNames := make(map[string]bool, len(state.DataProducts))
+	for _, product := range state.DataProducts {
+		productNames[product.Slug] = true
+	}
+
 	catalogNames := make(map[string]bool, len(state.Catalogs))
 	for _, c := range state.Catalogs {
 		catalogNames[c.CatalogName] = true
@@ -284,6 +299,11 @@ func Validate(state *DesiredState) []ValidationError {
 		endpointNames[e.Name] = true
 	}
 
+	assetNames := make(map[string]bool, len(state.Assets))
+	for _, asset := range state.Assets {
+		assetNames[asset.Name] = true
+	}
+
 	notebookNames := make(map[string]bool, len(state.Notebooks))
 	for _, n := range state.Notebooks {
 		notebookNames[n.Name] = true
@@ -299,6 +319,11 @@ func Validate(state *DesiredState) []ValidationError {
 		if m.Name != "" {
 			macroNames[m.Name] = true
 		}
+	}
+
+	semanticModelKeys := make(map[string]bool, len(state.SemanticModels))
+	for _, m := range state.SemanticModels {
+		semanticModelKeys[m.ProjectName+"."+m.ModelName] = true
 	}
 
 	presetNames := make(map[string]bool, len(state.PrivilegePresets))
@@ -370,17 +395,22 @@ func Validate(state *DesiredState) []ValidationError {
 	// 20. Validate notebooks.
 	validateNotebooks(state.Notebooks, &errs)
 
-	// 21. Validate orchestration resources.
-	validateAssets(state.Assets, &errs)
+	// 21. Validate product control-plane resources.
+	validateDomains(state.Domains, &errs)
+	validateTeams(state.Teams, domainNames, &errs)
+	validateDataProducts(state.DataProducts, domainNames, teamNames, assetNames, semanticModelKeys, productNames, &errs)
 
-	// 22. Validate macros.
+	// 22. Validate orchestration resources.
+	validateAssets(state.Assets, productNames, &errs)
+
+	// 23. Validate macros.
 	validateMacros(state.Macros, &errs)
 
-	// 23. Validate models.
+	// 24. Validate models.
 	validateModels(state.Models, macroNames, &errs)
 	validateNotebookPublishTargets(state.Notebooks, state.Models, &errs)
 
-	// 24. Validate semantic models.
+	// 25. Validate semantic models.
 	validateSemanticModels(state.SemanticModels, &errs)
 
 	return errs
@@ -404,6 +434,173 @@ func validateNotebookPublishTargets(notebooks []NotebookResource, models []Model
 		key := pm.Project + "." + pm.Name
 		if modelKeys[key] {
 			addErr(errs, path, "publish.model target %q conflicts with standalone model resource; use notebook publish only", key)
+		}
+	}
+}
+
+func validateDomains(domains []DomainResource, errs *[]ValidationError) {
+	seen := make(map[string]bool, len(domains))
+	for i, item := range domains {
+		path := fmt.Sprintf("domain[%d]", i)
+		if item.Name != "" {
+			path = fmt.Sprintf("domain[%s]", item.Name)
+		}
+		if strings.TrimSpace(item.Name) == "" {
+			addErr(errs, path, "name is required")
+			continue
+		}
+		if seen[item.Name] {
+			addErr(errs, path, "duplicate domain name %q", item.Name)
+		}
+		seen[item.Name] = true
+	}
+}
+
+func validateTeams(teams []TeamResource, domainNames map[string]bool, errs *[]ValidationError) {
+	seen := make(map[string]bool, len(teams))
+	for i, item := range teams {
+		path := fmt.Sprintf("team[%d]", i)
+		if item.Name != "" {
+			path = fmt.Sprintf("team[%s]", item.Name)
+		}
+		if strings.TrimSpace(item.Name) == "" {
+			addErr(errs, path, "name is required")
+			continue
+		}
+		if seen[item.Name] {
+			addErr(errs, path, "duplicate team name %q", item.Name)
+		}
+		seen[item.Name] = true
+		if strings.TrimSpace(item.Spec.DomainRef) == "" {
+			addErr(errs, path, "domain_ref is required")
+		} else if !domainNames[item.Spec.DomainRef] {
+			addErr(errs, path, "domain_ref references unknown domain %q", item.Spec.DomainRef)
+		}
+	}
+}
+
+func validateDataProducts(
+	products []DataProductResource,
+	domainNames map[string]bool,
+	teamNames map[string]bool,
+	assetNames map[string]bool,
+	semanticModelKeys map[string]bool,
+	productNames map[string]bool,
+	errs *[]ValidationError,
+) {
+	seen := make(map[string]bool, len(products))
+	for i, item := range products {
+		path := fmt.Sprintf("data_product[%d]", i)
+		if item.Slug != "" {
+			path = fmt.Sprintf("data_product[%s]", item.Slug)
+		}
+		if strings.TrimSpace(item.Slug) == "" {
+			addErr(errs, path, "slug is required")
+			continue
+		}
+		if seen[item.Slug] {
+			addErr(errs, path, "duplicate data product slug %q", item.Slug)
+		}
+		seen[item.Slug] = true
+		if strings.TrimSpace(item.Spec.DomainRef) == "" {
+			addErr(errs, path, "domain_ref is required")
+		} else if !domainNames[item.Spec.DomainRef] {
+			addErr(errs, path, "domain_ref references unknown domain %q", item.Spec.DomainRef)
+		}
+		if strings.TrimSpace(item.Spec.OwnerTeamRef) == "" {
+			addErr(errs, path, "owner_team_ref is required")
+		} else if !teamNames[item.Spec.OwnerTeamRef] {
+			addErr(errs, path, "owner_team_ref references unknown team %q", item.Spec.OwnerTeamRef)
+		}
+		if strings.TrimSpace(item.Spec.PublicationIntent) != "" {
+			switch strings.ToUpper(strings.TrimSpace(item.Spec.PublicationIntent)) {
+			case "DRAFT", "PUBLISHED":
+			default:
+				addErr(errs, path, "publication_intent must be DRAFT or PUBLISHED")
+			}
+		}
+		for j, output := range item.Spec.Outputs {
+			output = strings.TrimSpace(output)
+			if output == "" {
+				addErr(errs, fmt.Sprintf("%s.outputs[%d]", path, j), "output reference must not be blank")
+				continue
+			}
+			if !assetNames[output] {
+				addErr(errs, fmt.Sprintf("%s.outputs[%d]", path, j), "output references unknown asset %q", output)
+			}
+		}
+		for j, entrypoint := range item.Spec.SemanticEntrypoints {
+			entrypoint = strings.TrimSpace(entrypoint)
+			if entrypoint == "" {
+				addErr(errs, fmt.Sprintf("%s.semantic_entrypoints[%d]", path, j), "semantic_entrypoints entry must not be blank")
+				continue
+			}
+			if !semanticModelKeys[entrypoint] {
+				addErr(errs, fmt.Sprintf("%s.semantic_entrypoints[%d]", path, j), "semantic_entrypoints references unknown semantic model %q", entrypoint)
+			}
+		}
+		for j, dep := range item.Spec.Dependencies {
+			dep = strings.TrimSpace(dep)
+			if dep == "" {
+				addErr(errs, fmt.Sprintf("%s.dependencies[%d]", path, j), "dependency reference must not be blank")
+				continue
+			}
+			if dep == item.Slug {
+				addErr(errs, fmt.Sprintf("%s.dependencies[%d]", path, j), "dependency must not reference the product itself")
+				continue
+			}
+			if !productNames[dep] {
+				addErr(errs, fmt.Sprintf("%s.dependencies[%d]", path, j), "dependency references unknown data product %q", dep)
+			}
+		}
+		validateProductVersions(path, item.Spec.Versions, assetNames, semanticModelKeys, errs)
+	}
+}
+
+func validateProductVersions(path string, versions []DataProductVersionSpec, assetNames map[string]bool, semanticModelKeys map[string]bool, errs *[]ValidationError) {
+	seen := make(map[int]bool, len(versions))
+	for i, version := range versions {
+		vpath := fmt.Sprintf("%s.versions[%d]", path, i)
+		if version.Version <= 0 {
+			addErr(errs, vpath, "version must be > 0")
+		}
+		if seen[version.Version] {
+			addErr(errs, vpath, "duplicate version number %d", version.Version)
+		}
+		seen[version.Version] = true
+		if strings.TrimSpace(version.ReleaseState) != "" {
+			switch strings.ToUpper(strings.TrimSpace(version.ReleaseState)) {
+			case "DRAFT", "PUBLISHED", "DEPRECATED", "RETIRED":
+			default:
+				addErr(errs, vpath, "release_state must be DRAFT, PUBLISHED, DEPRECATED, or RETIRED")
+			}
+		}
+		if strings.TrimSpace(version.CompatibilityLevel) != "" {
+			switch strings.ToUpper(strings.TrimSpace(version.CompatibilityLevel)) {
+			case "BACKWARD_COMPATIBLE", "BREAKING":
+			default:
+				addErr(errs, vpath, "compatibility_level must be BACKWARD_COMPATIBLE or BREAKING")
+			}
+		}
+		for j, output := range version.Outputs {
+			output = strings.TrimSpace(output)
+			if output == "" {
+				addErr(errs, fmt.Sprintf("%s.outputs[%d]", vpath, j), "output reference must not be blank")
+				continue
+			}
+			if !assetNames[output] {
+				addErr(errs, fmt.Sprintf("%s.outputs[%d]", vpath, j), "output references unknown asset %q", output)
+			}
+		}
+		for j, entrypoint := range version.SemanticEntrypoints {
+			entrypoint = strings.TrimSpace(entrypoint)
+			if entrypoint == "" {
+				addErr(errs, fmt.Sprintf("%s.semantic_entrypoints[%d]", vpath, j), "semantic_entrypoints entry must not be blank")
+				continue
+			}
+			if !semanticModelKeys[entrypoint] {
+				addErr(errs, fmt.Sprintf("%s.semantic_entrypoints[%d]", vpath, j), "semantic_entrypoints references unknown semantic model %q", entrypoint)
+			}
 		}
 	}
 }
@@ -1536,7 +1733,7 @@ func validateNotebooks(notebooks []NotebookResource, errs *[]ValidationError) {
 	}
 }
 
-func validateAssets(assets []AssetResource, errs *[]ValidationError) {
+func validateAssets(assets []AssetResource, productNames map[string]bool, errs *[]ValidationError) {
 	validPartitionDefinitionTypes := map[string]bool{
 		"daily":   true,
 		"hourly":  true,
@@ -1558,6 +1755,11 @@ func validateAssets(assets []AssetResource, errs *[]ValidationError) {
 			addErr(errs, path, "duplicate asset name %q", a.Name)
 		}
 		seen[a.Name] = true
+		if strings.TrimSpace(a.Spec.ProductRef) == "" {
+			addErr(errs, path, "product_ref is required")
+		} else if !productNames[a.Spec.ProductRef] {
+			addErr(errs, path, "product_ref references unknown data product %q", a.Spec.ProductRef)
+		}
 
 		for j, dep := range a.Spec.DependsOn {
 			if strings.TrimSpace(dep) == "" {

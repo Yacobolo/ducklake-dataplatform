@@ -16,6 +16,29 @@ func containsStr(s, substr string) bool {
 // Helper to create *string.
 func strPtr(s string) *string { return &s }
 
+func testProductControlPlane(productSlug string) ([]DomainResource, []TeamResource, []DataProductResource) {
+	return []DomainResource{{
+			Name: "revenue",
+			Spec: DomainSpec{Description: "Revenue domain"},
+		}},
+		[]TeamResource{{
+			Name: "analytics-engineering",
+			Spec: TeamSpec{DomainRef: "revenue", ContactChannel: "#rev-data"},
+		}},
+		[]DataProductResource{{
+			Slug: productSlug,
+			Spec: DataProductSpec{
+				Name:             "Orders Product",
+				DomainRef:        "revenue",
+				OwnerTeamRef:     "analytics-engineering",
+				StewardPrincipal: "alice",
+				ContactChannel:   "#rev-data",
+				Contract:         ProductContractSpec{DataGrain: "one row per order"},
+				SLO:              ProductSLOSpec{FreshnessSLO: "60m"},
+			},
+		}}
+}
+
 func TestValidate_ValidFullState(t *testing.T) {
 	// Build a valid DesiredState with all resource types populated correctly.
 	// It should produce zero validation errors.
@@ -823,29 +846,36 @@ func TestValidate_MacroValid(t *testing.T) {
 func TestValidate_AssetPolicyRules(t *testing.T) {
 	positiveLag := int64(60)
 	positiveInterval := int64(30)
+	domains, teams, products := testProductControlPlane("orders-product")
 
-	valid := &DesiredState{Assets: []AssetResource{{
-		Name: "orders_asset",
-		Spec: AssetSpec{
-			DependsOn: []string{},
-			IOProfile: "warehouse-default",
-			PartitionDefinition: &AssetPartitionDefinitionSpec{
-				Type:       "static",
-				StaticKeys: []string{"us", "eu"},
+	valid := &DesiredState{
+		Domains:      domains,
+		Teams:        teams,
+		DataProducts: products,
+		Assets: []AssetResource{{
+			Name: "orders_asset",
+			Spec: AssetSpec{
+				ProductRef: "orders-product",
+				DependsOn:  []string{},
+				IOProfile:  "warehouse-default",
+				PartitionDefinition: &AssetPartitionDefinitionSpec{
+					Type:       "static",
+					StaticKeys: []string{"us", "eu"},
+				},
+				AutoMaterializePolicy: &AssetAutoMaterializePolicySpec{
+					Mode:               "scheduled",
+					MinIntervalSeconds: &positiveInterval,
+				},
+				FreshnessPolicy: &AssetFreshnessPolicySpec{
+					MaxLagSeconds: &positiveLag,
+				},
+				MaterializationPolicy: &AssetMaterializationPolicySpec{
+					Mode: "incremental",
+				},
+				CheckDefinitions: []AssetCheckSpec{{Name: "row_count", CheckType: "threshold"}},
 			},
-			AutoMaterializePolicy: &AssetAutoMaterializePolicySpec{
-				Mode:               "scheduled",
-				MinIntervalSeconds: &positiveInterval,
-			},
-			FreshnessPolicy: &AssetFreshnessPolicySpec{
-				MaxLagSeconds: &positiveLag,
-			},
-			MaterializationPolicy: &AssetMaterializationPolicySpec{
-				Mode: "incremental",
-			},
-			CheckDefinitions: []AssetCheckSpec{{Name: "row_count", CheckType: "threshold"}},
-		},
-	}}}
+		}},
+	}
 
 	err := Validate(valid)
 	var assetErrs []ValidationError
@@ -858,21 +888,27 @@ func TestValidate_AssetPolicyRules(t *testing.T) {
 
 	minusOne := int64(-1)
 	zero := int64(0)
-	invalid := &DesiredState{Assets: []AssetResource{{
-		Name: "broken_asset",
-		Spec: AssetSpec{
-			IOProfile:           " ",
-			PartitionDefinition: &AssetPartitionDefinitionSpec{Type: "static", StaticKeys: []string{"   "}},
-			AutoMaterializePolicy: &AssetAutoMaterializePolicySpec{
-				MinIntervalSeconds: &zero,
+	invalid := &DesiredState{
+		Domains:      domains,
+		Teams:        teams,
+		DataProducts: products,
+		Assets: []AssetResource{{
+			Name: "broken_asset",
+			Spec: AssetSpec{
+				ProductRef:          "orders-product",
+				IOProfile:           " ",
+				PartitionDefinition: &AssetPartitionDefinitionSpec{Type: "static", StaticKeys: []string{"   "}},
+				AutoMaterializePolicy: &AssetAutoMaterializePolicySpec{
+					MinIntervalSeconds: &zero,
+				},
+				FreshnessPolicy: &AssetFreshnessPolicySpec{
+					MaxLagSeconds: &minusOne,
+				},
+				MaterializationPolicy: &AssetMaterializationPolicySpec{Mode: " "},
+				MaxLagSeconds:         &zero,
 			},
-			FreshnessPolicy: &AssetFreshnessPolicySpec{
-				MaxLagSeconds: &minusOne,
-			},
-			MaterializationPolicy: &AssetMaterializationPolicySpec{Mode: " "},
-			MaxLagSeconds:         &zero,
-		},
-	}}}
+		}},
+	}
 
 	err = Validate(invalid)
 	require.NotEmpty(t, err)
@@ -898,20 +934,28 @@ func TestValidate_AssetPolicyRules(t *testing.T) {
 }
 
 func TestValidate_AssetPartitionDefinitionRules(t *testing.T) {
-	state := &DesiredState{Assets: []AssetResource{
-		{
-			Name: "invalid_type",
-			Spec: AssetSpec{
-				PartitionDefinition: &AssetPartitionDefinitionSpec{Type: "weekly"},
+	domains, teams, products := testProductControlPlane("orders-product")
+	state := &DesiredState{
+		Domains:      domains,
+		Teams:        teams,
+		DataProducts: products,
+		Assets: []AssetResource{
+			{
+				Name: "invalid_type",
+				Spec: AssetSpec{
+					ProductRef:          "orders-product",
+					PartitionDefinition: &AssetPartitionDefinitionSpec{Type: "weekly"},
+				},
+			},
+			{
+				Name: "missing_dynamic_group",
+				Spec: AssetSpec{
+					ProductRef:          "orders-product",
+					PartitionDefinition: &AssetPartitionDefinitionSpec{Type: "dynamic"},
+				},
 			},
 		},
-		{
-			Name: "missing_dynamic_group",
-			Spec: AssetSpec{
-				PartitionDefinition: &AssetPartitionDefinitionSpec{Type: "dynamic"},
-			},
-		},
-	}}
+	}
 
 	err := Validate(state)
 	require.NotEmpty(t, err)
@@ -929,4 +973,118 @@ func TestValidate_AssetPartitionDefinitionRules(t *testing.T) {
 
 	assert.True(t, foundTypeErr, "expected partition_definition.type enum error, got %v", err)
 	assert.True(t, foundDynamicGroupErr, "expected dynamic_group required error, got %v", err)
+}
+
+func TestValidate_ProductControlPlaneRefs(t *testing.T) {
+	valid := &DesiredState{
+		Domains: []DomainResource{{
+			Name: "revenue",
+			Spec: DomainSpec{Description: "Revenue domain"},
+		}},
+		Teams: []TeamResource{{
+			Name: "analytics-engineering",
+			Spec: TeamSpec{DomainRef: "revenue", ContactChannel: "#rev-data"},
+		}},
+		DataProducts: []DataProductResource{
+			{
+				Slug: "upstream-orders",
+				Spec: DataProductSpec{
+					Name:             "Upstream Orders",
+					DomainRef:        "revenue",
+					OwnerTeamRef:     "analytics-engineering",
+					StewardPrincipal: "alice",
+					ContactChannel:   "#rev-data",
+					Contract:         ProductContractSpec{DataGrain: "one row per order"},
+					SLO:              ProductSLOSpec{FreshnessSLO: "60m"},
+				},
+			},
+			{
+				Slug: "daily-orders",
+				Spec: DataProductSpec{
+					Name:                "Daily Orders",
+					DomainRef:           "revenue",
+					OwnerTeamRef:        "analytics-engineering",
+					StewardPrincipal:    "alice",
+					ContactChannel:      "#rev-data",
+					Contract:            ProductContractSpec{DataGrain: "one row per order"},
+					SLO:                 ProductSLOSpec{FreshnessSLO: "60m"},
+					Outputs:             []string{"daily_orders_asset"},
+					SemanticEntrypoints: []string{"sales.orders"},
+					Dependencies:        []string{"upstream-orders"},
+					Versions: []DataProductVersionSpec{{
+						Version:             1,
+						ReleaseState:        "PUBLISHED",
+						CompatibilityLevel:  "BACKWARD_COMPATIBLE",
+						Outputs:             []string{"daily_orders_asset"},
+						SemanticEntrypoints: []string{"sales.orders"},
+					}},
+				},
+			},
+		},
+		Assets: []AssetResource{{
+			Name: "daily_orders_asset",
+			Spec: AssetSpec{AssetType: "table", ProductRef: "daily-orders"},
+		}},
+		SemanticModels: []SemanticModelResource{{
+			ProjectName: "sales",
+			ModelName:   "orders",
+			Spec:        SemanticModelSpec{BaseModelRef: "sales.orders"},
+		}},
+	}
+
+	errs := Validate(valid)
+	assert.Empty(t, errs)
+
+	invalid := &DesiredState{
+		Domains: []DomainResource{{Name: "revenue", Spec: DomainSpec{}}},
+		Teams:   []TeamResource{{Name: "analytics-engineering", Spec: TeamSpec{DomainRef: "missing-domain"}}},
+		DataProducts: []DataProductResource{{
+			Slug: "broken-product",
+			Spec: DataProductSpec{
+				DomainRef:           "revenue",
+				OwnerTeamRef:        "missing-team",
+				Outputs:             []string{"missing-asset"},
+				SemanticEntrypoints: []string{"missing.project"},
+				Dependencies:        []string{"missing-product"},
+				PublicationIntent:   "INVALID",
+				Versions: []DataProductVersionSpec{{
+					Version:             0,
+					ReleaseState:        "BAD",
+					CompatibilityLevel:  "BAD",
+					Outputs:             []string{"missing-asset"},
+					SemanticEntrypoints: []string{"missing.project"},
+				}},
+			},
+		}},
+		Assets: []AssetResource{{
+			Name: "orphaned-asset",
+			Spec: AssetSpec{AssetType: "table", ProductRef: "missing-product"},
+		}},
+	}
+
+	errs = Validate(invalid)
+	require.NotEmpty(t, errs)
+
+	expected := []string{
+		"domain_ref references unknown domain",
+		"owner_team_ref references unknown team",
+		"output references unknown asset",
+		"semantic_entrypoints references unknown semantic model",
+		"dependency references unknown data product",
+		"publication_intent must be DRAFT or PUBLISHED",
+		"version must be > 0",
+		"release_state must be DRAFT, PUBLISHED, DEPRECATED, or RETIRED",
+		"compatibility_level must be BACKWARD_COMPATIBLE or BREAKING",
+		"product_ref references unknown data product",
+	}
+	for _, needle := range expected {
+		found := false
+		for _, err := range errs {
+			if containsStr(err.Error(), needle) {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "expected validation error containing %q, got %v", needle, errs)
+	}
 }

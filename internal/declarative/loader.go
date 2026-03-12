@@ -71,27 +71,32 @@ func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, erro
 		return nil, err
 	}
 
-	// 6. notebooks/
+	// 6. product control plane resources.
+	if err := loadProductControlPlane(dir, state, opts); err != nil {
+		return nil, err
+	}
+
+	// 7. notebooks/
 	if err := loadNotebooks(dir, state, opts); err != nil {
 		return nil, err
 	}
 
-	// 7. assets/
+	// 8. assets/
 	if err := loadAssets(dir, state, opts); err != nil {
 		return nil, err
 	}
 
-	// 8. models/
+	// 9. models/
 	if err := loadModels(dir, state, opts); err != nil {
 		return nil, err
 	}
 
-	// 9. semantic_models/
+	// 10. semantic_models/
 	if err := loadSemanticModels(dir, state, opts); err != nil {
 		return nil, err
 	}
 
-	// 10. macros/
+	// 11. macros/
 	if err := loadMacros(dir, state, opts); err != nil {
 		return nil, err
 	}
@@ -123,6 +128,142 @@ func failIfLegacyPipelinesPresent(root string) error {
 			return err
 		}
 		return fmt.Errorf("scan pipelines directory %s: %w", pipelinesDir, err)
+	}
+
+	return nil
+}
+
+func loadProductControlPlane(root string, state *DesiredState, opts LoadOptions) error {
+	if err := loadDomains(root, state, opts); err != nil {
+		return err
+	}
+	if err := loadTeams(root, state, opts); err != nil {
+		return err
+	}
+	if err := loadDataProducts(root, state, opts); err != nil {
+		return err
+	}
+	return nil
+}
+
+func loadDomains(root string, state *DesiredState, opts LoadOptions) error {
+	dir := filepath.Join(root, "domains")
+	if !dirExists(dir) {
+		return nil
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read domains directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		name := strings.TrimSuffix(entry.Name(), ".yaml")
+		path := filepath.Join(dir, entry.Name())
+
+		var doc DomainDoc
+		found, err := loadYAMLFile(path, &doc, opts)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameDomain); err != nil {
+			return err
+		}
+		if doc.Metadata.Name != name {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
+		}
+
+		state.Domains = append(state.Domains, DomainResource{Name: name, Spec: doc.Spec})
+	}
+
+	return nil
+}
+
+func loadTeams(root string, state *DesiredState, opts LoadOptions) error {
+	dir := filepath.Join(root, "teams")
+	if !dirExists(dir) {
+		return nil
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read teams directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		name := strings.TrimSuffix(entry.Name(), ".yaml")
+		path := filepath.Join(dir, entry.Name())
+
+		var doc TeamDoc
+		found, err := loadYAMLFile(path, &doc, opts)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameTeam); err != nil {
+			return err
+		}
+		if doc.Metadata.Name != name {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
+		}
+
+		state.Teams = append(state.Teams, TeamResource{Name: name, Spec: doc.Spec})
+	}
+
+	return nil
+}
+
+func loadDataProducts(root string, state *DesiredState, opts LoadOptions) error {
+	dir := filepath.Join(root, "data-products")
+	if !dirExists(dir) {
+		return nil
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read data-products directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		slug := strings.TrimSuffix(entry.Name(), ".yaml")
+		path := filepath.Join(dir, entry.Name())
+
+		var doc DataProductDoc
+		found, err := loadYAMLFile(path, &doc, opts)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameDataProduct); err != nil {
+			return err
+		}
+		if doc.Metadata.Name != slug {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, slug)
+		}
+
+		state.DataProducts = append(state.DataProducts, DataProductResource{Slug: slug, Spec: doc.Spec})
 	}
 
 	return nil

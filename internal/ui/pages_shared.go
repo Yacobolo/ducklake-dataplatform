@@ -65,6 +65,7 @@ type catalogExplorerPanelData struct {
 
 var navItems = []navItem{
 	{Label: "Overview", Href: "/ui", Key: "home", Icon: "house"},
+	{Label: "Products", Href: "/ui/products", Key: "products", Icon: "package-open"},
 	{Label: "Components", Href: "/ui/components", Key: "components", Icon: "layout-grid"},
 	{Label: "SQL Editor", Href: "/ui/sql", Key: "sql", Icon: "square-terminal"},
 	{Label: "Catalogs", Href: "/ui/catalogs", Key: "catalogs", Icon: "database"},
@@ -72,7 +73,7 @@ var navItems = []navItem{
 	{Label: "Storage", Href: "/ui/storage", Key: "storage", Icon: "hard-drive"},
 	{Label: "Compute", Href: "/ui/compute", Key: "compute", Icon: "server"},
 	{Label: "Governance", Href: "/ui/governance", Key: "governance", Icon: "scan-search"},
-	{Label: "Assets", Href: "/ui/assets", Key: "assets", Icon: "git-fork"},
+	{Label: "Runtime Assets", Href: "/ui/assets", Key: "assets", Icon: "git-fork"},
 	{Label: "Notebooks", Href: "/ui/notebooks", Key: "notebooks", Icon: "notebook-text"},
 	{Label: "Dashboards", Href: "/ui/dashboards", Key: "dashboards", Icon: "chart-column"},
 	{Label: "Macros", Href: "/ui/macros", Key: "macros", Icon: "braces"},

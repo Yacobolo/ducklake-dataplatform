@@ -1,0 +1,7 @@
+apiVersion: duck/v1
+kind: Team
+metadata:
+  name: data-eng
+spec:
+  domain_ref: analytics
+  contact_channel: "#data-eng"

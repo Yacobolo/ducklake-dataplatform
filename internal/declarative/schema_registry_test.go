@@ -28,4 +28,7 @@ func TestDeclarativeSchemaDocumentTypes_UniqueEntries(t *testing.T) {
 
 	assert.True(t, seenKinds[KindNameModel])
 	assert.True(t, seenKinds[KindNameMacro])
+	assert.True(t, seenKinds[KindNameDomain])
+	assert.True(t, seenKinds[KindNameTeam])
+	assert.True(t, seenKinds[KindNameDataProduct])
 }

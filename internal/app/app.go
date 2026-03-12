@@ -27,6 +27,7 @@ import (
 	"duck-demo/internal/service/notebook"
 	"duck-demo/internal/service/orchestration"
 	"duck-demo/internal/service/pipeline"
+	productsvc "duck-demo/internal/service/product"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
 	"duck-demo/internal/service/semantic"
@@ -73,6 +74,7 @@ type Services struct {
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
 	Pipeline            *pipeline.Service
+	Product             *productsvc.Service
 	Asset               *assetsvc.Service
 	Backfill            *orchestration.BackfillService
 	Model               *svcmodel.Service
@@ -108,6 +110,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	// === 2. All repositories (write-pool) ===
 	principalRepo := repository.NewPrincipalRepo(deps.WriteDB)
 	groupRepo := repository.NewGroupRepo(deps.WriteDB)
+	domainRepo := repository.NewDomainRepo(deps.WriteDB)
+	teamRepo := repository.NewTeamRepo(deps.WriteDB)
 	grantRepo := repository.NewGrantRepo(deps.WriteDB)
 	rowFilterRepo := repository.NewRowFilterRepo(deps.WriteDB)
 	columnMaskRepo := repository.NewColumnMaskRepo(deps.WriteDB)
@@ -124,6 +128,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	computeEndpointRepo := repository.NewComputeEndpointRepo(deps.WriteDB, encryptor)
 	computeRoutingRepo := repository.NewComputeRoutingRepo(deps.WriteDB)
 	catalogRegRepo := repository.NewCatalogRegistrationRepo(deps.WriteDB)
+	dataProductRepo := repository.NewDataProductRepo(deps.WriteDB)
 	queryJobRepo := repository.NewQueryJobRepo(deps.WriteDB)
 	authIdentityRepo := repository.NewAuthIdentityRepo(deps.WriteDB)
 	localCredentialRepo := repository.NewLocalCredentialRepo(deps.WriteDB)
@@ -328,12 +333,6 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	backfillRepo := repository.NewBackfillRepo(deps.WriteDB)
 	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
 	var pipelineSvc *pipeline.Service
-	if err := pipeline.SyncNotebooksToAssets(ctx, notebookRepo, assetRepo, assetDepRepo); err != nil {
-		return nil, fmt.Errorf("sync notebooks to assets: %w", err)
-	}
-	if err := pipeline.SyncNotebookOutputsToAssets(ctx, notebookRepo, notebookModelLinkRepo, assetRepo, assetDepRepo); err != nil {
-		return nil, fmt.Errorf("sync notebook outputs to assets: %w", err)
-	}
 	assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
 	ioManager, err := newOrchestrationIOManager(cfg)
 	if err != nil {
@@ -341,11 +340,30 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	}
 	triggerRouter := orchestration.NewTriggerRouter(orchEventRepo)
 	backfillSvc := orchestration.NewBackfillService(backfillRepo, triggerRouter, auditRepo, authSvc)
-	assetSvc := assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, orchEventRepo, auditRepo, authSvc)
+	assetSvc := assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, orchEventRepo, auditRepo, authSvc, dataProductRepo)
+	productSvc := productsvc.NewService(domainRepo, teamRepo, assetRepo, assetRunRepo, assetCheckRepo, dataProductRepo, auditRepo)
+	notebookProduct, err := productSvc.EnsureManagedRuntimeProduct(ctx, productsvc.ManagedRuntimeProductNotebooks)
+	if err != nil {
+		return nil, fmt.Errorf("ensure runtime notebook product: %w", err)
+	}
+	notebookOutputProduct, err := productSvc.EnsureManagedRuntimeProduct(ctx, productsvc.ManagedRuntimeProductNotebookOutputs)
+	if err != nil {
+		return nil, fmt.Errorf("ensure runtime notebook output product: %w", err)
+	}
+	modelProduct, err := productSvc.EnsureManagedRuntimeProduct(ctx, productsvc.ManagedRuntimeProductModels)
+	if err != nil {
+		return nil, fmt.Errorf("ensure runtime model product: %w", err)
+	}
+	if err := pipeline.SyncNotebooksToAssets(ctx, notebookRepo, assetRepo, assetDepRepo, notebookProduct.Product.ID); err != nil {
+		return nil, fmt.Errorf("sync notebooks to assets: %w", err)
+	}
+	if err := pipeline.SyncNotebookOutputsToAssets(ctx, notebookRepo, notebookModelLinkRepo, assetRepo, assetDepRepo, notebookOutputProduct.Product.ID); err != nil {
+		return nil, fmt.Errorf("sync notebook outputs to assets: %w", err)
+	}
 
 	// === Model ===
 	modelRepo := repository.NewModelRepo(deps.WriteDB)
-	if err := pipeline.SyncModelsToAssets(ctx, modelRepo, notebookModelLinkRepo, assetRepo, assetDepRepo); err != nil {
+	if err := pipeline.SyncModelsToAssets(ctx, modelRepo, notebookModelLinkRepo, assetRepo, assetDepRepo, modelProduct.Product.ID); err != nil {
 		return nil, fmt.Errorf("sync models to assets: %w", err)
 	}
 	modelRunRepo := repository.NewModelRunRepo(deps.WriteDB)
@@ -377,16 +395,25 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	semanticRelRepo := repository.NewSemanticRelationshipRepo(deps.WriteDB)
 	semanticPreAggRepo := repository.NewSemanticPreAggregationRepo(deps.WriteDB)
 	semanticSvc := semantic.NewService(semanticModelRepo, semanticMetricRepo, semanticRelRepo, semanticPreAggRepo)
+	productSvc.SetSemanticModelRepository(semanticModelRepo)
+	semanticProduct, err := productSvc.EnsureManagedRuntimeProduct(ctx, productsvc.ManagedRuntimeProductSemantic)
+	if err != nil {
+		return nil, fmt.Errorf("ensure runtime semantic product: %w", err)
+	}
 	semanticSvc.SetQueryExecutor(querySvc)
 	semanticSvc.SetModelRepository(modelRepo)
 	semanticSvc.SetDDLExecutor(duckExec)
 	dashboardRepo := repository.NewDashboardRepo(deps.WriteDB)
 	dashboardWidgetRepo := repository.NewDashboardWidgetRepo(deps.WriteDB)
 	dashboardSvc := dashboard.NewService(dashboardRepo, dashboardWidgetRepo, notebookRepo, auditRepo, querySvc, semanticSvc)
-	if err := pipeline.SyncSemanticResourcesToAssets(ctx, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, modelRepo, assetRepo, assetDepRepo); err != nil {
+	if err := pipeline.SyncSemanticResourcesToAssets(ctx, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, modelRepo, assetRepo, assetDepRepo, semanticProduct.Product.ID); err != nil {
 		return nil, fmt.Errorf("sync semantic resources to assets: %w", err)
 	}
-	if err := pipeline.SyncDashboardsToAssets(ctx, dashboardRepo, dashboardWidgetRepo, modelRepo, notebookRepo, notebookModelLinkRepo, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, assetRepo, assetDepRepo); err != nil {
+	dashboardProduct, err := productSvc.EnsureManagedRuntimeProduct(ctx, productsvc.ManagedRuntimeProductDashboards)
+	if err != nil {
+		return nil, fmt.Errorf("ensure runtime dashboard product: %w", err)
+	}
+	if err := pipeline.SyncDashboardsToAssets(ctx, dashboardRepo, dashboardWidgetRepo, modelRepo, notebookRepo, notebookModelLinkRepo, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, assetRepo, assetDepRepo, dashboardProduct.Product.ID); err != nil {
 		return nil, fmt.Errorf("sync dashboards to assets: %w", err)
 	}
 	assetExecutor := orchestration.NewAssetExecutor(
@@ -448,6 +475,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			SessionManager:      sessionMgr,
 			GitService:          gitSvc,
 			Pipeline:            pipelineSvc,
+			Product:             productSvc,
 			Asset:               assetSvc,
 			Backfill:            backfillSvc,
 			Model:               modelSvc,

@@ -502,6 +502,7 @@ func SyncModelsToAssets(
 	notebookLinkRepo domain.NotebookModelLinkRepository,
 	assetRepo domain.DataAssetRepository,
 	assetDepRepo domain.AssetDependencyRepository,
+	productID string,
 ) error {
 	if modelRepo == nil || assetRepo == nil || assetDepRepo == nil {
 		return nil
@@ -532,7 +533,7 @@ func SyncModelsToAssets(
 		return fmt.Errorf("build model asset graph: %w", err)
 	}
 
-	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo)
+	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo, productID)
 }
 
 func SyncNotebookOutputsToAssets(
@@ -541,6 +542,7 @@ func SyncNotebookOutputsToAssets(
 	notebookLinkRepo domain.NotebookModelLinkRepository,
 	assetRepo domain.DataAssetRepository,
 	assetDepRepo domain.AssetDependencyRepository,
+	productID string,
 ) error {
 	if notebookRepo == nil || notebookLinkRepo == nil || assetRepo == nil || assetDepRepo == nil {
 		return nil
@@ -569,7 +571,7 @@ func SyncNotebookOutputsToAssets(
 		return fmt.Errorf("build notebook output asset graph: %w", err)
 	}
 
-	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo)
+	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo, productID)
 }
 
 func SyncNotebooksToAssets(
@@ -577,6 +579,7 @@ func SyncNotebooksToAssets(
 	notebookRepo domain.NotebookRepository,
 	assetRepo domain.DataAssetRepository,
 	assetDepRepo domain.AssetDependencyRepository,
+	productID string,
 ) error {
 	if notebookRepo == nil || assetRepo == nil || assetDepRepo == nil {
 		return nil
@@ -592,7 +595,7 @@ func SyncNotebooksToAssets(
 		return fmt.Errorf("build notebook asset graph: %w", err)
 	}
 
-	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo)
+	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo, productID)
 }
 
 func SyncSemanticResourcesToAssets(
@@ -603,6 +606,7 @@ func SyncSemanticResourcesToAssets(
 	modelRepo domain.ModelRepository,
 	assetRepo domain.DataAssetRepository,
 	assetDepRepo domain.AssetDependencyRepository,
+	productID string,
 ) error {
 	if semanticModelRepo == nil || semanticMetricRepo == nil || semanticPreAggRepo == nil || modelRepo == nil || assetRepo == nil || assetDepRepo == nil {
 		return nil
@@ -636,7 +640,7 @@ func SyncSemanticResourcesToAssets(
 		return fmt.Errorf("build semantic asset graph: %w", err)
 	}
 
-	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo)
+	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo, productID)
 }
 
 func SyncDashboardsToAssets(
@@ -651,6 +655,7 @@ func SyncDashboardsToAssets(
 	semanticPreAggRepo domain.SemanticPreAggregationRepository,
 	assetRepo domain.DataAssetRepository,
 	assetDepRepo domain.AssetDependencyRepository,
+	productID string,
 ) error {
 	if dashboardRepo == nil || widgetRepo == nil || notebookRepo == nil || semanticModelRepo == nil || semanticMetricRepo == nil || semanticPreAggRepo == nil || assetRepo == nil || assetDepRepo == nil {
 		return nil
@@ -715,7 +720,7 @@ func SyncDashboardsToAssets(
 		return fmt.Errorf("build dashboard asset graph: %w", err)
 	}
 
-	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo)
+	return syncAdaptedAssets(ctx, adapted.Assets, adapted.Dependencies, assetRepo, assetDepRepo, productID)
 }
 
 func syncAdaptedAssets(
@@ -724,9 +729,13 @@ func syncAdaptedAssets(
 	deps []domain.AssetDependency,
 	assetRepo domain.DataAssetRepository,
 	assetDepRepo domain.AssetDependencyRepository,
+	productID string,
 ) error {
 	for i := range assets {
 		asset := assets[i]
+		if strings.TrimSpace(asset.ProductID) == "" {
+			asset.ProductID = strings.TrimSpace(productID)
+		}
 		if existing, getErr := assetRepo.GetByID(ctx, asset.ID); getErr == nil {
 			merged := mergeAdaptedAsset(existing, asset)
 			if _, updateErr := assetRepo.Update(ctx, asset.ID, &merged); updateErr != nil {
@@ -781,6 +790,9 @@ func mergeAdaptedAsset(existing *domain.DataAsset, adapted domain.DataAsset) dom
 	adapted.UpdatedAt = existing.UpdatedAt
 	if strings.TrimSpace(adapted.CreatedBy) == "" {
 		adapted.CreatedBy = existing.CreatedBy
+	}
+	if strings.TrimSpace(adapted.ProductID) == "" {
+		adapted.ProductID = existing.ProductID
 	}
 	return adapted
 }

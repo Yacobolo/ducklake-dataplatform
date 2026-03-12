@@ -61,6 +61,15 @@
       "$ref": "kinds/compute-routing-defaults.schema.json"
     },
     {
+      "$ref": "kinds/domain.schema.json"
+    },
+    {
+      "$ref": "kinds/team.schema.json"
+    },
+    {
+      "$ref": "kinds/data-product.schema.json"
+    },
+    {
       "$ref": "kinds/notebook.schema.json"
     },
     {

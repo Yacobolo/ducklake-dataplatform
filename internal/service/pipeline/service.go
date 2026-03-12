@@ -32,9 +32,10 @@ type Service struct {
 	reloader    ScheduleReloader
 	runCancels  sync.Map // maps run ID (string) → context.CancelFunc
 
-	assetRepo    domain.DataAssetRepository
-	assetDepRepo domain.AssetDependencyRepository
-	assetRunRepo domain.AssetRunRepository
+	assetRepo      domain.DataAssetRepository
+	assetDepRepo   domain.AssetDependencyRepository
+	assetRunRepo   domain.AssetRunRepository
+	assetProductID string
 }
 
 // NewService creates a new pipeline Service.
@@ -73,10 +74,12 @@ func (s *Service) SetAssetOrchestration(
 	assetRepo domain.DataAssetRepository,
 	assetDepRepo domain.AssetDependencyRepository,
 	assetRunRepo domain.AssetRunRepository,
+	assetProductID string,
 ) {
 	s.assetRepo = assetRepo
 	s.assetDepRepo = assetDepRepo
 	s.assetRunRepo = assetRunRepo
+	s.assetProductID = assetProductID
 }
 
 // SyncPipelinesToAssets maps existing pipeline/job definitions to asset graph state.
@@ -124,7 +127,13 @@ func (s *Service) syncPipelineAssets(ctx context.Context, pipeline *domain.Pipel
 
 	for i := range adapted.Assets {
 		asset := adapted.Assets[i]
-		if _, getErr := s.assetRepo.GetByID(ctx, asset.ID); getErr == nil {
+		if asset.ProductID == "" {
+			asset.ProductID = s.assetProductID
+		}
+		if existing, getErr := s.assetRepo.GetByID(ctx, asset.ID); getErr == nil {
+			if asset.ProductID == "" {
+				asset.ProductID = existing.ProductID
+			}
 			if _, updateErr := s.assetRepo.Update(ctx, asset.ID, &asset); updateErr != nil {
 				return fmt.Errorf("update asset %s: %w", asset.AssetKey, updateErr)
 			}
@@ -433,6 +442,9 @@ func (s *Service) executeRunViaAssets(
 	}
 
 	for i := range adapted.Assets {
+		if adapted.Assets[i].ProductID == "" {
+			adapted.Assets[i].ProductID = s.assetProductID
+		}
 		_, getErr := s.assetRepo.GetByID(ctx, adapted.Assets[i].ID)
 		if getErr == nil {
 			continue

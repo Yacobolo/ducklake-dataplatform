@@ -49,6 +49,11 @@ func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
 		return err
 	}
 
+	// Product control-plane resources.
+	if err := exportProductControlPlane(dir, state); err != nil {
+		return err
+	}
+
 	// Notebooks.
 	if err := exportNotebooks(dir, state); err != nil {
 		return err
@@ -74,6 +79,19 @@ func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
 		return err
 	}
 
+	return nil
+}
+
+func exportProductControlPlane(dir string, state *DesiredState) error {
+	if err := exportDomains(dir, state); err != nil {
+		return err
+	}
+	if err := exportTeams(dir, state); err != nil {
+		return err
+	}
+	if err := exportDataProducts(dir, state); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -426,6 +444,54 @@ func exportNotebooks(dir string, state *DesiredState) error {
 			Spec:       nb.Spec,
 		}
 		path := filepath.Join(dir, "notebooks", safeResourceFileName(nb.Name))
+		if err := writeYAMLFile(path, doc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportDomains(dir string, state *DesiredState) error {
+	for _, item := range state.Domains {
+		doc := DomainDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameDomain,
+			Metadata:   ObjectMeta{Name: item.Name},
+			Spec:       item.Spec,
+		}
+		path := filepath.Join(dir, "domains", safeResourceFileName(item.Name))
+		if err := writeYAMLFile(path, doc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportTeams(dir string, state *DesiredState) error {
+	for _, item := range state.Teams {
+		doc := TeamDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameTeam,
+			Metadata:   ObjectMeta{Name: item.Name},
+			Spec:       item.Spec,
+		}
+		path := filepath.Join(dir, "teams", safeResourceFileName(item.Name))
+		if err := writeYAMLFile(path, doc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportDataProducts(dir string, state *DesiredState) error {
+	for _, item := range state.DataProducts {
+		doc := DataProductDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameDataProduct,
+			Metadata:   ObjectMeta{Name: item.Slug},
+			Spec:       item.Spec,
+		}
+		path := filepath.Join(dir, "data-products", safeResourceFileName(item.Slug))
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}

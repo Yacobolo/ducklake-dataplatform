@@ -175,6 +175,9 @@
         "partition_type": {
           "type": "string"
         },
+        "product_ref": {
+          "type": "string"
+        },
         "properties": {
           "additionalProperties": {
             "type": "string"
@@ -188,6 +191,9 @@
           "type": "array"
         }
       },
+      "required": [
+        "product_ref"
+      ],
       "type": "object"
     },
     "ObjectMeta": {
