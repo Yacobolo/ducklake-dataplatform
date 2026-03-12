@@ -794,7 +794,7 @@ func buildNavNodes(configs []navEntryConfig, pageByRel map[string]page, pages []
 				if p.Kind == pageKindAPI && strings.HasPrefix(p.RelPath, "reference/generated/api/endpoints/") {
 					node.Children = append(node.Children, apiEndpointNavNode(p))
 				} else {
-					node.Children = append(node.Children, navNode{Title: p.Title, Path: p.URLPath})
+					node.Children = append(node.Children, navNode{Title: p.Title, Icon: cfg.Icon, Path: p.URLPath})
 				}
 				flat = append(flat, navItem{Title: p.Title, Path: p.URLPath})
 			}
@@ -808,7 +808,11 @@ func buildNavNodes(configs []navEntryConfig, pageByRel map[string]page, pages []
 			if err != nil {
 				return nil, nil, err
 			}
-			nodes = append(nodes, navNode{Title: cfg.Title, Icon: cfg.Icon, ForceOpen: cfg.Open, Children: children})
+			if strings.TrimSpace(cfg.Title) == "" {
+				nodes = append(nodes, children...)
+			} else {
+				nodes = append(nodes, navNode{Title: cfg.Title, Icon: cfg.Icon, ForceOpen: cfg.Open, Children: children})
+			}
 			flat = append(flat, childFlat...)
 		}
 	}

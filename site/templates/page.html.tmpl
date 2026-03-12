@@ -4,15 +4,19 @@
     <nav>
       <div class="site-sidebar-label">{{ if eq .Page.Kind "api" }}API Reference{{ else }}Documentation{{ end }}</div>
       {{ range .SidebarGroups }}
-        <details class="docs-nav-group section-nav-group" {{ if .Open }}open{{ end }}>
-          <summary>
-            <span class="site-nav-summary-row">
-              {{ if .Icon }}<span class="site-nav-group-icon" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
-              <span>{{ .Title }}</span>
-            </span>
-          </summary>
+        {{ if or .Title .Icon }}
+          <details class="docs-nav-group section-nav-group" {{ if .Open }}open{{ end }}>
+            <summary>
+              <span class="site-nav-summary-row">
+                {{ if .Icon }}<span class="site-nav-group-icon" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
+                <span>{{ .Title }}</span>
+              </span>
+            </summary>
+            {{ template "nav-nodes" .Nodes }}
+          </details>
+        {{ else }}
           {{ template "nav-nodes" .Nodes }}
-        </details>
+        {{ end }}
       {{ end }}
     </nav>
   </aside>

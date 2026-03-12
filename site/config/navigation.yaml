@@ -61,13 +61,8 @@ docs:
             autogen_dir: reference/generated/declarative/kinds
 
 api:
-  - title: Endpoint Groups
-    icon: folders
+  -
     items:
       - autogen_dir: reference/generated/api/endpoints
-  - title: Schemas
-    icon: database
-    items:
-      - title: Models
-        icon: file-json
+      - icon: file-json
         autogen_dir: reference/generated/api/schemas
