@@ -81,11 +81,8 @@
         <a href="{{ .Path }}"{{ if .Active }} class="is-active"{{ end }}{{ if .Method }} data-api-method="{{ .Method }}"{{ end }}>
           {{ if .Method }}
             <span class="api-nav-link">
-              <span class="api-nav-link-main">
-                <span class="api-nav-method" data-api-method="{{ .Method }}">{{ .Method }}</span>
-                <span class="api-nav-route">{{ .RoutePath }}</span>
-              </span>
-              {{ if .Description }}<span class="api-nav-description">{{ .Description }}</span>{{ end }}
+              <span class="api-nav-link-title">{{ .Title }}</span>
+              <span class="api-nav-method" data-api-method="{{ .Method }}">{{ .Method }}</span>
             </span>
           {{ else }}
             {{ .Title }}

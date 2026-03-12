@@ -906,8 +906,8 @@ func apiOperationNodes(p page) []navNode {
 		routePath := strings.TrimSpace(match[2])
 		description := strings.TrimSpace(match[3])
 		title := routePath
-		if description == "" {
-			title = method + " " + routePath
+		if description != "" {
+			title = description
 		}
 		nodes = append(nodes, navNode{
 			Title:       title,

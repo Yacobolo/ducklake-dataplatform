@@ -738,11 +738,11 @@
   }
 
   .api-nav-link {
-    @apply flex min-w-0 flex-col gap-1;
+    @apply flex min-w-0 items-center justify-between gap-3;
   }
 
-  .api-nav-link-main {
-    @apply flex min-w-0 items-center gap-2;
+  .api-nav-link-title {
+    @apply min-w-0 truncate;
   }
 
   .api-nav-method {
@@ -779,14 +779,9 @@
     color: #fca5a5;
   }
 
-  .api-nav-route {
+  .api-nav-link-title {
     color: var(--api-ink);
-    @apply min-w-0 truncate font-mono text-[13px] font-medium;
-  }
-
-  .api-nav-description {
-    color: var(--api-muted);
-    @apply truncate text-xs;
+    @apply text-[13px] font-medium;
   }
 
   .api-hero {
