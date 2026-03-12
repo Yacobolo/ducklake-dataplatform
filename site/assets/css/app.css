@@ -725,6 +725,22 @@
     color: var(--api-muted);
   }
 
+  [data-api-sidebar] .site-nav-node-summary {
+    @apply block pr-6;
+  }
+
+  [data-api-sidebar] .site-nav-node-label-wrap {
+    @apply min-w-0;
+  }
+
+  [data-api-sidebar] .site-nav-node-label {
+    @apply truncate;
+  }
+
+  [data-api-sidebar] .site-nav-node-meta {
+    @apply hidden;
+  }
+
   .api-nav-link {
     @apply flex min-w-0 flex-col gap-1;
   }
