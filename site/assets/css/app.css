@@ -159,11 +159,15 @@
   }
 
   .docs-layout {
-    @apply lg:grid-cols-[18rem_minmax(0,1fr)_14rem];
+    @apply max-w-none gap-0 px-0 py-0 lg:grid-cols-[22rem_minmax(0,1fr)_15rem];
   }
 
   .api-layout {
     @apply max-w-none gap-0 px-0 py-0 lg:grid-cols-[22rem_minmax(0,1fr)];
+  }
+
+  .section-layout {
+    @apply lg:min-h-[calc(100vh-4.5rem)];
   }
 
   .site-sidebar,
@@ -178,6 +182,18 @@
     background: var(--site-surface-strong);
   }
 
+  .section-sidebar nav,
+  .docs-toc nav {
+    top: 4.5rem;
+    max-height: calc(100vh - 4.5rem);
+    overflow-y: auto;
+  }
+
+  .site-sidebar-label {
+    color: var(--site-muted-soft);
+    @apply mb-4 text-xs font-semibold uppercase tracking-[0.2em];
+  }
+
   .site-sidebar ul,
   .site-toc ul {
     @apply space-y-2 text-sm;
@@ -187,22 +203,14 @@
     @apply mb-2;
   }
 
-  .docs-nav-group,
-  .api-nav-group,
+  .section-nav-group,
   .site-nav-node {
-    @apply mb-3 rounded-2xl border;
+    @apply mb-2;
   }
 
-  .docs-nav-group,
-  .site-nav-node {
-    border-color: var(--site-border);
-    background: color-mix(in srgb, var(--site-surface-strong) 88%, transparent);
-  }
-
-  .docs-nav-group > summary,
-  .site-nav-node > summary,
-  .api-nav-group > summary {
-    @apply cursor-pointer list-none px-4 py-3 text-sm font-semibold;
+  .section-nav-group > summary,
+  .site-nav-node > summary {
+    @apply relative cursor-pointer list-none rounded-2xl px-3 py-2 text-sm font-semibold;
   }
 
   .docs-nav-group > summary,
@@ -210,8 +218,44 @@
     color: var(--site-ink);
   }
 
+  .site-nav-summary-row,
+  .site-nav-node-label-wrap {
+    @apply flex min-w-0 items-center gap-2;
+  }
+
+  .section-nav-group > summary::after,
+  .site-nav-node > summary::after {
+    content: "";
+    position: absolute;
+    right: 0.95rem;
+    top: 0.95rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    opacity: 0.6;
+    transform: rotate(45deg);
+    transition: transform 160ms ease;
+  }
+
+  .section-nav-group[open] > summary::after,
+  .site-nav-node[open] > summary::after {
+    transform: rotate(225deg);
+  }
+
+  .site-nav-group-icon,
+  .site-nav-node-icon {
+    color: var(--site-muted-soft);
+    @apply inline-flex h-4 w-4 shrink-0;
+  }
+
+  .site-nav-group-icon svg,
+  .site-nav-node-icon svg {
+    @apply h-4 w-4;
+  }
+
   .site-nav-tree {
-    @apply space-y-2 px-3 pb-3;
+    @apply space-y-1 pb-1 pl-3;
   }
 
   .site-nav-node-summary {
@@ -229,7 +273,7 @@
 
   .site-nav-tree .site-nav-tree {
     @apply ml-3 border-l pl-3;
-    border-color: color-mix(in srgb, var(--site-border) 80%, transparent);
+    border-color: color-mix(in srgb, var(--site-border) 65%, transparent);
   }
 
   .site-nav-tree a {
@@ -264,8 +308,12 @@
     @apply min-w-0;
   }
 
-  .docs-layout .site-content {
-    @apply py-2;
+  .section-content {
+    @apply mx-auto min-h-screen max-w-5xl px-6 py-10 lg:px-12;
+  }
+
+  .docs-content {
+    @apply py-10;
   }
 
   .site-card-grid {
@@ -412,6 +460,11 @@
     @apply hidden lg:block;
   }
 
+  .docs-sidebar nav {
+    @apply h-[calc(100vh-4.5rem)] rounded-none border-0 border-r p-6;
+    background: color-mix(in srgb, var(--site-surface-strong) 88%, transparent);
+  }
+
   .api-sidebar nav {
     @apply h-[calc(100vh-4.5rem)] rounded-none border-0 border-r p-6;
     top: 4.5rem;
@@ -419,10 +472,32 @@
     border-color: var(--api-border);
   }
 
+  .docs-toc nav {
+    border-left: 1px solid var(--site-border);
+    border-right: 0;
+    border-top: 0;
+    border-bottom: 0;
+    border-radius: 0;
+    background: transparent;
+    @apply px-5 py-8;
+  }
+
+  .docs-nav-group > summary {
+    @apply hover:bg-slate-100;
+  }
+
+  .docs-nav-group .site-nav-node > summary:hover,
+  .docs-nav-group .site-nav-tree a:hover {
+    background: color-mix(in srgb, var(--site-brand) 7%, transparent);
+  }
+
+  .docs-nav-group .site-nav-node[open] > summary,
+  .docs-nav-group > summary {
+    @apply bg-transparent;
+  }
+
   .api-nav-group {
-    @apply mb-4 rounded-[1.6rem] border px-3 py-2;
-    border-color: rgba(148, 163, 184, 0.14);
-    background: rgba(15, 23, 42, 0.4);
+    @apply mb-3;
   }
 
   .api-nav-group summary {
@@ -431,18 +506,16 @@
   }
 
   .api-nav-group .site-nav-node {
-    border-color: rgba(148, 163, 184, 0.1);
-    background: rgba(6, 12, 23, 0.46);
-    @apply mb-2 overflow-hidden rounded-[1.15rem];
+    @apply mb-1;
   }
 
   .api-nav-group .site-nav-tree {
-    @apply mt-2 space-y-1 px-0 pb-0;
+    @apply mt-1 space-y-1 px-0 pb-0;
   }
 
   .api-nav-group .site-nav-tree .site-nav-tree {
     border-color: rgba(148, 163, 184, 0.12);
-    @apply ml-0 border-l-0 pl-0;
+    @apply ml-3 pl-3;
   }
 
   .api-nav-group .site-nav-tree a {
@@ -457,24 +530,13 @@
   }
 
   .api-nav-group .site-nav-node > summary {
-    @apply relative px-3 py-3;
+    @apply relative px-3 py-2;
   }
 
+  .api-nav-group > summary::after,
   .api-nav-group .site-nav-node > summary::after {
-    content: "";
-    position: absolute;
-    right: 0.95rem;
-    top: 1.15rem;
-    width: 0.45rem;
-    height: 0.45rem;
-    border-right: 1.5px solid rgba(226, 232, 240, 0.78);
-    border-bottom: 1.5px solid rgba(226, 232, 240, 0.78);
-    transform: rotate(45deg);
-    transition: transform 160ms ease;
-  }
-
-  .api-nav-group .site-nav-node[open] > summary::after {
-    transform: rotate(225deg);
+    border-right-color: rgba(226, 232, 240, 0.78);
+    border-bottom-color: rgba(226, 232, 240, 0.78);
   }
 
   .api-nav-group .site-nav-node .site-nav-node-label {
@@ -538,10 +600,6 @@
     @apply truncate text-xs;
   }
 
-  .api-content {
-    @apply mx-auto min-h-screen max-w-5xl px-6 py-10 lg:px-12;
-  }
-
   .api-hero {
     @apply mb-10 flex flex-wrap items-end justify-between gap-4 rounded-[2rem] border p-8;
     border-color: rgba(148, 163, 184, 0.14);
@@ -553,6 +611,10 @@
   .api-eyebrow {
     @apply mb-3 text-xs font-semibold uppercase tracking-[0.25em];
     color: #5eead4;
+  }
+
+  .api-sidebar-label {
+    color: var(--api-muted);
   }
 
   .api-hero h1 {

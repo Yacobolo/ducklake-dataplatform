@@ -1,17 +1,22 @@
 {{ define "docs" -}}
-<main class="site-layout docs-layout">
-  <aside class="site-sidebar">
+<main class="site-layout docs-layout section-layout">
+  <aside class="site-sidebar docs-sidebar section-sidebar">
     <nav>
-      <div class="mb-4 text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--site-muted-soft);">Documentation</div>
+      <div class="site-sidebar-label">Documentation</div>
       {{ range .SidebarGroups }}
-        <details class="docs-nav-group" {{ if .Open }}open{{ end }}>
-          <summary>{{ .Title }}</summary>
+        <details class="docs-nav-group section-nav-group" {{ if .Open }}open{{ end }}>
+          <summary>
+            <span class="site-nav-summary-row">
+              {{ if .Icon }}<span class="site-nav-group-icon" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
+              <span>{{ .Title }}</span>
+            </span>
+          </summary>
           {{ template "nav-nodes" .Nodes }}
         </details>
       {{ end }}
     </nav>
   </aside>
-  <article class="site-content">
+  <article class="site-content docs-content section-content">
     <div class="mb-8 flex flex-wrap items-center gap-3 text-sm" style="color: var(--site-muted);">
       {{ range .Breadcrumbs }}
         <a href="{{ .Path }}" class="no-underline">{{ .Title }}</a>
@@ -29,9 +34,9 @@
       {{ if .Next }}<a class="site-button site-button-secondary" href="{{ .Next.Path }}">{{ .Next.Title }} →</a>{{ end }}
     </div>
   </article>
-  <aside class="site-toc">
+  <aside class="site-toc docs-toc">
     <nav>
-      <div class="mb-4 text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--site-muted-soft);">On this page</div>
+      <div class="site-sidebar-label">On this page</div>
       <ul>
         {{ range .TOC }}
           <li><a href="#{{ .ID }}" data-site-toc-link="{{ .ID }}">{{ .Title }}</a></li>
@@ -43,19 +48,24 @@
 {{- end }}
 
 {{ define "api" -}}
-<main class="site-layout api-layout">
-  <aside class="site-sidebar api-sidebar">
+<main class="site-layout api-layout section-layout">
+  <aside class="site-sidebar api-sidebar section-sidebar">
     <nav>
-      <div class="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">API Reference</div>
+      <div class="site-sidebar-label api-sidebar-label">API Reference</div>
       {{ range .SidebarGroups }}
-        <details class="api-nav-group" {{ if .Open }}open{{ end }}>
-          <summary>{{ .Title }}</summary>
+        <details class="api-nav-group section-nav-group" {{ if .Open }}open{{ end }}>
+          <summary>
+            <span class="site-nav-summary-row">
+              {{ if .Icon }}<span class="site-nav-group-icon" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
+              <span>{{ .Title }}</span>
+            </span>
+          </summary>
           {{ template "nav-nodes" .Nodes }}
         </details>
       {{ end }}
     </nav>
   </aside>
-  <article class="site-content api-content">
+  <article class="site-content api-content section-content">
     <div class="mb-8 flex flex-wrap items-center gap-3 text-sm text-slate-400">
       {{ range .Breadcrumbs }}
         <a href="{{ .Path }}" class="no-underline text-slate-300">{{ .Title }}</a>
@@ -90,7 +100,10 @@
         <details class="site-nav-node" {{ if .Open }}open{{ end }}>
           <summary>
             <span class="site-nav-node-summary">
-              <span class="site-nav-node-label">{{ .Title }}</span>
+              <span class="site-nav-node-label-wrap">
+                {{ if .Icon }}<span class="site-nav-node-icon" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
+                <span class="site-nav-node-label">{{ .Title }}</span>
+              </span>
               {{ if .Description }}<span class="site-nav-node-meta">{{ .Description }}</span>{{ end }}
             </span>
           </summary>

@@ -52,12 +52,16 @@ type navLinkConfig struct {
 
 type navGroupConfig struct {
 	Title string           `yaml:"title"`
+	Icon  string           `yaml:"icon"`
+	Open  bool             `yaml:"open"`
 	Items []navEntryConfig `yaml:"items"`
 }
 
 type navEntryConfig struct {
 	Source  string           `yaml:"source"`
 	Title   string           `yaml:"title"`
+	Icon    string           `yaml:"icon"`
+	Open    bool             `yaml:"open"`
 	AutoDir string           `yaml:"autogen_dir"`
 	Items   []navEntryConfig `yaml:"items"`
 }
@@ -135,15 +139,18 @@ type navItem struct {
 
 type navGroup struct {
 	Title string
+	Icon  string
 	Nodes []navNode
 	Open  bool
 }
 
 type navNode struct {
 	Title       string
+	Icon        string
 	Path        string
 	Active      bool
 	Open        bool
+	ForceOpen   bool
 	Children    []navNode
 	Method      string
 	RoutePath   string
@@ -291,7 +298,9 @@ func loadConfig[T any](path string) (T, error) {
 }
 
 func loadTemplates(root string) (templateSet, error) {
-	tmpl, err := template.New("base").ParseFS(os.DirFS(root), "*.tmpl")
+	tmpl, err := template.New("base").Funcs(template.FuncMap{
+		"navIcon": navIconSVG,
+	}).ParseFS(os.DirFS(root), "*.tmpl")
 	if err != nil {
 		return templateSet{}, fmt.Errorf("parse templates: %w", err)
 	}
@@ -744,7 +753,7 @@ func buildConfiguredGroups(configs []navGroupConfig, pageByRel map[string]page, 
 	flat := make([]navItem, 0)
 
 	for _, groupCfg := range configs {
-		group := navGroup{Title: groupCfg.Title}
+		group := navGroup{Title: groupCfg.Title, Icon: groupCfg.Icon, Open: groupCfg.Open}
 		nodes, nodeFlat, err := buildNavNodes(groupCfg.Items, pageByRel, pages)
 		if err != nil {
 			return nil, nil, err
@@ -772,14 +781,14 @@ func buildNavNodes(configs []navEntryConfig, pageByRel map[string]page, pages []
 			if strings.TrimSpace(cfg.Title) != "" {
 				title = cfg.Title
 			}
-			nodes = append(nodes, navNode{Title: title, Path: p.URLPath})
+			nodes = append(nodes, navNode{Title: title, Icon: cfg.Icon, Path: p.URLPath, ForceOpen: cfg.Open})
 			flat = append(flat, navItem{Title: title, Path: p.URLPath})
 		case cfg.AutoDir != "":
 			children := pagesInDir(pages, cfg.AutoDir)
 			if len(children) == 0 {
 				continue
 			}
-			node := navNode{Title: cfg.Title}
+			node := navNode{Title: cfg.Title, Icon: cfg.Icon, ForceOpen: cfg.Open}
 			for _, p := range children {
 				if p.Kind == pageKindAPI && strings.HasPrefix(p.RelPath, "reference/generated/api/endpoints/") {
 					node.Children = append(node.Children, apiEndpointNavNode(p))
@@ -794,7 +803,7 @@ func buildNavNodes(configs []navEntryConfig, pageByRel map[string]page, pages []
 			if err != nil {
 				return nil, nil, err
 			}
-			nodes = append(nodes, navNode{Title: cfg.Title, Children: children})
+			nodes = append(nodes, navNode{Title: cfg.Title, Icon: cfg.Icon, ForceOpen: cfg.Open, Children: children})
 			flat = append(flat, childFlat...)
 		}
 	}
@@ -832,8 +841,9 @@ func buildTopNav(configs []navLinkConfig, currentPath string) []navItem {
 func activateGroups(groups []navGroup, currentPath string) []navGroup {
 	out := make([]navGroup, 0, len(groups))
 	for _, group := range groups {
-		next := navGroup{Title: group.Title}
+		next := navGroup{Title: group.Title, Icon: group.Icon, Open: group.Open}
 		next.Nodes, next.Open = activateNodes(group.Nodes, currentPath)
+		next.Open = next.Open || group.Open
 		out = append(out, next)
 	}
 	return out
@@ -846,12 +856,12 @@ func activateNodes(nodes []navNode, currentPath string) ([]navNode, bool) {
 		next := node
 		if len(node.Children) == 0 {
 			next.Active = node.Path == currentPath
-			next.Open = next.Active
+			next.Open = next.Active || node.ForceOpen
 		} else {
 			children, open := activateNodes(node.Children, currentPath)
 			next.Children = children
 			next.Active = node.Path == currentPath
-			next.Open = open || next.Active
+			next.Open = open || next.Active || node.ForceOpen
 		}
 		if next.Open || next.Active {
 			anyOpen = true
@@ -868,7 +878,9 @@ func apiEndpointNavNode(p page) navNode {
 	children = append(children, apiOperationNodes(p)...)
 	return navNode{
 		Title:       trimAPINavTitle(p.Title),
+		Icon:        "folder",
 		Path:        p.URLPath,
+		ForceOpen:   true,
 		Children:    children,
 		Description: p.Description,
 	}
@@ -905,6 +917,33 @@ func trimAPINavTitle(title string) string {
 	title = strings.TrimSuffix(title, " Endpoints")
 	title = strings.TrimSuffix(title, " Endpoint")
 	return strings.TrimSpace(title)
+}
+
+func navIconSVG(name string) template.HTML {
+	switch strings.TrimSpace(strings.ToLower(name)) {
+	case "rocket":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.5-1.5 4.5-1.5 4.5s3 0 4.5-1.5c.84-.84 1.14-2.06.9-3.18L7.68 15.6c-1.12-.24-2.34.06-3.18.9Z"></path><path d="m12 15-3-3a33.76 33.76 0 0 1 6.01-8.29 2.18 2.18 0 0 1 3 0 2.18 2.18 0 0 1 0 3A33.76 33.76 0 0 1 12 15Z"></path><path d="M9 12H4a2 2 0 0 0-2 2v1"></path><path d="M12 9V4a2 2 0 0 1 2-2h1"></path></svg>`)
+	case "book-open":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"></path><path d="M3 18V6a2 2 0 0 1 2-2h7v16H5a2 2 0 0 0-2 2"></path><path d="M21 18V6a2 2 0 0 0-2-2h-7v16h7a2 2 0 0 1 2 2"></path></svg>`)
+	case "blocks":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>`)
+	case "wrench":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0 5 5l-8.4 8.4a2 2 0 1 1-2.8-2.8l8.4-8.4a4 4 0 0 0-5-5l3 3-3.5 3.5-3-3Z"></path></svg>`)
+	case "library":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6 4 14"></path><path d="M12 6v14"></path><path d="M8 8v12"></path><path d="M4 4v16"></path></svg>`)
+	case "folders":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 19a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.93l-.81-1.21A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"></path><path d="M2 10h20"></path></svg>`)
+	case "folder":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.93l-.81-1.21A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>`)
+	case "route":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="5" r="2"></circle><path d="M12 19h4a2 2 0 0 0 2-2V7"></path><path d="M6 17V9a2 2 0 0 1 2-2h8"></path></svg>`)
+	case "database":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"></path><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"></path></svg>`)
+	case "file-json":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path><path d="M10 12H8"></path><path d="M16 12h-2"></path><path d="M10 18H8"></path><path d="M16 18h-2"></path></svg>`)
+	default:
+		return ""
+	}
 }
 
 func buildBreadcrumbs(p page) []navItem {
