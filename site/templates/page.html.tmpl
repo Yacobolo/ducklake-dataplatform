@@ -25,9 +25,11 @@
         {{ end }}
         <span>{{ .Page.Title }}</span>
       </div>
-      {{ if eq .Page.Kind "api" }}
-        <a class="site-button site-button-secondary" href="/llms/{{ .MirrorPath }}">Open Markdown</a>
-      {{ end }}
+      <button
+        type="button"
+        class="site-button site-button-secondary"
+        data-site-copy-page="/llms/{{ .MirrorPath }}"
+      >Copy Page</button>
     </div>
     <div class="site-prose">
       <h1>{{ .Page.Title }}</h1>

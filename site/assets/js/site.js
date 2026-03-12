@@ -138,6 +138,28 @@
     });
   });
 
+  document.querySelectorAll("[data-site-copy-page]").forEach(function (button) {
+    button.addEventListener("click", async function () {
+      const source = button.getAttribute("data-site-copy-page");
+      if (!source) {
+        return;
+      }
+
+      try {
+        const response = await fetch(source);
+        if (!response.ok) {
+          return;
+        }
+        const text = await response.text();
+        await navigator.clipboard.writeText(text);
+        button.textContent = "Copied";
+        setTimeout(function () {
+          button.textContent = "Copy Page";
+        }, 1200);
+      } catch (_) {}
+    });
+  });
+
   const tocLinks = Array.from(document.querySelectorAll("[data-site-toc-link]"));
   if (tocLinks.length) {
     const tocById = new Map();
