@@ -4,14 +4,14 @@ Duck is a secure SQL platform built on DuckDB with RBAC, row-level security, col
 
 ## Start With the Docs
 
-Canonical product guidance now lives under [`/docs`](./docs).
+Canonical product guidance now lives under [`/site/content`](./site/content).
 
-- Product entrypoint: [`docs/index.md`](./docs/index.md)
-- Quickstart: [`docs/start-here/quickstart.md`](./docs/start-here/quickstart.md)
-- Core concepts: [`docs/core-concepts/index.md`](./docs/core-concepts/index.md)
-- How-to guides: [`docs/how-to/index.md`](./docs/how-to/index.md)
-- Operations: [`docs/operations/index.md`](./docs/operations/index.md)
-- Reference: [`docs/reference/index.md`](./docs/reference/index.md)
+- Product entrypoint: [`site/content/index.md`](./site/content/index.md)
+- Quickstart: [`site/content/start-here/quickstart.md`](./site/content/start-here/quickstart.md)
+- Core concepts: [`site/content/core-concepts/index.md`](./site/content/core-concepts/index.md)
+- How-to guides: [`site/content/how-to/index.md`](./site/content/how-to/index.md)
+- Operations: [`site/content/operations/index.md`](./site/content/operations/index.md)
+- Reference: [`site/content/reference/index.md`](./site/content/reference/index.md)
 
 ## Local Development
 
@@ -38,14 +38,14 @@ task build-cli
 ## Docs Workflow
 
 ```bash
-task docs:dev
-task docs:build
+task site:dev
+task site:build
 task docs:generate
-task docs:check
+task site:check
 ```
 
 The canonical public API contract is `api/gen/openapi.yaml`.
-Generated reference under `docs/reference/generated` is derived from that contract plus the declarative schema artifacts.
+Generated reference under `site/content/reference/generated` is derived from that contract plus the declarative schema artifacts.
 
 ## Examples
 

@@ -1,0 +1,61 @@
+primary:
+  - title: Docs
+    path: /docs/
+  - title: API Reference
+    path: /api-reference/
+
+docs:
+  - title: Getting Started
+    items:
+      - source: start-here/index.md
+        title: Overview
+      - source: start-here/quickstart.md
+      - source: start-here/deployment-modes.md
+  - title: Core Concepts
+    items:
+      - source: core-concepts/index.md
+      - source: core-concepts/access-control.md
+      - source: core-concepts/declarative.md
+      - source: core-concepts/compute-and-query.md
+  - title: How To
+    items:
+      - source: how-to/index.md
+      - source: how-to/authentication.md
+      - source: how-to/use-the-cli.md
+      - source: how-to/access-control.md
+      - source: how-to/catalog-and-ingestion.md
+      - source: how-to/declarative-workflows.md
+  - title: Operations
+    items:
+      - source: operations/index.md
+      - source: operations/configuration.md
+      - source: operations/security-checklist.md
+      - source: operations/distributed-compute.md
+  - title: Reference
+    items:
+      - source: reference/index.md
+      - source: reference/glossary.md
+      - source: reference/api.md
+      - source: reference/declarative.md
+      - source: reference/cli.md
+      - source: browser-local-compute.md
+      - source: architecture-governance.md
+      - source: reference/generated/declarative/index.md
+      - title: Declarative Kinds
+        autogen_dir: reference/generated/declarative/kinds
+
+api:
+  - title: Overview
+    items:
+      - source: reference/generated/api/index.md
+        title: API Overview
+      - source: reference/generated/api/features.md
+        title: Feature Coverage
+  - title: Endpoint Groups
+    items:
+      - title: Operations
+        autogen_dir: reference/generated/api/endpoints
+  - title: Schemas
+    items:
+      - title: Models
+        autogen_dir: reference/generated/api/schemas

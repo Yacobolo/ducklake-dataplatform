@@ -1,0 +1,11 @@
+{
+  "name": "duck-public-site",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build:css": "tailwindcss -c ./tailwind.config.js -i ./assets/css/app.css -o ./assets/generated/site.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

@@ -1,0 +1,42 @@
+{{ define "home" -}}
+<main>
+  <section class="site-hero">
+    <div class="site-hero-inner">
+      <div class="space-y-6">
+        <div class="inline-flex rounded-full border px-3 py-1 text-sm" style="border-color: var(--site-border); color: var(--site-brand-strong);">Unified site</div>
+        <div class="space-y-4">
+          <h1 class="max-w-3xl text-5xl font-semibold">{{ .Home.Hero.Name }}</h1>
+          <p class="max-w-2xl text-xl" style="color: var(--site-muted);">{{ .Home.Hero.Tagline }}</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          {{ range .Home.Hero.Actions }}
+            <a href="{{ .Link }}" class="site-button {{ if eq .Theme "brand" }}site-button-primary{{ else }}site-button-secondary{{ end }}">{{ .Text }}</a>
+          {{ end }}
+        </div>
+      </div>
+      <div class="site-card">
+        <div class="text-sm font-semibold uppercase tracking-[0.2em]" style="color: var(--site-brand-strong);">What this ships</div>
+        <ul class="mt-4 space-y-3 text-sm" style="color: var(--site-muted);">
+          <li>One visual language across homepage, docs, and generated reference.</li>
+          <li>Clean Markdown mirrors for agents via `llms.txt` and `/llms/...`.</li>
+          <li>Static export and local Go-based dev server.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  <section class="mx-auto max-w-7xl px-4 py-16 lg:px-8">
+    <div class="mb-8 max-w-2xl space-y-3">
+      <h2 class="text-3xl font-semibold">Move between product overview, docs, and reference without changing context.</h2>
+      <p style="color: var(--site-muted);">{{ .Page.Description }}</p>
+    </div>
+    <div class="site-card-grid">
+      {{ range .Home.Features }}
+        <a href="{{ .Link }}" class="site-card no-underline transition hover:-translate-y-0.5">
+          <div class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ .Title }}</div>
+          <p class="mt-3 text-sm" style="color: var(--site-muted);">{{ .Details }}</p>
+        </a>
+      {{ end }}
+    </div>
+  </section>
+</main>
+{{- end }}

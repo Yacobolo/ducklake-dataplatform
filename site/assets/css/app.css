@@ -1,0 +1,387 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --site-brand: #0f766e;
+  --site-brand-strong: #115e59;
+  --site-surface: #f8fafc;
+  --site-surface-strong: #ffffff;
+  --site-surface-accent: #ecfeff;
+  --site-border: #dbe4ea;
+  --site-ink: #0f172a;
+  --site-muted: #475569;
+  --site-muted-soft: #64748b;
+  --site-code-bg: #0f172a;
+  --site-code-ink: #e2e8f0;
+  --api-panel: #0f172a;
+  --api-panel-soft: #111827;
+  --api-border: #1f2937;
+  --api-ink: #e5eefc;
+  --api-muted: #9fb0c8;
+}
+
+[data-theme="dark"] {
+  --site-brand: #5eead4;
+  --site-brand-strong: #99f6e4;
+  --site-surface: #020617;
+  --site-surface-strong: #0f172a;
+  --site-surface-accent: #082f2f;
+  --site-border: #1e293b;
+  --site-ink: #e2e8f0;
+  --site-muted: #cbd5e1;
+  --site-muted-soft: #94a3b8;
+  --site-code-bg: #020617;
+  --site-code-ink: #dbeafe;
+  --api-panel: #020617;
+  --api-panel-soft: #0b1220;
+  --api-border: #1e293b;
+  --api-ink: #e5eefc;
+  --api-muted: #94a3b8;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-surface text-ink antialiased;
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    @apply tracking-tight;
+  }
+
+  a {
+    color: var(--site-brand-strong);
+  }
+
+  pre {
+    background: var(--site-code-bg);
+    color: var(--site-code-ink);
+    @apply overflow-x-auto rounded-2xl p-4 text-sm;
+  }
+
+  code:not(pre code) {
+    background: color-mix(in srgb, var(--site-brand) 10%, transparent);
+    @apply rounded px-1.5 py-0.5 text-sm;
+  }
+}
+
+@layer components {
+  .site-shell {
+    @apply min-h-screen bg-surface text-ink;
+  }
+
+  .site-header {
+    backdrop-filter: blur(14px);
+    background: color-mix(in srgb, var(--site-surface) 92%, transparent);
+    border-bottom: 1px solid var(--site-border);
+    @apply sticky top-0 z-40;
+  }
+
+  .site-header-inner {
+    @apply mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 lg:px-8;
+  }
+
+  .site-logo {
+    @apply flex items-center gap-3 font-semibold text-ink no-underline;
+  }
+
+  .site-nav {
+    @apply hidden items-center gap-5 text-sm lg:flex;
+  }
+
+  .site-nav a {
+    @apply no-underline;
+    color: var(--site-muted);
+  }
+
+  .site-nav a:hover,
+  .site-nav a.is-active {
+    color: var(--site-brand-strong);
+  }
+
+  .site-actions {
+    @apply ml-auto flex items-center gap-3;
+  }
+
+  .site-button {
+    @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium no-underline transition;
+  }
+
+  .site-button-primary {
+    background: var(--site-brand);
+    color: white;
+  }
+
+  .site-button-secondary {
+    border: 1px solid var(--site-border);
+    color: var(--site-ink);
+  }
+
+  .site-layout {
+    @apply mx-auto grid max-w-7xl gap-10 px-4 py-10 lg:grid-cols-[16rem_minmax(0,1fr)_14rem] lg:px-8;
+  }
+
+  .docs-layout {
+    @apply lg:grid-cols-[18rem_minmax(0,1fr)_14rem];
+  }
+
+  .api-layout {
+    @apply max-w-none gap-0 px-0 py-0 lg:grid-cols-[22rem_minmax(0,1fr)];
+  }
+
+  .site-sidebar,
+  .site-toc {
+    @apply hidden lg:block;
+  }
+
+  .site-sidebar nav,
+  .site-toc nav {
+    @apply sticky top-24 rounded-3xl border p-5;
+    border-color: var(--site-border);
+    background: var(--site-surface-strong);
+  }
+
+  .site-sidebar ul,
+  .site-toc ul {
+    @apply space-y-2 text-sm;
+  }
+
+  .site-sidebar li {
+    @apply mb-2;
+  }
+
+  .site-sidebar a,
+  .site-toc a {
+    @apply no-underline;
+    color: var(--site-muted);
+  }
+
+  .site-sidebar a.is-active,
+  .site-sidebar a:hover,
+  .site-toc a:hover {
+    color: var(--site-brand-strong);
+  }
+
+  .site-content {
+    @apply min-w-0;
+  }
+
+  .docs-layout .site-content {
+    @apply py-2;
+  }
+
+  .site-card-grid {
+    @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .site-card {
+    background: var(--site-surface-strong);
+    border: 1px solid var(--site-border);
+    @apply rounded-3xl p-6 shadow-card;
+  }
+
+  .site-hero {
+    background:
+      radial-gradient(circle at top left, color-mix(in srgb, var(--site-brand) 22%, transparent), transparent 32%),
+      linear-gradient(180deg, color-mix(in srgb, var(--site-surface-accent) 65%, var(--site-surface-strong)), var(--site-surface));
+    @apply border-b;
+    border-color: var(--site-border);
+  }
+
+  .site-hero-inner {
+    @apply mx-auto grid max-w-7xl gap-8 px-4 py-20 lg:grid-cols-[minmax(0,1fr)_20rem] lg:px-8;
+  }
+
+  .site-prose {
+    @apply max-w-none space-y-6;
+  }
+
+  .site-prose h1 {
+    @apply text-4xl font-semibold;
+  }
+
+  .site-prose h2 {
+    @apply mt-12 text-2xl font-semibold;
+  }
+
+  .site-prose h3 {
+    @apply mt-8 text-xl font-semibold;
+  }
+
+  .site-prose p,
+  .site-prose li {
+    color: var(--site-muted);
+    @apply leading-7;
+  }
+
+  .site-prose table {
+    @apply w-full border-collapse overflow-hidden rounded-2xl text-sm;
+  }
+
+  .site-prose th,
+  .site-prose td {
+    border: 1px solid var(--site-border);
+    @apply px-3 py-2 text-left;
+  }
+
+  .site-callout {
+    border-left: 4px solid var(--site-brand);
+    background: color-mix(in srgb, var(--site-brand) 7%, var(--site-surface-strong));
+    @apply rounded-2xl p-4;
+  }
+
+  .site-mobile-nav {
+    @apply hidden border-t px-4 py-4 lg:hidden;
+    border-color: var(--site-border);
+    background: var(--site-surface-strong);
+  }
+
+  .site-mobile-nav.is-open {
+    @apply block;
+  }
+
+  .api-shell {
+    background:
+      radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 28%),
+      linear-gradient(180deg, #020617 0%, #08111f 100%);
+    color: var(--api-ink);
+  }
+
+  .api-shell .site-header {
+    background: rgba(2, 6, 23, 0.84);
+    border-bottom-color: var(--api-border);
+  }
+
+  .api-shell .site-logo,
+  .api-shell .site-nav a.is-active,
+  .api-shell .site-nav a:hover {
+    color: white;
+  }
+
+  .api-shell .site-nav a,
+  .api-shell .site-actions input,
+  .api-shell .site-actions button {
+    color: var(--api-muted);
+  }
+
+  .api-shell .site-button-secondary {
+    border-color: var(--api-border);
+    color: var(--api-ink);
+    background: rgba(15, 23, 42, 0.6);
+  }
+
+  .api-sidebar {
+    @apply hidden lg:block;
+  }
+
+  .api-sidebar nav {
+    @apply h-[calc(100vh-4.5rem)] rounded-none border-0 border-r p-6;
+    top: 4.5rem;
+    background: rgba(2, 6, 23, 0.9);
+    border-color: var(--api-border);
+  }
+
+  .api-nav-group {
+    @apply mb-4 rounded-2xl border px-3 py-2;
+    border-color: rgba(148, 163, 184, 0.14);
+    background: rgba(15, 23, 42, 0.4);
+  }
+
+  .api-nav-group summary {
+    @apply cursor-pointer list-none text-sm font-semibold;
+    color: var(--api-ink);
+  }
+
+  .api-nav-group ul {
+    @apply mt-3 space-y-2;
+  }
+
+  .api-nav-group a {
+    color: var(--api-muted);
+  }
+
+  .api-nav-group a.is-active,
+  .api-nav-group a:hover {
+    color: white;
+  }
+
+  .api-content {
+    @apply mx-auto min-h-screen max-w-5xl px-6 py-10 lg:px-12;
+  }
+
+  .api-hero {
+    @apply mb-10 flex flex-wrap items-end justify-between gap-4 rounded-[2rem] border p-8;
+    border-color: rgba(148, 163, 184, 0.14);
+    background:
+      linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(8, 17, 31, 0.82)),
+      radial-gradient(circle at top right, rgba(45, 212, 191, 0.18), transparent 34%);
+  }
+
+  .api-eyebrow {
+    @apply mb-3 text-xs font-semibold uppercase tracking-[0.25em];
+    color: #5eead4;
+  }
+
+  .api-hero h1 {
+    @apply text-4xl font-semibold text-white;
+  }
+
+  .api-hero p {
+    @apply mt-3 max-w-2xl text-base;
+    color: var(--api-muted);
+  }
+
+  .api-prose {
+    color: var(--api-ink);
+  }
+
+  .api-prose p,
+  .api-prose li {
+    color: var(--api-muted);
+  }
+
+  .api-prose h1 {
+    @apply hidden;
+  }
+
+  .api-prose h2 {
+    @apply mt-10 rounded-[1.75rem] border px-5 py-4 text-xl font-semibold;
+    color: white;
+    border-color: rgba(148, 163, 184, 0.14);
+    background: rgba(15, 23, 42, 0.78);
+  }
+
+  .api-prose h2 .api-method {
+    @apply mr-3 inline-flex min-w-[4.5rem] items-center justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em];
+    background: rgba(94, 234, 212, 0.14);
+    color: #99f6e4;
+  }
+
+  .api-prose h2 .api-path {
+    @apply font-mono text-base;
+  }
+
+  .api-prose h3 {
+    @apply mt-6 text-base font-semibold uppercase tracking-[0.15em];
+    color: #dbeafe;
+  }
+
+  .api-prose table {
+    @apply rounded-[1.5rem];
+    background: rgba(15, 23, 42, 0.65);
+  }
+
+  .api-prose th,
+  .api-prose td {
+    border-color: rgba(148, 163, 184, 0.14);
+  }
+}

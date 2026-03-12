@@ -1,0 +1,91 @@
+{{ define "docs" -}}
+<main class="site-layout docs-layout">
+  <aside class="site-sidebar">
+    <nav>
+      <div class="mb-4 text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--site-muted-soft);">Documentation</div>
+      {{ range .SidebarGroups }}
+        <div class="mb-6">
+          <div class="mb-3 text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--site-muted-soft);">{{ .Title }}</div>
+          <ul>
+            {{ range .Items }}
+              <li><a href="{{ .Path }}"{{ if .Active }} class="is-active"{{ end }}>{{ .Title }}</a></li>
+            {{ end }}
+          </ul>
+        </div>
+      {{ end }}
+    </nav>
+  </aside>
+  <article class="site-content">
+    <div class="mb-8 flex flex-wrap items-center gap-3 text-sm" style="color: var(--site-muted);">
+      {{ range .Breadcrumbs }}
+        <a href="{{ .Path }}" class="no-underline">{{ .Title }}</a>
+        <span>/</span>
+      {{ end }}
+      <span>{{ .Page.Title }}</span>
+    </div>
+    <div class="site-prose">
+      <h1>{{ .Page.Title }}</h1>
+      {{ if .Page.Description }}<p>{{ .Page.Description }}</p>{{ end }}
+      {{ .BodyHTML }}
+    </div>
+    <div class="mt-12 flex flex-wrap justify-between gap-4 border-t pt-6" style="border-color: var(--site-border);">
+      {{ if .Prev }}<a class="site-button site-button-secondary" href="{{ .Prev.Path }}">← {{ .Prev.Title }}</a>{{ else }}<span></span>{{ end }}
+      {{ if .Next }}<a class="site-button site-button-secondary" href="{{ .Next.Path }}">{{ .Next.Title }} →</a>{{ end }}
+    </div>
+  </article>
+  <aside class="site-toc">
+    <nav>
+      <div class="mb-4 text-xs font-semibold uppercase tracking-[0.2em]" style="color: var(--site-muted-soft);">On this page</div>
+      <ul>
+        {{ range .TOC }}
+          <li><a href="#{{ .ID }}">{{ .Title }}</a></li>
+        {{ end }}
+      </ul>
+    </nav>
+  </aside>
+</main>
+{{- end }}
+
+{{ define "api" -}}
+<main class="site-layout api-layout">
+  <aside class="site-sidebar api-sidebar">
+    <nav>
+      <div class="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">API Reference</div>
+      {{ range .SidebarGroups }}
+        <details class="api-nav-group" {{ if .Open }}open{{ end }}>
+          <summary>{{ .Title }}</summary>
+          <ul>
+            {{ range .Items }}
+              <li><a href="{{ .Path }}"{{ if .Active }} class="is-active"{{ end }}>{{ .Title }}</a></li>
+            {{ end }}
+          </ul>
+        </details>
+      {{ end }}
+    </nav>
+  </aside>
+  <article class="site-content api-content">
+    <div class="mb-8 flex flex-wrap items-center gap-3 text-sm text-slate-400">
+      {{ range .Breadcrumbs }}
+        <a href="{{ .Path }}" class="no-underline text-slate-300">{{ .Title }}</a>
+        <span>/</span>
+      {{ end }}
+      <span>{{ .Page.Title }}</span>
+    </div>
+    <div class="api-hero">
+      <div>
+        <div class="api-eyebrow">Reference</div>
+        <h1>{{ .Page.Title }}</h1>
+        {{ if .Page.Description }}<p>{{ .Page.Description }}</p>{{ end }}
+      </div>
+      <a class="site-button site-button-secondary" href="/llms/{{ .MirrorPath }}">Open Markdown</a>
+    </div>
+    <div class="site-prose api-prose">
+      {{ .BodyHTML }}
+    </div>
+    <div class="mt-12 flex flex-wrap justify-between gap-4 border-t border-slate-800 pt-6">
+      {{ if .Prev }}<a class="site-button site-button-secondary" href="{{ .Prev.Path }}">← {{ .Prev.Title }}</a>{{ else }}<span></span>{{ end }}
+      {{ if .Next }}<a class="site-button site-button-secondary" href="{{ .Next.Path }}">{{ .Next.Title }} →</a>{{ end }}
+    </div>
+  </article>
+</main>
+{{- end }}
