@@ -112,6 +112,11 @@
     @apply ml-auto flex items-center gap-3;
   }
 
+  .site-search-trigger {
+    @apply hidden items-center gap-2 rounded-full px-4 py-2 text-sm font-medium lg:inline-flex;
+    background: var(--site-surface-strong);
+  }
+
   .site-button {
     @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium no-underline transition;
   }
@@ -601,6 +606,99 @@
 
   .site-mobile-nav.is-open {
     @apply block;
+  }
+
+  .site-search-modal {
+    @apply fixed inset-0 z-50;
+  }
+
+  .site-search-backdrop {
+    background: rgba(2, 6, 23, 0.56);
+    @apply absolute inset-0;
+  }
+
+  .site-search-shell {
+    @apply relative z-10 mx-auto flex min-h-full w-full max-w-4xl items-start justify-center px-4 py-10 lg:py-16;
+  }
+
+  .site-search-dialog {
+    border: 1px solid var(--site-border);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--site-surface-strong) 96%, transparent), color-mix(in srgb, var(--site-surface-accent) 16%, var(--site-surface-strong)));
+    box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
+    @apply w-full rounded-[2rem] p-5 lg:p-6;
+  }
+
+  .site-search-header {
+    @apply mb-5 flex items-start justify-between gap-4;
+  }
+
+  .site-search-eyebrow {
+    color: var(--site-brand-strong);
+    @apply text-xs font-semibold uppercase tracking-[0.22em];
+  }
+
+  .site-search-title {
+    color: var(--site-ink);
+    @apply mt-2 text-2xl font-semibold;
+  }
+
+  .site-search-input-wrap {
+    border: 1px solid var(--site-border);
+    background: var(--site-surface);
+    @apply flex items-center gap-3 rounded-[1.5rem] px-4 py-3;
+  }
+
+  .site-search-input-wrap:focus-within {
+    border-color: color-mix(in srgb, var(--site-brand) 35%, var(--site-border));
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--site-brand) 12%, transparent);
+  }
+
+  .site-search-input-icon {
+    color: var(--site-muted-soft);
+    @apply h-5 w-5 shrink-0;
+  }
+
+  .site-search-input {
+    color: var(--site-ink);
+    background: transparent;
+    @apply min-w-0 flex-1 border-0 p-0 text-base outline-none;
+  }
+
+  .site-search-input::placeholder {
+    color: var(--site-muted-soft);
+  }
+
+  .site-search-results {
+    @apply mt-4 max-h-[65vh] space-y-3 overflow-y-auto pr-1;
+  }
+
+  .site-search-empty {
+    border: 1px dashed color-mix(in srgb, var(--site-border) 88%, transparent);
+    color: var(--site-muted);
+    background: color-mix(in srgb, var(--site-surface-accent) 18%, var(--site-surface-strong));
+    @apply rounded-[1.5rem] px-5 py-6 text-sm;
+  }
+
+  .site-search-result {
+    border: 1px solid var(--site-border);
+    background: color-mix(in srgb, var(--site-surface-strong) 92%, transparent);
+    @apply block rounded-[1.5rem] px-5 py-4 no-underline transition;
+  }
+
+  .site-search-result:hover {
+    border-color: color-mix(in srgb, var(--site-brand) 28%, var(--site-border));
+    background: color-mix(in srgb, var(--site-surface-accent) 26%, var(--site-surface-strong));
+  }
+
+  .site-search-result-title {
+    color: var(--site-ink);
+    @apply text-sm font-semibold;
+  }
+
+  .site-search-result-description {
+    color: var(--site-muted);
+    @apply mt-1 text-sm;
   }
 
   .api-shell {

@@ -36,7 +36,13 @@
           {{ end }}
         </nav>
         <div class="site-actions">
-          <input data-site-search-input type="search" placeholder="{{ if eq .Page.Kind `api` }}Search API{{ else }}Search docs{{ end }}" class="hidden rounded-full border px-4 py-2 text-sm lg:block">
+          <button data-site-search-open type="button" class="site-search-trigger site-button-secondary" aria-label="Open search" title="Open search">
+            <svg class="site-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <span>Search</span>
+          </button>
           <a href="https://github.com/Yacobolo/ducklake-dataplatform" class="site-icon-button site-button-secondary" aria-label="Open GitHub repository" title="Open GitHub repository" target="_blank" rel="noreferrer">
             <span class="sr-only">GitHub repository</span>
             <svg class="site-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -88,8 +94,34 @@
           {{ end }}
         </nav>
       </div>
-      <div data-site-search-results class="mx-auto hidden max-w-7xl px-4 pb-4 lg:block lg:px-8"></div>
     </header>
+    <div data-site-search-modal class="site-search-modal" hidden>
+      <div data-site-search-backdrop class="site-search-backdrop"></div>
+      <div class="site-search-shell">
+        <section class="site-search-dialog" role="dialog" aria-modal="true" aria-labelledby="site-search-title">
+          <div class="site-search-header">
+            <div>
+              <p class="site-search-eyebrow">Search</p>
+              <h2 id="site-search-title" class="site-search-title">{{ if eq .Page.Kind `api` }}Search API reference{{ else }}Search docs{{ end }}</h2>
+            </div>
+            <button data-site-search-close type="button" class="site-icon-button site-button-secondary" aria-label="Close search" title="Close search">
+              <svg class="site-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 6 6 18"></path>
+                <path d="m6 6 12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="site-search-input-wrap">
+            <svg class="site-search-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input data-site-search-input type="search" class="site-search-input" placeholder="{{ if eq .Page.Kind `api` }}Search endpoints, models, and operations{{ else }}Search pages, sections, and headings{{ end }}" autocomplete="off">
+          </div>
+          <div data-site-search-results class="site-search-results"></div>
+        </section>
+      </div>
+    </div>
     {{ if .Page.IsHome }}
       {{ template "home" . }}
     {{ else }}

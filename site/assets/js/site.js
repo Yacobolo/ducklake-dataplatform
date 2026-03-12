@@ -5,6 +5,10 @@
   const navButton = document.querySelector("[data-site-nav-toggle]");
   const nav = document.querySelector("[data-site-mobile-nav]");
   const themeButton = document.querySelector("[data-site-theme-toggle]");
+  const searchOpenButton = document.querySelector("[data-site-search-open]");
+  const searchCloseButton = document.querySelector("[data-site-search-close]");
+  const searchModal = document.querySelector("[data-site-search-modal]");
+  const searchBackdrop = document.querySelector("[data-site-search-backdrop]");
   const searchInput = document.querySelector("[data-site-search-input]");
   const searchResults = document.querySelector("[data-site-search-results]");
   const systemMedia =
@@ -80,27 +84,63 @@
     return indexPromise;
   }
 
+  function openSearch() {
+    if (!searchModal) {
+      return;
+    }
+    searchModal.hidden = false;
+    requestAnimationFrame(function () {
+      searchModal.classList.add("is-open");
+      if (searchInput) {
+        searchInput.focus();
+      }
+    });
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeSearch() {
+    if (!searchModal) {
+      return;
+    }
+    searchModal.classList.remove("is-open");
+    searchModal.hidden = true;
+    document.body.style.overflow = "";
+  }
+
   function renderResults(items) {
     if (!searchResults) {
       return;
     }
     if (!items.length) {
-      searchResults.innerHTML = "";
-      searchResults.classList.add("hidden");
+      searchResults.innerHTML =
+        '<div class="site-search-empty">Search pages, headings, and generated reference entries.</div>';
       return;
     }
-    searchResults.classList.remove("hidden");
     searchResults.innerHTML = items
       .map(function (item) {
-        return '<a class="block rounded-2xl border p-3 no-underline hover:bg-slate-50 dark:hover:bg-slate-900" href="' +
+        return '<a class="site-search-result" href="' +
           item.path +
-          '"><div class="text-sm font-semibold text-slate-900 dark:text-slate-100">' +
+          '"><div class="site-search-result-title">' +
           item.title +
-          '</div><div class="mt-1 text-sm text-slate-600 dark:text-slate-300">' +
+          '</div><div class="site-search-result-description">' +
           item.description +
           "</div></a>";
       })
       .join("");
+  }
+
+  renderResults([]);
+
+  if (searchOpenButton) {
+    searchOpenButton.addEventListener("click", openSearch);
+  }
+
+  if (searchCloseButton) {
+    searchCloseButton.addEventListener("click", closeSearch);
+  }
+
+  if (searchBackdrop) {
+    searchBackdrop.addEventListener("click", closeSearch);
   }
 
   if (searchInput) {
@@ -119,6 +159,35 @@
       renderResults(results);
     });
   }
+
+  document.addEventListener("keydown", function (event) {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      if (searchModal && searchModal.hidden) {
+        openSearch();
+      } else {
+        closeSearch();
+      }
+      return;
+    }
+
+    if (event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      const target = event.target;
+      const isTypingTarget =
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].indexOf(target.tagName) >= 0);
+      if (!isTypingTarget) {
+        event.preventDefault();
+        openSearch();
+      }
+      return;
+    }
+
+    if (event.key === "Escape" && searchModal && !searchModal.hidden) {
+      closeSearch();
+    }
+  });
 
   document.querySelectorAll("[data-site-copy]").forEach(function (button) {
     button.addEventListener("click", async function () {
