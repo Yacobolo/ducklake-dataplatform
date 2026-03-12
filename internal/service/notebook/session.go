@@ -497,6 +497,17 @@ func (m *SessionManager) RunAllNotebook(ctx context.Context, notebookID, session
 	return m.RunAll(ctx, sessionID, principal)
 }
 
+// RunAllNotebookAsync starts async notebook execution only after validating notebook/session ownership.
+func (m *SessionManager) RunAllNotebookAsync(ctx context.Context, notebookID, sessionID, principal string, isAdmin bool) (*domain.NotebookJob, error) {
+	if _, err := m.requireSessionAccess(ctx, notebookID, sessionID, principal, isAdmin); err != nil {
+		return nil, err
+	}
+	if isAdmin {
+		return m.RunAllAsync(ctx, sessionID)
+	}
+	return m.RunAllAsync(ctx, sessionID, principal)
+}
+
 // RunAllAsync starts an async execution of all cells and returns a job.
 // If principalName is non-empty, the caller must match the session owner.
 func (m *SessionManager) RunAllAsync(ctx context.Context, sessionID string, principalName ...string) (*domain.NotebookJob, error) {

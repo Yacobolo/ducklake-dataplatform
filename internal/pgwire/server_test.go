@@ -253,7 +253,7 @@ func TestServer_StartupRequiresUser(t *testing.T) {
 func TestServer_StartupRejectsUnknownDatabase(t *testing.T) {
 	srv := NewServer("127.0.0.1:0", nil, func(_ context.Context, _ string, _ string) (*QueryResult, error) {
 		return &QueryResult{}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -280,7 +280,7 @@ func TestServer_PGXExtendedProtocolQuery(t *testing.T) {
 			Columns: []string{"answer"},
 			Rows:    [][]interface{}{{"42"}},
 		}, nil
-	})
+	}, testAuthenticator())
 	require.NoError(t, srv.Start())
 	t.Cleanup(func() {
 		_ = srv.Shutdown(context.Background())
@@ -289,7 +289,7 @@ func TestServer_PGXExtendedProtocolQuery(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	conn, err := pgx.Connect(ctx, "postgres://duck@"+srv.Addr()+"/duck?sslmode=disable")
+	conn, err := pgx.Connect(ctx, "postgres://duck:test-token@"+srv.Addr()+"/duck?sslmode=disable")
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close(context.Background()) })
 
