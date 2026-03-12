@@ -52,7 +52,9 @@ func TestDocsRetrievalEval_TopResultsContainExpectedGuide(t *testing.T) {
 		{name: "query", query: "run first secure query", expectedID: "start-here/quickstart"},
 		{name: "governance", query: "grant access with row filters", expectedID: "how-to/access-control"},
 		{name: "declarative", query: "plan and apply declarative config", expectedID: "how-to/declarative-workflows"},
-		{name: "semantic", query: "semantic metrics and metric queries", expectedID: "reference/feature-semantic-layer"},
+		{name: "models", query: "create model and pipeline run", expectedID: "how-to/build-and-run-model-pipelines"},
+		{name: "notebooks", query: "publish dashboard from notebook analysis", expectedID: "how-to/author-notebooks-and-publish-dashboards"},
+		{name: "semantic", query: "semantic metrics and metric queries", expectedID: "how-to/define-semantic-metrics"},
 	}
 
 	for _, tc := range cases {

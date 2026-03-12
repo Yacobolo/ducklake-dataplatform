@@ -494,6 +494,256 @@ Admins should prefer identity-provider-backed access for people and keep API key
 - [Glossary](/reference/glossary)
 - [Advanced API Reference](/reference/api)
 
+## Author Notebooks and Publish Dashboards
+
+- Path: /how-to/author-notebooks-and-publish-dashboards
+- Doc kind: task
+- Audiences: ai-agents, builders, end-users, admins
+- Product areas: notebooks, dashboards, queries, semantic-layer
+- Surfaces: api, browser, cli
+- Tasks: create notebook, run notebook job, publish dashboard, inspect dashboard widgets
+- Last verified: 2026-03-12
+
+# Author Notebooks and Publish Dashboards
+
+## Objective
+
+Create an interactive analysis workflow that starts in a notebook and ends in a reusable dashboard for other users.
+
+## When to use
+
+Use this workflow when the user needs iterative analysis, a saved analytical narrative, or a dashboard built from notebook, SQL, or semantic outputs.
+
+## Prerequisites
+
+- an environment URL and working credential
+- a source table, view, or semantic model to analyze
+- a notebook-capable workspace
+
+## Required permissions
+
+- notebook create and edit access
+- query access to the source data
+- dashboard create or publish access for the target folder or workspace
+
+## Exact steps
+
+### 1. Confirm the source you will analyze
+
+- Identify the table, view, or metric source first.
+- If you still need to locate data, use [Query and Explore Data](/how-to/use-the-cli).
+
+Expected result: you know the exact object or metric source the notebook will use.
+
+### 2. Create the notebook
+
+Use the notebooks API surface to create the notebook shell and initial cells.
+
+```bash
+duck docs search "create notebook"
+duck api search notebook
+```
+
+Expected result: a notebook exists with an identifier, title, and editable cells.
+
+### 3. Open a notebook session and run cells
+
+- Start a notebook session before running interactive work.
+- Execute cells against the governed data source.
+- Save useful result sets, SQL fragments, and notes as part of the notebook.
+
+Expected result: the notebook contains a reproducible analysis with current outputs.
+
+### 4. Decide whether the dashboard should read notebook outputs, SQL, or semantic metrics
+
+- Use notebook or SQL-backed widgets for exploratory operational views.
+- Use semantic metrics when the dashboard needs business-safe reusable KPIs.
+
+Expected result: you have chosen the most stable source for downstream widgets.
+
+### 5. Create the dashboard and add widgets
+
+Use the dashboard operations to create the dashboard shell and attach charts or tables.
+
+```bash
+duck docs search "create dashboard widgets"
+duck api search dashboard
+```
+
+Expected result: the dashboard exists with at least one widget pointing at the intended source.
+
+### 6. Validate published output
+
+- Open the dashboard as a viewer, not just as the author.
+- Confirm governance behavior such as masked columns or filtered rows still makes sense in the published view.
+
+Expected result: the published dashboard renders for the intended audience without exposing unauthorized data.
+
+## Verified examples
+
+- Notebook flow: create notebook, start notebook session, run cells, inspect notebook jobs.
+- Dashboard flow: create dashboard, create dashboard widget, list dashboards, validate widget sources.
+
+## Expected result
+
+You end with a notebook that preserves the analytical workflow and a dashboard that exposes only the governed output intended for downstream users.
+
+## Failure modes
+
+- notebook session starts but queries fail: verify the notebook principal has query access to the source objects
+- dashboard widget renders empty: confirm the widget source still exists and the viewer can access it
+- viewer sees different values than the author: check row filters, column masks, and semantic-layer permissions
+- notebook jobs fail repeatedly: inspect notebook job history and reduce assumptions about transient session state
+
+## Related CLI commands
+
+- `duck docs search "create notebook"`
+- `duck docs search "dashboard widget"`
+- `duck api search notebook`
+- `duck api search dashboard`
+
+## Related API operations
+
+- `createNotebook`
+- `createNotebookSession`
+- `listNotebookJobs`
+- `createDashboard`
+- `createDashboardWidget`
+- `listDashboards`
+
+## Related docs
+
+- [Notebooks and Dashboards](/reference/feature-notebooks-and-dashboards)
+- [Query and Explore Data](/how-to/use-the-cli)
+- [Define Semantic Metrics](/how-to/define-semantic-metrics)
+
+## Build and Run Models and Pipelines
+
+- Path: /how-to/build-and-run-model-pipelines
+- Doc kind: task
+- Audiences: ai-agents, builders, admins
+- Product areas: models, pipelines, assets, declarative
+- Surfaces: api, cli, declarative
+- Tasks: define model, create macro, run model, create pipeline, inspect pipeline run
+- Last verified: 2026-03-12
+
+# Build and Run Models and Pipelines
+
+## Objective
+
+Turn source data into reusable, governed outputs through model definitions and repeatable orchestration.
+
+## When to use
+
+Use this workflow when one query is no longer enough and the transformation must be versioned, tested, and rerun reliably.
+
+## Prerequisites
+
+- a source catalog and schema with readable input data
+- compute capacity for model and pipeline execution
+- a build context that stores model logic, macros, and related configuration
+
+## Required permissions
+
+- model and asset creation access in the target catalog
+- pipeline creation and run access
+- read access to all upstream dependencies
+
+## Exact steps
+
+### 1. Define the target outputs
+
+- Decide which tables, views, or assets the pipeline is expected to publish.
+- Map the upstream dependencies and ownership before writing transformations.
+
+Expected result: you know the destination objects and the upstream lineage they depend on.
+
+### 2. Create or update model logic
+
+- Define the model body and any shared macros.
+- Add model tests for assumptions that must hold across runs.
+
+```bash
+duck docs search "create model"
+duck api search model
+```
+
+Expected result: the model exists and its dependencies are explicit.
+
+### 3. Validate the model path before orchestration
+
+- Run the model or model test path directly first.
+- Confirm the output shape and governance expectations before adding scheduling or orchestration layers.
+
+Expected result: the model can produce the intended output without pipeline-level troubleshooting noise.
+
+### 4. Create the pipeline and pipeline jobs
+
+- Define the sequence of jobs that materialize or refresh the target outputs.
+- Keep the first pipeline simple enough to debug step-by-step.
+
+```bash
+duck docs search "create pipeline job"
+duck api search pipeline
+```
+
+Expected result: a pipeline exists with jobs that map cleanly to the desired transformation stages.
+
+### 5. Trigger a pipeline run and inspect status
+
+- Start a run and inspect both job-level and pipeline-level status.
+- Verify failure handling on one stage before trusting the pipeline in automation.
+
+Expected result: you can identify which job succeeded, failed, or is still running.
+
+### 6. Move stable resources into declarative management
+
+- Once the workflow stabilizes, represent long-lived resources declaratively.
+- Keep one-off experimentation separate from production state.
+
+Expected result: the production path is repeatable and diffable instead of ad hoc.
+
+## Verified examples
+
+- Model flow: create model, create model test, list models, list model runs.
+- Pipeline flow: create pipeline, create pipeline job, list pipeline jobs, list pipeline runs.
+
+## Expected result
+
+You end with tested transformation logic and a repeatable orchestration path that publishes governed outputs on demand or on schedule.
+
+## Failure modes
+
+- model compiles but returns wrong output shape: verify upstream schema drift before changing downstream contracts
+- model tests fail intermittently: isolate data freshness assumptions from deterministic transformation checks
+- pipeline run fails after model success: inspect job sequencing, credentials, and target object conflicts
+- reruns produce unexpected duplicates or stale outputs: verify idempotency and downstream overwrite behavior
+
+## Related CLI commands
+
+- `duck docs search "create model"`
+- `duck docs search "create pipeline job"`
+- `duck api search model`
+- `duck api search pipeline`
+- `duck apply --config-dir <path>`
+
+## Related API operations
+
+- `createModel`
+- `createModelTest`
+- `listModels`
+- `listModelRuns`
+- `createPipeline`
+- `listPipelineJobs`
+- `createPipelineJob`
+- `listPipelineRuns`
+
+## Related docs
+
+- [Models and Pipelines](/reference/feature-models-and-pipelines)
+- [Load Data and Build Assets](/how-to/catalog-and-ingestion)
+- [Work Declaratively](/how-to/declarative-workflows)
+
 ## Load Data and Build Assets
 
 - Path: /how-to/catalog-and-ingestion
@@ -624,14 +874,123 @@ Use the generated JSON Schema artifacts for editor completion and early feedback
 - [Advanced Declarative Reference](/reference/declarative)
 - [Glossary](/reference/glossary)
 
+## Define Semantic Metrics
+
+- Path: /how-to/define-semantic-metrics
+- Doc kind: task
+- Audiences: ai-agents, builders, end-users, admins
+- Product areas: semantic-layer, models, governance
+- Surfaces: api, declarative, docs
+- Tasks: create semantic model, define metric, manage relationships, run metric query
+- Last verified: 2026-03-12
+
+# Define Semantic Metrics
+
+## Objective
+
+Create reusable business metrics that stay consistent across notebooks, dashboards, and agent-driven query workflows.
+
+## When to use
+
+Use this workflow when teams need named metrics, governed dimensions, and reusable relationship logic instead of raw SQL definitions repeated in many places.
+
+## Prerequisites
+
+- stable modeled tables or views to serve as the semantic source
+- clear business definitions for each metric
+- agreement on grain, dimensions, and ownership
+
+## Required permissions
+
+- semantic model and metric administration access
+- read access to all underlying modeled data
+- metric query access for validation
+
+## Exact steps
+
+### 1. Pick the source model and business grain
+
+- Start from modeled outputs that are already governed and stable.
+- Define the entity grain before introducing metrics.
+
+Expected result: the semantic model has a clear base object and row-level meaning.
+
+### 2. Create the semantic model
+
+- Register dimensions, measures, and any pre-aggregation strategy needed for repeated use.
+- Keep naming explicit enough for both humans and agents to discover the right object.
+
+```bash
+duck docs search "create semantic model"
+duck api search semantic
+```
+
+Expected result: the semantic model exists with the intended dimensions and metric-ready structure.
+
+### 3. Add metrics and relationships
+
+- Define each metric in business terms, not only technical expressions.
+- Add relationships only where cross-model navigation is genuinely useful.
+
+Expected result: consumers can ask for metrics without rebuilding joins or formulas manually.
+
+### 4. Run metric queries
+
+- Validate the metric against known expected values.
+- Compare semantic results to trusted SQL or notebook checks before broad rollout.
+
+Expected result: metric queries return values that match the approved business definition.
+
+### 5. Expose metrics to notebooks, dashboards, and agents
+
+- Route downstream consumers to semantic queries where consistency matters more than flexibility.
+- Reserve raw-table access for exploratory or engineering-only workflows.
+
+Expected result: dashboards and agents can rely on stable metric names and governed dimensions.
+
+## Verified examples
+
+- Semantic model flow: create semantic model, list semantic metrics, create semantic metric.
+- Query flow: run metric query and compare output to trusted validation checks.
+
+## Expected result
+
+You end with a semantic layer that reduces duplicated metric logic and gives agents a safer retrieval target than raw tables alone.
+
+## Failure modes
+
+- metrics disagree with trusted SQL: verify grain, filter defaults, and relationship joins before changing formulas
+- agents select the wrong metric: improve metric naming, keywords, and relationship descriptions
+- metric queries are slow: revisit pre-aggregations and semantic scope instead of broadening raw access
+- semantic model becomes stale after upstream changes: revalidate dimensions and metric definitions whenever source models change
+
+## Related CLI commands
+
+- `duck docs search "create semantic model"`
+- `duck docs search "metric query"`
+- `duck api search semantic`
+
+## Related API operations
+
+- `createSemanticModel`
+- `listSemanticMetrics`
+- `createSemanticMetric`
+- `runMetricQuery`
+
+## Related docs
+
+- [Semantic Layer](/reference/feature-semantic-layer)
+- [Build and Run Models and Pipelines](/how-to/build-and-run-model-pipelines)
+- [Query and Explore Data](/how-to/use-the-cli)
+
 ## Use Duck
 
 - Path: /how-to/index
 - Doc kind: overview
 - Audiences: ai-agents, end-users, builders
-- Product areas: queries, governance, ingestion, declarative
+- Product areas: queries, governance, ingestion, declarative, notebooks, dashboards, models, pipelines, semantic-layer
 - Surfaces: docs, api, cli, browser, sql
-- Tasks: pick task guide, navigate workflows, choose operating surface
+- Tasks: pick task guide, navigate workflows, choose operating surface, select advanced builder workflows
 - Last verified: 2026-03-12
 
 # Use Duck
@@ -645,6 +1004,9 @@ These guides focus on the tasks platform users actually perform: getting access,
 - [Manage Access](/how-to/access-control)
 - [Load Data and Build Assets](/how-to/catalog-and-ingestion)
 - [Work Declaratively](/how-to/declarative-workflows)
+- [Build and Run Models and Pipelines](/how-to/build-and-run-model-pipelines)
+- [Author Notebooks and Publish Dashboards](/how-to/author-notebooks-and-publish-dashboards)
+- [Define Semantic Metrics](/how-to/define-semantic-metrics)
 
 ## Before You Start
 
@@ -1240,6 +1602,7 @@ Use this guide when the workflow manages transformation logic, model tests, or m
 - Start with [Load Data and Build Assets](/how-to/catalog-and-ingestion) when the pipeline produces reusable outputs.
 - Use [Advanced CLI Reference](/reference/cli) if the workflow is automation-heavy.
 - Use [Advanced API Reference](/reference/api) for exact run and orchestration contracts.
+- Use [Build and Run Models and Pipelines](/how-to/build-and-run-model-pipelines) for the authored production workflow.
 
 ## Generated reference
 
@@ -1272,6 +1635,8 @@ Use this guide when the workflow depends on interactive authoring, notebook exec
 
 - Use [Advanced API Reference](/reference/api) for notebook session and dashboard widget contract details.
 - Use [Load Data and Build Assets](/how-to/catalog-and-ingestion) when notebooks or dashboards sit downstream of governed tables and models.
+- Use [Author Notebooks and Publish Dashboards](/how-to/author-notebooks-and-publish-dashboards) for the end-to-end authored workflow.
+- Use [Define Semantic Metrics](/how-to/define-semantic-metrics) when dashboard widgets should rely on governed business metrics.
 
 ## Generated reference
 
@@ -1339,6 +1704,7 @@ Use this guide when the workflow turns governed model outputs into reusable busi
 
 - Use [Build Data Products](/core-concepts/) for the broader governed data product context.
 - Use [Advanced API Reference](/reference/api) for exact semantic-layer payloads and operations.
+- Use [Define Semantic Metrics](/how-to/define-semantic-metrics) for the authored metric-design workflow.
 
 ## Generated reference
 

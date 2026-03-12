@@ -13,7 +13,7 @@ command_groups: [apply, api]
 operation_ids: [createModel, listModels, createPipeline, listPipelineRuns]
 api_tags: [Models, Pipelines]
 declarative_kinds: [model, macro]
-related_docs: [how-to/catalog-and-ingestion, reference/cli, core-concepts/index]
+related_docs: [how-to/catalog-and-ingestion, reference/cli, core-concepts/index, how-to/build-and-run-model-pipelines, how-to/declarative-workflows]
 keywords: [models, macros, pipelines, orchestration]
 last_verified: 2026-03-12
 source_of_truth: [docs, api/gen/openapi.yaml, schemas/declarative/v1/index.json]
@@ -36,6 +36,7 @@ Use this guide when the workflow manages transformation logic, model tests, or m
 - Start with [Load Data and Build Assets](/how-to/catalog-and-ingestion) when the pipeline produces reusable outputs.
 - Use [Advanced CLI Reference](/reference/cli) if the workflow is automation-heavy.
 - Use [Advanced API Reference](/reference/api) for exact run and orchestration contracts.
+- Use [Build and Run Models and Pipelines](/how-to/build-and-run-model-pipelines) for the authored production workflow.
 
 ## Generated reference
 

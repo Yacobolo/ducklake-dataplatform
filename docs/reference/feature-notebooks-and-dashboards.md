@@ -13,7 +13,7 @@ command_groups: [api]
 operation_ids: [createNotebook, listNotebookJobs, createDashboard, listDashboards]
 api_tags: [Notebooks, Dashboards]
 declarative_kinds: [notebook]
-related_docs: [reference/api, reference/feature-query-and-compute, how-to/catalog-and-ingestion]
+related_docs: [reference/api, reference/feature-query-and-compute, how-to/catalog-and-ingestion, how-to/author-notebooks-and-publish-dashboards, how-to/define-semantic-metrics]
 keywords: [notebooks, dashboard, interactive analysis, notebook jobs]
 last_verified: 2026-03-12
 source_of_truth: [docs, api/gen/openapi.yaml, schemas/declarative/v1/index.json]
@@ -35,6 +35,8 @@ Use this guide when the workflow depends on interactive authoring, notebook exec
 
 - Use [Advanced API Reference](/reference/api) for notebook session and dashboard widget contract details.
 - Use [Load Data and Build Assets](/how-to/catalog-and-ingestion) when notebooks or dashboards sit downstream of governed tables and models.
+- Use [Author Notebooks and Publish Dashboards](/how-to/author-notebooks-and-publish-dashboards) for the end-to-end authored workflow.
+- Use [Define Semantic Metrics](/how-to/define-semantic-metrics) when dashboard widgets should rely on governed business metrics.
 
 ## Generated reference
 

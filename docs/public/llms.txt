@@ -12,8 +12,11 @@
 - [Build Data Products](/core-concepts/index): Learn the objects and workflows behind governed data products in Duck.
 - [Manage Access](/how-to/access-control): Create secure access paths with groups, grants, row filters, and column masks.
 - [Access the Platform](/how-to/authentication): Understand the main sign-in and credential paths available to platform users.
+- [Author Notebooks and Publish Dashboards](/how-to/author-notebooks-and-publish-dashboards): Create notebooks, execute analysis, and publish dashboards backed by notebook, SQL, or semantic outputs.
+- [Build and Run Models and Pipelines](/how-to/build-and-run-model-pipelines): Define transformation logic, validate model outputs, and orchestrate repeatable pipeline runs.
 - [Load Data and Build Assets](/how-to/catalog-and-ingestion): Bring data into Duck and build tables, models, views, and other reusable assets.
 - [Work Declaratively](/how-to/declarative-workflows): Use validate-plan-apply workflows to manage platform state as code.
+- [Define Semantic Metrics](/how-to/define-semantic-metrics): Build semantic models, metrics, and relationships that agents and users can query consistently.
 - [Use Duck](/how-to/index): Complete common product tasks with expected outcomes and next steps.
 - [Query and Explore Data](/how-to/use-the-cli): Discover catalogs, inspect objects, and query data through Duck's available access surfaces.
 - [Duck Data Platform](/index): Product documentation for people and AI agents using Duck across querying, governance, and data product workflows.

@@ -122,7 +122,10 @@ function guideSidebar() {
         { text: "Query and Explore Data", link: "/how-to/use-the-cli" },
         { text: "Manage Access", link: "/how-to/access-control" },
         { text: "Load Data and Build Assets", link: "/how-to/catalog-and-ingestion" },
-        { text: "Work Declaratively", link: "/how-to/declarative-workflows" }
+        { text: "Work Declaratively", link: "/how-to/declarative-workflows" },
+        { text: "Build and Run Models and Pipelines", link: "/how-to/build-and-run-model-pipelines" },
+        { text: "Author Notebooks and Publish Dashboards", link: "/how-to/author-notebooks-and-publish-dashboards" },
+        { text: "Define Semantic Metrics", link: "/how-to/define-semantic-metrics" }
       ]
     },
     {

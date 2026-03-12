@@ -27,6 +27,9 @@ const queries = [
   { query: "authenticate with api key", expectedPrefix: "/how-to/authentication" },
   { query: "run first secure query", expectedPrefix: "/start-here/quickstart" },
   { query: "plan and apply declarative config", expectedPrefix: "/how-to/declarative-workflows" },
+  { query: "publish dashboard from notebook analysis", expectedPrefix: "/how-to/author-notebooks-and-publish-dashboards" },
+  { query: "create model and pipeline run", expectedPrefix: "/how-to/build-and-run-model-pipelines" },
+  { query: "semantic metrics and metric queries", expectedPrefix: "/how-to/define-semantic-metrics" },
 ];
 
 const failures = [];
