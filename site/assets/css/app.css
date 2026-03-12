@@ -378,6 +378,143 @@
     @apply mx-auto grid max-w-7xl gap-8 px-4 py-20 lg:grid-cols-[minmax(0,1fr)_20rem] lg:px-8;
   }
 
+  .site-hero-copy {
+    @apply space-y-6;
+  }
+
+  .site-hero-badge {
+    border: 1px solid var(--site-border);
+    color: var(--site-brand-strong);
+    background: color-mix(in srgb, var(--site-surface-strong) 82%, transparent);
+    @apply inline-flex rounded-full px-3 py-1 text-sm font-medium;
+  }
+
+  .site-hero-points {
+    @apply grid gap-3 pt-2 md:grid-cols-3;
+  }
+
+  .site-hero-point {
+    background: color-mix(in srgb, var(--site-surface-strong) 86%, transparent);
+    border: 1px solid color-mix(in srgb, var(--site-border) 88%, transparent);
+    @apply flex items-center gap-3 rounded-2xl px-4 py-3 text-sm;
+    color: var(--site-muted);
+  }
+
+  .site-hero-point-icon {
+    color: var(--site-brand-strong);
+    @apply inline-flex h-4 w-4 shrink-0;
+  }
+
+  .site-hero-point-icon svg {
+    @apply h-4 w-4;
+  }
+
+  .site-hero-panel {
+    border: 1px solid color-mix(in srgb, var(--site-border) 86%, transparent);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--site-surface-strong) 92%, transparent), color-mix(in srgb, var(--site-surface-accent) 34%, var(--site-surface-strong))),
+      radial-gradient(circle at top right, color-mix(in srgb, var(--site-brand) 18%, transparent), transparent 48%);
+    @apply rounded-[2rem] p-6 shadow-card;
+  }
+
+  .site-hero-panel-header {
+    @apply mb-6 space-y-1;
+  }
+
+  .site-hero-panel-title {
+    color: var(--site-brand-strong);
+    @apply text-sm font-semibold uppercase tracking-[0.2em];
+  }
+
+  .site-hero-panel-kicker {
+    color: var(--site-ink);
+    @apply text-xl font-semibold;
+  }
+
+  .site-hero-stat-grid {
+    @apply grid gap-3 sm:grid-cols-2;
+  }
+
+  .site-hero-stat {
+    border: 1px solid color-mix(in srgb, var(--site-border) 82%, transparent);
+    background: color-mix(in srgb, var(--site-surface-strong) 76%, transparent);
+    @apply rounded-2xl px-4 py-4;
+  }
+
+  .site-hero-stat-label {
+    color: var(--site-muted-soft);
+    @apply text-xs font-semibold uppercase tracking-[0.16em];
+  }
+
+  .site-hero-stat-value {
+    color: var(--site-ink);
+    @apply mt-2 text-sm font-medium leading-6;
+  }
+
+  .site-feature-section {
+    @apply mx-auto max-w-7xl px-4 py-16 lg:px-8;
+  }
+
+  .site-feature-intro {
+    @apply mb-8 max-w-2xl space-y-3;
+  }
+
+  .site-feature-eyebrow {
+    color: var(--site-brand-strong);
+    @apply text-xs font-semibold uppercase tracking-[0.22em];
+  }
+
+  .site-feature-grid {
+    @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .site-feature-card {
+    border: 1px solid var(--site-border);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--site-surface-strong) 94%, transparent), color-mix(in srgb, var(--site-surface-accent) 20%, var(--site-surface-strong)));
+    @apply block rounded-[2rem] p-6 no-underline transition;
+  }
+
+  .site-feature-card:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--site-brand) 28%, var(--site-border));
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  }
+
+  .site-feature-card-top {
+    @apply mb-5 flex items-center justify-between;
+  }
+
+  .site-feature-card-icon {
+    color: var(--site-brand-strong);
+    background: color-mix(in srgb, var(--site-brand) 10%, transparent);
+    @apply inline-flex h-12 w-12 items-center justify-center rounded-2xl;
+  }
+
+  .site-feature-card-icon svg {
+    @apply h-5 w-5;
+  }
+
+  .site-feature-card-arrow {
+    color: var(--site-muted-soft);
+    @apply text-lg transition;
+  }
+
+  .site-feature-card:hover .site-feature-card-arrow {
+    color: var(--site-brand-strong);
+    transform: translateX(2px);
+  }
+
+  .site-feature-card-title {
+    color: var(--site-ink);
+    @apply text-lg font-semibold;
+  }
+
+  .site-feature-card-copy {
+    color: var(--site-muted);
+    @apply mt-3 text-sm leading-7;
+  }
+
   .site-prose {
     @apply max-w-none space-y-6;
   }

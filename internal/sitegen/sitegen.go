@@ -97,6 +97,7 @@ type homeFeature struct {
 	Title   string `yaml:"title"`
 	Details string `yaml:"details"`
 	Link    string `yaml:"link"`
+	Icon    string `yaml:"icon"`
 }
 
 type pageKind string
