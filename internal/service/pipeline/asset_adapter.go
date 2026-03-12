@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/sqlrewrite"
 )
 
 type AdaptedPipelineAssets struct {
@@ -365,6 +366,7 @@ func BuildSemanticAssetGraph(
 func BuildDashboardAssetGraph(
 	dashboards []domain.Dashboard,
 	widgetsByDashboard map[string][]domain.DashboardWidget,
+	models []domain.Model,
 	notebooks []domain.Notebook,
 	linksByNotebookID map[string]domain.NotebookModelLink,
 	semanticModels []domain.SemanticModel,
@@ -383,6 +385,10 @@ func BuildDashboardAssetGraph(
 	semanticModelIDsByNaturalKey := make(map[string]string, len(semanticModels))
 	for _, semanticModel := range semanticModels {
 		semanticModelIDsByNaturalKey[semanticModelNaturalKey(semanticModel.ProjectName, semanticModel.Name)] = semanticModel.ID
+	}
+	modelIDsByQualifiedName := make(map[string]string, len(models))
+	for _, model := range models {
+		modelIDsByQualifiedName[model.QualifiedName()] = model.ID
 	}
 
 	metricIDsByNaturalKey := make(map[string]string)
@@ -411,6 +417,18 @@ func BuildDashboardAssetGraph(
 
 		for _, widget := range widgetsByDashboard[dashboard.ID] {
 			switch widget.Source.Kind {
+			case domain.DashboardWidgetSourceSQLQuery:
+				if widget.Source.SQLQuery == nil {
+					continue
+				}
+				for _, upstreamID := range matchingModelAssetIDsForSQLWidget(widget.Source.SQLQuery, modelIDsByQualifiedName) {
+					deps = append(deps, domain.AssetDependency{
+						ID:              domain.NewID(),
+						AssetID:         dashboard.ID,
+						UpstreamAssetID: upstreamID,
+						DependencyType:  domain.DependencyTypeHard,
+					})
+				}
 			case domain.DashboardWidgetSourceNotebookCell:
 				if widget.Source.NotebookCell == nil {
 					continue
@@ -625,6 +643,7 @@ func SyncDashboardsToAssets(
 	ctx context.Context,
 	dashboardRepo domain.DashboardRepository,
 	widgetRepo domain.DashboardWidgetRepository,
+	modelRepo domain.ModelRepository,
 	notebookRepo domain.NotebookRepository,
 	notebookLinkRepo domain.NotebookModelLinkRepository,
 	semanticModelRepo domain.SemanticModelRepository,
@@ -644,6 +663,10 @@ func SyncDashboardsToAssets(
 	notebooks, err := listAllNotebooks(ctx, notebookRepo)
 	if err != nil {
 		return fmt.Errorf("list notebooks: %w", err)
+	}
+	models, err := modelRepo.ListAll(ctx)
+	if err != nil {
+		return fmt.Errorf("list models: %w", err)
 	}
 	linksByNotebookID := make(map[string]domain.NotebookModelLink)
 	if notebookLinkRepo != nil {
@@ -687,7 +710,7 @@ func SyncDashboardsToAssets(
 		widgetsByDashboard[dashboard.ID] = widgets
 	}
 
-	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, notebooks, linksByNotebookID, semanticModels, metricsByModel, preAggsByModel)
+	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, models, notebooks, linksByNotebookID, semanticModels, metricsByModel, preAggsByModel)
 	if err != nil {
 		return fmt.Errorf("build dashboard asset graph: %w", err)
 	}
@@ -794,6 +817,43 @@ func metricNaturalKey(projectName, semanticModelName, metricName string) string 
 
 func notebookOutputAssetKey(notebookID, outputCellID string) string {
 	return "notebook_output." + notebookID + "." + outputCellID
+}
+
+func matchingModelAssetIDsForSQLWidget(source *domain.DashboardSQLQuerySource, modelIDsByQualifiedName map[string]string) []string {
+	if source == nil || strings.TrimSpace(source.SQL) == "" || len(modelIDsByQualifiedName) == 0 {
+		return nil
+	}
+
+	refs, err := sqlrewrite.ExtractTableRefs(source.SQL)
+	if err != nil {
+		return nil
+	}
+
+	defaultSchema := ""
+	if source.Schema != nil {
+		defaultSchema = strings.TrimSpace(*source.Schema)
+	}
+
+	seen := make(map[string]struct{})
+	matches := make([]string, 0)
+	for _, ref := range refs {
+		schemaName := strings.TrimSpace(ref.Schema)
+		if schemaName == "" {
+			schemaName = defaultSchema
+		}
+		if schemaName == "" || strings.TrimSpace(ref.Name) == "" {
+			continue
+		}
+		if modelID, ok := modelIDsByQualifiedName[schemaName+"."+strings.TrimSpace(ref.Name)]; ok {
+			if _, exists := seen[modelID]; exists {
+				continue
+			}
+			seen[modelID] = struct{}{}
+			matches = append(matches, modelID)
+		}
+	}
+	sort.Strings(matches)
+	return matches
 }
 
 func preAggregationSupportsMetric(preAgg domain.SemanticPreAggregation, metricName string) bool {

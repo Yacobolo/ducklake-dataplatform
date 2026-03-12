@@ -138,6 +138,16 @@ func TestBuildDashboardAssetGraph(t *testing.T) {
 	widgetsByDashboard := map[string][]domain.DashboardWidget{
 		"dash-1": {
 			{
+				ID: "widget-0",
+				Source: domain.DashboardWidgetSource{
+					Kind: domain.DashboardWidgetSourceSQLQuery,
+					SQLQuery: &domain.DashboardSQLQuerySource{
+						SQL:    "select * from fct_orders",
+						Schema: stringPtr("sales"),
+					},
+				},
+			},
+			{
 				ID: "widget-1",
 				Source: domain.DashboardWidgetSource{
 					Kind: domain.DashboardWidgetSourceSemanticQuery,
@@ -160,6 +170,7 @@ func TestBuildDashboardAssetGraph(t *testing.T) {
 			},
 		},
 	}
+	models := []domain.Model{{ID: "model-1", ProjectName: "sales", Name: "fct_orders"}}
 	notebooks := []domain.Notebook{{ID: "nb-1", Name: "Notebook", Owner: "alice"}}
 	linksByNotebookID := map[string]domain.NotebookModelLink{
 		"nb-1": {NotebookID: "nb-1", OutputCellID: "cell-1", ModelID: "model-1"},
@@ -177,12 +188,12 @@ func TestBuildDashboardAssetGraph(t *testing.T) {
 		}},
 	}
 
-	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, notebooks, linksByNotebookID, semanticModels, metricsByModel, preAggsByModel)
+	adapted, err := BuildDashboardAssetGraph(dashboards, widgetsByDashboard, models, notebooks, linksByNotebookID, semanticModels, metricsByModel, preAggsByModel)
 	require.NoError(t, err)
 	require.Len(t, adapted.Assets, 1)
 	assert.Equal(t, "dashboard.dash-1", adapted.Assets[0].AssetKey)
 	assert.Equal(t, domain.AssetTypeDashboard, adapted.Assets[0].AssetType)
-	assert.ElementsMatch(t, []string{"dash-1->preagg-1", "dash-1->cell-1"}, dependencyPairs(adapted.Dependencies))
+	assert.ElementsMatch(t, []string{"dash-1->model-1", "dash-1->preagg-1", "dash-1->cell-1"}, dependencyPairs(adapted.Dependencies))
 }
 
 func TestSyncModelsToAssets(t *testing.T) {
@@ -256,6 +267,24 @@ func TestSyncNotebookOutputsToAssets(t *testing.T) {
 	assert.Equal(t, "cell-out", assetRepo.created[0].ID)
 	assert.Equal(t, domain.AssetTypeNotebookOutput, assetRepo.created[0].AssetType)
 	assert.ElementsMatch(t, []string{"cell-out->nb-1"}, dependencyPairs(depRepo.created))
+}
+
+func TestMatchingModelAssetIDsForSQLWidget(t *testing.T) {
+	source := &domain.DashboardSQLQuerySource{
+		SQL:    "select * from fct_orders join dim_customers on fct_orders.customer_id = dim_customers.id",
+		Schema: stringPtr("sales"),
+	}
+
+	matches := matchingModelAssetIDsForSQLWidget(source, map[string]string{
+		"sales.fct_orders":    "model-1",
+		"sales.dim_customers": "model-2",
+	})
+
+	assert.Equal(t, []string{"model-1", "model-2"}, matches)
+}
+
+func stringPtr(v string) *string {
+	return &v
 }
 
 type mockModelRepo struct {
