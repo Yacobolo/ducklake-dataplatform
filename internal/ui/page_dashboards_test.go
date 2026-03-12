@@ -21,6 +21,23 @@ func TestDashboardsDetailPage_RendersWidgetStates(t *testing.T) {
 			Name:        "Revenue Dashboard",
 			Description: "Executive view",
 		},
+		Freshness: &domain.AssetFreshnessStatus{
+			AssetKey:               "dashboard.dash-1",
+			FreshnessStatus:        domain.AssetFreshnessStatusStale,
+			EffectiveMaxLagSeconds: 1800,
+			Reason:                 "upstream metric.sales.orders.revenue is stale",
+		},
+		FreshnessExplain: &domain.AssetFreshnessNode{
+			AssetKey:        "dashboard.dash-1",
+			FreshnessStatus: domain.AssetFreshnessStatusStale,
+			Upstream: []domain.AssetFreshnessNode{
+				{
+					AssetKey:        "metric.sales.orders.revenue",
+					FreshnessStatus: domain.AssetFreshnessStatusStale,
+					Reason:          "upstream model.sales.orders is stale",
+				},
+			},
+		},
 		BaseURL:         "/ui/dashboards/dash-1",
 		EditURL:         "/ui/dashboards/dash-1/edit",
 		DeleteURL:       "/ui/dashboards/dash-1/delete",
@@ -75,4 +92,6 @@ func TestDashboardsDetailPage_RendersWidgetStates(t *testing.T) {
 	assert.Contains(t, html, "Edit widget")
 	assert.Contains(t, html, "data-chart-payload")
 	assert.Contains(t, html, "Total Revenue")
+	assert.Contains(t, html, "Freshness")
+	assert.Contains(t, html, "metric.sales.orders.revenue")
 }

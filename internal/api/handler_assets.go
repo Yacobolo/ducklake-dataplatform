@@ -3,6 +3,7 @@ package api
 
 import (
 	"context"
+	"math"
 
 	"duck-demo/internal/domain"
 )
@@ -13,6 +14,9 @@ type assetService interface {
 	GetAsset(ctx context.Context, key string) (*domain.DataAsset, error)
 	UpdateAsset(ctx context.Context, assetKey string, req domain.UpdateAssetRequest) (*domain.DataAsset, error)
 	DeleteAsset(ctx context.Context, assetKey string) error
+	CheckFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessStatus, error)
+	ExplainFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessNode, error)
+	ReconcileFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessReconcileResult, error)
 	ResolveAssetKeys(ctx context.Context, assetIDs []string) (map[string]string, error)
 	GetGraph(ctx context.Context, assetID string) ([]domain.AssetDependency, []domain.AssetDependency, error)
 	ListPartitions(ctx context.Context, assetID string, page domain.PageRequest) ([]domain.AssetPartition, int64, error)
@@ -159,6 +163,121 @@ func (h *APIHandler) GetAssetGraph(ctx context.Context, req GenGetAssetGraphRequ
 	return GetAssetGraph200JSONResponse{
 		Body:    graph,
 		Headers: GetAssetGraph200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) GetAssetFreshness(ctx context.Context, req GenGetAssetFreshnessRequest) (GenGetAssetFreshnessResponse, error) {
+	status, err := h.assets.CheckFreshness(ctx, req.AssetKey)
+	if err != nil {
+		if resp, ok := respondDomainError[GenGetAssetFreshnessResponse](err, domainErrorResponder[GenGetAssetFreshnessResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenGetAssetFreshnessResponse {
+				return GetAssetFreshness400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetAssetFreshnessResponse {
+				return GetAssetFreshness404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	body := assetFreshnessStatusToAPI(*status)
+	return GetAssetFreshness200JSONResponse{
+		Body:    body,
+		Headers: GetAssetFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) ExplainAssetFreshness(ctx context.Context, req GenExplainAssetFreshnessRequest) (GenExplainAssetFreshnessResponse, error) {
+	node, err := h.assets.ExplainFreshness(ctx, req.AssetKey)
+	if err != nil {
+		if resp, ok := respondDomainError[GenExplainAssetFreshnessResponse](err, domainErrorResponder[GenExplainAssetFreshnessResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenExplainAssetFreshnessResponse {
+				return ExplainAssetFreshness400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenExplainAssetFreshnessResponse {
+				return ExplainAssetFreshness404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	body := assetFreshnessExplanationToAPI(*node)
+	return ExplainAssetFreshness200JSONResponse{
+		Body:    body,
+		Headers: ExplainAssetFreshness200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) ListAssetFreshnessRequirements(ctx context.Context, req GenListAssetFreshnessRequirementsRequest) (GenListAssetFreshnessRequirementsResponse, error) {
+	node, err := h.assets.ExplainFreshness(ctx, req.AssetKey)
+	if err != nil {
+		if resp, ok := respondDomainError[GenListAssetFreshnessRequirementsResponse](err, domainErrorResponder[GenListAssetFreshnessRequirementsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenListAssetFreshnessRequirementsResponse {
+				return ListAssetFreshnessRequirements400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListAssetFreshnessRequirementsResponse {
+				return ListAssetFreshnessRequirements404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	body := assetFreshnessRequirementsToAPI(*node)
+	return ListAssetFreshnessRequirements200JSONResponse{
+		Body:    body,
+		Headers: ListAssetFreshnessRequirements200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) ListAssetFreshnessBlockers(ctx context.Context, req GenListAssetFreshnessBlockersRequest) (GenListAssetFreshnessBlockersResponse, error) {
+	node, err := h.assets.ExplainFreshness(ctx, req.AssetKey)
+	if err != nil {
+		if resp, ok := respondDomainError[GenListAssetFreshnessBlockersResponse](err, domainErrorResponder[GenListAssetFreshnessBlockersResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenListAssetFreshnessBlockersResponse {
+				return ListAssetFreshnessBlockers400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListAssetFreshnessBlockersResponse {
+				return ListAssetFreshnessBlockers404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	body := assetFreshnessBlockersToAPI(*node)
+	return ListAssetFreshnessBlockers200JSONResponse{
+		Body:    body,
+		Headers: ListAssetFreshnessBlockers200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) ReconcileAssetFreshness(ctx context.Context, req GenReconcileAssetFreshnessRequest) (GenReconcileAssetFreshnessResponse, error) {
+	result, err := h.assets.ReconcileFreshness(ctx, req.AssetKey)
+	if err != nil {
+		if resp, ok := respondDomainError[GenReconcileAssetFreshnessResponse](err, domainErrorResponder[GenReconcileAssetFreshnessResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenReconcileAssetFreshnessResponse {
+				return ReconcileAssetFreshness400JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenReconcileAssetFreshnessResponse {
+				return ReconcileAssetFreshness404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	body := assetFreshnessReconcileResultToAPI(*result)
+	return ReconcileAssetFreshness202JSONResponse{
+		Body:    body,
+		Headers: ReconcileAssetFreshness202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -493,17 +612,20 @@ func (h *APIHandler) GetAssetBackfill(ctx context.Context, req GenGetAssetBackfi
 
 func assetToAPI(a domain.DataAsset) Asset {
 	return Asset{
-		Id:          &a.ID,
-		AssetKey:    &a.AssetKey,
-		AssetType:   &a.AssetType,
-		Owner:       &a.Owner,
-		Description: &a.Description,
-		Tags:        &a.Tags,
-		IoProfile:   &a.IOProfile,
-		IsActive:    &a.IsActive,
-		CreatedBy:   &a.CreatedBy,
-		CreatedAt:   formatTimePtr(&a.CreatedAt),
-		UpdatedAt:   formatTimePtr(&a.UpdatedAt),
+		Id:                    &a.ID,
+		AssetKey:              &a.AssetKey,
+		AssetType:             &a.AssetType,
+		Owner:                 &a.Owner,
+		Description:           &a.Description,
+		Tags:                  &a.Tags,
+		FreshnessPolicy:       assetFreshnessPolicyToAPI(a.FreshnessPolicy),
+		MaterializationPolicy: assetMaterializationPolicyToAPI(a.MaterializationPolicy),
+		AutoMaterializePolicy: assetAutoMaterializePolicyToAPI(a.AutoMaterializePolicy),
+		IoProfile:             &a.IOProfile,
+		IsActive:              &a.IsActive,
+		CreatedBy:             &a.CreatedBy,
+		CreatedAt:             formatTimePtr(&a.CreatedAt),
+		UpdatedAt:             formatTimePtr(&a.UpdatedAt),
 	}
 }
 
@@ -512,15 +634,18 @@ func domainCreateAssetRequest(req *CreateAssetJSONRequestBody) domain.CreateAsse
 		return domain.CreateAssetRequest{}
 	}
 	return domain.CreateAssetRequest{
-		AssetKey:          req.AssetKey,
-		AssetType:         req.AssetType,
-		Owner:             req.Owner,
-		Description:       derefString(req.Description),
-		Tags:              derefStringSlice(req.Tags),
-		IOProfile:         derefString(req.IoProfile),
-		IsActive:          derefBoolDefault(req.IsActive, true),
-		UpstreamAssetKeys: derefStringSlice(req.UpstreamAssetKeys),
-		Checks:            domainAssetChecks(req.Checks),
+		AssetKey:              req.AssetKey,
+		AssetType:             req.AssetType,
+		Owner:                 req.Owner,
+		Description:           derefString(req.Description),
+		Tags:                  derefStringSlice(req.Tags),
+		FreshnessPolicy:       domainAssetFreshnessPolicy(req.FreshnessPolicy),
+		MaterializationPolicy: domainAssetMaterializationPolicy(req.MaterializationPolicy),
+		AutoMaterializePolicy: domainAssetAutoMaterializePolicy(req.AutoMaterializePolicy),
+		IOProfile:             derefString(req.IoProfile),
+		IsActive:              derefBoolDefault(req.IsActive, true),
+		UpstreamAssetKeys:     derefStringSlice(req.UpstreamAssetKeys),
+		Checks:                domainAssetChecks(req.Checks),
 	}
 }
 
@@ -529,15 +654,104 @@ func domainUpdateAssetRequest(req *UpdateAssetJSONRequestBody) domain.UpdateAsse
 		return domain.UpdateAssetRequest{}
 	}
 	return domain.UpdateAssetRequest{
-		AssetType:         req.AssetType,
-		Owner:             req.Owner,
-		Description:       derefString(req.Description),
-		Tags:              derefStringSlice(req.Tags),
-		IOProfile:         derefString(req.IoProfile),
-		IsActive:          derefBoolDefault(req.IsActive, true),
-		UpstreamAssetKeys: derefStringSlice(req.UpstreamAssetKeys),
-		Checks:            domainAssetChecks(req.Checks),
+		AssetType:             req.AssetType,
+		Owner:                 req.Owner,
+		Description:           derefString(req.Description),
+		Tags:                  derefStringSlice(req.Tags),
+		FreshnessPolicy:       domainAssetFreshnessPolicy(req.FreshnessPolicy),
+		MaterializationPolicy: domainAssetMaterializationPolicy(req.MaterializationPolicy),
+		AutoMaterializePolicy: domainAssetAutoMaterializePolicy(req.AutoMaterializePolicy),
+		IOProfile:             derefString(req.IoProfile),
+		IsActive:              derefBoolDefault(req.IsActive, true),
+		UpstreamAssetKeys:     derefStringSlice(req.UpstreamAssetKeys),
+		Checks:                domainAssetChecks(req.Checks),
 	}
+}
+
+func domainAssetFreshnessPolicy(policy *AssetFreshnessPolicy) *domain.AssetFreshnessPolicy {
+	if policy == nil {
+		return nil
+	}
+	result := &domain.AssetFreshnessPolicy{}
+	if policy.MaxLagSeconds != nil {
+		result.MaxLagSeconds = int64(*policy.MaxLagSeconds)
+	}
+	result.CronSchedule = derefString(policy.CronSchedule)
+	return result
+}
+
+func domainAssetMaterializationPolicy(policy *AssetMaterializationPolicy) *domain.AssetMaterializationPolicy {
+	if policy == nil {
+		return nil
+	}
+	return &domain.AssetMaterializationPolicy{
+		Mode:            derefString(policy.Mode),
+		AllowConcurrent: derefBoolDefault(policy.AllowConcurrent, false),
+	}
+}
+
+func domainAssetAutoMaterializePolicy(policy *AssetAutoMaterializePolicy) *domain.AssetAutoMaterializePolicy {
+	if policy == nil {
+		return nil
+	}
+	result := &domain.AssetAutoMaterializePolicy{
+		Mode:                   derefString(policy.Mode),
+		RequireAllUpstreams:    derefBoolDefault(policy.RequireAllUpstreams, false),
+		OnFreshnessBreach:      derefBoolDefault(policy.OnFreshnessBreach, false),
+		OnUpstreamMaterialized: derefBoolDefault(policy.OnUpstreamMaterialized, false),
+		RespectDowntimeWindows: derefBoolDefault(policy.RespectDowntimeWindows, false),
+		DowntimeWindowsCronExpr: derefStringSlice(
+			policy.DowntimeWindowsCronExpr,
+		),
+	}
+	if policy.MinIntervalSeconds != nil {
+		result.MinIntervalSeconds = int64(*policy.MinIntervalSeconds)
+	}
+	return result
+}
+
+func assetFreshnessPolicyToAPI(policy *domain.AssetFreshnessPolicy) *AssetFreshnessPolicy {
+	if policy == nil {
+		return nil
+	}
+	return &AssetFreshnessPolicy{
+		MaxLagSeconds: safeAssetInt32Ptr(policy.MaxLagSeconds),
+		CronSchedule:  optStr(policy.CronSchedule),
+	}
+}
+
+func assetMaterializationPolicyToAPI(policy *domain.AssetMaterializationPolicy) *AssetMaterializationPolicy {
+	if policy == nil {
+		return nil
+	}
+	return &AssetMaterializationPolicy{
+		Mode:            optStr(policy.Mode),
+		AllowConcurrent: &policy.AllowConcurrent,
+	}
+}
+
+func assetAutoMaterializePolicyToAPI(policy *domain.AssetAutoMaterializePolicy) *AssetAutoMaterializePolicy {
+	if policy == nil {
+		return nil
+	}
+	downtime := append([]string(nil), policy.DowntimeWindowsCronExpr...)
+	return &AssetAutoMaterializePolicy{
+		Mode:                    optStr(policy.Mode),
+		MinIntervalSeconds:      safeAssetInt32Ptr(policy.MinIntervalSeconds),
+		RequireAllUpstreams:     &policy.RequireAllUpstreams,
+		OnFreshnessBreach:       &policy.OnFreshnessBreach,
+		OnUpstreamMaterialized:  &policy.OnUpstreamMaterialized,
+		RespectDowntimeWindows:  &policy.RespectDowntimeWindows,
+		DowntimeWindowsCronExpr: &downtime,
+	}
+}
+
+func safeAssetInt32Ptr(value int64) *int32 {
+	if value < math.MinInt32 || value > math.MaxInt32 {
+		return nil
+	}
+	v := int32(value)
+	return &v
 }
 
 func domainAssetChecks(checks *[]AssetCheckInput) []domain.AssetCheckInput {
@@ -651,6 +865,181 @@ func assetCheckToAPI(c domain.AssetCheck) AssetCheck {
 		Enabled:   &c.Enabled,
 		CreatedAt: formatTimePtr(&c.CreatedAt),
 		UpdatedAt: formatTimePtr(&c.UpdatedAt),
+	}
+}
+
+func assetFreshnessStatusToAPI(status domain.AssetFreshnessStatus) AssetFreshnessStatus {
+	return AssetFreshnessStatus{
+		AssetId:                optStr(status.AssetID),
+		AssetKey:               optStr(status.AssetKey),
+		AssetType:              optStr(status.AssetType),
+		FreshnessStatus:        optStr(status.FreshnessStatus),
+		EffectiveMaxLagSeconds: safeInt64ToInt32Ptr(&status.EffectiveMaxLagSeconds),
+		LastMaterializedAt:     formatTimePtr(status.LastMaterializedAt),
+		StaleSince:             formatTimePtr(status.StaleSince),
+		Reason:                 optStr(status.Reason),
+		Basis:                  slicePtr(status.Basis),
+	}
+}
+
+func assetFreshnessExplanationToAPI(root domain.AssetFreshnessNode) AssetFreshnessExplanation {
+	nodes := make([]AssetFreshnessStatus, 0)
+	edges := make([]AssetFreshnessEdge, 0)
+	flattenAssetFreshnessTree(root, &nodes, &edges)
+	asset := assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+		AssetID:                root.AssetID,
+		AssetKey:               root.AssetKey,
+		AssetType:              root.AssetType,
+		FreshnessStatus:        root.FreshnessStatus,
+		EffectiveMaxLagSeconds: root.EffectiveMaxLagSeconds,
+		LastMaterializedAt:     root.LastMaterializedAt,
+		StaleSince:             root.StaleSince,
+		Reason:                 root.Reason,
+		Basis:                  root.Basis,
+	})
+	return AssetFreshnessExplanation{
+		Asset: &asset,
+		Nodes: &nodes,
+		Edges: &edges,
+	}
+}
+
+func assetFreshnessRequirementsToAPI(root domain.AssetFreshnessNode) AssetFreshnessRequirementsResponse {
+	requirements := make([]AssetFreshnessRequirement, 0)
+	collectAssetFreshnessRequirements(root, &requirements)
+	asset := assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+		AssetID:                root.AssetID,
+		AssetKey:               root.AssetKey,
+		AssetType:              root.AssetType,
+		FreshnessStatus:        root.FreshnessStatus,
+		EffectiveMaxLagSeconds: root.EffectiveMaxLagSeconds,
+		LastMaterializedAt:     root.LastMaterializedAt,
+		StaleSince:             root.StaleSince,
+		Reason:                 root.Reason,
+		Basis:                  root.Basis,
+	})
+	return AssetFreshnessRequirementsResponse{
+		Asset:        &asset,
+		Requirements: &requirements,
+	}
+}
+
+func collectAssetFreshnessRequirements(root domain.AssetFreshnessNode, requirements *[]AssetFreshnessRequirement) {
+	if requirements == nil {
+		return
+	}
+	for _, child := range root.Upstream {
+		status := assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+			AssetID:                child.AssetID,
+			AssetKey:               child.AssetKey,
+			AssetType:              child.AssetType,
+			FreshnessStatus:        child.FreshnessStatus,
+			EffectiveMaxLagSeconds: child.EffectiveMaxLagSeconds,
+			LastMaterializedAt:     child.LastMaterializedAt,
+			StaleSince:             child.StaleSince,
+			Reason:                 child.Reason,
+			Basis:                  child.Basis,
+		})
+		*requirements = append(*requirements, AssetFreshnessRequirement{
+			Asset:          &status,
+			DependencyType: optStr(child.UpstreamDependencyType),
+		})
+		collectAssetFreshnessRequirements(child, requirements)
+	}
+}
+
+func assetFreshnessBlockersToAPI(root domain.AssetFreshnessNode) AssetFreshnessBlockersResponse {
+	blockers := make([]AssetFreshnessBlocker, 0)
+	seen := map[string]struct{}{}
+	collectAssetFreshnessBlockers(root, seen, &blockers)
+	asset := assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+		AssetID:                root.AssetID,
+		AssetKey:               root.AssetKey,
+		AssetType:              root.AssetType,
+		FreshnessStatus:        root.FreshnessStatus,
+		EffectiveMaxLagSeconds: root.EffectiveMaxLagSeconds,
+		LastMaterializedAt:     root.LastMaterializedAt,
+		StaleSince:             root.StaleSince,
+		Reason:                 root.Reason,
+		Basis:                  root.Basis,
+	})
+	return AssetFreshnessBlockersResponse{
+		Asset:    &asset,
+		Blockers: &blockers,
+	}
+}
+
+func collectAssetFreshnessBlockers(root domain.AssetFreshnessNode, seen map[string]struct{}, blockers *[]AssetFreshnessBlocker) {
+	if blockers == nil {
+		return
+	}
+	for _, child := range root.Upstream {
+		if child.FreshnessStatus != domain.AssetFreshnessStatusFresh {
+			if _, ok := seen[child.AssetID]; !ok {
+				seen[child.AssetID] = struct{}{}
+				status := assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+					AssetID:                child.AssetID,
+					AssetKey:               child.AssetKey,
+					AssetType:              child.AssetType,
+					FreshnessStatus:        child.FreshnessStatus,
+					EffectiveMaxLagSeconds: child.EffectiveMaxLagSeconds,
+					LastMaterializedAt:     child.LastMaterializedAt,
+					StaleSince:             child.StaleSince,
+					Reason:                 child.Reason,
+					Basis:                  child.Basis,
+				})
+				*blockers = append(*blockers, AssetFreshnessBlocker{
+					Asset:          &status,
+					DependencyType: optStr(child.UpstreamDependencyType),
+				})
+			}
+		}
+		collectAssetFreshnessBlockers(child, seen, blockers)
+	}
+}
+
+func flattenAssetFreshnessTree(root domain.AssetFreshnessNode, nodes *[]AssetFreshnessStatus, edges *[]AssetFreshnessEdge) {
+	if nodes == nil || edges == nil {
+		return
+	}
+	*nodes = append(*nodes, assetFreshnessStatusToAPI(domain.AssetFreshnessStatus{
+		AssetID:                root.AssetID,
+		AssetKey:               root.AssetKey,
+		AssetType:              root.AssetType,
+		FreshnessStatus:        root.FreshnessStatus,
+		EffectiveMaxLagSeconds: root.EffectiveMaxLagSeconds,
+		LastMaterializedAt:     root.LastMaterializedAt,
+		StaleSince:             root.StaleSince,
+		Reason:                 root.Reason,
+		Basis:                  root.Basis,
+	}))
+	for _, child := range root.Upstream {
+		fromKey := root.AssetKey
+		toKey := child.AssetKey
+		*edges = append(*edges, AssetFreshnessEdge{
+			FromAssetKey:   &fromKey,
+			ToAssetKey:     &toKey,
+			DependencyType: optStr(child.UpstreamDependencyType),
+		})
+		flattenAssetFreshnessTree(child, nodes, edges)
+	}
+}
+
+func assetFreshnessReconcileResultToAPI(result domain.AssetFreshnessReconcileResult) AssetFreshnessReconcileResponse {
+	targets := make([]AssetFreshnessReconcileTarget, 0, len(result.Targets))
+	for _, target := range result.Targets {
+		targets = append(targets, AssetFreshnessReconcileTarget{
+			AssetId:         optStr(target.AssetID),
+			AssetKey:        optStr(target.AssetKey),
+			AssetType:       optStr(target.AssetType),
+			FreshnessStatus: optStr(target.FreshnessStatus),
+			EventId:         optStr(target.EventID),
+		})
+	}
+	asset := assetFreshnessStatusToAPI(result.Asset)
+	return AssetFreshnessReconcileResponse{
+		Asset:   &asset,
+		Targets: &targets,
 	}
 }
 

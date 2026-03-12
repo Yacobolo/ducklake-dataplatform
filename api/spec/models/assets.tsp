@@ -30,6 +30,26 @@ enum AssetCheckSeverity {
   WARN,
 }
 
+model AssetFreshnessPolicy {
+  max_lag_seconds?: int64;
+  cron_schedule?: string;
+}
+
+model AssetMaterializationPolicy {
+  mode?: string;
+  allow_concurrent?: boolean;
+}
+
+model AssetAutoMaterializePolicy {
+  mode?: string;
+  min_interval_seconds?: int64;
+  require_all_upstreams?: boolean;
+  on_freshness_breach?: boolean;
+  on_upstream_materialized?: boolean;
+  respect_downtime_windows?: boolean;
+  downtime_windows_cron_expr?: string[];
+}
+
 model Asset {
   id?: string;
   asset_key?: string;
@@ -37,6 +57,9 @@ model Asset {
   owner?: string;
   description?: string;
   tags?: string[];
+  freshness_policy?: AssetFreshnessPolicy;
+  materialization_policy?: AssetMaterializationPolicy;
+  auto_materialize_policy?: AssetAutoMaterializePolicy;
   io_profile?: string;
   is_active?: boolean;
   created_by?: string;
@@ -89,6 +112,63 @@ model AssetMaterialization {
   created_at?: utcDateTime;
 }
 
+model AssetFreshnessStatus {
+  asset_id?: string;
+  asset_key?: string;
+  asset_type?: string;
+  freshness_status?: string;
+  effective_max_lag_seconds?: int64;
+  last_materialized_at?: utcDateTime;
+  stale_since?: utcDateTime;
+  reason?: string;
+  basis?: string[];
+}
+
+model AssetFreshnessEdge {
+  from_asset_key?: string;
+  to_asset_key?: string;
+  dependency_type?: string;
+}
+
+model AssetFreshnessExplanation {
+  asset?: AssetFreshnessStatus;
+  nodes?: AssetFreshnessStatus[];
+  edges?: AssetFreshnessEdge[];
+}
+
+model AssetFreshnessRequirement {
+  asset?: AssetFreshnessStatus;
+  dependency_type?: string;
+}
+
+model AssetFreshnessRequirementsResponse {
+  asset?: AssetFreshnessStatus;
+  requirements?: AssetFreshnessRequirement[];
+}
+
+model AssetFreshnessBlocker {
+  asset?: AssetFreshnessStatus;
+  dependency_type?: string;
+}
+
+model AssetFreshnessBlockersResponse {
+  asset?: AssetFreshnessStatus;
+  blockers?: AssetFreshnessBlocker[];
+}
+
+model AssetFreshnessReconcileTarget {
+  asset_id?: string;
+  asset_key?: string;
+  asset_type?: string;
+  freshness_status?: string;
+  event_id?: string;
+}
+
+model AssetFreshnessReconcileResponse {
+  asset?: AssetFreshnessStatus;
+  targets?: AssetFreshnessReconcileTarget[];
+}
+
 model AssetCheck {
   id?: string;
   asset_id?: string;
@@ -125,6 +205,9 @@ model CreateAssetRequest {
   owner: string;
   description?: string;
   tags?: string[];
+  freshness_policy?: AssetFreshnessPolicy;
+  materialization_policy?: AssetMaterializationPolicy;
+  auto_materialize_policy?: AssetAutoMaterializePolicy;
   io_profile?: string;
   is_active?: boolean;
   upstream_asset_keys?: string[];
@@ -136,6 +219,9 @@ model UpdateAssetRequest {
   owner: string;
   description?: string;
   tags?: string[];
+  freshness_policy?: AssetFreshnessPolicy;
+  materialization_policy?: AssetMaterializationPolicy;
+  auto_materialize_policy?: AssetAutoMaterializePolicy;
   io_profile?: string;
   is_active?: boolean;
   upstream_asset_keys?: string[];

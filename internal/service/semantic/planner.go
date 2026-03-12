@@ -34,8 +34,16 @@ type dimensionBinding struct {
 	InnerAlias  string
 }
 
+type explainMetricQueryOptions struct {
+	DisablePreAggregationID string
+}
+
 // ExplainMetricQuery compiles a semantic metric request into executable SQL and join metadata.
 func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest) (*MetricQueryPlan, error) {
+	return s.explainMetricQuery(ctx, req, explainMetricQueryOptions{})
+}
+
+func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest, opts explainMetricQueryOptions) (*MetricQueryPlan, error) {
 	if strings.TrimSpace(req.ProjectName) == "" {
 		return nil, domain.ErrValidation("project_name is required")
 	}
@@ -138,7 +146,7 @@ func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest
 		}
 	}
 
-	selectedPreAgg, preAggRelation := s.matchPreAggregation(ctx, baseModel.ID, req)
+	selectedPreAgg, preAggRelation := s.matchPreAggregation(ctx, baseModel.ID, req, opts)
 	fromRelation := baseModel.BaseModelRef
 	if preAggRelation != "" {
 		fromRelation = preAggRelation
@@ -1063,7 +1071,7 @@ func shortestPath(baseName, targetName string, relationships []domain.SemanticRe
 	return steps, nil
 }
 
-func (s *Service) matchPreAggregation(ctx context.Context, semanticModelID string, req MetricQueryRequest) (*string, string) {
+func (s *Service) matchPreAggregation(ctx context.Context, semanticModelID string, req MetricQueryRequest, opts explainMetricQueryOptions) (*string, string) {
 	preAggs, err := s.preAggs.ListByModel(ctx, semanticModelID)
 	if err != nil {
 		return nil, ""
@@ -1075,6 +1083,9 @@ func (s *Service) matchPreAggregation(ctx context.Context, semanticModelID strin
 	sort.Strings(wantDims)
 
 	for _, p := range preAggs {
+		if opts.DisablePreAggregationID != "" && p.ID == opts.DisablePreAggregationID {
+			continue
+		}
 		mset := append([]string(nil), p.MetricSet...)
 		dset := append([]string(nil), p.DimensionSet...)
 		sort.Strings(mset)
@@ -1086,4 +1097,23 @@ func (s *Service) matchPreAggregation(ctx context.Context, semanticModelID strin
 	}
 
 	return nil, ""
+}
+
+var safeTargetRelationPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*){0,2}$`)
+
+func normalizeTargetRelation(targetRelation string) (string, error) {
+	targetRelation = strings.TrimSpace(targetRelation)
+	if targetRelation == "" {
+		return "", domain.ErrValidation("target_relation is required")
+	}
+	if !safeTargetRelationPattern.MatchString(targetRelation) {
+		return "", domain.ErrValidation("target_relation must be a simple dotted identifier")
+	}
+
+	parts := strings.Split(targetRelation, ".")
+	quoted := make([]string, 0, len(parts))
+	for _, part := range parts {
+		quoted = append(quoted, quoteIdent(part))
+	}
+	return strings.Join(quoted, "."), nil
 }

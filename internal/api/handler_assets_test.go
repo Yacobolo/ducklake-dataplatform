@@ -17,6 +17,9 @@ type mockAssetService struct {
 	getAssetFn               func(context.Context, string) (*domain.DataAsset, error)
 	updateAssetFn            func(context.Context, string, domain.UpdateAssetRequest) (*domain.DataAsset, error)
 	deleteAssetFn            func(context.Context, string) error
+	checkFreshnessFn         func(context.Context, string) (*domain.AssetFreshnessStatus, error)
+	explainFreshnessFn       func(context.Context, string) (*domain.AssetFreshnessNode, error)
+	reconcileFreshnessFn     func(context.Context, string) (*domain.AssetFreshnessReconcileResult, error)
 	resolveAssetKeysFn       func(context.Context, []string) (map[string]string, error)
 	getGraphFn               func(context.Context, string) ([]domain.AssetDependency, []domain.AssetDependency, error)
 	listPartitionsFn         func(context.Context, string, domain.PageRequest) ([]domain.AssetPartition, int64, error)
@@ -43,6 +46,15 @@ func (m *mockAssetService) UpdateAsset(ctx context.Context, assetKey string, req
 }
 func (m *mockAssetService) DeleteAsset(ctx context.Context, assetKey string) error {
 	return m.deleteAssetFn(ctx, assetKey)
+}
+func (m *mockAssetService) CheckFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessStatus, error) {
+	return m.checkFreshnessFn(ctx, assetKey)
+}
+func (m *mockAssetService) ExplainFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessNode, error) {
+	return m.explainFreshnessFn(ctx, assetKey)
+}
+func (m *mockAssetService) ReconcileFreshness(ctx context.Context, assetKey string) (*domain.AssetFreshnessReconcileResult, error) {
+	return m.reconcileFreshnessFn(ctx, assetKey)
 }
 func (m *mockAssetService) ResolveAssetKeys(ctx context.Context, assetIDs []string) (map[string]string, error) {
 	if m.resolveAssetKeysFn == nil {
@@ -138,16 +150,41 @@ func TestHandler_CreateAsset(t *testing.T) {
 		require.Equal(t, domain.AssetTypeTable, req.AssetType)
 		require.Equal(t, []string{"showcase.rides.silver"}, req.UpstreamAssetKeys)
 		require.Len(t, req.Checks, 1)
+		require.NotNil(t, req.FreshnessPolicy)
+		assert.EqualValues(t, 1800, req.FreshnessPolicy.MaxLagSeconds)
+		require.NotNil(t, req.MaterializationPolicy)
+		assert.Equal(t, "TABLE", req.MaterializationPolicy.Mode)
+		require.NotNil(t, req.AutoMaterializePolicy)
+		assert.True(t, req.AutoMaterializePolicy.OnFreshnessBreach)
 		assert.True(t, req.IsActive)
-		return &domain.DataAsset{ID: "asset-1", AssetKey: req.AssetKey, AssetType: req.AssetType, Owner: req.Owner, CreatedAt: createdAt, UpdatedAt: createdAt}, nil
+		return &domain.DataAsset{
+			ID:                    "asset-1",
+			AssetKey:              req.AssetKey,
+			AssetType:             req.AssetType,
+			Owner:                 req.Owner,
+			FreshnessPolicy:       req.FreshnessPolicy,
+			MaterializationPolicy: req.MaterializationPolicy,
+			AutoMaterializePolicy: req.AutoMaterializePolicy,
+			CreatedAt:             createdAt,
+			UpdatedAt:             createdAt,
+		}, nil
 	}}}
 
 	resp, err := h.CreateAsset(assetTestCtx(true), GenCreateAssetRequest{Body: &CreateAssetJSONRequestBody{
-		AssetKey:          "showcase.rides.gold",
-		AssetType:         domain.AssetTypeTable,
-		Owner:             "platform-admins",
-		Description:       assetStrPtr("Gold showcase asset"),
-		Tags:              &[]string{"showcase", "gold"},
+		AssetKey:        "showcase.rides.gold",
+		AssetType:       domain.AssetTypeTable,
+		Owner:           "platform-admins",
+		Description:     assetStrPtr("Gold showcase asset"),
+		Tags:            &[]string{"showcase", "gold"},
+		FreshnessPolicy: &AssetFreshnessPolicy{MaxLagSeconds: assetInt32Ptr(1800), CronSchedule: assetStrPtr("*/30 * * * *")},
+		MaterializationPolicy: &AssetMaterializationPolicy{
+			Mode: assetStrPtr("TABLE"),
+		},
+		AutoMaterializePolicy: &AssetAutoMaterializePolicy{
+			Mode:               assetStrPtr("AUTO"),
+			OnFreshnessBreach:  assetBoolPtr(true),
+			MinIntervalSeconds: assetInt32Ptr(900),
+		},
 		IoProfile:         assetStrPtr("duckdb"),
 		IsActive:          assetBoolPtr(true),
 		UpstreamAssetKeys: &[]string{"showcase.rides.silver"},
@@ -161,6 +198,8 @@ func TestHandler_CreateAsset(t *testing.T) {
 	created, ok := resp.(CreateAsset201JSONResponse)
 	require.True(t, ok)
 	assert.Equal(t, "showcase.rides.gold", *created.Body.AssetKey)
+	require.NotNil(t, created.Body.FreshnessPolicy)
+	assert.EqualValues(t, 1800, *created.Body.FreshnessPolicy.MaxLagSeconds)
 }
 
 func TestHandler_GetAsset_NotFound(t *testing.T) {
@@ -180,7 +219,17 @@ func TestHandler_GetAsset(t *testing.T) {
 	createdAt := time.Now().UTC()
 	h := &APIHandler{assets: &mockAssetService{getAssetFn: func(_ context.Context, key string) (*domain.DataAsset, error) {
 		require.Equal(t, "sales.daily", key)
-		return &domain.DataAsset{ID: "asset-1", AssetKey: key, AssetType: domain.AssetTypeModel, Owner: "analytics", CreatedAt: createdAt, UpdatedAt: createdAt}, nil
+		return &domain.DataAsset{
+			ID:        "asset-1",
+			AssetKey:  key,
+			AssetType: domain.AssetTypeModel,
+			Owner:     "analytics",
+			CreatedAt: createdAt,
+			UpdatedAt: createdAt,
+			FreshnessPolicy: &domain.AssetFreshnessPolicy{
+				MaxLagSeconds: 300,
+			},
+		}, nil
 	}}}
 
 	resp, err := h.GetAsset(assetTestCtx(true), GenGetAssetRequest{AssetKey: "sales.daily"})
@@ -190,6 +239,8 @@ func TestHandler_GetAsset(t *testing.T) {
 	assert.Equal(t, "sales.daily", *ok.Body.AssetKey)
 	assert.Equal(t, domain.AssetTypeModel, *ok.Body.AssetType)
 	assert.Equal(t, "analytics", *ok.Body.Owner)
+	require.NotNil(t, ok.Body.FreshnessPolicy)
+	assert.EqualValues(t, 300, *ok.Body.FreshnessPolicy.MaxLagSeconds)
 }
 
 func TestHandler_UpdateAsset(t *testing.T) {
@@ -199,13 +250,29 @@ func TestHandler_UpdateAsset(t *testing.T) {
 		require.Equal(t, "showcase.rides.silver", assetKey)
 		require.Equal(t, "analytics", req.Owner)
 		require.Equal(t, []string{"showcase.rides.bronze"}, req.UpstreamAssetKeys)
-		return &domain.DataAsset{ID: "asset-1", AssetKey: assetKey, AssetType: req.AssetType, Owner: req.Owner, CreatedAt: updatedAt, UpdatedAt: updatedAt}, nil
+		require.NotNil(t, req.FreshnessPolicy)
+		require.NotNil(t, req.AutoMaterializePolicy)
+		return &domain.DataAsset{
+			ID:                    "asset-1",
+			AssetKey:              assetKey,
+			AssetType:             req.AssetType,
+			Owner:                 req.Owner,
+			FreshnessPolicy:       req.FreshnessPolicy,
+			AutoMaterializePolicy: req.AutoMaterializePolicy,
+			CreatedAt:             updatedAt,
+			UpdatedAt:             updatedAt,
+		}, nil
 	}}}
 
 	resp, err := h.UpdateAsset(assetTestCtx(true), GenUpdateAssetRequest{AssetKey: "showcase.rides.silver", Body: &UpdateAssetJSONRequestBody{
-		AssetType:         domain.AssetTypeTable,
-		Owner:             "analytics",
-		Description:       assetStrPtr("Silver showcase asset"),
+		AssetType:       domain.AssetTypeTable,
+		Owner:           "analytics",
+		Description:     assetStrPtr("Silver showcase asset"),
+		FreshnessPolicy: &AssetFreshnessPolicy{MaxLagSeconds: assetInt32Ptr(600)},
+		AutoMaterializePolicy: &AssetAutoMaterializePolicy{
+			Mode:                   assetStrPtr("AUTO"),
+			OnUpstreamMaterialized: assetBoolPtr(true),
+		},
 		IsActive:          assetBoolPtr(true),
 		UpstreamAssetKeys: &[]string{"showcase.rides.bronze"},
 	}})
@@ -213,6 +280,8 @@ func TestHandler_UpdateAsset(t *testing.T) {
 	updated, ok := resp.(UpdateAsset200JSONResponse)
 	require.True(t, ok)
 	assert.Equal(t, "analytics", *updated.Body.Owner)
+	require.NotNil(t, updated.Body.FreshnessPolicy)
+	assert.EqualValues(t, 600, *updated.Body.FreshnessPolicy.MaxLagSeconds)
 }
 
 func TestHandler_DeleteAsset(t *testing.T) {
@@ -256,6 +325,166 @@ func TestHandler_GetAssetGraph(t *testing.T) {
 	require.NotNil(t, ok.Body.DownstreamAssetKeys)
 	assert.Equal(t, []string{"raw.orders"}, *ok.Body.UpstreamAssetKeys)
 	assert.Equal(t, []string{"analytics.orders"}, *ok.Body.DownstreamAssetKeys)
+}
+
+func TestHandler_GetAssetFreshness(t *testing.T) {
+	t.Parallel()
+	lastMaterializedAt := time.Now().UTC()
+	h := &APIHandler{assets: &mockAssetService{checkFreshnessFn: func(_ context.Context, assetKey string) (*domain.AssetFreshnessStatus, error) {
+		require.Equal(t, "dashboard.exec", assetKey)
+		return &domain.AssetFreshnessStatus{
+			AssetID:                "dash-1",
+			AssetKey:               assetKey,
+			AssetType:              domain.AssetTypeDashboard,
+			FreshnessStatus:        domain.AssetFreshnessStatusFresh,
+			EffectiveMaxLagSeconds: 1800,
+			LastMaterializedAt:     &lastMaterializedAt,
+			Basis:                  []string{"metric.sales.orders.revenue"},
+		}, nil
+	}}}
+
+	resp, err := h.GetAssetFreshness(assetTestCtx(true), GenGetAssetFreshnessRequest{AssetKey: "dashboard.exec"})
+	require.NoError(t, err)
+	ok, cast := resp.(GetAssetFreshness200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Body.FreshnessStatus)
+	assert.Equal(t, domain.AssetFreshnessStatusFresh, *ok.Body.FreshnessStatus)
+	require.NotNil(t, ok.Body.EffectiveMaxLagSeconds)
+	assert.EqualValues(t, 1800, *ok.Body.EffectiveMaxLagSeconds)
+}
+
+func TestHandler_ExplainAssetFreshness(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{explainFreshnessFn: func(_ context.Context, assetKey string) (*domain.AssetFreshnessNode, error) {
+		require.Equal(t, "dashboard.exec", assetKey)
+		return &domain.AssetFreshnessNode{
+			AssetID:         "dash-1",
+			AssetKey:        assetKey,
+			AssetType:       domain.AssetTypeDashboard,
+			FreshnessStatus: domain.AssetFreshnessStatusStale,
+			Reason:          "upstream metric.sales.orders.revenue is stale",
+			Basis:           []string{"metric.sales.orders.revenue"},
+			Upstream: []domain.AssetFreshnessNode{{
+				AssetID:                "metric-1",
+				AssetKey:               "metric.sales.orders.revenue",
+				AssetType:              domain.AssetTypeMetric,
+				UpstreamDependencyType: domain.DependencyTypeSoft,
+				FreshnessStatus:        domain.AssetFreshnessStatusStale,
+			}},
+		}, nil
+	}}}
+
+	resp, err := h.ExplainAssetFreshness(assetTestCtx(true), GenExplainAssetFreshnessRequest{AssetKey: "dashboard.exec"})
+	require.NoError(t, err)
+	ok, cast := resp.(ExplainAssetFreshness200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Body.Nodes)
+	require.Len(t, *ok.Body.Nodes, 2)
+	require.NotNil(t, ok.Body.Edges)
+	require.Len(t, *ok.Body.Edges, 1)
+	assert.Equal(t, "metric.sales.orders.revenue", *(*ok.Body.Edges)[0].ToAssetKey)
+	require.NotNil(t, (*ok.Body.Edges)[0].DependencyType)
+	assert.Equal(t, domain.DependencyTypeSoft, *(*ok.Body.Edges)[0].DependencyType)
+}
+
+func TestHandler_ListAssetFreshnessRequirements(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{explainFreshnessFn: func(_ context.Context, assetKey string) (*domain.AssetFreshnessNode, error) {
+		require.Equal(t, "dashboard.exec", assetKey)
+		return &domain.AssetFreshnessNode{
+			AssetID:         "dash-1",
+			AssetKey:        assetKey,
+			AssetType:       domain.AssetTypeDashboard,
+			FreshnessStatus: domain.AssetFreshnessStatusStale,
+			Upstream: []domain.AssetFreshnessNode{{
+				AssetID:                "metric-1",
+				AssetKey:               "metric.sales.orders.revenue",
+				AssetType:              domain.AssetTypeMetric,
+				UpstreamDependencyType: domain.DependencyTypeHard,
+				FreshnessStatus:        domain.AssetFreshnessStatusStale,
+				EffectiveMaxLagSeconds: 1800,
+				Reason:                 "upstream model.sales.orders is stale",
+			}},
+		}, nil
+	}}}
+
+	resp, err := h.ListAssetFreshnessRequirements(assetTestCtx(true), GenListAssetFreshnessRequirementsRequest{AssetKey: "dashboard.exec"})
+	require.NoError(t, err)
+	ok, cast := resp.(ListAssetFreshnessRequirements200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Body.Requirements)
+	require.Len(t, *ok.Body.Requirements, 1)
+	require.NotNil(t, (*ok.Body.Requirements)[0].Asset)
+	assert.Equal(t, "metric.sales.orders.revenue", *(*ok.Body.Requirements)[0].Asset.AssetKey)
+	require.NotNil(t, (*ok.Body.Requirements)[0].DependencyType)
+	assert.Equal(t, domain.DependencyTypeHard, *(*ok.Body.Requirements)[0].DependencyType)
+}
+
+func TestHandler_ListAssetFreshnessBlockers(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{explainFreshnessFn: func(_ context.Context, assetKey string) (*domain.AssetFreshnessNode, error) {
+		require.Equal(t, "dashboard.exec", assetKey)
+		return &domain.AssetFreshnessNode{
+			AssetID:         "dash-1",
+			AssetKey:        assetKey,
+			AssetType:       domain.AssetTypeDashboard,
+			FreshnessStatus: domain.AssetFreshnessStatusStale,
+			Upstream: []domain.AssetFreshnessNode{{
+				AssetID:                "metric-1",
+				AssetKey:               "metric.sales.orders.revenue",
+				AssetType:              domain.AssetTypeMetric,
+				UpstreamDependencyType: domain.DependencyTypeHard,
+				FreshnessStatus:        domain.AssetFreshnessStatusStale,
+				Reason:                 "upstream model.sales.orders is stale",
+			}},
+		}, nil
+	}}}
+
+	resp, err := h.ListAssetFreshnessBlockers(assetTestCtx(true), GenListAssetFreshnessBlockersRequest{AssetKey: "dashboard.exec"})
+	require.NoError(t, err)
+	ok, cast := resp.(ListAssetFreshnessBlockers200JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Body.Blockers)
+	require.Len(t, *ok.Body.Blockers, 1)
+	require.NotNil(t, (*ok.Body.Blockers)[0].Asset)
+	assert.Equal(t, "metric.sales.orders.revenue", *(*ok.Body.Blockers)[0].Asset.AssetKey)
+	require.NotNil(t, (*ok.Body.Blockers)[0].DependencyType)
+	assert.Equal(t, domain.DependencyTypeHard, *(*ok.Body.Blockers)[0].DependencyType)
+}
+
+func TestHandler_ReconcileAssetFreshness(t *testing.T) {
+	t.Parallel()
+	h := &APIHandler{assets: &mockAssetService{reconcileFreshnessFn: func(_ context.Context, assetKey string) (*domain.AssetFreshnessReconcileResult, error) {
+		require.Equal(t, "dashboard.exec", assetKey)
+		return &domain.AssetFreshnessReconcileResult{
+			Asset: domain.AssetFreshnessStatus{
+				AssetID:         "dash-1",
+				AssetKey:        assetKey,
+				AssetType:       domain.AssetTypeDashboard,
+				FreshnessStatus: domain.AssetFreshnessStatusStale,
+				Reason:          "upstream model.exec.revenue is stale",
+			},
+			Targets: []domain.AssetFreshnessReconcileTarget{{
+				AssetID:         "model-1",
+				AssetKey:        "model.exec.revenue",
+				AssetType:       domain.AssetTypeModel,
+				FreshnessStatus: domain.AssetFreshnessStatusStale,
+				EventID:         "event-1",
+			}},
+		}, nil
+	}}}
+
+	resp, err := h.ReconcileAssetFreshness(assetTestCtx(true), GenReconcileAssetFreshnessRequest{AssetKey: "dashboard.exec"})
+	require.NoError(t, err)
+	ok, cast := resp.(ReconcileAssetFreshness202JSONResponse)
+	require.True(t, cast)
+	require.NotNil(t, ok.Body.Asset)
+	require.NotNil(t, ok.Body.Asset.FreshnessStatus)
+	assert.Equal(t, domain.AssetFreshnessStatusStale, *ok.Body.Asset.FreshnessStatus)
+	require.NotNil(t, ok.Body.Targets)
+	require.Len(t, *ok.Body.Targets, 1)
+	assert.Equal(t, "model.exec.revenue", *(*ok.Body.Targets)[0].AssetKey)
+	assert.Equal(t, "event-1", *(*ok.Body.Targets)[0].EventId)
 }
 
 func TestHandler_ListAssetPartitions(t *testing.T) {
@@ -420,6 +649,10 @@ func assetBoolPtr(v bool) *bool {
 }
 
 func assetStrPtr(v string) *string {
+	return &v
+}
+
+func assetInt32Ptr(v int32) *int32 {
 	return &v
 }
 

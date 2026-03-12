@@ -2,6 +2,8 @@ package semantic
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"duck-demo/internal/domain"
 )
@@ -14,6 +16,7 @@ type Service struct {
 	preAggs       domain.SemanticPreAggregationRepository
 	modelRepo     domain.ModelRepository
 	queryExec     queryExecutor
+	ddlExec       domain.DuckDBExecutor
 }
 
 // NewService creates a new semantic Service.
@@ -40,6 +43,11 @@ func NewService(
 // SetModelRepository wires transformation model lookup for semantic run error normalization.
 func (s *Service) SetModelRepository(repo domain.ModelRepository) {
 	s.modelRepo = repo
+}
+
+// SetDDLExecutor wires a trusted DuckDB executor for internal pre-aggregation materialization.
+func (s *Service) SetDDLExecutor(exec domain.DuckDBExecutor) {
+	s.ddlExec = exec
 }
 
 // CreateSemanticModel creates a semantic model.
@@ -257,4 +265,53 @@ func (s *Service) DeletePreAggregation(ctx context.Context, projectName, semanti
 		return err
 	}
 	return s.preAggs.Delete(ctx, existing.ID)
+}
+
+// MaterializePreAggregation rebuilds the target relation for a semantic pre-aggregation from semantic metadata.
+func (s *Service) MaterializePreAggregation(ctx context.Context, principal, preAggregationID string) (*domain.SemanticPreAggregation, map[string]any, error) {
+	if s.ddlExec == nil {
+		return nil, nil, domain.ErrValidation("semantic pre-aggregation materializer is not configured")
+	}
+
+	preAgg, err := s.preAggs.GetByID(ctx, preAggregationID)
+	if err != nil {
+		return nil, nil, err
+	}
+	model, err := s.models.GetByID(ctx, preAgg.SemanticModelID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req := MetricQueryRequest{
+		ProjectName:       model.ProjectName,
+		SemanticModelName: model.Name,
+		Metrics:           append([]string(nil), preAgg.MetricSet...),
+		Dimensions:        append([]string(nil), preAgg.DimensionSet...),
+	}
+	if grain := strings.TrimSpace(preAgg.Grain); grain != "" {
+		req.TimeGrain = &grain
+	}
+
+	plan, err := s.explainMetricQuery(ctx, req, explainMetricQueryOptions{DisablePreAggregationID: preAgg.ID})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	targetRelation, err := normalizeTargetRelation(preAgg.TargetRelation)
+	if err != nil {
+		return nil, nil, err
+	}
+	materializeSQL := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS %s", targetRelation, plan.GeneratedSQL)
+	if err := s.ddlExec.ExecContext(ctx, materializeSQL); err != nil {
+		return nil, nil, fmt.Errorf("materialize semantic pre-aggregation %q: %w", preAgg.Name, err)
+	}
+
+	return preAgg, map[string]any{
+		"asset_type":      domain.AssetTypeSemanticPreAggregation,
+		"principal":       principal,
+		"pre_aggregation": preAgg.Name,
+		"target_relation": preAgg.TargetRelation,
+		"generated_sql":   plan.GeneratedSQL,
+		"base_relation":   plan.BaseRelation,
+	}, nil
 }

@@ -177,6 +177,37 @@ func run() error {
 		}()
 	}
 
+	if application.Services.Asset != nil {
+		freshnessStop := make(chan struct{})
+		go func() {
+			ticker := time.NewTicker(30 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					close(freshnessStop)
+					return
+				case <-ticker.C:
+					triggered, err := application.Services.Asset.ReconcileFreshnessPolicies(ctx)
+					if err != nil {
+						logger.Warn("asset freshness reconciliation failed", "error", err)
+						continue
+					}
+					if triggered > 0 {
+						logger.Info("asset freshness reconciliation enqueued refresh work", "targets", triggered)
+					}
+				}
+			}
+		}()
+		defer func() {
+			select {
+			case <-freshnessStop:
+			case <-time.After(2 * time.Second):
+				logger.Warn("timed out waiting for asset freshness reconciliation shutdown")
+			}
+		}()
+	}
+
 	// Create API handler.
 	svc := application.Services
 	handler := api.NewHandler(

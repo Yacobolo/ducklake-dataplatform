@@ -316,6 +316,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	sessionMgr := notebook.NewSessionManager(deps.DuckDB, eng, notebookRepo, notebookJobRepo, auditRepo)
 	gitRepoRepo := repository.NewGitRepoRepo(deps.WriteDB)
 	gitSvc := notebook.NewGitService(gitRepoRepo, auditRepo)
+	notebookModelLinkRepo := repository.NewNotebookModelLinkRepo(deps.WriteDB)
 
 	// === Asset orchestration ===
 	assetRepo := repository.NewDataAssetRepo(deps.WriteDB)
@@ -327,38 +328,26 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	backfillRepo := repository.NewBackfillRepo(deps.WriteDB)
 	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
 	var pipelineSvc *pipeline.Service
+	if err := pipeline.SyncNotebooksToAssets(ctx, notebookRepo, assetRepo, assetDepRepo); err != nil {
+		return nil, fmt.Errorf("sync notebooks to assets: %w", err)
+	}
+	if err := pipeline.SyncNotebookOutputsToAssets(ctx, notebookRepo, notebookModelLinkRepo, assetRepo, assetDepRepo); err != nil {
+		return nil, fmt.Errorf("sync notebook outputs to assets: %w", err)
+	}
 	assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
 	ioManager, err := newOrchestrationIOManager(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("configure orchestration io manager: %w", err)
 	}
-	assetExecutor := orchestration.NewAssetExecutor(
-		assetRunRepo,
-		orchestration.NewAssetRunStateMachine(),
-		ioManager,
-		orchestration.NewConcurrencyLimiter(16, 2),
-		&noopAssetStepper{},
-	)
 	triggerRouter := orchestration.NewTriggerRouter(orchEventRepo)
 	backfillSvc := orchestration.NewBackfillService(backfillRepo, triggerRouter, auditRepo, authSvc)
-	backfillRunner := orchestration.NewBackfillRunner(backfillRepo, assetDepRepo, assetRunRepo, assetScheduler, assetExecutor)
-	reconciler := orchestration.NewReconciler(
-		orchEventRepo,
-		assetRepo,
-		assetRunRepo,
-		assetScheduler,
-		assetExecutor,
-		backfillRunner,
-		cfg.FeatureReconcilerShadow,
-	)
 	assetSvc := assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, orchEventRepo, auditRepo, authSvc)
 
 	// === Model ===
 	modelRepo := repository.NewModelRepo(deps.WriteDB)
-	if err := pipeline.SyncModelsToAssets(ctx, modelRepo, assetRepo, assetDepRepo); err != nil {
+	if err := pipeline.SyncModelsToAssets(ctx, modelRepo, notebookModelLinkRepo, assetRepo, assetDepRepo); err != nil {
 		return nil, fmt.Errorf("sync models to assets: %w", err)
 	}
-	notebookModelLinkRepo := repository.NewNotebookModelLinkRepo(deps.WriteDB)
 	modelRunRepo := repository.NewModelRunRepo(deps.WriteDB)
 	modelTestRepo := repository.NewModelTestRepo(deps.WriteDB)
 	modelTestResultRepo := repository.NewModelTestResultRepo(deps.WriteDB)
@@ -390,9 +379,41 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	semanticSvc := semantic.NewService(semanticModelRepo, semanticMetricRepo, semanticRelRepo, semanticPreAggRepo)
 	semanticSvc.SetQueryExecutor(querySvc)
 	semanticSvc.SetModelRepository(modelRepo)
+	semanticSvc.SetDDLExecutor(duckExec)
 	dashboardRepo := repository.NewDashboardRepo(deps.WriteDB)
 	dashboardWidgetRepo := repository.NewDashboardWidgetRepo(deps.WriteDB)
 	dashboardSvc := dashboard.NewService(dashboardRepo, dashboardWidgetRepo, notebookRepo, auditRepo, querySvc, semanticSvc)
+	if err := pipeline.SyncSemanticResourcesToAssets(ctx, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, modelRepo, assetRepo, assetDepRepo); err != nil {
+		return nil, fmt.Errorf("sync semantic resources to assets: %w", err)
+	}
+	if err := pipeline.SyncDashboardsToAssets(ctx, dashboardRepo, dashboardWidgetRepo, modelRepo, notebookRepo, notebookModelLinkRepo, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, assetRepo, assetDepRepo); err != nil {
+		return nil, fmt.Errorf("sync dashboards to assets: %w", err)
+	}
+	assetExecutor := orchestration.NewAssetExecutor(
+		assetRunRepo,
+		orchestration.NewAssetRunStateMachine(),
+		ioManager,
+		orchestration.NewConcurrencyLimiter(16, 2),
+		orchestration.NewMaterializingAssetStepper(
+			assetRepo,
+			assetDepRepo,
+			modelRepo,
+			modelSvc,
+			notebookRepo,
+			sessionMgr,
+			semanticSvc,
+		),
+	)
+	backfillRunner := orchestration.NewBackfillRunner(backfillRepo, assetDepRepo, assetRunRepo, assetScheduler, assetExecutor)
+	reconciler := orchestration.NewReconciler(
+		orchEventRepo,
+		assetRepo,
+		assetRunRepo,
+		assetScheduler,
+		assetExecutor,
+		backfillRunner,
+		cfg.FeatureReconcilerShadow,
+	)
 
 	// === API Key ===
 	apiKeyRepo := repository.NewAPIKeyRepo(deps.ReadDB)
@@ -439,12 +460,6 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		PrincipalRepo: principalRepo,
 		Reconciler:    reconciler,
 	}, nil
-}
-
-type noopAssetStepper struct{}
-
-func (n *noopAssetStepper) Execute(context.Context, string, orchestration.IOManager) (map[string]any, error) {
-	return map[string]any{"status": "noop"}, nil
 }
 
 func authSvcLookupViewInCatalog(

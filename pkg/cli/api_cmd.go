@@ -462,6 +462,16 @@ func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
 		endpoint.CLICommand = "dashboards widgets update"
 	case "deleteDashboardWidget":
 		endpoint.CLICommand = "dashboards widgets delete"
+	case "getAssetFreshness":
+		endpoint.CLICommand = "assets freshness get"
+	case "explainAssetFreshness":
+		endpoint.CLICommand = "assets freshness explain"
+	case "listAssetFreshnessRequirements":
+		endpoint.CLICommand = "assets freshness requirements"
+	case "listAssetFreshnessBlockers":
+		endpoint.CLICommand = "assets freshness blockers"
+	case "reconcileAssetFreshness":
+		endpoint.CLICommand = "assets freshness reconcile"
 	}
 	return endpoint
 }

@@ -27,6 +27,15 @@ func (f *fakeQueryExecutor) Execute(_ context.Context, _ string, sqlQuery string
 	return &query.QueryResult{Columns: []string{"ok"}, Rows: [][]interface{}{{"ok"}}, RowCount: 1}, nil
 }
 
+type fakeDDLExecutor struct {
+	lastSQL string
+}
+
+func (f *fakeDDLExecutor) ExecContext(_ context.Context, query string) error {
+	f.lastSQL = query
+	return nil
+}
+
 func setupSemanticServiceDeps(t *testing.T) (*Service, *repository.ModelRepo) {
 	t.Helper()
 	writeDB, _ := internaldb.OpenTestSQLite(t)
@@ -166,6 +175,51 @@ func TestService_ExplainAndRunMetricQuery(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, run.Result)
 	assert.Equal(t, plan.GeneratedSQL, fake.lastSQL)
+}
+
+func TestService_MaterializePreAggregation_RebuildsTargetWithoutSelfReference(t *testing.T) {
+	svc := setupSemanticService(t)
+	ctx := context.Background()
+
+	_, err := svc.CreateSemanticModel(ctx, "admin", domain.CreateSemanticModelRequest{
+		ProjectName:          "analytics",
+		Name:                 "sales",
+		BaseModelRef:         "analytics.fct_sales",
+		DefaultTimeDimension: "sales.order_date",
+	})
+	require.NoError(t, err)
+
+	_, err = svc.CreateMetric(ctx, "admin", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "placeholder",
+		Name:            "total_revenue",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(sales.amount)",
+	})
+	require.NoError(t, err)
+
+	preAgg, err := svc.CreatePreAggregation(ctx, "admin", "analytics", "sales", domain.CreateSemanticPreAggregationRequest{
+		SemanticModelID: "placeholder",
+		Name:            "daily_summary",
+		MetricSet:       []string{"total_revenue"},
+		DimensionSet:    []string{"sales.region"},
+		Grain:           "day",
+		TargetRelation:  "analytics.daily_sales_summary",
+	})
+	require.NoError(t, err)
+
+	ddl := &fakeDDLExecutor{}
+	svc.SetDDLExecutor(ddl)
+	materialized, metadata, err := svc.MaterializePreAggregation(ctx, "alice", preAgg.ID)
+	require.NoError(t, err)
+	require.NotNil(t, materialized)
+	require.NotNil(t, metadata)
+	assert.Equal(t, preAgg.ID, materialized.ID)
+	generatedSQL, _ := metadata["generated_sql"].(string)
+	assert.Contains(t, generatedSQL, "FROM analytics.fct_sales AS sales")
+	assert.NotContains(t, generatedSQL, "FROM analytics.daily_sales_summary")
+	assert.Contains(t, ddl.lastSQL, `CREATE OR REPLACE TABLE "analytics"."daily_sales_summary" AS`)
+	assert.Contains(t, ddl.lastSQL, generatedSQL)
 }
 
 func TestService_ExplainMetricQuery_AmbiguousJoinPath(t *testing.T) {

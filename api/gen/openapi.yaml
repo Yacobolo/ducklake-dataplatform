@@ -760,6 +760,251 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+  /assets/{assetKey}/freshness:
+    get:
+      operationId: getAssetFreshness
+      summary: Get asset freshness
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetFreshnessStatus'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Assets
+  /assets/{assetKey}/freshness/blockers:
+    get:
+      operationId: listAssetFreshnessBlockers
+      summary: List asset freshness blockers
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetFreshnessBlockersResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Assets
+  /assets/{assetKey}/freshness/explain:
+    get:
+      operationId: explainAssetFreshness
+      summary: Explain asset freshness
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetFreshnessExplanation'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Assets
+  /assets/{assetKey}/freshness/reconcile:
+    post:
+      operationId: reconcileAssetFreshness
+      summary: Reconcile asset freshness
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetFreshnessReconcileResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Assets
+  /assets/{assetKey}/freshness/requirements:
+    get:
+      operationId: listAssetFreshnessRequirements
+      summary: List asset freshness requirements
+      parameters:
+        - name: assetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetFreshnessRequirementsResponse'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Assets
   /assets/{assetKey}/graph:
     get:
       operationId: getAssetGraph
@@ -11599,6 +11844,12 @@ components:
           type: array
           items:
             type: string
+        freshness_policy:
+          $ref: '#/components/schemas/AssetFreshnessPolicy'
+        materialization_policy:
+          $ref: '#/components/schemas/AssetMaterializationPolicy'
+        auto_materialize_policy:
+          $ref: '#/components/schemas/AssetAutoMaterializePolicy'
         io_profile:
           type: string
         is_active:
@@ -11611,6 +11862,26 @@ components:
         updated_at:
           type: string
           format: date-time
+    AssetAutoMaterializePolicy:
+      type: object
+      properties:
+        mode:
+          type: string
+        min_interval_seconds:
+          type: integer
+          format: int64
+        require_all_upstreams:
+          type: boolean
+        on_freshness_breach:
+          type: boolean
+        on_upstream_materialized:
+          type: boolean
+        respect_downtime_windows:
+          type: boolean
+        downtime_windows_cron_expr:
+          type: array
+          items:
+            type: string
     AssetBackfillDetails:
       type: object
       properties:
@@ -11693,6 +11964,116 @@ components:
       enum:
         - ERROR
         - WARN
+    AssetFreshnessBlocker:
+      type: object
+      properties:
+        asset:
+          $ref: '#/components/schemas/AssetFreshnessStatus'
+        dependency_type:
+          type: string
+    AssetFreshnessBlockersResponse:
+      type: object
+      properties:
+        asset:
+          $ref: '#/components/schemas/AssetFreshnessStatus'
+        blockers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetFreshnessBlocker'
+    AssetFreshnessEdge:
+      type: object
+      properties:
+        from_asset_key:
+          type: string
+        to_asset_key:
+          type: string
+        dependency_type:
+          type: string
+    AssetFreshnessExplanation:
+      type: object
+      properties:
+        asset:
+          $ref: '#/components/schemas/AssetFreshnessStatus'
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetFreshnessStatus'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetFreshnessEdge'
+    AssetFreshnessPolicy:
+      type: object
+      properties:
+        max_lag_seconds:
+          type: integer
+          format: int64
+        cron_schedule:
+          type: string
+    AssetFreshnessReconcileResponse:
+      type: object
+      properties:
+        asset:
+          $ref: '#/components/schemas/AssetFreshnessStatus'
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetFreshnessReconcileTarget'
+    AssetFreshnessReconcileTarget:
+      type: object
+      properties:
+        asset_id:
+          type: string
+        asset_key:
+          type: string
+        asset_type:
+          type: string
+        freshness_status:
+          type: string
+        event_id:
+          type: string
+    AssetFreshnessRequirement:
+      type: object
+      properties:
+        asset:
+          $ref: '#/components/schemas/AssetFreshnessStatus'
+        dependency_type:
+          type: string
+    AssetFreshnessRequirementsResponse:
+      type: object
+      properties:
+        asset:
+          $ref: '#/components/schemas/AssetFreshnessStatus'
+        requirements:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetFreshnessRequirement'
+    AssetFreshnessStatus:
+      type: object
+      properties:
+        asset_id:
+          type: string
+        asset_key:
+          type: string
+        asset_type:
+          type: string
+        freshness_status:
+          type: string
+        effective_max_lag_seconds:
+          type: integer
+          format: int64
+        last_materialized_at:
+          type: string
+          format: date-time
+        stale_since:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        basis:
+          type: array
+          items:
+            type: string
     AssetGraph:
       type: object
       properties:
@@ -11728,6 +12109,13 @@ components:
         created_at:
           type: string
           format: date-time
+    AssetMaterializationPolicy:
+      type: object
+      properties:
+        mode:
+          type: string
+        allow_concurrent:
+          type: boolean
     AssetPartition:
       type: object
       properties:
@@ -12449,6 +12837,12 @@ components:
           type: array
           items:
             type: string
+        freshness_policy:
+          $ref: '#/components/schemas/AssetFreshnessPolicy'
+        materialization_policy:
+          $ref: '#/components/schemas/AssetMaterializationPolicy'
+        auto_materialize_policy:
+          $ref: '#/components/schemas/AssetAutoMaterializePolicy'
         io_profile:
           type: string
         is_active:
@@ -15593,6 +15987,12 @@ components:
           type: array
           items:
             type: string
+        freshness_policy:
+          $ref: '#/components/schemas/AssetFreshnessPolicy'
+        materialization_policy:
+          $ref: '#/components/schemas/AssetMaterializationPolicy'
+        auto_materialize_policy:
+          $ref: '#/components/schemas/AssetAutoMaterializePolicy'
         io_profile:
           type: string
         is_active:

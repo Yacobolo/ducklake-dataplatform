@@ -24,6 +24,8 @@ type dashboardDetailPageData struct {
 	Principal         domain.ContextPrincipal
 	Dashboard         *domain.Dashboard
 	Widgets           []dashboardsvc.ResolvedWidget
+	Freshness         *domain.AssetFreshnessStatus
+	FreshnessExplain  *domain.AssetFreshnessNode
 	BaseURL           string
 	EditURL           string
 	DeleteURL         string
@@ -131,9 +133,47 @@ func dashboardsDetailPage(d dashboardDetailPageData) Node {
 				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete"))),
 			),
 		),
+		dashboardFreshnessCard(d.Freshness, d.FreshnessExplain),
 		Div(Class("dashboard-grid"), Group(widgetNodes)),
 		dashboardWidgetFormCard(defaultWidgetFormData(d.CreateWidgetURL), d.CSRFFieldProvider),
 		Script(Src(uiScriptHref("dashboard.js"))),
+	)
+}
+
+func dashboardFreshnessCard(status *domain.AssetFreshnessStatus, explanation *domain.AssetFreshnessNode) Node {
+	if status == nil {
+		return Node(nil)
+	}
+
+	upstream := make([]Node, 0)
+	if explanation != nil {
+		for _, child := range explanation.Upstream {
+			upstream = append(upstream, Li(
+				Strong(Text(child.AssetKey)),
+				Text(" "),
+				statusLabel(child.FreshnessStatus, dashboardFreshnessTone(child.FreshnessStatus)),
+				Text(" "),
+				Span(Class(mutedClass()), Text(child.Reason)),
+			))
+		}
+	}
+	upstreamNode := Node(P(Class(mutedClass()), Text("No upstream blockers detected.")))
+	if len(upstream) > 0 {
+		upstreamNode = Ul(Group(upstream))
+	}
+
+	return Div(
+		Class(cardClass()),
+		H2(Text("Freshness")),
+		Div(Class("button-row"),
+			statusLabel(status.FreshnessStatus, dashboardFreshnessTone(status.FreshnessStatus)),
+			Span(Class(mutedClass()), Text(status.Reason)),
+		),
+		P(Text("Effective max lag: "+strconv.FormatInt(status.EffectiveMaxLagSeconds, 10)+"s")),
+		P(Text("Last materialized: "+formatTimePtr(status.LastMaterializedAt))),
+		P(Text("Stale since: "+formatTimePtr(status.StaleSince))),
+		H3(Text("Upstream status")),
+		upstreamNode,
 	)
 }
 
@@ -205,6 +245,21 @@ func dashboardWidgetTable(widget dashboardsvc.ResolvedWidget) Node {
 		rows = append(rows, Tr(Group(cells)))
 	}
 	return Div(Class("table-wrap"), Table(Class("data-table"), THead(Tr(Group(headers))), TBody(Group(rows))))
+}
+
+func dashboardFreshnessTone(status string) string {
+	switch status {
+	case domain.AssetFreshnessStatusFresh:
+		return "success"
+	case domain.AssetFreshnessStatusRefreshing:
+		return "accent"
+	case domain.AssetFreshnessStatusStale:
+		return "attention"
+	case domain.AssetFreshnessStatusBlocked:
+		return "severe"
+	default:
+		return ""
+	}
 }
 
 func dashboardWidgetFormCard(data dashboardWidgetFormData, csrfFieldProvider func() Node) Node {

@@ -26,16 +26,18 @@ func TestAssetScheduler_BuildPlan(t *testing.T) {
 		"b": {ID: "b"},
 		"c": {ID: "c"},
 	}}
-	deps := &fakeDeps{downstream: map[string][]domain.AssetDependency{
-		"a": {{AssetID: "b", UpstreamAssetID: "a"}, {AssetID: "c", UpstreamAssetID: "a"}},
+	deps := &fakeDeps{upstream: map[string][]domain.AssetDependency{
+		"a": {},
+		"b": {{AssetID: "b", UpstreamAssetID: "a"}},
+		"c": {{AssetID: "c", UpstreamAssetID: "a"}},
 	}}
 
 	s := NewAssetScheduler(assets, deps, nil)
-	plan, err := s.BuildPlan(context.Background(), "a")
+	plan, err := s.BuildPlan(context.Background(), "b")
 	require.NoError(t, err)
 	require.Len(t, plan.Levels, 2)
 	assert.Equal(t, []string{"a"}, plan.Levels[0])
-	assert.ElementsMatch(t, []string{"b", "c"}, plan.Levels[1])
+	assert.Equal(t, []string{"b"}, plan.Levels[1])
 }
 
 func TestAssetExecutor_ExecutePlan(t *testing.T) {
@@ -60,6 +62,10 @@ func TestAssetExecutor_ExecutePlan(t *testing.T) {
 		assert.Equal(t, []int{1}, runs.retryAttempts)
 		assert.Equal(t, 2, runs.startCalls)
 		assert.Equal(t, 2, stepper.executeCalls["b"])
+		require.Len(t, runs.materialize["a"], 1)
+		require.Len(t, runs.materialize["b"], 1)
+		assert.Equal(t, runID, *runs.materialize["a"][0].RunID)
+		assert.Equal(t, runID, *runs.materialize["b"][0].RunID)
 		require.Len(t, runs.events, 3)
 		assert.Equal(t, "ASSET_EXECUTION_RETRY", runs.events[1].EventType)
 		assert.Equal(t, "b", runs.events[1].MetadataJSON["asset_id"])
@@ -260,8 +266,22 @@ func (f *fakeRunRepo) CreateRunEvent(_ context.Context, event *domain.AssetRunEv
 func (f *fakeRunRepo) ListRunEvents(context.Context, string, domain.PageRequest) ([]domain.AssetRunEvent, int64, error) {
 	panic("not implemented")
 }
-func (f *fakeRunRepo) CreateMaterialization(context.Context, *domain.AssetMaterialization) (*domain.AssetMaterialization, error) {
-	panic("not implemented")
+func (f *fakeRunRepo) CreateMaterialization(_ context.Context, m *domain.AssetMaterialization) (*domain.AssetMaterialization, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if f.materialize == nil {
+		f.materialize = map[string][]domain.AssetMaterialization{}
+	}
+	materialization := *m
+	if materialization.ID == "" {
+		materialization.ID = domain.NewID()
+	}
+	if materialization.CreatedAt.IsZero() {
+		materialization.CreatedAt = time.Now().UTC()
+	}
+	f.materialize[materialization.AssetID] = append([]domain.AssetMaterialization{materialization}, f.materialize[materialization.AssetID]...)
+	return &materialization, nil
 }
 func (f *fakeRunRepo) ListMaterializationsByAsset(_ context.Context, assetID string, page domain.PageRequest) ([]domain.AssetMaterialization, int64, error) {
 	f.mu.Lock()
@@ -289,6 +309,7 @@ type fakeStepper struct {
 	mu                sync.Mutex
 	failuresRemaining map[string]int
 	executeCalls      map[string]int
+	results           map[string]map[string]any
 }
 
 func (f *fakeStepper) Execute(_ context.Context, assetID string, _ IOManager) (map[string]any, error) {
@@ -303,6 +324,9 @@ func (f *fakeStepper) Execute(_ context.Context, assetID string, _ IOManager) (m
 	if f.failuresRemaining[assetID] > 0 {
 		f.failuresRemaining[assetID]--
 		return nil, errors.New("boom")
+	}
+	if result, ok := f.results[assetID]; ok {
+		return result, nil
 	}
 	return map[string]any{"asset": assetID, "row_count": 1}, nil
 }
