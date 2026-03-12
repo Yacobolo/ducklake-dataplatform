@@ -798,7 +798,11 @@ func buildNavNodes(configs []navEntryConfig, pageByRel map[string]page, pages []
 				}
 				flat = append(flat, navItem{Title: p.Title, Path: p.URLPath})
 			}
-			nodes = append(nodes, node)
+			if strings.TrimSpace(cfg.Title) == "" {
+				nodes = append(nodes, node.Children...)
+			} else {
+				nodes = append(nodes, node)
+			}
 		case len(cfg.Items) > 0:
 			children, childFlat, err := buildNavNodes(cfg.Items, pageByRel, pages)
 			if err != nil {
@@ -879,9 +883,8 @@ func apiEndpointNavNode(p page) navNode {
 	children = append(children, apiOperationNodes(p)...)
 	return navNode{
 		Title:       trimAPINavTitle(p.Title),
-		Icon:        "folder",
+		Icon:        apiEndpointIcon(p.RelPath),
 		Path:        p.URLPath,
-		ForceOpen:   true,
 		Children:    children,
 		Description: p.Description,
 	}
@@ -920,6 +923,46 @@ func trimAPINavTitle(title string) string {
 	return strings.TrimSpace(title)
 }
 
+func apiEndpointIcon(relPath string) string {
+	name := strings.TrimSuffix(filepath.Base(relPath), filepath.Ext(relPath))
+	switch name {
+	case "assets":
+		return "package"
+	case "auth":
+		return "shield"
+	case "catalogs":
+		return "boxes"
+	case "compute":
+		return "cpu"
+	case "dashboards":
+		return "layout"
+	case "governance":
+		return "badge-check"
+	case "health":
+		return "activity"
+	case "identity":
+		return "fingerprint"
+	case "integrations":
+		return "plug"
+	case "lineage":
+		return "git-branch"
+	case "models":
+		return "layers"
+	case "notebooks":
+		return "notebook"
+	case "pipelines":
+		return "workflow"
+	case "queries":
+		return "search-code"
+	case "semantic-layer":
+		return "network"
+	case "storage":
+		return "hard-drive"
+	default:
+		return "folder"
+	}
+}
+
 func navIconSVG(name string) template.HTML {
 	switch strings.TrimSpace(strings.ToLower(name)) {
 	case "rocket":
@@ -942,6 +985,38 @@ func navIconSVG(name string) template.HTML {
 		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"></path><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"></path></svg>`)
 	case "file-json":
 		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path><path d="M10 12H8"></path><path d="M16 12h-2"></path><path d="M10 18H8"></path><path d="M16 18h-2"></path></svg>`)
+	case "package":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`)
+	case "shield":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path></svg>`)
+	case "boxes":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-6-3.43a2 2 0 0 0-2 0L6 6.27A2 2 0 0 0 5 8v8a2 2 0 0 0 1 1.73l6 3.43a2 2 0 0 0 2 0l6-3.43A2 2 0 0 0 21 16Z"></path><path d="M3.3 7 12 12l8.7-5"></path><path d="M12 22V12"></path><path d="m7.5 4.27 9 5.15"></path></svg>`)
+	case "cpu":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><path d="M9 1v3"></path><path d="M15 1v3"></path><path d="M9 20v3"></path><path d="M15 20v3"></path><path d="M20 9h3"></path><path d="M20 14h3"></path><path d="M1 9h3"></path><path d="M1 14h3"></path></svg>`)
+	case "layout":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path></svg>`)
+	case "badge-check":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.3 8.7a4 4 0 1 0-8.6 0A4 4 0 0 0 12 16a4 4 0 0 0 4.3-7.3Z"></path><path d="m9 12 2 2 4-4"></path><path d="m8.5 2.5 1 2.1"></path><path d="m14.5 2.5-1 2.1"></path><path d="m2.5 8.5 2.1 1"></path><path d="m19.4 9.5 2.1-1"></path><path d="m2.5 15.5 2.1-1"></path><path d="m19.4 14.5 2.1 1"></path><path d="m8.5 21.5 1-2.1"></path><path d="m14.5 21.5-1-2.1"></path></svg>`)
+	case "activity":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>`)
+	case "fingerprint":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 11a4 4 0 0 1 4 4v2"></path><path d="M8 15a4 4 0 0 1 8 0v1"></path><path d="M12 3a9 9 0 0 0-9 9v1"></path><path d="M21 12a9 9 0 0 0-9-9"></path><path d="M3 17a6 6 0 0 0 6 6"></path><path d="M15 23a6 6 0 0 0 6-6v-1"></path></svg>`)
+	case "plug":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"></path><path d="M9 8V2"></path><path d="M15 8V2"></path><path d="M18 8H6v5a6 6 0 0 0 12 0Z"></path></svg>`)
+	case "git-branch":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><path d="M6 9v12"></path><circle cx="18" cy="18" r="3"></circle><path d="M18 9a3 3 0 0 0-3-3H9"></path></svg>`)
+	case "layers":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5-9 5-9-5 9-5Z"></path><path d="m3 12 9 5 9-5"></path><path d="m3 17 9 5 9-5"></path></svg>`)
+	case "notebook":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8"></path><path d="M8 6h8"></path><path d="M8 10h8"></path><rect x="4" y="2" width="16" height="20" rx="2"></rect><path d="M8 14h5"></path></svg>`)
+	case "workflow":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"></rect><rect x="15" y="15" width="6" height="6" rx="1"></rect><rect x="15" y="3" width="6" height="6" rx="1"></rect><path d="M9 6h6"></path><path d="M18 9v6"></path><path d="M9 6v12h6"></path></svg>`)
+	case "search-code":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path><path d="m10 8-3 3 3 3"></path><path d="m12 14 3-3-3-3"></path></svg>`)
+	case "network":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"></circle><circle cx="5" cy="19" r="2"></circle><circle cx="19" cy="19" r="2"></circle><path d="M12 7v4"></path><path d="M12 11 6.5 17"></path><path d="M12 11 17.5 17"></path></svg>`)
+	case "hard-drive":
+		return template.HTML(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line></svg>`)
 	default:
 		return ""
 	}

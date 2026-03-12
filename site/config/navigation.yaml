@@ -63,12 +63,8 @@ docs:
 api:
   - title: Endpoint Groups
     icon: folders
-    open: true
     items:
-      - title: Operations
-        icon: route
-        open: true
-        autogen_dir: reference/generated/api/endpoints
+      - autogen_dir: reference/generated/api/endpoints
   - title: Schemas
     icon: database
     items:
