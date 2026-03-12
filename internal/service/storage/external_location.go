@@ -8,6 +8,7 @@ import (
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/auditutil"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 // ExternalLocationService provides CRUD operations for external locations
@@ -203,9 +204,9 @@ func (s *ExternalLocationService) RestoreSecrets(ctx context.Context) error {
 
 // requirePrivilege checks that the principal has the given privilege on a securable.
 func (s *ExternalLocationService) requirePrivilege(ctx context.Context, principal, securableType, securableID, privilege, action, detail string) error {
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, securableType, securableID, privilege)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, securableType, securableID, privilege)
 	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
+		return err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, action, detail)

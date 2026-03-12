@@ -506,6 +506,59 @@ func TestSessionManager_RunAllAsync(t *testing.T) {
 		var notFound *domain.NotFoundError
 		assert.ErrorAs(t, err, &notFound)
 	})
+
+	t.Run("marks job failed when a cell returns an execution error", func(t *testing.T) {
+		sm, repo, jobRepo, engine, _ := setupSessionManager(t)
+		ctx := context.Background()
+
+		repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+			return &domain.Notebook{ID: id, Name: "NB", Owner: "alice"}, nil
+		}
+		repo.ListCellsFn = func(_ context.Context, _ string) ([]domain.Cell, error) {
+			return []domain.Cell{
+				{ID: "cell-1", NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"},
+			}, nil
+		}
+		repo.GetCellFn = func(_ context.Context, id string) (*domain.Cell, error) {
+			return &domain.Cell{ID: id, NotebookID: "nb-1", CellType: domain.CellTypeSQL, Content: "SELECT 1"}, nil
+		}
+
+		engine.queryOnConnFn = func(_ context.Context, _ *sql.Conn, _ string, _ string) (*sql.Rows, error) {
+			return nil, assert.AnError
+		}
+
+		jobRepo.CreateJobFn = func(_ context.Context, job *domain.NotebookJob) (*domain.NotebookJob, error) {
+			job.CreatedAt = time.Now()
+			return job, nil
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		var finalState domain.JobState
+		var finalErr string
+		jobRepo.UpdateJobStateFn = func(_ context.Context, _ string, state domain.JobState, result *string, errMsg *string) error {
+			finalState = state
+			if errMsg != nil {
+				finalErr = *errMsg
+			}
+			if state == domain.JobStateComplete || state == domain.JobStateFailed {
+				wg.Done()
+			}
+			return nil
+		}
+
+		sess, err := sm.CreateSession(ctx, "nb-1", "alice")
+		require.NoError(t, err)
+
+		job, err := sm.RunAllAsync(ctx, sess.ID)
+		require.NoError(t, err)
+		assert.NotEmpty(t, job.ID)
+
+		wg.Wait()
+		assert.Equal(t, domain.JobStateFailed, finalState)
+		assert.Contains(t, finalErr, assert.AnError.Error())
+	})
 }
 
 // === ReapIdle ===

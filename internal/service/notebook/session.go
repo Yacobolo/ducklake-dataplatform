@@ -559,6 +559,12 @@ func (m *SessionManager) RunAllAsync(ctx context.Context, sessionID string, prin
 			_ = m.jobRepo.UpdateJobState(context.Background(), job.ID, domain.JobStateFailed, nil, &errStr)
 			return
 		}
+
+		if errMsg := runAllFailureMessage(result); errMsg != nil {
+			_ = m.jobRepo.UpdateJobState(context.Background(), job.ID, domain.JobStateFailed, nil, errMsg)
+			return
+		}
+
 		resultStr := string(resultJSON)
 		if runAllResultHasErrors(result) {
 			errStr := firstRunAllError(result)
@@ -587,6 +593,18 @@ func firstRunAllError(result *domain.RunAllResult) string {
 		}
 	}
 	return "notebook execution failed"
+}
+
+func runAllFailureMessage(result *domain.RunAllResult) *string {
+	if result == nil {
+		return nil
+	}
+	for _, cellResult := range result.Results {
+		if cellResult.Error != nil && *cellResult.Error != "" {
+			return cellResult.Error
+		}
+	}
+	return nil
 }
 
 // GetJob returns a notebook job by ID.

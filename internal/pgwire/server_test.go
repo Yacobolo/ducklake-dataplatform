@@ -439,10 +439,6 @@ func TestDecodeBinaryBindValue_CommonScalarTypes(t *testing.T) {
 	})
 }
 
-func startupPacket(t *testing.T) []byte {
-	return startupPacketForUser(t, "duck")
-}
-
 func startupPacketForUser(t *testing.T, user string) []byte {
 	t.Helper()
 	params := []byte("user\x00" + user + "\x00database\x00duck\x00\x00")

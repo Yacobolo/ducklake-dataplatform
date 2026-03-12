@@ -7,6 +7,7 @@ import (
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/auditutil"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 // StorageCredentialService provides CRUD operations for storage credentials
@@ -153,9 +154,9 @@ func (s *StorageCredentialService) Delete(ctx context.Context, principal string,
 
 // requirePrivilege checks that the principal has the given privilege on a securable.
 func (s *StorageCredentialService) requirePrivilege(ctx context.Context, principal, securableType, securableID, privilege, action, detail string) error {
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, securableType, securableID, privilege)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, securableType, securableID, privilege)
 	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
+		return err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, action, detail)

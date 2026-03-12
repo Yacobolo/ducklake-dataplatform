@@ -59,6 +59,14 @@ func TestServicePolicyHelpers_DelegateToSharedPolicyPackage(t *testing.T) {
 			snippets: []string{"internal/service/policy", "servicepolicy.RequireAdminIfPresentForAction(ctx, action)"},
 		},
 		{
+			file:     "internal/service/catalog/catalog.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.CheckSecurablePrivilege(", "servicepolicy.HasAnySecurablePrivilege("},
+		},
+		{
+			file:     "internal/service/catalog/views.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.CheckSecurablePrivilege(", "servicepolicy.HasAnySecurablePrivilege("},
+		},
+		{
 			file:     "internal/service/security/api_key.go",
 			snippets: []string{"internal/service/policy", "servicepolicy.RequireAuthenticatedPrincipal(ctx)", "servicepolicy.RequirePrincipalOrAdmin(ctx,"},
 		},
@@ -93,6 +101,14 @@ func TestServicePolicyHelpers_DelegateToSharedPolicyPackage(t *testing.T) {
 		{
 			file:     "internal/service/governance/lineage.go",
 			snippets: []string{"internal/service/policy", "servicepolicy.CallerNameOr(ctx, \"system\")"},
+		},
+		{
+			file:     "internal/service/ingestion/ingestion.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.LookupTableID(", "servicepolicy.CheckSecurablePrivilege("},
+		},
+		{
+			file:     "internal/service/query/manifest.go",
+			snippets: []string{"internal/service/policy", "servicepolicy.CheckSecurablePrivilege("},
 		},
 	}
 

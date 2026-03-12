@@ -254,7 +254,7 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req GenCreateEx
 			Forbidden: func(resp ForbiddenJSONResponse) GenCreateExternalLocationResponse {
 				return CreateExternalLocation403JSONResponse{resp}
 			},
-			NotFound: func(resp NotFoundJSONResponse) GenCreateExternalLocationResponse {
+			NotFound: func(_ NotFoundJSONResponse) GenCreateExternalLocationResponse {
 				return CreateExternalLocation400JSONResponse{badRequestErrorResponse(err)}
 			},
 			Conflict: func(resp ConflictJSONResponse) GenCreateExternalLocationResponse {

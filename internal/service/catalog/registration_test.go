@@ -176,3 +176,94 @@ func TestCatalogRegistrationService_SystemManagedCatalogGuards(t *testing.T) {
 	var validationErr *domain.ValidationError
 	assert.ErrorAs(t, err, &validationErr)
 }
+
+func TestCatalogRegistrationService_AdminAccess(t *testing.T) {
+	newService := func(repo *mockRegistrationRepo) *CatalogRegistrationService {
+		return NewCatalogRegistrationService(RegistrationServiceDeps{
+			Repo:               repo,
+			Attacher:           noopAttacher{},
+			ControlPlaneDBPath: "/tmp/ctrl.db",
+			Logger:             slog.Default(),
+		})
+	}
+
+	t.Run("list requires admin when principal present", func(t *testing.T) {
+		svc := newService(&mockRegistrationRepo{})
+
+		_, _, err := svc.List(domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"}), domain.PageRequest{})
+
+		require.Error(t, err)
+		var denied *domain.AccessDeniedError
+		require.ErrorAs(t, err, &denied)
+	})
+
+	t.Run("get requires admin when principal present", func(t *testing.T) {
+		svc := newService(&mockRegistrationRepo{})
+
+		_, err := svc.Get(domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"}), "cat")
+
+		require.Error(t, err)
+		var denied *domain.AccessDeniedError
+		require.ErrorAs(t, err, &denied)
+	})
+
+	t.Run("update requires admin when principal present", func(t *testing.T) {
+		svc := newService(&mockRegistrationRepo{})
+
+		_, err := svc.Update(domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"}), "cat", domain.UpdateCatalogRegistrationRequest{})
+
+		require.Error(t, err)
+		var denied *domain.AccessDeniedError
+		require.ErrorAs(t, err, &denied)
+	})
+
+	t.Run("delete requires admin when principal present", func(t *testing.T) {
+		svc := newService(&mockRegistrationRepo{})
+
+		err := svc.Delete(domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"}), "cat")
+
+		require.Error(t, err)
+		var denied *domain.AccessDeniedError
+		require.ErrorAs(t, err, &denied)
+	})
+
+	t.Run("set_default requires admin when principal present", func(t *testing.T) {
+		svc := newService(&mockRegistrationRepo{})
+
+		_, err := svc.SetDefault(domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice"}), "cat")
+
+		require.Error(t, err)
+		var denied *domain.AccessDeniedError
+		require.ErrorAs(t, err, &denied)
+	})
+
+	t.Run("background list remains allowed for startup flows", func(t *testing.T) {
+		repo := &mockRegistrationRepo{
+			ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.CatalogRegistration, int64, error) {
+				return []domain.CatalogRegistration{{ID: "1", Name: "cat"}}, 1, nil
+			},
+		}
+		svc := newService(repo)
+
+		regs, total, err := svc.List(context.Background(), domain.PageRequest{MaxResults: 10})
+
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), total)
+		require.Len(t, regs, 1)
+		assert.Equal(t, "cat", regs[0].Name)
+	})
+
+	t.Run("admin get succeeds", func(t *testing.T) {
+		repo := &mockRegistrationRepo{
+			GetByNameFn: func(_ context.Context, name string) (*domain.CatalogRegistration, error) {
+				return &domain.CatalogRegistration{ID: "1", Name: name}, nil
+			},
+		}
+		svc := newService(repo)
+
+		reg, err := svc.Get(domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin_user", IsAdmin: true}), "cat")
+
+		require.NoError(t, err)
+		assert.Equal(t, "cat", reg.Name)
+	})
+}

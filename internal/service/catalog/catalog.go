@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 // CatalogRepoFactory creates CatalogRepository instances scoped to a catalog.
@@ -131,9 +132,9 @@ func (s *CatalogService) CreateSchema(ctx context.Context, catalogName string, p
 		return nil, err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, catalogName, domain.PrivCreateSchema)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableCatalog, catalogName, domain.PrivCreateSchema)
 	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
+		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "CREATE_SCHEMA", fmt.Sprintf("Denied create schema %q in catalog %q", req.Name, catalogName))
@@ -198,15 +199,9 @@ func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, p
 		return nil, err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivModify)
+	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivModify, domain.PrivCreateSchema)
 	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateSchema)
-		if err != nil {
-			return nil, fmt.Errorf("check privilege: %w", err)
-		}
+		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "UPDATE_SCHEMA", fmt.Sprintf("Denied update schema %q", name))
@@ -237,15 +232,9 @@ func (s *CatalogService) DeleteSchema(ctx context.Context, catalogName string, p
 		return err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivManage)
+	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivManage, domain.PrivCreateSchema)
 	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateSchema)
-		if err != nil {
-			return fmt.Errorf("check privilege: %w", err)
-		}
+		return err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "DELETE_SCHEMA", fmt.Sprintf("Denied delete schema %q", name))
@@ -293,9 +282,9 @@ func (s *CatalogService) CreateTable(ctx context.Context, catalogName string, pr
 		return nil, err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
 	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
+		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "CREATE_TABLE", fmt.Sprintf("Denied create table %q in schema %q", req.Name, schemaName))
@@ -382,15 +371,9 @@ func (s *CatalogService) DeleteTable(ctx context.Context, catalogName string, pr
 		return err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivManage)
+	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, tbl.TableID, domain.PrivManage, domain.PrivCreateTable)
 	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivCreateTable)
-		if err != nil {
-			return fmt.Errorf("check privilege: %w", err)
-		}
+		return err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "DROP_TABLE", fmt.Sprintf("Denied delete table %q.%q", schemaName, tableName))
@@ -428,15 +411,9 @@ func (s *CatalogService) UpdateTable(ctx context.Context, catalogName string, pr
 		return nil, err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify)
+	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify, domain.PrivCreateTable)
 	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivCreateTable)
-		if err != nil {
-			return nil, fmt.Errorf("check privilege: %w", err)
-		}
+		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "UPDATE_TABLE", fmt.Sprintf("Denied update table %q.%q", schemaName, tableName))
@@ -460,9 +437,9 @@ func (s *CatalogService) UpdateCatalog(ctx context.Context, catalogName string, 
 		return nil, err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableCatalog, catalogName, domain.PrivManage)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableCatalog, catalogName, domain.PrivManage)
 	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
+		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "UPDATE_CATALOG", "Denied update catalog metadata")
@@ -496,15 +473,9 @@ func (s *CatalogService) UpdateColumn(ctx context.Context, catalogName string, p
 		return nil, err
 	}
 
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify)
+	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify, domain.PrivCreateTable)
 	if err != nil {
-		return nil, fmt.Errorf("check privilege: %w", err)
-	}
-	if !allowed {
-		allowed, err = s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivCreateTable)
-		if err != nil {
-			return nil, fmt.Errorf("check privilege: %w", err)
-		}
+		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "UPDATE_COLUMN", fmt.Sprintf("Denied update column %q in %q.%q", columnName, schemaName, tableName))
@@ -534,9 +505,9 @@ func (s *CatalogService) ProfileTable(ctx context.Context, catalogName string, p
 	}
 
 	// Authorization: require SELECT on the table
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, domain.SecurableTable, tbl.TableID, domain.PrivSelect)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, tbl.TableID, domain.PrivSelect)
 	if err != nil {
-		return nil, fmt.Errorf("check profile privilege: %w", err)
+		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "PROFILE_TABLE", fmt.Sprintf("Denied profile table %q.%q", schemaName, tableName))

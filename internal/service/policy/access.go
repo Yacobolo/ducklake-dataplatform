@@ -1,7 +1,9 @@
+// Package policy centralizes shared service-layer authorization helpers.
 package policy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -100,19 +102,69 @@ func RequireCatalogPrivilege(ctx context.Context, auth domain.AuthorizationServi
 	return nil
 }
 
-// RequireSecurablePrivilege validates that the principal can perform the given action on a securable.
-func RequireSecurablePrivilege(ctx context.Context, auth domain.AuthorizationService, principalName, securableType, securableID, privilege string) error {
+// CheckSecurablePrivilege reports whether the principal has the privilege on the securable.
+func CheckSecurablePrivilege(ctx context.Context, auth domain.AuthorizationService, principalName, securableType, securableID, privilege string) (bool, error) {
 	if strings.TrimSpace(principalName) == "" {
-		return domain.ErrAccessDenied("principal context is required")
+		return false, domain.ErrAccessDenied("principal context is required")
 	}
 	allowed, err := auth.CheckPrivilege(ctx, principalName, securableType, securableID, privilege)
 	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
+		return false, fmt.Errorf("check privilege: %w", err)
+	}
+	return allowed, nil
+}
+
+// RequireSecurablePrivilege validates that the principal can perform the given action on a securable.
+func RequireSecurablePrivilege(ctx context.Context, auth domain.AuthorizationService, principalName, securableType, securableID, privilege string) error {
+	allowed, err := CheckSecurablePrivilege(ctx, auth, principalName, securableType, securableID, privilege)
+	if err != nil {
+		return err
 	}
 	if !allowed {
 		return domain.ErrAccessDenied("%q lacks %s on %s %q", principalName, privilege, securableType, securableID)
 	}
 	return nil
+}
+
+// HasAnySecurablePrivilege reports whether the principal has at least one listed privilege.
+func HasAnySecurablePrivilege(ctx context.Context, auth domain.AuthorizationService, principalName, securableType, securableID string, privileges ...string) (bool, error) {
+	if len(privileges) == 0 {
+		return false, domain.ErrValidation("at least one privilege is required")
+	}
+	for _, privilege := range privileges {
+		allowed, err := CheckSecurablePrivilege(ctx, auth, principalName, securableType, securableID, privilege)
+		if err != nil {
+			return false, err
+		}
+		if allowed {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// LookupTableID resolves a table name using one or more lookup candidates.
+func LookupTableID(ctx context.Context, auth domain.AuthorizationService, tableNames ...string) (string, error) {
+	var lastErr error
+	for _, tableName := range tableNames {
+		if strings.TrimSpace(tableName) == "" {
+			continue
+		}
+		tableID, _, _, err := auth.LookupTableID(ctx, tableName)
+		if err == nil {
+			return tableID, nil
+		}
+		var notFound *domain.NotFoundError
+		if errors.As(err, &notFound) {
+			lastErr = err
+			continue
+		}
+		return "", fmt.Errorf("lookup table %q: %w", tableName, err)
+	}
+	if lastErr != nil {
+		return "", lastErr
+	}
+	return "", domain.ErrNotFound("table not found")
 }
 
 // IsAdmin reports whether the authenticated caller has admin rights.

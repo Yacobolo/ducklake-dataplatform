@@ -3989,6 +3989,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '429':
           description: Client error
           content:
@@ -4035,6 +4041,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -4201,6 +4213,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -4882,6 +4900,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '429':
           description: Client error
           content:
@@ -4928,6 +4952,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -5113,6 +5143,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '429':
           description: Client error
           content:
@@ -5150,8 +5186,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -7699,6 +7735,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '429':
           description: Client error
           content:
@@ -7743,6 +7785,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '429':
           description: Client error
           content:
@@ -7774,6 +7822,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Cell'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7782,6 +7836,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -7823,6 +7883,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CellList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7831,6 +7897,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -7877,6 +7949,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Cell'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7885,6 +7963,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -7934,6 +8018,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -8097,6 +8187,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '429':
           description: Client error
           content:
@@ -8137,6 +8233,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -8182,6 +8284,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CellExecutionResult'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8190,6 +8298,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -8242,6 +8356,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '429':
           description: Client error
           content:
@@ -8286,6 +8406,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -10850,6 +10976,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '429':
           description: Client error
           content:
@@ -10896,6 +11028,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:

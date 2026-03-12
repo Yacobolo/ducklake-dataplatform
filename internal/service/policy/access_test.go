@@ -192,9 +192,13 @@ func TestRequirePrincipalOrAdmin(t *testing.T) {
 
 type stubAuthorizationService struct {
 	checkPrivilegeFn func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error)
+	lookupTableIDFn  func(ctx context.Context, tableName string) (string, string, bool, error)
 }
 
 func (s stubAuthorizationService) LookupTableID(ctx context.Context, tableName string) (string, string, bool, error) {
+	if s.lookupTableIDFn != nil {
+		return s.lookupTableIDFn(ctx, tableName)
+	}
 	return "", "", false, errors.New("unexpected LookupTableID call")
 }
 
@@ -342,6 +346,122 @@ func TestRequireSecurablePrivilege(t *testing.T) {
 		}
 
 		require.NoError(t, RequireSecurablePrivilege(context.Background(), auth, "alice", domain.SecurableComputeEndpoint, "endpoint-1", domain.PrivManageCompute))
+	})
+}
+
+func TestCheckSecurablePrivilege(t *testing.T) {
+	t.Parallel()
+
+	t.Run("missing principal denied", func(t *testing.T) {
+		t.Parallel()
+
+		allowed, err := CheckSecurablePrivilege(context.Background(), stubAuthorizationService{}, "", domain.SecurableTable, "table-1", domain.PrivSelect)
+		require.Error(t, err)
+		assert.False(t, allowed)
+		assert.EqualError(t, err, "principal context is required")
+	})
+
+	t.Run("authorization service errors are wrapped", func(t *testing.T) {
+		t.Parallel()
+
+		auth := stubAuthorizationService{
+			checkPrivilegeFn: func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error) {
+				return false, errors.New("boom")
+			},
+		}
+
+		allowed, err := CheckSecurablePrivilege(context.Background(), auth, "alice", domain.SecurableTable, "table-1", domain.PrivSelect)
+		require.Error(t, err)
+		assert.False(t, allowed)
+		assert.EqualError(t, err, "check privilege: boom")
+	})
+
+	t.Run("allow returns true", func(t *testing.T) {
+		t.Parallel()
+
+		auth := stubAuthorizationService{
+			checkPrivilegeFn: func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error) {
+				return true, nil
+			},
+		}
+
+		allowed, err := CheckSecurablePrivilege(context.Background(), auth, "alice", domain.SecurableTable, "table-1", domain.PrivSelect)
+		require.NoError(t, err)
+		assert.True(t, allowed)
+	})
+}
+
+func TestHasAnySecurablePrivilege(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns true when any privilege matches", func(t *testing.T) {
+		t.Parallel()
+
+		var checked []string
+		auth := stubAuthorizationService{
+			checkPrivilegeFn: func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error) {
+				checked = append(checked, privilege)
+				return privilege == domain.PrivCreateTable, nil
+			},
+		}
+
+		allowed, err := HasAnySecurablePrivilege(context.Background(), auth, "alice", domain.SecurableSchema, "schema-1", domain.PrivModify, domain.PrivCreateTable)
+		require.NoError(t, err)
+		assert.True(t, allowed)
+		assert.Equal(t, []string{domain.PrivModify, domain.PrivCreateTable}, checked)
+	})
+
+	t.Run("returns false when no privilege matches", func(t *testing.T) {
+		t.Parallel()
+
+		auth := stubAuthorizationService{
+			checkPrivilegeFn: func(ctx context.Context, principal, securableType, securableID, privilege string) (bool, error) {
+				return false, nil
+			},
+		}
+
+		allowed, err := HasAnySecurablePrivilege(context.Background(), auth, "alice", domain.SecurableSchema, "schema-1", domain.PrivModify, domain.PrivCreateTable)
+		require.NoError(t, err)
+		assert.False(t, allowed)
+	})
+}
+
+func TestLookupTableID(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns first successful lookup", func(t *testing.T) {
+		t.Parallel()
+
+		auth := stubAuthorizationService{
+			lookupTableIDFn: func(ctx context.Context, tableName string) (string, string, bool, error) {
+				if tableName == "main.events" {
+					return "", "", false, domain.ErrNotFound("missing")
+				}
+				if tableName == "lake.main.events" {
+					return "table-1", "schema-1", false, nil
+				}
+				return "", "", false, domain.ErrNotFound("missing")
+			},
+		}
+
+		tableID, err := LookupTableID(context.Background(), auth, "main.events", "lake.main.events")
+		require.NoError(t, err)
+		assert.Equal(t, "table-1", tableID)
+	})
+
+	t.Run("preserves not found when all candidates miss", func(t *testing.T) {
+		t.Parallel()
+
+		auth := stubAuthorizationService{
+			lookupTableIDFn: func(ctx context.Context, tableName string) (string, string, bool, error) {
+				return "", "", false, domain.ErrNotFound("missing %s", tableName)
+			},
+		}
+
+		_, err := LookupTableID(context.Background(), auth, "main.events", "lake.main.events")
+		require.Error(t, err)
+		var notFound *domain.NotFoundError
+		require.ErrorAs(t, err, &notFound)
 	})
 }
 

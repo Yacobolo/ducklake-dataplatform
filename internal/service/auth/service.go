@@ -303,7 +303,7 @@ func (s *Service) issueJWT(p *domain.Principal) (string, error) {
 func (s *Service) failBootstrap(ctx context.Context, principalID, action string, cause error) error {
 	cleanupErr := s.rollbackBootstrap(ctx, principalID)
 	if cleanupErr != nil {
-		return fmt.Errorf("%s: %w; cleanup: %v", action, cause, cleanupErr)
+		return fmt.Errorf("%s: %w", action, errors.Join(cause, fmt.Errorf("cleanup: %w", cleanupErr)))
 	}
 	return fmt.Errorf("%s: %w", action, cause)
 }

@@ -247,7 +247,7 @@ tasks:
   test:workflow-invariants:
     desc: Run workflow and idempotency hardening regression suites
     cmds:
-      - gotestsum --format pkgname-and-test-fails -- ./pkg/cli ./internal/service/query
+      - gotestsum --format pkgname-and-test-fails -- ./pkg/cli ./internal/service/query ./internal/service/notebook ./internal/service/auth
 
   test:hardening:
     desc: Run focused hardening regression suites

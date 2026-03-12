@@ -126,7 +126,7 @@ func TestStorageCredentialService_GetByName(t *testing.T) {
 	t.Run("happy_path", func(t *testing.T) {
 		repo := &mockStorageCredentialRepo{
 			GetByNameFn: func(_ context.Context, name string) (*domain.StorageCredential, error) {
-				return &domain.StorageCredential{ID: "1", Name: name}, nil
+				return &domain.StorageCredential{ID: "1", Name: name, Owner: "admin_user"}, nil
 			},
 		}
 		svc := NewStorageCredentialService(repo, allowAllAuth(), &mockAuditRepo{})
@@ -150,6 +150,25 @@ func TestStorageCredentialService_GetByName(t *testing.T) {
 		require.Error(t, err)
 		var notFound *domain.NotFoundError
 		require.ErrorAs(t, err, &notFound)
+	})
+
+	t.Run("non_owner_denied", func(t *testing.T) {
+		repo := &mockStorageCredentialRepo{
+			GetByNameFn: func(_ context.Context, name string) (*domain.StorageCredential, error) {
+				return &domain.StorageCredential{ID: "1", Name: name, Owner: "alice"}, nil
+			},
+		}
+		audit := &mockAuditRepo{}
+		svc := NewStorageCredentialService(repo, allowAllAuth(), audit)
+
+		_, err := svc.GetByName(ctxWithPrincipal("bob"), "bob", "shared-cred")
+
+		require.Error(t, err)
+		var denied *domain.AccessDeniedError
+		require.ErrorAs(t, err, &denied)
+		require.NotNil(t, audit.LastEntry())
+		assert.Equal(t, "DENIED", audit.LastEntry().Status)
+		assert.Equal(t, "GET_STORAGE_CREDENTIAL", audit.LastEntry().Action)
 	})
 }
 
@@ -187,6 +206,51 @@ func TestStorageCredentialService_List(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, int64(0), total)
 		assert.Empty(t, creds)
+	})
+
+	t.Run("non_admin_sees_only_owned_credentials", func(t *testing.T) {
+		repo := &mockStorageCredentialRepo{
+			ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
+				return []domain.StorageCredential{
+					{ID: "1", Name: "cred-1", Owner: "alice"},
+					{ID: "2", Name: "cred-2", Owner: "bob"},
+					{ID: "3", Name: "cred-3", Owner: "alice"},
+				}, 3, nil
+			},
+		}
+		svc := NewStorageCredentialService(repo, allowAllAuth(), &mockAuditRepo{})
+
+		creds, total, err := svc.List(ctxWithPrincipal("alice"), "alice", domain.PageRequest{MaxResults: 10})
+
+		require.NoError(t, err)
+		require.Len(t, creds, 2)
+		assert.Equal(t, int64(2), total)
+		assert.Equal(t, "cred-1", creds[0].Name)
+		assert.Equal(t, "cred-3", creds[1].Name)
+	})
+
+	t.Run("non_admin_paginates_after_filtering_owned_credentials", func(t *testing.T) {
+		repo := &mockStorageCredentialRepo{
+			ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.StorageCredential, int64, error) {
+				return []domain.StorageCredential{
+					{ID: "1", Name: "cred-1", Owner: "alice"},
+					{ID: "2", Name: "cred-2", Owner: "alice"},
+					{ID: "3", Name: "cred-3", Owner: "bob"},
+					{ID: "4", Name: "cred-4", Owner: "alice"},
+				}, 4, nil
+			},
+		}
+		svc := NewStorageCredentialService(repo, allowAllAuth(), &mockAuditRepo{})
+
+		creds, total, err := svc.List(ctxWithPrincipal("alice"), "alice", domain.PageRequest{
+			MaxResults: 1,
+			PageToken:  domain.EncodePageToken(1),
+		})
+
+		require.NoError(t, err)
+		require.Len(t, creds, 1)
+		assert.Equal(t, int64(3), total)
+		assert.Equal(t, "cred-2", creds[0].Name)
 	})
 }
 

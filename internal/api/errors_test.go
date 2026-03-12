@@ -92,7 +92,7 @@ func TestRespondDomainError(t *testing.T) {
 			},
 		})
 		require.False(t, ok)
-		assert.Equal(t, "", resp)
+		assert.Empty(t, resp)
 	})
 
 	t.Run("generic error can map to internal when requested", func(t *testing.T) {

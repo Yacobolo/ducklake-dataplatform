@@ -154,6 +154,8 @@ model BadGatewayResponse {
 alias StandardErrorResponses = UnauthorizedResponse | TooManyRequestsResponse | InternalServerErrorResponse;
 alias MutatingErrorResponses = StandardErrorResponses | ForbiddenResponse;
 alias ResourceErrorResponses = MutatingErrorResponses | NotFoundResponse;
+alias ValidationResourceErrorResponses = ResourceErrorResponses | BadRequestResponse;
+alias LookupErrorResponses = StandardErrorResponses | NotFoundResponse;
 
 @summary("Service health status.")
 model HealthResponse {

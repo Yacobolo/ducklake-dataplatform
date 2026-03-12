@@ -155,8 +155,12 @@ func (h *APIHandler) GetQueryResults(ctx context.Context, req GenGetQueryResults
 	pageToken := ""
 	if req.Params.PageToken != nil {
 		pageToken = *req.Params.PageToken
-		if _, err := decodePageToken(pageToken); err != nil {
-			return GetQueryResults400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		pageTokenMessage := ""
+		if _, decodePageTokenErr := decodePageToken(pageToken); decodePageTokenErr != nil {
+			pageTokenMessage = decodePageTokenErr.Error()
+		}
+		if pageTokenMessage != "" {
+			return GetQueryResults400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: pageTokenMessage}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 	}
 
