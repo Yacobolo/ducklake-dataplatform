@@ -89,6 +89,7 @@ func TestHelpers_httpStatusFromError(t *testing.T) {
 		{name: "AccessDeniedError -> 403", err: domain.ErrAccessDenied("nope"), want: http.StatusForbidden},
 		{name: "ValidationError -> 400", err: domain.ErrValidation("bad"), want: http.StatusBadRequest},
 		{name: "ConflictError -> 409", err: domain.ErrConflict("dup"), want: http.StatusConflict},
+		{name: "NotImplementedError -> 501", err: domain.ErrNotImplemented("later"), want: http.StatusNotImplemented},
 		{name: "generic error -> 500", err: errors.New("boom"), want: http.StatusInternalServerError},
 	}
 
@@ -115,6 +116,7 @@ func TestHelpers_errorCodeFromError(t *testing.T) {
 		{name: "AccessDeniedError -> 403", err: domain.ErrAccessDenied("nope"), want: 403},
 		{name: "ValidationError -> 400", err: domain.ErrValidation("bad"), want: 400},
 		{name: "ConflictError -> 409", err: domain.ErrConflict("dup"), want: 409},
+		{name: "NotImplementedError -> 501", err: domain.ErrNotImplemented("later"), want: 501},
 		{name: "generic error -> 500", err: errors.New("boom"), want: 500},
 	}
 

@@ -182,11 +182,11 @@ func TestHTTP_StorageCredentialAuthorization(t *testing.T) {
 		{"analyst_update_403", "PATCH", "/v1/storage-credentials/auth-test-cred", env.Keys.Analyst, map[string]interface{}{"comment": "x"}, 403},
 		{"analyst_delete_403", "DELETE", "/v1/storage-credentials/auth-test-cred", env.Keys.Analyst, nil, 403},
 
-		// Read operations are open to all authenticated users
+		// List remains filtered for authenticated users; direct reads are owner/admin only
 		{"analyst_list_200", "GET", "/v1/storage-credentials", env.Keys.Analyst, nil, 200},
-		{"analyst_get_200", "GET", "/v1/storage-credentials/auth-test-cred", env.Keys.Analyst, nil, 200},
+		{"analyst_get_403", "GET", "/v1/storage-credentials/auth-test-cred", env.Keys.Analyst, nil, 403},
 		{"noaccess_list_200", "GET", "/v1/storage-credentials", env.Keys.NoAccess, nil, 200},
-		{"noaccess_get_200", "GET", "/v1/storage-credentials/auth-test-cred", env.Keys.NoAccess, nil, 200},
+		{"noaccess_get_403", "GET", "/v1/storage-credentials/auth-test-cred", env.Keys.NoAccess, nil, 403},
 	}
 
 	for _, tc := range tests {

@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 	"duck-demo/internal/service/query"
 )
 
@@ -229,17 +230,14 @@ func (s *IngestionService) execAddDataFiles(
 // checkInsertPrivilege verifies the authenticated principal has INSERT on the table.
 func (s *IngestionService) checkInsertPrivilege(ctx context.Context, principal, catalogName, schemaName, tableName string) error {
 	tableRef := catalogName + "." + schemaName + "." + tableName
-	tableID, _, _, err := s.authSvc.LookupTableID(ctx, tableRef)
-	if err != nil {
-		tableID, _, _, err = s.authSvc.LookupTableID(ctx, schemaName+"."+tableName)
-	}
+	tableID, err := servicepolicy.LookupTableID(ctx, s.authSvc, tableRef, schemaName+"."+tableName)
 	if err != nil {
 		return domain.ErrNotFound("table %q not found", tableName)
 	}
 
-	allowed, err := s.authSvc.CheckPrivilege(ctx, principal, domain.SecurableTable, tableID, domain.PrivInsert)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.authSvc, principal, domain.SecurableTable, tableID, domain.PrivInsert)
 	if err != nil {
-		return fmt.Errorf("check INSERT privilege: %w", err)
+		return err
 	}
 	if !allowed {
 		return domain.ErrAccessDenied("%q lacks INSERT on table %q", principal, tableName)

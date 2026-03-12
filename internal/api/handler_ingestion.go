@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"duck-demo/internal/domain"
@@ -31,14 +30,17 @@ func (h *APIHandler) CreateUploadUrl(ctx context.Context, request GenCreateUploa
 	principal := principalFromCtx(ctx)
 	result, err := h.ingestion.RequestUploadURL(ctx, principal, string(request.CatalogName), request.SchemaName, request.TableName, request.Body.Filename)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return CreateUploadUrl404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateUploadUrl403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CreateUploadUrl400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCreateUploadUrlResponse](err, domainErrorResponder[GenCreateUploadUrlResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateUploadUrlResponse {
+				return CreateUploadUrl403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenCreateUploadUrlResponse {
+				return CreateUploadUrl404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return CreateUploadUrl400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 
 	t := result.ExpiresAt.UTC().Format(time.RFC3339)
@@ -71,16 +73,20 @@ func (h *APIHandler) CommitTableIngestion(ctx context.Context, request GenCommit
 	principal := principalFromCtx(ctx)
 	result, err := h.ingestion.CommitIngestion(ctx, principal, string(request.CatalogName), request.SchemaName, request.TableName, request.Body.S3Keys, opts)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return CommitTableIngestion404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CommitTableIngestion403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return CommitTableIngestion400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return CommitTableIngestion400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenCommitTableIngestionResponse](err, domainErrorResponder[GenCommitTableIngestionResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCommitTableIngestionResponse {
+				return CommitTableIngestion400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCommitTableIngestionResponse {
+				return CommitTableIngestion403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenCommitTableIngestionResponse {
+				return CommitTableIngestion404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return CommitTableIngestion400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 
 	return CommitTableIngestion200JSONResponse{
@@ -113,16 +119,20 @@ func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, request GenLoad
 	principal := principalFromCtx(ctx)
 	result, err := h.ingestion.LoadExternalFiles(ctx, principal, string(request.CatalogName), request.SchemaName, request.TableName, request.Body.Paths, opts)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return LoadTableExternalFiles404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return LoadTableExternalFiles403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.ValidationError)):
-			return LoadTableExternalFiles400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return LoadTableExternalFiles400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		if resp, ok := respondDomainError[GenLoadTableExternalFilesResponse](err, domainErrorResponder[GenLoadTableExternalFilesResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenLoadTableExternalFilesResponse {
+				return LoadTableExternalFiles400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenLoadTableExternalFilesResponse {
+				return LoadTableExternalFiles403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenLoadTableExternalFilesResponse {
+				return LoadTableExternalFiles404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return LoadTableExternalFiles400JSONResponse{badRequestErrorResponse(err)}, nil
 	}
 
 	return LoadTableExternalFiles200JSONResponse{

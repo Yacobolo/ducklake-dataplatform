@@ -287,6 +287,52 @@ func TestAuth_InvalidBearerFallsBackToAPIKey(t *testing.T) {
 	assert.Equal(t, "api-user", cp.Name)
 }
 
+func TestAuth_AuthenticateCredentials_BearerThenAPIKeyFallback(t *testing.T) {
+	rawKey := "test-api-key-12345678"
+	auth := NewAuthenticator(
+		&stubValidator{err: fmt.Errorf("token invalid")},
+		&stubAPIKeyLookup{keys: map[string]string{
+			hashKey(rawKey): "api-user",
+		}},
+		&stubPrincipalLookup{principals: map[string]*domain.Principal{
+			"api-user": {Name: "api-user", Type: "service_principal"},
+		}},
+		nil,
+		config.AuthConfig{APIKeyEnabled: true, APIKeyHeader: "X-API-Key"},
+		nil,
+	)
+
+	principal, err := auth.AuthenticateCredentials(context.Background(), "Bearer bad-token", rawKey)
+	require.NoError(t, err)
+	require.NotNil(t, principal)
+	assert.Equal(t, "api-user", principal.Name)
+}
+
+func TestAuth_AuthenticatePassword_RequiresMatchingPrincipal(t *testing.T) {
+	auth := NewAuthenticator(
+		&stubValidator{claims: &JWTClaims{
+			Subject: "duck",
+			Raw:     map[string]interface{}{"sub": "duck"},
+		}},
+		nil,
+		&stubPrincipalLookup{principals: map[string]*domain.Principal{
+			"duck": {Name: "duck", Type: "user"},
+		}},
+		nil,
+		config.AuthConfig{NameClaim: "sub"},
+		nil,
+	)
+
+	_, err := auth.AuthenticatePassword(context.Background(), "other-user", "test-token")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "does not match startup user")
+
+	principal, err := auth.AuthenticatePassword(context.Background(), "duck", "test-token")
+	require.NoError(t, err)
+	require.NotNil(t, principal)
+	assert.Equal(t, "duck", principal.Name)
+}
+
 func TestAuth_JITProvisionNewUser(t *testing.T) {
 	handler, getPrincipal := nextHandler()
 

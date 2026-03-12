@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"duck-demo/internal/domain"
 	arrowflight "github.com/apache/arrow-go/v18/arrow/flight"
 	arrowflightsql "github.com/apache/arrow-go/v18/arrow/flight/flightsql"
 	"google.golang.org/grpc"
@@ -21,6 +22,7 @@ type Server struct {
 	addr   string
 	logger *slog.Logger
 	query  QueryExecutor
+	auth   Authenticator
 
 	mu         sync.Mutex
 	ln         net.Listener
@@ -29,7 +31,9 @@ type Server struct {
 	wg         sync.WaitGroup
 }
 
-func NewServer(addr string, logger *slog.Logger, query QueryExecutor) *Server {
+type Authenticator func(ctx context.Context) (*domain.ContextPrincipal, error)
+
+func NewServer(addr string, logger *slog.Logger, query QueryExecutor, auth Authenticator) *Server {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -38,7 +42,7 @@ func NewServer(addr string, logger *slog.Logger, query QueryExecutor) *Server {
 			return nil, fmt.Errorf("flight sql query executor is not configured")
 		}
 	}
-	return &Server{addr: addr, logger: logger, query: query}
+	return &Server{addr: addr, logger: logger, query: query, auth: auth}
 }
 
 func (s *Server) Start() error {
@@ -53,7 +57,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("listen flight sql: %w", err)
 	}
 	grpcSrv := grpc.NewServer()
-	arrowflight.RegisterFlightServiceServer(grpcSrv, arrowflightsql.NewFlightServer(newQueryServer(ln.Addr().String(), s.logger, s.query)))
+	arrowflight.RegisterFlightServiceServer(grpcSrv, arrowflightsql.NewFlightServer(newQueryServer(ln.Addr().String(), s.logger, s.query, s.auth)))
 	healthSrv := grpcHealth.NewServer()
 	healthSrv.SetServingStatus("", grpcHealthV1.HealthCheckResponse_SERVING)
 	grpcHealthV1.RegisterHealthServer(grpcSrv, healthSrv)

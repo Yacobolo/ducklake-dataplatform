@@ -207,6 +207,19 @@ func TestHandler_ListCatalogs(t *testing.T) {
 				require.Error(t, err)
 			},
 		},
+		{
+			name: "access denied returns 403",
+			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.CatalogRegistration, int64, error) {
+				return nil, 0, domain.ErrAccessDenied("admin required")
+			},
+			assertFn: func(t *testing.T, resp GenListCatalogsResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				forbidden, ok := resp.(GenListCatalogs403JSONResponse)
+				require.True(t, ok, "expected 403 response, got %T", resp)
+				assert.Equal(t, int32(403), forbidden.Body.Code)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -254,6 +267,19 @@ func TestHandler_GetCatalogRegistration(t *testing.T) {
 				notFound, ok := resp.(GenGetCatalogRegistration404JSONResponse)
 				require.True(t, ok, "expected 404 response, got %T", resp)
 				assert.Equal(t, int32(404), notFound.Body.Code)
+			},
+		},
+		{
+			name: "access denied returns 403",
+			svcFn: func(_ context.Context, _ string) (*domain.CatalogRegistration, error) {
+				return nil, domain.ErrAccessDenied("admin required")
+			},
+			assertFn: func(t *testing.T, resp GenGetCatalogRegistrationResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				forbidden, ok := resp.(GenGetCatalogRegistration403JSONResponse)
+				require.True(t, ok, "expected 403 response, got %T", resp)
+				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
 		},
 	}

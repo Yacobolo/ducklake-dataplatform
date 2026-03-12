@@ -172,6 +172,28 @@ func TestQueryService_SubmitAsync_IdempotentByRequestID(t *testing.T) {
 	assert.Equal(t, first.ID, second.ID)
 }
 
+func TestQueryService_SubmitAsync_RequestIDConflictOnDifferentSQL(t *testing.T) {
+	t.Parallel()
+
+	repo := newMemQueryJobRepo()
+	svc := NewQueryService(&testutil.MockSessionEngine{}, &testutil.MockAuditRepo{}, nil)
+	svc.SetJobRepository(repo)
+
+	_, err := repo.Create(context.Background(), &domain.QueryJob{
+		ID:            "job-1",
+		PrincipalName: "alice",
+		RequestID:     "request-1",
+		SQLText:       "SELECT 1 AS id",
+		Status:        domain.QueryJobStatusQueued,
+	})
+	require.NoError(t, err)
+
+	_, err = svc.SubmitAsync(context.Background(), "alice", "SELECT 2 AS id", "request-1")
+	require.Error(t, err)
+	var conflictErr *domain.ConflictError
+	assert.ErrorAs(t, err, &conflictErr)
+}
+
 func TestQueryService_SubmitAsync_CompletesAndStoresRows(t *testing.T) {
 	t.Parallel()
 

@@ -239,6 +239,20 @@ tasks:
     cmds:
       - gotestsum --format pkgname-and-test-fails -- ./internal/architecture/...
 
+  test:authz-matrix:
+    desc: Run authorization and transport hardening regression suites
+    cmds:
+      - gotestsum --format pkgname-and-test-fails -- ./internal/api ./internal/service/notebook ./internal/service/catalog ./internal/service/storage ./internal/middleware ./internal/flightsql ./internal/pgwire
+
+  test:workflow-invariants:
+    desc: Run workflow and idempotency hardening regression suites
+    cmds:
+      - gotestsum --format pkgname-and-test-fails -- ./pkg/cli ./internal/service/query ./internal/service/notebook ./internal/service/auth
+
+  test:hardening:
+    desc: Run focused hardening regression suites
+    deps: [test:arch, test:authz-matrix, test:workflow-invariants]
+
   test:integration:
     desc: Run integration tests (package summary, shows failures inline)
     cmds:
@@ -303,7 +317,7 @@ tasks:
       - |
         failed=0
         results=""
-        for step in lint:go lint:api verify:apigen-generated verify:declarative-schema docs:check test:arch test:unit test:integration; do
+        for step in lint:go lint:api verify:apigen-generated verify:declarative-schema docs:check test:arch test:authz-matrix test:workflow-invariants test:unit test:integration; do
           if task "$step" > /dev/null 2>&1; then
             results="${results}  ${step} ... ok\n"
           else

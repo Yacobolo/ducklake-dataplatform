@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"duck-demo/internal/domain"
@@ -42,16 +41,16 @@ func (h *APIHandler) CreateAPIKey(ctx context.Context, req GenCreateAPIKeyReques
 
 	rawKey, key, err := h.apiKeys.Create(ctx, domReq)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.ValidationError)):
-			return CreateAPIKey400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CreateAPIKey403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		case errors.As(err, new(*domain.NotFoundError)):
-			return CreateAPIKey400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenCreateAPIKeyResponse](err, domainErrorResponder[GenCreateAPIKeyResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateAPIKeyResponse { return CreateAPIKey400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateAPIKeyResponse { return CreateAPIKey403JSONResponse{resp} },
+			NotFound: func(NotFoundJSONResponse) GenCreateAPIKeyResponse {
+				return CreateAPIKey400JSONResponse{badRequestErrorResponse(err)}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenCreateAPIKey201JSONResponse{
 		Body: CreateAPIKeyResponse{
@@ -75,12 +74,12 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req GenListAPIKeysRequest)
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	keys, total, err := h.apiKeys.List(ctx, req.Params.PrincipalId, page)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return ListAPIKeys403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenListAPIKeysResponse](err, domainErrorResponder[GenListAPIKeysResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListAPIKeysResponse { return ListAPIKeys403JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	data := make([]APIKeyInfo, len(keys))
 	for i, k := range keys {
@@ -96,12 +95,13 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req GenListAPIKeysRequest)
 // DeleteAPIKey implements the endpoint for deleting an API key by ID.
 func (h *APIHandler) DeleteAPIKey(ctx context.Context, req GenDeleteAPIKeyRequest) (GenDeleteAPIKeyResponse, error) {
 	if err := h.apiKeys.Delete(ctx, req.ApiKeyId); err != nil {
-		switch {
-		case errors.As(err, new(*domain.NotFoundError)):
-			return DeleteAPIKey404JSONResponse{NotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: NotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenDeleteAPIKeyResponse](err, domainErrorResponder[GenDeleteAPIKeyResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteAPIKeyResponse { return DeleteAPIKey403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenDeleteAPIKeyResponse { return DeleteAPIKey404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return GenDeleteAPIKey204Response{}, nil
 }
@@ -110,12 +110,14 @@ func (h *APIHandler) DeleteAPIKey(ctx context.Context, req GenDeleteAPIKeyReques
 func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ GenCleanupExpiredAPIKeysRequest) (GenCleanupExpiredAPIKeysResponse, error) {
 	count, err := h.apiKeys.CleanupExpired(ctx)
 	if err != nil {
-		switch {
-		case errors.As(err, new(*domain.AccessDeniedError)):
-			return CleanupExpiredAPIKeys403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
-		default:
-			return nil, err
+		if resp, ok := respondDomainError[GenCleanupExpiredAPIKeysResponse](err, domainErrorResponder[GenCleanupExpiredAPIKeysResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenCleanupExpiredAPIKeysResponse {
+				return CleanupExpiredAPIKeys403JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
 		}
+		return nil, err
 	}
 	return CleanupExpiredAPIKeys200JSONResponse{
 		Body:    CleanupAPIKeysResponse{DeletedCount: safeInt64ToInt32(count)},

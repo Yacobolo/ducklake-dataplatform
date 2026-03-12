@@ -39,6 +39,9 @@ func (s *QueryService) SubmitAsync(ctx context.Context, principalName, sqlQuery,
 
 	existing, err := s.jobRepo.GetByRequestID(ctx, principalName, requestID)
 	if err == nil {
+		if existing.SQLText != sqlQuery {
+			return nil, domain.ErrConflict("request_id %q is already associated with a different query", requestID)
+		}
 		return existing, nil
 	}
 	var notFoundErr *domain.NotFoundError

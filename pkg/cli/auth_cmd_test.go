@@ -173,6 +173,36 @@ func TestCLI_AuthLocalLoginCommand(t *testing.T) {
 	assert.Equal(t, "local-token", cfg.Profiles[cfg.CurrentProfile].Token)
 }
 
+func TestCLI_AuthLocalLogin_PersistsSelectedProfileAndHost(t *testing.T) {
+	rec := &requestRecorder{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rec.record(r)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"token":"local-token","principal":{"name":"admin"}}`))
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	require.NoError(t, SaveUserConfig(&UserConfig{
+		CurrentProfile: "default",
+		Profiles: map[string]Profile{
+			"default": {},
+			"staging": {},
+		},
+	}))
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{"--host", srv.URL, "--profile", "staging", "auth", "local-login", "--username", "admin", "--password", "super-secure-password"})
+	require.NoError(t, rootCmd.Execute())
+
+	cfg, err := LoadUserConfig()
+	require.NoError(t, err)
+	require.Equal(t, "staging", cfg.CurrentProfile)
+	assert.Equal(t, "local-token", cfg.Profiles["staging"].Token)
+	assert.Equal(t, srv.URL, cfg.Profiles["staging"].Host)
+}
+
 func TestCLI_AuthBootstrapCommands(t *testing.T) {
 	t.Run("complete", func(t *testing.T) {
 		rec := &requestRecorder{}
@@ -219,6 +249,17 @@ func TestCLI_AuthBootstrapCommands(t *testing.T) {
 		ttlSeconds, ok := body["ttl_seconds"].(float64)
 		require.True(t, ok)
 		assert.InDelta(t, 60, ttlSeconds, 0.00001)
+	})
+
+	t.Run("token_create rejects sub-second ttl", func(t *testing.T) {
+		srv := httptest.NewServer(http.NotFoundHandler())
+		defer srv.Close()
+
+		rootCmd := newTestRootCmd(t, srv)
+		rootCmd.SetArgs([]string{"auth", "bootstrap", "token-create", "--ttl", "500ms"})
+		err := rootCmd.Execute()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "at least 1s")
 	})
 }
 

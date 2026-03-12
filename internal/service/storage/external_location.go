@@ -8,6 +8,7 @@ import (
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/auditutil"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 // ExternalLocationService provides CRUD operations for external locations
@@ -95,14 +96,35 @@ func (s *ExternalLocationService) Create(ctx context.Context, principal string, 
 
 // GetByName returns an external location by name.
 func (s *ExternalLocationService) GetByName(ctx context.Context, principal, name string) (*domain.ExternalLocation, error) {
-	_ = principal
-	return s.locRepo.GetByName(ctx, name)
+	location, err := s.locRepo.GetByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	if !canReadOwnedResource(ctx, principal, location.Owner) {
+		s.logAuditDenied(ctx, principal, "GET_EXTERNAL_LOCATION", fmt.Sprintf("Denied read external location %q", name))
+		return nil, domain.ErrAccessDenied("only the external location owner or admin can access %q", name)
+	}
+	return location, nil
 }
 
 // List returns a paginated list of external locations.
 func (s *ExternalLocationService) List(ctx context.Context, principal string, page domain.PageRequest) ([]domain.ExternalLocation, int64, error) {
-	_ = principal
-	return s.locRepo.List(ctx, page)
+	if isAdmin(ctx) {
+		return s.locRepo.List(ctx, page)
+	}
+
+	locations, _, err := s.locRepo.List(ctx, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+	if err != nil {
+		return nil, 0, err
+	}
+	filtered := make([]domain.ExternalLocation, 0, len(locations))
+	for _, location := range locations {
+		if location.Owner == principal {
+			filtered = append(filtered, location)
+		}
+	}
+	window, total := paginateSlice(filtered, page)
+	return window, total, nil
 }
 
 // Update updates an external location by name.
@@ -182,9 +204,9 @@ func (s *ExternalLocationService) RestoreSecrets(ctx context.Context) error {
 
 // requirePrivilege checks that the principal has the given privilege on a securable.
 func (s *ExternalLocationService) requirePrivilege(ctx context.Context, principal, securableType, securableID, privilege, action, detail string) error {
-	allowed, err := s.auth.CheckPrivilege(ctx, principal, securableType, securableID, privilege)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, securableType, securableID, privilege)
 	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
+		return err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, action, detail)

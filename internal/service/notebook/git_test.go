@@ -113,6 +113,20 @@ func TestGitService_GetGitRepo(t *testing.T) {
 		var notFound *domain.NotFoundError
 		require.ErrorAs(t, err, &notFound)
 	})
+
+	t.Run("secure read denies non-owner", func(t *testing.T) {
+		svc, repo, _ := setupGitService(t)
+		ctx := context.Background()
+
+		repo.GetByIDFn = func(_ context.Context, id string) (*domain.GitRepo, error) {
+			return &domain.GitRepo{ID: id, Owner: "alice"}, nil
+		}
+
+		_, err := svc.GetGitRepoForPrincipal(ctx, "bob", false, "repo-1")
+		require.Error(t, err)
+		var accessDenied *domain.AccessDeniedError
+		require.ErrorAs(t, err, &accessDenied)
+	})
 }
 
 // === ListGitRepos ===

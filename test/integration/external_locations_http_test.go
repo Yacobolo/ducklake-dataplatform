@@ -172,9 +172,9 @@ func TestHTTP_ExternalLocationAuthorization(t *testing.T) {
 		{"analyst_update_403", "PATCH", "/v1/external-locations/auth-test-loc", env.Keys.Analyst, map[string]interface{}{"comment": "x"}, 403},
 		{"analyst_delete_403", "DELETE", "/v1/external-locations/auth-test-loc", env.Keys.Analyst, nil, 403},
 
-		// Read operations are open to all authenticated users
+		// List remains filtered for authenticated users; direct reads are owner/admin only
 		{"analyst_list_200", "GET", "/v1/external-locations", env.Keys.Analyst, nil, 200},
-		{"analyst_get_200", "GET", "/v1/external-locations/auth-test-loc", env.Keys.Analyst, nil, 200},
+		{"analyst_get_403", "GET", "/v1/external-locations/auth-test-loc", env.Keys.Analyst, nil, 403},
 		{"noaccess_list_200", "GET", "/v1/external-locations", env.Keys.NoAccess, nil, 200},
 	}
 

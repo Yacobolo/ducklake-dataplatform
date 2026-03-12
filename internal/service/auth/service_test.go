@@ -86,6 +86,91 @@ func TestService_BootstrapConsumesRecoveryTokenOnFirstUse(t *testing.T) {
 	assert.ErrorAs(t, err, &denied)
 }
 
+func TestService_BootstrapCredentialFailureRollsBackPrincipal(t *testing.T) {
+	deps := newServiceTestDeps()
+	deps.credentials.upsertErr = fmt.Errorf("write failed")
+	svc := NewService(deps.principals, deps.credentials, deps.loginAttempts, deps.setupState, deps.providers, deps.audit, "unit-test-secret")
+
+	_, err := svc.Bootstrap(context.Background(), BootstrapRequest{
+		Username:      "admin",
+		Password:      "super-secure-password",
+		PrincipalName: "admin",
+	})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "store bootstrap credential")
+
+	_, getErr := deps.principals.GetByName(context.Background(), "admin")
+	require.Error(t, getErr)
+	var notFound *domain.NotFoundError
+	require.ErrorAs(t, getErr, &notFound)
+
+	_, credErr := deps.credentials.GetByUsername(context.Background(), "admin")
+	require.Error(t, credErr)
+	require.ErrorAs(t, credErr, &notFound)
+	assert.False(t, deps.setupState.state.SetupCompleted)
+}
+
+func TestService_BootstrapClearTokenFailureRollsBackCreatedIdentity(t *testing.T) {
+	deps := newServiceTestDeps()
+	_, err := deps.principals.Create(context.Background(), &domain.Principal{Name: "existing-admin", Type: "user", IsAdmin: true})
+	require.NoError(t, err)
+
+	svc := NewService(deps.principals, deps.credentials, deps.loginAttempts, deps.setupState, deps.providers, deps.audit, "unit-test-secret")
+	token, err := svc.CreateBootstrapToken(context.Background(), 5*time.Minute)
+	require.NoError(t, err)
+
+	deps.setupState.clearErr = fmt.Errorf("clear failed")
+
+	_, err = svc.Bootstrap(context.Background(), BootstrapRequest{
+		Username:       "recovery",
+		Password:       "super-secure-password",
+		PrincipalName:  "recovery",
+		BootstrapToken: token,
+	})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "clear bootstrap token")
+
+	principals, total, err := deps.principals.List(context.Background(), domain.PageRequest{})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	assert.Len(t, principals, 1)
+	assert.Equal(t, "existing-admin", principals[0].Name)
+
+	_, credErr := deps.credentials.GetByUsername(context.Background(), "recovery")
+	require.Error(t, credErr)
+	var notFound *domain.NotFoundError
+	require.ErrorAs(t, credErr, &notFound)
+
+	assert.NotNil(t, deps.setupState.state.BootstrapTokenHash)
+	assert.NotNil(t, deps.setupState.state.BootstrapTokenExpiresAt)
+}
+
+func TestService_BootstrapCompleteFailureRollsBackCreatedIdentity(t *testing.T) {
+	deps := newServiceTestDeps()
+	deps.setupState.completeErr = fmt.Errorf("complete failed")
+	svc := NewService(deps.principals, deps.credentials, deps.loginAttempts, deps.setupState, deps.providers, deps.audit, "unit-test-secret")
+
+	_, err := svc.Bootstrap(context.Background(), BootstrapRequest{
+		Username:      "admin",
+		Password:      "super-secure-password",
+		PrincipalName: "admin",
+	})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "mark setup complete")
+
+	_, getErr := deps.principals.GetByName(context.Background(), "admin")
+	require.Error(t, getErr)
+	var notFound *domain.NotFoundError
+	require.ErrorAs(t, getErr, &notFound)
+
+	_, credErr := deps.credentials.GetByUsername(context.Background(), "admin")
+	require.Error(t, credErr)
+	require.ErrorAs(t, credErr, &notFound)
+	assert.False(t, deps.setupState.state.SetupCompleted)
+	assert.Nil(t, deps.setupState.state.BootstrapTokenHash)
+	assert.Nil(t, deps.setupState.state.BootstrapTokenExpiresAt)
+}
+
 func TestService_LocalLogin_Success(t *testing.T) {
 	deps := newServiceTestDeps()
 	svc := NewService(deps.principals, deps.credentials, deps.loginAttempts, deps.setupState, deps.providers, deps.audit, "unit-test-secret")
@@ -245,6 +330,7 @@ func (r *stubPrincipalRepo) BindExternalID(_ context.Context, id string, externa
 
 type stubCredentialRepo struct {
 	byUsername map[string]*domain.LocalCredential
+	upsertErr  error
 }
 
 func newStubCredentialRepo() *stubCredentialRepo {
@@ -252,6 +338,9 @@ func newStubCredentialRepo() *stubCredentialRepo {
 }
 
 func (r *stubCredentialRepo) Upsert(_ context.Context, c *domain.LocalCredential) error {
+	if r.upsertErr != nil {
+		return r.upsertErr
+	}
 	cp := *c
 	r.byUsername[c.Username] = &cp
 	return nil
@@ -306,7 +395,9 @@ func (s *stubLoginAttemptRepo) CountRecentFailedByIP(_ context.Context, _ string
 }
 
 type stubSetupStateRepo struct {
-	state *domain.SetupState
+	state       *domain.SetupState
+	completeErr error
+	clearErr    error
 }
 
 func (s *stubSetupStateRepo) Get(_ context.Context) (*domain.SetupState, error) {
@@ -315,6 +406,9 @@ func (s *stubSetupStateRepo) Get(_ context.Context) (*domain.SetupState, error) 
 }
 
 func (s *stubSetupStateRepo) Complete(_ context.Context, principalID string) error {
+	if s.completeErr != nil {
+		return s.completeErr
+	}
 	now := time.Now()
 	s.state.SetupCompleted = true
 	s.state.SetupCompletedBy = &principalID
@@ -329,6 +423,9 @@ func (s *stubSetupStateRepo) SetBootstrapToken(_ context.Context, tokenHash stri
 }
 
 func (s *stubSetupStateRepo) ClearBootstrapToken(_ context.Context) error {
+	if s.clearErr != nil {
+		return s.clearErr
+	}
 	s.state.BootstrapTokenHash = nil
 	s.state.BootstrapTokenExpiresAt = nil
 	return nil

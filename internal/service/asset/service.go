@@ -4,11 +4,11 @@ package asset
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
 
 	"duck-demo/internal/domain"
+	servicepolicy "duck-demo/internal/service/policy"
 )
 
 type Service struct {
@@ -195,8 +195,6 @@ func (s *Service) TriggerMaterialization(ctx context.Context, assetID string, pa
 	if payload == nil {
 		payload = map[string]any{}
 	}
-	principal, _ := domain.PrincipalFromContext(ctx)
-
 	event, err := s.events.Enqueue(ctx, &domain.OrchestrationEvent{
 		ID:             domain.NewID(),
 		EventType:      domain.AssetTriggerTypeManual,
@@ -213,7 +211,7 @@ func (s *Service) TriggerMaterialization(ctx context.Context, assetID string, pa
 	if s.audit != nil {
 		_ = s.audit.Insert(ctx, &domain.AuditEntry{
 			ID:            domain.NewID(),
-			PrincipalName: principal.Name,
+			PrincipalName: servicepolicy.CallerName(ctx),
 			Action:        "asset.materialize.trigger",
 			Status:        "ALLOWED",
 			CreatedAt:     event.CreatedAt,
@@ -238,23 +236,9 @@ func (s *Service) CanTriggerMaterialization(ctx context.Context) (bool, error) {
 }
 
 func (s *Service) requirePrivilege(ctx context.Context, privilege string) error {
-	principal, _ := domain.PrincipalFromContext(ctx)
-	if strings.TrimSpace(principal.Name) == "" {
-		return domain.ErrAccessDenied("principal context is required")
-	}
-	if s.auth == nil {
-		if principal.IsAdmin {
-			return nil
-		}
-		return domain.ErrAccessDenied("asset orchestration requires %s on catalog", privilege)
-	}
-
-	allowed, err := s.auth.CheckPrivilege(ctx, principal.Name, domain.SecurableCatalog, domain.CatalogID, privilege)
+	principalName, err := servicepolicy.RequirePrincipalName(ctx)
 	if err != nil {
-		return fmt.Errorf("check privilege: %w", err)
+		return err
 	}
-	if !allowed {
-		return domain.ErrAccessDenied("%q lacks %s on catalog", principal.Name, privilege)
-	}
-	return nil
+	return servicepolicy.RequireCatalogPrivilege(ctx, s.auth, principalName, privilege, "asset orchestration requires %s on catalog")
 }

@@ -22,6 +22,7 @@ import (
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	_ "github.com/mattn/go-sqlite3"
+	"google.golang.org/grpc/metadata"
 
 	"duck-demo/internal/api"
 	"duck-demo/internal/app"
@@ -141,44 +142,6 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("app init: %w", err)
 	}
-	var flightServer *flightsql.Server
-	if cfg.FeatureFlightSQL {
-		flightServer = flightsql.NewServer(cfg.FlightSQLAddr, logger.With("component", "flightsql"), func(ctx context.Context, principal string, sqlQuery string) (*flightsql.QueryResult, error) {
-			res, err := application.Services.Query.Execute(ctx, principal, sqlQuery)
-			if err != nil {
-				return nil, err
-			}
-			return &flightsql.QueryResult{Columns: res.Columns, Rows: res.Rows}, nil
-		})
-		if err := flightServer.Start(); err != nil {
-			return fmt.Errorf("start Flight SQL listener: %w", err)
-		}
-	}
-
-	var pgWireServer *pgwire.Server
-	if cfg.FeaturePGWire {
-		pgWireServer = pgwire.NewServer(cfg.PGWireAddr, logger.With("component", "pgwire"), func(ctx context.Context, principal string, sqlQuery string) (*pgwire.QueryResult, error) {
-			res, err := application.Services.Query.Execute(ctx, principal, sqlQuery)
-			if err != nil {
-				return nil, err
-			}
-			return &pgwire.QueryResult{Columns: res.Columns, Rows: res.Rows}, nil
-		})
-		if err := pgWireServer.Start(); err != nil {
-			if flightServer != nil {
-				_ = flightServer.Shutdown(context.Background())
-			}
-			return fmt.Errorf("start PG-wire listener: %w", err)
-		}
-	}
-	defer func() {
-		if pgWireServer != nil {
-			_ = pgWireServer.Shutdown(context.Background())
-		}
-		if flightServer != nil {
-			_ = flightServer.Shutdown(context.Background())
-		}
-	}()
 
 	// Attach all registered catalogs (concurrent, bounded parallelism)
 	if err := application.Services.CatalogRegistration.AttachAll(ctx); err != nil {
@@ -368,6 +331,51 @@ func run() error {
 		cfg.Auth,
 		logger,
 	)
+	var flightServer *flightsql.Server
+	if cfg.FeatureFlightSQL {
+		flightServer = flightsql.NewServer(cfg.FlightSQLAddr, logger.With("component", "flightsql"), func(ctx context.Context, principal string, sqlQuery string) (*flightsql.QueryResult, error) {
+			res, err := application.Services.Query.Execute(ctx, principal, sqlQuery)
+			if err != nil {
+				return nil, err
+			}
+			return &flightsql.QueryResult{Columns: res.Columns, Rows: res.Rows}, nil
+		}, func(ctx context.Context) (*domain.ContextPrincipal, error) {
+			md, _ := metadata.FromIncomingContext(ctx)
+			return authenticator.AuthenticateCredentials(
+				ctx,
+				firstMetadataValue(md, "authorization"),
+				firstMetadataValue(md, cfg.Auth.APIKeyHeader),
+			)
+		})
+		if err := flightServer.Start(); err != nil {
+			return fmt.Errorf("start Flight SQL listener: %w", err)
+		}
+	}
+
+	var pgWireServer *pgwire.Server
+	if cfg.FeaturePGWire {
+		pgWireServer = pgwire.NewServer(cfg.PGWireAddr, logger.With("component", "pgwire"), func(ctx context.Context, principal string, sqlQuery string) (*pgwire.QueryResult, error) {
+			res, err := application.Services.Query.Execute(ctx, principal, sqlQuery)
+			if err != nil {
+				return nil, err
+			}
+			return &pgwire.QueryResult{Columns: res.Columns, Rows: res.Rows}, nil
+		}, authenticator.AuthenticatePassword)
+		if err := pgWireServer.Start(); err != nil {
+			if flightServer != nil {
+				_ = flightServer.Shutdown(context.Background())
+			}
+			return fmt.Errorf("start PG-wire listener: %w", err)
+		}
+	}
+	defer func() {
+		if pgWireServer != nil {
+			_ = pgWireServer.Shutdown(context.Background())
+		}
+		if flightServer != nil {
+			_ = flightServer.Shutdown(context.Background())
+		}
+	}()
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(authenticator.Middleware())
 		r.Post("/auth/bootstrap/tokens", authHandler.CreateBootstrapToken)
@@ -502,6 +510,14 @@ func curlHostForListenAddr(listenAddr string) string {
 		return "localhost:8080"
 	}
 	return trimmed
+}
+
+func firstMetadataValue(md metadata.MD, key string) string {
+	values := md.Get(strings.ToLower(key))
+	if len(values) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(values[0])
 }
 
 // runAdmin handles one-shot admin subcommands.

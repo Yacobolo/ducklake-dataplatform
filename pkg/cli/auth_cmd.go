@@ -53,7 +53,7 @@ func newAuthTokenCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("sign token: %w", err)
 			}
-			if err := saveTokenToActiveProfile(signed); err != nil {
+			if err := saveTokenForCommand(cmd, signed); err != nil {
 				return err
 			}
 
@@ -105,7 +105,7 @@ func newAuthLocalLoginCmd(client *apiruntime.Client) *cobra.Command {
 			if token == "" {
 				return fmt.Errorf("login response missing token")
 			}
-			if err := saveTokenToActiveProfile(token); err != nil {
+			if err := saveTokenForCommand(cmd, token); err != nil {
 				return err
 			}
 			if getOutputFormat(cmd) == "json" {
@@ -162,7 +162,7 @@ func newAuthBootstrapCompleteCmd(client *apiruntime.Client) *cobra.Command {
 			}
 			token, _ := payload["token"].(string)
 			if token != "" {
-				if err := saveTokenToActiveProfile(token); err != nil {
+				if err := saveTokenForCommand(cmd, token); err != nil {
 					return err
 				}
 			}
@@ -189,6 +189,9 @@ func newAuthBootstrapTokenCreateCmd(client *apiruntime.Client) *cobra.Command {
 		Use:   "token-create",
 		Short: "Create a one-time bootstrap token (admin only)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if ttl > 0 && ttl < time.Second {
+				return fmt.Errorf("ttl must be at least 1s")
+			}
 			resp, err := client.Do("POST", "/auth/bootstrap/tokens", nil, map[string]int64{"ttl_seconds": int64(ttl.Seconds())})
 			if err != nil {
 				return err
@@ -310,18 +313,46 @@ func newAuthProviderOIDCDisableCmd(client *apiruntime.Client) *cobra.Command {
 	}
 }
 
-func saveTokenToActiveProfile(token string) error {
+func saveTokenForCommand(cmd *cobra.Command, token string) error {
+	if cmd == nil {
+		return saveTokenToProfile(token, "", "")
+	}
+
+	root := cmd.Root()
+	if root == nil {
+		return saveTokenToProfile(token, "", "")
+	}
+
+	profileName := ""
+	if flag := root.PersistentFlags().Lookup("profile"); flag != nil {
+		profileName, _ = root.PersistentFlags().GetString("profile")
+	}
+
+	host := ""
+	if flag := root.PersistentFlags().Lookup("host"); flag != nil {
+		host, _ = root.PersistentFlags().GetString("host")
+	}
+
+	return saveTokenToProfile(token, profileName, host)
+}
+
+func saveTokenToProfile(token, profileName, host string) error {
 	cfg, err := LoadUserConfig()
 	if err != nil {
 		cfg = &UserConfig{Profiles: make(map[string]Profile)}
 	}
-	profileName := cfg.CurrentProfile
+	if profileName == "" {
+		profileName = cfg.CurrentProfile
+	}
 	if profileName == "" {
 		profileName = "default"
-		cfg.CurrentProfile = profileName
 	}
+	cfg.CurrentProfile = profileName
 	p := cfg.Profiles[profileName]
 	p.Token = token
+	if host != "" {
+		p.Host = host
+	}
 	if cfg.Profiles == nil {
 		cfg.Profiles = make(map[string]Profile)
 	}

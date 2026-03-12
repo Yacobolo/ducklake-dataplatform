@@ -278,13 +278,13 @@ op getCatalogRegistration(catalogName: string): Ok<CatalogRegistration> | Resour
 @patch(#{ implicitOptionality: true })
 @tag("Catalogs")
 @summary("Update catalog registration")
-op updateCatalogRegistration(catalogName: string, @body body: UpdateCatalogRegistrationRequest): Ok<CatalogRegistration> | MutatingErrorResponses;
+op updateCatalogRegistration(catalogName: string, @body body: UpdateCatalogRegistrationRequest): Ok<CatalogRegistration> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}")
 @delete
 @tag("Catalogs")
 @summary("Delete catalog registration")
-op deleteCatalogRegistration(catalogName: string): NoContent | MutatingErrorResponses;
+op deleteCatalogRegistration(catalogName: string): NoContent | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/set-default")
 @post
