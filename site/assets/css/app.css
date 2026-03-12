@@ -126,6 +126,34 @@
     color: var(--site-ink);
   }
 
+  .site-icon-button {
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-full p-0;
+  }
+
+  .site-icon {
+    @apply h-4 w-4;
+  }
+
+  .site-theme-icon {
+    @apply hidden h-4 w-4;
+  }
+
+  .site-theme-icon svg {
+    @apply h-4 w-4;
+  }
+
+  [data-theme-preference="system"] .site-theme-icon[data-theme-icon="system"],
+  [data-theme-preference="light"] .site-theme-icon[data-theme-icon="light"],
+  [data-theme-preference="dark"] .site-theme-icon[data-theme-icon="dark"] {
+    @apply inline-flex;
+  }
+
+  .sr-only {
+    @apply absolute h-px w-px overflow-hidden whitespace-nowrap border-0 p-0;
+    clip: rect(0, 0, 0, 0);
+    margin: -1px;
+  }
+
   .site-layout {
     @apply mx-auto grid max-w-7xl gap-10 px-4 py-10 lg:grid-cols-[16rem_minmax(0,1fr)_14rem] lg:px-8;
   }

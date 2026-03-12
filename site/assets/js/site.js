@@ -1,20 +1,35 @@
 (function () {
   const root = document.documentElement;
   const key = "duck-site-theme";
+  const themeModes = ["system", "light", "dark"];
   const navButton = document.querySelector("[data-site-nav-toggle]");
   const nav = document.querySelector("[data-site-mobile-nav]");
   const themeButton = document.querySelector("[data-site-theme-toggle]");
   const searchInput = document.querySelector("[data-site-search-input]");
   const searchResults = document.querySelector("[data-site-search-results]");
+  const systemMedia =
+    typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-color-scheme: dark)")
+      : null;
 
-  function applyTheme(theme) {
-    root.setAttribute("data-theme", theme);
+  function resolveTheme(themePreference) {
+    if (themePreference === "system") {
+      return systemMedia && systemMedia.matches ? "dark" : "light";
+    }
+    return themePreference;
+  }
+
+  function applyTheme(themePreference) {
+    const resolved = resolveTheme(themePreference);
+    root.setAttribute("data-theme-preference", themePreference);
+    root.setAttribute("data-theme", resolved);
     if (themeButton) {
-      themeButton.textContent = theme === "dark" ? "Light" : "Dark";
+      themeButton.setAttribute("aria-label", "Theme: " + themePreference);
+      themeButton.setAttribute("title", "Theme: " + themePreference);
     }
   }
 
-  let theme = "light";
+  let theme = "system";
   try {
     theme = localStorage.getItem(key) || theme;
   } catch (_) {}
@@ -22,11 +37,20 @@
 
   if (themeButton) {
     themeButton.addEventListener("click", function () {
-      theme = theme === "dark" ? "light" : "dark";
+      const nextIndex = (themeModes.indexOf(theme) + 1) % themeModes.length;
+      theme = themeModes[nextIndex];
       try {
         localStorage.setItem(key, theme);
       } catch (_) {}
       applyTheme(theme);
+    });
+  }
+
+  if (systemMedia) {
+    systemMedia.addEventListener("change", function () {
+      if (theme === "system") {
+        applyTheme(theme);
+      }
     });
   }
 

@@ -6,6 +6,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ .MetaTitle }}</title>
   <meta name="description" content="{{ .Page.Description }}">
+  <script>
+    (function () {
+      var stored = "system";
+      try {
+        stored = localStorage.getItem("duck-site-theme") || "system";
+      } catch (_) {}
+      var resolved = stored === "system"
+        ? (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        : stored;
+      document.documentElement.setAttribute("data-theme", resolved);
+      document.documentElement.setAttribute("data-theme-preference", stored);
+    })();
+  </script>
   <link rel="icon" href="/_site/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/_site/site.css">
 </head>
@@ -24,8 +37,42 @@
         </nav>
         <div class="site-actions">
           <input data-site-search-input type="search" placeholder="{{ if eq .Page.Kind `api` }}Search API{{ else }}Search docs{{ end }}" class="hidden rounded-full border px-4 py-2 text-sm lg:block">
-          <button data-site-theme-toggle type="button" class="site-button site-button-secondary">Dark</button>
-          <button data-site-nav-toggle type="button" class="site-button site-button-secondary lg:hidden">Menu</button>
+          <button data-site-theme-toggle type="button" class="site-icon-button site-button-secondary" aria-label="Theme: system" title="Theme: system">
+            <span class="sr-only">Theme</span>
+            <span class="site-theme-icon" data-theme-icon="system" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </span>
+            <span class="site-theme-icon" data-theme-icon="light" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2"></path>
+                <path d="M12 20v2"></path>
+                <path d="m4.93 4.93 1.41 1.41"></path>
+                <path d="m17.66 17.66 1.41 1.41"></path>
+                <path d="M2 12h2"></path>
+                <path d="M20 12h2"></path>
+                <path d="m6.34 17.66-1.41 1.41"></path>
+                <path d="m19.07 4.93-1.41 1.41"></path>
+              </svg>
+            </span>
+            <span class="site-theme-icon" data-theme-icon="dark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
+              </svg>
+            </span>
+          </button>
+          <button data-site-nav-toggle type="button" class="site-icon-button site-button-secondary lg:hidden" aria-label="Open menu" title="Open menu">
+            <span class="sr-only">Menu</span>
+            <svg class="site-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="4" y1="12" x2="20" y2="12"></line>
+              <line x1="4" y1="6" x2="20" y2="6"></line>
+              <line x1="4" y1="18" x2="20" y2="18"></line>
+            </svg>
+          </button>
         </div>
       </div>
       <div data-site-mobile-nav class="site-mobile-nav">
