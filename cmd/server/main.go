@@ -231,6 +231,7 @@ func run() error {
 		svc.Semantic,
 		svc.Dashboard,
 	)
+	handler.SetProductService(svc.Product)
 
 	authHandler := api.NewAuthHTTPHandler(svc.Auth, svc.WebSessionAuth)
 
@@ -454,6 +455,7 @@ func run() error {
 	uiHandler.GitService = svc.GitService
 	uiHandler.Semantic = svc.Semantic
 	uiHandler.Dashboard = svc.Dashboard
+	uiHandler.Product = svc.Product
 	r.Route("/ui", func(r chi.Router) {
 		ui.MountRoutes(r, uiHandler)
 	})

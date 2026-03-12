@@ -10,10 +10,12 @@ const (
 	KindPrincipal                                  // layer 0
 	KindTag                                        // layer 0
 	KindMacro                                      // layer 0
+	KindDomain                                     // layer 0
 	KindGroup                                      // layer 1
 	KindExternalLocation                           // layer 1
 	KindComputeEndpoint                            // layer 1
 	KindComputeRoutingDefaults                     // layer 1
+	KindTeam                                       // layer 1
 	KindGroupMembership                            // layer 2
 	KindCatalogRegistration                        // layer 2
 	KindSchema                                     // layer 3
@@ -29,9 +31,10 @@ const (
 	KindColumnMaskBinding                          // layer 6
 	KindAPIKey                                     // layer 6
 	KindNotebook                                   // layer 6
-	KindAsset                                      // layer 7
-	KindModel                                      // layer 8
-	KindSemanticModel                              // layer 9
+	KindDataProduct                                // layer 7
+	KindAsset                                      // layer 8
+	KindModel                                      // layer 9
+	KindSemanticModel                              // layer 10
 )
 
 // String returns a human-readable kebab-case name for the resource kind.
@@ -45,6 +48,8 @@ func (k ResourceKind) String() string {
 		return "tag"
 	case KindMacro:
 		return "macro"
+	case KindDomain:
+		return "domain"
 	case KindGroup:
 		return "group"
 	case KindExternalLocation:
@@ -53,6 +58,8 @@ func (k ResourceKind) String() string {
 		return "compute-endpoint"
 	case KindComputeRoutingDefaults:
 		return "compute-routing-defaults"
+	case KindTeam:
+		return "team"
 	case KindGroupMembership:
 		return "group-membership"
 	case KindCatalogRegistration:
@@ -83,6 +90,8 @@ func (k ResourceKind) String() string {
 		return "api-key"
 	case KindNotebook:
 		return "notebook"
+	case KindDataProduct:
+		return "data-product"
 	case KindAsset:
 		return "asset"
 	case KindModel:
@@ -98,9 +107,9 @@ func (k ResourceKind) String() string {
 // Layer 0 has no dependencies; higher layers depend on lower ones.
 func (k ResourceKind) Layer() int {
 	switch k {
-	case KindStorageCredential, KindPrincipal, KindTag, KindMacro:
+	case KindStorageCredential, KindPrincipal, KindTag, KindMacro, KindDomain:
 		return 0
-	case KindGroup, KindExternalLocation, KindComputeEndpoint, KindComputeRoutingDefaults:
+	case KindGroup, KindExternalLocation, KindComputeEndpoint, KindComputeRoutingDefaults, KindTeam:
 		return 1
 	case KindGroupMembership, KindCatalogRegistration:
 		return 2
@@ -112,19 +121,21 @@ func (k ResourceKind) Layer() int {
 		return 5
 	case KindRowFilterBinding, KindColumnMaskBinding, KindAPIKey, KindNotebook:
 		return 6
-	case KindAsset:
+	case KindDataProduct:
 		return 7
-	case KindModel:
+	case KindAsset:
 		return 8
-	case KindSemanticModel:
+	case KindModel:
 		return 9
+	case KindSemanticModel:
+		return 10
 	default:
 		return 99
 	}
 }
 
 // MaxLayer is the highest dependency layer.
-const MaxLayer = 9
+const MaxLayer = 10
 
 // Operation represents a planned change type.
 type Operation int
@@ -173,6 +184,9 @@ const (
 	KindNameComputeEndpointList    = "ComputeEndpointList"
 	KindNameComputeAssignmentList  = "ComputeAssignmentList"
 	KindNameComputeRoutingDefaults = "ComputeRoutingDefaults"
+	KindNameDomain                 = "Domain"
+	KindNameTeam                   = "Team"
+	KindNameDataProduct            = "DataProduct"
 	KindNameNotebook               = "Notebook"
 	KindNameAsset                  = "Asset"
 	KindNameModel                  = "Model"

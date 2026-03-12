@@ -19,6 +19,7 @@ import (
 	"duck-demo/internal/service/notebook"
 	"duck-demo/internal/service/orchestration"
 	"duck-demo/internal/service/pipeline"
+	productsvc "duck-demo/internal/service/product"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
 	"duck-demo/internal/service/semantic"
@@ -34,6 +35,7 @@ type Handler struct {
 	Manifest            *query.ManifestService
 	View                *catalog.ViewService
 	Pipeline            *pipeline.Service
+	Product             *productsvc.Service
 	Asset               *assetsvc.Service
 	Backfill            *orchestration.BackfillService
 	Notebook            *notebook.Service

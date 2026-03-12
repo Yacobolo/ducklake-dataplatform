@@ -4,10 +4,12 @@ import "@typespec/openapi3";
 import "./models/core.tsp";
 import "./models/assets.tsp";
 import "./models/ingestion.tsp";
+import "./models/products.tsp";
 import "./operations/core.tsp";
 import "./operations/assets.tsp";
 import "./operations/auth.tsp";
 import "./operations/extensions.tsp";
+import "./operations/products.tsp";
 import "./extensions/openapi.tsp";
 
 using TypeSpec.Http;
@@ -25,6 +27,7 @@ using TypeSpec.OpenAPI;
 @tagMetadata("Governance", #{ description: "Privileges, tags, classifications, row filters, and column masking controls." })
 @tagMetadata("Catalogs", #{ description: "Catalog, schema, table, view, volume, and ingestion management APIs." })
 @tagMetadata("Assets", #{ description: "Data asset definitions, runs, checks, partitions, and materialization workflows." })
+@tagMetadata("Products", #{ description: "Product-first control-plane APIs for domains, teams, product contracts, releases, discovery, and portfolio reporting." })
 @tagMetadata("Queries", #{ description: "Synchronous and asynchronous SQL query execution, search, and query history endpoints." })
 @tagMetadata("Lineage", #{ description: "Table and column lineage inspection together with lineage maintenance operations." })
 @tagMetadata("Storage", #{ description: "Storage credentials and external location configuration for object storage access." })

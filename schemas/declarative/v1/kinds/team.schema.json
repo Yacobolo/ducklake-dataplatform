@@ -1,0 +1,72 @@
+{
+  "$defs": {
+    "ObjectMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "deletion_protection": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "TeamDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "Team"
+          ],
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/$defs/TeamSpec"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "TeamSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "contact_channel": {
+          "type": "string"
+        },
+        "domain_ref": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "domain_ref"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/team.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/TeamDoc"
+    }
+  ],
+  "title": "Duck declarative Team"
+}

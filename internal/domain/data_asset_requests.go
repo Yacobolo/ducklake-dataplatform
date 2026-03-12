@@ -17,6 +17,7 @@ type AssetCheckInput struct {
 type CreateAssetRequest struct {
 	AssetKey              string
 	AssetType             string
+	ProductSlug           string
 	Owner                 string
 	Description           string
 	Tags                  []string
@@ -32,6 +33,7 @@ type CreateAssetRequest struct {
 // UpdateAssetRequest captures the full replacement body for an asset definition.
 type UpdateAssetRequest struct {
 	AssetType             string
+	ProductSlug           string
 	Owner                 string
 	Description           string
 	Tags                  []string
@@ -49,6 +51,9 @@ func ValidateCreateAssetRequest(req CreateAssetRequest) error {
 	if strings.TrimSpace(req.AssetKey) == "" {
 		return ErrValidation("asset_key is required")
 	}
+	if strings.TrimSpace(req.ProductSlug) == "" {
+		return ErrValidation("product_slug is required")
+	}
 	if err := validateAssetMutation(strings.TrimSpace(req.AssetKey), req.AssetType, req.Owner, req.UpstreamAssetKeys, req.Checks); err != nil {
 		return err
 	}
@@ -59,6 +64,9 @@ func ValidateCreateAssetRequest(req CreateAssetRequest) error {
 func ValidateUpdateAssetRequest(assetKey string, req UpdateAssetRequest) error {
 	if strings.TrimSpace(assetKey) == "" {
 		return ErrValidation("asset_key is required")
+	}
+	if strings.TrimSpace(req.ProductSlug) == "" {
+		return ErrValidation("product_slug is required")
 	}
 	if err := validateAssetMutation(strings.TrimSpace(assetKey), req.AssetType, req.Owner, req.UpstreamAssetKeys, req.Checks); err != nil {
 		return err

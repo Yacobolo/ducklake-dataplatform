@@ -202,6 +202,7 @@ model AssetCheckInput {
 model CreateAssetRequest {
   asset_key: string;
   asset_type: string;
+  product_slug: string;
   owner: string;
   description?: string;
   tags?: string[];
@@ -216,6 +217,7 @@ model CreateAssetRequest {
 
 model UpdateAssetRequest {
   asset_type: string;
+  product_slug: string;
   owner: string;
   description?: string;
   tags?: string[];

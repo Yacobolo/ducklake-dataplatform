@@ -436,6 +436,96 @@ type NotebookPublishModelSpec struct {
 	OutputCell      string `yaml:"output_cell"`
 }
 
+// DomainDoc declares a data product domain.
+type DomainDoc struct {
+	APIVersion string     `yaml:"apiVersion"`
+	Kind       string     `yaml:"kind"`
+	Metadata   ObjectMeta `yaml:"metadata"`
+	Spec       DomainSpec `yaml:"spec"`
+}
+
+// DomainSpec holds the authored metadata for a data domain.
+type DomainSpec struct {
+	Description string `yaml:"description,omitempty"`
+}
+
+// TeamDoc declares an owning team within a data domain.
+type TeamDoc struct {
+	APIVersion string     `yaml:"apiVersion"`
+	Kind       string     `yaml:"kind"`
+	Metadata   ObjectMeta `yaml:"metadata"`
+	Spec       TeamSpec   `yaml:"spec"`
+}
+
+// TeamSpec holds the authored metadata for an owning team.
+type TeamSpec struct {
+	DomainRef      string `yaml:"domain_ref"`
+	ContactChannel string `yaml:"contact_channel,omitempty"`
+}
+
+// DataProductDoc declares a product-first data contract.
+type DataProductDoc struct {
+	APIVersion string          `yaml:"apiVersion"`
+	Kind       string          `yaml:"kind"`
+	Metadata   ObjectMeta      `yaml:"metadata"`
+	Spec       DataProductSpec `yaml:"spec"`
+}
+
+// DataProductSpec holds the authored state for a data product.
+type DataProductSpec struct {
+	Name                string                   `yaml:"name,omitempty"`
+	Description         string                   `yaml:"description,omitempty"`
+	DomainRef           string                   `yaml:"domain_ref"`
+	OwnerTeamRef        string                   `yaml:"owner_team_ref"`
+	StewardPrincipal    string                   `yaml:"steward_principal,omitempty"`
+	ContactChannel      string                   `yaml:"contact_channel,omitempty"`
+	Visibility          string                   `yaml:"visibility,omitempty"`
+	ConsumerAudience    string                   `yaml:"consumer_audience,omitempty"`
+	DocsURL             string                   `yaml:"docs_url,omitempty"`
+	AccessRequestPath   string                   `yaml:"access_request_path,omitempty"`
+	BusinessDefinitions map[string]string        `yaml:"business_definitions,omitempty"`
+	Contract            ProductContractSpec      `yaml:"contract"`
+	SLO                 ProductSLOSpec           `yaml:"slo,omitempty"`
+	Outputs             []string                 `yaml:"outputs,omitempty"`
+	SemanticEntrypoints []string                 `yaml:"semantic_entrypoints,omitempty"`
+	Dependencies        []string                 `yaml:"dependencies,omitempty"`
+	PublicationIntent   string                   `yaml:"publication_intent,omitempty"`
+	Versions            []DataProductVersionSpec `yaml:"versions,omitempty"`
+}
+
+// ProductContractSpec mirrors the consumer-facing product contract.
+type ProductContractSpec struct {
+	DataGrain            string   `yaml:"data_grain,omitempty"`
+	PrimaryKeys          []string `yaml:"primary_keys,omitempty"`
+	JoinKeys             []string `yaml:"join_keys,omitempty"`
+	Dimensions           []string `yaml:"dimensions,omitempty"`
+	Measures             []string `yaml:"measures,omitempty"`
+	RetentionWindow      string   `yaml:"retention_window,omitempty"`
+	UpdateCadence        string   `yaml:"update_cadence,omitempty"`
+	QualityExpectations  []string `yaml:"quality_expectations,omitempty"`
+	BreakingChangePolicy string   `yaml:"breaking_change_policy,omitempty"`
+	SampleQueries        []string `yaml:"sample_queries,omitempty"`
+}
+
+// ProductSLOSpec captures authored product SLO targets.
+type ProductSLOSpec struct {
+	FreshnessSLO string `yaml:"freshness_slo,omitempty"`
+	LatencySLO   string `yaml:"latency_slo,omitempty"`
+}
+
+// DataProductVersionSpec describes an immutable product release snapshot.
+type DataProductVersionSpec struct {
+	Version             int                 `yaml:"version"`
+	ReleaseState        string              `yaml:"release_state,omitempty"`
+	CompatibilityLevel  string              `yaml:"compatibility_level,omitempty"`
+	Contract            ProductContractSpec `yaml:"contract,omitempty"`
+	SLO                 ProductSLOSpec      `yaml:"slo,omitempty"`
+	DocsURL             string              `yaml:"docs_url,omitempty"`
+	AccessRequestPath   string              `yaml:"access_request_path,omitempty"`
+	Outputs             []string            `yaml:"outputs,omitempty"`
+	SemanticEntrypoints []string            `yaml:"semantic_entrypoints,omitempty"`
+}
+
 // AssetDoc declares an asset-centric orchestration node.
 type AssetDoc struct {
 	APIVersion string     `yaml:"apiVersion"`
@@ -447,6 +537,7 @@ type AssetDoc struct {
 // AssetSpec holds the configuration for an orchestration asset.
 type AssetSpec struct {
 	AssetType             string                          `yaml:"asset_type,omitempty"`
+	ProductRef            string                          `yaml:"product_ref"`
 	Owner                 string                          `yaml:"owner,omitempty"`
 	Description           string                          `yaml:"description,omitempty"`
 	Tags                  []string                        `yaml:"tags,omitempty"`
@@ -506,6 +597,9 @@ type AssetCheckSpec struct {
 
 // DesiredState is the fully-parsed representation of all YAML files.
 type DesiredState struct {
+	Domains            []DomainResource
+	Teams              []TeamResource
+	DataProducts       []DataProductResource
 	Catalogs           []CatalogResource
 	Schemas            []SchemaResource
 	Tables             []TableResource
@@ -531,6 +625,24 @@ type DesiredState struct {
 	Models             []ModelResource
 	SemanticModels     []SemanticModelResource
 	Macros             []MacroResource
+}
+
+// DomainResource is a data domain with resolved name.
+type DomainResource struct {
+	Name string
+	Spec DomainSpec
+}
+
+// TeamResource is an owning team with resolved name.
+type TeamResource struct {
+	Name string
+	Spec TeamSpec
+}
+
+// DataProductResource is a product with resolved slug.
+type DataProductResource struct {
+	Slug string
+	Spec DataProductSpec
 }
 
 // CatalogResource is a catalog with positional context from the directory tree.

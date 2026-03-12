@@ -30,6 +30,7 @@ type APIHandler struct {
 	gitRepos            gitRepoService
 	assets              assetService
 	backfills           assetBackfillService
+	products            productService
 	models              modelService
 	macros              macroService
 	semantics           semanticService

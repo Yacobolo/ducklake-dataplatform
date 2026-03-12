@@ -135,6 +135,18 @@ func MountRoutes(r chi.Router, h *Handler) {
 		r.Post("/governance/lineage/edges/{edgeID}/delete", h.GovernanceLineageDeleteEdge)
 		r.Post("/governance/lineage/purge", h.GovernanceLineagePurge)
 
+		r.Get("/products", h.ProductsList)
+		r.Get("/products/new", h.ProductsNew)
+		r.Post("/products", h.ProductsCreate)
+		r.Get("/products/{productSlug}", h.ProductsDetail)
+		r.Get("/products/{productSlug}/versions/{version}", h.ProductsVersionDetail)
+		r.Post("/products/{productSlug}/versions", h.ProductsCreateVersion)
+		r.Post("/products/{productSlug}/publish", h.ProductsPublish)
+		r.Post("/products/{productSlug}/deprecate", h.ProductsDeprecate)
+		r.Post("/products/{productSlug}/retire", h.ProductsRetire)
+		r.Post("/products/{productSlug}/dependencies", h.ProductsAddDependency)
+		r.Post("/products/{productSlug}/subscriptions", h.ProductsSubscribe)
+
 		r.Get("/assets", h.AssetsList)
 		r.Get("/assets/{assetKey}", h.AssetsDetail)
 		r.Post("/assets/{assetKey}/materialize", h.AssetMaterialize)

@@ -40,6 +40,12 @@ func assetDetailPage(d assetDetailPageData) Node {
 						statusLabel(assetActiveLabel(d.IsActive), assetActiveTone(d.IsActive)),
 						statusLabel(summary.MaterializationMode, "accent"),
 						statusLabel(summary.PartitionLabel, "accent"),
+						func() Node {
+							if strings.TrimSpace(d.ProductSlug) == "" {
+								return statusLabel("Unlinked runtime asset", "attention")
+							}
+							return A(Href("/ui/products/"+d.ProductSlug), Class("Link--secondary"), Text("Product: "+fallbackString(d.ProductName, d.ProductSlug)))
+						}(),
 					),
 				),
 				Div(Class("asset-detail-hero-meta"),

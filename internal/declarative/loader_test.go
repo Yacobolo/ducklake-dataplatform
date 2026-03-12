@@ -115,6 +115,73 @@ func TestLoader_MinimalConfig(t *testing.T) {
 	assert.Empty(t, state.Catalogs)
 }
 
+func TestLoader_ProductControlPlane(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "domains"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "teams"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "data-products"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "assets"), 0o755))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "domains", "revenue.yaml"), []byte(`apiVersion: duck/v1
+kind: Domain
+metadata:
+  name: revenue
+spec:
+  description: Revenue domain
+`), 0o644))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "teams", "analytics-engineering.yaml"), []byte(`apiVersion: duck/v1
+kind: Team
+metadata:
+  name: analytics-engineering
+spec:
+  domain_ref: revenue
+  contact_channel: "#rev-data"
+`), 0o644))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "data-products", "daily-orders.yaml"), []byte(`apiVersion: duck/v1
+kind: DataProduct
+metadata:
+  name: daily-orders
+spec:
+  name: Daily Orders
+  domain_ref: revenue
+  owner_team_ref: analytics-engineering
+  steward_principal: alice
+  contact_channel: "#rev-data"
+  contract:
+    data_grain: one row per order
+  slo:
+    freshness_slo: 60m
+  outputs:
+    - daily_orders_asset
+`), 0o644))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "assets", "daily_orders_asset.yaml"), []byte(`apiVersion: duck/v1
+kind: Asset
+metadata:
+  name: daily_orders_asset
+spec:
+  asset_type: table
+  product_ref: daily-orders
+`), 0o644))
+
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err)
+
+	require.Len(t, state.Domains, 1)
+	assert.Equal(t, "revenue", state.Domains[0].Name)
+	require.Len(t, state.Teams, 1)
+	assert.Equal(t, "revenue", state.Teams[0].Spec.DomainRef)
+	require.Len(t, state.DataProducts, 1)
+	assert.Equal(t, "daily-orders", state.DataProducts[0].Slug)
+	assert.Equal(t, []string{"daily_orders_asset"}, state.DataProducts[0].Spec.Outputs)
+	require.Len(t, state.Assets, 1)
+	assert.Equal(t, "daily-orders", state.Assets[0].Spec.ProductRef)
+}
+
 func TestLoader_SecurityPresetsAndBindings(t *testing.T) {
 	t.Parallel()
 

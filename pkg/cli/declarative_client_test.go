@@ -3344,3 +3344,276 @@ func TestReadState_GroupMembersReverseLookup(t *testing.T) {
 	assert.Equal(t, "user", member.Type)
 	assert.Equal(t, "p-abc", member.MemberID, "MemberID should be preserved from API response")
 }
+
+func TestExecuteProductControlPlane_UpdateAndDelete(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	require.NoError(t, sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindDomain,
+		ResourceName: "revenue",
+		Desired: declarative.DomainResource{
+			Name: "revenue",
+			Spec: declarative.DomainSpec{Description: "Revenue data"},
+		},
+	}))
+
+	require.NoError(t, sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindTeam,
+		ResourceName: "analytics-engineering",
+		Desired: declarative.TeamResource{
+			Name: "analytics-engineering",
+			Spec: declarative.TeamSpec{DomainRef: "revenue", ContactChannel: "#rev-data"},
+		},
+	}))
+
+	require.NoError(t, sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindDataProduct,
+		ResourceName: "daily-orders",
+		Desired: declarative.DataProductResource{
+			Slug: "daily-orders",
+			Spec: declarative.DataProductSpec{
+				Name:             "Daily Orders",
+				DomainRef:        "revenue",
+				OwnerTeamRef:     "analytics-engineering",
+				StewardPrincipal: "alice",
+				ContactChannel:   "#rev-data",
+			},
+		},
+		Actual: declarative.DataProductResource{
+			Slug: "daily-orders",
+			Spec: declarative.DataProductSpec{
+				Name:             "Daily Orders",
+				DomainRef:        "revenue",
+				OwnerTeamRef:     "analytics-engineering",
+				StewardPrincipal: "alice",
+				ContactChannel:   "#old",
+			},
+		},
+	}))
+
+	require.NoError(t, sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindDomain,
+		ResourceName: "revenue",
+		Actual:       declarative.DomainResource{Name: "revenue"},
+	}))
+
+	require.NoError(t, sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindTeam,
+		ResourceName: "analytics-engineering",
+		Actual: declarative.TeamResource{
+			Name: "analytics-engineering",
+			Spec: declarative.TeamSpec{DomainRef: "revenue"},
+		},
+	}))
+
+	require.NoError(t, sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpDelete,
+		ResourceKind: declarative.KindDataProduct,
+		ResourceName: "daily-orders",
+		Actual:       declarative.DataProductResource{Slug: "daily-orders"},
+	}))
+
+	require.Len(t, captured, 6)
+	assert.Equal(t, http.MethodPut, captured[0].Method)
+	assert.Equal(t, "/v1/domains/revenue", captured[0].Path)
+	assert.Equal(t, "Revenue data", bodyStr(captured[0], "description"))
+
+	assert.Equal(t, http.MethodPut, captured[1].Method)
+	assert.Equal(t, "/v1/teams/revenue/analytics-engineering", captured[1].Path)
+	assert.Equal(t, "#rev-data", bodyStr(captured[1], "contact_channel"))
+
+	assert.Equal(t, http.MethodPut, captured[2].Method)
+	assert.Equal(t, "/v1/data-products/daily-orders", captured[2].Path)
+	assert.Equal(t, "revenue", bodyStr(captured[2], "domain_name"))
+	assert.Equal(t, "analytics-engineering", bodyStr(captured[2], "team_name"))
+
+	assert.Equal(t, http.MethodDelete, captured[3].Method)
+	assert.Equal(t, "/v1/domains/revenue", captured[3].Path)
+
+	assert.Equal(t, http.MethodDelete, captured[4].Method)
+	assert.Equal(t, "/v1/teams/revenue/analytics-engineering", captured[4].Path)
+
+	assert.Equal(t, http.MethodDelete, captured[5].Method)
+	assert.Equal(t, "/v1/data-products/daily-orders", captured[5].Path)
+}
+
+func TestReadState_ProductControlPlaneAndAssetBindings(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", emptyListHandler())
+	mux.HandleFunc("/v1/groups", emptyListHandler())
+	mux.HandleFunc("/v1/api-keys", emptyListHandler())
+	mux.HandleFunc("/v1/catalogs", emptyListHandler())
+	mux.HandleFunc("/v1/storage-credentials", emptyListHandler())
+	mux.HandleFunc("/v1/external-locations", emptyListHandler())
+	mux.HandleFunc("/v1/grants", emptyListHandler())
+	mux.HandleFunc("/v1/compute-endpoints", emptyListHandler())
+	mux.HandleFunc("/v1/tags", emptyListHandler())
+	mux.HandleFunc("/v1/notebooks", emptyListHandler())
+	mux.HandleFunc("/v1/macros", emptyListHandler())
+	mux.HandleFunc("/v1/models", emptyListHandler())
+	mux.HandleFunc("/v1/semantic-models", emptyListHandler())
+	mux.HandleFunc("/v1/semantic-relationships", emptyListHandler())
+	mux.HandleFunc("/v1/domains", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"data": []map[string]any{
+				{"id": "dom-1", "name": "revenue", "description": "Revenue"},
+			},
+		})
+	})
+	mux.HandleFunc("/v1/teams", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"data": []map[string]any{
+				{"id": "team-1", "domain_id": "dom-1", "name": "analytics-engineering", "contact_channel": "#rev-data"},
+			},
+		})
+	})
+	mux.HandleFunc("/v1/data-products", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/data-products" {
+			emptyListHandler()(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"data": []map[string]any{
+				{"product": map[string]any{"slug": "daily-orders"}},
+			},
+		})
+	})
+	mux.HandleFunc("/v1/data-products/daily-orders", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/data-products/daily-orders" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"product": map[string]any{
+				"id":                   "prod-1",
+				"slug":                 "daily-orders",
+				"name":                 "Daily Orders",
+				"description":          "Orders by day",
+				"steward_principal":    "alice",
+				"contact_channel":      "#rev-data",
+				"business_definitions": map[string]string{"orders": "Confirmed orders"},
+				"contract": map[string]any{
+					"data_grain":     "one row per order",
+					"update_cadence": "hourly",
+				},
+				"slo": map[string]any{
+					"freshness_slo": "60m",
+				},
+				"publication_intent": "DRAFT",
+			},
+			"domain": map[string]any{
+				"id":          "dom-1",
+				"name":        "revenue",
+				"description": "Revenue",
+			},
+			"owner_team": map[string]any{
+				"id":              "team-1",
+				"domain_id":       "dom-1",
+				"name":            "analytics-engineering",
+				"contact_channel": "#rev-data",
+			},
+			"versions": []map[string]any{
+				{
+					"version":             1,
+					"release_state":       "DRAFT",
+					"compatibility_level": "BACKWARD_COMPATIBLE",
+					"contract": map[string]any{
+						"data_grain":     "one row per order",
+						"update_cadence": "hourly",
+					},
+					"slo": map[string]any{
+						"freshness_slo": "60m",
+					},
+				},
+			},
+			"outputs": []map[string]any{
+				{"asset_key": "main.analytics.daily_orders", "is_primary": true},
+			},
+			"semantic_entrypoints": []map[string]any{
+				{"project_name": "sales", "model_name": "orders"},
+			},
+			"dependencies": []map[string]any{
+				{"product": map[string]any{"slug": "upstream-orders"}},
+			},
+		})
+	})
+	mux.HandleFunc("/v1/data-products/daily-orders/versions/1", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"version": map[string]any{
+				"version":             1,
+				"release_state":       "DRAFT",
+				"compatibility_level": "BACKWARD_COMPATIBLE",
+				"contract": map[string]any{
+					"data_grain":     "one row per order",
+					"update_cadence": "hourly",
+				},
+				"slo": map[string]any{
+					"freshness_slo": "60m",
+				},
+			},
+			"outputs": []map[string]any{
+				{"asset_key": "main.analytics.daily_orders", "is_primary": true},
+			},
+			"semantic_entrypoints": []map[string]any{
+				{"project_name": "sales", "model_name": "orders"},
+			},
+		})
+	})
+	mux.HandleFunc("/v1/assets", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"data": []map[string]any{
+				{
+					"asset_key":     "main.analytics.daily_orders",
+					"asset_type":    "TABLE",
+					"owner":         "analytics",
+					"description":   "Daily orders asset",
+					"tags":          []string{"gold"},
+					"io_profile":    "BATCH",
+					"is_active":     true,
+					"cron_schedule": "0 * * * *",
+				},
+			},
+		})
+	})
+	mux.HandleFunc("/v1/assets/main.analytics.daily_orders/graph", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"asset_key":           "main.analytics.daily_orders",
+			"upstream_asset_keys": []string{},
+		})
+	})
+	mux.HandleFunc("/v1/assets/main.analytics.daily_orders/checks", emptyListHandler())
+	mux.HandleFunc("/", emptyListHandler())
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, state.Domains, 1)
+	require.Len(t, state.Teams, 1)
+	require.Len(t, state.DataProducts, 1)
+	require.Len(t, state.Assets, 1)
+
+	assert.Equal(t, "revenue", state.Teams[0].Spec.DomainRef)
+	assert.Equal(t, "daily-orders", state.DataProducts[0].Slug)
+	assert.Equal(t, "upstream-orders", state.DataProducts[0].Spec.Dependencies[0])
+	assert.Equal(t, "main.analytics.daily_orders", state.DataProducts[0].Spec.Outputs[0])
+	assert.Equal(t, "sales.orders", state.DataProducts[0].Spec.SemanticEntrypoints[0])
+	assert.Equal(t, "daily-orders", state.Assets[0].Spec.ProductRef)
+}

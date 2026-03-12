@@ -12,6 +12,24 @@ import (
 func TestExporter_RoundTrip(t *testing.T) {
 	// Create a state with multiple resource types
 	original := &DesiredState{
+		Domains: []DomainResource{
+			{Name: "revenue", Spec: DomainSpec{Description: "Revenue domain"}},
+		},
+		Teams: []TeamResource{
+			{Name: "analytics-engineering", Spec: TeamSpec{DomainRef: "revenue", ContactChannel: "#rev-data"}},
+		},
+		DataProducts: []DataProductResource{
+			{Slug: "daily-orders", Spec: DataProductSpec{
+				Name:             "Daily Orders",
+				DomainRef:        "revenue",
+				OwnerTeamRef:     "analytics-engineering",
+				StewardPrincipal: "alice",
+				ContactChannel:   "#rev-data",
+				Contract:         ProductContractSpec{DataGrain: "one row per order"},
+				SLO:              ProductSLOSpec{FreshnessSLO: "60m"},
+				Outputs:          []string{"daily_kpi"},
+			}},
+		},
 		Principals: []PrincipalSpec{
 			{Name: "admin", Type: "user", IsAdmin: true},
 			{Name: "analyst1", Type: "user", IsAdmin: false},
@@ -74,7 +92,7 @@ func TestExporter_RoundTrip(t *testing.T) {
 			{Key: "env", Value: strPtr("prod")},
 		},
 		Assets: []AssetResource{
-			{Name: "daily_kpi", Spec: AssetSpec{AssetType: "table", Description: "Daily KPI asset"}},
+			{Name: "daily_kpi", Spec: AssetSpec{AssetType: "table", ProductRef: "daily-orders", Description: "Daily KPI asset"}},
 		},
 	}
 
@@ -87,6 +105,9 @@ func TestExporter_RoundTrip(t *testing.T) {
 	assertFileExists(t, filepath.Join(dir, "security", "principals.yaml"))
 	assertFileExists(t, filepath.Join(dir, "security", "groups.yaml"))
 	assertFileExists(t, filepath.Join(dir, "security", "grants.yaml"))
+	assertFileExists(t, filepath.Join(dir, "domains", "revenue.yaml"))
+	assertFileExists(t, filepath.Join(dir, "teams", "analytics-engineering.yaml"))
+	assertFileExists(t, filepath.Join(dir, "data-products", "daily-orders.yaml"))
 	assertFileExists(t, filepath.Join(dir, "catalogs", "main", "catalog.yaml"))
 	assertFileExists(t, filepath.Join(dir, "catalogs", "main", "schemas", "analytics", "schema.yaml"))
 	assertFileExists(t, filepath.Join(dir, "catalogs", "main", "schemas", "analytics", "tables", "orders", "table.yaml"))
@@ -107,6 +128,16 @@ func TestExporter_RoundTrip(t *testing.T) {
 
 	assert.Len(t, loaded.Grants, len(original.Grants))
 
+	require.Len(t, loaded.Domains, 1)
+	assert.Equal(t, "revenue", loaded.Domains[0].Name)
+
+	require.Len(t, loaded.Teams, 1)
+	assert.Equal(t, "analytics-engineering", loaded.Teams[0].Name)
+
+	require.Len(t, loaded.DataProducts, 1)
+	assert.Equal(t, "daily-orders", loaded.DataProducts[0].Slug)
+	assert.Equal(t, []string{"daily_kpi"}, loaded.DataProducts[0].Spec.Outputs)
+
 	require.Len(t, loaded.Catalogs, 1)
 	assert.Equal(t, original.Catalogs[0].CatalogName, loaded.Catalogs[0].CatalogName)
 	assert.Equal(t, original.Catalogs[0].DeletionProtection, loaded.Catalogs[0].DeletionProtection)
@@ -126,6 +157,7 @@ func TestExporter_RoundTrip(t *testing.T) {
 
 	require.Len(t, loaded.Assets, 1)
 	assert.Equal(t, "daily_kpi", loaded.Assets[0].Name)
+	assert.Equal(t, "daily-orders", loaded.Assets[0].Spec.ProductRef)
 }
 
 func TestExporter_EmptyState(t *testing.T) {

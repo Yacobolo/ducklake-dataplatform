@@ -15,6 +15,8 @@ func Diff(desired, actual *DesiredState) *Plan {
 	plan := &Plan{}
 
 	// Diff each resource type. Order doesn't matter here — SortActions handles ordering later.
+	diffDomains(plan, desired.Domains, actual.Domains)
+	diffTeams(plan, desired.Teams, actual.Teams)
 	diffPrincipals(plan, desired.Principals, actual.Principals)
 	diffGroups(plan, desired.Groups, actual.Groups)
 	diffGrants(plan, effectiveGrants(desired), effectiveGrants(actual))
@@ -33,6 +35,7 @@ func Diff(desired, actual *DesiredState) *Plan {
 	diffComputeAssignments(plan, desired.ComputeAssignments, actual.ComputeAssignments)
 	diffComputeRoutingDefaults(plan, desired.ComputeDefaults, actual.ComputeDefaults)
 	diffAPIKeys(plan, desired.APIKeys, actual.APIKeys)
+	diffDataProducts(plan, desired.DataProducts, actual.DataProducts)
 	diffNotebooks(plan, desired.Notebooks, actual.Notebooks)
 	diffAssets(plan, desired.Assets, actual.Assets)
 	diffModels(plan, desired.Models, actual.Models)
@@ -154,6 +157,113 @@ func formatMap(m map[string]string) string {
 		b.WriteString(m[k])
 	}
 	return b.String()
+}
+
+// === Principals ===
+
+func diffDomains(plan *Plan, desired, actual []DomainResource) {
+	actualMap := make(map[string]DomainResource, len(actual))
+	for _, a := range actual {
+		actualMap[a.Name] = a
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, d := range desired {
+		seen[d.Name] = true
+		a, exists := actualMap[d.Name]
+		if !exists {
+			addCreate(plan, KindDomain, d.Name, "", d)
+			continue
+		}
+
+		var changes []FieldDiff
+		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
+		if len(changes) > 0 {
+			addUpdate(plan, KindDomain, d.Name, "", d, a, changes)
+		}
+	}
+
+	for _, a := range actual {
+		if !seen[a.Name] {
+			addDelete(plan, KindDomain, a.Name, a)
+		}
+	}
+}
+
+func diffTeams(plan *Plan, desired, actual []TeamResource) {
+	actualMap := make(map[string]TeamResource, len(actual))
+	for _, a := range actual {
+		actualMap[a.Name] = a
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, d := range desired {
+		seen[d.Name] = true
+		a, exists := actualMap[d.Name]
+		if !exists {
+			addCreate(plan, KindTeam, d.Name, "", d)
+			continue
+		}
+
+		var changes []FieldDiff
+		diffField(&changes, "domain_ref", a.Spec.DomainRef, d.Spec.DomainRef)
+		diffField(&changes, "contact_channel", a.Spec.ContactChannel, d.Spec.ContactChannel)
+		if len(changes) > 0 {
+			addUpdate(plan, KindTeam, d.Name, "", d, a, changes)
+		}
+	}
+
+	for _, a := range actual {
+		if !seen[a.Name] {
+			addDelete(plan, KindTeam, a.Name, a)
+		}
+	}
+}
+
+func diffDataProducts(plan *Plan, desired, actual []DataProductResource) {
+	actualMap := make(map[string]DataProductResource, len(actual))
+	for _, a := range actual {
+		actualMap[a.Slug] = a
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, d := range desired {
+		seen[d.Slug] = true
+		a, exists := actualMap[d.Slug]
+		if !exists {
+			addCreate(plan, KindDataProduct, d.Slug, "", d)
+			continue
+		}
+
+		var changes []FieldDiff
+		diffField(&changes, "name", a.Spec.Name, d.Spec.Name)
+		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
+		diffField(&changes, "domain_ref", a.Spec.DomainRef, d.Spec.DomainRef)
+		diffField(&changes, "owner_team_ref", a.Spec.OwnerTeamRef, d.Spec.OwnerTeamRef)
+		diffField(&changes, "steward_principal", a.Spec.StewardPrincipal, d.Spec.StewardPrincipal)
+		diffField(&changes, "contact_channel", a.Spec.ContactChannel, d.Spec.ContactChannel)
+		diffField(&changes, "visibility", a.Spec.Visibility, d.Spec.Visibility)
+		diffField(&changes, "consumer_audience", a.Spec.ConsumerAudience, d.Spec.ConsumerAudience)
+		diffField(&changes, "docs_url", a.Spec.DocsURL, d.Spec.DocsURL)
+		diffField(&changes, "access_request_path", a.Spec.AccessRequestPath, d.Spec.AccessRequestPath)
+		diffMapField(&changes, "business_definitions", a.Spec.BusinessDefinitions, d.Spec.BusinessDefinitions)
+		diffField(&changes, "contract", stableJSON(a.Spec.Contract), stableJSON(d.Spec.Contract))
+		diffField(&changes, "slo", stableJSON(a.Spec.SLO), stableJSON(d.Spec.SLO))
+		diffField(&changes, "outputs", formatStringSlice(a.Spec.Outputs), formatStringSlice(d.Spec.Outputs))
+		diffField(&changes, "semantic_entrypoints", formatStringSlice(a.Spec.SemanticEntrypoints), formatStringSlice(d.Spec.SemanticEntrypoints))
+		diffField(&changes, "dependencies", formatStringSlice(a.Spec.Dependencies), formatStringSlice(d.Spec.Dependencies))
+		diffField(&changes, "publication_intent", a.Spec.PublicationIntent, d.Spec.PublicationIntent)
+		diffField(&changes, "versions", stableJSON(a.Spec.Versions), stableJSON(d.Spec.Versions))
+		if len(changes) > 0 {
+			addUpdate(plan, KindDataProduct, d.Slug, "", d, a, changes)
+		}
+	}
+
+	for _, a := range actual {
+		if !seen[a.Slug] {
+			addDelete(plan, KindDataProduct, a.Slug, a)
+		}
+	}
 }
 
 // === Principals ===
@@ -1125,6 +1235,7 @@ func diffAssets(plan *Plan, desired, actual []AssetResource) {
 
 		var changes []FieldDiff
 		diffField(&changes, "asset_type", a.Spec.AssetType, d.Spec.AssetType)
+		diffField(&changes, "product_ref", a.Spec.ProductRef, d.Spec.ProductRef)
 		diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
 		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
 		diffField(&changes, "tags", formatStringSlice(a.Spec.Tags), formatStringSlice(d.Spec.Tags))

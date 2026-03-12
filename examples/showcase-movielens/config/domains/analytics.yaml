@@ -1,0 +1,6 @@
+apiVersion: duck/v1
+kind: Domain
+metadata:
+  name: analytics
+spec:
+  description: Analytics domain for showcase data products

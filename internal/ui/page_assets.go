@@ -45,6 +45,8 @@ type assetOwnerCount struct {
 
 type assetDetailPageData struct {
 	Principal           domain.ContextPrincipal
+	ProductSlug         string
+	ProductName         string
 	AssetKey            string
 	AssetType           string
 	Owner               string

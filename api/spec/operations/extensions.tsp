@@ -441,7 +441,7 @@ op deleteGitRepo(gitRepoId: string): NoContent | ResourceErrorResponses;
 @post
 @tag("Integrations")
 @summary("Sync git repo")
-op syncGitRepo(gitRepoId: string): Ok<GitSyncResult> | LookupErrorResponses;
+op syncGitRepo(gitRepoId: string): Ok<GitSyncResult> | ResourceErrorResponses;
 
 @route("/pipelines")
 @get
