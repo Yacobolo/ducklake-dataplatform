@@ -150,6 +150,7 @@ type CreateDataProductRequest struct {
 	BusinessDefinitions map[string]string `json:"business_definitions"`
 	Contract            ProductContract   `json:"contract"`
 	SLO                 ProductSLO        `json:"slo"`
+	ProducingBuildID    *string           `json:"producing_build_id,omitempty"`
 	PrimaryAssetKey     *string           `json:"primary_asset_key"`
 	SemanticModelRefs   []string          `json:"semantic_model_refs"`
 	CreatedBy           string            `json:"created_by"`
@@ -174,6 +175,9 @@ func (r CreateDataProductRequest) Validate() error {
 	}
 	if strings.TrimSpace(r.ContactChannel) == "" {
 		return ErrValidation("contact_channel is required")
+	}
+	if r.ProducingBuildID != nil && strings.TrimSpace(*r.ProducingBuildID) == "" {
+		return ErrValidation("producing_build_id cannot be empty")
 	}
 	return nil
 }
@@ -220,6 +224,7 @@ func (r UpdateDataProductRequest) Validate() error {
 type DataProductVersion struct {
 	ID                 string          `json:"id"`
 	ProductID          string          `json:"product_id"`
+	ProducingBuildID   *string         `json:"producing_build_id,omitempty"`
 	Version            int             `json:"version"`
 	ReleaseState       string          `json:"release_state"`
 	CompatibilityLevel string          `json:"compatibility_level"`
@@ -238,6 +243,7 @@ type CreateDataProductVersionRequest struct {
 	SLO                ProductSLO      `json:"slo"`
 	DocsURL            string          `json:"docs_url"`
 	AccessRequestPath  string          `json:"access_request_path"`
+	ProducingBuildID   *string         `json:"producing_build_id,omitempty"`
 	OutputAssetKeys    []string        `json:"output_asset_keys"`
 	SemanticModelRefs  []string        `json:"semantic_model_refs"`
 	CreatedBy          string          `json:"created_by"`
@@ -249,6 +255,9 @@ func (r CreateDataProductVersionRequest) Validate() error {
 	case "", ProductCompatibilityBackwardCompatible, ProductCompatibilityBreaking:
 	default:
 		return ErrValidation("compatibility_level must be BACKWARD_COMPATIBLE or BREAKING")
+	}
+	if r.ProducingBuildID != nil && strings.TrimSpace(*r.ProducingBuildID) == "" {
+		return ErrValidation("producing_build_id cannot be empty")
 	}
 	return nil
 }

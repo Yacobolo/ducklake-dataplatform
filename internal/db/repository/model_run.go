@@ -38,6 +38,9 @@ func (r *ModelRunRepo) CreateRun(ctx context.Context, run *domain.ModelRun) (*do
 		Status:             run.Status,
 		TriggerType:        run.TriggerType,
 		TriggeredBy:        run.TriggeredBy,
+		ProjectName:        run.ProjectName,
+		EnvironmentName:    run.EnvironmentName,
+		BuildID:            nullStrFromPtr(run.BuildID),
 		TargetCatalog:      run.TargetCatalog,
 		TargetSchema:       run.TargetSchema,
 		ModelSelector:      run.ModelSelector,
@@ -91,6 +94,14 @@ func (r *ModelRunRepo) ListRuns(ctx context.Context, filter domain.ModelRunFilte
 		runs = append(runs, *modelRunFromDB(row))
 	}
 	return runs, total, nil
+}
+
+// UpdateRunBuild links a model run to its producing internal build.
+func (r *ModelRunRepo) UpdateRunBuild(ctx context.Context, id string, buildID string) error {
+	return mapDBError(r.q.UpdateModelRunBuild(ctx, dbstore.UpdateModelRunBuildParams{
+		BuildID: nullStrFromPtr(&buildID),
+		ID:      id,
+	}))
 }
 
 // UpdateRunStarted marks a model run as started.
@@ -208,6 +219,9 @@ func modelRunFromDB(row dbstore.ModelRun) *domain.ModelRun {
 		Status:             row.Status,
 		TriggerType:        row.TriggerType,
 		TriggeredBy:        row.TriggeredBy,
+		ProjectName:        row.ProjectName,
+		EnvironmentName:    row.EnvironmentName,
+		BuildID:            strPtrOrNil(strings.TrimSpace(row.BuildID.String)),
 		TargetCatalog:      row.TargetCatalog,
 		TargetSchema:       row.TargetSchema,
 		ModelSelector:      row.ModelSelector,

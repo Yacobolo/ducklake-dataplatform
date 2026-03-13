@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"strings"
 	"time"
 	"unicode/utf8"
 )
@@ -165,6 +166,9 @@ type ModelRun struct {
 	Status             string
 	TriggerType        string // "MANUAL", "SCHEDULED", "PIPELINE"
 	TriggeredBy        string
+	ProjectName        string
+	EnvironmentName    string
+	BuildID            *string
 	TargetCatalog      string
 	TargetSchema       string
 	ModelSelector      string // which models: "" = all, "stg_orders+", "tag:finance"
@@ -212,12 +216,14 @@ type ModelRunFilter struct {
 
 // TriggerModelRunRequest holds parameters for triggering a model run.
 type TriggerModelRunRequest struct {
-	TargetCatalog string
-	TargetSchema  string
-	Selector      string
-	TriggerType   string
-	Variables     map[string]string
-	FullRefresh   bool
+	ProjectName     string
+	EnvironmentName string
+	TargetCatalog   string
+	TargetSchema    string
+	Selector        string
+	TriggerType     string
+	Variables       map[string]string
+	FullRefresh     bool
 }
 
 // PromoteNotebookRequest holds parameters for promoting a notebook output cell to a model.
@@ -258,11 +264,8 @@ func (r *PromoteNotebookRequest) Validate() error {
 
 // Validate checks that the request is well-formed.
 func (r *TriggerModelRunRequest) Validate() error {
-	if r.TargetCatalog == "" {
-		return ErrValidation("target_catalog is required")
-	}
-	if r.TargetSchema == "" {
-		return ErrValidation("target_schema is required")
+	if strings.TrimSpace(r.ProjectName) == "" {
+		return ErrValidation("project_name is required")
 	}
 	return nil
 }

@@ -3,6 +3,7 @@
 package api
 
 import (
+	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -27,7 +28,11 @@ func TestProductRoutes_CreatePublishAndSubscribe(t *testing.T) {
 	domainRepo := repository.NewDomainRepo(writeDB)
 	teamRepo := repository.NewTeamRepo(writeDB)
 	productRepo := repository.NewDataProductRepo(writeDB)
+	projectRepo := repository.NewProjectRepo(writeDB)
 	productSvc := productsvc.NewService(domainRepo, teamRepo, assetRepo, assetRunRepo, assetCheckRepo, productRepo)
+	buildRepo := repository.NewBuildRepo(writeDB)
+	productSvc.SetBuildRepository(buildRepo)
+	productSvc.SetProjectRepository(projectRepo)
 
 	_, err := assetRepo.Create(t.Context(), &domain.DataAsset{
 		AssetKey:  "main.analytics.daily_orders",
@@ -79,6 +84,32 @@ func TestProductRoutes_CreatePublishAndSubscribe(t *testing.T) {
 	publishReq.Header.Set("Content-Type", "application/json")
 	publishRR := httptest.NewRecorder()
 	r.ServeHTTP(publishRR, publishReq)
+	require.Equal(t, http.StatusBadRequest, publishRR.Code)
+	assert.Contains(t, publishRR.Body.String(), `producing_build_id is required`)
+
+	productDetail, err := productRepo.GetBySlug(t.Context(), "daily-orders")
+	require.NoError(t, err)
+	buildID := createProductBuildForAPITest(t, writeDB, buildRepo, productDetail.Product, "alice")
+
+	createVersionReq := httptest.NewRequest(http.MethodPost, "/v1/data-products/daily-orders/versions", strings.NewReader(`{
+		"compatibility_level":"BACKWARD_COMPATIBLE",
+		"docs_url":"https://docs.example.com/daily-orders",
+		"access_request_path":"/access/daily-orders",
+		"contract":{"data_grain":"one row per order","update_cadence":"hourly","breaking_change_policy":"new version required"},
+		"slo":{"freshness_slo":"60m"},
+		"producing_build_id":"`+buildID+`",
+		"output_asset_keys":["main.analytics.daily_orders"],
+		"created_by":"alice"
+	}`))
+	createVersionReq.Header.Set("Content-Type", "application/json")
+	createVersionRR := httptest.NewRecorder()
+	r.ServeHTTP(createVersionRR, createVersionReq)
+	require.Equal(t, http.StatusCreated, createVersionRR.Code)
+
+	publishReq = httptest.NewRequest(http.MethodPatch, "/v1/data-products/daily-orders/publish", strings.NewReader(`{"version":2}`))
+	publishReq.Header.Set("Content-Type", "application/json")
+	publishRR = httptest.NewRecorder()
+	r.ServeHTTP(publishRR, publishReq)
 	require.Equal(t, http.StatusOK, publishRR.Code)
 	assert.Contains(t, publishRR.Body.String(), `"publication_state":"PUBLISHED"`)
 
@@ -114,8 +145,11 @@ func TestProductRoutes_SemanticEntrypoints(t *testing.T) {
 	domainRepo := repository.NewDomainRepo(writeDB)
 	teamRepo := repository.NewTeamRepo(writeDB)
 	productRepo := repository.NewDataProductRepo(writeDB)
+	projectRepo := repository.NewProjectRepo(writeDB)
 	semanticRepo := repository.NewSemanticModelRepo(writeDB)
 	productSvc := productsvc.NewService(domainRepo, teamRepo, assetRepo, assetRunRepo, assetCheckRepo, productRepo)
+	productSvc.SetBuildRepository(repository.NewBuildRepo(writeDB))
+	productSvc.SetProjectRepository(projectRepo)
 	productSvc.SetSemanticModelRepository(semanticRepo)
 
 	_, err := semanticRepo.Create(t.Context(), &domain.SemanticModel{
@@ -170,7 +204,10 @@ func TestProductRoutes_PortfolioReport(t *testing.T) {
 	domainRepo := repository.NewDomainRepo(writeDB)
 	teamRepo := repository.NewTeamRepo(writeDB)
 	productRepo := repository.NewDataProductRepo(writeDB)
+	projectRepo := repository.NewProjectRepo(writeDB)
 	productSvc := productsvc.NewService(domainRepo, teamRepo, assetRepo, assetRunRepo, assetCheckRepo, productRepo)
+	productSvc.SetBuildRepository(repository.NewBuildRepo(writeDB))
+	productSvc.SetProjectRepository(projectRepo)
 
 	_, err := assetRepo.Create(t.Context(), &domain.DataAsset{
 		AssetKey:  "main.analytics.orders",
@@ -233,4 +270,51 @@ func TestProductRoutes_PortfolioReport(t *testing.T) {
 	assert.Contains(t, reportRR.Body.String(), `"top_used"`)
 	assert.Contains(t, reportRR.Body.String(), `"orders"`)
 	assert.Contains(t, reportRR.Body.String(), `"main.analytics.orphaned"`)
+}
+
+func createProductBuildForAPITest(
+	t *testing.T,
+	writeDB *sql.DB,
+	buildRepo *repository.BuildRepo,
+	product domain.DataProduct,
+	createdBy string,
+) string {
+	t.Helper()
+
+	projectRepo := repository.NewProjectRepo(writeDB)
+	environmentRepo := repository.NewEnvironmentRepo(writeDB)
+
+	project, err := projectRepo.Create(t.Context(), &domain.Project{
+		Name:          product.Slug + "-authoring",
+		Kind:          domain.ProjectKindShared,
+		OwnerTeamID:   &product.OwnerTeamID,
+		ProductID:     &product.ID,
+		DefaultBranch: "main",
+		CreatedBy:     createdBy,
+	})
+	require.NoError(t, err)
+
+	environment, err := environmentRepo.Create(t.Context(), &domain.Environment{
+		ProjectID:     project.ID,
+		Name:          "prod",
+		Kind:          domain.EnvironmentKindProduction,
+		TargetCatalog: product.Slug,
+		TargetSchema:  "analytics",
+		CreatedBy:     createdBy,
+	})
+	require.NoError(t, err)
+
+	build, err := buildRepo.Create(t.Context(), &domain.Build{
+		ProjectID:       project.ID,
+		ProductID:       &product.ID,
+		EnvironmentID:   environment.ID,
+		GitRef:          "refs/heads/main",
+		Selector:        "state:modified",
+		TargetCatalog:   product.Slug,
+		TargetSchema:    "analytics",
+		CompileManifest: `{"version":1,"models":[{"name":"` + product.Slug + `.primary"}]}`,
+		CreatedBy:       createdBy,
+	})
+	require.NoError(t, err)
+	return build.ID
 }

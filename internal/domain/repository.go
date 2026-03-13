@@ -55,6 +55,7 @@ type TeamRepository interface {
 // DataProductRepository provides CRUD operations for products and their linked resources.
 type DataProductRepository interface {
 	Create(ctx context.Context, p *DataProduct) (*DataProduct, error)
+	GetByID(ctx context.Context, productID string) (*DataProduct, error)
 	GetBySlug(ctx context.Context, slug string) (*DataProductDetail, error)
 	List(ctx context.Context, filter DataProductFilter) ([]DataProductListItem, int64, error)
 	Update(ctx context.Context, p *DataProduct) (*DataProduct, error)
@@ -82,6 +83,35 @@ type DataProductRepository interface {
 	ListOrphanAssets(ctx context.Context) ([]OrphanResource, error)
 	ListOrphanSemanticModels(ctx context.Context) ([]OrphanResource, error)
 	GetByAssetID(ctx context.Context, assetID string) (*DataProductListItem, error)
+}
+
+// ProjectRepository provides CRUD operations for internal authoring projects.
+type ProjectRepository interface {
+	Create(ctx context.Context, p *Project) (*Project, error)
+	GetByID(ctx context.Context, id string) (*Project, error)
+	GetByName(ctx context.Context, name string) (*Project, error)
+	List(ctx context.Context, page PageRequest) ([]Project, int64, error)
+	ListByProduct(ctx context.Context, productID string, page PageRequest) ([]Project, int64, error)
+	Update(ctx context.Context, id string, req UpdateProjectRequest) (*Project, error)
+	Delete(ctx context.Context, id string) error
+}
+
+// EnvironmentRepository provides CRUD operations for internal project environments.
+type EnvironmentRepository interface {
+	Create(ctx context.Context, e *Environment) (*Environment, error)
+	GetByID(ctx context.Context, id string) (*Environment, error)
+	GetByName(ctx context.Context, projectID, name string) (*Environment, error)
+	ListByProject(ctx context.Context, projectID string, page PageRequest) ([]Environment, int64, error)
+	Update(ctx context.Context, id string, req UpdateEnvironmentRequest) (*Environment, error)
+	Delete(ctx context.Context, id string) error
+}
+
+// BuildRepository provides CRUD operations for internal immutable build snapshots.
+type BuildRepository interface {
+	Create(ctx context.Context, b *Build) (*Build, error)
+	GetByID(ctx context.Context, id string) (*Build, error)
+	ListByProject(ctx context.Context, projectID string, page PageRequest) ([]Build, int64, error)
+	UpdateState(ctx context.Context, id string, state string) error
 }
 
 // GrantRepository provides operations for privilege grants.
@@ -580,6 +610,7 @@ type ModelRunRepository interface {
 	CreateRun(ctx context.Context, run *ModelRun) (*ModelRun, error)
 	GetRunByID(ctx context.Context, id string) (*ModelRun, error)
 	ListRuns(ctx context.Context, filter ModelRunFilter) ([]ModelRun, int64, error)
+	UpdateRunBuild(ctx context.Context, id string, buildID string) error
 	UpdateRunStarted(ctx context.Context, id string) error
 	UpdateRunFinished(ctx context.Context, id string, status string, errMsg *string) error
 	CreateStep(ctx context.Context, step *ModelRunStep) (*ModelRunStep, error)

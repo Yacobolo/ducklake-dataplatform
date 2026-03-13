@@ -21,6 +21,9 @@ import (
 type Service struct {
 	models        domain.ModelRepository
 	runs          domain.ModelRunRepository
+	projects      domain.ProjectRepository
+	environments  domain.EnvironmentRepository
+	builds        domain.BuildRepository
 	tests         domain.ModelTestRepository
 	testResults   domain.ModelTestResultRepository
 	audit         domain.AuditRepository
@@ -39,6 +42,9 @@ type Service struct {
 type ServiceDeps struct {
 	Models        domain.ModelRepository
 	Runs          domain.ModelRunRepository
+	Projects      domain.ProjectRepository
+	Environments  domain.EnvironmentRepository
+	Builds        domain.BuildRepository
 	Tests         domain.ModelTestRepository
 	TestResults   domain.ModelTestResultRepository
 	Audit         domain.AuditRepository
@@ -57,6 +63,9 @@ func NewService(deps ServiceDeps) *Service {
 	return &Service{
 		models:        deps.Models,
 		runs:          deps.Runs,
+		projects:      deps.Projects,
+		environments:  deps.Environments,
+		builds:        deps.Builds,
 		tests:         deps.Tests,
 		testResults:   deps.TestResults,
 		audit:         deps.Audit,
@@ -195,6 +204,12 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 	if req.TriggerType == "" {
 		req.TriggerType = domain.ModelTriggerTypeManual
 	}
+	project, environment, err := s.resolveExecutionContext(ctx, req.ProjectName, req.EnvironmentName)
+	if err != nil {
+		return nil, err
+	}
+	req.TargetCatalog = environment.TargetCatalog
+	req.TargetSchema = environment.TargetSchema
 
 	// Load models
 	allModels, err := s.models.ListAll(ctx)
@@ -247,6 +262,8 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 		Status:             domain.ModelRunStatusPending,
 		TriggerType:        req.TriggerType,
 		TriggeredBy:        principal,
+		ProjectName:        project.Name,
+		EnvironmentName:    environment.Name,
 		TargetCatalog:      req.TargetCatalog,
 		TargetSchema:       req.TargetSchema,
 		ModelSelector:      req.Selector,
@@ -258,6 +275,11 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 	run, err = s.runs.CreateRun(ctx, run)
 	if err != nil {
 		return nil, fmt.Errorf("create run: %w", err)
+	}
+	if build, err := s.createRunBuild(ctx, principal, project, environment, run.ID, req, manifestJSON, diagnosticsJSON); err != nil {
+		return nil, err
+	} else if build != nil {
+		run.BuildID = &build.ID
 	}
 
 	// Create steps
@@ -306,6 +328,12 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 	if req.TriggerType == "" {
 		req.TriggerType = domain.ModelTriggerTypePipeline
 	}
+	project, environment, err := s.resolveExecutionContext(ctx, req.ProjectName, req.EnvironmentName)
+	if err != nil {
+		return err
+	}
+	req.TargetCatalog = environment.TargetCatalog
+	req.TargetSchema = environment.TargetSchema
 
 	// Load models
 	allModels, err := s.models.ListAll(ctx)
@@ -355,6 +383,8 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 		Status:             domain.ModelRunStatusPending,
 		TriggerType:        req.TriggerType,
 		TriggeredBy:        principal,
+		ProjectName:        project.Name,
+		EnvironmentName:    environment.Name,
 		TargetCatalog:      req.TargetCatalog,
 		TargetSchema:       req.TargetSchema,
 		ModelSelector:      req.Selector,
@@ -366,6 +396,11 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 	run, err = s.runs.CreateRun(ctx, run)
 	if err != nil {
 		return fmt.Errorf("create run: %w", err)
+	}
+	if build, err := s.createRunBuild(ctx, principal, project, environment, run.ID, req, manifestJSON, diagnosticsJSON); err != nil {
+		return err
+	} else if build != nil {
+		run.BuildID = &build.ID
 	}
 
 	// Create steps
@@ -1100,6 +1135,96 @@ func (s *Service) persistCompileDependencyLineage(
 	}
 
 	return nil
+}
+
+func (s *Service) resolveExecutionContext(ctx context.Context, projectName, environmentName string) (*domain.Project, *domain.Environment, error) {
+	if s.projects == nil || s.environments == nil {
+		return nil, nil, domain.ErrNotImplemented("project-backed model execution is not configured")
+	}
+	project, err := s.projects.GetByName(ctx, strings.TrimSpace(projectName))
+	if err != nil {
+		return nil, nil, err
+	}
+	if strings.TrimSpace(environmentName) != "" {
+		environment, err := s.environments.GetByName(ctx, project.ID, strings.TrimSpace(environmentName))
+		if err != nil {
+			return nil, nil, err
+		}
+		return project, environment, nil
+	}
+	environments, _, err := s.environments.ListByProject(ctx, project.ID, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+	if err != nil {
+		return nil, nil, err
+	}
+	environment, err := selectDefaultDevelopmentEnvironment(environments)
+	if err != nil {
+		return nil, nil, err
+	}
+	return project, environment, nil
+}
+
+func (s *Service) createRunBuild(
+	ctx context.Context,
+	principal string,
+	project *domain.Project,
+	environment *domain.Environment,
+	runID string,
+	req domain.TriggerModelRunRequest,
+	manifestJSON string,
+	diagnosticsJSON string,
+) (*domain.Build, error) {
+	if s.builds == nil {
+		return nil, nil
+	}
+	build := &domain.Build{
+		ProjectID:          project.ID,
+		ProductID:          project.ProductID,
+		EnvironmentID:      environment.ID,
+		State:              domain.BuildStateReady,
+		GitRef:             "refs/heads/" + project.DefaultBranch,
+		Selector:           req.Selector,
+		TargetCatalog:      environment.TargetCatalog,
+		TargetSchema:       environment.TargetSchema,
+		SourceModelRunID:   &runID,
+		CompileManifest:    manifestJSON,
+		CompileDiagnostics: strPtrOrNil(diagnosticsJSON),
+		CreatedBy:          principal,
+	}
+	created, err := s.builds.Create(ctx, build)
+	if err != nil {
+		return nil, fmt.Errorf("create build for model run %s: %w", runID, err)
+	}
+	if s.runs != nil {
+		if err := s.runs.UpdateRunBuild(ctx, runID, created.ID); err != nil {
+			return nil, fmt.Errorf("link model run %s to build %s: %w", runID, created.ID, err)
+		}
+	}
+	return created, nil
+}
+
+func selectDefaultDevelopmentEnvironment(environments []domain.Environment) (*domain.Environment, error) {
+	var namedDev *domain.Environment
+	devEnvironments := make([]domain.Environment, 0)
+	for i := range environments {
+		if environments[i].Kind != domain.EnvironmentKindDevelopment {
+			continue
+		}
+		devEnvironments = append(devEnvironments, environments[i])
+		if environments[i].Name == "dev" {
+			env := environments[i]
+			namedDev = &env
+		}
+	}
+	if namedDev != nil {
+		return namedDev, nil
+	}
+	if len(devEnvironments) == 1 {
+		return &devEnvironments[0], nil
+	}
+	if len(devEnvironments) == 0 {
+		return nil, domain.ErrValidation("project has no development environment")
+	}
+	return nil, domain.ErrValidation("project has multiple development environments; environment_name is required")
 }
 
 func depToLineageSource(dep, defaultSchema string) (schema, table string) {
