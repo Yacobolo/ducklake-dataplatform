@@ -93,10 +93,158 @@ Authentication worked, but your current principal does not have the required gra
 
 ## Next Steps
 
-- [Ways to Access Duck](/start-here/deployment-modes)
-- [Platform Architecture](/concepts/platform-architecture)
-- [Governance Model](/concepts/governance-model)
-- [Authentication And Identities](/govern/authentication-and-identities)
+<style>
+  .doc-next-steps {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .doc-next-step-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    border: 1px solid var(--site-border);
+    background: transparent;
+    color: inherit;
+    padding: 1rem 1.25rem !important;
+    text-decoration: none;
+    transition:
+      transform 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      background-color 180ms ease;
+  }
+
+  .doc-next-step-card,
+  .doc-next-step-card:hover,
+  .doc-next-step-card:focus,
+  .doc-next-step-card:visited {
+    text-decoration: none !important;
+  }
+
+  .doc-next-step-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--site-accent);
+    background: color-mix(in srgb, var(--site-accent) 3%, transparent);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  }
+
+  .doc-next-step-card:hover .doc-next-step-arrow {
+    color: var(--site-accent-strong);
+    transform: translate(2px, -2px);
+  }
+
+  .doc-next-step-icon {
+    display: inline-flex;
+    height: 3rem;
+    width: 3rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--site-accent) 12%, transparent);
+    color: var(--site-accent-strong);
+  }
+
+  .doc-next-step-copy {
+    min-width: 0;
+    flex: 1;
+    text-align: left;
+  }
+
+  .doc-next-step-title {
+    margin: 0;
+    color: var(--site-ink);
+    font-size: 0.98rem;
+    font-weight: 600;
+  }
+
+  .doc-next-step-subtitle {
+    margin: 0.2rem 0 0;
+    color: var(--site-muted);
+    font-size: 0.875rem;
+    line-height: 1.35;
+    white-space: nowrap;
+  }
+
+  .doc-next-step-arrow {
+    position: absolute;
+    right: 1.25rem;
+    top: 1.25rem;
+    height: 1rem;
+    width: 1rem;
+    color: var(--site-muted-soft);
+    transition: color 180ms ease, transform 180ms ease;
+  }
+
+  @media (max-width: 767px) {
+    .doc-next-step-card {
+      align-items: flex-start;
+      padding-right: 3.25rem !important;
+    }
+
+    .doc-next-step-subtitle {
+      white-space: normal;
+    }
+  }
+</style>
+
+<div class="doc-next-steps">
+  <a class="site-card doc-next-step-card" href="/start-here/deployment-modes">
+    <span class="doc-next-step-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 7h16"></path>
+        <path d="M7 12h10"></path>
+        <path d="M9 17h6"></path>
+      </svg>
+    </span>
+    <span class="doc-next-step-copy">
+      <h3 class="doc-next-step-title">Ways to Access Duck</h3>
+      <p class="doc-next-step-subtitle">Choose the right query surface.</p>
+    </span>
+    <svg class="doc-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+  </a>
+  <a class="site-card doc-next-step-card" href="/concepts/platform-architecture">
+    <span class="doc-next-step-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="5" width="16" height="6" rx="1"></rect>
+        <rect x="7" y="13" width="10" height="6" rx="1"></rect>
+      </svg>
+    </span>
+    <span class="doc-next-step-copy">
+      <h3 class="doc-next-step-title">Platform Architecture</h3>
+      <p class="doc-next-step-subtitle">See the secure request path.</p>
+    </span>
+    <svg class="doc-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+  </a>
+  <a class="site-card doc-next-step-card" href="/concepts/governance-model">
+    <span class="doc-next-step-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3z"></path>
+      </svg>
+    </span>
+    <span class="doc-next-step-copy">
+      <h3 class="doc-next-step-title">Governance Model</h3>
+      <p class="doc-next-step-subtitle">Understand grants, filters, and masks.</p>
+    </span>
+    <svg class="doc-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+  </a>
+  <a class="site-card doc-next-step-card" href="/govern/authentication-and-identities">
+    <span class="doc-next-step-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4z"></path>
+        <path d="M5 20a7 7 0 0 1 14 0"></path>
+      </svg>
+    </span>
+    <span class="doc-next-step-copy">
+      <h3 class="doc-next-step-title">Authentication And Identities</h3>
+      <p class="doc-next-step-subtitle">Match auth to real principals.</p>
+    </span>
+    <svg class="doc-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
+</a>
+</div>
 
 ## Related Reference
 

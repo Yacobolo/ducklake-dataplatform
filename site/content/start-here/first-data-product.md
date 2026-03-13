@@ -78,17 +78,18 @@ You are in good shape when:
 <style>
   .product-next-steps {
     display: grid;
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
   .product-next-step-card {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.875rem;
     border: 1px solid var(--site-border);
     background: transparent;
     color: inherit;
+    padding: 1rem 1.25rem !important;
     text-decoration: none;
     transition:
       transform 180ms ease,
@@ -118,8 +119,8 @@ You are in good shape when:
 
   .product-next-step-icon {
     display: inline-flex;
-    height: 3.75rem;
-    width: 3.75rem;
+    height: 3rem;
+    width: 3rem;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
@@ -138,22 +139,22 @@ You are in good shape when:
   .product-next-step-title {
     margin: 0;
     color: var(--site-ink);
-    font-size: 1rem;
+    font-size: 0.98rem;
     font-weight: 600;
   }
 
   .product-next-step-subtitle {
-    margin: 0.35rem 0 0;
+    margin: 0.2rem 0 0;
     color: var(--site-muted);
-    font-size: 0.95rem;
-    line-height: 1.4;
+    font-size: 0.875rem;
+    line-height: 1.35;
     white-space: nowrap;
   }
 
   .product-next-step-arrow {
     position: absolute;
-    right: 1.5rem;
-    top: 1.5rem;
+    right: 1.25rem;
+    top: 1.25rem;
     height: 1rem;
     width: 1rem;
     color: var(--site-muted-soft);

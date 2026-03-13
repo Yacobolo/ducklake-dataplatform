@@ -35,8 +35,26 @@ Duck is a governed data platform built around three outcomes:
 
 ## Recommended Next Steps
 
-- [Concepts](/concepts/)
-- [Reference Feature Map](/reference/feature-map)
+<div class="site-card-grid">
+  <a class="site-card" href="/concepts/" style="position: relative; display: flex; align-items: center; gap: 0.875rem; padding: 1rem 1.25rem; border: 1px solid var(--site-border); background: transparent; color: inherit; text-decoration: none;">
+    <span aria-hidden="true" style="display: inline-flex; height: 3rem; width: 3rem; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--site-accent) 12%, transparent); color: var(--site-accent-strong);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h10"></path></svg>
+    </span>
+    <span style="flex: 1; min-width: 0; text-align: left;">
+      <strong style="display: block; color: var(--site-ink); font-size: 0.98rem;">Concepts</strong>
+      <span style="display: block; margin-top: 0.2rem; color: var(--site-muted); font-size: 0.875rem; line-height: 1.35;">Build the platform mental model.</span>
+    </span>
+  </a>
+  <a class="site-card" href="/reference/feature-map" style="position: relative; display: flex; align-items: center; gap: 0.875rem; padding: 1rem 1.25rem; border: 1px solid var(--site-border); background: transparent; color: inherit; text-decoration: none;">
+    <span aria-hidden="true" style="display: inline-flex; height: 3rem; width: 3rem; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--site-accent) 12%, transparent); color: var(--site-accent-strong);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18V9"></path><path d="M12 18V5"></path><path d="M19 18v-6"></path><path d="M4 18h16"></path></svg>
+    </span>
+    <span style="flex: 1; min-width: 0; text-align: left;">
+      <strong style="display: block; color: var(--site-ink); font-size: 0.98rem;">Reference Feature Map</strong>
+      <span style="display: block; margin-top: 0.2rem; color: var(--site-muted); font-size: 0.875rem; line-height: 1.35;">Jump to specific capabilities.</span>
+    </span>
+  </a>
+</div>
 
 ## Related Reference
 
