@@ -16,6 +16,7 @@ type Service struct {
 	builds       domain.BuildRepository
 	teams        domain.TeamRepository
 	products     domain.DataProductRepository
+	audit        domain.AuditRepository
 }
 
 // NewService constructs the internal project service.
@@ -25,13 +26,19 @@ func NewService(
 	builds domain.BuildRepository,
 	teams domain.TeamRepository,
 	products domain.DataProductRepository,
+	audit ...domain.AuditRepository,
 ) *Service {
+	var auditRepo domain.AuditRepository
+	if len(audit) > 0 {
+		auditRepo = audit[0]
+	}
 	return &Service{
 		projects:     projects,
 		environments: environments,
 		builds:       builds,
 		teams:        teams,
 		products:     products,
+		audit:        auditRepo,
 	}
 }
 
@@ -79,7 +86,12 @@ func (s *Service) CreateProject(ctx context.Context, principal string, req domai
 		DefaultBranch:  defaultBranch(req.DefaultBranch),
 		CreatedBy:      principal,
 	}
-	return s.projects.Create(ctx, project)
+	created, err := s.projects.Create(ctx, project)
+	if err != nil {
+		return nil, err
+	}
+	s.logAudit(ctx, principal, "CREATE_INTERNAL_PROJECT")
+	return created, nil
 }
 
 // GetProject loads an internal project by name.
@@ -113,7 +125,7 @@ func (s *Service) CreateEnvironment(ctx context.Context, principal, projectName 
 	if project.Kind == domain.ProjectKindPersonal && normalizedEnvironmentKind(req.Kind) != domain.EnvironmentKindDevelopment {
 		return nil, domain.ErrValidation("personal projects only support development environments")
 	}
-	return s.environments.Create(ctx, &domain.Environment{
+	created, err := s.environments.Create(ctx, &domain.Environment{
 		ProjectID:          project.ID,
 		Name:               strings.TrimSpace(req.Name),
 		Kind:               normalizedEnvironmentKind(req.Kind),
@@ -126,6 +138,11 @@ func (s *Service) CreateEnvironment(ctx context.Context, principal, projectName 
 		SourceOverrides:    cloneStringMap(req.SourceOverrides),
 		CreatedBy:          principal,
 	})
+	if err != nil {
+		return nil, err
+	}
+	s.logAudit(ctx, principal, "CREATE_INTERNAL_ENVIRONMENT")
+	return created, nil
 }
 
 // ListEnvironments returns environments for a project.
@@ -159,7 +176,7 @@ func (s *Service) CreateBuild(ctx context.Context, principal, projectName string
 	if err != nil {
 		return nil, err
 	}
-	return s.builds.Create(ctx, &domain.Build{
+	created, err := s.builds.Create(ctx, &domain.Build{
 		ProjectID:          project.ID,
 		ProductID:          project.ProductID,
 		EnvironmentID:      environment.ID,
@@ -174,6 +191,11 @@ func (s *Service) CreateBuild(ctx context.Context, principal, projectName string
 		CompileDiagnostics: normalizedStringPtr(req.CompileDiagnostics),
 		CreatedBy:          principal,
 	})
+	if err != nil {
+		return nil, err
+	}
+	s.logAudit(ctx, principal, "CREATE_INTERNAL_BUILD")
+	return created, nil
 }
 
 // ListBuilds returns builds for a project.
@@ -232,4 +254,15 @@ func cloneStringMap(value map[string]string) map[string]string {
 		out[key] = item
 	}
 	return out
+}
+
+func (s *Service) logAudit(ctx context.Context, principal, action string) {
+	if s == nil || s.audit == nil {
+		return
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        action,
+		Status:        "ALLOWED",
+	})
 }
