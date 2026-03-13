@@ -173,7 +173,7 @@ tasks:
     cmds:
       - npm ci --prefix site
       - npm run build:css --prefix site
-      - go run ./cmd/sitegen -content-dir site/content -config site/config/site.yaml -nav site/config/navigation.yaml -templates-dir site/templates -assets-dir site/assets -out-dir dist/site
+      - go run ./cmd/sitegen -content-dir site/content -config site/config/site.yaml -nav site/config/navigation.yaml -templates-dir site/templates -assets-dir site/assets -out-dir dist/site -base-url "${SITE_BASE_URL:-}"
 
   site:dev:
     desc: Build and serve the public site locally
@@ -181,7 +181,7 @@ tasks:
     cmds:
       - npm ci --prefix site
       - npm run build:css --prefix site
-      - go run ./cmd/sitegen -content-dir site/content -config site/config/site.yaml -nav site/config/navigation.yaml -templates-dir site/templates -assets-dir site/assets -out-dir dist/site -serve -addr :4080
+      - go run ./cmd/sitegen -content-dir site/content -config site/config/site.yaml -nav site/config/navigation.yaml -templates-dir site/templates -assets-dir site/assets -out-dir dist/site -base-url "${SITE_BASE_URL:-}" -serve -addr :4080
 
   site:build:
     desc: Build the public site static export

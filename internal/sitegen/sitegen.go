@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -184,6 +185,7 @@ type searchItem struct {
 
 type pageTemplateData struct {
 	Site          siteConfig
+	SiteRoot      string
 	Page          page
 	MetaTitle     string
 	BodyHTML      template.HTML
@@ -248,6 +250,7 @@ func (b Builder) Build() error {
 	if err := renderMermaidAssets(b.OutDir, pages, b.MermaidCLI); err != nil {
 		return err
 	}
+	siteRoot := normalizeSiteRoot(b.BaseURL)
 
 	searchItems := make([]searchItem, 0, len(pages))
 	for _, p := range pages {
@@ -260,15 +263,16 @@ func (b Builder) Build() error {
 
 		data := pageTemplateData{
 			Site:          cfg,
+			SiteRoot:      siteRoot,
 			Page:          p,
 			MetaTitle:     metaTitle(cfg.Title, p.Title, p.IsHome),
 			TopNav:        buildTopNav(nav.Primary, p.URLPath),
-			SidebarGroups: activateGroups(sidebar, p.URLPath),
+			SidebarGroups: prefixNavGroups(activateGroups(sidebar, p.URLPath), siteRoot),
 			TOC:           tocForPage(p),
 			Breadcrumbs:   buildBreadcrumbs(p),
 			Prev:          findNeighbor(flat, p.URLPath, -1),
 			Next:          findNeighbor(flat, p.URLPath, 1),
-			BodyHTML:      p.BodyHTML,
+			BodyHTML:      template.HTML(prefixSiteRootInHTML(string(p.BodyHTML), siteRoot)),
 			Home:          p.Home,
 			MirrorPath:    p.MirrorPath,
 		}
@@ -292,7 +296,7 @@ func (b Builder) Build() error {
 	if err := writeSearchIndex(b.OutDir, searchItems); err != nil {
 		return err
 	}
-	if err := writeLLMSTXT(b.OutDir, cfg, pages); err != nil {
+	if err := writeLLMSTXT(b.OutDir, cfg, pages, siteRoot); err != nil {
 		return err
 	}
 	if err := writeSitemap(b.OutDir, b.BaseURL, pages); err != nil {
@@ -327,6 +331,7 @@ func loadConfig[T any](path string) (T, error) {
 func loadTemplates(root string) (templateSet, error) {
 	tmpl, err := template.New("base").Funcs(template.FuncMap{
 		"navIcon": navIconSVG,
+		"siteURL": joinSiteURL,
 	}).ParseFS(os.DirFS(root), "*.tmpl")
 	if err != nil {
 		return templateSet{}, fmt.Errorf("parse templates: %w", err)
@@ -516,7 +521,7 @@ func writeSearchIndex(outDir string, items []searchItem) error {
 	return os.WriteFile(filepath.Join(outDir, "search-index.json"), append(payload, '\n'), 0o600)
 }
 
-func writeLLMSTXT(outDir string, cfg siteConfig, pages []page) error {
+func writeLLMSTXT(outDir string, cfg siteConfig, pages []page, siteRoot string) error {
 	var b strings.Builder
 	b.WriteString("# ")
 	b.WriteString(cfg.Title)
@@ -527,8 +532,8 @@ func writeLLMSTXT(outDir string, cfg siteConfig, pages []page) error {
 	for _, p := range pages {
 		b.WriteString("- ")
 		b.WriteString(p.Title)
-		b.WriteString(": /llms/")
-		b.WriteString(p.MirrorPath)
+		b.WriteString(": ")
+		b.WriteString(joinSiteURL(siteRoot, "/llms/"+p.MirrorPath))
 		b.WriteString("\n")
 	}
 	return os.WriteFile(filepath.Join(outDir, "llms.txt"), []byte(b.String()), 0o600)
@@ -793,6 +798,94 @@ func attrValue(attrs, name string) string {
 		return ""
 	}
 	return html.UnescapeString(match[1])
+}
+
+func normalizeSiteRoot(baseURL string) string {
+	baseURL = strings.TrimSpace(baseURL)
+	if baseURL == "" {
+		return ""
+	}
+	if strings.HasPrefix(baseURL, "/") {
+		return trimTrailingSlash(baseURL)
+	}
+
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return ""
+	}
+	return trimTrailingSlash(parsed.Path)
+}
+
+func trimTrailingSlash(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" || path == "/" {
+		return ""
+	}
+	return strings.TrimRight(path, "/")
+}
+
+func joinSiteURL(siteRoot, target string) string {
+	target = strings.TrimSpace(target)
+	if target == "" {
+		if siteRoot == "" {
+			return "/"
+		}
+		return siteRoot + "/"
+	}
+	if strings.HasPrefix(target, "#") {
+		return target
+	}
+	lower := strings.ToLower(target)
+	if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") || strings.HasPrefix(lower, "mailto:") || strings.HasPrefix(lower, "tel:") {
+		return target
+	}
+	if siteRoot == "" {
+		if strings.HasPrefix(target, "/") {
+			return target
+		}
+		return "/" + strings.TrimLeft(target, "/")
+	}
+	if strings.HasPrefix(target, "/") {
+		return siteRoot + target
+	}
+	return siteRoot + "/" + strings.TrimLeft(target, "/")
+}
+
+func prefixSiteRootInHTML(source, siteRoot string) string {
+	if siteRoot == "" {
+		return source
+	}
+	attrRE := regexp.MustCompile(`\b(href|src)=(")(/[^"]*)"`)
+	return attrRE.ReplaceAllStringFunc(source, func(match string) string {
+		parts := attrRE.FindStringSubmatch(match)
+		if len(parts) != 4 {
+			return match
+		}
+		return parts[1] + `="` + joinSiteURL(siteRoot, parts[3]) + `"`
+	})
+}
+
+func prefixNavGroups(groups []navGroup, siteRoot string) []navGroup {
+	prefixed := make([]navGroup, len(groups))
+	for i, group := range groups {
+		prefixed[i] = group
+		prefixed[i].Nodes = prefixNavNodes(group.Nodes, siteRoot)
+	}
+	return prefixed
+}
+
+func prefixNavNodes(nodes []navNode, siteRoot string) []navNode {
+	prefixed := make([]navNode, len(nodes))
+	for i, node := range nodes {
+		prefixed[i] = node
+		if node.Path != "" {
+			prefixed[i].Path = joinSiteURL(siteRoot, node.Path)
+		}
+		if len(node.Children) > 0 {
+			prefixed[i].Children = prefixNavNodes(node.Children, siteRoot)
+		}
+	}
+	return prefixed
 }
 
 func hasAttr(attrs, name string) bool {

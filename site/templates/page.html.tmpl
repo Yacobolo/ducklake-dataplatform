@@ -24,7 +24,7 @@
     <div class="mb-8 flex flex-wrap items-center justify-between gap-4 text-sm" style="color: var(--site-muted);">
       <div class="flex flex-wrap items-center gap-3">
         {{ range .Breadcrumbs }}
-          <a href="{{ .Path }}" class="no-underline">{{ .Title }}</a>
+          <a href="{{ siteURL $.SiteRoot .Path }}" class="no-underline">{{ .Title }}</a>
           <span>/</span>
         {{ end }}
         <span>{{ .Page.Title }}</span>
@@ -32,7 +32,7 @@
       <button
         type="button"
         class="site-button site-button-secondary"
-        data-site-copy-page="/llms/{{ .MirrorPath }}"
+        data-site-copy-page="{{ siteURL .SiteRoot (print "/llms/" .MirrorPath) }}"
       >Copy Page</button>
     </div>
     <div class="site-prose">
@@ -41,8 +41,8 @@
       {{ .BodyHTML }}
     </div>
     <div class="mt-12 flex flex-wrap justify-between gap-4 border-t pt-6" style="border-color: var(--site-border);">
-      {{ if .Prev }}<a class="site-button site-button-secondary" href="{{ .Prev.Path }}">← {{ .Prev.Title }}</a>{{ else }}<span></span>{{ end }}
-      {{ if .Next }}<a class="site-button site-button-secondary" href="{{ .Next.Path }}">{{ .Next.Title }} →</a>{{ end }}
+      {{ if .Prev }}<a class="site-button site-button-secondary" href="{{ siteURL $.SiteRoot .Prev.Path }}">← {{ .Prev.Title }}</a>{{ else }}<span></span>{{ end }}
+      {{ if .Next }}<a class="site-button site-button-secondary" href="{{ siteURL $.SiteRoot .Next.Path }}">{{ .Next.Title }} →</a>{{ end }}
     </div>
   </article>
   <aside class="site-toc docs-toc">

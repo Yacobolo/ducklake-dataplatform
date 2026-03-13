@@ -1,6 +1,6 @@
 {{ define "base" -}}
 <!doctype html>
-<html lang="en" data-color-mode="light" data-light-theme="light" data-dark-theme="dark">
+<html lang="en" data-color-mode="light" data-light-theme="light" data-dark-theme="dark" data-site-root="{{ .SiteRoot }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,20 +28,20 @@
       document.documentElement.setAttribute("data-theme-preference", stored);
     })();
   </script>
-  <link rel="icon" href="/_site/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/_site/site.css">
+  <link rel="icon" href="{{ siteURL .SiteRoot "/_site/favicon.svg" }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ siteURL .SiteRoot "/_site/site.css" }}">
 </head>
 <body>
   <div class="site-shell">
     <header class="site-header">
       <div class="site-header-inner">
-        <a class="site-logo" href="/">
-          <img src="/_site/favicon.svg" alt="" class="h-8 w-8">
+        <a class="site-logo" href="{{ siteURL .SiteRoot "/" }}">
+          <img src="{{ siteURL .SiteRoot "/_site/favicon.svg" }}" alt="" class="h-8 w-8">
           <span>{{ .Site.Title }}</span>
         </a>
         <nav class="site-nav">
           {{ range .TopNav }}
-            <a href="{{ .Path }}"{{ if .Active }} class="is-active"{{ end }}>{{ .Title }}</a>
+            <a href="{{ siteURL $.SiteRoot .Path }}"{{ if .Active }} class="is-active"{{ end }}>{{ .Title }}</a>
           {{ end }}
         </nav>
         <div class="site-actions">
@@ -99,7 +99,7 @@
       <div data-site-mobile-nav class="site-mobile-nav">
         <nav class="space-y-3">
           {{ range .TopNav }}
-            <a class="block no-underline" href="{{ .Path }}">{{ .Title }}</a>
+            <a class="block no-underline" href="{{ siteURL $.SiteRoot .Path }}">{{ .Title }}</a>
           {{ end }}
         </nav>
       </div>
@@ -137,7 +137,7 @@
       {{ template "docs" . }}
     {{ end }}
   </div>
-  <script src="/_site/site.js"></script>
+  <script src="{{ siteURL .SiteRoot "/_site/site.js" }}"></script>
 </body>
 </html>
 {{- end }}

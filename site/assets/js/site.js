@@ -1,5 +1,6 @@
 (function () {
   const root = document.documentElement;
+  const siteRoot = root.getAttribute("data-site-root") || "";
   const key = "duck-site-theme";
   const themeModes = ["system", "light", "dark"];
   const navButton = document.querySelector("[data-site-nav-toggle]");
@@ -75,7 +76,7 @@
 
   async function loadSearchIndex() {
     try {
-      const response = await fetch("/search-index.json");
+      const response = await fetch(withSiteRoot("/search-index.json"));
       if (!response.ok) {
         return [];
       }
@@ -128,7 +129,7 @@
     searchResults.innerHTML = items
       .map(function (item) {
         return '<a class="site-search-result" href="' +
-          item.path +
+          withSiteRoot(item.path) +
           '"><div class="site-search-result-title">' +
           item.title +
           '</div><div class="site-search-result-description">' +
@@ -404,3 +405,15 @@
     });
   }
 })();
+  function withSiteRoot(path) {
+    if (!path) {
+      return siteRoot || "/";
+    }
+    if (/^(?:[a-z]+:)?\/\//i.test(path) || /^(?:mailto:|tel:)/i.test(path) || path.charAt(0) === "#") {
+      return path;
+    }
+    if (path.charAt(0) === "/") {
+      return (siteRoot || "") + path;
+    }
+    return (siteRoot || "") + "/" + path.replace(/^\/+/, "");
+  }

@@ -10,7 +10,7 @@
         </div>
         <div class="flex flex-wrap gap-3">
           {{ range .Home.Hero.Actions }}
-            <a href="{{ .Link }}" class="site-button {{ if eq .Theme "brand" }}site-button-primary{{ else }}site-button-secondary{{ end }}">{{ .Text }}</a>
+            <a href="{{ siteURL $.SiteRoot .Link }}" class="site-button {{ if eq .Theme "brand" }}site-button-primary{{ else }}site-button-secondary{{ end }}">{{ .Text }}</a>
           {{ end }}
         </div>
         <div class="site-hero-points">
@@ -62,7 +62,7 @@
     </div>
     <div class="site-feature-grid">
       {{ range .Home.Features }}
-        <a href="{{ .Link }}" class="site-feature-card">
+        <a href="{{ siteURL $.SiteRoot .Link }}" class="site-feature-card">
           <div class="site-feature-card-top">
             <span class="site-feature-card-icon" aria-hidden="true">{{ navIcon .Icon }}</span>
             <span class="site-feature-card-arrow" aria-hidden="true">→</span>

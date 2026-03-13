@@ -167,6 +167,28 @@ printf '</text></svg>' >> "$output"
 	assert.Contains(t, string(body), "A-->B")
 }
 
+func TestNormalizeSiteRoot_UsesBaseURLPath(t *testing.T) {
+	assert.Equal(t, "/ducklake-dataplatform", normalizeSiteRoot("https://yacobolo.github.io/ducklake-dataplatform/"))
+	assert.Equal(t, "", normalizeSiteRoot("https://yacobolo.github.io/"))
+	assert.Equal(t, "/preview", normalizeSiteRoot("/preview/"))
+}
+
+func TestJoinSiteURL_PrefixesInternalPaths(t *testing.T) {
+	assert.Equal(t, "/ducklake-dataplatform/docs/", joinSiteURL("/ducklake-dataplatform", "/docs/"))
+	assert.Equal(t, "/docs/", joinSiteURL("", "/docs/"))
+	assert.Equal(t, "https://example.com/docs/", joinSiteURL("/ducklake-dataplatform", "https://example.com/docs/"))
+	assert.Equal(t, "#overview", joinSiteURL("/ducklake-dataplatform", "#overview"))
+}
+
+func TestPrefixSiteRootInHTML_RewritesInternalHrefAndSrc(t *testing.T) {
+	source := `<p><a href="/docs/start-here/">Docs</a><img src="/_site/mermaid/a.svg" alt=""></p>`
+
+	rendered := prefixSiteRootInHTML(source, "/ducklake-dataplatform")
+
+	assert.Contains(t, rendered, `href="/ducklake-dataplatform/docs/start-here/"`)
+	assert.Contains(t, rendered, `src="/ducklake-dataplatform/_site/mermaid/a.svg"`)
+}
+
 func TestAPIOperationNodes_ExtractMethodRouteAndAnchor(t *testing.T) {
 	p := page{
 		URLPath: "/api-reference/endpoints/queries/",
