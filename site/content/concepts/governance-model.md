@@ -13,13 +13,12 @@ Teams often assume access control begins and ends with “can this user query th
 
 ## The Four Layers
 
-Authentication answers, “who is this principal?” It identifies the user or service account.
-
-Grants answer, “may this principal reach this object at all?” Grants are about reachability.
-
-Row filters answer, “if they can reach it, which rows are they allowed to see?” Filters are about scoped visibility.
-
-Column masks answer, “if they can see the row, should the raw value still be shown?” Masks are about transforming or redacting sensitive fields.
+| Layer | Question Answered | Functional Goal |
+| --- | --- | --- |
+| Authentication | Who is this principal? | Identity verification |
+| Grants | May they reach this object? | Reachability and access |
+| Row filters | Which rows can they see? | Scoped visibility |
+| Column masks | Should the raw value be shown? | Transformation and redaction |
 
 ## How They Apply In Order
 
