@@ -30,6 +30,8 @@ type Service struct {
 	runs     domain.AssetRunRepository
 	checks   domain.AssetCheckRepository
 	semantic domain.SemanticModelRepository
+	projects domain.ProjectRepository
+	builds   domain.BuildRepository
 	repo     domain.DataProductRepository
 	audit    domain.AuditRepository
 }
@@ -65,6 +67,22 @@ func (s *Service) SetSemanticModelRepository(repo domain.SemanticModelRepository
 		return
 	}
 	s.semantic = repo
+}
+
+// SetBuildRepository configures internal build provenance lookups for product versions.
+func (s *Service) SetBuildRepository(repo domain.BuildRepository) {
+	if s == nil {
+		return
+	}
+	s.builds = repo
+}
+
+// SetProjectRepository configures internal project lookups for build publication policy.
+func (s *Service) SetProjectRepository(repo domain.ProjectRepository) {
+	if s == nil {
+		return
+	}
+	s.projects = repo
 }
 
 // ListDomains lists normalized product domains.
@@ -329,6 +347,7 @@ func (s *Service) CreateProduct(ctx context.Context, req domain.CreateDataProduc
 		SLO:                req.SLO,
 		DocsURL:            product.DocsURL,
 		AccessRequestPath:  product.AccessRequestPath,
+		ProducingBuildID:   req.ProducingBuildID,
 		CreatedBy:          product.CreatedBy,
 	}
 	if req.PrimaryAssetKey != nil && strings.TrimSpace(*req.PrimaryAssetKey) != "" {
@@ -464,7 +483,7 @@ func (s *Service) PublishVersion(ctx context.Context, slug string, version int) 
 	if err != nil {
 		return nil, err
 	}
-	if publishErrs := validatePublish(product, targetVersion, outputs, entrypoints); len(publishErrs) > 0 {
+	if publishErrs := s.validatePublish(ctx, product, targetVersion, outputs, entrypoints); len(publishErrs) > 0 {
 		return nil, domain.ErrValidation("publish validation failed: %s", strings.Join(publishErrs, "; "))
 	}
 
@@ -473,9 +492,15 @@ func (s *Service) PublishVersion(ctx context.Context, slug string, version int) 
 			if err := s.repo.UpdateVersionReleaseState(ctx, product.Versions[i].ID, domain.ProductReleaseStateDeprecated); err != nil {
 				return nil, err
 			}
+			if err := s.updateBuildStateForVersion(ctx, &product.Versions[i], domain.BuildStateSuperseded); err != nil {
+				return nil, err
+			}
 		}
 	}
 	if err := s.repo.UpdateVersionReleaseState(ctx, targetVersion.ID, domain.ProductReleaseStatePublished); err != nil {
+		return nil, err
+	}
+	if err := s.updateBuildStateForVersion(ctx, targetVersion, domain.BuildStateReleased); err != nil {
 		return nil, err
 	}
 	if err := s.repo.UpdatePublicationIntent(ctx, product.Product.ID, domain.ProductPublicationIntentPublished); err != nil {
@@ -504,6 +529,9 @@ func (s *Service) DeprecateVersion(ctx context.Context, slug string, version int
 		return nil, err
 	}
 	if err := s.repo.UpdateVersionReleaseState(ctx, targetVersion.ID, domain.ProductReleaseStateDeprecated); err != nil {
+		return nil, err
+	}
+	if err := s.updateBuildStateForVersion(ctx, targetVersion, domain.BuildStateSuperseded); err != nil {
 		return nil, err
 	}
 	status, err := s.computeStatus(ctx, product.Product.ID, domain.ProductReleaseStateDeprecated, product.Outputs)
@@ -535,6 +563,9 @@ func (s *Service) RetireVersion(ctx context.Context, slug string, version int) (
 		return nil, err
 	}
 	if err := s.repo.UpdateVersionReleaseState(ctx, targetVersion.ID, domain.ProductReleaseStateRetired); err != nil {
+		return nil, err
+	}
+	if err := s.updateBuildStateForVersion(ctx, targetVersion, domain.BuildStateSuperseded); err != nil {
 		return nil, err
 	}
 	status, err := s.computeStatus(ctx, product.Product.ID, domain.ProductReleaseStateRetired, product.Outputs)
@@ -780,9 +811,13 @@ func (s *Service) createVersionForProduct(ctx context.Context, product *domain.D
 	if len(versions) > 0 {
 		nextVersion = versions[0].Version + 1
 	}
+	if err := s.validateDraftProducingBuild(ctx, product.ID, req.ProducingBuildID); err != nil {
+		return nil, err
+	}
 
 	version := &domain.DataProductVersion{
 		ProductID:          product.ID,
+		ProducingBuildID:   normalizedStringPtr(req.ProducingBuildID),
 		Version:            nextVersion,
 		ReleaseState:       domain.ProductReleaseStateDraft,
 		CompatibilityLevel: defaultString(req.CompatibilityLevel, domain.ProductCompatibilityBackwardCompatible),
@@ -819,6 +854,23 @@ func (s *Service) createVersionForProduct(ctx context.Context, product *domain.D
 		"compatibility_level": created.CompatibilityLevel,
 	})
 	return created, nil
+}
+
+func (s *Service) validateDraftProducingBuild(ctx context.Context, productID string, buildID *string) error {
+	if strings.TrimSpace(stringValue(buildID)) == "" {
+		return nil
+	}
+	if s.builds == nil {
+		return domain.ErrValidation("build provenance is not configured")
+	}
+	build, err := s.builds.GetByID(ctx, *buildID)
+	if err != nil {
+		return fmt.Errorf("resolve producing_build_id %q: %w", *buildID, err)
+	}
+	if build.ProductID == nil || *build.ProductID != productID {
+		return domain.ErrValidation("producing_build_id must belong to the same product")
+	}
+	return nil
 }
 
 func (s *Service) resolveAssetOutputs(ctx context.Context, productID, productVersionID string, assetKeys []string) ([]domain.ProductOutput, error) {
@@ -1173,7 +1225,7 @@ func (s *Service) computeStatus(ctx context.Context, productID, publicationInten
 	return current, nil
 }
 
-func validatePublish(product *domain.DataProductDetail, version *domain.DataProductVersion, outputs []domain.ProductOutput, entrypoints []domain.ProductSemanticEntrypoint) []string {
+func (s *Service) validatePublish(ctx context.Context, product *domain.DataProductDetail, version *domain.DataProductVersion, outputs []domain.ProductOutput, entrypoints []domain.ProductSemanticEntrypoint) []string {
 	errs := make([]string, 0)
 	if strings.TrimSpace(product.Product.StewardPrincipal) == "" {
 		errs = append(errs, "steward_principal is required")
@@ -1203,7 +1255,53 @@ func validatePublish(product *domain.DataProductDetail, version *domain.DataProd
 	if len(outputs) > 0 && !hasPrimary {
 		errs = append(errs, "a primary output is required")
 	}
+	switch {
+	case strings.TrimSpace(stringValue(version.ProducingBuildID)) == "":
+		errs = append(errs, "producing_build_id is required")
+	case s.builds == nil:
+		errs = append(errs, "build provenance is not configured")
+	default:
+		build, err := s.builds.GetByID(ctx, *version.ProducingBuildID)
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("producing_build_id %q is invalid", *version.ProducingBuildID))
+		} else if build.ProductID == nil || *build.ProductID != product.Product.ID {
+			errs = append(errs, "producing_build_id must belong to the same product")
+		} else if projectErr := s.validateBuildPublicationPolicy(ctx, build, product.Product.ID); projectErr != nil {
+			errs = append(errs, projectErr.Error())
+		}
+	}
 	return errs
+}
+
+func (s *Service) validateBuildPublicationPolicy(ctx context.Context, build *domain.Build, productID string) error {
+	if s.projects == nil {
+		return domain.ErrValidation("project policy is not configured")
+	}
+	project, err := s.projects.GetByID(ctx, build.ProjectID)
+	if err != nil {
+		return fmt.Errorf("producing_build project is invalid")
+	}
+	if project.Kind != domain.ProjectKindShared {
+		return domain.ErrValidation("producing_build_id must come from a shared project")
+	}
+	if project.ProductID == nil || *project.ProductID != productID {
+		return domain.ErrValidation("producing_build_id project must be attached to the same product")
+	}
+	defaultBranchRef := "refs/heads/" + project.DefaultBranch
+	if strings.TrimSpace(build.GitRef) != defaultBranchRef && !strings.HasPrefix(strings.TrimSpace(build.GitRef), "refs/tags/") {
+		return domain.ErrValidation("producing_build_id must come from the project default branch or a tag")
+	}
+	return nil
+}
+
+func (s *Service) updateBuildStateForVersion(ctx context.Context, version *domain.DataProductVersion, state string) error {
+	if version == nil || s.builds == nil || version.ProducingBuildID == nil || strings.TrimSpace(*version.ProducingBuildID) == "" {
+		return nil
+	}
+	if err := s.builds.UpdateState(ctx, *version.ProducingBuildID, state); err != nil {
+		return fmt.Errorf("update producing build %q state: %w", *version.ProducingBuildID, err)
+	}
+	return nil
 }
 
 func hasContract(contract domain.ProductContract) bool {
@@ -1213,6 +1311,24 @@ func hasContract(contract domain.ProductContract) bool {
 		len(contract.Measures) > 0 ||
 		strings.TrimSpace(contract.UpdateCadence) != "" ||
 		strings.TrimSpace(contract.BreakingChangePolicy) != ""
+}
+
+func normalizedStringPtr(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(*value)
 }
 
 func compareProductListItems(a, b domain.DataProductListItem) int {

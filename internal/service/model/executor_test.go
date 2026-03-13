@@ -97,7 +97,7 @@ func TestExecuteSingleModel_DDLBypassesQueryEngine(t *testing.T) {
 		wantQueryCount  int
 	}{
 		{name: "view", materialization: domain.MaterializationView, wantQueryCount: 0},
-		{name: "table", materialization: domain.MaterializationTable, wantQueryCount: 1},
+		{name: "table", materialization: domain.MaterializationTable, wantQueryCount: 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			engine := &ddlRejectingSessionEngine{}

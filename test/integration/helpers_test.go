@@ -27,6 +27,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/require"
 
 	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/grpc"
@@ -1496,10 +1497,34 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		modelTestResultRepo := repository.NewModelTestResultRepo(metaDB)
 		colLineageRepo := repository.NewColumnLineageRepo(metaDB)
 		macroRepo := repository.NewMacroRepo(metaDB)
+		projectRepo := repository.NewProjectRepo(metaDB)
+		environmentRepo := repository.NewEnvironmentRepo(metaDB)
+		buildRepo := repository.NewBuildRepo(metaDB)
 		macroSvc = macro.NewService(macroRepo, auditRepo)
+		projectItem, err := projectRepo.Create(context.Background(), &domain.Project{
+			Name:          "analytics",
+			Kind:          domain.ProjectKindShared,
+			Description:   "integration test authoring project",
+			DefaultBranch: "main",
+			CreatedBy:     "admin",
+		})
+		require.NoError(t, err)
+		_, err = environmentRepo.Create(context.Background(), &domain.Environment{
+			ProjectID:     projectItem.ID,
+			Name:          "dev",
+			Kind:          domain.EnvironmentKindDevelopment,
+			Description:   "integration test development environment",
+			TargetCatalog: "memory",
+			TargetSchema:  "analytics",
+			CreatedBy:     "admin",
+		})
+		require.NoError(t, err)
 		modelSvc = svcmodel.NewService(svcmodel.ServiceDeps{
 			Models:        modelRepo,
 			Runs:          modelRunRepo,
+			Projects:      projectRepo,
+			Environments:  environmentRepo,
+			Builds:        buildRepo,
 			Tests:         modelTestRepo,
 			TestResults:   modelTestResultRepo,
 			Audit:         auditRepo,

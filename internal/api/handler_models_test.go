@@ -105,13 +105,14 @@ func TestHandler_TriggerModelRun_UsesAllModelNames(t *testing.T) {
 				gotReq = req
 				assert.Equal(t, "admin-user", principal)
 				return &domain.ModelRun{
-					ID:            "run-1",
-					Status:        domain.ModelRunStatusPending,
-					TriggerType:   domain.ModelTriggerTypeManual,
-					TriggeredBy:   principal,
-					TargetSchema:  req.TargetSchema,
-					ModelSelector: req.Selector,
-					CreatedAt:     fixed,
+					ID:              "run-1",
+					Status:          domain.ModelRunStatusPending,
+					TriggerType:     domain.ModelTriggerTypeManual,
+					TriggeredBy:     principal,
+					ProjectName:     req.ProjectName,
+					EnvironmentName: req.EnvironmentName,
+					ModelSelector:   req.Selector,
+					CreatedAt:       fixed,
 				}, nil
 			},
 		},
@@ -127,6 +128,7 @@ func TestHandler_TriggerModelRun_UsesAllModelNames(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "stg_orders,fct_orders", gotReq.Selector)
+	assert.Equal(t, "analytics", gotReq.ProjectName)
 
 	created, ok := resp.(GenTriggerModelRun201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
@@ -142,11 +144,10 @@ func TestHandler_TriggerModelRun_MapsPayloadFields(t *testing.T) {
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
 
 	reqBody := GenTriggerModelRunJSONBody{
-		ProjectName:   "proj_a",
-		ModelNames:    &[]string{"stg_orders", "+fct_orders"},
-		FullRefresh:   boolPtr(true),
-		TargetCatalog: strPtr("analytics"),
-		TargetSchema:  strPtr("mart"),
+		ProjectName:     "proj_a",
+		EnvironmentName: strPtr("staging"),
+		ModelNames:      &[]string{"stg_orders", "+fct_orders"},
+		FullRefresh:     boolPtr(true),
 	}
 
 	var gotPrincipal string
@@ -166,14 +167,14 @@ func TestHandler_TriggerModelRun_MapsPayloadFields(t *testing.T) {
 	require.True(t, ok, "expected 201 response, got %T", resp)
 
 	assert.Equal(t, "alice", gotPrincipal)
-	assert.Equal(t, "analytics", gotReq.TargetCatalog)
-	assert.Equal(t, "mart", gotReq.TargetSchema)
+	assert.Equal(t, "proj_a", gotReq.ProjectName)
+	assert.Equal(t, "staging", gotReq.EnvironmentName)
 	assert.Equal(t, "stg_orders,+fct_orders", gotReq.Selector)
 	assert.True(t, gotReq.FullRefresh)
 	assert.Equal(t, domain.ModelTriggerTypeManual, gotReq.TriggerType)
 }
 
-func TestHandler_TriggerModelRun_DefaultTargetValues(t *testing.T) {
+func TestHandler_TriggerModelRun_DefaultEnvironmentIsEmpty(t *testing.T) {
 	t.Parallel()
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true})
@@ -194,8 +195,8 @@ func TestHandler_TriggerModelRun_DefaultTargetValues(t *testing.T) {
 	_, ok := resp.(GenTriggerModelRun201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
 
-	assert.Equal(t, "memory", gotReq.TargetCatalog)
-	assert.Equal(t, "proj_a", gotReq.TargetSchema)
+	assert.Equal(t, "proj_a", gotReq.ProjectName)
+	assert.Empty(t, gotReq.EnvironmentName)
 	assert.Empty(t, gotReq.Selector)
 	assert.False(t, gotReq.FullRefresh)
 }
@@ -235,7 +236,7 @@ func TestHandler_ListModelRuns_IncludesModelNamesAndProject(t *testing.T) {
 					Status:        domain.ModelRunStatusSuccess,
 					TriggerType:   domain.ModelTriggerTypeManual,
 					TriggeredBy:   "admin-user",
-					TargetSchema:  "analytics",
+					ProjectName:   "analytics",
 					ModelSelector: "stg_orders,fct_orders",
 					CreatedAt:     fixed,
 				}}, 1, nil
@@ -304,11 +305,14 @@ func TestModelRunToAPI_CompileDiagnosticsStableEmptyArrays(t *testing.T) {
 	t.Parallel()
 
 	run := domain.ModelRun{
-		ID:          "run-empty-diags",
-		Status:      domain.ModelRunStatusSuccess,
-		TriggerType: domain.ModelTriggerTypeManual,
-		TriggeredBy: "admin",
-		CreatedAt:   time.Date(2026, 2, 17, 12, 0, 0, 0, time.UTC),
+		ID:              "run-empty-diags",
+		Status:          domain.ModelRunStatusSuccess,
+		TriggerType:     domain.ModelTriggerTypeManual,
+		TriggeredBy:     "admin",
+		ProjectName:     "analytics",
+		EnvironmentName: "dev",
+		BuildID:         strPtr("build-1"),
+		CreatedAt:       time.Date(2026, 2, 17, 12, 0, 0, 0, time.UTC),
 		CompileDiagnostics: &domain.ModelCompileDiagnostics{
 			Warnings: nil,
 			Errors:   nil,
@@ -316,6 +320,12 @@ func TestModelRunToAPI_CompileDiagnosticsStableEmptyArrays(t *testing.T) {
 	}
 
 	got := modelRunToAPI(run)
+	require.NotNil(t, got.ProjectName)
+	assert.Equal(t, "analytics", *got.ProjectName)
+	require.NotNil(t, got.EnvironmentName)
+	assert.Equal(t, "dev", *got.EnvironmentName)
+	require.NotNil(t, got.BuildId)
+	assert.Equal(t, "build-1", *got.BuildId)
 	require.NotNil(t, got.CompileDiagnostics)
 	require.NotNil(t, got.CompileDiagnostics.Warnings)
 	require.NotNil(t, got.CompileDiagnostics.Errors)

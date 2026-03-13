@@ -20,6 +20,7 @@
 | `domain_name` | `string` | `true` | - |
 | `name` | `string` | `true` | - |
 | `primary_asset_key` | `string` | `false` | - |
+| `producing_build_id` | `string` | `false` | - |
 | `semantic_model_refs` | `array[string]` | `false` | - |
 | `slo` | `ProductSLO` | `false` | - |
 | `slug` | `string` | `true` | - |

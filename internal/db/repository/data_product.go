@@ -394,6 +394,11 @@ func (r *DataProductRepo) GetBySlug(ctx context.Context, slug string) (*domain.D
 	return item, nil
 }
 
+// GetByID returns the authored product row for an internal control-plane identifier.
+func (r *DataProductRepo) GetByID(ctx context.Context, productID string) (*domain.DataProduct, error) {
+	return r.getProductByID(ctx, strings.TrimSpace(productID))
+}
+
 // List returns ranked product discovery rows.
 func (r *DataProductRepo) List(ctx context.Context, filter domain.DataProductFilter) ([]domain.DataProductListItem, int64, error) {
 	whereSQL, args := buildDataProductListWhere(filter)
@@ -424,7 +429,7 @@ func (r *DataProductRepo) List(ctx context.Context, filter domain.DataProductFil
 			s.publication_state, s.certification_state, s.freshness_status, s.quality_status,
 			s.last_successful_update_at, s.failing_checks_count, s.lineage_coverage,
 			s.adoption_metrics_json, s.open_warnings_json, s.replacement_product_id, s.updated_at,
-			v.id, v.product_id, v.version, v.release_state, v.compatibility_level,
+			v.id, v.product_id, v.producing_build_id, v.version, v.release_state, v.compatibility_level,
 			v.contract_json, v.slo_json, v.docs_url, v.access_request_path, v.created_by, v.created_at,
 			o.id, o.product_version_id, o.asset_id, a.asset_key, a.asset_type, o.is_primary, o.created_at
 		FROM data_products p
@@ -572,13 +577,14 @@ func (r *DataProductRepo) CreateVersion(ctx context.Context, version *domain.Dat
 	}
 	_, err = r.db.ExecContext(ctx, `
 		INSERT INTO data_product_versions (
-			id, product_id, version, release_state, compatibility_level,
+			id, product_id, producing_build_id, version, release_state, compatibility_level,
 			contract_json, slo_json, docs_url, access_request_path, created_by
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		id,
 		version.ProductID,
+		nullableStringValue(version.ProducingBuildID),
 		version.Version,
 		defaultProductString(version.ReleaseState, domain.ProductReleaseStateDraft),
 		defaultProductString(version.CompatibilityLevel, domain.ProductCompatibilityBackwardCompatible),
@@ -597,7 +603,7 @@ func (r *DataProductRepo) CreateVersion(ctx context.Context, version *domain.Dat
 // ListVersions returns all versions for a product.
 func (r *DataProductRepo) ListVersions(ctx context.Context, productID string) ([]domain.DataProductVersion, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, product_id, version, release_state, compatibility_level,
+		SELECT id, product_id, producing_build_id, version, release_state, compatibility_level,
 		       contract_json, slo_json, docs_url, access_request_path, created_by, created_at
 		FROM data_product_versions
 		WHERE product_id = ?
@@ -625,7 +631,7 @@ func (r *DataProductRepo) ListVersions(ctx context.Context, productID string) ([
 // GetVersionByNumber returns a product version by ordinal.
 func (r *DataProductRepo) GetVersionByNumber(ctx context.Context, productID string, version int) (*domain.DataProductVersion, error) {
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, product_id, version, release_state, compatibility_level,
+		SELECT id, product_id, producing_build_id, version, release_state, compatibility_level,
 		       contract_json, slo_json, docs_url, access_request_path, created_by, created_at
 		FROM data_product_versions
 		WHERE product_id = ? AND version = ?
@@ -926,7 +932,7 @@ func (r *DataProductRepo) ListDependencies(ctx context.Context, productID string
 			s.publication_state, s.certification_state, s.freshness_status, s.quality_status,
 			s.last_successful_update_at, s.failing_checks_count, s.lineage_coverage,
 			s.adoption_metrics_json, s.open_warnings_json, s.replacement_product_id, s.updated_at,
-			v.id, v.product_id, v.version, v.release_state, v.compatibility_level,
+			v.id, v.product_id, v.producing_build_id, v.version, v.release_state, v.compatibility_level,
 			v.contract_json, v.slo_json, v.docs_url, v.access_request_path, v.created_by, v.created_at,
 			o.id, o.product_version_id, o.asset_id, a.asset_key, a.asset_type, o.is_primary, o.created_at
 		FROM product_dependencies pd
@@ -1195,7 +1201,7 @@ func (r *DataProductRepo) getProductByID(ctx context.Context, id string) (*domai
 
 func (r *DataProductRepo) getVersionByID(ctx context.Context, id string) (*domain.DataProductVersion, error) {
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, product_id, version, release_state, compatibility_level,
+		SELECT id, product_id, producing_build_id, version, release_state, compatibility_level,
 		       contract_json, slo_json, docs_url, access_request_path, created_by, created_at
 		FROM data_product_versions
 		WHERE id = ?
@@ -1270,15 +1276,19 @@ func scanProduct(scanner interface{ Scan(dest ...any) error }) (*domain.DataProd
 
 func scanProductVersion(scanner interface{ Scan(dest ...any) error }) (*domain.DataProductVersion, error) {
 	var (
-		item         domain.DataProductVersion
-		contractJSON string
-		sloJSON      string
+		item             domain.DataProductVersion
+		producingBuildID sql.NullString
+		contractJSON     string
+		sloJSON          string
 	)
 	if err := scanner.Scan(
-		&item.ID, &item.ProductID, &item.Version, &item.ReleaseState, &item.CompatibilityLevel,
+		&item.ID, &item.ProductID, &producingBuildID, &item.Version, &item.ReleaseState, &item.CompatibilityLevel,
 		&contractJSON, &sloJSON, &item.DocsURL, &item.AccessRequestPath, &item.CreatedBy, &item.CreatedAt,
 	); err != nil {
 		return nil, err
+	}
+	if producingBuildID.Valid {
+		item.ProducingBuildID = &producingBuildID.String
 	}
 	if err := json.Unmarshal([]byte(contractJSON), &item.Contract); err != nil {
 		return nil, fmt.Errorf("unmarshal product version contract_json: %w", err)
@@ -1477,6 +1487,7 @@ func scanProductListItem(scanner interface{ Scan(dest ...any) error }) (*domain.
 		statusUpdatedAt   sql.NullTime
 		versionID         sql.NullString
 		versionProductID  sql.NullString
+		versionBuildID    sql.NullString
 		versionNumber     sql.NullInt64
 		releaseState      sql.NullString
 		compatibility     sql.NullString
@@ -1504,7 +1515,7 @@ func scanProductListItem(scanner interface{ Scan(dest ...any) error }) (*domain.
 		&statusPub, &statusCert, &statusFresh, &statusQuality,
 		&lastSuccess, &failingChecks, &lineageCoverage,
 		&adoptionJSON, &warningsJSON, &replacementID, &statusUpdatedAt,
-		&versionID, &versionProductID, &versionNumber, &releaseState, &compatibility,
+		&versionID, &versionProductID, &versionBuildID, &versionNumber, &releaseState, &compatibility,
 		&versionContract, &versionSLO, &versionDocsURL, &versionAccessPath, &versionCreatedBy, &versionCreatedAt,
 		&outputID, &outputVersionID, &outputAssetID, &outputAssetKey, &outputAssetType, &outputIsPrimary, &outputCreatedAt,
 	); err != nil {
@@ -1534,6 +1545,9 @@ func scanProductListItem(scanner interface{ Scan(dest ...any) error }) (*domain.
 			DocsURL:            versionDocsURL.String,
 			AccessRequestPath:  versionAccessPath.String,
 			CreatedBy:          versionCreatedBy.String,
+		}
+		if versionBuildID.Valid {
+			version.ProducingBuildID = &versionBuildID.String
 		}
 		if versionCreatedAt.Valid {
 			version.CreatedAt = versionCreatedAt.Time

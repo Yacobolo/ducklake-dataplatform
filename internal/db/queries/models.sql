@@ -42,8 +42,11 @@ UPDATE models SET depends_on = ?, updated_at = datetime('now') WHERE id = ?;
 DELETE FROM models WHERE id = ?;
 
 -- name: CreateModelRun :one
-INSERT INTO model_runs (id, status, trigger_type, triggered_by, target_catalog, target_schema, model_selector, variables, full_refresh, compile_manifest, compile_diagnostics)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO model_runs (
+    id, status, trigger_type, triggered_by, project_name, environment_name, build_id,
+    target_catalog, target_schema, model_selector, variables, full_refresh, compile_manifest, compile_diagnostics
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetModelRunByID :one
@@ -61,6 +64,9 @@ WHERE (? = '' OR status = ?);
 
 -- name: UpdateModelRunStarted :exec
 UPDATE model_runs SET status = 'RUNNING', started_at = datetime('now') WHERE id = ?;
+
+-- name: UpdateModelRunBuild :exec
+UPDATE model_runs SET build_id = ? WHERE id = ?;
 
 -- name: UpdateModelRunFinished :exec
 UPDATE model_runs SET status = ?, finished_at = datetime('now'), error_message = ? WHERE id = ?;

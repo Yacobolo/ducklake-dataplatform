@@ -306,23 +306,7 @@ func (s *Service) materializeTable(ctx context.Context, conn *sql.Conn,
 	if err := s.execOnConn(ctx, conn, principal, ddl); err != nil {
 		return 0, err
 	}
-	// Count rows in the materialized table
-	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM %s", relation)
-	rows, err := s.engine.QueryOnConn(ctx, conn, principal, countSQL)
-	if err != nil {
-		return 0, fmt.Errorf("count materialized rows: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-	var count int64
-	if rows.Next() {
-		if err := rows.Scan(&count); err != nil {
-			return 0, fmt.Errorf("scan materialized row count: %w", err)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		s.logger.Warn("row count error", "error", err)
-	}
-	return count, nil
+	return s.countRows(ctx, conn, relation)
 }
 
 func (s *Service) execOnConn(ctx context.Context, conn *sql.Conn, principal, query string) error {
@@ -451,23 +435,7 @@ func (s *Service) materializeIncremental(ctx context.Context, conn *sql.Conn,
 		return 0, domain.ErrValidation("unsupported incremental_strategy %q for model %s", model.Config.IncrementalStrategy, model.Name)
 	}
 
-	// Count total rows
-	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM %s", targetFQN)
-	rows, err := s.engine.QueryOnConn(ctx, conn, principal, countSQL)
-	if err != nil {
-		return 0, fmt.Errorf("count incremental rows: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-	var count int64
-	if rows.Next() {
-		if err := rows.Scan(&count); err != nil {
-			return 0, fmt.Errorf("scan incremental row count: %w", err)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		s.logger.Warn("row count error", "error", err)
-	}
-	return count, nil
+	return s.countRows(ctx, conn, targetFQN)
 }
 
 func (s *Service) materializeSnapshot(ctx context.Context, conn *sql.Conn,
@@ -487,7 +455,7 @@ func (s *Service) materializeSnapshot(ctx context.Context, conn *sql.Conn,
 		if err := s.execOnConn(ctx, conn, principal, createSQL); err != nil {
 			return 0, err
 		}
-		return s.countRows(ctx, conn, principal, targetFQN)
+		return s.countRows(ctx, conn, targetFQN)
 	}
 
 	uniqueKeys := model.Config.UniqueKey
@@ -557,21 +525,23 @@ func (s *Service) materializeSnapshot(ctx context.Context, conn *sql.Conn,
 		return 0, err
 	}
 
-	return s.countRows(ctx, conn, principal, targetFQN)
+	return s.countRows(ctx, conn, targetFQN)
 }
 
-func (s *Service) countRows(ctx context.Context, conn *sql.Conn, principal, relation string) (int64, error) {
-	rows, err := s.engine.QueryOnConn(ctx, conn, principal, fmt.Sprintf("SELECT COUNT(*) FROM %s", relation))
+func (s *Service) countRows(ctx context.Context, conn *sql.Conn, relation string) (int64, error) {
+	rows, err := conn.QueryContext(ctx, fmt.Sprintf("SELECT COUNT(*) FROM %s", relation))
 	if err != nil {
-		return 0, nil
+		return 0, fmt.Errorf("count rows for %s: %w", relation, err)
 	}
 	defer func() { _ = rows.Close() }()
 	var count int64
 	if rows.Next() {
-		_ = rows.Scan(&count)
+		if err := rows.Scan(&count); err != nil {
+			return 0, fmt.Errorf("scan row count for %s: %w", relation, err)
+		}
 	}
 	if err := rows.Err(); err != nil {
-		s.logger.Warn("row count error", "error", err)
+		return 0, fmt.Errorf("iterate row count for %s: %w", relation, err)
 	}
 	return count, nil
 }

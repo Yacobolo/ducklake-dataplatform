@@ -329,6 +329,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	assetPartitionRepo := repository.NewAssetPartitionRepo(deps.WriteDB)
 	assetRunRepo := repository.NewAssetRunRepo(deps.WriteDB)
 	assetCheckRepo := repository.NewAssetCheckRepo(deps.WriteDB)
+	buildRepo := repository.NewBuildRepo(deps.WriteDB)
+	projectRepo := repository.NewProjectRepo(deps.WriteDB)
+	environmentRepo := repository.NewEnvironmentRepo(deps.WriteDB)
 	orchEventRepo := repository.NewOrchestrationEventRepo(deps.WriteDB)
 	backfillRepo := repository.NewBackfillRepo(deps.WriteDB)
 	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
@@ -342,6 +345,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	backfillSvc := orchestration.NewBackfillService(backfillRepo, triggerRouter, auditRepo, authSvc)
 	assetSvc := assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, orchEventRepo, auditRepo, authSvc, dataProductRepo)
 	productSvc := productsvc.NewService(domainRepo, teamRepo, assetRepo, assetRunRepo, assetCheckRepo, dataProductRepo, auditRepo)
+	productSvc.SetBuildRepository(buildRepo)
+	productSvc.SetProjectRepository(projectRepo)
 	notebookProduct, err := productSvc.EnsureManagedRuntimeProduct(ctx, productsvc.ManagedRuntimeProductNotebooks)
 	if err != nil {
 		return nil, fmt.Errorf("ensure runtime notebook product: %w", err)
@@ -375,6 +380,9 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	modelSvc := svcmodel.NewService(svcmodel.ServiceDeps{
 		Models:        modelRepo,
 		Runs:          modelRunRepo,
+		Projects:      projectRepo,
+		Environments:  environmentRepo,
+		Builds:        buildRepo,
 		Tests:         modelTestRepo,
 		TestResults:   modelTestResultRepo,
 		Audit:         auditRepo,

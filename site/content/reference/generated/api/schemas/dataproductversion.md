@@ -16,6 +16,7 @@
 | `created_by` | `string` | `false` | - |
 | `docs_url` | `string` | `false` | - |
 | `id` | `string` | `true` | - |
+| `producing_build_id` | `string` | `false` | - |
 | `product_id` | `string` | `true` | - |
 | `release_state` | `string` | `true` | - |
 | `slo` | `ProductSLO` | `false` | - |

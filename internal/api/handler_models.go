@@ -210,15 +210,11 @@ func (h *APIHandler) GetModelDAG(ctx context.Context, req GenGetModelDAGRequest)
 // TriggerModelRun implements the endpoint for triggering a model run.
 func (h *APIHandler) TriggerModelRun(ctx context.Context, req GenTriggerModelRunRequest) (GenTriggerModelRunResponse, error) {
 	domReq := domain.TriggerModelRunRequest{
-		TargetCatalog: "memory",
-		TargetSchema:  req.Body.ProjectName,
-		TriggerType:   domain.ModelTriggerTypeManual,
+		ProjectName: req.Body.ProjectName,
+		TriggerType: domain.ModelTriggerTypeManual,
 	}
-	if req.Body.TargetCatalog != nil {
-		domReq.TargetCatalog = *req.Body.TargetCatalog
-	}
-	if req.Body.TargetSchema != nil {
-		domReq.TargetSchema = *req.Body.TargetSchema
+	if req.Body.EnvironmentName != nil {
+		domReq.EnvironmentName = *req.Body.EnvironmentName
 	}
 	if req.Body.FullRefresh != nil {
 		domReq.FullRefresh = *req.Body.FullRefresh
@@ -399,8 +395,14 @@ func modelRunToAPI(r domain.ModelRun) ModelRun {
 		TriggeredBy: &r.TriggeredBy,
 		CreatedAt:   formatTimePtr(&r.CreatedAt),
 	}
-	if r.TargetSchema != "" {
-		resp.ProjectName = &r.TargetSchema
+	if r.ProjectName != "" {
+		resp.ProjectName = &r.ProjectName
+	}
+	if r.EnvironmentName != "" {
+		resp.EnvironmentName = &r.EnvironmentName
+	}
+	if r.BuildID != nil {
+		resp.BuildId = r.BuildID
 	}
 	resp.FullRefresh = &r.FullRefresh
 	if r.CompileManifest != nil {

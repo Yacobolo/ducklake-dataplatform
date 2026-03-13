@@ -101,6 +101,7 @@ model CreateDataProductRequest {
   business_definitions?: MetadataMap;
   contract?: ProductContract;
   slo?: ProductSLO;
+  producing_build_id?: string;
   primary_asset_key?: string;
   semantic_model_refs?: string[];
   created_by?: string;
@@ -126,6 +127,7 @@ model UpdateDataProductRequest {
 model DataProductVersion {
   id: string;
   product_id: string;
+  producing_build_id?: string;
   version: int32;
   release_state: string;
   compatibility_level: string;
@@ -143,6 +145,7 @@ model CreateDataProductVersionRequest {
   slo?: ProductSLO;
   docs_url?: string;
   access_request_path?: string;
+  producing_build_id?: string;
   output_asset_keys?: string[];
   semantic_model_refs?: string[];
   created_by?: string;

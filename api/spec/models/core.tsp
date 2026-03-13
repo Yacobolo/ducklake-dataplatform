@@ -1580,10 +1580,9 @@ model PaginatedSemanticRelationships {
 
 model TriggerModelRunRequest {
   project_name: string;
+  environment_name?: string;
   model_names?: string[];
   full_refresh?: boolean;
-  target_catalog?: string;
-  target_schema?: string;
 }
 
 model ModelRunCompileDiagnostics {
@@ -1597,6 +1596,8 @@ model ModelRun {
   trigger_type?: string;
   triggered_by?: string;
   project_name?: string;
+  environment_name?: string;
+  build_id?: string;
   model_names?: string[];
   full_refresh?: boolean;
   compile_manifest?: string;

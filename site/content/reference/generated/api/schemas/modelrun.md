@@ -8,9 +8,11 @@
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
+| `build_id` | `string` | `false` | - |
 | `compile_diagnostics` | `ModelRunCompileDiagnostics` | `false` | - |
 | `compile_manifest` | `string` | `false` | - |
 | `created_at` | `string` | `false` | - |
+| `environment_name` | `string` | `false` | - |
 | `error_message` | `string` | `false` | - |
 | `finished_at` | `string` | `false` | - |
 | `full_refresh` | `boolean` | `false` | - |

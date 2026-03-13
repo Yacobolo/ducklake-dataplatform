@@ -906,6 +906,7 @@ func dataProductVersionToAPI(item domain.DataProductVersion) DataProductVersion 
 	return DataProductVersion{
 		Id:                 item.ID,
 		ProductId:          item.ProductID,
+		ProducingBuildId:   item.ProducingBuildID,
 		Version:            safeIntToInt32(item.Version),
 		ReleaseState:       item.ReleaseState,
 		CompatibilityLevel: item.CompatibilityLevel,
@@ -1217,6 +1218,7 @@ func domainCreateDataProductRequest(body *GenCreateDataProductJSONBody) domain.C
 		BusinessDefinitions: stringMapFromRecord(body.BusinessDefinitions),
 		Contract:            domainProductContract(body.Contract),
 		SLO:                 domainProductSLO(body.Slo),
+		ProducingBuildID:    body.ProducingBuildId,
 		SemanticModelRefs:   cloneStringSlicePtr(body.SemanticModelRefs),
 		CreatedBy:           productDefaultString(derefString(body.CreatedBy), "system"),
 	}
@@ -1252,6 +1254,7 @@ func domainCreateDataProductVersionRequest(body *GenCreateDataProductVersionJSON
 		SLO:                domainProductSLO(body.Slo),
 		DocsURL:            derefString(body.DocsUrl),
 		AccessRequestPath:  derefString(body.AccessRequestPath),
+		ProducingBuildID:   body.ProducingBuildId,
 		OutputAssetKeys:    cloneStringSlicePtr(body.OutputAssetKeys),
 		SemanticModelRefs:  cloneStringSlicePtr(body.SemanticModelRefs),
 		CreatedBy:          derefString(body.CreatedBy),

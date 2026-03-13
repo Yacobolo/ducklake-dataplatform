@@ -14587,6 +14587,8 @@ components:
           $ref: '#/components/schemas/ProductContract'
         slo:
           $ref: '#/components/schemas/ProductSLO'
+        producing_build_id:
+          type: string
         primary_asset_key:
           type: string
         semantic_model_refs:
@@ -14607,6 +14609,8 @@ components:
         docs_url:
           type: string
         access_request_path:
+          type: string
+        producing_build_id:
           type: string
         output_asset_keys:
           type: array
@@ -15466,6 +15470,8 @@ components:
           type: string
         product_id:
           type: string
+        producing_build_id:
+          type: string
         version:
           type: integer
           format: int32
@@ -16245,6 +16251,10 @@ components:
         triggered_by:
           type: string
         project_name:
+          type: string
+        environment_name:
+          type: string
+        build_id:
           type: string
         model_names:
           type: array
@@ -18307,16 +18317,14 @@ components:
       properties:
         project_name:
           type: string
+        environment_name:
+          type: string
         model_names:
           type: array
           items:
             type: string
         full_refresh:
           type: boolean
-        target_catalog:
-          type: string
-        target_schema:
-          type: string
     TriggerPipelineRunRequest:
       type: object
       properties:

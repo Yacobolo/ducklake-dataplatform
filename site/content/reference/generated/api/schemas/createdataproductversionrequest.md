@@ -14,6 +14,7 @@
 | `created_by` | `string` | `false` | - |
 | `docs_url` | `string` | `false` | - |
 | `output_asset_keys` | `array[string]` | `false` | - |
+| `producing_build_id` | `string` | `false` | - |
 | `semantic_model_refs` | `array[string]` | `false` | - |
 | `slo` | `ProductSLO` | `false` | - |
 

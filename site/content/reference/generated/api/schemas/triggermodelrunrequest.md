@@ -9,9 +9,8 @@
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
+| `environment_name` | `string` | `false` | - |
 | `full_refresh` | `boolean` | `false` | - |
 | `model_names` | `array[string]` | `false` | - |
 | `project_name` | `string` | `true` | - |
-| `target_catalog` | `string` | `false` | - |
-| `target_schema` | `string` | `false` | - |
 

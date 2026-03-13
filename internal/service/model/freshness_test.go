@@ -70,6 +70,10 @@ func (s freshnessRunRepoStub) ListRuns(_ context.Context, _ domain.ModelRunFilte
 	return s.runs, int64(len(s.runs)), nil
 }
 
+func (s freshnessRunRepoStub) UpdateRunBuild(context.Context, string, string) error {
+	panic("unexpected call")
+}
+
 func (s freshnessRunRepoStub) UpdateRunStarted(context.Context, string) error {
 	panic("unexpected call")
 }
