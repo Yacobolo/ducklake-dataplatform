@@ -10,28 +10,46 @@ docs:
     expanded: true
     items:
       - source: start-here/index.md
-        title: Overview
       - source: start-here/quickstart.md
+      - source: start-here/first-data-product.md
+      - source: start-here/first-operator-setup.md
       - source: start-here/deployment-modes.md
-  - title: Core Concepts
+  - title: Concepts
     icon: blocks
     expanded: true
     items:
-      - source: core-concepts/index.md
-      - source: core-concepts/access-control.md
-      - source: core-concepts/declarative.md
-      - source: core-concepts/compute-and-query.md
-  - title: How To
+      - source: concepts/index.md
+      - source: concepts/platform-architecture.md
+      - source: concepts/governance-model.md
+      - source: concepts/data-products.md
+      - source: concepts/asset-orchestration.md
+      - source: concepts/transformation-framework.md
+      - source: concepts/semantic-layer.md
+      - source: concepts/lineage-and-freshness.md
+      - source: concepts/compute-topology.md
+  - title: Build
     icon: wrench
     expanded: true
     items:
-      - source: how-to/index.md
-      - source: how-to/authentication.md
-      - source: how-to/use-the-cli.md
-      - source: how-to/access-control.md
-      - source: how-to/catalog-and-ingestion.md
-      - source: how-to/declarative-workflows.md
-  - title: Operations
+      - source: build/index.md
+      - source: build/data-product-lifecycle.md
+      - source: build/register-source-data.md
+      - source: build/author-models-and-tests.md
+      - source: build/reuse-macros.md
+      - source: build/notebooks-and-promotion.md
+      - source: build/asset-orchestration.md
+      - source: build/semantic-models-and-metrics.md
+      - source: build/declarative-delivery.md
+  - title: Govern
+    icon: shield
+    expanded: true
+    items:
+      - source: govern/index.md
+      - source: govern/authentication-and-identities.md
+      - source: govern/access-design.md
+      - source: govern/policy-verification.md
+      - source: govern/product-ownership.md
+  - title: Operate
     icon: library
     expanded: true
     items:
@@ -39,24 +57,21 @@ docs:
       - source: operations/configuration.md
       - source: operations/security-checklist.md
       - source: operations/distributed-compute.md
+      - source: operations/storage-and-integrations.md
+      - source: operations/observability-and-troubleshooting.md
   - title: Reference
     icon: book-open
     expanded: true
     items:
-      - title: Overview
-        icon: book-open
-        items:
-          - source: reference/index.md
-          - source: reference/glossary.md
-          - source: reference/api.md
-          - source: reference/declarative.md
-          - source: reference/cli.md
-      - title: Deep Dives
-        icon: route
-        items:
-          - source: browser-local-compute.md
-          - source: architecture-governance.md
-      - title: Declarative Reference
+      - source: reference/index.md
+      - source: reference/feature-map.md
+      - source: reference/glossary.md
+      - source: reference/privileges.md
+      - source: reference/mermaid-diagrams.md
+      - source: reference/api.md
+      - source: reference/declarative.md
+      - source: reference/cli.md
+      - title: Declarative Schema
         icon: file-json
         items:
           - source: reference/generated/declarative/index.md

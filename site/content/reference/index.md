@@ -1,18 +1,21 @@
 ---
 title: Reference
-description: Start with product guidance and use advanced reference only when necessary.
+description: Use reference material for exact capability, privilege, CLI, API, schema, and diagram-authoring detail.
 ---
 
 # Reference
 
-This section exists for advanced users and admins who need technical detail beyond the product guides.
+Use this section when you already understand the journey and need precise answers.
 
-## Advanced Reference Areas
+## Start Here
 
-- [Advanced API Reference](/reference/api) for exact endpoint behavior, payload shapes, and operation-level detail.
-- [Advanced Declarative Reference](/reference/declarative) for field-level schema detail in declarative workflows.
-- [Advanced CLI Reference](/reference/cli) for command-level detail where CLI workflows are available.
+- [Feature Map](/reference/feature-map) to see how the authored docs line up with the platform surface.
+- [Privileges](/reference/privileges) to understand access vocabulary and where it matters.
+- [Glossary](/reference/glossary) to normalize platform terminology.
 
-## Supporting Material
+## Entry Guides
 
-- [Glossary](/reference/glossary)
+- [API Entry Guide](/reference/api)
+- [Declarative Entry Guide](/reference/declarative)
+- [CLI Entry Guide](/reference/cli)
+- [Mermaid Diagram Guide](/reference/mermaid-diagrams)

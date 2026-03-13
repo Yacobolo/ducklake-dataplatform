@@ -1,0 +1,13 @@
+flowchart LR
+    source@{ icon: "fa:hard-drive", label: "Source Asset" }
+    stage@{ icon: "fa:file-code", label: "Staging Asset" }
+    check@{ icon: "fa:circle-check", label: "Checks" }
+    fresh@{ icon: "fa:clock", label: "Freshness Policy" }
+    mart@{ icon: "fa:file-lines", label: "Curated Asset" }
+    materialize@{ icon: "fa:calendar", label: "Materialize / Backfill" }
+    product@{ icon: "fa:handshake", label: "Published Product" }
+
+    source --> stage --> mart --> product
+    stage --> check --> mart
+    mart --> fresh
+    fresh --> materialize --> mart

@@ -1,37 +1,45 @@
 ---
 title: Ways to Access Duck
-description: Understand the main access paths for users, builders, and admins.
+description: Choose the right interaction mode for users, builders, and operators.
 ---
 
 # Ways to Access Duck
 
-Duck supports multiple access paths so different users can work in the way that fits them best. Most end users should think about access in terms of product experience, not infrastructure.
+Duck supports multiple interaction modes because the same governed platform serves end users, builders, and operators.
 
-## Browser Access
-
-Use this when:
-
-- you are exploring the platform interactively
-- your organization uses browser-based sign-in
-- you want a guided product experience
-
-## SQL and BI Access
+## Query Surfaces
 
 Use this when:
 
-- you want to connect query tools or BI clients
-- your team works directly in SQL
-- you need a familiar database-style experience
+- you want guided product surfaces
+- your team exposes browser-based discovery or dashboards
+- you are troubleshooting user experience rather than API behavior
 
-## API and Automation Access
+## SQL, BI, And Programmatic Access
 
 Use this when:
 
-- you are automating workflows
-- you need repeatable scripted access
-- you are integrating Duck into a larger platform flow
+- you use SQL clients, BI tools, or service-to-service calls
+- you want a familiar query workflow
+- you need repeatable automation or scripting
 
-## Remote Compute Access
+## Builder Workflows
+
+Use this when:
+
+- you are creating models, assets, notebooks, metrics, and products
+- you need declarative change management
+- you want exact API and CLI control over platform state
+
+## Operator And Runtime Access
+
+Use this when:
+
+- you are configuring auth, storage, networking, or compute routing
+- you are rolling out distributed compute
+- you are debugging health, throughput, or fallback behavior
+
+## Execution Topology
 
 Use this when:
 
@@ -45,13 +53,13 @@ Read [Distributed Compute](/operations/distributed-compute) before rollout.
 
 | Need | Recommended path |
 | --- | --- |
-| Guided product experience | Browser access |
-| Direct query workflows | SQL or BI access |
-| Automation and integrations | API access |
-| Isolated or scaled execution | Remote compute |
+| Reach trusted data quickly | Query surfaces |
+| Build reusable products | Builder workflows |
+| Manage policy and runtime posture | Operator and runtime access |
+| Isolate or scale execution | Execution topology and remote compute |
 
 ## Next Steps
 
 - [Quickstart](/start-here/quickstart)
-- [Use the Platform](/how-to/)
-- [Govern & Administer](/operations/)
+- [First Data Product](/start-here/first-data-product)
+- [First Operator Setup](/start-here/first-operator-setup)

@@ -1,6 +1,0 @@
-flowchart LR
-    User["Platform user"] --> Auth["Auth layer"]
-    Auth --> API["Duck API"]
-    API --> Policy["RBAC + RLS + masking"]
-    Policy --> Engine["DuckDB query engine"]
-    Engine --> Result["Governed result set"]

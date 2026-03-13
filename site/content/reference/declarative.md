@@ -1,16 +1,16 @@
 ---
 title: Advanced Declarative Reference
-description: Use the generated declarative schema reference when you need field-level schema detail.
+description: Use the generated declarative schema reference for field-level detail after the workflow is clear.
 ---
 
-# Advanced Declarative Reference
+# Declarative Entry Guide
 
 The generated declarative reference documents the versioned JSON Schema artifacts that define supported document shapes. Treat it as the field-level companion to the declarative workflow.
 
 ## Best Entry Points
 
 - [Generated Declarative Reference](/reference/generated/declarative/index)
-- [Work Declaratively](/how-to/declarative-workflows)
+- [Declarative Delivery](/build/declarative-delivery)
 
 ## What the Generated Pages Are Best For
 
@@ -34,8 +34,9 @@ Use product guides first when you need:
 - a safe rollout workflow
 - an explanation of schema vs semantic validation
 - examples of expected CLI behavior and exit codes
+- how models, assets, semantic models, and data products fit together
 
 ## Next Steps
 
 - [Generated Declarative Reference](/reference/generated/declarative/index)
-- [Declarative Workflows](/core-concepts/declarative)
+- [Declarative Delivery](/build/declarative-delivery)

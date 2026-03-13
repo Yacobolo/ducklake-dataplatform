@@ -15,6 +15,7 @@ while IFS= read -r input_path; do
   mkdir -p "$(dirname "${output_path}")"
 
   npm exec --prefix "${root_dir}" mmdc -- \
+    --iconPacksNamesAndUrls "fa#https://unpkg.com/@iconify-json/fa6-solid/icons.json" \
     -i "${input_path}" \
     -o "${output_path}" \
     -b white \

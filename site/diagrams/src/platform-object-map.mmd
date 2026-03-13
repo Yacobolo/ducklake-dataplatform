@@ -1,0 +1,15 @@
+flowchart LR
+    principal@{ icon: "fa:circle-user", label: "Principal" }
+    group@{ icon: "fa:address-book", label: "Group" }
+    catalog@{ icon: "fa:folder-open", label: "Catalog" }
+    table@{ icon: "fa:file-lines", label: "Table / View" }
+    model@{ icon: "fa:file-code", label: "Model" }
+    asset@{ icon: "fa:clock", label: "Asset" }
+    product@{ icon: "fa:handshake", label: "Data Product" }
+
+    principal --> group
+    group --> catalog
+    catalog --> table
+    table --> model
+    model --> asset
+    asset --> product

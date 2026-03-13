@@ -1,0 +1,13 @@
+flowchart LR
+    principal@{ icon: "fa:user", label: "Principal" }
+    control@{ icon: "fa:shield", label: "Duck Control Plane" }
+    local@{ icon: "fa:hard-drive", label: "Local Execution" }
+    remote@{ icon: "fa:calendar", label: "Remote Worker" }
+    storage@{ icon: "fa:folder-open", label: "Storage / Catalog" }
+    result@{ icon: "fa:circle-check", label: "Governed Result" }
+
+    principal --> control
+    control --> local --> storage
+    control --> remote --> storage
+    local --> result
+    remote --> result

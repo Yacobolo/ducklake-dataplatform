@@ -1,43 +1,44 @@
 ---
 title: Getting Started
-description: Understand what Duck is, who it is for, and how platform users begin.
+description: Pick the right path for querying data, building a product, or operating Duck.
 ---
 
 # Getting Started
 
-Duck is a secure data platform for teams that want governed analytics, reusable data products, and flexible execution without losing control over access and data exposure.
+Duck is a governed data platform built around three outcomes:
 
-## Who This Site Is For
+- users can query trusted data through a secure control plane
+- builders can package reusable data products instead of shipping scattered SQL
+- operators can scale execution and governance without giving up policy control
 
-- analysts and data users who need governed query access
-- builders creating reusable data products and workflows
-- admins managing access, governance, and platform settings
+## Choose Your Journey
 
-## Start Here
+- [First governed query](/start-here/quickstart) if you want to reach trusted data quickly.
+- [First data product](/start-here/first-data-product) if you are building sources, transformations, assets, and semantic entrypoints.
+- [First operator setup](/start-here/first-operator-setup) if you own auth, storage, compute, or platform posture.
 
-- [Quickstart](/start-here/quickstart) to get access, run a first query, and learn the basics.
-- [Query and Explore Data](/how-to/use-the-cli) to find objects, inspect data, and work within governance controls.
-- [Administration](/operations/) to manage access, security controls, and advanced platform settings.
+## What Duck Covers
 
-## What You Get
-
-- Secure query execution with RBAC, row filters, and column masking
-- Platform objects such as catalogs, schemas, tables, views, models, and assets
-- Declarative workflows for teams that manage data products as code
-- Advanced integrations and remote compute when the platform grows
+- secure query execution with RBAC, row filters, and column masks
+- product-first APIs for domains, teams, contracts, versions, and subscriptions
+- asset-based orchestration with checks, dependencies, freshness, and backfills
+- transformation workflows with models, macros, notebooks, tests, and runs
+- semantic modeling for metrics, relationships, and pre-aggregations
+- local and remote compute options with central policy enforcement
 
 ## Recommended Reading Order
 
-1. [Quickstart](/start-here/quickstart)
-2. [Query and Explore Data](/how-to/use-the-cli)
-3. [Build Data Products](/core-concepts/)
-4. [Administration](/operations/)
+1. Start with the role-based quickstart that matches your job.
+2. Read the [Concepts](/concepts/) section to build a shared platform mental model.
+3. Move into [Build](/build/), [Govern](/govern/), or [Operate](/operations/) depending on your responsibilities.
+4. Use [Reference](/reference/) when you need exact payload, CLI, or schema detail.
+
+## Recommended Next Steps
+
+- [Concepts](/concepts/)
+- [Reference Feature Map](/reference/feature-map)
 
 ## Related Reference
 
 - [Glossary](/reference/glossary)
-- [Advanced API Reference](/reference/api)
-
-## Next Step
-
-Start with the [Quickstart](/start-here/quickstart), then continue to [Use Duck](/how-to/).
+- [API Entry Guide](/reference/api)

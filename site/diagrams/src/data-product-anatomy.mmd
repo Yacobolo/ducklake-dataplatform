@@ -1,0 +1,14 @@
+flowchart LR
+    domain@{ icon: "fa:folder-open", label: "Domain" }
+    team@{ icon: "fa:address-book", label: "Owner Team" }
+    outputs@{ icon: "fa:file-lines", label: "Trusted Outputs" }
+    semantic@{ icon: "fa:chart-bar", label: "Semantic Entrypoints" }
+    version@{ icon: "fa:bookmark", label: "Published Version" }
+    product@{ icon: "fa:handshake", label: "Data Product" }
+    subs@{ icon: "fa:bell", label: "Subscriptions" }
+
+    domain --> team --> product
+    outputs --> product
+    semantic --> product
+    version --> product
+    product --> subs

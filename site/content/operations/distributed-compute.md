@@ -1,23 +1,25 @@
 ---
 title: Distributed Compute
-description: Operate remote compute while keeping control-plane enforcement centralized.
+description: Roll out remote workers without moving identity, policy, or governance out of the control plane.
 ---
 
 # Distributed Compute
 
-This runbook describes how to roll out and operate remote compute without weakening the platform's security model.
+This runbook describes how to roll out remote compute without weakening Duck’s security and governance model.
 
 ## Architecture Boundaries
 
 - the gateway remains the single policy enforcement point
 - workers execute already-rewritten SQL
 - gateway-to-worker transport uses internal gRPC
+- storage, auth, and governance metadata remain anchored in the control plane
 
 ## When to Use Remote Compute
 
 - you need worker isolation or a separate execution fleet
 - you want lifecycle-style async execution
 - you need a staged rollout with local fallback
+- query or orchestration load makes local-only execution an operator bottleneck
 
 ## Admin Checklist
 
@@ -25,6 +27,7 @@ This runbook describes how to roll out and operate remote compute without weaken
 - set worker auth and listen addresses explicitly
 - start with fallback enabled on assignments
 - canary a small set of users or groups before widening traffic
+- monitor queue latency and failure reasons before widening scope
 
 ## Worker Settings
 
@@ -48,6 +51,7 @@ This runbook describes how to roll out and operate remote compute without weaken
 - monitor `GET /health` and `GET /metrics`
 - expect fallback behavior when worker health degrades and assignments allow local execution
 - use retention settings to control in-memory lifecycle result pressure
+- document the operator decision for when fallback should be automatic versus disabled
 
 ## Rollout Sequence
 
@@ -60,8 +64,8 @@ This runbook describes how to roll out and operate remote compute without weaken
 
 - [Platform Settings](/operations/configuration)
 - [Security Checklist](/operations/security-checklist)
+- [Observability And Troubleshooting](/operations/observability-and-troubleshooting)
 
 ## Related Reference
 
-- [Advanced API Reference](/reference/api)
-- [Glossary](/reference/glossary)
+- [Compute API](/reference/generated/api/endpoints/compute)

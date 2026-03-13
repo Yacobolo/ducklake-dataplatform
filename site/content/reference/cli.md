@@ -3,7 +3,7 @@ title: Advanced CLI Reference
 description: Use the CLI when your organization exposes command-line workflows and you need command-level detail.
 ---
 
-# Advanced CLI Reference
+# CLI Entry Guide
 
 The CLI is an advanced access surface for users and admins who need scripted workflows, discovery, or declarative change management.
 
@@ -14,7 +14,7 @@ The CLI is an advanced access surface for users and admins who need scripted wor
 | Declarative workflows | `validate`, `plan`, `apply`, `export` |
 | Auth and profiles | `auth`, `config` |
 | Discovery | `commands`, `api`, `find`, `describe` |
-| Generated resource management | command families under `catalog`, `security`, `models`, `storage`, and others |
+| Generated resource management | command families under `catalog`, `security`, `models`, `storage`, `semantic`, `notebooks`, and others |
 
 ## High-Value Commands
 
@@ -37,8 +37,9 @@ The CLI is an advanced access surface for users and admins who need scripted wor
 - declarative validation and apply workflows
 - discovery of command surfaces
 - scripting against API-backed operations without hand-writing HTTP
+- operator diagnostics across profiles and environments
 
 ## Next Steps
 
-- [Query and Explore Data](/how-to/use-the-cli)
+- [Declarative Delivery](/build/declarative-delivery)
 - [Generated API Reference](/reference/generated/api/index)
