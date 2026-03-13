@@ -15,10 +15,10 @@ Teams often assume access control begins and ends with “can this user query th
 
 | Layer | Question Answered | Functional Goal |
 | --- | --- | --- |
-| Authentication | Who is this principal? | Identity verification |
-| Grants | May they reach this object? | Reachability and access |
-| Row filters | Which rows can they see? | Scoped visibility |
-| Column masks | Should the raw value be shown? | Transformation and redaction |
+| 1. **Authentication** | Who is this principal? | Identity Verification |
+| 2. **Grants** | May they reach this object? | Reachability/Access |
+| 3. **Row Filters** | Which rows can they see? | Scoped Visibility |
+| 4. **Column Masks** | Should the raw value be shown? | Transformation/Redaction |
 
 ## How They Apply In Order
 
