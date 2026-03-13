@@ -53,8 +53,16 @@ jobs:
     name: Build Docs Site
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
 
       - uses: actions/setup-go@v5
         with:
@@ -69,6 +77,8 @@ jobs:
 
       - name: Build docs
         run: task site:build
+        env:
+          SITE_BASE_URL: ${{ steps.pages.outputs.base_url }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
