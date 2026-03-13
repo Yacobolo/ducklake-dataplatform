@@ -602,6 +602,10 @@ func renderMermaidAssets(outDir string, pages []page, cliOverride string) error 
 	defer func() {
 		_ = os.RemoveAll(tempDir)
 	}()
+	puppeteerConfigPath, err := writeMermaidPuppeteerConfig(tempDir)
+	if err != nil {
+		return err
+	}
 
 	ids := make([]string, 0, len(diagrams))
 	for id := range diagrams {
@@ -617,7 +621,7 @@ func renderMermaidAssets(outDir string, pages []page, cliOverride string) error 
 		if err := os.WriteFile(inputPath, []byte(diag.Source), 0o600); err != nil {
 			return fmt.Errorf("write mermaid source %s: %w", id, err)
 		}
-		if err := runMermaidCLI(cliOverride, inputPath, outputPath); err != nil {
+		if err := runMermaidCLI(cliOverride, inputPath, outputPath, puppeteerConfigPath); err != nil {
 			return fmt.Errorf("render mermaid %s from %s: %w", id, diag.SourcePath, err)
 		}
 	}
@@ -625,12 +629,21 @@ func renderMermaidAssets(outDir string, pages []page, cliOverride string) error 
 	return nil
 }
 
-func runMermaidCLI(cliOverride, inputPath, outputPath string) error {
+func writeMermaidPuppeteerConfig(dir string) (string, error) {
+	configPath := filepath.Join(dir, "puppeteer-config.json")
+	config := []byte("{\n  \"args\": [\"--no-sandbox\", \"--disable-setuid-sandbox\"]\n}\n")
+	if err := os.WriteFile(configPath, config, 0o600); err != nil {
+		return "", fmt.Errorf("write mermaid puppeteer config: %w", err)
+	}
+	return configPath, nil
+}
+
+func runMermaidCLI(cliOverride, inputPath, outputPath, puppeteerConfigPath string) error {
 	var cmd *exec.Cmd
 	if strings.TrimSpace(cliOverride) != "" {
-		cmd = exec.Command(cliOverride, "-i", inputPath, "-o", outputPath, "-t", "neutral", "-b", "white")
+		cmd = exec.Command(cliOverride, "-i", inputPath, "-o", outputPath, "-t", "neutral", "-b", "white", "-p", puppeteerConfigPath)
 	} else {
-		cmd = exec.Command("npm", "exec", "--prefix", "site", "mmdc", "--", "-i", inputPath, "-o", outputPath, "-t", "neutral", "-b", "white")
+		cmd = exec.Command("npm", "exec", "--prefix", "site", "mmdc", "--", "-i", inputPath, "-o", outputPath, "-t", "neutral", "-b", "white", "-p", puppeteerConfigPath)
 	}
 
 	var stderr bytes.Buffer

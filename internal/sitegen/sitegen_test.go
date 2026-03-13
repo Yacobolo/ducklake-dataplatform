@@ -189,6 +189,18 @@ func TestPrefixSiteRootInHTML_RewritesInternalHrefAndSrc(t *testing.T) {
 	assert.Contains(t, rendered, `src="/ducklake-dataplatform/_site/mermaid/a.svg"`)
 }
 
+func TestWriteMermaidPuppeteerConfig_IncludesSandboxFlags(t *testing.T) {
+	tempDir := t.TempDir()
+
+	configPath, err := writeMermaidPuppeteerConfig(tempDir)
+	require.NoError(t, err)
+
+	body, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "--no-sandbox")
+	assert.Contains(t, string(body), "--disable-setuid-sandbox")
+}
+
 func TestAPIOperationNodes_ExtractMethodRouteAndAnchor(t *testing.T) {
 	p := page{
 		URLPath: "/api-reference/endpoints/queries/",
