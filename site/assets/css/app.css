@@ -1,3 +1,6 @@
+@import "../../../web/tokens/functional/themes/light.css";
+@import "../../../web/tokens/functional/themes/dark.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,11 +17,11 @@
   --site-muted-soft: #64748b;
   --site-code-bg: #0f172a;
   --site-code-ink: #e2e8f0;
-  --api-panel: #0f172a;
-  --api-panel-soft: #111827;
-  --api-border: #1f2937;
-  --api-ink: #e5eefc;
-  --api-muted: #9fb0c8;
+  --api-panel: var(--bgColor-default);
+  --api-panel-soft: var(--bgColor-muted);
+  --api-border: var(--borderColor-default);
+  --api-ink: var(--fgColor-default);
+  --api-muted: var(--fgColor-muted);
 }
 
 [data-theme="dark"] {
@@ -33,11 +36,11 @@
   --site-muted-soft: #94a3b8;
   --site-code-bg: #020617;
   --site-code-ink: #dbeafe;
-  --api-panel: #020617;
-  --api-panel-soft: #0b1220;
-  --api-border: #1e293b;
-  --api-ink: #e5eefc;
-  --api-muted: #94a3b8;
+  --api-panel: var(--bgColor-default);
+  --api-panel-soft: var(--bgColor-muted);
+  --api-border: var(--borderColor-default);
+  --api-ink: var(--fgColor-default);
+  --api-muted: var(--fgColor-muted);
 }
 
 @layer base {
@@ -164,7 +167,7 @@
   }
 
   .docs-layout {
-    @apply max-w-none gap-0 px-0 py-0 lg:grid-cols-[22rem_minmax(0,1fr)_15rem];
+    @apply max-w-none gap-0 px-0 py-0 lg:grid-cols-[22rem_minmax(0,1fr)] xl:grid-cols-[22rem_minmax(0,1fr)_15rem];
   }
 
   .api-layout {
@@ -175,9 +178,12 @@
     @apply lg:min-h-[calc(100vh-4.5rem)];
   }
 
-  .site-sidebar,
-  .site-toc {
+  .site-sidebar {
     @apply hidden lg:block;
+  }
+
+  .site-toc {
+    @apply hidden xl:block;
   }
 
   .site-sidebar nav,
@@ -363,8 +369,9 @@
   }
 
   .site-codeblock {
-    border: 1px solid var(--site-border);
-    background: color-mix(in srgb, var(--site-surface-strong) 45%, var(--site-code-bg));
+    border: 1px solid var(--borderColor-default);
+    background: var(--bgColor-default);
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
     @apply overflow-hidden rounded-3xl;
   }
 
@@ -373,33 +380,126 @@
   }
 
   .site-codeblock-bar {
-    border-bottom: 1px solid color-mix(in srgb, var(--site-border) 60%, transparent);
+    border-bottom: 1px solid var(--borderColor-muted);
+    background: var(--bgColor-muted);
     @apply flex items-center justify-between gap-4 px-4 py-3;
   }
 
   .site-codeblock-lang {
-    color: var(--site-code-ink);
+    color: var(--fgColor-default);
     @apply text-xs font-semibold uppercase tracking-[0.18em];
   }
 
   .site-codeblock-copy {
-    border: 1px solid color-mix(in srgb, var(--site-code-ink) 18%, transparent);
-    color: var(--site-code-ink);
-    background: rgba(15, 23, 42, 0.18);
+    border: 1px solid var(--borderColor-default);
+    color: var(--fgColor-default);
+    background: var(--bgColor-default);
     @apply rounded-full px-3 py-1 text-xs font-semibold transition;
   }
 
   .site-codeblock-copy:hover {
-    background: rgba(15, 23, 42, 0.34);
+    background: var(--bgColor-muted);
   }
 
   .site-codeblock pre {
-    @apply m-0 rounded-none border-0;
+    background: var(--bgColor-default);
+    color: var(--fgColor-default);
+    tab-size: 2;
+    @apply m-0 overflow-x-auto rounded-none border-0 p-4 text-sm;
   }
 
   .site-codeblock code {
     background: transparent;
-    @apply p-0 text-inherit;
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    @apply block p-0 text-inherit;
+  }
+
+  .site-codeblock .chroma,
+  .site-codeblock .chroma pre,
+  .site-codeblock .chroma code {
+    background: transparent;
+  }
+
+  .site-codeblock .chroma .chroma-ln,
+  .site-codeblock .chroma .chroma-lnt {
+    color: var(--fgColor-muted);
+  }
+
+  .site-codeblock .chroma .chroma-c,
+  .site-codeblock .chroma .chroma-ch,
+  .site-codeblock .chroma .chroma-cm,
+  .site-codeblock .chroma .chroma-c1,
+  .site-codeblock .chroma .chroma-cs {
+    color: var(--color-prettylights-syntax-comment);
+  }
+
+  .site-codeblock .chroma .chroma-k,
+  .site-codeblock .chroma .chroma-kc,
+  .site-codeblock .chroma .chroma-kd,
+  .site-codeblock .chroma .chroma-kn,
+  .site-codeblock .chroma .chroma-kp,
+  .site-codeblock .chroma .chroma-kr,
+  .site-codeblock .chroma .chroma-kt,
+  .site-codeblock .chroma .chroma-nt {
+    color: var(--color-prettylights-syntax-keyword);
+  }
+
+  .site-codeblock .chroma .chroma-s,
+  .site-codeblock .chroma .chroma-sa,
+  .site-codeblock .chroma .chroma-sb,
+  .site-codeblock .chroma .chroma-sc,
+  .site-codeblock .chroma .chroma-dl,
+  .site-codeblock .chroma .chroma-sd,
+  .site-codeblock .chroma .chroma-s2,
+  .site-codeblock .chroma .chroma-se,
+  .site-codeblock .chroma .chroma-sh,
+  .site-codeblock .chroma .chroma-si,
+  .site-codeblock .chroma .chroma-sx,
+  .site-codeblock .chroma .chroma-sr,
+  .site-codeblock .chroma .chroma-s1,
+  .site-codeblock .chroma .chroma-ss {
+    color: var(--color-prettylights-syntax-string);
+  }
+
+  .site-codeblock .chroma .chroma-m,
+  .site-codeblock .chroma .chroma-mb,
+  .site-codeblock .chroma .chroma-mf,
+  .site-codeblock .chroma .chroma-mh,
+  .site-codeblock .chroma .chroma-mi,
+  .site-codeblock .chroma .chroma-il,
+  .site-codeblock .chroma .chroma-mo,
+  .site-codeblock .chroma .chroma-no,
+  .site-codeblock .chroma .chroma-bp {
+    color: var(--color-prettylights-syntax-constant);
+  }
+
+  .site-codeblock .chroma .chroma-na,
+  .site-codeblock .chroma .chroma-nb,
+  .site-codeblock .chroma .chroma-nc,
+  .site-codeblock .chroma .chroma-nd,
+  .site-codeblock .chroma .chroma-ne,
+  .site-codeblock .chroma .chroma-nf,
+  .site-codeblock .chroma .chroma-fm,
+  .site-codeblock .chroma .chroma-nl,
+  .site-codeblock .chroma .chroma-nn,
+  .site-codeblock .chroma .chroma-nx,
+  .site-codeblock .chroma .chroma-py,
+  .site-codeblock .chroma .chroma-vc,
+  .site-codeblock .chroma .chroma-vg,
+  .site-codeblock .chroma .chroma-vi,
+  .site-codeblock .chroma .chroma-vm {
+    color: var(--color-prettylights-syntax-variable);
+  }
+
+  .site-codeblock .chroma .chroma-o,
+  .site-codeblock .chroma .chroma-ow,
+  .site-codeblock .chroma .chroma-p,
+  .site-codeblock .chroma .chroma-w {
+    color: var(--fgColor-default);
+  }
+
+  .site-codeblock .chroma .chroma-err {
+    color: var(--fgColor-danger);
   }
 
   .site-hero {
@@ -567,6 +667,10 @@
     @apply mt-8 text-xl font-semibold;
   }
 
+  .site-prose h4 {
+    @apply mt-6 text-lg font-semibold;
+  }
+
   .site-prose h2 .api-method {
     @apply mr-3 inline-flex min-w-[4.5rem] items-center justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] align-middle;
   }
@@ -577,19 +681,167 @@
   }
 
   .site-prose p,
-  .site-prose li {
+  .site-prose li,
+  .site-prose dd,
+  .site-prose blockquote {
     color: var(--site-muted);
+    overflow-wrap: anywhere;
     @apply leading-7;
   }
 
+  .site-prose h1,
+  .site-prose h2,
+  .site-prose h3,
+  .site-prose h4,
+  .site-prose td,
+  .site-prose th {
+    overflow-wrap: anywhere;
+  }
+
+  .site-prose a {
+    color: var(--site-brand-strong);
+    text-decoration: underline;
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.18em;
+  }
+
+  .site-prose strong,
+  .site-prose th,
+  .site-prose dt {
+    color: var(--site-ink);
+  }
+
+  .site-prose ul,
+  .site-prose ol {
+    @apply my-6 pl-6;
+  }
+
+  .site-prose ul {
+    list-style: disc;
+  }
+
+  .site-prose ol {
+    list-style: decimal;
+  }
+
+  .site-prose ul ul {
+    list-style: circle;
+  }
+
+  .site-prose ul ul ul {
+    list-style: square;
+  }
+
+  .site-prose ol ol {
+    list-style: lower-alpha;
+  }
+
+  .site-prose ol ol ol {
+    list-style: lower-roman;
+  }
+
+  .site-prose li + li {
+    @apply mt-2;
+  }
+
+  .site-prose li::marker {
+    color: var(--site-brand-strong);
+  }
+
+  .site-prose ul.contains-task-list,
+  .site-prose li.task-list-item {
+    list-style: none;
+    @apply pl-0;
+  }
+
+  .site-prose li.task-list-item input[type="checkbox"] {
+    accent-color: var(--site-brand);
+    @apply mr-3;
+  }
+
+  .site-prose blockquote {
+    border-left: 4px solid color-mix(in srgb, var(--site-brand) 48%, var(--site-border));
+    background: color-mix(in srgb, var(--site-surface-accent) 46%, var(--site-surface-strong));
+    @apply rounded-r-2xl px-5 py-4;
+  }
+
+  .site-prose hr {
+    border: 0;
+    border-top: 1px solid color-mix(in srgb, var(--site-border) 85%, transparent);
+    @apply my-10;
+  }
+
+  .site-prose dl {
+    @apply my-6 grid gap-4;
+  }
+
+  .site-prose dt {
+    @apply text-sm font-semibold uppercase tracking-[0.14em];
+  }
+
+  .site-prose dd {
+    border-left: 2px solid color-mix(in srgb, var(--site-border) 82%, transparent);
+    @apply pl-4;
+  }
+
+  .site-prose img {
+    border: 1px solid var(--borderColor-default);
+    background: var(--bgColor-default);
+    @apply rounded-3xl;
+  }
+
+  .site-table-wrap {
+    border: 1px solid var(--borderColor-default);
+    background: var(--bgColor-default);
+    @apply my-8 overflow-x-auto rounded-[1.5rem];
+  }
+
   .site-prose table {
-    @apply w-full border-collapse overflow-hidden rounded-2xl text-sm;
+    border: 1px solid var(--borderColor-muted);
+    @apply m-0 min-w-full border-separate text-sm;
+    border-spacing: 0;
   }
 
   .site-prose th,
   .site-prose td {
-    border: 1px solid var(--site-border);
-    @apply px-3 py-2 text-left;
+    border-left: 1px solid var(--borderColor-muted);
+    border-top: 1px solid var(--borderColor-muted);
+    color: var(--fgColor-default);
+    @apply px-4 py-3 text-left align-top;
+  }
+
+  .site-prose thead th {
+    background: var(--bgColor-muted);
+    @apply text-xs font-semibold uppercase tracking-[0.16em];
+  }
+
+  .site-prose tr > :first-child {
+    border-left: 0;
+  }
+
+  .site-prose thead tr:first-child th {
+    border-top: 0;
+  }
+
+  .site-prose tbody tr:nth-child(odd) td {
+    background: var(--bgColor-default);
+  }
+
+  .site-prose tbody tr:nth-child(even) td {
+    background: var(--bgColor-muted);
+  }
+
+  .site-mermaid {
+    border: 1px solid var(--borderColor-default);
+    background: var(--bgColor-default);
+    @apply my-8 overflow-x-auto rounded-[1.5rem] p-5;
+  }
+
+  .site-mermaid img {
+    border: 0;
+    background: transparent;
+    width: max-content;
+    @apply mx-auto block h-auto max-w-none rounded-none;
   }
 
   .site-callout {
@@ -703,20 +955,20 @@
 
   .api-shell {
     background:
-      radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 28%),
-      linear-gradient(180deg, #020617 0%, #08111f 100%);
+      radial-gradient(circle at top right, color-mix(in srgb, var(--bgColor-accent-muted) 72%, transparent), transparent 28%),
+      linear-gradient(180deg, var(--api-panel-soft) 0%, var(--api-panel) 100%);
     color: var(--api-ink);
   }
 
   .api-shell .site-header {
-    background: rgba(2, 6, 23, 0.84);
+    background: color-mix(in srgb, var(--api-panel) 88%, transparent);
     border-bottom-color: var(--api-border);
   }
 
   .api-shell .site-logo,
   .api-shell .site-nav a.is-active,
   .api-shell .site-nav a:hover {
-    color: white;
+    color: var(--api-ink);
   }
 
   .api-shell .site-nav a,
@@ -728,7 +980,7 @@
   .api-shell .site-button-secondary {
     border-color: var(--api-border);
     color: var(--api-ink);
-    background: rgba(15, 23, 42, 0.6);
+    background: color-mix(in srgb, var(--api-panel) 82%, transparent);
   }
 
   .api-sidebar {
@@ -743,7 +995,7 @@
   .api-sidebar nav {
     @apply h-[calc(100vh-4.5rem)] rounded-none border-0 border-r p-6;
     top: 4.5rem;
-    background: rgba(2, 6, 23, 0.9);
+    background: color-mix(in srgb, var(--api-panel-soft) 92%, var(--api-panel));
     border-color: var(--api-border);
   }
 
@@ -785,7 +1037,7 @@
   }
 
   .api-nav-group .site-nav-tree .site-nav-tree {
-    border-color: rgba(148, 163, 184, 0.12);
+    border-color: var(--borderColor-muted);
     @apply ml-3 pl-3;
   }
 
@@ -796,8 +1048,8 @@
 
   .api-nav-group .site-nav-tree a.is-active,
   .api-nav-group .site-nav-tree a:hover {
-    background: rgba(94, 234, 212, 0.08);
-    color: white;
+    background: var(--bgColor-accent-muted);
+    color: var(--fgColor-accent);
   }
 
   .api-nav-group .site-nav-node > summary {
@@ -806,8 +1058,8 @@
 
   .api-nav-group > summary::after,
   .api-nav-group .site-nav-node > summary::after {
-    border-right-color: rgba(226, 232, 240, 0.78);
-    border-bottom-color: rgba(226, 232, 240, 0.78);
+    border-right-color: var(--fgColor-muted);
+    border-bottom-color: var(--fgColor-muted);
   }
 
   .api-nav-group .site-nav-node .site-nav-node-label {
@@ -849,32 +1101,32 @@
 
   .api-nav-method[data-api-method="GET"],
   .site-prose .api-method[data-api-method="GET"] {
-    background: rgba(34, 197, 94, 0.16);
-    color: #86efac;
+    background: var(--bgColor-success-muted);
+    color: var(--fgColor-success);
   }
 
   .api-nav-method[data-api-method="POST"],
   .site-prose .api-method[data-api-method="POST"] {
-    background: rgba(59, 130, 246, 0.18);
-    color: #93c5fd;
+    background: var(--bgColor-accent-muted);
+    color: var(--fgColor-accent);
   }
 
   .api-nav-method[data-api-method="PUT"],
   .site-prose .api-method[data-api-method="PUT"] {
-    background: rgba(234, 179, 8, 0.18);
-    color: #fde68a;
+    background: var(--bgColor-attention-muted);
+    color: var(--fgColor-attention);
   }
 
   .api-nav-method[data-api-method="PATCH"],
   .site-prose .api-method[data-api-method="PATCH"] {
-    background: rgba(168, 85, 247, 0.18);
-    color: #d8b4fe;
+    background: var(--bgColor-done-muted);
+    color: var(--fgColor-done);
   }
 
   .api-nav-method[data-api-method="DELETE"],
   .site-prose .api-method[data-api-method="DELETE"] {
-    background: rgba(248, 113, 113, 0.18);
-    color: #fca5a5;
+    background: var(--bgColor-danger-muted);
+    color: var(--fgColor-danger);
   }
 
   .api-nav-link-title {
@@ -884,15 +1136,15 @@
 
   .api-hero {
     @apply mb-10 flex flex-wrap items-end justify-between gap-4 rounded-[2rem] border p-8;
-    border-color: rgba(148, 163, 184, 0.14);
+    border-color: var(--api-border);
     background:
-      linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(8, 17, 31, 0.82)),
-      radial-gradient(circle at top right, rgba(45, 212, 191, 0.18), transparent 34%);
+      linear-gradient(135deg, color-mix(in srgb, var(--api-panel) 96%, transparent), color-mix(in srgb, var(--api-panel-soft) 92%, var(--api-panel))),
+      radial-gradient(circle at top right, color-mix(in srgb, var(--bgColor-accent-muted) 86%, transparent), transparent 34%);
   }
 
   .api-eyebrow {
     @apply mb-3 text-xs font-semibold uppercase tracking-[0.25em];
-    color: #5eead4;
+    color: var(--fgColor-accent);
   }
 
   .api-sidebar-label {
@@ -900,7 +1152,8 @@
   }
 
   .api-hero h1 {
-    @apply text-4xl font-semibold text-white;
+    color: var(--api-ink);
+    @apply text-4xl font-semibold;
   }
 
   .api-hero p {
@@ -923,9 +1176,9 @@
 
   .api-prose h2 {
     @apply mt-10 rounded-[1.75rem] border px-5 py-4 text-xl font-semibold;
-    color: white;
-    border-color: rgba(148, 163, 184, 0.14);
-    background: rgba(15, 23, 42, 0.78);
+    color: var(--api-ink);
+    border-color: var(--api-border);
+    background: color-mix(in srgb, var(--api-panel-soft) 92%, var(--api-panel));
   }
 
   .api-prose h2 .api-method {
@@ -938,16 +1191,16 @@
 
   .api-prose h3 {
     @apply mt-6 text-base font-semibold uppercase tracking-[0.15em];
-    color: #dbeafe;
+    color: var(--api-ink);
   }
 
   .api-prose table {
     @apply rounded-[1.5rem];
-    background: rgba(15, 23, 42, 0.65);
+    background: var(--api-panel);
   }
 
   .api-prose th,
   .api-prose td {
-    border-color: rgba(148, 163, 184, 0.14);
+    border-color: var(--api-border);
   }
 }

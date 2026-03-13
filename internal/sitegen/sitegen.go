@@ -3,6 +3,8 @@ package sitegen
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -11,6 +13,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -18,7 +21,9 @@ import (
 	"time"
 	"unicode"
 
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	ghtml "github.com/yuin/goldmark/renderer/html"
@@ -34,6 +39,7 @@ type Builder struct {
 	AssetsDir    string
 	OutDir       string
 	BaseURL      string
+	MermaidCLI   string
 }
 
 type siteConfig struct {
@@ -127,6 +133,13 @@ type page struct {
 	Keywords     []string
 	IsHome       bool
 	Home         homeFrontMatter
+	MermaidDiags []mermaidDiagram
+}
+
+type mermaidDiagram struct {
+	ID         string
+	Source     string
+	SourcePath string
 }
 
 type heading struct {
@@ -230,6 +243,9 @@ func (b Builder) Build() error {
 		return fmt.Errorf("create output: %w", err)
 	}
 	if err := copySiteAssets(b.AssetsDir, b.OutDir); err != nil {
+		return err
+	}
+	if err := renderMermaidAssets(b.OutDir, pages, b.MermaidCLI); err != nil {
 		return err
 	}
 
@@ -420,6 +436,8 @@ func parsePage(root, path string) (page, error) {
 
 	rendered = addHeadingAnchors(rendered)
 	rendered = stripLeadingH1(rendered)
+	rendered, mermaidDiags := replaceMermaidBlocks(rendered, path)
+	rendered = enhanceTables(rendered)
 	rendered = enhanceCodeBlocks(rendered)
 	if kind == pageKindAPI {
 		rendered = enhanceAPIHTML(rendered)
@@ -437,9 +455,10 @@ func parsePage(root, path string) (page, error) {
 		BodyMarkdown: body,
 		MirrorBody:   mirror,
 		// #nosec G203 -- rendered markdown is limited to repository-owned docs and generated content.
-		BodyHTML: template.HTML(rendered),
-		Headings: extractHeadings(mirror),
-		Keywords: fm.Keywords,
+		BodyHTML:     template.HTML(rendered),
+		Headings:     extractHeadings(mirror),
+		Keywords:     fm.Keywords,
+		MermaidDiags: mermaidDiags,
 	}, nil
 }
 
@@ -552,6 +571,81 @@ func copySiteAssets(assetsDir, outDir string) error {
 	return nil
 }
 
+func renderMermaidAssets(outDir string, pages []page, cliOverride string) error {
+	diagrams := make(map[string]mermaidDiagram)
+	for _, p := range pages {
+		for _, diag := range p.MermaidDiags {
+			if _, exists := diagrams[diag.ID]; exists {
+				continue
+			}
+			diagrams[diag.ID] = diag
+		}
+	}
+	if len(diagrams) == 0 {
+		return nil
+	}
+
+	targetDir := filepath.Join(outDir, "_site", "mermaid")
+	if err := os.MkdirAll(targetDir, 0o750); err != nil {
+		return fmt.Errorf("mkdir mermaid dir: %w", err)
+	}
+
+	tempDir, err := os.MkdirTemp("", "sitegen-mermaid-*")
+	if err != nil {
+		return fmt.Errorf("create mermaid temp dir: %w", err)
+	}
+	defer func() {
+		_ = os.RemoveAll(tempDir)
+	}()
+
+	ids := make([]string, 0, len(diagrams))
+	for id := range diagrams {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+
+	for _, id := range ids {
+		diag := diagrams[id]
+		inputPath := filepath.Join(tempDir, id+".mmd")
+		outputPath := filepath.Join(targetDir, id+".svg")
+
+		if err := os.WriteFile(inputPath, []byte(diag.Source), 0o600); err != nil {
+			return fmt.Errorf("write mermaid source %s: %w", id, err)
+		}
+		if err := runMermaidCLI(cliOverride, inputPath, outputPath); err != nil {
+			return fmt.Errorf("render mermaid %s from %s: %w", id, diag.SourcePath, err)
+		}
+	}
+
+	return nil
+}
+
+func runMermaidCLI(cliOverride, inputPath, outputPath string) error {
+	var cmd *exec.Cmd
+	if strings.TrimSpace(cliOverride) != "" {
+		cmd = exec.Command(cliOverride, "-i", inputPath, "-o", outputPath, "-t", "neutral", "-b", "white")
+	} else {
+		cmd = exec.Command("npm", "exec", "--prefix", "site", "mmdc", "--", "-i", inputPath, "-o", outputPath, "-t", "neutral", "-b", "white")
+	}
+
+	var stderr bytes.Buffer
+	cmd.Stdout = io.Discard
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		message := strings.TrimSpace(stderr.String())
+		if message == "" {
+			if cliOverride == "" {
+				message = "ensure `npm ci --prefix site` has installed @mermaid-js/mermaid-cli"
+			} else {
+				message = "mermaid cli failed"
+			}
+		}
+		return fmt.Errorf("%v: %s", err, message)
+	}
+
+	return nil
+}
+
 func copyFile(source, target string) error {
 	in, err := os.Open(filepath.Clean(source))
 	if err != nil {
@@ -597,7 +691,21 @@ func stripGeneratedComment(source string) string {
 
 func renderMarkdown(source string) (string, error) {
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, extension.DefinitionList),
+		goldmark.WithExtensions(
+			extension.GFM,
+			extension.DefinitionList,
+			highlighting.NewHighlighting(
+				highlighting.WithCodeBlockOptions(func(ctx highlighting.CodeBlockContext) []chromahtml.Option {
+					return []chromahtml.Option{
+						chromahtml.WithPreWrapper(siteCodePreWrapper{Language: highlightedLanguage(ctx)}),
+					}
+				}),
+				highlighting.WithFormatOptions(
+					chromahtml.WithClasses(true),
+					chromahtml.ClassPrefix("chroma-"),
+				),
+			),
+		),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
 		goldmark.WithRendererOptions(ghtml.WithUnsafe()),
 	)
@@ -606,6 +714,90 @@ func renderMarkdown(source string) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+type siteCodePreWrapper struct {
+	Language string
+}
+
+func (p siteCodePreWrapper) Start(code bool, styleAttr string) string {
+	if !code {
+		return `<pre tabindex="0">`
+	}
+
+	language := strings.TrimSpace(strings.ToLower(p.Language))
+	if language == "" {
+		language = "text"
+	}
+	return `<pre tabindex="0" class="chroma language-` + html.EscapeString(language) + `" data-code-language="` + html.EscapeString(language) + `">`
+}
+
+func (p siteCodePreWrapper) End(bool) string {
+	return `</pre>`
+}
+
+func highlightedLanguage(ctx highlighting.CodeBlockContext) string {
+	if language, ok := ctx.Language(); ok && len(language) > 0 {
+		return string(language)
+	}
+	return "text"
+}
+
+func replaceMermaidBlocks(htmlSource, sourcePath string) (string, []mermaidDiagram) {
+	codeRE := regexp.MustCompile(`(?s)<pre[^>]*><code([^>]*)>(.*?)</code></pre>`)
+	diagrams := make([]mermaidDiagram, 0)
+
+	rendered := codeRE.ReplaceAllStringFunc(htmlSource, func(match string) string {
+		parts := codeRE.FindStringSubmatch(match)
+		if len(parts) != 3 || !hasCodeLanguage(attrValue(parts[1], "class"), "mermaid") {
+			return match
+		}
+
+		source := strings.TrimSpace(html.UnescapeString(parts[2]))
+		if source == "" {
+			return match
+		}
+
+		diag := mermaidDiagram{
+			ID:         mermaidDiagramID(source),
+			Source:     source + "\n",
+			SourcePath: sourcePath,
+		}
+		diagrams = append(diagrams, diag)
+
+		return `<figure class="site-mermaid"><img src="/_site/mermaid/` + diag.ID + `.svg" alt="Mermaid diagram" loading="lazy" decoding="async"></figure>`
+	})
+
+	return rendered, diagrams
+}
+
+func mermaidDiagramID(source string) string {
+	sum := sha256.Sum256([]byte(source))
+	return hex.EncodeToString(sum[:12])
+}
+
+func hasCodeLanguage(className, language string) bool {
+	target := "language-" + language
+	for _, token := range strings.Fields(className) {
+		if token == target {
+			return true
+		}
+	}
+	return false
+}
+
+func attrValue(attrs, name string) string {
+	pattern := regexp.MustCompile(regexp.QuoteMeta(name) + `="([^"]*)"`)
+	match := pattern.FindStringSubmatch(attrs)
+	if len(match) != 2 {
+		return ""
+	}
+	return html.UnescapeString(match[1])
+}
+
+func hasAttr(attrs, name string) bool {
+	pattern := regexp.MustCompile(`(?:^|\s)` + regexp.QuoteMeta(name) + `=`)
+	return pattern.FindStringIndex(attrs) != nil
 }
 
 func transformDirectives(source string) (string, string, error) {
@@ -1080,7 +1272,7 @@ func tocForPage(p page) []heading {
 	}
 	filtered := make([]heading, 0)
 	for _, item := range p.Headings {
-		if item.Level >= 2 && item.Level <= 3 {
+		if item.Level == 2 {
 			filtered = append(filtered, item)
 		}
 	}
@@ -1201,16 +1393,27 @@ func enhanceAPIHTML(htmlSource string) string {
 }
 
 func enhanceCodeBlocks(htmlSource string) string {
-	codeRE := regexp.MustCompile(`(?s)<pre><code(?: class="([^"]*)")?>(.*?)</code></pre>`)
+	codeRE := regexp.MustCompile(`(?s)<pre([^>]*)>(?:<code([^>]*)>)?(.*?)(?:</code>)?</pre>`)
 	index := 0
 
 	return codeRE.ReplaceAllStringFunc(htmlSource, func(match string) string {
 		parts := codeRE.FindStringSubmatch(match)
-		if len(parts) != 3 {
+		if len(parts) != 4 {
 			return match
 		}
 
-		language := codeBlockLanguage(parts[1])
+		preAttrs := parts[1]
+		codeAttrs := parts[2]
+		codeClass := attrValue(codeAttrs, "class")
+		language := codeBlockLanguage(codeClass)
+		if language == "TEXT" {
+			language = codeBlockLanguage(attrValue(preAttrs, "class"))
+		}
+		if language == "TEXT" {
+			if value := attrValue(preAttrs, "data-code-language"); value != "" {
+				language = strings.ToUpper(value)
+			}
+		}
 		codeID := fmt.Sprintf("site-codeblock-%d", index)
 		index++
 
@@ -1224,18 +1427,32 @@ func enhanceCodeBlocks(htmlSource string) string {
 		b.WriteString(codeID)
 		b.WriteString(`">Copy</button>`)
 		b.WriteString(`</div>`)
-		b.WriteString(`<pre><code`)
-		if parts[1] != "" {
-			b.WriteString(` class="`)
-			b.WriteString(html.EscapeString(parts[1]))
+		b.WriteString(`<pre`)
+		if strings.TrimSpace(preAttrs) != "" {
+			b.WriteString(preAttrs)
+		}
+		b.WriteString(`><code`)
+		if strings.TrimSpace(codeAttrs) != "" {
+			b.WriteString(codeAttrs)
+		}
+		if !hasAttr(codeAttrs, "id") {
+			b.WriteString(` id="`)
+			b.WriteString(codeID)
 			b.WriteString(`"`)
 		}
-		b.WriteString(` id="`)
-		b.WriteString(codeID)
+		b.WriteString(` data-code-language="`)
+		b.WriteString(html.EscapeString(strings.ToLower(language)))
 		b.WriteString(`">`)
-		b.WriteString(parts[2])
+		b.WriteString(parts[3])
 		b.WriteString(`</code></pre></div>`)
 		return b.String()
+	})
+}
+
+func enhanceTables(htmlSource string) string {
+	tableRE := regexp.MustCompile(`(?s)<table>.*?</table>`)
+	return tableRE.ReplaceAllStringFunc(htmlSource, func(match string) string {
+		return `<div class="site-table-wrap">` + match + `</div>`
 	})
 }
 

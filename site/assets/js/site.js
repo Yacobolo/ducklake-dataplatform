@@ -25,6 +25,15 @@
 
   function applyTheme(themePreference) {
     const resolved = resolveTheme(themePreference);
+    if (themePreference === "system") {
+      root.setAttribute("data-color-mode", "auto");
+      root.setAttribute("data-light-theme", resolved);
+      root.setAttribute("data-dark-theme", "dark");
+    } else {
+      root.setAttribute("data-color-mode", resolved);
+      root.setAttribute("data-light-theme", "light");
+      root.setAttribute("data-dark-theme", "dark");
+    }
     root.setAttribute("data-theme-preference", themePreference);
     root.setAttribute("data-theme", resolved);
     if (themeButton) {

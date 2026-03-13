@@ -50,7 +50,7 @@
       <div class="site-sidebar-label">On this page</div>
       <ul class="site-toc-list">
         {{ range .TOC }}
-          <li class="site-toc-item{{ if eq .Level 3 }} is-child{{ end }}">
+          <li class="site-toc-item">
             <a href="#{{ .ID }}" data-site-toc-link="{{ .ID }}">{{ .Title }}</a>
           </li>
         {{ end }}

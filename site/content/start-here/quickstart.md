@@ -59,6 +59,17 @@ Once the first query succeeds, your next user actions are usually:
 - confirm whether any masking or row filtering applies to your role
 - when you are ready for a writable environment, use `duck init` to bootstrap a medallion catalog
 
+## Request flow at a glance
+
+```mermaid
+flowchart LR
+    User["Platform user"] --> Auth["Auth layer"]
+    Auth --> API["Duck API"]
+    API --> Policy["RBAC + RLS + masking"]
+    Policy --> Engine["DuckDB query engine"]
+    Engine --> Result["Governed result set"]
+```
+
 ## Troubleshooting
 
 ### `curl` cannot connect
