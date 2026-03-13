@@ -3,8 +3,6 @@ package sitegen
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -14,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -40,7 +37,6 @@ type Builder struct {
 	AssetsDir    string
 	OutDir       string
 	BaseURL      string
-	MermaidCLI   string
 }
 
 type siteConfig struct {
@@ -134,13 +130,6 @@ type page struct {
 	Keywords     []string
 	IsHome       bool
 	Home         homeFrontMatter
-	MermaidDiags []mermaidDiagram
-}
-
-type mermaidDiagram struct {
-	ID         string
-	Source     string
-	SourcePath string
 }
 
 type heading struct {
@@ -247,9 +236,6 @@ func (b Builder) Build() error {
 	if err := copySiteAssets(b.AssetsDir, b.OutDir); err != nil {
 		return err
 	}
-	if err := renderMermaidAssets(b.OutDir, pages, b.MermaidCLI); err != nil {
-		return err
-	}
 	siteRoot := normalizeSiteRoot(b.BaseURL)
 
 	searchItems := make([]searchItem, 0, len(pages))
@@ -272,6 +258,7 @@ func (b Builder) Build() error {
 			Breadcrumbs:   buildBreadcrumbs(p),
 			Prev:          findNeighbor(flat, p.URLPath, -1),
 			Next:          findNeighbor(flat, p.URLPath, 1),
+			// #nosec G203 -- BodyHTML is generated from repository-owned markdown, then only URL-prefixed here.
 			BodyHTML:      template.HTML(prefixSiteRootInHTML(string(p.BodyHTML), siteRoot)),
 			Home:          p.Home,
 			MirrorPath:    p.MirrorPath,
@@ -441,7 +428,6 @@ func parsePage(root, path string) (page, error) {
 
 	rendered = addHeadingAnchors(rendered)
 	rendered = stripLeadingH1(rendered)
-	rendered, mermaidDiags := replaceMermaidBlocks(rendered, path)
 	rendered = enhanceTables(rendered)
 	rendered = enhanceCodeBlocks(rendered)
 	if kind == pageKindAPI {
@@ -463,7 +449,6 @@ func parsePage(root, path string) (page, error) {
 		BodyHTML:     template.HTML(rendered),
 		Headings:     extractHeadings(mirror),
 		Keywords:     fm.Keywords,
-		MermaidDiags: mermaidDiags,
 	}, nil
 }
 
@@ -573,94 +558,9 @@ func copySiteAssets(assetsDir, outDir string) error {
 			return err
 		}
 	}
-	return nil
-}
-
-func renderMermaidAssets(outDir string, pages []page, cliOverride string) error {
-	diagrams := make(map[string]mermaidDiagram)
-	for _, p := range pages {
-		for _, diag := range p.MermaidDiags {
-			if _, exists := diagrams[diag.ID]; exists {
-				continue
-			}
-			diagrams[diag.ID] = diag
-		}
-	}
-	if len(diagrams) == 0 {
-		return nil
-	}
-
-	targetDir := filepath.Join(outDir, "_site", "mermaid")
-	if err := os.MkdirAll(targetDir, 0o750); err != nil {
-		return fmt.Errorf("mkdir mermaid dir: %w", err)
-	}
-
-	tempDir, err := os.MkdirTemp("", "sitegen-mermaid-*")
-	if err != nil {
-		return fmt.Errorf("create mermaid temp dir: %w", err)
-	}
-	defer func() {
-		_ = os.RemoveAll(tempDir)
-	}()
-	puppeteerConfigPath, err := writeMermaidPuppeteerConfig(tempDir)
-	if err != nil {
+	if err := copyDir(filepath.Join(assetsDir, "diagrams"), filepath.Join(staticDir, "diagrams")); err != nil {
 		return err
 	}
-
-	ids := make([]string, 0, len(diagrams))
-	for id := range diagrams {
-		ids = append(ids, id)
-	}
-	sort.Strings(ids)
-
-	for _, id := range ids {
-		diag := diagrams[id]
-		inputPath := filepath.Join(tempDir, id+".mmd")
-		outputPath := filepath.Join(targetDir, id+".svg")
-
-		if err := os.WriteFile(inputPath, []byte(diag.Source), 0o600); err != nil {
-			return fmt.Errorf("write mermaid source %s: %w", id, err)
-		}
-		if err := runMermaidCLI(cliOverride, inputPath, outputPath, puppeteerConfigPath); err != nil {
-			return fmt.Errorf("render mermaid %s from %s: %w", id, diag.SourcePath, err)
-		}
-	}
-
-	return nil
-}
-
-func writeMermaidPuppeteerConfig(dir string) (string, error) {
-	configPath := filepath.Join(dir, "puppeteer-config.json")
-	config := []byte("{\n  \"args\": [\"--no-sandbox\", \"--disable-setuid-sandbox\"]\n}\n")
-	if err := os.WriteFile(configPath, config, 0o600); err != nil {
-		return "", fmt.Errorf("write mermaid puppeteer config: %w", err)
-	}
-	return configPath, nil
-}
-
-func runMermaidCLI(cliOverride, inputPath, outputPath, puppeteerConfigPath string) error {
-	var cmd *exec.Cmd
-	if strings.TrimSpace(cliOverride) != "" {
-		cmd = exec.Command(cliOverride, "-i", inputPath, "-o", outputPath, "-t", "neutral", "-b", "white", "-p", puppeteerConfigPath)
-	} else {
-		cmd = exec.Command("npm", "exec", "--prefix", "site", "mmdc", "--", "-i", inputPath, "-o", outputPath, "-t", "neutral", "-b", "white", "-p", puppeteerConfigPath)
-	}
-
-	var stderr bytes.Buffer
-	cmd.Stdout = io.Discard
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		message := strings.TrimSpace(stderr.String())
-		if message == "" {
-			if cliOverride == "" {
-				message = "ensure `npm ci --prefix site` has installed @mermaid-js/mermaid-cli"
-			} else {
-				message = "mermaid cli failed"
-			}
-		}
-		return fmt.Errorf("%v: %s", err, message)
-	}
-
 	return nil
 }
 
@@ -689,6 +589,34 @@ func copyFile(source, target string) error {
 		return fmt.Errorf("copy %s: %w", source, err)
 	}
 	return nil
+}
+
+func copyDir(source, target string) error {
+	info, err := os.Stat(filepath.Clean(source))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("stat %s: %w", source, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%s is not a directory", source)
+	}
+
+	return filepath.WalkDir(source, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(source, path)
+		if err != nil {
+			return fmt.Errorf("rel path %s: %w", path, err)
+		}
+		return copyFile(path, filepath.Join(target, relPath))
+	})
 }
 
 func splitFrontMatter(content string) (string, string) {
@@ -738,7 +666,7 @@ type siteCodePreWrapper struct {
 	Language string
 }
 
-func (p siteCodePreWrapper) Start(code bool, styleAttr string) string {
+func (p siteCodePreWrapper) Start(code bool, _ string) string {
 	if !code {
 		return `<pre tabindex="0">`
 	}
@@ -759,49 +687,6 @@ func highlightedLanguage(ctx highlighting.CodeBlockContext) string {
 		return string(language)
 	}
 	return "text"
-}
-
-func replaceMermaidBlocks(htmlSource, sourcePath string) (string, []mermaidDiagram) {
-	codeRE := regexp.MustCompile(`(?s)<pre[^>]*><code([^>]*)>(.*?)</code></pre>`)
-	diagrams := make([]mermaidDiagram, 0)
-
-	rendered := codeRE.ReplaceAllStringFunc(htmlSource, func(match string) string {
-		parts := codeRE.FindStringSubmatch(match)
-		if len(parts) != 3 || !hasCodeLanguage(attrValue(parts[1], "class"), "mermaid") {
-			return match
-		}
-
-		source := strings.TrimSpace(html.UnescapeString(parts[2]))
-		if source == "" {
-			return match
-		}
-
-		diag := mermaidDiagram{
-			ID:         mermaidDiagramID(source),
-			Source:     source + "\n",
-			SourcePath: sourcePath,
-		}
-		diagrams = append(diagrams, diag)
-
-		return `<figure class="site-mermaid"><img src="/_site/mermaid/` + diag.ID + `.svg" alt="Mermaid diagram" loading="lazy" decoding="async"></figure>`
-	})
-
-	return rendered, diagrams
-}
-
-func mermaidDiagramID(source string) string {
-	sum := sha256.Sum256([]byte(source))
-	return hex.EncodeToString(sum[:12])
-}
-
-func hasCodeLanguage(className, language string) bool {
-	target := "language-" + language
-	for _, token := range strings.Fields(className) {
-		if token == target {
-			return true
-		}
-	}
-	return false
 }
 
 func attrValue(attrs, name string) string {

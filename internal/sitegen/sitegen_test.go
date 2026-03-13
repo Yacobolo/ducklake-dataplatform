@@ -98,20 +98,6 @@ func TestRenderMarkdown_HighlightsFencedCode(t *testing.T) {
 	assert.Contains(t, rendered, `class="chroma-nb"`)
 }
 
-func TestReplaceMermaidBlocks_RewritesFenceToImage(t *testing.T) {
-	source := `<p>Flow</p><pre><code class="language-mermaid">graph TD
-A--&gt;B
-</code></pre>`
-
-	rendered, diags := replaceMermaidBlocks(source, "site/content/example.md")
-
-	require.Len(t, diags, 1)
-	assert.Contains(t, rendered, `class="site-mermaid"`)
-	assert.Contains(t, rendered, `/_site/mermaid/`+diags[0].ID+`.svg`)
-	assert.Equal(t, "graph TD\nA-->B\n", diags[0].Source)
-	assert.Equal(t, "site/content/example.md", diags[0].SourcePath)
-}
-
 func TestEnhanceTables_WrapsTables(t *testing.T) {
 	source := `<p>Example</p><table><thead><tr><th>A</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table>`
 
@@ -121,55 +107,29 @@ func TestEnhanceTables_WrapsTables(t *testing.T) {
 	assert.Contains(t, rendered, `<table>`)
 }
 
-func TestRenderMermaidAssets_RendersUniqueDiagrams(t *testing.T) {
+func TestCopySiteAssets_CopiesDiagrams(t *testing.T) {
 	tempDir := t.TempDir()
-	cliPath := filepath.Join(tempDir, "fake-mmdc")
-	script := `#!/bin/sh
-set -eu
-input=""
-output=""
-while [ "$#" -gt 0 ]; do
-  case "$1" in
-    -i)
-      input="$2"
-      shift 2
-      ;;
-    -o)
-      output="$2"
-      shift 2
-      ;;
-    *)
-      shift
-      ;;
-  esac
-done
-printf '<svg xmlns="http://www.w3.org/2000/svg"><text>' > "$output"
-cat "$input" >> "$output"
-printf '</text></svg>' >> "$output"
-`
-	require.NoError(t, os.WriteFile(cliPath, []byte(script), 0o700))
+	assetsDir := filepath.Join(tempDir, "assets")
+	require.NoError(t, os.MkdirAll(filepath.Join(assetsDir, "generated"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(assetsDir, "js"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(assetsDir, "icons"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(assetsDir, "diagrams"), 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(assetsDir, "generated", "site.css"), []byte("body{}"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(assetsDir, "js", "site.js"), []byte(""), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(assetsDir, "icons", "favicon.svg"), []byte("<svg></svg>"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(assetsDir, "diagrams", "flow.svg"), []byte("<svg><text>diagram</text></svg>"), 0o600))
 
-	diag := mermaidDiagram{
-		ID:         mermaidDiagramID("graph TD\nA-->B"),
-		Source:     "graph TD\nA-->B\n",
-		SourcePath: "site/content/example.md",
-	}
-
-	err := renderMermaidAssets(tempDir, []page{
-		{MermaidDiags: []mermaidDiagram{diag}},
-		{MermaidDiags: []mermaidDiagram{diag}},
-	}, cliPath)
+	err := copySiteAssets(assetsDir, filepath.Join(tempDir, "out"))
 	require.NoError(t, err)
 
-	body, err := os.ReadFile(filepath.Join(tempDir, "_site", "mermaid", diag.ID+".svg"))
+	body, err := os.ReadFile(filepath.Join(tempDir, "out", "_site", "diagrams", "flow.svg"))
 	require.NoError(t, err)
-	assert.Contains(t, string(body), "graph TD")
-	assert.Contains(t, string(body), "A-->B")
+	assert.Contains(t, string(body), "diagram")
 }
 
 func TestNormalizeSiteRoot_UsesBaseURLPath(t *testing.T) {
 	assert.Equal(t, "/ducklake-dataplatform", normalizeSiteRoot("https://yacobolo.github.io/ducklake-dataplatform/"))
-	assert.Equal(t, "", normalizeSiteRoot("https://yacobolo.github.io/"))
+	assert.Empty(t, normalizeSiteRoot("https://yacobolo.github.io/"))
 	assert.Equal(t, "/preview", normalizeSiteRoot("/preview/"))
 }
 
@@ -181,24 +141,12 @@ func TestJoinSiteURL_PrefixesInternalPaths(t *testing.T) {
 }
 
 func TestPrefixSiteRootInHTML_RewritesInternalHrefAndSrc(t *testing.T) {
-	source := `<p><a href="/docs/start-here/">Docs</a><img src="/_site/mermaid/a.svg" alt=""></p>`
+	source := `<p><a href="/docs/start-here/">Docs</a><img src="/_site/diagrams/a.svg" alt=""></p>`
 
 	rendered := prefixSiteRootInHTML(source, "/ducklake-dataplatform")
 
 	assert.Contains(t, rendered, `href="/ducklake-dataplatform/docs/start-here/"`)
-	assert.Contains(t, rendered, `src="/ducklake-dataplatform/_site/mermaid/a.svg"`)
-}
-
-func TestWriteMermaidPuppeteerConfig_IncludesSandboxFlags(t *testing.T) {
-	tempDir := t.TempDir()
-
-	configPath, err := writeMermaidPuppeteerConfig(tempDir)
-	require.NoError(t, err)
-
-	body, err := os.ReadFile(configPath)
-	require.NoError(t, err)
-	assert.Contains(t, string(body), "--no-sandbox")
-	assert.Contains(t, string(body), "--disable-setuid-sandbox")
+	assert.Contains(t, rendered, `src="/ducklake-dataplatform/_site/diagrams/a.svg"`)
 }
 
 func TestAPIOperationNodes_ExtractMethodRouteAndAnchor(t *testing.T) {

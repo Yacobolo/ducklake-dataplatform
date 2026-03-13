@@ -175,6 +175,12 @@ tasks:
       - npm run build:css --prefix site
       - go run ./cmd/sitegen -content-dir site/content -config site/config/site.yaml -nav site/config/navigation.yaml -templates-dir site/templates -assets-dir site/assets -out-dir dist/site -base-url "${SITE_BASE_URL:-}"
 
+  site:diagrams:
+    desc: Generate checked-in Mermaid SVG diagrams for docs pages
+    cmds:
+      - npm ci --prefix site
+      - npm run generate:diagrams --prefix site
+
   site:dev:
     desc: Build and serve the public site locally
     deps: [docs:generate]

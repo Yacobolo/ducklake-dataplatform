@@ -3,7 +3,8 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "build:css": "tailwindcss -c ./tailwind.config.js -i ./assets/css/app.css -o ./assets/generated/site.css --minify"
+    "build:css": "tailwindcss -c ./tailwind.config.js -i ./assets/css/app.css -o ./assets/generated/site.css --minify",
+    "generate:diagrams": "./scripts/generate-mermaid-diagrams.sh"
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^11.12.0",

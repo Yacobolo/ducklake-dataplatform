@@ -61,14 +61,9 @@ Once the first query succeeds, your next user actions are usually:
 
 ## Request flow at a glance
 
-```mermaid
-flowchart LR
-    User["Platform user"] --> Auth["Auth layer"]
-    Auth --> API["Duck API"]
-    API --> Policy["RBAC + RLS + masking"]
-    Policy --> Engine["DuckDB query engine"]
-    Engine --> Result["Governed result set"]
-```
+<figure class="site-mermaid">
+  <img src="/_site/diagrams/quickstart-request-flow.svg" alt="Flow diagram showing a platform user moving through the auth layer, Duck API, RBAC plus RLS plus masking, DuckDB query engine, and a governed result set." loading="lazy" decoding="async">
+</figure>
 
 ## Troubleshooting
 
