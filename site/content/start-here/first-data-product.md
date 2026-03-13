@@ -75,10 +75,82 @@ You are in good shape when:
 
 ## Next Steps
 
-- [Data Products](/concepts/data-products)
-- [Transformation Framework](/concepts/transformation-framework)
-- [Data Product Lifecycle](/build/data-product-lifecycle)
-- [Semantic Models And Metrics](/build/semantic-models-and-metrics)
+<div class="site-card-grid">
+  <a class="site-card" href="/concepts/data-products" style="position: relative; display: flex; height: 100%; align-items: flex-start; gap: 1rem; color: inherit; text-decoration: none;">
+    <span aria-hidden="true" style="margin-top: 0.25rem; display: inline-flex; height: 2.75rem; width: 2.75rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--site-accent) 14%, var(--site-surface-strong)); color: var(--site-accent-strong);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 7h16"></path>
+        <path d="M7 4h10v16H7z"></path>
+        <path d="M10 11h4"></path>
+        <path d="M10 15h4"></path>
+      </svg>
+    </span>
+    <span style="min-width: 0; flex: 1;">
+      <h3 style="margin: 0; color: var(--site-ink); font-size: 1rem; font-weight: 600;">Data Products</h3>
+      <p style="margin: 0.5rem 0 0; color: var(--site-muted); font-size: 0.95rem; line-height: 1.7;">Learn how Duck packages contracts, outputs, ownership, versions, and subscriptions into a discoverable product surface.</p>
+    </span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; right: 1.5rem; top: 1.5rem; height: 1rem; width: 1rem; color: var(--site-muted-soft);">
+      <path d="M7 17 17 7"></path>
+      <path d="M7 7h10v10"></path>
+    </svg>
+  </a>
+  <a class="site-card" href="/concepts/transformation-framework" style="position: relative; display: flex; height: 100%; align-items: flex-start; gap: 1rem; color: inherit; text-decoration: none;">
+    <span aria-hidden="true" style="margin-top: 0.25rem; display: inline-flex; height: 2.75rem; width: 2.75rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--site-accent) 14%, var(--site-surface-strong)); color: var(--site-accent-strong);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 7h8"></path>
+        <path d="M8 12h8"></path>
+        <path d="M8 17h5"></path>
+        <path d="M6 4h12v16H6z"></path>
+      </svg>
+    </span>
+    <span style="min-width: 0; flex: 1;">
+      <h3 style="margin: 0; color: var(--site-ink); font-size: 1rem; font-weight: 600;">Transformation Framework</h3>
+      <p style="margin: 0.5rem 0 0; color: var(--site-muted); font-size: 0.95rem; line-height: 1.7;">See how models, macros, notebooks, tests, and runs turn raw sources into stable analytical outputs.</p>
+    </span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; right: 1.5rem; top: 1.5rem; height: 1rem; width: 1rem; color: var(--site-muted-soft);">
+      <path d="M7 17 17 7"></path>
+      <path d="M7 7h10v10"></path>
+    </svg>
+  </a>
+  <a class="site-card" href="/build/data-product-lifecycle" style="position: relative; display: flex; height: 100%; align-items: flex-start; gap: 1rem; color: inherit; text-decoration: none;">
+    <span aria-hidden="true" style="margin-top: 0.25rem; display: inline-flex; height: 2.75rem; width: 2.75rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--site-accent) 14%, var(--site-surface-strong)); color: var(--site-accent-strong);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 4v4"></path>
+        <path d="M17 4v4"></path>
+        <path d="M5 8h14"></path>
+        <rect x="4" y="6" width="16" height="14" rx="2"></rect>
+        <path d="M8 12h3"></path>
+        <path d="M13 12h3"></path>
+      </svg>
+    </span>
+    <span style="min-width: 0; flex: 1;">
+      <h3 style="margin: 0; color: var(--site-ink); font-size: 1rem; font-weight: 600;">Data Product Lifecycle</h3>
+      <p style="margin: 0.5rem 0 0; color: var(--site-muted); font-size: 0.95rem; line-height: 1.7;">Follow the builder path from draft outputs to governed release, versioning, and ongoing operational ownership.</p>
+    </span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; right: 1.5rem; top: 1.5rem; height: 1rem; width: 1rem; color: var(--site-muted-soft);">
+      <path d="M7 17 17 7"></path>
+      <path d="M7 7h10v10"></path>
+    </svg>
+  </a>
+  <a class="site-card" href="/build/semantic-models-and-metrics" style="position: relative; display: flex; height: 100%; align-items: flex-start; gap: 1rem; color: inherit; text-decoration: none;">
+    <span aria-hidden="true" style="margin-top: 0.25rem; display: inline-flex; height: 2.75rem; width: 2.75rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--site-accent) 14%, var(--site-surface-strong)); color: var(--site-accent-strong);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 18V9"></path>
+        <path d="M12 18V5"></path>
+        <path d="M19 18v-6"></path>
+        <path d="M4 18h16"></path>
+      </svg>
+    </span>
+    <span style="min-width: 0; flex: 1;">
+      <h3 style="margin: 0; color: var(--site-ink); font-size: 1rem; font-weight: 600;">Semantic Models And Metrics</h3>
+      <p style="margin: 0.5rem 0 0; color: var(--site-muted); font-size: 0.95rem; line-height: 1.7;">Move from technical outputs to business-facing metrics, relationships, and query entrypoints that consumers can trust.</p>
+    </span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; right: 1.5rem; top: 1.5rem; height: 1rem; width: 1rem; color: var(--site-muted-soft);">
+      <path d="M7 17 17 7"></path>
+      <path d="M7 7h10v10"></path>
+    </svg>
+  </a>
+</div>
 
 ## Related Reference
 
