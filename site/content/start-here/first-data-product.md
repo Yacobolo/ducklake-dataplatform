@@ -75,9 +75,100 @@ You are in good shape when:
 
 ## Next Steps
 
-<div class="site-card-grid">
-  <a class="site-card" href="/concepts/data-products" style="position: relative; display: flex; height: 100%; align-items: flex-start; gap: 1rem; color: inherit; text-decoration: none;">
-    <span aria-hidden="true" style="margin-top: 0.25rem; display: inline-flex; height: 2.75rem; width: 2.75rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--site-accent) 14%, var(--site-surface-strong)); color: var(--site-accent-strong);">
+<style>
+  .product-next-steps {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .product-next-step-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid var(--site-border);
+    background: transparent;
+    color: inherit;
+    text-decoration: none;
+    transition:
+      transform 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      background-color 180ms ease;
+  }
+
+  .product-next-step-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--site-accent);
+    background: color-mix(in srgb, var(--site-accent) 3%, transparent);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  }
+
+  .product-next-step-card:hover .product-next-step-arrow {
+    color: var(--site-accent-strong);
+    transform: translate(2px, -2px);
+  }
+
+  .product-next-step-icon {
+    display: inline-flex;
+    height: 3.75rem;
+    width: 3.75rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1.25rem;
+    background: color-mix(in srgb, var(--site-accent) 12%, transparent);
+    color: var(--site-accent-strong);
+  }
+
+  .product-next-step-copy {
+    min-width: 0;
+    flex: 1;
+    text-align: left;
+  }
+
+  .product-next-step-title {
+    margin: 0;
+    color: var(--site-ink);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .product-next-step-subtitle {
+    margin: 0.35rem 0 0;
+    color: var(--site-muted);
+    font-size: 0.95rem;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  .product-next-step-arrow {
+    position: absolute;
+    right: 1.5rem;
+    top: 1.5rem;
+    height: 1rem;
+    width: 1rem;
+    color: var(--site-muted-soft);
+    transition:
+      color 180ms ease,
+      transform 180ms ease;
+  }
+
+  @media (max-width: 767px) {
+    .product-next-step-card {
+      align-items: flex-start;
+      padding-right: 3.5rem;
+    }
+
+    .product-next-step-subtitle {
+      white-space: normal;
+    }
+  }
+</style>
+
+<div class="product-next-steps">
+  <a class="site-card product-next-step-card" href="/concepts/data-products">
+    <span class="product-next-step-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M4 7h16"></path>
         <path d="M7 4h10v16H7z"></path>
@@ -85,17 +176,17 @@ You are in good shape when:
         <path d="M10 15h4"></path>
       </svg>
     </span>
-    <span style="min-width: 0; flex: 1;">
-      <h3 style="margin: 0; color: var(--site-ink); font-size: 1rem; font-weight: 600;">Data Products</h3>
-      <p style="margin: 0.5rem 0 0; color: var(--site-muted); font-size: 0.95rem; line-height: 1.7;">Learn how Duck packages contracts, outputs, ownership, versions, and subscriptions into a discoverable product surface.</p>
+    <span class="product-next-step-copy">
+      <h3 class="product-next-step-title">Data Products</h3>
+      <p class="product-next-step-subtitle">Contracts, versions, and ownership.</p>
     </span>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; right: 1.5rem; top: 1.5rem; height: 1rem; width: 1rem; color: var(--site-muted-soft);">
+    <svg class="product-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M7 17 17 7"></path>
       <path d="M7 7h10v10"></path>
     </svg>
   </a>
-  <a class="site-card" href="/concepts/transformation-framework" style="position: relative; display: flex; height: 100%; align-items: flex-start; gap: 1rem; color: inherit; text-decoration: none;">
-    <span aria-hidden="true" style="margin-top: 0.25rem; display: inline-flex; height: 2.75rem; width: 2.75rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--site-accent) 14%, var(--site-surface-strong)); color: var(--site-accent-strong);">
+  <a class="site-card product-next-step-card" href="/concepts/transformation-framework">
+    <span class="product-next-step-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M8 7h8"></path>
         <path d="M8 12h8"></path>
@@ -103,17 +194,17 @@ You are in good shape when:
         <path d="M6 4h12v16H6z"></path>
       </svg>
     </span>
-    <span style="min-width: 0; flex: 1;">
-      <h3 style="margin: 0; color: var(--site-ink); font-size: 1rem; font-weight: 600;">Transformation Framework</h3>
-      <p style="margin: 0.5rem 0 0; color: var(--site-muted); font-size: 0.95rem; line-height: 1.7;">See how models, macros, notebooks, tests, and runs turn raw sources into stable analytical outputs.</p>
+    <span class="product-next-step-copy">
+      <h3 class="product-next-step-title">Transformation Framework</h3>
+      <p class="product-next-step-subtitle">Models, notebooks, tests, and runs.</p>
     </span>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; right: 1.5rem; top: 1.5rem; height: 1rem; width: 1rem; color: var(--site-muted-soft);">
+    <svg class="product-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M7 17 17 7"></path>
       <path d="M7 7h10v10"></path>
     </svg>
   </a>
-  <a class="site-card" href="/build/data-product-lifecycle" style="position: relative; display: flex; height: 100%; align-items: flex-start; gap: 1rem; color: inherit; text-decoration: none;">
-    <span aria-hidden="true" style="margin-top: 0.25rem; display: inline-flex; height: 2.75rem; width: 2.75rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--site-accent) 14%, var(--site-surface-strong)); color: var(--site-accent-strong);">
+  <a class="site-card product-next-step-card" href="/build/data-product-lifecycle">
+    <span class="product-next-step-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M7 4v4"></path>
         <path d="M17 4v4"></path>
@@ -123,17 +214,17 @@ You are in good shape when:
         <path d="M13 12h3"></path>
       </svg>
     </span>
-    <span style="min-width: 0; flex: 1;">
-      <h3 style="margin: 0; color: var(--site-ink); font-size: 1rem; font-weight: 600;">Data Product Lifecycle</h3>
-      <p style="margin: 0.5rem 0 0; color: var(--site-muted); font-size: 0.95rem; line-height: 1.7;">Follow the builder path from draft outputs to governed release, versioning, and ongoing operational ownership.</p>
+    <span class="product-next-step-copy">
+      <h3 class="product-next-step-title">Data Product Lifecycle</h3>
+      <p class="product-next-step-subtitle">From draft to release.</p>
     </span>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; right: 1.5rem; top: 1.5rem; height: 1rem; width: 1rem; color: var(--site-muted-soft);">
+    <svg class="product-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M7 17 17 7"></path>
       <path d="M7 7h10v10"></path>
     </svg>
   </a>
-  <a class="site-card" href="/build/semantic-models-and-metrics" style="position: relative; display: flex; height: 100%; align-items: flex-start; gap: 1rem; color: inherit; text-decoration: none;">
-    <span aria-hidden="true" style="margin-top: 0.25rem; display: inline-flex; height: 2.75rem; width: 2.75rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--site-accent) 14%, var(--site-surface-strong)); color: var(--site-accent-strong);">
+  <a class="site-card product-next-step-card" href="/build/semantic-models-and-metrics">
+    <span class="product-next-step-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M5 18V9"></path>
         <path d="M12 18V5"></path>
@@ -141,11 +232,11 @@ You are in good shape when:
         <path d="M4 18h16"></path>
       </svg>
     </span>
-    <span style="min-width: 0; flex: 1;">
-      <h3 style="margin: 0; color: var(--site-ink); font-size: 1rem; font-weight: 600;">Semantic Models And Metrics</h3>
-      <p style="margin: 0.5rem 0 0; color: var(--site-muted); font-size: 0.95rem; line-height: 1.7;">Move from technical outputs to business-facing metrics, relationships, and query entrypoints that consumers can trust.</p>
+    <span class="product-next-step-copy">
+      <h3 class="product-next-step-title">Semantic Models And Metrics</h3>
+      <p class="product-next-step-subtitle">Business-ready metrics and entrypoints.</p>
     </span>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; right: 1.5rem; top: 1.5rem; height: 1rem; width: 1rem; color: var(--site-muted-soft);">
+    <svg class="product-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M7 17 17 7"></path>
       <path d="M7 7h10v10"></path>
     </svg>
