@@ -56,9 +56,9 @@ Imagine a finance team wants to ask for `gross_revenue` by `pickup_zone` and wee
 
 ## Related Tasks
 
-- [Semantic Models And Metrics](/build/semantic-models-and-metrics)
-- [Data Products](/concepts/data-products)
-- [Lineage And Freshness](/concepts/lineage-and-freshness)
+- [Semantic Models And Metrics](/docs/build/semantic-models-and-metrics)
+- [Data Products](/docs/concepts/data-products)
+- [Lineage And Freshness](/docs/concepts/lineage-and-freshness)
 
 ## Related Reference
 

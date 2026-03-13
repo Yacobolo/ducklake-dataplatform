@@ -85,7 +85,7 @@ Once the first query works, most users continue in one of these directions:
 
 - verify whether your team expects browser sign-in, bearer tokens, or API keys
 - confirm the credential is still valid
-- see [Authentication And Identities](/govern/authentication-and-identities) for auth-path details
+- see [Authentication And Identities](/docs/govern/authentication-and-identities) for auth-path details
 
 ### Query returns `403 Forbidden`
 
@@ -206,7 +206,7 @@ Authentication worked, but your current principal does not have the required gra
     </span>
     <svg class="doc-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
   </a>
-  <a class="site-card doc-next-step-card" href="/concepts/platform-architecture">
+  <a class="site-card doc-next-step-card" href="/docs/concepts/platform-architecture">
     <span class="doc-next-step-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <rect x="4" y="5" width="16" height="6" rx="1"></rect>
@@ -219,7 +219,7 @@ Authentication worked, but your current principal does not have the required gra
     </span>
     <svg class="doc-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
   </a>
-  <a class="site-card doc-next-step-card" href="/concepts/governance-model">
+  <a class="site-card doc-next-step-card" href="/docs/concepts/governance-model">
     <span class="doc-next-step-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3z"></path>
@@ -231,7 +231,7 @@ Authentication worked, but your current principal does not have the required gra
     </span>
     <svg class="doc-next-step-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M7 7h10v10"></path></svg>
   </a>
-  <a class="site-card doc-next-step-card" href="/govern/authentication-and-identities">
+  <a class="site-card doc-next-step-card" href="/docs/govern/authentication-and-identities">
     <span class="doc-next-step-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4z"></path>

@@ -29,7 +29,7 @@ Macros keep repeated SQL behavior consistent across models and teams.
 
 ## Related Concepts
 
-- [Transformation Framework](/concepts/transformation-framework)
+- [Transformation Framework](/docs/concepts/transformation-framework)
 
 ## Related Reference
 

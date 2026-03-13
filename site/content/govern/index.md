@@ -9,12 +9,12 @@ Governance in Duck is not a single admin task. It is a collaboration between pla
 
 ## Recommended Path
 
-- [Authentication And Identities](/govern/authentication-and-identities)
-- [Access Design](/govern/access-design)
-- [Policy Verification](/govern/policy-verification)
-- [Product Ownership](/govern/product-ownership)
+- [Authentication And Identities](/docs/govern/authentication-and-identities)
+- [Access Design](/docs/govern/access-design)
+- [Policy Verification](/docs/govern/policy-verification)
+- [Product Ownership](/docs/govern/product-ownership)
 
 ## Related Concepts
 
-- [Governance Model](/concepts/governance-model)
-- [Data Products](/concepts/data-products)
+- [Governance Model](/docs/concepts/governance-model)
+- [Data Products](/docs/concepts/data-products)

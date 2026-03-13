@@ -176,7 +176,7 @@ You are in good shape when:
 </style>
 
 <div class="product-next-steps">
-  <a class="site-card product-next-step-card" href="/concepts/data-products">
+  <a class="site-card product-next-step-card" href="/docs/concepts/data-products">
     <span class="product-next-step-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M4 7h16"></path>
@@ -194,7 +194,7 @@ You are in good shape when:
       <path d="M7 7h10v10"></path>
     </svg>
   </a>
-  <a class="site-card product-next-step-card" href="/concepts/transformation-framework">
+  <a class="site-card product-next-step-card" href="/docs/concepts/transformation-framework">
     <span class="product-next-step-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M8 7h8"></path>
@@ -212,7 +212,7 @@ You are in good shape when:
       <path d="M7 7h10v10"></path>
     </svg>
   </a>
-  <a class="site-card product-next-step-card" href="/build/data-product-lifecycle">
+  <a class="site-card product-next-step-card" href="/docs/build/data-product-lifecycle">
     <span class="product-next-step-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M7 4v4"></path>
@@ -232,7 +232,7 @@ You are in good shape when:
       <path d="M7 7h10v10"></path>
     </svg>
   </a>
-  <a class="site-card product-next-step-card" href="/build/semantic-models-and-metrics">
+  <a class="site-card product-next-step-card" href="/docs/build/semantic-models-and-metrics">
     <span class="product-next-step-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M5 18V9"></path>

@@ -60,8 +60,8 @@ The underlying tables and models still exist, but the product is what makes them
 
 ## How This Relates To Other Concepts
 
-- [Asset Orchestration](/concepts/asset-orchestration) explains how outputs are produced and kept healthy
-- [Semantic Layer](/concepts/semantic-layer) explains how business-facing entrypoints are defined
+- [Asset Orchestration](/docs/concepts/asset-orchestration) explains how outputs are produced and kept healthy
+- [Semantic Layer](/docs/concepts/semantic-layer) explains how business-facing entrypoints are defined
 - this page explains how those outputs are packaged for consumption and ownership
 
 ## Common Misunderstandings
@@ -73,8 +73,8 @@ The underlying tables and models still exist, but the product is what makes them
 ## Related Tasks
 
 - [First Data Product](/start-here/first-data-product)
-- [Data Product Lifecycle](/build/data-product-lifecycle)
-- [Product Ownership](/govern/product-ownership)
+- [Data Product Lifecycle](/docs/build/data-product-lifecycle)
+- [Product Ownership](/docs/govern/product-ownership)
 
 ## Related Reference
 

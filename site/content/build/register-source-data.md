@@ -29,8 +29,8 @@ Use this guide when you are establishing the foundation for downstream models, a
 
 ## Related Concepts
 
-- [Platform Architecture](/concepts/platform-architecture)
-- [Governance Model](/concepts/governance-model)
+- [Platform Architecture](/docs/concepts/platform-architecture)
+- [Governance Model](/docs/concepts/governance-model)
 
 ## Related Reference
 

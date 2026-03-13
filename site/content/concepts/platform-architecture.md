@@ -51,9 +51,9 @@ This is why remote compute is different from letting users bypass Duck and talk 
 
 Platform architecture explains where decisions are made.
 
-- [Governance Model](/concepts/governance-model) explains what those access decisions are
-- [Compute Topology](/concepts/compute-topology) explains where execution can run
-- [Data Products](/concepts/data-products) explains what consumers discover once governance allows them through
+- [Governance Model](/docs/concepts/governance-model) explains what those access decisions are
+- [Compute Topology](/docs/concepts/compute-topology) explains where execution can run
+- [Data Products](/docs/concepts/data-products) explains what consumers discover once governance allows them through
 
 ## Example In Duck
 
@@ -62,7 +62,7 @@ Suppose an analyst submits a metric query through a BI client. The analyst may t
 ## Related Tasks
 
 - [Quickstart](/start-here/quickstart)
-- [Access Design](/govern/access-design)
+- [Access Design](/docs/govern/access-design)
 - [Platform Settings](/operations/configuration)
 
 ## Related Reference

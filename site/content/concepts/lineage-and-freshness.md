@@ -60,8 +60,8 @@ Suppose a weekly finance metric is stale. Freshness tells you the metric has exc
 
 ## Related Tasks
 
-- [Asset Orchestration Guide](/build/asset-orchestration)
-- [Policy Verification](/govern/policy-verification)
+- [Asset Orchestration Guide](/docs/build/asset-orchestration)
+- [Policy Verification](/docs/govern/policy-verification)
 - [Observability And Troubleshooting](/operations/observability-and-troubleshooting)
 
 ## Related Reference

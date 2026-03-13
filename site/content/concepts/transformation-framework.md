@@ -46,9 +46,9 @@ Imagine a raw trip events table. A builder first creates staging models to norma
 
 ## Related Tasks
 
-- [Author Models And Tests](/build/author-models-and-tests)
-- [Reuse Macros](/build/reuse-macros)
-- [Notebooks And Promotion](/build/notebooks-and-promotion)
+- [Author Models And Tests](/docs/build/author-models-and-tests)
+- [Reuse Macros](/docs/build/reuse-macros)
+- [Notebooks And Promotion](/docs/build/notebooks-and-promotion)
 
 ## Related Reference
 

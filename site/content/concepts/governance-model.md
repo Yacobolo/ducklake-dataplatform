@@ -39,9 +39,9 @@ Read the diagram as a relationship map, not a step-by-step execution flow. Princ
 
 Governance is easy to confuse with architecture or products:
 
-- [Platform Architecture](/concepts/platform-architecture) explains where policy is enforced
+- [Platform Architecture](/docs/concepts/platform-architecture) explains where policy is enforced
 - this page explains what policy decisions are made
-- [Data Products](/concepts/data-products) explain how governed outputs are packaged for discovery
+- [Data Products](/docs/concepts/data-products) explain how governed outputs are packaged for discovery
 
 ## Example In Duck
 
@@ -63,9 +63,9 @@ That is why Duck separates these layers. If all four concerns were collapsed int
 
 ## Related Tasks
 
-- [Authentication And Identities](/govern/authentication-and-identities)
-- [Access Design](/govern/access-design)
-- [Policy Verification](/govern/policy-verification)
+- [Authentication And Identities](/docs/govern/authentication-and-identities)
+- [Access Design](/docs/govern/access-design)
+- [Policy Verification](/docs/govern/policy-verification)
 
 ## Related Reference
 

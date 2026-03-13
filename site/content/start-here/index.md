@@ -31,14 +31,14 @@ Duck is a governed data platform built around three outcomes:
 ## Recommended Reading Order
 
 1. Start with the role-based quickstart that matches your job.
-2. Read the [Concepts](/concepts/) section to build a shared platform mental model.
-3. Move into [Build](/build/), [Govern](/govern/), or [Operate](/operations/) depending on your responsibilities.
+2. Read the [Concepts](/docs/concepts/) section to build a shared platform mental model.
+3. Move into [Build](/docs/build/), [Govern](/docs/govern/), or [Operate](/operations/) depending on your responsibilities.
 4. Use [Reference](/reference/) when you need exact payload, CLI, or schema detail.
 
 ## Recommended Next Steps
 
 <div class="site-card-grid">
-  <a class="site-card" href="/concepts/" style="position: relative; display: flex; align-items: center; gap: 0.875rem; padding: 1rem 1.25rem; border: 1px solid var(--site-border); background: transparent; color: inherit; text-decoration: none;">
+  <a class="site-card" href="/docs/concepts/" style="position: relative; display: flex; align-items: center; gap: 0.875rem; padding: 1rem 1.25rem; border: 1px solid var(--site-border); background: transparent; color: inherit; text-decoration: none;">
     <span aria-hidden="true" style="display: inline-flex; height: 3rem; width: 3rem; align-items: center; justify-content: center; border-radius: 1rem; background: color-mix(in srgb, var(--site-accent) 12%, transparent); color: var(--site-accent-strong);">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h10"></path></svg>
     </span>

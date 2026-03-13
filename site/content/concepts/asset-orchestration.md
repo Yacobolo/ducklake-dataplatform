@@ -98,9 +98,9 @@ That is the real value of asset orchestration. It turns a vague complaint like â
 
 ## Related Tasks
 
-- [Asset Orchestration Guide](/build/asset-orchestration)
-- [Lineage And Freshness](/concepts/lineage-and-freshness)
-- [Policy Verification](/govern/policy-verification)
+- [Asset Orchestration Guide](/docs/build/asset-orchestration)
+- [Lineage And Freshness](/docs/concepts/lineage-and-freshness)
+- [Policy Verification](/docs/govern/policy-verification)
 
 ## Related Reference
 

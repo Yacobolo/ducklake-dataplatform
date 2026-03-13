@@ -16,17 +16,17 @@ This section teaches Duck as one continuous builder workflow:
 
 ## Recommended Path
 
-- [Data Product Lifecycle](/build/data-product-lifecycle)
-- [Register Source Data](/build/register-source-data)
-- [Author Models And Tests](/build/author-models-and-tests)
-- [Reuse Macros](/build/reuse-macros)
-- [Notebooks And Promotion](/build/notebooks-and-promotion)
-- [Asset Orchestration Guide](/build/asset-orchestration)
-- [Semantic Models And Metrics](/build/semantic-models-and-metrics)
-- [Declarative Delivery](/build/declarative-delivery)
+- [Data Product Lifecycle](/docs/build/data-product-lifecycle)
+- [Register Source Data](/docs/build/register-source-data)
+- [Author Models And Tests](/docs/build/author-models-and-tests)
+- [Reuse Macros](/docs/build/reuse-macros)
+- [Notebooks And Promotion](/docs/build/notebooks-and-promotion)
+- [Asset Orchestration Guide](/docs/build/asset-orchestration)
+- [Semantic Models And Metrics](/docs/build/semantic-models-and-metrics)
+- [Declarative Delivery](/docs/build/declarative-delivery)
 
 ## Related Concepts
 
-- [Data Products](/concepts/data-products)
-- [Transformation Framework](/concepts/transformation-framework)
-- [Asset Orchestration](/concepts/asset-orchestration)
+- [Data Products](/docs/concepts/data-products)
+- [Transformation Framework](/docs/concepts/transformation-framework)
+- [Asset Orchestration](/docs/concepts/asset-orchestration)
