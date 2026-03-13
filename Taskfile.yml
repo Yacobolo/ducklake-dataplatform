@@ -217,7 +217,7 @@ tasks:
 
   generate:
     desc: Run all code generation
-    deps: [generate:api, sqlc, genduckdb, generate:declarative-schema, docs:generate]
+    deps: [sqlc, genduckdb, docs:generate]
 
   build:
     desc: Build all packages
