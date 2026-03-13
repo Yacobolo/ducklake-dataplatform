@@ -13,13 +13,14 @@ Teams need more than one-off SQL files. They need a place for transformation log
 
 ## What Lives In The Transformation Framework
 
-The transformation framework combines:
-
-- models as versioned SQL transformations
-- macros as reusable SQL building blocks
-- tests as quality gates
-- notebook cells for exploration and promotion
-- runs and DAGs for execution history and dependency visibility
+| Object | What It Is | What It Is Not | Why It Exists |
+| --- | --- | --- | --- |
+| Model | A maintained SQL transformation | An ad hoc notebook experiment | To define durable transformation logic |
+| Macro | A reusable SQL building block | A standalone output | To share logic across many models |
+| Test | A quality gate on model behavior | A model by itself | To validate trust before downstream use |
+| Notebook | An exploration and iteration surface | A guaranteed production artifact | To discover and refine logic quickly |
+| Run | A recorded execution of transformation work | The transformation definition itself | To show what executed and what passed or failed |
+| Transformation DAG | The graph of builder logic and model dependencies | The asset DAG | To explain how transformation code relates internally |
 
 ## Transformation DAG
 
@@ -31,14 +32,7 @@ Read the diagram left to right. Source tables feed the builder workflow. Macros 
 
 ## How These Pieces Differ
 
-A model is the maintained SQL transformation itself. A macro is a reusable chunk of SQL logic used by many models. A test is a validation step attached to model behavior. A notebook is a place to explore or iterate quickly. A run is the recorded execution of the transformation workflow.
-
-This is also where the transformation DAG differs from the asset DAG:
-
-- the transformation DAG explains builder logic and model dependencies
-- the asset DAG explains operational outputs, freshness, and remediation
-
-The two graphs are related, but they are not the same concept.
+The table above is the shortest way to keep these objects straight. The most common confusion is between the transformation DAG and the asset DAG. The transformation DAG explains builder logic and model dependencies, while the asset DAG explains operational outputs, freshness, and remediation. The two graphs are related, but they are not the same concept.
 
 ## Example In Duck
 

@@ -29,22 +29,16 @@ The generated API reference is the source of truth for request and response deta
 | Data load and storage | [Storage Endpoint Index](/reference/generated/api/endpoints/storage) |
 | Remote execution | [Compute Endpoint Index](/reference/generated/api/endpoints/compute) |
 
-## When To Use Generated API Reference
+## Where To Start
 
-Use it when you need:
-
-- exact paths and parameters
-- payload schema detail
-- operation IDs for automation or codegen work
-
-## When To Use Product Guides First
-
-Use the product guides first when you are deciding:
-
-- how users access the platform
-- how access policy should be designed
-- what builder workflow fits your team
-- how to operate the runtime safely
+| Need | Start With | Why |
+| --- | --- | --- |
+| Exact paths, parameters, and payloads | Generated API reference | It is the source of truth for operation detail |
+| Operation IDs for automation or codegen | Generated API reference | It exposes the precise operation surface |
+| Access-surface choices | Product guides | They explain the user and platform workflow first |
+| Access-policy design | Product guides | They teach the governance model, not just endpoints |
+| Builder workflow selection | Product guides | They connect endpoints to a real end-to-end path |
+| Runtime and operations questions | Product guides | They explain safe deployment and troubleshooting decisions |
 
 ## Next Steps
 

@@ -7,45 +7,15 @@ description: Choose the right interaction mode for users, builders, and operator
 
 Duck supports multiple interaction modes because the same governed platform serves end users, builders, and operators.
 
-## Query Surfaces
+## Access Modes
 
-Use this when:
-
-- you want guided product surfaces
-- your team exposes browser-based discovery or dashboards
-- you are troubleshooting user experience rather than API behavior
-
-## SQL, BI, And Programmatic Access
-
-Use this when:
-
-- you use SQL clients, BI tools, or service-to-service calls
-- you want a familiar query workflow
-- you need repeatable automation or scripting
-
-## Builder Workflows
-
-Use this when:
-
-- you are creating models, assets, notebooks, metrics, and products
-- you need declarative change management
-- you want exact API and CLI control over platform state
-
-## Operator And Runtime Access
-
-Use this when:
-
-- you are configuring auth, storage, networking, or compute routing
-- you are rolling out distributed compute
-- you are debugging health, throughput, or fallback behavior
-
-## Execution Topology
-
-Use this when:
-
-- your admins have enabled remote execution
-- you need worker isolation or a separate compute fleet
-- execution topology matters for scale or control
+| Access Mode | Best For | Typical User | When To Avoid |
+| --- | --- | --- | --- |
+| Query surfaces | Guided product experiences, dashboards, and discovery | Business users and analysts | When you need low-level API or CLI control |
+| SQL, BI, and programmatic access | Familiar query tooling and automation | Analysts, BI tools, and services | When the problem is really about product UX or platform config |
+| Builder workflows | Models, assets, notebooks, metrics, and products | Data builders and analytics engineers | When you only need to query trusted outputs |
+| Operator and runtime access | Auth, storage, networking, and compute posture | Platform operators and admins | When you are not responsible for deployment or runtime safety |
+| Execution topology | Worker isolation and remote routing strategy | Operators planning scale or isolation | When local execution already matches the workload |
 
 Read [Distributed Compute](/operations/distributed-compute) before rollout.
 

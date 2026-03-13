@@ -29,22 +29,21 @@ This runbook describes how to roll out remote compute without weakening Duck’s
 - canary a small set of users or groups before widening traffic
 - monitor queue latency and failure reasons before widening scope
 
-## Worker Settings
+## Remote Compute Settings
 
-- `AGENT_TOKEN`
-- `LISTEN_ADDR`
-- `GRPC_LISTEN_ADDR`
-- `MAX_MEMORY_GB`
-- `QUERY_RESULT_TTL`
-- `QUERY_CLEANUP_INTERVAL`
-
-## Gateway Settings
-
-- `FEATURE_REMOTE_ROUTING`
-- `FEATURE_ASYNC_QUEUE`
-- `FEATURE_CURSOR_MODE`
-- `FEATURE_INTERNAL_GRPC`
-- `REMOTE_CANARY_USERS`
+| Setting | Applies To | Why It Matters |
+| --- | --- | --- |
+| `AGENT_TOKEN` | Worker | Authenticates the worker to the control plane |
+| `LISTEN_ADDR` | Worker | Binds the worker’s public listener correctly |
+| `GRPC_LISTEN_ADDR` | Worker | Exposes the internal gRPC path for execution traffic |
+| `MAX_MEMORY_GB` | Worker | Caps worker memory for safer isolation |
+| `QUERY_RESULT_TTL` | Worker | Controls how long async results stay available |
+| `QUERY_CLEANUP_INTERVAL` | Worker | Governs lifecycle cleanup pressure |
+| `FEATURE_REMOTE_ROUTING` | Gateway | Enables routing work to remote workers |
+| `FEATURE_ASYNC_QUEUE` | Gateway | Turns on queued async execution behavior |
+| `FEATURE_CURSOR_MODE` | Gateway | Affects cursor-style remote result handling |
+| `FEATURE_INTERNAL_GRPC` | Gateway | Enables the internal transport to workers |
+| `REMOTE_CANARY_USERS` | Gateway | Limits early rollout to a known audience |
 
 ## Health and Failure Handling
 

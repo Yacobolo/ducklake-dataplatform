@@ -12,12 +12,17 @@ The generated declarative reference documents the versioned JSON Schema artifact
 - [Generated Declarative Reference](/reference/generated/declarative/index)
 - [Declarative Delivery](/build/declarative-delivery)
 
-## What the Generated Pages Are Best For
+## Where To Start
 
-- checking supported kinds
-- confirming field names and types
-- understanding per-kind schema files
-- wiring editor schema mappings
+| Task | Start With | Why |
+| --- | --- | --- |
+| Checking supported kinds | Generated declarative reference | It lists the schema-backed kinds directly |
+| Confirming field names and types | Generated declarative reference | It is the field-level source of truth |
+| Understanding per-kind schema files | Generated declarative reference | It points straight at the per-kind artifacts |
+| Wiring editor schema mappings | Generated declarative reference | It exposes the exact schema path to map |
+| Planning a safe rollout workflow | Product guides | They explain validate, plan, apply, and operational safety |
+| Understanding schema vs semantic validation | Product guides | They explain why both validation layers exist |
+| Learning how assets, models, semantics, and products fit together | Product guides | They connect the schema to the platform mental model |
 
 ## Editor Integration
 
@@ -26,15 +31,6 @@ Map the union schema:
 `schemas/declarative/v1/duck.declarative.schema.json`
 
 to your config file patterns in your editor.
-
-## When To Use Product Guides First
-
-Use product guides first when you need:
-
-- a safe rollout workflow
-- an explanation of schema vs semantic validation
-- examples of expected CLI behavior and exit codes
-- how models, assets, semantic models, and data products fit together
 
 ## Next Steps
 

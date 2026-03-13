@@ -15,23 +15,25 @@ Without a product layer, consumers are forced to guess. They infer trust from ta
 
 A data product is not the same thing as a table, dashboard, or semantic model.
 
-- a table is one technical object
-- a semantic model is one business-facing query interface
-- a dashboard is one consumption surface
-- a data product is the package around one or more outputs and the contract that explains what they are for
+| Concept | Primary Role | Consumer View | How It Differs From A Data Product |
+| --- | --- | --- | --- |
+| Table | Stores one technical dataset | A raw or curated object to query directly | It is one object, not a packaged contract |
+| Semantic model | Defines business-facing query structure | A trusted interface for metrics and dimensions | It is one entrypoint inside or alongside a product |
+| Dashboard | Presents a consumption surface | A report or visualization experience | It is an endpoint for reading, not the package of ownership and contract |
+| Data product | Packages outputs, semantics, ownership, and release state | A discoverable, supported contract | It is the layer that makes outputs legible, owned, and requestable |
 
 That package usually includes a domain, an owner team, a contract, outputs, optional semantic entrypoints, versioning, status, and a request path for consumers.
 
 ## What The Product Layer Connects
 
-A data product connects:
-
-- a business domain
-- an owner team
-- a contract and consumer audience
-- one or more outputs
-- optional semantic entrypoints
-- release, publication, and status metadata
+| Product Element | What It Contributes |
+| --- | --- |
+| Business domain | Places the product in a larger business context |
+| Owner team | Makes support and accountability explicit |
+| Contract and audience | Explains who the product is for and what it promises |
+| Outputs | Identifies the concrete things consumers can use |
+| Semantic entrypoints | Exposes business-friendly query surfaces |
+| Release and status metadata | Shows whether the product is draft, published, or changing |
 
 ## Product Anatomy
 

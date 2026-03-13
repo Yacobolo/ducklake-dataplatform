@@ -9,11 +9,13 @@ Use this quickstart when you are responsible for platform posture. The goal is n
 
 ## What You Are Establishing
 
-- a trusted identity path
-- secure runtime configuration
-- a storage and external-data strategy
-- clear policy ownership
-- a compute topology that matches your load and isolation needs
+| Operator Concern | Why It Matters | First Decision |
+| --- | --- | --- |
+| Trusted identity path | Users and services need a safe, auditable auth path | How people and services authenticate |
+| Secure runtime configuration | The deployment should start from a production-safe baseline | Which env vars, secrets, and listeners are required |
+| Storage and external-data strategy | Data location and integration posture affect both security and reliability | How storage credentials and external locations are managed |
+| Clear policy ownership | Governance breaks down when nobody owns grants and policy changes | Who approves and verifies access changes |
+| Compute topology | Runtime shape affects scale, isolation, and fallback behavior | Whether local execution is enough or remote workers are needed |
 
 ## 1. Establish identity first
 

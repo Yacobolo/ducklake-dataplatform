@@ -19,12 +19,14 @@ Duck is a governed data platform built around three outcomes:
 
 ## What Duck Covers
 
-- secure query execution with RBAC, row filters, and column masks
-- product-first APIs for domains, teams, contracts, versions, and subscriptions
-- asset-based orchestration with checks, dependencies, freshness, and backfills
-- transformation workflows with models, macros, notebooks, tests, and runs
-- semantic modeling for metrics, relationships, and pre-aggregations
-- local and remote compute options with central policy enforcement
+| Platform Area | What It Covers | Primary Audience |
+| --- | --- | --- |
+| Governed query execution | RBAC, row filters, and column masks on live queries | Data consumers and platform owners |
+| Data products | Domains, teams, contracts, versions, and subscriptions | Builders and product owners |
+| Asset orchestration | Checks, dependencies, freshness, and backfills | Builders and operators |
+| Transformation workflows | Models, macros, notebooks, tests, and runs | Analytics engineers and data builders |
+| Semantic modeling | Metrics, relationships, and pre-aggregations | Consumers and semantic model authors |
+| Flexible compute | Local and remote execution with central policy enforcement | Operators |
 
 ## Recommended Reading Order
 
