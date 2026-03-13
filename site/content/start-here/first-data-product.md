@@ -97,6 +97,13 @@ You are in good shape when:
       background-color 180ms ease;
   }
 
+  .product-next-step-card,
+  .product-next-step-card:hover,
+  .product-next-step-card:focus,
+  .product-next-step-card:visited {
+    text-decoration: none !important;
+  }
+
   .product-next-step-card:hover {
     transform: translateY(-2px);
     border-color: var(--site-accent);
@@ -116,6 +123,7 @@ You are in good shape when:
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
+    align-self: center;
     border-radius: 1.25rem;
     background: color-mix(in srgb, var(--site-accent) 12%, transparent);
     color: var(--site-accent-strong);
