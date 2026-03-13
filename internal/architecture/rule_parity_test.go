@@ -15,7 +15,7 @@ func TestGovernanceRules_ParityAcrossTestsLintAndDocs(t *testing.T) {
 
 	fromTests := architectureRuleMap()
 	fromDepguard := parseDepguardGovernanceRules(t, repoRootDir()+"/.golangci.yml")
-	fromDocs := parseDocsGovernanceRules(t, repoRootDir()+"/docs/architecture-governance.md")
+	fromDocs := parseDocsGovernanceRules(t, repoRootDir()+"/site/content/architecture-governance.md")
 
 	require.Equal(t, fromTests, fromDepguard, "governance: architecture test rules and depguard rules must match")
 	require.Equal(t, fromTests, fromDocs, "governance: architecture test rules and docs rules must match")

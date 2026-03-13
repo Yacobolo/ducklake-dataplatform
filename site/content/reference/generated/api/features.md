@@ -19,6 +19,7 @@ This page is generated from OpenAPI tags and operations.
 | [Models](./endpoints/models) | Model, macro, and model run management for transformation workflows. | 25 operations |
 | [Notebooks](./endpoints/notebooks) | Notebook authoring, sessions, cells, and job execution endpoints. | 16 operations |
 | [Pipelines](./endpoints/pipelines) | Pipeline definitions, jobs, runs, and orchestration controls. | 13 operations |
+| [Products](./endpoints/products) | Product-first control-plane APIs for domains, teams, product contracts, releases, discovery, and portfolio reporting. | 30 operations |
 | [Queries](./endpoints/queries) | Synchronous and asynchronous SQL query execution, search, and query history endpoints. | 9 operations |
 | [Semantic Layer](./endpoints/semantic-layer) | Semantic models, metrics, relationships, and metric query execution. | 21 operations |
 | [Storage](./endpoints/storage) | Storage credentials and external location configuration for object storage access. | 10 operations |

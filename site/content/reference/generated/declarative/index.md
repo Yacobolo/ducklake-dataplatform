@@ -17,6 +17,8 @@ This section is generated from versioned JSON Schema artifacts.
 - [ComputeAssignmentList](./kinds/compute-assignment-list) (`kinds/compute-assignment-list.schema.json`)
 - [ComputeEndpointList](./kinds/compute-endpoint-list) (`kinds/compute-endpoint-list.schema.json`)
 - [ComputeRoutingDefaults](./kinds/compute-routing-defaults) (`kinds/compute-routing-defaults.schema.json`)
+- [DataProduct](./kinds/data-product) (`kinds/data-product.schema.json`)
+- [Domain](./kinds/domain) (`kinds/domain.schema.json`)
 - [ExternalLocationList](./kinds/external-location-list) (`kinds/external-location-list.schema.json`)
 - [GrantList](./kinds/grant-list) (`kinds/grant-list.schema.json`)
 - [GroupList](./kinds/group-list) (`kinds/group-list.schema.json`)
@@ -31,6 +33,7 @@ This section is generated from versioned JSON Schema artifacts.
 - [StorageCredentialList](./kinds/storage-credential-list) (`kinds/storage-credential-list.schema.json`)
 - [Table](./kinds/table) (`kinds/table.schema.json`)
 - [TagConfig](./kinds/tag-config) (`kinds/tag-config.schema.json`)
+- [Team](./kinds/team) (`kinds/team.schema.json`)
 - [View](./kinds/view) (`kinds/view.schema.json`)
 - [Volume](./kinds/volume) (`kinds/volume.schema.json`)
 
@@ -39,13 +42,15 @@ This section is generated from versioned JSON Schema artifacts.
 | File | SHA256 |
 | --- | --- |
 | `kinds/api-key-list.schema.json` | `90233e3aa0c3ba6174f1e8589f8cbcd962d4c7bcca5d3853ee7643099d9f9a15` |
-| `kinds/asset.schema.json` | `2997d5164d9725c7b6983006462f493cbe0cccd5f6a3430c90f71b214d95cc9d` |
+| `kinds/asset.schema.json` | `2b90e79eee901cad9e273a00d4f063a7117efa3dcf2c13d29648fd4896db765e` |
 | `kinds/binding-list.schema.json` | `5c46b7f6f9e38e5829fca8e8fdc52d3c4ea8d8f2c241f06d992899bd2207c6dd` |
 | `kinds/catalog.schema.json` | `b09db032ebe5d9687e36898abf362ee79ea28f38a5dc11aed148c3622179a499` |
 | `kinds/column-mask-list.schema.json` | `d9c34a0d7affcf634680277d0eb960c7a4404902dc9d80a33a06e21baf12174b` |
 | `kinds/compute-assignment-list.schema.json` | `6fbe93f03583e8d78c49daf83e080acbe453ad59a0f075aec68ca81c6ce0cbc7` |
 | `kinds/compute-endpoint-list.schema.json` | `ebb5e300a231aab693d0b0386a7afef18f7aea60daa05017aa3d2198f21e2c4d` |
 | `kinds/compute-routing-defaults.schema.json` | `e6a2500fca51b845e3fa36709cc94459ce6d87fa79ef7010fe9da9dc380df41a` |
+| `kinds/data-product.schema.json` | `41ea4d256416634a6b11b22929e26952e2cf116867d0b45e3fb952f74309c7d3` |
+| `kinds/domain.schema.json` | `0774c2d9dc41e98a44bb1296f0665d768555dd340fafcd1427a7dcbb5db5257d` |
 | `kinds/external-location-list.schema.json` | `0ee50a446813a293604b06df459c07013a211df1e2bb11365062d306793b2514` |
 | `kinds/grant-list.schema.json` | `01894b437ecda3477ace579d8c9fce446218daf8c49976513baef5fa7de0ed76` |
 | `kinds/group-list.schema.json` | `3c23b29013f530fefac36ed3beabb88fb8bc873bb1ad2e53d30d0376b91823d5` |
@@ -60,5 +65,6 @@ This section is generated from versioned JSON Schema artifacts.
 | `kinds/storage-credential-list.schema.json` | `afe5ef7fd5ada3d8cb379c1064e6811c5dbab8e1f8015d141e7eedbf82347a2c` |
 | `kinds/table.schema.json` | `ba5f538e24c38543b7e8ec9f2288624ecb6f265d9b1f320ebecdd513778bcda8` |
 | `kinds/tag-config.schema.json` | `1e751bea5c972720ff8335f47b507c96d84339c9867328d1ddc7c072d0d907f8` |
+| `kinds/team.schema.json` | `dd4995f6fe0e2b018359129d7a8d7abc364b3022b012585488618f781970ce21` |
 | `kinds/view.schema.json` | `590efe3350dc234557c642624e03ef130d54e75bdfbe16696b4ad243a15a2c0e` |
 | `kinds/volume.schema.json` | `7e49d78c0a7af8442e6866996c6971fb251a50d60b22af5dcdd3ca0f9b27063c` |

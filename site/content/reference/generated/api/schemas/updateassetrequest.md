@@ -3,7 +3,7 @@
 # Schema: `UpdateAssetRequest`
 
 - Type: `object`
-- Required fields: `asset_type`, `owner`
+- Required fields: `asset_type`, `owner`, `product_slug`
 
 ## Properties
 
@@ -18,6 +18,7 @@
 | `is_active` | `boolean` | `false` | - |
 | `materialization_policy` | `AssetMaterializationPolicy` | `false` | - |
 | `owner` | `string` | `true` | - |
+| `product_slug` | `string` | `true` | - |
 | `tags` | `array[string]` | `false` | - |
 | `upstream_asset_keys` | `array[string]` | `false` | - |
 

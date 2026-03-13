@@ -1,3 +1,4 @@
+// Package sitegen builds the static public site from markdown content and templates.
 package sitegen
 
 import (
@@ -14,6 +15,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/yuin/goldmark"
@@ -23,6 +25,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Builder assembles the static site from content, config, templates, and assets.
 type Builder struct {
 	ContentDir   string
 	ConfigPath   string
@@ -185,6 +188,7 @@ type templateSet struct {
 	base *template.Template
 }
 
+// Build renders the full static site into the configured output directory.
 func (b Builder) Build() error {
 	cfg, err := loadConfig[siteConfig](b.ConfigPath)
 	if err != nil {
@@ -222,7 +226,7 @@ func (b Builder) Build() error {
 	if err := os.RemoveAll(b.OutDir); err != nil {
 		return fmt.Errorf("clean output: %w", err)
 	}
-	if err := os.MkdirAll(b.OutDir, 0o755); err != nil {
+	if err := os.MkdirAll(b.OutDir, 0o750); err != nil {
 		return fmt.Errorf("create output: %w", err)
 	}
 	if err := copySiteAssets(b.AssetsDir, b.OutDir); err != nil {
@@ -282,8 +286,14 @@ func (b Builder) Build() error {
 	return nil
 }
 
+// Serve exposes the generated site locally with conservative HTTP timeouts.
 func Serve(addr, outDir string) error {
-	return http.ListenAndServe(addr, http.FileServer(http.Dir(outDir)))
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           http.FileServer(http.Dir(outDir)),
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	return server.ListenAndServe()
 }
 
 func loadConfig[T any](path string) (T, error) {
@@ -426,9 +436,10 @@ func parsePage(root, path string) (page, error) {
 		Section:      sectionForPage(relPath, kind),
 		BodyMarkdown: body,
 		MirrorBody:   mirror,
-		BodyHTML:     template.HTML(rendered),
-		Headings:     extractHeadings(mirror),
-		Keywords:     fm.Keywords,
+		// #nosec G203 -- rendered markdown is limited to repository-owned docs and generated content.
+		BodyHTML: template.HTML(rendered),
+		Headings: extractHeadings(mirror),
+		Keywords: fm.Keywords,
 	}, nil
 }
 
@@ -442,15 +453,15 @@ func renderHTMLPage(templates templateSet, outDir string, p page, data pageTempl
 	if p.URLPath == "/" {
 		targetDir = outDir
 	}
-	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+	if err := os.MkdirAll(targetDir, 0o750); err != nil {
 		return fmt.Errorf("mkdir page dir: %w", err)
 	}
-	return os.WriteFile(filepath.Join(targetDir, "index.html"), buf.Bytes(), 0o644)
+	return os.WriteFile(filepath.Join(targetDir, "index.html"), buf.Bytes(), 0o600)
 }
 
 func writeMirrorMarkdown(outDir string, p page) error {
 	target := filepath.Join(outDir, "llms", filepath.FromSlash(p.MirrorPath))
-	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(target), 0o750); err != nil {
 		return fmt.Errorf("mkdir llms dir: %w", err)
 	}
 
@@ -475,7 +486,7 @@ func writeMirrorMarkdown(outDir string, p page) error {
 		content.WriteString("\n")
 	}
 
-	return os.WriteFile(target, []byte(content.String()), 0o644)
+	return os.WriteFile(target, []byte(content.String()), 0o600)
 }
 
 func writeSearchIndex(outDir string, items []searchItem) error {
@@ -483,7 +494,7 @@ func writeSearchIndex(outDir string, items []searchItem) error {
 	if err != nil {
 		return fmt.Errorf("marshal search index: %w", err)
 	}
-	return os.WriteFile(filepath.Join(outDir, "search-index.json"), append(payload, '\n'), 0o644)
+	return os.WriteFile(filepath.Join(outDir, "search-index.json"), append(payload, '\n'), 0o600)
 }
 
 func writeLLMSTXT(outDir string, cfg siteConfig, pages []page) error {
@@ -501,7 +512,7 @@ func writeLLMSTXT(outDir string, cfg siteConfig, pages []page) error {
 		b.WriteString(p.MirrorPath)
 		b.WriteString("\n")
 	}
-	return os.WriteFile(filepath.Join(outDir, "llms.txt"), []byte(b.String()), 0o644)
+	return os.WriteFile(filepath.Join(outDir, "llms.txt"), []byte(b.String()), 0o600)
 }
 
 func writeSitemap(outDir, baseURL string, pages []page) error {
@@ -517,12 +528,12 @@ func writeSitemap(outDir, baseURL string, pages []page) error {
 		b.WriteString("</loc></url>\n")
 	}
 	b.WriteString("</urlset>\n")
-	return os.WriteFile(filepath.Join(outDir, "sitemap.xml"), []byte(b.String()), 0o644)
+	return os.WriteFile(filepath.Join(outDir, "sitemap.xml"), []byte(b.String()), 0o600)
 }
 
 func copySiteAssets(assetsDir, outDir string) error {
 	staticDir := filepath.Join(outDir, "_site")
-	if err := os.MkdirAll(staticDir, 0o755); err != nil {
+	if err := os.MkdirAll(staticDir, 0o750); err != nil {
 		return fmt.Errorf("mkdir static dir: %w", err)
 	}
 	files := []struct {
@@ -546,17 +557,21 @@ func copyFile(source, target string) error {
 	if err != nil {
 		return fmt.Errorf("open %s: %w", source, err)
 	}
-	defer in.Close()
+	defer func() {
+		_ = in.Close()
+	}()
 
-	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(target), 0o750); err != nil {
 		return fmt.Errorf("mkdir %s: %w", target, err)
 	}
 
-	out, err := os.Create(filepath.Clean(target))
+	out, err := os.OpenFile(filepath.Clean(target), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
 		return fmt.Errorf("create %s: %w", target, err)
 	}
-	defer out.Close()
+	defer func() {
+		_ = out.Close()
+	}()
 
 	if _, err := io.Copy(out, in); err != nil {
 		return fmt.Errorf("copy %s: %w", source, err)
@@ -664,7 +679,7 @@ func renderDirective(name string, attrs map[string]string, childHTML, childMirro
 	case "callout":
 		title := attrs["title"]
 		if title == "" {
-			title = strings.Title(attrs["kind"])
+			title = directiveKindTitle(attrs["kind"])
 		}
 		htmlBlock := `<div class="site-callout">`
 		if title != "" {
@@ -733,10 +748,26 @@ func routeForRelPath(relPath string) (pageKind, string) {
 		return pageKindDocs, "/docs/"
 	}
 	clean := strings.TrimSuffix(relPath, filepath.Ext(relPath))
-	if strings.HasSuffix(clean, "/index") {
-		clean = strings.TrimSuffix(clean, "/index")
-	}
+	clean = strings.TrimSuffix(clean, "/index")
 	return pageKindDocs, "/docs/" + clean + "/"
+}
+
+func directiveKindTitle(kind string) string {
+	if kind == "" {
+		return ""
+	}
+	parts := strings.FieldsFunc(kind, func(r rune) bool {
+		return r == '-' || r == '_' || unicode.IsSpace(r)
+	})
+	for i := range parts {
+		if parts[i] == "" {
+			continue
+		}
+		runes := []rune(strings.ToLower(parts[i]))
+		runes[0] = unicode.ToUpper(runes[0])
+		parts[i] = string(runes)
+	}
+	return strings.Join(parts, " ")
 }
 
 func sectionForPage(relPath string, kind pageKind) string {

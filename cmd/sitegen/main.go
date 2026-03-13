@@ -1,9 +1,10 @@
+// Command sitegen builds and optionally serves the public site.
 package main
 
 import (
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"duck-demo/internal/sitegen"
@@ -20,6 +21,8 @@ func main() {
 	serve := flag.Bool("serve", false, "serve the generated site locally")
 	addr := flag.String("addr", ":4080", "address for local site server")
 	flag.Parse()
+
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
 	builder := sitegen.Builder{
 		ContentDir:   *contentDir,
@@ -40,7 +43,7 @@ func main() {
 		return
 	}
 
-	log.Printf("serving site at http://localhost%s", *addr)
+	logger.Info("serving site", "url", "http://localhost"+*addr)
 	if err := sitegen.Serve(*addr, *outDir); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error: serve site: %v\n", err)
 		os.Exit(1)

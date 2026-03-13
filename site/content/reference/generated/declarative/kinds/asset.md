@@ -5,7 +5,7 @@
 Duck declarative Asset
 
 - Schema file: `kinds/asset.schema.json`
-- SHA256: `2997d5164d9725c7b6983006462f493cbe0cccd5f6a3430c90f71b214d95cc9d`
+- SHA256: `2b90e79eee901cad9e273a00d4f063a7117efa3dcf2c13d29648fd4896db765e`
 
 ## Spec Fields
 
@@ -25,5 +25,6 @@ Duck declarative Asset
 | `owner` | `string` | `false` | - |
 | `partition_definition` | `AssetPartitionDefinitionSpec` | `false` | - |
 | `partition_type` | `string` | `false` | - |
+| `product_ref` | `string` | `true` | - |
 | `properties` | `object` | `false` | - |
 | `tags` | `array[string]` | `false` | - |
