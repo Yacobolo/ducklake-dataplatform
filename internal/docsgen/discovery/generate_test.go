@@ -12,7 +12,7 @@ import (
 func TestGenerate_EmitsDocAndOperationMetadata(t *testing.T) {
 	root := t.TempDir()
 	docsDir := filepath.Join(root, "docs")
-	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "how-to"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "govern"), 0o750))
 	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "reference", "generated"), 0o750))
 
 	docBody := `---
@@ -32,7 +32,7 @@ Use Duck securely.
 ` + "```bash\n" + `duck auth login
 ` + "```" + `
 `
-	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "how-to", "authentication.md"), []byte(docBody), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "govern", "authentication-and-identities.md"), []byte(docBody), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "reference", "generated", "ignored.md"), []byte("# Ignore me"), 0o600))
 
 	specPath := filepath.Join(root, "openapi.yaml")
@@ -68,7 +68,7 @@ paths:
 
 	output, err := os.ReadFile(outPath)
 	require.NoError(t, err)
-	assert.Contains(t, string(output), `ID: "how-to/authentication"`)
+	assert.Contains(t, string(output), `ID: "govern/authentication-and-identities"`)
 	assert.Contains(t, string(output), `OperationID: "login"`)
 	assert.Contains(t, string(output), `TargetID: "auth login"`)
 	assert.NotContains(t, string(output), `ignored.md`)
