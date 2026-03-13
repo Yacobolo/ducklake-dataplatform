@@ -211,7 +211,7 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 	req.TargetCatalog = environment.TargetCatalog
 	req.TargetSchema = environment.TargetSchema
 
-	// Load models
+	// Load all models for ref/source resolution, then scope execution to the active project by default.
 	allModels, err := s.models.ListAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load models: %w", err)
@@ -220,7 +220,10 @@ func (s *Service) TriggerRun(ctx context.Context, principal string, req domain.T
 		return nil, domain.ErrValidation("no models defined")
 	}
 
-	selected := allModels
+	selected, err := s.loadProjectModels(ctx, project.Name)
+	if err != nil {
+		return nil, err
+	}
 	if req.Selector != "" {
 		selected, err = s.selectModelsForRun(ctx, principal, req, allModels)
 		if err != nil {
@@ -335,7 +338,7 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 	req.TargetCatalog = environment.TargetCatalog
 	req.TargetSchema = environment.TargetSchema
 
-	// Load models
+	// Load all models for ref/source resolution, then scope execution to the active project by default.
 	allModels, err := s.models.ListAll(ctx)
 	if err != nil {
 		return fmt.Errorf("load models: %w", err)
@@ -344,7 +347,10 @@ func (s *Service) TriggerRunSync(ctx context.Context, principal string, req doma
 		return domain.ErrValidation("no models defined")
 	}
 
-	selected := allModels
+	selected, err := s.loadProjectModels(ctx, project.Name)
+	if err != nil {
+		return err
+	}
 	if req.Selector != "" {
 		selected, err = s.selectModelsForRun(ctx, principal, req, allModels)
 		if err != nil {
@@ -1200,6 +1206,18 @@ func (s *Service) createRunBuild(
 		}
 	}
 	return created, nil
+}
+
+func (s *Service) loadProjectModels(ctx context.Context, projectName string) ([]domain.Model, error) {
+	projectFilter := strings.TrimSpace(projectName)
+	models, _, err := s.models.List(ctx, &projectFilter, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+	if err != nil {
+		return nil, fmt.Errorf("load models for project %s: %w", projectFilter, err)
+	}
+	if len(models) == 0 {
+		return nil, domain.ErrValidation("no models defined in project %s", projectFilter)
+	}
+	return models, nil
 }
 
 func selectDefaultDevelopmentEnvironment(environments []domain.Environment) (*domain.Environment, error) {
