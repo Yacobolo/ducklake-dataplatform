@@ -57,11 +57,10 @@ pkg/cli/gen/*.gen.go
 /server_test
 /bin/
 
-# Docs site build/deps
-docs/reference/generated/
-docs/node_modules/
-docs/.vitepress/dist/
-docs/.vitepress/cache/
+# Public site build/deps
+dist/
+site/node_modules/
+site/assets/generated/site.css
 web/node_modules/
 api/spec/node_modules/
 tools/typespec-ir-emitter/node_modules/

@@ -4,37 +4,37 @@ on:
   push:
     branches: [main]
     paths:
-      - docs/**
+      - site/**
       - api/spec/**
       - api/gen/openapi.yaml
       - tools/typespec-ir-emitter/**
       - internal/apigen/**
       - cmd/apigen/**
-      - web/**
+      - cmd/sitegen/**
       - internal/api/**
       - internal/declarative/**
       - internal/docsgen/**
       - cmd/docsgen/**
+      - internal/sitegen/**
       - schemas/declarative/**
       - Taskfile.yml
-      - scripts/redocly-react-global.cjs
   pull_request:
     branches: [main]
     paths:
-      - docs/**
+      - site/**
       - api/spec/**
       - api/gen/openapi.yaml
       - tools/typespec-ir-emitter/**
       - internal/apigen/**
       - cmd/apigen/**
-      - web/**
+      - cmd/sitegen/**
       - internal/api/**
       - internal/declarative/**
       - internal/docsgen/**
       - cmd/docsgen/**
+      - internal/sitegen/**
       - schemas/declarative/**
       - Taskfile.yml
-      - scripts/redocly-react-global.cjs
 
 concurrency:
   group: docs-${{ github.ref }}
@@ -67,22 +67,13 @@ jobs:
       - name: Install Task
         run: go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
 
-      - name: Compute VitePress base path
-        run: |
-          repo="${GITHUB_REPOSITORY#*/}"
-          if [[ "$repo" == *.github.io ]]; then
-            echo "DOCS_BASE=/" >> "$GITHUB_ENV"
-          else
-            echo "DOCS_BASE=/$repo/" >> "$GITHUB_ENV"
-          fi
-
       - name: Build docs
-        run: task docs:build
+        run: task site:build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/.vitepress/dist
+          path: dist/site
 
   deploy:
     name: Deploy to GitHub Pages

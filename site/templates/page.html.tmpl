@@ -1,0 +1,95 @@
+{{ define "docs" -}}
+<main class="site-layout docs-layout section-layout">
+  <aside class="site-sidebar docs-sidebar section-sidebar"{{ if eq .Page.Kind "api" }} data-api-sidebar{{ end }}>
+    <nav>
+      <div class="site-sidebar-label">{{ if eq .Page.Kind "api" }}API Reference{{ else }}Documentation{{ end }}</div>
+      {{ range .SidebarGroups }}
+        {{ if or .Title .Icon }}
+          <details class="docs-nav-group section-nav-group" {{ if .Open }}open{{ end }}>
+            <summary>
+              <span class="site-nav-summary-row">
+                {{ if .Icon }}<span class="site-nav-group-icon" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
+                <span>{{ .Title }}</span>
+              </span>
+            </summary>
+            {{ template "nav-nodes" .Nodes }}
+          </details>
+        {{ else }}
+          {{ template "nav-nodes" .Nodes }}
+        {{ end }}
+      {{ end }}
+    </nav>
+  </aside>
+  <article class="site-content docs-content section-content">
+    <div class="mb-8 flex flex-wrap items-center justify-between gap-4 text-sm" style="color: var(--site-muted);">
+      <div class="flex flex-wrap items-center gap-3">
+        {{ range .Breadcrumbs }}
+          <a href="{{ .Path }}" class="no-underline">{{ .Title }}</a>
+          <span>/</span>
+        {{ end }}
+        <span>{{ .Page.Title }}</span>
+      </div>
+      <button
+        type="button"
+        class="site-button site-button-secondary"
+        data-site-copy-page="/llms/{{ .MirrorPath }}"
+      >Copy Page</button>
+    </div>
+    <div class="site-prose">
+      <h1>{{ .Page.Title }}</h1>
+      {{ if .Page.Description }}<p>{{ .Page.Description }}</p>{{ end }}
+      {{ .BodyHTML }}
+    </div>
+    <div class="mt-12 flex flex-wrap justify-between gap-4 border-t pt-6" style="border-color: var(--site-border);">
+      {{ if .Prev }}<a class="site-button site-button-secondary" href="{{ .Prev.Path }}">← {{ .Prev.Title }}</a>{{ else }}<span></span>{{ end }}
+      {{ if .Next }}<a class="site-button site-button-secondary" href="{{ .Next.Path }}">{{ .Next.Title }} →</a>{{ end }}
+    </div>
+  </article>
+  <aside class="site-toc docs-toc">
+    <nav>
+      <div class="site-sidebar-label">On this page</div>
+      <ul class="site-toc-list">
+        {{ range .TOC }}
+          <li class="site-toc-item{{ if eq .Level 3 }} is-child{{ end }}">
+            <a href="#{{ .ID }}" data-site-toc-link="{{ .ID }}">{{ .Title }}</a>
+          </li>
+        {{ end }}
+      </ul>
+    </nav>
+  </aside>
+</main>
+{{- end }}
+
+{{ define "nav-nodes" -}}
+<ul class="site-nav-tree">
+  {{ range . }}
+    <li>
+      {{ if .Children }}
+        <details class="site-nav-node" {{ if .Open }}open{{ end }}>
+          <summary>
+            <span class="site-nav-node-summary">
+              <span class="site-nav-node-label-wrap">
+                {{ if .Icon }}<span class="site-nav-node-icon" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
+                <span class="site-nav-node-label">{{ .Title }}</span>
+              </span>
+              {{ if .Description }}<span class="site-nav-node-meta">{{ .Description }}</span>{{ end }}
+            </span>
+          </summary>
+          {{ template "nav-nodes" .Children }}
+        </details>
+      {{ else }}
+        <a href="{{ .Path }}"{{ if .Active }} class="is-active"{{ end }}{{ if .Method }} data-api-method="{{ .Method }}"{{ end }}>
+          {{ if .Method }}
+            <span class="api-nav-link">
+              <span class="api-nav-link-title">{{ .Title }}</span>
+              <span class="api-nav-method" data-api-method="{{ .Method }}">{{ .Method }}</span>
+            </span>
+          {{ else }}
+            {{ .Title }}
+          {{ end }}
+        </a>
+      {{ end }}
+    </li>
+  {{ end }}
+</ul>
+{{- end }}

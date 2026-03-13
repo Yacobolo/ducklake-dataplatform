@@ -148,7 +148,7 @@ tasks:
     desc: Generate docs reference pages from generated API and schemas
     deps: [generate:api, generate:declarative-schema]
     cmds:
-      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated -docs-dir docs -cli-index-out pkg/cli/gen/discovery_index.gen.go
+      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
     sources:
       - api/gen/openapi.yaml
       - schemas/declarative/v1/index.json
@@ -156,35 +156,41 @@ tasks:
       - cmd/docsgen/*.go
       - internal/docsgen/**/*.go
     generates:
-      - docs/reference/generated/api/index.md
-      - docs/reference/generated/api/features.md
-      - docs/reference/generated/declarative/index.md
+      - site/content/reference/generated/api/index.md
+      - site/content/reference/generated/api/features.md
+      - site/content/reference/generated/declarative/index.md
       - pkg/cli/gen/discovery_index.gen.go
 
   docs:generate:generated:
     desc: Generate docs from canonical OpenAPI artifact and declarative schemas
     deps: [generate:api, generate:declarative-schema]
     cmds:
-      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir docs/reference/generated -docs-dir docs -cli-index-out pkg/cli/gen/discovery_index.gen.go
+      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
 
-  docs:dev:
-    desc: Start VitePress docs dev server
+  site:generate:
+    desc: Generate the public site content and static export
     deps: [docs:generate]
     cmds:
-      - npm install --prefix docs
-      - npm run docs:dev --prefix docs
+      - npm ci --prefix site
+      - npm run build:css --prefix site
+      - go run ./cmd/sitegen -content-dir site/content -config site/config/site.yaml -nav site/config/navigation.yaml -templates-dir site/templates -assets-dir site/assets -out-dir dist/site
 
-  docs:build:
-    desc: Build static docs site with VitePress
+  site:dev:
+    desc: Build and serve the public site locally
     deps: [docs:generate]
     cmds:
-      - npm ci --prefix docs
-      - npm run docs:build --prefix docs
+      - npm ci --prefix site
+      - npm run build:css --prefix site
+      - go run ./cmd/sitegen -content-dir site/content -config site/config/site.yaml -nav site/config/navigation.yaml -templates-dir site/templates -assets-dir site/assets -out-dir dist/site -serve -addr :4080
 
-  docs:check:
-    desc: Build docs and verify generated reference pages are up to date
+  site:build:
+    desc: Build the public site static export
+    deps: [site:generate]
+
+  site:check:
+    desc: Build the public site and verify generated content is up to date
     cmds:
-      - task docs:build
+      - task site:build
       - task verify:docs-generated
 
   ui:assets:
@@ -197,11 +203,11 @@ tasks:
     desc: Verify docs reference pages can be generated from canonical artifacts
     cmds:
       - task docs:generate
-      - test -f docs/reference/generated/api/index.md
-      - test -f docs/reference/generated/api/features.md
-      - test -f docs/reference/generated/declarative/index.md
+      - test -f site/content/reference/generated/api/index.md
+      - test -f site/content/reference/generated/api/features.md
+      - test -f site/content/reference/generated/declarative/index.md
       - test -f pkg/cli/gen/discovery_index.gen.go
-      - git diff --exit-code -- docs/reference/generated pkg/cli/gen/discovery_index.gen.go
+      - git diff --exit-code -- site/content/reference/generated pkg/cli/gen/discovery_index.gen.go
 
   generate:
     desc: Run all code generation
@@ -317,7 +323,7 @@ tasks:
       - |
         failed=0
         results=""
-        for step in lint:go lint:api verify:apigen-generated verify:declarative-schema docs:check test:arch test:authz-matrix test:workflow-invariants test:unit test:integration; do
+        for step in lint:go lint:api verify:apigen-generated verify:declarative-schema site:check test:arch test:authz-matrix test:workflow-invariants test:unit test:integration; do
           if task "$step" > /dev/null 2>&1; then
             results="${results}  ${step} ... ok\n"
           else

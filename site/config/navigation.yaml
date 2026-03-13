@@ -1,0 +1,73 @@
+primary:
+  - title: Docs
+    path: /docs/
+  - title: API Reference
+    path: /api-reference/
+
+docs:
+  - title: Getting Started
+    icon: rocket
+    expanded: true
+    items:
+      - source: start-here/index.md
+        title: Overview
+      - source: start-here/quickstart.md
+      - source: start-here/deployment-modes.md
+  - title: Core Concepts
+    icon: blocks
+    expanded: true
+    items:
+      - source: core-concepts/index.md
+      - source: core-concepts/access-control.md
+      - source: core-concepts/declarative.md
+      - source: core-concepts/compute-and-query.md
+  - title: How To
+    icon: wrench
+    expanded: true
+    items:
+      - source: how-to/index.md
+      - source: how-to/authentication.md
+      - source: how-to/use-the-cli.md
+      - source: how-to/access-control.md
+      - source: how-to/catalog-and-ingestion.md
+      - source: how-to/declarative-workflows.md
+  - title: Operations
+    icon: library
+    expanded: true
+    items:
+      - source: operations/index.md
+      - source: operations/configuration.md
+      - source: operations/security-checklist.md
+      - source: operations/distributed-compute.md
+  - title: Reference
+    icon: book-open
+    expanded: true
+    items:
+      - title: Overview
+        icon: book-open
+        items:
+          - source: reference/index.md
+          - source: reference/glossary.md
+          - source: reference/api.md
+          - source: reference/declarative.md
+          - source: reference/cli.md
+      - title: Deep Dives
+        icon: route
+        items:
+          - source: browser-local-compute.md
+          - source: architecture-governance.md
+      - title: Declarative Reference
+        icon: file-json
+        items:
+          - source: reference/generated/declarative/index.md
+          - title: Kinds
+            icon: folder
+            autogen_dir: reference/generated/declarative/kinds
+
+api:
+  -
+    items:
+      - autogen_dir: reference/generated/api/endpoints
+      - title: Models
+        icon: file-json
+        autogen_dir: reference/generated/api/schemas

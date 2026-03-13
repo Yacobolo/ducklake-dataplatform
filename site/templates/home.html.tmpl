@@ -1,0 +1,77 @@
+{{ define "home" -}}
+<main>
+  <section class="site-hero">
+    <div class="site-hero-inner">
+      <div class="site-hero-copy">
+        <div class="site-hero-badge">Unified site</div>
+        <div class="space-y-4">
+          <h1 class="max-w-3xl text-5xl font-semibold">{{ .Home.Hero.Name }}</h1>
+          <p class="max-w-2xl text-xl" style="color: var(--site-muted);">{{ .Home.Hero.Tagline }}</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          {{ range .Home.Hero.Actions }}
+            <a href="{{ .Link }}" class="site-button {{ if eq .Theme "brand" }}site-button-primary{{ else }}site-button-secondary{{ end }}">{{ .Text }}</a>
+          {{ end }}
+        </div>
+        <div class="site-hero-points">
+          <div class="site-hero-point">
+            <span class="site-hero-point-icon" aria-hidden="true">{{ navIcon "book-open" }}</span>
+            <span>Shared docs and reference language</span>
+          </div>
+          <div class="site-hero-point">
+            <span class="site-hero-point-icon" aria-hidden="true">{{ navIcon "database" }}</span>
+            <span>Generated API and schema reference</span>
+          </div>
+          <div class="site-hero-point">
+            <span class="site-hero-point-icon" aria-hidden="true">{{ navIcon "route" }}</span>
+            <span>Static export with fast local preview</span>
+          </div>
+        </div>
+      </div>
+      <div class="site-hero-panel">
+        <div class="site-hero-panel-header">
+          <div class="site-hero-panel-title">What this ships</div>
+          <div class="site-hero-panel-kicker">Public site system</div>
+        </div>
+        <div class="site-hero-stat-grid">
+          <div class="site-hero-stat">
+            <div class="site-hero-stat-label">One shell</div>
+            <div class="site-hero-stat-value">Docs + API</div>
+          </div>
+          <div class="site-hero-stat">
+            <div class="site-hero-stat-label">Readable mirrors</div>
+            <div class="site-hero-stat-value">`llms.txt` + `/llms`</div>
+          </div>
+          <div class="site-hero-stat">
+            <div class="site-hero-stat-label">Build path</div>
+            <div class="site-hero-stat-value">Go static export</div>
+          </div>
+          <div class="site-hero-stat">
+            <div class="site-hero-stat-label">Preview</div>
+            <div class="site-hero-stat-value">Local browser workflow</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="site-feature-section">
+    <div class="site-feature-intro">
+      <div class="site-feature-eyebrow">Explore the platform</div>
+      <h2 class="text-3xl font-semibold">Move between product overview, docs, and reference without changing context.</h2>
+      <p style="color: var(--site-muted);">{{ .Page.Description }}</p>
+    </div>
+    <div class="site-feature-grid">
+      {{ range .Home.Features }}
+        <a href="{{ .Link }}" class="site-feature-card">
+          <div class="site-feature-card-top">
+            <span class="site-feature-card-icon" aria-hidden="true">{{ navIcon .Icon }}</span>
+            <span class="site-feature-card-arrow" aria-hidden="true">→</span>
+          </div>
+          <div class="site-feature-card-title">{{ .Title }}</div>
+          <p class="site-feature-card-copy">{{ .Details }}</p>
+        </a>
+      {{ end }}
+    </div>
+  </section>
+</main>
+{{- end }}
