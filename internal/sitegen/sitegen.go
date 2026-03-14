@@ -79,14 +79,11 @@ type docFrontMatter struct {
 }
 
 type homeFrontMatter struct {
-	Layout       string            `yaml:"layout"`
-	Hero         homeHero          `yaml:"hero"`
-	Pillars      homeSection       `yaml:"pillars"`
-	Workflow     homeWorkflow      `yaml:"workflow"`
-	Capabilities homeSection       `yaml:"capabilities"`
-	OSSCTA       homeActionSection `yaml:"oss_cta"`
-	Title        string            `yaml:"title"`
-	Keywords     []string          `yaml:"keywords"`
+	Layout   string      `yaml:"layout"`
+	Hero     homeHero    `yaml:"hero"`
+	Pillars  homeSection `yaml:"pillars"`
+	Title    string      `yaml:"title"`
+	Keywords []string    `yaml:"keywords"`
 }
 
 type homeHero struct {
@@ -134,28 +131,6 @@ type homeFeature struct {
 	Icon    string `yaml:"icon"`
 }
 
-type homeWorkflow struct {
-	Eyebrow string             `yaml:"eyebrow"`
-	Title   string             `yaml:"title"`
-	Details string             `yaml:"details"`
-	Steps   []homeWorkflowStep `yaml:"steps"`
-}
-
-type homeWorkflowStep struct {
-	Stage   string `yaml:"stage"`
-	Title   string `yaml:"title"`
-	Details string `yaml:"details"`
-	Icon    string `yaml:"icon"`
-}
-
-type homeActionSection struct {
-	Eyebrow string         `yaml:"eyebrow"`
-	Title   string         `yaml:"title"`
-	Details string         `yaml:"details"`
-	Actions []homeHeroLink `yaml:"actions"`
-	Notes   []string       `yaml:"notes"`
-}
-
 type pageKind string
 
 const (
@@ -183,9 +158,10 @@ type page struct {
 }
 
 type heading struct {
-	Level int
-	ID    string
-	Title string
+	Level  int
+	ID     string
+	Title  string
+	Method string
 }
 
 type navItem struct {
@@ -366,14 +342,59 @@ func loadConfig[T any](path string) (T, error) {
 }
 
 func loadTemplates(root string) (templateSet, error) {
+	paths := make([]string, 0, 16)
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() || filepath.Ext(path) != ".tmpl" {
+			return nil
+		}
+		relPath, err := filepath.Rel(root, path)
+		if err != nil {
+			return fmt.Errorf("rel template path %s: %w", path, err)
+		}
+		paths = append(paths, filepath.ToSlash(relPath))
+		return nil
+	})
+	if err != nil {
+		return templateSet{}, fmt.Errorf("walk templates: %w", err)
+	}
+	sort.Strings(paths)
+
 	tmpl, err := template.New("base").Funcs(template.FuncMap{
-		"navIcon": navIconSVG,
-		"siteURL": joinSiteURL,
-	}).ParseFS(os.DirFS(root), "*.tmpl")
+		"cond":         tmplCond,
+		"dict":         tmplDict,
+		"navIcon":      navIconSVG,
+		"sectionLabel": pageSectionLabel,
+		"siteURL":      joinSiteURL,
+	}).ParseFS(os.DirFS(root), paths...)
 	if err != nil {
 		return templateSet{}, fmt.Errorf("parse templates: %w", err)
 	}
 	return templateSet{base: tmpl}, nil
+}
+
+func tmplCond(condition bool, whenTrue, whenFalse any) any {
+	if condition {
+		return whenTrue
+	}
+	return whenFalse
+}
+
+func tmplDict(values ...any) (map[string]any, error) {
+	if len(values)%2 != 0 {
+		return nil, fmt.Errorf("dict expects an even number of arguments")
+	}
+	out := make(map[string]any, len(values)/2)
+	for i := 0; i < len(values); i += 2 {
+		key, ok := values[i].(string)
+		if !ok {
+			return nil, fmt.Errorf("dict key at position %d must be a string, got %T", i, values[i])
+		}
+		out[key] = values[i+1]
+	}
+	return out, nil
 }
 
 func loadPages(root string) ([]page, error) {
@@ -433,12 +454,6 @@ func parsePage(root, path string) (page, error) {
 		}
 		for i := range home.Pillars.Items {
 			home.Pillars.Items[i].Link = rewriteLink(home.Pillars.Items[i].Link)
-		}
-		for i := range home.Capabilities.Items {
-			home.Capabilities.Items[i].Link = rewriteLink(home.Capabilities.Items[i].Link)
-		}
-		for i := range home.OSSCTA.Actions {
-			home.OSSCTA.Actions[i].Link = rewriteLink(home.OSSCTA.Actions[i].Link)
 		}
 		description := home.Hero.Tagline
 		if description == "" {
@@ -1058,6 +1073,39 @@ func sectionForPage(relPath string, kind pageKind) string {
 	return strings.Split(relPath, "/")[0]
 }
 
+func pageSectionLabel(p page) string {
+	if p.Kind == pageKindAPI {
+		switch {
+		case strings.Contains(p.RelPath, "reference/generated/api/endpoints/"):
+			return "Endpoint Groups"
+		case strings.Contains(p.RelPath, "reference/generated/api/schemas/"):
+			return "Models"
+		default:
+			return "API Reference"
+		}
+	}
+
+	switch p.Section {
+	case "start-here":
+		return "Getting Started"
+	case "concepts":
+		return "Concepts"
+	case "build":
+		return "Build"
+	case "govern":
+		return "Govern"
+	case "operations":
+		return "Operate"
+	case "reference":
+		return "Reference"
+	default:
+		if p.Title != "" {
+			return p.Title
+		}
+		return "Documentation"
+	}
+}
+
 func buildConfiguredGroups(configs []navGroupConfig, pageByRel map[string]page, pages []page) ([]navGroup, []navItem, error) {
 	groups := make([]navGroup, 0, len(configs))
 	flat := make([]navItem, 0)
@@ -1094,19 +1142,13 @@ func buildNavNodes(configs []navEntryConfig, pageByRel map[string]page, pages []
 			nodes = append(nodes, navNode{Title: title, Icon: cfg.Icon, Path: p.URLPath, ForceOpen: cfg.Expanded})
 			flat = append(flat, navItem{Title: title, Path: p.URLPath})
 		case cfg.AutoDir != "":
-			children := pagesInDir(pages, cfg.AutoDir)
+			children, childFlat := buildAutogenNavNodes(pages, cfg.AutoDir, cfg.Icon, cfg.Expanded)
 			if len(children) == 0 {
 				continue
 			}
 			node := navNode{Title: cfg.Title, Icon: cfg.Icon, ForceOpen: cfg.Expanded}
-			for _, p := range children {
-				if p.Kind == pageKindAPI && strings.HasPrefix(p.RelPath, "reference/generated/api/endpoints/") {
-					node.Children = append(node.Children, apiEndpointNavNode(p))
-				} else {
-					node.Children = append(node.Children, navNode{Title: p.Title, Icon: cfg.Icon, Path: p.URLPath})
-				}
-				flat = append(flat, navItem{Title: p.Title, Path: p.URLPath})
-			}
+			node.Children = children
+			flat = append(flat, childFlat...)
 			if strings.TrimSpace(cfg.Title) == "" {
 				nodes = append(nodes, node.Children...)
 			} else {
@@ -1129,22 +1171,129 @@ func buildNavNodes(configs []navEntryConfig, pageByRel map[string]page, pages []
 	return nodes, flat, nil
 }
 
-func pagesInDir(pages []page, dir string) []page {
-	matches := make([]page, 0)
+func buildAutogenNavNodes(pages []page, dir, icon string, forceOpen bool) ([]navNode, []navItem) {
+	entries := autogenEntriesInDir(pages, dir)
+	nodes := make([]navNode, 0, len(entries))
+	flat := make([]navItem, 0)
+	for _, entry := range entries {
+		if entry.Page != nil {
+			node := navNodeForPage(*entry.Page, icon)
+			node.ForceOpen = forceOpen
+			nodes = append(nodes, node)
+			flat = append(flat, navItem{Title: node.Title, Path: node.Path})
+			continue
+		}
+
+		children, childFlat := buildAutogenNavNodes(pages, entry.Dir, icon, forceOpen)
+		if entry.Index != nil {
+			node := navNodeForPage(*entry.Index, icon)
+			node.Children = children
+			node.ForceOpen = forceOpen
+			nodes = append(nodes, node)
+			flat = append(flat, navItem{Title: node.Title, Path: node.Path})
+		} else {
+			nodes = append(nodes, navNode{
+				Title:     humanizeNavSegment(filepath.Base(entry.Dir)),
+				Icon:      icon,
+				Children:  children,
+				ForceOpen: forceOpen,
+			})
+		}
+		flat = append(flat, childFlat...)
+	}
+	return nodes, flat
+}
+
+type autogenEntry struct {
+	Page  *page
+	Dir   string
+	Index *page
+	Title string
+}
+
+func autogenEntriesInDir(pages []page, dir string) []autogenEntry {
+	entries := make([]autogenEntry, 0)
 	prefix := strings.TrimSuffix(dir, "/") + "/"
+	dirIndexes := make(map[string]page)
+	dirSeen := make(map[string]struct{})
 	for _, p := range pages {
 		if strings.HasPrefix(p.RelPath, prefix) {
 			rel := strings.TrimPrefix(p.RelPath, prefix)
-			if strings.Contains(rel, "/") {
+			if rel == "" {
 				continue
 			}
-			matches = append(matches, p)
+			if rel == "index.md" {
+				continue
+			}
+			if !strings.Contains(rel, "/") {
+				pageCopy := p
+				entries = append(entries, autogenEntry{Page: &pageCopy, Title: navTitleForPage(p)})
+				continue
+			}
+			head, tail, _ := strings.Cut(rel, "/")
+			if head == "" {
+				continue
+			}
+			subdir := prefix + head
+			if tail == "index.md" {
+				dirIndexes[subdir] = p
+			}
+			dirSeen[subdir] = struct{}{}
 		}
 	}
-	sort.Slice(matches, func(i, j int) bool {
-		return matches[i].Title < matches[j].Title
+
+	for subdir := range dirSeen {
+		subdir := subdir
+		var indexPtr *page
+		if indexPage, ok := dirIndexes[subdir]; ok {
+			indexCopy := indexPage
+			indexPtr = &indexCopy
+		}
+		title := humanizeNavSegment(filepath.Base(subdir))
+		if indexPtr != nil {
+			title = navTitleForPage(*indexPtr)
+		}
+		entries = append(entries, autogenEntry{Dir: subdir, Index: indexPtr, Title: title})
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Title < entries[j].Title
 	})
-	return matches
+	return entries
+}
+
+func navNodeForPage(p page, fallbackIcon string) navNode {
+	if p.Kind == pageKindAPI && strings.HasPrefix(p.RelPath, "reference/generated/api/endpoints/") {
+		node := apiEndpointNavNode(p)
+		if node.Icon == "" {
+			node.Icon = fallbackIcon
+		}
+		return node
+	}
+	return navNode{Title: p.Title, Icon: fallbackIcon, Path: p.URLPath}
+}
+
+func navTitleForPage(p page) string {
+	if p.Kind == pageKindAPI && strings.HasPrefix(p.RelPath, "reference/generated/api/endpoints/") {
+		return trimAPINavTitle(p.Title)
+	}
+	return p.Title
+}
+
+func humanizeNavSegment(value string) string {
+	parts := strings.FieldsFunc(strings.TrimSpace(value), func(r rune) bool {
+		return r == '-' || r == '_' || unicode.IsSpace(r)
+	})
+	for i := range parts {
+		if parts[i] == "" {
+			continue
+		}
+		part := strings.ToLower(parts[i])
+		runes := []rune(part)
+		runes[0] = unicode.ToUpper(runes[0])
+		parts[i] = string(runes)
+	}
+	return strings.Join(parts, " ")
 }
 
 func buildTopNav(configs []navLinkConfig, currentPath string) []navItem {
@@ -1190,43 +1339,12 @@ func activateNodes(nodes []navNode, currentPath string) ([]navNode, bool) {
 }
 
 func apiEndpointNavNode(p page) navNode {
-	children := []navNode{
-		{Title: "Overview", Path: p.URLPath},
-	}
-	children = append(children, apiOperationNodes(p)...)
 	return navNode{
 		Title:       trimAPINavTitle(p.Title),
 		Icon:        apiEndpointIcon(p.RelPath),
 		Path:        p.URLPath,
-		Children:    children,
 		Description: p.Description,
 	}
-}
-
-func apiOperationNodes(p page) []navNode {
-	opRE := regexp.MustCompile("(?m)^## `([A-Z]+) ([^`]+)`\\n\\n([^\\n]+)")
-	matches := opRE.FindAllStringSubmatch(p.BodyMarkdown, -1)
-	nodes := make([]navNode, 0, len(matches))
-	for _, match := range matches {
-		if len(match) != 4 {
-			continue
-		}
-		method := strings.TrimSpace(match[1])
-		routePath := strings.TrimSpace(match[2])
-		description := strings.TrimSpace(match[3])
-		title := routePath
-		if description != "" {
-			title = description
-		}
-		nodes = append(nodes, navNode{
-			Title:       title,
-			Path:        p.URLPath + "#" + slug(method+" "+routePath),
-			Method:      method,
-			RoutePath:   routePath,
-			Description: description,
-		})
-	}
-	return nodes
 }
 
 func trimAPINavTitle(title string) string {
@@ -1356,6 +1474,9 @@ func tocForPage(p page) []heading {
 	if p.Kind == pageKindHome {
 		return nil
 	}
+	if p.Kind == pageKindAPI {
+		return apiTOCForPage(p)
+	}
 	filtered := make([]heading, 0)
 	for _, item := range p.Headings {
 		if item.Level == 2 {
@@ -1363,6 +1484,33 @@ func tocForPage(p page) []heading {
 		}
 	}
 	return filtered
+}
+
+func apiTOCForPage(p page) []heading {
+	opRE := regexp.MustCompile("(?m)^## `([A-Z]+) ([^`]+)`\\n\\n([^\\n]+)")
+	matches := opRE.FindAllStringSubmatch(p.BodyMarkdown, -1)
+	headings := make([]heading, 0, len(matches))
+	for _, match := range matches {
+		if len(match) != 4 {
+			continue
+		}
+		method := strings.TrimSpace(match[1])
+		routePath := strings.TrimSpace(match[2])
+		title := strings.TrimSpace(match[3])
+		if title == "" {
+			title = routePath
+		}
+		headings = append(headings, heading{
+			Level:  2,
+			ID:     slug(method + " " + routePath),
+			Title:  title,
+			Method: method,
+		})
+	}
+	if len(headings) > 0 {
+		return headings
+	}
+	return p.Headings
 }
 
 func findNeighbor(items []navItem, path string, offset int) *navItem {
@@ -1467,15 +1615,79 @@ func addHeadingAnchors(htmlSource string) string {
 
 func enhanceAPIHTML(htmlSource string) string {
 	opRE := regexp.MustCompile(`<h2 id="([^"]+)"><code>(GET|POST|PUT|PATCH|DELETE) ([^<]+)</code></h2>`)
-	return opRE.ReplaceAllStringFunc(htmlSource, func(match string) string {
-		parts := opRE.FindStringSubmatch(match)
-		if len(parts) != 4 {
-			return match
+	matches := opRE.FindAllStringSubmatchIndex(htmlSource, -1)
+	if len(matches) == 0 {
+		return htmlSource
+	}
+
+	var out strings.Builder
+	cursor := 0
+	for i, match := range matches {
+		if len(match) < 8 {
+			continue
 		}
-		method := parts[2]
-		routePath := parts[3]
-		return `<h2 id="` + parts[1] + `"><span class="api-method" data-api-method="` + method + `">` + method + `</span><span class="api-path">` + routePath + `</span></h2>`
-	})
+		start := match[0]
+		end := len(htmlSource)
+		if i+1 < len(matches) {
+			end = matches[i+1][0]
+		}
+		out.WriteString(htmlSource[cursor:start])
+		out.WriteString(transformAPIOperationHTML(htmlSource[start:end], opRE))
+		cursor = end
+	}
+	out.WriteString(htmlSource[cursor:])
+	return out.String()
+}
+
+func transformAPIOperationHTML(chunk string, opRE *regexp.Regexp) string {
+	match := opRE.FindStringSubmatchIndex(chunk)
+	if len(match) < 8 {
+		return chunk
+	}
+
+	method := chunk[match[4]:match[5]]
+	routePath := chunk[match[6]:match[7]]
+	sectionID := slug(method + " " + routePath)
+	rest := strings.TrimSpace(chunk[match[1]:])
+
+	paragraphRE := regexp.MustCompile(`(?s)^<p>(.*?)</p>\s*`)
+	opIDRE := regexp.MustCompile(`(?s)^<ul>\s*<li>Operation ID: <code>([^<]+)</code></li>\s*</ul>\s*`)
+
+	titleHTML := routePath
+	descriptionHTML := ""
+
+	if paragraph := paragraphRE.FindStringSubmatchIndex(rest); len(paragraph) == 4 {
+		titleHTML = rest[paragraph[2]:paragraph[3]]
+		rest = strings.TrimSpace(rest[paragraph[1]:])
+		if nextParagraph := paragraphRE.FindStringSubmatchIndex(rest); len(nextParagraph) == 4 {
+			descriptionHTML = rest[nextParagraph[2]:nextParagraph[3]]
+			rest = strings.TrimSpace(rest[nextParagraph[1]:])
+		}
+	}
+
+	operationID := ""
+	if opID := opIDRE.FindStringSubmatchIndex(rest); len(opID) == 4 {
+		operationID = rest[opID[2]:opID[3]]
+		rest = strings.TrimSpace(rest[opID[1]:])
+	}
+
+	var out strings.Builder
+	out.WriteString(`<section class="api-operation">`)
+	out.WriteString(`<header class="api-operation-header">`)
+	out.WriteString(`<h2 id="` + sectionID + `" class="api-operation-title"><span class="api-operation-title-text">` + titleHTML + `</span><span class="api-method" data-api-method="` + method + `">` + method + `</span></h2>`)
+	out.WriteString(`<p class="api-operation-route"><code>` + html.EscapeString(routePath) + `</code></p>`)
+	if descriptionHTML != "" {
+		out.WriteString(`<p class="api-operation-description">` + descriptionHTML + `</p>`)
+	}
+	if operationID != "" {
+		out.WriteString(`<div class="api-operation-meta"><span class="api-operation-meta-label">Operation ID</span><code>` + html.EscapeString(operationID) + `</code></div>`)
+	}
+	out.WriteString(`</header>`)
+	if rest != "" {
+		out.WriteString(rest)
+	}
+	out.WriteString(`</section>`)
+	return out.String()
 }
 
 func enhanceCodeBlocks(htmlSource string) string {

@@ -1,0 +1,27 @@
+{{ define "home_hero" -}}
+<section class="overflow-hidden px-4 pb-12 pt-10 sm:pt-12 lg:px-8 lg:pb-16 lg:pt-16">
+  <div class="mx-auto max-w-[88rem]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,40rem)_minmax(24rem,1fr)] lg:items-end lg:gap-10">
+      <div data-home-reveal style="--home-delay: 80ms;">
+        <p class="inline-flex items-center gap-3 text-[0.74rem] font-semibold uppercase tracking-[0.26em] text-[color:var(--site-brand-strong)]">
+          <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[color:var(--site-brand)] shadow-[0_0_0_6px_color-mix(in_srgb,var(--site-brand)_14%,transparent)]"></span>
+          {{ .Home.Hero.Eyebrow }}
+        </p>
+        <h1 class="mt-5 max-w-[14ch] text-[clamp(3rem,7vw,5.8rem)] font-semibold tracking-[-0.065em] text-[color:var(--site-ink)]">{{ .Home.Hero.Headline }}</h1>
+        <p class="mt-5 max-w-[40rem] text-lg leading-8 text-[color:var(--site-muted)] sm:text-xl">{{ .Home.Hero.Tagline }}</p>
+        <div class="mt-7 flex flex-wrap gap-3">
+          {{ range .Home.Hero.Actions }}
+            {{ template "home_cta" (dict "SiteRoot" $.SiteRoot "Action" .) }}
+          {{ end }}
+        </div>
+        <div class="mt-7 flex flex-wrap gap-3">
+          {{ range .Home.Hero.Proofs }}
+            {{ template "home_proof" . }}
+          {{ end }}
+        </div>
+      </div>
+      {{ template "home_visual" . }}
+    </div>
+  </div>
+</section>
+{{- end }}

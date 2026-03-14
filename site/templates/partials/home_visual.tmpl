@@ -1,0 +1,76 @@
+{{ define "home_visual" -}}
+<div class="flex flex-col gap-4" data-home-reveal style="--home-delay: 180ms;">
+  <div class="hidden rounded-[2rem] border border-[color:var(--site-border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--site-panel)_96%,transparent),color-mix(in_srgb,var(--site-soft)_56%,var(--site-panel)))] p-4 shadow-[0_24px_72px_color-mix(in_srgb,var(--site-brand)_8%,transparent)] lg:block">
+    <svg class="home-diagram h-auto w-full text-[color:var(--site-brand)]" viewBox="0 0 960 220" role="img" aria-label="Diagram showing access surfaces, a governed gateway, and DuckLake with DuckDB execution.">
+      <g class="home-diagram-rails" aria-hidden="true">
+        <path class="home-diagram-rail" d="M236 74H722"></path>
+        <path class="home-diagram-rail" d="M236 110H722"></path>
+        <path class="home-diagram-rail" d="M236 146H722"></path>
+      </g>
+      <g class="home-diagram-pulses" aria-hidden="true">
+        <circle class="home-diagram-pulse home-diagram-pulse-a" cx="270" cy="74" r="6"></circle>
+        <circle class="home-diagram-pulse home-diagram-pulse-b" cx="332" cy="110" r="6"></circle>
+        <circle class="home-diagram-pulse home-diagram-pulse-c" cx="394" cy="146" r="6"></circle>
+      </g>
+      <g transform="translate(40 38)">
+        <rect class="home-diagram-panel" x="0" y="0" width="180" height="144" rx="26"></rect>
+        <text class="home-diagram-kicker" x="90" y="30">access surfaces</text>
+        <g class="home-diagram-pill" transform="translate(22 52)">
+          <rect x="0" y="0" width="62" height="28" rx="14"></rect>
+          <text x="31" y="19">browser</text>
+        </g>
+        <g class="home-diagram-pill" transform="translate(96 52)">
+          <rect x="0" y="0" width="62" height="28" rx="14"></rect>
+          <text x="31" y="19">sql</text>
+        </g>
+        <g class="home-diagram-pill" transform="translate(22 92)">
+          <rect x="0" y="0" width="62" height="28" rx="14"></rect>
+          <text x="31" y="19">api</text>
+        </g>
+        <g class="home-diagram-pill" transform="translate(96 92)">
+          <rect x="0" y="0" width="62" height="28" rx="14"></rect>
+          <text x="31" y="19">cli</text>
+        </g>
+      </g>
+      <g transform="translate(390 26)">
+        <rect class="home-diagram-core" x="0" y="0" width="180" height="168" rx="32"></rect>
+        <text class="home-diagram-kicker" x="90" y="34">governed gateway</text>
+        <text class="home-diagram-title" x="90" y="72">policy in path</text>
+        <g class="home-diagram-chip" transform="translate(24 102)">
+          <rect x="0" y="0" width="52" height="22" rx="11"></rect>
+          <text x="26" y="15">rbac</text>
+        </g>
+        <g class="home-diagram-chip" transform="translate(86 102)">
+          <rect x="0" y="0" width="64" height="22" rx="11"></rect>
+          <text x="32" y="15">filters</text>
+        </g>
+        <g class="home-diagram-chip" transform="translate(54 132)">
+          <rect x="0" y="0" width="70" height="22" rx="11"></rect>
+          <text x="35" y="15">masks</text>
+        </g>
+      </g>
+      <g transform="translate(740 38)">
+        <rect class="home-diagram-panel" x="0" y="0" width="180" height="144" rx="26"></rect>
+        <text class="home-diagram-kicker" x="90" y="30">execution</text>
+        <text class="home-diagram-data" x="90" y="78">DuckLake</text>
+        <text class="home-diagram-data" x="90" y="116">DuckDB</text>
+      </g>
+    </svg>
+  </div>
+  <div class="grid gap-3 sm:grid-cols-2 lg:hidden">
+    <div class="rounded-[1.4rem] border border-[color:var(--site-border)] bg-[color:var(--site-panel)] px-4 py-4">
+      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[color:var(--site-brand-strong)]">Access</p>
+      <p class="mt-2 text-base font-medium text-[color:var(--site-ink)]">Browser, SQL, API, CLI</p>
+    </div>
+    <div class="rounded-[1.4rem] border border-[color:color-mix(in_srgb,var(--site-brand)_28%,var(--site-border))] bg-[color:color-mix(in_srgb,var(--site-soft)_88%,var(--site-panel))] px-4 py-4">
+      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[color:var(--site-brand-strong)]">Policy</p>
+      <p class="mt-2 text-base font-medium text-[color:var(--site-ink)]">RBAC, filters, masks</p>
+    </div>
+    <div class="rounded-[1.4rem] border border-[color:var(--site-border)] bg-[color:var(--site-panel)] px-4 py-4 sm:col-span-2">
+      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[color:var(--site-brand-strong)]">Execution</p>
+      <p class="mt-2 text-base font-medium text-[color:var(--site-ink)]">DuckLake with DuckDB underneath</p>
+    </div>
+  </div>
+  <p class="max-w-[42rem] text-base leading-7 text-[color:var(--site-muted)]">{{ .Home.Hero.SnapshotNote }}</p>
+</div>
+{{- end }}

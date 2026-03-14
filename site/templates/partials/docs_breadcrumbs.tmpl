@@ -1,0 +1,8 @@
+{{ define "docs_breadcrumbs" -}}
+<div class="mb-8 flex flex-wrap items-center justify-between gap-4 text-sm text-[color:var(--site-muted)]">
+  <p class="text-[0.74rem] font-semibold uppercase tracking-[0.24em] text-[color:var(--site-brand-strong)]">
+    {{ sectionLabel .Page }}
+  </p>
+  <button type="button" class="inline-flex items-center justify-center rounded-full border border-[color:var(--site-border)] bg-[color:var(--site-panel)] px-4 py-2 text-sm font-medium text-[color:var(--site-ink)] transition hover:border-[color:color-mix(in_srgb,var(--site-brand)_35%,var(--site-border))] hover:bg-[color:var(--site-soft)]" data-site-copy-page="{{ siteURL .SiteRoot (print "/llms/" .MirrorPath) }}">Copy Page</button>
+</div>
+{{- end }}

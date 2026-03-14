@@ -1,0 +1,21 @@
+{{ define "docs_toc" -}}
+<aside class="hidden xl:block">
+  <div class="sticky top-[4.5rem] max-h-[calc(100vh-4.5rem)] overflow-y-auto border-l border-[color:var(--site-border)] px-6 py-8">
+    <nav>
+      <div class="mb-4 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[color:var(--site-ink)]">On this page</div>
+      <ul class="space-y-1">
+        {{ range .TOC }}
+          <li>
+            <a href="#{{ .ID }}" class="site-toc-link" data-site-toc-link="{{ .ID }}">
+              <span>{{ .Title }}</span>
+              {{ if .Method }}
+                <span class="site-toc-method" data-api-method="{{ .Method }}">{{ .Method }}</span>
+              {{ end }}
+            </a>
+          </li>
+        {{ end }}
+      </ul>
+    </nav>
+  </div>
+</aside>
+{{- end }}

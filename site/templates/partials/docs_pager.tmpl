@@ -1,0 +1,12 @@
+{{ define "docs_pager" -}}
+<div class="mt-12 flex flex-wrap justify-between gap-4 border-t border-[color:var(--site-border)] pt-6">
+  {{ if .Prev }}
+    <a class="inline-flex items-center justify-center rounded-full border border-[color:var(--site-border)] bg-[color:var(--site-panel)] px-4 py-2 text-sm font-medium text-[color:var(--site-ink)] no-underline transition hover:border-[color:color-mix(in_srgb,var(--site-brand)_35%,var(--site-border))] hover:bg-[color:var(--site-soft)]" href="{{ siteURL $.SiteRoot .Prev.Path }}">← {{ .Prev.Title }}</a>
+  {{ else }}
+    <span></span>
+  {{ end }}
+  {{ if .Next }}
+    <a class="inline-flex items-center justify-center rounded-full border border-[color:var(--site-border)] bg-[color:var(--site-panel)] px-4 py-2 text-sm font-medium text-[color:var(--site-ink)] no-underline transition hover:border-[color:color-mix(in_srgb,var(--site-brand)_35%,var(--site-border))] hover:bg-[color:var(--site-soft)]" href="{{ siteURL $.SiteRoot .Next.Path }}">{{ .Next.Title }} →</a>
+  {{ end }}
+</div>
+{{- end }}
