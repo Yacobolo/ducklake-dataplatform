@@ -1,0 +1,9 @@
+flowchart LR
+    notebook@{ icon: "fa:note-sticky", label: "Notebook" }
+    session@{ icon: "fa:circle-play", label: "Session" }
+    output@{ icon: "fa:file-lines", label: "Output Cell" }
+    publish@{ icon: "fa:share-from-square", label: "Promote" }
+    model@{ icon: "fa:file-code", label: "Managed Model" }
+    asset@{ icon: "fa:clock", label: "Downstream Asset" }
+
+    notebook --> session --> output --> publish --> model --> asset

@@ -1,26 +1,29 @@
 ---
 title: Administration
-description: Manage access, security, platform settings, and distributed compute safely.
+description: Run Duck in shared and production environments with clear posture, storage, compute, and troubleshooting guidance.
 ---
 
-# Administration
+# Operate Duck
 
-Use this section when you are responsible for shared access, platform posture, or advanced compute behavior.
+Use this section when you are responsible for runtime posture, auth, storage, integrations, or compute topology.
 
 ## Read In Order
 
 1. [Platform Settings](/operations/configuration)
 2. [Security Checklist](/operations/security-checklist)
 3. [Distributed Compute](/operations/distributed-compute)
+4. [Storage And Integrations](/operations/storage-and-integrations)
+5. [Observability And Troubleshooting](/operations/observability-and-troubleshooting)
 
 ## What This Section Covers
 
-- platform settings and environment choices
-- auth and secret-management posture
-- remote compute rollout concerns
-- governance and access posture
+- platform configuration and baseline posture
+- auth and secret-management concerns
+- storage credentials and integration lifecycles
+- distributed compute rollout and fallback
+- health, metrics, and troubleshooting workflows
 
 ## Related Reference
 
-- [Glossary](/reference/glossary)
-- [Advanced Reference](/reference/)
+- [Feature Map](/reference/feature-map)
+- [API Entry Guide](/reference/api)

@@ -1,0 +1,12 @@
+flowchart LR
+    source@{ icon: "fa:hard-drive", label: "Source Tables" }
+    macro@{ icon: "fa:file-code", label: "Macros" }
+    stg@{ icon: "fa:file-lines", label: "Staging Models" }
+    mart@{ icon: "fa:file-lines", label: "Curated Models" }
+    tests@{ icon: "fa:circle-check", label: "Tests" }
+    note@{ icon: "fa:note-sticky", label: "Notebook Promotion" }
+    run@{ icon: "fa:calendar", label: "Model Run" }
+
+    source --> macro --> stg --> mart --> run
+    mart --> tests
+    note --> mart

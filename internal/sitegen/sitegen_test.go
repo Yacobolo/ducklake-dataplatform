@@ -3,6 +3,7 @@ package sitegen
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -179,4 +180,80 @@ func TestEnhanceAPIHTML_AddsMethodDataAttribute(t *testing.T) {
 
 	assert.Contains(t, rendered, `class="api-method" data-api-method="GET"`)
 	assert.Contains(t, rendered, `class="api-path">/queries<`)
+}
+
+func TestDocsPages_InternalLinksResolveToKnownRoutes(t *testing.T) {
+	contentRoot := filepath.Join("..", "..", "site", "content")
+	pages, err := loadPages(contentRoot)
+	require.NoError(t, err)
+
+	validRoutes := make(map[string]struct{}, len(pages)*2)
+	for _, p := range pages {
+		validRoutes[canonicalTestRoute(p.URLPath)] = struct{}{}
+	}
+
+	hrefRE := regexp.MustCompile(`href="([^"#?][^"]*|/[^"]*)"` + `|href='([^'#?][^']*|/[^']*)'`)
+	var broken []string
+
+	for _, p := range pages {
+		matches := hrefRE.FindAllStringSubmatch(string(p.BodyHTML), -1)
+		for _, match := range matches {
+			href := firstNonEmpty(match[1], match[2])
+			if href == "" || !strings.HasPrefix(href, "/") {
+				continue
+			}
+			if isIgnoredInternalHref(href) {
+				continue
+			}
+
+			target := canonicalTestRoute(href)
+			if _, ok := validRoutes[target]; ok {
+				continue
+			}
+
+			broken = append(broken, p.RelPath+" -> "+href)
+		}
+	}
+
+	require.Empty(t, broken, "found broken internal docs links:\n%s", strings.Join(broken, "\n"))
+}
+
+func canonicalTestRoute(href string) string {
+	href = strings.TrimSpace(href)
+	if href == "" {
+		return ""
+	}
+	if idx := strings.IndexAny(href, "?#"); idx >= 0 {
+		href = href[:idx]
+	}
+	if href == "" {
+		return "/"
+	}
+	if href != "/" {
+		href = strings.TrimRight(href, "/")
+	}
+	if href == "" {
+		return "/"
+	}
+	return href
+}
+
+func isIgnoredInternalHref(href string) bool {
+	switch {
+	case strings.HasPrefix(href, "/_site/"):
+		return true
+	case strings.HasPrefix(href, "/llms/"):
+		return true
+	default:
+		return false
+	}
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }

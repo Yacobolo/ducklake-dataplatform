@@ -1,0 +1,11 @@
+flowchart TB
+    source@{ icon: "fa:hard-drive", label: "Source Ready" }
+    check@{ icon: "fa:circle-xmark", label: "Check Failed" }
+    upstream@{ icon: "fa:hourglass-half", label: "Upstream Stale" }
+    downstream@{ icon: "fa:clock", label: "Downstream Asset" }
+    consumer@{ icon: "fa:bell", label: "Consumer Alert" }
+
+    source --> downstream
+    check --> downstream
+    upstream --> downstream
+    downstream --> consumer

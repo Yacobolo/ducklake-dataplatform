@@ -32,7 +32,7 @@ func TestDocsShow_JSONOutput(t *testing.T) {
 	t.Setenv("HOME", dir)
 
 	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{"--output", "json", "docs", "show", "how-to/authentication"})
+	rootCmd.SetArgs([]string{"--output", "json", "docs", "show", "govern/authentication-and-identities"})
 
 	restore := captureStdout(t)
 	err := rootCmd.Execute()
@@ -47,6 +47,6 @@ func TestDocsShow_JSONOutput(t *testing.T) {
 		RelatedOperations []string `json:"related_operations"`
 	}
 	require.NoError(t, json.Unmarshal([]byte(output), &payload))
-	assert.Equal(t, "how-to/authentication", payload.Doc.ID)
+	assert.Equal(t, "govern/authentication-and-identities", payload.Doc.ID)
 	assert.NotEmpty(t, payload.Doc.Title)
 }

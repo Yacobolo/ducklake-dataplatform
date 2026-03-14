@@ -1,0 +1,9 @@
+flowchart LR
+    semantic@{ icon: "fa:chart-bar", label: "Semantic Model" }
+    metric@{ icon: "fa:chart-bar", label: "Metric" }
+    planner@{ icon: "fa:compass", label: "Metric Planner" }
+    api@{ icon: "fa:folder-open", label: "Duck API" }
+    query@{ icon: "fa:file-code", label: "Governed SQL" }
+    result@{ icon: "fa:circle-check", label: "Metric Result" }
+
+    semantic --> metric --> planner --> api --> query --> result

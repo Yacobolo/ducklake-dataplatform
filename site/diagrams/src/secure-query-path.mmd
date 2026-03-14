@@ -1,0 +1,9 @@
+flowchart LR
+    user@{ icon: "fa:user", label: "Principal" }
+    auth@{ icon: "fa:id-card", label: "Identity" }
+    api@{ icon: "fa:folder-open", label: "Duck API" }
+    policy@{ icon: "fa:shield", label: "RBAC + Filters + Masks" }
+    engine@{ icon: "fa:hard-drive", label: "DuckDB Execution" }
+    result@{ icon: "fa:circle-check", label: "Governed Result" }
+
+    user --> auth --> api --> policy --> engine --> result

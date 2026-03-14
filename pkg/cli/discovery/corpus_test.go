@@ -14,15 +14,15 @@ func TestCorpus_Search_PrioritizesCommandThenOperation(t *testing.T) {
 		{Path: "catalog schemas create", Short: "Create a schema"},
 	}, gen.ReferenceIndex{
 		Docs: []gen.ReferenceDoc{
-			{ID: "how-to/schemas", Path: "how-to/schemas.md", Section: "how-to", Title: "Create Schemas", Description: "Create and manage schemas safely."},
+			{ID: "build/register-source-data", Path: "build/register-source-data.md", Section: "build", Title: "Register Source Data", Description: "Register and manage source data safely."},
 		},
 		Operations: []gen.ReferenceOperation{
 			{OperationID: "createSchema", Path: "/catalogs/{catalogName}/schemas", Summary: "Create a schema", CLICommand: "catalog schemas create"},
 		},
 		Links: []gen.ReferenceLink{
 			{SourceKind: "operation", SourceID: "createSchema", TargetKind: "command", TargetID: "catalog schemas create", Reason: "x-cli-command", Confidence: 100},
-			{SourceKind: "operation", SourceID: "createSchema", TargetKind: "doc", TargetID: "how-to/schemas", Reason: "keyword-match", Confidence: 80},
-			{SourceKind: "doc", SourceID: "how-to/schemas", TargetKind: "operation", TargetID: "createSchema", Reason: "keyword-match", Confidence: 80},
+			{SourceKind: "operation", SourceID: "createSchema", TargetKind: "doc", TargetID: "build/register-source-data", Reason: "keyword-match", Confidence: 80},
+			{SourceKind: "doc", SourceID: "build/register-source-data", TargetKind: "operation", TargetID: "createSchema", Reason: "keyword-match", Confidence: 80},
 		},
 	})
 
@@ -55,19 +55,19 @@ func TestCorpus_Search_UsesFuzzyFallback(t *testing.T) {
 func TestCorpus_FindDoc_ByIDPathAndTitle(t *testing.T) {
 	corpus := NewCorpus(nil, gen.ReferenceIndex{
 		Docs: []gen.ReferenceDoc{
-			{ID: "how-to/authentication", Path: "how-to/authentication.md", Section: "how-to", Title: "Access the Platform"},
+			{ID: "govern/authentication-and-identities", Path: "govern/authentication-and-identities.md", Section: "govern", Title: "Authentication And Identities"},
 		},
 	})
 
-	doc, ok := corpus.FindDoc("how-to/authentication")
+	doc, ok := corpus.FindDoc("govern/authentication-and-identities")
 	require.True(t, ok)
-	assert.Equal(t, "Access the Platform", doc.Title)
+	assert.Equal(t, "Authentication And Identities", doc.Title)
 
-	doc, ok = corpus.FindDoc("how-to/authentication.md")
+	doc, ok = corpus.FindDoc("govern/authentication-and-identities.md")
 	require.True(t, ok)
-	assert.Equal(t, "Access the Platform", doc.Title)
+	assert.Equal(t, "Authentication And Identities", doc.Title)
 
-	doc, ok = corpus.FindDoc("Access the Platform")
+	doc, ok = corpus.FindDoc("Authentication And Identities")
 	require.True(t, ok)
-	assert.Equal(t, "how-to/authentication", doc.ID)
+	assert.Equal(t, "govern/authentication-and-identities", doc.ID)
 }

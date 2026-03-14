@@ -791,44 +791,37 @@
   }
 
   .site-table-wrap {
-    border: 1px solid var(--borderColor-default);
-    background: var(--bgColor-default);
-    @apply my-8 overflow-x-auto rounded-[1.5rem];
+    @apply my-8 overflow-x-auto;
   }
 
   .site-prose table {
-    border: 1px solid var(--borderColor-muted);
-    @apply m-0 min-w-full border-separate text-sm;
+    @apply m-0 min-w-full border-collapse text-sm;
     border-spacing: 0;
+    background: transparent;
   }
 
   .site-prose th,
   .site-prose td {
-    border-left: 1px solid var(--borderColor-muted);
+    border-left: 0;
+    border-right: 0;
     border-top: 1px solid var(--borderColor-muted);
+    border-bottom: 0;
     color: var(--fgColor-default);
     @apply px-4 py-3 text-left align-top;
   }
 
   .site-prose thead th {
-    background: var(--bgColor-muted);
-    @apply text-xs font-semibold uppercase tracking-[0.16em];
-  }
-
-  .site-prose tr > :first-child {
-    border-left: 0;
+    background: transparent;
+    color: var(--site-ink);
+    @apply text-base font-semibold tracking-normal;
   }
 
   .site-prose thead tr:first-child th {
     border-top: 0;
   }
 
-  .site-prose tbody tr:nth-child(odd) td {
-    background: var(--bgColor-default);
-  }
-
-  .site-prose tbody tr:nth-child(even) td {
-    background: var(--bgColor-muted);
+  .site-prose tbody tr:last-child td {
+    border-bottom: 1px solid var(--borderColor-muted);
   }
 
   .site-mermaid {
@@ -1195,8 +1188,7 @@
   }
 
   .api-prose table {
-    @apply rounded-[1.5rem];
-    background: var(--api-panel);
+    background: transparent;
   }
 
   .api-prose th,

@@ -1,0 +1,11 @@
+flowchart LR
+    source@{ icon: "fa:hard-drive", label: "Source Table" }
+    stg@{ icon: "fa:file-lines", label: "Staging Model" }
+    mart@{ icon: "fa:file-lines", label: "Curated Model" }
+    asset@{ icon: "fa:clock", label: "Asset" }
+    metric@{ icon: "fa:chart-bar", label: "Metric" }
+    impact@{ icon: "fa:map", label: "Impact View" }
+
+    source --> stg --> mart --> asset --> metric
+    mart --> impact
+    metric --> impact
