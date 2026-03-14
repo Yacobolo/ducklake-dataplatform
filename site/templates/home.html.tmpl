@@ -1,76 +1,130 @@
 {{ define "home" -}}
-<main>
-  <section class="site-hero">
-    <div class="site-hero-inner">
-      <div class="site-hero-copy">
-        <div class="site-hero-badge">Unified site</div>
-        <div class="space-y-4">
-          <h1 class="max-w-3xl text-5xl font-semibold">{{ .Home.Hero.Name }}</h1>
-          <p class="max-w-2xl text-xl" style="color: var(--site-muted);">{{ .Home.Hero.Tagline }}</p>
-        </div>
-        <div class="flex flex-wrap gap-3">
+<main class="site-home">
+  <section class="site-home-hero">
+    <div class="site-home-shell site-home-hero-grid">
+      <div class="site-home-hero-copy" data-home-reveal style="--home-delay: 80ms;">
+        <p class="site-home-eyebrow">{{ .Home.Hero.Eyebrow }}</p>
+        <h1 class="site-home-display">{{ .Home.Hero.Headline }}</h1>
+        <p class="site-home-lead">{{ .Home.Hero.Tagline }}</p>
+        <div class="site-home-actions">
           {{ range .Home.Hero.Actions }}
-            <a href="{{ siteURL $.SiteRoot .Link }}" class="site-button {{ if eq .Theme "brand" }}site-button-primary{{ else }}site-button-secondary{{ end }}">{{ .Text }}</a>
+            <a href="{{ siteURL $.SiteRoot .Link }}" class="site-button {{ if eq .Theme "brand" }}site-home-button-primary{{ else }}site-home-button-secondary{{ end }}">{{ .Text }}</a>
           {{ end }}
         </div>
-        <div class="site-hero-points">
-          <div class="site-hero-point">
-            <span class="site-hero-point-icon" aria-hidden="true">{{ navIcon "book-open" }}</span>
-            <span>Shared docs and reference language</span>
-          </div>
-          <div class="site-hero-point">
-            <span class="site-hero-point-icon" aria-hidden="true">{{ navIcon "database" }}</span>
-            <span>Generated API and schema reference</span>
-          </div>
-          <div class="site-hero-point">
-            <span class="site-hero-point-icon" aria-hidden="true">{{ navIcon "route" }}</span>
-            <span>Static export with fast local preview</span>
-          </div>
+        <div class="site-home-proof-grid">
+          {{ range .Home.Hero.Proofs }}
+            <div class="site-home-proof">
+              <span class="site-home-proof-icon" aria-hidden="true">{{ navIcon .Icon }}</span>
+              <span>{{ .Text }}</span>
+            </div>
+          {{ end }}
         </div>
-      </div>
-      <div class="site-hero-panel">
-        <div class="site-hero-panel-header">
-          <div class="site-hero-panel-title">What this ships</div>
-          <div class="site-hero-panel-kicker">Public site system</div>
-        </div>
-        <div class="site-hero-stat-grid">
-          <div class="site-hero-stat">
-            <div class="site-hero-stat-label">One shell</div>
-            <div class="site-hero-stat-value">Docs + API</div>
+        <div class="site-home-hero-stage" data-home-reveal style="--home-delay: 180ms;">
+          <svg class="site-home-hero-strip site-home-hero-strip-desktop" viewBox="0 0 960 220" role="img" aria-label="Diagram showing access surfaces, a governed gateway, and DuckLake with DuckDB execution.">
+            <defs>
+              <linearGradient id="heroTrack" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="currentColor" stop-opacity="0.12"></stop>
+                <stop offset="50%" stop-color="currentColor" stop-opacity="0.5"></stop>
+                <stop offset="100%" stop-color="currentColor" stop-opacity="0.12"></stop>
+              </linearGradient>
+            </defs>
+
+            <g class="site-home-strip-rails" aria-hidden="true">
+              <path class="site-home-strip-rail" d="M236 74H722"></path>
+              <path class="site-home-strip-rail" d="M236 110H722"></path>
+              <path class="site-home-strip-rail" d="M236 146H722"></path>
+            </g>
+
+            <g class="site-home-strip-pulses" aria-hidden="true">
+              <circle class="site-home-strip-pulse site-home-strip-pulse-a" cx="270" cy="74" r="6"></circle>
+              <circle class="site-home-strip-pulse site-home-strip-pulse-b" cx="332" cy="110" r="6"></circle>
+              <circle class="site-home-strip-pulse site-home-strip-pulse-c" cx="394" cy="146" r="6"></circle>
+            </g>
+
+            <g class="site-home-strip-band" transform="translate(40 38)">
+              <rect class="site-home-strip-band-box" x="0" y="0" width="180" height="144" rx="26"></rect>
+              <text class="site-home-strip-band-kicker" x="90" y="30">access surfaces</text>
+              <g class="site-home-strip-pill" transform="translate(22 52)">
+                <rect x="0" y="0" width="62" height="28" rx="14"></rect>
+                <text x="31" y="19">browser</text>
+              </g>
+              <g class="site-home-strip-pill" transform="translate(96 52)">
+                <rect x="0" y="0" width="62" height="28" rx="14"></rect>
+                <text x="31" y="19">sql</text>
+              </g>
+              <g class="site-home-strip-pill" transform="translate(22 92)">
+                <rect x="0" y="0" width="62" height="28" rx="14"></rect>
+                <text x="31" y="19">api</text>
+              </g>
+              <g class="site-home-strip-pill" transform="translate(96 92)">
+                <rect x="0" y="0" width="62" height="28" rx="14"></rect>
+                <text x="31" y="19">cli</text>
+              </g>
+            </g>
+
+            <g class="site-home-strip-core" transform="translate(390 26)">
+              <rect class="site-home-strip-core-box" x="0" y="0" width="180" height="168" rx="32"></rect>
+              <text class="site-home-strip-core-kicker" x="90" y="34">governed gateway</text>
+              <text class="site-home-strip-core-title" x="90" y="72">policy in path</text>
+              <g class="site-home-strip-chip" transform="translate(24 102)">
+                <rect x="0" y="0" width="52" height="22" rx="11"></rect>
+                <text x="26" y="15">rbac</text>
+              </g>
+              <g class="site-home-strip-chip" transform="translate(86 102)">
+                <rect x="0" y="0" width="64" height="22" rx="11"></rect>
+                <text x="32" y="15">filters</text>
+              </g>
+              <g class="site-home-strip-chip" transform="translate(54 132)">
+                <rect x="0" y="0" width="70" height="22" rx="11"></rect>
+                <text x="35" y="15">masks</text>
+              </g>
+            </g>
+
+            <g class="site-home-strip-band" transform="translate(740 38)">
+              <rect class="site-home-strip-band-box" x="0" y="0" width="180" height="144" rx="26"></rect>
+              <text class="site-home-strip-band-kicker" x="90" y="30">execution</text>
+              <text class="site-home-strip-data-title" x="90" y="78">DuckLake</text>
+              <text class="site-home-strip-data-title" x="90" y="116">DuckDB</text>
+            </g>
+          </svg>
+          <div class="site-home-hero-mobile-strip" aria-label="Access surfaces, policy layer, and execution layers.">
+            <div class="site-home-hero-mobile-node">
+              <p class="site-home-hero-mobile-kicker">Access</p>
+              <p class="site-home-hero-mobile-title">Browser, SQL, API, CLI</p>
+            </div>
+            <div class="site-home-hero-mobile-node site-home-hero-mobile-node-primary">
+              <p class="site-home-hero-mobile-kicker">Policy</p>
+              <p class="site-home-hero-mobile-title">RBAC, filters, masks</p>
+            </div>
+            <div class="site-home-hero-mobile-node site-home-hero-mobile-node-full">
+              <p class="site-home-hero-mobile-kicker">Execution</p>
+              <p class="site-home-hero-mobile-title">DuckLake with DuckDB underneath</p>
+            </div>
           </div>
-          <div class="site-hero-stat">
-            <div class="site-hero-stat-label">Readable mirrors</div>
-            <div class="site-hero-stat-value">`llms.txt` + `/llms`</div>
-          </div>
-          <div class="site-hero-stat">
-            <div class="site-hero-stat-label">Build path</div>
-            <div class="site-hero-stat-value">Go static export</div>
-          </div>
-          <div class="site-hero-stat">
-            <div class="site-hero-stat-label">Preview</div>
-            <div class="site-hero-stat-value">Local browser workflow</div>
-          </div>
+          <p class="site-home-visual-copy">{{ .Home.Hero.SnapshotNote }}</p>
         </div>
       </div>
     </div>
   </section>
-  <section class="site-feature-section">
-    <div class="site-feature-intro">
-      <div class="site-feature-eyebrow">Explore the platform</div>
-      <h2 class="text-3xl font-semibold">Move between product overview, docs, and reference without changing context.</h2>
-      <p style="color: var(--site-muted);">{{ .Page.Description }}</p>
-    </div>
-    <div class="site-feature-grid">
-      {{ range .Home.Features }}
-        <a href="{{ siteURL $.SiteRoot .Link }}" class="site-feature-card">
-          <div class="site-feature-card-top">
-            <span class="site-feature-card-icon" aria-hidden="true">{{ navIcon .Icon }}</span>
-            <span class="site-feature-card-arrow" aria-hidden="true">→</span>
-          </div>
-          <div class="site-feature-card-title">{{ .Title }}</div>
-          <p class="site-feature-card-copy">{{ .Details }}</p>
-        </a>
-      {{ end }}
+
+  <section class="site-home-section site-home-feature-section">
+    <div class="site-home-shell site-home-feature-shell" data-home-reveal style="--home-delay: 260ms;">
+      <h2 class="site-home-feature-heading">{{ .Home.Pillars.Eyebrow }}</h2>
+      <div class="site-home-feature-grid">
+        {{ range $index, $item := .Home.Pillars.Items }}
+          <article class="site-home-pillar {{ if or (eq $index 0) (eq $index 3) }}site-home-pillar-major{{ else }}site-home-pillar-minor{{ end }}">
+            <div class="site-home-pillar-top">
+              <span class="site-home-pillar-icon" aria-hidden="true">{{ navIcon $item.Icon }}</span>
+              <span class="site-home-pillar-label">{{ $item.Label }}</span>
+            </div>
+            <h3 class="site-home-pillar-title">{{ $item.Title }}</h3>
+            <p class="site-home-pillar-copy">{{ $item.Details }}</p>
+            {{ if $item.Link }}
+              <a href="{{ siteURL $.SiteRoot $item.Link }}" class="site-home-inline-link">Read more</a>
+            {{ end }}
+          </article>
+        {{ end }}
+      </div>
     </div>
   </section>
 </main>

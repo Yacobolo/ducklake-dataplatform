@@ -79,18 +79,27 @@ type docFrontMatter struct {
 }
 
 type homeFrontMatter struct {
-	Layout   string        `yaml:"layout"`
-	Hero     homeHero      `yaml:"hero"`
-	Features []homeFeature `yaml:"features"`
-	Title    string        `yaml:"title"`
-	Keywords []string      `yaml:"keywords"`
+	Layout       string            `yaml:"layout"`
+	Hero         homeHero          `yaml:"hero"`
+	Pillars      homeSection       `yaml:"pillars"`
+	Workflow     homeWorkflow      `yaml:"workflow"`
+	Capabilities homeSection       `yaml:"capabilities"`
+	OSSCTA       homeActionSection `yaml:"oss_cta"`
+	Title        string            `yaml:"title"`
+	Keywords     []string          `yaml:"keywords"`
 }
 
 type homeHero struct {
-	Name    string         `yaml:"name"`
-	Text    string         `yaml:"text"`
-	Tagline string         `yaml:"tagline"`
-	Actions []homeHeroLink `yaml:"actions"`
+	Name          string             `yaml:"name"`
+	Eyebrow       string             `yaml:"eyebrow"`
+	Text          string             `yaml:"text"`
+	Headline      string             `yaml:"headline"`
+	Tagline       string             `yaml:"tagline"`
+	SnapshotTitle string             `yaml:"snapshot_title"`
+	SnapshotNote  string             `yaml:"snapshot_note"`
+	Actions       []homeHeroLink     `yaml:"actions"`
+	Proofs        []homeHeroProof    `yaml:"proofs"`
+	Snapshot      []homeHeroSnapshot `yaml:"snapshot"`
 }
 
 type homeHeroLink struct {
@@ -99,11 +108,52 @@ type homeHeroLink struct {
 	Link  string `yaml:"link"`
 }
 
+type homeHeroProof struct {
+	Icon string `yaml:"icon"`
+	Text string `yaml:"text"`
+}
+
+type homeHeroSnapshot struct {
+	Icon  string `yaml:"icon"`
+	Label string `yaml:"label"`
+	Value string `yaml:"value"`
+}
+
+type homeSection struct {
+	Eyebrow string        `yaml:"eyebrow"`
+	Title   string        `yaml:"title"`
+	Details string        `yaml:"details"`
+	Items   []homeFeature `yaml:"items"`
+}
+
 type homeFeature struct {
+	Label   string `yaml:"label"`
 	Title   string `yaml:"title"`
 	Details string `yaml:"details"`
 	Link    string `yaml:"link"`
 	Icon    string `yaml:"icon"`
+}
+
+type homeWorkflow struct {
+	Eyebrow string             `yaml:"eyebrow"`
+	Title   string             `yaml:"title"`
+	Details string             `yaml:"details"`
+	Steps   []homeWorkflowStep `yaml:"steps"`
+}
+
+type homeWorkflowStep struct {
+	Stage   string `yaml:"stage"`
+	Title   string `yaml:"title"`
+	Details string `yaml:"details"`
+	Icon    string `yaml:"icon"`
+}
+
+type homeActionSection struct {
+	Eyebrow string         `yaml:"eyebrow"`
+	Title   string         `yaml:"title"`
+	Details string         `yaml:"details"`
+	Actions []homeHeroLink `yaml:"actions"`
+	Notes   []string       `yaml:"notes"`
 }
 
 type pageKind string
@@ -259,9 +309,9 @@ func (b Builder) Build() error {
 			Prev:          findNeighbor(flat, p.URLPath, -1),
 			Next:          findNeighbor(flat, p.URLPath, 1),
 			// #nosec G203 -- BodyHTML is generated from repository-owned markdown, then only URL-prefixed here.
-			BodyHTML:      template.HTML(prefixSiteRootInHTML(string(p.BodyHTML), siteRoot)),
-			Home:          p.Home,
-			MirrorPath:    p.MirrorPath,
+			BodyHTML:   template.HTML(prefixSiteRootInHTML(string(p.BodyHTML), siteRoot)),
+			Home:       p.Home,
+			MirrorPath: p.MirrorPath,
 		}
 
 		if err := renderHTMLPage(templates, b.OutDir, p, data); err != nil {
@@ -372,11 +422,23 @@ func parsePage(root, path string) (page, error) {
 		if err := yaml.Unmarshal([]byte(frontMatter), &home); err != nil {
 			return page{}, fmt.Errorf("decode home front matter: %w", err)
 		}
+		if strings.TrimSpace(home.Hero.Headline) == "" {
+			home.Hero.Headline = strings.TrimSpace(home.Hero.Text)
+		}
+		if strings.TrimSpace(home.Hero.Name) == "" {
+			home.Hero.Name = strings.TrimSpace(home.Hero.Headline)
+		}
 		for i := range home.Hero.Actions {
 			home.Hero.Actions[i].Link = rewriteLink(home.Hero.Actions[i].Link)
 		}
-		for i := range home.Features {
-			home.Features[i].Link = rewriteLink(home.Features[i].Link)
+		for i := range home.Pillars.Items {
+			home.Pillars.Items[i].Link = rewriteLink(home.Pillars.Items[i].Link)
+		}
+		for i := range home.Capabilities.Items {
+			home.Capabilities.Items[i].Link = rewriteLink(home.Capabilities.Items[i].Link)
+		}
+		for i := range home.OSSCTA.Actions {
+			home.OSSCTA.Actions[i].Link = rewriteLink(home.OSSCTA.Actions[i].Link)
 		}
 		description := home.Hero.Tagline
 		if description == "" {
@@ -446,9 +508,9 @@ func parsePage(root, path string) (page, error) {
 		BodyMarkdown: body,
 		MirrorBody:   mirror,
 		// #nosec G203 -- rendered markdown is limited to repository-owned docs and generated content.
-		BodyHTML:     template.HTML(rendered),
-		Headings:     extractHeadings(mirror),
-		Keywords:     fm.Keywords,
+		BodyHTML: template.HTML(rendered),
+		Headings: extractHeadings(mirror),
+		Keywords: fm.Keywords,
 	}, nil
 }
 
@@ -478,24 +540,57 @@ func writeMirrorMarkdown(outDir string, p page) error {
 	content.WriteString("# ")
 	content.WriteString(p.Title)
 	content.WriteString("\n\n")
-	if p.Description != "" {
-		content.WriteString(p.Description)
-		content.WriteString("\n\n")
-	}
 	if p.IsHome {
-		for _, feature := range p.Home.Features {
-			content.WriteString("## ")
-			content.WriteString(feature.Title)
-			content.WriteString("\n\n")
-			content.WriteString(feature.Details)
+		writeHomeMirror(&content, p.Home)
+	} else {
+		if p.Description != "" {
+			content.WriteString(p.Description)
 			content.WriteString("\n\n")
 		}
-	} else {
 		content.WriteString(strings.TrimSpace(p.MirrorBody))
 		content.WriteString("\n")
 	}
 
 	return os.WriteFile(target, []byte(content.String()), 0o600)
+}
+
+func writeHomeMirror(content *strings.Builder, home homeFrontMatter) {
+	if headline := strings.TrimSpace(home.Hero.Headline); headline != "" {
+		content.WriteString(headline)
+		content.WriteString("\n\n")
+	}
+	if tagline := strings.TrimSpace(home.Hero.Tagline); tagline != "" {
+		content.WriteString(tagline)
+		content.WriteString("\n\n")
+	}
+
+	writeHomeMirrorSection(content, home.Pillars)
+}
+
+func writeHomeMirrorSection(content *strings.Builder, section homeSection) {
+	if strings.TrimSpace(section.Title) == "" {
+		return
+	}
+	content.WriteString("## ")
+	content.WriteString(section.Title)
+	content.WriteString("\n\n")
+	if details := strings.TrimSpace(section.Details); details != "" {
+		content.WriteString(details)
+		content.WriteString("\n\n")
+	}
+	for _, item := range section.Items {
+		title := strings.TrimSpace(item.Title)
+		if title == "" {
+			continue
+		}
+		content.WriteString("### ")
+		content.WriteString(title)
+		content.WriteString("\n\n")
+		if details := strings.TrimSpace(item.Details); details != "" {
+			content.WriteString(details)
+			content.WriteString("\n\n")
+		}
+	}
 }
 
 func writeSearchIndex(outDir string, items []searchItem) error {
