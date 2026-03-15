@@ -1,0 +1,6 @@
+{{ define "home_proof" -}}
+<div class="inline-flex items-center gap-2 rounded-full border border-[color:var(--site-border)] bg-[color:color-mix(in_srgb,var(--site-panel)_88%,transparent)] px-3 py-2 text-sm text-[color:var(--site-muted)]">
+  <span class="inline-flex h-4 w-4 shrink-0 text-[color:var(--site-brand-strong)]" aria-hidden="true">{{ navIcon .Icon }}</span>
+  <span>{{ .Text }}</span>
+</div>
+{{- end }}

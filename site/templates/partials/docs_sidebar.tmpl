@@ -1,0 +1,48 @@
+{{ define "docs_sidebar" -}}
+<aside class="hidden lg:block">
+  <div class="site-sidebar site-sidebar-scroll sticky top-[4.5rem] h-[calc(100vh-4.5rem)] overflow-y-auto border-r border-[color:var(--site-border)] px-5 py-6 xl:px-6" data-sidebar-kind="{{ .Page.Kind }}" data-sidebar-section="{{ .Page.Section }}">
+    <nav>
+      <div class="space-y-2">
+        {{ range .SidebarGroups }}
+          {{ if or .Title .Icon }}
+            <details class="site-nav-group" {{ if .Open }}open{{ end }}>
+              <summary class="site-nav-summary">
+                <span class="flex min-w-0 items-center gap-2">
+                  {{ if .Icon }}<span class="inline-flex h-4 w-4 shrink-0 text-[color:var(--site-muted-soft)]" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
+                  <span>{{ .Title }}</span>
+                </span>
+              </summary>
+              {{ template "nav_nodes" (dict "Nodes" .Nodes "Kind" $.Page.Kind) }}
+            </details>
+          {{ else }}
+            {{ template "nav_nodes" (dict "Nodes" .Nodes "Kind" $.Page.Kind) }}
+          {{ end }}
+        {{ end }}
+      </div>
+    </nav>
+  </div>
+  <script>
+    (function () {
+      var sidebar = document.currentScript && document.currentScript.previousElementSibling;
+      if (!sidebar || !sidebar.classList || !sidebar.classList.contains("site-sidebar-scroll")) {
+        return;
+      }
+      var kind = sidebar.getAttribute("data-sidebar-kind") || "docs";
+      var section = sidebar.getAttribute("data-sidebar-section") || kind;
+      var storageKey = "duck-site-sidebar-scroll:" + kind + ":" + section;
+      try {
+        var saved = sessionStorage.getItem(storageKey);
+        if (saved === null) {
+          return;
+        }
+        var scrollTop = Number(saved);
+        if (Number.isNaN(scrollTop) || scrollTop < 0) {
+          return;
+        }
+        sidebar.scrollTop = scrollTop;
+        sidebar.setAttribute("data-sidebar-restored", "true");
+      } catch (_) {}
+    })();
+  </script>
+</aside>
+{{- end }}

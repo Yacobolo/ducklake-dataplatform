@@ -8,22 +8,22 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 
 ## Endpoint Groups
 
-- [Assets](./endpoints/assets) (20 operations)
+- [Assets](./endpoints/assets/) (20 operations)
 - [Auth](./endpoints/auth) (7 operations)
-- [Catalogs](./endpoints/catalogs) (37 operations)
+- [Catalogs](./endpoints/catalogs/) (37 operations)
 - [Compute](./endpoints/compute) (9 operations)
 - [Dashboards](./endpoints/dashboards) (9 operations)
-- [Governance](./endpoints/governance) (22 operations)
+- [Governance](./endpoints/governance/) (22 operations)
 - [Health](./endpoints/health) (1 operations)
 - [Identity](./endpoints/identity) (16 operations)
 - [Integrations](./endpoints/integrations) (5 operations)
 - [Lineage](./endpoints/lineage) (7 operations)
-- [Models](./endpoints/models) (25 operations)
+- [Models](./endpoints/models/) (25 operations)
 - [Notebooks](./endpoints/notebooks) (16 operations)
 - [Pipelines](./endpoints/pipelines) (13 operations)
-- [Products](./endpoints/products) (30 operations)
+- [Products](./endpoints/products/) (30 operations)
 - [Queries](./endpoints/queries) (9 operations)
-- [Semantic Layer](./endpoints/semantic-layer) (21 operations)
+- [Semantic Layer](./endpoints/semantic-layer/) (21 operations)
 - [Storage](./endpoints/storage) (10 operations)
 
 ## Schemas

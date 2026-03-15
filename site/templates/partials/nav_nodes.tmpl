@@ -1,0 +1,32 @@
+{{ define "nav_nodes" -}}
+<ul class="ml-0 space-y-1 {{ if eq .Kind `api` }}mt-1{{ else }}mt-2{{ end }}">
+  {{ range .Nodes }}
+    <li>
+      {{ if .Children }}
+        <details class="site-nav-node {{ if eq $.Kind `api` }}is-subtle{{ end }}" {{ if .Open }}open{{ end }}>
+          <summary class="site-nav-summary {{ if eq $.Kind `api` }}is-subtle{{ end }}">
+            <span class="site-nav-node-summary">
+              <span class="site-nav-node-label-wrap">
+                {{ if and .Icon (ne $.Kind `api`) }}<span class="inline-flex h-4 w-4 shrink-0 text-[color:var(--site-muted-soft)]" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
+                {{ if .Path }}
+                  <a href="{{ .Path }}" class="site-nav-node-link {{ if .Active }}is-active{{ end }}">{{ .Title }}</a>
+                {{ else }}
+                  <span class="site-nav-node-label">{{ .Title }}</span>
+                {{ end }}
+              </span>
+              {{ if and .Description (ne $.Kind `api`) }}<span class="site-nav-node-meta">{{ .Description }}</span>{{ end }}
+            </span>
+          </summary>
+          <div class="{{ if eq $.Kind `api` }}ml-3 pl-3{{ else }}ml-3 border-l border-[color:var(--site-border-soft)] pl-3{{ end }}">
+            {{ template "nav_nodes" (dict "Nodes" .Children "Kind" $.Kind "Nested" true) }}
+          </div>
+        </details>
+      {{ else }}
+        <a href="{{ .Path }}" class="site-side-link {{ if .Active }}is-active{{ end }}">
+          {{ .Title }}
+        </a>
+      {{ end }}
+    </li>
+  {{ end }}
+</ul>
+{{- end }}

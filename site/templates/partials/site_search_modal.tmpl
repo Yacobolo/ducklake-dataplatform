@@ -1,0 +1,29 @@
+{{ define "site_search_modal" -}}
+<div data-site-search-modal class="site-search-modal" hidden>
+  <div data-site-search-backdrop class="absolute inset-0 bg-[color:color-mix(in_srgb,var(--site-bg)_44%,transparent)]"></div>
+  <div class="relative z-10 mx-auto flex min-h-full w-full max-w-4xl items-start justify-center px-4 py-10 lg:py-16">
+    <section class="w-full rounded-[2rem] border border-[color:var(--site-border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--site-panel)_96%,transparent),color-mix(in_srgb,var(--site-soft)_38%,var(--site-panel)))] p-5 shadow-[0_28px_80px_color-mix(in_srgb,var(--site-ink)_24%,transparent)] lg:p-6" role="dialog" aria-modal="true" aria-labelledby="site-search-title">
+      <div class="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <p class="text-[0.74rem] font-semibold uppercase tracking-[0.24em] text-[color:var(--site-brand-strong)]">Search</p>
+          <h2 id="site-search-title" class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[color:var(--site-ink)]">{{ if eq .Page.Kind `api` }}Search API reference{{ else }}Search docs{{ end }}</h2>
+        </div>
+        <button data-site-search-close type="button" class="site-icon-button" aria-label="Close search" title="Close search">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6 6 18"></path>
+            <path d="m6 6 12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="flex items-center gap-3 rounded-[1.5rem] border border-[color:var(--site-border)] bg-[color:var(--site-bg)] px-4 py-3 focus-within:border-[color:color-mix(in_srgb,var(--site-brand)_35%,var(--site-border))] focus-within:shadow-[0_0_0_4px_color-mix(in_srgb,var(--site-brand)_12%,transparent)]">
+        <svg class="h-5 w-5 shrink-0 text-[color:var(--site-muted-soft)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <input data-site-search-input type="search" class="min-w-0 flex-1 border-0 bg-transparent p-0 text-base text-[color:var(--site-ink)] outline-none placeholder:text-[color:var(--site-muted-soft)]" placeholder="{{ if eq .Page.Kind `api` }}Search endpoints, models, and operations{{ else }}Search pages, sections, and headings{{ end }}" autocomplete="off">
+      </div>
+      <div data-site-search-results class="site-search-results"></div>
+    </section>
+  </div>
+</div>
+{{- end }}

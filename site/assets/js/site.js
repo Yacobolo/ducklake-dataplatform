@@ -239,6 +239,78 @@
     });
   });
 
+  function sidebarStorageKey(sidebarScroll) {
+    const sidebarKind =
+      sidebarScroll.getAttribute("data-sidebar-kind") ||
+      (document.querySelector("[data-api-page]") ? "api" : "docs");
+    const sectionRoot = sidebarScroll.getAttribute("data-sidebar-section") || sidebarKind;
+    return "duck-site-sidebar-scroll:" + sidebarKind + ":" + sectionRoot;
+  }
+
+  function revealActiveSidebarItem(sidebarScroll) {
+    const activeItem = sidebarScroll.querySelector(
+      ".site-side-link.is-active, .site-nav-node-link.is-active"
+    );
+    if (!(activeItem instanceof HTMLElement)) {
+      return;
+    }
+
+    const containerHeight = sidebarScroll.clientHeight;
+    if (!containerHeight) {
+      return;
+    }
+
+    const activeTop = activeItem.offsetTop;
+    const activeBottom = activeTop + activeItem.offsetHeight;
+    const visibleTop = sidebarScroll.scrollTop;
+    const visibleBottom = visibleTop + containerHeight;
+    const comfortInset = Math.min(96, Math.floor(containerHeight * 0.22));
+    const comfortableTop = visibleTop + comfortInset;
+    const comfortableBottom = visibleBottom - comfortInset;
+
+    if (activeTop >= comfortableTop && activeBottom <= comfortableBottom) {
+      return;
+    }
+
+    const targetScrollTop = Math.max(
+      0,
+      activeTop - Math.max(24, Math.floor((containerHeight - activeItem.offsetHeight) / 2))
+    );
+    sidebarScroll.scrollTo({ top: targetScrollTop, behavior: "auto" });
+  }
+
+  function setupSidebarScrollPersistence() {
+    const sidebarScroll = document.querySelector(".site-sidebar-scroll");
+    if (!(sidebarScroll instanceof HTMLElement)) {
+      return;
+    }
+
+    const storageKey = sidebarStorageKey(sidebarScroll);
+    const restored = sidebarScroll.getAttribute("data-sidebar-restored") === "true";
+
+    if (!restored) {
+      revealActiveSidebarItem(sidebarScroll);
+    }
+
+    let saveTimer = 0;
+    sidebarScroll.addEventListener("scroll", function () {
+      window.clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(function () {
+        try {
+          sessionStorage.setItem(storageKey, String(sidebarScroll.scrollTop));
+        } catch (_) {}
+      }, 80);
+    }, { passive: true });
+  }
+
+  if (document.querySelector(".site-sidebar")) {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", setupSidebarScrollPersistence, { once: true });
+    } else {
+      setupSidebarScrollPersistence();
+    }
+  }
+
   const tocLinks = Array.from(document.querySelectorAll("[data-site-toc-link]"));
   if (tocLinks.length) {
     const tocById = new Map();
@@ -321,90 +393,6 @@
     });
   }
 
-  const apiNavLinks = Array.from(
-    document.querySelectorAll("[data-api-sidebar] a[href*='#']")
-  );
-  if (apiNavLinks.length) {
-    const apiLinkById = new Map();
-    apiNavLinks.forEach(function (link) {
-      const href = link.getAttribute("href") || "";
-      const index = href.indexOf("#");
-      const id = index >= 0 ? href.slice(index + 1) : "";
-      if (id) {
-        apiLinkById.set(id, link);
-      }
-    });
-
-    let activeAPINavId = "";
-    function setActiveAPINav(id) {
-      if (!id || id === activeAPINavId) {
-        return;
-      }
-      activeAPINavId = id;
-      apiNavLinks.forEach(function (link) {
-        const href = link.getAttribute("href") || "";
-        const index = href.indexOf("#");
-        const currentId = index >= 0 ? href.slice(index + 1) : "";
-        const isOverviewLink = index < 0 && link.pathname === window.location.pathname;
-        link.classList.toggle("is-active", currentId === id && !isOverviewLink);
-      });
-    }
-
-    const apiSections = Array.from(document.querySelectorAll(".api-prose h2[id]")).filter(
-      function (heading) {
-        return apiLinkById.has(heading.id);
-      }
-    );
-
-    if (window.location.hash) {
-      setActiveAPINav(window.location.hash.slice(1));
-    } else if (apiSections.length) {
-      setActiveAPINav(apiSections[0].id);
-    }
-
-    if (apiSections.length && "IntersectionObserver" in window) {
-      const observer = new IntersectionObserver(
-        function (entries) {
-          const visible = entries
-            .filter(function (entry) {
-              return entry.isIntersecting;
-            })
-            .sort(function (a, b) {
-              return a.target.getBoundingClientRect().top - b.target.getBoundingClientRect().top;
-            });
-
-          if (visible.length) {
-            setActiveAPINav(visible[0].target.id);
-            return;
-          }
-
-          const current = apiSections
-            .filter(function (heading) {
-              return heading.getBoundingClientRect().top <= 140;
-            })
-            .pop();
-          if (current) {
-            setActiveAPINav(current.id);
-          }
-        },
-        {
-          rootMargin: "-96px 0px -62% 0px",
-          threshold: [0, 1],
-        }
-      );
-
-      apiSections.forEach(function (heading) {
-        observer.observe(heading);
-      });
-    }
-
-    window.addEventListener("hashchange", function () {
-      if (window.location.hash) {
-        setActiveAPINav(window.location.hash.slice(1));
-      }
-    });
-  }
-})();
   function withSiteRoot(path) {
     if (!path) {
       return siteRoot || "/";
@@ -417,3 +405,4 @@
     }
     return (siteRoot || "") + "/" + path.replace(/^\/+/, "");
   }
+})();

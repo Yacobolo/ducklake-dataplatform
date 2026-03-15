@@ -8,8 +8,10 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"gopkg.in/yaml.v3"
 )
 
 type endpointDoc struct {
@@ -33,6 +35,36 @@ type paramDoc struct {
 	Description string
 }
 
+type endpointPageDoc struct {
+	Title       string
+	Slug        string
+	Description string
+	Endpoints   []endpointDoc
+}
+
+type tagOutput struct {
+	Tag         string
+	Title       string
+	Path        string
+	Description string
+	Operations  int
+	Pages       []endpointPageDoc
+}
+
+type apiGroupingConfig struct {
+	Tags map[string]apiTagGrouping `yaml:"api_generated"`
+}
+
+type apiTagGrouping struct {
+	Pages []apiPageGrouping `yaml:"pages"`
+}
+
+type apiPageGrouping struct {
+	Title         string   `yaml:"title"`
+	Slug          string   `yaml:"slug"`
+	MatchPrefixes []string `yaml:"match_prefixes"`
+}
+
 type requestBodyDoc struct {
 	Required     bool
 	ContentTypes []string
@@ -44,11 +76,15 @@ type responseDoc struct {
 }
 
 // Generate renders OpenAPI docs to markdown files.
-func Generate(specPath, outDir string) error {
+func Generate(specPath, outDir, configPath string) error {
 	loader := &openapi3.Loader{IsExternalRefsAllowed: true}
 	spec, err := loader.LoadFromFile(specPath)
 	if err != nil {
 		return fmt.Errorf("load spec: %w", err)
+	}
+	groupingConfig, err := loadGroupingConfig(configPath)
+	if err != nil {
+		return err
 	}
 
 	if err := os.RemoveAll(outDir); err != nil {
@@ -81,12 +117,15 @@ func Generate(specPath, outDir string) error {
 	}
 
 	tags := sortedKeys(tagEndpoints)
+	tagOutputs := make([]tagOutput, 0, len(tags))
 	for _, tag := range tags {
 		endpoints := tagEndpoints[tag]
 		sortEndpoints(endpoints)
-		if err := writeTagPage(filepath.Join(outDir, "endpoints", fileSlug(tag)+".md"), tag, tagDescriptions[tag], endpoints); err != nil {
+		output, err := writeTagDocs(filepath.Join(outDir, "endpoints"), tag, tagDescriptions[tag], endpoints, groupingConfig.Tags[fileSlug(tag)])
+		if err != nil {
 			return err
 		}
+		tagOutputs = append(tagOutputs, output)
 	}
 
 	schemaNames := sortedKeys(spec.Components.Schemas)
@@ -97,10 +136,10 @@ func Generate(specPath, outDir string) error {
 		}
 	}
 
-	if err := writeAPIIndex(filepath.Join(outDir, "index.md"), tags, tagEndpoints, schemaNames); err != nil {
+	if err := writeAPIIndex(filepath.Join(outDir, "index.md"), tagOutputs, schemaNames); err != nil {
 		return err
 	}
-	if err := writeFeaturesPage(filepath.Join(outDir, "features.md"), tags, tagDescriptions, tagEndpoints); err != nil {
+	if err := writeFeaturesPage(filepath.Join(outDir, "features.md"), tagOutputs); err != nil {
 		return err
 	}
 
@@ -166,16 +205,15 @@ func buildEndpointDoc(path, method string, pathItem *openapi3.PathItem, op *open
 	return endpoint
 }
 
-func writeAPIIndex(path string, tags []string, tagEndpoints map[string][]endpointDoc, schemaNames []string) error {
+func writeAPIIndex(path string, outputs []tagOutput, schemaNames []string) error {
 	var b strings.Builder
 	b.WriteString(generatedHeader())
 	b.WriteString("# API Reference\n\n")
 	b.WriteString("This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by default).\n\n")
 	b.WriteString("- [Feature Overview](./features)\n\n")
 	b.WriteString("## Endpoint Groups\n\n")
-	for _, tag := range tags {
-		count := len(tagEndpoints[tag])
-		b.WriteString(fmt.Sprintf("- [%s](./endpoints/%s) (%d operations)\n", tag, fileSlug(tag), count))
+	for _, output := range outputs {
+		b.WriteString(fmt.Sprintf("- [%s](.%s) (%d operations)\n", output.Title, output.Path, output.Operations))
 	}
 	b.WriteString("\n## Schemas\n\n")
 	for _, schema := range schemaNames {
@@ -185,28 +223,77 @@ func writeAPIIndex(path string, tags []string, tagEndpoints map[string][]endpoin
 	return writeFile(path, b.String())
 }
 
-func writeFeaturesPage(path string, tags []string, tagDescriptions map[string]string, tagEndpoints map[string][]endpointDoc) error {
+func writeFeaturesPage(path string, outputs []tagOutput) error {
 	var b strings.Builder
 	b.WriteString(generatedHeader())
 	b.WriteString("# Platform Features\n\n")
 	b.WriteString("This page is generated from OpenAPI tags and operations.\n\n")
 	b.WriteString("| Feature | What you can do | API coverage |\n")
 	b.WriteString("| --- | --- | --- |\n")
-	for _, tag := range tags {
-		desc := tagDescriptions[tag]
+	for _, output := range outputs {
+		desc := output.Description
 		if desc == "" {
 			desc = "-"
 		}
-		b.WriteString(fmt.Sprintf("| [%s](./endpoints/%s) | %s | %d operations |\n", tag, fileSlug(tag), tableSafe(desc), len(tagEndpoints[tag])))
+		b.WriteString(fmt.Sprintf("| [%s](.%s) | %s | %d operations |\n", output.Title, output.Path, tableSafe(desc), output.Operations))
 	}
 
 	return writeFile(path, b.String())
 }
 
-func writeTagPage(path, tag, description string, endpoints []endpointDoc) error {
+func writeTagDocs(rootDir, tag, description string, endpoints []endpointDoc, grouping apiTagGrouping) (tagOutput, error) {
+	output := tagOutput{
+		Tag:         tag,
+		Title:       tag,
+		Description: description,
+		Operations:  len(endpoints),
+	}
+
+	pages := splitEndpointPages(tag, description, endpoints, grouping)
+	output.Pages = pages
+	if len(pages) == 1 && pages[0].Slug == "" {
+		output.Path = "/endpoints/" + fileSlug(tag)
+		if err := writeEndpointPage(filepath.Join(rootDir, fileSlug(tag)+".md"), tag, description, pages[0].Endpoints); err != nil {
+			return tagOutput{}, err
+		}
+		return output, nil
+	}
+
+	tagDir := filepath.Join(rootDir, fileSlug(tag))
+	output.Path = "/endpoints/" + fileSlug(tag) + "/"
+	if err := writeTagIndexPage(filepath.Join(tagDir, "index.md"), tag, description, pages); err != nil {
+		return tagOutput{}, err
+	}
+	for _, page := range pages {
+		if err := writeEndpointPage(filepath.Join(tagDir, page.Slug+".md"), page.Title, page.Description, page.Endpoints); err != nil {
+			return tagOutput{}, err
+		}
+	}
+	return output, nil
+}
+
+func writeTagIndexPage(path, tag, description string, pages []endpointPageDoc) error {
 	var b strings.Builder
 	b.WriteString(generatedHeader())
 	b.WriteString(fmt.Sprintf("# %s Endpoints\n\n", tag))
+	if description != "" {
+		b.WriteString(description)
+		b.WriteString("\n\n")
+	}
+
+	b.WriteString("## Resources\n\n")
+	for _, page := range pages {
+		b.WriteString(fmt.Sprintf("- [%s](./%s) (%d operations)\n", page.Title, page.Slug, len(page.Endpoints)))
+	}
+	b.WriteString("\n")
+
+	return writeFile(path, b.String())
+}
+
+func writeEndpointPage(path, title, description string, endpoints []endpointDoc) error {
+	var b strings.Builder
+	b.WriteString(generatedHeader())
+	b.WriteString(fmt.Sprintf("# %s\n\n", title))
 	if description != "" {
 		b.WriteString(description)
 		b.WriteString("\n\n")
@@ -276,6 +363,216 @@ func writeTagPage(path, tag, description string, endpoints []endpointDoc) error 
 	}
 
 	return writeFile(path, b.String())
+}
+
+func splitEndpointPages(tag, description string, endpoints []endpointDoc, grouping apiTagGrouping) []endpointPageDoc {
+	if len(grouping.Pages) > 0 {
+		pages := splitConfiguredEndpointPages(tag, endpoints, grouping)
+		if len(pages) > 0 {
+			return pages
+		}
+	}
+	resourceGroups := groupEndpointsByResource(tag, endpoints)
+	if len(endpoints) < 18 || len(resourceGroups) < 3 {
+		return []endpointPageDoc{{
+			Title:       tag + " Endpoints",
+			Description: description,
+			Endpoints:   endpoints,
+		}}
+	}
+
+	pages := make([]endpointPageDoc, 0, len(resourceGroups))
+	for _, group := range resourceGroups {
+		pageDescription := fmt.Sprintf("%s operations within the %s API group.", group.Title, tag)
+		pages = append(pages, endpointPageDoc{
+			Title:       group.Title,
+			Slug:        group.Slug,
+			Description: pageDescription,
+			Endpoints:   group.Endpoints,
+		})
+	}
+	return pages
+}
+
+func splitConfiguredEndpointPages(tag string, endpoints []endpointDoc, grouping apiTagGrouping) []endpointPageDoc {
+	pages := make([]endpointPageDoc, 0, len(grouping.Pages))
+	assignments := make([]int, len(endpoints))
+	for idx := range assignments {
+		assignments[idx] = -1
+	}
+
+	for endpointIdx, endpoint := range endpoints {
+		bestGroup := -1
+		bestLen := -1
+		for groupIdx, group := range grouping.Pages {
+			matchLen := longestMatchingPrefixLen(endpoint.Path, group.MatchPrefixes)
+			if matchLen > bestLen {
+				bestLen = matchLen
+				bestGroup = groupIdx
+			}
+		}
+		assignments[endpointIdx] = bestGroup
+	}
+
+	for groupIdx, group := range grouping.Pages {
+		matched := make([]endpointDoc, 0)
+		for endpointIdx, assignedGroup := range assignments {
+			if assignedGroup == groupIdx {
+				matched = append(matched, endpoints[endpointIdx])
+			}
+		}
+		if len(matched) == 0 {
+			continue
+		}
+		sortEndpoints(matched)
+		title := strings.TrimSpace(group.Title)
+		if title == "" {
+			title = humanizeKey(group.Slug)
+		}
+		slug := strings.TrimSpace(group.Slug)
+		if slug == "" {
+			slug = fileSlug(title)
+		}
+		pages = append(pages, endpointPageDoc{
+			Title:       title,
+			Slug:        slug,
+			Description: fmt.Sprintf("%s operations within the %s API group.", title, tag),
+			Endpoints:   matched,
+		})
+	}
+
+	for idx, endpoint := range endpoints {
+		if assignments[idx] >= 0 {
+			continue
+		}
+		key := resourceKeyForEndpoint(tag, endpoint.Path)
+		found := false
+		for pageIdx := range pages {
+			if pages[pageIdx].Slug == fileSlug(key) {
+				pages[pageIdx].Endpoints = append(pages[pageIdx].Endpoints, endpoint)
+				found = true
+				break
+			}
+		}
+		if !found {
+			title := resourceTitle(tag, key)
+			pages = append(pages, endpointPageDoc{
+				Title:       title,
+				Slug:        fileSlug(key),
+				Description: fmt.Sprintf("%s operations within the %s API group.", title, tag),
+				Endpoints:   []endpointDoc{endpoint},
+			})
+		}
+	}
+
+	for idx := range pages {
+		sortEndpoints(pages[idx].Endpoints)
+	}
+
+	return pages
+}
+
+func longestMatchingPrefixLen(path string, prefixes []string) int {
+	best := -1
+	for _, prefix := range prefixes {
+		prefix = strings.TrimSpace(prefix)
+		if prefix == "" {
+			continue
+		}
+		if strings.HasPrefix(path, prefix) {
+			if len(prefix) > best {
+				best = len(prefix)
+			}
+		}
+	}
+	return best
+}
+
+func loadGroupingConfig(path string) (apiGroupingConfig, error) {
+	var cfg apiGroupingConfig
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return cfg, nil
+	}
+	body, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return cfg, fmt.Errorf("read grouping config %s: %w", path, err)
+	}
+	if err := yaml.Unmarshal(body, &cfg); err != nil {
+		return cfg, fmt.Errorf("decode grouping config %s: %w", path, err)
+	}
+	if cfg.Tags == nil {
+		cfg.Tags = map[string]apiTagGrouping{}
+	}
+	return cfg, nil
+}
+
+func groupEndpointsByResource(tag string, endpoints []endpointDoc) []endpointPageDoc {
+	grouped := make(map[string][]endpointDoc)
+	for _, endpoint := range endpoints {
+		key := resourceKeyForEndpoint(tag, endpoint.Path)
+		grouped[key] = append(grouped[key], endpoint)
+	}
+
+	keys := sortedKeys(grouped)
+	pages := make([]endpointPageDoc, 0, len(keys))
+	for _, key := range keys {
+		groupEndpoints := grouped[key]
+		sortEndpoints(groupEndpoints)
+		pages = append(pages, endpointPageDoc{
+			Title:     resourceTitle(tag, key),
+			Slug:      fileSlug(key),
+			Endpoints: groupEndpoints,
+		})
+	}
+	sort.Slice(pages, func(i, j int) bool {
+		return pages[i].Title < pages[j].Title
+	})
+	return pages
+}
+
+func resourceKeyForEndpoint(tag, path string) string {
+	segments := strings.Split(strings.Trim(path, "/"), "/")
+	lastMeaningful := fileSlug(tag)
+	for _, segment := range segments {
+		if segment == "" || strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}") {
+			continue
+		}
+		if isIgnoredResourceSegment(segment) {
+			continue
+		}
+		lastMeaningful = segment
+	}
+	return lastMeaningful
+}
+
+func isIgnoredResourceSegment(segment string) bool {
+	switch strings.TrimSpace(strings.ToLower(segment)) {
+	case "history", "info", "metastore", "summary", "set-default", "version-summary", "ingestion", "load", "upload-url", "commit", "profile", "columns", "manifest":
+		return true
+	default:
+		return false
+	}
+}
+
+func resourceTitle(_ string, key string) string {
+	return humanizeKey(key)
+}
+
+func humanizeKey(value string) string {
+	parts := strings.FieldsFunc(strings.TrimSpace(value), func(r rune) bool {
+		return r == '-' || r == '_' || r == '/' || unicode.IsSpace(r)
+	})
+	for i := range parts {
+		if parts[i] == "" {
+			continue
+		}
+		part := strings.ToLower(parts[i])
+		runes := []rune(part)
+		runes[0] = unicode.ToUpper(runes[0])
+		parts[i] = string(runes)
+	}
+	return strings.Join(parts, " ")
 }
 
 func writeSchemaPage(path, name string, ref *openapi3.SchemaRef) error {

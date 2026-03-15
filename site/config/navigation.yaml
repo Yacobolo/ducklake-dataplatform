@@ -80,9 +80,171 @@ docs:
             autogen_dir: reference/generated/declarative/kinds
 
 api:
-  -
+  - title: Endpoint Groups
+    icon: route
+    expanded: true
     items:
       - autogen_dir: reference/generated/api/endpoints
+  - title: Models
+    icon: file-json
+    expanded: true
+    items:
+      - autogen_dir: reference/generated/api/schemas
+
+api_generated:
+  catalogs:
+    pages:
+      - title: Catalogs
+        slug: catalogs
+        match_prefixes:
+          - /catalogs
+          - /manifest
+      - title: Schemas
+        slug: schemas
+        match_prefixes:
+          - /catalogs/{catalogName}/schemas
+      - title: Tables
+        slug: tables
+        match_prefixes:
+          - /catalogs/{catalogName}/schemas/{schemaName}/tables
+      - title: Views
+        slug: views
+        match_prefixes:
+          - /catalogs/{catalogName}/schemas/{schemaName}/views
+      - title: Volumes
+        slug: volumes
+        match_prefixes:
+          - /catalogs/{catalogName}/schemas/{schemaName}/volumes
+  assets:
+    pages:
+      - title: Assets
+        slug: assets
+        match_prefixes:
+          - /assets
+      - title: Freshness
+        slug: freshness
+        match_prefixes:
+          - /assets/{assetKey}/freshness
+          - /assets/{assetKey}/freshness/requirements
+      - title: Checks
+        slug: checks
+        match_prefixes:
+          - /assets/{assetKey}/checks
+          - /assets/{assetKey}/check-results
+      - title: Materialization and Runs
+        slug: runs
+        match_prefixes:
+          - /assets/{assetKey}/materialize
+          - /assets/{assetKey}/materializations
+          - /assets/{assetKey}/runs
+          - /assets/{assetKey}/backfills
+      - title: Lineage and Partitions
+        slug: graph
+        match_prefixes:
+          - /assets/{assetKey}/graph
+          - /assets/{assetKey}/partitions
+  models:
+    pages:
       - title: Models
-        icon: file-json
-        autogen_dir: reference/generated/api/schemas
+        slug: models
+        match_prefixes:
+          - /models
+          - /models/{projectName}/{modelName}
+          - /models/{projectName}/{modelName}/freshness
+          - /models/{projectName}/{modelName}/tests
+          - /models/from-notebook
+          - /models/dag
+      - title: Macros
+        slug: macros
+        match_prefixes:
+          - /macros
+          - /macros/{macroName}
+          - /macros/{macroName}/revisions
+          - /macros/{macroName}/diff
+          - /macros/{macroName}/impact
+      - title: Model Runs
+        slug: model-runs
+        match_prefixes:
+          - /model-runs
+          - /model-runs/{runId}
+          - /model-runs/{runId}/steps
+          - /model-runs/{runId}/steps/{stepId}/test-results
+          - /model-runs/{runId}/cancel
+  products:
+    pages:
+      - title: Data Products
+        slug: data-products
+        match_prefixes:
+          - /data-products/{productSlug}/dependencies
+          - /data-products/{productSlug}/outputs
+          - /data-products/{productSlug}/events
+          - /data-products/{productSlug}/status
+          - /data-products/{productSlug}/semantic-entrypoints
+          - /data-products
+      - title: Versions and Releases
+        slug: versions
+        match_prefixes:
+          - /data-products/{productSlug}/versions
+          - /data-products/{productSlug}/publish
+          - /data-products/{productSlug}/deprecate
+          - /data-products/{productSlug}/retire
+      - title: Subscriptions
+        slug: subscriptions
+        match_prefixes:
+          - /data-products/{productSlug}/subscriptions
+      - title: Teams
+        slug: teams
+        match_prefixes:
+          - /teams
+      - title: Domains
+        slug: domains
+        match_prefixes:
+          - /domains
+      - title: Portfolio and Scorecards
+        slug: portfolio
+        match_prefixes:
+          - /data-products/portfolio
+          - /data-products/scorecards
+  governance:
+    pages:
+      - title: Tags and Classification
+        slug: tags
+        match_prefixes:
+          - /tags
+          - /tags/{tagId}/assignments
+          - /tag-assignments
+          - /classifications
+      - title: Column and Row Policies
+        slug: policies
+        match_prefixes:
+          - /column-masks
+          - /column-masks/{columnMaskId}/bindings
+          - /tables/{tableId}/column-masks
+          - /row-filters
+          - /tables/{tableId}/row-filters
+      - title: Grants
+        slug: grants
+        match_prefixes:
+          - /grants
+  semantic-layer:
+    pages:
+      - title: Semantic Models and Relationships
+        slug: semantic-models
+        match_prefixes:
+          - /semantic-models
+          - /semantic-relationships
+      - title: Metrics and Freshness
+        slug: metrics
+        match_prefixes:
+          - /semantic-models/{projectName}/{semanticModelName}/metrics
+          - /metrics/{metricName}/freshness
+          - /sources/{sourceSchema}/{sourceTable}/freshness
+      - title: Query Execution
+        slug: query-execution
+        match_prefixes:
+          - /metric-queries:run
+          - /metric-queries:explain
+      - title: Pre-aggregations
+        slug: pre-aggregations
+        match_prefixes:
+          - /semantic-models/{projectName}/{semanticModelName}/pre-aggregations

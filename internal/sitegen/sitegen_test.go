@@ -150,36 +150,85 @@ func TestPrefixSiteRootInHTML_RewritesInternalHrefAndSrc(t *testing.T) {
 	assert.Contains(t, rendered, `src="/ducklake-dataplatform/_site/diagrams/a.svg"`)
 }
 
-func TestAPIOperationNodes_ExtractMethodRouteAndAnchor(t *testing.T) {
+func TestAPIEndpointNavNode_UsesSinglePageEntry(t *testing.T) {
 	p := page{
-		URLPath: "/api-reference/endpoints/queries/",
+		Title:       "Queries Endpoints",
+		RelPath:     "reference/generated/api/endpoints/queries.md",
+		URLPath:     "/api-reference/endpoints/queries/",
+		Description: "Query execution and audit operations.",
+	}
+
+	node := apiEndpointNavNode(p)
+	assert.Equal(t, "Queries", node.Title)
+	assert.Equal(t, "search-code", node.Icon)
+	assert.Equal(t, "/api-reference/endpoints/queries/", node.Path)
+	assert.Equal(t, "Query execution and audit operations.", node.Description)
+	assert.Empty(t, node.Children)
+}
+
+func TestBuildAutogenNavNodes_NestsGeneratedDirectories(t *testing.T) {
+	pages := []page{
+		{
+			Kind:     pageKindAPI,
+			Title:    "Auth Endpoints",
+			RelPath:  "reference/generated/api/endpoints/auth.md",
+			URLPath:  "/api-reference/endpoints/auth/",
+			Section:  "api-reference",
+		},
+		{
+			Kind:     pageKindAPI,
+			Title:    "Catalogs Endpoints",
+			RelPath:  "reference/generated/api/endpoints/catalogs/index.md",
+			URLPath:  "/api-reference/endpoints/catalogs/",
+			Section:  "api-reference",
+		},
+		{
+			Kind:     pageKindAPI,
+			Title:    "Schemas",
+			RelPath:  "reference/generated/api/endpoints/catalogs/schemas.md",
+			URLPath:  "/api-reference/endpoints/catalogs/schemas/",
+			Section:  "api-reference",
+		},
+	}
+
+	nodes, flat := buildAutogenNavNodes(pages, "reference/generated/api/endpoints", "route", true)
+
+	require.Len(t, nodes, 2)
+	assert.Equal(t, "Auth", nodes[0].Title)
+	assert.Equal(t, "Catalogs", nodes[1].Title)
+	require.Len(t, nodes[1].Children, 1)
+	assert.Equal(t, "Schemas", nodes[1].Children[0].Title)
+	assert.Equal(t, "/api-reference/endpoints/catalogs/schemas/", nodes[1].Children[0].Path)
+	require.Len(t, flat, 3)
+}
+
+func TestAPITOCForPage_UsesOperationSummaryAndMethod(t *testing.T) {
+	p := page{
+		Kind: pageKindAPI,
 		BodyMarkdown: strings.TrimSpace(`
-## ` + "`GET /audit-logs`" + `
+## ` + "`GET /compute/endpoints`" + `
 
-List audit logs
-
-## ` + "`POST /queries`" + `
-
-Submit query
+List compute endpoints
 `),
 	}
 
-	nodes := apiOperationNodes(p)
-	require.Len(t, nodes, 2)
-	assert.Equal(t, "GET", nodes[0].Method)
-	assert.Equal(t, "/audit-logs", nodes[0].RoutePath)
-	assert.Equal(t, "List audit logs", nodes[0].Description)
-	assert.Equal(t, "/api-reference/endpoints/queries/#get-audit-logs", nodes[0].Path)
-	assert.Equal(t, "/queries", nodes[1].RoutePath)
+	headings := apiTOCForPage(p)
+	require.Len(t, headings, 1)
+	assert.Equal(t, "List compute endpoints", headings[0].Title)
+	assert.Equal(t, "GET", headings[0].Method)
+	assert.Equal(t, "get-compute-endpoints", headings[0].ID)
 }
 
 func TestEnhanceAPIHTML_AddsMethodDataAttribute(t *testing.T) {
-	source := `<h2 id="get-queries"><code>GET /queries</code></h2>`
+	source := `<h2 id="get-queries"><code>GET /queries</code></h2><p>List queries</p><ul><li>Operation ID: <code>listQueries</code></li></ul>`
 
 	rendered := enhanceAPIHTML(source)
 
+	assert.Contains(t, rendered, `class="api-operation"`)
+	assert.Contains(t, rendered, `class="api-operation-title-text">List queries<`)
 	assert.Contains(t, rendered, `class="api-method" data-api-method="GET"`)
-	assert.Contains(t, rendered, `class="api-path">/queries<`)
+	assert.Contains(t, rendered, `class="api-operation-route"><code>/queries</code>`)
+	assert.Contains(t, rendered, `Operation ID</span><code>listQueries</code>`)
 }
 
 func TestDocsPages_InternalLinksResolveToKnownRoutes(t *testing.T) {
