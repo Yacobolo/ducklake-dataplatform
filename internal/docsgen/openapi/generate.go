@@ -555,7 +555,7 @@ func isIgnoredResourceSegment(segment string) bool {
 	}
 }
 
-func resourceTitle(tag, key string) string {
+func resourceTitle(_ string, key string) string {
 	return humanizeKey(key)
 }
 
