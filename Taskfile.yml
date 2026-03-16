@@ -271,6 +271,36 @@ tasks:
     cmds:
       - gotestsum --format pkgname-and-test-fails -- -tags integration -timeout 120s ./test/integration/... ./internal/api ./internal/service/security ./internal/service/ingestion ./internal/service/storage ./internal/engine
 
+  test:e2e:live:generated:
+    desc: Run generated live black-box checks against a managed task dev server
+    deps: [build-cli]
+    cmds:
+      - go test -tags livee2e -count=1 -v ./test/livee2e
+
+  test:e2e:live:generated:strict:
+    desc: Run strict generated live contract checks against a managed task dev server
+    deps: [build-cli]
+    cmds:
+      - E2E_LIVE_STRICT=true go test -tags livee2e -count=1 -v ./test/livee2e
+
+  test:e2e:live:generated:reuse:
+    desc: Run generated live black-box checks against an already running server
+    deps: [build-cli]
+    preconditions:
+      - sh: test -n "${E2E_LIVE_HOST}"
+        msg: "E2E_LIVE_HOST is required when reusing an existing live server"
+    cmds:
+      - E2E_LIVE_REUSE_SERVER=true go test -tags livee2e -count=1 -v ./test/livee2e
+
+  test:e2e:live:generated:strict:reuse:
+    desc: Run strict generated live contract checks against an already running server
+    deps: [build-cli]
+    preconditions:
+      - sh: test -n "${E2E_LIVE_HOST}"
+        msg: "E2E_LIVE_HOST is required when reusing an existing live server"
+    cmds:
+      - E2E_LIVE_REUSE_SERVER=true E2E_LIVE_STRICT=true go test -tags livee2e -count=1 -v ./test/livee2e
+
   examples:test:
     desc: Run declarative examples integration suite
     cmds:

@@ -30,6 +30,16 @@ func (h *APIHandler) ListComputeEndpoints(ctx context.Context, req GenListComput
 	principal := principalFromCtx(ctx)
 	eps, total, err := h.computeEndpoints.List(ctx, principal, page)
 	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenListComputeEndpointsResponse]("listComputeEndpoints", err, domainErrorResponder[GenListComputeEndpointsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListComputeEndpointsResponse {
+				return GenListComputeEndpoints403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenListComputeEndpointsResponse {
+				return GenListComputeEndpoints500JSONResponse{GenInternalErrorJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
+		}
 		return nil, err
 	}
 
@@ -65,7 +75,7 @@ func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req GenCreateCom
 	principal := cp.Name
 	result, err := h.computeEndpoints.Create(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateComputeEndpointResponse](err, domainErrorResponder[GenCreateComputeEndpointResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateComputeEndpointResponse]("createComputeEndpoint", err, domainErrorResponder[GenCreateComputeEndpointResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateComputeEndpointResponse {
 				return CreateComputeEndpoint400JSONResponse{resp}
 			},
@@ -75,10 +85,13 @@ func (h *APIHandler) CreateComputeEndpoint(ctx context.Context, req GenCreateCom
 			Conflict: func(resp ConflictJSONResponse) GenCreateComputeEndpointResponse {
 				return CreateComputeEndpoint409JSONResponse{resp}
 			},
+			Internal: func(resp InternalErrorJSONResponse) GenCreateComputeEndpointResponse {
+				return GenCreateComputeEndpoint500JSONResponse{GenInternalErrorJSONResponse(resp)}
+			},
 		}); ok {
 			return resp, nil
 		}
-		return CreateComputeEndpoint400JSONResponse{badRequestErrorResponse(err)}, nil
+		return nil, err
 	}
 	return GenCreateComputeEndpoint201JSONResponse{
 		Body:    computeEndpointToAPI(*result),
@@ -91,9 +104,15 @@ func (h *APIHandler) GetComputeEndpoint(ctx context.Context, req GenGetComputeEn
 	principal := principalFromCtx(ctx)
 	result, err := h.computeEndpoints.GetByName(ctx, principal, req.EndpointName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetComputeEndpointResponse](err, domainErrorResponder[GenGetComputeEndpointResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetComputeEndpointResponse]("getComputeEndpoint", err, domainErrorResponder[GenGetComputeEndpointResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetComputeEndpointResponse {
 				return GenGetComputeEndpoint404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetComputeEndpointResponse {
+				return GenGetComputeEndpoint403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenGetComputeEndpointResponse {
+				return GenGetComputeEndpoint500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},
 		}); ok {
 			return resp, nil
@@ -126,12 +145,15 @@ func (h *APIHandler) UpdateComputeEndpoint(ctx context.Context, req GenUpdateCom
 	principal := cp.Name
 	result, err := h.computeEndpoints.Update(ctx, principal, req.EndpointName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateComputeEndpointResponse](err, domainErrorResponder[GenUpdateComputeEndpointResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateComputeEndpointResponse]("updateComputeEndpoint", err, domainErrorResponder[GenUpdateComputeEndpointResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateComputeEndpointResponse {
 				return UpdateComputeEndpoint403JSONResponse{resp}
 			},
 			NotFound: func(resp NotFoundJSONResponse) GenUpdateComputeEndpointResponse {
 				return UpdateComputeEndpoint404JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenUpdateComputeEndpointResponse {
+				return GenUpdateComputeEndpoint500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},
 		}); ok {
 			return resp, nil
@@ -149,12 +171,15 @@ func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req GenDeleteCom
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.computeEndpoints.Delete(ctx, principal, req.EndpointName); err != nil {
-		if resp, ok := respondDomainError[GenDeleteComputeEndpointResponse](err, domainErrorResponder[GenDeleteComputeEndpointResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteComputeEndpointResponse]("deleteComputeEndpoint", err, domainErrorResponder[GenDeleteComputeEndpointResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteComputeEndpointResponse {
 				return DeleteComputeEndpoint403JSONResponse{resp}
 			},
 			NotFound: func(resp NotFoundJSONResponse) GenDeleteComputeEndpointResponse {
 				return DeleteComputeEndpoint404JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenDeleteComputeEndpointResponse {
+				return GenDeleteComputeEndpoint500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},
 		}); ok {
 			return resp, nil
@@ -219,9 +244,15 @@ func (h *APIHandler) ListComputeAssignments(ctx context.Context, req GenListComp
 	principal := principalFromCtx(ctx)
 	assignments, total, err := h.computeEndpoints.ListAssignments(ctx, principal, req.EndpointName, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListComputeAssignmentsResponse](err, domainErrorResponder[GenListComputeAssignmentsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListComputeAssignmentsResponse]("listComputeAssignments", err, domainErrorResponder[GenListComputeAssignmentsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListComputeAssignmentsResponse {
 				return GenListComputeAssignments404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenListComputeAssignmentsResponse {
+				return GenListComputeAssignments403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenListComputeAssignmentsResponse {
+				return GenListComputeAssignments500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},
 		}); ok {
 			return resp, nil
@@ -257,7 +288,7 @@ func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req GenCreateC
 	principal := cp.Name
 	result, err := h.computeEndpoints.Assign(ctx, principal, req.EndpointName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateComputeAssignmentResponse](err, domainErrorResponder[GenCreateComputeAssignmentResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateComputeAssignmentResponse]("createComputeAssignment", err, domainErrorResponder[GenCreateComputeAssignmentResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateComputeAssignmentResponse {
 				return CreateComputeAssignment400JSONResponse{resp}
 			},
@@ -267,10 +298,13 @@ func (h *APIHandler) CreateComputeAssignment(ctx context.Context, req GenCreateC
 			Conflict: func(resp ConflictJSONResponse) GenCreateComputeAssignmentResponse {
 				return CreateComputeAssignment409JSONResponse{resp}
 			},
+			Internal: func(resp InternalErrorJSONResponse) GenCreateComputeAssignmentResponse {
+				return GenCreateComputeAssignment500JSONResponse{GenInternalErrorJSONResponse(resp)}
+			},
 		}); ok {
 			return resp, nil
 		}
-		return CreateComputeAssignment400JSONResponse{badRequestErrorResponse(err)}, nil
+		return nil, err
 	}
 	return GenCreateComputeAssignment201JSONResponse{
 		Body:    computeAssignmentToAPI(*result),
@@ -285,7 +319,7 @@ func (h *APIHandler) GetComputeEndpointHealth(ctx context.Context, req GenGetCom
 
 	result, err := h.computeEndpoints.HealthCheck(ctx, principal, req.EndpointName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetComputeEndpointHealthResponse](err, domainErrorResponder[GenGetComputeEndpointHealthResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetComputeEndpointHealthResponse]("getComputeEndpointHealth", err, domainErrorResponder[GenGetComputeEndpointHealthResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenGetComputeEndpointHealthResponse {
 				return GetComputeEndpointHealth400JSONResponse{resp}
 			},
@@ -339,12 +373,15 @@ func (h *APIHandler) DeleteComputeAssignment(ctx context.Context, req GenDeleteC
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.computeEndpoints.Unassign(ctx, principal, req.AssignmentId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteComputeAssignmentResponse](err, domainErrorResponder[GenDeleteComputeAssignmentResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteComputeAssignmentResponse]("deleteComputeAssignment", err, domainErrorResponder[GenDeleteComputeAssignmentResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteComputeAssignmentResponse {
 				return DeleteComputeAssignment403JSONResponse{resp}
 			},
 			NotFound: func(resp NotFoundJSONResponse) GenDeleteComputeAssignmentResponse {
 				return DeleteComputeAssignment404JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenDeleteComputeAssignmentResponse {
+				return GenDeleteComputeAssignment500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},
 		}); ok {
 			return resp, nil

@@ -198,7 +198,7 @@ func (h *APIHandler) ListProductTeams(ctx context.Context, req GenListProductTea
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	items, total, err := h.products.ListTeams(ctx, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListProductTeamsResponse](err, domainErrorResponder[GenListProductTeamsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListProductTeamsResponse]("listProductTeams", err, domainErrorResponder[GenListProductTeamsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListProductTeamsResponse {
 				return ListProductTeams403JSONResponse{resp}
 			},
@@ -226,11 +226,20 @@ func (h *APIHandler) CreateProductTeam(ctx context.Context, req GenCreateProduct
 	if req.Body == nil {
 		return CreateProductTeam400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
 	}
+	if req.Body.DomainName == "" {
+		return CreateProductTeam400JSONResponse{badRequestErrorResponse(domain.ErrValidation("domain_name is required"))}, nil
+	}
+	if req.Body.Name == "" {
+		return CreateProductTeam400JSONResponse{badRequestErrorResponse(domain.ErrValidation("name is required"))}, nil
+	}
 	domainItem, err := h.products.GetDomain(ctx, req.Body.DomainName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateProductTeamResponse](err, domainErrorResponder[GenCreateProductTeamResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateProductTeamResponse]("createProductTeam", err, domainErrorResponder[GenCreateProductTeamResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenCreateProductTeamResponse {
 				return CreateProductTeam404JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenCreateProductTeamResponse {
+				return GenCreateProductTeam500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},
 		}); ok {
 			return resp, nil
@@ -243,7 +252,7 @@ func (h *APIHandler) CreateProductTeam(ctx context.Context, req GenCreateProduct
 		ContactChannel: derefString(req.Body.ContactChannel),
 	})
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateProductTeamResponse](err, domainErrorResponder[GenCreateProductTeamResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateProductTeamResponse]("createProductTeam", err, domainErrorResponder[GenCreateProductTeamResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateProductTeamResponse {
 				return CreateProductTeam400JSONResponse{resp}
 			},
@@ -255,6 +264,9 @@ func (h *APIHandler) CreateProductTeam(ctx context.Context, req GenCreateProduct
 			},
 			Conflict: func(resp ConflictJSONResponse) GenCreateProductTeamResponse {
 				return CreateProductTeam409JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenCreateProductTeamResponse {
+				return GenCreateProductTeam500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},
 		}); ok {
 			return resp, nil

@@ -378,6 +378,9 @@ func (h *APIHandler) DeleteTag(ctx context.Context, req GenDeleteTagRequest) (Ge
 
 // CreateTagAssignment implements the endpoint for assigning a tag to a securable object.
 func (h *APIHandler) CreateTagAssignment(ctx context.Context, req GenCreateTagAssignmentRequest) (GenCreateTagAssignmentResponse, error) {
+	if req.Body == nil {
+		return CreateTagAssignment400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
+	}
 	domReq := domain.AssignTagRequest{
 		TagID:         req.TagId,
 		SecurableType: string(req.Body.SecurableType),
@@ -388,9 +391,21 @@ func (h *APIHandler) CreateTagAssignment(ctx context.Context, req GenCreateTagAs
 	principal := cp.Name
 	result, err := h.tags.AssignTag(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateTagAssignmentResponse](err, domainErrorResponder[GenCreateTagAssignmentResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateTagAssignmentResponse]("createTagAssignment", err, domainErrorResponder[GenCreateTagAssignmentResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateTagAssignmentResponse {
+				return CreateTagAssignment400JSONResponse{resp}
+			},
 			Conflict: func(resp ConflictJSONResponse) GenCreateTagAssignmentResponse {
 				return CreateTagAssignment409JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateTagAssignmentResponse {
+				return CreateTagAssignment403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenCreateTagAssignmentResponse {
+				return CreateTagAssignment404JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenCreateTagAssignmentResponse {
+				return GenCreateTagAssignment500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},
 		}); ok {
 			return resp, nil
@@ -408,6 +423,19 @@ func (h *APIHandler) ListTagAssignments(ctx context.Context, req GenListTagAssig
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	assignments, err := h.tags.ListAssignmentsForTag(ctx, req.TagId)
 	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenListTagAssignmentsResponse]("listTagAssignments", err, domainErrorResponder[GenListTagAssignmentsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListTagAssignmentsResponse {
+				return ListTagAssignments403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListTagAssignmentsResponse {
+				return ListTagAssignments404JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenListTagAssignmentsResponse {
+				return GenListTagAssignments500JSONResponse{GenInternalErrorJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
+		}
 		return nil, err
 	}
 	start := page.Offset()

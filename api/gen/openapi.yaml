@@ -69,6 +69,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAPIKeys'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -100,6 +106,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateAPIKeyResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -144,6 +156,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CleanupAPIKeysResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -183,6 +201,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -234,6 +258,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAssets'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -266,6 +296,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Asset'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -327,6 +363,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Asset'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -375,6 +417,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Asset'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -431,6 +479,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -505,6 +559,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedBackfillRequests'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -553,6 +613,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateAssetBackfillResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -619,6 +685,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssetBackfillDetails'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -681,6 +753,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAssetCheckResults'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -730,6 +808,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssetCheckList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -779,6 +863,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssetFreshnessStatus'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -828,6 +918,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssetFreshnessBlockersResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -877,6 +973,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssetFreshnessExplanation'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -926,6 +1028,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssetFreshnessReconcileResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -975,6 +1083,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssetFreshnessRequirementsResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -1024,6 +1138,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssetGraph'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -1086,6 +1206,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAssetMaterializations'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -1136,6 +1262,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssetTriggerResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -1210,6 +1342,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAssetPartitions'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -1278,6 +1416,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAssetRuns'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -1353,8 +1497,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAuditLogs'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
           content:
             application/json:
               schema:
@@ -1373,6 +1529,8 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Queries
+      x-authz:
+        mode: admin_only
   /auth/bootstrap/complete:
     post:
       operationId: bootstrapComplete
@@ -1746,6 +1904,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogRegistration'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -1803,8 +1967,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogRegistrationList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
           content:
             application/json:
               schema:
@@ -1823,6 +1999,8 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-authz:
+        mode: admin_only
   /catalogs/{catalogName}:
     get:
       operationId: getCatalogRegistration
@@ -1840,6 +2018,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogRegistration'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -1888,6 +2072,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogRegistration'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -1938,6 +2128,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2012,6 +2208,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogHistoryResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2062,6 +2264,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogInfo'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2111,6 +2319,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MetastoreSummary'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2173,6 +2387,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedSchemaDetails'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2221,6 +2441,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SchemaDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2281,6 +2507,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SchemaDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2334,6 +2566,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SchemaDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2395,6 +2633,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2462,6 +2706,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTableDetails'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2515,6 +2765,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2580,6 +2836,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2638,6 +2900,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2698,6 +2966,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2770,6 +3044,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedColumnDetails'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2834,6 +3114,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ColumnDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2899,6 +3185,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IngestionResult'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -2964,6 +3256,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IngestionResult'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3029,6 +3327,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UploadUrlResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3094,6 +3398,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TableStatistics'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3155,6 +3465,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedViewDetails'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3208,6 +3524,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ViewDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3273,6 +3595,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ViewDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3331,6 +3659,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ViewDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3391,6 +3725,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3458,6 +3798,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedVolumes'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3511,6 +3857,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VolumeDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3576,6 +3928,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VolumeDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3634,6 +3992,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VolumeDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3694,6 +4058,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3743,6 +4113,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogRegistration'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3792,6 +4168,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogVersionSummary'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3849,6 +4231,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTags'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3882,6 +4270,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3938,6 +4332,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedColumnMaskBindings'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -3982,6 +4382,12 @@ paths:
       responses:
         '201':
           description: The request has succeeded and a new resource has been created as a result.
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4038,6 +4444,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4170,8 +4582,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedComputeEndpoints'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
           content:
             application/json:
               schema:
@@ -4190,6 +4614,8 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Compute
+      x-authz:
+        mode: admin_only
     post:
       operationId: createComputeEndpoint
       summary: Create compute endpoint
@@ -4202,6 +4628,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ComputeEndpoint'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4210,6 +4644,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -4257,6 +4697,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ComputeEndpoint'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4305,6 +4751,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ComputeEndpoint'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4361,6 +4813,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4429,6 +4887,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedComputeAssignments'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4477,6 +4941,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ComputeAssignment'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4485,6 +4957,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -4533,6 +5011,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4593,7 +5077,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4663,6 +5149,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedDashboards'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4694,6 +5186,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Dashboard'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4743,6 +5241,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DashboardDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4791,6 +5295,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Dashboard'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4835,6 +5345,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4878,6 +5394,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResolvedDashboardDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4927,6 +5449,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DashboardWidget'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -4981,6 +5509,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DashboardWidget'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5030,6 +5564,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5117,6 +5657,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedDataProducts'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5153,7 +5699,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5204,6 +5752,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductPortfolioReport'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5249,6 +5803,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductScorecardList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5286,6 +5846,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DataProductDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5333,7 +5899,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5384,6 +5952,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5433,6 +6007,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductDependencyList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5480,7 +6060,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5547,7 +6129,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5616,6 +6200,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductEventList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5659,6 +6249,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductOutputList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5707,7 +6303,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5768,7 +6366,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5824,6 +6424,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductSemanticEntrypointList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5867,6 +6473,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DataProductStatus'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5910,6 +6522,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductSubscriptionList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -5957,7 +6575,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6019,6 +6639,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DataProductVersionList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6066,7 +6692,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6134,6 +6762,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DataProductVersionDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6241,6 +6875,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedProductDomains'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6272,6 +6912,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductDomain'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6327,6 +6973,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductDomain'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6374,7 +7026,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6425,6 +7079,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6482,6 +7142,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedExternalLocations'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6514,6 +7180,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExternalLocation'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6569,6 +7241,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExternalLocation'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6617,6 +7295,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExternalLocation'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6673,6 +7357,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6736,6 +7426,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedGitRepos'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6767,6 +7463,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GitRepo'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6816,6 +7518,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GitRepo'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6860,6 +7568,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6909,6 +7623,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GitSyncResult'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -6996,8 +7716,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedGrants'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
           content:
             application/json:
               schema:
@@ -7016,6 +7748,8 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+      x-authz:
+        mode: admin_only
     post:
       operationId: createGrant
       summary: Create grant
@@ -7027,6 +7761,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PrivilegeGrant'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7035,6 +7777,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -7074,6 +7822,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7127,8 +7881,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedGroups'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
           content:
             application/json:
               schema:
@@ -7147,6 +7913,8 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
+      x-authz:
+        mode: admin_only
     post:
       operationId: createGroup
       summary: Create group
@@ -7158,6 +7926,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7207,6 +7981,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7311,6 +8091,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7367,6 +8153,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedGroupMembers'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7411,6 +8203,12 @@ paths:
       responses:
         '201':
           description: The request has succeeded and a new resource has been created as a result.
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7467,6 +8265,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7505,6 +8309,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7562,6 +8372,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedColumnLineageEdges'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7634,6 +8450,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedColumnLineageEdges'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7679,6 +8501,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7717,6 +8545,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PurgeLineageResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7784,6 +8618,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LineageNode'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7851,6 +8691,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedLineageEdges'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7918,6 +8764,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedLineageEdges'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -7975,6 +8827,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedMacros'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8006,6 +8864,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Macro'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8055,6 +8919,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Macro'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8103,6 +8973,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Macro'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8147,6 +9023,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8204,6 +9086,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MacroRevisionDiff'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8266,6 +9154,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MacroImpactList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8315,6 +9209,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MacroRevisionList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8359,6 +9259,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ManifestResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8403,6 +9309,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MetricQueryExplainResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8447,6 +9359,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MetricQueryRunResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8508,6 +9426,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MetricFreshnessStatus'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8552,6 +9476,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModelRun'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8614,6 +9544,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedModelRuns'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8651,6 +9587,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModelRun'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8700,6 +9642,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModelRun'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8743,6 +9691,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModelRunStepList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8797,6 +9751,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModelTestResultList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8860,6 +9820,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedModels'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8891,6 +9857,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Model'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8941,6 +9913,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModelDAG'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8973,6 +9951,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Model'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9072,6 +10056,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Model'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9125,6 +10115,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Model'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9174,6 +10170,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9222,6 +10224,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FreshnessStatus'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9276,6 +10284,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModelTest'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9329,6 +10343,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModelTestList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9384,6 +10404,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9441,6 +10467,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedNotebooks'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9472,6 +10504,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Notebook'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9521,6 +10559,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotebookDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9569,6 +10613,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Notebook'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9619,6 +10669,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9673,7 +10729,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9734,7 +10792,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9800,7 +10860,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9856,6 +10918,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9918,6 +10986,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedNotebookJobs'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -9972,6 +11046,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotebookJob'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10021,6 +11101,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotebookSession'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10071,6 +11157,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10135,7 +11227,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10190,6 +11284,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RunAllResult'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10244,6 +11344,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotebookJob'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10301,6 +11407,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedPipelines'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10332,6 +11444,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Pipeline'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10381,6 +11499,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PipelineRun'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10430,6 +11554,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PipelineRun'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10473,6 +11603,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PipelineJobRunList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10522,6 +11658,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Pipeline'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10570,6 +11712,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Pipeline'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10614,6 +11762,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10657,6 +11811,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PipelineJobList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10705,6 +11865,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PipelineJob'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10755,6 +11921,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10798,6 +11970,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PipelineRun'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10865,6 +12043,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedPipelineRuns'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10922,8 +12106,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedPrincipals'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
           content:
             application/json:
               schema:
@@ -10942,6 +12138,8 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
+      x-authz:
+        mode: admin_only
     post:
       operationId: createPrincipal
       summary: Create principal
@@ -10953,6 +12151,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Principal'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11002,6 +12206,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Principal'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11046,6 +12256,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11085,6 +12301,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11130,6 +12352,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SubmitQueryResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11179,6 +12407,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QueryJob'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11223,6 +12457,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11266,6 +12506,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CancelQueryResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11329,6 +12575,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QueryResult'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11374,6 +12626,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QueryResult'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11458,8 +12716,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedQueryHistoryEntries'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
           content:
             application/json:
               schema:
@@ -11478,6 +12748,8 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Queries
+      x-authz:
+        mode: admin_only
   /row-filters/{rowFilterId}:
     delete:
       operationId: deleteRowFilter
@@ -11491,6 +12763,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11547,6 +12825,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedRowFilterBindings'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11591,6 +12875,12 @@ paths:
       responses:
         '201':
           description: The request has succeeded and a new resource has been created as a result.
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11647,6 +12937,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11716,6 +13012,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedSearchResults'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11767,6 +13069,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedSemanticModels'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11798,6 +13106,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticModel'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11852,6 +13166,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticModel'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11905,6 +13225,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticModel'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -11954,6 +13280,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12002,6 +13334,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticMetricList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12055,6 +13393,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticMetric'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12114,6 +13458,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticMetric'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12168,6 +13518,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12216,6 +13572,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticPreAggregationList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12269,6 +13631,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticPreAggregation'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12328,6 +13696,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticPreAggregation'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12382,6 +13756,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12433,6 +13813,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedSemanticRelationships'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12464,6 +13850,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticRelationship'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12513,6 +13905,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SemanticRelationship'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12557,6 +13955,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12618,6 +14022,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SourceFreshnessStatus'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12675,6 +14085,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedStorageCredentials'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12707,6 +14123,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StorageCredential'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12762,6 +14184,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StorageCredential'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12810,6 +14238,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StorageCredential'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12866,6 +14300,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12934,6 +14374,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedColumnMasks'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -12982,6 +14428,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ColumnMask'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13044,6 +14496,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedRowFilters'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13092,6 +14550,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RowFilter'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13137,6 +14601,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13188,6 +14658,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTags'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13219,6 +14695,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Tag'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13264,6 +14746,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13320,6 +14808,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedTagAssignments'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13368,6 +14862,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TagAssignment'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13376,6 +14878,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -13425,6 +14933,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedProductTeams'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13456,6 +14970,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductTeam'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13468,8 +14990,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '409':
-          description: The request conflicts with the current state of the server.
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -13521,7 +15043,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -13577,6 +15101,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:

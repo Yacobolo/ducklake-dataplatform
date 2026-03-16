@@ -157,7 +157,8 @@ model NotImplementedResponse {
   @body body: Error;
 }
 
-alias StandardErrorResponses = UnauthorizedResponse | TooManyRequestsResponse | InternalServerErrorResponse;
+alias StandardErrorResponses = BadRequestResponse | UnauthorizedResponse | TooManyRequestsResponse | InternalServerErrorResponse;
+alias GuardedReadErrorResponses = StandardErrorResponses | ForbiddenResponse;
 alias MutatingErrorResponses = StandardErrorResponses | ForbiddenResponse;
 alias ResourceErrorResponses = MutatingErrorResponses | NotFoundResponse;
 alias ValidationResourceErrorResponses = ResourceErrorResponses | BadRequestResponse;

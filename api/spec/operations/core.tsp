@@ -20,7 +20,7 @@ op executeQuery(@body body: QueryRequest): Ok<QueryResult> | MutatingErrorRespon
 @get
 @tag("Identity")
 @summary("List principals")
-op listPrincipals(@query max_results?: int32, @query page_token?: string): Ok<PaginatedPrincipals> | StandardErrorResponses;
+op listPrincipals(@query max_results?: int32, @query page_token?: string): Ok<PaginatedPrincipals> | GuardedReadErrorResponses;
 
 @route("/principals")
 @post
@@ -50,7 +50,7 @@ op updatePrincipalAdmin(principalId: string, @body body: UpdatePrincipalAdminReq
 @get
 @tag("Identity")
 @summary("List groups")
-op listGroups(@query max_results?: int32, @query page_token?: string): Ok<PaginatedGroups> | StandardErrorResponses;
+op listGroups(@query max_results?: int32, @query page_token?: string): Ok<PaginatedGroups> | GuardedReadErrorResponses;
 
 @route("/groups")
 @post
@@ -105,13 +105,13 @@ op listGrants(
   @query securable_id?: string,
   @query max_results?: int32,
   @query page_token?: string,
-): Ok<PaginatedGrants> | StandardErrorResponses;
+): Ok<PaginatedGrants> | GuardedReadErrorResponses;
 
 @route("/grants")
 @post
 @tag("Governance")
 @summary("Create grant")
-op createGrant(@body body: CreateGrantRequest): Created<PrivilegeGrant> | MutatingErrorResponses;
+op createGrant(@body body: CreateGrantRequest): Created<PrivilegeGrant> | ValidationResourceErrorResponses;
 
 @route("/grants/{grantId}")
 @delete
@@ -239,7 +239,7 @@ op listAuditLogs(
   @query status?: AuditDecisionStatus,
   @query max_results?: int32,
   @query page_token?: string,
-): Ok<PaginatedAuditLogs> | StandardErrorResponses;
+): Ok<PaginatedAuditLogs> | GuardedReadErrorResponses;
 
 @route("/catalogs/{catalogName}/metastore/summary")
 @get
@@ -259,7 +259,7 @@ op listQueryHistory(
   @query to?: utcDateTime,
   @query max_results?: int32,
   @query page_token?: string,
-): Ok<PaginatedQueryHistoryEntries> | StandardErrorResponses;
+): Ok<PaginatedQueryHistoryEntries> | GuardedReadErrorResponses;
 
 @route("/catalogs")
 @post
@@ -272,7 +272,7 @@ op registerCatalog(@body body: CreateCatalogRequest): Created<CatalogRegistratio
 @tag("Catalogs")
 @summary("List catalogs")
 @doc("Lists registered catalogs and returns a paginated catalog registration view for management clients.")
-op listCatalogs(@query max_results?: int32, @query page_token?: string): Ok<CatalogRegistrationList> | StandardErrorResponses;
+op listCatalogs(@query max_results?: int32, @query page_token?: string): Ok<CatalogRegistrationList> | GuardedReadErrorResponses;
 
 @route("/catalogs/{catalogName}")
 @get

@@ -376,8 +376,9 @@ func (h *APIHandler) ListGrants(ctx context.Context, req GenListGrantsRequest) (
 		grants, total, err = h.grants.ListAll(ctx, page)
 	}
 	if err != nil {
-		if resp, ok := respondDomainError[GenListGrantsResponse](err, domainErrorResponder[GenListGrantsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListGrantsResponse]("listGrants", err, domainErrorResponder[GenListGrantsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListGrantsResponse { return ListGrants403JSONResponse{resp} },
+			Internal:  func(resp InternalErrorJSONResponse) GenListGrantsResponse { return GenListGrants500JSONResponse{GenInternalErrorJSONResponse(resp)} },
 		}); ok {
 			return resp, nil
 		}
@@ -406,9 +407,11 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req GenCreateGrantRequest)
 	}
 	result, err := h.grants.Grant(ctx, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateGrantResponse](err, domainErrorResponder[GenCreateGrantResponse]{
-			Conflict:  func(resp ConflictJSONResponse) GenCreateGrantResponse { return CreateGrant409JSONResponse{resp} },
-			Forbidden: func(resp ForbiddenJSONResponse) GenCreateGrantResponse { return CreateGrant403JSONResponse{resp} },
+		if resp, ok := respondDomainErrorForOperation[GenCreateGrantResponse]("createGrant", err, domainErrorResponder[GenCreateGrantResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateGrantResponse { return CreateGrant400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateGrantResponse { return CreateGrant403JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenCreateGrantResponse { return CreateGrant409JSONResponse{resp} },
+			Internal:   func(resp InternalErrorJSONResponse) GenCreateGrantResponse { return GenCreateGrant500JSONResponse{GenInternalErrorJSONResponse(resp)} },
 		}); ok {
 			return resp, nil
 		}

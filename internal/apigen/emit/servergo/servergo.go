@@ -81,6 +81,68 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 	b.WriteString("\t}\n")
 	b.WriteString("\treturn doc, nil\n")
 	b.WriteString("}\n\n")
+	b.WriteString("// GenOperationContract captures APIGen-owned contract metadata for one operation.\n")
+	b.WriteString("type GenOperationContract struct {\n")
+	b.WriteString("\tOperationID string\n")
+	b.WriteString("\tMethod string\n")
+	b.WriteString("\tPath string\n")
+	b.WriteString("\tTags []string\n")
+	b.WriteString("\tDocumentedStatusCodes []int\n")
+	b.WriteString("\tRequestBodyRequired bool\n")
+	b.WriteString("\tAuthzMode string\n")
+	b.WriteString("\tProtected bool\n")
+	b.WriteString("\tManual bool\n")
+	b.WriteString("}\n\n")
+	b.WriteString("var genOperationContracts = map[string]GenOperationContract{\n")
+	for _, endpoint := range doc.Endpoints {
+		fmt.Fprintf(&b, "\t%q: {OperationID: %q, Method: %q, Path: %q, Tags: %s, DocumentedStatusCodes: %s, RequestBodyRequired: %t, AuthzMode: %q, Protected: %t, Manual: %t},\n",
+			endpoint.OperationID,
+			endpoint.OperationID,
+			strings.ToUpper(endpoint.Method),
+			endpoint.Path,
+			renderGoStringSlice(endpoint.Tags),
+			renderGoIntSlice(documentedStatusCodes(endpoint)),
+			endpoint.RequestBody != nil && endpoint.RequestBody.Required,
+			endpointAuthzMode(endpoint),
+			endpointProtected(endpoint),
+			endpointManual(endpoint),
+		)
+	}
+	b.WriteString("}\n\n")
+	b.WriteString("// GetAPIGenOperationContracts returns a defensive copy of the generated contract registry.\n")
+	b.WriteString("func GetAPIGenOperationContracts() map[string]GenOperationContract {\n")
+	b.WriteString("\tout := make(map[string]GenOperationContract, len(genOperationContracts))\n")
+	b.WriteString("\tfor operationID, contract := range genOperationContracts {\n")
+	b.WriteString("\t\tout[operationID] = cloneAPIGenOperationContract(contract)\n")
+	b.WriteString("\t}\n")
+	b.WriteString("\treturn out\n")
+	b.WriteString("}\n\n")
+	b.WriteString("// GetAPIGenOperationContract returns generated contract metadata for a single operation.\n")
+	b.WriteString("func GetAPIGenOperationContract(operationID string) (GenOperationContract, bool) {\n")
+	b.WriteString("\tcontract, ok := genOperationContracts[operationID]\n")
+	b.WriteString("\tif !ok {\n")
+	b.WriteString("\t\treturn GenOperationContract{}, false\n")
+	b.WriteString("\t}\n")
+	b.WriteString("\treturn cloneAPIGenOperationContract(contract), true\n")
+	b.WriteString("}\n\n")
+	b.WriteString("// APIGenOperationAllowsStatus reports whether a status code is documented for an operation.\n")
+	b.WriteString("func APIGenOperationAllowsStatus(operationID string, statusCode int) bool {\n")
+	b.WriteString("\tcontract, ok := genOperationContracts[operationID]\n")
+	b.WriteString("\tif !ok {\n")
+	b.WriteString("\t\treturn false\n")
+	b.WriteString("\t}\n")
+	b.WriteString("\tfor _, documented := range contract.DocumentedStatusCodes {\n")
+	b.WriteString("\t\tif documented == statusCode {\n")
+	b.WriteString("\t\t\treturn true\n")
+	b.WriteString("\t\t}\n")
+	b.WriteString("\t}\n")
+	b.WriteString("\treturn false\n")
+	b.WriteString("}\n\n")
+	b.WriteString("func cloneAPIGenOperationContract(contract GenOperationContract) GenOperationContract {\n")
+	b.WriteString("\tcontract.Tags = append([]string(nil), contract.Tags...)\n")
+	b.WriteString("\tcontract.DocumentedStatusCodes = append([]int(nil), contract.DocumentedStatusCodes...)\n")
+	b.WriteString("\treturn contract\n")
+	b.WriteString("}\n\n")
 	b.WriteString("// GenServerInterface dispatches generated operations.\n")
 	b.WriteString("type GenServerInterface interface {\n")
 	b.WriteString("\tHandleAPIGen(operationID string, w http.ResponseWriter, r *http.Request)\n")
@@ -202,13 +264,27 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 		b.WriteString("}\n\n")
 	}
 	if hasRequestBodies {
-		b.WriteString("func decodeAPIGenJSONBody(body io.Reader, dest any) error {\n")
-		b.WriteString("\tdecoder := json.NewDecoder(body)\n")
+		b.WriteString("func decodeAPIGenJSONBody(body io.Reader, dest any, requiredFields ...string) error {\n")
+		b.WriteString("\traw, err := io.ReadAll(body)\n")
+		b.WriteString("\tif err != nil {\n")
+		b.WriteString("\t\treturn fmt.Errorf(\"read request body: %w\", err)\n")
+		b.WriteString("\t}\n")
+		b.WriteString("\tif len(strings.TrimSpace(string(raw))) == 0 {\n")
+		b.WriteString("\t\treturn fmt.Errorf(\"request body must not be empty\")\n")
+		b.WriteString("\t}\n")
+		b.WriteString("\tif len(requiredFields) > 0 {\n")
+		b.WriteString("\t\tvar envelope map[string]json.RawMessage\n")
+		b.WriteString("\t\tif err := json.Unmarshal(raw, &envelope); err == nil {\n")
+		b.WriteString("\t\t\tfor _, field := range requiredFields {\n")
+		b.WriteString("\t\t\t\tif _, ok := envelope[field]; !ok {\n")
+		b.WriteString("\t\t\t\t\treturn fmt.Errorf(\"%s is required\", field)\n")
+		b.WriteString("\t\t\t\t}\n")
+		b.WriteString("\t\t\t}\n")
+		b.WriteString("\t\t}\n")
+		b.WriteString("\t}\n")
+		b.WriteString("\tdecoder := json.NewDecoder(strings.NewReader(string(raw)))\n")
 		b.WriteString("\tdecoder.DisallowUnknownFields()\n")
 		b.WriteString("\tif err := decoder.Decode(dest); err != nil {\n")
-		b.WriteString("\t\tif err == io.EOF {\n")
-		b.WriteString("\t\t\treturn fmt.Errorf(\"request body must not be empty\")\n")
-		b.WriteString("\t\t}\n")
 		b.WriteString("\t\treturn fmt.Errorf(\"invalid JSON body: %w\", err)\n")
 		b.WriteString("\t}\n")
 		b.WriteString("\tvar extra json.RawMessage\n")
@@ -431,7 +507,12 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 
 		if endpoint.RequestBody != nil {
 			b.WriteString("\tvar body Gen" + name + "JSONBody\n")
-			b.WriteString("\tif err := decodeAPIGenJSONBody(r.Body, &body); err != nil {\n")
+			requiredFields := requestBodyRequiredFields(doc, endpoint)
+			if len(requiredFields) > 0 {
+				b.WriteString("\tif err := decodeAPIGenJSONBody(r.Body, &body, " + renderGoStringSlice(requiredFields) + "...); err != nil {\n")
+			} else {
+				b.WriteString("\tif err := decodeAPIGenJSONBody(r.Body, &body); err != nil {\n")
+			}
 			b.WriteString("\t\twriteAPIGenError(w, http.StatusBadRequest, err.Error())\n")
 			b.WriteString("\t\treturn\n")
 			b.WriteString("\t}\n")
@@ -508,6 +589,96 @@ func lowerCamelName(value string) string {
 		parts[i] = strings.ToUpper(parts[i][:1]) + parts[i][1:]
 	}
 	return strings.Join(parts, "")
+}
+
+func renderGoStringSlice(values []string) string {
+	if len(values) == 0 {
+		return "nil"
+	}
+	var b strings.Builder
+	b.WriteString("[]string{")
+	for i, value := range values {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		fmt.Fprintf(&b, "%q", value)
+	}
+	b.WriteString("}")
+	return b.String()
+}
+
+func renderGoIntSlice(values []int) string {
+	if len(values) == 0 {
+		return "nil"
+	}
+	var b strings.Builder
+	b.WriteString("[]int{")
+	for i, value := range values {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		fmt.Fprintf(&b, "%d", value)
+	}
+	b.WriteString("}")
+	return b.String()
+}
+
+func documentedStatusCodes(endpoint ir.Endpoint) []int {
+	seen := make(map[int]struct{}, len(endpoint.Responses)+8)
+	codes := make([]int, 0, len(endpoint.Responses)+8)
+	for _, response := range endpoint.Responses {
+		if _, ok := seen[response.StatusCode]; ok {
+			continue
+		}
+		seen[response.StatusCode] = struct{}{}
+		codes = append(codes, response.StatusCode)
+	}
+	for _, statusCode := range []int{400, 401, 403, 404, 409, 429, 500, 502} {
+		if _, ok := seen[statusCode]; ok {
+			continue
+		}
+		seen[statusCode] = struct{}{}
+		codes = append(codes, statusCode)
+	}
+	sort.Ints(codes)
+	return codes
+}
+
+func endpointProtected(endpoint ir.Endpoint) bool {
+	for _, response := range endpoint.Responses {
+		if response.StatusCode == 401 || response.StatusCode == 403 {
+			return true
+		}
+	}
+	return false
+}
+
+func endpointManual(endpoint ir.Endpoint) bool {
+	if len(endpoint.Extensions) == 0 {
+		return false
+	}
+	raw, ok := endpoint.Extensions["x-apigen-manual"]
+	if !ok {
+		return false
+	}
+	manual, ok := raw.(bool)
+	return ok && manual
+}
+
+func endpointAuthzMode(endpoint ir.Endpoint) string {
+	if len(endpoint.Extensions) == 0 {
+		return ""
+	}
+	raw, ok := endpoint.Extensions["x-authz"]
+	if !ok {
+		return ""
+	}
+	extension, ok := raw.(map[string]any)
+	if !ok {
+		return ""
+	}
+	mode, _ := extension["mode"].(string)
+	return mode
 }
 
 func endpointPathParams(endpoint ir.Endpoint) []ir.Parameter {
@@ -626,6 +797,33 @@ func requestBodyTypeName(doc ir.Document, endpoint ir.Endpoint) (string, bool) {
 
 	name := exportedName(endpoint.OperationID)
 	return name + "JSONRequestBody", true
+}
+
+func requestBodyRequiredFields(doc ir.Document, endpoint ir.Endpoint) []string {
+	if endpoint.RequestBody == nil {
+		return nil
+	}
+	schema, ok := resolveSchema(doc, endpoint.RequestBody.Schema)
+	if !ok {
+		return nil
+	}
+	if schema.Type != "object" || len(schema.Required) == 0 {
+		return nil
+	}
+	fields := append([]string(nil), schema.Required...)
+	sort.Strings(fields)
+	return fields
+}
+
+func resolveSchema(doc ir.Document, schemaRef ir.SchemaRef) (ir.Schema, bool) {
+	if schemaRef.Ref != "" {
+		schema, ok := doc.Schemas[schemaRef.Ref]
+		return schema, ok
+	}
+	if schemaRef.Type == "" {
+		return ir.Schema{}, false
+	}
+	return ir.Schema{Type: schemaRef.Type}, true
 }
 
 func resolveGenericRequestBodySchemaName(doc ir.Document, operationID string) (string, bool) {
