@@ -132,12 +132,8 @@ func TestSearchService_Search_DefaultCatalogResolution(t *testing.T) {
 		assert.Equal(t, "orders", results[0].Name)
 	})
 
-	t.Run("falls_back_to_static_default_when_no_default_catalog", func(t *testing.T) {
-		staticRepo := &mockSearchRepo{
-			SearchFn: func(_ context.Context, _ string, _ *string, _ int, _ int) ([]domain.SearchResult, int64, error) {
-				return []domain.SearchResult{}, 0, nil
-			},
-		}
+	t.Run("default_catalog_resolution_error_is_returned", func(t *testing.T) {
+		staticRepo := &mockSearchRepo{}
 		factory := &mockSearchRepoFactory{
 			ForDefaultFn: func(_ context.Context) (domain.SearchRepository, error) {
 				return nil, fmt.Errorf("no default catalog configured")
@@ -147,7 +143,8 @@ func TestSearchService_Search_DefaultCatalogResolution(t *testing.T) {
 
 		_, _, err := svc.Search(context.Background(), "test", nil, nil, domain.PageRequest{})
 
-		require.NoError(t, err, "should fall back to static default repo without error")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "resolve default search repo")
 	})
 }
 

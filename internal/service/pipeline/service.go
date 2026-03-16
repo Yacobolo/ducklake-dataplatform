@@ -59,6 +59,20 @@ func NewService(
 	}
 }
 
+func (s *Service) requirePipelinesRepo() error {
+	if s == nil || s.pipelines == nil {
+		return domain.ErrNotImplemented("pipeline service is not configured")
+	}
+	return nil
+}
+
+func (s *Service) requireRunsRepo() error {
+	if s.runs == nil {
+		return domain.ErrNotImplemented("pipeline run service is not configured")
+	}
+	return nil
+}
+
 // SetScheduleReloader sets the schedule reloader (breaks circular dep).
 func (s *Service) SetScheduleReloader(r ScheduleReloader) {
 	s.reloader = r
@@ -84,6 +98,9 @@ func (s *Service) SetAssetOrchestration(
 
 // SyncPipelinesToAssets maps existing pipeline/job definitions to asset graph state.
 func (s *Service) SyncPipelinesToAssets(ctx context.Context) error {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return err
+	}
 	if s.assetRepo == nil || s.assetDepRepo == nil {
 		return nil
 	}
@@ -169,6 +186,9 @@ func (s *Service) syncPipelineAssets(ctx context.Context, pipeline *domain.Pipel
 
 // CreatePipeline validates and persists a new pipeline, then reloads schedules.
 func (s *Service) CreatePipeline(ctx context.Context, principal string, req domain.CreatePipelineRequest) (*domain.Pipeline, error) {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return nil, err
+	}
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -209,16 +229,25 @@ func (s *Service) CreatePipeline(ctx context.Context, principal string, req doma
 
 // GetPipeline returns a pipeline by name.
 func (s *Service) GetPipeline(ctx context.Context, name string) (*domain.Pipeline, error) {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return nil, err
+	}
 	return s.pipelines.GetPipelineByName(ctx, name)
 }
 
 // ListPipelines returns a paginated list of pipelines.
 func (s *Service) ListPipelines(ctx context.Context, page domain.PageRequest) ([]domain.Pipeline, int64, error) {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return nil, 0, err
+	}
 	return s.pipelines.ListPipelines(ctx, page)
 }
 
 // UpdatePipeline applies changes to an existing pipeline and reloads schedules.
 func (s *Service) UpdatePipeline(ctx context.Context, principal string, name string, req domain.UpdatePipelineRequest) (*domain.Pipeline, error) {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return nil, err
+	}
 	if req.ScheduleCron != nil && *req.ScheduleCron != "" {
 		if _, err := cron.ParseStandard(*req.ScheduleCron); err != nil {
 			return nil, domain.ErrValidation("schedule_cron is invalid: %v", err)
@@ -252,6 +281,9 @@ func (s *Service) UpdatePipeline(ctx context.Context, principal string, name str
 
 // DeletePipeline removes a pipeline by name and reloads schedules.
 func (s *Service) DeletePipeline(ctx context.Context, principal string, name string) error {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return err
+	}
 	p, err := s.pipelines.GetPipelineByName(ctx, name)
 	if err != nil {
 		return err
@@ -280,6 +312,9 @@ func (s *Service) DeletePipeline(ctx context.Context, principal string, name str
 
 // CreateJob adds a new job to the specified pipeline after validating the notebook.
 func (s *Service) CreateJob(ctx context.Context, principal string, pipelineName string, req domain.CreatePipelineJobRequest) (*domain.PipelineJob, error) {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return nil, err
+	}
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -329,6 +364,9 @@ func (s *Service) CreateJob(ctx context.Context, principal string, pipelineName 
 
 // ListJobs returns all jobs belonging to the named pipeline.
 func (s *Service) ListJobs(ctx context.Context, pipelineName string) ([]domain.PipelineJob, error) {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return nil, err
+	}
 	p, err := s.pipelines.GetPipelineByName(ctx, pipelineName)
 	if err != nil {
 		return nil, err
@@ -338,6 +376,9 @@ func (s *Service) ListJobs(ctx context.Context, pipelineName string) ([]domain.P
 
 // DeleteJob removes a job from a pipeline by ID.
 func (s *Service) DeleteJob(ctx context.Context, principal string, _ string, jobID string) error {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return err
+	}
 	// Verify the job exists (also validates jobID).
 	_, err := s.pipelines.GetJobByID(ctx, jobID)
 	if err != nil {
@@ -363,6 +404,12 @@ func (s *Service) DeleteJob(ctx context.Context, principal string, _ string, job
 // TriggerRun validates the pipeline DAG and delegates execution to asset orchestration.
 func (s *Service) TriggerRun(ctx context.Context, principal string, pipelineName string,
 	params map[string]string, triggerType string) (*domain.PipelineRun, error) {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return nil, err
+	}
+	if err := s.requireRunsRepo(); err != nil {
+		return nil, err
+	}
 	runID := domain.NewID()
 	paramsCopy := cloneParams(params)
 	pipelineID, err := s.triggerAssets(ctx, runID, principal, pipelineName, paramsCopy)
@@ -550,11 +597,20 @@ func (p *pipelineAssetStepper) Execute(ctx context.Context, assetID string, _ or
 
 // GetRun returns a pipeline run by ID.
 func (s *Service) GetRun(ctx context.Context, runID string) (*domain.PipelineRun, error) {
+	if err := s.requireRunsRepo(); err != nil {
+		return nil, err
+	}
 	return s.runs.GetRunByID(ctx, runID)
 }
 
 // ListRuns returns a filtered, paginated list of runs for the named pipeline.
 func (s *Service) ListRuns(ctx context.Context, pipelineName string, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error) {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return nil, 0, err
+	}
+	if err := s.requireRunsRepo(); err != nil {
+		return nil, 0, err
+	}
 	p, err := s.pipelines.GetPipelineByName(ctx, pipelineName)
 	if err != nil {
 		return nil, 0, err
@@ -565,6 +621,9 @@ func (s *Service) ListRuns(ctx context.Context, pipelineName string, filter doma
 
 // ListJobRuns returns all job runs for the given pipeline run.
 func (s *Service) ListJobRuns(ctx context.Context, runID string) ([]domain.PipelineJobRun, error) {
+	if err := s.requireRunsRepo(); err != nil {
+		return nil, err
+	}
 	// Verify run exists.
 	_, err := s.runs.GetRunByID(ctx, runID)
 	if err != nil {
@@ -575,6 +634,9 @@ func (s *Service) ListJobRuns(ctx context.Context, runID string) ([]domain.Pipel
 
 // CancelRun cancels a pending or running pipeline run and its pending job runs.
 func (s *Service) CancelRun(ctx context.Context, principal string, runID string) error {
+	if err := s.requireRunsRepo(); err != nil {
+		return err
+	}
 	run, err := s.runs.GetRunByID(ctx, runID)
 	if err != nil {
 		return err

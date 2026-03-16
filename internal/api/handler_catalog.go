@@ -265,7 +265,7 @@ func (h *APIHandler) CreateTable(ctx context.Context, request GenCreateTableRequ
 	if request.Body.Columns != nil {
 		cols = make([]domain.CreateColumnDef, len(*request.Body.Columns))
 		for i, c := range *request.Body.Columns {
-			cols[i] = domain.CreateColumnDef{Name: c.Name, Type: c.Type}
+			cols[i] = domain.CreateColumnDef{Name: c.Name, Type: c.Type, Nullable: c.Nullable}
 		}
 	}
 	domReq := domain.CreateTableRequest{

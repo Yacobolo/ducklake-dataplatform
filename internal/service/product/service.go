@@ -528,6 +528,9 @@ func (s *Service) DeprecateVersion(ctx context.Context, slug string, version int
 	if err != nil {
 		return nil, err
 	}
+	if targetVersion.ReleaseState == domain.ProductReleaseStateDeprecated {
+		return s.repo.GetBySlug(ctx, product.Product.Slug)
+	}
 	if err := s.repo.UpdateVersionReleaseState(ctx, targetVersion.ID, domain.ProductReleaseStateDeprecated); err != nil {
 		return nil, err
 	}
@@ -561,6 +564,9 @@ func (s *Service) RetireVersion(ctx context.Context, slug string, version int) (
 	product, targetVersion, err := s.loadVersion(ctx, slug, version)
 	if err != nil {
 		return nil, err
+	}
+	if targetVersion.ReleaseState == domain.ProductReleaseStateRetired {
+		return s.repo.GetBySlug(ctx, product.Product.Slug)
 	}
 	if err := s.repo.UpdateVersionReleaseState(ctx, targetVersion.ID, domain.ProductReleaseStateRetired); err != nil {
 		return nil, err

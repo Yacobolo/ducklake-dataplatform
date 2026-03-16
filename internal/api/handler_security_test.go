@@ -159,12 +159,12 @@ func (m *mockGrantService) Revoke(ctx context.Context, principal string, grantID
 }
 
 type mockColumnMaskService struct {
-	getForTableFn func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
+	getForTableFn  func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	listBindingsFn func(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error)
-	createFn      func(ctx context.Context, req domain.CreateColumnMaskRequest) (*domain.ColumnMask, error)
-	deleteFn      func(ctx context.Context, id string) error
-	bindFn        func(ctx context.Context, req domain.BindColumnMaskRequest) error
-	unbindFn      func(ctx context.Context, req domain.BindColumnMaskRequest) error
+	createFn       func(ctx context.Context, req domain.CreateColumnMaskRequest) (*domain.ColumnMask, error)
+	deleteFn       func(ctx context.Context, id string) error
+	bindFn         func(ctx context.Context, req domain.BindColumnMaskRequest) error
+	unbindFn       func(ctx context.Context, req domain.BindColumnMaskRequest) error
 }
 
 func (m *mockColumnMaskService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
@@ -779,6 +779,19 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 				badReq, ok := resp.(CreateColumnMask400JSONResponse)
 				require.True(t, ok, "expected 400 response, got %T", resp)
 				assert.Equal(t, int32(400), badReq.Body.Code)
+			},
+		},
+		{
+			name: "conflict returns 409",
+			svcFn: func(_ context.Context, _ domain.CreateColumnMaskRequest) (*domain.ColumnMask, error) {
+				return nil, domain.ErrConflict("column mask already exists")
+			},
+			assertFn: func(t *testing.T, resp GenCreateColumnMaskResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				conflict, ok := resp.(CreateColumnMask409JSONResponse)
+				require.True(t, ok, "expected 409 response, got %T", resp)
+				assert.Equal(t, int32(409), conflict.Body.Code)
 			},
 		},
 	}

@@ -23,6 +23,14 @@ func setupSearchRepo(t *testing.T) (*SearchRepo, *sql.DB) {
 	return NewSearchRepo(writeDB, writeDB), writeDB
 }
 
+func setupSplitSearchRepo(t *testing.T) (*SearchRepo, *sql.DB, *sql.DB) {
+	t.Helper()
+	metaDB, _ := internaldb.OpenTestSQLite(t)
+	controlDB, _ := internaldb.OpenTestSQLite(t)
+	createDuckLakeTables(t, metaDB)
+	return NewSearchRepo(metaDB, controlDB), metaDB, controlDB
+}
+
 // seedSearchData inserts a realistic set of ducklake rows plus governance
 // metadata so that every search path (name, comment, tag, property) can
 // be exercised.
@@ -94,6 +102,15 @@ func seedSearchData(t *testing.T, db *sql.DB) {
 	require.NoError(t, err)
 }
 
+func seedMacroSearchData(t *testing.T, db *sql.DB) {
+	t.Helper()
+
+	_, err := db.ExecContext(context.Background(), `
+		INSERT INTO macros (id, name, macro_type, parameters, body, description, catalog_name, project_name, visibility, owner, properties, tags, status, created_by)
+		VALUES ('macro-1', 'manual_rollup', 'SCALAR', '[]', 'SELECT 1', 'Manual rollup macro', '', '', 'PRIVATE', 'admin', '{}', '[]', 'ACTIVE', 'admin')`)
+	require.NoError(t, err)
+}
+
 // ---------------------------------------------------------------------------
 // Search by name
 // ---------------------------------------------------------------------------
@@ -160,6 +177,26 @@ func TestSearchRepo_SearchByColumnName(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "expected column 'user_email' matched by name")
+}
+
+func TestSearchRepo_SearchMacroNameInSplitDBMode(t *testing.T) {
+	repo, metaDB, controlDB := setupSplitSearchRepo(t)
+	seedSearchData(t, metaDB)
+	seedMacroSearchData(t, controlDB)
+	ctx := context.Background()
+
+	results, total, err := repo.Search(ctx, "manual", nil, 100, 0)
+	require.NoError(t, err)
+	assert.Positive(t, total)
+
+	found := false
+	for _, r := range results {
+		if r.Type == "macro" && r.Name == "manual_rollup" && r.MatchField == "name" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected macro 'manual_rollup' matched by name in split DB mode")
 }
 
 // ---------------------------------------------------------------------------

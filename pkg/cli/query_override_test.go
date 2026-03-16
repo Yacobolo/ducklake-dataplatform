@@ -215,7 +215,7 @@ func TestQueryExecute_DefaultsToLocalBYOC(t *testing.T) {
 		"--api-key", "test-key",
 		"--duck-access-extension-path", extensionPath,
 		"--output", "json",
-		"query", "execute", "--sql", "SELECT 42 AS answer",
+		"query", "execute", "--sql", "SELECT 42 AS answer", "--compute-mode", "BYOC_LOCAL",
 	})
 
 	err := rootCmd.Execute()
@@ -288,12 +288,55 @@ func TestQueryExecute_LocalRequiresAPIKey(t *testing.T) {
 		"--host", "http://example.com",
 		"--token", "jwt-token",
 		"--duck-access-extension-path", extensionPath,
-		"query", "execute", "--sql", "SELECT 1",
+		"query", "execute", "--sql", "SELECT 1", "--compute-mode", "BYOC_LOCAL",
 	})
 
 	err := rootCmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "requires an API key")
+}
+
+func TestQueryExecute_RemoteHostPrefersAPI(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	restoreStdout := captureStdout(t)
+
+	fakeExec := &fakeLocalQueryExecutor{t: t}
+	originalExecutor := cliLocalQueryExecutor
+	cliLocalQueryExecutor = fakeExec
+	t.Cleanup(func() { cliLocalQueryExecutor = originalExecutor })
+
+	var capturedBody []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/v1/query", r.URL.Path)
+		capturedBody, _ = io.ReadAll(r.Body)
+		_ = r.Body.Close()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"columns":["answer"],"rows":[[42]],"row_count":1}`))
+	}))
+	defer srv.Close()
+
+	rootCmd := newRootCmd()
+	rootCmd.SetArgs([]string{
+		"--host", srv.URL,
+		"--token", "jwt-token",
+		"--output", "json",
+		"query", "execute", "--sql", "SELECT 42 AS answer",
+	})
+
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+	assert.False(t, fakeExec.called)
+
+	var body map[string]interface{}
+	require.NoError(t, json.Unmarshal(capturedBody, &body))
+	assert.Equal(t, "SELECT 42 AS answer", body["sql"])
+
+	output := restoreStdout()
+	assert.Contains(t, output, `"row_count": 1`)
 }
 
 func TestQueryOverride_SubmitAndWaitResults(t *testing.T) {

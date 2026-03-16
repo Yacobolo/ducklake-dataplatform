@@ -3,10 +3,17 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"duck-demo/internal/domain"
 	servicepolicy "duck-demo/internal/service/policy"
 )
+
+type runtimeViewCatalog interface {
+	CreateView(ctx context.Context, schemaName, viewName, viewDefinition string) error
+	UpdateViewDefinition(ctx context.Context, schemaName, viewName, viewDefinition string) error
+	DeleteView(ctx context.Context, schemaName, viewName string) error
+}
 
 // ViewService provides view management operations.
 // All methods accept a catalogName parameter to resolve the correct catalog repo.
@@ -50,18 +57,25 @@ func (s *ViewService) CreateView(ctx context.Context, catalogName string, princi
 	if err != nil {
 		return nil, err
 	}
+	runtimeRepo, ok := catalogRepo.(runtimeViewCatalog)
+	if !ok {
+		return nil, domain.ErrNotImplemented("catalog runtime does not support managed views")
+	}
 	schema, err := catalogRepo.GetSchema(ctx, schemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	allowed, err = servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateView, domain.PrivCreateTable)
+	allowed, err = servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, canonicalSchemaID(catalogName, schema.SchemaID), domain.PrivCreateView, domain.PrivCreateTable)
 	if err != nil {
 		return nil, err
 	}
 	if !allowed {
 		s.logAuditDenied(ctx, principal, "CREATE_VIEW", fmt.Sprintf("Denied create view %q in schema %q", req.Name, schemaName))
 		return nil, domain.ErrAccessDenied("%q lacks CREATE_TABLE privilege for creating views", principal)
+	}
+	if err := runtimeRepo.CreateView(ctx, schemaName, req.Name, req.ViewDefinition); err != nil {
+		return nil, err
 	}
 
 	view := &domain.ViewDetail{
@@ -76,12 +90,14 @@ func (s *ViewService) CreateView(ctx context.Context, catalogName string, princi
 
 	result, err := s.repo.Create(ctx, view)
 	if err != nil {
+		_ = runtimeRepo.DeleteView(ctx, schemaName, req.Name)
 		return nil, err
 	}
 
 	// Enrich with schema/catalog names (not stored in DB)
 	result.SchemaName = schemaName
 	result.CatalogName = schema.CatalogName
+	result.SchemaID = canonicalSchemaID(catalogName, result.SchemaID)
 
 	s.logAudit(ctx, principal, "CREATE_VIEW", fmt.Sprintf("Created view %q in schema %q", req.Name, schemaName))
 	return result, nil
@@ -103,6 +119,7 @@ func (s *ViewService) GetView(ctx context.Context, catalogName string, schemaNam
 	}
 	result.SchemaName = schemaName
 	result.CatalogName = schema.CatalogName
+	result.SchemaID = canonicalSchemaID(catalogName, result.SchemaID)
 	return result, nil
 }
 
@@ -123,6 +140,7 @@ func (s *ViewService) ListViews(ctx context.Context, catalogName string, schemaN
 	for i := range views {
 		views[i].SchemaName = schemaName
 		views[i].CatalogName = schema.CatalogName
+		views[i].SchemaID = canonicalSchemaID(catalogName, views[i].SchemaID)
 	}
 	return views, total, nil
 }
@@ -136,11 +154,15 @@ func (s *ViewService) DeleteView(ctx context.Context, catalogName string, princi
 	if err != nil {
 		return err
 	}
+	runtimeRepo, ok := repo.(runtimeViewCatalog)
+	if !ok {
+		return domain.ErrNotImplemented("catalog runtime does not support managed views")
+	}
 	schema, err := repo.GetSchema(ctx, schemaName)
 	if err != nil {
 		return err
 	}
-	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivManage)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, canonicalSchemaID(catalogName, schema.SchemaID), domain.PrivManage)
 	if err != nil {
 		return err
 	}
@@ -149,7 +171,7 @@ func (s *ViewService) DeleteView(ctx context.Context, catalogName string, princi
 		return domain.ErrAccessDenied("%q lacks permission to delete view %q.%q", principal, schemaName, viewName)
 	}
 
-	allowed, err = servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
+	allowed, err = servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, canonicalSchemaID(catalogName, schema.SchemaID), domain.PrivCreateTable)
 	if err != nil {
 		return err
 	}
@@ -158,6 +180,9 @@ func (s *ViewService) DeleteView(ctx context.Context, catalogName string, princi
 		return domain.ErrAccessDenied("%q lacks permission to delete view %q.%q", principal, schemaName, viewName)
 	}
 
+	if err := runtimeRepo.DeleteView(ctx, schemaName, viewName); err != nil {
+		return err
+	}
 	if err := s.repo.Delete(ctx, schema.SchemaID, viewName); err != nil {
 		return err
 	}
@@ -175,11 +200,15 @@ func (s *ViewService) UpdateView(ctx context.Context, catalogName string, princi
 	if err != nil {
 		return nil, err
 	}
+	runtimeRepo, ok := repo.(runtimeViewCatalog)
+	if !ok {
+		return nil, domain.ErrNotImplemented("catalog runtime does not support managed views")
+	}
 	schema, err := repo.GetSchema(ctx, schemaName)
 	if err != nil {
 		return nil, err
 	}
-	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivModify)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, canonicalSchemaID(catalogName, schema.SchemaID), domain.PrivModify)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +217,7 @@ func (s *ViewService) UpdateView(ctx context.Context, catalogName string, princi
 		return nil, domain.ErrAccessDenied("%q lacks permission to update view %q.%q", principal, schemaName, viewName)
 	}
 
-	allowed, err = servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
+	allowed, err = servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, canonicalSchemaID(catalogName, schema.SchemaID), domain.PrivCreateTable)
 	if err != nil {
 		return nil, err
 	}
@@ -197,13 +226,26 @@ func (s *ViewService) UpdateView(ctx context.Context, catalogName string, princi
 		return nil, domain.ErrAccessDenied("%q lacks permission to update view %q.%q", principal, schemaName, viewName)
 	}
 
+	existing, err := s.repo.GetByName(ctx, schema.SchemaID, viewName)
+	if err != nil {
+		return nil, err
+	}
+	if req.ViewDefinition != nil && strings.TrimSpace(*req.ViewDefinition) != "" {
+		if err := runtimeRepo.UpdateViewDefinition(ctx, schemaName, viewName, *req.ViewDefinition); err != nil {
+			return nil, err
+		}
+	}
 	result, err := s.repo.Update(ctx, schema.SchemaID, viewName, req.Comment, req.Properties, req.ViewDefinition)
 	if err != nil {
+		if req.ViewDefinition != nil && strings.TrimSpace(existing.ViewDefinition) != "" {
+			_ = runtimeRepo.UpdateViewDefinition(ctx, schemaName, viewName, existing.ViewDefinition)
+		}
 		return nil, err
 	}
 
 	result.SchemaName = schemaName
 	result.CatalogName = schema.CatalogName
+	result.SchemaID = canonicalSchemaID(catalogName, result.SchemaID)
 
 	s.logAudit(ctx, principal, "UPDATE_VIEW", fmt.Sprintf("Updated view %q.%q", schemaName, viewName))
 	return result, nil

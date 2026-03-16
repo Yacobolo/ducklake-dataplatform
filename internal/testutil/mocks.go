@@ -368,6 +368,9 @@ type MockCatalogRepo struct {
 	UpdateColumnFn             func(ctx context.Context, schemaName, tableName, columnName string, comment *string, props map[string]string) (*domain.ColumnDetail, error)
 	ListColumnsFn              func(ctx context.Context, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error)
 	SetSchemaStoragePathFn     func(ctx context.Context, schemaID string, path string) error
+	CreateViewFn               func(ctx context.Context, schemaName, viewName, viewDefinition string) error
+	UpdateViewDefinitionFn     func(ctx context.Context, schemaName, viewName, viewDefinition string) error
+	DeleteViewFn               func(ctx context.Context, schemaName, viewName string) error
 }
 
 // GetCatalogInfo implements the interface method for testing.
@@ -520,6 +523,30 @@ func (m *MockCatalogRepo) SetSchemaStoragePath(ctx context.Context, schemaID str
 		return m.SetSchemaStoragePathFn(ctx, schemaID, path)
 	}
 	panic("unexpected call to MockCatalogRepo.SetSchemaStoragePath")
+}
+
+// CreateView implements the runtime view DDL hook for testing.
+func (m *MockCatalogRepo) CreateView(ctx context.Context, schemaName, viewName, viewDefinition string) error {
+	if m.CreateViewFn != nil {
+		return m.CreateViewFn(ctx, schemaName, viewName, viewDefinition)
+	}
+	panic("unexpected call to MockCatalogRepo.CreateView")
+}
+
+// UpdateViewDefinition implements the runtime view DDL hook for testing.
+func (m *MockCatalogRepo) UpdateViewDefinition(ctx context.Context, schemaName, viewName, viewDefinition string) error {
+	if m.UpdateViewDefinitionFn != nil {
+		return m.UpdateViewDefinitionFn(ctx, schemaName, viewName, viewDefinition)
+	}
+	panic("unexpected call to MockCatalogRepo.UpdateViewDefinition")
+}
+
+// DeleteView implements the runtime view DDL hook for testing.
+func (m *MockCatalogRepo) DeleteView(ctx context.Context, schemaName, viewName string) error {
+	if m.DeleteViewFn != nil {
+		return m.DeleteViewFn(ctx, schemaName, viewName)
+	}
+	panic("unexpected call to MockCatalogRepo.DeleteView")
 }
 
 var _ domain.CatalogRepository = (*MockCatalogRepo)(nil)

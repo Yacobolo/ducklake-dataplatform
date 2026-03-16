@@ -8,8 +8,9 @@ import (
 
 // ColumnDef describes a column for CREATE TABLE.
 type ColumnDef struct {
-	Name string
-	Type string
+	Name     string
+	Type     string
+	Nullable *bool
 }
 
 // CreateSchema returns a DuckDB DDL statement: CREATE SCHEMA <catalog>."<name>".
@@ -62,7 +63,11 @@ func CreateTable(catalog, schema, table string, columns []ColumnDef) (string, er
 		if err := ValidateColumnType(c.Type); err != nil {
 			return "", fmt.Errorf("invalid column type for %q: %w", c.Name, err)
 		}
-		colDefs = append(colDefs, fmt.Sprintf("%s %s", QuoteIdentifier(c.Name), c.Type))
+		columnSQL := fmt.Sprintf("%s %s", QuoteIdentifier(c.Name), c.Type)
+		if c.Nullable != nil && !*c.Nullable {
+			columnSQL += " NOT NULL"
+		}
+		colDefs = append(colDefs, columnSQL)
 	}
 
 	return fmt.Sprintf("CREATE TABLE %s.%s.%s (%s)",
@@ -70,6 +75,52 @@ func CreateTable(catalog, schema, table string, columns []ColumnDef) (string, er
 		QuoteIdentifier(schema),
 		QuoteIdentifier(table),
 		strings.Join(colDefs, ", "),
+	), nil
+}
+
+// CreateView returns a DuckDB DDL statement:
+// CREATE VIEW <catalog>."<schema>"."<view>" AS <query>.
+func CreateView(catalog, schema, view, query string) (string, error) {
+	if err := ValidateIdentifier(catalog); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
+	if err := ValidateIdentifier(schema); err != nil {
+		return "", fmt.Errorf("invalid schema name: %w", err)
+	}
+	if err := ValidateIdentifier(view); err != nil {
+		return "", fmt.Errorf("invalid view name: %w", err)
+	}
+	if strings.TrimSpace(query) == "" {
+		return "", fmt.Errorf("view query is required")
+	}
+	return fmt.Sprintf("CREATE VIEW %s.%s.%s AS %s",
+		QuoteIdentifier(catalog),
+		QuoteIdentifier(schema),
+		QuoteIdentifier(view),
+		strings.TrimSpace(query),
+	), nil
+}
+
+// CreateOrReplaceView returns a DuckDB DDL statement:
+// CREATE OR REPLACE VIEW <catalog>."<schema>"."<view>" AS <query>.
+func CreateOrReplaceView(catalog, schema, view, query string) (string, error) {
+	if err := ValidateIdentifier(catalog); err != nil {
+		return "", fmt.Errorf("invalid catalog name: %w", err)
+	}
+	if err := ValidateIdentifier(schema); err != nil {
+		return "", fmt.Errorf("invalid schema name: %w", err)
+	}
+	if err := ValidateIdentifier(view); err != nil {
+		return "", fmt.Errorf("invalid view name: %w", err)
+	}
+	if strings.TrimSpace(query) == "" {
+		return "", fmt.Errorf("view query is required")
+	}
+	return fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS %s",
+		QuoteIdentifier(catalog),
+		QuoteIdentifier(schema),
+		QuoteIdentifier(view),
+		strings.TrimSpace(query),
 	), nil
 }
 

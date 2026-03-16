@@ -153,7 +153,7 @@ func storageTestCtx() context.Context {
 
 var storageFixedTime = time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
 
-func storageStrPtr(s string) *string { return &s }
+func storageStrPtr(s string) *string                                          { return &s }
 func storageCredentialTypePtr(v StorageCredentialType) *StorageCredentialType { return &v }
 
 func sampleStorageCredential() domain.StorageCredential {
@@ -1122,10 +1122,13 @@ func TestHandler_UpdateVolume(t *testing.T) {
 		{
 			name:       "happy path returns 200",
 			volumeName: "my-volume",
-			body:       GenUpdateVolumeJSONBody{Comment: storageStrPtr("updated")},
-			svcFn: func(_ context.Context, _ string, _, _, _ string, _ domain.UpdateVolumeRequest) (*domain.Volume, error) {
+			body:       GenUpdateVolumeJSONBody{Comment: storageStrPtr("updated"), StorageLocation: storageStrPtr("s3://bucket/updated")},
+			svcFn: func(_ context.Context, _ string, _, _, _ string, req domain.UpdateVolumeRequest) (*domain.Volume, error) {
+				require.NotNil(t, req.StorageLocation)
+				assert.Equal(t, "s3://bucket/updated", *req.StorageLocation)
 				v := sampleVolume()
 				v.Comment = "updated"
+				v.StorageLocation = "s3://bucket/updated"
 				return &v, nil
 			},
 			assertFn: func(t *testing.T, resp GenUpdateVolumeResponse, err error) {

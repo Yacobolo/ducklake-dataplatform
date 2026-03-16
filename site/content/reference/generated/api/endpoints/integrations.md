@@ -115,4 +115,5 @@ Sync git repo
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
+| `501` | Server error |
 

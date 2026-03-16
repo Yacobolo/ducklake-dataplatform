@@ -203,6 +203,13 @@ func (s *Service) TriggerMaterialization(ctx context.Context, assetID string, pa
 	if err := s.requirePrivilege(ctx, domain.PrivExecuteAssetMaterialization); err != nil {
 		return nil, err
 	}
+	asset, err := s.assets.GetByID(ctx, assetID)
+	if err != nil {
+		return nil, err
+	}
+	if !assetTypeSupportsExecution(asset.AssetType) {
+		return nil, domain.ErrValidation("asset type %q does not support materialization", asset.AssetType)
+	}
 	if payload == nil {
 		payload = map[string]any{}
 	}

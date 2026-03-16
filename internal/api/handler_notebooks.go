@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 
 	"duck-demo/internal/domain"
 )
@@ -605,6 +607,12 @@ func (h *APIHandler) SyncGitRepo(ctx context.Context, req GenSyncGitRepoRequest)
 			Forbidden:  func(resp ForbiddenJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo403JSONResponse{resp} },
 			NotFound:   func(resp NotFoundJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo404JSONResponse{resp} },
 			Internal: func(resp InternalErrorJSONResponse) GenSyncGitRepoResponse {
+				if httpStatusFromDomainError(err) == 501 {
+					return syncGitRepo501JSONResponse{
+						Body:    resp.Body,
+						Headers: GenInternalErrorResponseHeaders(resp.Headers),
+					}
+				}
 				return GenSyncGitRepo500JSONResponse{resp}
 			},
 		}); ok {
@@ -638,6 +646,17 @@ func notebookToAPI(nb domain.Notebook) Notebook {
 		CreatedAt:   formatTimePtr(&nb.CreatedAt),
 		UpdatedAt:   formatTimePtr(&nb.UpdatedAt),
 	}
+}
+
+type syncGitRepo501JSONResponse struct {
+	Body    Error
+	Headers GenInternalErrorResponseHeaders
+}
+
+func (response syncGitRepo501JSONResponse) VisitSyncGitRepoResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNotImplemented)
+	return json.NewEncoder(w).Encode(response.Body)
 }
 
 func cellToAPI(c domain.Cell) Cell {

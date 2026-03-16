@@ -16,6 +16,7 @@ import (
 	dbstore "duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
+	"duck-demo/internal/testutil"
 )
 
 // ctx is a package-level background context used by setup helpers.
@@ -646,11 +647,16 @@ func TestLookupTableID_CatalogQualified(t *testing.T) {
 		require.Equal(t, "passengers", tableName)
 		return &domain.TableDetail{TableID: "table-42", TableType: domain.TableTypeManaged}, nil
 	})
+	cat.SetCatalogSchemaLookup(func(_ context.Context, catalogName, schemaName string) (*domain.SchemaDetail, error) {
+		require.Equal(t, "demo", catalogName)
+		require.Equal(t, "titanic", schemaName)
+		return &domain.SchemaDetail{SchemaID: "schema-7", Name: schemaName, CatalogName: catalogName}, nil
+	})
 
 	tableID, schemaID, isExternal, err := cat.LookupTableID(ctx, "demo.titanic.passengers")
 	require.NoError(t, err)
-	assert.Equal(t, "table-42", tableID)
-	assert.Equal(t, "", schemaID)
+	assert.Equal(t, domain.SyntheticCatalogTableID("demo", "schema-7", "table-42"), tableID)
+	assert.Equal(t, domain.SyntheticCatalogSchemaID("demo", "schema-7"), schemaID)
 	assert.False(t, isExternal)
 }
 
@@ -664,13 +670,13 @@ func TestCheckPrivilege_CatalogQualifiedTableUsesCanonicalManagedID(t *testing.T
 
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
-		SecurableType: SecurableSchema, SecurableID: "0",
+		SecurableType: SecurableSchema, SecurableID: domain.SyntheticCatalogSchemaID("demo", "0"),
 		Privilege: PrivUsage,
 	})
 	require.NoError(t, err)
 	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
 		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
-		SecurableType: SecurableTable, SecurableID: "1",
+		SecurableType: SecurableTable, SecurableID: domain.SyntheticCatalogTableID("demo", "0", "1"),
 		Privilege: PrivSelect,
 	})
 	require.NoError(t, err)
@@ -694,6 +700,38 @@ func TestCheckPrivilege_CatalogQualifiedTableUsesCanonicalManagedID(t *testing.T
 	allowed, err := cat.CheckPrivilege(ctx, "catalog_qualified_reader", SecurableTable, tableID, PrivSelect)
 	require.NoError(t, err)
 	assert.True(t, allowed)
+}
+
+func TestCheckPrivilege_CatalogQualifiedTableDoesNotInheritDifferentCatalogGrant(t *testing.T) {
+	cat, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{ID: uuid.New().String(),
+		Name: "other_catalog_reader", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableCatalog, SecurableID: "other",
+		Privilege: PrivAllPrivileges,
+	})
+	require.NoError(t, err)
+
+	cat.SetCatalogTableLookup(func(_ context.Context, catalogName, schemaName, tableName string) (*domain.TableDetail, error) {
+		require.Equal(t, "demo", catalogName)
+		return &domain.TableDetail{TableID: "1", TableType: domain.TableTypeManaged}, nil
+	})
+	cat.SetCatalogSchemaLookup(func(_ context.Context, catalogName, schemaName string) (*domain.SchemaDetail, error) {
+		require.Equal(t, "demo", catalogName)
+		return &domain.SchemaDetail{SchemaID: "0", Name: schemaName, CatalogName: catalogName}, nil
+	})
+
+	tableID, _, _, err := cat.LookupTableID(ctx, "demo.main.titanic")
+	require.NoError(t, err)
+
+	allowed, err := cat.CheckPrivilege(ctx, "other_catalog_reader", SecurableTable, tableID, PrivSelect)
+	require.NoError(t, err)
+	assert.False(t, allowed)
 }
 
 func TestCheckPrivilege_DefaultCatalogTableUsesDefaultCatalogTableIDLookup(t *testing.T) {
@@ -738,6 +776,80 @@ func TestCheckPrivilege_DefaultCatalogTableUsesDefaultCatalogTableIDLookup(t *te
 	allowed, err := cat.CheckPrivilege(ctx, "default_catalog_reader", SecurableTable, tableID, PrivSelect)
 	require.NoError(t, err)
 	assert.True(t, allowed)
+}
+
+func TestGetEffectiveRowFilters_CatalogQualifiedTableUsesSyntheticID(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "catalog_filter_reader", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	filter, err := q.CreateRowFilter(ctx, dbstore.CreateRowFilterParams{
+		ID: uuid.New().String(), TableID: domain.SyntheticCatalogTableID("demo", "0", "1"),
+		FilterSql: `region = 'apac'`,
+	})
+	require.NoError(t, err)
+	err = q.BindRowFilter(ctx, dbstore.BindRowFilterParams{
+		ID: uuid.New().String(), RowFilterID: filter.ID, PrincipalID: user.ID, PrincipalType: "user",
+	})
+	require.NoError(t, err)
+
+	filters, err := svc.GetEffectiveRowFilters(ctx, "catalog_filter_reader", domain.SyntheticCatalogTableID("demo", "0", "1"))
+	require.NoError(t, err)
+	require.Equal(t, []string{`region = 'apac'`}, filters)
+}
+
+func TestGetEffectiveColumnMasks_CatalogQualifiedTableUsesSyntheticID(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "catalog_mask_reader", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	mask, err := q.CreateColumnMask(ctx, dbstore.CreateColumnMaskParams{
+		ID: uuid.New().String(), TableID: domain.SyntheticCatalogTableID("demo", "0", "1"),
+		ColumnName: "email", MaskExpression: "'***'",
+	})
+	require.NoError(t, err)
+	err = q.BindColumnMask(ctx, dbstore.BindColumnMaskParams{
+		ID: uuid.New().String(), ColumnMaskID: mask.ID, PrincipalID: user.ID, PrincipalType: "user", SeeOriginal: 0,
+	})
+	require.NoError(t, err)
+
+	masks, err := svc.GetEffectiveColumnMasks(ctx, "catalog_mask_reader", domain.SyntheticCatalogTableID("demo", "0", "1"))
+	require.NoError(t, err)
+	require.Equal(t, map[string]string{"email": "'***'"}, masks)
+}
+
+func TestGetTableColumnNames_CatalogQualifiedTableUsesCatalogLookup(t *testing.T) {
+	t.Parallel()
+
+	svc := NewAuthorizationService(
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		&testutil.MockIntrospectionRepo{
+			ListColumnsFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.Column, int64, error) {
+				t.Fatal("default introspection should not be used for attached catalog tables")
+				return nil, 0, nil
+			},
+		},
+		nil,
+	)
+	svc.SetCatalogColumnLookup(func(_ context.Context, catalogName, tableID string) ([]string, error) {
+		require.Equal(t, "demo", catalogName)
+		require.Equal(t, "22", tableID)
+		return []string{"id", "email", "region"}, nil
+	})
+
+	names, err := svc.GetTableColumnNames(context.Background(), domain.SyntheticCatalogTableID("demo", "11", "22"))
+	require.NoError(t, err)
+	require.Equal(t, []string{"id", "email", "region"}, names)
 }
 
 func TestLookupTableID_ViewSchemaQualified(t *testing.T) {

@@ -588,6 +588,9 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req GenCreateColumnMa
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateColumnMaskResponse {
 				return CreateColumnMask400JSONResponse{resp}
 			},
+			Conflict: func(resp ConflictJSONResponse) GenCreateColumnMaskResponse {
+				return CreateColumnMask409JSONResponse{resp}
+			},
 			Forbidden: func(resp ForbiddenJSONResponse) GenCreateColumnMaskResponse {
 				return CreateColumnMask403JSONResponse{resp}
 			},

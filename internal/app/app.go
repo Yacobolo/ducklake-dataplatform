@@ -179,6 +179,21 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		}
 		return repo.GetTable(ctx, schemaName, tableName)
 	})
+	authSvc.SetCatalogColumnLookup(func(ctx context.Context, catalogName, tableID string) ([]string, error) {
+		repo, err := introspectionFactory.ForCatalog(ctx, catalogName)
+		if err != nil {
+			return nil, err
+		}
+		cols, _, err := repo.ListColumns(ctx, tableID, domain.PageRequest{MaxResults: 10000})
+		if err != nil {
+			return nil, err
+		}
+		names := make([]string, len(cols))
+		for i, col := range cols {
+			names[i] = col.Name
+		}
+		return names, nil
+	})
 	authSvc.SetDefaultCatalogTableLookup(func(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
 		reg, err := catalogRegRepo.GetDefault(ctx)
 		if err != nil {
@@ -335,7 +350,17 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	orchEventRepo := repository.NewOrchestrationEventRepo(deps.WriteDB)
 	backfillRepo := repository.NewBackfillRepo(deps.WriteDB)
 	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
-	var pipelineSvc *pipeline.Service
+	pipelineRepo := repository.NewPipelineRepo(deps.WriteDB)
+	pipelineRunRepo := repository.NewPipelineRunRepo(deps.WriteDB)
+	pipelineSvc := pipeline.NewService(
+		pipelineRepo,
+		pipelineRunRepo,
+		auditRepo,
+		notebookProvider,
+		eng,
+		deps.DuckDB,
+		deps.Logger.With("component", "pipeline"),
+	)
 	assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
 	ioManager, err := newOrchestrationIOManager(cfg)
 	if err != nil {

@@ -52,8 +52,14 @@ func (r *SearchRepo) searchMultiDB(ctx context.Context, query string, objectType
 		return nil, 0, fmt.Errorf("search governance from control plane: %w", err)
 	}
 
-	// Merge and deduplicate (name match takes priority)
-	all := mergeSearchResults(nameResults, govResults)
+	// Phase 3: Macro name search from control plane (macros table)
+	macroNameResults, err := r.searchMacroNamesControl(ctx, likePattern, objectType)
+	if err != nil {
+		return nil, 0, fmt.Errorf("search macro names from control plane: %w", err)
+	}
+
+	// Merge and deduplicate (name matches take priority over governance metadata matches).
+	all := mergeSearchResults(nameResults, macroNameResults, govResults)
 	total := int64(len(all))
 
 	// Apply pagination
@@ -103,20 +109,23 @@ func (r *SearchRepo) searchNamesMeta(ctx context.Context, likePattern string, ob
 		args = append(args, likePattern)
 	}
 
-	if objectType == nil || *objectType == "macro" {
-		unions = append(unions, `
-			SELECT 'macro' as type, m.name as name, NULL as schema_name, NULL as table_name,
-				m.description as comment, 'name' as match_field
-			FROM macros m
-			WHERE LOWER(m.name) LIKE ?`)
-		args = append(args, likePattern)
-	}
-
 	if len(unions) == 0 {
 		return nil, nil
 	}
 
 	return r.execSearchQuery(ctx, r.metaDB, strings.Join(unions, " UNION ALL "), args)
+}
+
+func (r *SearchRepo) searchMacroNamesControl(ctx context.Context, likePattern string, objectType *string) ([]domain.SearchResult, error) {
+	if objectType != nil && *objectType != "macro" {
+		return nil, nil
+	}
+	query := `
+		SELECT 'macro' as type, m.name as name, NULL as schema_name, NULL as table_name,
+			m.description as comment, 'name' as match_field
+		FROM macros m
+		WHERE LOWER(m.name) LIKE ?`
+	return r.execSearchQuery(ctx, r.controlDB, query, []interface{}{likePattern})
 }
 
 // searchGovernanceControl searches the control plane for comment/property/tag matches.
@@ -290,9 +299,9 @@ func (r *SearchRepo) execSearchQuery(ctx context.Context, db *sql.DB, query stri
 	return results, nil
 }
 
-// mergeSearchResults merges name results and governance results, deduplicating
-// by (type, name, schema_name, table_name). Name matches take priority.
-func mergeSearchResults(nameResults, govResults []domain.SearchResult) []domain.SearchResult {
+// mergeSearchResults merges multiple result groups, deduplicating by
+// (type, name, schema_name, table_name). Earlier groups take priority.
+func mergeSearchResults(groups ...[]domain.SearchResult) []domain.SearchResult {
 	type key struct {
 		Type       string
 		Name       string
@@ -303,31 +312,19 @@ func mergeSearchResults(nameResults, govResults []domain.SearchResult) []domain.
 	seen := make(map[key]bool)
 	var merged []domain.SearchResult
 
-	// Add name results first (higher priority)
-	for _, r := range nameResults {
-		k := key{Type: r.Type, Name: r.Name}
-		if r.SchemaName != nil {
-			k.SchemaName = *r.SchemaName
-		}
-		if r.TableName != nil {
-			k.TableName = *r.TableName
-		}
-		seen[k] = true
-		merged = append(merged, r)
-	}
-
-	// Add governance results that weren't already matched by name
-	for _, r := range govResults {
-		k := key{Type: r.Type, Name: r.Name}
-		if r.SchemaName != nil {
-			k.SchemaName = *r.SchemaName
-		}
-		if r.TableName != nil {
-			k.TableName = *r.TableName
-		}
-		if !seen[k] {
-			seen[k] = true
-			merged = append(merged, r)
+	for _, group := range groups {
+		for _, r := range group {
+			k := key{Type: r.Type, Name: r.Name}
+			if r.SchemaName != nil {
+				k.SchemaName = *r.SchemaName
+			}
+			if r.TableName != nil {
+				k.TableName = *r.TableName
+			}
+			if !seen[k] {
+				seen[k] = true
+				merged = append(merged, r)
+			}
 		}
 	}
 

@@ -376,6 +376,20 @@ func TestHandler_SearchCatalog(t *testing.T) {
 				assert.Equal(t, int32(500), serverErr.Body.Code)
 			},
 		},
+		{
+			name:   "not found returns 404",
+			params: GenSearchCatalogParams{Query: "missing"},
+			svcFn: func(_ context.Context, _ string, _ *string, _ *string, _ domain.PageRequest) ([]domain.SearchResult, int64, error) {
+				return nil, 0, domain.ErrNotFound("no default catalog configured")
+			},
+			assertFn: func(t *testing.T, resp GenSearchCatalogResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				notFound, ok := resp.(SearchCatalog404JSONResponse)
+				require.True(t, ok, "expected 404 response, got %T", resp)
+				assert.Equal(t, int32(404), notFound.Body.Code)
+			},
+		},
 	}
 
 	for _, tt := range tests {

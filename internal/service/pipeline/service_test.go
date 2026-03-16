@@ -220,6 +220,16 @@ func TestPipelineService_ListPipelines(t *testing.T) {
 	assert.Len(t, pipelines, 2)
 }
 
+func TestPipelineService_ListPipelines_NotConfigured(t *testing.T) {
+	svc := NewService(nil, nil, &testutil.MockAuditRepo{}, &testutil.MockNotebookProvider{}, nil, nil, nil)
+
+	_, _, err := svc.ListPipelines(context.Background(), domain.PageRequest{MaxResults: 10})
+	require.Error(t, err)
+
+	var notImplemented *domain.NotImplementedError
+	require.ErrorAs(t, err, &notImplemented)
+}
+
 // === UpdatePipeline ===
 
 func TestPipelineService_UpdatePipeline(t *testing.T) {

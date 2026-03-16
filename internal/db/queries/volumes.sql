@@ -15,6 +15,7 @@ SELECT COUNT(*) FROM volumes WHERE schema_name = ?;
 -- name: UpdateVolume :exec
 UPDATE volumes
 SET name = COALESCE(?, name),
+    storage_location = COALESCE(?, storage_location),
     comment = COALESCE(?, comment),
     owner = COALESCE(?, owner),
     updated_at = datetime('now')

@@ -47,6 +47,12 @@ func TestViewService_CreateView(t *testing.T) {
 			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
+			CreateViewFn: func(_ context.Context, _, _, _ string) error {
+				return nil
+			},
+			DeleteViewFn: func(_ context.Context, _, _ string) error {
+				return nil
+			},
 		}
 		auth := &mockAuthService{
 			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
@@ -77,6 +83,12 @@ func TestViewService_CreateView(t *testing.T) {
 			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
+			CreateViewFn: func(_ context.Context, _, _, _ string) error {
+				return nil
+			},
+			DeleteViewFn: func(_ context.Context, _, _ string) error {
+				return nil
+			},
 		}
 		auth := &mockAuthService{
 			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
@@ -98,6 +110,12 @@ func TestViewService_CreateView(t *testing.T) {
 			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
+			CreateViewFn: func(_ context.Context, _, _, _ string) error {
+				return nil
+			},
+			DeleteViewFn: func(_ context.Context, _, _ string) error {
+				return nil
+			},
 		}
 		auth := &mockAuthService{
 			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
@@ -118,6 +136,12 @@ func TestViewService_CreateView(t *testing.T) {
 		catalog := &mockCatalogRepo{
 			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
+			},
+			CreateViewFn: func(_ context.Context, _, _, _ string) error {
+				return nil
+			},
+			DeleteViewFn: func(_ context.Context, _, _ string) error {
+				return nil
 			},
 		}
 		auth := &mockAuthService{
@@ -165,6 +189,12 @@ func TestViewService_CreateView(t *testing.T) {
 			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
+			CreateViewFn: func(_ context.Context, _, _, _ string) error {
+				return nil
+			},
+			DeleteViewFn: func(_ context.Context, _, _ string) error {
+				return nil
+			},
 		}
 		auth := &mockAuthService{
 			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
@@ -189,6 +219,9 @@ func TestViewService_CreateView(t *testing.T) {
 		catalog := &mockCatalogRepo{
 			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
+			},
+			CreateViewFn: func(_ context.Context, _, _, _ string) error {
+				return nil
 			},
 		}
 		auth := &mockAuthService{
@@ -242,6 +275,9 @@ func TestViewService_GetView(t *testing.T) {
 			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
+			DeleteViewFn: func(_ context.Context, _, _ string) error {
+				return nil
+			},
 		}
 
 		svc := NewViewService(viewRepo, &mockCatalogRepoFactory{repo: catalog}, &mockAuthService{}, &mockAuditRepo{})
@@ -277,6 +313,9 @@ func TestViewService_GetView(t *testing.T) {
 		catalog := &mockCatalogRepo{
 			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
+			},
+			DeleteViewFn: func(_ context.Context, _, _ string) error {
+				return nil
 			},
 		}
 
@@ -381,6 +420,9 @@ func TestViewService_DeleteView(t *testing.T) {
 			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
 			},
+			DeleteViewFn: func(_ context.Context, _, _ string) error {
+				return nil
+			},
 		}
 		auth := &mockAuthService{
 			CheckPrivilegeFn: func(_ context.Context, _, _ string, _ string, _ string) (bool, error) {
@@ -446,6 +488,9 @@ func TestViewService_DeleteView(t *testing.T) {
 		catalog := &mockCatalogRepo{
 			GetSchemaFn: func(_ context.Context, _ string) (*domain.SchemaDetail, error) {
 				return schema, nil
+			},
+			DeleteViewFn: func(_ context.Context, _, _ string) error {
+				return nil
 			},
 		}
 		auth := &mockAuthService{

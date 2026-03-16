@@ -56,6 +56,31 @@ func ensureMutableCatalog(catalogName string) error {
 	return nil
 }
 
+func canonicalSchemaID(catalogName, schemaID string) string {
+	return domain.SyntheticCatalogSchemaID(catalogName, schemaID)
+}
+
+func canonicalTableID(catalogName, schemaID, tableID string) string {
+	return domain.SyntheticCatalogTableID(catalogName, schemaID, tableID)
+}
+
+func canonicalizeSchemaDetail(catalogName string, schema *domain.SchemaDetail) {
+	if schema == nil {
+		return
+	}
+	schema.SchemaID = canonicalSchemaID(catalogName, schema.SchemaID)
+}
+
+func canonicalizeTableDetail(catalogName, rawSchemaID string, table *domain.TableDetail) {
+	if table == nil {
+		return
+	}
+	if table.CatalogName == "" {
+		table.CatalogName = catalogName
+	}
+	table.TableID = canonicalTableID(catalogName, rawSchemaID, table.TableID)
+}
+
 // GetCatalogInfo returns information about a catalog.
 func (s *CatalogService) GetCatalogInfo(ctx context.Context, catalogName string) (*domain.CatalogInfo, error) {
 	repo, err := s.repoFactory.ForCatalog(ctx, catalogName)
@@ -115,6 +140,7 @@ func (s *CatalogService) ListSchemas(ctx context.Context, catalogName string, pa
 		return nil, 0, err
 	}
 	for i := range schemas {
+		canonicalizeSchemaDetail(catalogName, &schemas[i])
 		s.enrichSchemaTags(ctx, &schemas[i])
 	}
 	return schemas, total, nil
@@ -158,14 +184,16 @@ func (s *CatalogService) CreateSchema(ctx context.Context, catalogName string, p
 	if err != nil {
 		return nil, err
 	}
+	rawSchemaID := result.SchemaID
 
 	// Set the schema storage path if a location was specified
 	if locationURL != "" {
-		if err := repo.SetSchemaStoragePath(ctx, result.SchemaID, locationURL); err != nil {
+		if err := repo.SetSchemaStoragePath(ctx, rawSchemaID, locationURL); err != nil {
 			return nil, fmt.Errorf("set schema storage path: %w", err)
 		}
 	}
 
+	canonicalizeSchemaDetail(catalogName, result)
 	s.logAudit(ctx, principal, "CREATE_SCHEMA", fmt.Sprintf("Created schema %q in catalog %q", req.Name, catalogName))
 	return result, nil
 }
@@ -180,6 +208,7 @@ func (s *CatalogService) GetSchema(ctx context.Context, catalogName string, name
 	if err != nil {
 		return nil, err
 	}
+	canonicalizeSchemaDetail(catalogName, result)
 	s.enrichSchemaTags(ctx, result)
 	return result, nil
 }
@@ -199,7 +228,7 @@ func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, p
 		return nil, err
 	}
 
-	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivModify, domain.PrivCreateSchema)
+	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, canonicalSchemaID(catalogName, schema.SchemaID), domain.PrivModify, domain.PrivCreateSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -213,6 +242,7 @@ func (s *CatalogService) UpdateSchema(ctx context.Context, catalogName string, p
 		return nil, err
 	}
 
+	canonicalizeSchemaDetail(catalogName, result)
 	s.logAudit(ctx, principal, "UPDATE_SCHEMA", fmt.Sprintf("Updated schema %q metadata", name))
 	return result, nil
 }
@@ -232,7 +262,7 @@ func (s *CatalogService) DeleteSchema(ctx context.Context, catalogName string, p
 		return err
 	}
 
-	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivManage, domain.PrivCreateSchema)
+	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, canonicalSchemaID(catalogName, schema.SchemaID), domain.PrivManage, domain.PrivCreateSchema)
 	if err != nil {
 		return err
 	}
@@ -259,7 +289,12 @@ func (s *CatalogService) ListTables(ctx context.Context, catalogName string, sch
 	if err != nil {
 		return nil, 0, err
 	}
+	var rawSchemaID string
+	if schema, schemaErr := repo.GetSchema(ctx, schemaName); schemaErr == nil {
+		rawSchemaID = schema.SchemaID
+	}
 	for i := range tables {
+		canonicalizeTableDetail(catalogName, rawSchemaID, &tables[i])
 		s.enrichTableTags(ctx, &tables[i])
 		s.enrichTableStats(ctx, &tables[i])
 	}
@@ -282,7 +317,7 @@ func (s *CatalogService) CreateTable(ctx context.Context, catalogName string, pr
 		return nil, err
 	}
 
-	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, schema.SchemaID, domain.PrivCreateTable)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableSchema, canonicalSchemaID(catalogName, schema.SchemaID), domain.PrivCreateTable)
 	if err != nil {
 		return nil, err
 	}
@@ -297,6 +332,7 @@ func (s *CatalogService) CreateTable(ctx context.Context, catalogName string, pr
 		if err != nil {
 			return nil, err
 		}
+		canonicalizeTableDetail(catalogName, schema.SchemaID, result)
 		s.logAudit(ctx, principal, "CREATE_TABLE", fmt.Sprintf("Created table %q in schema %q", req.Name, schemaName))
 		return result, nil
 
@@ -338,6 +374,9 @@ func (s *CatalogService) createExternalTable(ctx context.Context, catalogName st
 		return nil, err
 	}
 
+	if schema, schemaErr := repo.GetSchema(ctx, schemaName); schemaErr == nil {
+		canonicalizeTableDetail(catalogName, schema.SchemaID, result)
+	}
 	s.logAudit(ctx, principal, "CREATE_EXTERNAL_TABLE", fmt.Sprintf("Created external table %q in schema %q", req.Name, schemaName))
 	return result, nil
 }
@@ -352,6 +391,11 @@ func (s *CatalogService) GetTable(ctx context.Context, catalogName string, schem
 	if err != nil {
 		return nil, err
 	}
+	var rawSchemaID string
+	if schema, schemaErr := repo.GetSchema(ctx, schemaName); schemaErr == nil {
+		rawSchemaID = schema.SchemaID
+	}
+	canonicalizeTableDetail(catalogName, rawSchemaID, result)
 	s.enrichTableTags(ctx, result)
 	s.enrichTableStats(ctx, result)
 	return result, nil
@@ -370,8 +414,12 @@ func (s *CatalogService) DeleteTable(ctx context.Context, catalogName string, pr
 	if err != nil {
 		return err
 	}
+	schema, err := repo.GetSchema(ctx, schemaName)
+	if err != nil {
+		return err
+	}
 
-	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, tbl.TableID, domain.PrivManage, domain.PrivCreateTable)
+	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, canonicalTableID(catalogName, schema.SchemaID, tbl.TableID), domain.PrivManage, domain.PrivCreateTable)
 	if err != nil {
 		return err
 	}
@@ -410,8 +458,12 @@ func (s *CatalogService) UpdateTable(ctx context.Context, catalogName string, pr
 	if err != nil {
 		return nil, err
 	}
+	schema, err := repo.GetSchema(ctx, schemaName)
+	if err != nil {
+		return nil, err
+	}
 
-	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify, domain.PrivCreateTable)
+	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, canonicalTableID(catalogName, schema.SchemaID, tbl.TableID), domain.PrivModify, domain.PrivCreateTable)
 	if err != nil {
 		return nil, err
 	}
@@ -425,6 +477,7 @@ func (s *CatalogService) UpdateTable(ctx context.Context, catalogName string, pr
 		return nil, err
 	}
 
+	canonicalizeTableDetail(catalogName, schema.SchemaID, result)
 	s.enrichTableTags(ctx, result)
 	s.enrichTableStats(ctx, result)
 	s.logAudit(ctx, principal, "UPDATE_TABLE", fmt.Sprintf("Updated table %q.%q metadata", schemaName, tableName))
@@ -472,8 +525,12 @@ func (s *CatalogService) UpdateColumn(ctx context.Context, catalogName string, p
 	if err != nil {
 		return nil, err
 	}
+	schema, err := repo.GetSchema(ctx, schemaName)
+	if err != nil {
+		return nil, err
+	}
 
-	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, tbl.TableID, domain.PrivModify, domain.PrivCreateTable)
+	allowed, err := servicepolicy.HasAnySecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, canonicalTableID(catalogName, schema.SchemaID, tbl.TableID), domain.PrivModify, domain.PrivCreateTable)
 	if err != nil {
 		return nil, err
 	}
@@ -503,9 +560,13 @@ func (s *CatalogService) ProfileTable(ctx context.Context, catalogName string, p
 	if err != nil {
 		return nil, err
 	}
+	schema, err := repo.GetSchema(ctx, schemaName)
+	if err != nil {
+		return nil, err
+	}
 
 	// Authorization: require SELECT on the table
-	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, tbl.TableID, domain.PrivSelect)
+	allowed, err := servicepolicy.CheckSecurablePrivilege(ctx, s.auth, principal, domain.SecurableTable, canonicalTableID(catalogName, schema.SchemaID, tbl.TableID), domain.PrivSelect)
 	if err != nil {
 		return nil, err
 	}
