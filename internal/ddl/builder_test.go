@@ -148,6 +148,16 @@ func TestCreateTable(t *testing.T) {
 			want: `CREATE TABLE "lake"."main"."data" ("tags" VARCHAR[])`,
 		},
 		{
+			name:    "non_nullable_column",
+			catalog: "lake",
+			schema:  "analytics",
+			table:   "customers",
+			columns: []ColumnDef{
+				{Name: "email", Type: "VARCHAR", Nullable: boolPtr(false)},
+			},
+			want: `CREATE TABLE "lake"."analytics"."customers" ("email" VARCHAR NOT NULL)`,
+		},
+		{
 			name:    "empty_schema",
 			catalog: "lake",
 			schema:  "",
@@ -205,6 +215,10 @@ func TestCreateTable(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func boolPtr(v bool) *bool {
+	return &v
 }
 
 func TestDropTable(t *testing.T) {

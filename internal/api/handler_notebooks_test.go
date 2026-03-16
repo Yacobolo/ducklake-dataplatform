@@ -267,6 +267,59 @@ func (m *mockGitRepoService) SyncGitRepo(ctx context.Context, id string) (*domai
 	panic("SyncGitRepo not implemented")
 }
 
+func TestHandler_SyncGitRepo(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		svcFn    func(ctx context.Context, id string) (*domain.GitSyncResult, error)
+		assertFn func(t *testing.T, resp GenSyncGitRepoResponse, err error)
+	}{
+		{
+			name: "happy path returns 200",
+			svcFn: func(_ context.Context, _ string) (*domain.GitSyncResult, error) {
+				return &domain.GitSyncResult{
+					CommitSHA:        "abc123",
+					NotebooksCreated: 1,
+					NotebooksUpdated: 2,
+					NotebooksDeleted: 3,
+				}, nil
+			},
+			assertFn: func(t *testing.T, resp GenSyncGitRepoResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				ok200, ok := resp.(SyncGitRepo200JSONResponse)
+				require.True(t, ok, "expected 200 response, got %T", resp)
+				require.NotNil(t, ok200.Body.CommitSha)
+				assert.Equal(t, "abc123", *ok200.Body.CommitSha)
+			},
+		},
+		{
+			name: "not implemented returns 501",
+			svcFn: func(_ context.Context, _ string) (*domain.GitSyncResult, error) {
+				return nil, domain.ErrNotImplemented("git sync is not yet implemented")
+			},
+			assertFn: func(t *testing.T, resp GenSyncGitRepoResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				notImpl, ok := resp.(syncGitRepo501JSONResponse)
+				require.True(t, ok, "expected 501 response, got %T", resp)
+				assert.Equal(t, int32(501), notImpl.Body.Code)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			svc := &mockGitRepoService{syncGitRepoFn: tt.svcFn}
+			handler := &APIHandler{gitRepos: svc}
+			resp, err := handler.SyncGitRepo(context.Background(), GenSyncGitRepoRequest{GitRepoId: "repo-1"})
+			tt.assertFn(t, resp, err)
+		})
+	}
+}
+
 // === Test helpers ===
 
 // setupNotebookTestServer creates a lightweight test server wired with mock notebook services.

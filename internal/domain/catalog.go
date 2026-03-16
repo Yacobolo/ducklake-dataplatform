@@ -184,8 +184,9 @@ func (r *CreateTableRequest) Validate() error {
 
 // CreateColumnDef defines a column for table creation.
 type CreateColumnDef struct {
-	Name string
-	Type string
+	Name     string
+	Type     string
+	Nullable *bool
 }
 
 // MetastoreSummary provides high-level info about the DuckLake metastore.

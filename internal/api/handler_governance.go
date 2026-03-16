@@ -129,6 +129,9 @@ func (h *APIHandler) SearchCatalog(ctx context.Context, req GenSearchCatalogRequ
 	if err != nil {
 		if resp, ok := respondDomainError[GenSearchCatalogResponse](err, domainErrorResponder[GenSearchCatalogResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenSearchCatalogResponse { return SearchCatalog400JSONResponse{resp} },
+			NotFound: func(resp NotFoundJSONResponse) GenSearchCatalogResponse {
+				return SearchCatalog404JSONResponse{resp}
+			},
 			Internal: func(resp InternalErrorJSONResponse) GenSearchCatalogResponse {
 				return GenSearchCatalog500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},

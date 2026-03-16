@@ -99,16 +99,21 @@ func (r *VolumeRepo) Update(ctx context.Context, id string, req domain.UpdateVol
 	if req.Comment != nil {
 		comment = *req.Comment
 	}
+	storageLocation := current.StorageLocation
+	if req.StorageLocation != nil {
+		storageLocation = *req.StorageLocation
+	}
 	owner := current.Owner
 	if req.Owner != nil {
 		owner = *req.Owner
 	}
 
 	if err := r.q.UpdateVolume(ctx, dbstore.UpdateVolumeParams{
-		Name:    name,
-		Comment: comment,
-		Owner:   owner,
-		ID:      id,
+		Name:            name,
+		StorageLocation: storageLocation,
+		Comment:         comment,
+		Owner:           owner,
+		ID:              id,
 	}); err != nil {
 		return nil, mapDBError(err)
 	}

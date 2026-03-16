@@ -57,8 +57,7 @@ func (s *SearchService) resolveRepo(ctx context.Context, catalogName *string) (d
 		}
 		repo, err := s.factory.ForDefault(ctx)
 		if err != nil {
-			// Fall back to static default if no default catalog is configured.
-			return s.defaultRepo, nil //nolint:nilerr // intentional fallback
+			return nil, fmt.Errorf("resolve default search repo: %w", err)
 		}
 		return repo, nil
 	}

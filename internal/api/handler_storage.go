@@ -469,8 +469,9 @@ func (h *APIHandler) GetVolume(ctx context.Context, request GenGetVolumeRequest)
 // UpdateVolume implements the endpoint for updating a volume by name.
 func (h *APIHandler) UpdateVolume(ctx context.Context, request GenUpdateVolumeRequest) (GenUpdateVolumeResponse, error) {
 	domReq := domain.UpdateVolumeRequest{
-		NewName: request.Body.NewName,
-		Comment: request.Body.Comment,
+		NewName:         request.Body.NewName,
+		StorageLocation: request.Body.StorageLocation,
+		Comment:         request.Body.Comment,
 	}
 
 	principal := principalFromCtx(ctx)

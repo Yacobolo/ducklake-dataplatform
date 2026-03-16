@@ -151,6 +151,12 @@ model BadGatewayResponse {
   @body body: Error;
 }
 
+@error
+model NotImplementedResponse {
+  @statusCode statusCode: 501;
+  @body body: Error;
+}
+
 alias StandardErrorResponses = UnauthorizedResponse | TooManyRequestsResponse | InternalServerErrorResponse;
 alias MutatingErrorResponses = StandardErrorResponses | ForbiddenResponse;
 alias ResourceErrorResponses = MutatingErrorResponses | NotFoundResponse;

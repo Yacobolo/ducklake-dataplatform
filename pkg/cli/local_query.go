@@ -47,14 +47,21 @@ func shouldExecuteLocally(cmd *cobra.Command) bool {
 	mode, _ := cmd.Flags().GetString("compute-mode")
 	mode = strings.ToUpper(strings.TrimSpace(mode))
 
+	host, _ := cmd.Root().PersistentFlags().GetString("host")
+	if strings.TrimSpace(host) != "" && mode != computeModeBYOCLocal {
+		return false
+	}
+
 	endpoint, _ := cmd.Flags().GetString("compute-endpoint")
 	if strings.TrimSpace(endpoint) != "" {
 		return false
 	}
 
 	switch mode {
-	case "", computeModeAuto, computeModeBYOCLocal:
+	case computeModeBYOCLocal:
 		return true
+	case "", computeModeAuto:
+		return strings.TrimSpace(host) == ""
 	case computeModeSharedEndpoint:
 		return false
 	default:

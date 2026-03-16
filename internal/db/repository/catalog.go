@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	dbstore "duck-demo/internal/db/dbstore"
+	"duck-demo/internal/ddl"
 	"duck-demo/internal/domain"
 )
 
@@ -32,6 +34,73 @@ type CatalogRepo struct {
 // controlQ is dbstore.Queries backed by controlDB (for catalog_metadata, tag_assignments, etc.).
 func NewCatalogRepo(metaDB *sql.DB, controlDB *sql.DB, controlQ *dbstore.Queries, duckDB *sql.DB, catalogName string, extRepo *ExternalTableRepo, logger *slog.Logger) *CatalogRepo {
 	return &CatalogRepo{metaDB: metaDB, controlDB: controlDB, duckDB: duckDB, catalogName: catalogName, q: controlQ, extRepo: extRepo, logger: logger}
+}
+
+// CreateView creates a managed DuckDB view in the attached catalog.
+func (r *CatalogRepo) CreateView(ctx context.Context, schemaName, viewName, viewDefinition string) error {
+	unlock := r.lockCatalogWrites()
+	defer unlock()
+
+	if r.duckDB == nil {
+		return nil
+	}
+
+	stmt, err := ddl.CreateView(r.catalogName, schemaName, viewName, viewDefinition)
+	if err != nil {
+		return domain.ErrValidation("%s", err.Error())
+	}
+	if _, err := r.duckDB.ExecContext(ctx, stmt); err != nil {
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "already exists") {
+			return domain.ErrConflict("view %q already exists in schema %q", viewName, schemaName)
+		}
+		if strings.Contains(errMsg, "not found") || strings.Contains(errMsg, "does not exist") {
+			return domain.ErrNotFound("schema %q not found", schemaName)
+		}
+		return fmt.Errorf("create view: %w", err)
+	}
+	r.refreshMetaDB(ctx)
+	return nil
+}
+
+// UpdateViewDefinition replaces a managed DuckDB view definition in the attached catalog.
+func (r *CatalogRepo) UpdateViewDefinition(ctx context.Context, schemaName, viewName, viewDefinition string) error {
+	unlock := r.lockCatalogWrites()
+	defer unlock()
+
+	if r.duckDB == nil {
+		return nil
+	}
+
+	stmt, err := ddl.CreateOrReplaceView(r.catalogName, schemaName, viewName, viewDefinition)
+	if err != nil {
+		return domain.ErrValidation("%s", err.Error())
+	}
+	if _, err := r.duckDB.ExecContext(ctx, stmt); err != nil {
+		return fmt.Errorf("update view: %w", err)
+	}
+	r.refreshMetaDB(ctx)
+	return nil
+}
+
+// DeleteView drops a managed DuckDB view from the attached catalog.
+func (r *CatalogRepo) DeleteView(ctx context.Context, schemaName, viewName string) error {
+	unlock := r.lockCatalogWrites()
+	defer unlock()
+
+	if r.duckDB == nil {
+		return nil
+	}
+
+	stmt, err := ddl.DropView(r.catalogName, schemaName, viewName)
+	if err != nil {
+		return domain.ErrValidation("%s", err.Error())
+	}
+	if _, err := r.duckDB.ExecContext(ctx, stmt); err != nil {
+		return fmt.Errorf("drop view: %w", err)
+	}
+	r.refreshMetaDB(ctx)
+	return nil
 }
 
 // refreshMetaDB forces metaDB to see the latest WAL changes written by

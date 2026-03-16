@@ -201,7 +201,13 @@ func (s *uiAssetRepoStub) Create(context.Context, *domain.DataAsset) (*domain.Da
 }
 
 func (s *uiAssetRepoStub) GetByID(context.Context, string) (*domain.DataAsset, error) {
-	panic("unexpected call")
+	now := time.Now().UTC()
+	return &domain.DataAsset{
+		ID:        "asset-1",
+		AssetKey:  "orders.daily",
+		AssetType: domain.AssetTypeTable,
+		UpdatedAt: now,
+	}, nil
 }
 
 func (s *uiAssetRepoStub) GetByKey(_ context.Context, assetKey string) (*domain.DataAsset, error) {

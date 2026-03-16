@@ -267,3 +267,57 @@ func TestCatalogRegistrationService_AdminAccess(t *testing.T) {
 		assert.Equal(t, "cat", reg.Name)
 	})
 }
+
+func TestCatalogRegistrationService_AttachAll_SelectsStartupDefaultWhenMissing(t *testing.T) {
+	t.Parallel()
+
+	var setDefaultID string
+	var defaultCatalogName string
+	repo := &mockRegistrationRepo{
+		ListFn: func(_ context.Context, _ domain.PageRequest) ([]domain.CatalogRegistration, int64, error) {
+			cats := []domain.CatalogRegistration{
+				{ID: "sample", Name: domain.SampleDataCatalogName, Status: domain.CatalogStatusActive},
+				{ID: "manual", Name: "manual_lake", Status: domain.CatalogStatusActive},
+			}
+			return cats, int64(len(cats)), nil
+		},
+		GetDefaultFn: func(_ context.Context) (*domain.CatalogRegistration, error) {
+			return nil, domain.ErrNotFound("default catalog not found")
+		},
+		SetDefaultFn: func(_ context.Context, id string) error {
+			setDefaultID = id
+			return nil
+		},
+	}
+	attacher := &recordingAttacher{
+		setDefaultFn: func(_ context.Context, name string) error {
+			defaultCatalogName = name
+			return nil
+		},
+	}
+
+	svc := NewCatalogRegistrationService(RegistrationServiceDeps{
+		Repo:               repo,
+		Attacher:           attacher,
+		ControlPlaneDBPath: "/tmp/ctrl.db",
+		Logger:             slog.Default(),
+	})
+
+	err := svc.AttachAll(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "manual", setDefaultID)
+	assert.Equal(t, "manual_lake", defaultCatalogName)
+}
+
+type recordingAttacher struct {
+	setDefaultFn func(context.Context, string) error
+}
+
+func (r *recordingAttacher) Attach(_ context.Context, _ domain.CatalogRegistration) error { return nil }
+func (r *recordingAttacher) Detach(_ context.Context, _ string) error                     { return nil }
+func (r *recordingAttacher) SetDefaultCatalog(ctx context.Context, name string) error {
+	if r.setDefaultFn != nil {
+		return r.setDefaultFn(ctx, name)
+	}
+	return nil
+}

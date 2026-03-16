@@ -86,7 +86,7 @@ tasks:
     desc: Generate server/CLI from JSON IR (apigen)
     deps: [typespec:compile]
     cmds:
-      - find pkg/cli/gen -maxdepth 1 -type f -name '*.gen.go' ! -name 'apigen_registry.gen.go' -delete
+      - find pkg/cli/gen -maxdepth 1 -type f -name '*.gen.go' ! -name 'apigen_registry.gen.go' ! -name 'discovery_index.gen.go' -delete
       - go run ./cmd/apigen all -ir api/gen/json-ir.json -compat-types-out internal/api/types.gen.go
     sources:
       - api/gen/json-ir.json
@@ -229,6 +229,7 @@ tasks:
 
   build-cli:
     desc: Build the CLI binary
+    deps: [docs:generate]
     cmds:
       - go build -ldflags "-X main.version={{.GIT_TAG}}" -o bin/duck ./cmd/cli
 
