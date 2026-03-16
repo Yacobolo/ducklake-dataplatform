@@ -58,6 +58,25 @@ func TestAPIGenContractBoundary_GrantAndProductAndGovernanceHandlersUseOperation
 	require.True(t, strings.Contains(governanceSource, `respondDomainErrorForOperation[GenCreateTagAssignmentResponse]("createTagAssignment"`))
 }
 
+func TestAPIGenContractBoundary_StorageHandlersUseOperationAwareMapping(t *testing.T) {
+	t.Parallel()
+
+	storageBody, err := os.ReadFile(filepath.Join("..", "api", "handler_storage.go"))
+	require.NoError(t, err)
+	storageSource := string(storageBody)
+	require.NotContains(t, storageSource, `respondDomainError[`)
+	for _, snippet := range []string{
+		`respondDomainErrorForOperation[GenListStorageCredentialsResponse]("listStorageCredentials"`,
+		`respondDomainErrorForOperation[GenCreateStorageCredentialResponse]("createStorageCredential"`,
+		`respondDomainErrorForOperation[GenListExternalLocationsResponse]("listExternalLocations"`,
+		`respondDomainErrorForOperation[GenCreateExternalLocationResponse]("createExternalLocation"`,
+		`respondDomainErrorForOperation[GenListVolumesResponse]("listVolumes"`,
+		`respondDomainErrorForOperation[GenCreateVolumeResponse]("createVolume"`,
+	} {
+		require.True(t, strings.Contains(storageSource, snippet), "expected handler_storage.go to contain %q", snippet)
+	}
+}
+
 func TestAPIGenContractBoundary_NoManualOperationsRemain(t *testing.T) {
 	t.Parallel()
 
