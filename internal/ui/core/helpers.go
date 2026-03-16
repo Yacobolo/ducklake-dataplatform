@@ -26,16 +26,8 @@ func cardClass(extra ...string) string {
 	)
 }
 
-func CardClass(extra ...string) string {
-	return cardClass(extra...)
-}
-
 func mutedClass() string {
 	return "text-xs text-[var(--fgColor-muted)]"
-}
-
-func MutedClass() string {
-	return mutedClass()
 }
 
 func buttonBaseClass(size string) string {
@@ -59,10 +51,6 @@ func secondaryButtonClass(size ...string) string {
 	return buttonBaseClass(buttonSize)
 }
 
-func SecondaryButtonClass(size ...string) string {
-	return secondaryButtonClass(size...)
-}
-
 func primaryButtonClass(size ...string) string {
 	buttonSize := ""
 	if len(size) > 0 {
@@ -72,10 +60,6 @@ func primaryButtonClass(size ...string) string {
 		buttonBaseClass(buttonSize),
 		"border-[var(--button-primary-borderColor-rest)] bg-[var(--button-primary-bgColor-rest)] text-[var(--button-primary-fgColor-rest)] hover:bg-[var(--button-primary-bgColor-hover)] active:bg-[var(--button-primary-bgColor-active)]",
 	)
-}
-
-func PrimaryButtonClass(size ...string) string {
-	return primaryButtonClass(size...)
 }
 
 func dangerButtonClass(size ...string) string {
@@ -89,20 +73,12 @@ func dangerButtonClass(size ...string) string {
 	)
 }
 
-func DangerButtonClass(size ...string) string {
-	return dangerButtonClass(size...)
-}
-
 func iconButtonClass(size string) string {
 	sizeClasses := "h-10 w-10"
 	if strings.TrimSpace(size) == "small" {
 		sizeClasses = "h-8 w-8"
 	}
 	return ClassNames(secondaryButtonClass(size), sizeClasses, "p-0")
-}
-
-func IconButtonClass(size string) string {
-	return iconButtonClass(size)
 }
 
 func IconGlyphClass() string {
@@ -124,28 +100,12 @@ func formControlClass(extra ...string) string {
 	)
 }
 
-func FormControlClass(extra ...string) string {
-	return formControlClass(extra...)
-}
-
-func FormSelectClass(extra ...string) string {
-	return formControlClass(extra...)
-}
-
 func tableWrapClass(extra ...string) string {
 	return ClassNames("overflow-x-auto", strings.Join(extra, " "))
 }
 
-func TableWrapClass(extra ...string) string {
-	return tableWrapClass(extra...)
-}
-
 func buttonRowClass(extra ...string) string {
 	return ClassNames("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex", strings.Join(extra, " "))
-}
-
-func ButtonRowClass(extra ...string) string {
-	return buttonRowClass(extra...)
 }
 
 func FallbackString(value, fallback string) string {
@@ -166,32 +126,16 @@ func sectionTitleClass() string {
 	return "m-0 text-lg font-semibold text-[var(--fgColor-default)]"
 }
 
-func SectionTitleClass() string {
-	return sectionTitleClass()
-}
-
 func sectionCopyClass() string {
 	return "m-0 text-sm text-[var(--fgColor-muted)]"
-}
-
-func SectionCopyClass() string {
-	return sectionCopyClass()
 }
 
 func subtleLinkClass() string {
 	return "text-[var(--fgColor-muted)] no-underline hover:text-[var(--fgColor-default)]"
 }
 
-func SubtleLinkClass() string {
-	return subtleLinkClass()
-}
-
 func dataTableClass(extra ...string) string {
 	return ClassNames("min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--control-bgColor-hover)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]", strings.Join(extra, " "))
-}
-
-func DataTableClass(extra ...string) string {
-	return dataTableClass(extra...)
 }
 
 func labelClass(tone string) string {
@@ -208,10 +152,6 @@ func labelClass(tone string) string {
 	default:
 		return ClassNames(base, "bg-[var(--label-gray-bgColor-rest)] text-[var(--label-gray-fgColor-rest)]")
 	}
-}
-
-func LabelClass(tone string) string {
-	return labelClass(tone)
 }
 
 func StatusLabel(text, tone string) Node {

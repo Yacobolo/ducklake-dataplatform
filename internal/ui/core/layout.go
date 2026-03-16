@@ -86,15 +86,15 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
 					Class("app-header flex items-center justify-between gap-4 border-b border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-4 py-3 shadow-[var(--shadow-resting-xsmall)] max-md:flex-wrap"),
 					Div(
 						Class("app-header-brand inline-flex items-center gap-2"),
-						Button(Type("button"), ID("nav-toggle"), Class(ClassNames(IconButtonClass("small"), "app-header-menu hidden max-md:inline-flex")), Attr("aria-label", "Toggle navigation"), Attr("aria-controls", "app-sidebar"), Attr("aria-expanded", "false"), I(Class(IconGlyphClass()), Attr("data-lucide", "menu"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Toggle navigation"))),
+						Button(Type("button"), ID("nav-toggle"), Class(ClassNames(iconButtonClass("small"), "app-header-menu hidden max-md:inline-flex")), Attr("aria-label", "Toggle navigation"), Attr("aria-controls", "app-sidebar"), Attr("aria-expanded", "false"), I(Class(IconGlyphClass()), Attr("data-lucide", "menu"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Toggle navigation"))),
 						Strong(Class("block text-[0.8125rem] font-semibold uppercase tracking-[0.04em]"), Text("Duck Platform")),
 					),
 					Div(
 						Class("app-header-meta inline-flex items-center gap-2 max-md:w-full max-md:justify-between"),
-						Button(Type("button"), ID("sidebar-toggle"), Class(ClassNames(IconButtonClass("small"), "max-md:hidden")), Attr("aria-label", "Toggle compact sidebar"), Title("Toggle compact sidebar"), I(Class(IconGlyphClass()), Attr("data-lucide", "panel-left"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Toggle compact sidebar"))),
+						Button(Type("button"), ID("sidebar-toggle"), Class(ClassNames(iconButtonClass("small"), "max-md:hidden")), Attr("aria-label", "Toggle compact sidebar"), Title("Toggle compact sidebar"), I(Class(IconGlyphClass()), Attr("data-lucide", "panel-left"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Toggle compact sidebar"))),
 						P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Signed in as "+principalLabel)),
-						Button(Type("button"), ID("theme-toggle"), Class(IconButtonClass("small")), Title("Toggle theme"), Attr("aria-label", "Toggle theme"), Span(ID("theme-icon-sun"), I(Class(IconGlyphClass()), Attr("data-lucide", "sun"), Attr("aria-hidden", "true"))), Span(ID("theme-icon-moon"), Class("hidden"), I(Class(IconGlyphClass()), Attr("data-lucide", "moon"), Attr("aria-hidden", "true"))), Span(Class("sr-only"), Text("Toggle theme"))),
-						Form(Method("post"), Action("/ui/logout"), Button(Type("submit"), Class(SecondaryButtonClass("small")), Text("Sign out"))),
+						Button(Type("button"), ID("theme-toggle"), Class(iconButtonClass("small")), Title("Toggle theme"), Attr("aria-label", "Toggle theme"), Span(ID("theme-icon-sun"), I(Class(IconGlyphClass()), Attr("data-lucide", "sun"), Attr("aria-hidden", "true"))), Span(ID("theme-icon-moon"), Class("hidden"), I(Class(IconGlyphClass()), Attr("data-lucide", "moon"), Attr("aria-hidden", "true"))), Span(Class("sr-only"), Text("Toggle theme"))),
+						Form(Method("post"), Action("/ui/logout"), Button(Type("submit"), Class(secondaryButtonClass("small")), Text("Sign out"))),
 					),
 				),
 				Div(

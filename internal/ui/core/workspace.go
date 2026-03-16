@@ -131,7 +131,7 @@ func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defa
 
 	collapseButton := Button(
 		Type("button"),
-		Class(ClassNames("workspace-aside-toggle shrink-0 [.is-aside-collapsed_&]:hidden", IconButtonClass("small"))),
+		Class(ClassNames("workspace-aside-toggle shrink-0 [.is-aside-collapsed_&]:hidden", iconButtonClass("small"))),
 		Attr("data-workspace-aside-toggle", "true"),
 		Attr("aria-label", "Collapse sidebar"),
 		Attr("aria-expanded", "true"),
@@ -260,7 +260,7 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 
 	newCatalogButton := Node(nil)
 	if strings.TrimSpace(d.NewCatalogURL) != "" {
-		newCatalogButton = A(Href(d.NewCatalogURL), Class(IconButtonClass("small")), Title("New catalog"), Attr("aria-label", "New catalog"), I(Class(IconGlyphClass()), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("New catalog")))
+		newCatalogButton = A(Href(d.NewCatalogURL), Class(iconButtonClass("small")), Title("New catalog"), Attr("aria-label", "New catalog"), I(Class(IconGlyphClass()), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("New catalog")))
 	}
 
 	filterNode := Node(nil)
@@ -268,7 +268,7 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 		filterNode = Div(Class("relative"),
 			I(Class(NavIconClass()), Attr("data-lucide", "search"), Attr("aria-hidden", "true")),
 			Label(Class("sr-only"), Text("Filter catalog explorer")),
-			Input(Type("search"), Class(FormControlClass("pl-9")), Placeholder(d.FilterPlaceholder), data.Bind("q"), AutoComplete("off")),
+			Input(Type("search"), Class(formControlClass("pl-9")), Placeholder(d.FilterPlaceholder), data.Bind("q"), AutoComplete("off")),
 		)
 	}
 
