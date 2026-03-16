@@ -572,14 +572,150 @@ spec:
 		assert.Nil(t, createdRepo.LastCommit)
 		assert.Nil(t, createdRepo.LastSyncAt)
 	})
+
+	t.Run("fails when linked notebooks have duplicate git paths", func(t *testing.T) {
+		ctx := context.Background()
+		gitRepoRepo := &testutil.MockGitRepoRepo{}
+		notebookRepo := newMemoryNotebookRepo()
+		auditRepo := &testutil.MockAuditRepo{}
+		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
+
+		repoDir, _ := initGitRepoWithFiles(t, map[string]string{
+			"notebooks/sales.yaml": `
+apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: sales
+spec:
+  cells:
+    - type: sql
+      name: output
+      role: output
+      content: SELECT 1
+`,
+		})
+
+		createdRepo := &domain.GitRepo{ID: "repo-1", URL: repoDir, Branch: "master", Owner: "alice"}
+		gitRepoRepo.GetByIDFn = func(_ context.Context, id string) (*domain.GitRepo, error) { return createdRepo, nil }
+		gitRepoRepo.UpdateSyncStatusFn = func(_ context.Context, id string, commitSHA string, syncedAt time.Time) error {
+			t.Fatalf("sync status should not be updated on duplicate linked paths")
+			return nil
+		}
+
+		_, err := notebookRepo.CreateNotebook(ctx, &domain.Notebook{
+			ID:        "linked-1",
+			Name:      "sales-a",
+			Owner:     "alice",
+			GitRepoID: stringPtr(createdRepo.ID),
+			GitPath:   stringPtr("notebooks/sales.yaml"),
+		})
+		require.NoError(t, err)
+		_, err = notebookRepo.CreateNotebook(ctx, &domain.Notebook{
+			ID:        "linked-2",
+			Name:      "sales-b",
+			Owner:     "alice",
+			GitRepoID: stringPtr(createdRepo.ID),
+			GitPath:   stringPtr("notebooks/sales.yaml"),
+		})
+		require.NoError(t, err)
+
+		result, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
+		assert.Nil(t, result)
+		require.Error(t, err)
+		var conflictErr *domain.ConflictError
+		require.ErrorAs(t, err, &conflictErr)
+		assert.Contains(t, conflictErr.Message, "duplicate synced notebook path")
+	})
+
+	t.Run("removes notebook publish link when publish config is deleted", func(t *testing.T) {
+		ctx := context.Background()
+		gitRepoRepo := &testutil.MockGitRepoRepo{}
+		notebookRepo := newMemoryNotebookRepo()
+		auditRepo := &testutil.MockAuditRepo{}
+		linkRepo := newMemoryNotebookModelLinkRepo()
+		promoter := &capturingNotebookPromoter{linkRepo: linkRepo}
+		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
+		svc.SetPublishDependencies(promoter, linkRepo)
+
+		repoDir, repo := initGitRepoWithFiles(t, map[string]string{
+			"notebooks/sales.yaml": `
+apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: sales
+spec:
+  cells:
+    - type: sql
+      name: published_output
+      role: output
+      content: SELECT 1
+  publish:
+    model:
+      project: analytics
+      name: sales_model
+      materialization: VIEW
+      output_cell: published_output
+`,
+		})
+
+		createdRepo := &domain.GitRepo{ID: "repo-1", URL: repoDir, Branch: "master", Owner: "alice"}
+		gitRepoRepo.GetByIDFn = func(_ context.Context, id string) (*domain.GitRepo, error) { return createdRepo, nil }
+		gitRepoRepo.UpdateSyncStatusFn = func(_ context.Context, id string, commitSHA string, syncedAt time.Time) error {
+			createdRepo.LastCommit = &commitSHA
+			createdRepo.LastSyncAt = &syncedAt
+			return nil
+		}
+
+		first, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 1, first.NotebooksCreated)
+		require.Len(t, promoter.requests, 1)
+
+		items, total, err := notebookRepo.ListNotebooks(ctx, nil, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+		require.NoError(t, err)
+		require.Equal(t, int64(1), total)
+		require.Len(t, items, 1)
+		require.NotNil(t, linkRepo.links[items[0].ID])
+
+		writeGitFile(t, repoDir, "notebooks/sales.yaml", `
+apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: sales
+spec:
+  cells:
+    - type: sql
+      name: published_output
+      role: output
+      content: SELECT 1
+`)
+		commitGitChanges(t, repo, "remove publish config", []string{"notebooks/sales.yaml"}, nil)
+
+		second, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 0, second.NotebooksCreated)
+		assert.Equal(t, 0, second.NotebooksDeleted)
+		assert.Nil(t, linkRepo.links[items[0].ID])
+		assert.Len(t, promoter.requests, 1)
+	})
 }
 
 type capturingNotebookPromoter struct {
 	requests []domain.PromoteNotebookRequest
+	linkRepo domain.NotebookModelLinkRepository
 }
 
-func (p *capturingNotebookPromoter) PromoteNotebook(_ context.Context, _ string, req domain.PromoteNotebookRequest) (*domain.Model, error) {
+func (p *capturingNotebookPromoter) PromoteNotebook(ctx context.Context, _ string, req domain.PromoteNotebookRequest) (*domain.Model, error) {
 	p.requests = append(p.requests, req)
+	if p.linkRepo != nil {
+		if err := p.linkRepo.Upsert(ctx, &domain.NotebookModelLink{
+			NotebookID:   req.NotebookID,
+			ModelID:      domain.NewID(),
+			OutputCellID: req.OutputCellID,
+		}); err != nil {
+			return nil, err
+		}
+	}
 	return &domain.Model{ID: domain.NewID()}, nil
 }
 
@@ -627,6 +763,50 @@ func sortedKeys(values map[string]string) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+type memoryNotebookModelLinkRepo struct {
+	links map[string]*domain.NotebookModelLink
+}
+
+func newMemoryNotebookModelLinkRepo() *memoryNotebookModelLinkRepo {
+	return &memoryNotebookModelLinkRepo{links: make(map[string]*domain.NotebookModelLink)}
+}
+
+func (r *memoryNotebookModelLinkRepo) Upsert(_ context.Context, link *domain.NotebookModelLink) error {
+	cloned := *link
+	if cloned.ID == "" {
+		cloned.ID = domain.NewID()
+	}
+	r.links[cloned.NotebookID] = &cloned
+	return nil
+}
+
+func (r *memoryNotebookModelLinkRepo) GetByNotebookID(_ context.Context, notebookID string) (*domain.NotebookModelLink, error) {
+	link, ok := r.links[notebookID]
+	if !ok {
+		return nil, domain.ErrNotFound("notebook model link not found")
+	}
+	cloned := *link
+	return &cloned, nil
+}
+
+func (r *memoryNotebookModelLinkRepo) GetByModelID(_ context.Context, modelID string) (*domain.NotebookModelLink, error) {
+	for _, link := range r.links {
+		if link.ModelID == modelID {
+			cloned := *link
+			return &cloned, nil
+		}
+	}
+	return nil, domain.ErrNotFound("notebook model link not found")
+}
+
+func (r *memoryNotebookModelLinkRepo) DeleteByNotebookID(_ context.Context, notebookID string) error {
+	if _, ok := r.links[notebookID]; !ok {
+		return domain.ErrNotFound("notebook model link not found")
+	}
+	delete(r.links, notebookID)
+	return nil
 }
 
 type memoryNotebookRepo struct {

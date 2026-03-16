@@ -189,6 +189,9 @@ func (s *GitService) SyncGitRepo(ctx context.Context, principal string, isAdmin 
 		if nb.GitRepoID == nil || *nb.GitRepoID != repo.ID || nb.GitPath == nil || *nb.GitPath == "" {
 			continue
 		}
+		if _, exists := linked[*nb.GitPath]; exists {
+			return nil, domain.ErrConflict("duplicate synced notebook path %q found for git repo %q", *nb.GitPath, repo.ID)
+		}
 		linked[*nb.GitPath] = nb
 	}
 
@@ -406,6 +409,14 @@ func (s *GitService) syncNotebookCells(ctx context.Context, notebookID string, d
 
 func (s *GitService) reconcileNotebookPublish(ctx context.Context, principal, notebookID string, spec declarative.NotebookSpec) error {
 	if spec.Publish == nil || spec.Publish.Model == nil {
+		if s.notebookLinks != nil {
+			if err := s.notebookLinks.DeleteByNotebookID(ctx, notebookID); err != nil {
+				var notFound *domain.NotFoundError
+				if !errors.As(err, &notFound) {
+					return fmt.Errorf("delete notebook publish link: %w", err)
+				}
+			}
+		}
 		return nil
 	}
 	if s.models == nil {
