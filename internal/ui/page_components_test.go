@@ -34,8 +34,8 @@ func TestUIComponentsPage_SelectionAndLoadingPatternsRender(t *testing.T) {
 
 	assert.Contains(t, html, "Enable row-level security")
 	assert.Contains(t, html, "Notify on failed runs")
-	assert.Contains(t, html, "Spinner")
-	assert.Contains(t, html, "ProgressBar")
+	assert.Contains(t, html, `role="progressbar"`)
+	assert.Contains(t, html, "Loading metadata from metastore")
 }
 
 func renderComponentsPageForTest(t *testing.T) string {

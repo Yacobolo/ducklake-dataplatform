@@ -26,7 +26,7 @@ func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData,
 	}
 	tableNode := Node(emptyStateCard("No macros yet.", "New macro", "/ui/macros/new"))
 	if len(tableRows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Visibility")), Th(Text("Status")))), TBody(Group(tableRows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Visibility")), Th(Text("Status")))), TBody(Group(tableRows))))
 	}
 	return appPage("Macros", "macros", principal, pageToolbar("/ui/macros/new", "New macro"), quickFilterCard("Filter by macro name or visibility"), tableNode, paginationCard("/ui/macros", page, total))
 }
@@ -60,7 +60,7 @@ func macroDetailPage(d macroDetailPageData) Node {
 		r := d.Revisions[i]
 		revRows = append(revRows, Tr(Td(Text(r.Version)), Td(Text(r.Status)), Td(Text(r.CreatedBy)), Td(Text(r.Created))))
 	}
-	return appPage("Macro: "+d.Name, "macros", d.Principal, Div(Class(cardClass()), P(Text("Type: "+d.Type)), P(Text("Visibility: "+d.Visibility)), P(Text("Status: "+d.Status)), P(Text("Owner: "+d.Owner)), Div(Class("BtnGroup"), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href(d.DiffURL), Class(secondaryButtonClass()), Text("Diff revisions")), A(Href(d.ImpactURL), Class(secondaryButtonClass()), Text("Impact")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete"))))), Div(Class(cardClass()), H2(Text("Definition")), Pre(Text(d.Definition))), Div(Class(cardClass("table-wrap")), H2(Text("Revisions")), Table(Class("data-table"), THead(Tr(Th(Text("Version")), Th(Text("Status")), Th(Text("Created by")), Th(Text("Created")))), TBody(Group(revRows)))))
+	return appPage("Macro: "+d.Name, "macros", d.Principal, Div(Class(cardClass()), P(Text("Type: "+d.Type)), P(Text("Visibility: "+d.Visibility)), P(Text("Status: "+d.Status)), P(Text("Owner: "+d.Owner)), Div(Class(buttonRowClass()), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href(d.DiffURL), Class(secondaryButtonClass()), Text("Diff revisions")), A(Href(d.ImpactURL), Class(secondaryButtonClass()), Text("Impact")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(dangerButtonClass()), Text("Delete"))))), Div(Class(cardClass()), H2(Text("Definition")), Pre(Text(d.Definition))), Div(Class(cardClass(tableWrapClass())), H2(Text("Revisions")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Version")), Th(Text("Status")), Th(Text("Created by")), Th(Text("Created")))), TBody(Group(revRows)))))
 }
 
 func macrosNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
@@ -173,7 +173,7 @@ func macroImpactPage(d macroImpactPageData) Node {
 	}
 	tableNode := Node(emptyStateCard("No impacted models found for this macro.", "Back to macro", "/ui/macros/"+d.Name))
 	if len(rows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Model")), Th(Text("Last seen")))), TBody(Group(rows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Model")), Th(Text("Last seen")))), TBody(Group(rows))))
 	}
 	return appPage("Macro Impact: "+d.Name, "macros", d.Principal, tableNode)
 }
@@ -187,5 +187,5 @@ func macroImpactSection(title string, rowsData []macroImpactRowData, emptyMessag
 		row := rowsData[i]
 		rows = append(rows, Tr(Td(A(Href(row.URL), Text(row.ModelName))), Td(Text(row.LastSeen))))
 	}
-	return Div(Class(cardClass("table-wrap")), H2(Text(title)), Table(Class("data-table"), THead(Tr(Th(Text("Model")), Th(Text("Last seen")))), TBody(Group(rows))))
+	return Div(Class(cardClass(tableWrapClass())), H2(Text(title)), Table(Class(dataTableClass()), THead(Tr(Th(Text("Model")), Th(Text("Last seen")))), TBody(Group(rows))))
 }

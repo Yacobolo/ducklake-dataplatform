@@ -25,7 +25,7 @@ func semanticHomePage(principal domain.ContextPrincipal) Node {
 		"Semantic",
 		"semantic",
 		principal,
-		Div(Class("grid"), Group(nodes)),
+		Div(Class("grid gap-3 md:grid-cols-2 xl:grid-cols-3"), Group(nodes)),
 	)
 }
 
@@ -59,7 +59,7 @@ func semanticModelsListPage(d semanticModelsListPageData) Node {
 	}
 	tableNode := Node(emptyStateCard("No semantic models defined.", "New semantic model", "/ui/semantic/models/new"))
 	if len(rows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Model")), Th(Text("Base model")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(rows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Model")), Th(Text("Base model")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(rows))))
 	}
 	return appPage("Semantic Models", "semantic", d.Principal, pageToolbar("/ui/semantic/models/new", "New semantic model"), pageToolbar("/ui/semantic/relationships", "Relationships"), quickFilterCard("Filter by semantic model or base model"), tableNode, paginationCard("/ui/semantic/models", d.Page, d.Total))
 }
@@ -147,7 +147,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 			P(Text("Base model: "+d.BaseModelRef)),
 			P(Text("Default time dimension: "+d.DefaultTimeDim)),
 			P(Text("Description: "+valueOrDash(d.Description))),
-			Div(Class("BtnGroup"), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href("/ui/semantic/relationships"), Class(secondaryButtonClass()), Text("Relationships")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete")))),
+			Div(Class(buttonRowClass()), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href("/ui/semantic/relationships"), Class(secondaryButtonClass()), Text("Relationships")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(dangerButtonClass()), Text("Delete")))),
 		),
 		Div(
 			Class(cardClass()),
@@ -179,7 +179,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				Button(Type("submit"), Class(primaryButtonClass()), Text("Create metric")),
 			),
 		),
-		Div(Class(cardClass("table-wrap")), H2(Text("Metrics")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Expression")), Th(Text("Status")), Th(Class("text-right"), Text("Actions")))), TBody(Group(metricRows)))),
+		Div(Class(cardClass(tableWrapClass())), H2(Text("Metrics")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Expression")), Th(Text("Status")), Th(Class("text-right"), Text("Actions")))), TBody(Group(metricRows)))),
 		Div(
 			Class(cardClass()),
 			H2(Text("Create pre-aggregation")),
@@ -202,7 +202,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				Button(Type("submit"), Class(primaryButtonClass()), Text("Create pre-aggregation")),
 			),
 		),
-		Div(Class(cardClass("table-wrap")), H2(Text("Pre-aggregations")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Grain")), Th(Text("Target")), Th(Class("text-right"), Text("Actions")))), TBody(Group(preAggRows)))),
+		Div(Class(cardClass(tableWrapClass())), H2(Text("Pre-aggregations")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Grain")), Th(Text("Target")), Th(Class("text-right"), Text("Actions")))), TBody(Group(preAggRows)))),
 		semanticQueryCard(d.ProjectName, d.ModelName, d.QueryExplainURL, d.QueryRunURL, d.CSRFFieldProvider, nil, nil),
 	)
 }
@@ -250,7 +250,7 @@ func semanticRelationshipsPage(d semanticRelationshipsPageData) Node {
 	}
 	tableNode := Node(emptyStateCard("No relationships defined.", "Create semantic model", "/ui/semantic/models/new"))
 	if len(rows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("From")), Th(Text("To")), Th(Text("Type")), Th(Text("Join SQL")), Th(Class("text-right"), Text("Actions")))), TBody(Group(rows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("From")), Th(Text("To")), Th(Text("Type")), Th(Text("Join SQL")), Th(Class("text-right"), Text("Actions")))), TBody(Group(rows))))
 	}
 	return appPage(
 		"Semantic Relationships",
@@ -305,7 +305,7 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 		}
 		resultNode = Group([]Node{
 			Div(Class(cardClass()), H2(Text("Query plan")), P(Text("Base model: "+d.Plan.BaseModelName)), P(Text("Base relation: "+d.Plan.BaseRelation)), P(Text("Metrics: "+stringsJoin(d.Plan.Metrics))), P(Text("Dimensions: "+stringsJoin(d.Plan.Dimensions))), P(Text("Freshness status: "+d.Plan.FreshnessStatus)), P(Text("Freshness basis: "+stringsJoin(d.Plan.FreshnessBasis))), H3(Text("Generated SQL")), Pre(Text(d.Plan.GeneratedSQL))),
-			Div(Class(cardClass("table-wrap")), H2(Text("Join path")), Table(Class("data-table"), THead(Tr(Th(Text("Relationship")), Th(Text("From")), Th(Text("To")), Th(Text("Join SQL")))), TBody(Group(joinRows)))),
+			Div(Class(cardClass(tableWrapClass())), H2(Text("Join path")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Relationship")), Th(Text("From")), Th(Text("To")), Th(Text("Join SQL")))), TBody(Group(joinRows)))),
 		})
 	}
 	if d.Result != nil && d.Result.Result != nil {
@@ -323,7 +323,7 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 		}
 		resultNode = Group([]Node{
 			resultNode,
-			Div(Class(cardClass("table-wrap")), H2(Text("Execution result")), Table(Class("data-table"), THead(Tr(Group(headers))), TBody(Group(rows)))),
+			Div(Class(cardClass(tableWrapClass())), H2(Text("Execution result")), Table(Class(dataTableClass()), THead(Tr(Group(headers))), TBody(Group(rows)))),
 		})
 	}
 	return appPage("Semantic Query", "semantic", d.Principal, semanticQueryCard(d.Request.ProjectName, d.Request.SemanticModelName, "/ui/semantic/query/explain", "/ui/semantic/query/run", d.CSRFFieldProvider, &d.Request, d.Result), resultNode)
@@ -371,7 +371,7 @@ func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string
 			Input(Name("limit"), Value(limit)),
 			Label(Text("Time grain")),
 			Input(Name("time_grain"), Value(timeGrain)),
-			Div(Class("BtnGroup"),
+			Div(Class(buttonRowClass()),
 				Button(Type("submit"), Class(primaryButtonClass()), Text("Explain query")),
 				Button(Type("submit"), FormAction(runURL), Class(secondaryButtonClass()), Text("Run query")),
 			),

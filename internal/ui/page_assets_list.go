@@ -30,7 +30,7 @@ func assetsListPage(principal domain.ContextPrincipal, rows []assetsListRowData,
 		"Assets",
 		"assets",
 		principal,
-		Div(Class("assets-shell"),
+		Div(Class(assetShellClass()),
 			assetsHero(summary, canMaterialize, backfillConfigured),
 			quickFilterCardWithValue("Filter by asset key, type, owner, or tag", filterValue),
 			assetsMetricsGrid(summary),
@@ -116,21 +116,23 @@ func assetsHero(summary assetsListSummary, canMaterialize bool, backfillConfigur
 	if len(summary.OwnerCounts) > 0 {
 		ownerText = "Top owner: " + summary.OwnerCounts[0].Label
 	}
-	return Div(Class("assets-hero"),
-		Div(Class("assets-hero-copy"),
-			P(Class("assets-kicker"), Text("Operations cockpit")),
-			H2(Class("assets-hero-title"), Text("Assets are where metadata turns into runtime behavior.")),
-			P(Class("assets-hero-text"), Text(message)),
-			Div(Class("assets-hero-actions"),
+	return Div(Class(assetHeroClass()),
+		Div(Class(assetHeroCopyClass()),
+			P(Class(assetKickerClass()), Text("Operations cockpit")),
+			H2(Class(assetTitleClass()), Text("Assets are where metadata turns into runtime behavior.")),
+			P(Class(assetDescriptionClass()), Text(message)),
+			Div(Class(assetHeroActionsClass()),
 				A(Href(actionHref), Class(primaryButtonClass()), Text(actionLabel)),
 				A(Href("/ui/catalogs"), Class(secondaryButtonClass()), Text("Browse source catalog")),
 			),
 		),
-		Div(Class("assets-hero-meta"),
-			Div(Class("assets-hero-chip"), statusLabel(strconv.Itoa(summary.Active)+" active", "success")),
-			Div(Class("assets-hero-chip"), statusLabel(strconv.Itoa(summary.Partitioned)+" partitioned", "accent")),
-			Div(Class("assets-hero-chip"), statusLabel(backfillLabel, backfillTone)),
-			P(Class("assets-hero-caption"), Text(ownerText)),
+		Div(Class(assetHeroMetaClass()),
+			Div(Class(assetBadgeRowClass()),
+				statusLabel(strconv.Itoa(summary.Active)+" active", "success"),
+				statusLabel(strconv.Itoa(summary.Partitioned)+" partitioned", "accent"),
+				statusLabel(backfillLabel, backfillTone),
+			),
+			P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(ownerText)),
 		),
 	)
 }
@@ -150,14 +152,14 @@ func assetsMetricsGrid(summary assetsListSummary) Node {
 	for i := range items {
 		item := items[i]
 		nodes = append(nodes,
-			Div(Class("assets-metric-card"),
-				P(Class("assets-metric-label"), Text(item.Label)),
-				P(Class("assets-metric-value"), Text(strconv.Itoa(item.Value))),
-				P(Class("assets-metric-hint"), Text(item.Hint)),
+			Div(Class(assetMetricCardClass()),
+				P(Class(assetMetricLabelClass()), Text(item.Label)),
+				P(Class(assetMetricValueClass()), Text(strconv.Itoa(item.Value))),
+				P(Class(assetMetricHintClass()), Text(item.Hint)),
 			),
 		)
 	}
-	return Div(Class("assets-metrics-grid"), Group(nodes))
+	return Div(Class(assetMetricsGridClass()), Group(nodes))
 }
 
 func assetsTypeBand(counts []assetTypeCount) Node {
@@ -171,18 +173,18 @@ func assetsTypeBand(counts []assetTypeCount) Node {
 	for i := range counts {
 		count := counts[i]
 		chips = append(chips,
-			Div(Class("assets-type-chip"),
+			Div(Class(assetTypeChipClass()),
 				statusLabel(count.Label, assetTypeTone(count.Label)),
-				Span(Class("assets-type-count"), Text(strconv.Itoa(count.Count))),
+				Span(Class(assetTypeCountClass()), Text(strconv.Itoa(count.Count))),
 			),
 		)
 	}
-	return Div(Class(cardClass("assets-type-band")),
-		Div(Class("assets-section-head"),
+	return Div(Class(assetTypeBandClass()),
+		Div(Class(assetSectionHeadClass()),
 			H2(Text("Asset mix")),
 			P(Class(mutedClass()), Text("A quick split between physical relations and higher-level products.")),
 		),
-		Div(Class("assets-type-list"), Group(chips)),
+		Div(Class(assetTypeListClass()), Group(chips)),
 	)
 }
 
@@ -200,30 +202,30 @@ func assetsShowcaseGrid(rows []assetsListRowData) Node {
 		cards = append(cards,
 			A(
 				Href(row.URL),
-				Class("assets-showcase-card"),
+				Class(assetShowcaseCardClass()),
 				data.Show(containsExpr(row.Filter)),
-				Div(Class("assets-showcase-head"),
+				Div(Class(assetShowcaseHeadClass()),
 					Div(
-						P(Class("assets-showcase-key"), Text(row.AssetKey)),
-						P(Class("assets-showcase-owner"), Text("Owned by "+fallbackString(row.Owner, "unknown"))),
+						P(Class(assetShowcaseKeyClass()), Text(row.AssetKey)),
+						P(Class(assetShowcaseOwnerClass()), Text("Owned by "+fallbackString(row.Owner, "unknown"))),
 					),
 					statusLabel(strings.ToUpper(row.Type), assetTypeTone(row.Type)),
 				),
-				P(Class("assets-showcase-description"), Text(fallbackString(row.Description, "No description yet."))),
-				Div(Class("assets-badge-row"), Group(assetOperationalBadges(row))),
-				Div(Class("assets-showcase-foot"),
-					Span(Class("assets-showcase-updated"), Text("Updated "+row.Updated)),
-					Span(Class("assets-showcase-link"), Text("Inspect ->")),
+				P(Class(assetShowcaseDescriptionClass()), Text(fallbackString(row.Description, "No description yet."))),
+				Div(Class(assetBadgeRowClass()), Group(assetOperationalBadges(row))),
+				Div(Class(assetShowcaseFootClass()),
+					Span(Class(assetShowcaseUpdatedClass()), Text("Updated "+row.Updated)),
+					Span(Class(assetShowcaseLinkClass()), Text("Inspect ->")),
 				),
 			),
 		)
 	}
-	return Div(Class(cardClass("assets-showcase-section")),
-		Div(Class("assets-section-head"),
+	return Div(Class(assetShowcaseSectionClass()),
+		Div(Class(assetSectionHeadClass()),
 			H2(Text("Asset showcase")),
 			P(Class(mutedClass()), Text("Browse the assets carrying the most orchestration context first.")),
 		),
-		Div(Class("assets-showcase-grid"), Group(cards)),
+		Div(Class(assetShowcaseGridClass()), Group(cards)),
 	)
 }
 
@@ -240,11 +242,11 @@ func assetsInventorySection(rows []assetsListRowData, emptyMessage string, hint 
 				data.Show(containsExpr(row.Filter)),
 				Td(
 					A(Href(row.URL), Text(row.AssetKey)),
-					P(Class("assets-table-subtitle"), Text(fallbackString(row.Description, "No description yet."))),
+					P(Class(assetTableSubtitleClass()), Text(fallbackString(row.Description, "No description yet."))),
 				),
 				Td(statusLabel(strings.ToUpper(row.Type), assetTypeTone(row.Type))),
 				Td(Text(row.Owner)),
-				Td(Div(Class("assets-badge-stack"), Group(assetOperationalBadges(row)))),
+				Td(Div(Class(assetBadgeStackClass()), Group(assetOperationalBadges(row)))),
 				Td(statusLabel(boolLabel(row.Active), activeTone)),
 				Td(Text(row.Updated)),
 			),
@@ -256,13 +258,13 @@ func assetsInventorySection(rows []assetsListRowData, emptyMessage string, hint 
 			Div(Class(cardClass()), P(Class(mutedClass()), Text(hint))),
 		)
 	}
-	return Div(Class(cardClass("table-wrap")),
-		Div(Class("assets-section-head"),
+	return Div(Class(cardClass(tableWrapClass())),
+		Div(Class(assetSectionHeadClass()),
 			H2(Text("Inventory")),
 			P(Class(mutedClass()), Text("The full asset register stays searchable and operationally legible.")),
 		),
 		Table(
-			Class("data-table"),
+			Class(dataTableClass()),
 			THead(Tr(Th(Text("Asset key")), Th(Text("Type")), Th(Text("Owner")), Th(Text("Signals")), Th(Text("Active")), Th(Text("Updated")))),
 			TBody(Group(tableRows)),
 		),

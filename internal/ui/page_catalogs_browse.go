@@ -52,8 +52,8 @@ func schemaDetailPage(d schemaDetailPageData) Node {
 
 	return appPage("Schema: "+d.CatalogName+"."+d.SchemaName, "catalogs", d.Principal,
 		Div(Class(cardClass()), P(Text("Owner: "+d.Owner)), P(Text("Comment: "+d.Comment)), P(Text("Properties: "+d.Properties)), P(Text("Tags: "+d.Tags)), A(Href(d.BackURL), Text("<- Back to catalog")), A(Href(d.EditURL), Text("Edit schema")), Form(Method("post"), Action(d.DeleteURL), d.CSRFField(), Button(Type("submit"), Class(secondaryButtonClass()), Text("Delete schema")))),
-		Div(Class(cardClass("table-wrap")), H2(Text("Tables")), Table(THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows)))),
-		Div(Class(cardClass("table-wrap")), H2(Text("Views")), Table(THead(Tr(Th(Text("Name")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(viewRows)))),
+		Div(Class(cardClass(tableWrapClass())), H2(Text("Tables")), Table(THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows)))),
+		Div(Class(cardClass(tableWrapClass())), H2(Text("Views")), Table(THead(Tr(Th(Text("Name")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(viewRows)))),
 	)
 }
 
@@ -86,7 +86,7 @@ func tableDetailPage(d tableDetailPageData) Node {
 	}
 	return appPage(d.Title, "catalogs", d.Principal,
 		Div(Class(cardClass()), P(Text("Type: "+d.Type)), P(Text("Owner: "+d.Owner)), P(Text("Comment: "+d.Comment)), P(Text("Properties: "+d.Properties)), P(Text("Tags: "+d.Tags)), P(Text("Updated: "+d.Updated)), A(Href(d.BackURL), Text("<- Back to schema"))),
-		Div(Class(cardClass("table-wrap")), H2(Text("Columns")), Table(THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable")), Th(Text("Comment")), Th(Text("Properties")))), TBody(Group(rows)))),
+		Div(Class(cardClass(tableWrapClass())), H2(Text("Columns")), Table(THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable")), Th(Text("Comment")), Th(Text("Properties")))), TBody(Group(rows)))),
 	)
 }
 
@@ -118,6 +118,6 @@ func viewDetailPage(d viewDetailPageData) Node {
 	return appPage(d.Title, "catalogs", d.Principal,
 		Div(Class(cardClass()), P(Text("Owner: "+d.Owner)), P(Text("Comment: "+d.Comment)), P(Text("Properties: "+d.Properties)), P(Text("Tags: -")), P(Text("Source tables: "+d.SourceTables)), P(Text("Updated: "+d.Updated)), A(Href(d.BackURL), Text("<- Back to schema"))),
 		Div(Class(cardClass()), H2(Text("Definition")), Pre(Text(d.Definition))),
-		Div(Class(cardClass("table-wrap")), H2(Text("Columns")), columnSection),
+		Div(Class(cardClass(tableWrapClass())), H2(Text("Columns")), columnSection),
 	)
 }

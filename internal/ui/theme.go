@@ -53,8 +53,8 @@ const themeBehaviorScript = `(function(){
     var isDark=resolvedMode()==='dark';
     var sun=document.getElementById('theme-icon-sun');
     var moon=document.getElementById('theme-icon-moon');
-    if(sun){ sun.classList.toggle('is-hidden', isDark); }
-    if(moon){ moon.classList.toggle('is-hidden', !isDark); }
+    if(sun){ sun.classList.toggle('hidden', isDark); }
+    if(moon){ moon.classList.toggle('hidden', !isDark); }
     var nextMode=isDark?'light':'dark';
     var label=isDark?'Switch to light theme':'Switch to dark theme';
     toggle.setAttribute('aria-label', label);

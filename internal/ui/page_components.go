@@ -9,32 +9,32 @@ import (
 
 func componentsPage(principal domain.ContextPrincipal) Node {
 	buttonShowcase := Div(
-		Class("component-row"),
-		Button(Type("button"), Class("btn"), Text("Default")),
-		Button(Type("button"), Class("btn btn-primary"), Text("Primary")),
-		Button(Type("button"), Class("btn btn-danger"), Text("Danger")),
-		Button(Type("button"), Class("btn btn-sm"), Text("Small")),
-		Button(Type("button"), Class("btn btn-sm btn-icon"), Attr("aria-label", "Settings"), I(Class("btn-icon-glyph"), Attr("data-lucide", "settings"), Attr("aria-hidden", "true"))),
+		Class("flex flex-wrap items-center gap-3"),
+		Button(Type("button"), Class(secondaryButtonClass()), Text("Default")),
+		Button(Type("button"), Class(primaryButtonClass()), Text("Primary")),
+		Button(Type("button"), Class(dangerButtonClass()), Text("Danger")),
+		Button(Type("button"), Class(secondaryButtonClass("small")), Text("Small")),
+		Button(Type("button"), Class(iconButtonClass("small")), Attr("aria-label", "Settings"), I(Class(iconGlyphClass()), Attr("data-lucide", "settings"), Attr("aria-hidden", "true"))),
 	)
 
 	buttonGroupShowcase := Div(
-		Class("component-row"),
+		Class("flex flex-wrap items-center gap-3"),
 		Div(
-			Class("BtnGroup"),
-			Button(Type("button"), Class("btn btn-sm"), Text("Run")),
-			Button(Type("button"), Class("btn btn-sm"), Text("Explain")),
-			Button(Type("button"), Class("btn btn-sm"), Text("History")),
+			Class(buttonRowClass()),
+			Button(Type("button"), Class(secondaryButtonClass("small")), Text("Run")),
+			Button(Type("button"), Class(secondaryButtonClass("small")), Text("Explain")),
+			Button(Type("button"), Class(secondaryButtonClass("small")), Text("History")),
 		),
 		Div(
-			Class("BtnGroup"),
-			Button(Type("button"), Class("btn btn-sm btn-icon"), Attr("aria-label", "Refresh"), I(Class("btn-icon-glyph"), Attr("data-lucide", "refresh-cw"), Attr("aria-hidden", "true"))),
-			Button(Type("button"), Class("btn btn-sm btn-icon"), Attr("aria-label", "Download"), I(Class("btn-icon-glyph"), Attr("data-lucide", "download"), Attr("aria-hidden", "true"))),
-			Button(Type("button"), Class("btn btn-sm btn-icon"), Attr("aria-label", "Share"), I(Class("btn-icon-glyph"), Attr("data-lucide", "share-2"), Attr("aria-hidden", "true"))),
+			Class(buttonRowClass()),
+			Button(Type("button"), Class(iconButtonClass("small")), Attr("aria-label", "Refresh"), I(Class(iconGlyphClass()), Attr("data-lucide", "refresh-cw"), Attr("aria-hidden", "true"))),
+			Button(Type("button"), Class(iconButtonClass("small")), Attr("aria-label", "Download"), I(Class(iconGlyphClass()), Attr("data-lucide", "download"), Attr("aria-hidden", "true"))),
+			Button(Type("button"), Class(iconButtonClass("small")), Attr("aria-label", "Share"), I(Class(iconGlyphClass()), Attr("data-lucide", "share-2"), Attr("aria-hidden", "true"))),
 		),
 	)
 
 	labelShowcase := Div(
-		Class("component-row"),
+		Class("flex flex-wrap items-center gap-3"),
 		statusLabel("Default", ""),
 		statusLabel("Accent", "accent"),
 		statusLabel("Success", "success"),
@@ -49,48 +49,48 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 	})
 
 	avatarShowcase := Div(
-		Class("component-row"),
+		Class("flex flex-wrap items-center gap-3"),
 		avatar(avatarConfig{Label: "Data Platform", Tone: "accent", Size: "small"}),
 		avatar(avatarConfig{Label: "Analytics Team", Tone: "success", Size: "medium"}),
 		avatar(avatarConfig{Label: "Operations", Tone: "attention", Size: "large"}),
 	)
 
 	formShowcase := Div(
-		Class("component-stack"),
+		Class("flex flex-col gap-3"),
 		Label(Text("Search assets")),
-		Input(Type("search"), Class("form-control"), Placeholder("orders.daily")),
+		Input(Type("search"), Class(formControlClass()), Placeholder("orders.daily")),
 		Label(Text("Catalog")),
-		Select(Class("form-select"), Option(Text("analytics")), Option(Text("warehouse"))),
+		Select(Class(formSelectClass()), Option(Text("analytics")), Option(Text("warehouse"))),
 		Label(Text("Description")),
 		Textarea(Placeholder("Add details for teammates")),
-		Div(Class("button-row"), Button(Type("button"), Class(primaryButtonClass()), Text("Save")), Button(Type("button"), Class(secondaryButtonClass()), Text("Cancel"))),
+		Div(Class(buttonRowClass()), Button(Type("button"), Class(primaryButtonClass()), Text("Save")), Button(Type("button"), Class(secondaryButtonClass()), Text("Cancel"))),
 	)
 
 	twoColumnFormShowcase := Div(
-		Class("component-columns"),
+		Class("grid gap-4 md:grid-cols-2"),
 		Div(
-			Class("component-stack"),
+			Class("flex flex-col gap-3"),
 			Label(Text("Model name")),
-			Input(Type("text"), Class("form-control"), Value("revenue_daily")),
+			Input(Type("text"), Class(formControlClass()), Value("revenue_daily")),
 		),
 		Div(
-			Class("component-stack"),
+			Class("flex flex-col gap-3"),
 			Label(Text("Owner")),
-			Input(Type("text"), Class("form-control"), Value("data-platform")),
+			Input(Type("text"), Class(formControlClass()), Value("data-platform")),
 		),
 	)
 
 	selectionControlShowcase := Div(
-		Class("component-columns"),
+		Class("grid gap-4 md:grid-cols-2"),
 		Div(
-			Class("component-stack"),
+			Class("flex flex-col gap-3"),
 			P(Class(mutedClass()), Text("Checkbox Group")),
 			checkboxOption("feature-audit", "feature", "Enable audit logs", true),
 			checkboxOption("feature-masking", "feature", "Enable column masking", true),
 			checkboxOption("feature-rls", "feature", "Enable row-level security", false),
 		),
 		Div(
-			Class("component-stack"),
+			Class("flex flex-col gap-3"),
 			P(Class(mutedClass()), Text("Radio + Toggle")),
 			radioOption("run-manual", "run-mode", "Manual run", true),
 			radioOption("run-scheduled", "run-mode", "Scheduled run", false),
@@ -101,15 +101,15 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 	actionBarShowcase := actionBar()
 
 	toolbarShowcase := Div(
-		Class("component-stack component-stack-wide"),
+		Class("flex flex-col gap-3"),
 		pageToolbar("/ui/components", "New component"),
 		quickFilterCardWithValue("Filter by name, type, or owner", "asset"),
 	)
 
 	tableShowcase := Div(
-		Class("table-wrap"),
+		Class(tableWrapClass()),
 		Table(
-			Class("data-table"),
+			Class(dataTableClass()),
 			THead(
 				Tr(
 					Th(Text("Name")),
@@ -126,7 +126,7 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 	)
 
 	dropdownShowcase := Div(
-		Class("component-row"),
+		Class("flex flex-wrap items-center gap-3"),
 		actionMenu(
 			"Actions",
 			actionMenuLink("/ui/components", "Open"),
@@ -136,7 +136,7 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 	)
 
 	feedbackShowcase := Div(
-		Class("component-stack"),
+		Class("flex flex-col gap-3"),
 		banner("info", "Info", "Use tokenized primitives for all new UI surfaces and controls."),
 		banner("success", "Success", "Catalog sync completed and materializations are up to date."),
 		banner("attention", "Attention", "Backfill service is configured but currently paused."),
@@ -144,14 +144,14 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 	)
 
 	metricsShowcase := Div(
-		Class("metric-grid"),
+		Class("grid gap-3 md:grid-cols-2 xl:grid-cols-3"),
 		metricCard("Active Models", "142", "+12 this week", "accent"),
 		metricCard("Successful Runs", "98.7%", "7-day average", "success"),
 		metricCard("Queued Backfills", "8", "2 high priority", "attention"),
 	)
 
 	emptyAndPaginationShowcase := Div(
-		Class("component-stack component-stack-wide"),
+		Class("flex flex-col gap-3"),
 		emptyStateCard("No semantic models yet.", "Create model", "/ui/models/new"),
 		paginationCard("/ui/components", domain.PageRequest{MaxResults: 10}, 42),
 	)
@@ -193,7 +193,7 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 	})
 
 	limitedFormShowcase := Form(
-		Class("component-stack component-form-limited"),
+		Class("flex max-w-xl flex-col gap-3"),
 		formField(formFieldConfig{
 			Label:        "Model name",
 			Name:         "model_name",
@@ -217,22 +217,22 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 			Placeholder: "60",
 			HelpText:    "Set expected freshness target in minutes.",
 		}),
-		Div(Class("button-row"), Button(Type("button"), Class(primaryButtonClass()), Text("Save")), Button(Type("button"), Class(secondaryButtonClass()), Text("Cancel"))),
+		Div(Class(buttonRowClass()), Button(Type("button"), Class(primaryButtonClass()), Text("Save")), Button(Type("button"), Class(secondaryButtonClass()), Text("Cancel"))),
 	)
 
 	loadingShowcase := Div(
-		Class("component-stack component-form-limited"),
-		Div(Class("component-row"), spinner(), P(Text("Loading metadata from metastore..."))),
+		Class("flex max-w-xl flex-col gap-3"),
+		Div(Class("flex items-center gap-3"), spinner(), P(Text("Loading metadata from metastore..."))),
 		progressBar(68, 100),
 	)
 
 	tokenSwatches := Div(
-		Class("token-grid"),
-		Div(Class("token-swatch-card"), Div(Class("token-swatch token-swatch-accent")), Code(Text("--bgColor-accent-emphasis"))),
-		Div(Class("token-swatch-card"), Div(Class("token-swatch token-swatch-success")), Code(Text("--bgColor-success-emphasis"))),
-		Div(Class("token-swatch-card"), Div(Class("token-swatch token-swatch-attention")), Code(Text("--bgColor-attention-emphasis"))),
-		Div(Class("token-swatch-card"), Div(Class("token-swatch token-swatch-danger")), Code(Text("--bgColor-danger-emphasis"))),
-		Div(Class("token-swatch-card"), Div(Class("token-swatch token-swatch-surface")), Code(Text("--bgColor-muted"))),
+		Class("grid gap-3 sm:grid-cols-2 xl:grid-cols-5"),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-accent-emphasis)]")), Code(Class("text-xs"), Text("--bgColor-accent-emphasis"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-success-emphasis)]")), Code(Class("text-xs"), Text("--bgColor-success-emphasis"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-attention-emphasis)]")), Code(Class("text-xs"), Text("--bgColor-attention-emphasis"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-danger-emphasis)]")), Code(Class("text-xs"), Text("--bgColor-danger-emphasis"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-muted)]")), Code(Class("text-xs"), Text("--bgColor-muted"))),
 	)
 
 	return appPage(
@@ -240,34 +240,34 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 		"components",
 		principal,
 		Div(
-			Class("components-showcase"),
+			Class("grid gap-4"),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Buttons")),
 				P(Class(mutedClass()), Text("Shared button variants for primary flows, secondary actions, and compact icon controls.")),
 				buttonShowcase,
 				buttonGroupShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Labels")),
 				P(Class(mutedClass()), Text("Semantic status labels driven by shared tone tokens.")),
 				labelShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Breadcrumbs")),
 				P(Class(mutedClass()), Text("Path navigation for hierarchical resources and detail pages.")),
 				breadcrumbShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Action Bar")),
 				P(Class(mutedClass()), Text("Search, sort, and actions in a single reusable row with DataStar signals.")),
 				actionBarShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Forms")),
 				P(Class(mutedClass()), Text("Input, select, and textarea controls using tokenized surfaces, borders, and focus states.")),
 				formShowcase,
@@ -275,73 +275,73 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 				selectionControlShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Toolbar & Filters")),
 				P(Class(mutedClass()), Text("Reusable toolbar and quick-filter card for list pages.")),
 				toolbarShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Tables")),
 				P(Class(mutedClass()), Text("Data table pattern for list pages with semantic labels.")),
 				tableShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Menus")),
 				P(Class(mutedClass()), Text("Dropdown action menu used across list and detail views.")),
 				dropdownShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Avatar")),
 				P(Class(mutedClass()), Text("Compact identity markers with semantic tone support.")),
 				avatarShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Feedback")),
 				P(Class(mutedClass()), Text("Inline banners for informational, success, warning, and error states.")),
 				feedbackShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Loading")),
 				P(Class(mutedClass()), Text("Spinner and progress indicators for async operations and background processing.")),
 				loadingShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Cards & Metrics")),
 				P(Class(mutedClass()), Text("Stat cards for dashboards and overview pages.")),
 				metricsShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Tabs")),
 				P(Class(mutedClass()), Text("Segmented tabs for switching related detail panels without nested boxes.")),
 				tabShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Tree View")),
 				P(Class(mutedClass()), Text("Reusable hierarchical tree with icons, active leaf styling, and disclosure behavior used in catalog navigation.")),
 				treeShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Form Fields")),
 				P(Class(mutedClass()), Text("Reusable field builder with required indicator, help text, and validation message.")),
 				limitedFormShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Empty & Pagination")),
 				P(Class(mutedClass()), Text("Consistent empty state and pagination components for collection pages.")),
 				emptyAndPaginationShowcase,
 			),
 			Div(
-				Class(cardClass("component-section")),
+				Class(cardClass("flex flex-col gap-4")),
 				H2(Text("Theme Tokens")),
 				P(Class(mutedClass()), Text("Functional theme tokens are the source of truth for semantic colors in light and dark mode.")),
 				tokenSwatches,

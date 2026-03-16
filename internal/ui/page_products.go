@@ -56,23 +56,23 @@ func productsListPage(principal domain.ContextPrincipal, items []domain.DataProd
 		cards = append(cards,
 			A(
 				Href("/ui/products/"+url.PathEscape(item.Product.Slug)),
-				Class("assets-showcase-card"),
+				Class(assetShowcaseCardClass()),
 				data.Show(containsExpr(filter)),
-				Div(Class("assets-showcase-head"),
+				Div(Class(assetShowcaseHeadClass()),
 					Div(
-						P(Class("assets-showcase-key"), Text(item.Product.Name)),
-						P(Class("assets-showcase-owner"), Text(item.Domain.Name+" / "+item.OwnerTeam.Name)),
+						P(Class(assetShowcaseKeyClass()), Text(item.Product.Name)),
+						P(Class(assetShowcaseOwnerClass()), Text(item.Domain.Name+" / "+item.OwnerTeam.Name)),
 					),
 					statusLabel(versionLabel, "accent"),
 				),
-				P(Class("assets-showcase-description"), Text(fallbackString(item.Product.Description, "No product description yet."))),
-				Div(Class("assets-badge-row"),
+				P(Class(assetShowcaseDescriptionClass()), Text(fallbackString(item.Product.Description, "No product description yet."))),
+				Div(Class(assetBadgeRowClass()),
 					statusLabel(fallbackString(productListItemPublicationState(item), domain.ProductReleaseStateDraft), productPublicationTone(productListItemPublicationState(item))),
 					statusLabel(fallbackString(productListItemCertificationState(item), domain.CertificationDraft), productCertificationTone(productListItemCertificationState(item))),
 					statusLabel(healthLabel, healthTone),
 				),
-				P(Class("color-fg-muted text-small mb-1"), Text("Primary output: "+outputLabel)),
-				P(Class("color-fg-muted text-small mb-0"), Text("Steward: "+fallbackString(item.Product.StewardPrincipal, "unassigned"))),
+				P(Class("mb-1 text-xs text-[var(--fgColor-muted)]"), Text("Primary output: "+outputLabel)),
+				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Steward: "+fallbackString(item.Product.StewardPrincipal, "unassigned"))),
 			),
 		)
 	}
@@ -81,27 +81,27 @@ func productsListPage(principal domain.ContextPrincipal, items []domain.DataProd
 		"Products",
 		"products",
 		principal,
-		Div(Class("assets-shell"),
-			Div(Class("assets-hero"),
-				Div(Class("assets-hero-copy"),
-					P(Class("assets-kicker"), Text("Product control plane")),
-					H2(Class("assets-hero-title"), Text("Products are the governed interface consumers should discover first.")),
-					P(Class("assets-hero-text"), Text("Use products to package ownership, contract, runtime outputs, and trust state around the datasets your platform publishes.")),
-					Div(Class("assets-hero-actions"),
+		Div(Class(assetShellClass()),
+			Div(Class(assetHeroClass()),
+				Div(Class(assetHeroCopyClass()),
+					P(Class(assetKickerClass()), Text("Product control plane")),
+					H2(Class(assetTitleClass()), Text("Products are the governed interface consumers should discover first.")),
+					P(Class(assetDescriptionClass()), Text("Use products to package ownership, contract, runtime outputs, and trust state around the datasets your platform publishes.")),
+					Div(Class(assetHeroActionsClass()),
 						A(Href("/ui/products/new"), Class(primaryButtonClass()), Text("New product")),
 						A(Href("/ui/assets"), Class(secondaryButtonClass()), Text("Open runtime assets")),
 					),
 				),
 			),
 			quickFilterCardWithValue("Filter by product, domain, team, or steward", filterValue),
-			Div(Class("assets-metrics-grid"),
+			Div(Class(assetMetricsGridClass()),
 				productMetricCard("Total products", total),
 				productMetricCard("Published", int64(published)),
 				productMetricCard("Certified", int64(certified)),
 				productMetricCard("Linked outputs", int64(linked)),
 			),
-			Div(Class(cardClass("assets-type-band")),
-				Div(Class("assets-section-head"),
+			Div(Class(assetTypeBandClass()),
+				Div(Class(assetSectionHeadClass()),
 					H2(Text("Published catalog")),
 					P(Class(mutedClass()), Text("Products link business ownership to runtime assets and semantic entrypoints.")),
 				),
@@ -109,7 +109,7 @@ func productsListPage(principal domain.ContextPrincipal, items []domain.DataProd
 					if len(cards) == 0 {
 						return emptyStateCard("No products defined yet.", "Create product", "/ui/products/new")
 					}
-					return Div(Class("assets-showcase-grid"), Group(cards))
+					return Div(Class(assetShowcaseGridClass()), Group(cards))
 				}(),
 			),
 			paginationCard("/ui/products", page, total),
@@ -118,9 +118,9 @@ func productsListPage(principal domain.ContextPrincipal, items []domain.DataProd
 }
 
 func productMetricCard(label string, value int64) Node {
-	return Div(Class("assets-metric-card"),
-		P(Class("assets-metric-label"), Text(label)),
-		P(Class("assets-metric-value"), Text(strconv.FormatInt(value, 10))),
+	return Div(Class(assetMetricCardClass()),
+		P(Class(assetMetricLabelClass()), Text(label)),
+		P(Class(assetMetricValueClass()), Text(strconv.FormatInt(value, 10))),
 	)
 }
 
@@ -143,58 +143,58 @@ func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataPro
 		if output.IsPrimary {
 			label += " (primary)"
 		}
-		outputs = append(outputs, Li(Class("asset-link-list-item"), A(Href("/ui/assets/"+url.PathEscape(output.AssetKey)), Text(label))))
+		outputs = append(outputs, Li(Class(assetListItemClass()), A(Href("/ui/assets/"+url.PathEscape(output.AssetKey)), Text(label))))
 	}
 	if len(outputs) == 0 {
-		outputs = append(outputs, Li(Class("asset-link-list-item"), Text("No outputs linked yet.")))
+		outputs = append(outputs, Li(Class(assetListItemClass()), Text("No outputs linked yet.")))
 	}
 
 	semanticEntrypoints := make([]Node, 0, len(detail.SemanticEntrypoints))
 	for i := range detail.SemanticEntrypoints {
 		semanticEntrypoints = append(semanticEntrypoints,
-			Li(Class("asset-link-list-item"), Text(detail.SemanticEntrypoints[i].ProjectName+"."+detail.SemanticEntrypoints[i].ModelName)),
+			Li(Class(assetListItemClass()), Text(detail.SemanticEntrypoints[i].ProjectName+"."+detail.SemanticEntrypoints[i].ModelName)),
 		)
 	}
 	if len(semanticEntrypoints) == 0 {
-		semanticEntrypoints = append(semanticEntrypoints, Li(Class("asset-link-list-item"), Text("No semantic entrypoints linked yet.")))
+		semanticEntrypoints = append(semanticEntrypoints, Li(Class(assetListItemClass()), Text("No semantic entrypoints linked yet.")))
 	}
 
 	dependencies := make([]Node, 0, len(detail.Dependencies))
 	for i := range detail.Dependencies {
 		dependencies = append(dependencies,
-			Li(Class("asset-link-list-item"),
+			Li(Class(assetListItemClass()),
 				A(Href("/ui/products/"+url.PathEscape(detail.Dependencies[i].Product.Slug)), Text(detail.Dependencies[i].Product.Name)),
 			),
 		)
 	}
 	if len(dependencies) == 0 {
-		dependencies = append(dependencies, Li(Class("asset-link-list-item"), Text("No product dependencies linked yet.")))
+		dependencies = append(dependencies, Li(Class(assetListItemClass()), Text("No product dependencies linked yet.")))
 	}
 
 	subscriptions := make([]Node, 0, len(detail.Subscriptions))
 	for i := range detail.Subscriptions {
 		subscriptions = append(subscriptions,
-			Li(Class("asset-link-list-item"),
+			Li(Class(assetListItemClass()),
 				Text(detail.Subscriptions[i].PrincipalName+" • "+detail.Subscriptions[i].EventType+" • "+detail.Subscriptions[i].Channel),
 			),
 		)
 	}
 	if len(subscriptions) == 0 {
-		subscriptions = append(subscriptions, Li(Class("asset-link-list-item"), Text("No subscribers yet.")))
+		subscriptions = append(subscriptions, Li(Class(assetListItemClass()), Text("No subscribers yet.")))
 	}
 
 	events := make([]Node, 0, len(detail.Events))
 	for i := range detail.Events {
 		event := detail.Events[i]
 		events = append(events,
-			Li(Class("asset-link-list-item"),
+			Li(Class(assetListItemClass()),
 				Strong(Text(event.Title+" ")),
 				Text(event.EventType+" • "+formatTime(event.CreatedAt)),
 			),
 		)
 	}
 	if len(events) == 0 {
-		events = append(events, Li(Class("asset-link-list-item"), Text("No product events recorded yet.")))
+		events = append(events, Li(Class(assetListItemClass()), Text("No product events recorded yet.")))
 	}
 
 	status := detail.Status
@@ -221,29 +221,29 @@ func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataPro
 		"Product: "+detail.Product.Name,
 		"products",
 		principal,
-		Div(Class("asset-detail-shell"),
-			Div(Class("asset-detail-hero"),
-				Div(Class("asset-detail-hero-copy"),
-					P(Class("assets-kicker"), Text("Published interface")),
-					Div(Class("asset-detail-title-row"),
-						H2(Class("asset-detail-title"), Text(detail.Product.Name)),
+		Div(Class(assetDetailShellClass()),
+			Div(Class(assetHeroClass()),
+				Div(Class(assetHeroCopyClass()),
+					P(Class(assetKickerClass()), Text("Published interface")),
+					Div(Class(assetTitleRowClass()),
+						H2(Class(assetTitleClass()), Text(detail.Product.Name)),
 						statusLabel(publicationState, productPublicationTone(publicationState)),
 					),
-					P(Class("asset-detail-description"), Text(fallbackString(detail.Product.Description, "No description provided yet."))),
-					Div(Class("assets-badge-row"),
+					P(Class(assetDescriptionClass()), Text(fallbackString(detail.Product.Description, "No description provided yet."))),
+					Div(Class(assetBadgeRowClass()),
 						statusLabel(certificationState, productCertificationTone(certificationState)),
 						statusLabel(freshness, productHealthTone(freshness)),
 						statusLabel(quality, productHealthTone(quality)),
 					),
 				),
-				Div(Class("asset-detail-hero-meta"),
+				Div(Class(assetHeroMetaClass()),
 					assetDetailMetaRow("Slug", detail.Product.Slug),
 					assetDetailMetaRow("Domain", detail.Domain.Name),
 					assetDetailMetaRow("Owner team", detail.OwnerTeam.Name),
 					assetDetailMetaRow("Steward", fallbackString(detail.Product.StewardPrincipal, "unassigned")),
 				),
 			),
-			Div(Class("asset-detail-metrics"),
+			Div(Class(assetMetricsGridClass()),
 				assetDetailMetricCard("Versions", strconv.Itoa(len(detail.Versions)), "Immutable release records"),
 				assetDetailMetricCard("Outputs", strconv.Itoa(len(detail.Outputs)), "Runtime assets linked to the latest release"),
 				assetDetailMetricCard("Freshness", freshness, "Computed from linked runtime state"),
@@ -252,10 +252,10 @@ func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataPro
 				assetDetailMetricCard("Downstream products", downstreamCount, "Products depending on this product"),
 				assetDetailMetricCard("Subscribers", subscriberCount, "Consumers following product events"),
 			),
-			Div(Class("asset-detail-layout"),
-				Div(Class("asset-detail-main"),
-					Div(Class(cardClass("asset-detail-section")),
-						Div(Class("assets-section-head"), H2(Text("Contract")), P(Class(mutedClass()), Text("Consumer-facing contract and SLO expectations."))),
+			Div(Class(assetDetailLayoutClass()),
+				Div(Class(assetDetailMainClass()),
+					Div(Class(cardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Contract")), P(Class(sectionCopyClass()), Text("Consumer-facing contract and SLO expectations."))),
 						assetFactList([][2]string{
 							{"Data grain", fallbackString(detail.Product.Contract.DataGrain, "-")},
 							{"Update cadence", fallbackString(detail.Product.Contract.UpdateCadence, "-")},
@@ -265,35 +265,35 @@ func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataPro
 							{"Change policy", fallbackString(detail.Product.Contract.BreakingChangePolicy, "-")},
 						}),
 					),
-					Div(Class(cardClass("asset-detail-section")),
-						Div(Class("assets-section-head"), H2(Text("Latest outputs")), P(Class(mutedClass()), Text("Runtime resources linked to the current product release."))),
-						Ul(Class("asset-link-list"), Group(outputs)),
+					Div(Class(cardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Latest outputs")), P(Class(sectionCopyClass()), Text("Runtime resources linked to the current product release."))),
+						Ul(Class(assetListClass()), Group(outputs)),
 					),
-					Div(Class(cardClass("asset-detail-section")),
-						Div(Class("assets-section-head"), H2(Text("Semantic entrypoints")), P(Class(mutedClass()), Text("Consumer-facing semantic models linked to the current product release."))),
-						Ul(Class("asset-link-list"), Group(semanticEntrypoints)),
+					Div(Class(cardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Semantic entrypoints")), P(Class(sectionCopyClass()), Text("Consumer-facing semantic models linked to the current product release."))),
+						Ul(Class(assetListClass()), Group(semanticEntrypoints)),
 					),
-					Div(Class(cardClass("asset-detail-section")),
-						Div(Class("assets-section-head"), H2(Text("Version history")), P(Class(mutedClass()), Text("Published state is versioned even when the UI is still minimal."))),
-						Div(Class("assets-badge-row"), Group(versionBadges)),
-						Ul(Class("asset-link-list mt-3"), Group(productVersionLinks(detail))),
+					Div(Class(cardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Version history")), P(Class(sectionCopyClass()), Text("Published state is versioned even when the UI is still minimal."))),
+						Div(Class(assetBadgeRowClass()), Group(versionBadges)),
+						Ul(Class(assetListClass("mt-3")), Group(productVersionLinks(detail))),
 					),
-					Div(Class(cardClass("asset-detail-section")),
-						Div(Class("assets-section-head"), H2(Text("Dependencies")), P(Class(mutedClass()), Text("Upstream products that affect this product's trust state."))),
-						Ul(Class("asset-link-list"), Group(dependencies)),
+					Div(Class(cardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Dependencies")), P(Class(sectionCopyClass()), Text("Upstream products that affect this product's trust state."))),
+						Ul(Class(assetListClass()), Group(dependencies)),
 					),
-					Div(Class(cardClass("asset-detail-section")),
-						Div(Class("assets-section-head"), H2(Text("Subscriptions")), P(Class(mutedClass()), Text("Consumers following product change events."))),
-						Ul(Class("asset-link-list"), Group(subscriptions)),
+					Div(Class(cardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Subscriptions")), P(Class(sectionCopyClass()), Text("Consumers following product change events."))),
+						Ul(Class(assetListClass()), Group(subscriptions)),
 					),
-					Div(Class(cardClass("asset-detail-section")),
-						Div(Class("assets-section-head"), H2(Text("Recent events")), P(Class(mutedClass()), Text("Durable product lifecycle and health events."))),
-						Ul(Class("asset-link-list"), Group(events)),
+					Div(Class(cardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Recent events")), P(Class(sectionCopyClass()), Text("Durable product lifecycle and health events."))),
+						Ul(Class(assetListClass()), Group(events)),
 					),
 				),
-				Div(Class("asset-detail-rail"),
-					Div(Class(cardClass("asset-rail-card")),
-						H2(Text("Ownership")),
+				Div(Class(assetDetailRailClass()),
+					Div(Class(cardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Ownership")),
 						assetFactList([][2]string{
 							{"Domain", detail.Domain.Name},
 							{"Team", detail.OwnerTeam.Name},
@@ -302,37 +302,37 @@ func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataPro
 							{"Access path", fallbackString(detail.Product.AccessRequestPath, "-")},
 						}),
 					),
-					Div(Class(cardClass("asset-rail-card")),
-						H2(Text("Lifecycle")),
-						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/publish"), Class("stack-form"),
+					Div(Class(cardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Lifecycle")),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/publish"), Class(stackFormClass()),
 							Div(Class("form-group"),
 								Label(For("publish-version"), Text("Publish version")),
-								Input(Type("number"), Name("version"), ID("publish-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class("form-control")),
+								Input(Type("number"), Name("version"), ID("publish-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class(formControlClass())),
 							),
 							Button(Type("submit"), Class(primaryButtonClass()), Text("Publish")),
 						),
-						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/deprecate"), Class("stack-form mt-3"),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/deprecate"), Class(stackFormClass("mt-3")),
 							Div(Class("form-group"),
 								Label(For("deprecate-version"), Text("Deprecate version")),
-								Input(Type("number"), Name("version"), ID("deprecate-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class("form-control")),
+								Input(Type("number"), Name("version"), ID("deprecate-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class(formControlClass())),
 							),
 							Div(Class("form-group"),
 								Label(For("replacement-slug"), Text("Replacement product slug")),
-								Input(Type("text"), Name("replacement_slug"), ID("replacement-slug"), Class("form-control"), Placeholder("replacement-product")),
+								Input(Type("text"), Name("replacement_slug"), ID("replacement-slug"), Class(formControlClass()), Placeholder("replacement-product")),
 							),
 							Button(Type("submit"), Class(secondaryButtonClass()), Text("Deprecate")),
 						),
-						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/retire"), Class("stack-form mt-3"),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/retire"), Class(stackFormClass("mt-3")),
 							Div(Class("form-group"),
 								Label(For("retire-version"), Text("Retire version")),
-								Input(Type("number"), Name("version"), ID("retire-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class("form-control")),
+								Input(Type("number"), Name("version"), ID("retire-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class(formControlClass())),
 							),
 							Button(Type("submit"), Class(secondaryButtonClass()), Text("Retire")),
 						),
 					),
-					Div(Class(cardClass("asset-rail-card")),
-						H2(Text("New Version")),
-						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/versions"), Class("stack-form"),
+					Div(Class(cardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("New Version")),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/versions"), Class(stackFormClass()),
 							productFormField("compatibility_level", "Compatibility", domain.ProductCompatibilityBackwardCompatible),
 							productFormField("data_grain", "Data grain", detail.Product.Contract.DataGrain),
 							productFormField("update_cadence", "Update cadence", detail.Product.Contract.UpdateCadence),
@@ -347,16 +347,16 @@ func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataPro
 							Button(Type("submit"), Class(primaryButtonClass()), Text("Create draft version")),
 						),
 					),
-					Div(Class(cardClass("asset-rail-card")),
-						H2(Text("Dependency")),
-						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/dependencies"), Class("stack-form"),
+					Div(Class(cardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Dependency")),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/dependencies"), Class(stackFormClass()),
 							productFormField("depends_on_slug", "Depends on product slug", "upstream-product"),
 							Button(Type("submit"), Class(secondaryButtonClass()), Text("Add dependency")),
 						),
 					),
-					Div(Class(cardClass("asset-rail-card")),
-						H2(Text("Subscribe")),
-						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/subscriptions"), Class("stack-form"),
+					Div(Class(cardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Subscribe")),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/subscriptions"), Class(stackFormClass()),
 							productFormField("event_type", "Event type", "freshness_breach"),
 							productFormField("channel", "Channel", "inbox"),
 							Button(Type("submit"), Class(secondaryButtonClass()), Text("Subscribe")),
@@ -375,54 +375,54 @@ func productVersionPage(principal domain.ContextPrincipal, detail *domain.DataPr
 	for i := range versionDetail.Outputs {
 		output := versionDetail.Outputs[i]
 		outputs = append(outputs,
-			Li(Class("asset-link-list-item"),
+			Li(Class(assetListItemClass()),
 				A(Href("/ui/assets/"+url.PathEscape(output.AssetKey)), Text(output.AssetKey)),
 			),
 		)
 	}
 	if len(outputs) == 0 {
-		outputs = append(outputs, Li(Class("asset-link-list-item"), Text("No outputs linked to this version.")))
+		outputs = append(outputs, Li(Class(assetListItemClass()), Text("No outputs linked to this version.")))
 	}
 
 	semanticEntrypoints := make([]Node, 0, len(versionDetail.SemanticEntrypoints))
 	for i := range versionDetail.SemanticEntrypoints {
 		semanticEntrypoints = append(semanticEntrypoints,
-			Li(Class("asset-link-list-item"), Text(versionDetail.SemanticEntrypoints[i].ProjectName+"."+versionDetail.SemanticEntrypoints[i].ModelName)),
+			Li(Class(assetListItemClass()), Text(versionDetail.SemanticEntrypoints[i].ProjectName+"."+versionDetail.SemanticEntrypoints[i].ModelName)),
 		)
 	}
 	if len(semanticEntrypoints) == 0 {
-		semanticEntrypoints = append(semanticEntrypoints, Li(Class("asset-link-list-item"), Text("No semantic entrypoints linked to this version.")))
+		semanticEntrypoints = append(semanticEntrypoints, Li(Class(assetListItemClass()), Text("No semantic entrypoints linked to this version.")))
 	}
 
 	return appPage(
 		fmt.Sprintf("Product %s v%d", detail.Product.Name, version.Version),
 		"products",
 		principal,
-		Div(Class("asset-detail-shell"),
-			Div(Class("asset-detail-hero"),
-				Div(Class("asset-detail-hero-copy"),
-					P(Class("assets-kicker"), Text("Version detail")),
-					Div(Class("asset-detail-title-row"),
-						H2(Class("asset-detail-title"), Text(detail.Product.Name+" v"+strconv.Itoa(version.Version))),
+		Div(Class(assetDetailShellClass()),
+			Div(Class(assetHeroClass()),
+				Div(Class(assetHeroCopyClass()),
+					P(Class(assetKickerClass()), Text("Version detail")),
+					Div(Class(assetTitleRowClass()),
+						H2(Class(assetTitleClass()), Text(detail.Product.Name+" v"+strconv.Itoa(version.Version))),
 						statusLabel(version.ReleaseState, productPublicationTone(version.ReleaseState)),
 					),
-					P(Class("asset-detail-description"), Text("Immutable contract snapshot for the selected product release.")),
-					Div(Class("assets-badge-row"),
+					P(Class(assetDescriptionClass()), Text("Immutable contract snapshot for the selected product release.")),
+					Div(Class(assetBadgeRowClass()),
 						statusLabel(version.CompatibilityLevel, "accent"),
 						statusLabel(fallbackString(detail.Product.Visibility, "internal"), "accent"),
 					),
 				),
-				Div(Class("asset-detail-hero-meta"),
+				Div(Class(assetHeroMetaClass()),
 					assetDetailMetaRow("Product", detail.Product.Name),
 					assetDetailMetaRow("Slug", detail.Product.Slug),
 					assetDetailMetaRow("Domain", detail.Domain.Name),
 					assetDetailMetaRow("Owner team", detail.OwnerTeam.Name),
 				),
 			),
-			Div(Class("asset-detail-layout"),
-				Div(Class("asset-detail-main"),
-					Div(Class(cardClass("asset-detail-section")),
-						Div(Class("assets-section-head"), H2(Text("Contract snapshot")), P(Class(mutedClass()), Text("Versioned consumer-facing contract fields."))),
+			Div(Class(assetDetailLayoutClass()),
+				Div(Class(assetDetailMainClass()),
+					Div(Class(cardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Contract snapshot")), P(Class(sectionCopyClass()), Text("Versioned consumer-facing contract fields."))),
 						assetFactList([][2]string{
 							{"Data grain", fallbackString(version.Contract.DataGrain, "-")},
 							{"Update cadence", fallbackString(version.Contract.UpdateCadence, "-")},
@@ -432,18 +432,18 @@ func productVersionPage(principal domain.ContextPrincipal, detail *domain.DataPr
 							{"Change policy", fallbackString(version.Contract.BreakingChangePolicy, "-")},
 						}),
 					),
-					Div(Class(cardClass("asset-detail-section")),
-						Div(Class("assets-section-head"), H2(Text("Outputs")), P(Class(mutedClass()), Text("Runtime assets currently linked to this release snapshot."))),
-						Ul(Class("asset-link-list"), Group(outputs)),
+					Div(Class(cardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Outputs")), P(Class(sectionCopyClass()), Text("Runtime assets currently linked to this release snapshot."))),
+						Ul(Class(assetListClass()), Group(outputs)),
 					),
-					Div(Class(cardClass("asset-detail-section")),
-						Div(Class("assets-section-head"), H2(Text("Semantic entrypoints")), P(Class(mutedClass()), Text("Semantic entrypoints exposed by this release."))),
-						Ul(Class("asset-link-list"), Group(semanticEntrypoints)),
+					Div(Class(cardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Semantic entrypoints")), P(Class(sectionCopyClass()), Text("Semantic entrypoints exposed by this release."))),
+						Ul(Class(assetListClass()), Group(semanticEntrypoints)),
 					),
 				),
-				Div(Class("asset-detail-rail"),
-					Div(Class(cardClass("asset-rail-card")),
-						H2(Text("Release metadata")),
+				Div(Class(assetDetailRailClass()),
+					Div(Class(cardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Release metadata")),
 						assetFactList([][2]string{
 							{"Release state", version.ReleaseState},
 							{"Compatibility", version.CompatibilityLevel},
@@ -453,11 +453,11 @@ func productVersionPage(principal domain.ContextPrincipal, detail *domain.DataPr
 							{"Created at", formatTime(version.CreatedAt)},
 						}),
 					),
-					Div(Class(cardClass("asset-rail-card")),
-						H2(Text("Navigate")),
+					Div(Class(cardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Navigate")),
 						P(Class(mutedClass()), Text("Inspect the full product control plane or switch versions.")),
 						A(Href("/ui/products/"+url.PathEscape(detail.Product.Slug)), Class(secondaryButtonClass()), Text("Back to product")),
-						Ul(Class("asset-link-list mt-3"), Group(productVersionLinks(detail))),
+						Ul(Class(assetListClass("mt-3")), Group(productVersionLinks(detail))),
 					),
 				),
 			),
@@ -470,7 +470,7 @@ func productVersionLinks(detail *domain.DataProductDetail) []Node {
 	for i := range detail.Versions {
 		version := detail.Versions[i]
 		links = append(links,
-			Li(Class("asset-link-list-item"),
+			Li(Class(assetListItemClass()),
 				A(Href("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/versions/"+strconv.Itoa(version.Version)),
 					Text(fmt.Sprintf("v%d %s", version.Version, version.ReleaseState)),
 				),
@@ -478,7 +478,7 @@ func productVersionLinks(detail *domain.DataProductDetail) []Node {
 		)
 	}
 	if len(links) == 0 {
-		links = append(links, Li(Class("asset-link-list-item"), Text("No versions created yet.")))
+		links = append(links, Li(Class(assetListItemClass()), Text("No versions created yet.")))
 	}
 	return links
 }
@@ -488,11 +488,11 @@ func productNewPage(principal domain.ContextPrincipal, csrfField func() Node) No
 		"New Product",
 		"products",
 		principal,
-		Div(Class("asset-detail-shell"),
-			Div(Class(cardClass("asset-detail-section")),
-				Div(Class("assets-section-head"),
-					H2(Text("Create product")),
-					P(Class(mutedClass()), Text("Create a draft product, normalize ownership into domain/team records, and optionally link a primary runtime asset.")),
+		Div(Class(assetDetailShellClass()),
+			Div(Class(cardClass(assetSectionClass())),
+				Div(Class(assetSectionHeadClass()),
+					H2(Class(sectionTitleClass()), Text("Create product")),
+					P(Class(sectionCopyClass()), Text("Create a draft product, normalize ownership into domain/team records, and optionally link a primary runtime asset.")),
 				),
 				Form(Method("post"), Action("/ui/products"),
 					csrfField(),
@@ -518,9 +518,9 @@ func productNewPage(principal domain.ContextPrincipal, csrfField func() Node) No
 					),
 					Div(Class("form-group"),
 						Label(For("description"), Text("Description")),
-						Textarea(Name("description"), ID("description"), Class("form-control"), Rows("5")),
+						Textarea(Name("description"), ID("description"), Class(formControlClass()), Rows("5")),
 					),
-					Div(Class("mt-3 d-flex gap-2"),
+					Div(Class("mt-3 flex gap-2"),
 						Button(Type("submit"), Class(primaryButtonClass()), Text("Create draft product")),
 						A(Href("/ui/products"), Class(secondaryButtonClass()), Text("Cancel")),
 					),
@@ -533,7 +533,7 @@ func productNewPage(principal domain.ContextPrincipal, csrfField func() Node) No
 func productFormField(name, label, placeholder string) Node {
 	return Div(Class("form-group"),
 		Label(For(name), Text(label)),
-		Input(Type("text"), Name(name), ID(name), Class("form-control"), Placeholder(placeholder)),
+		Input(Type("text"), Name(name), ID(name), Class(formControlClass()), Placeholder(placeholder)),
 	)
 }
 

@@ -13,7 +13,7 @@ import (
 
 func dependencyAdjacencyView(assetKey string, edges []assetDependencyEdgeData) Node {
 	if len(edges) == 0 {
-		return Div(Class("mb-2"), P(Class("color-fg-muted"), Text("No dependency edges recorded.")))
+		return Div(Class("mb-2"), P(Class("text-[var(--fgColor-muted)]"), Text("No dependency edges recorded.")))
 	}
 
 	graphData := buildAssetGraphData(assetKey, edges)
@@ -30,7 +30,7 @@ func dependencyAdjacencyView(assetKey string, edges []assetDependencyEdgeData) N
 	}
 
 	return Div(Class("mb-3"),
-		P(Class("color-fg-muted"), Text("Interactive dependency map for "+assetKey+":")),
+		P(Class("text-[var(--fgColor-muted)]"), Text("Interactive dependency map for "+assetKey+":")),
 		El("asset-graph-view",
 			Class("asset-graph-host"),
 			Attr("nodes", nodesJSON),

@@ -11,14 +11,14 @@ func segmentedTabs(items []segmentedTabItem) Node {
 	nodes := make([]Node, 0, len(items))
 	for i := range items {
 		item := items[i]
-		className := "SegmentedControl-item"
+		className := "inline-flex min-h-9 items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-[var(--fgColor-muted)] transition-colors hover:text-[var(--fgColor-default)]"
 		if item.Active {
-			className += " is-active"
+			className += " bg-[var(--bgColor-default)] text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)]"
 		}
 		nodes = append(nodes, Button(Type("button"), Class(className), Attr("aria-pressed", boolToString(item.Active)), Text(item.Label)))
 	}
 
-	return Div(Class("SegmentedControl"), Group(nodes))
+	return Div(Class("inline-flex flex-wrap gap-1 rounded-xl bg-[var(--bgColor-muted)] p-1"), Group(nodes))
 }
 
 func breadcrumbs(items []breadcrumbItem) Node {
@@ -29,30 +29,29 @@ func breadcrumbs(items []breadcrumbItem) Node {
 	nodes := make([]Node, 0, len(items))
 	for i := range items {
 		item := items[i]
-		linkClass := "Breadcrumbs-link"
+		linkClass := "rounded-md px-2 py-1 text-xs text-[var(--fgColor-accent)] no-underline hover:bg-[var(--bgColor-muted)]"
 		ariaCurrent := Node(nil)
 		if item.Active {
-			linkClass += " is-active"
+			linkClass += " font-semibold text-[var(--fgColor-default)]"
 			ariaCurrent = Attr("aria-current", "page")
 		}
 		nodes = append(nodes,
 			Li(
-				Class("Breadcrumbs-item"),
+				Class("inline-flex items-center gap-1"),
 				A(Href(fallbackString(item.Href, "#")), Class(linkClass), ariaCurrent, Text(item.Label)),
 			),
 		)
 	}
 
 	return Nav(
-		Class("Breadcrumbs"),
 		Attr("aria-label", "Breadcrumb"),
-		Ol(Class("Breadcrumbs-list"), Group(nodes)),
+		Ol(Class("flex flex-wrap items-center gap-1 text-xs text-[var(--fgColor-muted)]"), Group(nodes)),
 	)
 }
 
 func treeView(items []treeViewItem) Node {
 	if len(items) == 0 {
-		return P(Class("TreeView-empty"), Text("No items"))
+		return P(Class("text-sm text-[var(--fgColor-muted)]"), Text("No items"))
 	}
 
 	nodes := make([]Node, 0, len(items))
@@ -60,7 +59,7 @@ func treeView(items []treeViewItem) Node {
 		nodes = append(nodes, treeViewNode(items[i]))
 	}
 
-	return Ul(Class("TreeView-root"), Group(nodes))
+	return Ul(Class("grid gap-1"), Group(nodes))
 }
 
 func treeViewNode(item treeViewItem) Node {
@@ -69,20 +68,20 @@ func treeViewNode(item treeViewItem) Node {
 		icon = "circle"
 	}
 
-	linkClass := "TreeView-link"
+	linkClass := "inline-flex min-h-9 items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--fgColor-default)] no-underline hover:bg-[var(--bgColor-muted)]"
 	if item.Active {
-		linkClass += " active"
+		linkClass += " bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
 	}
 
 	link := A(
 		Href(fallbackString(item.Href, "#")),
 		Class(linkClass),
-		I(Class("nav-icon"), Attr("data-lucide", icon), Attr("aria-hidden", "true")),
+		I(Class(navIconClass()), Attr("data-lucide", icon), Attr("aria-hidden", "true")),
 		Span(Text(item.Label)),
 	)
 
 	if len(item.Children) == 0 {
-		return Li(Class("TreeView-node"), link)
+		return Li(link)
 	}
 
 	childNodes := make([]Node, 0, len(item.Children))
@@ -96,16 +95,15 @@ func treeViewNode(item treeViewItem) Node {
 	}
 
 	return Li(
-		Class("TreeView-node"),
 		Details(
-			Class("details-reset TreeView-disclosure"),
+			Class("group"),
 			openAttr,
 			Summary(
-				Class("TreeView-summary"),
-				I(Class("nav-icon TreeView-caret"), Attr("data-lucide", "chevron-right"), Attr("aria-hidden", "true")),
+				Class(detailsSummaryClass("flex items-center gap-2")),
+				I(Class(navIconClass("transition-transform group-open:rotate-90")), Attr("data-lucide", "chevron-right"), Attr("aria-hidden", "true")),
 				link,
 			),
-			Ul(Class("TreeView-children"), Group(childNodes)),
+			Ul(Class("ml-6 mt-1 grid gap-1 border-l border-[var(--borderColor-muted)] pl-2"), Group(childNodes)),
 		),
 	)
 }

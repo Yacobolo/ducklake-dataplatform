@@ -39,7 +39,7 @@ func notebooksListPage(principal domain.ContextPrincipal, rows []notebooksListRo
 	}
 	tableNode := Node(emptyStateCard("No notebooks yet.", "New notebook", "/ui/notebooks/new"))
 	if len(tableRows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
 	}
 	return appPage("Notebooks", "notebooks", principal, pageToolbar("/ui/notebooks/new", "New notebook"), pageToolbar("/ui/notebooks/git-repos", "Git repos"), quickFilterCard("Filter by notebook or owner"), tableNode, paginationCard("/ui/notebooks", page, total))
 }
@@ -112,6 +112,15 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		c := d.Cells[i]
 		formID := "cell-form-" + c.ID
 		isMarkdown := c.CellType == string(domain.CellTypeMarkdown)
+		cellFrameClass := "relative overflow-hidden rounded-xl border border-[var(--borderColor-muted)] bg-transparent before:absolute before:inset-y-0 before:left-0 before:w-[var(--borderWidth-thick)] before:bg-[var(--borderColor-accent-emphasis)] before:opacity-0 before:transition-opacity focus-within:border-[var(--borderColor-accent-emphasis)] focus-within:before:opacity-100 [.is-active-cell_&]:before:opacity-100"
+		cellBodyClass := "flex flex-col gap-3 px-3 pt-2 pb-3"
+		markdownPreviewClass := "markdown-body min-h-[6rem] cursor-text rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-4 py-3 [&>:first-child]:mt-0 [&>:last-child]:mb-0 [.is-editing-markdown_&]:hidden"
+		editorFormClass := "notebook-cell-form"
+		if isMarkdown {
+			cellFrameClass = "relative overflow-hidden rounded-xl border border-transparent bg-transparent before:absolute before:inset-y-0 before:left-0 before:w-[var(--borderWidth-thick)] before:bg-[var(--borderColor-accent-emphasis)] before:opacity-0 before:transition-opacity [.is-editing-markdown_&]:border-[var(--borderColor-muted)] [.is-editing-markdown_&]:before:opacity-100"
+			cellBodyClass = "flex flex-col gap-3 p-0"
+			editorFormClass += " hidden [.is-editing-markdown_&]:block"
+		}
 
 		runButton := Node(nil)
 		if c.CellType == string(domain.CellTypeSQL) {
@@ -119,43 +128,45 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Type("submit"),
 				Attr("form", formID),
 				FormAction(c.RunURL),
-				Class("btn btn-sm btn-icon notebook-cell-gutter-run"),
+				Class(classNames(iconButtonClass("small"), "border-transparent bg-transparent text-[var(--fgColor-success)] hover:border-[var(--borderColor-muted)] hover:bg-[var(--bgColor-muted)]")),
 				Attr("data-run-cell", "true"),
 				Attr("data-notebook-run-cell", "true"),
 				Title("Run cell"),
 				Attr("aria-label", "Run cell"),
-				I(Class("btn-icon-glyph"), Attr("data-lucide", "play"), Attr("aria-hidden", "true")),
+				I(Class(iconGlyphClass()), Attr("data-lucide", "play"), Attr("aria-hidden", "true")),
 				Span(Class("sr-only"), Text("Run")),
 			)
 		}
 
 		editorInput := Node(Textarea(
 			Name("content"),
-			Class("form-control notebook-editor"),
+			Class(formControlClass("min-h-[10rem] font-mono text-[0.8125rem]")),
 			Attr("data-cell-editor", "true"),
 			Text(c.Content),
 		))
 		if c.CellType == string(domain.CellTypeSQL) {
 			editorInput = Div(
-				Class("notebook-sql-editor-host"),
+				Class("min-w-0 overflow-hidden"),
 				El(
 					"sql-editor-surface",
 					Attr("min-lines", "1"),
 					Style("--sql-editor-height:auto; --sql-editor-flex:0 0 auto;"),
 					Textarea(
 						Name("content"),
-						Class("form-control sql-editor-textarea"),
+						Class(formControlClass("sql-editor-textarea min-h-[10rem] rounded-none border-0 bg-transparent font-mono text-[0.8125rem]")),
 						Attr("data-cell-editor", "true"),
 						Attr("spellcheck", "false"),
 						Text(c.Content),
 					),
 				),
 			)
-		}
-
-		editorFormClass := "notebook-cell-form"
-		if isMarkdown {
-			editorFormClass += " notebook-markdown-editor"
+		} else {
+			editorInput = Textarea(
+				Name("content"),
+				Class(formControlClass("min-h-[calc(var(--control-xlarge-size)*2)] rounded-none border-0 bg-transparent px-4 pt-4 pb-3 font-mono text-[0.8125rem] focus-visible:outline-none")),
+				Attr("data-cell-editor", "true"),
+				Text(c.Content),
+			)
 		}
 
 		editorForm := Form(
@@ -183,14 +194,14 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Action(c.MoveURL),
 				d.CSRFFieldFunc(),
 				Input(Type("hidden"), Name("direction"), Value("up")),
-				Button(Type("submit"), Class("dropdown-item"), Text("Move cell up")),
+				Button(Type("submit"), Class("dropdown-item flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[0.8125rem] text-[var(--fgColor-default)] hover:bg-[var(--control-bgColor-hover)]"), Text("Move cell up")),
 			),
 			Form(
 				Method("post"),
 				Action(c.MoveURL),
 				d.CSRFFieldFunc(),
 				Input(Type("hidden"), Name("direction"), Value("down")),
-				Button(Type("submit"), Class("dropdown-item"), Text("Move cell down")),
+				Button(Type("submit"), Class("dropdown-item flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[0.8125rem] text-[var(--fgColor-default)] hover:bg-[var(--control-bgColor-hover)]"), Text("Move cell down")),
 			),
 			Form(
 				Method("post"),
@@ -199,7 +210,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Input(Type("hidden"), Name("cell_type"), Value("sql")),
 				Input(Type("hidden"), Name("content"), Value("")),
 				Input(Type("hidden"), Name("position"), Value(strconv.Itoa(c.Position))),
-				Button(Type("submit"), Class("dropdown-item"), Attr("data-add-above", "true"), Text("Insert SQL cell above")),
+				Button(Type("submit"), Class("dropdown-item flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[0.8125rem] text-[var(--fgColor-default)] hover:bg-[var(--control-bgColor-hover)]"), Attr("data-add-above", "true"), Text("Insert SQL cell above")),
 			),
 			Form(
 				Method("post"),
@@ -208,35 +219,35 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Input(Type("hidden"), Name("cell_type"), Value("sql")),
 				Input(Type("hidden"), Name("content"), Value("")),
 				Input(Type("hidden"), Name("position"), Value(strconv.Itoa(c.Position+1))),
-				Button(Type("submit"), Class("dropdown-item"), Attr("data-add-below", "true"), Text("Insert SQL cell below")),
+				Button(Type("submit"), Class("dropdown-item flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[0.8125rem] text-[var(--fgColor-default)] hover:bg-[var(--control-bgColor-hover)]"), Attr("data-add-below", "true"), Text("Insert SQL cell below")),
 			),
 			actionMenuPost(c.DeleteURL, "Delete cell", d.CSRFFieldFunc, true),
 		)
 
 		cellMenu := Details(
-			Class("dropdown details-reset details-overlay d-inline-block"),
+			Class(detailsClass()),
 			Summary(
-				Class("btn btn-sm btn-icon"),
+				Class(detailsSummaryClass(iconButtonClass("small"))),
 				Title("Cell actions"),
 				Attr("aria-label", "Cell actions"),
-				I(Class("btn-icon-glyph"), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
+				I(Class(iconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
 				Span(Class("sr-only"), Text("Cell actions")),
 			),
 			Div(
-				Class("dropdown-menu dropdown-menu-sw"),
+				Class(dropdownMenuClass("min-w-[14rem]")),
 				Group(cellMenuItems),
 			),
 		)
 
 		cellActions := Div(
-			Class("notebook-cell-actions"),
+			Class("flex flex-col items-center gap-2 opacity-0 pointer-events-none transition-opacity group-hover/notebook-cell:opacity-100 group-hover/notebook-cell:pointer-events-auto max-md:flex-row max-md:opacity-100 max-md:pointer-events-auto"),
 			Button(
 				Type("button"),
-				Class("btn btn-sm btn-icon"),
+				Class(iconButtonClass("small")),
 				Attr("data-drag-handle", "true"),
 				Title("Reorder cell (drag)"),
 				Attr("aria-label", "Reorder cell (drag)"),
-				I(Class("btn-icon-glyph"), Attr("data-lucide", "grip-vertical"), Attr("aria-hidden", "true")),
+				I(Class(iconGlyphClass()), Attr("data-lucide", "grip-vertical"), Attr("aria-hidden", "true")),
 				Span(Class("sr-only"), Text("Reorder cell (drag)")),
 			),
 			cellMenu,
@@ -246,16 +257,16 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 		mainContent := Node(
 			Div(
-				Class("notebook-cell-body"),
+				Class(cellBodyClass),
 				editorForm,
 				notebookResultNode(c),
 			),
 		)
 		if isMarkdown {
 			mainContent = Div(
-				Class("notebook-cell-body"),
+				Class(cellBodyClass),
 				Div(
-					Class("notebook-markdown-preview markdown-body"),
+					Class(markdownPreviewClass),
 					Attr("data-markdown-preview", "true"),
 					Attr("tabindex", "0"),
 					Title("Double-click to edit markdown"),
@@ -267,27 +278,27 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 		cellNodes = append(cellNodes,
 			Article(
-				Class("notebook-cell"),
+				Class("group/notebook-cell relative scroll-mt-[var(--size-sticky-offset)] px-1 transition-[background-color,box-shadow] [&.dragging]:opacity-75 [&.drag-over]:shadow-[inset_0_0_0_var(--borderWidth-thick)_var(--borderColor-accent-emphasis)]"),
 				ID("cell-"+c.ID),
 				Attr("data-notebook-cell", "true"),
 				Attr("data-cell-id", c.ID),
 				Attr("data-cell-type", c.CellType),
 				data.Show(containsExpr(c.Title+" "+c.CellType+" "+c.Content)),
-				Div(Class("notebook-cell-shell"),
+				Div(Class("grid gap-2 [grid-template-columns:calc(var(--control-medium-size)-var(--space-1))_minmax(0,1fr)_calc(var(--control-medium-size)+var(--space-1))] max-md:grid-cols-[auto_1fr_auto]"),
 					Aside(
-						Class("notebook-cell-gutter notebook-cell-gutter-left"),
+						Class("flex flex-col items-center gap-2 pt-2 max-md:col-start-1 max-md:row-start-1 max-md:flex-row max-md:justify-start max-md:pt-0"),
 						runButton,
-						Span(Class("notebook-cell-gutter-index"), Text(strconv.Itoa(c.Position+1))),
+						Span(Class("font-mono text-xs text-[var(--fgColor-muted)]"), Text(strconv.Itoa(c.Position+1))),
 					),
 					Div(
-						Class("notebook-cell-content"),
+						Class("min-w-0 max-md:col-span-full max-md:row-start-2"),
 						Div(
-							Class("notebook-cell-frame"),
+							Class(cellFrameClass),
 							mainContent,
 						),
 					),
 					Aside(
-						Class("notebook-cell-gutter notebook-cell-gutter-right"),
+						Class("flex flex-col items-center gap-2 pt-2 max-md:col-start-3 max-md:row-start-1 max-md:pt-0"),
 						cellActions,
 					),
 				),
@@ -314,19 +325,26 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			outlineKindLabel = "Markdown"
 		}
 
+		outlineIndentClass := ""
+		if outlineLevel == 2 {
+			outlineIndentClass = "pl-[calc(var(--space-2)+var(--space-1))]"
+		} else if outlineLevel >= 3 {
+			outlineIndentClass = "pl-[calc(var(--space-2)+var(--space-2))] [&_.notebook-outline-label]:text-[var(--text-caption-size)]"
+		}
 		outlineNodes = append(outlineNodes,
 			Li(
+				Class("border-b border-[var(--borderColor-muted)] last:border-b-0"),
 				data.Show(containsExpr(outlineText+" "+c.CellType+" "+c.Content)),
 				A(
 					Href("#cell-"+c.ID),
-					Class("notebook-outline-link"),
+					Class(classNames("flex items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm text-[var(--fgColor-default)] no-underline transition-colors visited:text-[var(--fgColor-default)] hover:text-[var(--fgColor-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[var(--outline-focus-offset)] focus-visible:outline-[var(--focus-outlineColor)] [&.is-active-outline-link]:text-[var(--fgColor-accent)]", outlineIndentClass)),
 					Attr("data-outline-link", "true"),
 					Attr("data-cell-anchor", "cell-"+c.ID),
 					Attr("data-outline-level", strconv.Itoa(outlineLevel)),
-					Span(Class("notebook-outline-label"), Text(outlineText)),
+					Span(Class("notebook-outline-label min-w-0 flex-1 truncate"), Text(outlineText)),
 					Span(
-						Class("notebook-outline-kind"),
-						I(Class("notebook-outline-kind-icon"), Attr("data-lucide", outlineKindIcon), Attr("aria-hidden", "true")),
+						Class("inline-flex items-center text-[var(--fgColor-muted)]"),
+						I(Class("h-4 w-4"), Attr("data-lucide", outlineKindIcon), Attr("aria-hidden", "true")),
 						Span(Class("sr-only"), Text(outlineKindLabel)),
 					),
 				),
@@ -342,22 +360,22 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 	}
 
 	outlinePanel := Details(
-		Class("notebook-outline-panel"),
+		Class("m-0 border-0 bg-transparent"),
 		Attr("open", "open"),
 		Summary(
-			Class("notebook-outline-summary"),
+			Class(detailsSummaryClass("flex items-center justify-between gap-2 border-b border-[var(--borderColor-muted)] pb-2 text-sm font-semibold")),
 			Span(Text("Outline")),
-			Span(Class("notebook-outline-count"), Text(strconv.Itoa(len(d.Cells))+" cells")),
+			Span(Class("text-xs font-normal text-[var(--fgColor-muted)]"), Text(strconv.Itoa(len(d.Cells))+" cells")),
 		),
 		Div(
-			Class("notebook-outline-body"),
+			Class("pt-2"),
 			Div(
-				Class("notebook-outline-filter d-flex flex-items-center gap-2"),
+				Class("mb-2 flex items-center gap-2"),
 				Label(Class("sr-only"), Text("Filter cells")),
-				Input(Type("search"), Class("form-control"), Placeholder("Filter cells"), data.Bind("q"), AutoComplete("off")),
+				Input(Type("search"), Class(formControlClass()), Placeholder("Filter cells"), data.Bind("q"), AutoComplete("off")),
 			),
-			Div(Class("notebook-outline-list"),
-				Ul(Group(outlineNodes)),
+			Div(Class("mt-2 max-h-[var(--size-outline-max-height)] overflow-auto"),
+				Ul(Class("m-0 grid list-none gap-0 p-0"), Group(outlineNodes)),
 			),
 		),
 	)
@@ -371,21 +389,21 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 	descriptionNode := Node(nil)
 	if strings.TrimSpace(d.Description) != "" {
-		descriptionNode = Span(Class("notebook-toolbar-meta-item"), Text(d.Description))
+		descriptionNode = Span(Class("text-sm text-[var(--fgColor-muted)]"), Text(d.Description))
 	}
 
 	toolbarNode := Div(
-		Class("notebook-toolbar"),
-		Div(Class("notebook-toolbar-main d-flex flex-justify-between flex-wrap flex-items-start gap-2"),
+		Class("sticky top-0 z-20 mb-2 border-b border-[var(--borderColor-muted)] bg-[var(--bgColor-default)] pb-2"),
+		Div(Class("flex flex-wrap items-start justify-between gap-2"),
 			Div(
-				H2(Class("notebook-title"), Text(d.Name)),
+				H2(Class("m-0 text-2xl font-semibold"), Text(d.Name)),
 				Div(
-					Class("notebook-toolbar-meta"),
-					Span(Class("notebook-toolbar-meta-item"), Text("Owner "+d.Owner)),
+					Class("mt-1 flex flex-wrap gap-2"),
+					Span(Class("text-sm text-[var(--fgColor-muted)]"), Text("Owner "+d.Owner)),
 					descriptionNode,
 				),
 			),
-			Div(Class("button-row notebook-toolbar-actions"),
+			Div(Class(buttonRowClass("mt-0")),
 				Form(
 					Method("post"),
 					Action(d.RunAllURL),
@@ -410,16 +428,16 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				A(Href(d.JobsURL), Class(secondaryButtonClass()), Text("Jobs")),
 				A(Href(d.GitRepoURL), Class(secondaryButtonClass()), Text("Git repos")),
 				Details(
-					Class("dropdown details-reset details-overlay d-inline-block"),
+					Class(detailsClass()),
 					Summary(
-						Class("btn btn-sm btn-icon"),
+						Class(detailsSummaryClass(iconButtonClass("small"))),
 						Title("Notebook actions"),
 						Attr("aria-label", "Notebook actions"),
-						I(Class("btn-icon-glyph"), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
+						I(Class(iconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
 						Span(Class("sr-only"), Text("Notebook actions")),
 					),
 					Div(
-						Class("dropdown-menu dropdown-menu-sw"),
+						Class(dropdownMenuClass("min-w-[14rem]")),
 						actionMenuLink(d.EditURL, "Notebook settings"),
 						actionMenuPost(d.DeleteURL, "Delete notebook", d.CSRFFieldFunc, true),
 					),
@@ -429,24 +447,24 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 	)
 
 	workspaceNode := workspaceLayout(
-		"notebook-workspace",
+		"min-h-0",
 		workspaceAside(
 			"notebook-"+d.NotebookID,
 			"notebook-aside",
 			[]workspaceAsideTab{
-				{ID: "outline", Label: "Outline", Icon: "list-tree", Count: strconv.Itoa(len(d.Cells)), Content: outlinePanel, PanelClass: "notebook-outline-panel-wrap"},
+				{ID: "outline", Label: "Outline", Icon: "list-tree", Count: strconv.Itoa(len(d.Cells)), Content: outlinePanel},
 				{ID: "explorer", Label: "Explorer", Icon: "database", Content: explorerPanel},
 				{ID: "runs", Label: "Runs", Icon: "workflow", Count: strconv.Itoa(len(d.Jobs)), Content: notebookJobsAside(d.Jobs)},
 			},
 			"outline",
 		),
 		Div(
-			Class("notebook-main"),
+			Class("min-w-0"),
 			toolbarNode,
 			notebookComputeCard(d),
 			notebookPromoteCard(d),
 			Div(
-				Class("notebook-cells"),
+				Class("grid min-w-0 gap-0"),
 				Attr("data-notebook-selected-catalog", d.SelectedCatalog),
 				Attr("data-notebook-selected-schema", d.SelectedSchema),
 				Attr("data-reorder-url", d.ReorderURL),
@@ -468,7 +486,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 func notebookJobsAside(jobs []notebookJobRowData) Node {
 	if len(jobs) == 0 {
-		return P(Class("color-fg-muted text-small"), Text("No async jobs yet."))
+		return P(Class(mutedClass()), Text("No async jobs yet."))
 	}
 	rows := make([]Node, 0, len(jobs))
 	for i := range jobs {
@@ -545,17 +563,17 @@ func notebookComputeCard(d notebookDetailPageData) Node {
 		Class(cardClass("sql-compute-card")),
 		Attr("data-notebook-browser-runtime", "true"),
 		Attr("data-runtime-manifest-endpoint", "/ui/sql/runtime/manifest"),
-		H2(Class("sql-results-title"), Text("Compute")),
+		H2(Class(sqlResultsTitleClass()), Text("Compute")),
 		P(Class(mutedClass()), Text("Interactive SQL cell runs can use the browser-local DuckDB runtime. Notebook Run all and async runs stay on managed compute.")),
 		Div(
-			Class("button-row"),
-			Select(ID("notebook-compute-mode"), Name("notebook_compute_mode"), Class("form-select sql-compute-select"), Group(modeOptions)),
-			Select(ID("notebook-compute-endpoint"), Name("notebook_endpoint_name"), Class("form-select sql-compute-select"), Group(endpointOptions)),
+			Class(buttonRowClass()),
+			Select(ID("notebook-compute-mode"), Name("notebook_compute_mode"), Class(formSelectClass("sql-compute-select w-auto min-w-[11rem]")), Group(modeOptions)),
+			Select(ID("notebook-compute-endpoint"), Name("notebook_endpoint_name"), Class(formSelectClass("sql-compute-select w-auto min-w-[12rem]")), Group(endpointOptions)),
 			Button(
 				Type("button"),
 				ID("notebook-reset-local-runtime"),
 				Class(secondaryButtonClass()),
-				I(Class("btn-icon-glyph"), Attr("data-lucide", "rotate-ccw"), Attr("aria-hidden", "true")),
+				I(Class(iconGlyphClass()), Attr("data-lucide", "rotate-ccw"), Attr("aria-hidden", "true")),
 				Span(Text("Reset local runtime")),
 			),
 			Button(
@@ -563,14 +581,14 @@ func notebookComputeCard(d notebookDetailPageData) Node {
 				ID("notebook-cancel-local-run"),
 				Class(secondaryButtonClass()),
 				Disabled(),
-				I(Class("btn-icon-glyph"), Attr("data-lucide", "square"), Attr("aria-hidden", "true")),
+				I(Class(iconGlyphClass()), Attr("data-lucide", "square"), Attr("aria-hidden", "true")),
 				Span(Text("Cancel local run")),
 			),
 		),
 		Div(
-			Class("Banner Banner-attention"),
+			Class("flex items-start gap-3 rounded-xl border border-[var(--borderColor-attention-muted)] bg-[var(--bgColor-attention-muted)] px-4 py-3 text-sm"),
 			Attr("data-notebook-runtime-banner", "true"),
-			I(Class("nav-icon"), Attr("data-lucide", "cpu"), Attr("aria-hidden", "true")),
+			I(Class(navIconClass("mt-0.5")), Attr("data-lucide", "cpu"), Attr("aria-hidden", "true")),
 			Div(
 				Strong(Attr("data-notebook-browser-runtime-title", "true"), Text("Browser runtime")),
 				P(Attr("data-notebook-browser-runtime-message", "true"), Text(d.BrowserRuntime.StatusReason)),
@@ -582,9 +600,9 @@ func notebookComputeCard(d notebookDetailPageData) Node {
 
 func notebookInsertRail(notebookID string, position int, csrfField func() Node) Node {
 	return Div(
-		Class("notebook-insert-rail"),
+		Class("notebook-insert-rail relative mx-1 flex h-[var(--control-medium-size)] items-center justify-center py-1"),
 		Div(
-			Class("notebook-insert-actions"),
+			Class("notebook-insert-actions relative z-[1] inline-flex items-center gap-2 [&_form]:m-0 [&_form]:flex"),
 			Form(
 				Method("post"),
 				Action("/ui/notebooks/"+notebookID+"/cells"),
@@ -592,7 +610,7 @@ func notebookInsertRail(notebookID string, position int, csrfField func() Node) 
 				Input(Type("hidden"), Name("cell_type"), Value("sql")),
 				Input(Type("hidden"), Name("content"), Value("")),
 				Input(Type("hidden"), Name("position"), Value(strconv.Itoa(position))),
-				Button(Type("submit"), Class("btn btn-sm notebook-insert-btn"), Text("SQL")),
+				Button(Type("submit"), Class(secondaryButtonClass("small")), Text("SQL")),
 			),
 			Form(
 				Method("post"),
@@ -601,7 +619,7 @@ func notebookInsertRail(notebookID string, position int, csrfField func() Node) 
 				Input(Type("hidden"), Name("cell_type"), Value("markdown")),
 				Input(Type("hidden"), Name("content"), Value("")),
 				Input(Type("hidden"), Name("position"), Value(strconv.Itoa(position))),
-				Button(Type("submit"), Class("btn btn-sm notebook-insert-btn"), Text("Markdown")),
+				Button(Type("submit"), Class(secondaryButtonClass("small")), Text("Markdown")),
 			),
 		),
 	)
@@ -609,16 +627,16 @@ func notebookInsertRail(notebookID string, position int, csrfField func() Node) 
 
 func notebookResultNode(c notebookCellRowData) Node {
 	if c.CellType != string(domain.CellTypeSQL) {
-		return Div(Class("notebook-output"), Attr("data-notebook-cell-output", "true"), P(Class(mutedClass()), Text("Markdown cell output is rendered by your markdown consumer.")))
+		return Div(Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Attr("data-notebook-cell-output", "true"), P(Class(mutedClass()), Text("Markdown cell output is rendered by your markdown consumer.")))
 	}
 
 	if c.LastResult == nil {
-		return Div(Class("notebook-output"), Attr("data-notebook-cell-output", "true"), P(Class(mutedClass()), Text("Run this cell to see output.")))
+		return Div(Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Attr("data-notebook-cell-output", "true"), P(Class(mutedClass()), Text("Run this cell to see output.")))
 	}
 
 	if c.LastResult.Error != "" {
 		return Div(
-			Class("notebook-output flash flash-error"),
+			Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-danger-emphasis)] bg-[var(--bgColor-danger-muted)] p-4"),
 			Attr("data-notebook-cell-output", "true"),
 			H4(Text("Query Error")),
 			P(Class(mutedClass()), Text("Last runtime: "+humanDuration(c.LastResult.Duration))),
@@ -635,14 +653,14 @@ func notebookResultNode(c notebookCellRowData) Node {
 			}
 			value, secondary := metricValueFromResult(c.LastResult, field)
 			return Div(
-				Class("notebook-output"),
+				Class("notebook-output flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"),
 				Attr("data-notebook-cell-output", "true"),
 				visualMetricCard(defaultVisualTitle(c.VisualSpec, "Metric"), value, secondary),
 				notebookResultDataDetails(c),
 			)
 		case domain.VisualOutputChart:
 			return Div(
-				Class("notebook-output"),
+				Class("notebook-output flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"),
 				Attr("data-notebook-cell-output", "true"),
 				chartHost(c.LastResult.Columns, c.LastResult.RawRows, c.VisualSpec),
 				notebookResultDataDetails(c),
@@ -655,7 +673,7 @@ func notebookResultNode(c notebookCellRowData) Node {
 
 func notebookTableResultNode(c notebookCellRowData) Node {
 	if c.LastResult == nil {
-		return Div(Class("notebook-output"), Attr("data-notebook-cell-output", "true"), P(Class(mutedClass()), Text("Run this cell to see output.")))
+		return Div(Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Attr("data-notebook-cell-output", "true"), P(Class(mutedClass()), Text("Run this cell to see output.")))
 	}
 
 	headers := make([]Node, 0, len(c.LastResult.Columns))
@@ -685,29 +703,29 @@ func notebookTableResultNode(c notebookCellRowData) Node {
 	}
 
 	return Div(
-		Class("notebook-output table-wrap"),
+		Class("notebook-output flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"),
 		Attr("data-notebook-cell-output", "true"),
-		Div(Class("d-flex flex-justify-between flex-wrap flex-items-center gap-2"),
+		Div(Class("flex flex-wrap items-center justify-between gap-2"),
 			H4(Text("Output")),
-			Div(Class("button-row"),
+			Div(Class(buttonRowClass()),
 				A(
 					Href(c.DownloadURL),
-					Class("btn btn-sm btn-icon"),
+					Class(iconButtonClass("small")),
 					Title("Download result CSV"),
 					Attr("aria-label", "Download result CSV"),
-					I(Class("btn-icon-glyph"), Attr("data-lucide", "download"), Attr("aria-hidden", "true")),
+					I(Class(iconGlyphClass()), Attr("data-lucide", "download"), Attr("aria-hidden", "true")),
 					Span(Class("sr-only"), Text("Download result CSV")),
 				),
 			),
 		),
 		P(Class(mutedClass()), Text(meta)),
-		Table(Class("data-table"), THead(Tr(Group(headers))), TBody(Group(rows))),
+		Div(Class("overflow-x-auto"), Table(Class(dataTableClass()), THead(Tr(Group(headers))), TBody(Group(rows)))),
 	)
 }
 
 func notebookResultDataDetails(c notebookCellRowData) Node {
 	return Details(
-		Class("notebook-output-data"),
+		Class("mt-3"),
 		Summary(Text("View data")),
 		notebookTableResultNode(c),
 	)
@@ -783,7 +801,7 @@ func notebookGitReposListPage(d notebookGitReposListPageData) Node {
 	}
 	tableNode := Node(emptyStateCard("No Git repositories registered.", "Register Git repo", "/ui/notebooks/git-repos/new"))
 	if len(rows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Repository")), Th(Text("Branch")), Th(Text("Path")), Th(Text("Owner")), Th(Text("Last sync")))), TBody(Group(rows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Repository")), Th(Text("Branch")), Th(Text("Path")), Th(Text("Owner")), Th(Text("Last sync")))), TBody(Group(rows))))
 	}
 	return appPage("Notebook Git Repos", "notebooks", d.Principal, pageToolbar("/ui/notebooks/git-repos/new", "Register Git repo"), tableNode, paginationCard("/ui/notebooks/git-repos", d.Page, d.Total))
 }
@@ -828,9 +846,9 @@ func notebookGitRepoDetailPage(d notebookGitRepoDetailPageData) Node {
 			P(Text("Owner: "+d.Owner)),
 			P(Text("Last sync: "+d.LastSync)),
 			P(Text("Last commit: "+d.LastCommit)),
-			Div(Class("BtnGroup"),
+			Div(Class(buttonRowClass()),
 				Form(Method("post"), Action(d.SyncURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(primaryButtonClass()), Text("Sync repo"))),
-				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete repo"))),
+				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(dangerButtonClass()), Text("Delete repo"))),
 			),
 		),
 	)
@@ -892,7 +910,7 @@ func notebookJobsListPage(d notebookJobsListPageData) Node {
 	}
 	tableNode := Node(emptyStateCard("No notebook jobs found.", "Back to notebook", "/ui/notebooks/"+d.NotebookID))
 	if len(rows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Job ID")), Th(Text("State")), Th(Text("Updated")))), TBody(Group(rows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Job ID")), Th(Text("State")), Th(Text("Updated")))), TBody(Group(rows))))
 	}
 	return appPage("Notebook Jobs", "notebooks", d.Principal, tableNode, paginationCard("/ui/notebooks/"+d.NotebookID+"/jobs", d.Page, d.Total))
 }

@@ -20,5 +20,5 @@ func overviewPage(principal domain.ContextPrincipal, cards []overviewCardData) N
 		c := cards[i]
 		nodes = append(nodes, Div(Class(cardClass()), H2(Text(c.Title)), P(Text(c.Description)), A(Href(c.Href), Text(c.LinkLabel))))
 	}
-	return appPage("Overview", "home", principal, Div(Class("grid"), Group(nodes)))
+	return appPage("Overview", "home", principal, Div(Class("grid gap-3 md:grid-cols-2 xl:grid-cols-3"), Group(nodes)))
 }

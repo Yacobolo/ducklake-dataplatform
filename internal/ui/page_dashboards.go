@@ -79,7 +79,7 @@ func dashboardsListPage(principal domain.ContextPrincipal, rows []dashboardListR
 	}
 	tableNode := Node(emptyStateCard("No dashboards yet.", "New dashboard", "/ui/dashboards/new"))
 	if len(tableRows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Description")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Description")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
 	}
 	return appPage("Dashboards", "dashboards", principal, pageToolbar("/ui/dashboards/new", "New dashboard"), tableNode, paginationCard("/ui/dashboards", page, total))
 }
@@ -125,16 +125,16 @@ func dashboardsDetailPage(d dashboardDetailPageData) Node {
 		"dashboards",
 		d.Principal,
 		Div(
-			Class("dashboard-toolbar"),
-			H1(Text(d.Dashboard.Name)),
-			P(Class("color-fg-muted"), Text(d.Dashboard.Description)),
-			Div(Class("button-row"),
+			Class("grid gap-3"),
+			H1(Class("m-0 text-3xl font-semibold"), Text(d.Dashboard.Name)),
+			P(Class("m-0 text-[var(--fgColor-muted)]"), Text(d.Dashboard.Description)),
+			Div(Class(buttonRowClass()),
 				A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")),
-				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete"))),
+				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(dangerButtonClass()), Text("Delete"))),
 			),
 		),
 		dashboardFreshnessCard(d.Freshness, d.FreshnessExplain),
-		Div(Class("dashboard-grid"), Group(widgetNodes)),
+		Div(Class("grid gap-4 md:grid-cols-2 xl:grid-cols-12 [&>*]:xl:col-span-6"), Group(widgetNodes)),
 		dashboardWidgetFormCard(defaultWidgetFormData(d.CreateWidgetURL), d.CSRFFieldProvider),
 		Script(Src(uiScriptHref("dashboard.js"))),
 	)
@@ -165,7 +165,7 @@ func dashboardFreshnessCard(status *domain.AssetFreshnessStatus, explanation *do
 	return Div(
 		Class(cardClass()),
 		H2(Text("Freshness")),
-		Div(Class("button-row"),
+		Div(Class(buttonRowClass()),
 			statusLabel(status.FreshnessStatus, dashboardFreshnessTone(status.FreshnessStatus)),
 			Span(Class(mutedClass()), Text(status.Reason)),
 		),
@@ -211,16 +211,16 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 	}
 
 	return Div(
-		Class("dashboard-widget"),
-		H2(Text(widget.Widget.Name)),
-		P(Class("color-fg-muted"), Text(widget.Widget.Description)),
-		Div(Class("button-row"),
+		Class("grid gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-small)]"),
+		H2(Class("m-0 text-xl font-semibold"), Text(widget.Widget.Name)),
+		P(Class("m-0 text-[var(--fgColor-muted)]"), Text(widget.Widget.Description)),
+		Div(Class(buttonRowClass()),
 			A(Href(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/edit"), Class(secondaryButtonClass()), Text("Edit widget")),
 		),
 		content,
 		dashboardWidgetDataDetails(widget),
 		generatedSQL,
-		Form(Method("post"), Action(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/delete"), csrfFieldProvider(), Button(Type("submit"), Class("btn btn-danger btn-sm"), Text("Delete widget"))),
+		Form(Method("post"), Action(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/delete"), csrfFieldProvider(), Button(Type("submit"), Class(dangerButtonClass("small")), Text("Delete widget"))),
 	)
 }
 
@@ -244,7 +244,7 @@ func dashboardWidgetTable(widget dashboardsvc.ResolvedWidget) Node {
 		}
 		rows = append(rows, Tr(Group(cells)))
 	}
-	return Div(Class("table-wrap"), Table(Class("data-table"), THead(Tr(Group(headers))), TBody(Group(rows))))
+	return Div(Class(tableWrapClass()), Table(Class(dataTableClass()), THead(Tr(Group(headers))), TBody(Group(rows))))
 }
 
 func dashboardFreshnessTone(status string) string {

@@ -17,7 +17,7 @@ func sectionHomePage(title, active string, principal domain.ContextPrincipal, ca
 		card := cards[i]
 		nodes = append(nodes, Div(Class(cardClass()), H2(Text(card.Title)), P(Text(card.Description)), A(Href(card.Href), Text(card.LinkLabel))))
 	}
-	return appPage(title, active, principal, Div(Class("grid"), Group(nodes)))
+	return appPage(title, active, principal, Div(Class("grid gap-3 md:grid-cols-2 xl:grid-cols-3"), Group(nodes)))
 }
 
 func storageSectionNav(active string) Node {
@@ -55,7 +55,7 @@ func adminSectionNav(active, _ string, items []navItem) Node {
 		}
 		nodes = append(nodes, A(Href(item.Href), Class(className), Text(item.Label)))
 	}
-	return Div(Class(cardClass("toolbar")), Div(Class("d-flex flex-wrap gap-2"), Group(nodes)))
+	return Div(Class(cardClass()), Div(Class("flex flex-wrap gap-2"), Group(nodes)))
 }
 
 type adminTableRow struct {
@@ -75,7 +75,7 @@ func adminTablePage(title, active string, principal domain.ContextPrincipal, nav
 		for i := range headers {
 			ths = append(ths, Th(Text(headers[i])))
 		}
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Group(ths))), TBody(Group(tableRows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Group(ths))), TBody(Group(tableRows))))
 	}
 
 	nodes := []Node{nav}
@@ -377,19 +377,19 @@ func governanceSearchPage(d governanceSearchPageData) Node {
 	}
 	tableNode := Node(emptyStateCard("No search results yet.", "", ""))
 	if len(rows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Type")), Th(Text("Name")), Th(Text("Schema")), Th(Text("Comment")), Th(Text("Match")))), TBody(Group(rows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Type")), Th(Text("Name")), Th(Text("Schema")), Th(Text("Comment")), Th(Text("Match")))), TBody(Group(rows))))
 	}
 	return appPage("Governance: Search", "governance", d.Principal,
 		governanceSectionNav("search"),
 		Div(Class(cardClass()),
-			Form(Class("stack-form"), Method("get"), Action("/ui/governance/search"),
+			Form(Class(stackFormClass()), Method("get"), Action("/ui/governance/search"),
 				Label(Text("Query")),
 				Input(Name("q"), Value(d.Query)),
 				Label(Text("Object type")),
 				Input(Name("object_type"), Value(d.ObjectType)),
 				Label(Text("Catalog")),
 				Input(Name("catalog"), Value(d.CatalogName)),
-				Div(Class("form-actions"), Button(Type("submit"), Class(primaryButtonClass()), Text("Search"))),
+				Div(Class(formActionsClass()), Button(Type("submit"), Class(primaryButtonClass()), Text("Search"))),
 			),
 		),
 		tableNode,

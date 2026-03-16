@@ -39,7 +39,7 @@ func modelsListPage(d modelsListPageData) Node {
 	}
 	tableNode := Node(emptyStateCard("No models available.", "New model", "/ui/models/new"))
 	if len(rows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Model")), Th(Text("Materialization")), Th(Text("Dependencies")), Th(Text("Updated")))), TBody(Group(rows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Model")), Th(Text("Materialization")), Th(Text("Dependencies")), Th(Text("Updated")))), TBody(Group(rows))))
 	}
 
 	return appPage(
@@ -119,13 +119,13 @@ func modelsDetailPage(d modelsDetailPageData) Node {
 			P(Text("Owner: "+d.Owner)),
 			P(Text("Depends on: "+d.DependsOn)),
 			P(Text("Config: "+d.ConfigText)),
-			Div(Class("BtnGroup"),
+			Div(Class(buttonRowClass()),
 				A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")),
 				A(Href(d.NewTestURL), Class(primaryButtonClass()), Text("New test")),
 				A(Href(d.RunsURL), Class(secondaryButtonClass()), Text("Runs")),
 				A(Href(d.DAGURL), Class(secondaryButtonClass()), Text("DAG")),
 				A(Href(d.SourceFreshnessURL), Class(secondaryButtonClass()), Text("Source freshness")),
-				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete"))),
+				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(dangerButtonClass()), Text("Delete"))),
 			),
 			Div(
 				Class(cardClass()),
@@ -145,11 +145,11 @@ func modelsDetailPage(d modelsDetailPageData) Node {
 				Input(Type("hidden"), Name("project_name"), Value(d.TriggerProject)),
 				Input(Type("hidden"), Name("model_name"), Value(d.TriggerModel)),
 				Label(Text("Target catalog")),
-				Input(Name("target_catalog"), Class("form-control"), Required()),
+				Input(Name("target_catalog"), Class(formControlClass()), Required()),
 				Label(Text("Target schema")),
-				Input(Name("target_schema"), Class("form-control"), Required()),
+				Input(Name("target_schema"), Class(formControlClass()), Required()),
 				Label(Text("Selector")),
-				Input(Name("selector"), Class("form-control"), Value(d.DefaultSelector)),
+				Input(Name("selector"), Class(formControlClass()), Value(d.DefaultSelector)),
 				Button(Type("submit"), Class(primaryButtonClass()), Text("Trigger model run")),
 			),
 			Form(
@@ -157,12 +157,12 @@ func modelsDetailPage(d modelsDetailPageData) Node {
 				Action(d.CancelRunURL),
 				d.CSRFFieldProvider(),
 				Label(Text("Run ID to cancel")),
-				Input(Name("run_id"), Class("form-control")),
+				Input(Name("run_id"), Class(formControlClass())),
 				Button(Type("submit"), Class(secondaryButtonClass()), Text("Cancel model run")),
 			),
 		),
 		Div(Class(cardClass()), H2(Text("SQL")), Pre(Text(d.SQL))),
-		Div(Class(cardClass("table-wrap")), H2(Text("Tests")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Column")), Th(Class("text-right"), Text("Actions")))), TBody(Group(testRows)))),
+		Div(Class(cardClass(tableWrapClass())), H2(Text("Tests")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Column")), Th(Class("text-right"), Text("Actions")))), TBody(Group(testRows)))),
 	)
 }
 
@@ -248,9 +248,9 @@ func modelsDAGPage(d modelsDAGPageData) Node {
 		}
 		tierNodes = append(tierNodes,
 			Div(
-				Class(cardClass("table-wrap")),
+				Class(cardClass(tableWrapClass())),
 				H2(Text(tier.Label)),
-				Table(Class("data-table"), THead(Tr(Th(Text("Model")), Th(Text("Materialization")), Th(Text("Depends on")))), TBody(Group(rows))),
+				Table(Class(dataTableClass()), THead(Tr(Th(Text("Model")), Th(Text("Materialization")), Th(Text("Depends on")))), TBody(Group(rows))),
 			),
 		)
 	}
@@ -299,7 +299,7 @@ func modelRunsListPage(d modelRunsListPageData) Node {
 	}
 	tableNode := Node(emptyStateCard("No model runs found.", "View DAG", "/ui/models/dag"))
 	if len(rows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Run ID")), Th(Text("Status")), Th(Text("Trigger")), Th(Text("By")), Th(Text("Target")), Th(Text("Selector")), Th(Text("Created")))), TBody(Group(rows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Run ID")), Th(Text("Status")), Th(Text("Trigger")), Th(Text("By")), Th(Text("Target")), Th(Text("Selector")), Th(Text("Created")))), TBody(Group(rows))))
 	}
 	return appPage(
 		"Model Runs",
@@ -387,7 +387,7 @@ func modelRunDetailPage(d modelRunDetailPageData) Node {
 			Form(Method("post"), Action(d.CancelURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(secondaryButtonClass()), Text("Cancel run"))),
 		),
 		Div(Class(cardClass()), H2(Text("Compile manifest")), Pre(Text(d.CompileManifest))),
-		Div(Class(cardClass("table-wrap")), H2(Text("Steps")), Table(Class("data-table"), THead(Tr(Th(Text("Model")), Th(Text("Status")), Th(Text("Tier")), Th(Text("Rows")), Th(Text("Started")), Th(Text("Finished")), Th(Text("Tests")), Th(Text("Error")))), TBody(Group(stepRows)))),
+		Div(Class(cardClass(tableWrapClass())), H2(Text("Steps")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Model")), Th(Text("Status")), Th(Text("Tier")), Th(Text("Rows")), Th(Text("Started")), Th(Text("Finished")), Th(Text("Tests")), Th(Text("Error")))), TBody(Group(stepRows)))),
 	)
 }
 

@@ -28,7 +28,7 @@ func catalogsListPage(principal domain.ContextPrincipal, rows []catalogsListRowD
 	}
 	tableNode := Node(emptyStateCard("No catalogs found yet.", "Create catalog", "/ui/catalogs/new"))
 	if len(tableRows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Status")), Th(Text("Metastore")), Th(Text("Updated")))), TBody(Group(tableRows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Status")), Th(Text("Metastore")), Th(Text("Updated")))), TBody(Group(tableRows))))
 	}
 	return appPage(
 		"Catalogs",
@@ -165,9 +165,9 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 	for i := range d.Panel.MetaItems {
 		item := d.Panel.MetaItems[i]
 		metaNodes = append(metaNodes,
-			Div(Class("catalog-meta-row"),
-				Dt(Class("catalog-meta-label"), Text(item.Label)),
-				Dd(Class("catalog-meta-value"), Text(dashIfEmpty(item.Value))),
+			Div(Class(catalogMetaRowClass()),
+				Dt(Class(catalogMetaLabelClass()), Text(item.Label)),
+				Dd(Class(catalogMetaValueClass()), Text(dashIfEmpty(item.Value))),
 			),
 		)
 	}
@@ -185,7 +185,7 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 	}
 	if d.Panel.SetDefaultURL != "" {
 		panelActions = append(panelActions,
-			Form(Method("post"), Action(d.Panel.SetDefaultURL), d.CSRFField(), Button(Type("submit"), Class("btn"), Text("Set default"))),
+			Form(Method("post"), Action(d.Panel.SetDefaultURL), d.CSRFField(), Button(Type("submit"), Class(secondaryButtonClass()), Text("Set default"))),
 		)
 	}
 	if d.Panel.DeleteURL != "" {
@@ -195,20 +195,23 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 	columnsNode := Node(nil)
 	if d.Panel.Mode == "table" || d.Panel.Mode == "view" {
 		if len(d.Panel.Columns) == 0 && d.Panel.Mode == "view" && !d.Panel.ColumnsAvailable {
-			columnsNode = P(Class("catalog-muted"), Text("Columns unavailable for this view."))
+			columnsNode = P(Class(mutedClass()), Text("Columns unavailable for this view."))
 		} else {
 			rows := make([]Node, 0, len(d.Panel.Columns))
 			for i := range d.Panel.Columns {
 				c := d.Panel.Columns[i]
 				rows = append(rows, Tr(Td(Text(c.Name)), Td(Text(c.Type)), Td(Text(c.Nullable)), Td(Text(c.Comment)), Td(Text(c.Properties))))
 			}
-			columnsNode = Div(Class("table-wrap catalog-columns-table"), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable")), Th(Text("Comment")), Th(Text("Properties")))), TBody(Group(rows))))
+			columnsNode = Div(Class(tableWrapClass("catalog-columns-table")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Nullable")), Th(Text("Comment")), Th(Text("Properties")))), TBody(Group(rows))))
 		}
 	}
 
 	definitionNode := Node(nil)
 	if d.Panel.Definition != "" {
-		definitionNode = Div(Class("catalog-section"), H3(Class("catalog-section-title"), Text("Definition")), Pre(Class("catalog-definition"), Text(d.Panel.Definition)))
+		definitionNode = Div(Class(catalogSectionClass()),
+			H3(Class(sectionTitleClass()), Text("Definition")),
+			Pre(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-3"), Text(d.Panel.Definition)),
+		)
 	}
 
 	panelStatus := panelMetaValue(d.Panel, "Status")
@@ -220,22 +223,21 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 	tabItems := make([]Node, 0, len(tabKeys))
 	for i := range tabKeys {
 		tab := tabKeys[i]
-		className := "catalog-tab"
+		className := catalogTabClass(d.ActiveTab == tab)
 		currentAttr := Node(nil)
 		if d.ActiveTab == tab {
-			className += " active"
 			currentAttr = Attr("aria-current", "page")
 		}
 		tabItems = append(tabItems, A(Href(catalogWorkspaceTabURL(d, tab)), Class(className), currentAttr, Text(catalogTabLabel(tab))))
 	}
 
 	overviewContent := catalogOverviewContent(d)
-	detailsNodes := []Node{Dl(Class("catalog-meta"), Group(metaNodes)), definitionNode}
+	detailsNodes := []Node{Dl(Class(catalogMetaListClass()), Group(metaNodes)), definitionNode}
 	if d.Panel.Mode == "table" || d.Panel.Mode == "view" {
 		if columnsNode != nil {
-			detailsNodes = append(detailsNodes, Div(Class("catalog-section catalog-section-inline"), H3(Class("catalog-section-title"), Text("Columns")), columnsNode))
+			detailsNodes = append(detailsNodes, Div(Class(catalogSectionClass()), H3(Class(sectionTitleClass()), Text("Columns")), columnsNode))
 		} else {
-			detailsNodes = append(detailsNodes, Div(Class("catalog-section catalog-section-inline"), H3(Class("catalog-section-title"), Text("Columns")), P(Class("catalog-muted"), Text("No columns available."))))
+			detailsNodes = append(detailsNodes, Div(Class(catalogSectionClass()), H3(Class(sectionTitleClass()), Text("Columns")), P(Class(mutedClass()), Text("No columns available."))))
 		}
 	}
 	detailsContent := Node(Group(detailsNodes))
@@ -276,7 +278,7 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 		d.Principal,
 		data.Signals(map[string]any{"q": "", "childq": ""}),
 		workspaceLayout(
-			"catalog-workspace",
+			"min-h-0",
 			workspaceAside(
 				"catalog-workspace",
 				"catalog-aside",
@@ -291,18 +293,18 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 				"explorer",
 			),
 			Section(
-				Class("catalog-detail"),
-				Div(Class("catalog-detail-header"),
-					Div(Class("catalog-detail-title-wrap"),
+				Class("flex min-w-0 flex-col gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-5 shadow-[var(--shadow-resting-xsmall)] max-md:p-4"),
+				Div(Class("flex flex-wrap items-start justify-between gap-3"),
+					Div(Class("min-w-0 flex-1"),
 						catalogBreadcrumb(d),
-						Div(Class("catalog-detail-heading"),
-							H2(Class("catalog-detail-title"), Text(d.Panel.Title)),
+						Div(Class("inline-flex flex-wrap items-center gap-3"),
+							H2(Class("m-0 text-2xl font-semibold"), Text(d.Panel.Title)),
 							statusLabel(panelStatus, "accent"),
 						),
 					),
-					Div(Class("button-row catalog-detail-actions"), Group(panelActions)),
+					Div(Class(buttonRowClass("mt-0")), Group(panelActions)),
 				),
-				Div(Class("catalog-tabs"), Group(tabItems)),
+				Div(Class(catalogTabsClass()), Group(tabItems)),
 				detailContent,
 			),
 		),
@@ -376,7 +378,7 @@ func isCatalogTabAllowed(mode, tab string) bool {
 }
 
 func catalogPlaceholderTab(title, text string) Node {
-	return Div(Class("catalog-section catalog-section-inline"), H3(Class("catalog-section-title"), Text(title)), P(Class("catalog-muted"), Text(text)))
+	return Div(Class(catalogSectionClass()), H3(Class(sectionTitleClass()), Text(title)), P(Class(mutedClass()), Text(text)))
 }
 
 func catalogHistoryContent(d catalogWorkspacePageData) Node {
@@ -385,9 +387,9 @@ func catalogHistoryContent(d catalogWorkspacePageData) Node {
 	}
 	if d.Panel.VersionError != "" {
 		return Div(
-			Class("catalog-section catalog-section-inline"),
-			H3(Class("catalog-section-title"), Text("History")),
-			P(Class("catalog-muted"), Text(d.Panel.VersionError)),
+			Class(catalogSectionClass()),
+			H3(Class(sectionTitleClass()), Text("History")),
+			P(Class(mutedClass()), Text(d.Panel.VersionError)),
 		)
 	}
 	if d.Panel.Mode != "catalog" {
@@ -395,9 +397,9 @@ func catalogHistoryContent(d catalogWorkspacePageData) Node {
 	}
 	if d.Panel.VersionSummary == nil {
 		return Div(
-			Class("catalog-section catalog-section-inline"),
-			H3(Class("catalog-section-title"), Text("History")),
-			P(Class("catalog-muted"), Text("Version metadata is not available for this catalog.")),
+			Class(catalogSectionClass()),
+			H3(Class(sectionTitleClass()), Text("History")),
+			P(Class(mutedClass()), Text("Version metadata is not available for this catalog.")),
 		)
 	}
 	filterLinks := []struct {
@@ -412,10 +414,7 @@ func catalogHistoryContent(d catalogWorkspacePageData) Node {
 	filterNodes := make([]Node, 0, len(filterLinks))
 	for i := range filterLinks {
 		item := filterLinks[i]
-		className := "catalog-history-filter"
-		if d.Panel.HistoryEntity == item.value {
-			className += " active"
-		}
+		className := catalogHistoryFilterClass(d.Panel.HistoryEntity == item.value)
 		filterNodes = append(filterNodes, A(Href(catalogHistoryURL(d, item.value)), Class(className), Text(item.label)))
 	}
 
@@ -431,9 +430,9 @@ func catalogHistoryContent(d catalogWorkspacePageData) Node {
 	for i := range metaItems {
 		item := metaItems[i]
 		metaNodes = append(metaNodes,
-			Div(Class("catalog-meta-row"),
-				Dt(Class("catalog-meta-label"), Text(item.Label)),
-				Dd(Class("catalog-meta-value"), Text(dashIfEmpty(item.Value))),
+			Div(Class(catalogMetaRowClass()),
+				Dt(Class(catalogMetaLabelClass()), Text(item.Label)),
+				Dd(Class(catalogMetaValueClass()), Text(dashIfEmpty(item.Value))),
 			),
 		)
 	}
@@ -461,27 +460,27 @@ func catalogHistoryContent(d catalogWorkspacePageData) Node {
 	}
 
 	return Div(
-		Class("catalog-section catalog-section-inline catalog-history"),
-		Div(Class("catalog-history-intro"),
-			H3(Class("catalog-section-title"), Text("Version metadata")),
-			P(Class("catalog-muted"), Text("DuckLake metastore metadata and snapshot-aware counts for this catalog.")),
+		Class(catalogSectionClass()),
+		Div(Class("flex flex-col gap-1"),
+			H3(Class(sectionTitleClass()), Text("Version metadata")),
+			P(Class(mutedClass()), Text("DuckLake metastore metadata and snapshot-aware counts for this catalog.")),
 		),
-		Dl(Class("catalog-meta catalog-history-meta"), Group(metaNodes)),
+		Dl(Class(catalogMetaListClass()), Group(metaNodes)),
 		Div(
-			Class("catalog-section"),
-			H3(Class("catalog-section-title"), Text("Metadata tables")),
-			Div(Class("table-wrap catalog-history-table"),
+			Class(catalogSectionClass()),
+			H3(Class(sectionTitleClass()), Text("Metadata tables")),
+			Div(Class(tableWrapClass()),
 				Table(
-					Class("data-table"),
+					Class(dataTableClass()),
 					THead(Tr(Th(Text("Entity")), Th(Text("Active")), Th(Text("Historical")), Th(Text("Total")), Th(Text("Latest snapshot")))),
 					TBody(Group(rows)),
 				),
 			),
 		),
 		Div(
-			Class("catalog-section"),
-			H3(Class("catalog-section-title"), Text("Recent history")),
-			Div(Class("catalog-history-filters"), Group(filterNodes)),
+			Class(catalogSectionClass()),
+			H3(Class(sectionTitleClass()), Text("Recent history")),
+			Div(Class("flex flex-wrap gap-2"), Group(filterNodes)),
 			catalogHistoryEntriesTable(d.Panel.HistoryEntries),
 		),
 	)
@@ -497,17 +496,14 @@ func catalogHistoryEntriesSection(d catalogWorkspacePageData, showFilters bool) 
 		filterNodes := make([]Node, 0, len(filterLinks))
 		for i := range filterLinks {
 			item := filterLinks[i]
-			className := "catalog-history-filter"
-			if d.Panel.HistoryEntity == item.value {
-				className += " active"
-			}
+			className := catalogHistoryFilterClass(d.Panel.HistoryEntity == item.value)
 			filterNodes = append(filterNodes, A(Href(catalogHistoryURL(d, item.value)), Class(className), Text(item.label)))
 		}
-		filters = Div(Class("catalog-history-filters"), Group(filterNodes))
+		filters = Div(Class("flex flex-wrap gap-2"), Group(filterNodes))
 	}
 	return Div(
-		Class("catalog-section catalog-section-inline catalog-history"),
-		H3(Class("catalog-section-title"), Text("Recent history")),
+		Class(catalogSectionClass()),
+		H3(Class(sectionTitleClass()), Text("Recent history")),
 		filters,
 		catalogHistoryEntriesTable(d.Panel.HistoryEntries),
 	)
@@ -528,9 +524,9 @@ func catalogHistoryEntriesTable(entries []domain.CatalogHistoryEntry) Node {
 		)
 	}
 	if len(historyRows) == 0 {
-		return P(Class("catalog-muted"), Text("No history entries match the current filter."))
+		return P(Class(mutedClass()), Text("No history entries match the current filter."))
 	}
-	return Div(Class("table-wrap catalog-history-table"), Table(Class("data-table"), THead(Tr(Th(Text("Entity")), Th(Text("Object")), Th(Text("Begin snapshot")), Th(Text("End snapshot")), Th(Text("Status")))), TBody(Group(historyRows))))
+	return Div(Class(tableWrapClass()), Table(Class(dataTableClass()), THead(Tr(Th(Text("Entity")), Th(Text("Object")), Th(Text("Begin snapshot")), Th(Text("End snapshot")), Th(Text("Status")))), TBody(Group(historyRows))))
 }
 
 func catalogOverviewContent(d catalogWorkspacePageData) Node {
@@ -617,7 +613,7 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 
 	descriptionNode := Node(nil)
 	if strings.TrimSpace(d.Panel.Description) != "" {
-		descriptionNode = P(Class("catalog-overview-description"), Text(d.Panel.Description))
+		descriptionNode = P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(d.Panel.Description))
 	}
 
 	headers := []Node{Th(Text("Name")), Th(Text("Owner")), Th(Text("Created at"))}
@@ -628,28 +624,28 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 		headers = []Node{Th(Text("Name")), Th(Text("Owner")), Th(Text("Created at")), Th(Text("Asset"))}
 	}
 
-	childTable := Node(P(Class("catalog-muted"), Text("No child elements.")))
+	childTable := Node(P(Class(mutedClass()), Text("No child elements.")))
 	if len(childRows) > 0 {
-		childTable = Div(Class("table-wrap catalog-overview-table"), Table(Class("data-table"), THead(Tr(Group(headers))), TBody(Group(childRows))))
+		childTable = Div(Class(tableWrapClass()), Table(Class(dataTableClass("border-[var(--borderColor-muted)]")), THead(Tr(Group(headers))), TBody(Group(childRows))))
 	}
 
 	return Div(
-		Class("catalog-section catalog-section-inline"),
+		Class(catalogSectionClass()),
 		descriptionNode,
 		If(d.Panel.AssetURL != "",
-			Div(Class("catalog-section"),
-				H3(Class("catalog-section-title"), Text("Linked asset")),
-				P(Class("catalog-muted"), Text("This object is already represented in the orchestration graph and asset workspace.")),
+			Div(Class(catalogSectionClass()),
+				H3(Class(sectionTitleClass()), Text("Linked asset")),
+				P(Class(mutedClass()), Text("This object is already represented in the orchestration graph and asset workspace.")),
 				A(Href(d.Panel.AssetURL), Class(secondaryButtonClass()), Text(fallbackString(d.Panel.AssetKey, "Open asset"))),
 			),
 		),
-		Div(Class("catalog-overview-toolbar"),
-			Div(Class("catalog-overview-filter"),
-				I(Class("nav-icon"), Attr("data-lucide", "search"), Attr("aria-hidden", "true")),
+		Div(Class(catalogOverviewToolbarClass()),
+			Div(Class("flex min-w-0 max-w-[calc(var(--overlay-width-small)-var(--space-2))] flex-1 items-center gap-2"),
+				I(Class(navIconClass()), Attr("data-lucide", "search"), Attr("aria-hidden", "true")),
 				Label(Class("sr-only"), Text("Filter child elements")),
-				Input(Type("search"), Class("form-control"), Placeholder(filterPlaceholder), data.Bind("childq"), AutoComplete("off")),
+				Input(Type("search"), Class(formControlClass("w-full")), Placeholder(filterPlaceholder), data.Bind("childq"), AutoComplete("off")),
 			),
-			P(Class("catalog-overview-count"), Text(strconv.Itoa(len(childRows))+" "+pluralize(len(childRows), countLabelSingular, countLabelPlural))),
+			P(Class("m-0 whitespace-nowrap text-xs text-[var(--fgColor-muted)]"), Text(strconv.Itoa(len(childRows))+" "+pluralize(len(childRows), countLabelSingular, countLabelPlural))),
 		),
 		childTable,
 	)
@@ -664,25 +660,25 @@ func pluralize(count int, singular, plural string) string {
 
 func catalogBreadcrumb(d catalogWorkspacePageData) Node {
 	items := []Node{
-		Li(Class("catalog-breadcrumb-item"), A(Href(catalogExplorerURL(d.ActiveCatalogName, "", "catalog", "")), Title(d.ActiveCatalogName), Span(Class("catalog-breadcrumb-label"), Text(d.ActiveCatalogName)))),
+		Li(Class(catalogBreadcrumbItemClass()), A(Href(catalogExplorerURL(d.ActiveCatalogName, "", "catalog", "")), Title(d.ActiveCatalogName), Span(Class(catalogBreadcrumbLabelClass(false)), Text(d.ActiveCatalogName)))),
 	}
 
 	if d.SelectedSchemaName != "" {
 		items = append(items,
-			Li(Class("catalog-breadcrumb-item"), Span(Class("catalog-breadcrumb-separator"), Attr("aria-hidden", "true"), Text("/")), A(Href(catalogExplorerURL(d.ActiveCatalogName, d.SelectedSchemaName, "schema", "")), Title(d.SelectedSchemaName), Span(Class("catalog-breadcrumb-label"), Text(d.SelectedSchemaName)))),
+			Li(Class(catalogBreadcrumbItemClass()), Span(Class("catalog-breadcrumb-separator text-[var(--fgColor-muted)]"), Attr("aria-hidden", "true"), Text("/")), A(Href(catalogExplorerURL(d.ActiveCatalogName, d.SelectedSchemaName, "schema", "")), Title(d.SelectedSchemaName), Span(Class(catalogBreadcrumbLabelClass(false)), Text(d.SelectedSchemaName)))),
 		)
 	}
 
 	if d.SelectedName != "" {
 		items = append(items,
-			Li(Class("catalog-breadcrumb-item"), Span(Class("catalog-breadcrumb-separator"), Attr("aria-hidden", "true"), Text("/")), Span(Class("catalog-breadcrumb-current catalog-breadcrumb-label"), Title(d.SelectedName), Text(d.SelectedName))),
+			Li(Class(catalogBreadcrumbItemClass()), Span(Class("catalog-breadcrumb-separator text-[var(--fgColor-muted)]"), Attr("aria-hidden", "true"), Text("/")), Span(Class(catalogBreadcrumbLabelClass(true)), Title(d.SelectedName), Text(d.SelectedName))),
 		)
 	}
 
 	return Nav(
-		Class("catalog-breadcrumb"),
+		Class(catalogBreadcrumbClass()),
 		Attr("aria-label", "Catalog path"),
-		Ol(Class("catalog-breadcrumb-list"), Group(items)),
+		Ol(Class(catalogBreadcrumbListClass()), Group(items)),
 	)
 }
 

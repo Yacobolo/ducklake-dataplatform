@@ -31,7 +31,7 @@ func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRo
 	}
 	tableNode := Node(emptyStateCard("No pipelines yet.", "New pipeline", "/ui/pipelines/new"))
 	if len(tableRows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Paused")), Th(Text("Schedule")), Th(Text("Updated")))), TBody(Group(tableRows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Paused")), Th(Text("Schedule")), Th(Text("Updated")))), TBody(Group(tableRows))))
 	}
 	return appPage(
 		"Pipelines",
@@ -75,8 +75,8 @@ func pipelineDetailPage(d pipelineDetailPageData) Node {
 		"Pipeline: "+d.Name,
 		"pipelines",
 		d.Principal,
-		Div(Class(cardClass()), P(Text("Created by: "+d.CreatedBy)), P(Text("Concurrency: "+d.Concurrency)), P(Text("Schedule: "+d.Schedule)), Div(Class("BtnGroup"), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href(d.NewJobURL), Class(secondaryButtonClass()), Text("New job")), A(Href("/ui/assets"), Class(secondaryButtonClass()), Text("Open assets")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete"))))),
-		Div(Class(cardClass("table-wrap")), H2(Text("Jobs")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Selector")), Th(Text("Notebook")), Th(Class("text-right"), Text("Actions")))), TBody(Group(jobRows)))),
+		Div(Class(cardClass()), P(Text("Created by: "+d.CreatedBy)), P(Text("Concurrency: "+d.Concurrency)), P(Text("Schedule: "+d.Schedule)), Div(Class(buttonRowClass()), A(Href(d.EditURL), Class(secondaryButtonClass()), Text("Edit")), A(Href(d.NewJobURL), Class(secondaryButtonClass()), Text("New job")), A(Href("/ui/assets"), Class(secondaryButtonClass()), Text("Open assets")), Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(dangerButtonClass()), Text("Delete"))))),
+		Div(Class(cardClass(tableWrapClass())), H2(Text("Jobs")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Selector")), Th(Text("Notebook")), Th(Class("text-right"), Text("Actions")))), TBody(Group(jobRows)))),
 	)
 }
 

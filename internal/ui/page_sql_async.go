@@ -68,7 +68,7 @@ func sqlAsyncJobsListPage(d sqlAsyncJobsListPageData) Node {
 	}
 	tableNode := Node(emptyStateCard("No async query jobs yet.", "Open SQL editor", "/ui/sql"))
 	if len(rows) > 0 {
-		tableNode = Div(Class(cardClass("table-wrap")), Table(Class("data-table"), THead(Tr(Th(Text("Job ID")), Th(Text("Status")), Th(Text("Compute")), Th(Text("Request ID")), Th(Text("Rows")), Th(Text("Created")), Th(Text("Completed")))), TBody(Group(rows))))
+		tableNode = Div(Class(cardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Job ID")), Th(Text("Status")), Th(Text("Compute")), Th(Text("Request ID")), Th(Text("Rows")), Th(Text("Created")), Th(Text("Completed")))), TBody(Group(rows))))
 	}
 	return appPage("Async Query Jobs", "sql", d.Principal, pageToolbar("/ui/sql", "Open SQL editor"), tableNode, paginationCard("/ui/sql/jobs", d.Page, d.Total))
 }
@@ -93,7 +93,7 @@ func sqlAsyncJobPage(d sqlAsyncJobPageData) Node {
 
 	resultNode := Node(P(Class(mutedClass()), Text("Results are not available yet.")))
 	if len(d.Columns) > 0 {
-		resultNode = Div(Class(cardClass("table-wrap")), H2(Text("Results")), P(Class(mutedClass()), Text(strconv.Itoa(d.RowCount)+" row(s)")), Table(Class("data-table"), THead(Tr(Group(headers))), TBody(Group(rows))))
+		resultNode = Div(Class(cardClass(tableWrapClass())), H2(Text("Results")), P(Class(mutedClass()), Text(strconv.Itoa(d.RowCount)+" row(s)")), Table(Class(dataTableClass()), THead(Tr(Group(headers))), TBody(Group(rows))))
 	}
 
 	return appPage(
@@ -115,10 +115,10 @@ func sqlAsyncJobPage(d sqlAsyncJobPageData) Node {
 			P(Text("Started: "+d.StartedAtText)),
 			P(Text("Completed: "+d.CompletedAtText)),
 			P(Text("Error: "+d.ErrorText)),
-			Div(Class("BtnGroup"),
+			Div(Class(buttonRowClass()),
 				A(Href(d.EditorURL), Class(secondaryButtonClass()), Text("Open in SQL editor")),
 				Form(Method("post"), Action(d.CancelURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(secondaryButtonClass()), Text("Cancel job"))),
-				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class("btn btn-danger"), Text("Delete job"))),
+				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(dangerButtonClass()), Text("Delete job"))),
 			),
 		),
 		Div(Class(cardClass()), H2(Text("SQL")), Pre(Text(d.SQLText))),

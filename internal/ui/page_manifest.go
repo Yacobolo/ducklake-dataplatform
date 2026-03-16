@@ -38,10 +38,10 @@ func governanceManifestPage(d governanceManifestPageData) Node {
 		}
 		resultNode = Group([]Node{
 			Div(Class(cardClass()), H2(Text("Manifest summary")), P(Text("Table: "+d.Result.Schema+"."+d.Result.Table)), P(Text("Expires at: "+formatTime(d.Result.ExpiresAt)))),
-			Div(Class(cardClass("table-wrap")), H2(Text("Columns")), Table(Class("data-table"), THead(Tr(Th(Text("Name")), Th(Text("Type")))), TBody(Group(columnRows)))),
+			Div(Class(cardClass(tableWrapClass())), H2(Text("Columns")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Type")))), TBody(Group(columnRows)))),
 			Div(Class(cardClass()), H2(Text("Files")), Ul(Group(fileRows))),
 			Div(Class(cardClass()), H2(Text("Row filters")), Ul(Group(filterRows))),
-			Div(Class(cardClass("table-wrap")), H2(Text("Column masks")), Table(Class("data-table"), THead(Tr(Th(Text("Column")), Th(Text("Mask")))), TBody(Group(maskRows)))),
+			Div(Class(cardClass(tableWrapClass())), H2(Text("Column masks")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Column")), Th(Text("Mask")))), TBody(Group(maskRows)))),
 		})
 	}
 	return appPage(

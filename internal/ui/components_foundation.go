@@ -20,10 +20,34 @@ func avatar(cfg avatarConfig) Node {
 	}
 
 	return Span(
-		Class("Avatar Avatar-"+size+" Avatar-"+tone),
+		Class(classNames("inline-flex items-center justify-center rounded-full font-semibold uppercase tracking-wide", avatarSizeClass(size), avatarToneClass(tone))),
 		Attr("aria-label", cfg.Label),
 		Text(initials),
 	)
+}
+
+func avatarSizeClass(size string) string {
+	switch size {
+	case "small":
+		return "h-8 w-8 text-xs"
+	case "large":
+		return "h-12 w-12 text-base"
+	default:
+		return "h-10 w-10 text-sm"
+	}
+}
+
+func avatarToneClass(tone string) string {
+	switch tone {
+	case "accent":
+		return "bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
+	case "success":
+		return "bg-[var(--bgColor-success-muted)] text-[var(--fgColor-success)]"
+	case "danger":
+		return "bg-[var(--bgColor-danger-muted)] text-[var(--fgColor-danger)]"
+	default:
+		return "bg-[var(--bgColor-neutral-muted)] text-[var(--fgColor-default)]"
+	}
 }
 
 func avatarInitials(label string) string {

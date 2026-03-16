@@ -36,6 +36,89 @@ body {
   background: var(--bg);
 }
 
+code,
+pre {
+  font-family: var(--fontStack-monospace);
+  font-size: var(--text-caption-size);
+}
+
+pre {
+  margin: 0;
+  background: var(--canvas-subtle);
+  border: var(--borderWidth-default) solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  overflow-x: auto;
+}
+
+table:not([class]) {
+  width: 100%;
+  border-collapse: collapse;
+  border: var(--borderWidth-default) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bgColor-default);
+}
+
+table:not([class]) th,
+table:not([class]) td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--borderWidth-default) solid var(--border);
+  vertical-align: top;
+  font-size: var(--text-codeBlock-size);
+}
+
+table:not([class]) th {
+  background: var(--bgColor-muted);
+  color: var(--muted);
+  font-weight: var(--base-text-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+textarea:not([class]),
+select:not([class]),
+input:not([type]):not([class]),
+input[type="text"]:not([class]),
+input[type="search"]:not([class]),
+input[type="number"]:not([class]),
+input[type="email"]:not([class]),
+input[type="password"]:not([class]) {
+  width: 100%;
+  max-width: 100%;
+  border: var(--borderWidth-default) solid var(--control-borderColor-rest);
+  border-radius: var(--borderRadius-medium);
+  background: var(--bgColor-default);
+  color: var(--fgColor-default);
+  padding: var(--space-2) var(--space-3);
+}
+
+textarea:not([class]):focus-visible,
+select:not([class]):focus-visible,
+input:not([type]):not([class]):focus-visible,
+input[type="text"]:not([class]):focus-visible,
+input[type="search"]:not([class]):focus-visible,
+input[type="number"]:not([class]):focus-visible,
+input[type="email"]:not([class]):focus-visible,
+input[type="password"]:not([class]):focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 0;
+  border-color: var(--focus-outlineColor);
+}
+
+textarea:not([class]) {
+  min-height: var(--size-editor-min-height);
+  resize: vertical;
+}
+
+label:not([class]) {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-caption-size);
+  font-weight: var(--base-text-weight-semibold);
+  color: var(--fgColor-muted);
+}
+
 a,
 a:visited {
   color: var(--fgColor-accent);

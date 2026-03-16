@@ -5,16 +5,22 @@
   "description": "Frontend asset workspace for internal UI",
   "scripts": {
     "build": "npm run sync:tokens && npm run build:css:prod && npm run build:js:prod",
+    "generate:tailwind-theme": "node ./scripts/generate-tailwind-theme.mjs",
     "sync:tokens": "node ./scripts/sync-primer-primitives.mjs",
     "build:css:dev": "node ./scripts/build-css.mjs --mode=dev",
     "build:css:prod": "node ./scripts/build-css.mjs --mode=prod",
     "build:js:dev": "node ./scripts/build-js.mjs --mode=dev",
     "build:js:prod": "node ./scripts/build-js.mjs --mode=prod",
-    "watch:css": "npm run sync:tokens && esbuild ./styles/app.css --bundle --sourcemap --outfile=../internal/ui/assets/static/css/app.css --watch",
+    "watch:css": "npm run sync:tokens && node ./scripts/build-css.mjs --mode=dev --watch",
     "watch:js": "esbuild ./src/sql-editor.ts ./src/notebook.ts ./src/dashboard.ts --bundle --format=iife --outdir=../internal/ui/assets/static/js --sourcemap --watch"
   },
   "devDependencies": {
-    "esbuild": "0.25.10"
+    "@tailwindcss/postcss": "^4.1.13",
+    "chokidar": "^4.0.3",
+    "esbuild": "0.25.10",
+    "postcss": "^8.5.6",
+    "postcss-import": "^16.1.1",
+    "tailwindcss": "^4.1.13"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.30.0",

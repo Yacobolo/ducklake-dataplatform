@@ -19,11 +19,11 @@ func formPage(principal domain.ContextPrincipal, title, active, action string, c
 		Div(
 			Class(cardClass()),
 			Form(
-				Class("stack-form"),
+				Class(stackFormClass()),
 				Method("post"),
 				Action(action),
 				Group(nodes),
-				Div(Class("form-actions"), Button(Type("submit"), Class(primaryButtonClass()), Text("Save"))),
+				Div(Class(formActionsClass()), Button(Type("submit"), Class(primaryButtonClass()), Text("Save"))),
 			),
 		),
 	)
