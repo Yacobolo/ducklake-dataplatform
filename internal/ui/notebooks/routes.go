@@ -1,0 +1,67 @@
+package notebooks
+
+import (
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+)
+
+type Routes interface {
+	NotebooksList(http.ResponseWriter, *http.Request)
+	NotebookGitReposList(http.ResponseWriter, *http.Request)
+	NotebookGitReposNew(http.ResponseWriter, *http.Request)
+	NotebookGitReposCreate(http.ResponseWriter, *http.Request)
+	NotebookGitReposDetail(http.ResponseWriter, *http.Request)
+	NotebookGitReposDelete(http.ResponseWriter, *http.Request)
+	NotebookGitReposSync(http.ResponseWriter, *http.Request)
+	NotebooksDetail(http.ResponseWriter, *http.Request)
+	NotebookJobsList(http.ResponseWriter, *http.Request)
+	NotebookJobsDetail(http.ResponseWriter, *http.Request)
+	NotebooksNew(http.ResponseWriter, *http.Request)
+	NotebooksCreate(http.ResponseWriter, *http.Request)
+	NotebooksEdit(http.ResponseWriter, *http.Request)
+	NotebooksUpdate(http.ResponseWriter, *http.Request)
+	NotebooksDelete(http.ResponseWriter, *http.Request)
+	NotebookCellsNew(http.ResponseWriter, *http.Request)
+	NotebookCellsCreate(http.ResponseWriter, *http.Request)
+	NotebookCellsEdit(http.ResponseWriter, *http.Request)
+	NotebookCellsUpdate(http.ResponseWriter, *http.Request)
+	NotebookCellsRun(http.ResponseWriter, *http.Request)
+	NotebookCellsMove(http.ResponseWriter, *http.Request)
+	NotebookCellsDownloadCSV(http.ResponseWriter, *http.Request)
+	NotebookCellsDelete(http.ResponseWriter, *http.Request)
+	NotebookCellsReorder(http.ResponseWriter, *http.Request)
+	NotebookRunAll(http.ResponseWriter, *http.Request)
+	NotebookRunAllAsync(http.ResponseWriter, *http.Request)
+	NotebookRuntimeManifest(http.ResponseWriter, *http.Request)
+}
+
+func MountRoutes(r chi.Router, h Routes) {
+	r.Get("/notebooks", h.NotebooksList)
+	r.Get("/notebooks/git-repos", h.NotebookGitReposList)
+	r.Get("/notebooks/git-repos/new", h.NotebookGitReposNew)
+	r.Post("/notebooks/git-repos", h.NotebookGitReposCreate)
+	r.Get("/notebooks/git-repos/{gitRepoID}", h.NotebookGitReposDetail)
+	r.Post("/notebooks/git-repos/{gitRepoID}/delete", h.NotebookGitReposDelete)
+	r.Post("/notebooks/git-repos/{gitRepoID}/sync", h.NotebookGitReposSync)
+	r.Get("/notebooks/{notebookID}", h.NotebooksDetail)
+	r.Get("/notebooks/{notebookID}/jobs", h.NotebookJobsList)
+	r.Get("/notebooks/{notebookID}/jobs/{jobID}", h.NotebookJobsDetail)
+	r.Get("/notebooks/new", h.NotebooksNew)
+	r.Post("/notebooks", h.NotebooksCreate)
+	r.Get("/notebooks/{notebookID}/edit", h.NotebooksEdit)
+	r.Post("/notebooks/{notebookID}/update", h.NotebooksUpdate)
+	r.Post("/notebooks/{notebookID}/delete", h.NotebooksDelete)
+	r.Get("/notebooks/{notebookID}/cells/new", h.NotebookCellsNew)
+	r.Post("/notebooks/{notebookID}/cells", h.NotebookCellsCreate)
+	r.Get("/notebooks/{notebookID}/cells/{cellID}/edit", h.NotebookCellsEdit)
+	r.Post("/notebooks/{notebookID}/cells/{cellID}/update", h.NotebookCellsUpdate)
+	r.Post("/notebooks/{notebookID}/cells/{cellID}/run", h.NotebookCellsRun)
+	r.Post("/notebooks/{notebookID}/cells/{cellID}/move", h.NotebookCellsMove)
+	r.Get("/notebooks/{notebookID}/cells/{cellID}/download.csv", h.NotebookCellsDownloadCSV)
+	r.Post("/notebooks/{notebookID}/cells/{cellID}/delete", h.NotebookCellsDelete)
+	r.Post("/notebooks/{notebookID}/cells/reorder", h.NotebookCellsReorder)
+	r.Post("/notebooks/{notebookID}/run-all", h.NotebookRunAll)
+	r.Post("/notebooks/{notebookID}/run-all-async", h.NotebookRunAllAsync)
+	r.Get("/notebooks/runtime/manifest", h.NotebookRuntimeManifest)
+}

@@ -1,0 +1,804 @@
+package products
+
+import (
+	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	"duck-demo/internal/domain"
+	"duck-demo/internal/ui/core"
+
+	. "maragu.dev/gomponents"
+	data "maragu.dev/gomponents-datastar"
+	. "maragu.dev/gomponents/html"
+)
+
+func productsListPage(principal domain.ContextPrincipal, items []domain.DataProductListItem, page domain.PageRequest, total int64, filterValue string) Node {
+	published := 0
+	certified := 0
+	linked := 0
+	cards := make([]Node, 0, len(items))
+	for i := range items {
+		item := items[i]
+		if item.Status != nil && strings.EqualFold(item.Status.PublicationState, domain.ProductReleaseStatePublished) {
+			published++
+		}
+		if item.Status != nil && strings.EqualFold(item.Status.CertificationState, domain.CertificationCertified) {
+			certified++
+		}
+		if item.PrimaryOutput != nil {
+			linked++
+		}
+
+		filter := strings.Join([]string{
+			item.Product.Slug,
+			item.Product.Name,
+			item.Domain.Name,
+			item.OwnerTeam.Name,
+			item.Product.Description,
+			item.Product.StewardPrincipal,
+		}, " ")
+		versionLabel := "No versions"
+		if item.LatestVersion != nil {
+			versionLabel = fmt.Sprintf("v%d", item.LatestVersion.Version)
+		}
+		healthLabel := "Status pending"
+		healthTone := "attention"
+		if item.Status != nil {
+			healthLabel = fallbackString(item.Status.QualityStatus, "Status pending")
+			healthTone = productHealthTone(item.Status.QualityStatus)
+		}
+		outputLabel := "No primary output"
+		if item.PrimaryOutput != nil {
+			outputLabel = item.PrimaryOutput.AssetKey
+		}
+
+		cards = append(cards,
+			A(
+				Href("/ui/products/"+url.PathEscape(item.Product.Slug)),
+				Class(assetShowcaseCardClass()),
+				data.Show(containsExpr(filter)),
+				Div(Class(assetShowcaseHeadClass()),
+					Div(
+						P(Class(assetShowcaseKeyClass()), Text(item.Product.Name)),
+						P(Class(assetShowcaseOwnerClass()), Text(item.Domain.Name+" / "+item.OwnerTeam.Name)),
+					),
+					statusLabel(versionLabel, "accent"),
+				),
+				P(Class(assetShowcaseDescriptionClass()), Text(fallbackString(item.Product.Description, "No product description yet."))),
+				Div(Class(assetBadgeRowClass()),
+					statusLabel(fallbackString(productListItemPublicationState(item), domain.ProductReleaseStateDraft), productPublicationTone(productListItemPublicationState(item))),
+					statusLabel(fallbackString(productListItemCertificationState(item), domain.CertificationDraft), productCertificationTone(productListItemCertificationState(item))),
+					statusLabel(healthLabel, healthTone),
+				),
+				P(Class("mb-1 text-xs text-[var(--fgColor-muted)]"), Text("Primary output: "+outputLabel)),
+				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Steward: "+fallbackString(item.Product.StewardPrincipal, "unassigned"))),
+			),
+		)
+	}
+
+	return core.AppPage(
+		"Products",
+		"products",
+		principal,
+		Div(Class(assetShellClass()),
+			Div(Class(assetHeroClass()),
+				Div(Class(assetHeroCopyClass()),
+					P(Class(assetKickerClass()), Text("Product control plane")),
+					H2(Class(assetTitleClass()), Text("Products are the governed interface consumers should discover first.")),
+					P(Class(assetDescriptionClass()), Text("Use products to package ownership, contract, runtime outputs, and trust state around the datasets your platform publishes.")),
+					Div(Class(assetHeroActionsClass()),
+						A(Href("/ui/products/new"), Class(core.PrimaryButtonClass()), Text("New product")),
+						A(Href("/ui/assets"), Class(core.SecondaryButtonClass()), Text("Open runtime assets")),
+					),
+				),
+			),
+			quickFilterCardWithValue("Filter by product, domain, team, or steward", filterValue),
+			Div(Class(assetMetricsGridClass()),
+				productMetricCard("Total products", total),
+				productMetricCard("Published", int64(published)),
+				productMetricCard("Certified", int64(certified)),
+				productMetricCard("Linked outputs", int64(linked)),
+			),
+			Div(Class(assetTypeBandClass()),
+				Div(Class(assetSectionHeadClass()),
+					H2(Text("Published catalog")),
+					P(Class(core.MutedClass()), Text("Products link business ownership to runtime assets and semantic entrypoints.")),
+				),
+				func() Node {
+					if len(cards) == 0 {
+						return emptyStateCard("No products defined yet.", "Create product", "/ui/products/new")
+					}
+					return Div(Class(assetShowcaseGridClass()), Group(cards))
+				}(),
+			),
+			paginationCard("/ui/products", page, total),
+		),
+	)
+}
+
+func productMetricCard(label string, value int64) Node {
+	return Div(Class(assetMetricCardClass()),
+		P(Class(assetMetricLabelClass()), Text(label)),
+		P(Class(assetMetricValueClass()), Text(strconv.FormatInt(value, 10))),
+	)
+}
+
+func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataProductDetail) Node {
+	versionBadges := []Node{statusLabel("No versions", "attention")}
+	if len(detail.Versions) > 0 {
+		versionBadges = make([]Node, 0, len(detail.Versions))
+		for i := range detail.Versions {
+			versionBadges = append(versionBadges, statusLabel(
+				fmt.Sprintf("v%d %s", detail.Versions[i].Version, detail.Versions[i].ReleaseState),
+				productPublicationTone(detail.Versions[i].ReleaseState),
+			))
+		}
+	}
+
+	outputs := make([]Node, 0, len(detail.Outputs))
+	for i := range detail.Outputs {
+		output := detail.Outputs[i]
+		label := output.AssetKey
+		if output.IsPrimary {
+			label += " (primary)"
+		}
+		outputs = append(outputs, Li(Class(assetListItemClass()), A(Href("/ui/assets/"+url.PathEscape(output.AssetKey)), Text(label))))
+	}
+	if len(outputs) == 0 {
+		outputs = append(outputs, Li(Class(assetListItemClass()), Text("No outputs linked yet.")))
+	}
+
+	semanticEntrypoints := make([]Node, 0, len(detail.SemanticEntrypoints))
+	for i := range detail.SemanticEntrypoints {
+		semanticEntrypoints = append(semanticEntrypoints, Li(Class(assetListItemClass()), Text(detail.SemanticEntrypoints[i].ProjectName+"."+detail.SemanticEntrypoints[i].ModelName)))
+	}
+	if len(semanticEntrypoints) == 0 {
+		semanticEntrypoints = append(semanticEntrypoints, Li(Class(assetListItemClass()), Text("No semantic entrypoints linked yet.")))
+	}
+
+	dependencies := make([]Node, 0, len(detail.Dependencies))
+	for i := range detail.Dependencies {
+		dependencies = append(dependencies, Li(Class(assetListItemClass()), A(Href("/ui/products/"+url.PathEscape(detail.Dependencies[i].Product.Slug)), Text(detail.Dependencies[i].Product.Name))))
+	}
+	if len(dependencies) == 0 {
+		dependencies = append(dependencies, Li(Class(assetListItemClass()), Text("No product dependencies linked yet.")))
+	}
+
+	subscriptions := make([]Node, 0, len(detail.Subscriptions))
+	for i := range detail.Subscriptions {
+		subscriptions = append(subscriptions, Li(Class(assetListItemClass()), Text(detail.Subscriptions[i].PrincipalName+" • "+detail.Subscriptions[i].EventType+" • "+detail.Subscriptions[i].Channel)))
+	}
+	if len(subscriptions) == 0 {
+		subscriptions = append(subscriptions, Li(Class(assetListItemClass()), Text("No subscribers yet.")))
+	}
+
+	events := make([]Node, 0, len(detail.Events))
+	for i := range detail.Events {
+		event := detail.Events[i]
+		events = append(events, Li(Class(assetListItemClass()), Strong(Text(event.Title+" ")), Text(event.EventType+" • "+formatTime(event.CreatedAt))))
+	}
+	if len(events) == 0 {
+		events = append(events, Li(Class(assetListItemClass()), Text("No product events recorded yet.")))
+	}
+
+	status := detail.Status
+	publicationState := detail.Product.PublicationIntent
+	certificationState := domain.CertificationDraft
+	freshness := "UNKNOWN"
+	quality := "UNKNOWN"
+	lastSuccess := "-"
+	adoptionScore := "0"
+	downstreamCount := "0"
+	subscriberCount := "0"
+	if status != nil {
+		publicationState = fallbackString(status.PublicationState, publicationState)
+		certificationState = fallbackString(status.CertificationState, certificationState)
+		freshness = fallbackString(status.FreshnessStatus, freshness)
+		quality = fallbackString(status.QualityStatus, quality)
+		lastSuccess = formatTimePtr(status.LastSuccessfulUpdateAt)
+		adoptionScore = metricDisplay(status.AdoptionMetrics["adoption_score"])
+		downstreamCount = metricDisplay(status.AdoptionMetrics["downstream_product_count"])
+		subscriberCount = metricDisplay(status.AdoptionMetrics["subscription_count"])
+	}
+
+	return core.AppPage(
+		"Product: "+detail.Product.Name,
+		"products",
+		principal,
+		Div(Class(assetDetailShellClass()),
+			Div(Class(assetHeroClass()),
+				Div(Class(assetHeroCopyClass()),
+					P(Class(assetKickerClass()), Text("Published interface")),
+					Div(Class(assetTitleRowClass()),
+						H2(Class(assetTitleClass()), Text(detail.Product.Name)),
+						statusLabel(publicationState, productPublicationTone(publicationState)),
+					),
+					P(Class(assetDescriptionClass()), Text(fallbackString(detail.Product.Description, "No description provided yet."))),
+					Div(Class(assetBadgeRowClass()),
+						statusLabel(certificationState, productCertificationTone(certificationState)),
+						statusLabel(freshness, productHealthTone(freshness)),
+						statusLabel(quality, productHealthTone(quality)),
+					),
+				),
+				Div(Class(assetHeroMetaClass()),
+					assetDetailMetaRow("Slug", detail.Product.Slug),
+					assetDetailMetaRow("Domain", detail.Domain.Name),
+					assetDetailMetaRow("Owner team", detail.OwnerTeam.Name),
+					assetDetailMetaRow("Steward", fallbackString(detail.Product.StewardPrincipal, "unassigned")),
+				),
+			),
+			Div(Class(assetMetricsGridClass()),
+				assetDetailMetricCard("Versions", strconv.Itoa(len(detail.Versions)), "Immutable release records"),
+				assetDetailMetricCard("Outputs", strconv.Itoa(len(detail.Outputs)), "Runtime assets linked to the latest release"),
+				assetDetailMetricCard("Freshness", freshness, "Computed from linked runtime state"),
+				assetDetailMetricCard("Last success", lastSuccess, "Latest successful update across linked outputs"),
+				assetDetailMetricCard("Adoption score", adoptionScore, "Ranked from current control-plane usage signals"),
+				assetDetailMetricCard("Downstream products", downstreamCount, "Products depending on this product"),
+				assetDetailMetricCard("Subscribers", subscriberCount, "Consumers following product events"),
+			),
+			Div(Class(assetDetailLayoutClass()),
+				Div(Class(assetDetailMainClass()),
+					Div(Class(core.CardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Contract")), P(Class(sectionCopyClass()), Text("Consumer-facing contract and SLO expectations."))),
+						assetFactList([][2]string{
+							{"Data grain", fallbackString(detail.Product.Contract.DataGrain, "-")},
+							{"Update cadence", fallbackString(detail.Product.Contract.UpdateCadence, "-")},
+							{"Retention", fallbackString(detail.Product.Contract.RetentionWindow, "-")},
+							{"Freshness SLO", fallbackString(detail.Product.SLO.FreshnessSLO, "-")},
+							{"Latency SLO", fallbackString(detail.Product.SLO.LatencySLO, "-")},
+							{"Change policy", fallbackString(detail.Product.Contract.BreakingChangePolicy, "-")},
+						}),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Latest outputs")), P(Class(sectionCopyClass()), Text("Runtime resources linked to the current product release."))),
+						Ul(Class(assetListClass()), Group(outputs)),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Semantic entrypoints")), P(Class(sectionCopyClass()), Text("Consumer-facing semantic models linked to the current product release."))),
+						Ul(Class(assetListClass()), Group(semanticEntrypoints)),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Version history")), P(Class(sectionCopyClass()), Text("Published state is versioned even when the UI is still minimal."))),
+						Div(Class(assetBadgeRowClass()), Group(versionBadges)),
+						Ul(Class(assetListClass("mt-3")), Group(productVersionLinks(detail))),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Dependencies")), P(Class(sectionCopyClass()), Text("Upstream products that affect this product's trust state."))),
+						Ul(Class(assetListClass()), Group(dependencies)),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Subscriptions")), P(Class(sectionCopyClass()), Text("Consumers following product change events."))),
+						Ul(Class(assetListClass()), Group(subscriptions)),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Recent events")), P(Class(sectionCopyClass()), Text("Durable product lifecycle and health events."))),
+						Ul(Class(assetListClass()), Group(events)),
+					),
+				),
+				Div(Class(assetDetailRailClass()),
+					Div(Class(core.CardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Ownership")),
+						assetFactList([][2]string{
+							{"Domain", detail.Domain.Name},
+							{"Team", detail.OwnerTeam.Name},
+							{"Contact", fallbackString(detail.Product.ContactChannel, "-")},
+							{"Docs", fallbackString(detail.Product.DocsURL, "-")},
+							{"Access path", fallbackString(detail.Product.AccessRequestPath, "-")},
+						}),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Lifecycle")),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/publish"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
+							Div(Class("form-group"),
+								Label(For("publish-version"), Text("Publish version")),
+								Input(Type("number"), Name("version"), ID("publish-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class(core.FormControlClass())),
+							),
+							Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Publish")),
+						),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/deprecate"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0 mt-3"),
+							Div(Class("form-group"),
+								Label(For("deprecate-version"), Text("Deprecate version")),
+								Input(Type("number"), Name("version"), ID("deprecate-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class(core.FormControlClass())),
+							),
+							Div(Class("form-group"),
+								Label(For("replacement-slug"), Text("Replacement product slug")),
+								Input(Type("text"), Name("replacement_slug"), ID("replacement-slug"), Class(core.FormControlClass()), Placeholder("replacement-product")),
+							),
+							Button(Type("submit"), Class(core.SecondaryButtonClass()), Text("Deprecate")),
+						),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/retire"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0 mt-3"),
+							Div(Class("form-group"),
+								Label(For("retire-version"), Text("Retire version")),
+								Input(Type("number"), Name("version"), ID("retire-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class(core.FormControlClass())),
+							),
+							Button(Type("submit"), Class(core.SecondaryButtonClass()), Text("Retire")),
+						),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("New Version")),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/versions"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
+							productFormField("compatibility_level", "Compatibility", domain.ProductCompatibilityBackwardCompatible),
+							productFormField("data_grain", "Data grain", detail.Product.Contract.DataGrain),
+							productFormField("update_cadence", "Update cadence", detail.Product.Contract.UpdateCadence),
+							productFormField("retention_window", "Retention window", detail.Product.Contract.RetentionWindow),
+							productFormField("freshness_slo", "Freshness SLO", detail.Product.SLO.FreshnessSLO),
+							productFormField("latency_slo", "Latency SLO", detail.Product.SLO.LatencySLO),
+							productFormField("breaking_change_policy", "Breaking change policy", detail.Product.Contract.BreakingChangePolicy),
+							productFormField("docs_url", "Docs URL", detail.Product.DocsURL),
+							productFormField("access_request_path", "Access path", detail.Product.AccessRequestPath),
+							productFormField("output_asset_keys", "Output asset keys", joinOutputAssetKeys(detail.Outputs)),
+							productFormField("semantic_model_refs", "Semantic model refs", joinSemanticModelRefs(detail.SemanticEntrypoints)),
+							Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Create draft version")),
+						),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Dependency")),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/dependencies"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
+							productFormField("depends_on_slug", "Depends on product slug", "upstream-product"),
+							Button(Type("submit"), Class(core.SecondaryButtonClass()), Text("Add dependency")),
+						),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Subscribe")),
+						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/subscriptions"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
+							productFormField("event_type", "Event type", "freshness_breach"),
+							productFormField("channel", "Channel", "inbox"),
+							Button(Type("submit"), Class(core.SecondaryButtonClass()), Text("Subscribe")),
+						),
+					),
+				),
+			),
+		),
+	)
+}
+
+func productVersionPage(principal domain.ContextPrincipal, detail *domain.DataProductDetail, versionDetail *domain.DataProductVersionDetail) Node {
+	version := versionDetail.Version
+
+	outputs := make([]Node, 0, len(versionDetail.Outputs))
+	for i := range versionDetail.Outputs {
+		output := versionDetail.Outputs[i]
+		outputs = append(outputs, Li(Class(assetListItemClass()), A(Href("/ui/assets/"+url.PathEscape(output.AssetKey)), Text(output.AssetKey))))
+	}
+	if len(outputs) == 0 {
+		outputs = append(outputs, Li(Class(assetListItemClass()), Text("No outputs linked to this version.")))
+	}
+
+	semanticEntrypoints := make([]Node, 0, len(versionDetail.SemanticEntrypoints))
+	for i := range versionDetail.SemanticEntrypoints {
+		semanticEntrypoints = append(semanticEntrypoints, Li(Class(assetListItemClass()), Text(versionDetail.SemanticEntrypoints[i].ProjectName+"."+versionDetail.SemanticEntrypoints[i].ModelName)))
+	}
+	if len(semanticEntrypoints) == 0 {
+		semanticEntrypoints = append(semanticEntrypoints, Li(Class(assetListItemClass()), Text("No semantic entrypoints linked to this version.")))
+	}
+
+	return core.AppPage(
+		fmt.Sprintf("Product %s v%d", detail.Product.Name, version.Version),
+		"products",
+		principal,
+		Div(Class(assetDetailShellClass()),
+			Div(Class(assetHeroClass()),
+				Div(Class(assetHeroCopyClass()),
+					P(Class(assetKickerClass()), Text("Version detail")),
+					Div(Class(assetTitleRowClass()),
+						H2(Class(assetTitleClass()), Text(detail.Product.Name+" v"+strconv.Itoa(version.Version))),
+						statusLabel(version.ReleaseState, productPublicationTone(version.ReleaseState)),
+					),
+					P(Class(assetDescriptionClass()), Text("Immutable contract snapshot for the selected product release.")),
+					Div(Class(assetBadgeRowClass()),
+						statusLabel(version.CompatibilityLevel, "accent"),
+						statusLabel(fallbackString(detail.Product.Visibility, "internal"), "accent"),
+					),
+				),
+				Div(Class(assetHeroMetaClass()),
+					assetDetailMetaRow("Product", detail.Product.Name),
+					assetDetailMetaRow("Slug", detail.Product.Slug),
+					assetDetailMetaRow("Domain", detail.Domain.Name),
+					assetDetailMetaRow("Owner team", detail.OwnerTeam.Name),
+				),
+			),
+			Div(Class(assetDetailLayoutClass()),
+				Div(Class(assetDetailMainClass()),
+					Div(Class(core.CardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Contract snapshot")), P(Class(sectionCopyClass()), Text("Versioned consumer-facing contract fields."))),
+						assetFactList([][2]string{
+							{"Data grain", fallbackString(version.Contract.DataGrain, "-")},
+							{"Update cadence", fallbackString(version.Contract.UpdateCadence, "-")},
+							{"Retention", fallbackString(version.Contract.RetentionWindow, "-")},
+							{"Freshness SLO", fallbackString(version.SLO.FreshnessSLO, "-")},
+							{"Latency SLO", fallbackString(version.SLO.LatencySLO, "-")},
+							{"Change policy", fallbackString(version.Contract.BreakingChangePolicy, "-")},
+						}),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Outputs")), P(Class(sectionCopyClass()), Text("Runtime assets currently linked to this release snapshot."))),
+						Ul(Class(assetListClass()), Group(outputs)),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Semantic entrypoints")), P(Class(sectionCopyClass()), Text("Semantic entrypoints exposed by this release."))),
+						Ul(Class(assetListClass()), Group(semanticEntrypoints)),
+					),
+				),
+				Div(Class(assetDetailRailClass()),
+					Div(Class(core.CardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Release metadata")),
+						assetFactList([][2]string{
+							{"Release state", version.ReleaseState},
+							{"Compatibility", version.CompatibilityLevel},
+							{"Docs", fallbackString(version.DocsURL, "-")},
+							{"Access path", fallbackString(version.AccessRequestPath, "-")},
+							{"Created by", fallbackString(version.CreatedBy, "-")},
+							{"Created at", formatTime(version.CreatedAt)},
+						}),
+					),
+					Div(Class(core.CardClass(assetSectionClass())),
+						H2(Class(sectionTitleClass()), Text("Navigate")),
+						P(Class(core.MutedClass()), Text("Inspect the full product control plane or switch versions.")),
+						A(Href("/ui/products/"+url.PathEscape(detail.Product.Slug)), Class(core.SecondaryButtonClass()), Text("Back to product")),
+						Ul(Class(assetListClass("mt-3")), Group(productVersionLinks(detail))),
+					),
+				),
+			),
+		),
+	)
+}
+
+func productVersionLinks(detail *domain.DataProductDetail) []Node {
+	links := make([]Node, 0, len(detail.Versions))
+	for i := range detail.Versions {
+		version := detail.Versions[i]
+		links = append(links, Li(Class(assetListItemClass()), A(Href("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/versions/"+strconv.Itoa(version.Version)), Text(fmt.Sprintf("v%d %s", version.Version, version.ReleaseState)))))
+	}
+	if len(links) == 0 {
+		links = append(links, Li(Class(assetListItemClass()), Text("No versions created yet.")))
+	}
+	return links
+}
+
+func productPublicationTone(state string) string {
+	switch strings.ToUpper(strings.TrimSpace(state)) {
+	case domain.ProductReleaseStatePublished:
+		return "success"
+	case domain.ProductReleaseStateDeprecated:
+		return "attention"
+	case domain.ProductReleaseStateRetired:
+		return "severe"
+	default:
+		return "accent"
+	}
+}
+
+func productCertificationTone(state string) string {
+	switch strings.ToUpper(strings.TrimSpace(state)) {
+	case domain.CertificationCertified:
+		return "success"
+	case domain.CertificationDeprecated:
+		return "attention"
+	default:
+		return "accent"
+	}
+}
+
+func metricDisplay(value any) string {
+	switch v := value.(type) {
+	case int:
+		return strconv.Itoa(v)
+	case int32:
+		return strconv.FormatInt(int64(v), 10)
+	case int64:
+		return strconv.FormatInt(v, 10)
+	case float64:
+		return strconv.FormatInt(int64(v), 10)
+	case string:
+		if strings.TrimSpace(v) != "" {
+			return v
+		}
+	}
+	return "0"
+}
+
+func productHealthTone(state string) string {
+	switch strings.ToUpper(strings.TrimSpace(state)) {
+	case "HEALTHY", "GOOD":
+		return "success"
+	case "STALE", "DEGRADED", "WARNING":
+		return "attention"
+	case "FAILED", "ERROR":
+		return "severe"
+	default:
+		return "accent"
+	}
+}
+
+func productListItemPublicationState(item domain.DataProductListItem) string {
+	if item.Status == nil {
+		return item.Product.PublicationIntent
+	}
+	return item.Status.PublicationState
+}
+
+func productListItemCertificationState(item domain.DataProductListItem) string {
+	if item.Status == nil {
+		return domain.CertificationDraft
+	}
+	return item.Status.CertificationState
+}
+
+func defaultVersionValue(versions []domain.DataProductVersion) string {
+	if len(versions) == 0 {
+		return "1"
+	}
+	return strconv.Itoa(versions[0].Version)
+}
+
+func joinOutputAssetKeys(outputs []domain.ProductOutput) string {
+	if len(outputs) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(outputs))
+	for i := range outputs {
+		keys = append(keys, outputs[i].AssetKey)
+	}
+	return strings.Join(keys, ", ")
+}
+
+func joinSemanticModelRefs(entrypoints []domain.ProductSemanticEntrypoint) string {
+	if len(entrypoints) == 0 {
+		return ""
+	}
+	refs := make([]string, 0, len(entrypoints))
+	for i := range entrypoints {
+		refs = append(refs, entrypoints[i].ProjectName+"."+entrypoints[i].ModelName)
+	}
+	return strings.Join(refs, ", ")
+}
+
+func fallbackString(value, fallback string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return fallback
+	}
+	return trimmed
+}
+
+func formatTime(ts time.Time) string {
+	if ts.IsZero() {
+		return "-"
+	}
+	return ts.Format(time.RFC3339)
+}
+
+func formatTimePtr(ts *time.Time) string {
+	if ts == nil || ts.IsZero() {
+		return "-"
+	}
+	return ts.Format(time.RFC3339)
+}
+
+func containsExpr(value string) string {
+	lower := strings.ToLower(value)
+	return "$q === '' || " + strconv.Quote(lower) + ".includes($q.toLowerCase())"
+}
+
+func quickFilterCardWithValue(placeholder, initialValue string, extraControls ...Node) Node {
+	controls := []Node{
+		Div(
+			Class("flex min-w-[min(20rem,100%)] flex-1 flex-col gap-1"),
+			Label(Class("sr-only"), Text("Quick filter")),
+			Input(Type("search"), Class(core.FormControlClass()), Name("q"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off"), Attr("data-quick-filter-input", "true")),
+		),
+	}
+	controls = append(controls, extraControls...)
+	syncScript := `(function(){
+  var input=document.querySelector('[data-quick-filter-input="true"]');
+  if(!(input instanceof HTMLInputElement)){ return; }
+
+  function syncURL(value){
+    var url=new URL(window.location.href);
+    if(value){
+      url.searchParams.set('q', value);
+    } else {
+      url.searchParams.delete('q');
+    }
+    url.searchParams.delete('page_token');
+    var next=url.pathname;
+    var query=url.searchParams.toString();
+    if(query){ next+='?'+query; }
+    if(next!==window.location.pathname+window.location.search){
+      window.history.replaceState({}, '', next);
+    }
+  }
+
+  input.addEventListener('input', function(){
+    syncURL(input.value.trim());
+  });
+})();`
+
+	return Div(
+		Class(core.CardClass()),
+		data.Signals(map[string]any{"q": initialValue}),
+		Div(Class("flex flex-wrap items-center gap-3"), Group(controls)),
+		Script(Raw(syncScript)),
+	)
+}
+
+func emptyStateCard(message, ctaLabel, ctaHref string) Node {
+	cta := Node(nil)
+	if ctaLabel != "" && ctaHref != "" {
+		cta = A(Href(ctaHref), Class(core.PrimaryButtonClass()), Text(ctaLabel))
+	}
+	return Div(
+		Class(core.CardClass("text-center")),
+		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"),
+			I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true")),
+		),
+		Div(Class("flex flex-col items-center gap-2 text-center"),
+			P(Class("m-0 text-lg font-semibold"), Text("No results yet")),
+			P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(message)),
+			cta,
+		),
+	)
+}
+
+func paginationCard(basePath string, page domain.PageRequest, total int64) Node {
+	shown := min(page.Limit(), int(total))
+	summary := fmt.Sprintf("Showing %d of %d entries.", shown, total)
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	if nextToken == "" {
+		return Div(
+			Class(core.CardClass()),
+			Div(
+				Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
+				Div(Class("flex min-w-0 flex-col gap-1"),
+					P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")),
+					P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
+				),
+				Span(Class(core.ClassNames(core.SecondaryButtonClass("small"), "pointer-events-none opacity-60")), Attr("aria-disabled", "true"), Text("Next")),
+			),
+		)
+	}
+	u := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
+	return Div(
+		Class(core.CardClass()),
+		Div(
+			Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
+			Div(Class("flex min-w-0 flex-col gap-1"),
+				P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")),
+				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
+			),
+			A(Href(u), Class(core.SecondaryButtonClass("small")), Text("Next page")),
+		),
+	)
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func assetDetailMetaRow(label string, value string) Node {
+	return Div(Class(assetMetaRowClass()),
+		Span(Class(assetMetaLabelClass()), Text(label)),
+		Span(Class(assetMetaValueClass()), Text(value)),
+	)
+}
+
+func assetDetailMetricCard(label string, value string, hint string) Node {
+	return Div(Class(assetMetricCardClass()),
+		P(Class(assetMetricLabelClass()), Text(label)),
+		P(Class(assetMetricValueClass()), Text(value)),
+		P(Class(assetMetricHintClass()), Text(hint)),
+	)
+}
+
+func assetFactList(items [][2]string) Node {
+	rows := make([]Node, 0, len(items))
+	for i := range items {
+		rows = append(rows, Div(Class(assetFactRowClass()),
+			Span(Class(assetFactLabelClass()), Text(items[i][0])),
+			Span(Class(assetFactValueClass()), Text(items[i][1])),
+		))
+	}
+	return Div(Class(assetFactListClass()), Group(rows))
+}
+
+func assetShellClass() string       { return "flex flex-col gap-4" }
+func assetDetailShellClass() string { return "flex flex-col gap-4" }
+func assetHeroClass() string {
+	return "grid gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[linear-gradient(135deg,var(--bgColor-muted)_0%,var(--bgColor-default)_65%)] p-5 shadow-[var(--shadow-resting-small)] lg:grid-cols-[minmax(0,1.5fr)_minmax(16rem,0.8fr)]"
+}
+func assetHeroCopyClass() string { return "flex min-w-0 flex-col gap-3" }
+func assetHeroMetaClass() string {
+	return "grid gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4"
+}
+func assetKickerClass() string {
+	return "m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"
+}
+func assetTitleRowClass() string { return "flex flex-wrap items-center gap-3" }
+func assetTitleClass() string {
+	return "m-0 text-3xl font-semibold leading-tight text-[var(--fgColor-default)]"
+}
+func assetDescriptionClass() string {
+	return "m-0 max-w-3xl text-sm leading-6 text-[var(--fgColor-muted)]"
+}
+func assetBadgeRowClass() string    { return "flex flex-wrap items-center gap-2" }
+func assetHeroActionsClass() string { return "flex flex-wrap items-center gap-3" }
+func assetMetricsGridClass() string { return "grid gap-3 sm:grid-cols-2 xl:grid-cols-4" }
+func assetMetricCardClass() string {
+	return "flex flex-col gap-1 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4 shadow-[var(--shadow-resting-xsmall)]"
+}
+func assetMetricLabelClass() string {
+	return "m-0 text-xs font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"
+}
+func assetMetricValueClass() string {
+	return "m-0 text-2xl font-semibold text-[var(--fgColor-default)]"
+}
+func assetMetricHintClass() string   { return "m-0 text-xs text-[var(--fgColor-muted)]" }
+func assetTypeBandClass() string     { return core.CardClass("flex flex-col gap-4") }
+func assetShowcaseGridClass() string { return "grid gap-3 lg:grid-cols-2 2xl:grid-cols-3" }
+func assetShowcaseCardClass() string {
+	return "flex h-full flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4 text-inherit no-underline shadow-[var(--shadow-resting-xsmall)] transition-colors hover:border-[var(--borderColor-accent-muted)] hover:bg-[var(--control-bgColor-hover)]"
+}
+func assetShowcaseHeadClass() string { return "flex items-start justify-between gap-3" }
+func assetShowcaseKeyClass() string {
+	return "m-0 text-base font-semibold text-[var(--fgColor-default)]"
+}
+func assetShowcaseOwnerClass() string { return "mt-1 mb-0 text-xs text-[var(--fgColor-muted)]" }
+func assetShowcaseDescriptionClass() string {
+	return "m-0 text-sm leading-6 text-[var(--fgColor-muted)]"
+}
+func assetSectionHeadClass() string { return "flex flex-wrap items-start justify-between gap-2" }
+func assetDetailLayoutClass() string {
+	return "grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(18rem,0.8fr)]"
+}
+func assetDetailMainClass() string { return "flex min-w-0 flex-col gap-4" }
+func assetDetailRailClass() string { return "flex min-w-0 flex-col gap-4" }
+func assetSectionClass() string    { return "flex flex-col gap-4" }
+func assetListClass(extra ...string) string {
+	return core.ClassNames("grid gap-2", strings.Join(extra, " "))
+}
+func assetListItemClass() string {
+	return "rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-2 text-sm"
+}
+func assetMetaRowClass() string {
+	return "grid gap-1 border-b border-[var(--borderColor-default)] pb-2 last:border-b-0 last:pb-0"
+}
+func assetMetaLabelClass() string {
+	return "text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"
+}
+func assetMetaValueClass() string { return "text-sm text-[var(--fgColor-default)]" }
+func assetFactListClass() string  { return "grid gap-2" }
+func assetFactRowClass() string {
+	return "flex items-start justify-between gap-3 rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-2"
+}
+func assetFactLabelClass() string {
+	return "text-xs font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"
+}
+func assetFactValueClass() string { return "text-sm text-right text-[var(--fgColor-default)]" }
+func sectionTitleClass() string   { return "m-0 text-lg font-semibold text-[var(--fgColor-default)]" }
+func sectionCopyClass() string    { return "m-0 text-sm text-[var(--fgColor-muted)]" }
+
+func labelClass(tone string) string {
+	base := "inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
+	switch tone {
+	case "accent":
+		return core.ClassNames(base, "bg-[var(--label-blue-bgColor-rest)] text-[var(--label-blue-fgColor-rest)]")
+	case "attention":
+		return core.ClassNames(base, "bg-[var(--label-yellow-bgColor-rest)] text-[var(--label-yellow-fgColor-rest)]")
+	case "success":
+		return core.ClassNames(base, "bg-[var(--label-green-bgColor-rest)] text-[var(--label-green-fgColor-rest)]")
+	case "severe":
+		return core.ClassNames(base, "bg-[var(--label-orange-bgColor-rest)] text-[var(--label-orange-fgColor-rest)]")
+	default:
+		return core.ClassNames(base, "bg-[var(--label-gray-bgColor-rest)] text-[var(--label-gray-fgColor-rest)]")
+	}
+}
+
+func statusLabel(text, tone string) Node {
+	return Span(Class(labelClass(tone)), Text(text))
+}

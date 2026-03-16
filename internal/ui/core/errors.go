@@ -1,0 +1,65 @@
+package core
+
+import (
+	"errors"
+	"net/http"
+
+	"duck-demo/internal/domain"
+
+	. "maragu.dev/gomponents"
+	. "maragu.dev/gomponents/html"
+)
+
+func ErrorPage(title, message string) Node {
+	return HTML(
+		Lang("en"),
+		Attr("data-color-mode", "auto"),
+		Attr("data-light-theme", "light"),
+		Attr("data-dark-theme", "dark"),
+		Head(
+			Meta(Charset("utf-8")),
+			Meta(Name("viewport"), Content("width=device-width, initial-scale=1")),
+			TitleEl(Text(title+" | Duck UI")),
+			Link(Rel("icon"), Href("data:,")),
+			Script(Raw(ThemeInitScript)),
+			Link(Rel("preconnect"), Href("https://fonts.googleapis.com")),
+			Link(Rel("preconnect"), Href("https://fonts.gstatic.com"), Attr("crossorigin", "")),
+			Link(Rel("stylesheet"), Href("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap")),
+			Link(Rel("stylesheet"), Href(UIStylesheetHref())),
+			Script(Src("https://unpkg.com/lucide@latest/dist/umd/lucide.min.js")),
+		),
+		Body(
+			Main(
+				Class("mx-auto max-w-[var(--size-layout-max-width)] px-6 py-8"),
+				H1(Class("m-0 text-[calc(var(--text-title-size-medium)+var(--borderWidth-thick))] font-semibold leading-[var(--text-title-lineHeight-medium)]"), Text(title)),
+				P(Text(message)),
+				P(A(Href("/ui"), Text("Back to overview"))),
+			),
+			Script(Raw(ThemeBehaviorScript)),
+			Script(Raw("if (window.lucide) { window.lucide.createIcons(); }")),
+		),
+	)
+}
+
+func ServiceErrorStatus(err error) (int, string) {
+	status := http.StatusInternalServerError
+	message := "An unexpected error occurred while loading this page."
+
+	var notFound *domain.NotFoundError
+	var accessDenied *domain.AccessDeniedError
+	var validation *domain.ValidationError
+	var conflict *domain.ConflictError
+	if errors.As(err, &notFound) {
+		return http.StatusNotFound, notFound.Error()
+	}
+	if errors.As(err, &accessDenied) {
+		return http.StatusForbidden, accessDenied.Error()
+	}
+	if errors.As(err, &validation) {
+		return http.StatusBadRequest, validation.Error()
+	}
+	if errors.As(err, &conflict) {
+		return http.StatusConflict, conflict.Error()
+	}
+	return status, message
+}

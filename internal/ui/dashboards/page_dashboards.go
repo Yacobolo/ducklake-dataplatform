@@ -1,0 +1,776 @@
+package dashboards
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	"duck-demo/internal/domain"
+	dashboardsvc "duck-demo/internal/service/dashboard"
+	"duck-demo/internal/ui/core"
+
+	. "maragu.dev/gomponents"
+	. "maragu.dev/gomponents/html"
+)
+
+type dashboardListRowData struct {
+	Name        string
+	Description string
+	URL         string
+	Owner       string
+	Updated     string
+}
+
+type dashboardDetailPageData struct {
+	Principal         domain.ContextPrincipal
+	Dashboard         *domain.Dashboard
+	Widgets           []dashboardsvc.ResolvedWidget
+	Freshness         *domain.AssetFreshnessStatus
+	FreshnessExplain  *domain.AssetFreshnessNode
+	BaseURL           string
+	EditURL           string
+	DeleteURL         string
+	CreateWidgetURL   string
+	CSRFFieldProvider func() Node
+}
+
+type dashboardWidgetFormData struct {
+	Title             string
+	Action            string
+	SubmitLabel       string
+	Name              string
+	Description       string
+	SourceKind        string
+	SQL               string
+	NotebookID        string
+	CellID            string
+	ProjectName       string
+	semanticModelName string
+	Metrics           string
+	Dimensions        string
+	Filters           string
+	OrderBy           string
+	Limit             string
+	TimeGrain         string
+	VisualKind        string
+	ChartType         string
+	VisualTitle       string
+	VisualSubtitle    string
+	VisualX           string
+	VisualY           string
+	VisualSeries      string
+	VisualLabel       string
+	VisualValue       string
+	VisualSecondary   string
+	LayoutX           string
+	LayoutY           string
+	LayoutW           string
+	LayoutH           string
+}
+
+func dashboardsListPage(principal domain.ContextPrincipal, rows []dashboardListRowData, page domain.PageRequest, total int64) Node {
+	tableRows := make([]Node, 0, len(rows))
+	for _, row := range rows {
+		tableRows = append(tableRows, Tr(
+			Td(A(Href(row.URL), Text(row.Name))),
+			Td(Text(row.Description)),
+			Td(Text(row.Owner)),
+			Td(Text(row.Updated)),
+		))
+	}
+	tableNode := Node(emptyStateCard("No dashboards yet.", "New dashboard", "/ui/dashboards/new"))
+	if len(tableRows) > 0 {
+		tableNode = Div(Class(core.CardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Description")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
+	}
+	return core.AppPage("Dashboards", "dashboards", principal, pageToolbar("/ui/dashboards/new", "New dashboard"), tableNode, paginationCard("/ui/dashboards", page, total))
+}
+
+func dashboardsNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "New Dashboard", "dashboards", "/ui/dashboards", csrfFieldProvider,
+		Label(Text("Name")),
+		Input(Name("name"), Required()),
+		Label(Text("Description")),
+		Textarea(Name("description")),
+	)
+}
+
+func dashboardsEditPage(principal domain.ContextPrincipal, dashboard *domain.Dashboard, csrfFieldProvider func() Node) Node {
+	return formPage(principal, "Edit Dashboard", "dashboards", "/ui/dashboards/"+dashboard.ID+"/update", csrfFieldProvider,
+		Label(Text("Name")),
+		Input(Name("name"), Value(dashboard.Name), Required()),
+		Label(Text("Description")),
+		Textarea(Name("description"), Text(dashboard.Description)),
+	)
+}
+
+func dashboardWidgetEditPage(principal domain.ContextPrincipal, dashboard *domain.Dashboard, widget *domain.DashboardWidget, csrfFieldProvider func() Node) Node {
+	return core.AppPage(
+		"Edit Widget: "+widget.Name,
+		"dashboards",
+		principal,
+		dashboardWidgetFormCard(widgetFormDataFromWidget(widget, "/ui/dashboards/"+dashboard.ID+"/widgets/"+widget.ID+"/update", "Update widget", "Edit Widget"), csrfFieldProvider),
+	)
+}
+
+func dashboardsDetailPage(d dashboardDetailPageData) Node {
+	widgetNodes := make([]Node, 0, len(d.Widgets))
+	for _, widget := range d.Widgets {
+		widgetNodes = append(widgetNodes, dashboardWidgetCard(widget, d.BaseURL, d.CSRFFieldProvider))
+	}
+	if len(widgetNodes) == 0 {
+		widgetNodes = append(widgetNodes, emptyStateCard("No widgets yet.", "Add widget below", "#dashboard-widget-form"))
+	}
+
+	return core.AppPage(
+		"Dashboard: "+d.Dashboard.Name,
+		"dashboards",
+		d.Principal,
+		Div(
+			Class("grid gap-3"),
+			H1(Class("m-0 text-3xl font-semibold"), Text(d.Dashboard.Name)),
+			P(Class("m-0 text-[var(--fgColor-muted)]"), Text(d.Dashboard.Description)),
+			Div(Class(buttonRowClass()),
+				A(Href(d.EditURL), Class(core.SecondaryButtonClass()), Text("Edit")),
+				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass()), Text("Delete"))),
+			),
+		),
+		dashboardFreshnessCard(d.Freshness, d.FreshnessExplain),
+		Div(Class("grid gap-4 md:grid-cols-2 xl:grid-cols-12 [&>*]:xl:col-span-6"), Group(widgetNodes)),
+		dashboardWidgetFormCard(defaultWidgetFormData(d.CreateWidgetURL), d.CSRFFieldProvider),
+		Script(Src(core.UIScriptHref("dashboard.js"))),
+	)
+}
+
+func dashboardFreshnessCard(status *domain.AssetFreshnessStatus, explanation *domain.AssetFreshnessNode) Node {
+	if status == nil {
+		return nil
+	}
+
+	upstream := make([]Node, 0)
+	if explanation != nil {
+		for _, child := range explanation.Upstream {
+			upstream = append(upstream, Li(
+				Strong(Text(child.AssetKey)),
+				Text(" "),
+				statusLabel(child.FreshnessStatus, dashboardFreshnessTone(child.FreshnessStatus)),
+				Text(" "),
+				Span(Class(core.MutedClass()), Text(child.Reason)),
+			))
+		}
+	}
+	upstreamNode := Node(P(Class(core.MutedClass()), Text("No upstream blockers detected.")))
+	if len(upstream) > 0 {
+		upstreamNode = Ul(Group(upstream))
+	}
+
+	return Div(
+		Class(core.CardClass()),
+		H2(Text("Freshness")),
+		Div(Class(buttonRowClass()),
+			statusLabel(status.FreshnessStatus, dashboardFreshnessTone(status.FreshnessStatus)),
+			Span(Class(core.MutedClass()), Text(status.Reason)),
+		),
+		P(Text("Effective max lag: "+strconv.FormatInt(status.EffectiveMaxLagSeconds, 10)+"s")),
+		P(Text("Last materialized: "+formatTimePtr(status.LastMaterializedAt))),
+		P(Text("Stale since: "+formatTimePtr(status.StaleSince))),
+		H3(Text("Upstream status")),
+		upstreamNode,
+	)
+}
+
+func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL string, csrfFieldProvider func() Node) Node {
+	content := Node(nil)
+	switch {
+	case widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputMetric:
+		field := ""
+		if widget.Widget.VisualSpec.Encodings.Value != nil {
+			field = widget.Widget.VisualSpec.Encodings.Value.Field
+		}
+		value := "-"
+		if len(widget.Rows) > 0 {
+			idx := 0
+			for i, col := range widget.Columns {
+				if col == field {
+					idx = i
+					break
+				}
+			}
+			if len(widget.Rows[0]) > idx {
+				value = fmt.Sprint(widget.Rows[0][idx])
+			}
+		}
+		content = visualMetricCard(defaultVisualTitle(widget.Widget.VisualSpec, widget.Widget.Name), value, fmt.Sprintf("%d row(s)", widget.RowCount))
+	case widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputChart:
+		content = chartHost(widget.Columns, widget.Rows, widget.Widget.VisualSpec)
+	default:
+		content = dashboardWidgetTable(widget)
+	}
+
+	generatedSQL := Node(nil)
+	if widget.GeneratedSQL != "" {
+		generatedSQL = Details(Summary(Text("Generated SQL")), Pre(Text(widget.GeneratedSQL)))
+	}
+
+	return Div(
+		Class("grid gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-small)]"),
+		H2(Class("m-0 text-xl font-semibold"), Text(widget.Widget.Name)),
+		P(Class("m-0 text-[var(--fgColor-muted)]"), Text(widget.Widget.Description)),
+		Div(Class(buttonRowClass()), A(Href(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/edit"), Class(core.SecondaryButtonClass()), Text("Edit widget"))),
+		content,
+		dashboardWidgetDataDetails(widget),
+		generatedSQL,
+		Form(Method("post"), Action(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/delete"), csrfFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass("small")), Text("Delete widget"))),
+	)
+}
+
+func dashboardWidgetDataDetails(widget dashboardsvc.ResolvedWidget) Node {
+	return Details(
+		Summary(Text("View data")),
+		dashboardWidgetTable(widget),
+	)
+}
+
+func dashboardWidgetTable(widget dashboardsvc.ResolvedWidget) Node {
+	headers := make([]Node, 0, len(widget.Columns))
+	for _, col := range widget.Columns {
+		headers = append(headers, Th(Text(col)))
+	}
+	rows := make([]Node, 0, len(widget.Rows))
+	for _, row := range widget.Rows {
+		cells := make([]Node, 0, len(row))
+		for _, cell := range row {
+			cells = append(cells, Td(Text(fmt.Sprint(cell))))
+		}
+		rows = append(rows, Tr(Group(cells)))
+	}
+	return Div(Class(tableWrapClass()), Table(Class(dataTableClass()), THead(Tr(Group(headers))), TBody(Group(rows))))
+}
+
+func dashboardFreshnessTone(status string) string {
+	switch status {
+	case domain.AssetFreshnessStatusFresh:
+		return "success"
+	case domain.AssetFreshnessStatusRefreshing:
+		return "accent"
+	case domain.AssetFreshnessStatusStale:
+		return "attention"
+	case domain.AssetFreshnessStatusBlocked:
+		return "severe"
+	default:
+		return ""
+	}
+}
+
+func dashboardWidgetFormCard(data dashboardWidgetFormData, csrfFieldProvider func() Node) Node {
+	return Div(
+		Class(core.CardClass()),
+		ID("dashboard-widget-form"),
+		H2(Text(data.Title)),
+		Form(
+			Method("post"),
+			Action(data.Action),
+			csrfFieldProvider(),
+			Label(Text("Name")),
+			Input(Name("name"), Value(data.Name), Required()),
+			Label(Text("Description")),
+			Textarea(Name("description"), Text(data.Description)),
+			Label(Text("Source kind")),
+			Select(Name("source_kind"),
+				Option(Value("sql_query"), selectedValue(data.SourceKind, "sql_query"), Text("sql_query")),
+				Option(Value("notebook_cell"), selectedValue(data.SourceKind, "notebook_cell"), Text("notebook_cell")),
+				Option(Value("semantic_query"), selectedValue(data.SourceKind, "semantic_query"), Text("semantic_query")),
+			),
+			Label(Text("SQL query")),
+			Textarea(Name("sql"), Text(data.SQL)),
+			Label(Text("Notebook ID")),
+			Input(Name("notebook_id"), Value(data.NotebookID)),
+			Label(Text("Cell ID")),
+			Input(Name("cell_id"), Value(data.CellID)),
+			Label(Text("Project name")),
+			Input(Name("project_name"), Value(data.ProjectName)),
+			Label(Text("Semantic model")),
+			Input(Name("semantic_model_name"), Value(data.semanticModelName)),
+			Label(Text("Metrics (comma separated)")),
+			Input(Name("metrics"), Value(data.Metrics)),
+			Label(Text("Dimensions (comma separated)")),
+			Input(Name("dimensions"), Value(data.Dimensions)),
+			Label(Text("Filters (comma separated)")),
+			Input(Name("filters"), Value(data.Filters)),
+			Label(Text("Order by (comma separated)")),
+			Input(Name("order_by"), Value(data.OrderBy)),
+			Label(Text("Limit")),
+			Input(Name("limit"), Value(data.Limit)),
+			Label(Text("Time grain")),
+			Input(Name("time_grain"), Value(data.TimeGrain)),
+			Label(Text("Visual kind")),
+			Select(Name("visual_kind"),
+				Option(Value("table"), selectedValue(data.VisualKind, "table"), Text("table")),
+				Option(Value("metric"), selectedValue(data.VisualKind, "metric"), Text("metric")),
+				Option(Value("chart"), selectedValue(data.VisualKind, "chart"), Text("chart")),
+			),
+			Label(Text("Chart type")),
+			Select(Name("chart_type"),
+				Option(Value("bar"), selectedValue(data.ChartType, "bar"), Text("bar")),
+				Option(Value("line"), selectedValue(data.ChartType, "line"), Text("line")),
+				Option(Value("area"), selectedValue(data.ChartType, "area"), Text("area")),
+				Option(Value("pie"), selectedValue(data.ChartType, "pie"), Text("pie")),
+				Option(Value("doughnut"), selectedValue(data.ChartType, "doughnut"), Text("doughnut")),
+				Option(Value("scatter"), selectedValue(data.ChartType, "scatter"), Text("scatter")),
+				Option(Value("stacked_bar"), selectedValue(data.ChartType, "stacked_bar"), Text("stacked_bar")),
+			),
+			Label(Text("Title")),
+			Input(Name("visual_title"), Value(data.VisualTitle)),
+			Label(Text("Subtitle")),
+			Input(Name("visual_subtitle"), Value(data.VisualSubtitle)),
+			Label(Text("X field")),
+			Input(Name("visual_x"), Value(data.VisualX)),
+			Label(Text("Y field")),
+			Input(Name("visual_y"), Value(data.VisualY)),
+			Label(Text("Series field")),
+			Input(Name("visual_series"), Value(data.VisualSeries)),
+			Label(Text("Label field")),
+			Input(Name("visual_label"), Value(data.VisualLabel)),
+			Label(Text("Value field")),
+			Input(Name("visual_value"), Value(data.VisualValue)),
+			Label(Text("Secondary field")),
+			Input(Name("visual_secondary"), Value(data.VisualSecondary)),
+			Label(Text("Layout X")),
+			Input(Name("layout_x"), Value(data.LayoutX)),
+			Label(Text("Layout Y")),
+			Input(Name("layout_y"), Value(data.LayoutY)),
+			Label(Text("Layout W")),
+			Input(Name("layout_w"), Value(data.LayoutW)),
+			Label(Text("Layout H")),
+			Input(Name("layout_h"), Value(data.LayoutH)),
+			Button(Type("submit"), Class(core.PrimaryButtonClass()), Text(data.SubmitLabel)),
+		),
+	)
+}
+
+func defaultWidgetFormData(action string) dashboardWidgetFormData {
+	return dashboardWidgetFormData{
+		Title:       "Add widget",
+		Action:      action,
+		SubmitLabel: "Create widget",
+		SourceKind:  "sql_query",
+		VisualKind:  "table",
+		LayoutX:     "0",
+		LayoutY:     "0",
+		LayoutW:     "4",
+		LayoutH:     "3",
+	}
+}
+
+func widgetFormDataFromWidget(widget *domain.DashboardWidget, action, submitLabel, title string) dashboardWidgetFormData {
+	data := defaultWidgetFormData(action)
+	data.Title = title
+	data.SubmitLabel = submitLabel
+	data.Name = widget.Name
+	data.Description = widget.Description
+	data.SourceKind = string(widget.Source.Kind)
+	data.LayoutX = strconv.Itoa(widget.Layout.X)
+	data.LayoutY = strconv.Itoa(widget.Layout.Y)
+	data.LayoutW = strconv.Itoa(widget.Layout.W)
+	data.LayoutH = strconv.Itoa(widget.Layout.H)
+
+	switch widget.Source.Kind {
+	case domain.DashboardWidgetSourceSQLQuery:
+		if widget.Source.SQLQuery != nil {
+			data.SQL = widget.Source.SQLQuery.SQL
+		}
+	case domain.DashboardWidgetSourceNotebookCell:
+		if widget.Source.NotebookCell != nil {
+			data.NotebookID = widget.Source.NotebookCell.NotebookID
+			data.CellID = widget.Source.NotebookCell.CellID
+		}
+	case domain.DashboardWidgetSourceSemanticQuery:
+		if widget.Source.SemanticQuery != nil {
+			data.ProjectName = widget.Source.SemanticQuery.ProjectName
+			data.semanticModelName = widget.Source.SemanticQuery.SemanticModelName
+			data.Metrics = strings.Join(widget.Source.SemanticQuery.Metrics, ", ")
+			data.Dimensions = strings.Join(widget.Source.SemanticQuery.Dimensions, ", ")
+			data.Filters = strings.Join(widget.Source.SemanticQuery.Filters, ", ")
+			data.OrderBy = strings.Join(widget.Source.SemanticQuery.OrderBy, ", ")
+			if widget.Source.SemanticQuery.Limit != nil {
+				data.Limit = strconv.Itoa(*widget.Source.SemanticQuery.Limit)
+			}
+			if widget.Source.SemanticQuery.TimeGrain != nil {
+				data.TimeGrain = *widget.Source.SemanticQuery.TimeGrain
+			}
+		}
+	}
+
+	if widget.VisualSpec != nil {
+		data.VisualKind = string(widget.VisualSpec.Kind)
+		data.VisualTitle = widget.VisualSpec.Title
+		data.VisualSubtitle = widget.VisualSpec.Subtitle
+		if widget.VisualSpec.ChartType != nil {
+			data.ChartType = string(*widget.VisualSpec.ChartType)
+		}
+		if widget.VisualSpec.Encodings.X != nil {
+			data.VisualX = widget.VisualSpec.Encodings.X.Field
+		}
+		if widget.VisualSpec.Encodings.Y != nil {
+			data.VisualY = widget.VisualSpec.Encodings.Y.Field
+		}
+		if widget.VisualSpec.Encodings.Series != nil {
+			data.VisualSeries = widget.VisualSpec.Encodings.Series.Field
+		}
+		if widget.VisualSpec.Encodings.Label != nil {
+			data.VisualLabel = widget.VisualSpec.Encodings.Label.Field
+		}
+		if widget.VisualSpec.Encodings.Value != nil {
+			data.VisualValue = widget.VisualSpec.Encodings.Value.Field
+		}
+		if widget.VisualSpec.Encodings.Secondary != nil {
+			data.VisualSecondary = widget.VisualSpec.Encodings.Secondary.Field
+		}
+	}
+
+	return data
+}
+
+func formPage(principal domain.ContextPrincipal, title, active, action string, csrfFieldProvider func() Node, fields ...Node) Node {
+	nodes := []Node{csrfFieldProvider()}
+	nodes = append(nodes, fields...)
+	return core.AppPage(
+		title,
+		active,
+		principal,
+		Div(
+			Class(core.CardClass()),
+			Form(
+				Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
+				Method("post"),
+				Action(action),
+				Group(nodes),
+				Div(Class("form-actions mt-2"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Save"))),
+			),
+		),
+	)
+}
+
+func selectedValue(current, expected string) Node {
+	if current == expected {
+		return Selected()
+	}
+	return nil
+}
+
+func parseIntWithDefault(value string, fallback int) int {
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func formatTime(ts time.Time) string {
+	if ts.IsZero() {
+		return "-"
+	}
+	return ts.Format(time.RFC3339)
+}
+
+func formatTimePtr(ts *time.Time) string {
+	if ts == nil || ts.IsZero() {
+		return "-"
+	}
+	return ts.Format(time.RFC3339)
+}
+
+func dataTableClass(extra ...string) string {
+	return core.ClassNames("min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--control-bgColor-hover)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]", strings.Join(extra, " "))
+}
+
+func tableWrapClass(extra ...string) string {
+	return core.ClassNames("overflow-x-auto", strings.Join(extra, " "))
+}
+
+func buttonRowClass(extra ...string) string {
+	return core.ButtonRowClass(extra...)
+}
+
+func labelClass(tone string) string {
+	base := "inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
+	switch tone {
+	case "accent":
+		return core.ClassNames(base, "bg-[var(--label-blue-bgColor-rest)] text-[var(--label-blue-fgColor-rest)]")
+	case "attention":
+		return core.ClassNames(base, "bg-[var(--label-yellow-bgColor-rest)] text-[var(--label-yellow-fgColor-rest)]")
+	case "success":
+		return core.ClassNames(base, "bg-[var(--label-green-bgColor-rest)] text-[var(--label-green-fgColor-rest)]")
+	case "severe":
+		return core.ClassNames(base, "bg-[var(--label-orange-bgColor-rest)] text-[var(--label-orange-fgColor-rest)]")
+	default:
+		return core.ClassNames(base, "bg-[var(--label-gray-bgColor-rest)] text-[var(--label-gray-fgColor-rest)]")
+	}
+}
+
+func statusLabel(text, tone string) Node {
+	return Span(Class(labelClass(tone)), Text(text))
+}
+
+func pageToolbar(newHref, newLabel string) Node {
+	return Div(
+		Class(core.CardClass()),
+		Div(
+			Class("flex flex-wrap items-center justify-between gap-3"),
+			Div(
+				Class("flex min-w-0 flex-col gap-1"),
+				Span(Class(labelClass("")), Text("Workspace")),
+				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Browse and manage resources.")),
+			),
+			A(Href(newHref), Class(core.PrimaryButtonClass()), Text(newLabel)),
+		),
+	)
+}
+
+func emptyStateCard(message, ctaLabel, ctaHref string) Node {
+	cta := Node(nil)
+	if ctaLabel != "" && ctaHref != "" {
+		cta = A(Href(ctaHref), Class(core.PrimaryButtonClass()), Text(ctaLabel))
+	}
+	return Div(
+		Class(core.CardClass("text-center")),
+		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"), I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true"))),
+		Div(
+			Class("flex flex-col items-center gap-2 text-center"),
+			P(Class("m-0 text-lg font-semibold"), Text("No results yet")),
+			P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(message)),
+			cta,
+		),
+	)
+}
+
+func paginationCard(basePath string, page domain.PageRequest, total int64) Node {
+	shown := min(page.Limit(), int(total))
+	summary := fmt.Sprintf("Showing %d of %d entries.", shown, total)
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	if nextToken == "" {
+		return Div(
+			Class(core.CardClass()),
+			Div(
+				Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
+				Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))),
+				Span(Class(core.ClassNames(core.SecondaryButtonClass("small"), "pointer-events-none opacity-60")), Attr("aria-disabled", "true"), Text("Next")),
+			),
+		)
+	}
+	url := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
+	return Div(
+		Class(core.CardClass()),
+		Div(
+			Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
+			Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))),
+			A(Href(url), Class(core.SecondaryButtonClass("small")), Text("Next page")),
+		),
+	)
+}
+
+func chartHost(columns []string, rows [][]interface{}, visual *domain.VisualSpec) Node {
+	return El("duck-chart", Class("block min-h-[20rem]"), Attr("data-chart-payload", chartPayload(columns, rows, visual)))
+}
+
+type chartRenderPayload struct {
+	Columns []string           `json:"columns"`
+	Rows    [][]interface{}    `json:"rows"`
+	Visual  *domain.VisualSpec `json:"visual"`
+}
+
+func chartPayload(columns []string, rows [][]interface{}, visual *domain.VisualSpec) string {
+	payload, err := json.Marshal(chartRenderPayload{Columns: columns, Rows: rows, Visual: visual})
+	if err != nil {
+		return "{}"
+	}
+	return string(payload)
+}
+
+func visualMetricCard(title string, value interface{}, secondary string) Node {
+	return Div(
+		Class("relative overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[linear-gradient(135deg,var(--bgColor-accent-muted)_0%,var(--bgColor-default)_45%)] p-4 shadow-[var(--shadow-resting-small)] before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--borderColor-accent-emphasis)] before:content-['']"),
+		P(Class("m-0 text-xs font-semibold text-[var(--fgColor-default)]"), Text(title)),
+		P(Class("my-1 text-3xl font-semibold leading-[var(--text-title-lineHeight-medium)] text-[var(--fgColor-default)]"), Text(fmt.Sprint(value))),
+		P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(secondary)),
+	)
+}
+
+func defaultVisualTitle(spec *domain.VisualSpec, fallback string) string {
+	if spec == nil || strings.TrimSpace(spec.Title) == "" {
+		return fallback
+	}
+	return spec.Title
+}
+
+func parseFormOrRenderBadRequest(w http.ResponseWriter, r *http.Request) bool {
+	if err := r.ParseForm(); err != nil {
+		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "Unable to parse form."))
+		return false
+	}
+	return true
+}
+
+func formString(values map[string][]string, key string) string {
+	if values == nil {
+		return ""
+	}
+	return strings.TrimSpace(first(values[key]))
+}
+
+func formOptionalString(values map[string][]string, key string) *string {
+	v := formString(values, key)
+	if v == "" {
+		return nil
+	}
+	return &v
+}
+
+func formCSV(values map[string][]string, key string) []string {
+	raw := formString(values, key)
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		out = append(out, p)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func first(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	return values[0]
+}
+
+func visualSpecFromForm(values url.Values) (*domain.VisualSpec, error) {
+	if values.Get("visual_kind") == "" &&
+		values.Get("chart_type") == "" &&
+		values.Get("visual_title") == "" &&
+		values.Get("visual_x") == "" &&
+		values.Get("visual_y") == "" &&
+		values.Get("visual_value") == "" &&
+		values.Get("visual_label") == "" {
+		return nil, nil
+	}
+	kind := domain.VisualOutputKind(formString(values, "visual_kind"))
+	if kind == "" {
+		kind = domain.VisualOutputTable
+	}
+	spec := &domain.VisualSpec{
+		Kind:         kind,
+		Title:        formString(values, "visual_title"),
+		Subtitle:     formString(values, "visual_subtitle"),
+		ColorPalette: formString(values, "visual_palette"),
+	}
+	if legend := values.Get("visual_legend"); legend != "" {
+		v := legend == "on" || legend == "true"
+		spec.Legend = &v
+	}
+	if stacked := values.Get("visual_stacked"); stacked != "" {
+		v := stacked == "on" || stacked == "true"
+		spec.Stacked = &v
+	}
+	if chartType := formString(values, "chart_type"); chartType != "" {
+		ct := domain.VisualChartType(chartType)
+		spec.ChartType = &ct
+	}
+	if field := formString(values, "visual_x"); field != "" {
+		spec.Encodings.X = &domain.VisualFieldBinding{Field: field}
+	}
+	if field := formString(values, "visual_y"); field != "" {
+		spec.Encodings.Y = &domain.VisualFieldBinding{Field: field}
+	}
+	if field := formString(values, "visual_series"); field != "" {
+		spec.Encodings.Series = &domain.VisualFieldBinding{Field: field}
+	}
+	if field := formString(values, "visual_label"); field != "" {
+		spec.Encodings.Label = &domain.VisualFieldBinding{Field: field}
+	}
+	if field := formString(values, "visual_value"); field != "" {
+		spec.Encodings.Value = &domain.VisualFieldBinding{Field: field}
+	}
+	if field := formString(values, "visual_secondary"); field != "" {
+		spec.Encodings.Secondary = &domain.VisualFieldBinding{Field: field}
+	}
+	return spec, spec.Validate()
+}
+
+func dashboardWidgetSourceFromForm(values url.Values) (domain.DashboardWidgetSource, error) {
+	kind := domain.DashboardWidgetSourceKind(formString(values, "source_kind"))
+	switch kind {
+	case domain.DashboardWidgetSourceSQLQuery:
+		return domain.DashboardWidgetSource{
+			Kind: kind,
+			SQLQuery: &domain.DashboardSQLQuerySource{
+				SQL: formString(values, "sql"),
+			},
+		}, nil
+	case domain.DashboardWidgetSourceNotebookCell:
+		return domain.DashboardWidgetSource{
+			Kind: kind,
+			NotebookCell: &domain.DashboardNotebookCellSource{
+				NotebookID: formString(values, "notebook_id"),
+				CellID:     formString(values, "cell_id"),
+			},
+		}, nil
+	case domain.DashboardWidgetSourceSemanticQuery:
+		source := domain.DashboardWidgetSource{
+			Kind: kind,
+			SemanticQuery: &domain.DashboardSemanticQuerySource{
+				ProjectName:       formString(values, "project_name"),
+				SemanticModelName: formString(values, "semantic_model_name"),
+				Metrics:           formCSV(values, "metrics"),
+				Dimensions:        formCSV(values, "dimensions"),
+				Filters:           formCSV(values, "filters"),
+				OrderBy:           formCSV(values, "order_by"),
+			},
+		}
+		if rawLimit := formString(values, "limit"); rawLimit != "" {
+			limit, err := strconv.Atoi(rawLimit)
+			if err != nil {
+				return domain.DashboardWidgetSource{}, fmt.Errorf("limit must be an integer")
+			}
+			source.SemanticQuery.Limit = &limit
+		}
+		if timeGrain := strings.TrimSpace(formString(values, "time_grain")); timeGrain != "" {
+			source.SemanticQuery.TimeGrain = &timeGrain
+		}
+		return source, nil
+	default:
+		return domain.DashboardWidgetSource{}, fmt.Errorf("unsupported source kind %q", string(kind))
+	}
+}
+
+func parseInt(v string) (int, error) {
+	return strconv.Atoi(v)
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func renderHTMLString(node Node) (string, error) {
+	var buf bytes.Buffer
+	if err := node.Render(&buf); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
