@@ -1447,7 +1447,15 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
+		assert.Equal(t, "first_class", rf.Name)
 		assert.Equal(t, `"Pclass" = 1`, rf.FilterSql)
+	})
+
+	t.Run("create duplicate row filter returns conflict", func(t *testing.T) {
+		body := `{"name":"first_class","filter_sql":"\"Pclass\" = 1","description":"First class only"}`
+		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusConflict, resp.StatusCode)
 	})
 
 	t.Run("create row filter invalid SQL", func(t *testing.T) {

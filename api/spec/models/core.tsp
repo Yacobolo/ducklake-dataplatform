@@ -404,6 +404,7 @@ model CleanupAPIKeysResponse {
 model RowFilter {
   id: string;
   table_id: string;
+  name: string;
   filter_sql: string;
   description?: string;
   created_at?: utcDateTime;
@@ -441,6 +442,7 @@ model PaginatedRowFilterBindings {
 model ColumnMask {
   id: string;
   table_id: string;
+  name: string;
   column_name: string;
   mask_expression: string;
   description?: string;

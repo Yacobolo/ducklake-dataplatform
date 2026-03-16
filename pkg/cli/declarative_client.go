@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -225,6 +226,9 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 	if err := c.readTags(ctx, state); err != nil {
 		return nil, fmt.Errorf("read tags: %w", err)
 	}
+	if err := c.readTagAssignments(ctx, state); err != nil {
+		return nil, fmt.Errorf("read tag assignments: %w", err)
+	}
 	if err := c.readNotebooks(ctx, state); err != nil {
 		return nil, fmt.Errorf("read notebooks: %w", err)
 	}
@@ -429,34 +433,56 @@ type apiAPIKey struct {
 	ExpiresAt   *string `json:"expires_at"`
 }
 
-func (c *APIStateClient) readAPIKeys(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/api-keys")
-	if err != nil {
-		return err
-	}
-	if len(pages) == 0 {
-		return nil
-	}
-
-	var items []apiAPIKey
-	if err := mergePages(pages, &items); err != nil {
-		return err
-	}
-
-	for _, k := range items {
-		principal := k.Principal
-		if principal == "" && k.PrincipalID != "" {
-			principal = c.reverseLookupPrincipalName(k.PrincipalID, "user")
+func (c *APIStateClient) readAPIKeys(_ context.Context, state *declarative.DesiredState) error {
+	for _, principalSpec := range state.Principals {
+		principalID := ""
+		if c.index != nil {
+			principalID = c.index.principalIDByName[principalSpec.Name]
 		}
-		if principal == "" {
-			principal = k.PrincipalID
+		if principalID == "" {
+			continue
 		}
 
-		state.APIKeys = append(state.APIKeys, declarative.APIKeySpec{
-			Name:      k.Name,
-			Principal: principal,
-			ExpiresAt: k.ExpiresAt,
-		})
+		q := url.Values{}
+		q.Set("max_results", "1000")
+		q.Set("principal_id", principalID)
+
+		resp, err := c.client.Do(http.MethodGet, "/api-keys", q, nil)
+		if err != nil {
+			return fmt.Errorf("GET /api-keys for %s: %w", principalSpec.Name, err)
+		}
+		body, err := apiruntime.ReadBody(resp)
+		if err != nil {
+			return fmt.Errorf("read GET /api-keys for %s: %w", principalSpec.Name, err)
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return fmt.Errorf("GET /api-keys for %s: HTTP %d: %s", principalSpec.Name, resp.StatusCode, string(body))
+		}
+
+		var parsed listResponse
+		if err := json.Unmarshal(body, &parsed); err != nil {
+			return fmt.Errorf("parse GET /api-keys for %s: %w", principalSpec.Name, err)
+		}
+		if len(parsed.Data) == 0 || string(parsed.Data) == "null" {
+			continue
+		}
+
+		var items []apiAPIKey
+		if err := json.Unmarshal(parsed.Data, &items); err != nil {
+			return fmt.Errorf("parse api-keys data for %s: %w", principalSpec.Name, err)
+		}
+
+		for _, k := range items {
+			principal := k.Principal
+			if principal == "" {
+				principal = principalSpec.Name
+			}
+			state.APIKeys = append(state.APIKeys, declarative.APIKeySpec{
+				Name:      k.Name,
+				Principal: principal,
+				ExpiresAt: k.ExpiresAt,
+			})
+		}
 	}
 	return nil
 }
@@ -474,14 +500,38 @@ type apiCatalog struct {
 }
 
 func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/catalogs")
-	if err != nil {
-		return err
-	}
+	var (
+		items     []apiCatalog
+		pageToken string
+	)
+	for {
+		query := url.Values{}
+		if pageToken != "" {
+			query.Set("page_token", pageToken)
+		}
+		resp, err := c.client.Do(http.MethodGet, "/catalogs", query, nil)
+		if err != nil {
+			return err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
 
-	var items []apiCatalog
-	if err := mergePages(pages, &items); err != nil {
-		return fmt.Errorf("parse catalogs: %w", err)
+		var payload struct {
+			Catalogs      []apiCatalog `json:"catalogs"`
+			NextPageToken string       `json:"next_page_token"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+			_ = resp.Body.Close()
+			return fmt.Errorf("decode catalogs: %w", err)
+		}
+		_ = resp.Body.Close()
+
+		items = append(items, payload.Catalogs...)
+		if payload.NextPageToken == "" {
+			break
+		}
+		pageToken = payload.NextPageToken
 	}
 
 	for _, cat := range items {
@@ -509,7 +559,7 @@ func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.De
 }
 
 type apiSchema struct {
-	ID           string            `json:"id"`
+	ID           string            `json:"schema_id"`
 	Name         string            `json:"name"`
 	Comment      string            `json:"comment"`
 	Owner        string            `json:"owner"`
@@ -561,7 +611,7 @@ func (c *APIStateClient) readSchemas(ctx context.Context, catalogName string, st
 }
 
 type apiTable struct {
-	ID           string            `json:"id"`
+	ID           string            `json:"table_id"`
 	Name         string            `json:"name"`
 	TableType    string            `json:"table_type"`
 	Comment      string            `json:"comment"`
@@ -577,6 +627,32 @@ type apiColumn struct {
 	Name    string `json:"name"`
 	Type    string `json:"type"`
 	Comment string `json:"comment"`
+}
+
+type apiRowFilter struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	FilterSQL   string `json:"filter_sql"`
+	Description string `json:"description"`
+}
+
+type apiRowFilterBinding struct {
+	PrincipalID   string `json:"principal_id"`
+	PrincipalType string `json:"principal_type"`
+}
+
+type apiColumnMask struct {
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	ColumnName     string `json:"column_name"`
+	MaskExpression string `json:"mask_expression"`
+	Description    string `json:"description"`
+}
+
+type apiColumnMaskBinding struct {
+	PrincipalID   string `json:"principal_id"`
+	PrincipalType string `json:"principal_type"`
+	SeeOriginal   bool   `json:"see_original"`
 }
 
 func (c *APIStateClient) readTables(ctx context.Context, catalogName, schemaName string, state *declarative.DesiredState) error {
@@ -622,8 +698,177 @@ func (c *APIStateClient) readTables(ctx context.Context, catalogName, schemaName
 		if t.ID != "" && c.index != nil {
 			c.index.tableIDByPath[catalogName+"."+schemaName+"."+t.Name] = t.ID
 		}
+		if t.ID != "" {
+			if err := c.readTableGovernance(ctx, catalogName, schemaName, t.Name, t.ID, state); err != nil {
+				return fmt.Errorf("table %s.%s.%s governance: %w", catalogName, schemaName, t.Name, err)
+			}
+		}
 	}
 	return nil
+}
+
+func (c *APIStateClient) readTableGovernance(ctx context.Context, catalogName, schemaName, tableName, tableID string, state *declarative.DesiredState) error {
+	if err := c.readTableRowFilters(ctx, catalogName, schemaName, tableName, tableID, state); err != nil {
+		return err
+	}
+	if err := c.readTableColumnMasks(ctx, catalogName, schemaName, tableName, tableID, state); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *APIStateClient) readTableRowFilters(ctx context.Context, catalogName, schemaName, tableName, tableID string, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/row-filters")
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return nil
+	}
+
+	var items []apiRowFilter
+	if err := mergePages(pages, &items); err != nil {
+		return err
+	}
+
+	filters := make([]declarative.RowFilterSpec, 0, len(items))
+	for _, filter := range items {
+		bindings, err := c.readRowFilterBindings(ctx, filter.ID)
+		if err != nil {
+			return fmt.Errorf("row filter %q bindings: %w", filter.Name, err)
+		}
+		filters = append(filters, declarative.RowFilterSpec{
+			Name:        filter.Name,
+			FilterSQL:   filter.FilterSQL,
+			Description: filter.Description,
+			Bindings:    bindings,
+		})
+		if c.index != nil && filter.ID != "" {
+			c.index.rowFilterIDByPath[catalogName+"."+schemaName+"."+tableName+"/"+filter.Name] = filter.ID
+		}
+	}
+
+	if len(filters) > 0 {
+		state.RowFilters = append(state.RowFilters, declarative.RowFilterResource{
+			CatalogName: catalogName,
+			SchemaName:  schemaName,
+			TableName:   tableName,
+			Filters:     filters,
+		})
+	}
+
+	return nil
+}
+
+func (c *APIStateClient) readRowFilterBindings(ctx context.Context, filterID string) ([]declarative.FilterBindingRef, error) {
+	pages, err := c.fetchAllPages(ctx, "/row-filters/"+filterID+"/bindings")
+	if err != nil {
+		return nil, err
+	}
+	if len(pages) == 0 {
+		return nil, nil
+	}
+
+	var items []apiRowFilterBinding
+	if err := mergePages(pages, &items); err != nil {
+		return nil, err
+	}
+
+	bindings := make([]declarative.FilterBindingRef, 0, len(items))
+	for _, binding := range items {
+		name := c.reverseLookupPrincipalName(binding.PrincipalID, binding.PrincipalType)
+		if name == "" {
+			resolvedName, err := c.lookupMemberNameByID(ctx, binding.PrincipalID, binding.PrincipalType)
+			if err != nil {
+				return nil, err
+			}
+			name = resolvedName
+		}
+		bindings = append(bindings, declarative.FilterBindingRef{
+			Principal:     name,
+			PrincipalType: binding.PrincipalType,
+		})
+	}
+
+	return bindings, nil
+}
+
+func (c *APIStateClient) readTableColumnMasks(ctx context.Context, catalogName, schemaName, tableName, tableID string, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/column-masks")
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return nil
+	}
+
+	var items []apiColumnMask
+	if err := mergePages(pages, &items); err != nil {
+		return err
+	}
+
+	masks := make([]declarative.ColumnMaskSpec, 0, len(items))
+	for _, mask := range items {
+		bindings, err := c.readColumnMaskBindings(ctx, mask.ID)
+		if err != nil {
+			return fmt.Errorf("column mask %q bindings: %w", mask.Name, err)
+		}
+		masks = append(masks, declarative.ColumnMaskSpec{
+			Name:           mask.Name,
+			ColumnName:     mask.ColumnName,
+			MaskExpression: mask.MaskExpression,
+			Description:    mask.Description,
+			Bindings:       bindings,
+		})
+		if c.index != nil && mask.ID != "" {
+			c.index.columnMaskIDByPath[catalogName+"."+schemaName+"."+tableName+"/"+mask.Name] = mask.ID
+		}
+	}
+
+	if len(masks) > 0 {
+		state.ColumnMasks = append(state.ColumnMasks, declarative.ColumnMaskResource{
+			CatalogName: catalogName,
+			SchemaName:  schemaName,
+			TableName:   tableName,
+			Masks:       masks,
+		})
+	}
+
+	return nil
+}
+
+func (c *APIStateClient) readColumnMaskBindings(ctx context.Context, maskID string) ([]declarative.MaskBindingRef, error) {
+	pages, err := c.fetchAllPages(ctx, "/column-masks/"+maskID+"/bindings")
+	if err != nil {
+		return nil, err
+	}
+	if len(pages) == 0 {
+		return nil, nil
+	}
+
+	var items []apiColumnMaskBinding
+	if err := mergePages(pages, &items); err != nil {
+		return nil, err
+	}
+
+	bindings := make([]declarative.MaskBindingRef, 0, len(items))
+	for _, binding := range items {
+		name := c.reverseLookupPrincipalName(binding.PrincipalID, binding.PrincipalType)
+		if name == "" {
+			resolvedName, err := c.lookupMemberNameByID(ctx, binding.PrincipalID, binding.PrincipalType)
+			if err != nil {
+				return nil, err
+			}
+			name = resolvedName
+		}
+		bindings = append(bindings, declarative.MaskBindingRef{
+			Principal:     name,
+			PrincipalType: binding.PrincipalType,
+			SeeOriginal:   binding.SeeOriginal,
+		})
+	}
+
+	return bindings, nil
 }
 
 type apiView struct {
@@ -827,7 +1072,7 @@ type apiComputeEndpoint struct {
 type apiComputeAssignment struct {
 	ID            string `json:"id"`
 	Endpoint      string `json:"endpoint"`
-	Principal     string `json:"principal"`
+	PrincipalID   string `json:"principal_id"`
 	PrincipalType string `json:"principal_type"`
 	IsDefault     bool   `json:"is_default"`
 	FallbackLocal bool   `json:"fallback_local"`
@@ -881,15 +1126,23 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 				return fmt.Errorf("endpoint %q assignments parse: %w", ep.Name, err)
 			}
 			for _, a := range assignments {
+				principalName := c.reverseLookupPrincipalName(a.PrincipalID, a.PrincipalType)
+				if principalName == "" {
+					resolvedName, err := c.lookupMemberNameByID(ctx, a.PrincipalID, a.PrincipalType)
+					if err != nil {
+						return fmt.Errorf("endpoint %q assignment principal %s (%s): %w", ep.Name, a.PrincipalID, a.PrincipalType, err)
+					}
+					principalName = resolvedName
+				}
 				state.ComputeAssignments = append(state.ComputeAssignments, declarative.ComputeAssignmentSpec{
 					Endpoint:      ep.Name,
-					Principal:     a.Principal,
+					Principal:     principalName,
 					PrincipalType: a.PrincipalType,
 					IsDefault:     a.IsDefault,
 					FallbackLocal: a.FallbackLocal,
 				})
 				if a.ID != "" && c.index != nil {
-					c.index.computeAssignIDByKey[computeAssignmentKey(ep.Name, a.PrincipalType, a.Principal)] = a.ID
+					c.index.computeAssignIDByKey[computeAssignmentKey(ep.Name, a.PrincipalType, principalName)] = a.ID
 				}
 			}
 		}
@@ -930,6 +1183,14 @@ type apiTag struct {
 	Value *string `json:"value"`
 }
 
+type apiTagAssignment struct {
+	ID            string  `json:"id"`
+	TagID         string  `json:"tag_id"`
+	SecurableID   string  `json:"securable_id"`
+	SecurableType string  `json:"securable_type"`
+	ColumnName    *string `json:"column_name"`
+}
+
 func (c *APIStateClient) readTags(ctx context.Context, state *declarative.DesiredState) error {
 	pages, err := c.fetchAllPages(ctx, "/tags")
 	if err != nil {
@@ -956,12 +1217,61 @@ func (c *APIStateClient) readTags(ctx context.Context, state *declarative.Desire
 	return nil
 }
 
+func (c *APIStateClient) readTagAssignments(ctx context.Context, state *declarative.DesiredState) error {
+	if c.index == nil {
+		return fmt.Errorf("resource index not populated; call ReadState first")
+	}
+
+	tagByID := make(map[string]string, len(c.index.tagIDByKey))
+	for key, id := range c.index.tagIDByKey {
+		tagByID[id] = key
+	}
+
+	for tagID, tagKey := range tagByID {
+		pages, err := c.fetchAllPages(ctx, "/tags/"+tagID+"/assignments")
+		if err != nil {
+			return err
+		}
+		if len(pages) == 0 {
+			continue
+		}
+
+		var items []apiTagAssignment
+		if err := mergePages(pages, &items); err != nil {
+			return err
+		}
+
+		for _, assignment := range items {
+			securablePath := c.reverseLookupSecurablePath(assignment.SecurableType, assignment.SecurableID)
+			if securablePath == "" {
+				continue
+			}
+			state.TagAssignments = append(state.TagAssignments, declarative.TagAssignmentSpec{
+				Tag:           tagKey,
+				SecurableType: assignment.SecurableType,
+				Securable:     securablePath,
+				ColumnName:    derefString(assignment.ColumnName),
+				AssignmentID:  assignment.ID,
+			})
+		}
+	}
+
+	return nil
+}
+
 // tagKey returns the canonical key for a tag: "key" or "key:value".
 func tagKey(key string, value *string) string {
 	if value != nil {
 		return key + ":" + *value
 	}
 	return key
+}
+
+func derefString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 // --- Workflow resources (simplified) ---
@@ -1417,6 +1727,14 @@ func productDependencySlugs(items []apiDataProductListItem) []string {
 	return slugs
 }
 
+func normalizeAssetTypeForConfig(assetType string) string {
+	return strings.ToLower(strings.TrimSpace(assetType))
+}
+
+func normalizeAssetTypeForAPI(assetType string) string {
+	return strings.ToUpper(strings.TrimSpace(assetType))
+}
+
 func cloneStringMap(values map[string]string) map[string]string {
 	if len(values) == 0 {
 		return nil
@@ -1485,7 +1803,7 @@ func (c *APIStateClient) readAssets(ctx context.Context, state *declarative.Desi
 
 	for _, asset := range items {
 		spec := declarative.AssetSpec{
-			AssetType:    asset.AssetType,
+			AssetType:    normalizeAssetTypeForConfig(asset.AssetType),
 			ProductRef:   productRefByAssetKey[asset.AssetKey],
 			Owner:        asset.Owner,
 			Description:  asset.Description,
@@ -2362,13 +2680,6 @@ func (c *APIStateClient) lookupTableIDByPath(_ context.Context, catalogName, sch
 		return "", fmt.Errorf("table %q has no id in API response", catalogName+"."+schemaName+"."+tableName)
 	}
 	return id, nil
-}
-
-type apiColumnMask struct {
-	ID             string `json:"id"`
-	ColumnName     string `json:"column_name"`
-	MaskExpression string `json:"mask_expression"`
-	Description    string `json:"description"`
 }
 
 func (c *APIStateClient) lookupColumnMaskIDBySpec(ctx context.Context, tablePath string, mask declarative.ColumnMaskSpec) (string, error) {
@@ -3421,20 +3732,16 @@ func (c *APIStateClient) executeAsset(_ context.Context, action declarative.Acti
 	toAssetBody := func(asset declarative.AssetResource) map[string]interface{} {
 		body := map[string]interface{}{
 			"asset_key":     asset.Name,
-			"asset_type":    asset.Spec.AssetType,
+			"asset_type":    normalizeAssetTypeForAPI(asset.Spec.AssetType),
 			"product_slug":  asset.Spec.ProductRef,
 			"owner":         asset.Spec.Owner,
 			"description":   asset.Spec.Description,
 			"tags":          asset.Spec.Tags,
 			"io_profile":    asset.Spec.IOProfile,
 			"is_active":     true,
-			"cron_schedule": asset.Spec.CronSchedule,
 		}
 		if len(asset.Spec.DependsOn) > 0 {
-			body["depends_on"] = asset.Spec.DependsOn
-		}
-		if asset.Spec.PartitionDefinition != nil {
-			body["partition_definition"] = asset.Spec.PartitionDefinition
+			body["upstream_asset_keys"] = asset.Spec.DependsOn
 		}
 		if asset.Spec.AutoMaterializePolicy != nil {
 			body["auto_materialize_policy"] = asset.Spec.AutoMaterializePolicy
@@ -3445,17 +3752,8 @@ func (c *APIStateClient) executeAsset(_ context.Context, action declarative.Acti
 		if asset.Spec.MaterializationPolicy != nil {
 			body["materialization_policy"] = asset.Spec.MaterializationPolicy
 		}
-		if asset.Spec.PartitionType != "" {
-			body["partition_type"] = asset.Spec.PartitionType
-		}
-		if asset.Spec.MaxLagSeconds != nil {
-			body["max_lag_seconds"] = *asset.Spec.MaxLagSeconds
-		}
 		if len(asset.Spec.CheckDefinitions) > 0 {
 			body["checks"] = asset.Spec.CheckDefinitions
-		}
-		if len(asset.Spec.Properties) > 0 {
-			body["properties"] = asset.Spec.Properties
 		}
 		return body
 	}
@@ -4167,6 +4465,30 @@ func (c *APIStateClient) executeStorageCredential(_ context.Context, action decl
 		if spec.Comment != "" {
 			body["comment"] = spec.Comment
 		}
+		if spec.CredentialType == "S3" {
+			if spec.S3 == nil {
+				return fmt.Errorf("storage credential %q is missing s3 configuration", spec.Name)
+			}
+			keyID, err := resolveRequiredEnv(spec.S3.KeyIDFromEnv)
+			if err != nil {
+				return fmt.Errorf("resolve storage credential %q key id: %w", spec.Name, err)
+			}
+			secret, err := resolveRequiredEnv(spec.S3.SecretFromEnv)
+			if err != nil {
+				return fmt.Errorf("resolve storage credential %q secret: %w", spec.Name, err)
+			}
+			body["key_id"] = keyID
+			body["secret"] = secret
+			if spec.S3.Endpoint != "" {
+				body["endpoint"] = spec.S3.Endpoint
+			}
+			if spec.S3.Region != "" {
+				body["region"] = spec.S3.Region
+			}
+			if spec.S3.URLStyle != "" {
+				body["url_style"] = spec.S3.URLStyle
+			}
+		}
 		resp, err := c.client.Do(http.MethodPost, "/storage-credentials", nil, body)
 		if err != nil {
 			return err
@@ -4207,6 +4529,18 @@ func (c *APIStateClient) executeStorageCredential(_ context.Context, action decl
 	}
 }
 
+func resolveRequiredEnv(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", fmt.Errorf("environment variable name is required")
+	}
+	value, ok := os.LookupEnv(name)
+	if !ok || value == "" {
+		return "", fmt.Errorf("environment variable %q is not set", name)
+	}
+	return value, nil
+}
+
 func (c *APIStateClient) executeExternalLocation(_ context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
@@ -4243,7 +4577,6 @@ func (c *APIStateClient) executeExternalLocation(_ context.Context, action decla
 		body := map[string]interface{}{
 			"url":             spec.URL,
 			"credential_name": spec.CredentialName,
-			"storage_type":    spec.StorageType,
 			"comment":         spec.Comment,
 			"read_only":       spec.ReadOnly,
 		}
@@ -4704,20 +5037,30 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 
 	case declarative.OpUpdate:
 		cat := action.Desired.(declarative.CatalogResource)
-		body := map[string]interface{}{
-			"metastore_type": cat.Spec.MetastoreType,
-			"dsn":            cat.Spec.DSN,
-			"data_path":      cat.Spec.DataPath,
-			"is_default":     cat.Spec.IsDefault,
+		body := map[string]interface{}{}
+		if cat.Spec.DataPath != "" {
+			body["data_path"] = cat.Spec.DataPath
 		}
 		if cat.Spec.Comment != "" {
 			body["comment"] = cat.Spec.Comment
 		}
-		resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+action.ResourceName, nil, body)
-		if err != nil {
-			return err
+		if len(body) > 0 {
+			resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+action.ResourceName, nil, body)
+			if err != nil {
+				return err
+			}
+			if err := apiruntime.CheckError(resp); err != nil {
+				return err
+			}
 		}
-		return apiruntime.CheckError(resp)
+		if cat.Spec.IsDefault {
+			resp, err := c.client.Do(http.MethodPost, "/catalogs/"+action.ResourceName+"/set-default", nil, map[string]interface{}{})
+			if err != nil {
+				return err
+			}
+			return apiruntime.CheckError(resp)
+		}
+		return nil
 
 	case declarative.OpDelete:
 		resp, err := c.client.Do(http.MethodDelete, "/catalogs/"+action.ResourceName, nil, nil)
@@ -4810,9 +5153,6 @@ func (c *APIStateClient) executeTable(ctx context.Context, action declarative.Ac
 		body := map[string]interface{}{
 			"name": tbl.TableName,
 		}
-		if tbl.Spec.TableType != "" {
-			body["table_type"] = tbl.Spec.TableType
-		}
 		if tbl.Spec.Comment != "" {
 			body["comment"] = tbl.Spec.Comment
 		}
@@ -4829,15 +5169,6 @@ func (c *APIStateClient) executeTable(ctx context.Context, action declarative.Ac
 				cols[i] = c
 			}
 			body["columns"] = cols
-		}
-		if tbl.Spec.SourcePath != "" {
-			body["source_path"] = tbl.Spec.SourcePath
-		}
-		if tbl.Spec.FileFormat != "" {
-			body["file_format"] = tbl.Spec.FileFormat
-		}
-		if tbl.Spec.LocationName != "" {
-			body["location_name"] = tbl.Spec.LocationName
 		}
 		basePath := "/catalogs/" + tbl.CatalogName + "/schemas/" + tbl.SchemaName + "/tables"
 		resp, err := c.client.Do(http.MethodPost, basePath, nil, body)
@@ -5124,6 +5455,7 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 			return fmt.Errorf("resolve table for row filter: %w", err)
 		}
 		body := map[string]interface{}{
+			"name":       filter.Name,
 			"filter_sql": filter.FilterSQL,
 		}
 		if filter.Description != "" {
@@ -5220,6 +5552,7 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 			return fmt.Errorf("resolve table for column mask: %w", err)
 		}
 		body := map[string]interface{}{
+			"name":            mask.Name,
 			"column_name":     mask.ColumnName,
 			"mask_expression": mask.MaskExpression,
 		}

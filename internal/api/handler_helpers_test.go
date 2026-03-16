@@ -179,13 +179,14 @@ func TestHelpers_grantToAPI(t *testing.T) {
 func TestHelpers_rowFilterToAPI(t *testing.T) {
 	t.Parallel()
 	rf := domain.RowFilter{
-		ID: "rf-1", TableID: "t-1", FilterSQL: "age > 18",
+		ID: "rf-1", TableID: "t-1", Name: "adults_only", FilterSQL: "age > 18",
 		Description: "Adults only", CreatedAt: helpersFixedTime,
 	}
 	result := rowFilterToAPI(rf)
 
 	assert.Equal(t, "rf-1", result.Id)
 	assert.Equal(t, "t-1", result.TableId)
+	assert.Equal(t, "adults_only", result.Name)
 	assert.Equal(t, "age > 18", result.FilterSql)
 	require.NotNil(t, result.Description)
 	assert.Equal(t, "Adults only", *result.Description)
@@ -196,7 +197,7 @@ func TestHelpers_rowFilterToAPI(t *testing.T) {
 func TestHelpers_columnMaskToAPI(t *testing.T) {
 	t.Parallel()
 	cm := domain.ColumnMask{
-		ID: "cm-1", TableID: "t-1", ColumnName: "ssn",
+		ID: "cm-1", TableID: "t-1", Name: "mask_ssn", ColumnName: "ssn",
 		MaskExpression: "'***'", Description: "Mask SSN",
 		CreatedAt: helpersFixedTime,
 	}
@@ -204,6 +205,7 @@ func TestHelpers_columnMaskToAPI(t *testing.T) {
 
 	assert.Equal(t, "cm-1", result.Id)
 	assert.Equal(t, "t-1", result.TableId)
+	assert.Equal(t, "mask_ssn", result.Name)
 	assert.Equal(t, "ssn", result.ColumnName)
 	assert.Equal(t, "'***'", result.MaskExpression)
 	require.NotNil(t, result.Description)

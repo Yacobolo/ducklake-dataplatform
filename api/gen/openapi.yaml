@@ -14432,12 +14432,15 @@ components:
       required:
         - id
         - table_id
+        - name
         - column_name
         - mask_expression
       properties:
         id:
           type: string
         table_id:
+          type: string
+        name:
           type: string
         column_name:
           type: string
@@ -18110,11 +18113,14 @@ components:
       required:
         - id
         - table_id
+        - name
         - filter_sql
       properties:
         id:
           type: string
         table_id:
+          type: string
+        name:
           type: string
         filter_sql:
           type: string

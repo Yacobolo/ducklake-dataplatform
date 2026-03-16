@@ -407,6 +407,7 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req GenCreateGrantRequest)
 	result, err := h.grants.Grant(ctx, domReq)
 	if err != nil {
 		if resp, ok := respondDomainError[GenCreateGrantResponse](err, domainErrorResponder[GenCreateGrantResponse]{
+			Conflict:  func(resp ConflictJSONResponse) GenCreateGrantResponse { return CreateGrant409JSONResponse{resp} },
 			Forbidden: func(resp ForbiddenJSONResponse) GenCreateGrantResponse { return CreateGrant403JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -475,6 +476,9 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req GenCreateRowFilter
 		if resp, ok := respondDomainError[GenCreateRowFilterResponse](err, domainErrorResponder[GenCreateRowFilterResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateRowFilterResponse {
 				return CreateRowFilter400JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenCreateRowFilterResponse {
+				return CreateRowFilter409JSONResponse{resp}
 			},
 			Forbidden: func(resp ForbiddenJSONResponse) GenCreateRowFilterResponse {
 				return CreateRowFilter403JSONResponse{resp}

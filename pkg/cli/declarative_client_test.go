@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -163,7 +164,8 @@ func TestExecuteCatalog_Update(t *testing.T) {
 	req := captured[0]
 	assert.Equal(t, http.MethodPatch, req.Method)
 	assert.Contains(t, req.Path, "/catalogs/demo")
-	assert.Equal(t, "sqlite", bodyStr(req, "metastore_type"))
+	assert.Equal(t, "/tmp/data2/", bodyStr(req, "data_path"))
+	assert.Empty(t, bodyStr(req, "metastore_type"))
 }
 
 // === Grant execution tests (#130) ===
@@ -379,6 +381,7 @@ func TestExecuteRowFilter_Create(t *testing.T) {
 	req := captured[0]
 	assert.Equal(t, http.MethodPost, req.Method)
 	assert.Contains(t, req.Path, "/tables/table-id-passengers/row-filters")
+	assert.Equal(t, "first_class", bodyStr(req, "name"))
 	assert.Equal(t, `"Pclass" = 1`, bodyStr(req, "filter_sql"))
 	assert.Equal(t, "First class only", bodyStr(req, "description"))
 
@@ -482,6 +485,7 @@ func TestExecuteColumnMask_Create(t *testing.T) {
 	req := captured[0]
 	assert.Equal(t, http.MethodPost, req.Method)
 	assert.Contains(t, req.Path, "/tables/table-id-passengers/column-masks")
+	assert.Equal(t, "mask_name", bodyStr(req, "name"))
 	assert.Equal(t, "Name", bodyStr(req, "column_name"))
 	assert.Equal(t, "'***'", bodyStr(req, "mask_expression"))
 	assert.Equal(t, "Mask PII names", bodyStr(req, "description"))
@@ -561,6 +565,38 @@ func TestExecuteColumnMaskBinding_Delete(t *testing.T) {
 	assert.Contains(t, req.Path, "/column-masks/cm-id-name/bindings")
 	assert.Equal(t, "principal-id-alice", queryStr(req, "principal_id"))
 	assert.Equal(t, "user", queryStr(req, "principal_type"))
+}
+
+func TestExecuteAsset_CreateUsesSupportedFields(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	err := sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindAsset,
+		ResourceName: "daily_orders_asset",
+		Desired: declarative.AssetResource{
+			Name: "daily_orders_asset",
+			Spec: declarative.AssetSpec{
+				AssetType:   "table",
+				ProductRef:  "daily-orders",
+				Owner:       "admin_user",
+				Description: "Declarative e2e asset",
+				Tags:        []string{"e2e"},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+	assert.Equal(t, http.MethodPost, captured[0].Method)
+	assert.Equal(t, "/v1/assets", captured[0].Path)
+	assert.Equal(t, "daily_orders_asset", bodyStr(captured[0], "asset_key"))
+	assert.Equal(t, "TABLE", bodyStr(captured[0], "asset_type"))
+	assert.Equal(t, "daily-orders", bodyStr(captured[0], "product_slug"))
+	_, hasCron := captured[0].Body["cron_schedule"]
+	assert.False(t, hasCron)
+	_, hasProps := captured[0].Body["properties"]
+	assert.False(t, hasProps)
 }
 
 // === Principal execution tests (ID capture) ===
@@ -819,8 +855,9 @@ func TestExecuteTable_CreateUsesNestedPath(t *testing.T) {
 	assert.Equal(t, http.MethodPost, req.Method)
 	assert.Contains(t, req.Path, "/catalogs/demo/schemas/analytics/tables")
 	assert.Equal(t, "orders", bodyStr(req, "name"))
-	assert.Equal(t, "MANAGED", bodyStr(req, "table_type"))
 	assert.Equal(t, "order table", bodyStr(req, "comment"))
+	_, hasTableType := req.Body["table_type"]
+	assert.False(t, hasTableType)
 
 	// Columns should be present.
 	cols, ok := req.Body["columns"].([]interface{})
@@ -2007,7 +2044,7 @@ func TestReadState_CatalogsWithSchemasAndTables(t *testing.T) {
 	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
-			"data": []map[string]interface{}{
+			"catalogs": []map[string]interface{}{
 				{
 					"id":             "cat-1",
 					"name":           "demo",
@@ -2026,7 +2063,7 @@ func TestReadState_CatalogsWithSchemasAndTables(t *testing.T) {
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
 				{
-					"id":      "sch-1",
+					"schema_id": "sch-1",
 					"name":    "analytics",
 					"comment": "Analytics schema",
 					"owner":   "alice",
@@ -2040,7 +2077,7 @@ func TestReadState_CatalogsWithSchemasAndTables(t *testing.T) {
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
 				{
-					"id":         "tbl-1",
+					"table_id":   "tbl-1",
 					"name":       "orders",
 					"table_type": "MANAGED",
 					"comment":    "Order data",
@@ -2151,6 +2188,67 @@ func TestReadState_StorageCredentials(t *testing.T) {
 	assert.Equal(t, "s3.example.com", state.StorageCredentials[0].S3.Endpoint)
 }
 
+func TestExecuteStorageCredential_CreateResolvesS3Env(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	t.Setenv("DECL_E2E_AWS_KEY", "test-key")
+	t.Setenv("DECL_E2E_AWS_SECRET", "test-secret")
+
+	err := sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindStorageCredential,
+		ResourceName: "e2e-s3",
+		Desired: declarative.StorageCredentialSpec{
+			Name:           "e2e-s3",
+			CredentialType: "S3",
+			Comment:        "AWS access",
+			S3: &declarative.S3CredentialSpec{
+				KeyIDFromEnv:  "DECL_E2E_AWS_KEY",
+				SecretFromEnv: "DECL_E2E_AWS_SECRET",
+				Endpoint:      "s3.example.com",
+				Region:        "ap-southeast-2",
+				URLStyle:      "path",
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+	assert.Equal(t, "POST", captured[0].Method)
+	assert.Equal(t, "/v1/storage-credentials", captured[0].Path)
+	assert.Equal(t, "test-key", captured[0].Body["key_id"])
+	assert.Equal(t, "test-secret", captured[0].Body["secret"])
+	assert.Equal(t, "s3.example.com", captured[0].Body["endpoint"])
+	assert.Equal(t, "ap-southeast-2", captured[0].Body["region"])
+	assert.Equal(t, "path", captured[0].Body["url_style"])
+}
+
+func TestExecuteStorageCredential_CreateFailsWhenEnvMissing(t *testing.T) {
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	for _, key := range []string{"DECL_E2E_MISSING_KEY", "DECL_E2E_MISSING_SECRET"} {
+		require.NoError(t, os.Unsetenv(key))
+	}
+
+	err := sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindStorageCredential,
+		ResourceName: "e2e-s3",
+		Desired: declarative.StorageCredentialSpec{
+			Name:           "e2e-s3",
+			CredentialType: "S3",
+			S3: &declarative.S3CredentialSpec{
+				KeyIDFromEnv:  "DECL_E2E_MISSING_KEY",
+				SecretFromEnv: "DECL_E2E_MISSING_SECRET",
+			},
+		},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `environment variable "DECL_E2E_MISSING_KEY" is not set`)
+	assert.Empty(t, captured)
+}
+
 func TestReadState_ExternalLocations(t *testing.T) {
 	t.Parallel()
 
@@ -2184,10 +2282,48 @@ func TestReadState_ExternalLocations(t *testing.T) {
 	assert.True(t, state.ExternalLocations[0].ReadOnly)
 }
 
+func TestExecuteExternalLocation_UpdateOmitsStorageType(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := newTestExecuteClient(t, &captured)
+
+	err := sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindExternalLocation,
+		ResourceName: "e2e-lake",
+		Desired: declarative.ExternalLocationSpec{
+			Name:           "e2e-lake",
+			URL:            "s3://duck-e2e-bucket/",
+			CredentialName: "e2e-s3",
+			StorageType:    "S3",
+			Comment:        "End to end external location",
+			ReadOnly:       true,
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, captured, 1)
+	assert.Equal(t, "PATCH", captured[0].Method)
+	assert.Equal(t, "/v1/external-locations/e2e-lake", captured[0].Path)
+	_, hasStorageType := captured[0].Body["storage_type"]
+	assert.False(t, hasStorageType)
+	assert.Equal(t, "s3://duck-e2e-bucket/", captured[0].Body["url"])
+	assert.Equal(t, "e2e-s3", captured[0].Body["credential_name"])
+}
+
 func TestReadState_ComputeEndpointsWithAssignments(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/principals", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"data": []map[string]interface{}{
+				{"id": "principal-alice", "name": "alice", "type": "user", "is_admin": false},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
 	mux.HandleFunc("/v1/compute-endpoints", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/compute-endpoints" {
 			emptyListHandler()(w, r)
@@ -2207,7 +2343,7 @@ func TestReadState_ComputeEndpointsWithAssignments(t *testing.T) {
 			"data": []map[string]interface{}{
 				{
 					"endpoint":       "local",
-					"principal":      "alice",
+					"principal_id":   "principal-alice",
 					"principal_type": "user",
 					"is_default":     true,
 					"fallback_local": false,
@@ -2463,7 +2599,7 @@ func TestReadState_GrantsResolvedFromIDs(t *testing.T) {
 	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
-			"data": []map[string]interface{}{
+			"catalogs": []map[string]interface{}{
 				{"id": "cat-1", "name": "demo", "metastore_type": "sqlite", "dsn": ":memory:", "data_path": "/tmp"},
 			},
 		}
@@ -2473,7 +2609,7 @@ func TestReadState_GrantsResolvedFromIDs(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
-				{"id": "sch-1", "name": "analytics"},
+				{"schema_id": "sch-1", "name": "analytics"},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -2482,7 +2618,7 @@ func TestReadState_GrantsResolvedFromIDs(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"data": []map[string]interface{}{
-				{"id": "tbl-1", "name": "orders", "table_type": "MANAGED"},
+				{"table_id": "tbl-1", "name": "orders", "table_type": "MANAGED"},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -2877,7 +3013,7 @@ func TestReadState_ViewsAndVolumes(t *testing.T) {
 	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
-			"data": []map[string]interface{}{
+			"catalogs": []map[string]interface{}{
 				{"id": "cat-1", "name": "demo", "metastore_type": "sqlite", "dsn": ":memory:"},
 			},
 		}
@@ -3690,6 +3826,7 @@ func TestReadState_ProductControlPlaneAndAssetBindings(t *testing.T) {
 	assert.Equal(t, "upstream-orders", state.DataProducts[0].Spec.Dependencies[0])
 	assert.Equal(t, "main.analytics.daily_orders", state.DataProducts[0].Spec.Outputs[0])
 	assert.Equal(t, "sales.orders", state.DataProducts[0].Spec.SemanticEntrypoints[0])
+	assert.Equal(t, "table", state.Assets[0].Spec.AssetType)
 	assert.Equal(t, "daily-orders", state.Assets[0].Spec.ProductRef)
 }
 

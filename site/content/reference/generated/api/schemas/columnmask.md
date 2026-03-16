@@ -3,7 +3,7 @@
 # Schema: `ColumnMask`
 
 - Type: `object`
-- Required fields: `column_name`, `id`, `mask_expression`, `table_id`
+- Required fields: `column_name`, `id`, `mask_expression`, `name`, `table_id`
 
 ## Properties
 
@@ -14,5 +14,6 @@
 | `description` | `string` | `false` | - |
 | `id` | `string` | `true` | - |
 | `mask_expression` | `string` | `true` | - |
+| `name` | `string` | `true` | - |
 | `table_id` | `string` | `true` | - |
 
