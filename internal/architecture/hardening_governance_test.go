@@ -357,8 +357,8 @@ func TestCatalogRegistrationHandlers_UseSharedDomainErrorResponder(t *testing.T)
 		t.Fatalf("read internal/api/handler_catalogs.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_catalogs.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_catalogs.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_catalogs.go must not use ad hoc errors.As domain error switches")

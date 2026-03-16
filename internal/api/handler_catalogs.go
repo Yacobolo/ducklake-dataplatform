@@ -36,7 +36,7 @@ func (h *APIHandler) RegisterCatalog(ctx context.Context, request GenRegisterCat
 
 	result, err := h.catalogRegistration.Register(ctx, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenRegisterCatalogResponse](err, domainErrorResponder[GenRegisterCatalogResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenRegisterCatalogResponse]("registerCatalog", err, domainErrorResponder[GenRegisterCatalogResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenRegisterCatalogResponse {
 				return RegisterCatalog400JSONResponse{resp}
 			},
@@ -62,9 +62,12 @@ func (h *APIHandler) ListCatalogs(ctx context.Context, request GenListCatalogsRe
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	catalogs, total, err := h.catalogRegistration.List(ctx, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListCatalogsResponse](err, domainErrorResponder[GenListCatalogsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListCatalogsResponse]("listCatalogs", err, domainErrorResponder[GenListCatalogsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListCatalogsResponse {
 				return GenListCatalogs403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenListCatalogsResponse {
+				return GenListCatalogs500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},
 		}); ok {
 			return resp, nil
@@ -92,7 +95,7 @@ func (h *APIHandler) ListCatalogs(ctx context.Context, request GenListCatalogsRe
 func (h *APIHandler) GetCatalogRegistration(ctx context.Context, request GenGetCatalogRegistrationRequest) (GenGetCatalogRegistrationResponse, error) {
 	result, err := h.catalogRegistration.Get(ctx, string(request.CatalogName))
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetCatalogRegistrationResponse](err, domainErrorResponder[GenGetCatalogRegistrationResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetCatalogRegistrationResponse]("getCatalogRegistration", err, domainErrorResponder[GenGetCatalogRegistrationResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenGetCatalogRegistrationResponse {
 				return GenGetCatalogRegistration403JSONResponse{GenForbiddenJSONResponse(resp)}
 			},
@@ -119,7 +122,7 @@ func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request GenU
 
 	result, err := h.catalogRegistration.Update(ctx, string(request.CatalogName), domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateCatalogRegistrationResponse](err, domainErrorResponder[GenUpdateCatalogRegistrationResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateCatalogRegistrationResponse]("updateCatalogRegistration", err, domainErrorResponder[GenUpdateCatalogRegistrationResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateCatalogRegistrationResponse {
 				return UpdateCatalogRegistration403JSONResponse{resp}
 			},
@@ -140,7 +143,7 @@ func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request GenU
 // DeleteCatalogRegistration implements the endpoint for deleting a catalog registration.
 func (h *APIHandler) DeleteCatalogRegistration(ctx context.Context, request GenDeleteCatalogRegistrationRequest) (GenDeleteCatalogRegistrationResponse, error) {
 	if err := h.catalogRegistration.Delete(ctx, string(request.CatalogName)); err != nil {
-		if resp, ok := respondDomainError[GenDeleteCatalogRegistrationResponse](err, domainErrorResponder[GenDeleteCatalogRegistrationResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteCatalogRegistrationResponse]("deleteCatalogRegistration", err, domainErrorResponder[GenDeleteCatalogRegistrationResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteCatalogRegistrationResponse {
 				return DeleteCatalogRegistration403JSONResponse{resp}
 			},
@@ -161,7 +164,7 @@ func (h *APIHandler) DeleteCatalogRegistration(ctx context.Context, request GenD
 func (h *APIHandler) SetDefaultCatalog(ctx context.Context, request GenSetDefaultCatalogRequest) (GenSetDefaultCatalogResponse, error) {
 	result, err := h.catalogRegistration.SetDefault(ctx, string(request.CatalogName))
 	if err != nil {
-		if resp, ok := respondDomainError[GenSetDefaultCatalogResponse](err, domainErrorResponder[GenSetDefaultCatalogResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenSetDefaultCatalogResponse]("setDefaultCatalog", err, domainErrorResponder[GenSetDefaultCatalogResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenSetDefaultCatalogResponse {
 				return SetDefaultCatalog400JSONResponse{resp}
 			},

@@ -77,6 +77,25 @@ func TestAPIGenContractBoundary_StorageHandlersUseOperationAwareMapping(t *testi
 	}
 }
 
+func TestAPIGenContractBoundary_CatalogHandlersUseOperationAwareMapping(t *testing.T) {
+	t.Parallel()
+
+	catalogBody, err := os.ReadFile(filepath.Join("..", "api", "handler_catalogs.go"))
+	require.NoError(t, err)
+	catalogSource := string(catalogBody)
+	require.NotContains(t, catalogSource, `respondDomainError[`)
+	for _, snippet := range []string{
+		`respondDomainErrorForOperation[GenRegisterCatalogResponse]("registerCatalog"`,
+		`respondDomainErrorForOperation[GenListCatalogsResponse]("listCatalogs"`,
+		`respondDomainErrorForOperation[GenGetCatalogRegistrationResponse]("getCatalogRegistration"`,
+		`respondDomainErrorForOperation[GenUpdateCatalogRegistrationResponse]("updateCatalogRegistration"`,
+		`respondDomainErrorForOperation[GenDeleteCatalogRegistrationResponse]("deleteCatalogRegistration"`,
+		`respondDomainErrorForOperation[GenSetDefaultCatalogResponse]("setDefaultCatalog"`,
+	} {
+		require.True(t, strings.Contains(catalogSource, snippet), "expected handler_catalogs.go to contain %q", snippet)
+	}
+}
+
 func TestAPIGenContractBoundary_NoManualOperationsRemain(t *testing.T) {
 	t.Parallel()
 
