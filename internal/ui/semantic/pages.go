@@ -96,7 +96,7 @@ func semanticHomePage(principal domain.ContextPrincipal) Node {
 }
 
 func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticModelRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class(core.MutedClass()), Text("No semantic models defined.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No semantic models defined.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
@@ -108,14 +108,14 @@ func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticMo
 				Td(Text(row.UpdatedAt)),
 			))
 		}
-		table = Div(Class(core.TableWrapClass()), Table(Class("min-w-full text-left text-sm"),
+		table = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 			THead(Tr(Th(Text("Model")), Th(Text("Base model")), Th(Text("Owner")), Th(Text("Updated")))),
 			TBody(Group(tableRows)),
 		))
 	}
 	return core.AppPage("Semantic Models", "semantic", principal,
 		sectionHeader("Semantic models", "Manage semantic models and their runtime semantics.", "/ui/semantic/models/new", "New semantic model"),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			table,
 			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" semantic models. Total: "+strconv.FormatInt(total, 10))),
 		),
@@ -125,22 +125,22 @@ func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticMo
 func semanticModelsNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
 	return semanticFormPage(principal, "New Semantic Model", "/ui/semantic/models", csrfFieldProvider,
 		Label(Text("Project")),
-		Input(Name("project_name"), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("project_name"), Required()),
 		Label(Text("Name")),
-		Input(Name("name"), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("name"), Required()),
 		Label(Text("Description")),
-		Textarea(Name("description"), Class(core.FormControlClass("min-h-24"))),
+		core.TextareaControl("min-h-24", Name("description")),
 		Label(Text("Base model reference")),
-		Input(Name("base_model_ref"), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("base_model_ref"), Required()),
 		Label(Text("Default time dimension")),
-		Input(Name("default_time_dimension"), Class(core.FormControlClass())),
+		core.InputControl("", Name("default_time_dimension")),
 		Label(Text("Tags (comma separated)")),
-		Input(Name("tags"), Class(core.FormControlClass())),
+		core.InputControl("", Name("tags")),
 	)
 }
 
 func semanticModelDetailPage(d semanticModelDetailPageData) Node {
-	metricRows := Node(P(Class(core.MutedClass()), Text("No metrics created yet.")))
+	metricRows := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No metrics created yet.")))
 	if len(d.Metrics) > 0 {
 		rows := make([]Node, 0, len(d.Metrics))
 		for i := range d.Metrics {
@@ -150,19 +150,19 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				Td(Text(metric.Type)),
 				Td(Text(metric.Expression)),
 				Td(Text(metric.Status)),
-				Td(Class("text-right"), Div(Class(core.ButtonRowClass("mt-0")),
-					A(Href(metric.EditURL), Class(core.SecondaryButtonClass("small")), Text("Edit")),
-					Form(Method("post"), Action(metric.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass("small")), Text("Delete"))),
+				Td(Class("text-right"), Div(Class("mt-0 flex flex-wrap items-center justify-end gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+					core.SecondaryLink(metric.EditURL, "small", Text("Edit")),
+					Form(Method("post"), Action(metric.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete"))),
 				)),
 			))
 		}
-		metricRows = Div(Class(core.TableWrapClass()), Table(Class("min-w-full text-left text-sm"),
+		metricRows = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 			THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Expression")), Th(Text("Status")), Th(Class("text-right"), Text("Actions")))),
 			TBody(Group(rows)),
 		))
 	}
 
-	preAggRows := Node(P(Class(core.MutedClass()), Text("No pre-aggregations created yet.")))
+	preAggRows := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No pre-aggregations created yet.")))
 	if len(d.PreAggregations) > 0 {
 		rows := make([]Node, 0, len(d.PreAggregations))
 		for i := range d.PreAggregations {
@@ -171,78 +171,78 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				Td(Text(item.Name)),
 				Td(Text(item.Grain)),
 				Td(Text(item.Target)),
-				Td(Class("text-right"), Div(Class(core.ButtonRowClass("mt-0")),
-					A(Href(item.EditURL), Class(core.SecondaryButtonClass("small")), Text("Edit")),
-					Form(Method("post"), Action(item.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass("small")), Text("Delete"))),
+				Td(Class("text-right"), Div(Class("mt-0 flex flex-wrap items-center justify-end gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+					core.SecondaryLink(item.EditURL, "small", Text("Edit")),
+					Form(Method("post"), Action(item.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete"))),
 				)),
 			))
 		}
-		preAggRows = Div(Class(core.TableWrapClass()), Table(Class("min-w-full text-left text-sm"),
+		preAggRows = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 			THead(Tr(Th(Text("Name")), Th(Text("Grain")), Th(Text("Target")), Th(Class("text-right"), Text("Actions")))),
 			TBody(Group(rows)),
 		))
 	}
 
 	return core.AppPage("Semantic Model: "+d.ProjectName+"."+d.ModelName, "semantic", d.Principal,
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H2(Class("mt-0 text-lg font-semibold"), Text(d.ProjectName+"."+d.ModelName)),
 			P(Class("m-0 text-sm"), Strong(Text("Base model: ")), Text(d.BaseModelRef)),
 			P(Class("m-0 text-sm"), Strong(Text("Default time dimension: ")), Text(d.DefaultTimeDim)),
 			P(Class("m-0 text-sm"), Strong(Text("Description: ")), Text(valueOrDash(d.Description))),
-			Div(Class(core.ButtonRowClass()),
-				A(Href(d.EditURL), Class(core.SecondaryButtonClass()), Text("Edit")),
-				A(Href("/ui/semantic/relationships"), Class(core.SecondaryButtonClass()), Text("Relationships")),
-				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass()), Text("Delete"))),
+			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+				core.SecondaryLink(d.EditURL, "", Text("Edit")),
+				core.SecondaryLink("/ui/semantic/relationships", "", Text("Relationships")),
+				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
 			),
 		),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Create metric")),
 			Form(Class("grid gap-3"), Method("post"), Action(d.MetricsCreateURL),
 				d.CSRFFieldProvider(),
 				Label(Text("Name")),
-				Input(Name("name"), Required(), Class(core.FormControlClass())),
+				core.InputControl("", Name("name"), Required()),
 				Label(Text("Label")),
-				Input(Name("label"), Class(core.FormControlClass())),
+				core.InputControl("", Name("label")),
 				Label(Text("Description")),
-				Input(Name("description"), Class(core.FormControlClass())),
+				core.InputControl("", Name("description")),
 				Label(Text("Metric type")),
-				Select(Name("metric_type"), Class(core.FormControlClass()), Option(Value("SUM"), Text("SUM")), Option(Value("COUNT"), Text("COUNT")), Option(Value("COUNT_DISTINCT"), Text("COUNT_DISTINCT")), Option(Value("AVG"), Text("AVG")), Option(Value("MIN"), Text("MIN")), Option(Value("MAX"), Text("MAX")), Option(Value("RATIO"), Text("RATIO"))),
+				core.SelectControl("", Name("metric_type"), Option(Value("SUM"), Text("SUM")), Option(Value("COUNT"), Text("COUNT")), Option(Value("COUNT_DISTINCT"), Text("COUNT_DISTINCT")), Option(Value("AVG"), Text("AVG")), Option(Value("MIN"), Text("MIN")), Option(Value("MAX"), Text("MAX")), Option(Value("RATIO"), Text("RATIO"))),
 				Label(Text("Expression mode")),
-				Select(Name("expression_mode"), Class(core.FormControlClass()), Option(Value("DSL"), Text("DSL")), Option(Value("SQL"), Text("SQL"))),
+				core.SelectControl("", Name("expression_mode"), Option(Value("DSL"), Text("DSL")), Option(Value("SQL"), Text("SQL"))),
 				Label(Text("Expression")),
-				Textarea(Name("expression"), Required(), Class(core.FormControlClass("min-h-24"))),
+				core.TextareaControl("min-h-24", Name("expression"), Required()),
 				Label(Text("Metric filter SQL")),
-				Input(Name("filter_sql"), Class(core.FormControlClass())),
+				core.InputControl("", Name("filter_sql")),
 				Label(Text("Default time grain")),
-				Input(Name("default_time_grain"), Class(core.FormControlClass())),
+				core.InputControl("", Name("default_time_grain")),
 				Label(Text("Format")),
-				Input(Name("format"), Class(core.FormControlClass())),
+				core.InputControl("", Name("format")),
 				Label(Text("Certification state")),
-				Select(Name("certification_state"), Class(core.FormControlClass()), Option(Value("DRAFT"), Text("DRAFT")), Option(Value("CERTIFIED"), Text("CERTIFIED")), Option(Value("DEPRECATED"), Text("DEPRECATED"))),
-				Div(Class("mt-2"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Create metric"))),
+				core.SelectControl("", Name("certification_state"), Option(Value("DRAFT"), Text("DRAFT")), Option(Value("CERTIFIED"), Text("CERTIFIED")), Option(Value("DEPRECATED"), Text("DEPRECATED"))),
+				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create metric"))),
 			),
 		),
-		Div(Class(core.CardClass()), H3(Class("mt-0 text-lg font-semibold"), Text("Metrics")), metricRows),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), H3(Class("mt-0 text-lg font-semibold"), Text("Metrics")), metricRows),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Create pre-aggregation")),
 			Form(Class("grid gap-3"), Method("post"), Action(d.PreAggCreateURL),
 				d.CSRFFieldProvider(),
 				Label(Text("Name")),
-				Input(Name("name"), Required(), Class(core.FormControlClass())),
+				core.InputControl("", Name("name"), Required()),
 				Label(Text("Metric set (comma separated)")),
-				Input(Name("metric_set"), Class(core.FormControlClass())),
+				core.InputControl("", Name("metric_set")),
 				Label(Text("Dimension set (comma separated)")),
-				Input(Name("dimension_set"), Class(core.FormControlClass())),
+				core.InputControl("", Name("dimension_set")),
 				Label(Text("Grain")),
-				Input(Name("grain"), Class(core.FormControlClass())),
+				core.InputControl("", Name("grain")),
 				Label(Text("Target relation")),
-				Input(Name("target_relation"), Required(), Class(core.FormControlClass())),
+				core.InputControl("", Name("target_relation"), Required()),
 				Label(Text("Refresh policy")),
-				Input(Name("refresh_policy"), Class(core.FormControlClass())),
-				Div(Class("mt-2"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Create pre-aggregation"))),
+				core.InputControl("", Name("refresh_policy")),
+				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create pre-aggregation"))),
 			),
 		),
-		Div(Class(core.CardClass()), H3(Class("mt-0 text-lg font-semibold"), Text("Pre-aggregations")), preAggRows),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), H3(Class("mt-0 text-lg font-semibold"), Text("Pre-aggregations")), preAggRows),
 		semanticQueryCard(d.ProjectName, d.ModelName, d.QueryExplainURL, d.QueryRunURL, d.CSRFFieldProvider),
 	)
 }
@@ -253,7 +253,7 @@ func semanticRelationshipsPage(d semanticRelationshipsPageData) Node {
 		modelOptions = append(modelOptions, Option(Value(d.ModelOptions[i].Value), Text(d.ModelOptions[i].Label)))
 	}
 
-	table := Node(P(Class(core.MutedClass()), Text("No relationships defined.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No relationships defined.")))
 	if len(d.Rows) > 0 {
 		rows := make([]Node, 0, len(d.Rows))
 		for i := range d.Rows {
@@ -264,42 +264,42 @@ func semanticRelationshipsPage(d semanticRelationshipsPageData) Node {
 				Td(Text(row.ToModel)),
 				Td(Text(row.Type)),
 				Td(Text(row.JoinSQL)),
-				Td(Class("text-right"), Div(Class(core.ButtonRowClass("mt-0")),
-					A(Href(row.EditURL), Class(core.SecondaryButtonClass("small")), Text("Edit")),
-					Form(Method("post"), Action(row.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass("small")), Text("Delete"))),
+				Td(Class("text-right"), Div(Class("mt-0 flex flex-wrap items-center justify-end gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+					core.SecondaryLink(row.EditURL, "small", Text("Edit")),
+					Form(Method("post"), Action(row.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete"))),
 				)),
 			))
 		}
-		table = Div(Class(core.TableWrapClass()), Table(Class("min-w-full text-left text-sm"),
+		table = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 			THead(Tr(Th(Text("Name")), Th(Text("From")), Th(Text("To")), Th(Text("Type")), Th(Text("Join SQL")), Th(Class("text-right"), Text("Actions")))),
 			TBody(Group(rows)),
 		))
 	}
 
 	return core.AppPage("Semantic Relationships", "semantic", d.Principal,
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H2(Class("mt-0 text-lg font-semibold"), Text("Create relationship")),
 			Form(Class("grid gap-3"), Method("post"), Action("/ui/semantic/relationships"),
 				d.CSRFFieldProvider(),
 				Label(Text("Name")),
-				Input(Name("name"), Required(), Class(core.FormControlClass())),
+				core.InputControl("", Name("name"), Required()),
 				Label(Text("From model")),
-				Select(Name("from_semantic_id"), Class(core.FormControlClass()), Group(modelOptions)),
+				core.SelectControl("", Name("from_semantic_id"), Group(modelOptions)),
 				Label(Text("To model")),
-				Select(Name("to_semantic_id"), Class(core.FormControlClass()), Group(modelOptions)),
+				core.SelectControl("", Name("to_semantic_id"), Group(modelOptions)),
 				Label(Text("Relationship type")),
-				Select(Name("relationship_type"), Class(core.FormControlClass()), Option(Value("ONE_TO_ONE"), Text("ONE_TO_ONE")), Option(Value("ONE_TO_MANY"), Text("ONE_TO_MANY")), Option(Value("MANY_TO_ONE"), Text("MANY_TO_ONE")), Option(Value("MANY_TO_MANY"), Text("MANY_TO_MANY"))),
+				core.SelectControl("", Name("relationship_type"), Option(Value("ONE_TO_ONE"), Text("ONE_TO_ONE")), Option(Value("ONE_TO_MANY"), Text("ONE_TO_MANY")), Option(Value("MANY_TO_ONE"), Text("MANY_TO_ONE")), Option(Value("MANY_TO_MANY"), Text("MANY_TO_MANY"))),
 				Label(Text("Join SQL")),
-				Textarea(Name("join_sql"), Required(), Class(core.FormControlClass("min-h-24 font-mono text-xs"))),
+				core.TextareaControl("min-h-24 font-mono text-xs", Name("join_sql"), Required()),
 				Label(Text("Cost")),
-				Input(Name("cost"), Value("0"), Class(core.FormControlClass())),
+				core.InputControl("", Name("cost"), Value("0")),
 				Label(Text("Max hops")),
-				Input(Name("max_hops"), Value("0"), Class(core.FormControlClass())),
+				core.InputControl("", Name("max_hops"), Value("0")),
 				Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("is_default"), Value("true"), Class("h-4 w-4")), Span(Text("Default relationship"))),
-				Div(Class("mt-2"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Create relationship"))),
+				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create relationship"))),
 			),
 		),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			table,
 			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(d.Page.MaxResults)+" relationships. Total: "+strconv.FormatInt(d.Total, 10))),
 		),
@@ -315,7 +315,7 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 			joinRows = append(joinRows, Tr(Td(Text(join.RelationshipName)), Td(Text(join.FromModel)), Td(Text(join.ToModel)), Td(Text(join.JoinSQL))))
 		}
 		resultNode = Group([]Node{
-			Div(Class(core.CardClass()),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 				H2(Class("mt-0 text-lg font-semibold"), Text("Query plan")),
 				P(Text("Base model: "+d.Plan.BaseModelName)),
 				P(Text("Base relation: "+d.Plan.BaseRelation)),
@@ -326,8 +326,8 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 				H3(Class("mt-4 text-lg font-semibold"), Text("Generated SQL")),
 				Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Plan.GeneratedSQL)),
 			),
-			Div(Class(core.CardClass()), H2(Class("mt-0 text-lg font-semibold"), Text("Join path")),
-				Div(Class(core.TableWrapClass()), Table(Class("min-w-full text-left text-sm"),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), H2(Class("mt-0 text-lg font-semibold"), Text("Join path")),
+				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 					THead(Tr(Th(Text("Relationship")), Th(Text("From")), Th(Text("To")), Th(Text("Join SQL")))),
 					TBody(Group(joinRows)),
 				)),
@@ -349,8 +349,8 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 		}
 		resultNode = Group([]Node{
 			resultNode,
-			Div(Class(core.CardClass()), H2(Class("mt-0 text-lg font-semibold"), Text("Execution result")),
-				Div(Class(core.TableWrapClass()), Table(Class("min-w-full text-left text-sm"),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), H2(Class("mt-0 text-lg font-semibold"), Text("Execution result")),
+				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 					THead(Tr(Group(headers))),
 					TBody(Group(rows)),
 				)),
@@ -386,29 +386,29 @@ func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string
 			timeGrain = *request.TimeGrain
 		}
 	}
-	return Div(Class(core.CardClass()),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		H3(Class("mt-0 text-lg font-semibold"), Text("Metric query")),
 		Form(Class("grid gap-3"), Method("post"), Action(explainURL),
 			csrfFieldProvider(),
 			Label(Text("Project")),
-			Input(Name("project_name"), Value(projectName), Required(), Class(core.FormControlClass())),
+			core.InputControl("", Name("project_name"), Value(projectName), Required()),
 			Label(Text("Semantic model")),
-			Input(Name("semantic_model_name"), Value(semanticModelName), Required(), Class(core.FormControlClass())),
+			core.InputControl("", Name("semantic_model_name"), Value(semanticModelName), Required()),
 			Label(Text("Metrics (comma separated)")),
-			Input(Name("metrics"), Value(metrics), Required(), Class(core.FormControlClass())),
+			core.InputControl("", Name("metrics"), Value(metrics), Required()),
 			Label(Text("Dimensions (comma separated)")),
-			Input(Name("dimensions"), Value(dimensions), Class(core.FormControlClass())),
+			core.InputControl("", Name("dimensions"), Value(dimensions)),
 			Label(Text("Filters (comma separated)")),
-			Input(Name("filters"), Value(filters), Class(core.FormControlClass())),
+			core.InputControl("", Name("filters"), Value(filters)),
 			Label(Text("Order by (comma separated)")),
-			Input(Name("order_by"), Value(orderBy), Class(core.FormControlClass())),
+			core.InputControl("", Name("order_by"), Value(orderBy)),
 			Label(Text("Limit")),
-			Input(Name("limit"), Value(limit), Class(core.FormControlClass())),
+			core.InputControl("", Name("limit"), Value(limit)),
 			Label(Text("Time grain")),
-			Input(Name("time_grain"), Value(timeGrain), Class(core.FormControlClass())),
-			Div(Class(core.ButtonRowClass()),
-				Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Explain query")),
-				Button(Type("submit"), FormAction(runURL), Class(core.SecondaryButtonClass()), Text("Run query")),
+			core.InputControl("", Name("time_grain"), Value(timeGrain)),
+			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+				core.PrimaryButton("", Type("submit"), Text("Explain query")),
+				core.SecondaryButton("", Type("submit"), FormAction(runURL), Text("Run query")),
 			),
 		),
 	)
@@ -417,51 +417,51 @@ func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string
 func semanticModelsEditPage(principal domain.ContextPrincipal, projectName, semanticModelName string, item *domain.SemanticModel, csrfFieldProvider func() Node) Node {
 	return semanticFormPage(principal, "Edit Semantic Model", "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/update", csrfFieldProvider,
 		Label(Text("Description")),
-		Textarea(Name("description"), Class(core.FormControlClass("min-h-24")), Text(item.Description)),
+		core.TextareaControl("min-h-24", Name("description"), Text(item.Description)),
 		Label(Text("Base model reference")),
-		Input(Name("base_model_ref"), Value(item.BaseModelRef), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("base_model_ref"), Value(item.BaseModelRef), Required()),
 		Label(Text("Default time dimension")),
-		Input(Name("default_time_dimension"), Value(item.DefaultTimeDimension), Class(core.FormControlClass())),
+		core.InputControl("", Name("default_time_dimension"), Value(item.DefaultTimeDimension)),
 		Label(Text("Tags (comma separated)")),
-		Input(Name("tags"), Value(csvValues(item.Tags)), Class(core.FormControlClass())),
+		core.InputControl("", Name("tags"), Value(csvValues(item.Tags))),
 	)
 }
 
 func semanticMetricEditPage(principal domain.ContextPrincipal, projectName, semanticModelName string, metric *domain.SemanticMetric, csrfFieldProvider func() Node) Node {
 	return semanticFormPage(principal, "Edit Semantic Metric", "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/metrics/"+metric.Name+"/update", csrfFieldProvider,
 		Label(Text("Label")),
-		Input(Name("label"), Value(metric.Label), Class(core.FormControlClass())),
+		core.InputControl("", Name("label"), Value(metric.Label)),
 		Label(Text("Description")),
-		Textarea(Name("description"), Class(core.FormControlClass("min-h-24")), Text(metric.Description)),
+		core.TextareaControl("min-h-24", Name("description"), Text(metric.Description)),
 		Label(Text("Metric type")),
-		Select(Name("metric_type"), Class(core.FormControlClass()), optionSelected("SUM", metric.MetricType), optionSelected("COUNT", metric.MetricType), optionSelected("COUNT_DISTINCT", metric.MetricType), optionSelected("AVG", metric.MetricType), optionSelected("MIN", metric.MetricType), optionSelected("MAX", metric.MetricType), optionSelected("RATIO", metric.MetricType)),
+		core.SelectControl("", Name("metric_type"), optionSelected("SUM", metric.MetricType), optionSelected("COUNT", metric.MetricType), optionSelected("COUNT_DISTINCT", metric.MetricType), optionSelected("AVG", metric.MetricType), optionSelected("MIN", metric.MetricType), optionSelected("MAX", metric.MetricType), optionSelected("RATIO", metric.MetricType)),
 		Label(Text("Expression mode")),
-		Select(Name("expression_mode"), Class(core.FormControlClass()), optionSelected("DSL", metric.ExpressionMode), optionSelected("SQL", metric.ExpressionMode)),
+		core.SelectControl("", Name("expression_mode"), optionSelected("DSL", metric.ExpressionMode), optionSelected("SQL", metric.ExpressionMode)),
 		Label(Text("Expression")),
-		Textarea(Name("expression"), Required(), Class(core.FormControlClass("min-h-24")), Text(metric.Expression)),
+		core.TextareaControl("min-h-24", Name("expression"), Required(), Text(metric.Expression)),
 		Label(Text("Metric filter SQL")),
-		Input(Name("filter_sql"), Value(metric.FilterSQL), Class(core.FormControlClass())),
+		core.InputControl("", Name("filter_sql"), Value(metric.FilterSQL)),
 		Label(Text("Default time grain")),
-		Input(Name("default_time_grain"), Value(metric.DefaultTimeGrain), Class(core.FormControlClass())),
+		core.InputControl("", Name("default_time_grain"), Value(metric.DefaultTimeGrain)),
 		Label(Text("Format")),
-		Input(Name("format"), Value(metric.Format), Class(core.FormControlClass())),
+		core.InputControl("", Name("format"), Value(metric.Format)),
 		Label(Text("Certification state")),
-		Select(Name("certification_state"), Class(core.FormControlClass()), optionSelected("DRAFT", metric.CertificationState), optionSelected("CERTIFIED", metric.CertificationState), optionSelected("DEPRECATED", metric.CertificationState)),
+		core.SelectControl("", Name("certification_state"), optionSelected("DRAFT", metric.CertificationState), optionSelected("CERTIFIED", metric.CertificationState), optionSelected("DEPRECATED", metric.CertificationState)),
 	)
 }
 
 func semanticPreAggregationEditPage(principal domain.ContextPrincipal, projectName, semanticModelName string, item *domain.SemanticPreAggregation, csrfFieldProvider func() Node) Node {
 	return semanticFormPage(principal, "Edit Pre-Aggregation", "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/pre-aggregations/"+item.Name+"/update", csrfFieldProvider,
 		Label(Text("Metric set (comma separated)")),
-		Input(Name("metric_set"), Value(csvValues(item.MetricSet)), Class(core.FormControlClass())),
+		core.InputControl("", Name("metric_set"), Value(csvValues(item.MetricSet))),
 		Label(Text("Dimension set (comma separated)")),
-		Input(Name("dimension_set"), Value(csvValues(item.DimensionSet)), Class(core.FormControlClass())),
+		core.InputControl("", Name("dimension_set"), Value(csvValues(item.DimensionSet))),
 		Label(Text("Grain")),
-		Input(Name("grain"), Value(item.Grain), Class(core.FormControlClass())),
+		core.InputControl("", Name("grain"), Value(item.Grain)),
 		Label(Text("Target relation")),
-		Input(Name("target_relation"), Value(item.TargetRelation), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("target_relation"), Value(item.TargetRelation), Required()),
 		Label(Text("Refresh policy")),
-		Input(Name("refresh_policy"), Value(item.RefreshPolicy), Class(core.FormControlClass())),
+		core.InputControl("", Name("refresh_policy"), Value(item.RefreshPolicy)),
 	)
 }
 
@@ -475,17 +475,17 @@ func semanticRelationshipEditPage(principal domain.ContextPrincipal, item *domai
 	}
 	return semanticFormPage(principal, "Edit Relationship", "/ui/semantic/relationships/"+item.Name+"/update", csrfFieldProvider,
 		Label(Text("From model")),
-		Select(Name("from_semantic_id"), Disabled(), Class(core.FormControlClass()), Group(fromOptions)),
+		core.SelectControl("", Name("from_semantic_id"), Disabled(), Group(fromOptions)),
 		Label(Text("To model")),
-		Select(Name("to_semantic_id"), Disabled(), Class(core.FormControlClass()), Group(toOptions)),
+		core.SelectControl("", Name("to_semantic_id"), Disabled(), Group(toOptions)),
 		Label(Text("Relationship type")),
-		Select(Name("relationship_type"), Class(core.FormControlClass()), optionSelected("ONE_TO_ONE", item.RelationshipType), optionSelected("ONE_TO_MANY", item.RelationshipType), optionSelected("MANY_TO_ONE", item.RelationshipType), optionSelected("MANY_TO_MANY", item.RelationshipType)),
+		core.SelectControl("", Name("relationship_type"), optionSelected("ONE_TO_ONE", item.RelationshipType), optionSelected("ONE_TO_MANY", item.RelationshipType), optionSelected("MANY_TO_ONE", item.RelationshipType), optionSelected("MANY_TO_MANY", item.RelationshipType)),
 		Label(Text("Join SQL")),
-		Textarea(Name("join_sql"), Required(), Class(core.FormControlClass("min-h-24 font-mono text-xs")), Text(item.JoinSQL)),
+		core.TextareaControl("min-h-24 font-mono text-xs", Name("join_sql"), Required(), Text(item.JoinSQL)),
 		Label(Text("Cost")),
-		Input(Name("cost"), Value(strconv.Itoa(item.Cost)), Class(core.FormControlClass())),
+		core.InputControl("", Name("cost"), Value(strconv.Itoa(item.Cost))),
 		Label(Text("Max hops")),
-		Input(Name("max_hops"), Value(strconv.Itoa(item.MaxHops)), Class(core.FormControlClass())),
+		core.InputControl("", Name("max_hops"), Value(strconv.Itoa(item.MaxHops))),
 		Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("is_default"), Value("true"), checkedIf(item.IsDefault), Class("h-4 w-4")), Span(Text("Default relationship"))),
 	)
 }
@@ -493,19 +493,19 @@ func semanticRelationshipEditPage(principal domain.ContextPrincipal, item *domai
 func semanticFormPage(principal domain.ContextPrincipal, title, action string, csrfFieldProvider func() Node, fields ...Node) Node {
 	nodes := []Node{csrfFieldProvider()}
 	nodes = append(nodes, fields...)
-	nodes = append(nodes, Div(Class("mt-4"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Save"))))
-	return core.AppPage(title, "semantic", principal, Div(Class(core.CardClass()), Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes))))
+	nodes = append(nodes, Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save"))))
+	return core.AppPage(title, "semantic", principal, core.Card(Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes))))
 }
 
 func semanticCard(title, copy, href string) Node {
-	return Div(Class(core.CardClass()), H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-[var(--fgColor-muted)]"), Text(copy)), A(Href(href), Class(core.SecondaryButtonClass()), Text("Open")))
+	return core.Card(H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-[var(--fgColor-muted)]"), Text(copy)), core.SecondaryLink(href, "", Text("Open")))
 }
 
 func sectionHeader(title, copy, href, action string) Node {
-	return Div(Class(core.CardClass()),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		Div(Class("flex flex-wrap items-start justify-between gap-3"),
 			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(copy))),
-			A(Href(href), Class(core.PrimaryButtonClass()), Text(action)),
+			core.PrimaryLink(href, "", Text(action)),
 		),
 	)
 }

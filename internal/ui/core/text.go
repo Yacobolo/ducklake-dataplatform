@@ -1,6 +1,9 @@
 package core
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 func TitleizeWords(value string) string {
 	trimmed := strings.TrimSpace(value)
@@ -18,4 +21,18 @@ func TitleizeWords(value string) string {
 		parts[i] = string(runes)
 	}
 	return strings.Join(parts, " ")
+}
+
+func BoolLabel(value bool) string {
+	if value {
+		return "true"
+	}
+	return "false"
+}
+
+func FormatTimeUTC(ts time.Time) string {
+	if ts.IsZero() {
+		return "-"
+	}
+	return ts.UTC().Format("2006-01-02 15:04 UTC")
 }

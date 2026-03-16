@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"duck-demo/internal/domain"
+	"duck-demo/internal/ui/core"
 
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
@@ -22,7 +23,7 @@ func assetDetailPage(d assetDetailPageData) Node {
 	executionSummary := assetExecutionSummaryBadges(d)
 	historySummary := assetHistorySummaryBadges(d)
 
-	return appPage(
+	return core.AppPage(
 		"Asset: "+d.AssetKey,
 		"assets",
 		d.Principal,
@@ -44,7 +45,7 @@ func assetDetailPage(d assetDetailPageData) Node {
 							if strings.TrimSpace(d.ProductSlug) == "" {
 								return statusLabel("Unlinked runtime asset", "attention")
 							}
-							return A(Href("/ui/products/"+d.ProductSlug), Class(subtleLinkClass()), Text("Product: "+fallbackString(d.ProductName, d.ProductSlug)))
+							return A(Href("/ui/products/"+d.ProductSlug), Class("text-[var(--fgColor-muted)] no-underline hover:text-[var(--fgColor-default)]"), Text("Product: "+fallbackString(d.ProductName, d.ProductSlug)))
 						}(),
 					),
 				),
@@ -63,57 +64,57 @@ func assetDetailPage(d assetDetailPageData) Node {
 			),
 			Div(Class(assetDetailLayoutClass()),
 				Div(Class(assetDetailMainClass()),
-					Div(Class(cardClass(assetSectionClass())),
-						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Dependency flow")), P(Class(sectionCopyClass()), Text("See how this asset fans in and fans out across the runtime graph."))),
+					Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)] flex flex-col gap-4"),
+						Div(Class(assetSectionHeadClass()), H2(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Dependency flow")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("See how this asset fans in and fans out across the runtime graph."))),
 						Div(Class(assetBadgeRowClass()), Group(assetDependencySummaryBadges(d.AssetKey, d.DependencyEdges))),
 						Div(Class(assetSubGridClass()),
-							Div(Class(assetPanelClass()), H3(Class(sectionTitleClass()), Text("Upstream")), P(Class(sectionCopyClass()), Text("Inputs that must be ready before this asset can run.")), assetLinkList(d.UpstreamAssetKeys, "No upstream dependencies.")),
-							Div(Class(assetPanelClass()), H3(Class(sectionTitleClass()), Text("Downstream")), P(Class(sectionCopyClass()), Text("Consumers and derivatives affected by this asset.")), assetLinkList(d.DownstreamAssetKeys, "No downstream dependencies.")),
+							Div(Class(assetPanelClass()), H3(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Upstream")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Inputs that must be ready before this asset can run.")), assetLinkList(d.UpstreamAssetKeys, "No upstream dependencies.")),
+							Div(Class(assetPanelClass()), H3(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Downstream")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Consumers and derivatives affected by this asset.")), assetLinkList(d.DownstreamAssetKeys, "No downstream dependencies.")),
 						),
 						dependencyAdjacencyView(d.AssetKey, d.DependencyEdges),
 					),
-					Div(Class(cardClass(assetSectionClass())),
-						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Execution health")), P(Class(sectionCopyClass()), Text("The most recent runs, retries, and failure signatures in one place."))),
+					Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)] flex flex-col gap-4"),
+						Div(Class(assetSectionHeadClass()), H2(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Execution health")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("The most recent runs, retries, and failure signatures in one place."))),
 						Div(Class(assetBadgeRowClass()), Group(executionSummary)),
 						Div(Class(assetSubGridClass()),
-							Div(Class(assetPanelClass()), H3(Class(sectionTitleClass()), Text("Recent Runs")), assetRunsTable(d.Runs)),
-							Div(Class(assetPanelClass()), H3(Class(sectionTitleClass()), Text("Retry Timeline")), retryTimelinePanel(d.RetryTimeline)),
+							Div(Class(assetPanelClass()), H3(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Recent Runs")), assetRunsTable(d.Runs)),
+							Div(Class(assetPanelClass()), H3(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Retry Timeline")), retryTimelinePanel(d.RetryTimeline)),
 						),
-						Div(Class(assetPanelClass("lg:col-span-2")), H3(Class(sectionTitleClass()), Text("Failure Root Cause")), failureRootCausePanel(d.FailureRootCauses)),
+						Div(Class(assetPanelClass("lg:col-span-2")), H3(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Failure Root Cause")), failureRootCausePanel(d.FailureRootCauses)),
 					),
-					Div(Class(cardClass(assetSectionClass())),
-						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Materialization history")), P(Class(sectionCopyClass()), Text("Completed outputs and configured checks for this asset."))),
+					Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)] flex flex-col gap-4"),
+						Div(Class(assetSectionHeadClass()), H2(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Materialization history")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Completed outputs and configured checks for this asset."))),
 						Div(Class(assetBadgeRowClass()), Group(historySummary)),
 						Div(Class(assetSubGridClass()),
-							Div(Class(assetPanelClass()), H3(Class(sectionTitleClass()), Text("Materializations")), assetMaterializationsTable(d.Materializations)),
-							Div(Class(assetPanelClass()), H3(Class(sectionTitleClass()), Text("Checks")), assetChecksTable(d.Checks)),
+							Div(Class(assetPanelClass()), H3(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Materializations")), assetMaterializationsTable(d.Materializations)),
+							Div(Class(assetPanelClass()), H3(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Checks")), assetChecksTable(d.Checks)),
 						),
 					),
-					Div(Class(cardClass(assetSectionClass())),
-						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Partitions and recovery")), P(Class(sectionCopyClass()), Text("Partition coverage, freshness drift, and backfill activity."))),
+					Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)] flex flex-col gap-4"),
+						Div(Class(assetSectionHeadClass()), H2(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Partitions and recovery")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Partition coverage, freshness drift, and backfill activity."))),
 						partitionSummary(d.PartitionStatus),
 						partitionCalendarPanel(d.PartitionCalendar),
 						Div(Class(assetSubGridClass()),
-							Div(Class(assetPanelClass()), H3(Class(sectionTitleClass()), Text("Partitions")), assetPartitionsTable(d.Partitions)),
-							Div(Class(assetPanelClass()), H3(Class(sectionTitleClass()), Text("Backfills")), assetBackfillsTable(d.Backfills)),
+							Div(Class(assetPanelClass()), H3(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Partitions")), assetPartitionsTable(d.Partitions)),
+							Div(Class(assetPanelClass()), H3(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Backfills")), assetBackfillsTable(d.Backfills)),
 						),
 					),
 				),
 				Div(Class(assetDetailRailClass()),
-					Div(Class(cardClass(assetSectionClass())),
-						H2(Class(sectionTitleClass()), Text("Operate")),
-						P(Class(mutedClass()), Text("Kick the asset manually or request a targeted backfill from the same control rail.")),
+					Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)] flex flex-col gap-4"),
+						H2(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Operate")),
+						P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Kick the asset manually or request a targeted backfill from the same control rail.")),
 						materializeForm(d),
 						backfillForm(d),
 					),
-					Div(Class(cardClass(assetSectionClass())),
-						H2(Class(sectionTitleClass()), Text("At a glance")),
+					Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)] flex flex-col gap-4"),
+						H2(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("At a glance")),
 						assetFactList([][2]string{{"Owner", fallbackString(d.Owner, "unknown")}, {"Freshness", d.FreshnessLabel}, {"Materializations", strconv.Itoa(len(d.Materializations))}, {"Checks", strconv.Itoa(len(d.Checks))}, {"Runs", strconv.Itoa(len(d.Runs))}, {"Backfills", strconv.Itoa(len(d.Backfills))}}),
 					),
 				),
 			),
 		),
-		Script(Type("module"), Src(uiScriptHref("asset-graph.js"))),
+		Script(Type("module"), Src(core.UIScriptHref("asset-graph.js"))),
 	)
 }
 
@@ -184,7 +185,7 @@ func assetHistorySummaryBadges(d assetDetailPageData) []Node {
 	}
 	badges = append(badges, statusLabel(strconv.Itoa(enabledChecks)+" enabled checks", "success"))
 	if len(d.Materializations) > 0 {
-		latestPartition := stringPtr(d.Materializations[0].PartitionKey)
+		latestPartition := core.StringPtr(d.Materializations[0].PartitionKey)
 		if latestPartition != "-" {
 			badges = append(badges, statusLabel("Latest "+latestPartition, "attention"))
 		}
@@ -197,7 +198,7 @@ func assetRunsTable(runs []domain.AssetRun) Node {
 	hasRunErrors := false
 	for i := range runs {
 		r := runs[i]
-		errorMessage := stringPtr(r.ErrorMessage)
+		errorMessage := core.StringPtr(r.ErrorMessage)
 		if errorMessage != "-" {
 			hasRunErrors = true
 		}
@@ -242,7 +243,7 @@ func assetRunsTable(runs []domain.AssetRun) Node {
 			)
 		}
 	}
-	return Table(Class(dataTableClass()), THead(Tr(Group(headCells))), TBody(Group(rowsWithOptionalError)))
+	return core.DataTable("", THead(Tr(Group(headCells))), TBody(Group(rowsWithOptionalError)))
 }
 
 func assetMaterializationsTable(items []domain.AssetMaterialization) Node {
@@ -255,9 +256,9 @@ func assetMaterializationsTable(items []domain.AssetMaterialization) Node {
 					Span(Class("text-sm font-semibold text-[var(--fgColor-default)]"), Text(shortAssetID(m.ID))),
 					P(Class(assetTableSubtitleClass()), Text(m.ID)),
 				),
-				Td(Text(stringPtr(m.PartitionKey))),
+				Td(Text(core.StringPtr(m.PartitionKey))),
 				Td(Text(nullableInt64(m.RowCount))),
-				Td(Text(stringPtr(m.SchemaHash))),
+				Td(Text(core.StringPtr(m.SchemaHash))),
 				Td(Text(materializationMetadataSummary(m.MetadataJSON))),
 				Td(Text(formatTime(m.MaterializedAt))),
 			),
@@ -266,7 +267,7 @@ func assetMaterializationsTable(items []domain.AssetMaterialization) Node {
 	if len(matRows) == 0 {
 		return P(Class("text-[var(--fgColor-muted)]"), Text("No materializations yet."))
 	}
-	return Table(Class(dataTableClass()), THead(Tr(Th(Text("Materialization")), Th(Text("Partition")), Th(Text("Rows")), Th(Text("Schema Hash")), Th(Text("Metadata")), Th(Text("Materialized At")))), TBody(Group(matRows)))
+	return core.DataTable("", THead(Tr(Th(Text("Materialization")), Th(Text("Partition")), Th(Text("Rows")), Th(Text("Schema Hash")), Th(Text("Metadata")), Th(Text("Materialized At")))), TBody(Group(matRows)))
 }
 
 func assetChecksTable(checks []domain.AssetCheck) Node {
@@ -277,12 +278,12 @@ func assetChecksTable(checks []domain.AssetCheck) Node {
 		if c.Enabled {
 			enabledTone = "success"
 		}
-		checkRows = append(checkRows, Tr(Td(Text(c.Name)), Td(Text(c.CheckType)), Td(Text(c.Severity)), Td(statusLabel(boolLabel(c.Enabled), enabledTone))))
+		checkRows = append(checkRows, Tr(Td(Text(c.Name)), Td(Text(c.CheckType)), Td(Text(c.Severity)), Td(statusLabel(core.BoolLabel(c.Enabled), enabledTone))))
 	}
 	if len(checkRows) == 0 {
 		return P(Class("text-[var(--fgColor-muted)]"), Text("No checks configured."))
 	}
-	return Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Severity")), Th(Text("Enabled")))), TBody(Group(checkRows)))
+	return core.DataTable("", THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Severity")), Th(Text("Enabled")))), TBody(Group(checkRows)))
 }
 
 func assetPartitionsTable(partitions []domain.AssetPartition) Node {
@@ -294,7 +295,7 @@ func assetPartitionsTable(partitions []domain.AssetPartition) Node {
 	if len(partitionRows) == 0 {
 		return P(Class("text-[var(--fgColor-muted)]"), Text("No partitions recorded."))
 	}
-	return Table(Class(dataTableClass()), THead(Tr(Th(Text("Partition")), Th(Text("Status")), Th(Text("Last Materialized")))), TBody(Group(partitionRows)))
+	return core.DataTable("", THead(Tr(Th(Text("Partition")), Th(Text("Status")), Th(Text("Last Materialized")))), TBody(Group(partitionRows)))
 }
 
 func assetBackfillsTable(backfills []domain.BackfillRequest) Node {
@@ -306,7 +307,7 @@ func assetBackfillsTable(backfills []domain.BackfillRequest) Node {
 	if len(backfillRows) == 0 {
 		return P(Class("text-[var(--fgColor-muted)]"), Text("No backfills requested."))
 	}
-	return Table(Class(dataTableClass()), THead(Tr(Th(Text("ID")), Th(Text("Range")), Th(Text("Status")), Th(Text("Requested By")), Th(Text("Created")))), TBody(Group(backfillRows)))
+	return core.DataTable("", THead(Tr(Th(Text("ID")), Th(Text("Range")), Th(Text("Status")), Th(Text("Requested By")), Th(Text("Created")))), TBody(Group(backfillRows)))
 }
 
 func materializeForm(d assetDetailPageData) Node {
@@ -321,9 +322,9 @@ func materializeForm(d assetDetailPageData) Node {
 				P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Run the asset now, optionally scoped to a single partition.")),
 			),
 			Div(Class("flex flex-col gap-2"),
-				Input(Type("text"), Name("partition_key"), Placeholder("Partition key (optional)"), Class(formControlClass())),
+				core.InputControl("", Type("text"), Name("partition_key"), Placeholder("Partition key (optional)")),
 			),
-			Button(Type("submit"), Class(primaryButtonClass()), Text("Trigger materialization")),
+			core.PrimaryButton("", Type("submit"), Text("Trigger materialization")),
 		)
 	}
 
@@ -338,8 +339,8 @@ func materializeForm(d assetDetailPageData) Node {
 		),
 		FieldSet(Disabled(),
 			Class("flex flex-col gap-2"),
-			Input(Type("text"), Name("partition_key"), Placeholder("Partition key (optional)"), Class(formControlClass())),
-			Button(Type("submit"), Class(primaryButtonClass()), Text("Trigger materialization")),
+			core.InputControl("", Type("text"), Name("partition_key"), Placeholder("Partition key (optional)")),
+			core.PrimaryButton("", Type("submit"), Text("Trigger materialization")),
 		),
 		P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Requires execute asset materialization on catalog.")),
 	)
@@ -367,11 +368,11 @@ func backfillForm(d assetDetailPageData) Node {
 				P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Generate recovery slices across a partition range.")),
 			),
 			Div(Class("grid gap-2 md:grid-cols-3"),
-				Input(Type("text"), Name("partition_from"), Placeholder("partition_from (YYYY-MM-DD)"), Required(), Class(formControlClass())),
-				Input(Type("text"), Name("partition_to"), Placeholder("partition_to (YYYY-MM-DD)"), Required(), Class(formControlClass())),
-				Input(Class(formControlClass()), Type("number"), Name("max_parallelism"), Placeholder("max parallelism")),
+				core.InputControl("", Type("text"), Name("partition_from"), Placeholder("partition_from (YYYY-MM-DD)"), Required()),
+				core.InputControl("", Type("text"), Name("partition_to"), Placeholder("partition_to (YYYY-MM-DD)"), Required()),
+				core.InputControl("", Type("number"), Name("max_parallelism"), Placeholder("max parallelism")),
 			),
-			Button(Type("submit"), Class(secondaryButtonClass()), Text("Create backfill")),
+			core.SecondaryButton("", Type("submit"), Text("Create backfill")),
 		)
 	}
 
@@ -386,10 +387,10 @@ func backfillForm(d assetDetailPageData) Node {
 		),
 		FieldSet(Disabled(),
 			Class("grid gap-2 md:grid-cols-3"),
-			Input(Type("text"), Name("partition_from"), Placeholder("partition_from (YYYY-MM-DD)"), Required(), Class(formControlClass())),
-			Input(Type("text"), Name("partition_to"), Placeholder("partition_to (YYYY-MM-DD)"), Required(), Class(formControlClass())),
-			Input(Class(formControlClass()), Type("number"), Name("max_parallelism"), Placeholder("max parallelism")),
-			Button(Type("submit"), Class(secondaryButtonClass()), Text("Create backfill")),
+			core.InputControl("", Type("text"), Name("partition_from"), Placeholder("partition_from (YYYY-MM-DD)"), Required()),
+			core.InputControl("", Type("text"), Name("partition_to"), Placeholder("partition_to (YYYY-MM-DD)"), Required()),
+			core.InputControl("", Type("number"), Name("max_parallelism"), Placeholder("max parallelism")),
+			core.SecondaryButton("", Type("submit"), Text("Create backfill")),
 		),
 		P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Requires execute asset materialization on catalog.")),
 	)
@@ -404,7 +405,7 @@ func buildAssetDetailSummary(d assetDetailPageData) assetDetailSummary {
 		PartitionHint:        "No partition inventory recorded.",
 	}
 	if len(d.Runs) > 0 {
-		summary.LatestRunStatus = titleizeWords(d.Runs[0].Status)
+		summary.LatestRunStatus = core.TitleizeWords(d.Runs[0].Status)
 	}
 	if len(d.Materializations) > 0 {
 		summary.LatestMaterializedAt = formatTime(d.Materializations[0].MaterializedAt)
@@ -544,9 +545,9 @@ func retryTimelinePanel(entries []assetRetryTimelineEntry) Node {
 					Strong(Text(entry.RunID)),
 					statusLabel(entry.Status, runStatusTone(entry.Status)),
 					retryTag,
-					Span(Class(mutedClass()), Text(entry.AttemptSummary)),
+					Span(Class("text-xs text-[var(--fgColor-muted)]"), Text(entry.AttemptSummary)),
 				),
-				Div(Class(mutedClass()), Text(entry.WindowLabel+" | trigger: "+entry.TriggerType)),
+				Div(Class("text-xs text-[var(--fgColor-muted)]"), Text(entry.WindowLabel+" | trigger: "+entry.TriggerType)),
 				If(strings.TrimSpace(entry.RetryHint) != "", P(Class("mb-2"), Text(entry.RetryHint))),
 			),
 		)
@@ -585,7 +586,7 @@ func failureRootCausePanel(groups []assetFailureRootCauseGroup) Node {
 	}
 
 	return Table(
-		Class(dataTableClass()),
+		Class("min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--control-bgColor-hover)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]"),
 		THead(Tr(Th(Text("Signature")), Th(Text("Message")), Th(Text("Count")), Th(Text("Last seen")), Th(Text("Statuses")), Th(Text("Runs")))),
 		TBody(Group(rows)),
 	)
@@ -601,7 +602,7 @@ func partitionCalendarPanel(months []assetPartitionCalendarMonth) Node {
 		statusLabel("warning", "attention"),
 		statusLabel("error", "severe"),
 		statusLabel("other", "accent"),
-		Span(Class(mutedClass()), Text("blank cells have no partition record")),
+		Span(Class("text-xs text-[var(--fgColor-muted)]"), Text("blank cells have no partition record")),
 	)
 
 	monthNodes := make([]Node, 0, len(months))
@@ -637,7 +638,7 @@ func partitionCalendarPanel(months []assetPartitionCalendarMonth) Node {
 
 		monthNodes = append(monthNodes,
 			Div(Class("mb-3"),
-				H3(Class(sectionTitleClass()), Text(month.Label)),
+				H3(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text(month.Label)),
 				Div(Attr("style", "display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap:0.35rem;"), Group(cells)),
 			),
 		)
@@ -689,7 +690,7 @@ func partitionSummary(statuses map[string]int) Node {
 		chips = append(chips, Span(Class("mr-2"), statusLabel(status+": "+strconv.Itoa(count), partitionStatusTone(status))))
 		bars = append(bars,
 			Div(Class("mb-2"),
-				Div(Class("mb-1 flex flex-wrap items-center gap-2"), statusLabel(status, partitionStatusTone(status)), Span(Class(mutedClass()), Text(strconv.Itoa(count)+" / "+strconv.Itoa(total)))),
+				Div(Class("mb-1 flex flex-wrap items-center gap-2"), statusLabel(status, partitionStatusTone(status)), Span(Class("text-xs text-[var(--fgColor-muted)]"), Text(strconv.Itoa(count)+" / "+strconv.Itoa(total)))),
 				Div(Class("rounded-full bg-[var(--bgColor-muted)]"), Attr("style", "height:8px; overflow: hidden;"),
 					Div(Attr("style", "height:100%; width:"+strconv.Itoa(percent)+"%; background: var(--color-accent-emphasis);")),
 				),

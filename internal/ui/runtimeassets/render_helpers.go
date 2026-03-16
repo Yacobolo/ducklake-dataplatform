@@ -1,80 +1,13 @@
 package runtimeassets
 
 import (
-	"duck-demo/internal/domain"
 	"duck-demo/internal/ui/core"
 
 	. "maragu.dev/gomponents"
 )
 
-func appPage(title, active string, principal domain.ContextPrincipal, body ...Node) Node {
-	return core.AppPage(title, active, principal, body...)
-}
-
-func cardClass(extra ...string) string {
-	return core.CardClass(extra...)
-}
-
-func mutedClass() string {
-	return core.MutedClass()
-}
-
-func primaryButtonClass(size ...string) string {
-	return core.PrimaryButtonClass(size...)
-}
-
-func secondaryButtonClass(size ...string) string {
-	return core.SecondaryButtonClass(size...)
-}
-
-func formControlClass(extra ...string) string {
-	return core.FormControlClass(extra...)
-}
-
-func tableWrapClass(extra ...string) string {
-	return core.TableWrapClass(extra...)
-}
-
-func uiScriptHref(name string) string {
-	return core.UIScriptHref(name)
-}
-
-func subtleLinkClass() string {
-	return "text-[var(--fgColor-muted)] no-underline hover:text-[var(--fgColor-default)]"
-}
-
-func sectionTitleClass() string {
-	return "m-0 text-lg font-semibold text-[var(--fgColor-default)]"
-}
-
-func sectionCopyClass() string {
-	return "m-0 text-sm text-[var(--fgColor-muted)]"
-}
-
-func dataTableClass(extra ...string) string {
-	return core.ClassNames("min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--control-bgColor-hover)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]", core.ClassNames(extra...))
-}
-
 func statusLabel(text, tone string) Node {
 	return statusPill(text, tone)
-}
-
-func stringPtr(v *string) string {
-	if v == nil || *v == "" {
-		return "-"
-	}
-	return *v
-}
-
-func boolLabel(value bool) string {
-	if value {
-		return "true"
-	}
-	return "false"
-}
-
-func titleizeWords(value string) string {
-	return core.TitleizeWords(value)
 }
 
 func assetDetailShellClass() string {

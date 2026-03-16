@@ -85,7 +85,7 @@ func dashboardsListPage(principal domain.ContextPrincipal, rows []dashboardListR
 	}
 	tableNode := Node(emptyStateCard("No dashboards yet.", "New dashboard", "/ui/dashboards/new"))
 	if len(tableRows) > 0 {
-		tableNode = Div(Class(core.CardClass(tableWrapClass())), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Description")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
+		tableNode = Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)] overflow-x-auto"), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Description")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
 	}
 	return core.AppPage("Dashboards", "dashboards", principal, pageToolbar("/ui/dashboards/new", "New dashboard"), tableNode, paginationCard("/ui/dashboards", page, total))
 }
@@ -134,9 +134,9 @@ func dashboardsDetailPage(d dashboardDetailPageData) Node {
 			Class("grid gap-3"),
 			H1(Class("m-0 text-3xl font-semibold"), Text(d.Dashboard.Name)),
 			P(Class("m-0 text-[var(--fgColor-muted)]"), Text(d.Dashboard.Description)),
-			Div(Class(buttonRowClass()),
-				A(Href(d.EditURL), Class(core.SecondaryButtonClass()), Text("Edit")),
-				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass()), Text("Delete"))),
+			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+				core.SecondaryLink(d.EditURL, "", Text("Edit")),
+				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
 			),
 		),
 		dashboardFreshnessCard(d.Freshness, d.FreshnessExplain),
@@ -159,21 +159,21 @@ func dashboardFreshnessCard(status *domain.AssetFreshnessStatus, explanation *do
 				Text(" "),
 				statusLabel(child.FreshnessStatus, dashboardFreshnessTone(child.FreshnessStatus)),
 				Text(" "),
-				Span(Class(core.MutedClass()), Text(child.Reason)),
+				Span(Class("text-xs text-[var(--fgColor-muted)]"), Text(child.Reason)),
 			))
 		}
 	}
-	upstreamNode := Node(P(Class(core.MutedClass()), Text("No upstream blockers detected.")))
+	upstreamNode := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No upstream blockers detected.")))
 	if len(upstream) > 0 {
 		upstreamNode = Ul(Group(upstream))
 	}
 
 	return Div(
-		Class(core.CardClass()),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		H2(Text("Freshness")),
-		Div(Class(buttonRowClass()),
+		Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
 			statusLabel(status.FreshnessStatus, dashboardFreshnessTone(status.FreshnessStatus)),
-			Span(Class(core.MutedClass()), Text(status.Reason)),
+			Span(Class("text-xs text-[var(--fgColor-muted)]"), Text(status.Reason)),
 		),
 		P(Text("Effective max lag: "+strconv.FormatInt(status.EffectiveMaxLagSeconds, 10)+"s")),
 		P(Text("Last materialized: "+formatTimePtr(status.LastMaterializedAt))),
@@ -220,11 +220,11 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 		Class("grid gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-small)]"),
 		H2(Class("m-0 text-xl font-semibold"), Text(widget.Widget.Name)),
 		P(Class("m-0 text-[var(--fgColor-muted)]"), Text(widget.Widget.Description)),
-		Div(Class(buttonRowClass()), A(Href(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/edit"), Class(core.SecondaryButtonClass()), Text("Edit widget"))),
+		Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"), core.SecondaryLink(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/edit", "", Text("Edit widget"))),
 		content,
 		dashboardWidgetDataDetails(widget),
 		generatedSQL,
-		Form(Method("post"), Action(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/delete"), csrfFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass("small")), Text("Delete widget"))),
+		Form(Method("post"), Action(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/delete"), csrfFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete widget"))),
 	)
 }
 
@@ -268,7 +268,7 @@ func dashboardFreshnessTone(status string) string {
 
 func dashboardWidgetFormCard(data dashboardWidgetFormData, csrfFieldProvider func() Node) Node {
 	return Div(
-		Class(core.CardClass()),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		ID("dashboard-widget-form"),
 		H2(Text(data.Title)),
 		Form(
@@ -347,7 +347,7 @@ func dashboardWidgetFormCard(data dashboardWidgetFormData, csrfFieldProvider fun
 			Input(Name("layout_w"), Value(data.LayoutW)),
 			Label(Text("Layout H")),
 			Input(Name("layout_h"), Value(data.LayoutH)),
-			Button(Type("submit"), Class(core.PrimaryButtonClass()), Text(data.SubmitLabel)),
+			core.PrimaryButton("", Type("submit"), Text(data.SubmitLabel)),
 		),
 	)
 }
@@ -443,13 +443,13 @@ func formPage(principal domain.ContextPrincipal, title, active, action string, c
 		active,
 		principal,
 		Div(
-			Class(core.CardClass()),
+			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			Form(
 				Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
 				Method("post"),
 				Action(action),
 				Group(nodes),
-				Div(Class("form-actions mt-2"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Save"))),
+				Div(Class("form-actions mt-2"), core.PrimaryButton("", Type("submit"), Text("Save"))),
 			),
 		),
 	)
@@ -492,10 +492,6 @@ func tableWrapClass(extra ...string) string {
 	return core.ClassNames("overflow-x-auto", strings.Join(extra, " "))
 }
 
-func buttonRowClass(extra ...string) string {
-	return core.ButtonRowClass(extra...)
-}
-
 func labelClass(tone string) string {
 	base := "inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
 	switch tone {
@@ -518,15 +514,15 @@ func statusLabel(text, tone string) Node {
 
 func pageToolbar(newHref, newLabel string) Node {
 	return Div(
-		Class(core.CardClass()),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		Div(
 			Class("flex flex-wrap items-center justify-between gap-3"),
 			Div(
 				Class("flex min-w-0 flex-col gap-1"),
-				Span(Class(labelClass("")), Text("Workspace")),
+				Span(Class("inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium bg-[var(--label-gray-bgColor-rest)] text-[var(--label-gray-fgColor-rest)]"), Text("Workspace")),
 				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Browse and manage resources.")),
 			),
-			A(Href(newHref), Class(core.PrimaryButtonClass()), Text(newLabel)),
+			core.PrimaryLink(newHref, "", Text(newLabel)),
 		),
 	)
 }
@@ -534,10 +530,10 @@ func pageToolbar(newHref, newLabel string) Node {
 func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 	cta := Node(nil)
 	if ctaLabel != "" && ctaHref != "" {
-		cta = A(Href(ctaHref), Class(core.PrimaryButtonClass()), Text(ctaLabel))
+		cta = core.PrimaryLink(ctaHref, "", Text(ctaLabel))
 	}
 	return Div(
-		Class(core.CardClass("text-center")),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-[var(--shadow-resting-xsmall)]"),
 		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"), I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true"))),
 		Div(
 			Class("flex flex-col items-center gap-2 text-center"),
@@ -554,21 +550,21 @@ func paginationCard(basePath string, page domain.PageRequest, total int64) Node 
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
 		return Div(
-			Class(core.CardClass()),
+			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			Div(
 				Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
 				Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))),
-				Span(Class(core.ClassNames(core.SecondaryButtonClass("small"), "pointer-events-none opacity-60")), Attr("aria-disabled", "true"), Text("Next")),
+				Span(Class("inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
 			),
 		)
 	}
 	url := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
 	return Div(
-		Class(core.CardClass()),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		Div(
 			Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
 			Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))),
-			A(Href(url), Class(core.SecondaryButtonClass("small")), Text("Next page")),
+			core.SecondaryLink(url, "small", Text("Next page")),
 		),
 	)
 }

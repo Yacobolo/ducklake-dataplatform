@@ -51,43 +51,8 @@ type avatarConfig struct {
 	Size  string
 }
 
-func fallbackString(value, fallback string) string {
-	trimmed := strings.TrimSpace(value)
-	if trimmed == "" {
-		return fallback
-	}
-	return trimmed
-}
-
-func boolToString(v bool) string {
-	if v {
-		return "true"
-	}
-	return "false"
-}
-
-func intToString(v int) string {
-	return strconv.Itoa(v)
-}
-
-func dataTableClass(extra ...string) string {
-	return core.ClassNames("min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--control-bgColor-hover)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]", strings.Join(extra, " "))
-}
-
-func detailsClass(extra ...string) string {
-	return core.ClassNames("relative inline-block", strings.Join(extra, " "))
-}
-
-func detailsSummaryClass(extra ...string) string {
-	return core.ClassNames("list-none [&::-webkit-details-marker]:hidden", strings.Join(extra, " "))
-}
-
-func dropdownMenuClass(extra ...string) string {
-	return core.ClassNames("absolute right-0 top-full z-20 mt-1 min-w-[var(--overlay-width-xsmall)] rounded-xl border border-[var(--overlay-borderColor)] bg-[var(--overlay-bgColor)] p-1 shadow-[var(--shadow-floating-small)]", strings.Join(extra, " "))
-}
-
-func dropdownItemClass(extra ...string) string {
-	return core.ClassNames("flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[0.8125rem] no-underline hover:bg-[var(--control-bgColor-hover)]", strings.Join(extra, " "))
+func statusLabel(text, tone string) Node {
+	return Span(Class(labelClass(tone)), Text(text))
 }
 
 func labelClass(tone string) string {
@@ -104,10 +69,6 @@ func labelClass(tone string) string {
 	default:
 		return core.ClassNames(base, "bg-[var(--label-gray-bgColor-rest)] text-[var(--label-gray-fgColor-rest)]")
 	}
-}
-
-func statusLabel(text, tone string) Node {
-	return Span(Class(labelClass(tone)), Text(text))
 }
 
 func breadcrumbs(items []breadcrumbItem) Node {
@@ -127,7 +88,7 @@ func breadcrumbs(items []breadcrumbItem) Node {
 		nodes = append(nodes,
 			Li(
 				Class("inline-flex items-center gap-1"),
-				A(Href(fallbackString(item.Href, "#")), Class(linkClass), ariaCurrent, Text(item.Label)),
+				A(Href(core.FallbackString(item.Href, "#")), Class(linkClass), ariaCurrent, Text(item.Label)),
 			),
 		)
 	}
@@ -209,7 +170,7 @@ func formField(cfg formFieldConfig) Node {
 		inputType = "text"
 	}
 
-	inputClass := core.FormControlClass()
+	inputClass := "w-full rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-2 text-sm text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] transition-colors placeholder:text-[var(--fgColor-muted)] focus:border-[var(--borderColor-accent-emphasis)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-outlineColor)]"
 	if cfg.Invalid {
 		inputClass += " border-[var(--borderColor-danger-emphasis)]"
 	}
@@ -311,17 +272,17 @@ func actionBar() Node {
 		Div(
 			Class("flex flex-col gap-1"),
 			Label(For("component-search"), Class("text-xs font-semibold text-[var(--fgColor-muted)]"), Text("Search")),
-			Input(ID("component-search"), Type("search"), Class(core.FormControlClass()), Placeholder("Search components"), AutoComplete("off"), data.Bind("q")),
+			core.InputControl("", ID("component-search"), Type("search"), Placeholder("Search components"), AutoComplete("off"), data.Bind("q")),
 		),
 		Div(
 			Class("flex flex-col gap-1"),
 			Label(For("component-sort"), Class("text-xs font-semibold text-[var(--fgColor-muted)]"), Text("Sort")),
-			Select(ID("component-sort"), Class(core.FormSelectClass()), data.Bind("sort"), Option(Value("updated"), Text("Recently updated")), Option(Value("name"), Text("Name")), Option(Value("category"), Text("Category"))),
+			core.SelectControl("", ID("component-sort"), data.Bind("sort"), Option(Value("updated"), Text("Recently updated")), Option(Value("name"), Text("Name")), Option(Value("category"), Text("Category"))),
 		),
 		Div(
 			Class("flex flex-wrap items-center gap-2"),
-			Button(Type("button"), Class(core.SecondaryButtonClass()), Text("Reset")),
-			Button(Type("button"), Class(core.PrimaryButtonClass()), Text("Create component")),
+			core.SecondaryButton("", Type("button"), Text("Reset")),
+			core.PrimaryButton("", Type("button"), Text("Create component")),
 		),
 	)
 }
@@ -331,7 +292,7 @@ func quickFilterCardWithValue(placeholder, initialValue string, extraControls ..
 		Div(
 			Class("flex min-w-[min(20rem,100%)] flex-1 flex-col gap-1"),
 			Label(Class("sr-only"), Text("Quick filter")),
-			Input(Type("search"), Class(core.FormControlClass()), Name("q"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off"), Attr("data-quick-filter-input", "true")),
+			core.InputControl("", Type("search"), Name("q"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off"), Attr("data-quick-filter-input", "true")),
 		),
 	}
 	controls = append(controls, extraControls...)
@@ -361,7 +322,7 @@ func quickFilterCardWithValue(placeholder, initialValue string, extraControls ..
 })();`
 
 	return Div(
-		Class(core.CardClass()),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		data.Signals(map[string]any{"q": initialValue}),
 		Div(Class("flex flex-wrap items-center gap-3"), Group(controls)),
 		Script(Raw(syncScript)),
@@ -370,7 +331,7 @@ func quickFilterCardWithValue(placeholder, initialValue string, extraControls ..
 
 func pageToolbar(newHref, newLabel string) Node {
 	return Div(
-		Class(core.CardClass()),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		Div(
 			Class("flex flex-wrap items-center justify-between gap-3"),
 			Div(
@@ -378,7 +339,7 @@ func pageToolbar(newHref, newLabel string) Node {
 				Span(Class(labelClass("")), Text("Workspace")),
 				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Browse and manage resources.")),
 			),
-			A(Href(newHref), Class(core.PrimaryButtonClass()), Text(newLabel)),
+			core.PrimaryLink(newHref, "", Text(newLabel)),
 		),
 	)
 }
@@ -386,10 +347,10 @@ func pageToolbar(newHref, newLabel string) Node {
 func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 	cta := Node(nil)
 	if ctaLabel != "" && ctaHref != "" {
-		cta = A(Href(ctaHref), Class(core.PrimaryButtonClass()), Text(ctaLabel))
+		cta = core.PrimaryLink(ctaHref, "", Text(ctaLabel))
 	}
 	return Div(
-		Class(core.CardClass("text-center")),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-[var(--shadow-resting-xsmall)]"),
 		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"), I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true"))),
 		Div(
 			Class("flex flex-col items-center gap-2 text-center"),
@@ -406,21 +367,21 @@ func paginationCard(basePath string, page domain.PageRequest, total int64) Node 
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
 		return Div(
-			Class(core.CardClass()),
+			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			Div(
 				Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
 				Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))),
-				Span(Class(core.ClassNames(core.SecondaryButtonClass("small"), "pointer-events-none opacity-60")), Attr("aria-disabled", "true"), Text("Next")),
+				Span(Class("inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
 			),
 		)
 	}
 	url := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
 	return Div(
-		Class(core.CardClass()),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		Div(
 			Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
 			Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))),
-			A(Href(url), Class(core.SecondaryButtonClass("small")), Text("Next page")),
+			core.SecondaryLink(url, "small", Text("Next page")),
 		),
 	)
 }
@@ -433,10 +394,10 @@ func min(a, b int) int {
 }
 
 func actionMenu(label string, items ...Node) Node {
-	summaryClass := core.SecondaryButtonClass("small")
+	summaryClass := "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"
 	summaryContent := Node(Text(label))
 	if label == "More" || label == "Actions" {
-		summaryClass = core.IconButtonClass("small")
+		summaryClass = "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] min-w-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"
 		summaryContent = Group([]Node{
 			I(Class(core.IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
 			Span(Class("sr-only"), Text(label)),
@@ -444,19 +405,19 @@ func actionMenu(label string, items ...Node) Node {
 	}
 
 	return Details(
-		Class(detailsClass()),
-		Summary(Class(detailsSummaryClass(summaryClass)), Title(label), Attr("aria-label", label), summaryContent),
-		Div(Class(dropdownMenuClass()), Group(items)),
+		Class(core.DetailsClass()),
+		Summary(Class(summaryClass), Title(label), Attr("aria-label", label), summaryContent),
+		Div(Class(core.DropdownMenuClass()), Group(items)),
 	)
 }
 
 func actionMenuLink(href, label string) Node {
 	icon := actionIconForLabel(label)
-	return A(Href(href), Class(dropdownItemClass("text-[var(--fgColor-default)]")), I(Class(core.NavIconClass()), Attr("data-lucide", icon), Attr("aria-hidden", "true")), Span(Text(label)))
+	return A(Href(href), Class(core.DropdownItemClass("text-[var(--fgColor-default)]")), I(Class(core.NavIconClass()), Attr("data-lucide", icon), Attr("aria-hidden", "true")), Span(Text(label)))
 }
 
 func actionMenuPost(action, label string, csrfField func() Node, danger bool) Node {
-	btnClass := dropdownItemClass()
+	btnClass := core.DropdownItemClass()
 	if danger {
 		btnClass += " text-[var(--fgColor-danger)] hover:bg-[var(--bgColor-danger-muted)]"
 	} else {
@@ -532,9 +493,9 @@ func progressBar(value, max int) Node {
 		Class("h-2 w-full overflow-hidden rounded-full bg-[var(--bgColor-muted)]"),
 		Attr("role", "progressbar"),
 		Attr("aria-valuemin", "0"),
-		Attr("aria-valuemax", intToString(max)),
-		Attr("aria-valuenow", intToString(value)),
-		Div(Class("h-full rounded-full bg-[var(--bgColor-accent-emphasis)] transition-[width] duration-200 ease-out"), Style("width: "+intToString((value*100)/max)+"%;")),
+		Attr("aria-valuemax", strconv.Itoa(max)),
+		Attr("aria-valuenow", strconv.Itoa(value)),
+		Div(Class("h-full rounded-full bg-[var(--bgColor-accent-emphasis)] transition-[width] duration-200 ease-out"), Style("width: "+strconv.Itoa((value*100)/max)+"%;")),
 	)
 }
 
@@ -554,7 +515,7 @@ func metricCard(label, value, meta, tone string) Node {
 
 	metaNode := Node(nil)
 	if strings.TrimSpace(meta) != "" {
-		metaNode = P(Class(core.MutedClass()), Text(meta))
+		metaNode = P(Class("text-xs text-[var(--fgColor-muted)]"), Text(meta))
 	}
 
 	return Div(
@@ -573,7 +534,7 @@ func segmentedTabs(items []segmentedTabItem) Node {
 		if item.Active {
 			className += " bg-[var(--bgColor-default)] text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)]"
 		}
-		nodes = append(nodes, Button(Type("button"), Class(className), Attr("aria-pressed", boolToString(item.Active)), Text(item.Label)))
+		nodes = append(nodes, Button(Type("button"), Class(className), Attr("aria-pressed", strconv.FormatBool(item.Active)), Text(item.Label)))
 	}
 
 	return Div(Class("inline-flex flex-wrap gap-1 rounded-xl bg-[var(--bgColor-muted)] p-1"), Group(nodes))
@@ -603,7 +564,7 @@ func treeViewNode(item treeViewItem) Node {
 		linkClass += " bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
 	}
 
-	link := A(Href(fallbackString(item.Href, "#")), Class(linkClass), I(Class(core.NavIconClass()), Attr("data-lucide", icon), Attr("aria-hidden", "true")), Span(Text(item.Label)))
+	link := A(Href(core.FallbackString(item.Href, "#")), Class(linkClass), I(Class(core.NavIconClass()), Attr("data-lucide", icon), Attr("aria-hidden", "true")), Span(Text(item.Label)))
 	if len(item.Children) == 0 {
 		return Li(link)
 	}
@@ -622,7 +583,7 @@ func treeViewNode(item treeViewItem) Node {
 		Details(
 			Class("group"),
 			openAttr,
-			Summary(Class(detailsSummaryClass("flex items-center gap-2")), I(Class(core.NavIconClass("transition-transform group-open:rotate-90")), Attr("data-lucide", "chevron-right"), Attr("aria-hidden", "true")), link),
+			Summary(Class(core.DetailsSummaryClass("flex items-center gap-2")), I(Class(core.NavIconClass("transition-transform group-open:rotate-90")), Attr("data-lucide", "chevron-right"), Attr("aria-hidden", "true")), link),
 			Ul(Class("ml-6 mt-1 grid gap-1 border-l border-[var(--borderColor-muted)] pl-2"), Group(childNodes)),
 		),
 	)

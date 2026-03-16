@@ -24,7 +24,7 @@ func securityHomePage(principal domain.ContextPrincipal, cards []securityCardDat
 	nodes := make([]Node, 0, len(cards))
 	for i := range cards {
 		card := cards[i]
-		nodes = append(nodes, Div(Class(core.CardClass()), H2(Text(card.Title)), P(Text(card.Description)), A(Href(card.Href), Text(card.LinkLabel))))
+		nodes = append(nodes, Div(Class(cardShellClass()), H2(Text(card.Title)), P(Text(card.Description)), A(Href(card.Href), Text(card.LinkLabel))))
 	}
 	return core.AppPage("Security", "security", principal, Div(Class("grid gap-3 md:grid-cols-2 xl:grid-cols-3"), Group(nodes)))
 }
@@ -45,13 +45,13 @@ func securitySectionNav(active string) Node {
 	nodes := make([]Node, 0, len(links))
 	for i := range links {
 		link := links[i]
-		className := core.SecondaryButtonClass()
 		if link.key == active {
-			className = core.PrimaryButtonClass()
+			nodes = append(nodes, core.PrimaryLink(link.href, "", Text(link.label)))
+			continue
 		}
-		nodes = append(nodes, A(Href(link.href), Class(className), Text(link.label)))
+		nodes = append(nodes, core.SecondaryLink(link.href, "", Text(link.label)))
 	}
-	return Div(Class(core.CardClass()), Div(Class("flex flex-wrap gap-2"), Group(nodes)))
+	return Div(Class(cardShellClass()), Div(Class("flex flex-wrap gap-2"), Group(nodes)))
 }
 
 type securityPrincipalRowData struct {
@@ -76,7 +76,7 @@ func securityPrincipalsListPage(principal domain.ContextPrincipal, rows []securi
 	}
 	tableNode := Node(emptyStateCard("No principals found.", "New principal", "/ui/security/principals/new"))
 	if len(tableRows) > 0 {
-		tableNode = Div(Class(core.CardClass("overflow-x-auto")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Role")), Th(Text("Created")))), TBody(Group(tableRows))))
+		tableNode = Div(Class(tableCardClass()), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Role")), Th(Text("Created")))), TBody(Group(tableRows))))
 	}
 
 	return core.AppPage("Security: Principals", "security", principal, securitySectionNav("principals"), pageToolbar("/ui/security/principals/new", "New principal"), quickFilterCard("Filter by principal name or type"), tableNode, paginationCard("/ui/security/principals", page, total))
@@ -117,21 +117,21 @@ func securityPrincipalDetailPage(d securityPrincipalDetailPageData) Node {
 		"security",
 		d.Principal,
 		securitySectionNav("principals"),
-		Div(Class(core.CardClass()),
+		Div(Class(cardShellClass()),
 			P(Text("Principal ID: "+d.Item.ID)),
 			P(Text("Type: "+d.Item.Type)),
 			P(Text("Role: "), roleLabel),
 			P(Text("External subject: "+strOrDash(d.Item.ExternalID))),
 			P(Text("External issuer: "+strOrDash(d.Item.ExternalIssuer))),
 			P(Text("Created: "+formatTime(d.Item.CreatedAt))),
-			Div(Class(core.ButtonRowClass()),
-				Form(Method("post"), Action("/ui/security/principals/"+d.Item.ID+"/admin"), d.CSRFFieldProvider(), Input(Type("hidden"), Name("is_admin"), Value(adminValue)), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text(adminButtonLabel))),
-				Form(Method("post"), Action("/ui/security/principals/"+d.Item.ID+"/delete"), d.CSRFFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass()), Text("Delete principal"))),
-				A(Href("/ui/security/api-keys?principal_id="+d.Item.ID), Class(core.SecondaryButtonClass()), Text("View API keys")),
+			Div(Class(buttonRowClass()),
+				Form(Method("post"), Action("/ui/security/principals/"+d.Item.ID+"/admin"), d.CSRFFieldProvider(), Input(Type("hidden"), Name("is_admin"), Value(adminValue)), core.PrimaryButton("", Type("submit"), Text(adminButtonLabel))),
+				Form(Method("post"), Action("/ui/security/principals/"+d.Item.ID+"/delete"), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete principal"))),
+				core.SecondaryLink("/ui/security/api-keys?principal_id="+d.Item.ID, "", Text("View API keys")),
 			),
 		),
-		Div(Class(core.CardClass("overflow-x-auto")), H2(Text("Privilege grants")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Privilege")), Th(Text("Securable type")), Th(Text("Securable ID")), Th(Text("Granted")), Th(Class("text-right"), Text("Actions")))), TBody(Group(grantRows)))),
-		Div(Class(core.CardClass("overflow-x-auto")), H2(Text("API keys")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Prefix")), Th(Text("Expires")), Th(Text("Created")), Th(Class("text-right"), Text("Actions")))), TBody(Group(keyRows)))),
+		Div(Class(tableCardClass()), H2(Text("Privilege grants")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Privilege")), Th(Text("Securable type")), Th(Text("Securable ID")), Th(Text("Granted")), Th(Class("text-right"), Text("Actions")))), TBody(Group(grantRows)))),
+		Div(Class(tableCardClass()), H2(Text("API keys")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Prefix")), Th(Text("Expires")), Th(Text("Created")), Th(Class("text-right"), Text("Actions")))), TBody(Group(keyRows)))),
 	)
 }
 
@@ -163,7 +163,7 @@ func securityGroupsListPage(principal domain.ContextPrincipal, rows []securityGr
 	}
 	tableNode := Node(emptyStateCard("No groups found.", "New group", "/ui/security/groups/new"))
 	if len(tableRows) > 0 {
-		tableNode = Div(Class(core.CardClass("overflow-x-auto")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Members")), Th(Text("Created")))), TBody(Group(tableRows))))
+		tableNode = Div(Class(tableCardClass()), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Members")), Th(Text("Created")))), TBody(Group(tableRows))))
 	}
 	return core.AppPage("Security: Groups", "security", principal, securitySectionNav("groups"), pageToolbar("/ui/security/groups/new", "New group"), quickFilterCard("Filter by group name"), tableNode, paginationCard("/ui/security/groups", page, total))
 }
@@ -187,7 +187,7 @@ func securityGroupDetailPage(d securityGroupDetailPageData) Node {
 	memberRows := make([]Node, 0, len(d.Members))
 	for i := range d.Members {
 		member := d.Members[i]
-		memberRows = append(memberRows, Tr(Td(Text(member.MemberID)), Td(Text(member.MemberType)), Td(Class("text-right"), Form(Method("post"), Action("/ui/security/groups/"+member.GroupID+"/members/delete"), member.CSRFField(), Input(Type("hidden"), Name("member_id"), Value(member.MemberID)), Input(Type("hidden"), Name("member_type"), Value(member.MemberType)), Button(Type("submit"), Class(core.DangerButtonClass()), Text("Remove"))))))
+		memberRows = append(memberRows, Tr(Td(Text(member.MemberID)), Td(Text(member.MemberType)), Td(Class("text-right"), Form(Method("post"), Action("/ui/security/groups/"+member.GroupID+"/members/delete"), member.CSRFField(), Input(Type("hidden"), Name("member_id"), Value(member.MemberID)), Input(Type("hidden"), Name("member_type"), Value(member.MemberType)), core.DangerButton("", Type("submit"), Text("Remove"))))))
 	}
 
 	grantRows := make([]Node, 0, len(d.Grants))
@@ -201,26 +201,26 @@ func securityGroupDetailPage(d securityGroupDetailPageData) Node {
 		"security",
 		d.Principal,
 		securitySectionNav("groups"),
-		Div(Class(core.CardClass()),
+		Div(Class(cardShellClass()),
 			P(Text("Group ID: "+d.Item.ID)),
 			P(Text("Description: "+dashIfEmpty(d.Item.Description))),
 			P(Text("Created: "+formatTime(d.Item.CreatedAt))),
-			Div(Class(core.ButtonRowClass()),
-				Form(Method("post"), Action("/ui/security/groups/"+d.Item.ID+"/delete"), d.CSRFFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass()), Text("Delete group"))),
+			Div(Class(buttonRowClass()),
+				Form(Method("post"), Action("/ui/security/groups/"+d.Item.ID+"/delete"), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete group"))),
 			),
 		),
-		Div(Class(core.CardClass()),
+		Div(Class(cardShellClass()),
 			H2(Text("Add member")),
 			Form(Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"), Method("post"), Action("/ui/security/groups/"+d.Item.ID+"/members"), d.CSRFFieldProvider(),
 				Label(Text("Member type")),
 				Select(Name("member_type"), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
 				Label(Text("Member ID")),
 				Input(Name("member_id"), Required()),
-				Div(Class("form-actions mt-2"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Add member"))),
+				Div(Class("form-actions mt-2"), core.PrimaryButton("", Type("submit"), Text("Add member"))),
 			),
 		),
-		Div(Class(core.CardClass("overflow-x-auto")), H2(Text("Members")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Member ID")), Th(Text("Type")), Th(Class("text-right"), Text("Actions")))), TBody(Group(memberRows)))),
-		Div(Class(core.CardClass("overflow-x-auto")), H2(Text("Privilege grants")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Privilege")), Th(Text("Securable type")), Th(Text("Securable ID")), Th(Class("text-right"), Text("Actions")))), TBody(Group(grantRows)))),
+		Div(Class(tableCardClass()), H2(Text("Members")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Member ID")), Th(Text("Type")), Th(Class("text-right"), Text("Actions")))), TBody(Group(memberRows)))),
+		Div(Class(tableCardClass()), H2(Text("Privilege grants")), Table(Class(dataTableClass()), THead(Tr(Th(Text("Privilege")), Th(Text("Securable type")), Th(Text("Securable ID")), Th(Class("text-right"), Text("Actions")))), TBody(Group(grantRows)))),
 	)
 }
 
@@ -237,8 +237,8 @@ func formPage(principal domain.ContextPrincipal, title, active, action string, c
 	nodes := []Node{csrfFieldProvider()}
 	nodes = append(nodes, fields...)
 	return core.AppPage(title, active, principal,
-		Div(Class(core.CardClass()),
-			Form(Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"), Method("post"), Action(action), Group(nodes), Div(Class("form-actions mt-2"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Save")))),
+		Div(Class(cardShellClass()),
+			Form(Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"), Method("post"), Action(action), Group(nodes), Div(Class("form-actions mt-2"), core.PrimaryButton("", Type("submit"), Text("Save")))),
 		),
 	)
 }
@@ -248,9 +248,9 @@ func dataTableClass(extra ...string) string {
 }
 
 func pageToolbar(newHref, newLabel string) Node {
-	return Div(Class(core.CardClass()), Div(Class("flex flex-wrap items-center justify-between gap-3"),
+	return Div(Class(cardShellClass()), Div(Class("flex flex-wrap items-center justify-between gap-3"),
 		Div(Class("flex min-w-0 flex-col gap-1"), Span(Class(labelClass("")), Text("Workspace")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Browse and manage resources."))),
-		A(Href(newHref), Class(core.PrimaryButtonClass()), Text(newLabel)),
+		core.PrimaryLink(newHref, "", Text(newLabel)),
 	))
 }
 
@@ -259,10 +259,10 @@ func quickFilterCard(placeholder string, extraControls ...Node) Node {
 }
 
 func quickFilterCardWithValue(placeholder, initialValue string, extraControls ...Node) Node {
-	controls := []Node{Div(Class("flex min-w-[min(20rem,100%)] flex-1 flex-col gap-1"), Label(Class("sr-only"), Text("Quick filter")), Input(Type("search"), Class(core.FormControlClass()), Name("q"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off"), Attr("data-quick-filter-input", "true")))}
+	controls := []Node{Div(Class("flex min-w-[min(20rem,100%)] flex-1 flex-col gap-1"), Label(Class("sr-only"), Text("Quick filter")), core.InputControl("", Type("search"), Name("q"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off"), Attr("data-quick-filter-input", "true")))}
 	controls = append(controls, extraControls...)
 	syncScript := `(function(){var input=document.querySelector('[data-quick-filter-input="true"]');if(!(input instanceof HTMLInputElement)){ return; }function syncURL(value){var url=new URL(window.location.href);if(value){url.searchParams.set('q', value);} else {url.searchParams.delete('q');}url.searchParams.delete('page_token');var next=url.pathname;var query=url.searchParams.toString();if(query){ next+='?'+query; }if(next!==window.location.pathname+window.location.search){window.history.replaceState({}, '', next);}}input.addEventListener('input', function(){syncURL(input.value.trim());});})();`
-	return Div(Class(core.CardClass()), data.Signals(map[string]any{"q": initialValue}), Div(Class("flex flex-wrap items-center gap-3"), Group(controls)), Script(Raw(syncScript)))
+	return Div(Class(cardShellClass()), data.Signals(map[string]any{"q": initialValue}), Div(Class("flex flex-wrap items-center gap-3"), Group(controls)), Script(Raw(syncScript)))
 }
 
 func paginationCard(basePath string, page domain.PageRequest, total int64) Node {
@@ -270,10 +270,10 @@ func paginationCard(basePath string, page domain.PageRequest, total int64) Node 
 	summary := "Showing " + strconv.Itoa(shown) + " of " + strconv.FormatInt(total, 10) + " entries."
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
-		return Div(Class(core.CardClass()), Div(Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"), Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))), Span(Class(core.ClassNames(core.SecondaryButtonClass("small"), "pointer-events-none opacity-60")), Attr("aria-disabled", "true"), Text("Next"))))
+		return Div(Class(cardShellClass()), Div(Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"), Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))), Span(Class("inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next"))))
 	}
 	u := basePath + "?max_results=" + strconv.Itoa(page.Limit()) + "&page_token=" + nextToken
-	return Div(Class(core.CardClass()), Div(Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"), Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))), A(Href(u), Class(core.SecondaryButtonClass("small")), Text("Next page"))))
+	return Div(Class(cardShellClass()), Div(Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"), Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))), core.SecondaryLink(u, "small", Text("Next page"))))
 }
 
 func min(a, b int) int {
@@ -304,13 +304,13 @@ func labelClass(tone string) string {
 func statusLabel(text, tone string) Node { return Span(Class(labelClass(tone)), Text(text)) }
 
 func actionMenu(label string, items ...Node) Node {
-	summaryClass := core.SecondaryButtonClass("small")
+	summaryClass := "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"
 	summaryContent := Node(Text(label))
 	if label == "More" || label == "Actions" {
-		summaryClass = core.IconButtonClass("small")
+		summaryClass = "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] min-w-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"
 		summaryContent = Group([]Node{I(Class(core.IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text(label))})
 	}
-	return Details(Class("relative inline-block"), Summary(Class(core.ClassNames("list-none [&::-webkit-details-marker]:hidden", summaryClass)), Title(label), Attr("aria-label", label), summaryContent), Div(Class("absolute right-0 top-full z-20 mt-1 min-w-[var(--overlay-width-xsmall)] rounded-xl border border-[var(--overlay-borderColor)] bg-[var(--overlay-bgColor)] p-1 shadow-[var(--shadow-floating-small)]"), Group(items)))
+	return Details(Class("relative inline-block"), Summary(Class(summaryClass), Title(label), Attr("aria-label", label), summaryContent), Div(Class("absolute right-0 top-full z-20 mt-1 min-w-[var(--overlay-width-xsmall)] rounded-xl border border-[var(--overlay-borderColor)] bg-[var(--overlay-bgColor)] p-1 shadow-[var(--shadow-floating-small)]"), Group(items)))
 }
 
 func actionMenuPost(action, label string, csrfField func() Node, danger bool) Node {
@@ -330,9 +330,25 @@ func actionMenuPost(action, label string, csrfField func() Node, danger bool) No
 func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 	cta := Node(nil)
 	if ctaLabel != "" && ctaHref != "" {
-		cta = A(Href(ctaHref), Class(core.PrimaryButtonClass()), Text(ctaLabel))
+		cta = core.PrimaryLink(ctaHref, "", Text(ctaLabel))
 	}
-	return Div(Class(core.CardClass("text-center")), Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"), I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true"))), Div(Class("flex flex-col items-center gap-2 text-center"), P(Class("m-0 text-lg font-semibold"), Text("No results yet")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(message)), cta))
+	return Div(Class(emptyCardClass()), Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"), I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true"))), Div(Class("flex flex-col items-center gap-2 text-center"), P(Class("m-0 text-lg font-semibold"), Text("No results yet")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(message)), cta))
+}
+
+func cardShellClass() string {
+	return "rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"
+}
+
+func tableCardClass() string {
+	return "overflow-x-auto rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"
+}
+
+func emptyCardClass() string {
+	return "rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-[var(--shadow-resting-xsmall)]"
+}
+
+func buttonRowClass() string {
+	return "mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"
 }
 
 func containsExpr(value string) string {

@@ -40,7 +40,7 @@ type pipelineDetailPageData struct {
 }
 
 func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class(core.MutedClass()), Text("No pipelines yet.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No pipelines yet.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
@@ -53,7 +53,7 @@ func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRo
 			))
 		}
 		table = Div(
-			Class(core.TableWrapClass()),
+			Class("overflow-x-auto"),
 			Table(
 				Class("min-w-full text-left text-sm"),
 				THead(Tr(Th(Text("Name")), Th(Text("Paused")), Th(Text("Schedule")), Th(Text("Updated")))),
@@ -66,11 +66,10 @@ func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRo
 		"Pipelines",
 		"pipelines",
 		principal,
-		Div(
-			Class(core.CardClass()),
+		core.Card(
 			Div(Class("mb-4 flex flex-wrap items-center justify-between gap-3"),
 				Div(H2(Class("m-0 text-xl font-semibold"), Text("Pipelines")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Manage orchestrated jobs and schedules."))),
-				A(Href("/ui/pipelines/new"), Class(core.PrimaryButtonClass()), Text("New pipeline")),
+				core.PrimaryLink("/ui/pipelines/new", "", Text("New pipeline")),
 			),
 			table,
 			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" pipelines. Total: "+strconv.FormatInt(total, 10))),
@@ -79,7 +78,7 @@ func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRo
 }
 
 func pipelineDetailPage(d pipelineDetailPageData) Node {
-	jobTable := Node(P(Class(core.MutedClass()), Text("No jobs defined yet.")))
+	jobTable := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No jobs defined yet.")))
 	if len(d.Jobs) > 0 {
 		rows := make([]Node, 0, len(d.Jobs))
 		for i := range d.Jobs {
@@ -91,13 +90,13 @@ func pipelineDetailPage(d pipelineDetailPageData) Node {
 				Td(Text(emptyDash(job.Notebook))),
 				Td(Class("text-right"),
 					Form(Method("post"), Action(job.DeleteURL), d.CSRFFieldFunc(),
-						Button(Type("submit"), Class(core.DangerButtonClass("small")), Text("Delete")),
+						core.DangerButton("small", Type("submit"), Text("Delete")),
 					),
 				),
 			))
 		}
 		jobTable = Div(
-			Class(core.TableWrapClass()),
+			Class("overflow-x-auto"),
 			Table(
 				Class("min-w-full text-left text-sm"),
 				THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Selector")), Th(Text("Notebook")), Th(Class("text-right"), Text("Actions")))),
@@ -110,17 +109,16 @@ func pipelineDetailPage(d pipelineDetailPageData) Node {
 		"Pipeline: "+d.Name,
 		"pipelines",
 		d.Principal,
-		Div(
-			Class(core.CardClass()),
+		core.Card(
 			Div(Class("flex flex-wrap items-start justify-between gap-3"),
 				Div(
 					H2(Class("m-0 text-xl font-semibold"), Text(d.Name)),
 					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Created by "+emptyDash(d.CreatedBy))),
 				),
-				Div(Class(core.ButtonRowClass("mt-0")),
-					A(Href(d.EditURL), Class(core.SecondaryButtonClass()), Text("Edit")),
-					A(Href(d.NewJobURL), Class(core.SecondaryButtonClass()), Text("New job")),
-					Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(core.DangerButtonClass()), Text("Delete pipeline"))),
+				core.ButtonGroup("mt-0",
+					core.SecondaryLink(d.EditURL, "", Text("Edit")),
+					core.SecondaryLink(d.NewJobURL, "", Text("New job")),
+					Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), core.DangerButton("", Type("submit"), Text("Delete pipeline"))),
 				),
 			),
 			Dl(Class("mt-4 grid gap-3 sm:grid-cols-3"),
@@ -129,8 +127,7 @@ func pipelineDetailPage(d pipelineDetailPageData) Node {
 				metaRow("Jobs", strconv.Itoa(len(d.Jobs))),
 			),
 		),
-		Div(
-			Class(core.CardClass()),
+		core.Card(
 			H3(Class("mt-0 text-lg font-semibold"), Text("Jobs")),
 			jobTable,
 		),
@@ -140,13 +137,13 @@ func pipelineDetailPage(d pipelineDetailPageData) Node {
 func pipelinesNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
 	return pipelineFormPage(principal, "New Pipeline", "/ui/pipelines", csrfFieldProvider,
 		Label(Text("Name")),
-		Input(Name("name"), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("name"), Required()),
 		Label(Text("Description")),
-		Textarea(Name("description"), Class(core.FormControlClass("min-h-28"))),
+		core.TextareaControl("min-h-28", Name("description")),
 		Label(Text("Schedule Cron")),
-		Input(Name("schedule_cron"), Class(core.FormControlClass())),
+		core.InputControl("", Name("schedule_cron")),
 		Label(Text("Concurrency Limit")),
-		Input(Name("concurrency_limit"), Value("1"), Class(core.FormControlClass())),
+		core.InputControl("", Name("concurrency_limit"), Value("1")),
 		Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("is_paused")), Span(Text("Paused"))),
 	)
 }
@@ -160,11 +157,11 @@ func pipelinesEditPage(principal domain.ContextPrincipal, pipelineName string, p
 
 	return pipelineFormPage(principal, "Edit Pipeline", "/ui/pipelines/"+pipelineName+"/update", csrfFieldProvider,
 		Label(Text("Description")),
-		Textarea(Name("description"), Class(core.FormControlClass("min-h-28")), Text(pipeline.Description)),
+		core.TextareaControl("min-h-28", Name("description"), Text(pipeline.Description)),
 		Label(Text("Schedule Cron")),
-		Input(Name("schedule_cron"), Value(optionalStringValue(pipeline.ScheduleCron)), Class(core.FormControlClass())),
+		core.InputControl("", Name("schedule_cron"), Value(optionalStringValue(pipeline.ScheduleCron))),
 		Label(Text("Concurrency Limit")),
-		Input(Name("concurrency_limit"), Value(strconv.Itoa(pipeline.ConcurrencyLimit)), Class(core.FormControlClass())),
+		core.InputControl("", Name("concurrency_limit"), Value(strconv.Itoa(pipeline.ConcurrencyLimit))),
 		Label(Class("inline-flex items-center gap-2"), Input(paused...), Span(Text("Paused"))),
 	)
 }
@@ -172,32 +169,31 @@ func pipelinesEditPage(principal domain.ContextPrincipal, pipelineName string, p
 func pipelineJobsNewPage(principal domain.ContextPrincipal, pipelineName string, csrfFieldProvider func() Node) Node {
 	return pipelineFormPage(principal, "New Pipeline Job", "/ui/pipelines/"+pipelineName+"/jobs", csrfFieldProvider,
 		Label(Text("Name")),
-		Input(Name("name"), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("name"), Required()),
 		Label(Text("Type")),
-		Select(Name("job_type"), Class(core.FormControlClass()),
+		core.SelectControl("", Name("job_type"),
 			Option(Value("NOTEBOOK"), Text("NOTEBOOK")),
 			Option(Value("MODEL_RUN"), Text("MODEL_RUN")),
 		),
 		Label(Text("Notebook ID")),
-		Input(Name("notebook_id"), Class(core.FormControlClass())),
+		core.InputControl("", Name("notebook_id")),
 		Label(Text("Model Selector")),
-		Input(Name("model_selector"), Class(core.FormControlClass())),
+		core.InputControl("", Name("model_selector")),
 		Label(Text("Depends On (comma separated job names)")),
-		Input(Name("depends_on"), Class(core.FormControlClass())),
+		core.InputControl("", Name("depends_on")),
 	)
 }
 
 func pipelineFormPage(principal domain.ContextPrincipal, title, action string, csrfFieldProvider func() Node, fields ...Node) Node {
 	nodes := []Node{csrfFieldProvider()}
 	nodes = append(nodes, fields...)
-	nodes = append(nodes, Div(Class("mt-4"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Save"))))
+	nodes = append(nodes, Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save"))))
 
 	return core.AppPage(
 		title,
 		"pipelines",
 		principal,
-		Div(
-			Class(core.CardClass()),
+		core.Card(
 			Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes)),
 		),
 	)

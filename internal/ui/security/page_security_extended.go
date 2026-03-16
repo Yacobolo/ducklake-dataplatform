@@ -3,6 +3,7 @@ package security
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/ui/core"
@@ -472,23 +473,23 @@ func coreAppPage(title string, principal domain.ContextPrincipal, body ...Node) 
 }
 
 func coreCardClass(extra ...string) string {
-	return core.CardClass(extra...)
+	return core.ClassNames("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]", strings.Join(extra, " "))
 }
 
 func coreCardClassWithTableWrap() string {
-	return core.CardClass("overflow-x-auto")
+	return "overflow-x-auto rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"
 }
 
 func primaryButtonClass() string {
-	return core.PrimaryButtonClass()
+	return "inline-flex min-h-[var(--control-medium-size)] items-center justify-center rounded-lg border border-[var(--button-primary-borderColor-rest)] bg-[var(--button-primary-bgColor-rest)] px-4 text-sm font-medium text-[var(--button-primary-fgColor-rest)] shadow-[var(--shadow-resting-xsmall)] transition-colors hover:border-[var(--button-primary-borderColor-hover)] hover:bg-[var(--button-primary-bgColor-hover)] hover:text-[var(--button-primary-fgColor-hover)]"
 }
 
 func secondaryButtonClass() string {
-	return core.SecondaryButtonClass()
+	return "inline-flex min-h-[var(--control-medium-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-4 text-sm font-medium text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] transition-colors hover:bg-[var(--control-bgColor-hover)]"
 }
 
 func dangerButtonClass() string {
-	return core.DangerButtonClass()
+	return "inline-flex min-h-[var(--control-medium-size)] items-center justify-center rounded-lg border border-[var(--button-danger-borderColor-rest)] bg-[var(--button-danger-bgColor-rest)] px-4 text-sm font-medium text-[var(--button-danger-fgColor-rest)] shadow-[var(--shadow-resting-xsmall)] transition-colors hover:border-[var(--button-danger-borderColor-hover)] hover:bg-[var(--button-danger-bgColor-hover)] hover:text-[var(--button-danger-fgColor-hover)]"
 }
 
 func stackFormClass() string {

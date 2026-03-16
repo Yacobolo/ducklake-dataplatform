@@ -91,7 +91,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Type("submit"),
 				Attr("form", formID),
 				FormAction(c.RunURL),
-				Class(core.ClassNames(core.IconButtonClass("small"), "border-transparent bg-transparent text-[var(--fgColor-success)] hover:border-[var(--borderColor-muted)] hover:bg-[var(--bgColor-muted)]")),
+				Class("inline-flex min-h-[var(--control-small-size)] min-w-[var(--control-small-size)] items-center justify-center rounded-lg border border-transparent bg-transparent px-2 text-[var(--fgColor-success)] hover:border-[var(--borderColor-muted)] hover:bg-[var(--bgColor-muted)]"),
 				Attr("data-run-cell", "true"),
 				Attr("data-notebook-run-cell", "true"),
 				Title("Run cell"),
@@ -103,7 +103,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 		editorInput := Node(Textarea(
 			Name("content"),
-			Class(core.FormControlClass("min-h-[10rem] font-mono text-[0.8125rem]")),
+			Class("w-full rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-2 text-sm text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] transition-colors placeholder:text-[var(--fgColor-muted)] focus:border-[var(--borderColor-accent-emphasis)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-outlineColor)] min-h-[10rem] font-mono text-[0.8125rem]"),
 			Attr("data-cell-editor", "true"),
 			Text(c.Content),
 		))
@@ -116,7 +116,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 					Style("--sql-editor-height:auto; --sql-editor-flex:0 0 auto;"),
 					Textarea(
 						Name("content"),
-						Class(core.FormControlClass("sql-editor-textarea min-h-[10rem] rounded-none border-0 bg-transparent font-mono text-[0.8125rem]")),
+						Class("sql-editor-textarea w-full rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-2 text-sm text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] transition-colors placeholder:text-[var(--fgColor-muted)] focus:border-[var(--borderColor-accent-emphasis)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-outlineColor)] min-h-[10rem] rounded-none border-0 bg-transparent font-mono text-[0.8125rem] shadow-none"),
 						Attr("data-cell-editor", "true"),
 						Attr("spellcheck", "false"),
 						Text(c.Content),
@@ -124,12 +124,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				),
 			)
 		} else {
-			editorInput = Textarea(
-				Name("content"),
-				Class(core.FormControlClass("min-h-[calc(var(--control-xlarge-size)*2)] rounded-none border-0 bg-transparent px-4 pt-4 pb-3 font-mono text-[0.8125rem] focus-visible:outline-none")),
-				Attr("data-cell-editor", "true"),
-				Text(c.Content),
-			)
+			editorInput = core.TextareaControl("min-h-[calc(var(--control-xlarge-size)*2)] rounded-none border-0 bg-transparent px-4 pt-4 pb-3 font-mono text-[0.8125rem] shadow-none focus-visible:outline-none", Name("content"), Attr("data-cell-editor", "true"), Text(c.Content))
 		}
 
 		editorForm := Form(
@@ -158,7 +153,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		cellMenu := Details(
 			Class("relative inline-block"),
 			Summary(
-				Class(core.ClassNames("list-none [&::-webkit-details-marker]:hidden", core.IconButtonClass("small"))),
+				Class("list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] min-w-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"),
 				Title("Cell actions"),
 				Attr("aria-label", "Cell actions"),
 				I(Class(core.IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
@@ -169,7 +164,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 		cellActions := Div(
 			Class("flex flex-col items-center gap-2 opacity-0 pointer-events-none transition-opacity group-hover/notebook-cell:opacity-100 group-hover/notebook-cell:pointer-events-auto max-md:flex-row max-md:opacity-100 max-md:pointer-events-auto"),
-			Button(Type("button"), Class(core.IconButtonClass("small")), Attr("data-drag-handle", "true"), Title("Reorder cell (drag)"), Attr("aria-label", "Reorder cell (drag)"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "grip-vertical"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Reorder cell (drag)"))),
+			core.IconButton("small", Type("button"), Attr("data-drag-handle", "true"), Title("Reorder cell (drag)"), Attr("aria-label", "Reorder cell (drag)"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "grip-vertical"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Reorder cell (drag)"))),
 			cellMenu,
 		)
 
@@ -249,7 +244,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			Span(Class("text-xs font-normal text-[var(--fgColor-muted)]"), Text(strconv.Itoa(len(d.Cells))+" cells")),
 		),
 		Div(Class("pt-2"),
-			Div(Class("mb-2 flex items-center gap-2"), Label(Class("sr-only"), Text("Filter cells")), Input(Type("search"), Class(core.FormControlClass()), Placeholder("Filter cells"), data.Bind("q"), AutoComplete("off"))),
+			Div(Class("mb-2 flex items-center gap-2"), Label(Class("sr-only"), Text("Filter cells")), core.InputControl("", Type("search"), Placeholder("Filter cells"), data.Bind("q"), AutoComplete("off"))),
 			Div(Class("mt-2 max-h-[var(--size-outline-max-height)] overflow-auto"), Ul(Class("m-0 grid list-none gap-0 p-0"), Group(outlineNodes))),
 		),
 	)
@@ -270,15 +265,15 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		Class("sticky top-0 z-20 mb-2 border-b border-[var(--borderColor-muted)] bg-[var(--bgColor-default)] pb-2"),
 		Div(Class("flex flex-wrap items-start justify-between gap-2"),
 			Div(H2(Class("m-0 text-2xl font-semibold"), Text(d.Name)), Div(Class("mt-1 flex flex-wrap gap-2"), Span(Class("text-sm text-[var(--fgColor-muted)]"), Text("Owner "+d.Owner)), descriptionNode)),
-			Div(Class(core.ButtonRowClass("mt-0")),
-				Form(Method("post"), Action(d.RunAllURL), Attr("data-notebook-run-all-form", "true"), d.CSRFFieldFunc(), Input(Type("hidden"), Name("compute_mode"), Value(d.ComputeRequest.Mode)), Input(Type("hidden"), Name("endpoint_name"), Value(d.ComputeRequest.EndpointName)), Input(Type("hidden"), Name("workload_type"), Value(domain.ComputeWorkloadInteractive)), Button(Type("submit"), ID("notebook-run-all"), Class(core.PrimaryButtonClass()), Text("Run all"))),
-				Form(Method("post"), Action(d.RunAllAsyncURL), Attr("data-notebook-run-all-async-form", "true"), d.CSRFFieldFunc(), Input(Type("hidden"), Name("compute_mode"), Value(d.ComputeRequest.Mode)), Input(Type("hidden"), Name("endpoint_name"), Value(d.ComputeRequest.EndpointName)), Input(Type("hidden"), Name("workload_type"), Value(domain.ComputeWorkloadInteractive)), Button(Type("submit"), ID("notebook-run-all-async"), Class(core.SecondaryButtonClass()), Text("Run async"))),
-				A(Href(d.NewCellURL), Class(core.SecondaryButtonClass()), Text("New cell")),
-				A(Href(d.JobsURL), Class(core.SecondaryButtonClass()), Text("Jobs")),
-				A(Href(d.GitRepoURL), Class(core.SecondaryButtonClass()), Text("Git repos")),
+			Div(Class("mt-0 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+				Form(Method("post"), Action(d.RunAllURL), Attr("data-notebook-run-all-form", "true"), d.CSRFFieldFunc(), Input(Type("hidden"), Name("compute_mode"), Value(d.ComputeRequest.Mode)), Input(Type("hidden"), Name("endpoint_name"), Value(d.ComputeRequest.EndpointName)), Input(Type("hidden"), Name("workload_type"), Value(domain.ComputeWorkloadInteractive)), core.PrimaryButton("", Type("submit"), ID("notebook-run-all"), Text("Run all"))),
+				Form(Method("post"), Action(d.RunAllAsyncURL), Attr("data-notebook-run-all-async-form", "true"), d.CSRFFieldFunc(), Input(Type("hidden"), Name("compute_mode"), Value(d.ComputeRequest.Mode)), Input(Type("hidden"), Name("endpoint_name"), Value(d.ComputeRequest.EndpointName)), Input(Type("hidden"), Name("workload_type"), Value(domain.ComputeWorkloadInteractive)), core.SecondaryButton("", Type("submit"), ID("notebook-run-all-async"), Text("Run async"))),
+				core.SecondaryLink(d.NewCellURL, "", Text("New cell")),
+				core.SecondaryLink(d.JobsURL, "", Text("Jobs")),
+				core.SecondaryLink(d.GitRepoURL, "", Text("Git repos")),
 				Details(
 					Class("relative inline-block"),
-					Summary(Class(core.ClassNames("list-none [&::-webkit-details-marker]:hidden", core.IconButtonClass("small"))), Title("Notebook actions"), Attr("aria-label", "Notebook actions"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Notebook actions"))),
+					Summary(Class("list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] min-w-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"), Title("Notebook actions"), Attr("aria-label", "Notebook actions"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Notebook actions"))),
 					Div(Class(dropdownMenuClass("min-w-[14rem]")), actionMenuLink(d.EditURL, "Notebook settings"), actionMenuPost(d.DeleteURL, "Delete notebook", d.CSRFFieldFunc, true)),
 				),
 			),
@@ -319,12 +314,12 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 func notebookJobsAside(jobs []notebookJobRow) Node {
 	if len(jobs) == 0 {
-		return P(Class(core.MutedClass()), Text("No async jobs yet."))
+		return P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No async jobs yet."))
 	}
 	rows := make([]Node, 0, len(jobs))
 	for i := range jobs {
 		job := jobs[i]
-		rows = append(rows, Li(A(Href(job.URL), Text(job.ID)), Text(" "), statusLabel(job.State, notebookJobTone(job.State)), Text(" "), Span(Class(core.MutedClass()), Text(job.Updated))))
+		rows = append(rows, Li(A(Href(job.URL), Text(job.ID)), Text(" "), statusLabel(job.State, notebookJobTone(job.State)), Text(" "), Span(Class("text-xs text-[var(--fgColor-muted)]"), Text(job.Updated))))
 	}
 	return Ul(Group(rows))
 }
@@ -339,9 +334,9 @@ func notebookPromoteCard(d notebookDetailPageData) Node {
 		options = append(options, Option(Value(cell.ID), Text(fmt.Sprintf("%s (%s)", cell.Title, cell.ID))))
 	}
 	if len(options) == 0 {
-		return Div(Class(core.CardClass()), H2(Text("Promote to model")), P(Class(core.MutedClass()), Text("Add at least one SQL cell before promoting notebook output to a model.")))
+		return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), H2(Text("Promote to model")), P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Add at least one SQL cell before promoting notebook output to a model.")))
 	}
-	return Div(Class(core.CardClass()), H2(Text("Promote to model")), Form(Method("post"), Action(d.PromoteURL), d.CSRFFieldFunc(), Input(Type("hidden"), Name("notebook_id"), Value(d.NotebookID)), Label(Text("Output cell")), Select(Name("output_cell_id"), Group(options)), Label(Text("Project")), Input(Name("project_name"), Required(), Class(core.FormControlClass())), Label(Text("Model name")), Input(Name("name"), Required(), Class(core.FormControlClass())), Label(Text("Materialization")), Select(Name("materialization"), Class(core.FormControlClass()), Option(Value("VIEW"), Text("VIEW")), Option(Value("TABLE"), Text("TABLE")), Option(Value("INCREMENTAL"), Text("INCREMENTAL")), Option(Value("EPHEMERAL"), Text("EPHEMERAL"))), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Promote notebook output"))))
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), H2(Text("Promote to model")), Form(Method("post"), Action(d.PromoteURL), Class("grid gap-3"), d.CSRFFieldFunc(), Input(Type("hidden"), Name("notebook_id"), Value(d.NotebookID)), Label(Text("Output cell")), core.SelectControl("", Name("output_cell_id"), Group(options)), Label(Text("Project")), core.InputControl("", Name("project_name"), Required()), Label(Text("Model name")), core.InputControl("", Name("name"), Required()), Label(Text("Materialization")), core.SelectControl("", Name("materialization"), Option(Value("VIEW"), Text("VIEW")), Option(Value("TABLE"), Text("TABLE")), Option(Value("INCREMENTAL"), Text("INCREMENTAL")), Option(Value("EPHEMERAL"), Text("EPHEMERAL"))), core.PrimaryButton("", Type("submit"), Text("Promote notebook output"))))
 }
 
 func notebookComputeCard(d notebookDetailPageData) Node {
@@ -374,43 +369,43 @@ func notebookComputeCard(d notebookDetailPageData) Node {
 	}
 
 	return Div(
-		Class(core.CardClass("sql-compute-card")),
+		Class("sql-compute-card rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		Attr("data-notebook-browser-runtime", "true"),
 		Attr("data-runtime-manifest-endpoint", "/ui/notebooks/runtime/manifest"),
 		H2(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Compute")),
-		P(Class(core.MutedClass()), Text("Interactive SQL cell runs can use the browser-local DuckDB runtime. Notebook Run all and async runs stay on managed compute.")),
-		Div(Class(core.ButtonRowClass()),
-			Select(ID("notebook-compute-mode"), Name("notebook_compute_mode"), Class(core.FormSelectClass("sql-compute-select w-auto min-w-[11rem]")), Group(modeOptions)),
-			Select(ID("notebook-compute-endpoint"), Name("notebook_endpoint_name"), Class(core.FormSelectClass("sql-compute-select w-auto min-w-[12rem]")), Group(endpointOptions)),
-			Button(Type("button"), ID("notebook-reset-local-runtime"), Class(core.SecondaryButtonClass()), I(Class(core.IconGlyphClass()), Attr("data-lucide", "rotate-ccw"), Attr("aria-hidden", "true")), Span(Text("Reset local runtime"))),
-			Button(Type("button"), ID("notebook-cancel-local-run"), Class(core.SecondaryButtonClass()), Disabled(), I(Class(core.IconGlyphClass()), Attr("data-lucide", "square"), Attr("aria-hidden", "true")), Span(Text("Cancel local run"))),
+		P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Interactive SQL cell runs can use the browser-local DuckDB runtime. Notebook Run all and async runs stay on managed compute.")),
+		Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+			core.SelectControl("sql-compute-select w-auto min-w-[11rem]", ID("notebook-compute-mode"), Name("notebook_compute_mode"), Group(modeOptions)),
+			core.SelectControl("sql-compute-select w-auto min-w-[12rem]", ID("notebook-compute-endpoint"), Name("notebook_endpoint_name"), Group(endpointOptions)),
+			core.SecondaryButton("", Type("button"), ID("notebook-reset-local-runtime"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "rotate-ccw"), Attr("aria-hidden", "true")), Span(Text("Reset local runtime"))),
+			core.SecondaryButton("", Type("button"), ID("notebook-cancel-local-run"), Disabled(), I(Class(core.IconGlyphClass()), Attr("data-lucide", "square"), Attr("aria-hidden", "true")), Span(Text("Cancel local run"))),
 		),
 		Div(Class("flex items-start gap-3 rounded-xl border border-[var(--borderColor-attention-muted)] bg-[var(--bgColor-attention-muted)] px-4 py-3 text-sm"), Attr("data-notebook-runtime-banner", "true"),
 			I(Class(core.NavIconClass("mt-0.5")), Attr("data-lucide", "cpu"), Attr("aria-hidden", "true")),
 			Div(Strong(Attr("data-notebook-browser-runtime-title", "true"), Text("Browser runtime")), P(Attr("data-notebook-browser-runtime-message", "true"), Text(d.BrowserRuntime.StatusReason))),
 		),
-		P(Class(core.MutedClass()), Attr("data-notebook-browser-runtime-preflight", "true"), Text("")),
+		P(Class("text-xs text-[var(--fgColor-muted)]"), Attr("data-notebook-browser-runtime-preflight", "true"), Text("")),
 	)
 }
 
 func notebookInsertRail(notebookID string, position int, csrfField func() Node) Node {
 	return Div(Class("notebook-insert-rail relative mx-1 flex h-[var(--control-medium-size)] items-center justify-center py-1"),
 		Div(Class("notebook-insert-actions relative z-[1] inline-flex items-center gap-2 [&_form]:m-0 [&_form]:flex"),
-			Form(Method("post"), Action("/ui/notebooks/"+notebookID+"/cells"), csrfField(), Input(Type("hidden"), Name("cell_type"), Value("sql")), Input(Type("hidden"), Name("content"), Value("")), Input(Type("hidden"), Name("position"), Value(strconv.Itoa(position))), Button(Type("submit"), Class(core.SecondaryButtonClass("small")), Text("SQL"))),
-			Form(Method("post"), Action("/ui/notebooks/"+notebookID+"/cells"), csrfField(), Input(Type("hidden"), Name("cell_type"), Value("markdown")), Input(Type("hidden"), Name("content"), Value("")), Input(Type("hidden"), Name("position"), Value(strconv.Itoa(position))), Button(Type("submit"), Class(core.SecondaryButtonClass("small")), Text("Markdown"))),
+			Form(Method("post"), Action("/ui/notebooks/"+notebookID+"/cells"), csrfField(), Input(Type("hidden"), Name("cell_type"), Value("sql")), Input(Type("hidden"), Name("content"), Value("")), Input(Type("hidden"), Name("position"), Value(strconv.Itoa(position))), core.SecondaryButton("small", Type("submit"), Text("SQL"))),
+			Form(Method("post"), Action("/ui/notebooks/"+notebookID+"/cells"), csrfField(), Input(Type("hidden"), Name("cell_type"), Value("markdown")), Input(Type("hidden"), Name("content"), Value("")), Input(Type("hidden"), Name("position"), Value(strconv.Itoa(position))), core.SecondaryButton("small", Type("submit"), Text("Markdown"))),
 		),
 	)
 }
 
 func notebookResultNode(c notebookCellRow) Node {
 	if c.CellType != string(domain.CellTypeSQL) {
-		return Div(Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Attr("data-notebook-cell-output", "true"), P(Class(core.MutedClass()), Text("Markdown cell output is rendered by your markdown consumer.")))
+		return Div(Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Attr("data-notebook-cell-output", "true"), P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Markdown cell output is rendered by your markdown consumer.")))
 	}
 	if c.LastResult == nil {
-		return Div(Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Attr("data-notebook-cell-output", "true"), P(Class(core.MutedClass()), Text("Run this cell to see output.")))
+		return Div(Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Attr("data-notebook-cell-output", "true"), P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Run this cell to see output.")))
 	}
 	if c.LastResult.Error != "" {
-		return Div(Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-danger-emphasis)] bg-[var(--bgColor-danger-muted)] p-4"), Attr("data-notebook-cell-output", "true"), H4(Text("Query Error")), P(Class(core.MutedClass()), Text("Last runtime: "+humanDuration(c.LastResult.Duration))), Pre(Text(c.LastResult.Error)))
+		return Div(Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-danger-emphasis)] bg-[var(--bgColor-danger-muted)] p-4"), Attr("data-notebook-cell-output", "true"), H4(Text("Query Error")), P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Last runtime: "+humanDuration(c.LastResult.Duration))), Pre(Text(c.LastResult.Error)))
 	}
 	if c.VisualSpec != nil && c.VisualSpec.Kind != domain.VisualOutputTable {
 		switch c.VisualSpec.Kind {
@@ -430,7 +425,7 @@ func notebookResultNode(c notebookCellRow) Node {
 
 func notebookTableResultNode(c notebookCellRow) Node {
 	if c.LastResult == nil {
-		return Div(Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Attr("data-notebook-cell-output", "true"), P(Class(core.MutedClass()), Text("Run this cell to see output.")))
+		return Div(Class("notebook-output flex flex-col gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Attr("data-notebook-cell-output", "true"), P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Run this cell to see output.")))
 	}
 	headers := make([]Node, 0, len(c.LastResult.Columns))
 	for i := range c.LastResult.Columns {
@@ -456,11 +451,11 @@ func notebookTableResultNode(c notebookCellRow) Node {
 	}
 	return Div(Class("notebook-output flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Attr("data-notebook-cell-output", "true"),
 		Div(Class("flex flex-wrap items-center justify-between gap-2"), H4(Text("Output")),
-			Div(Class(core.ButtonRowClass()),
-				A(Href(c.DownloadURL), Class(core.IconButtonClass("small")), Title("Download result CSV"), Attr("aria-label", "Download result CSV"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "download"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Download result CSV"))),
+			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+				core.SecondaryLink(c.DownloadURL, "small", Title("Download result CSV"), Attr("aria-label", "Download result CSV"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "download"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Download result CSV"))),
 			),
 		),
-		P(Class(core.MutedClass()), Text(meta)),
+		P(Class("text-xs text-[var(--fgColor-muted)]"), Text(meta)),
 		Div(Class("overflow-x-auto"), Table(Class(dataTableClass()), THead(Tr(Group(headers))), TBody(Group(rows)))),
 	)
 }

@@ -15,14 +15,13 @@ func formPage(principal domain.ContextPrincipal, title, active, action string, c
 		title,
 		active,
 		principal,
-		Div(
-			Class(core.CardClass()),
+		core.Card(
 			Form(
 				Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
 				Method("post"),
 				Action(action),
 				Group(nodes),
-				Div(Class("form-actions mt-2"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Save"))),
+				Div(Class("form-actions mt-2"), core.PrimaryButton("", Type("submit"), Text("Save"))),
 			),
 		),
 	)

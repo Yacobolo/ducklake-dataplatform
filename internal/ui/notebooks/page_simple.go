@@ -85,13 +85,13 @@ func notebookJobDetailPage(d notebookJobDetailPageData) Node {
 		"notebooks",
 		d.Principal,
 		pageToolbar("Notebook Job", "Inspect a notebook run.", "/ui/notebooks/"+d.NotebookID+"/jobs", "Back to jobs"),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			P(Text("State: "+d.State)),
 			P(Text("Created: "+d.CreatedAt)),
 			P(Text("Updated: "+d.UpdatedAt)),
 			P(Text("Error: "+d.ErrorText)),
 		),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H2(Class("m-0 text-lg font-semibold"), Text("Result payload")),
 			Pre(Class("mt-3 overflow-x-auto rounded-lg bg-[var(--bgColor-muted)] p-3 text-xs"), Text(d.Result)),
 		),
@@ -140,11 +140,11 @@ func notebookGitReposListPage(d notebookGitReposListPageData) Node {
 func notebooksNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
 	return notebookFormPage(principal, "New Notebook", "/ui/notebooks", csrfFieldProvider,
 		Label(Text("Name")),
-		Input(Name("name"), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("name"), Required()),
 		Label(Text("Description")),
-		Textarea(Name("description"), Class(core.FormControlClass("min-h-28"))),
+		core.TextareaControl("min-h-28", Name("description")),
 		Label(Text("Source")),
-		Input(Name("source"), Class(core.FormControlClass())),
+		core.InputControl("", Name("source")),
 	)
 }
 
@@ -155,32 +155,32 @@ func notebooksEditPage(principal domain.ContextPrincipal, notebookID string, not
 	}
 	return notebookFormPage(principal, "Edit Notebook", "/ui/notebooks/"+notebookID+"/update", csrfFieldProvider,
 		Label(Text("Name")),
-		Input(Name("name"), Value(notebook.Name), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("name"), Value(notebook.Name), Required()),
 		Label(Text("Description")),
-		Textarea(Name("description"), Class(core.FormControlClass("min-h-28")), Text(description)),
+		core.TextareaControl("min-h-28", Name("description"), Text(description)),
 	)
 }
 
 func notebookCellsNewPage(principal domain.ContextPrincipal, notebookID string, csrfFieldProvider func() Node) Node {
 	return notebookFormPage(principal, "New Notebook Cell", "/ui/notebooks/"+notebookID+"/cells", csrfFieldProvider,
 		Label(Text("Cell Type")),
-		Select(Name("cell_type"), Class(core.FormControlClass()),
+		core.SelectControl("", Name("cell_type"),
 			Option(Value("sql"), Text("sql")),
 			Option(Value("markdown"), Text("markdown")),
 		),
 		Label(Text("Content")),
-		Textarea(Name("content"), Required(), Class(core.FormControlClass("min-h-40 font-mono"))),
+		core.TextareaControl("min-h-40 font-mono", Name("content"), Required()),
 		Label(Text("Position (optional)")),
-		Input(Name("position"), Class(core.FormControlClass())),
+		core.InputControl("", Name("position")),
 	)
 }
 
 func notebookCellsEditPage(principal domain.ContextPrincipal, notebookID, cellID string, cell *domain.Cell, csrfFieldProvider func() Node) Node {
 	nodes := []Node{
 		Label(Text("Content")),
-		Textarea(Name("content"), Text(cell.Content), Required(), Class(core.FormControlClass("min-h-40 font-mono"))),
+		core.TextareaControl("min-h-40 font-mono", Name("content"), Required(), Text(cell.Content)),
 		Label(Text("Position")),
-		Input(Name("position"), Value(strconv.Itoa(cell.Position)), Class(core.FormControlClass())),
+		core.InputControl("", Name("position"), Value(strconv.Itoa(cell.Position))),
 	}
 	if cell.CellType == domain.CellTypeSQL {
 		visualKind := "table"
@@ -217,32 +217,32 @@ func notebookCellsEditPage(principal domain.ContextPrincipal, notebookID, cellID
 		}
 		nodes = append(nodes,
 			Label(Text("Visual kind")),
-			Select(Name("visual_kind"), Class(core.FormControlClass()),
+			core.SelectControl("", Name("visual_kind"),
 				optionSelected("table", visualKind),
 				optionSelected("metric", visualKind),
 				optionSelected("chart", visualKind),
 			),
 			Label(Text("Chart type")),
-			Select(Name("chart_type"), Class(core.FormControlClass()),
+			core.SelectControl("", Name("chart_type"),
 				optionSelected("bar", chartType),
 				optionSelected("line", chartType),
 				optionSelected("area", chartType),
 				optionSelected("pie", chartType),
 			),
 			Label(Text("Visual title")),
-			Input(Name("visual_title"), Value(title), Class(core.FormControlClass())),
+			core.InputControl("", Name("visual_title"), Value(title)),
 			Label(Text("Visual subtitle")),
-			Input(Name("visual_subtitle"), Value(subtitle), Class(core.FormControlClass())),
+			core.InputControl("", Name("visual_subtitle"), Value(subtitle)),
 			Label(Text("X field")),
-			Input(Name("visual_x"), Value(xField), Class(core.FormControlClass())),
+			core.InputControl("", Name("visual_x"), Value(xField)),
 			Label(Text("Y field")),
-			Input(Name("visual_y"), Value(yField), Class(core.FormControlClass())),
+			core.InputControl("", Name("visual_y"), Value(yField)),
 			Label(Text("Series field")),
-			Input(Name("visual_series"), Value(seriesField), Class(core.FormControlClass())),
+			core.InputControl("", Name("visual_series"), Value(seriesField)),
 			Label(Text("Label field")),
-			Input(Name("visual_label"), Value(labelField), Class(core.FormControlClass())),
+			core.InputControl("", Name("visual_label"), Value(labelField)),
 			Label(Text("Value field")),
-			Input(Name("visual_value"), Value(valueField), Class(core.FormControlClass())),
+			core.InputControl("", Name("visual_value"), Value(valueField)),
 		)
 	}
 	return notebookFormPage(principal, "Edit Notebook Cell", "/ui/notebooks/"+notebookID+"/cells/"+cellID+"/update", csrfFieldProvider, nodes...)
@@ -251,13 +251,13 @@ func notebookCellsEditPage(principal domain.ContextPrincipal, notebookID, cellID
 func notebookGitReposNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
 	return notebookFormPage(principal, "Register Git Repo", "/ui/notebooks/git-repos", csrfFieldProvider,
 		Label(Text("Repository URL")),
-		Input(Name("url"), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("url"), Required()),
 		Label(Text("Branch")),
-		Input(Name("branch"), Value("main"), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("branch"), Value("main"), Required()),
 		Label(Text("Path")),
-		Input(Name("path"), Class(core.FormControlClass())),
+		core.InputControl("", Name("path")),
 		Label(Text("Auth token")),
-		Input(Name("auth_token"), Type("password"), Class(core.FormControlClass())),
+		core.InputControl("", Name("auth_token"), Type("password")),
 	)
 }
 
@@ -281,16 +281,16 @@ func notebookGitRepoDetailPage(d notebookGitRepoDetailPageData) Node {
 		"notebooks",
 		d.Principal,
 		pageToolbar("Git Repo", "Repository details and sync controls.", "/ui/notebooks/git-repos", "Back to repos"),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			P(Text("Repository: "+d.URL)),
 			P(Text("Branch: "+d.Branch)),
 			P(Text("Path: "+d.Path)),
 			P(Text("Owner: "+d.Owner)),
 			P(Text("Last sync: "+d.LastSync)),
 			P(Text("Last commit: "+d.LastCommit)),
-			Div(Class(core.ButtonRowClass()),
-				Form(Method("post"), Action(d.SyncURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Sync repo"))),
-				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(core.DangerButtonClass()), Text("Delete repo"))),
+			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+				Form(Method("post"), Action(d.SyncURL), d.CSRFFieldFunc(), core.PrimaryButton("", Type("submit"), Text("Sync repo"))),
+				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), core.DangerButton("", Type("submit"), Text("Delete repo"))),
 			),
 		),
 	)
@@ -311,7 +311,7 @@ func notebookGitRepoSyncResultPage(d notebookGitRepoSyncResultPageData) Node {
 		"notebooks",
 		d.Principal,
 		pageToolbar("Git Sync", "Latest sync result.", "/ui/notebooks/git-repos/"+d.GitRepoID, "Back to repo"),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			P(Text("Created notebooks: "+strconv.Itoa(d.Result.NotebooksCreated))),
 			P(Text("Updated notebooks: "+strconv.Itoa(d.Result.NotebooksUpdated))),
 			P(Text("Deleted notebooks: "+strconv.Itoa(d.Result.NotebooksDeleted))),
@@ -335,13 +335,13 @@ func notebookGitRepoSyncUnavailablePage(d notebookGitRepoSyncUnavailablePageData
 		"notebooks",
 		d.Principal,
 		pageToolbar("Git Sync", "Sync is not available yet.", "/ui/notebooks/git-repos/"+d.GitRepoID, "Back to repo"),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H2(Class("m-0 text-lg font-semibold"), Text("Sync is not available yet")),
 			P(Text(d.Message)),
 			P(Text("Repository: "+d.RepoURL)),
 			P(Text("Branch: "+d.Branch)),
 			P(Text("Path: "+d.Path)),
-			P(Class(core.MutedClass()), Text("The repo is registered correctly, but server-side sync execution has not been implemented yet.")),
+			P(Class("text-xs text-[var(--fgColor-muted)]"), Text("The repo is registered correctly, but server-side sync execution has not been implemented yet.")),
 		),
 	)
 }
@@ -349,12 +349,12 @@ func notebookGitRepoSyncUnavailablePage(d notebookGitRepoSyncUnavailablePageData
 func notebookFormPage(principal domain.ContextPrincipal, title, action string, csrfFieldProvider func() Node, fields ...Node) Node {
 	nodes := []Node{csrfFieldProvider()}
 	nodes = append(nodes, fields...)
-	nodes = append(nodes, Div(Class("mt-3"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Save"))))
+	nodes = append(nodes, Div(Class("mt-3"), core.PrimaryButton("", Type("submit"), Text("Save"))))
 	return core.AppPage(
 		title,
 		"notebooks",
 		principal,
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			Form(Method("post"), Action(action), Class("grid gap-3"), Group(nodes)),
 		),
 	)
@@ -368,13 +368,13 @@ func optionSelected(value, selected string) Node {
 }
 
 func pageToolbar(title, description, href, label string) Node {
-	return Div(Class(core.CardClass()),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		Div(Class("flex flex-wrap items-center justify-between gap-3"),
 			Div(Class("flex min-w-0 flex-col gap-1"),
 				Span(Class("inline-flex items-center rounded-full bg-[var(--bgColor-muted)] px-2 py-0.5 text-xs font-medium text-[var(--fgColor-muted)]"), Text(title)),
 				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(description)),
 			),
-			A(Href(href), Class(core.PrimaryButtonClass()), Text(label)),
+			core.PrimaryLink(href, "", Text(label)),
 		),
 	)
 }
@@ -382,9 +382,9 @@ func pageToolbar(title, description, href, label string) Node {
 func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 	cta := Node(nil)
 	if ctaLabel != "" && ctaHref != "" {
-		cta = A(Href(ctaHref), Class(core.PrimaryButtonClass()), Text(ctaLabel))
+		cta = core.PrimaryLink(ctaHref, "", Text(ctaLabel))
 	}
-	return Div(Class(core.CardClass("text-center")),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-[var(--shadow-resting-xsmall)]"),
 		P(Class("m-0 text-lg font-semibold"), Text("No results yet")),
 		P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(message)),
 		cta,
@@ -396,7 +396,7 @@ func tableCard(headers []string, rows []Node) Node {
 	for i := range headers {
 		headerNodes = append(headerNodes, Th(Class("px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.02em] text-[var(--fgColor-muted)]"), Text(headers[i])))
 	}
-	return Div(Class(core.CardClass("overflow-x-auto")),
+	return Div(Class("overflow-x-auto rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		Table(Class("min-w-full border-collapse"),
 			THead(Tr(Group(headerNodes))),
 			TBody(Group(rows)),
@@ -412,18 +412,18 @@ func paginationCard(basePath string, page domain.PageRequest, total int64) Node 
 	summary := "Showing " + strconv.Itoa(shown) + " of " + strconv.FormatInt(total, 10) + " entries."
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
-		return Div(Class(core.CardClass()),
+		return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			Div(Class("flex items-center justify-between gap-3"),
 				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
-				Span(Class(core.ClassNames(core.SecondaryButtonClass("small"), "pointer-events-none opacity-60")), Attr("aria-disabled", "true"), Text("Next")),
+				Span(Class("inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
 			),
 		)
 	}
 	u := basePath + "?max_results=" + strconv.Itoa(page.Limit()) + "&page_token=" + nextToken
-	return Div(Class(core.CardClass()),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		Div(Class("flex items-center justify-between gap-3"),
 			P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
-			A(Href(u), Class(core.SecondaryButtonClass("small")), Text("Next page")),
+			core.SecondaryLink(u, "small", Text("Next page")),
 		),
 	)
 }

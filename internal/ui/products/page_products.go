@@ -90,8 +90,8 @@ func productsListPage(principal domain.ContextPrincipal, items []domain.DataProd
 					H2(Class(assetTitleClass()), Text("Products are the governed interface consumers should discover first.")),
 					P(Class(assetDescriptionClass()), Text("Use products to package ownership, contract, runtime outputs, and trust state around the datasets your platform publishes.")),
 					Div(Class(assetHeroActionsClass()),
-						A(Href("/ui/products/new"), Class(core.PrimaryButtonClass()), Text("New product")),
-						A(Href("/ui/assets"), Class(core.SecondaryButtonClass()), Text("Open runtime assets")),
+						core.PrimaryLink("/ui/products/new", "", Text("New product")),
+						core.SecondaryLink("/ui/assets", "", Text("Open runtime assets")),
 					),
 				),
 			),
@@ -105,7 +105,7 @@ func productsListPage(principal domain.ContextPrincipal, items []domain.DataProd
 			Div(Class(assetTypeBandClass()),
 				Div(Class(assetSectionHeadClass()),
 					H2(Text("Published catalog")),
-					P(Class(core.MutedClass()), Text("Products link business ownership to runtime assets and semantic entrypoints.")),
+					P(Class("text-sm text-[var(--fgColor-muted)]"), Text("Products link business ownership to runtime assets and semantic entrypoints.")),
 				),
 				func() Node {
 					if len(cards) == 0 {
@@ -241,7 +241,7 @@ func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataPro
 			),
 			Div(Class(assetDetailLayoutClass()),
 				Div(Class(assetDetailMainClass()),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Contract")), P(Class(sectionCopyClass()), Text("Consumer-facing contract and SLO expectations."))),
 						assetFactList([][2]string{
 							{"Data grain", fallbackString(detail.Product.Contract.DataGrain, "-")},
@@ -252,34 +252,34 @@ func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataPro
 							{"Change policy", fallbackString(detail.Product.Contract.BreakingChangePolicy, "-")},
 						}),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Latest outputs")), P(Class(sectionCopyClass()), Text("Runtime resources linked to the current product release."))),
 						Ul(Class(assetListClass()), Group(outputs)),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Semantic entrypoints")), P(Class(sectionCopyClass()), Text("Consumer-facing semantic models linked to the current product release."))),
 						Ul(Class(assetListClass()), Group(semanticEntrypoints)),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Version history")), P(Class(sectionCopyClass()), Text("Published state is versioned even when the UI is still minimal."))),
 						Div(Class(assetBadgeRowClass()), Group(versionBadges)),
 						Ul(Class(assetListClass("mt-3")), Group(productVersionLinks(detail))),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Dependencies")), P(Class(sectionCopyClass()), Text("Upstream products that affect this product's trust state."))),
 						Ul(Class(assetListClass()), Group(dependencies)),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Subscriptions")), P(Class(sectionCopyClass()), Text("Consumers following product change events."))),
 						Ul(Class(assetListClass()), Group(subscriptions)),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Recent events")), P(Class(sectionCopyClass()), Text("Durable product lifecycle and health events."))),
 						Ul(Class(assetListClass()), Group(events)),
 					),
 				),
 				Div(Class(assetDetailRailClass()),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						H2(Class(sectionTitleClass()), Text("Ownership")),
 						assetFactList([][2]string{
 							{"Domain", detail.Domain.Name},
@@ -289,35 +289,35 @@ func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataPro
 							{"Access path", fallbackString(detail.Product.AccessRequestPath, "-")},
 						}),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						H2(Class(sectionTitleClass()), Text("Lifecycle")),
 						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/publish"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
 							Div(Class("form-group"),
 								Label(For("publish-version"), Text("Publish version")),
-								Input(Type("number"), Name("version"), ID("publish-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class(core.FormControlClass())),
+								core.InputControl("", Type("number"), Name("version"), ID("publish-version"), Value(defaultVersionValue(detail.Versions)), Min("1")),
 							),
-							Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Publish")),
+							core.PrimaryButton("", Type("submit"), Text("Publish")),
 						),
 						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/deprecate"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0 mt-3"),
 							Div(Class("form-group"),
 								Label(For("deprecate-version"), Text("Deprecate version")),
-								Input(Type("number"), Name("version"), ID("deprecate-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class(core.FormControlClass())),
+								core.InputControl("", Type("number"), Name("version"), ID("deprecate-version"), Value(defaultVersionValue(detail.Versions)), Min("1")),
 							),
 							Div(Class("form-group"),
 								Label(For("replacement-slug"), Text("Replacement product slug")),
-								Input(Type("text"), Name("replacement_slug"), ID("replacement-slug"), Class(core.FormControlClass()), Placeholder("replacement-product")),
+								core.InputControl("", Type("text"), Name("replacement_slug"), ID("replacement-slug"), Placeholder("replacement-product")),
 							),
-							Button(Type("submit"), Class(core.SecondaryButtonClass()), Text("Deprecate")),
+							core.SecondaryButton("", Type("submit"), Text("Deprecate")),
 						),
 						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/retire"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0 mt-3"),
 							Div(Class("form-group"),
 								Label(For("retire-version"), Text("Retire version")),
-								Input(Type("number"), Name("version"), ID("retire-version"), Value(defaultVersionValue(detail.Versions)), Min("1"), Class(core.FormControlClass())),
+								core.InputControl("", Type("number"), Name("version"), ID("retire-version"), Value(defaultVersionValue(detail.Versions)), Min("1")),
 							),
-							Button(Type("submit"), Class(core.SecondaryButtonClass()), Text("Retire")),
+							core.SecondaryButton("", Type("submit"), Text("Retire")),
 						),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						H2(Class(sectionTitleClass()), Text("New Version")),
 						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/versions"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
 							productFormField("compatibility_level", "Compatibility", domain.ProductCompatibilityBackwardCompatible),
@@ -331,22 +331,22 @@ func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataPro
 							productFormField("access_request_path", "Access path", detail.Product.AccessRequestPath),
 							productFormField("output_asset_keys", "Output asset keys", joinOutputAssetKeys(detail.Outputs)),
 							productFormField("semantic_model_refs", "Semantic model refs", joinSemanticModelRefs(detail.SemanticEntrypoints)),
-							Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Create draft version")),
+							core.PrimaryButton("", Type("submit"), Text("Create draft version")),
 						),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						H2(Class(sectionTitleClass()), Text("Dependency")),
 						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/dependencies"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
 							productFormField("depends_on_slug", "Depends on product slug", "upstream-product"),
-							Button(Type("submit"), Class(core.SecondaryButtonClass()), Text("Add dependency")),
+							core.SecondaryButton("", Type("submit"), Text("Add dependency")),
 						),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						H2(Class(sectionTitleClass()), Text("Subscribe")),
 						Form(Method("post"), Action("/ui/products/"+url.PathEscape(detail.Product.Slug)+"/subscriptions"), Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
 							productFormField("event_type", "Event type", "freshness_breach"),
 							productFormField("channel", "Channel", "inbox"),
-							Button(Type("submit"), Class(core.SecondaryButtonClass()), Text("Subscribe")),
+							core.SecondaryButton("", Type("submit"), Text("Subscribe")),
 						),
 					),
 				),
@@ -402,7 +402,7 @@ func productVersionPage(principal domain.ContextPrincipal, detail *domain.DataPr
 			),
 			Div(Class(assetDetailLayoutClass()),
 				Div(Class(assetDetailMainClass()),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Contract snapshot")), P(Class(sectionCopyClass()), Text("Versioned consumer-facing contract fields."))),
 						assetFactList([][2]string{
 							{"Data grain", fallbackString(version.Contract.DataGrain, "-")},
@@ -413,17 +413,17 @@ func productVersionPage(principal domain.ContextPrincipal, detail *domain.DataPr
 							{"Change policy", fallbackString(version.Contract.BreakingChangePolicy, "-")},
 						}),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Outputs")), P(Class(sectionCopyClass()), Text("Runtime assets currently linked to this release snapshot."))),
 						Ul(Class(assetListClass()), Group(outputs)),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						Div(Class(assetSectionHeadClass()), H2(Class(sectionTitleClass()), Text("Semantic entrypoints")), P(Class(sectionCopyClass()), Text("Semantic entrypoints exposed by this release."))),
 						Ul(Class(assetListClass()), Group(semanticEntrypoints)),
 					),
 				),
 				Div(Class(assetDetailRailClass()),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						H2(Class(sectionTitleClass()), Text("Release metadata")),
 						assetFactList([][2]string{
 							{"Release state", version.ReleaseState},
@@ -434,10 +434,10 @@ func productVersionPage(principal domain.ContextPrincipal, detail *domain.DataPr
 							{"Created at", formatTime(version.CreatedAt)},
 						}),
 					),
-					Div(Class(core.CardClass(assetSectionClass())),
+					Div(Class(assetSectionCardClass()),
 						H2(Class(sectionTitleClass()), Text("Navigate")),
-						P(Class(core.MutedClass()), Text("Inspect the full product control plane or switch versions.")),
-						A(Href("/ui/products/"+url.PathEscape(detail.Product.Slug)), Class(core.SecondaryButtonClass()), Text("Back to product")),
+						P(Class("text-sm text-[var(--fgColor-muted)]"), Text("Inspect the full product control plane or switch versions.")),
+						core.SecondaryLink("/ui/products/"+url.PathEscape(detail.Product.Slug), "", Text("Back to product")),
 						Ul(Class(assetListClass("mt-3")), Group(productVersionLinks(detail))),
 					),
 				),
@@ -588,7 +588,7 @@ func quickFilterCardWithValue(placeholder, initialValue string, extraControls ..
 		Div(
 			Class("flex min-w-[min(20rem,100%)] flex-1 flex-col gap-1"),
 			Label(Class("sr-only"), Text("Quick filter")),
-			Input(Type("search"), Class(core.FormControlClass()), Name("q"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off"), Attr("data-quick-filter-input", "true")),
+			core.InputControl("", Type("search"), Name("q"), Placeholder(placeholder), data.Bind("q"), AutoComplete("off"), Attr("data-quick-filter-input", "true")),
 		),
 	}
 	controls = append(controls, extraControls...)
@@ -618,7 +618,7 @@ func quickFilterCardWithValue(placeholder, initialValue string, extraControls ..
 })();`
 
 	return Div(
-		Class(core.CardClass()),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		data.Signals(map[string]any{"q": initialValue}),
 		Div(Class("flex flex-wrap items-center gap-3"), Group(controls)),
 		Script(Raw(syncScript)),
@@ -628,10 +628,10 @@ func quickFilterCardWithValue(placeholder, initialValue string, extraControls ..
 func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 	cta := Node(nil)
 	if ctaLabel != "" && ctaHref != "" {
-		cta = A(Href(ctaHref), Class(core.PrimaryButtonClass()), Text(ctaLabel))
+		cta = core.PrimaryLink(ctaHref, "", Text(ctaLabel))
 	}
 	return Div(
-		Class(core.CardClass("text-center")),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-[var(--shadow-resting-xsmall)]"),
 		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"),
 			I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true")),
 		),
@@ -649,27 +649,27 @@ func paginationCard(basePath string, page domain.PageRequest, total int64) Node 
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
 		return Div(
-			Class(core.CardClass()),
+			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			Div(
 				Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
 				Div(Class("flex min-w-0 flex-col gap-1"),
 					P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")),
 					P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
 				),
-				Span(Class(core.ClassNames(core.SecondaryButtonClass("small"), "pointer-events-none opacity-60")), Attr("aria-disabled", "true"), Text("Next")),
+				Span(Class("inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
 			),
 		)
 	}
 	u := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
 	return Div(
-		Class(core.CardClass()),
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		Div(
 			Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
 			Div(Class("flex min-w-0 flex-col gap-1"),
 				P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")),
 				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
 			),
-			A(Href(u), Class(core.SecondaryButtonClass("small")), Text("Next page")),
+			core.SecondaryLink(u, "small", Text("Next page")),
 		),
 	)
 }
@@ -738,8 +738,10 @@ func assetMetricLabelClass() string {
 func assetMetricValueClass() string {
 	return "m-0 text-2xl font-semibold text-[var(--fgColor-default)]"
 }
-func assetMetricHintClass() string   { return "m-0 text-xs text-[var(--fgColor-muted)]" }
-func assetTypeBandClass() string     { return core.CardClass("flex flex-col gap-4") }
+func assetMetricHintClass() string { return "m-0 text-xs text-[var(--fgColor-muted)]" }
+func assetTypeBandClass() string {
+	return "flex flex-col gap-4 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"
+}
 func assetShowcaseGridClass() string { return "grid gap-3 lg:grid-cols-2 2xl:grid-cols-3" }
 func assetShowcaseCardClass() string {
 	return "flex h-full flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4 text-inherit no-underline shadow-[var(--shadow-resting-xsmall)] transition-colors hover:border-[var(--borderColor-accent-muted)] hover:bg-[var(--control-bgColor-hover)]"
@@ -759,6 +761,9 @@ func assetDetailLayoutClass() string {
 func assetDetailMainClass() string { return "flex min-w-0 flex-col gap-4" }
 func assetDetailRailClass() string { return "flex min-w-0 flex-col gap-4" }
 func assetSectionClass() string    { return "flex flex-col gap-4" }
+func assetSectionCardClass() string {
+	return "flex flex-col gap-4 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"
+}
 func assetListClass(extra ...string) string {
 	return core.ClassNames("grid gap-2", strings.Join(extra, " "))
 }

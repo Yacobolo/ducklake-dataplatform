@@ -66,7 +66,7 @@ type macroImpactPageData struct {
 }
 
 func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class(core.MutedClass()), Text("No macros yet.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No macros yet.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
@@ -78,7 +78,7 @@ func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData,
 				Td(statusPill(row.Status, "neutral")),
 			))
 		}
-		table = Div(Class(core.TableWrapClass()),
+		table = Div(Class("overflow-x-auto"),
 			Table(Class("min-w-full text-left text-sm"),
 				THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Visibility")), Th(Text("Status")))),
 				TBody(Group(tableRows)),
@@ -87,10 +87,10 @@ func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData,
 	}
 
 	return core.AppPage("Macros", "macros", principal,
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			Div(Class("mb-4 flex flex-wrap items-center justify-between gap-3"),
 				Div(H2(Class("m-0 text-xl font-semibold"), Text("Macros")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Create and manage reusable SQL and transformation helpers."))),
-				A(Href("/ui/macros/new"), Class(core.PrimaryButtonClass()), Text("New macro")),
+				core.PrimaryLink("/ui/macros/new", "", Text("New macro")),
 			),
 			table,
 			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" macros. Total: "+strconv.FormatInt(total, 10))),
@@ -99,7 +99,7 @@ func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData,
 }
 
 func macroDetailPage(d macroDetailPageData) Node {
-	revisions := Node(P(Class(core.MutedClass()), Text("No revisions yet.")))
+	revisions := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No revisions yet.")))
 	if len(d.Revisions) > 0 {
 		rows := make([]Node, 0, len(d.Revisions))
 		for i := range d.Revisions {
@@ -111,7 +111,7 @@ func macroDetailPage(d macroDetailPageData) Node {
 				Td(Text(rev.Created)),
 			))
 		}
-		revisions = Div(Class(core.TableWrapClass()),
+		revisions = Div(Class("overflow-x-auto"),
 			Table(Class("min-w-full text-left text-sm"),
 				THead(Tr(Th(Text("Version")), Th(Text("Status")), Th(Text("Created by")), Th(Text("Created")))),
 				TBody(Group(rows)),
@@ -120,17 +120,17 @@ func macroDetailPage(d macroDetailPageData) Node {
 	}
 
 	return core.AppPage("Macro: "+d.Name, "macros", d.Principal,
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			Div(Class("flex flex-wrap items-start justify-between gap-3"),
 				Div(
 					H2(Class("m-0 text-xl font-semibold"), Text(d.Name)),
 					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Owner: "+emptyDash(d.Owner))),
 				),
-				Div(Class(core.ButtonRowClass("mt-0")),
-					A(Href(d.EditURL), Class(core.SecondaryButtonClass()), Text("Edit")),
-					A(Href(d.DiffURL), Class(core.SecondaryButtonClass()), Text("Diff revisions")),
-					A(Href(d.ImpactURL), Class(core.SecondaryButtonClass()), Text("Impact")),
-					Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), Button(Type("submit"), Class(core.DangerButtonClass()), Text("Delete"))),
+				Div(Class("mt-0 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+					core.SecondaryLink(d.EditURL, "", Text("Edit")),
+					core.SecondaryLink(d.DiffURL, "", Text("Diff revisions")),
+					core.SecondaryLink(d.ImpactURL, "", Text("Impact")),
+					Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), core.DangerButton("", Type("submit"), Text("Delete"))),
 				),
 			),
 			Dl(Class("mt-4 grid gap-3 sm:grid-cols-3"),
@@ -139,11 +139,11 @@ func macroDetailPage(d macroDetailPageData) Node {
 				metaRow("Status", d.Status),
 			),
 		),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Definition")),
 			Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Definition)),
 		),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Revisions")),
 			revisions,
 		),
@@ -153,43 +153,43 @@ func macroDetailPage(d macroDetailPageData) Node {
 func macrosNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
 	return macroFormPage(principal, "New Macro", "/ui/macros", csrfFieldProvider,
 		Label(Text("Name")),
-		Input(Name("name"), Required(), Class(core.FormControlClass())),
+		core.InputControl("", Name("name"), Required()),
 		Label(Text("Type")),
-		Select(Name("macro_type"), Class(core.FormControlClass()),
+		core.SelectControl("", Name("macro_type"),
 			Option(Value("SCALAR"), Text("SCALAR")),
 			Option(Value("TABLE"), Text("TABLE")),
 		),
 		Label(Text("Visibility")),
-		Select(Name("visibility"), Class(core.FormControlClass()),
+		core.SelectControl("", Name("visibility"),
 			Option(Value("project"), Text("project")),
 			Option(Value("catalog_global"), Text("catalog_global")),
 			Option(Value("system"), Text("system")),
 		),
 		Label(Text("Description")),
-		Textarea(Name("description"), Class(core.FormControlClass("min-h-24"))),
+		core.TextareaControl("min-h-24", Name("description")),
 		Label(Text("Parameters (comma separated)")),
-		Input(Name("parameters"), Class(core.FormControlClass())),
+		core.InputControl("", Name("parameters")),
 		Label(Text("Body")),
-		Textarea(Name("body"), Required(), Class(core.FormControlClass("min-h-40 font-mono text-xs"))),
+		core.TextareaControl("min-h-40 font-mono text-xs", Name("body"), Required()),
 	)
 }
 
 func macrosEditPage(principal domain.ContextPrincipal, macroName string, macro *domain.Macro, csrfFieldProvider func() Node) Node {
 	return macroFormPage(principal, "Edit Macro", "/ui/macros/"+macroName+"/update", csrfFieldProvider,
 		Label(Text("Description")),
-		Textarea(Name("description"), Class(core.FormControlClass("min-h-24")), Text(macro.Description)),
+		core.TextareaControl("min-h-24", Name("description"), Text(macro.Description)),
 		Label(Text("Visibility")),
-		Select(Name("visibility"), Class(core.FormControlClass()),
+		core.SelectControl("", Name("visibility"),
 			optionSelected("project", macro.Visibility),
 			optionSelected("catalog_global", macro.Visibility),
 			optionSelected("system", macro.Visibility),
 		),
 		Label(Text("Parameters (comma separated)")),
-		Input(Name("parameters"), Value(csvValues(macro.Parameters)), Class(core.FormControlClass())),
+		core.InputControl("", Name("parameters"), Value(csvValues(macro.Parameters))),
 		Label(Text("Body")),
-		Textarea(Name("body"), Required(), Class(core.FormControlClass("min-h-40 font-mono text-xs")), Text(macro.Body)),
+		core.TextareaControl("min-h-40 font-mono text-xs", Name("body"), Required(), Text(macro.Body)),
 		Label(Text("Status")),
-		Select(Name("status"), Class(core.FormControlClass()),
+		core.SelectControl("", Name("status"),
 			optionSelected("ACTIVE", macro.Status),
 			optionSelected("DEPRECATED", macro.Status),
 		),
@@ -199,10 +199,10 @@ func macrosEditPage(principal domain.ContextPrincipal, macroName string, macro *
 func macroFormPage(principal domain.ContextPrincipal, title, action string, csrfFieldProvider func() Node, fields ...Node) Node {
 	nodes := []Node{csrfFieldProvider()}
 	nodes = append(nodes, fields...)
-	nodes = append(nodes, Div(Class("mt-4"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Save"))))
+	nodes = append(nodes, Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save"))))
 
 	return core.AppPage(title, "macros", principal,
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes)),
 		),
 	)
@@ -211,10 +211,10 @@ func macroFormPage(principal domain.ContextPrincipal, title, action string, csrf
 func macroDiffPage(d macroDiffPageData) Node {
 	if d.Diff == nil {
 		return core.AppPage("Macro Diff: "+d.Name, "macros", d.Principal,
-			Div(Class(core.CardClass()),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 				H2(Class("mt-0 text-xl font-semibold"), Text("Macro diff")),
-				P(Class(core.MutedClass()), Text("At least two revisions are required to diff a macro.")),
-				A(Href("/ui/macros/"+d.Name), Class(core.SecondaryButtonClass()), Text("Back to macro")),
+				P(Class("text-xs text-[var(--fgColor-muted)]"), Text("At least two revisions are required to diff a macro.")),
+				core.SecondaryLink("/ui/macros/"+d.Name, "", Text("Back to macro")),
 			),
 		)
 	}
@@ -228,12 +228,12 @@ func macroDiffPage(d macroDiffPageData) Node {
 	}
 
 	return core.AppPage("Macro Diff: "+d.Name, "macros", d.Principal,
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H2(Class("mt-0 text-xl font-semibold"), Text("Compare revisions")),
 			Form(Class("grid gap-3 md:grid-cols-2"), Method("get"), Action("/ui/macros/"+d.Name+"/diff"),
-				Div(Label(Text("From revision")), Select(Name("from"), Class(core.FormControlClass()), Group(fromOptions))),
-				Div(Label(Text("To revision")), Select(Name("to"), Class(core.FormControlClass()), Group(toOptions))),
-				Div(Class("md:col-span-2"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Compare revisions"))),
+				Div(Label(Text("From revision")), core.SelectControl("", Name("from"), Group(fromOptions))),
+				Div(Label(Text("To revision")), core.SelectControl("", Name("to"), Group(toOptions))),
+				Div(Class("md:col-span-2"), core.PrimaryButton("", Type("submit"), Text("Compare revisions"))),
 			),
 			Dl(Class("mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5"),
 				metaRow("Changed", boolLabel(d.Diff.Changed)),
@@ -243,17 +243,17 @@ func macroDiffPage(d macroDiffPageData) Node {
 				metaRow("Status changed", boolLabel(d.Diff.StatusChanged)),
 			),
 		),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Parameters")),
 			P(Text("From: "+stringsJoin(d.Diff.FromParameters))),
 			P(Text("To: "+stringsJoin(d.Diff.ToParameters))),
 		),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Description")),
 			P(Text("From: "+emptyDash(d.Diff.FromDescription))),
 			P(Text("To: "+emptyDash(d.Diff.ToDescription))),
 		),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Body")),
 			H4(Class("mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--fgColor-muted)]"), Text("From")),
 			Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Diff.FromBody)),
@@ -274,9 +274,9 @@ func macroImpactPage(d macroImpactPageData) Node {
 
 func macroImpactSection(title string, rowsData []macroImpactRowData, emptyMessage string) Node {
 	if len(rowsData) == 0 {
-		return Div(Class(core.CardClass()),
+		return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H2(Class("mt-0 text-lg font-semibold"), Text(title)),
-			P(Class(core.MutedClass()), Text(emptyMessage)),
+			P(Class("text-xs text-[var(--fgColor-muted)]"), Text(emptyMessage)),
 		)
 	}
 	rows := make([]Node, 0, len(rowsData))
@@ -284,9 +284,9 @@ func macroImpactSection(title string, rowsData []macroImpactRowData, emptyMessag
 		row := rowsData[i]
 		rows = append(rows, Tr(Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.ModelName))), Td(Text(row.LastSeen))))
 	}
-	return Div(Class(core.CardClass()),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		H2(Class("mt-0 text-lg font-semibold"), Text(title)),
-		Div(Class(core.TableWrapClass()),
+		Div(Class("overflow-x-auto"),
 			Table(Class("min-w-full text-left text-sm"),
 				THead(Tr(Th(Text("Model")), Th(Text("Last seen")))),
 				TBody(Group(rows)),

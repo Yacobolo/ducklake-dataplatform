@@ -11,26 +11,26 @@ import (
 func componentsPage(principal domain.ContextPrincipal) Node {
 	buttonShowcase := Div(
 		Class("flex flex-wrap items-center gap-3"),
-		Button(Type("button"), Class(core.SecondaryButtonClass()), Text("Default")),
-		Button(Type("button"), Class(core.PrimaryButtonClass()), Text("Primary")),
-		Button(Type("button"), Class(core.DangerButtonClass()), Text("Danger")),
-		Button(Type("button"), Class(core.SecondaryButtonClass("small")), Text("Small")),
-		Button(Type("button"), Class(core.IconButtonClass("small")), Attr("aria-label", "Settings"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "settings"), Attr("aria-hidden", "true"))),
+		core.SecondaryButton("", Type("button"), Text("Default")),
+		core.PrimaryButton("", Type("button"), Text("Primary")),
+		core.DangerButton("", Type("button"), Text("Danger")),
+		core.SecondaryButton("small", Type("button"), Text("Small")),
+		core.IconButton("small", Type("button"), Attr("aria-label", "Settings"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "settings"), Attr("aria-hidden", "true"))),
 	)
 
 	buttonGroupShowcase := Div(
 		Class("flex flex-wrap items-center gap-3"),
 		Div(
-			Class(core.ButtonRowClass()),
-			Button(Type("button"), Class(core.SecondaryButtonClass("small")), Text("Run")),
-			Button(Type("button"), Class(core.SecondaryButtonClass("small")), Text("Explain")),
-			Button(Type("button"), Class(core.SecondaryButtonClass("small")), Text("History")),
+			Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+			core.SecondaryButton("small", Type("button"), Text("Run")),
+			core.SecondaryButton("small", Type("button"), Text("Explain")),
+			core.SecondaryButton("small", Type("button"), Text("History")),
 		),
 		Div(
-			Class(core.ButtonRowClass()),
-			Button(Type("button"), Class(core.IconButtonClass("small")), Attr("aria-label", "Refresh"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "refresh-cw"), Attr("aria-hidden", "true"))),
-			Button(Type("button"), Class(core.IconButtonClass("small")), Attr("aria-label", "Download"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "download"), Attr("aria-hidden", "true"))),
-			Button(Type("button"), Class(core.IconButtonClass("small")), Attr("aria-label", "Share"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "share-2"), Attr("aria-hidden", "true"))),
+			Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+			core.IconButton("small", Type("button"), Attr("aria-label", "Refresh"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "refresh-cw"), Attr("aria-hidden", "true"))),
+			core.IconButton("small", Type("button"), Attr("aria-label", "Download"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "download"), Attr("aria-hidden", "true"))),
+			core.IconButton("small", Type("button"), Attr("aria-label", "Share"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "share-2"), Attr("aria-hidden", "true"))),
 		),
 	)
 
@@ -59,12 +59,12 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 	formShowcase := Div(
 		Class("flex flex-col gap-3"),
 		Label(Text("Search assets")),
-		Input(Type("search"), Class(core.FormControlClass()), Placeholder("orders.daily")),
+		core.InputControl("", Type("search"), Placeholder("orders.daily")),
 		Label(Text("Catalog")),
-		Select(Class(core.FormSelectClass()), Option(Text("analytics")), Option(Text("warehouse"))),
+		core.SelectControl("", Option(Text("analytics")), Option(Text("warehouse"))),
 		Label(Text("Description")),
 		Textarea(Placeholder("Add details for teammates")),
-		Div(Class(core.ButtonRowClass()), Button(Type("button"), Class(core.PrimaryButtonClass()), Text("Save")), Button(Type("button"), Class(core.SecondaryButtonClass()), Text("Cancel"))),
+		Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"), core.PrimaryButton("", Type("button"), Text("Save")), core.SecondaryButton("", Type("button"), Text("Cancel"))),
 	)
 
 	twoColumnFormShowcase := Div(
@@ -72,12 +72,12 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 		Div(
 			Class("flex flex-col gap-3"),
 			Label(Text("Model name")),
-			Input(Type("text"), Class(core.FormControlClass()), Value("revenue_daily")),
+			core.InputControl("", Type("text"), Value("revenue_daily")),
 		),
 		Div(
 			Class("flex flex-col gap-3"),
 			Label(Text("Owner")),
-			Input(Type("text"), Class(core.FormControlClass()), Value("data-platform")),
+			core.InputControl("", Type("text"), Value("data-platform")),
 		),
 	)
 
@@ -85,14 +85,14 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 		Class("grid gap-4 md:grid-cols-2"),
 		Div(
 			Class("flex flex-col gap-3"),
-			P(Class(core.MutedClass()), Text("Checkbox Group")),
+			P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Checkbox Group")),
 			checkboxOption("feature-audit", "feature", "Enable audit logs", true),
 			checkboxOption("feature-masking", "feature", "Enable column masking", true),
 			checkboxOption("feature-rls", "feature", "Enable row-level security", false),
 		),
 		Div(
 			Class("flex flex-col gap-3"),
-			P(Class(core.MutedClass()), Text("Radio + Toggle")),
+			P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Radio + Toggle")),
 			radioOption("run-manual", "run-mode", "Manual run", true),
 			radioOption("run-scheduled", "run-mode", "Scheduled run", false),
 			toggleSwitch("notifications", "notifications", "Notify on failed runs", true),
@@ -107,10 +107,8 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 		quickFilterCardWithValue("Filter by name, type, or owner", "asset"),
 	)
 
-	tableShowcase := Div(
-		Class(core.TableWrapClass()),
-		Table(
-			Class(dataTableClass()),
+	tableShowcase := core.TableContainer("",
+		core.DataTable("",
 			THead(
 				Tr(
 					Th(Text("Name")),
@@ -218,7 +216,7 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 			Placeholder: "60",
 			HelpText:    "Set expected freshness target in minutes.",
 		}),
-		Div(Class(core.ButtonRowClass()), Button(Type("button"), Class(core.PrimaryButtonClass()), Text("Save")), Button(Type("button"), Class(core.SecondaryButtonClass()), Text("Cancel"))),
+		Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"), core.PrimaryButton("", Type("button"), Text("Save")), core.SecondaryButton("", Type("button"), Text("Cancel"))),
 	)
 
 	loadingShowcase := Div(
@@ -266,8 +264,8 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 func componentCard(title, copy string, body ...Node) Node {
 	nodes := []Node{
 		H2(Text(title)),
-		P(Class(core.MutedClass()), Text(copy)),
+		P(Class("text-xs text-[var(--fgColor-muted)]"), Text(copy)),
 	}
 	nodes = append(nodes, body...)
-	return Div(Class(core.CardClass("flex flex-col gap-4")), Group(nodes))
+	return Div(Class("flex flex-col gap-4 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), Group(nodes))
 }

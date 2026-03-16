@@ -41,13 +41,13 @@ func assetsListPage(principal domain.ContextPrincipal, rows []assetsListRowData,
 		"assets",
 		principal,
 		Div(
-			Class(core.CardClass()),
+			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			Div(Class("mb-4 flex flex-wrap items-start justify-between gap-3"),
 				Div(
 					H2(Class("m-0 text-xl font-semibold"), Text("Runtime assets")),
 					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(assetsHeroText(summary, canMaterialize, backfillConfigured))),
 				),
-				A(Href("/ui/catalogs"), Class(core.SecondaryButtonClass()), Text("Browse catalogs")),
+				A(Href("/ui/catalogs"), Class("inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--button-default-borderColor-rest)] bg-[var(--button-default-bgColor-rest)] px-4 py-2 text-sm font-medium text-[var(--button-default-fgColor-rest)] transition-colors duration-100 ease-out hover:bg-[var(--button-default-bgColor-hover)] active:bg-[var(--button-default-bgColor-active)] focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[var(--focus-outlineColor)] disabled:cursor-not-allowed disabled:border-[var(--control-borderColor-disabled)] disabled:bg-[var(--button-default-bgColor-disabled)] disabled:text-[var(--fgColor-disabled)]"), Text("Browse catalogs")),
 			),
 			Div(Class("mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"),
 				metricCard("Total", strconv.Itoa(summary.Total), "Registered runtime objects"),
@@ -99,7 +99,7 @@ func assetsHeroText(summary assetsListSummary, canMaterialize bool, backfillConf
 
 func assetsListTable(rows []assetsListRowData) Node {
 	if len(rows) == 0 {
-		return P(Class(core.MutedClass()), Text("No assets found yet."))
+		return P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No assets found yet."))
 	}
 
 	tableRows := make([]Node, 0, len(rows))
@@ -132,7 +132,7 @@ func assetsListTable(rows []assetsListRowData) Node {
 		))
 	}
 
-	return Div(Class(core.TableWrapClass()),
+	return Div(Class("overflow-x-auto"),
 		Table(Class("min-w-full text-left text-sm"),
 			THead(Tr(Th(Text("Asset key")), Th(Text("Type")), Th(Text("Owner")), Th(Text("Signals")), Th(Text("Active")), Th(Text("Updated")))),
 			TBody(Group(tableRows)),

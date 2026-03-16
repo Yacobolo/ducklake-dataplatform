@@ -37,7 +37,7 @@ func computeHomePage(principal domain.ContextPrincipal) Node {
 }
 
 func computeEndpointsListPage(principal domain.ContextPrincipal, rows []computeEndpointRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class(core.MutedClass()), Text("No compute endpoints found.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No compute endpoints found.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
@@ -49,7 +49,7 @@ func computeEndpointsListPage(principal domain.ContextPrincipal, rows []computeE
 				Td(Text(row.URLText)),
 			))
 		}
-		table = Div(Class(core.TableWrapClass()), Table(Class("min-w-full text-left text-sm"),
+		table = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 			THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Status")), Th(Text("URL")))),
 			TBody(Group(tableRows)),
 		))
@@ -57,7 +57,7 @@ func computeEndpointsListPage(principal domain.ContextPrincipal, rows []computeE
 	return core.AppPage("Compute: Endpoints", "compute", principal,
 		computeSectionNav("endpoints"),
 		sectionHeader("Compute endpoints", "Create compute endpoints and manage assignments.", "/ui/compute/endpoints/new", "New endpoint"),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			table,
 			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" endpoints. Total: "+strconv.FormatInt(total, 10))),
 		),
@@ -65,7 +65,7 @@ func computeEndpointsListPage(principal domain.ContextPrincipal, rows []computeE
 }
 
 func computeEndpointDetailPage(principal domain.ContextPrincipal, item *domain.ComputeEndpoint, healthText string, assignments []computeAssignmentRowData, csrfFieldProvider func() Node) Node {
-	assignTable := Node(P(Class(core.MutedClass()), Text("No assignments yet.")))
+	assignTable := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No assignments yet.")))
 	if len(assignments) > 0 {
 		rows := make([]Node, 0, len(assignments))
 		for i := range assignments {
@@ -75,10 +75,10 @@ func computeEndpointDetailPage(principal domain.ContextPrincipal, item *domain.C
 				Td(Text(a.PrincipalType)),
 				Td(Text(strconv.FormatBool(a.IsDefault))),
 				Td(Text(strconv.FormatBool(a.FallbackLocal))),
-				Td(Class("text-right"), Form(Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/assignments/"+url.PathEscape(a.ID)+"/delete"), csrfFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass("small")), Text("Remove")))),
+				Td(Class("text-right"), Form(Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/assignments/"+url.PathEscape(a.ID)+"/delete"), csrfFieldProvider(), core.DangerButton("small", Type("submit"), Text("Remove")))),
 			))
 		}
-		assignTable = Div(Class(core.TableWrapClass()), Table(Class("min-w-full text-left text-sm"),
+		assignTable = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 			THead(Tr(Th(Text("Principal ID")), Th(Text("Type")), Th(Text("Default")), Th(Text("Fallback Local")), Th(Class("text-right"), Text("Actions")))),
 			TBody(Group(rows)),
 		))
@@ -86,32 +86,32 @@ func computeEndpointDetailPage(principal domain.ContextPrincipal, item *domain.C
 
 	return core.AppPage("Compute Endpoint: "+item.Name, "compute", principal,
 		computeSectionNav("endpoints"),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H2(Class("mt-0 text-lg font-semibold"), Text(item.Name)),
 			P(Class("m-0 text-sm"), Strong(Text("Type: ")), Text(item.Type)),
 			P(Class("m-0 text-sm"), Strong(Text("Status: ")), Text(item.Status)),
 			P(Class("m-0 text-sm"), Strong(Text("URL: ")), Text(item.URL)),
 			P(Class("m-0 text-sm"), Strong(Text("Health: ")), Text(healthText)),
 			P(Class("m-0 text-sm"), Strong(Text("Owner: ")), Text(item.Owner)),
-			Div(Class(core.ButtonRowClass()),
-				A(Href("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/edit"), Class(core.SecondaryButtonClass()), Text("Edit")),
-				Form(Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/delete"), csrfFieldProvider(), Button(Type("submit"), Class(core.DangerButtonClass()), Text("Delete"))),
+			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+				core.SecondaryLink("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/edit", "", Text("Edit")),
+				Form(Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/delete"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
 			),
 		),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Create assignment")),
 			Form(Class("grid gap-3"), Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/assignments"),
 				csrfFieldProvider(),
 				Label(Text("Principal ID")),
-				Input(Name("principal_id"), Required(), Class(core.FormControlClass())),
+				core.InputControl("", Name("principal_id"), Required()),
 				Label(Text("Principal type")),
-				Select(Name("principal_type"), Class(core.FormControlClass()), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
+				core.SelectControl("", Name("principal_type"), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
 				Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("is_default"), Class("h-4 w-4")), Span(Text("Default endpoint"))),
 				Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("fallback_local"), Class("h-4 w-4")), Span(Text("Fallback to local compute"))),
-				Div(Class("mt-2"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Create assignment"))),
+				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create assignment"))),
 			),
 		),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Assignments")),
 			assignTable,
 		),
@@ -131,52 +131,51 @@ func computeEndpointFormPage(principal domain.ContextPrincipal, title, action st
 	}
 	return core.AppPage(title, "compute", principal,
 		computeSectionNav("endpoints"),
-		Div(Class(core.CardClass()),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 			Form(Class("grid gap-3"), Method("post"), Action(action),
 				csrfFieldProvider(),
 				Label(Text("Name")),
-				Input(Name("name"), Value(optionalEndpointName(item)), Required(), Class(core.FormControlClass())),
+				core.InputControl("", Name("name"), Value(optionalEndpointName(item)), Required()),
 				Label(Text("URL")),
-				Input(Name("url"), Value(optionalEndpointURL(item)), Required(), Class(core.FormControlClass())),
+				core.InputControl("", Name("url"), Value(optionalEndpointURL(item)), Required()),
 				Label(Text("Type")),
-				Select(Name("type"), Class(core.FormControlClass()), optionSelected("LOCAL", endpointType), optionSelected("REMOTE", endpointType)),
+				core.SelectControl("", Name("type"), optionSelected("LOCAL", endpointType), optionSelected("REMOTE", endpointType)),
 				Label(Text("Size")),
-				Select(Name("size"), Class(core.FormControlClass()), optionSelected("SMALL", size), optionSelected("MEDIUM", size), optionSelected("LARGE", size)),
+				core.SelectControl("", Name("size"), optionSelected("SMALL", size), optionSelected("MEDIUM", size), optionSelected("LARGE", size)),
 				Label(Text("Max memory (GB)")),
-				Input(Name("max_memory_gb"), Value(optionalEndpointMemory(item)), Class(core.FormControlClass())),
+				core.InputControl("", Name("max_memory_gb"), Value(optionalEndpointMemory(item))),
 				Label(Text("Auth token")),
-				Input(Name("auth_token"), Value(optionalEndpointToken(item)), Class(core.FormControlClass())),
+				core.InputControl("", Name("auth_token"), Value(optionalEndpointToken(item))),
 				Label(Text("Status")),
-				Input(Name("status"), Value(optionalEndpointStatus(item)), Class(core.FormControlClass())),
-				Div(Class("mt-4"), Button(Type("submit"), Class(core.PrimaryButtonClass()), Text("Save"))),
+				core.InputControl("", Name("status"), Value(optionalEndpointStatus(item))),
+				Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save"))),
 			),
 		),
 	)
 }
 
 func computeSectionNav(active string) Node {
-	return Div(Class(core.CardClass()), Div(Class("flex flex-wrap gap-2"), navButton("Endpoints", "/ui/compute/endpoints", active == "endpoints")))
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), Div(Class("flex flex-wrap gap-2"), navButton("Endpoints", "/ui/compute/endpoints", active == "endpoints")))
 }
 
 func navButton(label, href string, active bool) Node {
-	className := core.SecondaryButtonClass()
 	if active {
-		className = core.PrimaryButtonClass()
+		return core.PrimaryLink(href, "", Text(label))
 	}
-	return A(Href(href), Class(className), Text(label))
+	return core.SecondaryLink(href, "", Text(label))
 }
 
 func sectionHeader(title, copy, href, action string) Node {
-	return Div(Class(core.CardClass()),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
 		Div(Class("flex flex-wrap items-start justify-between gap-3"),
 			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(copy))),
-			A(Href(href), Class(core.PrimaryButtonClass()), Text(action)),
+			core.PrimaryLink(href, "", Text(action)),
 		),
 	)
 }
 
 func computeCard(title, copy, href string) Node {
-	return Div(Class(core.CardClass()), H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-[var(--fgColor-muted)]"), Text(copy)), A(Href(href), Class(core.SecondaryButtonClass()), Text("Open")))
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-[var(--fgColor-muted)]"), Text(copy)), core.SecondaryLink(href, "", Text("Open")))
 }
 
 func optionSelected(value, current string) Node {

@@ -2,11 +2,7 @@ package catalogs
 
 import (
 	"encoding/json"
-	"net/http"
-	"strings"
-	"time"
 
-	"duck-demo/internal/domain"
 	"duck-demo/internal/ui/core"
 
 	. "maragu.dev/gomponents"
@@ -18,29 +14,6 @@ type catalogExplorerObjectItem = core.CatalogExplorerObjectItem
 type catalogExplorerSchemaItem = core.CatalogExplorerSchemaItem
 type catalogExplorerCatalogItem = core.CatalogExplorerCatalogItem
 type catalogExplorerPanelData = core.CatalogExplorerPanelData
-
-func appPage(title, active string, principal domain.ContextPrincipal, body ...Node) Node {
-	return core.AppPage(title, active, principal, body...)
-}
-
-func workspaceLayout(className string, aside Node, main ...Node) Node {
-	return core.WorkspaceLayout(className, aside, main...)
-}
-
-func workspaceAside(storageKey, className string, tabs []workspaceAsideTab, defaultTab string) Node {
-	return core.WorkspaceAside(storageKey, className, tabs, defaultTab)
-}
-
-func catalogExplorerPanel(d catalogExplorerPanelData) Node {
-	return core.CatalogExplorerPanel(d)
-}
-
-func fallbackString(value, fallback string) string {
-	if strings.TrimSpace(value) == "" {
-		return fallback
-	}
-	return value
-}
 
 func mapJSON(m map[string]string) string {
 	if len(m) == 0 {
@@ -64,75 +37,24 @@ func stringsJoin(values []string) string {
 	return out
 }
 
-func stringPtr(v *string) string {
-	if v == nil || *v == "" {
-		return "-"
-	}
-	return *v
-}
-
-func buttonRowClass(extra ...string) string {
-	return core.ButtonRowClass(extra...)
-}
-
-func mutedClass() string {
-	return core.MutedClass()
-}
-
-func primaryButtonClass(size ...string) string {
-	return core.PrimaryButtonClass(size...)
-}
-
-func secondaryButtonClass(size ...string) string {
-	return core.SecondaryButtonClass(size...)
-}
-
-func navIconClass(extra ...string) string {
-	return core.NavIconClass(extra...)
-}
-
-func formControlClass(extra ...string) string {
-	return core.FormControlClass(extra...)
-}
-
-func sectionTitleClass() string {
-	return "m-0 text-lg font-semibold text-[var(--fgColor-default)]"
-}
-
-func sectionCopyClass() string {
-	return "m-0 text-sm text-[var(--fgColor-muted)]"
-}
-
-func subtleLinkClass() string {
-	return "text-[var(--fgColor-muted)] no-underline hover:text-[var(--fgColor-default)]"
-}
-
-func dataTableClass(extra ...string) string {
-	return core.ClassNames("min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--control-bgColor-hover)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]", core.ClassNames(extra...))
-}
-
-func tableWrapClass(extra ...string) string {
-	return core.TableWrapClass(extra...)
-}
-
 func catalogSectionClass(extra ...string) string {
 	return core.ClassNames("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4", core.ClassNames(extra...))
 }
 
 func catalogMetaListClass(extra ...string) string {
-	return core.ClassNames("grid gap-3 sm:grid-cols-2", core.ClassNames(extra...))
+	return core.MetaGridClass(extra...)
 }
 
 func catalogMetaRowClass() string {
-	return "grid gap-1 rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-3"
+	return core.MetaRowClass()
 }
 
 func catalogMetaLabelClass() string {
-	return "text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"
+	return core.MetaLabelClass()
 }
 
 func catalogMetaValueClass() string {
-	return "m-0 text-sm text-[var(--fgColor-default)]"
+	return core.MetaValueClass()
 }
 
 func catalogTabsClass() string {
@@ -179,52 +101,32 @@ func catalogOverviewToolbarClass() string {
 	return "flex flex-wrap items-center justify-between gap-3"
 }
 
-func labelClass(tone string) string {
-	base := "inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
-	switch tone {
-	case "accent":
-		return core.ClassNames(base, "bg-[var(--label-blue-bgColor-rest)] text-[var(--label-blue-fgColor-rest)]")
-	case "attention":
-		return core.ClassNames(base, "bg-[var(--label-yellow-bgColor-rest)] text-[var(--label-yellow-fgColor-rest)]")
-	case "success":
-		return core.ClassNames(base, "bg-[var(--label-green-bgColor-rest)] text-[var(--label-green-fgColor-rest)]")
-	case "severe":
-		return core.ClassNames(base, "bg-[var(--label-orange-bgColor-rest)] text-[var(--label-orange-fgColor-rest)]")
-	default:
-		return core.ClassNames(base, "bg-[var(--label-gray-bgColor-rest)] text-[var(--label-gray-fgColor-rest)]")
-	}
+func catalogSectionTitleClass() string {
+	return "m-0 text-lg font-semibold text-[var(--fgColor-default)]"
 }
 
-func statusLabel(text, tone string) Node {
-	return Span(Class(labelClass(tone)), Text(text))
+func catalogMutedCopyClass() string {
+	return "text-sm text-[var(--fgColor-muted)]"
 }
 
-func detailsClass(extra ...string) string {
-	return core.ClassNames("relative inline-block", core.ClassNames(extra...))
+func catalogTableWrapClass(extra ...string) string {
+	return core.ClassNames("overflow-x-auto", core.ClassNames(extra...))
 }
 
-func detailsSummaryClass(extra ...string) string {
-	return core.ClassNames("list-none [&::-webkit-details-marker]:hidden", core.ClassNames(extra...))
-}
-
-func dropdownMenuClass(extra ...string) string {
-	return core.ClassNames("absolute right-0 top-full z-20 mt-1 min-w-[var(--overlay-width-xsmall)] rounded-xl border border-[var(--overlay-borderColor)] bg-[var(--overlay-bgColor)] p-1 shadow-[var(--shadow-floating-small)]", core.ClassNames(extra...))
-}
-
-func dropdownItemClass(extra ...string) string {
-	return core.ClassNames("flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[0.8125rem] no-underline hover:bg-[var(--control-bgColor-hover)]", core.ClassNames(extra...))
+func catalogButtonRowClass(extra ...string) string {
+	return core.ClassNames("mt-0 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex", core.ClassNames(extra...))
 }
 
 func actionMenu(label string, items ...Node) Node {
 	return Details(
-		Class(detailsClass()),
-		Summary(Class(detailsSummaryClass(secondaryButtonClass("small"))), Text(label)),
-		Div(Class(dropdownMenuClass()), Group(items)),
+		Class(core.DetailsClass()),
+		Summary(Class("list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"), Text(label)),
+		Div(Class(core.DropdownMenuClass()), Group(items)),
 	)
 }
 
 func actionMenuPost(action, label string, csrfField func() Node, danger bool) Node {
-	btnClass := dropdownItemClass()
+	btnClass := core.DropdownItemClass()
 	if danger {
 		btnClass += " text-[var(--fgColor-danger)] hover:bg-[var(--bgColor-danger-muted)]"
 	} else {
@@ -243,15 +145,4 @@ func actionMenuPost(action, label string, csrfField func() Node, danger bool) No
 		})
 	}
 	return button
-}
-
-func principalFromContext(r *http.Request) domain.ContextPrincipal {
-	return core.PrincipalFromContext(r.Context())
-}
-
-func formatTime(ts time.Time) string {
-	if ts.IsZero() {
-		return "-"
-	}
-	return ts.UTC().Format("2006-01-02 15:04 UTC")
 }
