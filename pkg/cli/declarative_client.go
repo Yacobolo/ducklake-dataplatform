@@ -982,14 +982,15 @@ type apiNotebook struct {
 }
 
 type apiNotebookCell struct {
-	ID       string               `json:"id"`
-	CellType string               `json:"cell_type"`
-	Name     string               `json:"name"`
-	Role     string               `json:"role"`
-	Disabled bool                 `json:"disabled"`
-	Test     *apiNotebookCellTest `json:"test"`
-	Content  string               `json:"content"`
-	Position int                  `json:"position"`
+	ID         string               `json:"id"`
+	CellType   string               `json:"cell_type"`
+	Name       string               `json:"name"`
+	Role       string               `json:"role"`
+	Disabled   bool                 `json:"disabled"`
+	Test       *apiNotebookCellTest `json:"test"`
+	VisualSpec *domain.VisualSpec   `json:"visual_spec"`
+	Content    string               `json:"content"`
+	Position   int                  `json:"position"`
 }
 
 type apiNotebookCellTest struct {
@@ -1082,6 +1083,9 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 				}
 				if cell.Test != nil {
 					spec.Test = toDeclarativeNotebookTest(cell.Test)
+				}
+				if cell.VisualSpec != nil {
+					spec.VisualSpec = cell.VisualSpec
 				}
 				cells = append(cells, spec)
 			}
@@ -3536,6 +3540,9 @@ func notebookCellBody(cell declarative.CellSpec, position int, includeCellType b
 		body["test"] = map[string]interface{}{
 			"severity": cell.Test.Severity,
 		}
+	}
+	if cell.VisualSpec != nil {
+		body["visual_spec"] = cell.VisualSpec
 	}
 	return body
 }

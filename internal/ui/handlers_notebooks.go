@@ -562,7 +562,8 @@ func (h *Handler) NotebookGitReposDelete(w http.ResponseWriter, r *http.Request)
 
 func (h *Handler) NotebookGitReposSync(w http.ResponseWriter, r *http.Request) {
 	gitRepoID := chi.URLParam(r, "gitRepoID")
-	result, err := h.GitService.SyncGitRepo(r.Context(), gitRepoID)
+	principal, isAdmin := principalLabel(r.Context())
+	result, err := h.GitService.SyncGitRepo(r.Context(), principal, isAdmin, gitRepoID)
 	if err != nil {
 		var notImplemented *domain.NotImplementedError
 		if errors.As(err, &notImplemented) {

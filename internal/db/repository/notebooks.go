@@ -27,16 +27,18 @@ func NewNotebookRepo(db *sql.DB) *NotebookRepo {
 
 // CreateNotebook inserts a new notebook.
 func (r *NotebookRepo) CreateNotebook(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error) {
-	row, err := r.q.CreateNotebook(ctx, dbstore.CreateNotebookParams{
-		ID:          domain.NewID(),
-		Name:        nb.Name,
-		Description: mapper.NullStrFromPtr(nb.Description),
-		Owner:       nb.Owner,
-	})
+	notebookID := nb.ID
+	if notebookID == "" {
+		notebookID = domain.NewID()
+	}
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO notebooks (id, name, description, owner, git_repo_id, git_path)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, notebookID, nb.Name, mapper.NullStrFromPtr(nb.Description), nb.Owner, mapper.NullStrFromPtr(nb.GitRepoID), mapper.NullStrFromPtr(nb.GitPath))
 	if err != nil {
 		return nil, mapDBError(err)
 	}
-	return mapper.NotebookFromDB(row), nil
+	return r.GetNotebook(ctx, notebookID)
 }
 
 // GetNotebook returns a notebook by its ID.
@@ -93,6 +95,25 @@ func (r *NotebookRepo) UpdateNotebook(ctx context.Context, id string, req domain
 		return nil, mapDBError(err)
 	}
 	return mapper.NotebookFromDB(row), nil
+}
+
+// UpdateNotebookSync applies Git-backed notebook metadata updates.
+func (r *NotebookRepo) UpdateNotebookSync(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error) {
+	if nb == nil {
+		return nil, domain.ErrValidation("notebook is required")
+	}
+	if nb.ID == "" {
+		return nil, domain.ErrValidation("notebook id is required")
+	}
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE notebooks
+		SET name = ?, description = ?, owner = ?, git_repo_id = ?, git_path = ?, updated_at = datetime('now')
+		WHERE id = ?
+	`, nb.Name, mapper.NullStrFromPtr(nb.Description), nb.Owner, mapper.NullStrFromPtr(nb.GitRepoID), mapper.NullStrFromPtr(nb.GitPath), nb.ID)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	return r.GetNotebook(ctx, nb.ID)
 }
 
 // DeleteNotebook removes a notebook by ID.
@@ -269,6 +290,49 @@ func (r *NotebookRepo) UpdateCell(ctx context.Context, id string, req domain.Upd
 		return nil, fmt.Errorf("commit update cell: %w", err)
 	}
 	return mapper.CellFromDB(row), nil
+}
+
+// UpdateCellSync replaces persisted cell state for Git-backed sync while preserving the cell ID.
+func (r *NotebookRepo) UpdateCellSync(ctx context.Context, cell *domain.Cell) (*domain.Cell, error) {
+	if cell == nil {
+		return nil, domain.ErrValidation("cell is required")
+	}
+	if cell.ID == "" {
+		return nil, domain.ErrValidation("cell id is required")
+	}
+	role := cell.Role
+	if role == "" {
+		if cell.CellType == domain.CellTypeMarkdown {
+			role = domain.CellRoleMarkdown
+		} else {
+			role = domain.CellRoleTransform
+		}
+	}
+	testCfg := "{}"
+	if cell.Test != nil {
+		b, err := json.Marshal(cell.Test)
+		if err != nil {
+			return nil, fmt.Errorf("marshal test config: %w", err)
+		}
+		testCfg = string(b)
+	}
+	visualSpec := ""
+	if cell.VisualSpec != nil {
+		b, err := json.Marshal(cell.VisualSpec)
+		if err != nil {
+			return nil, fmt.Errorf("marshal visual spec: %w", err)
+		}
+		visualSpec = string(b)
+	}
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE cells
+		SET cell_type = ?, name = ?, role = ?, disabled = ?, test_config = ?, visual_spec = ?, content = ?, position = ?, updated_at = datetime('now')
+		WHERE id = ?
+	`, string(cell.CellType), mapper.NullStrFromPtr(cell.Name), string(role), boolToInt64(cell.Disabled), testCfg, visualSpec, cell.Content, cell.Position, cell.ID)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	return r.GetCell(ctx, cell.ID)
 }
 
 // DeleteCell removes a cell by ID.

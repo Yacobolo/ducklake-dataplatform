@@ -221,7 +221,7 @@ type mockGitRepoService struct {
 	listGitReposFn             func(ctx context.Context, page domain.PageRequest) ([]domain.GitRepo, int64, error)
 	listGitReposForPrincipalFn func(ctx context.Context, principal string, isAdmin bool, page domain.PageRequest) ([]domain.GitRepo, int64, error)
 	deleteGitRepoFn            func(ctx context.Context, principal string, isAdmin bool, id string) error
-	syncGitRepoFn              func(ctx context.Context, id string) (*domain.GitSyncResult, error)
+	syncGitRepoFn              func(ctx context.Context, principal string, isAdmin bool, id string) (*domain.GitSyncResult, error)
 }
 
 func (m *mockGitRepoService) CreateGitRepo(ctx context.Context, principal string, req domain.CreateGitRepoRequest) (*domain.GitRepo, error) {
@@ -260,9 +260,9 @@ func (m *mockGitRepoService) DeleteGitRepo(ctx context.Context, principal string
 	}
 	panic("DeleteGitRepo not implemented")
 }
-func (m *mockGitRepoService) SyncGitRepo(ctx context.Context, id string) (*domain.GitSyncResult, error) {
+func (m *mockGitRepoService) SyncGitRepo(ctx context.Context, principal string, isAdmin bool, id string) (*domain.GitSyncResult, error) {
 	if m.syncGitRepoFn != nil {
-		return m.syncGitRepoFn(ctx, id)
+		return m.syncGitRepoFn(ctx, principal, isAdmin, id)
 	}
 	panic("SyncGitRepo not implemented")
 }

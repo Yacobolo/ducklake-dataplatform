@@ -4,17 +4,20 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
 	"duck-demo/internal/db/repository"
-	"duck-demo/internal/domain"
 	authsvc "duck-demo/internal/service/auth"
 	notebooksvc "duck-demo/internal/service/notebook"
 	semanticsvc "duck-demo/internal/service/semantic"
@@ -71,15 +74,40 @@ func TestUIAdvanced_SemanticModelCreateFlow(t *testing.T) {
 	assert.Contains(t, detail.Body.String(), "Create metric")
 }
 
-func TestUIAdvanced_NotebookGitRepoSyncUnavailablePage(t *testing.T) {
+func TestUIAdvanced_NotebookGitRepoSyncFlow(t *testing.T) {
 	env := newUIAdvancedTestEnv(t)
 	sessionCookie := loginSessionCookie(t, env.router)
 	csrfCookie := fetchCSRFCookie(t, env.router, sessionCookie, "/ui/notebooks/git-repos/new")
 
+	repoDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(repoDir, "notebooks"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, "notebooks", "sales.yaml"), []byte(`
+apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: sales
+spec:
+  cells:
+    - type: sql
+      name: output
+      role: output
+      content: SELECT 1 AS value
+`), 0o644))
+	repo, err := git.PlainInit(repoDir, false)
+	require.NoError(t, err)
+	worktree, err := repo.Worktree()
+	require.NoError(t, err)
+	_, err = worktree.Add("notebooks/sales.yaml")
+	require.NoError(t, err)
+	_, err = worktree.Commit("add notebook", &git.CommitOptions{
+		Author: &object.Signature{Name: "codex", Email: "codex@example.com"},
+	})
+	require.NoError(t, err)
+
 	createForm := url.Values{}
 	createForm.Set("csrf_token", csrfCookie.Value)
-	createForm.Set("url", "https://github.com/acme/notebooks.git")
-	createForm.Set("branch", "main")
+	createForm.Set("url", repoDir)
+	createForm.Set("branch", "master")
 
 	createResp := postFormWithCookies(t, env.router, "/ui/notebooks/git-repos", createForm, sessionCookie, csrfCookie)
 	require.Equal(t, http.StatusSeeOther, createResp.Code)
@@ -89,8 +117,9 @@ func TestUIAdvanced_NotebookGitRepoSyncUnavailablePage(t *testing.T) {
 	syncForm.Set("csrf_token", csrfCookie.Value)
 	syncResp := postFormWithCookies(t, env.router, location+"/sync", syncForm, sessionCookie, csrfCookie)
 	require.Equal(t, http.StatusOK, syncResp.Code)
-	assert.Contains(t, syncResp.Body.String(), "Sync is not available yet")
-	assert.Contains(t, syncResp.Body.String(), domain.ErrNotImplemented("git sync is not yet implemented").Error())
+	assert.Contains(t, syncResp.Body.String(), "Created notebooks: 1")
+	assert.Contains(t, syncResp.Body.String(), "Updated notebooks: 0")
+	assert.Contains(t, syncResp.Body.String(), "Deleted notebooks: 0")
 }
 
 func newUIAdvancedTestEnv(t *testing.T) uiAdvancedTestEnv {
@@ -115,7 +144,7 @@ func newUIAdvancedTestEnv(t *testing.T) uiAdvancedTestEnv {
 
 	webSessionService := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, 30*time.Minute, 24*time.Hour)
 	h := NewHandler(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, authService, webSessionService, nil, config.AuthConfig{WebSessionCookieName: "ui_session"}, false)
-	h.GitService = notebooksvc.NewGitService(repository.NewGitRepoRepo(writeDB), auditRepo)
+	h.GitService = notebooksvc.NewGitService(repository.NewGitRepoRepo(writeDB), repository.NewNotebookRepo(writeDB), auditRepo)
 	h.Semantic = semanticsvc.NewService(
 		repository.NewSemanticModelRepo(writeDB),
 		repository.NewSemanticMetricRepo(writeDB),

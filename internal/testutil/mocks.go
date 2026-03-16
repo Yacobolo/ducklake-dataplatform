@@ -915,11 +915,13 @@ type MockNotebookRepo struct {
 	GetNotebookFn      func(ctx context.Context, id string) (*domain.Notebook, error)
 	ListNotebooksFn    func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
 	UpdateNotebookFn   func(ctx context.Context, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
+	UpdateNotebookSyncFn func(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error)
 	DeleteNotebookFn   func(ctx context.Context, id string) error
 	CreateCellFn       func(ctx context.Context, cell *domain.Cell) (*domain.Cell, error)
 	GetCellFn          func(ctx context.Context, id string) (*domain.Cell, error)
 	ListCellsFn        func(ctx context.Context, notebookID string) ([]domain.Cell, error)
 	UpdateCellFn       func(ctx context.Context, id string, req domain.UpdateCellRequest) (*domain.Cell, error)
+	UpdateCellSyncFn   func(ctx context.Context, cell *domain.Cell) (*domain.Cell, error)
 	DeleteCellFn       func(ctx context.Context, id string) error
 	UpdateCellResultFn func(ctx context.Context, cellID string, result *string) error
 	ReorderCellsFn     func(ctx context.Context, notebookID string, cellIDs []string) error
@@ -956,6 +958,14 @@ func (m *MockNotebookRepo) UpdateNotebook(ctx context.Context, id string, req do
 		return m.UpdateNotebookFn(ctx, id, req)
 	}
 	panic("unexpected call to MockNotebookRepo.UpdateNotebook")
+}
+
+// UpdateNotebookSync implements the interface method for testing.
+func (m *MockNotebookRepo) UpdateNotebookSync(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error) {
+	if m.UpdateNotebookSyncFn != nil {
+		return m.UpdateNotebookSyncFn(ctx, nb)
+	}
+	panic("unexpected call to MockNotebookRepo.UpdateNotebookSync")
 }
 
 // DeleteNotebook implements the interface method for testing.
@@ -996,6 +1006,14 @@ func (m *MockNotebookRepo) UpdateCell(ctx context.Context, id string, req domain
 		return m.UpdateCellFn(ctx, id, req)
 	}
 	panic("unexpected call to MockNotebookRepo.UpdateCell")
+}
+
+// UpdateCellSync implements the interface method for testing.
+func (m *MockNotebookRepo) UpdateCellSync(ctx context.Context, cell *domain.Cell) (*domain.Cell, error) {
+	if m.UpdateCellSyncFn != nil {
+		return m.UpdateCellSyncFn(ctx, cell)
+	}
+	panic("unexpected call to MockNotebookRepo.UpdateCellSync")
 }
 
 // DeleteCell implements the interface method for testing.

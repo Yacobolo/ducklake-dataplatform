@@ -1,5 +1,7 @@
 package declarative
 
+import "duck-demo/internal/domain"
+
 // Document is the generic envelope parsed first to determine Kind.
 type Document struct {
 	APIVersion string `yaml:"apiVersion"`
@@ -410,12 +412,13 @@ type NotebookSpec struct {
 
 // CellSpec describes a single cell in a notebook.
 type CellSpec struct {
-	Type     string            `yaml:"type"` // sql or markdown
-	Name     string            `yaml:"name,omitempty"`
-	Role     string            `yaml:"role,omitempty"` // transform | output | test | markdown
-	Disabled bool              `yaml:"disabled,omitempty"`
-	Test     *NotebookTestSpec `yaml:"test,omitempty"`
-	Content  string            `yaml:"content"`
+	Type       string             `yaml:"type"` // sql or markdown
+	Name       string             `yaml:"name,omitempty"`
+	Role       string             `yaml:"role,omitempty"` // transform | output | test | markdown
+	Disabled   bool               `yaml:"disabled,omitempty"`
+	Test       *NotebookTestSpec  `yaml:"test,omitempty"`
+	VisualSpec *domain.VisualSpec `yaml:"visual_spec,omitempty"`
+	Content    string             `yaml:"content"`
 }
 
 // NotebookTestSpec configures notebook test-cell behavior.
