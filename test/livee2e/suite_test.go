@@ -254,8 +254,12 @@ func (s *liveSuite) startManagedServer() error {
 	select {
 	case <-hostCh:
 		return nil
-	case <-time.After(30 * time.Second):
-		return fmt.Errorf("timed out waiting for task dev host discovery; log: %s", s.logPath)
+	case <-time.After(5 * time.Second):
+		// task dev derives stable ports from the worktree path, so we already know
+		// the host ahead of time. CI can spend longer compiling before it emits the
+		// startup banner, so fall back to the derived host and let waitForHealthy
+		// own readiness instead of failing on log timing.
+		return nil
 	}
 }
 
