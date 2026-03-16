@@ -96,6 +96,28 @@ func TestAPIGenContractBoundary_CatalogHandlersUseOperationAwareMapping(t *testi
 	}
 }
 
+func TestAPIGenContractBoundary_SemanticHandlersUseOperationAwareMapping(t *testing.T) {
+	t.Parallel()
+
+	semanticBody, err := os.ReadFile(filepath.Join("..", "api", "handler_semantic.go"))
+	require.NoError(t, err)
+	semanticSource := string(semanticBody)
+	require.NotContains(t, semanticSource, `respondDomainError[`)
+	for _, snippet := range []string{
+		`respondDomainErrorForOperation[GenListSemanticModelsResponse]("listSemanticModels"`,
+		`respondDomainErrorForOperation[GenCreateSemanticModelResponse]("createSemanticModel"`,
+		`respondDomainErrorForOperation[GenListSemanticMetricsResponse]("listSemanticMetrics"`,
+		`respondDomainErrorForOperation[GenCreateSemanticMetricResponse]("createSemanticMetric"`,
+		`respondDomainErrorForOperation[GenListSemanticRelationshipsResponse]("listSemanticRelationships"`,
+		`respondDomainErrorForOperation[GenCreateSemanticRelationshipResponse]("createSemanticRelationship"`,
+		`respondDomainErrorForOperation[GenCheckMetricFreshnessResponse]("checkMetricFreshness"`,
+		`respondDomainErrorForOperation[GenExplainMetricQueryResponse]("explainMetricQuery"`,
+		`respondDomainErrorForOperation[GenRunMetricQueryResponse]("runMetricQuery"`,
+	} {
+		require.True(t, strings.Contains(semanticSource, snippet), "expected handler_semantic.go to contain %q", snippet)
+	}
+}
+
 func TestAPIGenContractBoundary_NoManualOperationsRemain(t *testing.T) {
 	t.Parallel()
 
