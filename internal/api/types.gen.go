@@ -472,6 +472,7 @@ type ColumnMask struct {
 	Description    *string `json:"description,omitempty"`
 	Id             string  `json:"id"`
 	MaskExpression string  `json:"mask_expression"`
+	Name           string  `json:"name"`
 	TableId        string  `json:"table_id"`
 }
 
@@ -2255,6 +2256,7 @@ type RowFilter struct {
 	Description *string `json:"description,omitempty"`
 	FilterSql   string  `json:"filter_sql"`
 	Id          string  `json:"id"`
+	Name        string  `json:"name"`
 	TableId     string  `json:"table_id"`
 }
 
