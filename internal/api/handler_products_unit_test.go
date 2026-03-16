@@ -77,6 +77,9 @@ func (m *mockProductService) DeprecateVersion(context.Context, string, int, *str
 func (m *mockProductService) RetireVersion(context.Context, string, int) (*domain.DataProductDetail, error) {
 	panic("not implemented")
 }
+func (m *mockProductService) DeleteVersion(context.Context, string, int) error {
+	panic("not implemented")
+}
 func (m *mockProductService) AddDependency(context.Context, string, string) (*domain.DataProductDetail, error) {
 	panic("not implemented")
 }

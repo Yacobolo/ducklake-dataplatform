@@ -267,7 +267,7 @@ op deleteComputeAssignment(endpointName: string, assignmentId: string): NoConten
 @get
 @tag("Compute")
 @summary("Get compute routing defaults")
-op getComputeRoutingDefaults(): Ok<ComputeRoutingDefaults> | StandardErrorResponses;
+op getComputeRoutingDefaults(): Ok<ComputeRoutingDefaults> | GuardedReadErrorResponses;
 
 @route("/compute-defaults")
 @patch(#{ implicitOptionality: true })

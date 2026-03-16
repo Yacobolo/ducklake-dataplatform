@@ -194,6 +194,19 @@ func (h *APIHandler) GetComputeRoutingDefaults(ctx context.Context, _ GenGetComp
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.computeEndpoints.GetRoutingDefaults(ctx, cp.Name)
 	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetComputeRoutingDefaultsResponse]("getComputeRoutingDefaults", err, domainErrorResponder[GenGetComputeRoutingDefaultsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenGetComputeRoutingDefaultsResponse {
+				return GenGetComputeRoutingDefaults400JSONResponse{GenBadRequestJSONResponse(resp)}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetComputeRoutingDefaultsResponse {
+				return GenGetComputeRoutingDefaults403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenGetComputeRoutingDefaultsResponse {
+				return GenGetComputeRoutingDefaults500JSONResponse{GenInternalErrorJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
+		}
 		return nil, err
 	}
 	return GenGetComputeRoutingDefaults200JSONResponse{
@@ -216,7 +229,7 @@ func (h *APIHandler) UpdateComputeRoutingDefaults(ctx context.Context, req GenUp
 	}
 	result, err := h.computeEndpoints.UpdateRoutingDefaults(ctx, cp.Name, defaults)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateComputeRoutingDefaultsResponse](err, domainErrorResponder[GenUpdateComputeRoutingDefaultsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateComputeRoutingDefaultsResponse]("updateComputeRoutingDefaults", err, domainErrorResponder[GenUpdateComputeRoutingDefaultsResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateComputeRoutingDefaultsResponse {
 				return UpdateComputeRoutingDefaults400JSONResponse{resp}
 			},

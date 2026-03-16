@@ -4488,37 +4488,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ComputeRoutingDefaults'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Compute
-    patch:
-      operationId: updateComputeRoutingDefaults
-      summary: Update compute routing defaults
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ComputeRoutingDefaults'
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -4551,12 +4520,61 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Compute
+      x-authz:
+        mode: admin_only
+    patch:
+      operationId: updateComputeRoutingDefaults
+      summary: Update compute routing defaults
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeRoutingDefaults'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Compute
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ComputeRoutingDefaults'
+      x-authz:
+        mode: admin_only
   /compute-endpoints:
     get:
       operationId: listComputeEndpoints
@@ -6817,7 +6835,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8040,7 +8060,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -10002,6 +10024,12 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
