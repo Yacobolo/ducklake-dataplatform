@@ -231,7 +231,7 @@ func TestGitService_DeleteGitRepo(t *testing.T) {
 // === SyncGitRepo ===
 
 func TestGitService_SyncGitRepo(t *testing.T) {
-	t.Run("returns_not_implemented_error", func(t *testing.T) {
+	t.Run("denies_non_owner", func(t *testing.T) {
 		svc, repo, _, _ := setupGitService(t)
 		ctx := context.Background()
 
@@ -268,9 +268,8 @@ func TestGitService_SyncGitRepo(t *testing.T) {
 		auditRepo := &testutil.MockAuditRepo{}
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 
-		repoDir := t.TempDir()
-		require.NoError(t, os.MkdirAll(filepath.Join(repoDir, "notebooks"), 0o755))
-		require.NoError(t, os.WriteFile(filepath.Join(repoDir, "notebooks", "sales.yaml"), []byte(`
+		repoDir, repo := initGitRepoWithFiles(t, map[string]string{
+			"notebooks/sales.yaml": `
 apiVersion: duck/v1
 kind: Notebook
 metadata:
@@ -287,18 +286,9 @@ spec:
         encodings:
           value:
             field: value
-`), 0o644))
-
-		repo, err := git.PlainInit(repoDir, false)
-		require.NoError(t, err)
-		worktree, err := repo.Worktree()
-		require.NoError(t, err)
-		_, err = worktree.Add("notebooks/sales.yaml")
-		require.NoError(t, err)
-		_, err = worktree.Commit("add notebook", &git.CommitOptions{
-			Author: &object.Signature{Name: "codex", Email: "codex@example.com"},
+`,
 		})
-		require.NoError(t, err)
+		_ = repo
 
 		createdRepo := &domain.GitRepo{
 			ID:     "repo-1",
@@ -342,6 +332,301 @@ spec:
 		require.NotNil(t, cells[0].VisualSpec)
 		assert.Equal(t, domain.VisualOutputMetric, cells[0].VisualSpec.Kind)
 	})
+
+	t.Run("syncs test config and publish metadata", func(t *testing.T) {
+		ctx := context.Background()
+		gitRepoRepo := &testutil.MockGitRepoRepo{}
+		notebookRepo := newMemoryNotebookRepo()
+		auditRepo := &testutil.MockAuditRepo{}
+		promoter := &capturingNotebookPromoter{}
+		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
+		svc.SetPublishDependencies(promoter, nil)
+
+		repoDir, _ := initGitRepoWithFiles(t, map[string]string{
+			"notebooks/sales.yaml": `
+apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: sales
+spec:
+  cells:
+    - type: sql
+      name: assertions
+      role: test
+      test:
+        severity: warn
+      content: SELECT 1
+    - type: sql
+      name: published_output
+      role: output
+      content: SELECT 1 AS value
+  publish:
+    model:
+      project: analytics
+      name: sales_model
+      materialization: VIEW
+      output_cell: published_output
+`,
+		})
+
+		createdRepo := &domain.GitRepo{ID: "repo-1", URL: repoDir, Branch: "master", Owner: "alice"}
+		gitRepoRepo.GetByIDFn = func(_ context.Context, id string) (*domain.GitRepo, error) {
+			require.Equal(t, "repo-1", id)
+			return createdRepo, nil
+		}
+		gitRepoRepo.UpdateSyncStatusFn = func(_ context.Context, id string, commitSHA string, syncedAt time.Time) error {
+			require.Equal(t, "repo-1", id)
+			require.NotEmpty(t, commitSHA)
+			createdRepo.LastCommit = &commitSHA
+			createdRepo.LastSyncAt = &syncedAt
+			return nil
+		}
+
+		result, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.Len(t, promoter.requests, 1)
+		assert.Equal(t, "analytics", promoter.requests[0].ProjectName)
+		assert.Equal(t, "sales_model", promoter.requests[0].Name)
+		assert.Equal(t, "VIEW", promoter.requests[0].Materialization)
+		assert.NotEmpty(t, promoter.requests[0].OutputCellID)
+
+		items, total, err := notebookRepo.ListNotebooks(ctx, nil, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+		require.NoError(t, err)
+		require.Equal(t, int64(1), total)
+		cells, err := notebookRepo.ListCells(ctx, items[0].ID)
+		require.NoError(t, err)
+		require.Len(t, cells, 2)
+		require.NotNil(t, cells[0].Test)
+		assert.Equal(t, domain.NotebookTestSeverityWarn, cells[0].Test.Severity)
+	})
+
+	t.Run("updates existing linked notebook in place", func(t *testing.T) {
+		ctx := context.Background()
+		gitRepoRepo := &testutil.MockGitRepoRepo{}
+		notebookRepo := newMemoryNotebookRepo()
+		auditRepo := &testutil.MockAuditRepo{}
+		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
+
+		repoDir, repo := initGitRepoWithFiles(t, map[string]string{
+			"notebooks/sales.yaml": `
+apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: sales
+spec:
+  description: Sales notebook
+  cells:
+    - type: sql
+      name: output
+      role: output
+      content: SELECT 1 AS value
+`,
+		})
+
+		createdRepo := &domain.GitRepo{ID: "repo-1", URL: repoDir, Branch: "master", Owner: "alice"}
+		gitRepoRepo.GetByIDFn = func(_ context.Context, id string) (*domain.GitRepo, error) { return createdRepo, nil }
+		updateCalls := 0
+		gitRepoRepo.UpdateSyncStatusFn = func(_ context.Context, id string, commitSHA string, syncedAt time.Time) error {
+			updateCalls++
+			createdRepo.LastCommit = &commitSHA
+			createdRepo.LastSyncAt = &syncedAt
+			return nil
+		}
+
+		first, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 1, first.NotebooksCreated)
+
+		writeGitFile(t, repoDir, "notebooks/sales.yaml", `
+apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: sales
+spec:
+  description: Updated sales notebook
+  cells:
+    - type: sql
+      name: output
+      role: output
+      content: SELECT 2 AS value
+`)
+		commitGitChanges(t, repo, "update notebook", []string{"notebooks/sales.yaml"}, nil)
+
+		second, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 0, second.NotebooksCreated)
+		assert.Equal(t, 1, second.NotebooksUpdated)
+		assert.Equal(t, 0, second.NotebooksDeleted)
+		assert.Equal(t, 2, updateCalls)
+
+		items, total, err := notebookRepo.ListNotebooks(ctx, nil, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+		require.NoError(t, err)
+		require.Equal(t, int64(1), total)
+		assert.Equal(t, "Updated sales notebook", *items[0].Description)
+
+		cells, err := notebookRepo.ListCells(ctx, items[0].ID)
+		require.NoError(t, err)
+		require.Len(t, cells, 1)
+		assert.Equal(t, "SELECT 2 AS value", cells[0].Content)
+	})
+
+	t.Run("deletes removed linked notebooks and keeps unrelated notebooks", func(t *testing.T) {
+		ctx := context.Background()
+		gitRepoRepo := &testutil.MockGitRepoRepo{}
+		notebookRepo := newMemoryNotebookRepo()
+		auditRepo := &testutil.MockAuditRepo{}
+		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
+
+		repoDir, repo := initGitRepoWithFiles(t, map[string]string{
+			"notebooks/sales.yaml": `
+apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: sales
+spec:
+  cells:
+    - type: sql
+      name: output
+      role: output
+      content: SELECT 1
+`,
+		})
+
+		createdRepo := &domain.GitRepo{ID: "repo-1", URL: repoDir, Branch: "master", Owner: "alice"}
+		gitRepoRepo.GetByIDFn = func(_ context.Context, id string) (*domain.GitRepo, error) { return createdRepo, nil }
+		gitRepoRepo.UpdateSyncStatusFn = func(_ context.Context, id string, commitSHA string, syncedAt time.Time) error {
+			createdRepo.LastCommit = &commitSHA
+			createdRepo.LastSyncAt = &syncedAt
+			return nil
+		}
+
+		_, err := notebookRepo.CreateNotebook(ctx, &domain.Notebook{
+			ID:    "manual-1",
+			Name:  "manual",
+			Owner: "alice",
+		})
+		require.NoError(t, err)
+
+		first, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 1, first.NotebooksCreated)
+
+		require.NoError(t, os.Remove(filepath.Join(repoDir, "notebooks", "sales.yaml")))
+		commitGitChanges(t, repo, "remove notebook", nil, []string{"notebooks/sales.yaml"})
+
+		second, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
+		require.NoError(t, err)
+		assert.Equal(t, 0, second.NotebooksCreated)
+		assert.Equal(t, 0, second.NotebooksUpdated)
+		assert.Equal(t, 1, second.NotebooksDeleted)
+
+		items, total, err := notebookRepo.ListNotebooks(ctx, nil, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+		require.NoError(t, err)
+		require.Equal(t, int64(1), total)
+		assert.Equal(t, "manual", items[0].Name)
+		assert.Nil(t, items[0].GitRepoID)
+	})
+
+	t.Run("does not update sync status when sync fails", func(t *testing.T) {
+		ctx := context.Background()
+		gitRepoRepo := &testutil.MockGitRepoRepo{}
+		notebookRepo := newMemoryNotebookRepo()
+		auditRepo := &testutil.MockAuditRepo{}
+		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
+
+		repoDir, _ := initGitRepoWithFiles(t, map[string]string{
+			"notebooks/sales.yaml": `
+apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: sales
+spec:
+  publish:
+    model:
+      project: analytics
+      name: broken
+      materialization: VIEW
+      output_cell: missing_output
+  cells:
+    - type: sql
+      name: actual_output
+      role: output
+      content: SELECT 1
+`,
+		})
+
+		createdRepo := &domain.GitRepo{ID: "repo-1", URL: repoDir, Branch: "master", Owner: "alice"}
+		gitRepoRepo.GetByIDFn = func(_ context.Context, id string) (*domain.GitRepo, error) { return createdRepo, nil }
+		syncStatusUpdated := false
+		gitRepoRepo.UpdateSyncStatusFn = func(_ context.Context, id string, commitSHA string, syncedAt time.Time) error {
+			syncStatusUpdated = true
+			return nil
+		}
+		svc.SetPublishDependencies(&capturingNotebookPromoter{}, nil)
+
+		result, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
+		assert.Nil(t, result)
+		require.Error(t, err)
+		assert.False(t, syncStatusUpdated)
+		assert.Nil(t, createdRepo.LastCommit)
+		assert.Nil(t, createdRepo.LastSyncAt)
+	})
+}
+
+type capturingNotebookPromoter struct {
+	requests []domain.PromoteNotebookRequest
+}
+
+func (p *capturingNotebookPromoter) PromoteNotebook(_ context.Context, _ string, req domain.PromoteNotebookRequest) (*domain.Model, error) {
+	p.requests = append(p.requests, req)
+	return &domain.Model{ID: domain.NewID()}, nil
+}
+
+func initGitRepoWithFiles(t *testing.T, files map[string]string) (string, *git.Repository) {
+	t.Helper()
+	repoDir := t.TempDir()
+	for path, contents := range files {
+		writeGitFile(t, repoDir, path, contents)
+	}
+	repo, err := git.PlainInit(repoDir, false)
+	require.NoError(t, err)
+	commitGitChanges(t, repo, "initial commit", sortedKeys(files), nil)
+	return repoDir, repo
+}
+
+func writeGitFile(t *testing.T, repoDir, path, contents string) {
+	t.Helper()
+	fullPath := filepath.Join(repoDir, path)
+	require.NoError(t, os.MkdirAll(filepath.Dir(fullPath), 0o755))
+	require.NoError(t, os.WriteFile(fullPath, []byte(contents), 0o644))
+}
+
+func commitGitChanges(t *testing.T, repo *git.Repository, message string, addPaths, removePaths []string) {
+	t.Helper()
+	worktree, err := repo.Worktree()
+	require.NoError(t, err)
+	for _, path := range addPaths {
+		_, err = worktree.Add(path)
+		require.NoError(t, err)
+	}
+	for _, path := range removePaths {
+		_, err = worktree.Remove(path)
+		require.NoError(t, err)
+	}
+	_, err = worktree.Commit(message, &git.CommitOptions{
+		Author: &object.Signature{Name: "codex", Email: "codex@example.com"},
+	})
+	require.NoError(t, err)
+}
+
+func sortedKeys(values map[string]string) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 type memoryNotebookRepo struct {

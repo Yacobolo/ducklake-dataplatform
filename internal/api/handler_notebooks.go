@@ -601,8 +601,9 @@ func (h *APIHandler) SyncGitRepo(ctx context.Context, req GenSyncGitRepoRequest)
 	result, err := h.gitRepos.SyncGitRepo(ctx, cp.Name, cp.IsAdmin, req.GitRepoId)
 	if err != nil {
 		if resp, ok := respondDomainError[GenSyncGitRepoResponse](err, domainErrorResponder[GenSyncGitRepoResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo403JSONResponse{resp} },
-			NotFound: func(resp NotFoundJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo404JSONResponse{resp} },
+			BadRequest: func(resp BadRequestJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo404JSONResponse{resp} },
 			Internal: func(resp InternalErrorJSONResponse) GenSyncGitRepoResponse {
 				return GenSyncGitRepo500JSONResponse{resp}
 			},

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -565,23 +564,6 @@ func (h *Handler) NotebookGitReposSync(w http.ResponseWriter, r *http.Request) {
 	principal, isAdmin := principalLabel(r.Context())
 	result, err := h.GitService.SyncGitRepo(r.Context(), principal, isAdmin, gitRepoID)
 	if err != nil {
-		var notImplemented *domain.NotImplementedError
-		if errors.As(err, &notImplemented) {
-			repo, repoErr := h.GitService.GetGitRepo(r.Context(), gitRepoID)
-			if repoErr != nil {
-				h.renderServiceError(w, r, repoErr)
-				return
-			}
-			renderHTML(w, http.StatusOK, notebookGitRepoSyncUnavailablePage(notebookGitRepoSyncUnavailablePageData{
-				Principal: principalFromContext(r.Context()),
-				GitRepoID: gitRepoID,
-				RepoURL:   repo.URL,
-				Branch:    repo.Branch,
-				Path:      valueOrDash(repo.Path),
-				Message:   notImplemented.Error(),
-			}))
-			return
-		}
 		h.renderServiceError(w, r, err)
 		return
 	}

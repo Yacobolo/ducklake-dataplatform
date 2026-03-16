@@ -816,6 +816,19 @@ func TestAPI_GitRepoCRUD(t *testing.T) {
 		deleteGitRepoFn: func(_ context.Context, _ string, _ bool, _ string) error {
 			return nil
 		},
+		syncGitRepoFn: func(_ context.Context, _ string, _ bool, id string) (*domain.GitSyncResult, error) {
+			switch id {
+			case "repo-bad":
+				return nil, domain.ErrValidation("invalid declarative notebook")
+			default:
+				return &domain.GitSyncResult{
+					NotebooksCreated: 1,
+					NotebooksUpdated: 0,
+					NotebooksDeleted: 0,
+					CommitSHA:        "abc123",
+				}, nil
+			}
+		},
 	}
 
 	srv := setupNotebookTestServer(t, nil, nil, gitSvc, "alice", false)
@@ -857,6 +870,17 @@ func TestAPI_GitRepoCRUD(t *testing.T) {
 		resp := nbDoRequest(t, http.MethodDelete, srv.URL+"/git-repos/"+repoID, "")
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	})
+
+	t.Run("sync git repo bad input returns 400", func(t *testing.T) {
+		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/git-repos/repo-bad/sync", "")
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		var errResp Error
+		_ = json.NewDecoder(resp.Body).Decode(&errResp)
+		assert.Equal(t, int32(400), errResp.Code)
+		assert.Contains(t, errResp.Message, "invalid declarative notebook")
 	})
 }
 
