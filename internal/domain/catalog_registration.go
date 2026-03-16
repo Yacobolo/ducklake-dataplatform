@@ -6,6 +6,8 @@ import (
 )
 
 const (
+	// PrimaryCatalogName is the built-in mutable DuckLake catalog exposed by local/dev environments.
+	PrimaryCatalogName = "lake"
 	// SampleDataCatalogName is the reserved built-in catalog for platform-managed sample data.
 	SampleDataCatalogName = "sample_data"
 	// AllAuthenticatedGroupID is the synthetic group granted baseline access for all signed-in users.
@@ -69,4 +71,10 @@ type UpdateCatalogRegistrationRequest struct {
 // IsSystemManagedCatalog reports whether a catalog name is reserved for platform-managed content.
 func IsSystemManagedCatalog(name string) bool {
 	return strings.EqualFold(strings.TrimSpace(name), SampleDataCatalogName)
+}
+
+// IsPrimaryCatalog reports whether a catalog name refers to the built-in mutable
+// primary DuckLake catalog.
+func IsPrimaryCatalog(name string) bool {
+	return strings.EqualFold(strings.TrimSpace(name), PrimaryCatalogName)
 }

@@ -168,7 +168,7 @@ func TestGrantRepo_HasPrivilege_False(t *testing.T) {
 	assert.False(t, has)
 }
 
-func TestGrantRepo_HasPrivilege_CatalogIgnoresLegacySecurableID(t *testing.T) {
+func TestGrantRepo_HasPrivilege_CatalogMatchesExactCatalogID(t *testing.T) {
 	grantRepo, principalRepo := setupGrantRepo(t)
 	ctx := context.Background()
 
@@ -178,12 +178,36 @@ func TestGrantRepo_HasPrivilege_CatalogIgnoresLegacySecurableID(t *testing.T) {
 		PrincipalID:   p.ID,
 		PrincipalType: "user",
 		SecurableType: domain.SecurableCatalog,
-		SecurableID:   "legacy-catalog-id",
+		SecurableID:   "lake",
 		Privilege:     domain.PrivUseCatalog,
 	})
 	require.NoError(t, err)
 
-	has, err := grantRepo.HasPrivilege(ctx, p.ID, "user", domain.SecurableCatalog, domain.CatalogID, domain.PrivUseCatalog)
+	has, err := grantRepo.HasPrivilege(ctx, p.ID, "user", domain.SecurableCatalog, "lake", domain.PrivUseCatalog)
+	require.NoError(t, err)
+	assert.True(t, has)
+
+	has, err = grantRepo.HasPrivilege(ctx, p.ID, "user", domain.SecurableCatalog, "other", domain.PrivUseCatalog)
+	require.NoError(t, err)
+	assert.False(t, has)
+}
+
+func TestGrantRepo_HasPrivilege_CatalogFallsBackToLegacySentinel(t *testing.T) {
+	grantRepo, principalRepo := setupGrantRepo(t)
+	ctx := context.Background()
+
+	p := createTestPrincipal(t, principalRepo, "legacy-catalog-user")
+
+	_, err := grantRepo.Grant(ctx, &domain.PrivilegeGrant{
+		PrincipalID:   p.ID,
+		PrincipalType: "user",
+		SecurableType: domain.SecurableCatalog,
+		SecurableID:   domain.CatalogID,
+		Privilege:     domain.PrivUseCatalog,
+	})
+	require.NoError(t, err)
+
+	has, err := grantRepo.HasPrivilege(ctx, p.ID, "user", domain.SecurableCatalog, "lake", domain.PrivUseCatalog)
 	require.NoError(t, err)
 	assert.True(t, has)
 }

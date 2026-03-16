@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -306,10 +307,38 @@ func (s *CatalogRegistrationService) AttachAll(ctx context.Context) error {
 		} else {
 			s.logger.Info("default catalog set", "catalog", defCat.Name)
 		}
+	} else if errors.As(err, new(*domain.NotFoundError)) {
+		fallback := chooseStartupDefaultCatalog(catalogs)
+		if fallback != nil {
+			if setErr := s.repo.SetDefault(ctx, fallback.ID); setErr != nil {
+				s.logger.Warn("set startup default catalog failed", "catalog", fallback.Name, "error", setErr)
+			} else if useErr := s.attacher.SetDefaultCatalog(ctx, fallback.Name); useErr != nil {
+				s.logger.Warn("USE startup default catalog failed", "catalog", fallback.Name, "error", useErr)
+			} else {
+				s.logger.Info("startup default catalog selected", "catalog", fallback.Name)
+			}
+		}
 	}
 
 	s.logger.Info("catalog startup complete", "total", len(catalogs))
 	return nil
+}
+
+func chooseStartupDefaultCatalog(catalogs []domain.CatalogRegistration) *domain.CatalogRegistration {
+	var systemFallback *domain.CatalogRegistration
+	for i := range catalogs {
+		cat := &catalogs[i]
+		if cat.Status != domain.CatalogStatusActive {
+			continue
+		}
+		if !domain.IsSystemManagedCatalog(cat.Name) {
+			return cat
+		}
+		if systemFallback == nil {
+			systemFallback = cat
+		}
+	}
+	return systemFallback
 }
 
 // enforceSQLiteSeparation ensures the given DSN doesn't point to the control plane DB.

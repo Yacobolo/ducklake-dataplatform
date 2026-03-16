@@ -32,9 +32,10 @@ type CreateVolumeRequest struct {
 
 // UpdateVolumeRequest holds parameters for updating a volume.
 type UpdateVolumeRequest struct {
-	NewName *string
-	Comment *string
-	Owner   *string
+	NewName         *string
+	StorageLocation *string
+	Comment         *string
+	Owner           *string
 }
 
 // Validate checks that the request is well-formed.

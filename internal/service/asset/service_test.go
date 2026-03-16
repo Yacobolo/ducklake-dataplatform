@@ -275,6 +275,28 @@ func TestService_ReconcileFreshness_SkipsStaleLineageWhenServingPreAggregationIs
 	assert.Empty(t, events.events)
 }
 
+func TestService_TriggerMaterialization_RejectsUnsupportedAssetType(t *testing.T) {
+	t.Parallel()
+
+	assets := &fakeAssetRepo{assetsByID: map[string]domain.DataAsset{}, idsByKey: map[string]string{}}
+	events := &fakeOrchestrationEventRepo{}
+
+	dashboard, err := assets.Create(adminCtx(), &domain.DataAsset{
+		ID:         "dashboard-1",
+		AssetKey:   "dashboard.exec",
+		AssetType:  domain.AssetTypeDashboard,
+		Owner:      "alice",
+		SchemaJSON: map[string]any{},
+	})
+	require.NoError(t, err)
+
+	svc := &Service{assets: assets, events: events}
+	_, err = svc.TriggerMaterialization(adminCtx(), dashboard.ID, nil, nil, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "does not support materialization")
+	assert.Empty(t, events.events)
+}
+
 func adminCtx() context.Context {
 	return domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "tester", IsAdmin: true, Type: "user"})
 }

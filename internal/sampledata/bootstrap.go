@@ -362,8 +362,9 @@ func ensureView(ctx context.Context, duckDB *sql.DB, viewRepo *repository.ViewRe
 }
 
 func ensureSampleGrants(ctx context.Context, grantRepo *repository.GrantRepo, schemaID string) error {
+	securableSchemaID := domain.SyntheticCatalogSchemaID(domain.SampleDataCatalogName, schemaID)
 	for _, privilege := range []string{domain.PrivUseSchema, domain.PrivSelect} {
-		hasGrant, err := grantRepo.HasPrivilege(ctx, domain.AllAuthenticatedGroupID, "group", domain.SecurableSchema, schemaID, privilege)
+		hasGrant, err := grantRepo.HasPrivilege(ctx, domain.AllAuthenticatedGroupID, "group", domain.SecurableSchema, securableSchemaID, privilege)
 		if err != nil {
 			return fmt.Errorf("check sample grant %s: %w", privilege, err)
 		}
@@ -374,7 +375,7 @@ func ensureSampleGrants(ctx context.Context, grantRepo *repository.GrantRepo, sc
 			PrincipalID:   domain.AllAuthenticatedGroupID,
 			PrincipalType: "group",
 			SecurableType: domain.SecurableSchema,
-			SecurableID:   schemaID,
+			SecurableID:   securableSchemaID,
 			Privilege:     privilege,
 			GrantedBy:     strPtr(systemOwner),
 		})

@@ -31,7 +31,7 @@ func (r *CatalogRepo) CreateTable(ctx context.Context, schemaName string, req do
 	// Build column definitions via ddl package (validates names + types)
 	cols := make([]ddl.ColumnDef, len(req.Columns))
 	for i, c := range req.Columns {
-		cols[i] = ddl.ColumnDef{Name: c.Name, Type: c.Type}
+		cols[i] = ddl.ColumnDef{Name: c.Name, Type: c.Type, Nullable: c.Nullable}
 	}
 
 	stmt, err := ddl.CreateTable(r.catalogName, schemaName, req.Name, cols)

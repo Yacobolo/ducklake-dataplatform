@@ -846,6 +846,7 @@ func TestCatalogService_ProfileTable(t *testing.T) {
 			if tt.setupRepo != nil {
 				tt.setupRepo(repo)
 			}
+			ensureCatalogLookupDefaults(repo, "main", "events")
 			audit := &mockAuditRepo{}
 			svc := newTestCatalogService(repo, auth, audit, &mockTagRepo{}, tt.stats, nil)
 
@@ -938,6 +939,9 @@ func TestCatalogService_ListTables(t *testing.T) {
 		t.Parallel()
 
 		repo := &mockCatalogRepo{
+			GetSchemaFn: func(_ context.Context, name string) (*domain.SchemaDetail, error) {
+				return &domain.SchemaDetail{SchemaID: "schema-1", Name: name, CatalogName: "lake"}, nil
+			},
 			ListTablesFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.TableDetail, int64, error) {
 				return []domain.TableDetail{
 					{TableID: "1", Name: "events", SchemaName: "main"},
@@ -977,6 +981,9 @@ func TestCatalogService_GetTable(t *testing.T) {
 		t.Parallel()
 
 		repo := &mockCatalogRepo{
+			GetSchemaFn: func(_ context.Context, name string) (*domain.SchemaDetail, error) {
+				return &domain.SchemaDetail{SchemaID: "schema-1", Name: name, CatalogName: "lake"}, nil
+			},
 			GetTableFn: func(_ context.Context, _, tableName string) (*domain.TableDetail, error) {
 				return &domain.TableDetail{TableID: "1", Name: tableName, SchemaName: "main"}, nil
 			},

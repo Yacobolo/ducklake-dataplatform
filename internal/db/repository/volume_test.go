@@ -126,13 +126,16 @@ func TestVolume_Update(t *testing.T) {
 
 	newName := "renamed"
 	newComment := "updated comment"
+	newStorageLocation := "s3://bucket/renamed"
 	updated, err := repo.Update(ctx, vol.ID, domain.UpdateVolumeRequest{
-		NewName: &newName,
-		Comment: &newComment,
+		NewName:         &newName,
+		StorageLocation: &newStorageLocation,
+		Comment:         &newComment,
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "renamed", updated.Name)
 	assert.Equal(t, "updated comment", updated.Comment)
+	assert.Equal(t, "s3://bucket/renamed", updated.StorageLocation)
 	assert.Equal(t, "admin", updated.Owner) // unchanged
 
 	// Verify via GetByName with new name
