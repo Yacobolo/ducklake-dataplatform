@@ -322,6 +322,10 @@ model CreateGroupRequest {
   description?: string;
 }
 
+model UpdateGroupRequest {
+  description?: string;
+}
+
 model GroupMember {
   group_id: string;
   member_type: PrincipalType;
@@ -869,6 +873,12 @@ model ComputeEndpointHealth {
   max_memory_gb?: int32;
   uptime_seconds?: int32;
   duckdb_version?: string;
+}
+
+model ComputeRoutingDefaults {
+  interactive_mode?: string;
+  scheduled_mode?: string;
+  notebook_mode?: string;
 }
 
 model SubmitQueryRequest {

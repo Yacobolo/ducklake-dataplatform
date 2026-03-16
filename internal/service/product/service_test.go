@@ -290,6 +290,68 @@ func TestService_CreateAndPublishSemanticOnlyProduct(t *testing.T) {
 	assert.Equal(t, domain.BuildStateReleased, build.State)
 }
 
+func TestService_DeleteVersion_RemovesDraftVersion(t *testing.T) {
+	writeDB, _ := internaldb.OpenTestSQLite(t)
+	ctx := context.Background()
+
+	assetRepo := repository.NewDataAssetRepo(writeDB)
+	assetRunRepo := repository.NewAssetRunRepo(writeDB)
+	assetCheckRepo := repository.NewAssetCheckRepo(writeDB)
+	domainRepo := repository.NewDomainRepo(writeDB)
+	teamRepo := repository.NewTeamRepo(writeDB)
+	productRepo := repository.NewDataProductRepo(writeDB)
+	projectRepo := repository.NewProjectRepo(writeDB)
+	svc := NewService(domainRepo, teamRepo, assetRepo, assetRunRepo, assetCheckRepo, productRepo)
+	buildRepo := repository.NewBuildRepo(writeDB)
+	svc.SetBuildRepository(buildRepo)
+	svc.SetProjectRepository(projectRepo)
+
+	_, err := assetRepo.Create(ctx, &domain.DataAsset{
+		AssetKey:  "main.analytics.orders",
+		AssetType: domain.AssetTypeTable,
+		Owner:     "analytics",
+		CreatedBy: "alice",
+		IsActive:  true,
+	})
+	require.NoError(t, err)
+
+	ordersKey := "main.analytics.orders"
+	_, err = svc.CreateProduct(ctx, domain.CreateDataProductRequest{
+		Slug:              "orders",
+		Name:              "Orders",
+		DomainName:        "Revenue",
+		TeamName:          "Analytics Engineering",
+		StewardPrincipal:  "alice",
+		ContactChannel:    "#rev-data",
+		DocsURL:           "https://docs.example.com/orders",
+		AccessRequestPath: "/access/orders",
+		PrimaryAssetKey:   &ordersKey,
+		CreatedBy:         "alice",
+	})
+	require.NoError(t, err)
+
+	detail, err := svc.GetProduct(ctx, "orders")
+	require.NoError(t, err)
+	buildID := createBuildForProduct(t, ctx, writeDB, buildRepo, detail.Product, "alice")
+
+	_, err = svc.CreateVersion(ctx, "orders", domain.CreateDataProductVersionRequest{
+		CompatibilityLevel: domain.ProductCompatibilityBackwardCompatible,
+		DocsURL:           "https://docs.example.com/orders",
+		AccessRequestPath: "/access/orders",
+		ProducingBuildID:  &buildID,
+		OutputAssetKeys:   []string{ordersKey},
+		CreatedBy:         "alice",
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, svc.DeleteVersion(ctx, "orders", 2))
+
+	updated, err := svc.GetProduct(ctx, "orders")
+	require.NoError(t, err)
+	require.Len(t, updated.Versions, 1)
+	assert.Equal(t, 1, updated.Versions[0].Version)
+}
+
 func TestService_GetPortfolioReport(t *testing.T) {
 	writeDB, _ := internaldb.OpenTestSQLite(t)
 	ctx := context.Background()

@@ -24,6 +24,13 @@ The generated declarative reference documents the versioned JSON Schema artifact
 | Understanding schema vs semantic validation | Product guides | They explain why both validation layers exist |
 | Learning how assets, models, semantics, and products fit together | Product guides | They connect the schema to the platform mental model |
 
+## Runtime Contract
+
+- declarative reads are strict by default, so missing supported endpoints fail the operation instead of being skipped
+- `plan` uses exit code `0` for clean, `2` for actionable drift, and `1` for blocking declarative errors
+- `apply` aborts before mutation when blocking declarative errors are present
+- the operational success condition is a clean follow-up `plan` after `apply`
+
 ## Editor Integration
 
 Map the union schema:

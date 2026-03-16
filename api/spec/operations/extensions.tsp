@@ -263,6 +263,18 @@ op getComputeEndpointHealth(endpointName: string): Ok<ComputeEndpointHealth> | B
 @summary("Delete compute assignment")
 op deleteComputeAssignment(endpointName: string, assignmentId: string): NoContent | ResourceErrorResponses;
 
+@route("/compute-defaults")
+@get
+@tag("Compute")
+@summary("Get compute routing defaults")
+op getComputeRoutingDefaults(): Ok<ComputeRoutingDefaults> | StandardErrorResponses;
+
+@route("/compute-defaults")
+@patch(#{ implicitOptionality: true })
+@tag("Compute")
+@summary("Update compute routing defaults")
+op updateComputeRoutingDefaults(@body body: ComputeRoutingDefaults): Ok<ComputeRoutingDefaults> | MutatingErrorResponses | BadRequestResponse;
+
 @route("/notebooks")
 @get
 @tag("Notebooks")
@@ -622,6 +634,12 @@ op checkSourceFreshness(sourceSchema: string, sourceTable: string, @query timest
 @tag("Models")
 @summary("Promote notebook to model")
 op promoteNotebookToModel(@body body: PromoteNotebookRequest): Created<Model> | MutatingErrorResponses;
+
+@route("/models/from-notebook/{notebookId}")
+@delete
+@tag("Models")
+@summary("Unpublish notebook model")
+op unpublishNotebookModel(notebookId: string): NoContent | ResourceErrorResponses;
 
 @route("/model-runs/{runId}/cancel")
 @post

@@ -28,6 +28,7 @@ type modelService interface {
 	CheckFreshness(ctx context.Context, projectName, modelName string) (*domain.FreshnessStatus, error)
 	CheckSourceFreshness(ctx context.Context, principal, sourceSchema, sourceTable, timestampColumn string, maxLagSeconds int64) (*domain.SourceFreshnessStatus, error)
 	PromoteNotebook(ctx context.Context, principal string, req domain.PromoteNotebookRequest) (*domain.Model, error)
+	UnpublishNotebook(ctx context.Context, principal, notebookID string) error
 }
 
 // === Models ===
@@ -967,4 +968,41 @@ func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req GenPromoteN
 		Body:    modelToAPI(*result),
 		Headers: GenPromoteNotebookToModel201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
+}
+
+// UnpublishNotebookModel implements the endpoint for removing a notebook-backed published model.
+func (h *APIHandler) UnpublishNotebookModel(ctx context.Context, req GenUnpublishNotebookModelRequest) (GenUnpublishNotebookModelResponse, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	if _, _, err := h.notebooks.GetNotebookForPrincipal(ctx, cp.Name, cp.IsAdmin, req.NotebookId); err != nil {
+		if resp, ok := respondDomainError[GenUnpublishNotebookModelResponse](err, domainErrorResponder[GenUnpublishNotebookModelResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenUnpublishNotebookModelResponse {
+				return UnpublishNotebookModel403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUnpublishNotebookModelResponse {
+				return UnpublishNotebookModel404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	if err := h.models.UnpublishNotebook(ctx, cp.Name, req.NotebookId); err != nil {
+		if resp, ok := respondDomainError[GenUnpublishNotebookModelResponse](err, domainErrorResponder[GenUnpublishNotebookModelResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUnpublishNotebookModelResponse {
+				return UnpublishNotebookModel400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenUnpublishNotebookModelResponse {
+				return UnpublishNotebookModel403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUnpublishNotebookModelResponse {
+				return UnpublishNotebookModel404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	return GenUnpublishNotebookModel204Response{}, nil
 }

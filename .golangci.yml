@@ -160,6 +160,7 @@ linters:
     paths:
       - vendor
       - context
+      - site/node_modules
 
     rules:
       - path: _test\.go

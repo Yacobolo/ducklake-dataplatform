@@ -75,6 +75,22 @@ func (r *CreateGroupRequest) Validate() error {
 	return nil
 }
 
+// UpdateGroupRequest holds mutable group fields.
+type UpdateGroupRequest struct {
+	Description *string
+}
+
+// Validate checks that the request is well-formed.
+func (r *UpdateGroupRequest) Validate() error {
+	if r == nil {
+		return ErrValidation("update request is required")
+	}
+	if r.Description != nil && strings.TrimSpace(*r.Description) == "" {
+		return ErrValidation("description cannot be empty when provided")
+	}
+	return nil
+}
+
 // AddGroupMemberRequest holds parameters for adding a member to a group.
 type AddGroupMemberRequest struct {
 	GroupID    string

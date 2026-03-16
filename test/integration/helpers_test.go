@@ -53,6 +53,7 @@ import (
 	svcnotebook "duck-demo/internal/service/notebook"
 	"duck-demo/internal/service/orchestration"
 	svcpipeline "duck-demo/internal/service/pipeline"
+	productsvc "duck-demo/internal/service/product"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
 	svcsemantic "duck-demo/internal/service/semantic"
@@ -1230,6 +1231,9 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	searchRepo := repository.NewSearchRepo(metaDB, metaDB)
 	queryHistoryRepo := repository.NewQueryHistoryRepo(metaDB)
 	viewRepo := repository.NewViewRepo(metaDB)
+	domainRepo := repository.NewDomainRepo(metaDB)
+	teamRepo := repository.NewTeamRepo(metaDB)
+	productRepo := repository.NewDataProductRepo(metaDB)
 
 	// Build authorization service unconditionally (needed by viewSvc)
 	authSvc := security.NewAuthorizationService(
@@ -1249,6 +1253,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	lineageSvc := governance.NewLineageService(lineageRepo, nil)
 	searchSvc := catalog.NewSearchService(searchRepo, nil)
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
+	productSvc := productsvc.NewService(domainRepo, teamRepo, nil, nil, nil, productRepo, auditRepo)
 
 	// querySvc gets nil engine — no /v1/query support unless WithDuckLake+engine
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
@@ -1304,6 +1309,9 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		searchRepo = repository.NewSearchRepo(metaDB, metaDB)
 		queryHistoryRepo = repository.NewQueryHistoryRepo(metaDB)
 		viewRepo = repository.NewViewRepo(metaDB)
+		domainRepo = repository.NewDomainRepo(metaDB)
+		teamRepo = repository.NewTeamRepo(metaDB)
+		productRepo = repository.NewDataProductRepo(metaDB)
 
 		// Rebuild services on new repos
 		authSvc = security.NewAuthorizationService(
@@ -1322,6 +1330,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		lineageSvc = governance.NewLineageService(lineageRepo, nil)
 		searchSvc = catalog.NewSearchService(searchRepo, nil)
 		queryHistorySvc = governance.NewQueryHistoryService(queryHistoryRepo)
+		productSvc = productsvc.NewService(domainRepo, teamRepo, nil, nil, nil, productRepo, auditRepo)
 
 		catalogRegRepo = repository.NewCatalogRegistrationRepo(metaDB)
 		catalogRepoFactory = repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
@@ -1465,6 +1474,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			false,
 		)
 		assetSvc = assetsvc.NewService(assetRepo, assetDepRepo, assetPartitionRepo, assetRunRepo, assetCheckRepo, backfillRepo, eventRepo, auditRepo, authSvc)
+		productSvc = productsvc.NewService(domainRepo, teamRepo, assetRepo, assetRunRepo, assetCheckRepo, productRepo, auditRepo)
 	}
 
 	// Wire APIKeyService by default so API key endpoints are always available
@@ -1538,6 +1548,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			Logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
 		})
 		notebookSvc.SetPublishRepositories(modelRepo, notebookModelLinkRepo)
+		productSvc.SetBuildRepository(buildRepo)
+		productSvc.SetProjectRepository(projectRepo)
 	}
 
 	// Optionally wire Semantic service.
@@ -1554,6 +1566,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			semanticPreAggRepo,
 		)
 		semanticSvc.SetQueryExecutor(querySvc)
+		productSvc.SetSemanticModelRepository(semanticModelRepo)
 	}
 
 	handler := api.NewHandler(
@@ -1573,6 +1586,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		macroSvc, // macroSvc
 		semanticSvc,
 	)
+	handler.SetProductService(productSvc)
 	r := chi.NewRouter()
 
 	// Always use the full Authenticator for correct IsAdmin resolution.

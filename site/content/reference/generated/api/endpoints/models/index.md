@@ -6,7 +6,7 @@ Model, macro, and model run management for transformation workflows.
 
 ## Resources
 
-- [Models](./models) (11 operations)
+- [Models](./models) (12 operations)
 - [Macros](./macros) (8 operations)
 - [Model Runs](./model-runs) (6 operations)
 

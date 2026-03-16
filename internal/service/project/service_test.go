@@ -166,6 +166,10 @@ func (f *fakeDataProductRepo) ListVersions(context.Context, string) ([]domain.Da
 	panic("ListVersions not implemented")
 }
 
+func (f *fakeDataProductRepo) DeleteVersion(context.Context, string) error {
+	panic("DeleteVersion not implemented")
+}
+
 func (f *fakeDataProductRepo) UpdateVersionReleaseState(context.Context, string, string) error {
 	panic("UpdateVersionReleaseState not implemented")
 }

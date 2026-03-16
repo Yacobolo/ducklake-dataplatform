@@ -166,3 +166,28 @@ Get data product version
 | `429` | Client error |
 | `500` | Server error |
 
+## `DELETE /data-products/{productSlug}/versions/{version}`
+
+Delete data product version
+
+- Operation ID: `deleteDataProductVersion`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `productSlug` | `string` | `true` | - |
+| `version` | `integer` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+

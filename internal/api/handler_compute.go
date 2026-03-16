@@ -164,6 +164,55 @@ func (h *APIHandler) DeleteComputeEndpoint(ctx context.Context, req GenDeleteCom
 	return GenDeleteComputeEndpoint204Response{}, nil
 }
 
+// GetComputeRoutingDefaults implements the endpoint for retrieving global compute routing defaults.
+func (h *APIHandler) GetComputeRoutingDefaults(ctx context.Context, _ GenGetComputeRoutingDefaultsRequest) (GenGetComputeRoutingDefaultsResponse, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.computeEndpoints.GetRoutingDefaults(ctx, cp.Name)
+	if err != nil {
+		return nil, err
+	}
+	return GenGetComputeRoutingDefaults200JSONResponse{
+		Body: ComputeRoutingDefaults{
+			InteractiveMode: optStr(result.InteractiveMode),
+			ScheduledMode:   optStr(result.ScheduledMode),
+			NotebookMode:    optStr(result.NotebookMode),
+		},
+		Headers: GenGetComputeRoutingDefaults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// UpdateComputeRoutingDefaults implements the endpoint for updating global compute routing defaults.
+func (h *APIHandler) UpdateComputeRoutingDefaults(ctx context.Context, req GenUpdateComputeRoutingDefaultsRequest) (GenUpdateComputeRoutingDefaultsResponse, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	defaults := domain.ComputeRoutingDefaults{
+		InteractiveMode: derefString(req.Body.InteractiveMode),
+		ScheduledMode:   derefString(req.Body.ScheduledMode),
+		NotebookMode:    derefString(req.Body.NotebookMode),
+	}
+	result, err := h.computeEndpoints.UpdateRoutingDefaults(ctx, cp.Name, defaults)
+	if err != nil {
+		if resp, ok := respondDomainError[GenUpdateComputeRoutingDefaultsResponse](err, domainErrorResponder[GenUpdateComputeRoutingDefaultsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateComputeRoutingDefaultsResponse {
+				return UpdateComputeRoutingDefaults400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateComputeRoutingDefaultsResponse {
+				return UpdateComputeRoutingDefaults403JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenUpdateComputeRoutingDefaults200JSONResponse{
+		Body: ComputeRoutingDefaults{
+			InteractiveMode: optStr(result.InteractiveMode),
+			ScheduledMode:   optStr(result.ScheduledMode),
+			NotebookMode:    optStr(result.NotebookMode),
+		},
+		Headers: GenUpdateComputeRoutingDefaults200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
 // ListComputeAssignments implements the endpoint for listing assignments for a compute endpoint.
 func (h *APIHandler) ListComputeAssignments(ctx context.Context, req GenListComputeAssignmentsRequest) (GenListComputeAssignmentsResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)

@@ -25,8 +25,8 @@ type StateWriter interface {
 	Execute(ctx context.Context, action declarative.Action) error
 }
 
-// CapabilityCompatibilityMode controls how tolerant the declarative client is
-// of optional endpoint drift when reading state from older servers.
+// CapabilityCompatibilityMode controls how strict the declarative client is
+// when reading server state.
 type CapabilityCompatibilityMode string
 
 const (
@@ -42,10 +42,10 @@ type APIStateClientOptions struct {
 }
 
 func normalizeCompatibilityMode(mode CapabilityCompatibilityMode) CapabilityCompatibilityMode {
-	if mode == CapabilityCompatibilityStrict {
+	if mode == CapabilityCompatibilityLegacy {
 		return mode
 	}
-	return CapabilityCompatibilityLegacy
+	return CapabilityCompatibilityStrict
 }
 
 // resourceIndex maps human-readable names to API UUIDs. It is populated during
@@ -229,38 +229,22 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 		return nil, fmt.Errorf("read notebooks: %w", err)
 	}
 	if err := c.readDomains(ctx, state); err != nil {
-		if !c.isOptionalReadError(err) {
-			return nil, fmt.Errorf("read domains: %w", err)
-		}
-	} else {
-		if err := c.readTeams(ctx, state); err != nil {
-			if !c.isOptionalReadError(err) {
-				return nil, fmt.Errorf("read teams: %w", err)
-			}
-		}
-		if err := c.readDataProducts(ctx, state); err != nil {
-			if !c.isOptionalReadError(err) {
-				return nil, fmt.Errorf("read data products: %w", err)
-			}
-		}
+		return nil, fmt.Errorf("read domains: %w", err)
+	}
+	if err := c.readTeams(ctx, state); err != nil {
+		return nil, fmt.Errorf("read teams: %w", err)
+	}
+	if err := c.readDataProducts(ctx, state); err != nil {
+		return nil, fmt.Errorf("read data products: %w", err)
 	}
 	if err := c.readAssets(ctx, state); err != nil {
-		if !c.isOptionalReadError(err) {
-			return nil, fmt.Errorf("read assets: %w", err)
-		}
-		c.addOptionalReadWarning("assets", err)
+		return nil, fmt.Errorf("read assets: %w", err)
 	}
 	if err := c.readMacros(ctx, state); err != nil {
-		if !c.isOptionalReadError(err) {
-			return nil, fmt.Errorf("read macros: %w", err)
-		}
-		c.addOptionalReadWarning("macros", err)
+		return nil, fmt.Errorf("read macros: %w", err)
 	}
 	if err := c.readModels(ctx, state); err != nil {
-		if !c.isOptionalReadError(err) {
-			return nil, fmt.Errorf("read models: %w", err)
-		}
-		c.addOptionalReadWarning("models", err)
+		return nil, fmt.Errorf("read models: %w", err)
 	}
 	if err := c.readSemanticModels(ctx, state); err != nil {
 		return nil, fmt.Errorf("read semantic models: %w", err)
@@ -912,20 +896,28 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 	}
 
 	defaultsPage, err := c.client.Do(http.MethodGet, "/compute-defaults", nil, nil)
-	if err == nil && defaultsPage.StatusCode >= 200 && defaultsPage.StatusCode < 300 {
-		var defaults struct {
-			InteractiveMode string `json:"interactive_mode"`
-			ScheduledMode   string `json:"scheduled_mode"`
-			NotebookMode    string `json:"notebook_mode"`
-		}
-		body, readErr := apiruntime.ReadBody(defaultsPage)
-		if readErr == nil && json.Unmarshal(body, &defaults) == nil {
-			state.ComputeDefaults = &declarative.ComputeRoutingDefaultsSpec{
-				InteractiveMode: defaults.InteractiveMode,
-				ScheduledMode:   defaults.ScheduledMode,
-				NotebookMode:    defaults.NotebookMode,
-			}
-		}
+	if err != nil {
+		return fmt.Errorf("GET /compute-defaults: %w", err)
+	}
+	body, err := apiruntime.ReadBody(defaultsPage)
+	if err != nil {
+		return fmt.Errorf("read GET /compute-defaults: %w", err)
+	}
+	if defaultsPage.StatusCode < 200 || defaultsPage.StatusCode >= 300 {
+		return fmt.Errorf("GET /compute-defaults: HTTP %d: %s", defaultsPage.StatusCode, string(body))
+	}
+	var defaults struct {
+		InteractiveMode string `json:"interactive_mode"`
+		ScheduledMode   string `json:"scheduled_mode"`
+		NotebookMode    string `json:"notebook_mode"`
+	}
+	if err := json.Unmarshal(body, &defaults); err != nil {
+		return fmt.Errorf("parse GET /compute-defaults: %w", err)
+	}
+	state.ComputeDefaults = &declarative.ComputeRoutingDefaultsSpec{
+		InteractiveMode: defaults.InteractiveMode,
+		ScheduledMode:   defaults.ScheduledMode,
+		NotebookMode:    defaults.NotebookMode,
 	}
 	return nil
 }
@@ -2887,6 +2879,11 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if c.index != nil {
 			c.index.notebookIDByName[nb.Name] = notebookID
 		}
+		if shouldUnpublishNotebook(nil, nb.Spec.Publish) {
+			if err := c.unpublishNotebookModel(notebookID); err != nil {
+				return err
+			}
+		}
 		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
 			return err
 		}
@@ -2909,6 +2906,16 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if err := apiruntime.CheckError(resp); err != nil {
 			return err
 		}
+		detail, err := c.readNotebookDetail(ctx, notebookID)
+		if err != nil {
+			return err
+		}
+		currentPublish := buildNotebookPublishSpec(detail.PublishModel, detail.Cells)
+		if shouldUnpublishNotebook(currentPublish, nb.Spec.Publish) {
+			if err := c.unpublishNotebookModel(notebookID); err != nil {
+				return err
+			}
+		}
 		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
 			return err
 		}
@@ -2922,6 +2929,9 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		notebookID, err := c.resolveNotebookID(ctx, notebookName)
 		if err != nil {
 			return fmt.Errorf("resolve notebook for delete: %w", err)
+		}
+		if err := c.unpublishNotebookModel(notebookID); err != nil {
+			return err
 		}
 		resp, err := c.client.Do(http.MethodDelete, "/notebooks/"+notebookID, nil, nil)
 		if err != nil {
@@ -3143,12 +3153,40 @@ func (c *APIStateClient) applyDataProductUpdate(ctx context.Context, desired, ac
 				extra = append(extra, version)
 			}
 			sort.Ints(extra)
-			return fmt.Errorf("data product %q has existing versions %v that cannot be removed declaratively", desired.Slug, extra)
+			for _, version := range extra {
+				resp, err := c.client.Do(http.MethodDelete, fmt.Sprintf("/data-products/%s/versions/%d", desired.Slug, version), nil, nil)
+				if err != nil {
+					return err
+				}
+				if err := apiruntime.CheckError(resp); err != nil {
+					return err
+				}
+			}
 		}
-	} else if desired.Spec.PublicationIntent == domain.ProductPublicationIntentPublished {
-		if versionOne, ok := findProductVersion(actual.Spec.Versions, 1); ok {
-			if err := c.applyProductVersionState(ctx, desired.Slug, versionOne.ReleaseState, domain.ProductReleaseStatePublished, 1); err != nil {
-				return err
+	} else {
+		if len(actual.Spec.Versions) > 0 {
+			extra := make([]int, 0, len(actual.Spec.Versions))
+			for _, version := range actual.Spec.Versions {
+				if version.Version != 1 {
+					extra = append(extra, version.Version)
+				}
+			}
+			sort.Ints(extra)
+			for _, version := range extra {
+				resp, err := c.client.Do(http.MethodDelete, fmt.Sprintf("/data-products/%s/versions/%d", desired.Slug, version), nil, nil)
+				if err != nil {
+					return err
+				}
+				if err := apiruntime.CheckError(resp); err != nil {
+					return err
+				}
+			}
+		}
+		if desired.Spec.PublicationIntent == domain.ProductPublicationIntentPublished {
+			if versionOne, ok := findProductVersion(actual.Spec.Versions, 1); ok {
+				if err := c.applyProductVersionState(ctx, desired.Slug, versionOne.ReleaseState, domain.ProductReleaseStatePublished, 1); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -3249,8 +3287,8 @@ func (c *APIStateClient) prepareCreateDataProduct(item declarative.DataProductRe
 	body := dataProductCreateBody(item.Slug, item.Spec)
 	topLevelPatch := map[string]interface{}{}
 	if versionOne, ok := findProductVersion(item.Spec.Versions, 1); ok {
-		body["contract"] = versionOne.Contract
-		body["slo"] = versionOne.SLO
+		body["contract"] = apiProductContractFromDeclarative(versionOne.Contract)
+		body["slo"] = apiProductSLOFromDeclarative(versionOne.SLO)
 		body["docs_url"] = versionOne.DocsURL
 		body["access_request_path"] = versionOne.AccessRequestPath
 		body["semantic_model_refs"] = versionOne.SemanticEntrypoints
@@ -3288,8 +3326,8 @@ func dataProductCreateBody(slug string, spec declarative.DataProductSpec) map[st
 		"docs_url":             spec.DocsURL,
 		"access_request_path":  spec.AccessRequestPath,
 		"business_definitions": spec.BusinessDefinitions,
-		"contract":             spec.Contract,
-		"slo":                  spec.SLO,
+		"contract":             apiProductContractFromDeclarative(spec.Contract),
+		"slo":                  apiProductSLOFromDeclarative(spec.SLO),
 		"semantic_model_refs":  spec.SemanticEntrypoints,
 		"created_by":           "declarative",
 	}
@@ -3316,8 +3354,8 @@ func dataProductUpdateBody(slug string, spec declarative.DataProductSpec) map[st
 		"docs_url":             spec.DocsURL,
 		"access_request_path":  spec.AccessRequestPath,
 		"business_definitions": spec.BusinessDefinitions,
-		"contract":             spec.Contract,
-		"slo":                  spec.SLO,
+		"contract":             apiProductContractFromDeclarative(spec.Contract),
+		"slo":                  apiProductSLOFromDeclarative(spec.SLO),
 		"publication_intent":   spec.PublicationIntent,
 	}
 }
@@ -3325,13 +3363,35 @@ func dataProductUpdateBody(slug string, spec declarative.DataProductSpec) map[st
 func dataProductVersionBody(spec declarative.DataProductVersionSpec) map[string]interface{} {
 	return map[string]interface{}{
 		"compatibility_level": spec.CompatibilityLevel,
-		"contract":            spec.Contract,
-		"slo":                 spec.SLO,
+		"contract":            apiProductContractFromDeclarative(spec.Contract),
+		"slo":                 apiProductSLOFromDeclarative(spec.SLO),
 		"docs_url":            spec.DocsURL,
 		"access_request_path": spec.AccessRequestPath,
 		"output_asset_keys":   spec.Outputs,
 		"semantic_model_refs": spec.SemanticEntrypoints,
 		"created_by":          "declarative",
+	}
+}
+
+func apiProductContractFromDeclarative(item declarative.ProductContractSpec) apiProductContract {
+	return apiProductContract{
+		DataGrain:            item.DataGrain,
+		PrimaryKeys:          append([]string(nil), item.PrimaryKeys...),
+		JoinKeys:             append([]string(nil), item.JoinKeys...),
+		Dimensions:           append([]string(nil), item.Dimensions...),
+		Measures:             append([]string(nil), item.Measures...),
+		RetentionWindow:      item.RetentionWindow,
+		UpdateCadence:        item.UpdateCadence,
+		QualityExpectations:  append([]string(nil), item.QualityExpectations...),
+		BreakingChangePolicy: item.BreakingChangePolicy,
+		SampleQueries:        append([]string(nil), item.SampleQueries...),
+	}
+}
+
+func apiProductSLOFromDeclarative(item declarative.ProductSLOSpec) apiProductSLO {
+	return apiProductSLO{
+		FreshnessSLO: item.FreshnessSLO,
+		LatencySLO:   item.LatencySLO,
 	}
 }
 
@@ -3519,6 +3579,16 @@ func (c *APIStateClient) syncNotebookCells(ctx context.Context, notebookID strin
 	return nil
 }
 
+func shouldUnpublishNotebook(current *declarative.NotebookPublishSpec, desired *declarative.NotebookPublishSpec) bool {
+	if current == nil {
+		return false
+	}
+	if desired == nil {
+		return true
+	}
+	return !reflect.DeepEqual(current, desired)
+}
+
 func notebookCellBody(cell declarative.CellSpec, position int, includeCellType bool) map[string]interface{} {
 	body := map[string]interface{}{
 		"content":  cell.Content,
@@ -3571,6 +3641,14 @@ func (c *APIStateClient) reconcileNotebookPublish(_ context.Context, notebookID 
 		body["materialization"] = spec.Publish.Model.Materialization
 	}
 	resp, err := c.client.Do(http.MethodPost, "/models/from-notebook", nil, body)
+	if err != nil {
+		return err
+	}
+	return apiruntime.CheckError(resp)
+}
+
+func (c *APIStateClient) unpublishNotebookModel(notebookID string) error {
+	resp, err := c.client.Do(http.MethodDelete, "/models/from-notebook/"+notebookID, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -4515,7 +4593,16 @@ func (c *APIStateClient) executeGroup(_ context.Context, action declarative.Acti
 		return nil
 
 	case declarative.OpUpdate:
-		resp, err := c.client.Do(http.MethodPatch, "/groups/"+action.ResourceName, nil, action.Desired)
+		spec := action.Desired.(declarative.GroupSpec)
+		groupID, err := c.resolvePrincipalID(spec.Name, "group")
+		if err != nil {
+			return fmt.Errorf("resolve group for update: %w", err)
+		}
+		body := map[string]interface{}{}
+		if spec.Description != "" {
+			body["description"] = spec.Description
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/groups/"+groupID, nil, body)
 		if err != nil {
 			return err
 		}

@@ -83,6 +83,20 @@ func newApplyCmd(client *apiruntime.Client) *cobra.Command {
 				return nil
 			}
 
+			if len(plan.Errors) > 0 {
+				if isJSON {
+					if err := apiruntime.PrintJSON(os.Stdout, map[string]interface{}{
+						"status": "error",
+						"errors": planErrorMessages(plan),
+					}); err != nil {
+						return err
+					}
+				} else {
+					declarative.FormatText(os.Stdout, plan, noColor)
+				}
+				os.Exit(1)
+			}
+
 			// 5. Show the plan (text mode only).
 			if !isJSON {
 				declarative.FormatText(os.Stdout, plan, noColor)

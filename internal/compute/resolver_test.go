@@ -91,6 +91,9 @@ func (m *mockGroupRepo) GetByName(_ context.Context, _ string) (*domain.Group, e
 func (m *mockGroupRepo) List(_ context.Context, _ domain.PageRequest) ([]domain.Group, int64, error) {
 	panic("unexpected")
 }
+func (m *mockGroupRepo) Update(_ context.Context, _ string, _ *domain.Group) (*domain.Group, error) {
+	panic("unexpected")
+}
 func (m *mockGroupRepo) Delete(_ context.Context, _ string) error { panic("unexpected") }
 func (m *mockGroupRepo) AddMember(_ context.Context, _ *domain.GroupMember) error {
 	panic("unexpected")

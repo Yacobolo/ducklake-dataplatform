@@ -627,6 +627,43 @@ func (s *Service) PromoteNotebook(ctx context.Context, principal string, req dom
 	return created, nil
 }
 
+// UnpublishNotebook removes a notebook-backed model publication and its link.
+func (s *Service) UnpublishNotebook(ctx context.Context, principal, notebookID string) error {
+	if strings.TrimSpace(notebookID) == "" {
+		return domain.ErrValidation("notebook_id is required")
+	}
+	if s.notebookLinks == nil {
+		return domain.ErrValidation("notebook-model link repository not configured")
+	}
+
+	link, err := s.notebookLinks.GetByNotebookID(ctx, notebookID)
+	if err != nil {
+		var notFound *domain.NotFoundError
+		if errors.As(err, &notFound) {
+			return nil
+		}
+		return err
+	}
+
+	if _, err := s.models.GetByID(ctx, link.ModelID); err != nil {
+		var notFound *domain.NotFoundError
+		if errors.As(err, &notFound) {
+			if err := s.notebookLinks.DeleteByNotebookID(ctx, notebookID); err != nil {
+				return err
+			}
+			return nil
+		}
+		return err
+	}
+
+	if err := s.models.Delete(ctx, link.ModelID); err != nil {
+		return err
+	}
+
+	s.logAudit(ctx, principal, "delete_model", link.ModelID)
+	return nil
+}
+
 func (s *Service) logAudit(ctx context.Context, principal, action, _ string) {
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: principal,

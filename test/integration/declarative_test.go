@@ -37,9 +37,7 @@ func writeYAML(t *testing.T, dir, relPath, content string) {
 func makeStateClient(t *testing.T, serverURL, apiKey string) *cli.APIStateClient {
 	t.Helper()
 	client := apiruntime.NewClient(serverURL, apiKey, "")
-	return cli.NewAPIStateClientWithOptions(client, cli.APIStateClientOptions{
-		CompatibilityMode: cli.CapabilityCompatibilityLegacy,
-	})
+	return cli.NewAPIStateClient(client)
 }
 
 // ---------------------------------------------------------------------------
@@ -396,6 +394,47 @@ groups:
 	principalUpdates := actionsOfKindAndOp(plan, declarative.KindPrincipal, declarative.OpUpdate)
 	assert.Empty(t, principalCreates, "no principal creates expected")
 	assert.Empty(t, principalUpdates, "no principal updates expected")
+}
+
+func TestDeclarative_GroupDescriptionUpdateConverges(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithComputeEndpoints: true})
+	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
+
+	dir := t.TempDir()
+	writeYAML(t, dir, "security/principals.yaml", seedPrincipalsYAML)
+	writeYAML(t, dir, "security/groups.yaml", `apiVersion: duck/v1
+kind: GroupList
+groups:
+  - name: admins
+    description: "Updated admin team description"
+    members:
+      - name: admin_user
+        type: user
+  - name: analysts
+    members:
+      - name: analyst1
+        type: user
+  - name: researchers
+    members:
+      - name: researcher1
+        type: user
+`)
+
+	desired, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+
+	actual, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+
+	plan := declarative.Diff(desired, actual)
+	groupUpdates := actionsOfKindAndOp(plan, declarative.KindGroup, declarative.OpUpdate)
+	require.Len(t, groupUpdates, 1)
+	executeActions(t, stateClient, groupUpdates)
+
+	actualAfterApply, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replan := declarative.Diff(desired, actualAfterApply)
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindGroup, declarative.OpUpdate))
 }
 
 // ---------------------------------------------------------------------------
@@ -935,6 +974,171 @@ spec:
 	require.NoError(t, err)
 	replanDelete := declarative.Diff(desiredDeleted, actualAfterDelete)
 	assert.Empty(t, actionsOfKindAndOp(replanDelete, declarative.KindModel, declarative.OpDelete))
+}
+
+func TestDeclarative_NotebookPublishRemovalConverges(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{WithModels: true, WithComputeEndpoints: true})
+	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
+
+	dir := t.TempDir()
+	writeYAML(t, dir, "notebooks/revenue_review.yaml", `apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: revenue_review
+spec:
+  owner: admin_user
+  cells:
+    - type: markdown
+      name: intro
+      content: |
+        # Revenue review
+    - type: sql
+      name: published_output
+      role: output
+      content: |
+        SELECT 1 AS revenue
+  publish:
+    model:
+      project: analytics
+      name: revenue_review_model
+      materialization: VIEW
+      output_cell: published_output
+`)
+
+	desired, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Empty(t, declarative.Validate(desired))
+
+	actual, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+
+	plan := declarative.Diff(desired, actual)
+	notebookCreates := actionsOfKindAndOp(plan, declarative.KindNotebook, declarative.OpCreate)
+	require.Len(t, notebookCreates, 1)
+	executeActions(t, stateClient, notebookCreates)
+
+	actualAfterCreate, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replanCreate := declarative.Diff(desired, actualAfterCreate)
+	assert.Empty(t, actionsOfKindAndOp(replanCreate, declarative.KindNotebook, declarative.OpUpdate))
+
+	writeYAML(t, dir, "notebooks/revenue_review.yaml", `apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: revenue_review
+spec:
+  owner: admin_user
+  cells:
+    - type: markdown
+      name: intro
+      content: |
+        # Revenue review
+`)
+
+	desiredWithoutPublish, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Empty(t, declarative.Validate(desiredWithoutPublish))
+
+	planUpdate := declarative.Diff(desiredWithoutPublish, actualAfterCreate)
+	notebookUpdates := actionsOfKindAndOp(planUpdate, declarative.KindNotebook, declarative.OpUpdate)
+	require.Len(t, notebookUpdates, 1)
+	executeActions(t, stateClient, notebookUpdates)
+
+	actualAfterUpdate, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	replanUpdate := declarative.Diff(desiredWithoutPublish, actualAfterUpdate)
+	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindNotebook, declarative.OpUpdate))
+	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindModel, declarative.OpDelete))
+	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindModel, declarative.OpUpdate))
+}
+
+func TestDeclarative_DataProductVersionRemovalConverges(t *testing.T) {
+	env := setupHTTPServer(t, httpTestOpts{})
+	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
+
+	dir := t.TempDir()
+	writeYAML(t, dir, "domains/revenue.yaml", `apiVersion: duck/v1
+kind: Domain
+metadata:
+  name: revenue
+spec:
+  description: Revenue domain
+`)
+	writeYAML(t, dir, "teams/analytics-engineering.yaml", `apiVersion: duck/v1
+kind: Team
+metadata:
+  name: analytics-engineering
+spec:
+  domain_ref: revenue
+  contact_channel: "#rev-data"
+`)
+	writeYAML(t, dir, "data-products/daily-orders.yaml", `apiVersion: duck/v1
+kind: DataProduct
+metadata:
+  name: daily-orders
+spec:
+  name: Daily Orders
+  domain_ref: revenue
+  owner_team_ref: analytics-engineering
+  steward_principal: admin_user
+  contact_channel: "#rev-data"
+  versions:
+    - version: 1
+      release_state: DRAFT
+      compatibility_level: BACKWARD_COMPATIBLE
+`)
+
+	desired, err := declarative.LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Empty(t, declarative.Validate(desired))
+
+	actual, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+
+	plan := declarative.Diff(desired, actual)
+	var createActions []declarative.Action
+	for _, action := range plan.Actions {
+		switch action.ResourceKind {
+		case declarative.KindDomain, declarative.KindTeam, declarative.KindDataProduct:
+			if action.Operation == declarative.OpCreate {
+				createActions = append(createActions, action)
+			}
+		}
+	}
+	require.Len(t, createActions, 3)
+	executeActions(t, stateClient, createActions)
+
+	createVersionResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/data-products/daily-orders/versions", env.Keys.Admin, map[string]any{
+		"compatibility_level": "BACKWARD_COMPATIBLE",
+		"created_by":          "admin_user",
+	})
+	require.Equal(t, http.StatusCreated, createVersionResp.StatusCode)
+	_ = createVersionResp.Body.Close()
+
+	actualWithExtraVersion, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	require.Len(t, actualWithExtraVersion.DataProducts, 1)
+	require.Len(t, actualWithExtraVersion.DataProducts[0].Spec.Versions, 2)
+
+	desiredForRemoval := *desired
+	desiredForRemoval.DataProducts = append([]declarative.DataProductResource(nil), desired.DataProducts...)
+	desiredForRemoval.DataProducts[0].Spec.Versions = nil
+	desiredForRemoval.DataProducts[0].Spec.PublicationIntent = actualWithExtraVersion.DataProducts[0].Spec.PublicationIntent
+
+	planUpdate := declarative.Diff(&desiredForRemoval, actualWithExtraVersion)
+	productUpdates := actionsOfKindAndOp(planUpdate, declarative.KindDataProduct, declarative.OpUpdate)
+	require.Len(t, productUpdates, 1)
+	executeActions(t, stateClient, productUpdates)
+
+	actualAfterApply, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+	require.Len(t, actualAfterApply.DataProducts, 1)
+	assert.Empty(t, actualAfterApply.DataProducts[0].Spec.Versions)
+
+	replan := declarative.Diff(&desiredForRemoval, actualAfterApply)
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindDataProduct, declarative.OpUpdate))
+	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindDataProduct, declarative.OpDelete))
+	assert.Empty(t, replan.Errors)
 }
 
 func TestDeclarative_MacroLifecycle(t *testing.T) {

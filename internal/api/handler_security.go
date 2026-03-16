@@ -20,6 +20,7 @@ type groupService interface {
 	List(ctx context.Context, page domain.PageRequest) ([]domain.Group, int64, error)
 	Create(ctx context.Context, req domain.CreateGroupRequest) (*domain.Group, error)
 	GetByID(ctx context.Context, id string) (*domain.Group, error)
+	Update(ctx context.Context, id string, req domain.UpdateGroupRequest) (*domain.Group, error)
 	Delete(ctx context.Context, id string) error
 	ListMembers(ctx context.Context, groupID string, page domain.PageRequest) ([]domain.GroupMember, int64, error)
 	AddMember(ctx context.Context, req domain.AddGroupMemberRequest) error
@@ -233,6 +234,33 @@ func (h *APIHandler) GetGroup(ctx context.Context, req GenGetGroupRequest) (GenG
 	return GenGetGroup200JSONResponse{
 		Body:    groupToAPI(*g),
 		Headers: GenGetGroup200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// UpdateGroup implements the endpoint for updating a group by ID.
+func (h *APIHandler) UpdateGroup(ctx context.Context, req GenUpdateGroupRequest) (GenUpdateGroupResponse, error) {
+	if req.Body == nil {
+		return UpdateGroup400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
+	}
+	domReq := domain.UpdateGroupRequest{}
+	if req.Body.Description != nil {
+		domReq.Description = req.Body.Description
+	}
+	group, err := h.groups.Update(ctx, req.GroupId, domReq)
+	if err != nil {
+		if resp, ok := respondDomainError[GenUpdateGroupResponse](err, domainErrorResponder[GenUpdateGroupResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateGroupResponse { return UpdateGroup400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenUpdateGroupResponse { return UpdateGroup403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenUpdateGroupResponse { return UpdateGroup404JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenUpdateGroupResponse { return UpdateGroup409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenUpdateGroup200JSONResponse{
+		Body:    groupToAPI(*group),
+		Headers: GenUpdateGroup200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

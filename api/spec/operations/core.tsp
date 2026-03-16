@@ -65,6 +65,12 @@ op createGroup(@body body: CreateGroupRequest): Created<Group> | MutatingErrorRe
 op getGroup(groupId: string): Ok<Group> | ResourceErrorResponses;
 
 @route("/groups/{groupId}")
+@patch(#{implicitOptionality: true})
+@tag("Identity")
+@summary("Update group")
+op updateGroup(groupId: string, @body body: UpdateGroupRequest): Ok<Group> | ValidationResourceErrorResponses;
+
+@route("/groups/{groupId}")
 @delete
 @tag("Identity")
 @summary("Delete group")

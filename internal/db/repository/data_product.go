@@ -643,6 +643,25 @@ func (r *DataProductRepo) GetVersionByNumber(ctx context.Context, productID stri
 	return item, nil
 }
 
+// DeleteVersion removes an immutable product version and its linked outputs/entrypoints.
+func (r *DataProductRepo) DeleteVersion(ctx context.Context, versionID string) error {
+	res, err := r.db.ExecContext(ctx, `
+		DELETE FROM data_product_versions
+		WHERE id = ?
+	`, versionID)
+	if err != nil {
+		return mapDBError(err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return domain.ErrNotFound("product version %q not found", versionID)
+	}
+	return nil
+}
+
 // UpdateVersionReleaseState updates the release state for a version.
 func (r *DataProductRepo) UpdateVersionReleaseState(ctx context.Context, versionID string, releaseState string) error {
 	res, err := r.db.ExecContext(ctx, `

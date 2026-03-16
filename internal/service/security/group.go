@@ -44,6 +44,29 @@ func (s *GroupService) GetByID(ctx context.Context, id string) (*domain.Group, e
 	return s.repo.GetByID(ctx, id)
 }
 
+// Update mutates a group's editable fields. Requires admin privileges.
+func (s *GroupService) Update(ctx context.Context, id string, req domain.UpdateGroupRequest) (*domain.Group, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, err
+	}
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	current, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if req.Description != nil {
+		current.Description = *req.Description
+	}
+	result, err := s.repo.Update(ctx, id, current)
+	if err != nil {
+		return nil, err
+	}
+	s.logAudit(ctx, fmt.Sprintf("UPDATE_GROUP(id=%s)", id))
+	return result, nil
+}
+
 // List returns a paginated list of groups. Requires admin privileges.
 func (s *GroupService) List(ctx context.Context, page domain.PageRequest) ([]domain.Group, int64, error) {
 	if err := requireAdmin(ctx); err != nil {
