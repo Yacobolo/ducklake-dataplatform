@@ -28,14 +28,17 @@ Use this guide when your team wants repeatable review, promotion, and drift mana
 - row filters and column masks
 - models, macros, notebooks, assets, semantic models, and data products
 - compute routing and storage-related config where supported
+- Git-backed notebook projects where `notebooks/*.yaml` is the reviewed source of truth
 
 ## Verification
 
 - validation passes both schema and semantic checks
 - plan output matches intended changes
 - a follow-up plan returns no additional drift
+- Git sync leaves linked notebooks aligned with the declarative files under the configured repo path
 
 ## Related Reference
 
 - [Declarative Entry Guide](/reference/declarative)
 - [CLI Entry Guide](/reference/cli)
+- [Notebooks And Promotion](/docs/build/notebooks-and-promotion)

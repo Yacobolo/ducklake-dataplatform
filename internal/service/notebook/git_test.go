@@ -3,13 +3,12 @@ package notebook
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 	"time"
-
-	git "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/testutil"
@@ -268,7 +267,7 @@ func TestGitService_SyncGitRepo(t *testing.T) {
 		auditRepo := &testutil.MockAuditRepo{}
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 
-		repoDir, repo := initGitRepoWithFiles(t, map[string]string{
+		repoDir := initGitRepoWithFiles(t, map[string]string{
 			"notebooks/sales.yaml": `
 apiVersion: duck/v1
 kind: Notebook
@@ -288,8 +287,6 @@ spec:
             field: value
 `,
 		})
-		_ = repo
-
 		createdRepo := &domain.GitRepo{
 			ID:     "repo-1",
 			URL:    repoDir,
@@ -342,7 +339,7 @@ spec:
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 		svc.SetPublishDependencies(promoter, nil)
 
-		repoDir, _ := initGitRepoWithFiles(t, map[string]string{
+		repoDir := initGitRepoWithFiles(t, map[string]string{
 			"notebooks/sales.yaml": `
 apiVersion: duck/v1
 kind: Notebook
@@ -408,7 +405,7 @@ spec:
 		auditRepo := &testutil.MockAuditRepo{}
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 
-		repoDir, repo := initGitRepoWithFiles(t, map[string]string{
+		repoDir := initGitRepoWithFiles(t, map[string]string{
 			"notebooks/sales.yaml": `
 apiVersion: duck/v1
 kind: Notebook
@@ -451,7 +448,7 @@ spec:
       role: output
       content: SELECT 2 AS value
 `)
-		commitGitChanges(t, repo, "update notebook", []string{"notebooks/sales.yaml"}, nil)
+		commitGitChanges(t, repoDir, "update notebook", []string{"notebooks/sales.yaml"}, nil)
 
 		second, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
 		require.NoError(t, err)
@@ -478,7 +475,7 @@ spec:
 		auditRepo := &testutil.MockAuditRepo{}
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 
-		repoDir, repo := initGitRepoWithFiles(t, map[string]string{
+		repoDir := initGitRepoWithFiles(t, map[string]string{
 			"notebooks/sales.yaml": `
 apiVersion: duck/v1
 kind: Notebook
@@ -513,7 +510,7 @@ spec:
 		assert.Equal(t, 1, first.NotebooksCreated)
 
 		require.NoError(t, os.Remove(filepath.Join(repoDir, "notebooks", "sales.yaml")))
-		commitGitChanges(t, repo, "remove notebook", nil, []string{"notebooks/sales.yaml"})
+		commitGitChanges(t, repoDir, "remove notebook", nil, []string{"notebooks/sales.yaml"})
 
 		second, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
 		require.NoError(t, err)
@@ -535,7 +532,7 @@ spec:
 		auditRepo := &testutil.MockAuditRepo{}
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 
-		repoDir, _ := initGitRepoWithFiles(t, map[string]string{
+		repoDir := initGitRepoWithFiles(t, map[string]string{
 			"notebooks/sales.yaml": `
 apiVersion: duck/v1
 kind: Notebook
@@ -580,7 +577,7 @@ spec:
 		auditRepo := &testutil.MockAuditRepo{}
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 
-		repoDir, _ := initGitRepoWithFiles(t, map[string]string{
+		repoDir := initGitRepoWithFiles(t, map[string]string{
 			"notebooks/sales.yaml": `
 apiVersion: duck/v1
 kind: Notebook
@@ -637,7 +634,7 @@ spec:
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 		svc.SetPublishDependencies(promoter, linkRepo)
 
-		repoDir, repo := initGitRepoWithFiles(t, map[string]string{
+		repoDir := initGitRepoWithFiles(t, map[string]string{
 			"notebooks/sales.yaml": `
 apiVersion: duck/v1
 kind: Notebook
@@ -689,7 +686,7 @@ spec:
       role: output
       content: SELECT 1
 `)
-		commitGitChanges(t, repo, "remove publish config", []string{"notebooks/sales.yaml"}, nil)
+		commitGitChanges(t, repoDir, "remove publish config", []string{"notebooks/sales.yaml"}, nil)
 
 		second, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
 		require.NoError(t, err)
@@ -719,16 +716,17 @@ func (p *capturingNotebookPromoter) PromoteNotebook(ctx context.Context, _ strin
 	return &domain.Model{ID: domain.NewID()}, nil
 }
 
-func initGitRepoWithFiles(t *testing.T, files map[string]string) (string, *git.Repository) {
+func initGitRepoWithFiles(t *testing.T, files map[string]string) string {
 	t.Helper()
 	repoDir := t.TempDir()
 	for path, contents := range files {
 		writeGitFile(t, repoDir, path, contents)
 	}
-	repo, err := git.PlainInit(repoDir, false)
-	require.NoError(t, err)
-	commitGitChanges(t, repo, "initial commit", sortedKeys(files), nil)
-	return repoDir, repo
+	runGit(t, repoDir, "init", "--initial-branch=master")
+	runGit(t, repoDir, "config", "user.name", "codex")
+	runGit(t, repoDir, "config", "user.email", "codex@example.com")
+	commitGitChanges(t, repoDir, "initial commit", sortedKeys(files), nil)
+	return repoDir
 }
 
 func writeGitFile(t *testing.T, repoDir, path, contents string) {
@@ -738,22 +736,24 @@ func writeGitFile(t *testing.T, repoDir, path, contents string) {
 	require.NoError(t, os.WriteFile(fullPath, []byte(contents), 0o644))
 }
 
-func commitGitChanges(t *testing.T, repo *git.Repository, message string, addPaths, removePaths []string) {
+func commitGitChanges(t *testing.T, repoDir, message string, addPaths, removePaths []string) {
 	t.Helper()
-	worktree, err := repo.Worktree()
-	require.NoError(t, err)
 	for _, path := range addPaths {
-		_, err = worktree.Add(path)
-		require.NoError(t, err)
+		runGit(t, repoDir, "add", path)
 	}
 	for _, path := range removePaths {
-		_, err = worktree.Remove(path)
-		require.NoError(t, err)
+		runGit(t, repoDir, "rm", "-f", path)
 	}
-	_, err = worktree.Commit(message, &git.CommitOptions{
-		Author: &object.Signature{Name: "codex", Email: "codex@example.com"},
-	})
-	require.NoError(t, err)
+	runGit(t, repoDir, "commit", "-m", message)
+}
+
+func runGit(t *testing.T, repoDir string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = repoDir
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git %s failed: %s", strings.Join(args, " "), strings.TrimSpace(string(output)))
+	return string(output)
 }
 
 func sortedKeys(values map[string]string) []string {

@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	git "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -93,16 +93,11 @@ spec:
       role: output
       content: SELECT 1 AS value
 `), 0o644))
-	repo, err := git.PlainInit(repoDir, false)
-	require.NoError(t, err)
-	worktree, err := repo.Worktree()
-	require.NoError(t, err)
-	_, err = worktree.Add("notebooks/sales.yaml")
-	require.NoError(t, err)
-	_, err = worktree.Commit("add notebook", &git.CommitOptions{
-		Author: &object.Signature{Name: "codex", Email: "codex@example.com"},
-	})
-	require.NoError(t, err)
+	runGit(t, repoDir, "init", "--initial-branch=master")
+	runGit(t, repoDir, "config", "user.name", "codex")
+	runGit(t, repoDir, "config", "user.email", "codex@example.com")
+	runGit(t, repoDir, "add", "notebooks/sales.yaml")
+	runGit(t, repoDir, "commit", "-m", "add notebook")
 
 	createForm := url.Values{}
 	createForm.Set("csrf_token", csrfCookie.Value)
@@ -157,4 +152,13 @@ func newUIAdvancedTestEnv(t *testing.T) uiAdvancedTestEnv {
 		MountRoutes(r, h)
 	})
 	return uiAdvancedTestEnv{router: router}
+}
+
+func runGit(t *testing.T, repoDir string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = repoDir
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git %s failed: %s", strings.Join(args, " "), strings.TrimSpace(string(output)))
+	return string(output)
 }

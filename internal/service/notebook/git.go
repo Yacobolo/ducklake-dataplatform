@@ -2,18 +2,16 @@ package notebook
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
-
-	git "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 
 	"duck-demo/internal/declarative"
 	"duck-demo/internal/domain"
@@ -282,29 +280,50 @@ func (s *GitService) cloneRepo(ctx context.Context, repo *domain.GitRepo) (strin
 	if err != nil {
 		return "", "", fmt.Errorf("create temp dir: %w", err)
 	}
-	opts := &git.CloneOptions{
-		URL:           repo.URL,
-		ReferenceName: plumbing.NewBranchReferenceName(repo.Branch),
-		SingleBranch:  true,
-		Depth:         1,
-	}
-	if strings.TrimSpace(repo.AuthToken) != "" {
-		opts.Auth = &githttp.BasicAuth{
-			Username: "git",
-			Password: repo.AuthToken,
-		}
-	}
-	cloned, err := git.PlainCloneContext(ctx, dir, false, opts)
-	if err != nil {
+	cloneArgs := []string{"clone", "--depth", "1", "--branch", repo.Branch, "--single-branch", repo.URL, dir}
+	if _, err := runGitCommand(ctx, "", repo.AuthToken, cloneArgs...); err != nil {
 		_ = os.RemoveAll(dir)
 		return "", "", fmt.Errorf("clone git repo %q: %w", repo.URL, err)
 	}
-	head, err := cloned.Head()
+	commitSHA, err := runGitCommand(ctx, dir, "", "rev-parse", "HEAD")
 	if err != nil {
 		_ = os.RemoveAll(dir)
 		return "", "", fmt.Errorf("resolve git head: %w", err)
 	}
-	return dir, head.Hash().String(), nil
+	return dir, strings.TrimSpace(commitSHA), nil
+}
+
+func runGitCommand(ctx context.Context, dir, authToken string, args ...string) (string, error) {
+	cmdArgs := append([]string{}, args...)
+	if strings.TrimSpace(authToken) != "" {
+		cmdArgs = append([]string{"-c", "http.extraHeader=" + gitAuthorizationHeader(authToken)}, cmdArgs...)
+	}
+	// #nosec G204 -- the executable is fixed to git; arguments are controlled clone/rev-parse inputs.
+	cmd := exec.CommandContext(ctx, "git", cmdArgs...)
+	if dir != "" {
+		cmd.Dir = dir
+	}
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("git %s: %s", strings.Join(args, " "), sanitizeGitCommandOutput(string(output), authToken))
+	}
+	return string(output), nil
+}
+
+func gitAuthorizationHeader(authToken string) string {
+	encoded := base64.StdEncoding.EncodeToString([]byte("git:" + authToken))
+	return "AUTHORIZATION: basic " + encoded
+}
+
+func sanitizeGitCommandOutput(output, authToken string) string {
+	trimmed := strings.TrimSpace(output)
+	if trimmed == "" {
+		trimmed = "command failed"
+	}
+	if authToken == "" {
+		return trimmed
+	}
+	return strings.ReplaceAll(trimmed, authToken, "[REDACTED]")
 }
 
 func resolveDeclarativeRoot(cloneDir, repoPath string) (string, error) {
