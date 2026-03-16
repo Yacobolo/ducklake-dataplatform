@@ -15,7 +15,9 @@ Get compute routing defaults
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
 

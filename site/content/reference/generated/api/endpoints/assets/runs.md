@@ -29,6 +29,7 @@ List asset backfills
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -57,6 +58,7 @@ Create asset backfill
 | Code | Description |
 | --- | --- |
 | `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -81,6 +83,7 @@ Get asset backfill
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -111,6 +114,7 @@ List asset materializations
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -141,6 +145,7 @@ Starts a materialization run for the specified asset and returns the queued exec
 | Code | Description |
 | --- | --- |
 | `202` | The request has been accepted for processing, but processing has not yet completed. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -172,6 +177,7 @@ List asset runs
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |

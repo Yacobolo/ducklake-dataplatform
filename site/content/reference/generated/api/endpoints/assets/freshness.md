@@ -21,6 +21,7 @@ Get asset freshness
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -44,6 +45,7 @@ List asset freshness blockers
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -67,6 +69,7 @@ Explain asset freshness
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -90,6 +93,7 @@ Reconcile asset freshness
 | Code | Description |
 | --- | --- |
 | `202` | The request has been accepted for processing, but processing has not yet completed. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -113,6 +117,7 @@ List asset freshness requirements
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |

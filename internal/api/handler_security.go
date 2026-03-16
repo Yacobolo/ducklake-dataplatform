@@ -248,7 +248,7 @@ func (h *APIHandler) UpdateGroup(ctx context.Context, req GenUpdateGroupRequest)
 	}
 	group, err := h.groups.Update(ctx, req.GroupId, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateGroupResponse](err, domainErrorResponder[GenUpdateGroupResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateGroupResponse]("updateGroup", err, domainErrorResponder[GenUpdateGroupResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateGroupResponse { return UpdateGroup400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenUpdateGroupResponse { return UpdateGroup403JSONResponse{resp} },
 			NotFound:   func(resp NotFoundJSONResponse) GenUpdateGroupResponse { return UpdateGroup404JSONResponse{resp} },

@@ -15,6 +15,7 @@ Get product portfolio report
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
@@ -37,6 +38,7 @@ List product scorecards
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |

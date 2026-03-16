@@ -602,7 +602,7 @@ func (h *APIHandler) CreateDataProductVersion(ctx context.Context, req GenCreate
 
 func (h *APIHandler) DeleteDataProductVersion(ctx context.Context, req GenDeleteDataProductVersionRequest) (GenDeleteDataProductVersionResponse, error) {
 	if err := h.products.DeleteVersion(ctx, req.ProductSlug, int(req.Version)); err != nil {
-		if resp, ok := respondDomainError[GenDeleteDataProductVersionResponse](err, domainErrorResponder[GenDeleteDataProductVersionResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteDataProductVersionResponse]("deleteDataProductVersion", err, domainErrorResponder[GenDeleteDataProductVersionResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeleteDataProductVersionResponse {
 				return DeleteDataProductVersion400JSONResponse{resp}
 			},

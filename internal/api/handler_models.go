@@ -974,7 +974,7 @@ func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req GenPromoteN
 func (h *APIHandler) UnpublishNotebookModel(ctx context.Context, req GenUnpublishNotebookModelRequest) (GenUnpublishNotebookModelResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	if _, _, err := h.notebooks.GetNotebookForPrincipal(ctx, cp.Name, cp.IsAdmin, req.NotebookId); err != nil {
-		if resp, ok := respondDomainError[GenUnpublishNotebookModelResponse](err, domainErrorResponder[GenUnpublishNotebookModelResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUnpublishNotebookModelResponse]("unpublishNotebookModel", err, domainErrorResponder[GenUnpublishNotebookModelResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUnpublishNotebookModelResponse {
 				return UnpublishNotebookModel403JSONResponse{resp}
 			},
@@ -988,7 +988,7 @@ func (h *APIHandler) UnpublishNotebookModel(ctx context.Context, req GenUnpublis
 	}
 
 	if err := h.models.UnpublishNotebook(ctx, cp.Name, req.NotebookId); err != nil {
-		if resp, ok := respondDomainError[GenUnpublishNotebookModelResponse](err, domainErrorResponder[GenUnpublishNotebookModelResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUnpublishNotebookModelResponse]("unpublishNotebookModel", err, domainErrorResponder[GenUnpublishNotebookModelResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUnpublishNotebookModelResponse {
 				return UnpublishNotebookModel400JSONResponse{resp}
 			},

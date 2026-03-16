@@ -21,6 +21,7 @@ Get asset graph
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -51,6 +52,7 @@ List asset partitions
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
