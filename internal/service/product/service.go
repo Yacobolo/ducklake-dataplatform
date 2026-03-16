@@ -469,6 +469,39 @@ func (s *Service) CreateVersion(ctx context.Context, slug string, req domain.Cre
 	return detail, nil
 }
 
+// DeleteVersion removes an existing non-published version from a product.
+func (s *Service) DeleteVersion(ctx context.Context, slug string, version int) error {
+	if strings.TrimSpace(slug) == "" {
+		return domain.ErrValidation("slug is required")
+	}
+	if version <= 0 {
+		return domain.ErrValidation("version must be greater than zero")
+	}
+	product, targetVersion, err := s.loadVersion(ctx, slug, version)
+	if err != nil {
+		return err
+	}
+	if targetVersion.ReleaseState == domain.ProductReleaseStatePublished {
+		return domain.ErrValidation("cannot delete published product version %d", version)
+	}
+	if err := s.repo.DeleteVersion(ctx, targetVersion.ID); err != nil {
+		return err
+	}
+	detail, err := s.repo.GetBySlug(ctx, product.Product.Slug)
+	if err != nil {
+		return err
+	}
+	status, err := s.computeStatus(ctx, detail.Product.ID, detail.Product.PublicationIntent, detail.Outputs)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.UpsertStatus(ctx, status); err != nil {
+		return err
+	}
+	s.logAudit(ctx, "system", "DELETE_DATA_PRODUCT_VERSION")
+	return nil
+}
+
 // PublishVersion publishes a validated product version.
 func (s *Service) PublishVersion(ctx context.Context, slug string, version int) (*domain.DataProductDetail, error) {
 	product, targetVersion, err := s.loadVersion(ctx, slug, version)

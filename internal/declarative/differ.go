@@ -415,7 +415,9 @@ func diffCatalogs(plan *Plan, desired, actual []CatalogResource) {
 		diffField(&changes, "metastore_type", a.Spec.MetastoreType, d.Spec.MetastoreType)
 		diffField(&changes, "dsn", a.Spec.DSN, d.Spec.DSN)
 		diffField(&changes, "data_path", a.Spec.DataPath, d.Spec.DataPath)
-		diffBoolField(&changes, "is_default", a.Spec.IsDefault, d.Spec.IsDefault)
+		if d.Spec.IsDefault {
+			diffBoolField(&changes, "is_default", a.Spec.IsDefault, d.Spec.IsDefault)
+		}
 		diffField(&changes, "comment", a.Spec.Comment, d.Spec.Comment)
 		if len(changes) > 0 {
 			addUpdate(plan, KindCatalogRegistration, d.CatalogName, "", d, a, changes)
@@ -615,7 +617,9 @@ func diffViews(plan *Plan, desired, actual []ViewResource) {
 			continue
 		}
 		var changes []FieldDiff
-		diffField(&changes, "view_definition", a.Spec.ViewDefinition, d.Spec.ViewDefinition)
+		if normalizeViewDefinition(a.Spec.ViewDefinition) != normalizeViewDefinition(d.Spec.ViewDefinition) {
+			diffField(&changes, "view_definition", a.Spec.ViewDefinition, d.Spec.ViewDefinition)
+		}
 		diffField(&changes, "comment", a.Spec.Comment, d.Spec.Comment)
 		diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
 		diffMapField(&changes, "properties", a.Spec.Properties, d.Spec.Properties)
@@ -630,6 +634,10 @@ func diffViews(plan *Plan, desired, actual []ViewResource) {
 			addDelete(plan, KindView, k, a)
 		}
 	}
+}
+
+func normalizeViewDefinition(value string) string {
+	return strings.TrimSpace(value)
 }
 
 // === Volumes ===
@@ -1235,7 +1243,9 @@ func diffAssets(plan *Plan, desired, actual []AssetResource) {
 
 		var changes []FieldDiff
 		diffField(&changes, "asset_type", a.Spec.AssetType, d.Spec.AssetType)
-		diffField(&changes, "product_ref", a.Spec.ProductRef, d.Spec.ProductRef)
+		if a.Spec.ProductRef != "" || d.Spec.ProductRef == "" {
+			diffField(&changes, "product_ref", a.Spec.ProductRef, d.Spec.ProductRef)
+		}
 		diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
 		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
 		diffField(&changes, "tags", formatStringSlice(a.Spec.Tags), formatStringSlice(d.Spec.Tags))
@@ -1316,6 +1326,19 @@ func normalizeIncrementalStrategy(strategy string) string {
 
 func normalizeOnSchemaChange(value string) string {
 	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func normalizeSemanticMetricSpecs(metrics []SemanticMetricSpec) []SemanticMetricSpec {
+	if len(metrics) == 0 {
+		return nil
+	}
+	normalized := append([]SemanticMetricSpec(nil), metrics...)
+	for i := range normalized {
+		if normalized[i].CertificationState == "" {
+			normalized[i].CertificationState = "DRAFT"
+		}
+	}
+	return normalized
 }
 
 func normalizeMacroType(value string) string {
@@ -1560,7 +1583,7 @@ func diffSemanticModels(plan *Plan, desired, actual []SemanticModelResource) {
 		diffField(&changes, "base_model_ref", a.Spec.BaseModelRef, d.Spec.BaseModelRef)
 		diffField(&changes, "default_time_dimension", a.Spec.DefaultTimeDimension, d.Spec.DefaultTimeDimension)
 		diffField(&changes, "tags", formatStringSlice(a.Spec.Tags), formatStringSlice(d.Spec.Tags))
-		diffField(&changes, "metrics", stableJSON(a.Spec.Metrics), stableJSON(d.Spec.Metrics))
+		diffField(&changes, "metrics", stableJSON(normalizeSemanticMetricSpecs(a.Spec.Metrics)), stableJSON(normalizeSemanticMetricSpecs(d.Spec.Metrics)))
 		diffField(&changes, "relationships", stableJSON(a.Spec.Relationships), stableJSON(d.Spec.Relationships))
 		diffField(&changes, "pre_aggregations", stableJSON(a.Spec.PreAggregations), stableJSON(d.Spec.PreAggregations))
 		if len(changes) > 0 {

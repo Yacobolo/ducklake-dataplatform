@@ -57,19 +57,6 @@ func (c *APIStateClient) OptionalReadWarnings() []string {
 	return out
 }
 
-func (c *APIStateClient) addOptionalReadWarning(resource string, err error) {
-	if err == nil {
-		return
-	}
-	if status, ok := httpStatusFromError(err); ok {
-		c.optionalReadWarnings = append(c.optionalReadWarnings,
-			fmt.Sprintf("%s endpoint unavailable (HTTP %d); continuing without %s state", resource, status, resource))
-		return
-	}
-	c.optionalReadWarnings = append(c.optionalReadWarnings,
-		fmt.Sprintf("%s endpoint read failed: %v", resource, err))
-}
-
 func endpointRequiredByPlan(actions []declarative.Action, kind declarative.ResourceKind) bool {
 	for _, action := range actions {
 		if action.ResourceKind == kind {
@@ -100,12 +87,6 @@ func (c *APIStateClient) probeEndpoint(ctx context.Context, path string) error {
 // ValidateApplyCapabilities validates that optional model/macro endpoints
 // required by the current plan are available before execution starts.
 func (c *APIStateClient) ValidateApplyCapabilities(ctx context.Context, actions []declarative.Action) error {
-	for _, action := range actions {
-		if action.ResourceKind == declarative.KindGroup && action.Operation == declarative.OpUpdate {
-			return fmt.Errorf("group updates are not supported by the API; delete and recreate group %q or remove the description drift", action.ResourceName)
-		}
-	}
-
 	if endpointRequiredByPlan(actions, declarative.KindModel) {
 		if err := c.probeEndpoint(ctx, "/models"); err != nil {
 			if c.isOptionalReadError(err) {

@@ -388,6 +388,23 @@ func TestDiff_Views(t *testing.T) {
 		assert.Equal(t, KindView, plan.Actions[0].ResourceKind)
 		assert.Equal(t, "c.s.v1", plan.Actions[0].ResourceName)
 	})
+
+	t.Run("ignore view whitespace-only drift", func(t *testing.T) {
+		desired := &DesiredState{
+			Views: []ViewResource{
+				{CatalogName: "c", SchemaName: "s", ViewName: "v1",
+					Spec: ViewSpec{ViewDefinition: "SELECT 1\n"}},
+			},
+		}
+		actual := &DesiredState{
+			Views: []ViewResource{
+				{CatalogName: "c", SchemaName: "s", ViewName: "v1",
+					Spec: ViewSpec{ViewDefinition: "\nSELECT 1\n"}},
+			},
+		}
+		plan := Diff(desired, actual)
+		assert.Empty(t, plan.Actions)
+	})
 }
 
 func TestDiff_Volumes(t *testing.T) {

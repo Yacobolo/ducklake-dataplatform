@@ -12,6 +12,12 @@ SELECT * FROM groups WHERE name = ?;
 -- name: ListGroups :many
 SELECT * FROM groups ORDER BY name;
 
+-- name: UpdateGroup :one
+UPDATE groups
+SET description = ?
+WHERE id = ?
+RETURNING *;
+
 -- name: DeleteGroup :exec
 DELETE FROM groups WHERE id = ?;
 

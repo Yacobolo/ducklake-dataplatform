@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,6 +45,22 @@ func TestHTTP_GroupCRUD(t *testing.T) {
 			var result map[string]interface{}
 			decodeJSON(t, resp, &result)
 			assert.Equal(t, "test-group-crud", result["name"])
+		}},
+		{"update", func(t *testing.T) {
+			url := fmt.Sprintf("%s/v1/groups/%s", env.Server.URL, groupID)
+			body := map[string]interface{}{
+				"description": "updated group description",
+			}
+			resp := doRequest(t, "PATCH", url, env.Keys.Admin, body)
+			if resp.StatusCode != 200 {
+				payload, _ := io.ReadAll(resp.Body)
+				require.Failf(t, "unexpected status", "status=%d body=%s", resp.StatusCode, string(payload))
+			}
+
+			var result map[string]interface{}
+			decodeJSON(t, resp, &result)
+			assert.Equal(t, "test-group-crud", result["name"])
+			assert.Equal(t, "updated group description", result["description"])
 		}},
 		{"list", func(t *testing.T) {
 			resp := doRequest(t, "GET", env.Server.URL+"/v1/groups", env.Keys.Admin, nil)

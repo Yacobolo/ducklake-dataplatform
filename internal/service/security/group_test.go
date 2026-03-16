@@ -62,6 +62,31 @@ func TestGroupService_Delete_AdminRequired(t *testing.T) {
 	assert.ErrorAs(t, err, &accessDenied)
 }
 
+func TestGroupService_Update_AdminAllowed(t *testing.T) {
+	svc, _ := setupGroupService(t)
+
+	group, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "team", Description: "Old"})
+	require.NoError(t, err)
+
+	description := "New"
+	updated, err := svc.Update(adminCtx(), group.ID, domain.UpdateGroupRequest{Description: &description})
+	require.NoError(t, err)
+	assert.Equal(t, "New", updated.Description)
+}
+
+func TestGroupService_Update_AdminRequired(t *testing.T) {
+	svc, _ := setupGroupService(t)
+
+	group, err := svc.Create(adminCtx(), domain.CreateGroupRequest{Name: "team", Description: "Old"})
+	require.NoError(t, err)
+
+	description := "New"
+	_, err = svc.Update(nonAdminCtx(), group.ID, domain.UpdateGroupRequest{Description: &description})
+	require.Error(t, err)
+	var accessDenied *domain.AccessDeniedError
+	assert.ErrorAs(t, err, &accessDenied)
+}
+
 func TestGroupService_Delete_AdminAllowed(t *testing.T) {
 	svc, _ := setupGroupService(t)
 

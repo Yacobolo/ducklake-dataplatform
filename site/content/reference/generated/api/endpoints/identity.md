@@ -152,6 +152,35 @@ Get group
 | `429` | Client error |
 | `500` | Server error |
 
+## `PATCH /groups/{groupId}`
+
+Update group
+
+- Operation ID: `updateGroup`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `groupId` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `DELETE /groups/{groupId}`
 
 Delete group

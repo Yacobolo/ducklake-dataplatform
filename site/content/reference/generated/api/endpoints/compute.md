@@ -4,6 +4,43 @@
 
 Compute endpoint lifecycle, assignments, and health checks.
 
+## `GET /compute-defaults`
+
+Get compute routing defaults
+
+- Operation ID: `getComputeRoutingDefaults`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `401` | Access is unauthorized. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /compute-defaults`
+
+Update compute routing defaults
+
+- Operation ID: `updateComputeRoutingDefaults`
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `GET /compute-endpoints`
 
 List compute endpoints

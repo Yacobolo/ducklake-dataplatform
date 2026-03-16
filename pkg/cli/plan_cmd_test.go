@@ -34,7 +34,7 @@ func TestApplyCmd_AssetActionsExecute(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/compute-defaults":
-			http.NotFound(w, r)
+			_, _ = w.Write([]byte(`{"interactive_mode":"LOCAL","scheduled_mode":"LOCAL","notebook_mode":"LOCAL"}`))
 			return
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/domains":
 			_, _ = w.Write([]byte(`{"data":[{"id":"domain-1","name":"revenue"}]}`))

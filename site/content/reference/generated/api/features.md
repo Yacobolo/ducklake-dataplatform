@@ -9,17 +9,17 @@ This page is generated from OpenAPI tags and operations.
 | [Assets](./endpoints/assets/) | Data asset definitions, runs, checks, partitions, and materialization workflows. | 20 operations |
 | [Auth](./endpoints/auth) | Authentication bootstrap, login, OIDC configuration, and web session administration. | 7 operations |
 | [Catalogs](./endpoints/catalogs/) | Catalog, schema, table, view, volume, and ingestion management APIs. | 37 operations |
-| [Compute](./endpoints/compute) | Compute endpoint lifecycle, assignments, and health checks. | 9 operations |
+| [Compute](./endpoints/compute) | Compute endpoint lifecycle, assignments, and health checks. | 11 operations |
 | [Dashboards](./endpoints/dashboards) | - | 9 operations |
 | [Governance](./endpoints/governance/) | Privileges, tags, classifications, row filters, and column masking controls. | 22 operations |
 | [Health](./endpoints/health) | Operational readiness and service health endpoints. | 1 operations |
-| [Identity](./endpoints/identity) | Principals, groups, and API key management for authenticated access. | 16 operations |
+| [Identity](./endpoints/identity) | Principals, groups, and API key management for authenticated access. | 17 operations |
 | [Integrations](./endpoints/integrations) | Git repository and external integration lifecycle operations. | 5 operations |
 | [Lineage](./endpoints/lineage) | Table and column lineage inspection together with lineage maintenance operations. | 7 operations |
-| [Models](./endpoints/models/) | Model, macro, and model run management for transformation workflows. | 25 operations |
+| [Models](./endpoints/models/) | Model, macro, and model run management for transformation workflows. | 26 operations |
 | [Notebooks](./endpoints/notebooks) | Notebook authoring, sessions, cells, and job execution endpoints. | 16 operations |
 | [Pipelines](./endpoints/pipelines) | Pipeline definitions, jobs, runs, and orchestration controls. | 13 operations |
-| [Products](./endpoints/products/) | Product-first control-plane APIs for domains, teams, product contracts, releases, discovery, and portfolio reporting. | 30 operations |
+| [Products](./endpoints/products/) | Product-first control-plane APIs for domains, teams, product contracts, releases, discovery, and portfolio reporting. | 31 operations |
 | [Queries](./endpoints/queries) | Synchronous and asynchronous SQL query execution, search, and query history endpoints. | 9 operations |
 | [Semantic Layer](./endpoints/semantic-layer/) | Semantic models, metrics, relationships, and metric query execution. | 21 operations |
 | [Storage](./endpoints/storage) | Storage credentials and external location configuration for object storage access. | 10 operations |

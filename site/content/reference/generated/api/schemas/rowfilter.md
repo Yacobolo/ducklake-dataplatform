@@ -3,7 +3,7 @@
 # Schema: `RowFilter`
 
 - Type: `object`
-- Required fields: `filter_sql`, `id`, `table_id`
+- Required fields: `filter_sql`, `id`, `name`, `table_id`
 
 ## Properties
 
@@ -13,5 +13,6 @@
 | `description` | `string` | `false` | - |
 | `filter_sql` | `string` | `true` | - |
 | `id` | `string` | `true` | - |
+| `name` | `string` | `true` | - |
 | `table_id` | `string` | `true` | - |
 

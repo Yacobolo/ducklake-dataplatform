@@ -74,8 +74,10 @@ func newPlanCmd(client *apiruntime.Client) *cobra.Command {
 				declarative.FormatText(os.Stdout, plan, noColor)
 			}
 
-			// 6. Exit code 2 if there are changes (useful for CI).
-			if plan.HasChanges() {
+			switch planExitCode(plan) {
+			case 1:
+				os.Exit(1)
+			case 2:
 				os.Exit(2)
 			}
 

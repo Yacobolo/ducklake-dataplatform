@@ -13,10 +13,12 @@ import (
 
 type promotionModelRepoStub struct {
 	listAllFn                func(context.Context) ([]domain.Model, error)
+	getByIDFn                func(context.Context, string) (*domain.Model, error)
 	getByNameFn              func(context.Context, string, string) (*domain.Model, error)
 	updateFn                 func(context.Context, string, domain.UpdateModelRequest) (*domain.Model, error)
 	updateDependenciesFn     func(context.Context, string, []string) error
 	createWithNotebookLinkFn func(context.Context, *domain.Model, string, string) (*domain.Model, error)
+	deleteFn                 func(context.Context, string) error
 }
 
 func (s promotionModelRepoStub) Create(context.Context, *domain.Model) (*domain.Model, error) {
@@ -30,7 +32,10 @@ func (s promotionModelRepoStub) CreateWithNotebookLink(ctx context.Context, m *d
 	panic("unexpected call")
 }
 
-func (s promotionModelRepoStub) GetByID(context.Context, string) (*domain.Model, error) {
+func (s promotionModelRepoStub) GetByID(ctx context.Context, id string) (*domain.Model, error) {
+	if s.getByIDFn != nil {
+		return s.getByIDFn(ctx, id)
+	}
 	panic("unexpected call")
 }
 
@@ -52,7 +57,10 @@ func (s promotionModelRepoStub) Update(ctx context.Context, id string, req domai
 	panic("unexpected call")
 }
 
-func (s promotionModelRepoStub) Delete(context.Context, string) error {
+func (s promotionModelRepoStub) Delete(ctx context.Context, id string) error {
+	if s.deleteFn != nil {
+		return s.deleteFn(ctx, id)
+	}
 	panic("unexpected call")
 }
 
@@ -98,7 +106,9 @@ func (s promotionNotebookProviderStub) ListCells(context.Context, string) ([]dom
 }
 
 type promotionLinkRepoStub struct {
-	upsertFn func(context.Context, *domain.NotebookModelLink) error
+	upsertFn            func(context.Context, *domain.NotebookModelLink) error
+	getByNotebookIDFn   func(context.Context, string) (*domain.NotebookModelLink, error)
+	deleteByNotebookIDFn func(context.Context, string) error
 }
 
 func (s promotionLinkRepoStub) Upsert(ctx context.Context, link *domain.NotebookModelLink) error {
@@ -108,7 +118,10 @@ func (s promotionLinkRepoStub) Upsert(ctx context.Context, link *domain.Notebook
 	panic("unexpected call")
 }
 
-func (s promotionLinkRepoStub) GetByNotebookID(context.Context, string) (*domain.NotebookModelLink, error) {
+func (s promotionLinkRepoStub) GetByNotebookID(ctx context.Context, notebookID string) (*domain.NotebookModelLink, error) {
+	if s.getByNotebookIDFn != nil {
+		return s.getByNotebookIDFn(ctx, notebookID)
+	}
 	panic("unexpected call")
 }
 
@@ -116,7 +129,10 @@ func (s promotionLinkRepoStub) GetByModelID(context.Context, string) (*domain.No
 	panic("unexpected call")
 }
 
-func (s promotionLinkRepoStub) DeleteByNotebookID(context.Context, string) error {
+func (s promotionLinkRepoStub) DeleteByNotebookID(ctx context.Context, notebookID string) error {
+	if s.deleteByNotebookIDFn != nil {
+		return s.deleteByNotebookIDFn(ctx, notebookID)
+	}
 	panic("unexpected call")
 }
 
@@ -268,4 +284,61 @@ func TestPromoteNotebook_UpdateRequiresLinkRepository(t *testing.T) {
 	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "notebook-model link repository not configured")
+}
+
+func TestUnpublishNotebook_DeletesPublishedModel(t *testing.T) {
+	ctx := context.Background()
+	var deletedModelID string
+
+	svc := &Service{
+		models: promotionModelRepoStub{
+			getByIDFn: func(_ context.Context, id string) (*domain.Model, error) {
+				return &domain.Model{ID: id, ProjectName: "analytics", Name: "orders"}, nil
+			},
+			deleteFn: func(_ context.Context, id string) error {
+				deletedModelID = id
+				return nil
+			},
+		},
+		notebookLinks: promotionLinkRepoStub{
+			getByNotebookIDFn: func(_ context.Context, notebookID string) (*domain.NotebookModelLink, error) {
+				require.Equal(t, "nb-1", notebookID)
+				return &domain.NotebookModelLink{NotebookID: notebookID, ModelID: "m-1", OutputCellID: "cell-out"}, nil
+			},
+		},
+		audit:  promotionAuditRepoStub{},
+		logger: slog.New(slog.DiscardHandler),
+	}
+
+	err := svc.UnpublishNotebook(ctx, "alice", "nb-1")
+	require.NoError(t, err)
+	assert.Equal(t, "m-1", deletedModelID)
+}
+
+func TestUnpublishNotebook_RemovesStaleLinkWhenModelMissing(t *testing.T) {
+	ctx := context.Background()
+	var deletedNotebookID string
+
+	svc := &Service{
+		models: promotionModelRepoStub{
+			getByIDFn: func(context.Context, string) (*domain.Model, error) {
+				return nil, domain.ErrNotFound("model")
+			},
+		},
+		notebookLinks: promotionLinkRepoStub{
+			getByNotebookIDFn: func(_ context.Context, notebookID string) (*domain.NotebookModelLink, error) {
+				return &domain.NotebookModelLink{NotebookID: notebookID, ModelID: "m-1"}, nil
+			},
+			deleteByNotebookIDFn: func(_ context.Context, notebookID string) error {
+				deletedNotebookID = notebookID
+				return nil
+			},
+		},
+		audit:  promotionAuditRepoStub{},
+		logger: slog.New(slog.DiscardHandler),
+	}
+
+	err := svc.UnpublishNotebook(ctx, "alice", "nb-1")
+	require.NoError(t, err)
+	assert.Equal(t, "nb-1", deletedNotebookID)
 }

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/mattn/go-sqlite3"
@@ -103,6 +104,35 @@ func TestProductRoutes_CreatePublishAndSubscribe(t *testing.T) {
 	}`))
 	createVersionReq.Header.Set("Content-Type", "application/json")
 	createVersionRR := httptest.NewRecorder()
+	r.ServeHTTP(createVersionRR, createVersionReq)
+	require.Equal(t, http.StatusCreated, createVersionRR.Code)
+
+	deleteVersionReq := httptest.NewRequest(http.MethodDelete, "/v1/data-products/daily-orders/versions/2", nil)
+	deleteVersionRR := httptest.NewRecorder()
+	r.ServeHTTP(deleteVersionRR, deleteVersionReq)
+	require.Equal(t, http.StatusNoContent, deleteVersionRR.Code)
+
+	versionReq = httptest.NewRequest(http.MethodGet, "/v1/data-products/daily-orders/versions/2", nil)
+	versionRR = httptest.NewRecorder()
+	r.ServeHTTP(versionRR, versionReq)
+	require.Equal(t, http.StatusNotFound, versionRR.Code)
+
+	productDetail, err = productRepo.GetBySlug(t.Context(), "daily-orders")
+	require.NoError(t, err)
+	buildID = createProductBuildForAPITest(t, writeDB, buildRepo, productDetail.Product, "alice")
+
+	createVersionReq = httptest.NewRequest(http.MethodPost, "/v1/data-products/daily-orders/versions", strings.NewReader(`{
+		"compatibility_level":"BACKWARD_COMPATIBLE",
+		"docs_url":"https://docs.example.com/daily-orders",
+		"access_request_path":"/access/daily-orders",
+		"contract":{"data_grain":"one row per order","update_cadence":"hourly","breaking_change_policy":"new version required"},
+		"slo":{"freshness_slo":"60m"},
+		"producing_build_id":"`+buildID+`",
+		"output_asset_keys":["main.analytics.daily_orders"],
+		"created_by":"alice"
+	}`))
+	createVersionReq.Header.Set("Content-Type", "application/json")
+	createVersionRR = httptest.NewRecorder()
 	r.ServeHTTP(createVersionRR, createVersionReq)
 	require.Equal(t, http.StatusCreated, createVersionRR.Code)
 
@@ -285,7 +315,7 @@ func createProductBuildForAPITest(
 	environmentRepo := repository.NewEnvironmentRepo(writeDB)
 
 	project, err := projectRepo.Create(t.Context(), &domain.Project{
-		Name:          product.Slug + "-authoring",
+		Name:          product.Slug + "-authoring-" + strings.ToLower(time.Now().UTC().Format("150405.000000000")),
 		Kind:          domain.ProjectKindShared,
 		OwnerTeamID:   &product.OwnerTeamID,
 		ProductID:     &product.ID,

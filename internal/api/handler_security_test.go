@@ -60,6 +60,7 @@ type mockGroupService struct {
 	listFn         func(ctx context.Context, page domain.PageRequest) ([]domain.Group, int64, error)
 	createFn       func(ctx context.Context, req domain.CreateGroupRequest) (*domain.Group, error)
 	getByIDFn      func(ctx context.Context, id string) (*domain.Group, error)
+	updateFn       func(ctx context.Context, id string, req domain.UpdateGroupRequest) (*domain.Group, error)
 	deleteFn       func(ctx context.Context, id string) error
 	listMembersFn  func(ctx context.Context, groupID string, page domain.PageRequest) ([]domain.GroupMember, int64, error)
 	addMemberFn    func(ctx context.Context, req domain.AddGroupMemberRequest) error
@@ -85,6 +86,13 @@ func (m *mockGroupService) GetByID(ctx context.Context, id string) (*domain.Grou
 		panic("mockGroupService.GetByID called but not configured")
 	}
 	return m.getByIDFn(ctx, id)
+}
+
+func (m *mockGroupService) Update(ctx context.Context, id string, req domain.UpdateGroupRequest) (*domain.Group, error) {
+	if m.updateFn == nil {
+		panic("mockGroupService.Update called but not configured")
+	}
+	return m.updateFn(ctx, id, req)
 }
 
 func (m *mockGroupService) Delete(ctx context.Context, id string) error {
@@ -113,6 +121,68 @@ func (m *mockGroupService) RemoveMember(ctx context.Context, req domain.RemoveGr
 		panic("mockGroupService.RemoveMember called but not configured")
 	}
 	return m.removeMemberFn(ctx, req)
+}
+
+func TestUpdateGroup(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
+		handler := &APIHandler{
+			groups: &mockGroupService{
+				updateFn: func(_ context.Context, id string, req domain.UpdateGroupRequest) (*domain.Group, error) {
+					assert.Equal(t, "group-1", id)
+					require.NotNil(t, req.Description)
+					assert.Equal(t, "Updated description", *req.Description)
+					return &domain.Group{
+						ID:          id,
+						Name:        "analysts",
+						Description: "Updated description",
+					}, nil
+				},
+			},
+		}
+
+		desc := "Updated description"
+		resp, err := handler.UpdateGroup(context.Background(), GenUpdateGroupRequest{
+			GroupId: "group-1",
+			Body:    &UpdateGroupRequest{Description: &desc},
+		})
+		require.NoError(t, err)
+
+		okResp, ok := resp.(GenUpdateGroup200JSONResponse)
+		require.True(t, ok)
+		assert.Equal(t, "group-1", okResp.Body.Id)
+		require.NotNil(t, okResp.Body.Description)
+		assert.Equal(t, "Updated description", *okResp.Body.Description)
+	})
+
+	t.Run("missing body", func(t *testing.T) {
+		handler := &APIHandler{}
+
+		resp, err := handler.UpdateGroup(context.Background(), GenUpdateGroupRequest{GroupId: "group-1"})
+		require.NoError(t, err)
+		_, ok := resp.(UpdateGroup400JSONResponse)
+		require.True(t, ok)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		handler := &APIHandler{
+			groups: &mockGroupService{
+				updateFn: func(context.Context, string, domain.UpdateGroupRequest) (*domain.Group, error) {
+					return nil, domain.ErrNotFound("group")
+				},
+			},
+		}
+
+		desc := "Updated description"
+		resp, err := handler.UpdateGroup(context.Background(), GenUpdateGroupRequest{
+			GroupId: "missing",
+			Body:    &UpdateGroupRequest{Description: &desc},
+		})
+		require.NoError(t, err)
+		_, ok := resp.(UpdateGroup404JSONResponse)
+		require.True(t, ok)
+	})
 }
 
 type mockGrantService struct {

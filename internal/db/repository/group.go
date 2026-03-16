@@ -69,6 +69,18 @@ func (r *GroupRepo) List(ctx context.Context, page domain.PageRequest) ([]domain
 	return mapper.GroupsFromDB(rows), total, nil
 }
 
+// Update mutates group fields by ID.
+func (r *GroupRepo) Update(ctx context.Context, id string, g *domain.Group) (*domain.Group, error) {
+	row, err := r.q.UpdateGroup(ctx, dbstore.UpdateGroupParams{
+		Description: sql.NullString{String: g.Description, Valid: g.Description != ""},
+		ID:          id,
+	})
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	return mapper.GroupFromDB(row), nil
+}
+
 // Delete removes a group by ID.
 func (r *GroupRepo) Delete(ctx context.Context, id string) error {
 	tx, err := r.db.BeginTx(ctx, nil)

@@ -23,6 +23,7 @@ type GroupRepository interface {
 	GetByID(ctx context.Context, id string) (*Group, error)
 	GetByName(ctx context.Context, name string) (*Group, error)
 	List(ctx context.Context, page PageRequest) ([]Group, int64, error)
+	Update(ctx context.Context, id string, g *Group) (*Group, error)
 	Delete(ctx context.Context, id string) error
 	AddMember(ctx context.Context, m *GroupMember) error
 	RemoveMember(ctx context.Context, m *GroupMember) error
@@ -63,6 +64,7 @@ type DataProductRepository interface {
 	CreateVersion(ctx context.Context, version *DataProductVersion) (*DataProductVersion, error)
 	GetVersionByNumber(ctx context.Context, productID string, version int) (*DataProductVersion, error)
 	ListVersions(ctx context.Context, productID string) ([]DataProductVersion, error)
+	DeleteVersion(ctx context.Context, versionID string) error
 	UpdateVersionReleaseState(ctx context.Context, versionID string, releaseState string) error
 	UpdatePublicationIntent(ctx context.Context, productID string, publicationIntent string) error
 	UpsertStatus(ctx context.Context, status *DataProductStatus) error

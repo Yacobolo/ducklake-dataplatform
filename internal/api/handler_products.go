@@ -26,6 +26,7 @@ type productService interface {
 	UpdateProduct(ctx context.Context, slug string, req domain.UpdateDataProductRequest) (*domain.DataProductDetail, error)
 	DeleteProduct(ctx context.Context, slug string) error
 	CreateVersion(ctx context.Context, slug string, req domain.CreateDataProductVersionRequest) (*domain.DataProductDetail, error)
+	DeleteVersion(ctx context.Context, slug string, version int) error
 	PublishVersion(ctx context.Context, slug string, version int) (*domain.DataProductDetail, error)
 	DeprecateVersion(ctx context.Context, slug string, version int, replacementSlug *string) (*domain.DataProductDetail, error)
 	RetireVersion(ctx context.Context, slug string, version int) (*domain.DataProductDetail, error)
@@ -42,6 +43,14 @@ func (h *APIHandler) SetProductService(products productService) {
 }
 
 func (h *APIHandler) ListProductDomains(ctx context.Context, req GenListProductDomainsRequest) (GenListProductDomainsResponse, error) {
+	if isNilService(h.products) {
+		empty := []ProductDomain{}
+		return ListProductDomains200JSONResponse{
+			Body:    PaginatedProductDomains{Data: empty, NextPageToken: nil},
+			Headers: ListProductDomains200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		}, nil
+	}
+
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	items, total, err := h.products.ListDomains(ctx, page)
 	if err != nil {
@@ -178,6 +187,14 @@ func (h *APIHandler) DeleteProductDomain(ctx context.Context, req GenDeleteProdu
 }
 
 func (h *APIHandler) ListProductTeams(ctx context.Context, req GenListProductTeamsRequest) (GenListProductTeamsResponse, error) {
+	if isNilService(h.products) {
+		empty := []ProductTeam{}
+		return ListProductTeams200JSONResponse{
+			Body:    PaginatedProductTeams{Data: empty, NextPageToken: nil},
+			Headers: ListProductTeams200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		}, nil
+	}
+
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	items, total, err := h.products.ListTeams(ctx, page)
 	if err != nil {
@@ -310,6 +327,14 @@ func (h *APIHandler) DeleteProductTeam(ctx context.Context, req GenDeleteProduct
 }
 
 func (h *APIHandler) ListDataProducts(ctx context.Context, req GenListDataProductsRequest) (GenListDataProductsResponse, error) {
+	if isNilService(h.products) {
+		empty := []DataProductListItem{}
+		return ListDataProducts200JSONResponse{
+			Body:    PaginatedDataProducts{Data: empty, NextPageToken: nil},
+			Headers: ListDataProducts200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		}, nil
+	}
+
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	filter := domain.DataProductFilter{
 		Query:              req.Params.Q,
@@ -560,6 +585,28 @@ func (h *APIHandler) CreateDataProductVersion(ctx context.Context, req GenCreate
 	return CreateDataProductVersion201JSONResponse{
 		Body:    dataProductDetailToAPI(*item),
 		Headers: CreateDataProductVersion201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) DeleteDataProductVersion(ctx context.Context, req GenDeleteDataProductVersionRequest) (GenDeleteDataProductVersionResponse, error) {
+	if err := h.products.DeleteVersion(ctx, req.ProductSlug, int(req.Version)); err != nil {
+		if resp, ok := respondDomainError[GenDeleteDataProductVersionResponse](err, domainErrorResponder[GenDeleteDataProductVersionResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenDeleteDataProductVersionResponse {
+				return DeleteDataProductVersion400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteDataProductVersionResponse {
+				return DeleteDataProductVersion403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteDataProductVersionResponse {
+				return DeleteDataProductVersion404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return DeleteDataProductVersion204Response{
+		Headers: DeleteDataProductVersion204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

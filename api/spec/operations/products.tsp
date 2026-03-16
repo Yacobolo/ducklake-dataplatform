@@ -119,6 +119,12 @@ op listDataProductVersions(productSlug: string): Ok<DataProductVersionList> | Lo
 @summary("Get data product version")
 op getDataProductVersion(productSlug: string, version: int32): Ok<DataProductVersionDetail> | LookupErrorResponses;
 
+@route("/data-products/{productSlug}/versions/{version}")
+@delete
+@tag("Products")
+@summary("Delete data product version")
+op deleteDataProductVersion(productSlug: string, version: int32): NoContent | ResourceErrorResponses | BadRequestResponse;
+
 @route("/data-products/{productSlug}/versions")
 @post
 @tag("Products")

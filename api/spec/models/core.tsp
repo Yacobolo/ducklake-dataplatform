@@ -322,6 +322,10 @@ model CreateGroupRequest {
   description?: string;
 }
 
+model UpdateGroupRequest {
+  description?: string;
+}
+
 model GroupMember {
   group_id: string;
   member_type: PrincipalType;
@@ -400,6 +404,7 @@ model CleanupAPIKeysResponse {
 model RowFilter {
   id: string;
   table_id: string;
+  name: string;
   filter_sql: string;
   description?: string;
   created_at?: utcDateTime;
@@ -437,6 +442,7 @@ model PaginatedRowFilterBindings {
 model ColumnMask {
   id: string;
   table_id: string;
+  name: string;
   column_name: string;
   mask_expression: string;
   description?: string;
@@ -869,6 +875,12 @@ model ComputeEndpointHealth {
   max_memory_gb?: int32;
   uptime_seconds?: int32;
   duckdb_version?: string;
+}
+
+model ComputeRoutingDefaults {
+  interactive_mode?: string;
+  scheduled_mode?: string;
+  notebook_mode?: string;
 }
 
 model SubmitQueryRequest {

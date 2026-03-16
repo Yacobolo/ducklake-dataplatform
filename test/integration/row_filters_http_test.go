@@ -42,6 +42,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			decodeJSON(t, resp, &result)
 			require.NotNil(t, result["id"])
 			filterID = result["id"].(string)
+			assert.Equal(t, "age-over-30", result["name"])
 			assert.Equal(t, `"Age" > 30`, result["filter_sql"])
 			assert.Equal(t, "age filter", result["description"])
 		}},

@@ -19,6 +19,7 @@ type mockModelService struct {
 	listRunStepsFn         func(ctx context.Context, runID string) ([]domain.ModelRunStep, error)
 	listTestResultsFn      func(ctx context.Context, runID, stepID string) ([]domain.ModelTestResult, error)
 	checkSourceFreshnessFn func(ctx context.Context, principal, sourceSchema, sourceTable, timestampColumn string, maxLagSeconds int64) (*domain.SourceFreshnessStatus, error)
+	unpublishNotebookFn    func(ctx context.Context, principal, notebookID string) error
 }
 
 func (m *mockModelService) CreateModel(context.Context, string, domain.CreateModelRequest) (*domain.Model, error) {
@@ -92,6 +93,43 @@ func (m *mockModelService) CheckSourceFreshness(ctx context.Context, principal, 
 }
 func (m *mockModelService) PromoteNotebook(context.Context, string, domain.PromoteNotebookRequest) (*domain.Model, error) {
 	panic("not implemented")
+}
+func (m *mockModelService) UnpublishNotebook(ctx context.Context, principal, notebookID string) error {
+	if m.unpublishNotebookFn == nil {
+		panic("not implemented")
+	}
+	return m.unpublishNotebookFn(ctx, principal, notebookID)
+}
+
+func TestHandler_UnpublishNotebookModel(t *testing.T) {
+	t.Parallel()
+
+	var called bool
+	h := &APIHandler{
+		models: &mockModelService{
+			unpublishNotebookFn: func(_ context.Context, principal, notebookID string) error {
+				called = true
+				assert.Equal(t, "admin-user", principal)
+				assert.Equal(t, "nb-1", notebookID)
+				return nil
+			},
+		},
+		notebooks: &mockNotebookService{
+			getNotebookForPrincipalFn: func(_ context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, []domain.Cell, error) {
+				assert.Equal(t, "admin-user", principal)
+				assert.True(t, isAdmin)
+				assert.Equal(t, "nb-1", id)
+				return &domain.Notebook{ID: id, Name: "notebook"}, nil, nil
+			},
+		},
+	}
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "admin-user", IsAdmin: true})
+	resp, err := h.UnpublishNotebookModel(ctx, GenUnpublishNotebookModelRequest{NotebookId: "nb-1"})
+	require.NoError(t, err)
+	require.True(t, called)
+	_, ok := resp.(GenUnpublishNotebookModel204Response)
+	require.True(t, ok)
 }
 
 func TestHandler_TriggerModelRun_UsesAllModelNames(t *testing.T) {
