@@ -15,9 +15,9 @@ import (
 	"duck-demo/internal/ui/catalogs"
 	"duck-demo/internal/ui/components"
 	"duck-demo/internal/ui/compute"
+	"duck-demo/internal/ui/core"
 	"duck-demo/internal/ui/dashboards"
 	"duck-demo/internal/ui/governance"
-	"duck-demo/internal/ui/legacy"
 	"duck-demo/internal/ui/macros"
 	"duck-demo/internal/ui/models"
 	"duck-demo/internal/ui/notebooks"
@@ -30,13 +30,12 @@ import (
 	"duck-demo/internal/ui/storage"
 )
 
-type PrincipalResolver = legacy.PrincipalResolver
+type PrincipalResolver = core.PrincipalResolver
 
 // Handler is the public UI facade used by cmd/server and integration tests.
-// The current implementation is delegated to the legacy UI package while
-// top-level route ownership moves into feature packages.
+// It composes feature handlers over shared UI dependencies.
 type Handler struct {
-	*legacy.Handler
+	*core.Dependencies
 	Auth          *uiauth.Handler
 	Catalogs      *catalogs.Handler
 	Compute       *compute.Handler
@@ -73,41 +72,48 @@ func NewHandler(
 	authCfg config.AuthConfig,
 	production bool,
 ) *Handler {
-	legacyHandler := legacy.NewHandler(
-		catalogRegistration,
-		catalogSvc,
-		querySvc,
-		viewSvc,
-		pipelineSvc,
-		assetSvc,
-		backfillSvc,
-		notebookSvc,
-		sessionManager,
-		macroSvc,
-		modelSvc,
-		authService,
-		webSessionService,
-		principalResolver,
-		authCfg,
-		production,
-	)
-	return &Handler{
-		Handler:       legacyHandler,
-		Auth:          uiauth.New(authService, webSessionService, principalResolver, authCfg, production),
-		Catalogs:      catalogs.New(legacyHandler),
-		Compute:       compute.New(legacyHandler),
-		Overview:      overview.New(),
-		Components:    components.New(),
-		Dashboards:    dashboards.New(legacyHandler),
-		Governance:    governance.New(legacyHandler),
-		Macros:        macros.New(legacyHandler),
-		Models:        models.New(legacyHandler),
-		Notebooks:     notebooks.New(legacyHandler),
-		Pipelines:     pipelines.New(legacyHandler),
-		Products:      products.New(legacyHandler),
-		RuntimeAssets: runtimeassets.New(legacyHandler),
-		Security:      security.New(legacyHandler),
-		Semantic:      semantic.New(legacyHandler),
-		Storage:       storage.New(legacyHandler),
+	deps := &core.Dependencies{
+		CatalogRegistration: catalogRegistration,
+		Catalog:             catalogSvc,
+		Query:               querySvc,
+		View:                viewSvc,
+		Pipeline:            pipelineSvc,
+		Asset:               assetSvc,
+		Backfill:            backfillSvc,
+		Notebook:            notebookSvc,
+		SessionManager:      sessionManager,
+		Macro:               macroSvc,
+		Model:               modelSvc,
+		AuthService:         authService,
+		WebSessionService:   webSessionService,
+		PrincipalResolver:   principalResolver,
+		Auth:                authCfg,
+		Production:          production,
+	}
+	handler := &Handler{
+		Dependencies: deps,
+		Auth:         uiauth.New(authService, webSessionService, principalResolver, authCfg, production),
+		Overview:     overview.New(),
+		Components:   components.New(),
+	}
+	handler.Catalogs = catalogs.New(handler.Dependencies)
+	handler.Compute = compute.New(handler.Dependencies)
+	handler.Dashboards = dashboards.New(handler.Dependencies)
+	handler.Governance = governance.New(handler.Dependencies)
+	handler.Macros = macros.New(handler.Dependencies)
+	handler.Models = models.New(handler.Dependencies)
+	handler.Notebooks = notebooks.New(handler.Dependencies)
+	handler.Pipelines = pipelines.New(handler.Dependencies)
+	handler.Products = products.New(handler.Dependencies)
+	handler.RuntimeAssets = runtimeassets.New(handler.Dependencies)
+	handler.Security = security.New(handler.Dependencies)
+	handler.Semantic = semantic.New(handler.Dependencies)
+	handler.Storage = storage.New(handler.Dependencies)
+	return handler
+}
+
+func (h *Handler) SyncDependencies() {
+	if h == nil || h.Dependencies == nil {
+		return
 	}
 }

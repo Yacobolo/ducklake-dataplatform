@@ -8,18 +8,17 @@ import (
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/ui/core"
-	"duck-demo/internal/ui/legacy"
 )
 
 type Handler struct {
-	legacy *legacy.Handler
+	deps *core.Dependencies
 }
 
-func New(h *legacy.Handler) *Handler { return &Handler{legacy: h} }
+func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
 func (h *Handler) PipelinesList(w http.ResponseWriter, r *http.Request) {
 	pageReq := pageFromRequest(r, 30)
-	items, total, err := h.legacy.Pipeline.ListPipelines(r.Context(), pageReq)
+	items, total, err := h.deps.Pipeline.ListPipelines(r.Context(), pageReq)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -42,12 +41,12 @@ func (h *Handler) PipelinesList(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) PipelinesDetail(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "pipelineName")
-	pipe, err := h.legacy.Pipeline.GetPipeline(r.Context(), name)
+	pipe, err := h.deps.Pipeline.GetPipeline(r.Context(), name)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	jobs, _ := h.legacy.Pipeline.ListJobs(r.Context(), name)
+	jobs, _ := h.deps.Pipeline.ListJobs(r.Context(), name)
 
 	jobRows := make([]pipelineJobRowData, 0, len(jobs))
 	for i := range jobs {
@@ -71,12 +70,12 @@ func (h *Handler) PipelinesDetail(w http.ResponseWriter, r *http.Request) {
 		DeleteURL:     "/ui/pipelines/" + name + "/delete",
 		NewJobURL:     "/ui/pipelines/" + name + "/jobs/new",
 		Jobs:          jobRows,
-		CSRFFieldFunc: h.legacy.CSRFFieldProvider(r),
+		CSRFFieldFunc: h.deps.CSRFFieldProvider(r),
 	}))
 }
 
 func (h *Handler) PipelinesNew(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, pipelinesNewPage(core.PrincipalFromContext(r.Context()), h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, pipelinesNewPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) PipelinesCreate(w http.ResponseWriter, r *http.Request) {
@@ -88,7 +87,7 @@ func (h *Handler) PipelinesCreate(w http.ResponseWriter, r *http.Request) {
 	if p, err := formOptionalInt(r.Form, "concurrency_limit"); err == nil && p != nil {
 		concurrency = *p
 	}
-	_, err := h.legacy.Pipeline.CreatePipeline(r.Context(), principal, domain.CreatePipelineRequest{
+	_, err := h.deps.Pipeline.CreatePipeline(r.Context(), principal, domain.CreatePipelineRequest{
 		Name:             formString(r.Form, "name"),
 		Description:      formString(r.Form, "description"),
 		ScheduleCron:     formOptionalString(r.Form, "schedule_cron"),
@@ -104,12 +103,12 @@ func (h *Handler) PipelinesCreate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) PipelinesEdit(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "pipelineName")
-	p, err := h.legacy.Pipeline.GetPipeline(r.Context(), name)
+	p, err := h.deps.Pipeline.GetPipeline(r.Context(), name)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	core.RenderHTML(w, http.StatusOK, pipelinesEditPage(core.PrincipalFromContext(r.Context()), name, p, h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, pipelinesEditPage(core.PrincipalFromContext(r.Context()), name, p, h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) PipelinesUpdate(w http.ResponseWriter, r *http.Request) {
@@ -126,7 +125,7 @@ func (h *Handler) PipelinesUpdate(w http.ResponseWriter, r *http.Request) {
 	schedule := formString(r.Form, "schedule_cron")
 	desc := formString(r.Form, "description")
 	isPaused := formBool(r.Form, "is_paused")
-	_, err = h.legacy.Pipeline.UpdatePipeline(r.Context(), principal, name, domain.UpdatePipelineRequest{
+	_, err = h.deps.Pipeline.UpdatePipeline(r.Context(), principal, name, domain.UpdatePipelineRequest{
 		Description:      &desc,
 		ScheduleCron:     &schedule,
 		IsPaused:         &isPaused,
@@ -141,7 +140,7 @@ func (h *Handler) PipelinesUpdate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) PipelinesDelete(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "pipelineName")
-	if err := h.legacy.Pipeline.DeletePipeline(r.Context(), principalName(r), name); err != nil {
+	if err := h.deps.Pipeline.DeletePipeline(r.Context(), principalName(r), name); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -150,7 +149,7 @@ func (h *Handler) PipelinesDelete(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) PipelineJobsNew(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "pipelineName")
-	core.RenderHTML(w, http.StatusOK, pipelineJobsNewPage(core.PrincipalFromContext(r.Context()), name, h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, pipelineJobsNewPage(core.PrincipalFromContext(r.Context()), name, h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) PipelineJobsCreate(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +157,7 @@ func (h *Handler) PipelineJobsCreate(w http.ResponseWriter, r *http.Request) {
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	_, err := h.legacy.Pipeline.CreateJob(r.Context(), principalName(r), name, domain.CreatePipelineJobRequest{
+	_, err := h.deps.Pipeline.CreateJob(r.Context(), principalName(r), name, domain.CreatePipelineJobRequest{
 		Name:          formString(r.Form, "name"),
 		DependsOn:     formCSV(r.Form, "depends_on"),
 		NotebookID:    formString(r.Form, "notebook_id"),
@@ -175,7 +174,7 @@ func (h *Handler) PipelineJobsCreate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) PipelineJobsDelete(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "pipelineName")
 	jobID := chi.URLParam(r, "jobID")
-	if err := h.legacy.Pipeline.DeleteJob(r.Context(), principalName(r), name, jobID); err != nil {
+	if err := h.deps.Pipeline.DeleteJob(r.Context(), principalName(r), name, jobID); err != nil {
 		renderServiceError(w, err)
 		return
 	}

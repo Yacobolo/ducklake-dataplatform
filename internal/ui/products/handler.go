@@ -8,17 +8,16 @@ import (
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/ui/core"
-	"duck-demo/internal/ui/legacy"
 
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct{ legacy *legacy.Handler }
+type Handler struct{ deps *core.Dependencies }
 
-func New(h *legacy.Handler) *Handler { return &Handler{legacy: h} }
+func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
 func (h *Handler) ProductsList(w http.ResponseWriter, r *http.Request) {
-	if h.legacy.Product == nil {
+	if h.deps.Product == nil {
 		core.RenderHTML(w, http.StatusNotFound, core.ErrorPage("Not Found", "Products UI is not configured."))
 		return
 	}
@@ -29,7 +28,7 @@ func (h *Handler) ProductsList(w http.ResponseWriter, r *http.Request) {
 	if query != "" {
 		filterQuery = &query
 	}
-	items, total, err := h.legacy.Product.ListProducts(r.Context(), domain.DataProductFilter{
+	items, total, err := h.deps.Product.ListProducts(r.Context(), domain.DataProductFilter{
 		Query: filterQuery,
 		Page:  pageReq,
 	})
@@ -42,15 +41,15 @@ func (h *Handler) ProductsList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ProductsNew(w http.ResponseWriter, r *http.Request) {
-	if h.legacy.Product == nil {
+	if h.deps.Product == nil {
 		core.RenderHTML(w, http.StatusNotFound, core.ErrorPage("Not Found", "Products UI is not configured."))
 		return
 	}
-	core.RenderHTML(w, http.StatusOK, productNewPage(core.PrincipalFromContext(r.Context()), h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, productNewPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) ProductsCreate(w http.ResponseWriter, r *http.Request) {
-	if h.legacy.Product == nil {
+	if h.deps.Product == nil {
 		core.RenderHTML(w, http.StatusNotFound, core.ErrorPage("Not Found", "Products UI is not configured."))
 		return
 	}
@@ -64,7 +63,7 @@ func (h *Handler) ProductsCreate(w http.ResponseWriter, r *http.Request) {
 		primaryAssetKey = &value
 	}
 
-	product, err := h.legacy.Product.CreateProduct(r.Context(), domain.CreateDataProductRequest{
+	product, err := h.deps.Product.CreateProduct(r.Context(), domain.CreateDataProductRequest{
 		Slug:              strings.TrimSpace(r.FormValue("slug")),
 		Name:              strings.TrimSpace(r.FormValue("name")),
 		Description:       strings.TrimSpace(r.FormValue("description")),
@@ -99,12 +98,12 @@ func (h *Handler) ProductsCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ProductsDetail(w http.ResponseWriter, r *http.Request) {
-	if h.legacy.Product == nil {
+	if h.deps.Product == nil {
 		core.RenderHTML(w, http.StatusNotFound, core.ErrorPage("Not Found", "Products UI is not configured."))
 		return
 	}
 
-	product, err := h.legacy.Product.GetProduct(r.Context(), chi.URLParam(r, "productSlug"))
+	product, err := h.deps.Product.GetProduct(r.Context(), chi.URLParam(r, "productSlug"))
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -114,18 +113,18 @@ func (h *Handler) ProductsDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ProductsVersionDetail(w http.ResponseWriter, r *http.Request) {
-	if h.legacy.Product == nil {
+	if h.deps.Product == nil {
 		core.RenderHTML(w, http.StatusNotFound, core.ErrorPage("Not Found", "Products UI is not configured."))
 		return
 	}
 
-	product, err := h.legacy.Product.GetProduct(r.Context(), chi.URLParam(r, "productSlug"))
+	product, err := h.deps.Product.GetProduct(r.Context(), chi.URLParam(r, "productSlug"))
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 	version := parseIntOrDefault(chi.URLParam(r, "version"), 1)
-	versionDetail, err := h.legacy.Product.GetVersion(r.Context(), chi.URLParam(r, "productSlug"), version)
+	versionDetail, err := h.deps.Product.GetVersion(r.Context(), chi.URLParam(r, "productSlug"), version)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -134,7 +133,7 @@ func (h *Handler) ProductsVersionDetail(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) ProductsCreateVersion(w http.ResponseWriter, r *http.Request) {
-	if h.legacy.Product == nil {
+	if h.deps.Product == nil {
 		core.RenderHTML(w, http.StatusNotFound, core.ErrorPage("Not Found", "Products UI is not configured."))
 		return
 	}
@@ -143,7 +142,7 @@ func (h *Handler) ProductsCreateVersion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	outputAssetKeys := splitCSV(r.FormValue("output_asset_keys"))
-	product, err := h.legacy.Product.CreateVersion(r.Context(), chi.URLParam(r, "productSlug"), domain.CreateDataProductVersionRequest{
+	product, err := h.deps.Product.CreateVersion(r.Context(), chi.URLParam(r, "productSlug"), domain.CreateDataProductVersionRequest{
 		CompatibilityLevel: strings.TrimSpace(r.FormValue("compatibility_level")),
 		Contract: domain.ProductContract{
 			DataGrain:            strings.TrimSpace(r.FormValue("data_grain")),
@@ -181,7 +180,7 @@ func (h *Handler) ProductsRetire(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ProductsAddDependency(w http.ResponseWriter, r *http.Request) {
-	if h.legacy.Product == nil {
+	if h.deps.Product == nil {
 		core.RenderHTML(w, http.StatusNotFound, core.ErrorPage("Not Found", "Products UI is not configured."))
 		return
 	}
@@ -189,7 +188,7 @@ func (h *Handler) ProductsAddDependency(w http.ResponseWriter, r *http.Request) 
 		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "Unable to parse dependency form."))
 		return
 	}
-	product, err := h.legacy.Product.AddDependency(r.Context(), chi.URLParam(r, "productSlug"), strings.TrimSpace(r.FormValue("depends_on_slug")))
+	product, err := h.deps.Product.AddDependency(r.Context(), chi.URLParam(r, "productSlug"), strings.TrimSpace(r.FormValue("depends_on_slug")))
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -198,7 +197,7 @@ func (h *Handler) ProductsAddDependency(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) ProductsSubscribe(w http.ResponseWriter, r *http.Request) {
-	if h.legacy.Product == nil {
+	if h.deps.Product == nil {
 		core.RenderHTML(w, http.StatusNotFound, core.ErrorPage("Not Found", "Products UI is not configured."))
 		return
 	}
@@ -206,7 +205,7 @@ func (h *Handler) ProductsSubscribe(w http.ResponseWriter, r *http.Request) {
 		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "Unable to parse subscription form."))
 		return
 	}
-	_, err := h.legacy.Product.Subscribe(
+	_, err := h.deps.Product.Subscribe(
 		r.Context(),
 		chi.URLParam(r, "productSlug"),
 		core.PrincipalFromContext(r.Context()).Name,
@@ -221,7 +220,7 @@ func (h *Handler) ProductsSubscribe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) productsMutateVersionState(w http.ResponseWriter, r *http.Request, action string) {
-	if h.legacy.Product == nil {
+	if h.deps.Product == nil {
 		core.RenderHTML(w, http.StatusNotFound, core.ErrorPage("Not Found", "Products UI is not configured."))
 		return
 	}
@@ -236,15 +235,15 @@ func (h *Handler) productsMutateVersionState(w http.ResponseWriter, r *http.Requ
 	)
 	switch action {
 	case "publish":
-		product, err = h.legacy.Product.PublishVersion(r.Context(), chi.URLParam(r, "productSlug"), version)
+		product, err = h.deps.Product.PublishVersion(r.Context(), chi.URLParam(r, "productSlug"), version)
 	case "deprecate":
 		var replacementSlug *string
 		if value := strings.TrimSpace(r.FormValue("replacement_slug")); value != "" {
 			replacementSlug = &value
 		}
-		product, err = h.legacy.Product.DeprecateVersion(r.Context(), chi.URLParam(r, "productSlug"), version, replacementSlug)
+		product, err = h.deps.Product.DeprecateVersion(r.Context(), chi.URLParam(r, "productSlug"), version, replacementSlug)
 	case "retire":
-		product, err = h.legacy.Product.RetireVersion(r.Context(), chi.URLParam(r, "productSlug"), version)
+		product, err = h.deps.Product.RetireVersion(r.Context(), chi.URLParam(r, "productSlug"), version)
 	default:
 		err = domain.ErrValidation("unsupported action %q", action)
 	}

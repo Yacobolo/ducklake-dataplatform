@@ -8,21 +8,52 @@ import (
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/ui/core"
-	"duck-demo/internal/ui/legacy"
 
 	"github.com/go-chi/chi/v5"
+
+	. "maragu.dev/gomponents"
+	. "maragu.dev/gomponents/html"
 )
 
 type Handler struct {
-	legacy *legacy.Handler
+	deps *core.Dependencies
 }
 
-func New(h *legacy.Handler) *Handler {
-	return &Handler{legacy: h}
+func New(deps *core.Dependencies) *Handler {
+	return &Handler{deps: deps}
 }
 
 func (h *Handler) CatalogsList(w http.ResponseWriter, r *http.Request) {
-	h.legacy.CatalogsList(w, r)
+	items, _, err := h.deps.CatalogRegistration.List(r.Context(), domain.PageRequest{MaxResults: 200})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	if len(items) == 0 {
+		core.RenderHTML(w, http.StatusOK, core.AppPage("Catalogs", "catalogs", core.PrincipalFromContext(r.Context()),
+			Div(Class(core.CardClass()),
+				H2(Class("m-0 text-xl font-semibold"), Text("Catalogs")),
+				P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("No catalogs found yet.")),
+				A(Href("/ui/catalogs/new"), Class(core.PrimaryButtonClass()), Text("New catalog")),
+			),
+		))
+		return
+	}
+
+	selectedCatalog := strings.TrimSpace(r.URL.Query().Get("catalog"))
+	if selectedCatalog == "" {
+		for i := range items {
+			if items[i].IsDefault {
+				selectedCatalog = items[i].Name
+				break
+			}
+		}
+	}
+	if selectedCatalog == "" {
+		selectedCatalog = items[0].Name
+	}
+
+	h.renderCatalogWorkspace(w, r, items, selectedCatalog)
 }
 
 func (h *Handler) CatalogsDetail(w http.ResponseWriter, r *http.Request) {
@@ -33,14 +64,14 @@ func (h *Handler) CatalogsDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CatalogsNew(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, catalogsNewPage(core.PrincipalFromContext(r.Context()), h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, catalogsNewPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) CatalogsCreate(w http.ResponseWriter, r *http.Request) {
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	_, err := h.legacy.CatalogRegistration.Register(r.Context(), domain.CreateCatalogRequest{
+	_, err := h.deps.CatalogRegistration.Register(r.Context(), domain.CreateCatalogRequest{
 		Name:          formString(r.Form, "name"),
 		MetastoreType: formString(r.Form, "metastore_type"),
 		DSN:           formString(r.Form, "dsn"),
@@ -56,12 +87,12 @@ func (h *Handler) CatalogsCreate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CatalogsEdit(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "catalogName")
-	c, err := h.legacy.CatalogRegistration.Get(r.Context(), name)
+	c, err := h.deps.CatalogRegistration.Get(r.Context(), name)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	core.RenderHTML(w, http.StatusOK, catalogsEditPage(core.PrincipalFromContext(r.Context()), name, c, h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, catalogsEditPage(core.PrincipalFromContext(r.Context()), name, c, h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) CatalogsUpdate(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +100,7 @@ func (h *Handler) CatalogsUpdate(w http.ResponseWriter, r *http.Request) {
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	_, err := h.legacy.CatalogRegistration.Update(r.Context(), name, domain.UpdateCatalogRegistrationRequest{
+	_, err := h.deps.CatalogRegistration.Update(r.Context(), name, domain.UpdateCatalogRegistrationRequest{
 		Comment:  formOptionalString(r.Form, "comment"),
 		DataPath: formOptionalString(r.Form, "data_path"),
 		DSN:      formOptionalString(r.Form, "dsn"),
@@ -83,7 +114,7 @@ func (h *Handler) CatalogsUpdate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CatalogsDelete(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "catalogName")
-	if err := h.legacy.CatalogRegistration.Delete(r.Context(), name); err != nil {
+	if err := h.deps.CatalogRegistration.Delete(r.Context(), name); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -92,7 +123,7 @@ func (h *Handler) CatalogsDelete(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CatalogsSetDefault(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "catalogName")
-	if _, err := h.legacy.CatalogRegistration.SetDefault(r.Context(), name); err != nil {
+	if _, err := h.deps.CatalogRegistration.SetDefault(r.Context(), name); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -101,7 +132,7 @@ func (h *Handler) CatalogsSetDefault(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CatalogSchemasNew(w http.ResponseWriter, r *http.Request) {
 	catalogName := chi.URLParam(r, "catalogName")
-	core.RenderHTML(w, http.StatusOK, catalogSchemasNewPage(core.PrincipalFromContext(r.Context()), catalogName, h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, catalogSchemasNewPage(core.PrincipalFromContext(r.Context()), catalogName, h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) CatalogSchemasCreate(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +141,7 @@ func (h *Handler) CatalogSchemasCreate(w http.ResponseWriter, r *http.Request) {
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	_, err := h.legacy.Catalog.CreateSchema(r.Context(), catalogName, principal, domain.CreateSchemaRequest{
+	_, err := h.deps.Catalog.CreateSchema(r.Context(), catalogName, principal, domain.CreateSchemaRequest{
 		Name:         formString(r.Form, "name"),
 		Comment:      formString(r.Form, "comment"),
 		LocationName: formString(r.Form, "location_name"),
@@ -131,12 +162,12 @@ func (h *Handler) CatalogSchemasDetail(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CatalogSchemasEdit(w http.ResponseWriter, r *http.Request) {
 	catalogName := chi.URLParam(r, "catalogName")
 	schemaName := chi.URLParam(r, "schemaName")
-	s, err := h.legacy.Catalog.GetSchema(r.Context(), catalogName, schemaName)
+	s, err := h.deps.Catalog.GetSchema(r.Context(), catalogName, schemaName)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	core.RenderHTML(w, http.StatusOK, catalogSchemasEditPage(core.PrincipalFromContext(r.Context()), catalogName, schemaName, s, h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, catalogSchemasEditPage(core.PrincipalFromContext(r.Context()), catalogName, schemaName, s, h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) CatalogSchemasUpdate(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +177,7 @@ func (h *Handler) CatalogSchemasUpdate(w http.ResponseWriter, r *http.Request) {
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	_, err := h.legacy.Catalog.UpdateSchema(r.Context(), catalogName, principal, schemaName, domain.UpdateSchemaRequest{
+	_, err := h.deps.Catalog.UpdateSchema(r.Context(), catalogName, principal, schemaName, domain.UpdateSchemaRequest{
 		Comment: formOptionalString(r.Form, "comment"),
 	})
 	if err != nil {
@@ -160,7 +191,7 @@ func (h *Handler) CatalogSchemasDelete(w http.ResponseWriter, r *http.Request) {
 	catalogName := chi.URLParam(r, "catalogName")
 	schemaName := chi.URLParam(r, "schemaName")
 	principal, _ := principalLabel(r)
-	if err := h.legacy.Catalog.DeleteSchema(r.Context(), catalogName, principal, schemaName, true); err != nil {
+	if err := h.deps.Catalog.DeleteSchema(r.Context(), catalogName, principal, schemaName, true); err != nil {
 		renderServiceError(w, err)
 		return
 	}

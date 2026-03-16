@@ -456,6 +456,7 @@ func run() error {
 	uiHandler.Semantic = svc.Semantic
 	uiHandler.Dashboard = svc.Dashboard
 	uiHandler.Product = svc.Product
+	uiHandler.SyncDependencies()
 	r.Route("/ui", func(r chi.Router) {
 		ui.MountRoutes(r, uiHandler)
 	})

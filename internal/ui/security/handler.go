@@ -10,14 +10,13 @@ import (
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/ui/core"
-	"duck-demo/internal/ui/legacy"
 
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct{ legacy *legacy.Handler }
+type Handler struct{ deps *core.Dependencies }
 
-func New(h *legacy.Handler) *Handler { return &Handler{legacy: h} }
+func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
 func (h *Handler) SecurityHome(w http.ResponseWriter, r *http.Request) {
 	core.RenderHTML(w, http.StatusOK, securityHomePage(core.PrincipalFromContext(r.Context()), []securityCardData{
@@ -30,7 +29,7 @@ func (h *Handler) SecurityHome(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) SecurityPrincipalsList(w http.ResponseWriter, r *http.Request) {
 	pageReq := pageFromRequest(r, 30)
-	items, total, err := h.legacy.Principal.List(r.Context(), pageReq)
+	items, total, err := h.deps.Principal.List(r.Context(), pageReq)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -53,14 +52,14 @@ func (h *Handler) SecurityPrincipalsList(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Handler) SecurityPrincipalsNew(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, securityPrincipalFormPage(core.PrincipalFromContext(r.Context()), h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, securityPrincipalFormPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) SecurityPrincipalsCreate(w http.ResponseWriter, r *http.Request) {
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	item, err := h.legacy.Principal.Create(r.Context(), domain.CreatePrincipalRequest{
+	item, err := h.deps.Principal.Create(r.Context(), domain.CreatePrincipalRequest{
 		Name:    formString(r.Form, "name"),
 		Type:    formString(r.Form, "type"),
 		IsAdmin: formBool(r.Form, "is_admin"),
@@ -74,19 +73,19 @@ func (h *Handler) SecurityPrincipalsCreate(w http.ResponseWriter, r *http.Reques
 
 func (h *Handler) SecurityPrincipalsDetail(w http.ResponseWriter, r *http.Request) {
 	principalID := chi.URLParam(r, "principalID")
-	item, err := h.legacy.Principal.GetByID(r.Context(), principalID)
+	item, err := h.deps.Principal.GetByID(r.Context(), principalID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 
-	grants, _, err := h.legacy.Grant.ListForPrincipal(r.Context(), item.ID, item.Type, domain.PageRequest{MaxResults: 50})
+	grants, _, err := h.deps.Grant.ListForPrincipal(r.Context(), item.ID, item.Type, domain.PageRequest{MaxResults: 50})
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 
-	keys, _, err := h.legacy.APIKey.List(r.Context(), &item.ID, domain.PageRequest{MaxResults: 50})
+	keys, _, err := h.deps.APIKey.List(r.Context(), &item.ID, domain.PageRequest{MaxResults: 50})
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -97,13 +96,13 @@ func (h *Handler) SecurityPrincipalsDetail(w http.ResponseWriter, r *http.Reques
 		Item:              item,
 		Grants:            grants,
 		APIKeys:           keys,
-		CSRFFieldProvider: h.legacy.CSRFFieldProvider(r),
+		CSRFFieldProvider: h.deps.CSRFFieldProvider(r),
 	}))
 }
 
 func (h *Handler) SecurityPrincipalsDelete(w http.ResponseWriter, r *http.Request) {
 	principalID := chi.URLParam(r, "principalID")
-	if err := h.legacy.Principal.Delete(r.Context(), principalID); err != nil {
+	if err := h.deps.Principal.Delete(r.Context(), principalID); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -115,7 +114,7 @@ func (h *Handler) SecurityPrincipalsSetAdmin(w http.ResponseWriter, r *http.Requ
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	if err := h.legacy.Principal.SetAdmin(r.Context(), principalID, formBool(r.Form, "is_admin")); err != nil {
+	if err := h.deps.Principal.SetAdmin(r.Context(), principalID, formBool(r.Form, "is_admin")); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -124,7 +123,7 @@ func (h *Handler) SecurityPrincipalsSetAdmin(w http.ResponseWriter, r *http.Requ
 
 func (h *Handler) SecurityGroupsList(w http.ResponseWriter, r *http.Request) {
 	pageReq := pageFromRequest(r, 30)
-	items, total, err := h.legacy.Group.List(r.Context(), pageReq)
+	items, total, err := h.deps.Group.List(r.Context(), pageReq)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -134,7 +133,7 @@ func (h *Handler) SecurityGroupsList(w http.ResponseWriter, r *http.Request) {
 	for i := range items {
 		item := items[i]
 		memberCount := "0"
-		members, totalMembers, membersErr := h.legacy.Group.ListMembers(r.Context(), item.ID, domain.PageRequest{MaxResults: 1})
+		members, totalMembers, membersErr := h.deps.Group.ListMembers(r.Context(), item.ID, domain.PageRequest{MaxResults: 1})
 		if membersErr == nil {
 			if totalMembers > 0 {
 				memberCount = formatCount(totalMembers)
@@ -155,14 +154,14 @@ func (h *Handler) SecurityGroupsList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SecurityGroupsNew(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, securityGroupFormPage(core.PrincipalFromContext(r.Context()), h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, securityGroupFormPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) SecurityGroupsCreate(w http.ResponseWriter, r *http.Request) {
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	item, err := h.legacy.Group.Create(r.Context(), domain.CreateGroupRequest{
+	item, err := h.deps.Group.Create(r.Context(), domain.CreateGroupRequest{
 		Name:        formString(r.Form, "name"),
 		Description: formString(r.Form, "description"),
 	})
@@ -175,13 +174,13 @@ func (h *Handler) SecurityGroupsCreate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) SecurityGroupsDetail(w http.ResponseWriter, r *http.Request) {
 	groupID := chi.URLParam(r, "groupID")
-	item, err := h.legacy.Group.GetByID(r.Context(), groupID)
+	item, err := h.deps.Group.GetByID(r.Context(), groupID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 
-	members, _, err := h.legacy.Group.ListMembers(r.Context(), groupID, domain.PageRequest{MaxResults: 100})
+	members, _, err := h.deps.Group.ListMembers(r.Context(), groupID, domain.PageRequest{MaxResults: 100})
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -193,11 +192,11 @@ func (h *Handler) SecurityGroupsDetail(w http.ResponseWriter, r *http.Request) {
 			GroupID:    groupID,
 			MemberID:   member.MemberID,
 			MemberType: member.MemberType,
-			CSRFField:  h.legacy.CSRFFieldProvider(r),
+			CSRFField:  h.deps.CSRFFieldProvider(r),
 		})
 	}
 
-	grants, _, err := h.legacy.Grant.ListForPrincipal(r.Context(), groupID, "group", domain.PageRequest{MaxResults: 50})
+	grants, _, err := h.deps.Grant.ListForPrincipal(r.Context(), groupID, "group", domain.PageRequest{MaxResults: 50})
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -208,13 +207,13 @@ func (h *Handler) SecurityGroupsDetail(w http.ResponseWriter, r *http.Request) {
 		Item:              item,
 		Members:           memberRows,
 		Grants:            grants,
-		CSRFFieldProvider: h.legacy.CSRFFieldProvider(r),
+		CSRFFieldProvider: h.deps.CSRFFieldProvider(r),
 	}))
 }
 
 func (h *Handler) SecurityGroupsDelete(w http.ResponseWriter, r *http.Request) {
 	groupID := chi.URLParam(r, "groupID")
-	if err := h.legacy.Group.Delete(r.Context(), groupID); err != nil {
+	if err := h.deps.Group.Delete(r.Context(), groupID); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -226,7 +225,7 @@ func (h *Handler) SecurityGroupsAddMember(w http.ResponseWriter, r *http.Request
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	err := h.legacy.Group.AddMember(r.Context(), domain.AddGroupMemberRequest{
+	err := h.deps.Group.AddMember(r.Context(), domain.AddGroupMemberRequest{
 		GroupID:    groupID,
 		MemberID:   formString(r.Form, "member_id"),
 		MemberType: formString(r.Form, "member_type"),
@@ -243,7 +242,7 @@ func (h *Handler) SecurityGroupsRemoveMember(w http.ResponseWriter, r *http.Requ
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	err := h.legacy.Group.RemoveMember(r.Context(), domain.RemoveGroupMemberRequest{
+	err := h.deps.Group.RemoveMember(r.Context(), domain.RemoveGroupMemberRequest{
 		GroupID:    groupID,
 		MemberID:   formString(r.Form, "member_id"),
 		MemberType: formString(r.Form, "member_type"),
@@ -269,11 +268,11 @@ func (h *Handler) SecurityGrantsList(w http.ResponseWriter, r *http.Request) {
 	)
 	switch {
 	case principalID != "" && principalType != "":
-		items, total, err = h.legacy.Grant.ListForPrincipal(r.Context(), principalID, principalType, pageReq)
+		items, total, err = h.deps.Grant.ListForPrincipal(r.Context(), principalID, principalType, pageReq)
 	case securableID != "" && securableType != "":
-		items, total, err = h.legacy.Grant.ListForSecurable(r.Context(), securableType, securableID, pageReq)
+		items, total, err = h.deps.Grant.ListForSecurable(r.Context(), securableType, securableID, pageReq)
 	default:
-		items, total, err = h.legacy.Grant.ListAll(r.Context(), pageReq)
+		items, total, err = h.deps.Grant.ListAll(r.Context(), pageReq)
 	}
 	if err != nil {
 		renderServiceError(w, err)
@@ -304,7 +303,7 @@ func (h *Handler) SecurityGrantsList(w http.ResponseWriter, r *http.Request) {
 		PrincipalType:     principalType,
 		SecurableType:     securableType,
 		SecurableID:       securableID,
-		CSRFFieldProvider: h.legacy.CSRFFieldProvider(r),
+		CSRFFieldProvider: h.deps.CSRFFieldProvider(r),
 	}))
 }
 func (h *Handler) SecurityGrantsCreate(w http.ResponseWriter, r *http.Request) {
@@ -318,7 +317,7 @@ func (h *Handler) SecurityGrantsCreate(w http.ResponseWriter, r *http.Request) {
 		SecurableID:   formString(r.Form, "securable_id"),
 		Privilege:     formString(r.Form, "privilege"),
 	}
-	if _, err := h.legacy.Grant.Grant(r.Context(), req); err != nil {
+	if _, err := h.deps.Grant.Grant(r.Context(), req); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -331,7 +330,7 @@ func (h *Handler) SecurityGrantsCreate(w http.ResponseWriter, r *http.Request) {
 }
 func (h *Handler) SecurityGrantsDelete(w http.ResponseWriter, r *http.Request) {
 	grantID := chi.URLParam(r, "grantID")
-	if err := h.legacy.Grant.Revoke(r.Context(), "", grantID); err != nil {
+	if err := h.deps.Grant.Revoke(r.Context(), "", grantID); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -345,14 +344,14 @@ func (h *Handler) SecurityRowFiltersList(w http.ResponseWriter, r *http.Request)
 	tableID := r.URL.Query().Get("table_id")
 	rows := []securityRowFilterRowData{}
 	if tableID != "" {
-		items, _, err := h.legacy.RowFilter.GetForTable(r.Context(), tableID, domain.PageRequest{MaxResults: 100})
+		items, _, err := h.deps.RowFilter.GetForTable(r.Context(), tableID, domain.PageRequest{MaxResults: 100})
 		if err != nil {
 			renderServiceError(w, err)
 			return
 		}
 		for i := range items {
 			item := items[i]
-			bindings, err := h.legacy.RowFilter.ListBindings(r.Context(), item.ID)
+			bindings, err := h.deps.RowFilter.ListBindings(r.Context(), item.ID)
 			if err != nil {
 				renderServiceError(w, err)
 				return
@@ -371,7 +370,7 @@ func (h *Handler) SecurityRowFiltersList(w http.ResponseWriter, r *http.Request)
 		Principal:         core.PrincipalFromContext(r.Context()),
 		TableID:           tableID,
 		Rows:              rows,
-		CSRFFieldProvider: h.legacy.CSRFFieldProvider(r),
+		CSRFFieldProvider: h.deps.CSRFFieldProvider(r),
 	}))
 }
 func (h *Handler) SecurityRowFiltersCreate(w http.ResponseWriter, r *http.Request) {
@@ -383,7 +382,7 @@ func (h *Handler) SecurityRowFiltersCreate(w http.ResponseWriter, r *http.Reques
 		Description: formString(r.Form, "description"),
 		FilterSQL:   formString(r.Form, "filter_sql"),
 	}
-	if _, err := h.legacy.RowFilter.Create(r.Context(), req); err != nil {
+	if _, err := h.deps.RowFilter.Create(r.Context(), req); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -391,7 +390,7 @@ func (h *Handler) SecurityRowFiltersCreate(w http.ResponseWriter, r *http.Reques
 }
 func (h *Handler) SecurityRowFiltersDelete(w http.ResponseWriter, r *http.Request) {
 	filterID := chi.URLParam(r, "filterID")
-	if err := h.legacy.RowFilter.Delete(r.Context(), filterID); err != nil {
+	if err := h.deps.RowFilter.Delete(r.Context(), filterID); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -410,7 +409,7 @@ func (h *Handler) SecurityRowFiltersBind(w http.ResponseWriter, r *http.Request)
 		PrincipalType: formString(r.Form, "principal_type"),
 		PrincipalID:   formString(r.Form, "principal_id"),
 	}
-	if err := h.legacy.RowFilter.Bind(r.Context(), req); err != nil {
+	if err := h.deps.RowFilter.Bind(r.Context(), req); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -429,7 +428,7 @@ func (h *Handler) SecurityRowFiltersUnbind(w http.ResponseWriter, r *http.Reques
 		PrincipalType: formString(r.Form, "principal_type"),
 		PrincipalID:   formString(r.Form, "principal_id"),
 	}
-	if err := h.legacy.RowFilter.Unbind(r.Context(), req); err != nil {
+	if err := h.deps.RowFilter.Unbind(r.Context(), req); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -443,14 +442,14 @@ func (h *Handler) SecurityColumnMasksList(w http.ResponseWriter, r *http.Request
 	tableID := r.URL.Query().Get("table_id")
 	rows := []securityColumnMaskRowData{}
 	if tableID != "" {
-		items, _, err := h.legacy.ColumnMask.GetForTable(r.Context(), tableID, domain.PageRequest{MaxResults: 100})
+		items, _, err := h.deps.ColumnMask.GetForTable(r.Context(), tableID, domain.PageRequest{MaxResults: 100})
 		if err != nil {
 			renderServiceError(w, err)
 			return
 		}
 		for i := range items {
 			item := items[i]
-			bindings, err := h.legacy.ColumnMask.ListBindings(r.Context(), item.ID)
+			bindings, err := h.deps.ColumnMask.ListBindings(r.Context(), item.ID)
 			if err != nil {
 				renderServiceError(w, err)
 				return
@@ -470,7 +469,7 @@ func (h *Handler) SecurityColumnMasksList(w http.ResponseWriter, r *http.Request
 		Principal:         core.PrincipalFromContext(r.Context()),
 		TableID:           tableID,
 		Rows:              rows,
-		CSRFFieldProvider: h.legacy.CSRFFieldProvider(r),
+		CSRFFieldProvider: h.deps.CSRFFieldProvider(r),
 	}))
 }
 func (h *Handler) SecurityColumnMasksCreate(w http.ResponseWriter, r *http.Request) {
@@ -483,7 +482,7 @@ func (h *Handler) SecurityColumnMasksCreate(w http.ResponseWriter, r *http.Reque
 		Description:    formString(r.Form, "description"),
 		MaskExpression: formString(r.Form, "mask_expression"),
 	}
-	if _, err := h.legacy.ColumnMask.Create(r.Context(), req); err != nil {
+	if _, err := h.deps.ColumnMask.Create(r.Context(), req); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -491,7 +490,7 @@ func (h *Handler) SecurityColumnMasksCreate(w http.ResponseWriter, r *http.Reque
 }
 func (h *Handler) SecurityColumnMasksDelete(w http.ResponseWriter, r *http.Request) {
 	maskID := chi.URLParam(r, "maskID")
-	if err := h.legacy.ColumnMask.Delete(r.Context(), maskID); err != nil {
+	if err := h.deps.ColumnMask.Delete(r.Context(), maskID); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -511,7 +510,7 @@ func (h *Handler) SecurityColumnMasksBind(w http.ResponseWriter, r *http.Request
 		PrincipalID:   formString(r.Form, "principal_id"),
 		SeeOriginal:   formBool(r.Form, "see_original"),
 	}
-	if err := h.legacy.ColumnMask.Bind(r.Context(), req); err != nil {
+	if err := h.deps.ColumnMask.Bind(r.Context(), req); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -530,7 +529,7 @@ func (h *Handler) SecurityColumnMasksUnbind(w http.ResponseWriter, r *http.Reque
 		PrincipalType: formString(r.Form, "principal_type"),
 		PrincipalID:   formString(r.Form, "principal_id"),
 	}
-	if err := h.legacy.ColumnMask.Unbind(r.Context(), req); err != nil {
+	if err := h.deps.ColumnMask.Unbind(r.Context(), req); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -547,7 +546,7 @@ func (h *Handler) SecurityAPIKeysList(w http.ResponseWriter, r *http.Request) {
 	if selectedPrincipal != "" {
 		principalID = &selectedPrincipal
 	}
-	items, total, err := h.legacy.APIKey.List(r.Context(), principalID, pageReq)
+	items, total, err := h.deps.APIKey.List(r.Context(), principalID, pageReq)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -572,7 +571,7 @@ func (h *Handler) SecurityAPIKeysList(w http.ResponseWriter, r *http.Request) {
 		Page:              pageReq,
 		Total:             total,
 		SelectedPrincipal: selectedPrincipal,
-		CSRFFieldProvider: h.legacy.CSRFFieldProvider(r),
+		CSRFFieldProvider: h.deps.CSRFFieldProvider(r),
 	}))
 }
 func (h *Handler) SecurityAPIKeysCreate(w http.ResponseWriter, r *http.Request) {
@@ -589,7 +588,7 @@ func (h *Handler) SecurityAPIKeysCreate(w http.ResponseWriter, r *http.Request) 
 		Name:        formString(r.Form, "name"),
 		ExpiresAt:   expiresAt,
 	}
-	rawKey, key, err := h.legacy.APIKey.Create(r.Context(), req)
+	rawKey, key, err := h.deps.APIKey.Create(r.Context(), req)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -598,7 +597,7 @@ func (h *Handler) SecurityAPIKeysCreate(w http.ResponseWriter, r *http.Request) 
 }
 func (h *Handler) SecurityAPIKeysDelete(w http.ResponseWriter, r *http.Request) {
 	keyID := chi.URLParam(r, "keyID")
-	if err := h.legacy.APIKey.Delete(r.Context(), keyID); err != nil {
+	if err := h.deps.APIKey.Delete(r.Context(), keyID); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -609,7 +608,7 @@ func (h *Handler) SecurityAPIKeysDelete(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }
 func (h *Handler) SecurityAPIKeysCleanup(w http.ResponseWriter, r *http.Request) {
-	if _, err := h.legacy.APIKey.CleanupExpired(r.Context()); err != nil {
+	if _, err := h.deps.APIKey.CleanupExpired(r.Context()); err != nil {
 		renderServiceError(w, err)
 		return
 	}

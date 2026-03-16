@@ -7,17 +7,16 @@ import (
 	"duck-demo/internal/domain"
 	dashboardsvc "duck-demo/internal/service/dashboard"
 	"duck-demo/internal/ui/core"
-	"duck-demo/internal/ui/legacy"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
-	legacy *legacy.Handler
+	deps *core.Dependencies
 }
 
-func New(h *legacy.Handler) *Handler {
-	return &Handler{legacy: h}
+func New(deps *core.Dependencies) *Handler {
+	return &Handler{deps: deps}
 }
 
 func (h *Handler) DashboardsList(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +26,7 @@ func (h *Handler) DashboardsList(w http.ResponseWriter, r *http.Request) {
 		owner = &principal
 	}
 	page := pageFromRequest(r, 25)
-	items, total, err := h.legacy.Dashboard.ListDashboards(r.Context(), owner, page)
+	items, total, err := h.deps.Dashboard.ListDashboards(r.Context(), owner, page)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -48,7 +47,7 @@ func (h *Handler) DashboardsList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DashboardsNew(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, dashboardsNewPage(core.PrincipalFromContext(r.Context()), h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, dashboardsNewPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) DashboardsCreate(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +56,7 @@ func (h *Handler) DashboardsCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	principal, _ := principalLabel(r)
-	item, err := h.legacy.Dashboard.CreateDashboard(r.Context(), principal, domain.CreateDashboardRequest{
+	item, err := h.deps.Dashboard.CreateDashboard(r.Context(), principal, domain.CreateDashboardRequest{
 		Name:        formString(r.Form, "name"),
 		Description: formString(r.Form, "description"),
 	})
@@ -71,14 +70,14 @@ func (h *Handler) DashboardsCreate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 	dashboardID := chi.URLParam(r, "dashboardID")
-	item, widgets, err := h.legacy.Dashboard.GetDashboard(r.Context(), dashboardID)
+	item, widgets, err := h.deps.Dashboard.GetDashboard(r.Context(), dashboardID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 
 	principal, _ := principalLabel(r)
-	resolved, err := h.legacy.Dashboard.ResolveWidgets(r.Context(), principal, widgets)
+	resolved, err := h.deps.Dashboard.ResolveWidgets(r.Context(), principal, widgets)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -86,17 +85,17 @@ func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 
 	var freshness *domain.AssetFreshnessStatus
 	var freshnessExplain *domain.AssetFreshnessNode
-	if h.legacy.Asset != nil {
+	if h.deps.Asset != nil {
 		assetKey := "dashboard." + dashboardID
 		var notFoundErr *domain.NotFoundError
-		if status, statusErr := h.legacy.Asset.CheckFreshness(r.Context(), assetKey); statusErr == nil {
+		if status, statusErr := h.deps.Asset.CheckFreshness(r.Context(), assetKey); statusErr == nil {
 			freshness = status
 		} else if !errors.As(statusErr, &notFoundErr) {
 			renderServiceError(w, statusErr)
 			return
 		}
 		notFoundErr = nil
-		if explain, explainErr := h.legacy.Asset.ExplainFreshness(r.Context(), assetKey); explainErr == nil {
+		if explain, explainErr := h.deps.Asset.ExplainFreshness(r.Context(), assetKey); explainErr == nil {
 			freshnessExplain = explain
 		} else if !errors.As(explainErr, &notFoundErr) {
 			renderServiceError(w, explainErr)
@@ -114,19 +113,19 @@ func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 		EditURL:           "/ui/dashboards/" + dashboardID + "/edit",
 		DeleteURL:         "/ui/dashboards/" + dashboardID + "/delete",
 		CreateWidgetURL:   "/ui/dashboards/" + dashboardID + "/widgets",
-		CSRFFieldProvider: h.legacy.CSRFFieldProvider(r),
+		CSRFFieldProvider: h.deps.CSRFFieldProvider(r),
 	}))
 }
 
 func (h *Handler) DashboardsEdit(w http.ResponseWriter, r *http.Request) {
 	dashboardID := chi.URLParam(r, "dashboardID")
-	item, _, err := h.legacy.Dashboard.GetDashboard(r.Context(), dashboardID)
+	item, _, err := h.deps.Dashboard.GetDashboard(r.Context(), dashboardID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 
-	core.RenderHTML(w, http.StatusOK, dashboardsEditPage(core.PrincipalFromContext(r.Context()), item, h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, dashboardsEditPage(core.PrincipalFromContext(r.Context()), item, h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) DashboardsUpdate(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +135,7 @@ func (h *Handler) DashboardsUpdate(w http.ResponseWriter, r *http.Request) {
 
 	dashboardID := chi.URLParam(r, "dashboardID")
 	principal, isAdmin := principalLabel(r)
-	_, err := h.legacy.Dashboard.UpdateDashboard(r.Context(), principal, isAdmin, dashboardID, domain.UpdateDashboardRequest{
+	_, err := h.deps.Dashboard.UpdateDashboard(r.Context(), principal, isAdmin, dashboardID, domain.UpdateDashboardRequest{
 		Name:        formOptionalString(r.Form, "name"),
 		Description: formOptionalString(r.Form, "description"),
 	})
@@ -151,7 +150,7 @@ func (h *Handler) DashboardsUpdate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DashboardsDelete(w http.ResponseWriter, r *http.Request) {
 	dashboardID := chi.URLParam(r, "dashboardID")
 	principal, isAdmin := principalLabel(r)
-	if err := h.legacy.Dashboard.DeleteDashboard(r.Context(), principal, isAdmin, dashboardID); err != nil {
+	if err := h.deps.Dashboard.DeleteDashboard(r.Context(), principal, isAdmin, dashboardID); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -189,7 +188,7 @@ func (h *Handler) DashboardWidgetsCreate(w http.ResponseWriter, r *http.Request)
 			H: parseIntWithDefault(formString(r.Form, "layout_h"), 3),
 		},
 	}
-	if _, err := h.legacy.Dashboard.CreateWidget(r.Context(), principal, isAdmin, dashboardID, req); err != nil {
+	if _, err := h.deps.Dashboard.CreateWidget(r.Context(), principal, isAdmin, dashboardID, req); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -201,7 +200,7 @@ func (h *Handler) DashboardWidgetsEdit(w http.ResponseWriter, r *http.Request) {
 	dashboardID := chi.URLParam(r, "dashboardID")
 	widgetID := chi.URLParam(r, "widgetID")
 
-	dashboard, widgets, err := h.legacy.Dashboard.GetDashboard(r.Context(), dashboardID)
+	dashboard, widgets, err := h.deps.Dashboard.GetDashboard(r.Context(), dashboardID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -219,7 +218,7 @@ func (h *Handler) DashboardWidgetsEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	core.RenderHTML(w, http.StatusOK, dashboardWidgetEditPage(core.PrincipalFromContext(r.Context()), dashboard, widget, h.legacy.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, dashboardWidgetEditPage(core.PrincipalFromContext(r.Context()), dashboard, widget, h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) DashboardWidgetsUpdate(w http.ResponseWriter, r *http.Request) {
@@ -256,7 +255,7 @@ func (h *Handler) DashboardWidgetsUpdate(w http.ResponseWriter, r *http.Request)
 			H: parseIntWithDefault(formString(r.Form, "layout_h"), 3),
 		},
 	}
-	if _, err := h.legacy.Dashboard.UpdateWidget(r.Context(), principal, isAdmin, widgetID, req); err != nil {
+	if _, err := h.deps.Dashboard.UpdateWidget(r.Context(), principal, isAdmin, widgetID, req); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -268,7 +267,7 @@ func (h *Handler) DashboardWidgetsDelete(w http.ResponseWriter, r *http.Request)
 	widgetID := chi.URLParam(r, "widgetID")
 	dashboardID := chi.URLParam(r, "dashboardID")
 	principal, isAdmin := principalLabel(r)
-	if err := h.legacy.Dashboard.DeleteWidget(r.Context(), principal, isAdmin, widgetID); err != nil {
+	if err := h.deps.Dashboard.DeleteWidget(r.Context(), principal, isAdmin, widgetID); err != nil {
 		renderServiceError(w, err)
 		return
 	}

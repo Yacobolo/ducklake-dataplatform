@@ -1,0 +1,182 @@
+package runtimeassets
+
+import (
+	"strconv"
+	"strings"
+
+	"duck-demo/internal/domain"
+	"duck-demo/internal/ui/core"
+
+	. "maragu.dev/gomponents"
+	. "maragu.dev/gomponents/html"
+)
+
+type assetsListRowData struct {
+	AssetKey            string
+	URL                 string
+	Type                string
+	Owner               string
+	Description         string
+	Active              bool
+	Updated             string
+	FreshnessTracked    bool
+	PartitionType       string
+	AutoMaterialized    bool
+	MaterializationMode string
+}
+
+type assetsListSummary struct {
+	Total            int
+	Active           int
+	Partitioned      int
+	FreshnessTracked int
+	AutoMaterialized int
+	ManualOnly       int
+}
+
+func assetsListPage(principal domain.ContextPrincipal, rows []assetsListRowData, page domain.PageRequest, total int64, canMaterialize bool, backfillConfigured bool) Node {
+	summary := summarizeAssetsRows(rows)
+	return core.AppPage(
+		"Assets",
+		"assets",
+		principal,
+		Div(
+			Class(core.CardClass()),
+			Div(Class("mb-4 flex flex-wrap items-start justify-between gap-3"),
+				Div(
+					H2(Class("m-0 text-xl font-semibold"), Text("Runtime assets")),
+					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(assetsHeroText(summary, canMaterialize, backfillConfigured))),
+				),
+				A(Href("/ui/catalogs"), Class(core.SecondaryButtonClass()), Text("Browse catalogs")),
+			),
+			Div(Class("mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"),
+				metricCard("Total", strconv.Itoa(summary.Total), "Registered runtime objects"),
+				metricCard("Active", strconv.Itoa(summary.Active), "Assets ready to run"),
+				metricCard("Freshness", strconv.Itoa(summary.FreshnessTracked), "Assets with SLAs"),
+				metricCard("Auto", strconv.Itoa(summary.AutoMaterialized), "Auto materialized assets"),
+			),
+			assetsListTable(rows),
+			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" assets. Total: "+strconv.FormatInt(total, 10))),
+		),
+	)
+}
+
+func summarizeAssetsRows(rows []assetsListRowData) assetsListSummary {
+	summary := assetsListSummary{Total: len(rows)}
+	for i := range rows {
+		row := rows[i]
+		if row.Active {
+			summary.Active++
+		}
+		if !strings.EqualFold(strings.TrimSpace(row.PartitionType), "unpartitioned") {
+			summary.Partitioned++
+		}
+		if row.FreshnessTracked {
+			summary.FreshnessTracked++
+		}
+		if row.AutoMaterialized {
+			summary.AutoMaterialized++
+		} else {
+			summary.ManualOnly++
+		}
+	}
+	return summary
+}
+
+func assetsHeroText(summary assetsListSummary, canMaterialize bool, backfillConfigured bool) string {
+	if summary.Total == 0 {
+		return "Sync a catalog or declarative config to populate runtime assets."
+	}
+	text := "Track orchestration-ready tables, views, notebooks, and derived objects in one place."
+	if !canMaterialize {
+		text += " Materialization requires the appropriate runtime permission."
+	}
+	if !backfillConfigured {
+		text += " Backfill is not configured in this environment."
+	}
+	return text
+}
+
+func assetsListTable(rows []assetsListRowData) Node {
+	if len(rows) == 0 {
+		return P(Class(core.MutedClass()), Text("No assets found yet."))
+	}
+
+	tableRows := make([]Node, 0, len(rows))
+	for i := range rows {
+		row := rows[i]
+		tableRows = append(tableRows, Tr(
+			Td(
+				A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.AssetKey)),
+				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(fallbackString(row.Description, "No description yet."))),
+			),
+			Td(statusPill(strings.ToUpper(row.Type), assetTypeTone(row.Type))),
+			Td(Text(fallbackString(row.Owner, "-"))),
+			Td(Div(Class("flex flex-wrap gap-2"),
+				statusPill(core.TitleizeWords(row.MaterializationMode), "accent"),
+				func() Node {
+					if row.FreshnessTracked {
+						return statusPill("SLA", "success")
+					}
+					return statusPill("No SLA", "attention")
+				}(),
+				statusPill(fallbackString(row.PartitionType, "Unpartitioned"), "neutral"),
+			)),
+			Td(func() Node {
+				if row.Active {
+					return statusPill("true", "success")
+				}
+				return statusPill("false", "severe")
+			}()),
+			Td(Text(row.Updated)),
+		))
+	}
+
+	return Div(Class(core.TableWrapClass()),
+		Table(Class("min-w-full text-left text-sm"),
+			THead(Tr(Th(Text("Asset key")), Th(Text("Type")), Th(Text("Owner")), Th(Text("Signals")), Th(Text("Active")), Th(Text("Updated")))),
+			TBody(Group(tableRows)),
+		),
+	)
+}
+
+func metricCard(label, value, hint string) Node {
+	return Div(
+		Class("rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3"),
+		P(Class("m-0 text-xs font-medium uppercase tracking-wide text-[var(--fgColor-muted)]"), Text(label)),
+		P(Class("my-1 text-2xl font-semibold"), Text(value)),
+		P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(hint)),
+	)
+}
+
+func statusPill(text, tone string) Node {
+	className := "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+	switch tone {
+	case "success":
+		className += " bg-[var(--bgColor-success-muted)] text-[var(--fgColor-success)]"
+	case "attention":
+		className += " bg-[var(--bgColor-attention-muted)] text-[var(--fgColor-attention)]"
+	case "severe":
+		className += " bg-[var(--bgColor-danger-muted)] text-[var(--fgColor-danger)]"
+	case "neutral":
+		className += " bg-[var(--bgColor-muted)] text-[var(--fgColor-default)]"
+	default:
+		className += " bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
+	}
+	return Span(Class(className), Text(text))
+}
+
+func assetTypeTone(value string) string {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case domain.AssetTypeTable:
+		return "success"
+	case domain.AssetTypeView:
+		return "accent"
+	case domain.AssetTypeModel:
+		return "attention"
+	case domain.AssetTypeNotebook:
+		return "severe"
+	default:
+		return "accent"
+	}
+}
