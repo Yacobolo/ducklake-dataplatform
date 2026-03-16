@@ -267,6 +267,68 @@ func (m *mockGitRepoService) SyncGitRepo(ctx context.Context, principal string, 
 	panic("SyncGitRepo not implemented")
 }
 
+func TestHandler_SyncGitRepo(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		svcFn    func(ctx context.Context, principal string, isAdmin bool, id string) (*domain.GitSyncResult, error)
+		assertFn func(t *testing.T, resp GenSyncGitRepoResponse, err error)
+	}{
+		{
+			name: "happy path returns 200",
+			svcFn: func(_ context.Context, principal string, isAdmin bool, id string) (*domain.GitSyncResult, error) {
+				assert.Empty(t, principal)
+				assert.False(t, isAdmin)
+				assert.Equal(t, "repo-1", id)
+				return &domain.GitSyncResult{
+					CommitSHA:        "abc123",
+					NotebooksCreated: 1,
+					NotebooksUpdated: 2,
+					NotebooksDeleted: 3,
+				}, nil
+			},
+			assertFn: func(t *testing.T, resp GenSyncGitRepoResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				ok200, ok := resp.(SyncGitRepo200JSONResponse)
+				require.True(t, ok, "expected 200 response, got %T", resp)
+				require.NotNil(t, ok200.Body.CommitSha)
+				require.NotNil(t, ok200.Body.NotebooksCreated)
+				require.NotNil(t, ok200.Body.NotebooksUpdated)
+				require.NotNil(t, ok200.Body.NotebooksDeleted)
+				assert.Equal(t, "abc123", *ok200.Body.CommitSha)
+				assert.Equal(t, int32(1), *ok200.Body.NotebooksCreated)
+				assert.Equal(t, int32(2), *ok200.Body.NotebooksUpdated)
+				assert.Equal(t, int32(3), *ok200.Body.NotebooksDeleted)
+			},
+		},
+		{
+			name: "validation error returns 400",
+			svcFn: func(_ context.Context, _ string, _ bool, _ string) (*domain.GitSyncResult, error) {
+				return nil, domain.ErrValidation("invalid declarative notebook")
+			},
+			assertFn: func(t *testing.T, resp GenSyncGitRepoResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				badReq, ok := resp.(SyncGitRepo400JSONResponse)
+				require.True(t, ok, "expected 400 response, got %T", resp)
+				assert.Equal(t, int32(400), badReq.Body.Code)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			svc := &mockGitRepoService{syncGitRepoFn: tt.svcFn}
+			handler := &APIHandler{gitRepos: svc}
+			resp, err := handler.SyncGitRepo(context.Background(), GenSyncGitRepoRequest{GitRepoId: "repo-1"})
+			tt.assertFn(t, resp, err)
+		})
+	}
+}
+
 // === Test helpers ===
 
 // setupNotebookTestServer creates a lightweight test server wired with mock notebook services.
