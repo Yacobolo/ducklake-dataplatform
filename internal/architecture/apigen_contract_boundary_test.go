@@ -25,7 +25,7 @@ func TestAPIGenContractBoundary_ComputeHandlersAvoidAdHocFallbacks(t *testing.T)
 	require.True(t, strings.Contains(source, `respondDomainErrorForOperation[GenListComputeEndpointsResponse]("listComputeEndpoints"`))
 }
 
-func TestAPIGenContractBoundary_GrantAndProductTeamHandlersUseOperationAwareMapping(t *testing.T) {
+func TestAPIGenContractBoundary_GrantAndProductAndGovernanceHandlersUseOperationAwareMapping(t *testing.T) {
 	t.Parallel()
 
 	securityBody, err := os.ReadFile(filepath.Join("..", "api", "handler_security.go"))
@@ -37,8 +37,19 @@ func TestAPIGenContractBoundary_GrantAndProductTeamHandlersUseOperationAwareMapp
 	productsBody, err := os.ReadFile(filepath.Join("..", "api", "handler_products.go"))
 	require.NoError(t, err)
 	productsSource := string(productsBody)
-	require.True(t, strings.Contains(productsSource, `respondDomainErrorForOperation[GenListProductTeamsResponse]("listProductTeams"`))
-	require.True(t, strings.Contains(productsSource, `respondDomainErrorForOperation[GenCreateProductTeamResponse]("createProductTeam"`))
+	require.NotContains(t, productsSource, `respondDomainError[`)
+	for _, snippet := range []string{
+		`respondDomainErrorForOperation[GenListProductDomainsResponse]("listProductDomains"`,
+		`respondDomainErrorForOperation[GenCreateProductDomainResponse]("createProductDomain"`,
+		`respondDomainErrorForOperation[GenListProductTeamsResponse]("listProductTeams"`,
+		`respondDomainErrorForOperation[GenCreateProductTeamResponse]("createProductTeam"`,
+		`respondDomainErrorForOperation[GenListDataProductsResponse]("listDataProducts"`,
+		`respondDomainErrorForOperation[GenCreateDataProductResponse]("createDataProduct"`,
+		`respondDomainErrorForOperation[GenCreateDataProductDependencyResponse]("createDataProductDependency"`,
+		`respondDomainErrorForOperation[GenCreateDataProductSubscriptionResponse]("createDataProductSubscription"`,
+	} {
+		require.True(t, strings.Contains(productsSource, snippet), "expected handler_products.go to contain %q", snippet)
+	}
 
 	governanceBody, err := os.ReadFile(filepath.Join("..", "api", "handler_governance.go"))
 	require.NoError(t, err)
