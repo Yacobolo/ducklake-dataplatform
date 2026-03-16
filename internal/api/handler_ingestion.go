@@ -30,7 +30,7 @@ func (h *APIHandler) CreateUploadUrl(ctx context.Context, request GenCreateUploa
 	principal := principalFromCtx(ctx)
 	result, err := h.ingestion.RequestUploadURL(ctx, principal, string(request.CatalogName), request.SchemaName, request.TableName, request.Body.Filename)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateUploadUrlResponse](err, domainErrorResponder[GenCreateUploadUrlResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateUploadUrlResponse]("createUploadUrl", err, domainErrorResponder[GenCreateUploadUrlResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenCreateUploadUrlResponse {
 				return CreateUploadUrl403JSONResponse{resp}
 			},
@@ -73,7 +73,7 @@ func (h *APIHandler) CommitTableIngestion(ctx context.Context, request GenCommit
 	principal := principalFromCtx(ctx)
 	result, err := h.ingestion.CommitIngestion(ctx, principal, string(request.CatalogName), request.SchemaName, request.TableName, request.Body.S3Keys, opts)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCommitTableIngestionResponse](err, domainErrorResponder[GenCommitTableIngestionResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCommitTableIngestionResponse]("commitTableIngestion", err, domainErrorResponder[GenCommitTableIngestionResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCommitTableIngestionResponse {
 				return CommitTableIngestion400JSONResponse{resp}
 			},
@@ -119,7 +119,7 @@ func (h *APIHandler) LoadTableExternalFiles(ctx context.Context, request GenLoad
 	principal := principalFromCtx(ctx)
 	result, err := h.ingestion.LoadExternalFiles(ctx, principal, string(request.CatalogName), request.SchemaName, request.TableName, request.Body.Paths, opts)
 	if err != nil {
-		if resp, ok := respondDomainError[GenLoadTableExternalFilesResponse](err, domainErrorResponder[GenLoadTableExternalFilesResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenLoadTableExternalFilesResponse]("loadTableExternalFiles", err, domainErrorResponder[GenLoadTableExternalFilesResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenLoadTableExternalFilesResponse {
 				return LoadTableExternalFiles400JSONResponse{resp}
 			},

@@ -229,8 +229,8 @@ func TestNotebookHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_notebooks.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_notebooks.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_notebooks.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_notebooks.go must not use ad hoc errors.As domain error switches")
@@ -261,8 +261,8 @@ func TestAssetHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_assets.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_assets.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_assets.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_assets.go must not use ad hoc errors.As domain error switches")
@@ -277,8 +277,8 @@ func TestPipelineHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_pipeline.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_pipeline.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_pipeline.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_pipeline.go must not use ad hoc errors.As domain error switches")
@@ -293,8 +293,8 @@ func TestIngestionHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_ingestion.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_ingestion.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_ingestion.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_ingestion.go must not use ad hoc errors.As domain error switches")
@@ -309,8 +309,8 @@ func TestAPIKeyHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_apikeys.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_apikeys.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_apikeys.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_apikeys.go must not use ad hoc errors.As domain error switches")
@@ -325,8 +325,8 @@ func TestViewHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_views.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_views.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_views.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_views.go must not use ad hoc errors.As domain error switches")
@@ -341,8 +341,8 @@ func TestQueryHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_query.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_query.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_query.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"case errors.As(err, new(*domain.NotFoundError)):", "case errors.As(err, new(*domain.AccessDeniedError)):", "case errors.As(err, new(*domain.ValidationError)):"}) {
 		t.Fatal("governance: internal/api/handler_query.go must not use ad hoc domain error switches")
@@ -389,8 +389,8 @@ func TestMacroHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_macros.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_macros.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_macros.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_macros.go must not use ad hoc errors.As domain error switches")
@@ -405,8 +405,8 @@ func TestCatalogHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_catalog.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_catalog.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_catalog.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_catalog.go must not use ad hoc errors.As domain error switches")
@@ -421,8 +421,8 @@ func TestGovernanceHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_governance.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_governance.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_governance.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_governance.go must not use ad hoc errors.As domain error switches")
@@ -437,8 +437,8 @@ func TestModelHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_models.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_models.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_models.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_models.go must not use ad hoc errors.As domain error switches")
@@ -453,8 +453,8 @@ func TestSecurityHandlers_UseSharedDomainErrorResponder(t *testing.T) {
 		t.Fatalf("read internal/api/handler_security.go: %v", err)
 	}
 	source := string(body)
-	if !containsAny(source, []string{"respondDomainError["}) {
-		t.Fatal("governance: internal/api/handler_security.go must use respondDomainError for domain error mapping")
+	if !containsAny(source, []string{"respondDomainError[", "respondDomainErrorForOperation["}) {
+		t.Fatal("governance: internal/api/handler_security.go must use shared domain error mapping")
 	}
 	if containsAny(source, []string{"errors.As(err,"}) {
 		t.Fatal("governance: internal/api/handler_security.go must not use ad hoc errors.As domain error switches")

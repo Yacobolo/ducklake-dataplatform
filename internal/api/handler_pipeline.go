@@ -66,7 +66,7 @@ func (h *APIHandler) CreatePipeline(ctx context.Context, req GenCreatePipelineRe
 	principal := cp.Name
 	result, err := h.pipelines.CreatePipeline(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreatePipelineResponse](err, domainErrorResponder[GenCreatePipelineResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreatePipelineResponse]("createPipeline", err, domainErrorResponder[GenCreatePipelineResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreatePipelineResponse {
 				return CreatePipeline400JSONResponse{resp}
 			},
@@ -87,7 +87,7 @@ func (h *APIHandler) CreatePipeline(ctx context.Context, req GenCreatePipelineRe
 func (h *APIHandler) GetPipeline(ctx context.Context, req GenGetPipelineRequest) (GenGetPipelineResponse, error) {
 	result, err := h.pipelines.GetPipeline(ctx, req.PipelineName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetPipelineResponse](err, domainErrorResponder[GenGetPipelineResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetPipelineResponse]("getPipeline", err, domainErrorResponder[GenGetPipelineResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetPipelineResponse {
 				return GenGetPipeline404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -118,7 +118,7 @@ func (h *APIHandler) UpdatePipeline(ctx context.Context, req GenUpdatePipelineRe
 	principal := cp.Name
 	result, err := h.pipelines.UpdatePipeline(ctx, principal, req.PipelineName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdatePipelineResponse](err, domainErrorResponder[GenUpdatePipelineResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdatePipelineResponse]("updatePipeline", err, domainErrorResponder[GenUpdatePipelineResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUpdatePipelineResponse { return UpdatePipeline403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenUpdatePipelineResponse { return UpdatePipeline404JSONResponse{resp} },
 		}); ok {
@@ -137,7 +137,7 @@ func (h *APIHandler) DeletePipeline(ctx context.Context, req GenDeletePipelineRe
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.pipelines.DeletePipeline(ctx, principal, req.PipelineName); err != nil {
-		if resp, ok := respondDomainError[GenDeletePipelineResponse](err, domainErrorResponder[GenDeletePipelineResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeletePipelineResponse]("deletePipeline", err, domainErrorResponder[GenDeletePipelineResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeletePipelineResponse { return DeletePipeline403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenDeletePipelineResponse { return DeletePipeline404JSONResponse{resp} },
 		}); ok {
@@ -156,7 +156,7 @@ func (h *APIHandler) DeletePipeline(ctx context.Context, req GenDeletePipelineRe
 func (h *APIHandler) ListPipelineJobs(ctx context.Context, req GenListPipelineJobsRequest) (GenListPipelineJobsResponse, error) {
 	jobs, err := h.pipelines.ListJobs(ctx, req.PipelineName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListPipelineJobsResponse](err, domainErrorResponder[GenListPipelineJobsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListPipelineJobsResponse]("listPipelineJobs", err, domainErrorResponder[GenListPipelineJobsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListPipelineJobsResponse {
 				return GenListPipelineJobs404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -210,7 +210,7 @@ func (h *APIHandler) CreatePipelineJob(ctx context.Context, req GenCreatePipelin
 	principal := cp.Name
 	result, err := h.pipelines.CreateJob(ctx, principal, req.PipelineName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreatePipelineJobResponse](err, domainErrorResponder[GenCreatePipelineJobResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreatePipelineJobResponse]("createPipelineJob", err, domainErrorResponder[GenCreatePipelineJobResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreatePipelineJobResponse {
 				return CreatePipelineJob400JSONResponse{resp}
 			},
@@ -239,7 +239,7 @@ func (h *APIHandler) DeletePipelineJob(ctx context.Context, req GenDeletePipelin
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.pipelines.DeleteJob(ctx, principal, req.PipelineName, req.JobId); err != nil {
-		if resp, ok := respondDomainError[GenDeletePipelineJobResponse](err, domainErrorResponder[GenDeletePipelineJobResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeletePipelineJobResponse]("deletePipelineJob", err, domainErrorResponder[GenDeletePipelineJobResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeletePipelineJobResponse {
 				return DeletePipelineJob403JSONResponse{resp}
 			},
@@ -269,7 +269,7 @@ func (h *APIHandler) TriggerPipelineRun(ctx context.Context, req GenTriggerPipel
 	principal := cp.Name
 	result, err := h.pipelines.TriggerRun(ctx, principal, req.PipelineName, params, domain.TriggerTypeManual)
 	if err != nil {
-		if resp, ok := respondDomainError[GenTriggerPipelineRunResponse](err, domainErrorResponder[GenTriggerPipelineRunResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenTriggerPipelineRunResponse]("triggerPipelineRun", err, domainErrorResponder[GenTriggerPipelineRunResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenTriggerPipelineRunResponse {
 				return TriggerPipelineRun400JSONResponse{resp}
 			},
@@ -306,7 +306,7 @@ func (h *APIHandler) ListPipelineRuns(ctx context.Context, req GenListPipelineRu
 
 	runs, total, err := h.pipelines.ListRuns(ctx, req.PipelineName, filter)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListPipelineRunsResponse](err, domainErrorResponder[GenListPipelineRunsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListPipelineRunsResponse]("listPipelineRuns", err, domainErrorResponder[GenListPipelineRunsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListPipelineRunsResponse {
 				return GenListPipelineRuns404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -331,7 +331,7 @@ func (h *APIHandler) ListPipelineRuns(ctx context.Context, req GenListPipelineRu
 func (h *APIHandler) GetPipelineRun(ctx context.Context, req GenGetPipelineRunRequest) (GenGetPipelineRunResponse, error) {
 	result, err := h.pipelines.GetRun(ctx, req.RunId)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetPipelineRunResponse](err, domainErrorResponder[GenGetPipelineRunResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetPipelineRunResponse]("getPipelineRun", err, domainErrorResponder[GenGetPipelineRunResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetPipelineRunResponse {
 				return GenGetPipelineRun404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -351,7 +351,7 @@ func (h *APIHandler) CancelPipelineRun(ctx context.Context, req GenCancelPipelin
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.pipelines.CancelRun(ctx, principal, req.RunId); err != nil {
-		if resp, ok := respondDomainError[GenCancelPipelineRunResponse](err, domainErrorResponder[GenCancelPipelineRunResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCancelPipelineRunResponse]("cancelPipelineRun", err, domainErrorResponder[GenCancelPipelineRunResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCancelPipelineRunResponse {
 				return CancelPipelineRun400JSONResponse{resp}
 			},
@@ -387,7 +387,7 @@ func (h *APIHandler) CancelPipelineRun(ctx context.Context, req GenCancelPipelin
 func (h *APIHandler) ListPipelineJobRuns(ctx context.Context, req GenListPipelineJobRunsRequest) (GenListPipelineJobRunsResponse, error) {
 	jobRuns, err := h.pipelines.ListJobRuns(ctx, req.RunId)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListPipelineJobRunsResponse](err, domainErrorResponder[GenListPipelineJobRunsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListPipelineJobRunsResponse]("listPipelineJobRuns", err, domainErrorResponder[GenListPipelineJobRunsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListPipelineJobRunsResponse {
 				return GenListPipelineJobRuns404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},

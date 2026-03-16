@@ -22,7 +22,7 @@ func (h *APIHandler) ListViews(ctx context.Context, request GenListViewsRequest)
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	views, total, err := h.views.ListViews(ctx, string(request.CatalogName), request.SchemaName, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListViewsResponse](err, domainErrorResponder[GenListViewsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListViewsResponse]("listViews", err, domainErrorResponder[GenListViewsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListViewsResponse {
 				return GenListViews404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -57,7 +57,7 @@ func (h *APIHandler) CreateView(ctx context.Context, request GenCreateViewReques
 	principal := principalFromCtx(ctx)
 	result, err := h.views.CreateView(ctx, string(request.CatalogName), principal, request.SchemaName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateViewResponse](err, domainErrorResponder[GenCreateViewResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateViewResponse]("createView", err, domainErrorResponder[GenCreateViewResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateViewResponse { return CreateView400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateViewResponse { return CreateView403JSONResponse{resp} },
 			Conflict:   func(resp ConflictJSONResponse) GenCreateViewResponse { return CreateView409JSONResponse{resp} },
@@ -76,7 +76,7 @@ func (h *APIHandler) CreateView(ctx context.Context, request GenCreateViewReques
 func (h *APIHandler) GetView(ctx context.Context, request GenGetViewRequest) (GenGetViewResponse, error) {
 	result, err := h.views.GetView(ctx, string(request.CatalogName), request.SchemaName, request.ViewName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetViewResponse](err, domainErrorResponder[GenGetViewResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetViewResponse]("getView", err, domainErrorResponder[GenGetViewResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetViewResponse {
 				return GenGetView404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -104,7 +104,7 @@ func (h *APIHandler) UpdateView(ctx context.Context, request GenUpdateViewReques
 	principal := principalFromCtx(ctx)
 	result, err := h.views.UpdateView(ctx, string(request.CatalogName), principal, request.SchemaName, request.ViewName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateViewResponse](err, domainErrorResponder[GenUpdateViewResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateViewResponse]("updateView", err, domainErrorResponder[GenUpdateViewResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateViewResponse { return UpdateView403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenUpdateViewResponse { return UpdateView404JSONResponse{resp} },
 		}); ok {
@@ -122,7 +122,7 @@ func (h *APIHandler) UpdateView(ctx context.Context, request GenUpdateViewReques
 func (h *APIHandler) DeleteView(ctx context.Context, request GenDeleteViewRequest) (GenDeleteViewResponse, error) {
 	principal := principalFromCtx(ctx)
 	if err := h.views.DeleteView(ctx, string(request.CatalogName), principal, request.SchemaName, request.ViewName); err != nil {
-		if resp, ok := respondDomainError[GenDeleteViewResponse](err, domainErrorResponder[GenDeleteViewResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteViewResponse]("deleteView", err, domainErrorResponder[GenDeleteViewResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteViewResponse { return DeleteView403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenDeleteViewResponse { return DeleteView404JSONResponse{resp} },
 		}); ok {

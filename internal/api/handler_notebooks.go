@@ -61,7 +61,7 @@ func (h *APIHandler) ListNotebooks(ctx context.Context, req GenListNotebooksRequ
 	cp, _ := domain.PrincipalFromContext(ctx)
 	nbs, total, err := h.notebooks.ListNotebooksForPrincipal(ctx, cp.Name, cp.IsAdmin, req.Params.Owner, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListNotebooksResponse](err, domainErrorResponder[GenListNotebooksResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListNotebooksResponse]("listNotebooks", err, domainErrorResponder[GenListNotebooksResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebooksResponse { return ListNotebooks403JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -92,7 +92,7 @@ func (h *APIHandler) CreateNotebook(ctx context.Context, req GenCreateNotebookRe
 	principal := cp.Name
 	result, err := h.notebooks.CreateNotebook(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateNotebookResponse](err, domainErrorResponder[GenCreateNotebookResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateNotebookResponse]("createNotebook", err, domainErrorResponder[GenCreateNotebookResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateNotebookResponse {
 				return CreateNotebook400JSONResponse{resp}
 			},
@@ -113,7 +113,7 @@ func (h *APIHandler) GetNotebook(ctx context.Context, req GenGetNotebookRequest)
 	cp, _ := domain.PrincipalFromContext(ctx)
 	nb, cells, err := h.notebooks.GetNotebookForPrincipal(ctx, cp.Name, cp.IsAdmin, req.NotebookId)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetNotebookResponse](err, domainErrorResponder[GenGetNotebookResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetNotebookResponse]("getNotebook", err, domainErrorResponder[GenGetNotebookResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenGetNotebookResponse { return GenGetNotebook403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenGetNotebookResponse { return GenGetNotebook404JSONResponse{resp} },
 		}); ok {
@@ -150,7 +150,7 @@ func (h *APIHandler) UpdateNotebook(ctx context.Context, req GenUpdateNotebookRe
 
 	result, err := h.notebooks.UpdateNotebook(ctx, principal, isAdmin, req.NotebookId, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateNotebookResponse](err, domainErrorResponder[GenUpdateNotebookResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateNotebookResponse]("updateNotebook", err, domainErrorResponder[GenUpdateNotebookResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateNotebookResponse {
 				return UpdateNotebook400JSONResponse{resp}
 			},
@@ -174,7 +174,7 @@ func (h *APIHandler) DeleteNotebook(ctx context.Context, req GenDeleteNotebookRe
 	isAdmin := cp.IsAdmin
 
 	if err := h.notebooks.DeleteNotebook(ctx, principal, isAdmin, req.NotebookId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteNotebookResponse](err, domainErrorResponder[GenDeleteNotebookResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteNotebookResponse]("deleteNotebook", err, domainErrorResponder[GenDeleteNotebookResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteNotebookResponse { return DeleteNotebook403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenDeleteNotebookResponse { return DeleteNotebook404JSONResponse{resp} },
 		}); ok {
@@ -222,7 +222,7 @@ func (h *APIHandler) CreateCell(ctx context.Context, req GenCreateCellRequest) (
 
 	result, err := h.notebooks.CreateCell(ctx, principal, isAdmin, req.NotebookId, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateCellResponse](err, domainErrorResponder[GenCreateCellResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateCellResponse]("createCell", err, domainErrorResponder[GenCreateCellResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateCellResponse { return CreateCell400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateCellResponse { return CreateCell403JSONResponse{resp} },
 			NotFound:   func(resp NotFoundJSONResponse) GenCreateCellResponse { return CreateCell404JSONResponse{resp} },
@@ -269,7 +269,7 @@ func (h *APIHandler) UpdateCell(ctx context.Context, req GenUpdateCellRequest) (
 
 	result, err := h.notebooks.UpdateCell(ctx, principal, isAdmin, req.CellId, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateCellResponse](err, domainErrorResponder[GenUpdateCellResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateCellResponse]("updateCell", err, domainErrorResponder[GenUpdateCellResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateCellResponse { return UpdateCell400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenUpdateCellResponse { return UpdateCell403JSONResponse{resp} },
 			NotFound:   func(resp NotFoundJSONResponse) GenUpdateCellResponse { return UpdateCell404JSONResponse{resp} },
@@ -291,7 +291,7 @@ func (h *APIHandler) DeleteCell(ctx context.Context, req GenDeleteCellRequest) (
 	isAdmin := cp.IsAdmin
 
 	if err := h.notebooks.DeleteCell(ctx, principal, isAdmin, req.CellId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteCellResponse](err, domainErrorResponder[GenDeleteCellResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteCellResponse]("deleteCell", err, domainErrorResponder[GenDeleteCellResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeleteCellResponse { return DeleteCell400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenDeleteCellResponse { return DeleteCell403JSONResponse{resp} },
 			NotFound:   func(resp NotFoundJSONResponse) GenDeleteCellResponse { return DeleteCell404JSONResponse{resp} },
@@ -315,7 +315,7 @@ func (h *APIHandler) ReorderCells(ctx context.Context, req GenReorderCellsReques
 
 	cells, err := h.notebooks.ReorderCells(ctx, principal, isAdmin, req.NotebookId, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenReorderCellsResponse](err, domainErrorResponder[GenReorderCellsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenReorderCellsResponse]("reorderCells", err, domainErrorResponder[GenReorderCellsResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenReorderCellsResponse { return ReorderCells400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenReorderCellsResponse { return ReorderCells403JSONResponse{resp} },
 			NotFound:   func(resp NotFoundJSONResponse) GenReorderCellsResponse { return ReorderCells404JSONResponse{resp} },
@@ -344,7 +344,7 @@ func (h *APIHandler) CreateNotebookSession(ctx context.Context, req GenCreateNot
 
 	result, err := h.sessions.CreateSessionForNotebook(ctx, req.NotebookId, principal, cp.IsAdmin)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateNotebookSessionResponse](err, domainErrorResponder[GenCreateNotebookSessionResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateNotebookSessionResponse]("createNotebookSession", err, domainErrorResponder[GenCreateNotebookSessionResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenCreateNotebookSessionResponse {
 				return CreateNotebookSession403JSONResponse{resp}
 			},
@@ -367,7 +367,7 @@ func (h *APIHandler) CloseNotebookSession(ctx context.Context, req GenCloseNoteb
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.sessions.CloseNotebookSession(ctx, req.NotebookId, req.SessionId, principal, cp.IsAdmin); err != nil {
-		if resp, ok := respondDomainError[GenCloseNotebookSessionResponse](err, domainErrorResponder[GenCloseNotebookSessionResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCloseNotebookSessionResponse]("closeNotebookSession", err, domainErrorResponder[GenCloseNotebookSessionResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenCloseNotebookSessionResponse {
 				return CloseNotebookSession403JSONResponse{resp}
 			},
@@ -388,7 +388,7 @@ func (h *APIHandler) ExecuteCell(ctx context.Context, req GenExecuteCellRequest)
 	principal := cp.Name
 	result, err := h.sessions.ExecuteNotebookCell(ctx, req.NotebookId, req.SessionId, req.CellId, principal, cp.IsAdmin)
 	if err != nil {
-		if resp, ok := respondDomainError[GenExecuteCellResponse](err, domainErrorResponder[GenExecuteCellResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenExecuteCellResponse]("executeCell", err, domainErrorResponder[GenExecuteCellResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenExecuteCellResponse { return ExecuteCell400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenExecuteCellResponse { return ExecuteCell403JSONResponse{resp} },
 			NotFound:   func(resp NotFoundJSONResponse) GenExecuteCellResponse { return ExecuteCell404JSONResponse{resp} },
@@ -409,7 +409,7 @@ func (h *APIHandler) RunAllCells(ctx context.Context, req GenRunAllCellsRequest)
 	principal := cp.Name
 	result, err := h.sessions.RunAllNotebook(ctx, req.NotebookId, req.SessionId, principal, cp.IsAdmin)
 	if err != nil {
-		if resp, ok := respondDomainError[GenRunAllCellsResponse](err, domainErrorResponder[GenRunAllCellsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenRunAllCellsResponse]("runAllCells", err, domainErrorResponder[GenRunAllCellsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenRunAllCellsResponse { return RunAllCells403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenRunAllCellsResponse { return RunAllCells404JSONResponse{resp} },
 		}); ok {
@@ -429,7 +429,7 @@ func (h *APIHandler) RunAllCellsAsync(ctx context.Context, req GenRunAllCellsAsy
 	principal := cp.Name
 	result, err := h.sessions.RunAllNotebookAsync(ctx, req.NotebookId, req.SessionId, principal, cp.IsAdmin)
 	if err != nil {
-		if resp, ok := respondDomainError[GenRunAllCellsAsyncResponse](err, domainErrorResponder[GenRunAllCellsAsyncResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenRunAllCellsAsyncResponse]("runAllCellsAsync", err, domainErrorResponder[GenRunAllCellsAsyncResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenRunAllCellsAsyncResponse {
 				return RunAllCellsAsync403JSONResponse{resp}
 			},
@@ -455,7 +455,7 @@ func (h *APIHandler) ListNotebookJobs(ctx context.Context, req GenListNotebookJo
 	cp, _ := domain.PrincipalFromContext(ctx)
 	jobs, total, err := h.sessions.ListNotebookJobs(ctx, req.NotebookId, cp.Name, cp.IsAdmin, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListNotebookJobsResponse](err, domainErrorResponder[GenListNotebookJobsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListNotebookJobsResponse]("listNotebookJobs", err, domainErrorResponder[GenListNotebookJobsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookJobsResponse {
 				return GenListNotebookJobs403JSONResponse{resp}
 			},
@@ -484,7 +484,7 @@ func (h *APIHandler) GetNotebookJob(ctx context.Context, req GenGetNotebookJobRe
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.sessions.GetNotebookJob(ctx, req.NotebookId, req.JobId, cp.Name, cp.IsAdmin)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetNotebookJobResponse](err, domainErrorResponder[GenGetNotebookJobResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetNotebookJobResponse]("getNotebookJob", err, domainErrorResponder[GenGetNotebookJobResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenGetNotebookJobResponse {
 				return GenGetNotebookJob403JSONResponse{resp}
 			},
@@ -510,7 +510,7 @@ func (h *APIHandler) ListGitRepos(ctx context.Context, req GenListGitReposReques
 	cp, _ := domain.PrincipalFromContext(ctx)
 	repos, total, err := h.gitRepos.ListGitReposForPrincipal(ctx, cp.Name, cp.IsAdmin, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListGitReposResponse](err, domainErrorResponder[GenListGitReposResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListGitReposResponse]("listGitRepos", err, domainErrorResponder[GenListGitReposResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListGitReposResponse { return GenListGitRepos403JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -546,7 +546,7 @@ func (h *APIHandler) CreateGitRepo(ctx context.Context, req GenCreateGitRepoRequ
 	principal := cp.Name
 	result, err := h.gitRepos.CreateGitRepo(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateGitRepoResponse](err, domainErrorResponder[GenCreateGitRepoResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateGitRepoResponse]("createGitRepo", err, domainErrorResponder[GenCreateGitRepoResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateGitRepoResponse { return CreateGitRepo400JSONResponse{resp} },
 			Conflict:   func(resp ConflictJSONResponse) GenCreateGitRepoResponse { return CreateGitRepo409JSONResponse{resp} },
 		}); ok {
@@ -565,7 +565,7 @@ func (h *APIHandler) GetGitRepo(ctx context.Context, req GenGetGitRepoRequest) (
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.gitRepos.GetGitRepoForPrincipal(ctx, cp.Name, cp.IsAdmin, req.GitRepoId)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetGitRepoResponse](err, domainErrorResponder[GenGetGitRepoResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetGitRepoResponse]("getGitRepo", err, domainErrorResponder[GenGetGitRepoResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenGetGitRepoResponse { return GenGetGitRepo403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenGetGitRepoResponse { return GenGetGitRepo404JSONResponse{resp} },
 		}); ok {
@@ -586,7 +586,7 @@ func (h *APIHandler) DeleteGitRepo(ctx context.Context, req GenDeleteGitRepoRequ
 	isAdmin := cp.IsAdmin
 
 	if err := h.gitRepos.DeleteGitRepo(ctx, principal, isAdmin, req.GitRepoId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteGitRepoResponse](err, domainErrorResponder[GenDeleteGitRepoResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteGitRepoResponse]("deleteGitRepo", err, domainErrorResponder[GenDeleteGitRepoResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteGitRepoResponse { return DeleteGitRepo403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenDeleteGitRepoResponse { return DeleteGitRepo404JSONResponse{resp} },
 		}); ok {
@@ -602,10 +602,10 @@ func (h *APIHandler) SyncGitRepo(ctx context.Context, req GenSyncGitRepoRequest)
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.gitRepos.SyncGitRepo(ctx, cp.Name, cp.IsAdmin, req.GitRepoId)
 	if err != nil {
-		if resp, ok := respondDomainError[GenSyncGitRepoResponse](err, domainErrorResponder[GenSyncGitRepoResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenSyncGitRepoResponse]("syncGitRepo", err, domainErrorResponder[GenSyncGitRepoResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo403JSONResponse{resp} },
-			NotFound:   func(resp NotFoundJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo404JSONResponse{resp} },
+			NotFound: func(resp NotFoundJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo404JSONResponse{resp} },
 			Internal: func(resp InternalErrorJSONResponse) GenSyncGitRepoResponse {
 				if httpStatusFromDomainError(err) == 501 {
 					return syncGitRepo501JSONResponse{

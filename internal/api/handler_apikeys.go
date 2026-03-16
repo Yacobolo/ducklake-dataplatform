@@ -41,7 +41,7 @@ func (h *APIHandler) CreateAPIKey(ctx context.Context, req GenCreateAPIKeyReques
 
 	rawKey, key, err := h.apiKeys.Create(ctx, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateAPIKeyResponse](err, domainErrorResponder[GenCreateAPIKeyResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateAPIKeyResponse]("createAPIKey", err, domainErrorResponder[GenCreateAPIKeyResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateAPIKeyResponse { return CreateAPIKey400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateAPIKeyResponse { return CreateAPIKey403JSONResponse{resp} },
 			NotFound: func(NotFoundJSONResponse) GenCreateAPIKeyResponse {
@@ -74,7 +74,7 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req GenListAPIKeysRequest)
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	keys, total, err := h.apiKeys.List(ctx, req.Params.PrincipalId, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListAPIKeysResponse](err, domainErrorResponder[GenListAPIKeysResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListAPIKeysResponse]("listAPIKeys", err, domainErrorResponder[GenListAPIKeysResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListAPIKeysResponse { return ListAPIKeys403JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -95,7 +95,7 @@ func (h *APIHandler) ListAPIKeys(ctx context.Context, req GenListAPIKeysRequest)
 // DeleteAPIKey implements the endpoint for deleting an API key by ID.
 func (h *APIHandler) DeleteAPIKey(ctx context.Context, req GenDeleteAPIKeyRequest) (GenDeleteAPIKeyResponse, error) {
 	if err := h.apiKeys.Delete(ctx, req.ApiKeyId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteAPIKeyResponse](err, domainErrorResponder[GenDeleteAPIKeyResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteAPIKeyResponse]("deleteAPIKey", err, domainErrorResponder[GenDeleteAPIKeyResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteAPIKeyResponse { return DeleteAPIKey403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenDeleteAPIKeyResponse { return DeleteAPIKey404JSONResponse{resp} },
 		}); ok {
@@ -110,7 +110,7 @@ func (h *APIHandler) DeleteAPIKey(ctx context.Context, req GenDeleteAPIKeyReques
 func (h *APIHandler) CleanupExpiredAPIKeys(ctx context.Context, _ GenCleanupExpiredAPIKeysRequest) (GenCleanupExpiredAPIKeysResponse, error) {
 	count, err := h.apiKeys.CleanupExpired(ctx)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCleanupExpiredAPIKeysResponse](err, domainErrorResponder[GenCleanupExpiredAPIKeysResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCleanupExpiredAPIKeysResponse]("cleanupExpiredAPIKeys", err, domainErrorResponder[GenCleanupExpiredAPIKeysResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenCleanupExpiredAPIKeysResponse {
 				return CleanupExpiredAPIKeys403JSONResponse{resp}
 			},

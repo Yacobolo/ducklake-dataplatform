@@ -59,7 +59,7 @@ func (h *APIHandler) ListAuditLogs(ctx context.Context, req GenListAuditLogsRequ
 
 	entries, total, err := h.audit.List(ctx, filter)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListAuditLogsResponse](err, domainErrorResponder[GenListAuditLogsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListAuditLogsResponse]("listAuditLogs", err, domainErrorResponder[GenListAuditLogsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListAuditLogsResponse { return ListAuditLogs403JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -97,7 +97,7 @@ func (h *APIHandler) ListQueryHistory(ctx context.Context, req GenListQueryHisto
 
 	entries, total, err := h.queryHistory.List(ctx, filter)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListQueryHistoryResponse](err, domainErrorResponder[GenListQueryHistoryResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListQueryHistoryResponse]("listQueryHistory", err, domainErrorResponder[GenListQueryHistoryResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListQueryHistoryResponse {
 				return ListQueryHistory403JSONResponse{resp}
 			},
@@ -127,7 +127,7 @@ func (h *APIHandler) SearchCatalog(ctx context.Context, req GenSearchCatalogRequ
 
 	results, total, err := h.search.Search(ctx, req.Params.Query, req.Params.Type, req.Params.Catalog, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenSearchCatalogResponse](err, domainErrorResponder[GenSearchCatalogResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenSearchCatalogResponse]("searchCatalog", err, domainErrorResponder[GenSearchCatalogResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenSearchCatalogResponse { return SearchCatalog400JSONResponse{resp} },
 			NotFound: func(resp NotFoundJSONResponse) GenSearchCatalogResponse {
 				return SearchCatalog404JSONResponse{resp}
@@ -231,7 +231,7 @@ func (h *APIHandler) GetDownstreamLineage(ctx context.Context, req GenGetDownstr
 // DeleteLineageEdge implements the endpoint for deleting a lineage edge by ID.
 func (h *APIHandler) DeleteLineageEdge(ctx context.Context, req GenDeleteLineageEdgeRequest) (GenDeleteLineageEdgeResponse, error) {
 	if err := h.lineage.DeleteEdge(ctx, req.EdgeId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteLineageEdgeResponse](err, domainErrorResponder[GenDeleteLineageEdgeResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteLineageEdgeResponse]("deleteLineageEdge", err, domainErrorResponder[GenDeleteLineageEdgeResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenDeleteLineageEdgeResponse {
 				return DeleteLineageEdge404JSONResponse{resp}
 			},
@@ -252,7 +252,7 @@ func (h *APIHandler) PurgeLineage(ctx context.Context, req GenPurgeLineageReques
 
 	deleted, err := h.lineage.PurgeOlderThan(ctx, int(req.Body.OlderThanDays))
 	if err != nil {
-		if resp, ok := respondDomainError[GenPurgeLineageResponse](err, domainErrorResponder[GenPurgeLineageResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenPurgeLineageResponse]("purgeLineage", err, domainErrorResponder[GenPurgeLineageResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenPurgeLineageResponse { return PurgeLineage403JSONResponse{resp} },
 			Internal: func(resp InternalErrorJSONResponse) GenPurgeLineageResponse {
 				return GenPurgeLineage500JSONResponse{GenInternalErrorJSONResponse(resp)}
@@ -343,7 +343,7 @@ func (h *APIHandler) CreateTag(ctx context.Context, req GenCreateTagRequest) (Ge
 	principal := caller.Name
 	result, err := h.tags.CreateTag(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateTagResponse](err, domainErrorResponder[GenCreateTagResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateTagResponse]("createTag", err, domainErrorResponder[GenCreateTagResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateTagResponse { return CreateTag400JSONResponse{resp} },
 			Conflict:   func(resp ConflictJSONResponse) GenCreateTagResponse { return CreateTag409JSONResponse{resp} },
 		}); ok {
@@ -366,7 +366,7 @@ func (h *APIHandler) DeleteTag(ctx context.Context, req GenDeleteTagRequest) (Ge
 
 	principal := caller.Name
 	if err := h.tags.DeleteTag(ctx, principal, req.TagId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteTagResponse](err, domainErrorResponder[GenDeleteTagResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteTagResponse]("deleteTag", err, domainErrorResponder[GenDeleteTagResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenDeleteTagResponse { return DeleteTag404JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -462,7 +462,7 @@ func (h *APIHandler) DeleteTagAssignment(ctx context.Context, req GenDeleteTagAs
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.tags.UnassignTag(ctx, principal, req.AssignmentId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteTagAssignmentResponse](err, domainErrorResponder[GenDeleteTagAssignmentResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteTagAssignmentResponse]("deleteTagAssignment", err, domainErrorResponder[GenDeleteTagAssignmentResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeleteTagAssignmentResponse {
 				return DeleteTagAssignment400JSONResponse{resp}
 			},

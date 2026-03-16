@@ -3,6 +3,7 @@ package architecture
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -132,4 +133,26 @@ func TestAPIGenContractBoundary_NoManualOperationsRemain(t *testing.T) {
 	}
 
 	require.Emptyf(t, remainingManual, "expected full APIGen migration with no remaining manual operations, found: %s", strings.Join(remainingManual, ", "))
+}
+
+func TestAPIGenContractBoundary_AllHandlersUseOperationAwareMapping(t *testing.T) {
+	t.Parallel()
+
+	handlerPaths, err := filepath.Glob(filepath.Join("..", "api", "handler*.go"))
+	require.NoError(t, err)
+	sort.Strings(handlerPaths)
+	require.NotEmpty(t, handlerPaths)
+
+	skipFiles := map[string]struct{}{
+		filepath.Join("..", "api", "handler_auth_custom.go"): {},
+	}
+
+	for _, handlerPath := range handlerPaths {
+		if _, skip := skipFiles[handlerPath]; skip {
+			continue
+		}
+		content, err := os.ReadFile(handlerPath)
+		require.NoError(t, err)
+		require.NotContainsf(t, string(content), `respondDomainError[`, "expected %s to use operation-aware contract mapping only", handlerPath)
+	}
 }

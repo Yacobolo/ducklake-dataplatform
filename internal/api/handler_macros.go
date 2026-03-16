@@ -92,7 +92,7 @@ func (h *APIHandler) CreateMacro(ctx context.Context, req GenCreateMacroRequest)
 	principal := cp.Name
 	result, err := h.macros.Create(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateMacroResponse](err, domainErrorResponder[GenCreateMacroResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateMacroResponse]("createMacro", err, domainErrorResponder[GenCreateMacroResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateMacroResponse { return CreateMacro400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateMacroResponse { return CreateMacro403JSONResponse{resp} },
 			Conflict:   func(resp ConflictJSONResponse) GenCreateMacroResponse { return CreateMacro409JSONResponse{resp} },
@@ -111,7 +111,7 @@ func (h *APIHandler) CreateMacro(ctx context.Context, req GenCreateMacroRequest)
 func (h *APIHandler) ListMacroRevisions(ctx context.Context, req GenListMacroRevisionsRequest) (GenListMacroRevisionsResponse, error) {
 	revisions, err := h.macros.ListRevisions(ctx, req.MacroName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListMacroRevisionsResponse](err, domainErrorResponder[GenListMacroRevisionsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListMacroRevisionsResponse]("listMacroRevisions", err, domainErrorResponder[GenListMacroRevisionsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListMacroRevisionsResponse {
 				return GenListMacroRevisions404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -134,7 +134,7 @@ func (h *APIHandler) ListMacroRevisions(ctx context.Context, req GenListMacroRev
 func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req GenDiffMacroRevisionsRequest) (GenDiffMacroRevisionsResponse, error) {
 	diff, err := h.macros.DiffRevisions(ctx, req.MacroName, int(req.Params.FromVersion), int(req.Params.ToVersion))
 	if err != nil {
-		if resp, ok := respondDomainError[GenDiffMacroRevisionsResponse](err, domainErrorResponder[GenDiffMacroRevisionsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDiffMacroRevisionsResponse]("diffMacroRevisions", err, domainErrorResponder[GenDiffMacroRevisionsResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDiffMacroRevisionsResponse {
 				return DiffMacroRevisions400JSONResponse{resp}
 			},
@@ -149,7 +149,7 @@ func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req GenDiffMacroRev
 
 	fromRev, err := h.macros.GetRevisionByVersion(ctx, req.MacroName, int(req.Params.FromVersion))
 	if err != nil {
-		if resp, ok := respondDomainError[GenDiffMacroRevisionsResponse](err, domainErrorResponder[GenDiffMacroRevisionsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDiffMacroRevisionsResponse]("diffMacroRevisions", err, domainErrorResponder[GenDiffMacroRevisionsResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDiffMacroRevisionsResponse {
 				return DiffMacroRevisions400JSONResponse{resp}
 			},
@@ -164,7 +164,7 @@ func (h *APIHandler) DiffMacroRevisions(ctx context.Context, req GenDiffMacroRev
 
 	toRev, err := h.macros.GetRevisionByVersion(ctx, req.MacroName, int(req.Params.ToVersion))
 	if err != nil {
-		if resp, ok := respondDomainError[GenDiffMacroRevisionsResponse](err, domainErrorResponder[GenDiffMacroRevisionsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDiffMacroRevisionsResponse]("diffMacroRevisions", err, domainErrorResponder[GenDiffMacroRevisionsResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDiffMacroRevisionsResponse {
 				return DiffMacroRevisions400JSONResponse{resp}
 			},
@@ -212,7 +212,7 @@ func (h *APIHandler) GetMacroImpact(ctx context.Context, req GenGetMacroImpactRe
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 
 	if _, err := h.macros.Get(ctx, req.MacroName); err != nil {
-		if resp, ok := respondDomainError[GenGetMacroImpactResponse](err, domainErrorResponder[GenGetMacroImpactResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetMacroImpactResponse]("getMacroImpact", err, domainErrorResponder[GenGetMacroImpactResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetMacroImpactResponse {
 				return GenGetMacroImpact404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -252,7 +252,7 @@ func (h *APIHandler) GetMacroImpact(ctx context.Context, req GenGetMacroImpactRe
 func (h *APIHandler) GetMacro(ctx context.Context, req GenGetMacroRequest) (GenGetMacroResponse, error) {
 	result, err := h.macros.Get(ctx, req.MacroName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetMacroResponse](err, domainErrorResponder[GenGetMacroResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetMacroResponse]("getMacro", err, domainErrorResponder[GenGetMacroResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetMacroResponse {
 				return GenGetMacro404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -304,7 +304,7 @@ func (h *APIHandler) UpdateMacro(ctx context.Context, req GenUpdateMacroRequest)
 	principal := cp.Name
 	result, err := h.macros.Update(ctx, principal, req.MacroName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateMacroResponse](err, domainErrorResponder[GenUpdateMacroResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateMacroResponse]("updateMacro", err, domainErrorResponder[GenUpdateMacroResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateMacroResponse { return UpdateMacro400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenUpdateMacroResponse { return UpdateMacro403JSONResponse{resp} },
 			NotFound:   func(resp NotFoundJSONResponse) GenUpdateMacroResponse { return UpdateMacro404JSONResponse{resp} },
@@ -324,7 +324,7 @@ func (h *APIHandler) DeleteMacro(ctx context.Context, req GenDeleteMacroRequest)
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.macros.Delete(ctx, principal, req.MacroName); err != nil {
-		if resp, ok := respondDomainError[GenDeleteMacroResponse](err, domainErrorResponder[GenDeleteMacroResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteMacroResponse]("deleteMacro", err, domainErrorResponder[GenDeleteMacroResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteMacroResponse { return DeleteMacro403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenDeleteMacroResponse { return DeleteMacro404JSONResponse{resp} },
 		}); ok {
