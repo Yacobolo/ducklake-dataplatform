@@ -1417,7 +1417,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	notebookSvc := svcnotebook.New(notebookRepo, auditRepo)
 	notebookProvider := svcpipeline.NewDBNotebookProvider(notebookRepo)
 	gitRepoRepo := repository.NewGitRepoRepo(metaDB)
-	gitRepoSvc := svcnotebook.NewGitService(gitRepoRepo, auditRepo)
+	gitRepoSvc := svcnotebook.NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 	pipelineRepo := repository.NewPipelineRepo(metaDB)
 	pipelineRunRepo := repository.NewPipelineRunRepo(metaDB)
 	pipelineSvc := svcpipeline.NewService(

@@ -167,7 +167,9 @@ func (s *GitService) SyncGitRepo(ctx context.Context, principal string, isAdmin 
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(cloneDir)
+	defer func() {
+		_ = os.RemoveAll(cloneDir)
+	}()
 
 	root, err := resolveDeclarativeRoot(cloneDir, repo.Path)
 	if err != nil {

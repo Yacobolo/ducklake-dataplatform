@@ -198,6 +198,9 @@ func (s notebookRepoStub) ListNotebooks(context.Context, *string, domain.PageReq
 func (s notebookRepoStub) UpdateNotebook(context.Context, string, domain.UpdateNotebookRequest) (*domain.Notebook, error) {
 	panic("unexpected call")
 }
+func (s notebookRepoStub) UpdateNotebookSync(context.Context, *domain.Notebook) (*domain.Notebook, error) {
+	panic("unexpected call")
+}
 func (s notebookRepoStub) DeleteNotebook(context.Context, string) error { panic("unexpected call") }
 func (s notebookRepoStub) CreateCell(context.Context, *domain.Cell) (*domain.Cell, error) {
 	panic("unexpected call")
@@ -209,6 +212,9 @@ func (s notebookRepoStub) ListCells(context.Context, string) ([]domain.Cell, err
 	panic("unexpected call")
 }
 func (s notebookRepoStub) UpdateCell(context.Context, string, domain.UpdateCellRequest) (*domain.Cell, error) {
+	panic("unexpected call")
+}
+func (s notebookRepoStub) UpdateCellSync(context.Context, *domain.Cell) (*domain.Cell, error) {
 	panic("unexpected call")
 }
 func (s notebookRepoStub) DeleteCell(context.Context, string) error { panic("unexpected call") }
