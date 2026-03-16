@@ -126,6 +126,7 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 	b.WriteString("\treturn cloneAPIGenOperationContract(contract), true\n")
 	b.WriteString("}\n\n")
 	b.WriteString("// APIGenOperationAllowsStatus reports whether a status code is documented for an operation.\n")
+	b.WriteString("//nolint:revive // exported generated helper name matches the APIGen contract registry namespace.\n")
 	b.WriteString("func APIGenOperationAllowsStatus(operationID string, statusCode int) bool {\n")
 	b.WriteString("\tcontract, ok := genOperationContracts[operationID]\n")
 	b.WriteString("\tif !ok {\n")
