@@ -1671,6 +1671,13 @@ func validateNotebooks(notebooks []NotebookResource, errs *[]ValidationError) {
 					addErr(errs, cpath, "test severity must be \"error\" or \"warn\", got %q", c.Test.Severity)
 				}
 			}
+			if c.VisualSpec != nil {
+				if c.Type != "sql" {
+					addErr(errs, cpath, "visual_spec is only allowed for sql cells")
+				} else if err := c.VisualSpec.Validate(); err != nil {
+					addErr(errs, cpath, "visual_spec is invalid: %v", err)
+				}
+			}
 		}
 
 		seenCellNames := make(map[string]bool)

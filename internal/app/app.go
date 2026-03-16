@@ -335,7 +335,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	notebookSvc := notebook.New(notebookRepo, auditRepo)
 	sessionMgr := notebook.NewSessionManager(deps.DuckDB, eng, notebookRepo, notebookJobRepo, auditRepo)
 	gitRepoRepo := repository.NewGitRepoRepo(deps.WriteDB)
-	gitSvc := notebook.NewGitService(gitRepoRepo, auditRepo)
+	gitSvc := notebook.NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 	notebookModelLinkRepo := repository.NewNotebookModelLinkRepo(deps.WriteDB)
 
 	// === Asset orchestration ===
@@ -421,6 +421,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		Logger:        deps.Logger.With("component", "model"),
 	})
 	notebookSvc.SetPublishRepositories(modelRepo, notebookModelLinkRepo)
+	gitSvc.SetPublishDependencies(modelSvc, notebookModelLinkRepo)
 
 	// === Semantic ===
 	semanticModelRepo := repository.NewSemanticModelRepo(deps.WriteDB)

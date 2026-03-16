@@ -221,7 +221,7 @@ type mockGitRepoService struct {
 	listGitReposFn             func(ctx context.Context, page domain.PageRequest) ([]domain.GitRepo, int64, error)
 	listGitReposForPrincipalFn func(ctx context.Context, principal string, isAdmin bool, page domain.PageRequest) ([]domain.GitRepo, int64, error)
 	deleteGitRepoFn            func(ctx context.Context, principal string, isAdmin bool, id string) error
-	syncGitRepoFn              func(ctx context.Context, id string) (*domain.GitSyncResult, error)
+	syncGitRepoFn              func(ctx context.Context, principal string, isAdmin bool, id string) (*domain.GitSyncResult, error)
 }
 
 func (m *mockGitRepoService) CreateGitRepo(ctx context.Context, principal string, req domain.CreateGitRepoRequest) (*domain.GitRepo, error) {
@@ -260,9 +260,9 @@ func (m *mockGitRepoService) DeleteGitRepo(ctx context.Context, principal string
 	}
 	panic("DeleteGitRepo not implemented")
 }
-func (m *mockGitRepoService) SyncGitRepo(ctx context.Context, id string) (*domain.GitSyncResult, error) {
+func (m *mockGitRepoService) SyncGitRepo(ctx context.Context, principal string, isAdmin bool, id string) (*domain.GitSyncResult, error) {
 	if m.syncGitRepoFn != nil {
-		return m.syncGitRepoFn(ctx, id)
+		return m.syncGitRepoFn(ctx, principal, isAdmin, id)
 	}
 	panic("SyncGitRepo not implemented")
 }
@@ -272,12 +272,15 @@ func TestHandler_SyncGitRepo(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		svcFn    func(ctx context.Context, id string) (*domain.GitSyncResult, error)
+		svcFn    func(ctx context.Context, principal string, isAdmin bool, id string) (*domain.GitSyncResult, error)
 		assertFn func(t *testing.T, resp GenSyncGitRepoResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
-			svcFn: func(_ context.Context, _ string) (*domain.GitSyncResult, error) {
+			svcFn: func(_ context.Context, principal string, isAdmin bool, id string) (*domain.GitSyncResult, error) {
+				assert.Empty(t, principal)
+				assert.False(t, isAdmin)
+				assert.Equal(t, "repo-1", id)
 				return &domain.GitSyncResult{
 					CommitSHA:        "abc123",
 					NotebooksCreated: 1,
@@ -291,20 +294,26 @@ func TestHandler_SyncGitRepo(t *testing.T) {
 				ok200, ok := resp.(SyncGitRepo200JSONResponse)
 				require.True(t, ok, "expected 200 response, got %T", resp)
 				require.NotNil(t, ok200.Body.CommitSha)
+				require.NotNil(t, ok200.Body.NotebooksCreated)
+				require.NotNil(t, ok200.Body.NotebooksUpdated)
+				require.NotNil(t, ok200.Body.NotebooksDeleted)
 				assert.Equal(t, "abc123", *ok200.Body.CommitSha)
+				assert.Equal(t, int32(1), *ok200.Body.NotebooksCreated)
+				assert.Equal(t, int32(2), *ok200.Body.NotebooksUpdated)
+				assert.Equal(t, int32(3), *ok200.Body.NotebooksDeleted)
 			},
 		},
 		{
-			name: "not implemented returns 501",
-			svcFn: func(_ context.Context, _ string) (*domain.GitSyncResult, error) {
-				return nil, domain.ErrNotImplemented("git sync is not yet implemented")
+			name: "validation error returns 400",
+			svcFn: func(_ context.Context, _ string, _ bool, _ string) (*domain.GitSyncResult, error) {
+				return nil, domain.ErrValidation("invalid declarative notebook")
 			},
 			assertFn: func(t *testing.T, resp GenSyncGitRepoResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				notImpl, ok := resp.(syncGitRepo501JSONResponse)
-				require.True(t, ok, "expected 501 response, got %T", resp)
-				assert.Equal(t, int32(501), notImpl.Body.Code)
+				badReq, ok := resp.(SyncGitRepo400JSONResponse)
+				require.True(t, ok, "expected 400 response, got %T", resp)
+				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
 		},
 	}
@@ -869,6 +878,19 @@ func TestAPI_GitRepoCRUD(t *testing.T) {
 		deleteGitRepoFn: func(_ context.Context, _ string, _ bool, _ string) error {
 			return nil
 		},
+		syncGitRepoFn: func(_ context.Context, _ string, _ bool, id string) (*domain.GitSyncResult, error) {
+			switch id {
+			case "repo-bad":
+				return nil, domain.ErrValidation("invalid declarative notebook")
+			default:
+				return &domain.GitSyncResult{
+					NotebooksCreated: 1,
+					NotebooksUpdated: 0,
+					NotebooksDeleted: 0,
+					CommitSHA:        "abc123",
+				}, nil
+			}
+		},
 	}
 
 	srv := setupNotebookTestServer(t, nil, nil, gitSvc, "alice", false)
@@ -910,6 +932,17 @@ func TestAPI_GitRepoCRUD(t *testing.T) {
 		resp := nbDoRequest(t, http.MethodDelete, srv.URL+"/git-repos/"+repoID, "")
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	})
+
+	t.Run("sync git repo bad input returns 400", func(t *testing.T) {
+		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/git-repos/repo-bad/sync", "")
+		defer resp.Body.Close() //nolint:errcheck
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		var errResp Error
+		_ = json.NewDecoder(resp.Body).Decode(&errResp)
+		assert.Equal(t, int32(400), errResp.Code)
+		assert.Contains(t, errResp.Message, "invalid declarative notebook")
 	})
 }
 

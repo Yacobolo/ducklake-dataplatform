@@ -431,12 +431,14 @@ type NotebookRepository interface {
 	GetNotebook(ctx context.Context, id string) (*Notebook, error)
 	ListNotebooks(ctx context.Context, owner *string, page PageRequest) ([]Notebook, int64, error)
 	UpdateNotebook(ctx context.Context, id string, req UpdateNotebookRequest) (*Notebook, error)
+	UpdateNotebookSync(ctx context.Context, nb *Notebook) (*Notebook, error)
 	DeleteNotebook(ctx context.Context, id string) error
 
 	CreateCell(ctx context.Context, cell *Cell) (*Cell, error)
 	GetCell(ctx context.Context, id string) (*Cell, error)
 	ListCells(ctx context.Context, notebookID string) ([]Cell, error)
 	UpdateCell(ctx context.Context, id string, req UpdateCellRequest) (*Cell, error)
+	UpdateCellSync(ctx context.Context, cell *Cell) (*Cell, error)
 	DeleteCell(ctx context.Context, id string) error
 	UpdateCellResult(ctx context.Context, cellID string, result *string) error
 	ReorderCells(ctx context.Context, notebookID string, cellIDs []string) error

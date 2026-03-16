@@ -50,7 +50,7 @@ type gitRepoService interface {
 	ListGitRepos(ctx context.Context, page domain.PageRequest) ([]domain.GitRepo, int64, error)
 	ListGitReposForPrincipal(ctx context.Context, principal string, isAdmin bool, page domain.PageRequest) ([]domain.GitRepo, int64, error)
 	DeleteGitRepo(ctx context.Context, principal string, isAdmin bool, id string) error
-	SyncGitRepo(ctx context.Context, id string) (*domain.GitSyncResult, error)
+	SyncGitRepo(ctx context.Context, principal string, isAdmin bool, id string) (*domain.GitSyncResult, error)
 }
 
 // === Notebooks ===
@@ -599,10 +599,13 @@ func (h *APIHandler) DeleteGitRepo(ctx context.Context, req GenDeleteGitRepoRequ
 
 // SyncGitRepo implements the endpoint for triggering a Git sync.
 func (h *APIHandler) SyncGitRepo(ctx context.Context, req GenSyncGitRepoRequest) (GenSyncGitRepoResponse, error) {
-	result, err := h.gitRepos.SyncGitRepo(ctx, req.GitRepoId)
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.gitRepos.SyncGitRepo(ctx, cp.Name, cp.IsAdmin, req.GitRepoId)
 	if err != nil {
 		if resp, ok := respondDomainError[GenSyncGitRepoResponse](err, domainErrorResponder[GenSyncGitRepoResponse]{
-			NotFound: func(resp NotFoundJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo404JSONResponse{resp} },
+			BadRequest: func(resp BadRequestJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo404JSONResponse{resp} },
 			Internal: func(resp InternalErrorJSONResponse) GenSyncGitRepoResponse {
 				if httpStatusFromDomainError(err) == 501 {
 					return syncGitRepo501JSONResponse{

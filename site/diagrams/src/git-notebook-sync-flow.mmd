@@ -1,0 +1,10 @@
+flowchart LR
+    repo@{ icon: "fa:folder-open", label: "Git Repo" }
+    docs@{ icon: "fa:file-code", label: "notebooks/*.yaml" }
+    sync@{ icon: "fa:arrows-rotate", label: "Sync API" }
+    loader@{ icon: "fa:file-lines", label: "Declarative Loader" }
+    notebook@{ icon: "fa:note-sticky", label: "Local Notebook" }
+    model@{ icon: "fa:file-code", label: "Published Model" }
+
+    repo --> docs --> sync --> loader --> notebook
+    notebook --> model

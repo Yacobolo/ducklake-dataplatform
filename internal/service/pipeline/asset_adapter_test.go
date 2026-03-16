@@ -443,6 +443,10 @@ func (m *mockNotebookRepo) UpdateNotebook(context.Context, string, domain.Update
 	panic("unexpected call")
 }
 
+func (m *mockNotebookRepo) UpdateNotebookSync(context.Context, *domain.Notebook) (*domain.Notebook, error) {
+	panic("unexpected call")
+}
+
 func (m *mockNotebookRepo) DeleteNotebook(context.Context, string) error {
 	panic("unexpected call")
 }
@@ -460,6 +464,10 @@ func (m *mockNotebookRepo) ListCells(context.Context, string) ([]domain.Cell, er
 }
 
 func (m *mockNotebookRepo) UpdateCell(context.Context, string, domain.UpdateCellRequest) (*domain.Cell, error) {
+	panic("unexpected call")
+}
+
+func (m *mockNotebookRepo) UpdateCellSync(context.Context, *domain.Cell) (*domain.Cell, error) {
 	panic("unexpected call")
 }
 

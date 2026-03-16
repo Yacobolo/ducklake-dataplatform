@@ -20,6 +20,9 @@
         },
         "type": {
           "type": "string"
+        },
+        "visual_spec": {
+          "$ref": "#/$defs/VisualSpec"
         }
       },
       "required": [
@@ -132,6 +135,79 @@
       },
       "required": [
         "name"
+      ],
+      "type": "object"
+    },
+    "VisualEncodings": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        },
+        "secondary": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        },
+        "series": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        },
+        "value": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        },
+        "x": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        },
+        "y": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        }
+      },
+      "type": "object"
+    },
+    "VisualFieldBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "field"
+      ],
+      "type": "object"
+    },
+    "VisualSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "chartType": {
+          "type": "string"
+        },
+        "colorPalette": {
+          "type": "string"
+        },
+        "encodings": {
+          "$ref": "#/$defs/VisualEncodings"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "legend": {
+          "type": "boolean"
+        },
+        "stacked": {
+          "type": "boolean"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "colorPalette",
+        "encodings",
+        "kind",
+        "subtitle",
+        "title"
       ],
       "type": "object"
     }
