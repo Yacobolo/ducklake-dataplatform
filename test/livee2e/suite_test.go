@@ -536,6 +536,9 @@ func (s *liveSuite) discoverCatalogFixtures() error {
 		return nil
 	}
 	s.fixtures["catalogName"] = catalogName
+	if err := s.ensureDefaultCatalog(catalogName); err != nil {
+		return err
+	}
 
 	path := fmt.Sprintf("/v1/catalogs/%s/schemas", catalogName)
 	resp, data, err = s.doJSON(context.Background(), http.MethodGet, path, s.token, nil)
@@ -571,6 +574,18 @@ func (s *liveSuite) discoverCatalogFixtures() error {
 		if viewName := firstDataField(data, "name"); viewName != "" {
 			s.fixtures["viewName"] = viewName
 		}
+	}
+	return nil
+}
+
+func (s *liveSuite) ensureDefaultCatalog(catalogName string) error {
+	path := fmt.Sprintf("/v1/catalogs/%s/set-default", catalogName)
+	resp, data, err := s.doJSON(context.Background(), http.MethodPost, path, s.token, map[string]any{})
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("set default catalog %q: status %d body=%s", catalogName, resp.StatusCode, strings.TrimSpace(string(data)))
 	}
 	return nil
 }
