@@ -531,7 +531,7 @@ func (s *liveSuite) discoverCatalogFixtures() error {
 	if resp.StatusCode != http.StatusOK {
 		return nil
 	}
-	catalogName := firstDataField(data, "name")
+	catalogName := firstCatalogField(data, "name")
 	if catalogName == "" {
 		return nil
 	}
@@ -576,6 +576,20 @@ func (s *liveSuite) discoverCatalogFixtures() error {
 		}
 	}
 	return nil
+}
+
+func firstCatalogField(data []byte, field string) string {
+	var payload struct {
+		Catalogs []map[string]any `json:"catalogs"`
+	}
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return ""
+	}
+	if len(payload.Catalogs) == 0 {
+		return ""
+	}
+	value, _ := payload.Catalogs[0][field].(string)
+	return value
 }
 
 func (s *liveSuite) ensureDefaultCatalog(catalogName string) error {
