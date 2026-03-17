@@ -42,7 +42,7 @@ op listProductTeams(@query max_results?: int32, @query page_token?: string): Ok<
 @post
 @tag("Products")
 @summary("Create product team")
-op createProductTeam(@body body: CreateProductTeamRequest): Created<ProductTeam> | MutatingErrorResponses | ConflictResponse;
+op createProductTeam(@body body: CreateProductTeamRequest): Created<ProductTeam> | ValidationResourceErrorResponses;
 
 @route("/teams/{domainName}/{teamName}")
 @put

@@ -32,17 +32,30 @@ func httpStatusFromDomainError(err error) int {
 }
 
 type domainErrorResponder[T any] struct {
-	BadRequest func(BadRequestJSONResponse) T
-	Forbidden  func(ForbiddenJSONResponse) T
-	NotFound   func(NotFoundJSONResponse) T
-	Conflict   func(ConflictJSONResponse) T
-	Internal   func(InternalErrorJSONResponse) T
+	BadRequest     func(BadRequestJSONResponse) T
+	Forbidden      func(ForbiddenJSONResponse) T
+	NotFound       func(NotFoundJSONResponse) T
+	Conflict       func(ConflictJSONResponse) T
+	NotImplemented func(InternalErrorJSONResponse) T
+	Internal       func(InternalErrorJSONResponse) T
 }
 
 func respondDomainError[T any](err error, responder domainErrorResponder[T]) (T, bool) {
-	var zero T
+	return respondDomainErrorForOperation("", err, responder)
+}
 
-	switch httpStatusFromDomainError(err) {
+func respondDomainErrorForOperation[T any](operationID string, err error, responder domainErrorResponder[T]) (T, bool) {
+	var zero T
+	status := httpStatusFromDomainError(err)
+	if operationID != "" && !APIGenOperationAllowsStatus(operationID, status) {
+		if APIGenOperationAllowsStatus(operationID, http.StatusInternalServerError) {
+			status = http.StatusInternalServerError
+		} else {
+			return zero, false
+		}
+	}
+
+	switch status {
 	case http.StatusBadRequest:
 		if responder.BadRequest != nil {
 			return responder.BadRequest(badRequestErrorResponse(err)), true
@@ -58,6 +71,13 @@ func respondDomainError[T any](err error, responder domainErrorResponder[T]) (T,
 	case http.StatusConflict:
 		if responder.Conflict != nil {
 			return responder.Conflict(conflictErrorResponse(err)), true
+		}
+	case http.StatusNotImplemented:
+		if responder.NotImplemented != nil {
+			return responder.NotImplemented(internalErrorResponse(err)), true
+		}
+		if responder.Internal != nil {
+			return responder.Internal(internalErrorResponse(err)), true
 		}
 	default:
 		if responder.Internal != nil {

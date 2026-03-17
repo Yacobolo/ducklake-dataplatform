@@ -75,7 +75,7 @@ func catTestCtx() context.Context {
 
 var catFixedTime = time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
 
-func catStrPtr(s string) *string { return &s }
+func catStrPtr(s string) *string                         { return &s }
 func catMetastoreTypePtr(v MetastoreType) *MetastoreType { return &v }
 
 func catSampleRegistration() domain.CatalogRegistration {
@@ -198,13 +198,16 @@ func TestHandler_ListCatalogs(t *testing.T) {
 			},
 		},
 		{
-			name: "service error propagates",
+			name: "service error returns 500",
 			svcFn: func(_ context.Context, _ domain.PageRequest) ([]domain.CatalogRegistration, int64, error) {
 				return nil, 0, assert.AnError
 			},
 			assertFn: func(t *testing.T, resp GenListCatalogsResponse, err error) {
 				t.Helper()
-				require.Error(t, err)
+				require.NoError(t, err)
+				internal, ok := resp.(GenListCatalogs500JSONResponse)
+				require.True(t, ok, "expected 500 response, got %T", resp)
+				assert.Equal(t, int32(500), internal.Body.Code)
 			},
 		},
 		{

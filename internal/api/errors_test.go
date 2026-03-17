@@ -118,4 +118,16 @@ func TestRespondDomainError(t *testing.T) {
 		require.True(t, ok)
 		assert.Equal(t, 501, resp)
 	})
+
+	t.Run("operation-aware mapping falls back to internal responder for undocumented statuses", func(t *testing.T) {
+		t.Parallel()
+
+		resp, ok := respondDomainErrorForOperation[int]("getComputeEndpoint", domain.ErrNotImplemented("later"), domainErrorResponder[int]{
+			Internal: func(resp InternalErrorJSONResponse) int {
+				return int(resp.Body.Code)
+			},
+		})
+		require.True(t, ok)
+		assert.Equal(t, 501, resp)
+	})
 }

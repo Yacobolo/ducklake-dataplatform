@@ -16,6 +16,15 @@ namespace Duck;
 @@extension(revokeAllWebSessions, "x-apigen-manual", true);
 @@extension(getWebSessionStats, "x-authz", #{ mode: "admin_only" });
 @@extension(getWebSessionStats, "x-apigen-manual", true);
+@@extension(listPrincipals, "x-authz", #{ mode: "admin_only" });
+@@extension(listGroups, "x-authz", #{ mode: "admin_only" });
+@@extension(listGrants, "x-authz", #{ mode: "admin_only" });
+@@extension(listAuditLogs, "x-authz", #{ mode: "admin_only" });
+@@extension(listQueryHistory, "x-authz", #{ mode: "admin_only" });
+@@extension(listCatalogs, "x-authz", #{ mode: "admin_only" });
+@@extension(listComputeEndpoints, "x-authz", #{ mode: "admin_only" });
+@@extension(getComputeRoutingDefaults, "x-authz", #{ mode: "admin_only" });
+@@extension(updateComputeRoutingDefaults, "x-authz", #{ mode: "admin_only" });
 
 @@extension(createSchema, "x-authz", #{ mode: "privilege", checks: #[#{ securable_type: "catalog", privilege: "CREATE_SCHEMA", securable_id_source: "catalog_name_param" }] });
 @@extension(updateSchema, "x-authz", #{ mode: "privilege", checks: #[#{ securable_type: "schema", privilege: "CREATE_SCHEMA", securable_id_source: "runtime_resolved_object_id" }] });

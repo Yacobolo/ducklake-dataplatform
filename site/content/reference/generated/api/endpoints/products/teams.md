@@ -22,6 +22,7 @@ List product teams
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
@@ -42,9 +43,10 @@ Create product team
 | Code | Description |
 | --- | --- |
 | `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
-| `409` | The request conflicts with the current state of the server. |
+| `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
 
@@ -96,6 +98,7 @@ Delete product team
 | Code | Description |
 | --- | --- |
 | `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |

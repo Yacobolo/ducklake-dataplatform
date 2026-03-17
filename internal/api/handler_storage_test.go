@@ -928,13 +928,16 @@ func TestHandler_ListVolumes(t *testing.T) {
 			},
 		},
 		{
-			name: "service error propagates",
+			name: "service error returns 500",
 			svcFn: func(_ context.Context, _ string, _ string, _ string, _ domain.PageRequest) ([]domain.Volume, int64, error) {
 				return nil, 0, assert.AnError
 			},
 			assertFn: func(t *testing.T, resp GenListVolumesResponse, err error) {
 				t.Helper()
-				require.Error(t, err)
+				require.NoError(t, err)
+				internal, ok := resp.(ListVolumes500JSONResponse)
+				require.True(t, ok, "expected 500 response, got %T", resp)
+				assert.Equal(t, int32(500), internal.Body.Code)
 			},
 		},
 	}

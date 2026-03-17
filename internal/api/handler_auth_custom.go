@@ -38,7 +38,7 @@ type bootstrapTokenRequest struct {
 }
 
 type oidcProviderRequest struct {
-	Enabled      bool    `json:"enabled"`
+	Enabled      *bool   `json:"enabled"`
 	IssuerURL    *string `json:"issuer_url"`
 	JWKSURL      *string `json:"jwks_url"`
 	Audience     *string `json:"audience"`
@@ -165,9 +165,13 @@ func (h *AuthHTTPHandler) UpsertOIDCProvider(w http.ResponseWriter, r *http.Requ
 		writeAuthError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if req.Enabled == nil {
+		writeAuthError(w, http.StatusBadRequest, "enabled is required")
+		return
+	}
 
 	err := h.auth.UpsertOIDCProvider(r.Context(), &domain.AuthProviderConfig{
-		OIDCEnabled:         req.Enabled,
+		OIDCEnabled:         *req.Enabled,
 		OIDCIssuerURL:       normalizePtr(req.IssuerURL),
 		OIDCJWKSURL:         normalizePtr(req.JWKSURL),
 		OIDCAudience:        normalizePtr(req.Audience),

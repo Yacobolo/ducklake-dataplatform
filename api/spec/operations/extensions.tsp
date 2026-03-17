@@ -132,7 +132,7 @@ op listTagAssignments(
 @post
 @tag("Governance")
 @summary("Create tag assignment")
-op createTagAssignment(tagId: string, @body body: CreateTagAssignmentRequest): Created<TagAssignment> | MutatingErrorResponses;
+op createTagAssignment(tagId: string, @body body: CreateTagAssignmentRequest): Created<TagAssignment> | ValidationResourceErrorResponses;
 
 @route("/tag-assignments/{assignmentId}")
 @delete
@@ -212,14 +212,14 @@ op deleteExternalLocation(locationName: string): NoContent | ResourceErrorRespon
 @get
 @tag("Compute")
 @summary("List compute endpoints")
-op listComputeEndpoints(@query max_results?: int32, @query page_token?: string): Ok<PaginatedComputeEndpoints> | StandardErrorResponses;
+op listComputeEndpoints(@query max_results?: int32, @query page_token?: string): Ok<PaginatedComputeEndpoints> | GuardedReadErrorResponses;
 
 @route("/compute-endpoints")
 @post
 @tag("Compute")
 @summary("Create compute endpoint")
 @doc("Registers a compute endpoint that can execute remote workloads and accept assignment-based routing.")
-op createComputeEndpoint(@body body: CreateComputeEndpointRequest): Created<ComputeEndpoint> | MutatingErrorResponses;
+op createComputeEndpoint(@body body: CreateComputeEndpointRequest): Created<ComputeEndpoint> | ValidationResourceErrorResponses;
 
 @route("/compute-endpoints/{endpointName}")
 @get
@@ -249,7 +249,7 @@ op listComputeAssignments(endpointName: string, @query max_results?: int32, @que
 @post
 @tag("Compute")
 @summary("Create compute assignment")
-op createComputeAssignment(endpointName: string, @body body: CreateComputeAssignmentRequest): Created<ComputeAssignment> | MutatingErrorResponses;
+op createComputeAssignment(endpointName: string, @body body: CreateComputeAssignmentRequest): Created<ComputeAssignment> | ValidationResourceErrorResponses;
 
 @route("/compute-endpoints/{endpointName}/health")
 @get
@@ -267,7 +267,7 @@ op deleteComputeAssignment(endpointName: string, assignmentId: string): NoConten
 @get
 @tag("Compute")
 @summary("Get compute routing defaults")
-op getComputeRoutingDefaults(): Ok<ComputeRoutingDefaults> | StandardErrorResponses;
+op getComputeRoutingDefaults(): Ok<ComputeRoutingDefaults> | GuardedReadErrorResponses;
 
 @route("/compute-defaults")
 @patch(#{ implicitOptionality: true })

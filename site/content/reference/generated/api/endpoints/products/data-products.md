@@ -28,6 +28,7 @@ List data products
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
@@ -72,6 +73,7 @@ Get data product
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
@@ -123,6 +125,7 @@ Delete data product
 | Code | Description |
 | --- | --- |
 | `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -146,6 +149,7 @@ List data product dependencies
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
@@ -205,6 +209,7 @@ List data product events
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
@@ -227,6 +232,7 @@ List data product outputs
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
@@ -249,6 +255,7 @@ List data product semantic entrypoints
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
@@ -271,6 +278,7 @@ Get data product status
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |

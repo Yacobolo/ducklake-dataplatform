@@ -38,6 +38,11 @@ func TestEmit(t *testing.T) {
 	require.Contains(t, content, "type genStrictBridge struct")
 	require.Contains(t, content, "type GenStrictServerInterface interface")
 	require.Contains(t, content, "func DispatchAPIGenStrictOperation(operationID string, handler GenStrictServerInterface")
+	require.Contains(t, content, "type GenOperationContract struct")
+	require.Contains(t, content, "var genOperationContracts = map[string]GenOperationContract{")
+	require.Contains(t, content, "func GetAPIGenOperationContracts() map[string]GenOperationContract")
+	require.Contains(t, content, "func GetAPIGenOperationContract(operationID string) (GenOperationContract, bool)")
+	require.Contains(t, content, "func APIGenOperationAllowsStatus(operationID string, statusCode int) bool")
 }
 
 func TestEmit_UsesIRPathAsIs(t *testing.T) {
@@ -110,6 +115,45 @@ func TestEmit_DispatchParityAndHealthHandling(t *testing.T) {
 	require.Contains(t, content, "w.Header().Set(\"Content-Type\", \"application/json\")")
 	require.Contains(t, content, "_ = json.NewEncoder(w).Encode(map[string]string{\"status\": \"ok\"})")
 	require.NotContains(t, content, "dispatcher.GetHealth(w, r)")
+}
+
+func TestEmit_OperationContractsIncludeManualAndBodyMetadata(t *testing.T) {
+	t.Helper()
+
+	doc := ir.Document{
+		SchemaVersion: "v1",
+		Info:          ir.Info{Title: "t", Version: "1"},
+		Endpoints: []ir.Endpoint{
+			{
+				Method:      "post",
+				Path:        "/auth/local-login",
+				OperationID: "localLogin",
+				Tags:        []string{"Auth"},
+				RequestBody: &ir.RequestBody{Required: true, Schema: ir.SchemaRef{Ref: "LoginRequest"}},
+				Responses: []ir.Response{
+					{StatusCode: 200, Description: "ok"},
+					{StatusCode: 401, Description: "unauthorized"},
+				},
+				Extensions: map[string]any{
+					"x-apigen-manual": true,
+					"x-authz":         map[string]any{"mode": "none"},
+				},
+			},
+		},
+		Schemas: map[string]ir.Schema{
+			"LoginRequest": {Type: "object"},
+		},
+	}
+
+	b, err := Emit(doc)
+	require.NoError(t, err)
+	content := string(b)
+	require.Contains(t, content, `"localLogin": {OperationID: "localLogin", Method: "POST", Path: "/auth/local-login"`)
+	require.Contains(t, content, `DocumentedStatusCodes: []int{200, 400, 401, 403, 404, 409, 429, 500, 502}`)
+	require.Contains(t, content, `RequestBodyRequired: true`)
+	require.Contains(t, content, `AuthzMode: "none"`)
+	require.Contains(t, content, `Protected: true`)
+	require.Contains(t, content, `Manual: true`)
 }
 
 func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
@@ -194,10 +238,11 @@ func TestEmit_GeneratesStrictJSONBodyDecoding(t *testing.T) {
 	content := string(b)
 
 	require.Contains(t, content, "\"io\"")
-	require.Contains(t, content, "func decodeAPIGenJSONBody(body io.Reader, dest any) error {")
+	require.Contains(t, content, "func decodeAPIGenJSONBody(body io.Reader, dest any, requiredFields ...string) error {")
 	require.Contains(t, content, "decoder.DisallowUnknownFields()")
 	require.Contains(t, content, "return fmt.Errorf(\"request body must not be empty\")")
 	require.Contains(t, content, "return fmt.Errorf(\"request body must contain a single JSON value\")")
+	require.Contains(t, content, "decoder := json.NewDecoder(strings.NewReader(string(raw)))")
 	require.Contains(t, content, "if err := decodeAPIGenJSONBody(r.Body, &body); err != nil {")
 	require.Contains(t, content, "writeAPIGenError(w, http.StatusBadRequest, err.Error())")
 	require.Contains(t, content, "writeAPIGenError(w, http.StatusInternalServerError, err.Error())")

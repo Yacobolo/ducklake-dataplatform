@@ -40,7 +40,7 @@ type catalogService interface {
 func (h *APIHandler) GetCatalog(ctx context.Context, request GenGetCatalogRequest) (GenGetCatalogResponse, error) {
 	info, err := h.catalog.GetCatalogInfo(ctx, string(request.CatalogName))
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetCatalogResponse](err, domainErrorResponder[GenGetCatalogResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetCatalogResponse]("getCatalog", err, domainErrorResponder[GenGetCatalogResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetCatalogResponse {
 				return GenGetCatalog404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -59,7 +59,7 @@ func (h *APIHandler) GetCatalog(ctx context.Context, request GenGetCatalogReques
 func (h *APIHandler) GetCatalogVersionSummary(ctx context.Context, request GenGetCatalogVersionSummaryRequest) (GenGetCatalogVersionSummaryResponse, error) {
 	summary, err := h.catalog.GetCatalogVersionSummary(ctx, string(request.CatalogName))
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetCatalogVersionSummaryResponse](err, domainErrorResponder[GenGetCatalogVersionSummaryResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetCatalogVersionSummaryResponse]("getCatalogVersionSummary", err, domainErrorResponder[GenGetCatalogVersionSummaryResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetCatalogVersionSummaryResponse {
 				return GetCatalogVersionSummary404JSONResponse{resp}
 			},
@@ -92,7 +92,7 @@ func (h *APIHandler) ListCatalogHistory(ctx context.Context, request GenListCata
 
 	entries, err := h.catalog.ListCatalogHistory(ctx, string(request.CatalogName), filter)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListCatalogHistoryResponse](err, domainErrorResponder[GenListCatalogHistoryResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListCatalogHistoryResponse]("listCatalogHistory", err, domainErrorResponder[GenListCatalogHistoryResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenListCatalogHistoryResponse {
 				return ListCatalogHistory400JSONResponse{resp}
 			},
@@ -150,7 +150,7 @@ func (h *APIHandler) CreateSchema(ctx context.Context, request GenCreateSchemaRe
 	principal := principalFromCtx(ctx)
 	result, err := h.catalog.CreateSchema(ctx, string(request.CatalogName), principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateSchemaResponse](err, domainErrorResponder[GenCreateSchemaResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateSchemaResponse]("createSchema", err, domainErrorResponder[GenCreateSchemaResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateSchemaResponse { return CreateSchema400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateSchemaResponse { return CreateSchema403JSONResponse{resp} },
 			Conflict:   func(resp ConflictJSONResponse) GenCreateSchemaResponse { return CreateSchema409JSONResponse{resp} },
@@ -169,7 +169,7 @@ func (h *APIHandler) CreateSchema(ctx context.Context, request GenCreateSchemaRe
 func (h *APIHandler) GetSchema(ctx context.Context, request GenGetSchemaRequest) (GenGetSchemaResponse, error) {
 	result, err := h.catalog.GetSchema(ctx, string(request.CatalogName), request.SchemaName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetSchemaResponse](err, domainErrorResponder[GenGetSchemaResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetSchemaResponse]("getSchema", err, domainErrorResponder[GenGetSchemaResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetSchemaResponse {
 				return GenGetSchema404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -196,7 +196,7 @@ func (h *APIHandler) UpdateSchema(ctx context.Context, request GenUpdateSchemaRe
 	principal := principalFromCtx(ctx)
 	result, err := h.catalog.UpdateSchema(ctx, string(request.CatalogName), principal, request.SchemaName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateSchemaResponse](err, domainErrorResponder[GenUpdateSchemaResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateSchemaResponse]("updateSchema", err, domainErrorResponder[GenUpdateSchemaResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateSchemaResponse { return UpdateSchema403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenUpdateSchemaResponse { return UpdateSchema404JSONResponse{resp} },
 		}); ok {
@@ -239,7 +239,7 @@ func (h *APIHandler) ListTables(ctx context.Context, request GenListTablesReques
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	tables, total, err := h.catalog.ListTables(ctx, string(request.CatalogName), request.SchemaName, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListTablesResponse](err, domainErrorResponder[GenListTablesResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListTablesResponse]("listTables", err, domainErrorResponder[GenListTablesResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListTablesResponse {
 				return GenListTables404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -279,7 +279,7 @@ func (h *APIHandler) CreateTable(ctx context.Context, request GenCreateTableRequ
 	principal := principalFromCtx(ctx)
 	result, err := h.catalog.CreateTable(ctx, string(request.CatalogName), principal, request.SchemaName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateTableResponse](err, domainErrorResponder[GenCreateTableResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateTableResponse]("createTable", err, domainErrorResponder[GenCreateTableResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateTableResponse { return CreateTable400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateTableResponse { return CreateTable403JSONResponse{resp} },
 			NotFound: func(NotFoundJSONResponse) GenCreateTableResponse {
@@ -301,7 +301,7 @@ func (h *APIHandler) CreateTable(ctx context.Context, request GenCreateTableRequ
 func (h *APIHandler) GetTable(ctx context.Context, request GenGetTableRequest) (GenGetTableResponse, error) {
 	result, err := h.catalog.GetTable(ctx, string(request.CatalogName), request.SchemaName, request.TableName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetTableResponse](err, domainErrorResponder[GenGetTableResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetTableResponse]("getTable", err, domainErrorResponder[GenGetTableResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetTableResponse {
 				return GenGetTable404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -332,7 +332,7 @@ func (h *APIHandler) UpdateTable(ctx context.Context, request GenUpdateTableRequ
 	principal := principalFromCtx(ctx)
 	result, err := h.catalog.UpdateTable(ctx, string(request.CatalogName), principal, request.SchemaName, request.TableName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateTableResponse](err, domainErrorResponder[GenUpdateTableResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateTableResponse]("updateTable", err, domainErrorResponder[GenUpdateTableResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateTableResponse { return UpdateTable403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenUpdateTableResponse { return UpdateTable404JSONResponse{resp} },
 		}); ok {
@@ -350,7 +350,7 @@ func (h *APIHandler) UpdateTable(ctx context.Context, request GenUpdateTableRequ
 func (h *APIHandler) DeleteTable(ctx context.Context, request GenDeleteTableRequest) (GenDeleteTableResponse, error) {
 	principal := principalFromCtx(ctx)
 	if err := h.catalog.DeleteTable(ctx, string(request.CatalogName), principal, request.SchemaName, request.TableName); err != nil {
-		if resp, ok := respondDomainError[GenDeleteTableResponse](err, domainErrorResponder[GenDeleteTableResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteTableResponse]("deleteTable", err, domainErrorResponder[GenDeleteTableResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteTableResponse { return DeleteTable403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenDeleteTableResponse { return DeleteTable404JSONResponse{resp} },
 		}); ok {
@@ -366,7 +366,7 @@ func (h *APIHandler) ListTableColumns(ctx context.Context, request GenListTableC
 	page := pageFromParams(request.Params.MaxResults, request.Params.PageToken)
 	cols, total, err := h.catalog.ListColumns(ctx, string(request.CatalogName), request.SchemaName, request.TableName, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListTableColumnsResponse](err, domainErrorResponder[GenListTableColumnsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListTableColumnsResponse]("listTableColumns", err, domainErrorResponder[GenListTableColumnsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListTableColumnsResponse {
 				return GenListTableColumns404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -396,7 +396,7 @@ func (h *APIHandler) UpdateColumn(ctx context.Context, request GenUpdateColumnRe
 	principal := principalFromCtx(ctx)
 	result, err := h.catalog.UpdateColumn(ctx, string(request.CatalogName), principal, request.SchemaName, request.TableName, request.ColumnName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateColumnResponse](err, domainErrorResponder[GenUpdateColumnResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateColumnResponse]("updateColumn", err, domainErrorResponder[GenUpdateColumnResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateColumnResponse { return UpdateColumn403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenUpdateColumnResponse { return UpdateColumn404JSONResponse{resp} },
 		}); ok {
@@ -415,7 +415,7 @@ func (h *APIHandler) ProfileTable(ctx context.Context, request GenProfileTableRe
 	principal := principalFromCtx(ctx)
 	stats, err := h.catalog.ProfileTable(ctx, string(request.CatalogName), principal, request.SchemaName, request.TableName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenProfileTableResponse](err, domainErrorResponder[GenProfileTableResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenProfileTableResponse]("profileTable", err, domainErrorResponder[GenProfileTableResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenProfileTableResponse { return ProfileTable403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenProfileTableResponse { return ProfileTable404JSONResponse{resp} },
 		}); ok {

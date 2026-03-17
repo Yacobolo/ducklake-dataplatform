@@ -194,14 +194,17 @@ func TestHandler_ListComputeEndpoints(t *testing.T) {
 			},
 		},
 		{
-			name:   "service error propagates",
+			name:   "service error returns documented 500 response",
 			params: GenListComputeEndpointsParams{},
 			svcFn: func(_ context.Context, _ string, _ domain.PageRequest) ([]domain.ComputeEndpoint, int64, error) {
 				return nil, 0, assert.AnError
 			},
 			assertFn: func(t *testing.T, resp GenListComputeEndpointsResponse, err error) {
 				t.Helper()
-				require.Error(t, err)
+				require.NoError(t, err)
+				internal, ok := resp.(GenListComputeEndpoints500JSONResponse)
+				require.True(t, ok, "expected 500 response, got %T", resp)
+				assert.Equal(t, int32(500), internal.Body.Code)
 			},
 		},
 	}
@@ -287,7 +290,7 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 			},
 		},
 		{
-			name: "unknown error falls through to 400",
+			name: "unknown error returns documented 500",
 			body: GenCreateComputeEndpointJSONBody{Name: "fail", Url: "http://x", Type: LOCAL},
 			svcFn: func(_ context.Context, _ string, _ domain.CreateComputeEndpointRequest) (*domain.ComputeEndpoint, error) {
 				return nil, assert.AnError
@@ -295,9 +298,9 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeEndpointResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreateComputeEndpoint400JSONResponse)
-				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
-				assert.Equal(t, int32(400), badReq.Body.Code)
+				internal, ok := resp.(GenCreateComputeEndpoint500JSONResponse)
+				require.True(t, ok, "expected 500 response for unknown error, got %T", resp)
+				assert.Equal(t, int32(500), internal.Body.Code)
 			},
 		},
 	}
@@ -309,6 +312,52 @@ func TestHandler_CreateComputeEndpoint(t *testing.T) {
 			handler := &APIHandler{computeEndpoints: svc}
 			body := tt.body
 			resp, err := handler.CreateComputeEndpoint(computeTestCtx(), GenCreateComputeEndpointRequest{Body: &body})
+			tt.assertFn(t, resp, err)
+		})
+	}
+}
+
+func TestHandler_GetComputeRoutingDefaults_MapsDomainErrors(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		svcFn    func(ctx context.Context, principal string) (*domain.ComputeRoutingDefaults, error)
+		assertFn func(t *testing.T, resp GenGetComputeRoutingDefaultsResponse, err error)
+	}{
+		{
+			name: "forbidden returns 403",
+			svcFn: func(_ context.Context, _ string) (*domain.ComputeRoutingDefaults, error) {
+				return nil, domain.ErrAccessDenied("denied")
+			},
+			assertFn: func(t *testing.T, resp GenGetComputeRoutingDefaultsResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				forbidden, ok := resp.(GenGetComputeRoutingDefaults403JSONResponse)
+				require.True(t, ok, "expected 403 response, got %T", resp)
+				assert.Equal(t, int32(403), forbidden.Body.Code)
+			},
+		},
+		{
+			name: "unexpected error returns 500",
+			svcFn: func(_ context.Context, _ string) (*domain.ComputeRoutingDefaults, error) {
+				return nil, assert.AnError
+			},
+			assertFn: func(t *testing.T, resp GenGetComputeRoutingDefaultsResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				internal, ok := resp.(GenGetComputeRoutingDefaults500JSONResponse)
+				require.True(t, ok, "expected 500 response, got %T", resp)
+				assert.Equal(t, int32(500), internal.Body.Code)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			handler := &APIHandler{computeEndpoints: &mockComputeEndpointService{getDefaultsFn: tt.svcFn}}
+			resp, err := handler.GetComputeRoutingDefaults(computeTestCtx(), GenGetComputeRoutingDefaultsRequest{})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -636,7 +685,7 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 			},
 		},
 		{
-			name:         "unknown error falls through to 400",
+			name:         "unknown error returns documented 500",
 			endpointName: "analytics-xl",
 			body:         GenCreateComputeAssignmentJSONBody{PrincipalId: "u-1", PrincipalType: ComputeAssignmentPrincipalTypeUser},
 			svcFn: func(_ context.Context, _ string, _ string, _ domain.CreateComputeAssignmentRequest) (*domain.ComputeAssignment, error) {
@@ -645,9 +694,9 @@ func TestHandler_CreateComputeAssignment(t *testing.T) {
 			assertFn: func(t *testing.T, resp GenCreateComputeAssignmentResponse, err error) {
 				t.Helper()
 				require.NoError(t, err)
-				badReq, ok := resp.(CreateComputeAssignment400JSONResponse)
-				require.True(t, ok, "expected 400 response for unknown error, got %T", resp)
-				assert.Equal(t, int32(400), badReq.Body.Code)
+				internal, ok := resp.(GenCreateComputeAssignment500JSONResponse)
+				require.True(t, ok, "expected 500 response for unknown error, got %T", resp)
+				assert.Equal(t, int32(500), internal.Body.Code)
 			},
 		},
 	}

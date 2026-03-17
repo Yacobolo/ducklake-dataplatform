@@ -63,7 +63,7 @@ func (h *APIHandler) ListPrincipals(ctx context.Context, req GenListPrincipalsRe
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	ps, total, err := h.principals.List(ctx, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListPrincipalsResponse](err, domainErrorResponder[GenListPrincipalsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListPrincipalsResponse]("listPrincipals", err, domainErrorResponder[GenListPrincipalsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListPrincipalsResponse { return ListPrincipals403JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -94,7 +94,7 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req GenCreatePrincipal
 	}
 	result, err := h.principals.Create(ctx, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreatePrincipalResponse](err, domainErrorResponder[GenCreatePrincipalResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreatePrincipalResponse]("createPrincipal", err, domainErrorResponder[GenCreatePrincipalResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreatePrincipalResponse {
 				return CreatePrincipal400JSONResponse{resp}
 			},
@@ -119,7 +119,7 @@ func (h *APIHandler) CreatePrincipal(ctx context.Context, req GenCreatePrincipal
 func (h *APIHandler) GetPrincipal(ctx context.Context, req GenGetPrincipalRequest) (GenGetPrincipalResponse, error) {
 	p, err := h.principals.GetByID(ctx, req.PrincipalId)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetPrincipalResponse](err, domainErrorResponder[GenGetPrincipalResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetPrincipalResponse]("getPrincipal", err, domainErrorResponder[GenGetPrincipalResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetPrincipalResponse {
 				return GenGetPrincipal404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -137,7 +137,7 @@ func (h *APIHandler) GetPrincipal(ctx context.Context, req GenGetPrincipalReques
 // DeletePrincipal implements the endpoint for deleting a principal by ID.
 func (h *APIHandler) DeletePrincipal(ctx context.Context, req GenDeletePrincipalRequest) (GenDeletePrincipalResponse, error) {
 	if err := h.principals.Delete(ctx, req.PrincipalId); err != nil {
-		if resp, ok := respondDomainError[GenDeletePrincipalResponse](err, domainErrorResponder[GenDeletePrincipalResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeletePrincipalResponse]("deletePrincipal", err, domainErrorResponder[GenDeletePrincipalResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeletePrincipalResponse {
 				return DeletePrincipal403JSONResponse{resp}
 			},
@@ -155,7 +155,7 @@ func (h *APIHandler) DeletePrincipal(ctx context.Context, req GenDeletePrincipal
 // UpdatePrincipalAdmin implements the endpoint for updating a principal's admin status.
 func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req GenUpdatePrincipalAdminRequest) (GenUpdatePrincipalAdminResponse, error) {
 	if err := h.principals.SetAdmin(ctx, req.PrincipalId, req.Body.IsAdmin); err != nil {
-		if resp, ok := respondDomainError[GenUpdatePrincipalAdminResponse](err, domainErrorResponder[GenUpdatePrincipalAdminResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdatePrincipalAdminResponse]("updatePrincipalAdmin", err, domainErrorResponder[GenUpdatePrincipalAdminResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUpdatePrincipalAdminResponse {
 				return UpdatePrincipalAdmin403JSONResponse{resp}
 			},
@@ -177,7 +177,7 @@ func (h *APIHandler) ListGroups(ctx context.Context, req GenListGroupsRequest) (
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	gs, total, err := h.groups.List(ctx, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListGroupsResponse](err, domainErrorResponder[GenListGroupsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListGroupsResponse]("listGroups", err, domainErrorResponder[GenListGroupsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListGroupsResponse { return ListGroups403JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -203,7 +203,7 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req GenCreateGroupRequest)
 	}
 	result, err := h.groups.Create(ctx, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateGroupResponse](err, domainErrorResponder[GenCreateGroupResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateGroupResponse]("createGroup", err, domainErrorResponder[GenCreateGroupResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateGroupResponse { return CreateGroup400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateGroupResponse { return CreateGroup403JSONResponse{resp} },
 			Conflict:   func(resp ConflictJSONResponse) GenCreateGroupResponse { return CreateGroup409JSONResponse{resp} },
@@ -222,7 +222,7 @@ func (h *APIHandler) CreateGroup(ctx context.Context, req GenCreateGroupRequest)
 func (h *APIHandler) GetGroup(ctx context.Context, req GenGetGroupRequest) (GenGetGroupResponse, error) {
 	g, err := h.groups.GetByID(ctx, req.GroupId)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetGroupResponse](err, domainErrorResponder[GenGetGroupResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetGroupResponse]("getGroup", err, domainErrorResponder[GenGetGroupResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetGroupResponse {
 				return GenGetGroup404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -248,7 +248,7 @@ func (h *APIHandler) UpdateGroup(ctx context.Context, req GenUpdateGroupRequest)
 	}
 	group, err := h.groups.Update(ctx, req.GroupId, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateGroupResponse](err, domainErrorResponder[GenUpdateGroupResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateGroupResponse]("updateGroup", err, domainErrorResponder[GenUpdateGroupResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateGroupResponse { return UpdateGroup400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenUpdateGroupResponse { return UpdateGroup403JSONResponse{resp} },
 			NotFound:   func(resp NotFoundJSONResponse) GenUpdateGroupResponse { return UpdateGroup404JSONResponse{resp} },
@@ -267,7 +267,7 @@ func (h *APIHandler) UpdateGroup(ctx context.Context, req GenUpdateGroupRequest)
 // DeleteGroup implements the endpoint for deleting a group by ID.
 func (h *APIHandler) DeleteGroup(ctx context.Context, req GenDeleteGroupRequest) (GenDeleteGroupResponse, error) {
 	if err := h.groups.Delete(ctx, req.GroupId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteGroupResponse](err, domainErrorResponder[GenDeleteGroupResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteGroupResponse]("deleteGroup", err, domainErrorResponder[GenDeleteGroupResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteGroupResponse { return DeleteGroup403JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -282,7 +282,7 @@ func (h *APIHandler) ListGroupMembers(ctx context.Context, req GenListGroupMembe
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	ms, total, err := h.groups.ListMembers(ctx, req.GroupId, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListGroupMembersResponse](err, domainErrorResponder[GenListGroupMembersResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListGroupMembersResponse]("listGroupMembers", err, domainErrorResponder[GenListGroupMembersResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenListGroupMembersResponse {
 				return ListGroupMembers400JSONResponse{resp}
 			},
@@ -315,7 +315,7 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req GenCreateGroupMe
 		MemberType: string(req.Body.MemberType),
 		MemberID:   req.Body.MemberId,
 	}); err != nil {
-		if resp, ok := respondDomainError[GenCreateGroupMemberResponse](err, domainErrorResponder[GenCreateGroupMemberResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateGroupMemberResponse]("createGroupMember", err, domainErrorResponder[GenCreateGroupMemberResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateGroupMemberResponse {
 				return CreateGroupMember400JSONResponse{resp}
 			},
@@ -340,7 +340,7 @@ func (h *APIHandler) DeleteGroupMember(ctx context.Context, req GenDeleteGroupMe
 		MemberType: string(req.Params.MemberType),
 		MemberID:   req.Params.MemberId,
 	}); err != nil {
-		if resp, ok := respondDomainError[GenDeleteGroupMemberResponse](err, domainErrorResponder[GenDeleteGroupMemberResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteGroupMemberResponse]("deleteGroupMember", err, domainErrorResponder[GenDeleteGroupMemberResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeleteGroupMemberResponse {
 				return DeleteGroupMember400JSONResponse{resp}
 			},
@@ -376,8 +376,11 @@ func (h *APIHandler) ListGrants(ctx context.Context, req GenListGrantsRequest) (
 		grants, total, err = h.grants.ListAll(ctx, page)
 	}
 	if err != nil {
-		if resp, ok := respondDomainError[GenListGrantsResponse](err, domainErrorResponder[GenListGrantsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListGrantsResponse]("listGrants", err, domainErrorResponder[GenListGrantsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListGrantsResponse { return ListGrants403JSONResponse{resp} },
+			Internal: func(resp InternalErrorJSONResponse) GenListGrantsResponse {
+				return GenListGrants500JSONResponse{GenInternalErrorJSONResponse(resp)}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -406,9 +409,13 @@ func (h *APIHandler) CreateGrant(ctx context.Context, req GenCreateGrantRequest)
 	}
 	result, err := h.grants.Grant(ctx, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateGrantResponse](err, domainErrorResponder[GenCreateGrantResponse]{
-			Conflict:  func(resp ConflictJSONResponse) GenCreateGrantResponse { return CreateGrant409JSONResponse{resp} },
-			Forbidden: func(resp ForbiddenJSONResponse) GenCreateGrantResponse { return CreateGrant403JSONResponse{resp} },
+		if resp, ok := respondDomainErrorForOperation[GenCreateGrantResponse]("createGrant", err, domainErrorResponder[GenCreateGrantResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateGrantResponse { return CreateGrant400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateGrantResponse { return CreateGrant403JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenCreateGrantResponse { return CreateGrant409JSONResponse{resp} },
+			Internal: func(resp InternalErrorJSONResponse) GenCreateGrantResponse {
+				return GenCreateGrant500JSONResponse{GenInternalErrorJSONResponse(resp)}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -425,7 +432,7 @@ func (h *APIHandler) DeleteGrant(ctx context.Context, req GenDeleteGrantRequest)
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.grants.Revoke(ctx, principal, req.GrantId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteGrantResponse](err, domainErrorResponder[GenDeleteGrantResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteGrantResponse]("deleteGrant", err, domainErrorResponder[GenDeleteGrantResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteGrantResponse { return DeleteGrant403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenDeleteGrantResponse { return DeleteGrant404JSONResponse{resp} },
 		}); ok {
@@ -443,7 +450,7 @@ func (h *APIHandler) ListRowFilters(ctx context.Context, req GenListRowFiltersRe
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	fs, total, err := h.rowFilters.GetForTable(ctx, req.TableId, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListRowFiltersResponse](err, domainErrorResponder[GenListRowFiltersResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListRowFiltersResponse]("listRowFilters", err, domainErrorResponder[GenListRowFiltersResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListRowFiltersResponse { return ListRowFilters403JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -473,7 +480,7 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req GenCreateRowFilter
 	}
 	result, err := h.rowFilters.Create(ctx, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateRowFilterResponse](err, domainErrorResponder[GenCreateRowFilterResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateRowFilterResponse]("createRowFilter", err, domainErrorResponder[GenCreateRowFilterResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateRowFilterResponse {
 				return CreateRowFilter400JSONResponse{resp}
 			},
@@ -497,7 +504,7 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req GenCreateRowFilter
 // DeleteRowFilter implements the endpoint for deleting a row filter.
 func (h *APIHandler) DeleteRowFilter(ctx context.Context, req GenDeleteRowFilterRequest) (GenDeleteRowFilterResponse, error) {
 	if err := h.rowFilters.Delete(ctx, req.RowFilterId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteRowFilterResponse](err, domainErrorResponder[GenDeleteRowFilterResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteRowFilterResponse]("deleteRowFilter", err, domainErrorResponder[GenDeleteRowFilterResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteRowFilterResponse {
 				return DeleteRowFilter403JSONResponse{resp}
 			},
@@ -519,7 +526,7 @@ func (h *APIHandler) BindRowFilter(ctx context.Context, req GenBindRowFilterRequ
 		PrincipalID:   req.Body.PrincipalId,
 		PrincipalType: string(req.Body.PrincipalType),
 	}); err != nil {
-		if resp, ok := respondDomainError[GenBindRowFilterResponse](err, domainErrorResponder[GenBindRowFilterResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenBindRowFilterResponse]("bindRowFilter", err, domainErrorResponder[GenBindRowFilterResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenBindRowFilterResponse { return BindRowFilter400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenBindRowFilterResponse { return BindRowFilter403JSONResponse{resp} },
 		}); ok {
@@ -568,7 +575,7 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req GenUnbindRowFilter
 		PrincipalID:   req.Params.PrincipalId,
 		PrincipalType: string(req.Params.PrincipalType),
 	}); err != nil {
-		if resp, ok := respondDomainError[GenUnbindRowFilterResponse](err, domainErrorResponder[GenUnbindRowFilterResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUnbindRowFilterResponse]("unbindRowFilter", err, domainErrorResponder[GenUnbindRowFilterResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUnbindRowFilterResponse {
 				return UnbindRowFilter403JSONResponse{resp}
 			},
@@ -616,7 +623,7 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req GenCreateColumnMa
 	}
 	result, err := h.columnMasks.Create(ctx, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateColumnMaskResponse](err, domainErrorResponder[GenCreateColumnMaskResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateColumnMaskResponse]("createColumnMask", err, domainErrorResponder[GenCreateColumnMaskResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateColumnMaskResponse {
 				return CreateColumnMask400JSONResponse{resp}
 			},
@@ -640,7 +647,7 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req GenCreateColumnMa
 // DeleteColumnMask implements the endpoint for deleting a column mask.
 func (h *APIHandler) DeleteColumnMask(ctx context.Context, req GenDeleteColumnMaskRequest) (GenDeleteColumnMaskResponse, error) {
 	if err := h.columnMasks.Delete(ctx, req.ColumnMaskId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteColumnMaskResponse](err, domainErrorResponder[GenDeleteColumnMaskResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteColumnMaskResponse]("deleteColumnMask", err, domainErrorResponder[GenDeleteColumnMaskResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteColumnMaskResponse {
 				return DeleteColumnMask403JSONResponse{resp}
 			},
@@ -667,7 +674,7 @@ func (h *APIHandler) BindColumnMask(ctx context.Context, req GenBindColumnMaskRe
 		PrincipalType: string(req.Body.PrincipalType),
 		SeeOriginal:   seeOriginal,
 	}); err != nil {
-		if resp, ok := respondDomainError[GenBindColumnMaskResponse](err, domainErrorResponder[GenBindColumnMaskResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenBindColumnMaskResponse]("bindColumnMask", err, domainErrorResponder[GenBindColumnMaskResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenBindColumnMaskResponse {
 				return BindColumnMask400JSONResponse{resp}
 			},
@@ -719,7 +726,7 @@ func (h *APIHandler) UnbindColumnMask(ctx context.Context, req GenUnbindColumnMa
 		PrincipalID:   req.Params.PrincipalId,
 		PrincipalType: string(req.Params.PrincipalType),
 	}); err != nil {
-		if resp, ok := respondDomainError[GenUnbindColumnMaskResponse](err, domainErrorResponder[GenUnbindColumnMaskResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUnbindColumnMaskResponse]("unbindColumnMask", err, domainErrorResponder[GenUnbindColumnMaskResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUnbindColumnMaskResponse {
 				return UnbindColumnMask403JSONResponse{resp}
 			},

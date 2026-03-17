@@ -95,6 +95,16 @@ func TestAuthHTTPHandler_OIDCProviderEndpoints(t *testing.T) {
 		assert.Equal(t, "https://issuer.example.com", resp["issuer_url"])
 		assert.Equal(t, true, resp["secret_stored"])
 	})
+
+	t.Run("admin_upsert_requires_enabled", func(t *testing.T) {
+		payload := []byte(`{"issuer_url":"https://issuer.example.com"}`)
+		putReq := httptest.NewRequest(http.MethodPut, "/v1/auth/provider/oidc", bytes.NewReader(payload))
+		putReq = putReq.WithContext(domain.WithPrincipal(putReq.Context(), domain.ContextPrincipal{Name: "admin", IsAdmin: true, Type: "user"}))
+		putRR := httptest.NewRecorder()
+		h.UpsertOIDCProvider(putRR, putReq)
+		require.Equal(t, http.StatusBadRequest, putRR.Code)
+		assert.Contains(t, putRR.Body.String(), "enabled is required")
+	})
 }
 
 func setupAuthHandler(t *testing.T) (*AuthHTTPHandler, *authsvc.Service) {

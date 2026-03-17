@@ -25,7 +25,9 @@ List audit logs
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
 
@@ -47,6 +49,7 @@ Submits a SQL query for asynchronous execution and returns a query job identifie
 | Code | Description |
 | --- | --- |
 | `202` | The request has been accepted for processing, but processing has not yet completed. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `429` | Client error |
@@ -69,6 +72,7 @@ Get query
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -92,6 +96,7 @@ Delete query
 | Code | Description |
 | --- | --- |
 | `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `429` | Client error |
@@ -114,6 +119,7 @@ Cancel query
 | Code | Description |
 | --- | --- |
 | `202` | The request has been accepted for processing, but processing has not yet completed. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -146,6 +152,7 @@ Returns a page of rows for a previously submitted query using the stored query j
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
@@ -170,6 +177,7 @@ Executes a SQL statement synchronously and returns the first page of results in 
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `429` | Client error |
@@ -199,7 +207,9 @@ Lists recorded query executions and supports filtering by principal, decision st
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
 
@@ -224,6 +234,7 @@ Search catalog
 | Code | Description |
 | --- | --- |
 | `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |

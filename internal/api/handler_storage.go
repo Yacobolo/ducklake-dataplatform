@@ -41,7 +41,7 @@ func (h *APIHandler) ListStorageCredentials(ctx context.Context, req GenListStor
 	principal := principalFromCtx(ctx)
 	creds, total, err := h.storageCreds.List(ctx, principal, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListStorageCredentialsResponse](err, domainErrorResponder[GenListStorageCredentialsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListStorageCredentialsResponse]("listStorageCredentials", err, domainErrorResponder[GenListStorageCredentialsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListStorageCredentialsResponse {
 				return GenListStorageCredentials403JSONResponse{resp}
 			},
@@ -94,7 +94,7 @@ func (h *APIHandler) CreateStorageCredential(ctx context.Context, req GenCreateS
 	principal := cp.Name
 	result, err := h.storageCreds.Create(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateStorageCredentialResponse](err, domainErrorResponder[GenCreateStorageCredentialResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateStorageCredentialResponse]("createStorageCredential", err, domainErrorResponder[GenCreateStorageCredentialResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateStorageCredentialResponse {
 				return CreateStorageCredential400JSONResponse{resp}
 			},
@@ -120,7 +120,7 @@ func (h *APIHandler) GetStorageCredential(ctx context.Context, req GenGetStorage
 	principal := principalFromCtx(ctx)
 	result, err := h.storageCreds.GetByName(ctx, principal, req.CredentialName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetStorageCredentialResponse](err, domainErrorResponder[GenGetStorageCredentialResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetStorageCredentialResponse]("getStorageCredential", err, domainErrorResponder[GenGetStorageCredentialResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenGetStorageCredentialResponse {
 				return GenGetStorageCredential403JSONResponse{resp}
 			},
@@ -157,7 +157,7 @@ func (h *APIHandler) UpdateStorageCredential(ctx context.Context, req GenUpdateS
 	principal := cp.Name
 	result, err := h.storageCreds.Update(ctx, principal, req.CredentialName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateStorageCredentialResponse](err, domainErrorResponder[GenUpdateStorageCredentialResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateStorageCredentialResponse]("updateStorageCredential", err, domainErrorResponder[GenUpdateStorageCredentialResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateStorageCredentialResponse {
 				return UpdateStorageCredential403JSONResponse{resp}
 			},
@@ -180,7 +180,7 @@ func (h *APIHandler) DeleteStorageCredential(ctx context.Context, req GenDeleteS
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.storageCreds.Delete(ctx, principal, req.CredentialName); err != nil {
-		if resp, ok := respondDomainError[GenDeleteStorageCredentialResponse](err, domainErrorResponder[GenDeleteStorageCredentialResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteStorageCredentialResponse]("deleteStorageCredential", err, domainErrorResponder[GenDeleteStorageCredentialResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteStorageCredentialResponse {
 				return DeleteStorageCredential403JSONResponse{resp}
 			},
@@ -203,7 +203,7 @@ func (h *APIHandler) ListExternalLocations(ctx context.Context, req GenListExter
 	principal := principalFromCtx(ctx)
 	locs, total, err := h.externalLocations.List(ctx, principal, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListExternalLocationsResponse](err, domainErrorResponder[GenListExternalLocationsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListExternalLocationsResponse]("listExternalLocations", err, domainErrorResponder[GenListExternalLocationsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListExternalLocationsResponse {
 				return GenListExternalLocations403JSONResponse{resp}
 			},
@@ -247,7 +247,7 @@ func (h *APIHandler) CreateExternalLocation(ctx context.Context, req GenCreateEx
 	principal := cp.Name
 	result, err := h.externalLocations.Create(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateExternalLocationResponse](err, domainErrorResponder[GenCreateExternalLocationResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateExternalLocationResponse]("createExternalLocation", err, domainErrorResponder[GenCreateExternalLocationResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateExternalLocationResponse {
 				return CreateExternalLocation400JSONResponse{resp}
 			},
@@ -276,7 +276,7 @@ func (h *APIHandler) GetExternalLocation(ctx context.Context, req GenGetExternal
 	principal := principalFromCtx(ctx)
 	result, err := h.externalLocations.GetByName(ctx, principal, req.LocationName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetExternalLocationResponse](err, domainErrorResponder[GenGetExternalLocationResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetExternalLocationResponse]("getExternalLocation", err, domainErrorResponder[GenGetExternalLocationResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenGetExternalLocationResponse {
 				return GenGetExternalLocation403JSONResponse{resp}
 			},
@@ -311,7 +311,7 @@ func (h *APIHandler) UpdateExternalLocation(ctx context.Context, req GenUpdateEx
 	principal := cp.Name
 	result, err := h.externalLocations.Update(ctx, principal, req.LocationName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateExternalLocationResponse](err, domainErrorResponder[GenUpdateExternalLocationResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateExternalLocationResponse]("updateExternalLocation", err, domainErrorResponder[GenUpdateExternalLocationResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateExternalLocationResponse {
 				return UpdateExternalLocation403JSONResponse{resp}
 			},
@@ -334,7 +334,7 @@ func (h *APIHandler) DeleteExternalLocation(ctx context.Context, req GenDeleteEx
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.externalLocations.Delete(ctx, principal, req.LocationName); err != nil {
-		if resp, ok := respondDomainError[GenDeleteExternalLocationResponse](err, domainErrorResponder[GenDeleteExternalLocationResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteExternalLocationResponse]("deleteExternalLocation", err, domainErrorResponder[GenDeleteExternalLocationResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteExternalLocationResponse {
 				return DeleteExternalLocation403JSONResponse{resp}
 			},
@@ -393,6 +393,19 @@ func (h *APIHandler) ListVolumes(ctx context.Context, request GenListVolumesRequ
 	principal := principalFromCtx(ctx)
 	vols, total, err := h.volumes.List(ctx, principal, string(request.CatalogName), request.SchemaName, page)
 	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenListVolumesResponse]("listVolumes", err, domainErrorResponder[GenListVolumesResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListVolumesResponse {
+				return ListVolumes403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListVolumesResponse {
+				return ListVolumes404JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenListVolumesResponse {
+				return ListVolumes500JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
 		return nil, err
 	}
 
@@ -425,7 +438,7 @@ func (h *APIHandler) CreateVolume(ctx context.Context, request GenCreateVolumeRe
 	principal := principalFromCtx(ctx)
 	result, err := h.volumes.Create(ctx, principal, string(request.CatalogName), request.SchemaName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateVolumeResponse](err, domainErrorResponder[GenCreateVolumeResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateVolumeResponse]("createVolume", err, domainErrorResponder[GenCreateVolumeResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateVolumeResponse {
 				return CreateVolume400JSONResponse{resp}
 			},
@@ -451,7 +464,7 @@ func (h *APIHandler) GetVolume(ctx context.Context, request GenGetVolumeRequest)
 	principal := principalFromCtx(ctx)
 	result, err := h.volumes.GetByName(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetVolumeResponse](err, domainErrorResponder[GenGetVolumeResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetVolumeResponse]("getVolume", err, domainErrorResponder[GenGetVolumeResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetVolumeResponse {
 				return GenGetVolume404JSONResponse{resp}
 			},
@@ -477,7 +490,7 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, request GenUpdateVolumeRe
 	principal := principalFromCtx(ctx)
 	result, err := h.volumes.Update(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateVolumeResponse](err, domainErrorResponder[GenUpdateVolumeResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateVolumeResponse]("updateVolume", err, domainErrorResponder[GenUpdateVolumeResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateVolumeResponse {
 				return UpdateVolume403JSONResponse{resp}
 			},
@@ -499,7 +512,7 @@ func (h *APIHandler) UpdateVolume(ctx context.Context, request GenUpdateVolumeRe
 func (h *APIHandler) DeleteVolume(ctx context.Context, request GenDeleteVolumeRequest) (GenDeleteVolumeResponse, error) {
 	principal := principalFromCtx(ctx)
 	if err := h.volumes.Delete(ctx, principal, string(request.CatalogName), request.SchemaName, request.VolumeName); err != nil {
-		if resp, ok := respondDomainError[GenDeleteVolumeResponse](err, domainErrorResponder[GenDeleteVolumeResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteVolumeResponse]("deleteVolume", err, domainErrorResponder[GenDeleteVolumeResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteVolumeResponse {
 				return DeleteVolume403JSONResponse{resp}
 			},

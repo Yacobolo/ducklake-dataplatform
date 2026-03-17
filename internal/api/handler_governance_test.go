@@ -892,6 +892,21 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 		assertFn func(t *testing.T, resp GenCreateTagAssignmentResponse, err error)
 	}{
 		{
+			name:  "missing body returns 400",
+			tagID: "tag-1",
+			svcFn: func(_ context.Context, _ string, _ domain.AssignTagRequest) (*domain.TagAssignment, error) {
+				t.Fatal("assign service should not be called when body is missing")
+				return nil, nil
+			},
+			assertFn: func(t *testing.T, resp GenCreateTagAssignmentResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				badReq, ok := resp.(CreateTagAssignment400JSONResponse)
+				require.True(t, ok, "expected 400 response, got %T", resp)
+				assert.Equal(t, int32(400), badReq.Body.Code)
+			},
+		},
+		{
 			name:  "happy path returns 201",
 			tagID: "tag-1",
 			body:  GenCreateTagAssignmentJSONBody{SecurableType: "table", SecurableId: "table-1"},
@@ -905,6 +920,21 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 				created, ok := resp.(GenCreateTagAssignment201JSONResponse)
 				require.True(t, ok, "expected 201 response, got %T", resp)
 				assert.Equal(t, "ta-1", *created.Body.Id)
+			},
+		},
+		{
+			name:  "validation error returns 400",
+			tagID: "tag-1",
+			body:  GenCreateTagAssignmentJSONBody{SecurableType: "table", SecurableId: "table-1"},
+			svcFn: func(_ context.Context, _ string, _ domain.AssignTagRequest) (*domain.TagAssignment, error) {
+				return nil, domain.ErrValidation("securable_type is required")
+			},
+			assertFn: func(t *testing.T, resp GenCreateTagAssignmentResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				badReq, ok := resp.(CreateTagAssignment400JSONResponse)
+				require.True(t, ok, "expected 400 response, got %T", resp)
+				assert.Equal(t, int32(400), badReq.Body.Code)
 			},
 		},
 		{
@@ -923,7 +953,7 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 			},
 		},
 		{
-			name:  "unknown error propagates",
+			name:  "unexpected error returns 500",
 			tagID: "tag-1",
 			body:  GenCreateTagAssignmentJSONBody{SecurableType: "table", SecurableId: "table-1"},
 			svcFn: func(_ context.Context, _ string, _ domain.AssignTagRequest) (*domain.TagAssignment, error) {
@@ -931,7 +961,10 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 			},
 			assertFn: func(t *testing.T, resp GenCreateTagAssignmentResponse, err error) {
 				t.Helper()
-				require.Error(t, err)
+				require.NoError(t, err)
+				internal, ok := resp.(GenCreateTagAssignment500JSONResponse)
+				require.True(t, ok, "expected 500 response, got %T", resp)
+				assert.Equal(t, int32(500), internal.Body.Code)
 			},
 		},
 	}
@@ -941,10 +974,14 @@ func TestHandler_CreateTagAssignment(t *testing.T) {
 			t.Parallel()
 			svc := &mockTagService{assignTagFn: tt.svcFn}
 			handler := &APIHandler{tags: svc}
-			body := tt.body
+			var body *GenCreateTagAssignmentJSONBody
+			if tt.name != "missing body returns 400" {
+				copyBody := tt.body
+				body = &copyBody
+			}
 			resp, err := handler.CreateTagAssignment(govTestCtx(), GenCreateTagAssignmentRequest{
 				TagId: tt.tagID,
-				Body:  &body,
+				Body:  body,
 			})
 			tt.assertFn(t, resp, err)
 		})

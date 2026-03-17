@@ -676,6 +676,20 @@ func TestHandler_ListGrants(t *testing.T) {
 				assert.Equal(t, int32(403), forbidden.Body.Code)
 			},
 		},
+		{
+			name:   "unexpected error returns 500",
+			params: GenListGrantsParams{},
+			listAllFn: func(_ context.Context, _ domain.PageRequest) ([]domain.PrivilegeGrant, int64, error) {
+				return nil, 0, assert.AnError
+			},
+			assertFn: func(t *testing.T, resp GenListGrantsResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				internal, ok := resp.(GenListGrants500JSONResponse)
+				require.True(t, ok, "expected 500 response, got %T", resp)
+				assert.Equal(t, int32(500), internal.Body.Code)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -688,6 +702,108 @@ func TestHandler_ListGrants(t *testing.T) {
 			}
 			handler := &APIHandler{grants: svc}
 			resp, err := handler.ListGrants(secTestCtx(), GenListGrantsRequest{Params: tt.params})
+			tt.assertFn(t, resp, err)
+		})
+	}
+}
+
+func TestHandler_CreateGrant(t *testing.T) {
+	t.Parallel()
+
+	baseBody := GenCreateGrantJSONBody{
+		PrincipalId:   "p-1",
+		PrincipalType: PrincipalType("user"),
+		SecurableType: "table",
+		SecurableId:   "t-1",
+		Privilege:     "SELECT",
+	}
+
+	tests := []struct {
+		name     string
+		body     GenCreateGrantJSONBody
+		svcFn    func(ctx context.Context, req domain.CreateGrantRequest) (*domain.PrivilegeGrant, error)
+		assertFn func(t *testing.T, resp GenCreateGrantResponse, err error)
+	}{
+		{
+			name: "happy path returns 201",
+			body: baseBody,
+			svcFn: func(_ context.Context, _ domain.CreateGrantRequest) (*domain.PrivilegeGrant, error) {
+				grant := secSampleGrant()
+				return &grant, nil
+			},
+			assertFn: func(t *testing.T, resp GenCreateGrantResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				created, ok := resp.(GenCreateGrant201JSONResponse)
+				require.True(t, ok, "expected 201 response, got %T", resp)
+				assert.Equal(t, "grant-1", created.Body.Id)
+			},
+		},
+		{
+			name: "validation error returns 400",
+			body: baseBody,
+			svcFn: func(_ context.Context, _ domain.CreateGrantRequest) (*domain.PrivilegeGrant, error) {
+				return nil, domain.ErrValidation("principal_id is required")
+			},
+			assertFn: func(t *testing.T, resp GenCreateGrantResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				badReq, ok := resp.(CreateGrant400JSONResponse)
+				require.True(t, ok, "expected 400 response, got %T", resp)
+				assert.Equal(t, int32(400), badReq.Body.Code)
+			},
+		},
+		{
+			name: "access denied returns 403",
+			body: baseBody,
+			svcFn: func(_ context.Context, _ domain.CreateGrantRequest) (*domain.PrivilegeGrant, error) {
+				return nil, domain.ErrAccessDenied("not allowed")
+			},
+			assertFn: func(t *testing.T, resp GenCreateGrantResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				forbidden, ok := resp.(CreateGrant403JSONResponse)
+				require.True(t, ok, "expected 403 response, got %T", resp)
+				assert.Equal(t, int32(403), forbidden.Body.Code)
+			},
+		},
+		{
+			name: "conflict returns 409",
+			body: baseBody,
+			svcFn: func(_ context.Context, _ domain.CreateGrantRequest) (*domain.PrivilegeGrant, error) {
+				return nil, domain.ErrConflict("grant already exists")
+			},
+			assertFn: func(t *testing.T, resp GenCreateGrantResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				conflict, ok := resp.(CreateGrant409JSONResponse)
+				require.True(t, ok, "expected 409 response, got %T", resp)
+				assert.Equal(t, int32(409), conflict.Body.Code)
+			},
+		},
+		{
+			name: "unexpected error returns 500",
+			body: baseBody,
+			svcFn: func(_ context.Context, _ domain.CreateGrantRequest) (*domain.PrivilegeGrant, error) {
+				return nil, assert.AnError
+			},
+			assertFn: func(t *testing.T, resp GenCreateGrantResponse, err error) {
+				t.Helper()
+				require.NoError(t, err)
+				internal, ok := resp.(GenCreateGrant500JSONResponse)
+				require.True(t, ok, "expected 500 response, got %T", resp)
+				assert.Equal(t, int32(500), internal.Body.Code)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			svc := &mockGrantService{grantFn: tt.svcFn}
+			handler := &APIHandler{grants: svc}
+			body := tt.body
+			resp, err := handler.CreateGrant(secTestCtx(), GenCreateGrantRequest{Body: &body})
 			tt.assertFn(t, resp, err)
 		})
 	}

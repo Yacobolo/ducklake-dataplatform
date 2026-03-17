@@ -92,7 +92,7 @@ func (h *APIHandler) CreateModel(ctx context.Context, req GenCreateModelRequest)
 	principal := cp.Name
 	result, err := h.models.CreateModel(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateModelResponse](err, domainErrorResponder[GenCreateModelResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateModelResponse]("createModel", err, domainErrorResponder[GenCreateModelResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateModelResponse { return CreateModel400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateModelResponse { return CreateModel403JSONResponse{resp} },
 			Conflict:   func(resp ConflictJSONResponse) GenCreateModelResponse { return CreateModel409JSONResponse{resp} },
@@ -111,7 +111,7 @@ func (h *APIHandler) CreateModel(ctx context.Context, req GenCreateModelRequest)
 func (h *APIHandler) GetModel(ctx context.Context, req GenGetModelRequest) (GenGetModelResponse, error) {
 	result, err := h.models.GetModel(ctx, req.ProjectName, req.ModelName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetModelResponse](err, domainErrorResponder[GenGetModelResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetModelResponse]("getModel", err, domainErrorResponder[GenGetModelResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetModelResponse {
 				return GenGetModel404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -156,7 +156,7 @@ func (h *APIHandler) UpdateModel(ctx context.Context, req GenUpdateModelRequest)
 	principal := cp.Name
 	result, err := h.models.UpdateModel(ctx, principal, req.ProjectName, req.ModelName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateModelResponse](err, domainErrorResponder[GenUpdateModelResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateModelResponse]("updateModel", err, domainErrorResponder[GenUpdateModelResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateModelResponse { return UpdateModel400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenUpdateModelResponse { return UpdateModel403JSONResponse{resp} },
 			NotFound:   func(resp NotFoundJSONResponse) GenUpdateModelResponse { return UpdateModel404JSONResponse{resp} },
@@ -176,7 +176,7 @@ func (h *APIHandler) DeleteModel(ctx context.Context, req GenDeleteModelRequest)
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.models.DeleteModel(ctx, principal, req.ProjectName, req.ModelName); err != nil {
-		if resp, ok := respondDomainError[GenDeleteModelResponse](err, domainErrorResponder[GenDeleteModelResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteModelResponse]("deleteModel", err, domainErrorResponder[GenDeleteModelResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteModelResponse { return DeleteModel403JSONResponse{resp} },
 			NotFound:  func(resp NotFoundJSONResponse) GenDeleteModelResponse { return DeleteModel404JSONResponse{resp} },
 		}); ok {
@@ -193,7 +193,7 @@ func (h *APIHandler) DeleteModel(ctx context.Context, req GenDeleteModelRequest)
 func (h *APIHandler) GetModelDAG(ctx context.Context, req GenGetModelDAGRequest) (GenGetModelDAGResponse, error) {
 	tiers, err := h.models.GetDAG(ctx, req.Params.ProjectName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetModelDAGResponse](err, domainErrorResponder[GenGetModelDAGResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetModelDAGResponse]("getModelDAG", err, domainErrorResponder[GenGetModelDAGResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenGetModelDAGResponse { return GetModelDAG400JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -228,7 +228,7 @@ func (h *APIHandler) TriggerModelRun(ctx context.Context, req GenTriggerModelRun
 	principal := cp.Name
 	result, err := h.models.TriggerRun(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenTriggerModelRunResponse](err, domainErrorResponder[GenTriggerModelRunResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenTriggerModelRunResponse]("triggerModelRun", err, domainErrorResponder[GenTriggerModelRunResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenTriggerModelRunResponse {
 				return TriggerModelRun400JSONResponse{resp}
 			},
@@ -283,7 +283,7 @@ func (h *APIHandler) ListModelRuns(ctx context.Context, req GenListModelRunsRequ
 func (h *APIHandler) GetModelRun(ctx context.Context, req GenGetModelRunRequest) (GenGetModelRunResponse, error) {
 	result, err := h.models.GetRun(ctx, req.RunId)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetModelRunResponse](err, domainErrorResponder[GenGetModelRunResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetModelRunResponse]("getModelRun", err, domainErrorResponder[GenGetModelRunResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetModelRunResponse {
 				return GenGetModelRun404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -302,7 +302,7 @@ func (h *APIHandler) GetModelRun(ctx context.Context, req GenGetModelRunRequest)
 func (h *APIHandler) ListModelRunSteps(ctx context.Context, req GenListModelRunStepsRequest) (GenListModelRunStepsResponse, error) {
 	steps, err := h.models.ListRunSteps(ctx, req.RunId)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListModelRunStepsResponse](err, domainErrorResponder[GenListModelRunStepsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListModelRunStepsResponse]("listModelRunSteps", err, domainErrorResponder[GenListModelRunStepsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListModelRunStepsResponse {
 				return GenListModelRunSteps404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -327,7 +327,7 @@ func (h *APIHandler) CancelModelRun(ctx context.Context, req GenCancelModelRunRe
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.models.CancelRun(ctx, principal, req.RunId); err != nil {
-		if resp, ok := respondDomainError[GenCancelModelRunResponse](err, domainErrorResponder[GenCancelModelRunResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCancelModelRunResponse]("cancelModelRun", err, domainErrorResponder[GenCancelModelRunResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCancelModelRunResponse {
 				return CancelModelRun400JSONResponse{resp}
 			},
@@ -589,7 +589,7 @@ func (h *APIHandler) CreateModelTest(ctx context.Context, req GenCreateModelTest
 	principal := cp.Name
 	result, err := h.models.CreateTest(ctx, principal, req.ProjectName, req.ModelName, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateModelTestResponse](err, domainErrorResponder[GenCreateModelTestResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateModelTestResponse]("createModelTest", err, domainErrorResponder[GenCreateModelTestResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateModelTestResponse {
 				return CreateModelTest400JSONResponse{resp}
 			},
@@ -617,7 +617,7 @@ func (h *APIHandler) CreateModelTest(ctx context.Context, req GenCreateModelTest
 func (h *APIHandler) ListModelTests(ctx context.Context, req GenListModelTestsRequest) (GenListModelTestsResponse, error) {
 	tests, err := h.models.ListTests(ctx, req.ProjectName, req.ModelName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListModelTestsResponse](err, domainErrorResponder[GenListModelTestsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListModelTestsResponse]("listModelTests", err, domainErrorResponder[GenListModelTestsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListModelTestsResponse {
 				return GenListModelTests404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -642,7 +642,7 @@ func (h *APIHandler) DeleteModelTest(ctx context.Context, req GenDeleteModelTest
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 	if err := h.models.DeleteTest(ctx, principal, req.ProjectName, req.ModelName, req.TestId); err != nil {
-		if resp, ok := respondDomainError[GenDeleteModelTestResponse](err, domainErrorResponder[GenDeleteModelTestResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteModelTestResponse]("deleteModelTest", err, domainErrorResponder[GenDeleteModelTestResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteModelTestResponse {
 				return DeleteModelTest403JSONResponse{resp}
 			},
@@ -663,7 +663,7 @@ func (h *APIHandler) DeleteModelTest(ctx context.Context, req GenDeleteModelTest
 func (h *APIHandler) ListModelTestResults(ctx context.Context, req GenListModelTestResultsRequest) (GenListModelTestResultsResponse, error) {
 	results, err := h.models.ListTestResults(ctx, req.RunId, req.StepId)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListModelTestResultsResponse](err, domainErrorResponder[GenListModelTestResultsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListModelTestResultsResponse]("listModelTestResults", err, domainErrorResponder[GenListModelTestResultsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListModelTestResultsResponse {
 				return GenListModelTestResults404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -822,7 +822,7 @@ func domainFreshnessPolicy(f GenSchemaFreshnessPolicy) domain.FreshnessPolicy {
 func (h *APIHandler) CheckModelFreshness(ctx context.Context, req GenCheckModelFreshnessRequest) (GenCheckModelFreshnessResponse, error) {
 	result, err := h.models.CheckFreshness(ctx, req.ProjectName, req.ModelName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCheckModelFreshnessResponse](err, domainErrorResponder[GenCheckModelFreshnessResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCheckModelFreshnessResponse]("checkModelFreshness", err, domainErrorResponder[GenCheckModelFreshnessResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenCheckModelFreshnessResponse {
 				return GenCheckModelFreshness404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -867,7 +867,7 @@ func (h *APIHandler) CheckSourceFreshness(ctx context.Context, req GenCheckSourc
 
 	result, err := h.models.CheckSourceFreshness(ctx, principal, req.SourceSchema, req.SourceTable, timestampColumn, maxLagSeconds)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCheckSourceFreshnessResponse](err, domainErrorResponder[GenCheckSourceFreshnessResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCheckSourceFreshnessResponse]("checkSourceFreshness", err, domainErrorResponder[GenCheckSourceFreshnessResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCheckSourceFreshnessResponse {
 				return CheckSourceFreshness400JSONResponse{resp}
 			},
@@ -911,7 +911,7 @@ func sourceFreshnessStatusToAPI(s domain.SourceFreshnessStatus) SourceFreshnessS
 func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req GenPromoteNotebookToModelRequest) (GenPromoteNotebookToModelResponse, error) {
 	_, cells, err := h.notebooks.GetNotebook(ctx, req.Body.NotebookId)
 	if err != nil {
-		if resp, ok := respondDomainError[GenPromoteNotebookToModelResponse](err, domainErrorResponder[GenPromoteNotebookToModelResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenPromoteNotebookToModelResponse]("promoteNotebookToModel", err, domainErrorResponder[GenPromoteNotebookToModelResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenPromoteNotebookToModelResponse {
 				return PromoteNotebookToModel404JSONResponse{resp}
 			},
@@ -946,7 +946,7 @@ func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req GenPromoteN
 	principal := cp.Name
 	result, err := h.models.PromoteNotebook(ctx, principal, domReq)
 	if err != nil {
-		if resp, ok := respondDomainError[GenPromoteNotebookToModelResponse](err, domainErrorResponder[GenPromoteNotebookToModelResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenPromoteNotebookToModelResponse]("promoteNotebookToModel", err, domainErrorResponder[GenPromoteNotebookToModelResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenPromoteNotebookToModelResponse {
 				return PromoteNotebookToModel400JSONResponse{resp}
 			},
@@ -974,7 +974,7 @@ func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req GenPromoteN
 func (h *APIHandler) UnpublishNotebookModel(ctx context.Context, req GenUnpublishNotebookModelRequest) (GenUnpublishNotebookModelResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	if _, _, err := h.notebooks.GetNotebookForPrincipal(ctx, cp.Name, cp.IsAdmin, req.NotebookId); err != nil {
-		if resp, ok := respondDomainError[GenUnpublishNotebookModelResponse](err, domainErrorResponder[GenUnpublishNotebookModelResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUnpublishNotebookModelResponse]("unpublishNotebookModel", err, domainErrorResponder[GenUnpublishNotebookModelResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUnpublishNotebookModelResponse {
 				return UnpublishNotebookModel403JSONResponse{resp}
 			},
@@ -988,7 +988,7 @@ func (h *APIHandler) UnpublishNotebookModel(ctx context.Context, req GenUnpublis
 	}
 
 	if err := h.models.UnpublishNotebook(ctx, cp.Name, req.NotebookId); err != nil {
-		if resp, ok := respondDomainError[GenUnpublishNotebookModelResponse](err, domainErrorResponder[GenUnpublishNotebookModelResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUnpublishNotebookModelResponse]("unpublishNotebookModel", err, domainErrorResponder[GenUnpublishNotebookModelResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUnpublishNotebookModelResponse {
 				return UnpublishNotebookModel400JSONResponse{resp}
 			},

@@ -54,7 +54,7 @@ func (h *APIHandler) ListProductDomains(ctx context.Context, req GenListProductD
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	items, total, err := h.products.ListDomains(ctx, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListProductDomainsResponse](err, domainErrorResponder[GenListProductDomainsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListProductDomainsResponse]("listProductDomains", err, domainErrorResponder[GenListProductDomainsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListProductDomainsResponse {
 				return ListProductDomains403JSONResponse{resp}
 			},
@@ -87,7 +87,7 @@ func (h *APIHandler) CreateProductDomain(ctx context.Context, req GenCreateProdu
 		Description: derefString(req.Body.Description),
 	})
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateProductDomainResponse](err, domainErrorResponder[GenCreateProductDomainResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateProductDomainResponse]("createProductDomain", err, domainErrorResponder[GenCreateProductDomainResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateProductDomainResponse {
 				return CreateProductDomain400JSONResponse{resp}
 			},
@@ -112,7 +112,7 @@ func (h *APIHandler) CreateProductDomain(ctx context.Context, req GenCreateProdu
 func (h *APIHandler) GetProductDomain(ctx context.Context, req GenGetProductDomainRequest) (GenGetProductDomainResponse, error) {
 	item, err := h.products.GetDomain(ctx, req.DomainName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetProductDomainResponse](err, domainErrorResponder[GenGetProductDomainResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetProductDomainResponse]("getProductDomain", err, domainErrorResponder[GenGetProductDomainResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetProductDomainResponse {
 				return GetProductDomain404JSONResponse{resp}
 			},
@@ -136,7 +136,7 @@ func (h *APIHandler) UpdateProductDomain(ctx context.Context, req GenUpdateProdu
 		Description: derefString(req.Body.Description),
 	})
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateProductDomainResponse](err, domainErrorResponder[GenUpdateProductDomainResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateProductDomainResponse]("updateProductDomain", err, domainErrorResponder[GenUpdateProductDomainResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateProductDomainResponse {
 				return UpdateProductDomain400JSONResponse{resp}
 			},
@@ -163,7 +163,7 @@ func (h *APIHandler) UpdateProductDomain(ctx context.Context, req GenUpdateProdu
 
 func (h *APIHandler) DeleteProductDomain(ctx context.Context, req GenDeleteProductDomainRequest) (GenDeleteProductDomainResponse, error) {
 	if err := h.products.DeleteDomain(ctx, req.DomainName); err != nil {
-		if resp, ok := respondDomainError[GenDeleteProductDomainResponse](err, domainErrorResponder[GenDeleteProductDomainResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteProductDomainResponse]("deleteProductDomain", err, domainErrorResponder[GenDeleteProductDomainResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeleteProductDomainResponse {
 				return DeleteProductDomain400JSONResponse{resp}
 			},
@@ -198,7 +198,7 @@ func (h *APIHandler) ListProductTeams(ctx context.Context, req GenListProductTea
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	items, total, err := h.products.ListTeams(ctx, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListProductTeamsResponse](err, domainErrorResponder[GenListProductTeamsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListProductTeamsResponse]("listProductTeams", err, domainErrorResponder[GenListProductTeamsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListProductTeamsResponse {
 				return ListProductTeams403JSONResponse{resp}
 			},
@@ -226,11 +226,20 @@ func (h *APIHandler) CreateProductTeam(ctx context.Context, req GenCreateProduct
 	if req.Body == nil {
 		return CreateProductTeam400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
 	}
+	if req.Body.DomainName == "" {
+		return CreateProductTeam400JSONResponse{badRequestErrorResponse(domain.ErrValidation("domain_name is required"))}, nil
+	}
+	if req.Body.Name == "" {
+		return CreateProductTeam400JSONResponse{badRequestErrorResponse(domain.ErrValidation("name is required"))}, nil
+	}
 	domainItem, err := h.products.GetDomain(ctx, req.Body.DomainName)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateProductTeamResponse](err, domainErrorResponder[GenCreateProductTeamResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateProductTeamResponse]("createProductTeam", err, domainErrorResponder[GenCreateProductTeamResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenCreateProductTeamResponse {
 				return CreateProductTeam404JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenCreateProductTeamResponse {
+				return GenCreateProductTeam500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},
 		}); ok {
 			return resp, nil
@@ -243,7 +252,7 @@ func (h *APIHandler) CreateProductTeam(ctx context.Context, req GenCreateProduct
 		ContactChannel: derefString(req.Body.ContactChannel),
 	})
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateProductTeamResponse](err, domainErrorResponder[GenCreateProductTeamResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateProductTeamResponse]("createProductTeam", err, domainErrorResponder[GenCreateProductTeamResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateProductTeamResponse {
 				return CreateProductTeam400JSONResponse{resp}
 			},
@@ -255,6 +264,9 @@ func (h *APIHandler) CreateProductTeam(ctx context.Context, req GenCreateProduct
 			},
 			Conflict: func(resp ConflictJSONResponse) GenCreateProductTeamResponse {
 				return CreateProductTeam409JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenCreateProductTeamResponse {
+				return GenCreateProductTeam500JSONResponse{GenInternalErrorJSONResponse(resp)}
 			},
 		}); ok {
 			return resp, nil
@@ -276,7 +288,7 @@ func (h *APIHandler) UpdateProductTeam(ctx context.Context, req GenUpdateProduct
 		ContactChannel: derefString(req.Body.ContactChannel),
 	})
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateProductTeamResponse](err, domainErrorResponder[GenUpdateProductTeamResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateProductTeamResponse]("updateProductTeam", err, domainErrorResponder[GenUpdateProductTeamResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateProductTeamResponse {
 				return UpdateProductTeam400JSONResponse{resp}
 			},
@@ -303,7 +315,7 @@ func (h *APIHandler) UpdateProductTeam(ctx context.Context, req GenUpdateProduct
 
 func (h *APIHandler) DeleteProductTeam(ctx context.Context, req GenDeleteProductTeamRequest) (GenDeleteProductTeamResponse, error) {
 	if err := h.products.DeleteTeam(ctx, req.DomainName, req.TeamName); err != nil {
-		if resp, ok := respondDomainError[GenDeleteProductTeamResponse](err, domainErrorResponder[GenDeleteProductTeamResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteProductTeamResponse]("deleteProductTeam", err, domainErrorResponder[GenDeleteProductTeamResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeleteProductTeamResponse {
 				return DeleteProductTeam400JSONResponse{resp}
 			},
@@ -347,7 +359,7 @@ func (h *APIHandler) ListDataProducts(ctx context.Context, req GenListDataProduc
 	}
 	items, total, err := h.products.ListProducts(ctx, filter)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListDataProductsResponse](err, domainErrorResponder[GenListDataProductsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListDataProductsResponse]("listDataProducts", err, domainErrorResponder[GenListDataProductsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListDataProductsResponse {
 				return ListDataProducts403JSONResponse{resp}
 			},
@@ -377,7 +389,7 @@ func (h *APIHandler) CreateDataProduct(ctx context.Context, req GenCreateDataPro
 	}
 	item, err := h.products.CreateProduct(ctx, domainCreateDataProductRequest(req.Body))
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateDataProductResponse](err, domainErrorResponder[GenCreateDataProductResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateDataProductResponse]("createDataProduct", err, domainErrorResponder[GenCreateDataProductResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateDataProductResponse {
 				return CreateDataProduct400JSONResponse{resp}
 			},
@@ -402,7 +414,7 @@ func (h *APIHandler) CreateDataProduct(ctx context.Context, req GenCreateDataPro
 func (h *APIHandler) GetProductPortfolioReport(ctx context.Context, _ GenGetProductPortfolioReportRequest) (GenGetProductPortfolioReportResponse, error) {
 	item, err := h.products.GetPortfolioReport(ctx)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetProductPortfolioReportResponse](err, domainErrorResponder[GenGetProductPortfolioReportResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetProductPortfolioReportResponse]("getProductPortfolioReport", err, domainErrorResponder[GenGetProductPortfolioReportResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenGetProductPortfolioReportResponse {
 				return GetProductPortfolioReport403JSONResponse{resp}
 			},
@@ -424,7 +436,7 @@ func (h *APIHandler) ListProductScorecards(ctx context.Context, req GenListProdu
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	items, total, err := h.products.ListScorecards(ctx, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListProductScorecardsResponse](err, domainErrorResponder[GenListProductScorecardsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListProductScorecardsResponse]("listProductScorecards", err, domainErrorResponder[GenListProductScorecardsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListProductScorecardsResponse {
 				return ListProductScorecards403JSONResponse{resp}
 			},
@@ -450,7 +462,7 @@ func (h *APIHandler) ListProductScorecards(ctx context.Context, req GenListProdu
 func (h *APIHandler) GetDataProduct(ctx context.Context, req GenGetDataProductRequest) (GenGetDataProductResponse, error) {
 	item, err := h.products.GetProduct(ctx, req.ProductSlug)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetDataProductResponse](err, domainErrorResponder[GenGetDataProductResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetDataProductResponse]("getDataProduct", err, domainErrorResponder[GenGetDataProductResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetDataProductResponse { return GetDataProduct404JSONResponse{resp} },
 		}); ok {
 			return resp, nil
@@ -469,7 +481,7 @@ func (h *APIHandler) UpdateDataProduct(ctx context.Context, req GenUpdateDataPro
 	}
 	item, err := h.products.UpdateProduct(ctx, req.ProductSlug, domainUpdateDataProductRequest(req.Body))
 	if err != nil {
-		if resp, ok := respondDomainError[GenUpdateDataProductResponse](err, domainErrorResponder[GenUpdateDataProductResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenUpdateDataProductResponse]("updateDataProduct", err, domainErrorResponder[GenUpdateDataProductResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateDataProductResponse {
 				return UpdateDataProduct400JSONResponse{resp}
 			},
@@ -495,7 +507,7 @@ func (h *APIHandler) UpdateDataProduct(ctx context.Context, req GenUpdateDataPro
 
 func (h *APIHandler) DeleteDataProduct(ctx context.Context, req GenDeleteDataProductRequest) (GenDeleteDataProductResponse, error) {
 	if err := h.products.DeleteProduct(ctx, req.ProductSlug); err != nil {
-		if resp, ok := respondDomainError[GenDeleteDataProductResponse](err, domainErrorResponder[GenDeleteDataProductResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteDataProductResponse]("deleteDataProduct", err, domainErrorResponder[GenDeleteDataProductResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeleteDataProductResponse {
 				return DeleteDataProduct400JSONResponse{resp}
 			},
@@ -521,7 +533,7 @@ func (h *APIHandler) DeleteDataProduct(ctx context.Context, req GenDeleteDataPro
 func (h *APIHandler) ListDataProductVersions(ctx context.Context, req GenListDataProductVersionsRequest) (GenListDataProductVersionsResponse, error) {
 	item, err := h.products.GetProduct(ctx, req.ProductSlug)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListDataProductVersionsResponse](err, domainErrorResponder[GenListDataProductVersionsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListDataProductVersionsResponse]("listDataProductVersions", err, domainErrorResponder[GenListDataProductVersionsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListDataProductVersionsResponse {
 				return ListDataProductVersions404JSONResponse{resp}
 			},
@@ -543,7 +555,7 @@ func (h *APIHandler) ListDataProductVersions(ctx context.Context, req GenListDat
 func (h *APIHandler) GetDataProductVersion(ctx context.Context, req GenGetDataProductVersionRequest) (GenGetDataProductVersionResponse, error) {
 	item, err := h.products.GetVersion(ctx, req.ProductSlug, int(req.Version))
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetDataProductVersionResponse](err, domainErrorResponder[GenGetDataProductVersionResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetDataProductVersionResponse]("getDataProductVersion", err, domainErrorResponder[GenGetDataProductVersionResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetDataProductVersionResponse {
 				return GetDataProductVersion404JSONResponse{resp}
 			},
@@ -564,7 +576,7 @@ func (h *APIHandler) CreateDataProductVersion(ctx context.Context, req GenCreate
 	}
 	item, err := h.products.CreateVersion(ctx, req.ProductSlug, domainCreateDataProductVersionRequest(req.Body))
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateDataProductVersionResponse](err, domainErrorResponder[GenCreateDataProductVersionResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateDataProductVersionResponse]("createDataProductVersion", err, domainErrorResponder[GenCreateDataProductVersionResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateDataProductVersionResponse {
 				return CreateDataProductVersion400JSONResponse{resp}
 			},
@@ -590,7 +602,7 @@ func (h *APIHandler) CreateDataProductVersion(ctx context.Context, req GenCreate
 
 func (h *APIHandler) DeleteDataProductVersion(ctx context.Context, req GenDeleteDataProductVersionRequest) (GenDeleteDataProductVersionResponse, error) {
 	if err := h.products.DeleteVersion(ctx, req.ProductSlug, int(req.Version)); err != nil {
-		if resp, ok := respondDomainError[GenDeleteDataProductVersionResponse](err, domainErrorResponder[GenDeleteDataProductVersionResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeleteDataProductVersionResponse]("deleteDataProductVersion", err, domainErrorResponder[GenDeleteDataProductVersionResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeleteDataProductVersionResponse {
 				return DeleteDataProductVersion400JSONResponse{resp}
 			},
@@ -617,7 +629,7 @@ func (h *APIHandler) PublishDataProductVersion(ctx context.Context, req GenPubli
 	}
 	item, err := h.products.PublishVersion(ctx, req.ProductSlug, version)
 	if err != nil {
-		if resp, ok := respondDomainError[GenPublishDataProductVersionResponse](err, domainErrorResponder[GenPublishDataProductVersionResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenPublishDataProductVersionResponse]("publishDataProductVersion", err, domainErrorResponder[GenPublishDataProductVersionResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenPublishDataProductVersionResponse {
 				return PublishDataProductVersion400JSONResponse{resp}
 			},
@@ -652,7 +664,7 @@ func (h *APIHandler) DeprecateDataProductVersion(ctx context.Context, req GenDep
 	}
 	item, err := h.products.DeprecateVersion(ctx, req.ProductSlug, version, replacement)
 	if err != nil {
-		if resp, ok := respondDomainError[GenDeprecateDataProductVersionResponse](err, domainErrorResponder[GenDeprecateDataProductVersionResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenDeprecateDataProductVersionResponse]("deprecateDataProductVersion", err, domainErrorResponder[GenDeprecateDataProductVersionResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeprecateDataProductVersionResponse {
 				return DeprecateDataProductVersion400JSONResponse{resp}
 			},
@@ -683,7 +695,7 @@ func (h *APIHandler) RetireDataProductVersion(ctx context.Context, req GenRetire
 	}
 	item, err := h.products.RetireVersion(ctx, req.ProductSlug, version)
 	if err != nil {
-		if resp, ok := respondDomainError[GenRetireDataProductVersionResponse](err, domainErrorResponder[GenRetireDataProductVersionResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenRetireDataProductVersionResponse]("retireDataProductVersion", err, domainErrorResponder[GenRetireDataProductVersionResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenRetireDataProductVersionResponse {
 				return RetireDataProductVersion400JSONResponse{resp}
 			},
@@ -710,7 +722,7 @@ func (h *APIHandler) RetireDataProductVersion(ctx context.Context, req GenRetire
 func (h *APIHandler) GetDataProductStatus(ctx context.Context, req GenGetDataProductStatusRequest) (GenGetDataProductStatusResponse, error) {
 	item, err := h.products.GetProduct(ctx, req.ProductSlug)
 	if err != nil {
-		if resp, ok := respondDomainError[GenGetDataProductStatusResponse](err, domainErrorResponder[GenGetDataProductStatusResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenGetDataProductStatusResponse]("getDataProductStatus", err, domainErrorResponder[GenGetDataProductStatusResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetDataProductStatusResponse {
 				return GetDataProductStatus404JSONResponse{resp}
 			},
@@ -731,7 +743,7 @@ func (h *APIHandler) GetDataProductStatus(ctx context.Context, req GenGetDataPro
 func (h *APIHandler) ListDataProductOutputs(ctx context.Context, req GenListDataProductOutputsRequest) (GenListDataProductOutputsResponse, error) {
 	item, err := h.products.GetProduct(ctx, req.ProductSlug)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListDataProductOutputsResponse](err, domainErrorResponder[GenListDataProductOutputsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListDataProductOutputsResponse]("listDataProductOutputs", err, domainErrorResponder[GenListDataProductOutputsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListDataProductOutputsResponse {
 				return ListDataProductOutputs404JSONResponse{resp}
 			},
@@ -753,7 +765,7 @@ func (h *APIHandler) ListDataProductOutputs(ctx context.Context, req GenListData
 func (h *APIHandler) ListDataProductSemanticEntrypoints(ctx context.Context, req GenListDataProductSemanticEntrypointsRequest) (GenListDataProductSemanticEntrypointsResponse, error) {
 	item, err := h.products.GetProduct(ctx, req.ProductSlug)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListDataProductSemanticEntrypointsResponse](err, domainErrorResponder[GenListDataProductSemanticEntrypointsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListDataProductSemanticEntrypointsResponse]("listDataProductSemanticEntrypoints", err, domainErrorResponder[GenListDataProductSemanticEntrypointsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListDataProductSemanticEntrypointsResponse {
 				return ListDataProductSemanticEntrypoints404JSONResponse{resp}
 			},
@@ -775,7 +787,7 @@ func (h *APIHandler) ListDataProductSemanticEntrypoints(ctx context.Context, req
 func (h *APIHandler) ListDataProductDependencies(ctx context.Context, req GenListDataProductDependenciesRequest) (GenListDataProductDependenciesResponse, error) {
 	item, err := h.products.GetProduct(ctx, req.ProductSlug)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListDataProductDependenciesResponse](err, domainErrorResponder[GenListDataProductDependenciesResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListDataProductDependenciesResponse]("listDataProductDependencies", err, domainErrorResponder[GenListDataProductDependenciesResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListDataProductDependenciesResponse {
 				return ListDataProductDependencies404JSONResponse{resp}
 			},
@@ -800,7 +812,7 @@ func (h *APIHandler) CreateDataProductDependency(ctx context.Context, req GenCre
 	}
 	item, err := h.products.AddDependency(ctx, req.ProductSlug, req.Body.DependsOnSlug)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateDataProductDependencyResponse](err, domainErrorResponder[GenCreateDataProductDependencyResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateDataProductDependencyResponse]("createDataProductDependency", err, domainErrorResponder[GenCreateDataProductDependencyResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateDataProductDependencyResponse {
 				return CreateDataProductDependency400JSONResponse{resp}
 			},
@@ -831,7 +843,7 @@ func (h *APIHandler) CreateDataProductDependency(ctx context.Context, req GenCre
 func (h *APIHandler) ListDataProductSubscriptions(ctx context.Context, req GenListDataProductSubscriptionsRequest) (GenListDataProductSubscriptionsResponse, error) {
 	item, err := h.products.GetProduct(ctx, req.ProductSlug)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListDataProductSubscriptionsResponse](err, domainErrorResponder[GenListDataProductSubscriptionsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListDataProductSubscriptionsResponse]("listDataProductSubscriptions", err, domainErrorResponder[GenListDataProductSubscriptionsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListDataProductSubscriptionsResponse {
 				return ListDataProductSubscriptions404JSONResponse{resp}
 			},
@@ -856,7 +868,7 @@ func (h *APIHandler) CreateDataProductSubscription(ctx context.Context, req GenC
 	}
 	item, err := h.products.Subscribe(ctx, req.ProductSlug, req.Body.PrincipalName, req.Body.EventType, productDefaultString(derefString(req.Body.Channel), "inbox"))
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateDataProductSubscriptionResponse](err, domainErrorResponder[GenCreateDataProductSubscriptionResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateDataProductSubscriptionResponse]("createDataProductSubscription", err, domainErrorResponder[GenCreateDataProductSubscriptionResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateDataProductSubscriptionResponse {
 				return CreateDataProductSubscription400JSONResponse{resp}
 			},
@@ -884,7 +896,7 @@ func (h *APIHandler) ListDataProductEvents(ctx context.Context, req GenListDataP
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	items, total, err := h.products.ListEvents(ctx, req.ProductSlug, page)
 	if err != nil {
-		if resp, ok := respondDomainError[GenListDataProductEventsResponse](err, domainErrorResponder[GenListDataProductEventsResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenListDataProductEventsResponse]("listDataProductEvents", err, domainErrorResponder[GenListDataProductEventsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListDataProductEventsResponse {
 				return ListDataProductEvents404JSONResponse{resp}
 			},

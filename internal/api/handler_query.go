@@ -350,7 +350,7 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 
 	result, err := h.manifest.GetManifest(ctx, principal, "", schemaName, req.Body.Table)
 	if err != nil {
-		if resp, ok := respondDomainError[GenCreateManifestResponse](err, domainErrorResponder[GenCreateManifestResponse]{
+		if resp, ok := respondDomainErrorForOperation[GenCreateManifestResponse]("createManifest", err, domainErrorResponder[GenCreateManifestResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateManifestResponse {
 				return CreateManifest400JSONResponse{resp}
 			},
