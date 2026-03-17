@@ -24,8 +24,8 @@ Use this guide when outputs need explicit operational guarantees instead of info
 
 ## Execution Graph
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/asset-dag-materialization.svg" alt="Diagram showing source, staging, and downstream assets connected by checks, freshness, and materialization actions." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/asset-dag-materialization.svg" alt="Diagram showing source, staging, and downstream assets connected by checks, freshness, and materialization actions." loading="lazy" decoding="async">
 </figure>
 
 ## Verification

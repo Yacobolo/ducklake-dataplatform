@@ -3,26 +3,26 @@
   {{ range .Nodes }}
     <li>
       {{ if .Children }}
-        <details class="site-nav-node {{ if eq $.Kind `api` }}is-subtle{{ end }}" {{ if .Open }}open{{ end }}>
-          <summary class="site-nav-summary {{ if eq $.Kind `api` }}is-subtle{{ end }}">
-            <span class="site-nav-node-summary">
-              <span class="site-nav-node-label-wrap">
-                {{ if and .Icon (ne $.Kind `api`) }}<span class="inline-flex h-4 w-4 shrink-0 text-[color:var(--site-muted-soft)]" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
+        <details class="group {{ if eq $.Kind `api` }}mb-1{{ else }}mb-2{{ end }}" {{ if .Open }}open{{ end }}>
+          <summary class="{{ if eq $.Kind `api` }}relative cursor-pointer list-none rounded-xl px-3 py-2 text-sm font-medium text-[var(--fgColor-muted)] transition hover:bg-[color:color-mix(in_srgb,var(--bgColor-muted)_88%,transparent)] hover:text-[var(--fgColor-default)] [&::-webkit-details-marker]:hidden after:absolute after:right-[0.95rem] after:top-[0.95rem] after:h-[0.45rem] after:w-[0.45rem] after:rotate-45 after:border-b-[1.5px] after:border-r-[1.5px] after:border-current after:opacity-60 after:transition-transform after:content-[''] group-open:after:rotate-[225deg]{{ else }}relative cursor-pointer list-none rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--fgColor-default)] transition hover:bg-[color:color-mix(in_srgb,var(--bgColor-muted)_88%,transparent)] [&::-webkit-details-marker]:hidden after:absolute after:right-[0.95rem] after:top-[0.95rem] after:h-[0.45rem] after:w-[0.45rem] after:rotate-45 after:border-b-[1.5px] after:border-r-[1.5px] after:border-current after:opacity-60 after:transition-transform after:content-[''] group-open:after:rotate-[225deg]{{ end }}">
+            <span class="{{ if eq $.Kind `api` }}block min-w-0 pr-6{{ else }}block min-w-0 pr-6{{ end }}">
+              <span class="flex min-w-0 items-center gap-2">
+                {{ if and .Icon (ne $.Kind `api`) }}<span class="inline-flex h-4 w-4 shrink-0 text-[var(--fgColor-muted)]" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
                 {{ if .Path }}
-                  <a href="{{ .Path }}" class="site-nav-node-link {{ if .Active }}is-active{{ end }}">{{ .Title }}</a>
+                  <a href="{{ .Path }}" data-site-nav-node-link {{ if .Active }}aria-current="page"{{ end }} class="truncate text-sm font-medium no-underline transition hover:text-[var(--fgColor-default)] {{ if .Active }}text-[var(--fgColor-accent)]{{ else if eq $.Kind `api` }}text-[var(--fgColor-muted)]{{ else }}text-[var(--fgColor-default)]{{ end }}">{{ .Title }}</a>
                 {{ else }}
-                  <span class="site-nav-node-label">{{ .Title }}</span>
+                  <span class="truncate text-sm font-medium text-[var(--fgColor-default)]">{{ .Title }}</span>
                 {{ end }}
               </span>
-              {{ if and .Description (ne $.Kind `api`) }}<span class="site-nav-node-meta">{{ .Description }}</span>{{ end }}
+              {{ if and .Description (ne $.Kind `api`) }}<span class="mt-1 block text-xs leading-5 text-[var(--fgColor-muted)]">{{ .Description }}</span>{{ end }}
             </span>
           </summary>
-          <div class="{{ if eq $.Kind `api` }}ml-3 pl-3{{ else }}ml-3 border-l border-[color:var(--site-border-soft)] pl-3{{ end }}">
+          <div class="{{ if eq $.Kind `api` }}ml-3 pl-3{{ else }}ml-3 border-l border-[var(--borderColor-muted)] pl-3{{ end }}">
             {{ template "nav_nodes" (dict "Nodes" .Children "Kind" $.Kind "Nested" true) }}
           </div>
         </details>
       {{ else }}
-        <a href="{{ .Path }}" class="site-side-link {{ if .Active }}is-active{{ end }}">
+        <a href="{{ .Path }}" data-site-side-link {{ if .Active }}aria-current="page"{{ end }} class="block rounded-2xl px-3 py-2 text-sm no-underline transition hover:bg-[color:color-mix(in_srgb,var(--bgColor-muted)_88%,transparent)] hover:text-[var(--fgColor-default)] {{ if .Active }}bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--fgColor-accent)_16%,transparent)]{{ else }}text-[var(--fgColor-muted)]{{ end }}">
           {{ .Title }}
         </a>
       {{ end }}

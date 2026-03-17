@@ -1,15 +1,15 @@
 {{ define "home_feature_card" -}}
-<article class="{{ if or (eq .Index 0) (eq .Index 3) }}lg:col-span-7{{ else }}lg:col-span-5{{ end }} rounded-[1.9rem] border border-[color:var(--site-border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--site-panel)_96%,transparent),color-mix(in_srgb,var(--site-soft)_46%,var(--site-panel)))] px-6 py-6 shadow-[0_20px_60px_color-mix(in_srgb,var(--site-brand)_8%,transparent)] transition duration-200 hover:-translate-y-1 hover:border-[color:color-mix(in_srgb,var(--site-brand)_32%,var(--site-border))]">
+<article class="{{ if or (eq .Index 0) (eq .Index 3) }}lg:col-span-7{{ else }}lg:col-span-5{{ end }} rounded-[1.9rem] border border-[var(--borderColor-default)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bgColor-inset)_96%,transparent),color-mix(in_srgb,var(--bgColor-muted)_46%,var(--bgColor-inset)))] px-6 py-6 shadow-[0_20px_60px_color-mix(in_srgb,var(--fgColor-accent)_8%,transparent)] transition duration-200 hover:-translate-y-1 hover:border-[color:color-mix(in_srgb,var(--fgColor-accent)_32%,var(--borderColor-default))]">
   <div class="mb-6 flex items-center gap-3">
-    <span class="inline-flex h-5 w-5 shrink-0 text-[color:var(--site-brand-strong)]" aria-hidden="true">{{ navIcon .Item.Icon }}</span>
-    <span class="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[color:var(--site-brand-strong)]">{{ .Item.Label }}</span>
+    <span class="inline-flex h-5 w-5 shrink-0 text-[var(--fgColor-accent)]" aria-hidden="true">{{ navIcon .Item.Icon }}</span>
+    <span class="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-accent)]">{{ .Item.Label }}</span>
   </div>
-  <h3 class="max-w-[18ch] text-[1.55rem] font-semibold leading-[1.05] tracking-[-0.04em] text-[color:var(--site-ink)]">{{ .Item.Title }}</h3>
-  <p class="mt-4 max-w-[34rem] text-sm leading-7 text-[color:var(--site-muted)]">{{ .Item.Details }}</p>
+  <h3 class="max-w-[18ch] text-[1.55rem] font-semibold leading-[1.05] tracking-[-0.04em] text-[var(--fgColor-default)]">{{ .Item.Title }}</h3>
+  <p class="mt-4 max-w-[34rem] text-sm leading-7 text-[var(--fgColor-muted)]">{{ .Item.Details }}</p>
   {{ if .Item.Link }}
-    <a href="{{ siteURL .SiteRoot .Item.Link }}" class="mt-5 inline-flex items-center gap-2 text-sm font-medium text-[color:var(--site-ink)] no-underline transition hover:text-[color:var(--site-brand-strong)]">
+    <a href="{{ siteURL .SiteRoot .Item.Link }}" class="mt-5 inline-flex items-center gap-2 text-sm font-medium text-[var(--fgColor-default)] no-underline transition hover:text-[var(--fgColor-accent)]">
       <span>Read more</span>
-      <span class="text-[color:var(--site-brand-strong)]">→</span>
+      <span class="text-[var(--fgColor-accent)]">→</span>
     </a>
   {{ end }}
 </article>

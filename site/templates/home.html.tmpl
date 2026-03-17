@@ -1,11 +1,11 @@
 {{ define "home" -}}
 <main>
   {{ template "home_hero" . }}
-  <section class="border-t border-[color:var(--site-border)] px-4 py-14 sm:py-16 lg:px-8 lg:py-20">
+  <section class="border-t border-[var(--borderColor-default)] px-4 py-14 sm:py-16 lg:px-8 lg:py-20">
     <div class="mx-auto max-w-[88rem]">
       <div class="mb-8 flex items-center gap-4" data-home-reveal style="--home-delay: 220ms;">
-        <h2 class="text-[0.76rem] font-semibold uppercase tracking-[0.28em] text-[color:var(--site-brand-strong)]">{{ .Home.Pillars.Eyebrow }}</h2>
-        <span class="h-px flex-1 bg-[linear-gradient(90deg,color-mix(in_srgb,var(--site-brand)_40%,transparent),transparent_72%)]"></span>
+        <h2 class="text-[0.76rem] font-semibold uppercase tracking-[0.28em] text-[var(--fgColor-accent)]">{{ .Home.Pillars.Eyebrow }}</h2>
+        <span class="h-px flex-1 bg-[linear-gradient(90deg,color-mix(in_srgb,var(--fgColor-accent)_40%,transparent),transparent_72%)]"></span>
       </div>
       <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-12">
         {{ range $index, $item := .Home.Pillars.Items }}

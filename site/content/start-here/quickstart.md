@@ -61,8 +61,8 @@ The exact JSON shape may include metadata fields, but you should see rows coming
 
 ## Request flow at a glance
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/secure-query-path.svg" alt="Flow diagram showing a principal moving through identity, the Duck API, policy enforcement, DuckDB execution, and a governed result." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/secure-query-path.svg" alt="Flow diagram showing a principal moving through identity, the Duck API, policy enforcement, DuckDB execution, and a governed result." loading="lazy" decoding="async">
 </figure>
 
 ## 5. What to do next
@@ -104,7 +104,7 @@ Authentication worked, but your current principal does not have the required gra
     display: flex;
     align-items: center;
     gap: 0.875rem;
-    border: 1px solid var(--site-border);
+    border: 1px solid var(--borderColor-default);
     background: transparent;
     color: inherit;
     padding: 1rem 1.25rem !important;
@@ -125,13 +125,13 @@ Authentication worked, but your current principal does not have the required gra
 
   .doc-next-step-card:hover {
     transform: translateY(-2px);
-    border-color: var(--site-accent);
-    background: color-mix(in srgb, var(--site-accent) 3%, transparent);
+    border-color: var(--fgColor-accent);
+    background: color-mix(in srgb, var(--fgColor-accent) 3%, transparent);
     box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
   }
 
   .doc-next-step-card:hover .doc-next-step-arrow {
-    color: var(--site-accent-strong);
+    color: var(--fgColor-accent);
     transform: translate(2px, -2px);
   }
 
@@ -144,8 +144,8 @@ Authentication worked, but your current principal does not have the required gra
     justify-content: center;
     align-self: center;
     border-radius: 1rem;
-    background: color-mix(in srgb, var(--site-accent) 12%, transparent);
-    color: var(--site-accent-strong);
+    background: color-mix(in srgb, var(--fgColor-accent) 12%, transparent);
+    color: var(--fgColor-accent);
   }
 
   .doc-next-step-copy {
@@ -156,14 +156,14 @@ Authentication worked, but your current principal does not have the required gra
 
   .doc-next-step-title {
     margin: 0;
-    color: var(--site-ink);
+    color: var(--fgColor-default);
     font-size: 0.98rem;
     font-weight: 600;
   }
 
   .doc-next-step-subtitle {
     margin: 0.2rem 0 0;
-    color: var(--site-muted);
+    color: var(--fgColor-muted);
     font-size: 0.875rem;
     line-height: 1.35;
     white-space: nowrap;
@@ -175,7 +175,7 @@ Authentication worked, but your current principal does not have the required gra
     top: 1.25rem;
     height: 1rem;
     width: 1rem;
-    color: var(--site-muted-soft);
+    color: var(--fgColor-muted);
     transition: color 180ms ease, transform 180ms ease;
   }
 

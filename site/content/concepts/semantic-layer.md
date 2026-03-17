@@ -32,8 +32,8 @@ A semantic model usually sits on top of a trusted base model and defines:
 
 ## Query Planning Flow
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/semantic-query-flow.svg" alt="Diagram showing semantic models and metrics resolving through the semantic planner into governed query execution." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/semantic-query-flow.svg" alt="Diagram showing semantic models and metrics resolving through the semantic planner into governed query execution." loading="lazy" decoding="async">
 </figure>
 
 Read the diagram from left to right. Semantic models define the available business structure. Metrics sit on top of those models because they are the named measurements consumers ask for. The metric planner sits in the middle because it translates business-facing requests into a governed query plan. The Duck API and governed SQL execution sit on the right because the semantic layer still runs through the same secure platform path as any other query.

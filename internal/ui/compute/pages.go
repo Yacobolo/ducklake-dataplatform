@@ -37,13 +37,13 @@ func computeHomePage(principal domain.ContextPrincipal) Node {
 }
 
 func computeEndpointsListPage(principal domain.ContextPrincipal, rows []computeEndpointRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class("text-xs text-muted"), Text("No compute endpoints found.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No compute endpoints found.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-accent"), Text(row.Name))),
+				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
 				Td(Text(row.Type)),
 				Td(Text(row.Status)),
 				Td(Text(row.URLText)),
@@ -57,15 +57,15 @@ func computeEndpointsListPage(principal domain.ContextPrincipal, rows []computeE
 	return core.AppPage("Compute: Endpoints", "compute", principal,
 		computeSectionNav("endpoints"),
 		sectionHeader("Compute endpoints", "Create compute endpoints and manage assignments.", "/ui/compute/endpoints/new", "New endpoint"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			table,
-			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" endpoints. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" endpoints. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
 
 func computeEndpointDetailPage(principal domain.ContextPrincipal, item *domain.ComputeEndpoint, healthText string, assignments []computeAssignmentRowData, csrfFieldProvider func() Node) Node {
-	assignTable := Node(P(Class("text-xs text-muted"), Text("No assignments yet.")))
+	assignTable := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No assignments yet.")))
 	if len(assignments) > 0 {
 		rows := make([]Node, 0, len(assignments))
 		for i := range assignments {
@@ -86,7 +86,7 @@ func computeEndpointDetailPage(principal domain.ContextPrincipal, item *domain.C
 
 	return core.AppPage("Compute Endpoint: "+item.Name, "compute", principal,
 		computeSectionNav("endpoints"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text(item.Name)),
 			P(Class("m-0 text-sm"), Strong(Text("Type: ")), Text(item.Type)),
 			P(Class("m-0 text-sm"), Strong(Text("Status: ")), Text(item.Status)),
@@ -98,7 +98,7 @@ func computeEndpointDetailPage(principal domain.ContextPrincipal, item *domain.C
 				Form(Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/delete"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Create assignment")),
 			Form(Class("grid gap-3"), Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/assignments"),
 				csrfFieldProvider(),
@@ -111,7 +111,7 @@ func computeEndpointDetailPage(principal domain.ContextPrincipal, item *domain.C
 				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create assignment"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Assignments")),
 			assignTable,
 		),
@@ -131,7 +131,7 @@ func computeEndpointFormPage(principal domain.ContextPrincipal, title, action st
 	}
 	return core.AppPage(title, "compute", principal,
 		computeSectionNav("endpoints"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			Form(Class("grid gap-3"), Method("post"), Action(action),
 				csrfFieldProvider(),
 				Label(Text("Name")),
@@ -155,7 +155,7 @@ func computeEndpointFormPage(principal domain.ContextPrincipal, title, action st
 }
 
 func computeSectionNav(active string) Node {
-	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), Div(Class("flex flex-wrap gap-2"), navButton("Endpoints", "/ui/compute/endpoints", active == "endpoints")))
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), Div(Class("flex flex-wrap gap-2"), navButton("Endpoints", "/ui/compute/endpoints", active == "endpoints")))
 }
 
 func navButton(label, href string, active bool) Node {
@@ -166,16 +166,16 @@ func navButton(label, href string, active bool) Node {
 }
 
 func sectionHeader(title, copy, href, action string) Node {
-	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 		Div(Class("flex flex-wrap items-start justify-between gap-3"),
-			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-muted"), Text(copy))),
+			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(copy))),
 			core.PrimaryLink(href, "", Text(action)),
 		),
 	)
 }
 
 func computeCard(title, copy, href string) Node {
-	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-muted"), Text(copy)), core.SecondaryLink(href, "", Text("Open")))
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-[var(--fgColor-muted)]"), Text(copy)), core.SecondaryLink(href, "", Text("Open")))
 }
 
 func optionSelected(value, current string) Node {

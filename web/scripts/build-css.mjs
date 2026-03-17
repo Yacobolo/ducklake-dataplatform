@@ -1,5 +1,4 @@
 import { transform } from "esbuild";
-import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -15,7 +14,6 @@ const rootDir = join(__dirname, "..", "..");
 
 const entryFile = join(rootDir, "web", "styles", "app.css");
 const outputDir = join(rootDir, "internal", "ui", "assets", "static", "css");
-const themeGeneratorFile = join(rootDir, "web", "scripts", "generate-tailwind-theme.mjs");
 const modeArg = process.argv.find((arg) => arg.startsWith("--mode="));
 const mode = modeArg ? modeArg.split("=")[1] : "prod";
 const shouldWatch = process.argv.includes("--watch");
@@ -33,11 +31,6 @@ const processor = postcss([
 ]);
 
 async function buildCSS() {
-  execFileSync(process.execPath, [themeGeneratorFile], {
-    cwd: join(rootDir, "web"),
-    stdio: "inherit",
-  });
-
   const result = await processor.process(`@import "${entryFile}";`, {
     from: entryFile,
     to: join(outputDir, "app.css"),

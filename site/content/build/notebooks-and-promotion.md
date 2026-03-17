@@ -23,8 +23,8 @@ Use notebooks when you need an exploratory surface that can still graduate into 
 
 ## Promotion Flow
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/notebook-promotion-flow.svg" alt="Diagram showing a notebook session producing an output cell that is promoted into a managed model and downstream asset." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/notebook-promotion-flow.svg" alt="Diagram showing a notebook session producing an output cell that is promoted into a managed model and downstream asset." loading="lazy" decoding="async">
 </figure>
 
 ## Git-Backed Notebook Sync

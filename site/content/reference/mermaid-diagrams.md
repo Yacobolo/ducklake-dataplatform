@@ -11,7 +11,7 @@ The docs use checked-in Mermaid source files rendered to SVG through the site di
 
 1. add a `.mmd` file under `site/diagrams/src`
 2. generate the SVG with `task site:diagrams`
-3. embed the SVG with a `site-mermaid` figure
+3. embed the SVG with a styled mermaid figure
 4. add descriptive alt text on the image
 
 ## Diagram Rules

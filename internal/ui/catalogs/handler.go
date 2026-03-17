@@ -31,9 +31,9 @@ func (h *Handler) CatalogsList(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(items) == 0 {
 		core.RenderHTML(w, http.StatusOK, core.AppPage("Catalogs", "catalogs", core.PrincipalFromContext(r.Context()),
-			Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 				H2(Class("m-0 text-xl font-semibold"), Text("Catalogs")),
-				P(Class("m-0 text-sm text-muted"), Text("No catalogs found yet.")),
+				P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("No catalogs found yet.")),
 				core.PrimaryLink("/ui/catalogs/new", "", Text("New catalog")),
 			),
 		))

@@ -29,44 +29,44 @@ func formPage(principal domain.ContextPrincipal, title, active, action string, c
 
 func catalogsNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
 	return formPage(principal, "New Catalog", "catalogs", "/ui/catalogs", csrfFieldProvider,
-		Label(Text("Name")),
-		Input(Name("name"), Required()),
-		Label(Text("Metastore Type")),
-		Select(Name("metastore_type"), Option(Value("sqlite"), Text("sqlite")), Option(Value("postgres"), Text("postgres"))),
-		Label(Text("DSN")),
-		Input(Name("dsn"), Required()),
-		Label(Text("Data Path")),
-		Input(Name("data_path"), Required()),
-		Label(Text("Comment")),
-		Textarea(Name("comment")),
+		core.FieldLabel("Name"),
+		core.InputControl("", Name("name"), Required()),
+		core.FieldLabel("Metastore Type"),
+		core.SelectControl("", Name("metastore_type"), Option(Value("sqlite"), Text("sqlite")), Option(Value("postgres"), Text("postgres"))),
+		core.FieldLabel("DSN"),
+		core.InputControl("", Name("dsn"), Required()),
+		core.FieldLabel("Data Path"),
+		core.InputControl("", Name("data_path"), Required()),
+		core.FieldLabel("Comment"),
+		core.TextareaControl("", Name("comment")),
 	)
 }
 
 func catalogsEditPage(principal domain.ContextPrincipal, catalogName string, catalog *domain.CatalogRegistration, csrfFieldProvider func() Node) Node {
 	return formPage(principal, "Edit Catalog", "catalogs", "/ui/catalogs/"+catalogName+"/update", csrfFieldProvider,
-		Label(Text("Comment")),
-		Textarea(Name("comment"), Text(catalog.Comment)),
-		Label(Text("Data Path")),
-		Input(Name("data_path"), Value(catalog.DataPath)),
-		Label(Text("DSN")),
-		Input(Name("dsn"), Value(catalog.DSN)),
+		core.FieldLabel("Comment"),
+		core.TextareaControl("", Name("comment"), Text(catalog.Comment)),
+		core.FieldLabel("Data Path"),
+		core.InputControl("", Name("data_path"), Value(catalog.DataPath)),
+		core.FieldLabel("DSN"),
+		core.InputControl("", Name("dsn"), Value(catalog.DSN)),
 	)
 }
 
 func catalogSchemasNewPage(principal domain.ContextPrincipal, catalogName string, csrfFieldProvider func() Node) Node {
 	return formPage(principal, "New Schema", "catalogs", "/ui/catalogs/"+catalogName+"/schemas", csrfFieldProvider,
-		Label(Text("Schema Name")),
-		Input(Name("name"), Required()),
-		Label(Text("Comment")),
-		Textarea(Name("comment")),
-		Label(Text("Location Name")),
-		Input(Name("location_name")),
+		core.FieldLabel("Schema Name"),
+		core.InputControl("", Name("name"), Required()),
+		core.FieldLabel("Comment"),
+		core.TextareaControl("", Name("comment")),
+		core.FieldLabel("Location Name"),
+		core.InputControl("", Name("location_name")),
 	)
 }
 
 func catalogSchemasEditPage(principal domain.ContextPrincipal, catalogName, schemaName string, schema *domain.SchemaDetail, csrfFieldProvider func() Node) Node {
 	return formPage(principal, "Edit Schema", "catalogs", "/ui/catalogs/"+catalogName+"/schemas/"+schemaName+"/update", csrfFieldProvider,
-		Label(Text("Comment")),
-		Textarea(Name("comment"), Text(schema.Comment)),
+		core.FieldLabel("Comment"),
+		core.TextareaControl("", Name("comment"), Text(schema.Comment)),
 	)
 }

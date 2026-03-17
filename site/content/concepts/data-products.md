@@ -37,8 +37,8 @@ That package usually includes a domain, an owner team, a contract, outputs, opti
 
 ## Product Anatomy
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/data-product-anatomy.svg" alt="Diagram showing a domain and team owning outputs, semantic entrypoints, versions, subscriptions, and a published data product." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/data-product-anatomy.svg" alt="Diagram showing a domain and team owning outputs, semantic entrypoints, versions, subscriptions, and a published data product." loading="lazy" decoding="async">
 </figure>
 
 Read the diagram from left to right. A domain and owner team define who stands behind the product. Trusted outputs and semantic entrypoints feed into the product because those are the things consumers actually use. Versioning and subscriptions sit alongside the product because products change over time and often have downstream consumers who need to know when something important changes.

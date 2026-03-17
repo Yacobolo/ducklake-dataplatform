@@ -96,13 +96,13 @@ func semanticHomePage(principal domain.ContextPrincipal) Node {
 }
 
 func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticModelRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class("text-xs text-muted"), Text("No semantic models defined.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No semantic models defined.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-accent"), Text(row.Name))),
+				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
 				Td(Text(row.BaseModel)),
 				Td(Text(row.Owner)),
 				Td(Text(row.UpdatedAt)),
@@ -115,9 +115,9 @@ func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticMo
 	}
 	return core.AppPage("Semantic Models", "semantic", principal,
 		sectionHeader("Semantic models", "Manage semantic models and their runtime semantics.", "/ui/semantic/models/new", "New semantic model"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			table,
-			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" semantic models. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" semantic models. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
@@ -140,7 +140,7 @@ func semanticModelsNewPage(principal domain.ContextPrincipal, csrfFieldProvider 
 }
 
 func semanticModelDetailPage(d semanticModelDetailPageData) Node {
-	metricRows := Node(P(Class("text-xs text-muted"), Text("No metrics created yet.")))
+	metricRows := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No metrics created yet.")))
 	if len(d.Metrics) > 0 {
 		rows := make([]Node, 0, len(d.Metrics))
 		for i := range d.Metrics {
@@ -162,7 +162,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 		))
 	}
 
-	preAggRows := Node(P(Class("text-xs text-muted"), Text("No pre-aggregations created yet.")))
+	preAggRows := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No pre-aggregations created yet.")))
 	if len(d.PreAggregations) > 0 {
 		rows := make([]Node, 0, len(d.PreAggregations))
 		for i := range d.PreAggregations {
@@ -184,7 +184,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 	}
 
 	return core.AppPage("Semantic Model: "+d.ProjectName+"."+d.ModelName, "semantic", d.Principal,
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text(d.ProjectName+"."+d.ModelName)),
 			P(Class("m-0 text-sm"), Strong(Text("Base model: ")), Text(d.BaseModelRef)),
 			P(Class("m-0 text-sm"), Strong(Text("Default time dimension: ")), Text(d.DefaultTimeDim)),
@@ -195,7 +195,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Create metric")),
 			Form(Class("grid gap-3"), Method("post"), Action(d.MetricsCreateURL),
 				d.CSRFFieldProvider(),
@@ -222,8 +222,8 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create metric"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Metrics")), metricRows),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Metrics")), metricRows),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Create pre-aggregation")),
 			Form(Class("grid gap-3"), Method("post"), Action(d.PreAggCreateURL),
 				d.CSRFFieldProvider(),
@@ -242,7 +242,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create pre-aggregation"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Pre-aggregations")), preAggRows),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Pre-aggregations")), preAggRows),
 		semanticQueryCard(d.ProjectName, d.ModelName, d.QueryExplainURL, d.QueryRunURL, d.CSRFFieldProvider),
 	)
 }
@@ -253,7 +253,7 @@ func semanticRelationshipsPage(d semanticRelationshipsPageData) Node {
 		modelOptions = append(modelOptions, Option(Value(d.ModelOptions[i].Value), Text(d.ModelOptions[i].Label)))
 	}
 
-	table := Node(P(Class("text-xs text-muted"), Text("No relationships defined.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No relationships defined.")))
 	if len(d.Rows) > 0 {
 		rows := make([]Node, 0, len(d.Rows))
 		for i := range d.Rows {
@@ -277,7 +277,7 @@ func semanticRelationshipsPage(d semanticRelationshipsPageData) Node {
 	}
 
 	return core.AppPage("Semantic Relationships", "semantic", d.Principal,
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text("Create relationship")),
 			Form(Class("grid gap-3"), Method("post"), Action("/ui/semantic/relationships"),
 				d.CSRFFieldProvider(),
@@ -299,9 +299,9 @@ func semanticRelationshipsPage(d semanticRelationshipsPageData) Node {
 				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create relationship"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			table,
-			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(d.Page.MaxResults)+" relationships. Total: "+strconv.FormatInt(d.Total, 10))),
+			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(d.Page.MaxResults)+" relationships. Total: "+strconv.FormatInt(d.Total, 10))),
 		),
 	)
 }
@@ -315,7 +315,7 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 			joinRows = append(joinRows, Tr(Td(Text(join.RelationshipName)), Td(Text(join.FromModel)), Td(Text(join.ToModel)), Td(Text(join.JoinSQL))))
 		}
 		resultNode = Group([]Node{
-			Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 				H2(Class("mt-0 text-lg font-semibold"), Text("Query plan")),
 				P(Text("Base model: "+d.Plan.BaseModelName)),
 				P(Text("Base relation: "+d.Plan.BaseRelation)),
@@ -324,9 +324,9 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 				P(Text("Freshness status: "+d.Plan.FreshnessStatus)),
 				P(Text("Freshness basis: "+stringsJoin(d.Plan.FreshnessBasis))),
 				H3(Class("mt-4 text-lg font-semibold"), Text("Generated SQL")),
-				Pre(Class("overflow-x-auto rounded-lg border border-border-muted bg-surface-muted p-3 text-sm"), Text(d.Plan.GeneratedSQL)),
+				Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Plan.GeneratedSQL)),
 			),
-			Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Join path")),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Join path")),
 				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 					THead(Tr(Th(Text("Relationship")), Th(Text("From")), Th(Text("To")), Th(Text("Join SQL")))),
 					TBody(Group(joinRows)),
@@ -349,7 +349,7 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 		}
 		resultNode = Group([]Node{
 			resultNode,
-			Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Execution result")),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Execution result")),
 				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 					THead(Tr(Group(headers))),
 					TBody(Group(rows)),
@@ -386,7 +386,7 @@ func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string
 			timeGrain = *request.TimeGrain
 		}
 	}
-	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 		H3(Class("mt-0 text-lg font-semibold"), Text("Metric query")),
 		Form(Class("grid gap-3"), Method("post"), Action(explainURL),
 			csrfFieldProvider(),
@@ -498,13 +498,13 @@ func semanticFormPage(principal domain.ContextPrincipal, title, action string, c
 }
 
 func semanticCard(title, copy, href string) Node {
-	return core.Card(H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-muted"), Text(copy)), core.SecondaryLink(href, "", Text("Open")))
+	return core.Card(H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-[var(--fgColor-muted)]"), Text(copy)), core.SecondaryLink(href, "", Text("Open")))
 }
 
 func sectionHeader(title, copy, href, action string) Node {
-	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 		Div(Class("flex flex-wrap items-start justify-between gap-3"),
-			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-muted"), Text(copy))),
+			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(copy))),
 			core.PrimaryLink(href, "", Text(action)),
 		),
 	)

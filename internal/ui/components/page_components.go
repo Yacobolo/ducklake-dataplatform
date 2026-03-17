@@ -66,7 +66,7 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 		Label(Text("Catalog")),
 		core.SelectControl("", Option(Text("analytics")), Option(Text("warehouse"))),
 		Label(Text("Description")),
-		Textarea(Placeholder("Add details for teammates")),
+		core.TextareaControl("", Placeholder("Add details for teammates")),
 		Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"), core.PrimaryButton("", Type("button"), Text("Save")), core.SecondaryButton("", Type("button"), Text("Cancel"))),
 	)
 
@@ -88,17 +88,17 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 		Class("grid gap-4 md:grid-cols-2"),
 		Div(
 			Class("flex flex-col gap-3"),
-			P(Class("text-xs text-muted"), Text("Checkbox Group")),
-			checkboxOption("feature-audit", "feature", "Enable audit logs", true),
-			checkboxOption("feature-masking", "feature", "Enable column masking", true),
-			checkboxOption("feature-rls", "feature", "Enable row-level security", false),
+			P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Checkbox Group")),
+			core.Checkbox("feature-audit", "feature", "Enable audit logs", "Enable audit logs", true),
+			core.Checkbox("feature-masking", "feature", "Enable column masking", "Enable column masking", true),
+			core.Checkbox("feature-rls", "feature", "Enable row-level security", "Enable row-level security", false),
 		),
 		Div(
 			Class("flex flex-col gap-3"),
-			P(Class("text-xs text-muted"), Text("Radio + Toggle")),
-			radioOption("run-manual", "run-mode", "Manual run", true),
-			radioOption("run-scheduled", "run-mode", "Scheduled run", false),
-			toggleSwitch("notifications", "notifications", "Notify on failed runs", true),
+			P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Radio + Toggle")),
+			core.Radio("run-manual", "run-mode", "Manual run", "Manual run", true),
+			core.Radio("run-scheduled", "run-mode", "Scheduled run", "Scheduled run", false),
+			core.Toggle("notifications", "notifications", "Notify on failed runs", true),
 		),
 	)
 
@@ -230,11 +230,11 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 
 	tokenSwatches := Div(
 		Class("grid gap-3 sm:grid-cols-2 xl:grid-cols-5"),
-		Div(Class("flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4"), Div(Class("h-16 rounded-lg bg-accent")), Code(Class("text-xs"), Text("--color-accent"))),
-		Div(Class("flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4"), Div(Class("h-16 rounded-lg bg-success")), Code(Class("text-xs"), Text("--color-success"))),
-		Div(Class("flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4"), Div(Class("h-16 rounded-lg bg-warning")), Code(Class("text-xs"), Text("--color-warning"))),
-		Div(Class("flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4"), Div(Class("h-16 rounded-lg bg-danger")), Code(Class("text-xs"), Text("--color-danger"))),
-		Div(Class("flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4"), Div(Class("h-16 rounded-lg bg-surface-muted")), Code(Class("text-xs"), Text("--color-surface-muted"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-accent-emphasis)]")), Code(Class("text-xs"), Text("--color-accent"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-success-emphasis)]")), Code(Class("text-xs"), Text("--color-success"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-attention-emphasis)]")), Code(Class("text-xs"), Text("--color-warning"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-danger-emphasis)]")), Code(Class("text-xs"), Text("--color-danger"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-muted)]")), Code(Class("text-xs"), Text("--color-surface-muted"))),
 	)
 
 	return core.AppPage(
@@ -242,33 +242,32 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 		"components",
 		principal,
 		Div(
-			Class("grid gap-4"),
-			componentCard("Buttons", "Shared button variants for primary flows, secondary actions, and compact icon controls.", buttonShowcase, buttonGroupShowcase),
-			componentCard("Labels", "Semantic status labels driven by shared tone tokens.", labelShowcase),
-			componentCard("Breadcrumbs", "Path navigation for hierarchical resources and detail pages.", breadcrumbShowcase),
-			componentCard("Action Bar", "Search, sort, and actions in a single reusable row with DataStar signals.", actionBarShowcase),
-			componentCard("Forms", "Input, select, and textarea controls using tokenized surfaces, borders, and focus states.", formShowcase, twoColumnFormShowcase, selectionControlShowcase),
-			componentCard("Toolbar & Filters", "Reusable toolbar and quick-filter card for list pages.", toolbarShowcase),
-			componentCard("Tables", "Data table pattern for list pages with semantic labels.", tableShowcase),
-			componentCard("Menus", "Dropdown action menu used across list and detail views.", dropdownShowcase),
-			componentCard("Avatar", "Compact identity markers with semantic tone support.", avatarShowcase),
-			componentCard("Feedback", "Inline banners for informational, success, warning, and error states.", feedbackShowcase),
-			componentCard("Loading", "Spinner and progress indicators for async operations and background processing.", loadingShowcase),
-			componentCard("Cards & Metrics", "Stat cards for dashboards and overview pages.", metricsShowcase),
-			componentCard("Tabs", "Segmented tabs for switching related detail panels without nested boxes.", tabShowcase),
-			componentCard("Tree View", "Reusable hierarchical tree with icons, active leaf styling, and disclosure behavior used in catalog navigation.", treeShowcase),
-			componentCard("Form Fields", "Reusable field builder with required indicator, help text, and validation message.", limitedFormShowcase),
-			componentCard("Empty & Pagination", "Consistent empty state and pagination components for collection pages.", emptyAndPaginationShowcase),
-			componentCard("Theme Tokens", "Functional theme tokens are the source of truth for semantic colors in light and dark mode.", tokenSwatches),
+			Class("grid gap-8"),
+			componentCard("Buttons", "Shared buttons and link-buttons for primary flows, secondary actions, and icon affordances.", buttonShowcase, buttonGroupShowcase),
+			Div(Class("grid gap-8 xl:grid-cols-2"),
+				componentCard("Forms", "Shared inputs, selects, field wrappers, and real selection controls from core.", formShowcase, twoColumnFormShowcase, selectionControlShowcase, limitedFormShowcase),
+				componentCard("Menus & Tables", "Shared action menus and data tables for list and detail views.", dropdownShowcase, tableShowcase, toolbarShowcase, actionBarShowcase),
+			),
+			Div(Class("grid gap-8 xl:grid-cols-2"),
+				componentCard("States & Signals", "Empty states, banners, loading indicators, pagination, and semantic badges.", labelShowcase, feedbackShowcase, loadingShowcase, emptyAndPaginationShowcase),
+				componentCard("Navigation & Identity", "Breadcrumbs, tree navigation, avatars, and segmented tabs.", breadcrumbShowcase, treeShowcase, avatarShowcase, tabShowcase),
+			),
+			Div(Class("grid gap-8 xl:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.9fr)]"),
+				componentCard("Metrics", "Shared stat treatments used across dashboards, runtime assets, and products.", metricsShowcase),
+				componentCard("Theme Tokens", "Semantic theme aliases used by the component library in light and dark mode.", tokenSwatches),
+			),
 		),
 	)
 }
 
 func componentCard(title, copy string, body ...Node) Node {
 	nodes := []Node{
-		H2(Text(title)),
-		P(Class("text-xs text-muted"), Text(copy)),
+		Div(
+			Class("flex flex-col gap-2 border-l-2 border-[var(--borderColor-accent-emphasis)] pl-4"),
+			H2(Class("m-0 text-xl font-semibold tracking-tight text-[var(--fgColor-default)]"), Text(title)),
+			P(Class("m-0 max-w-2xl text-sm leading-6 text-[var(--fgColor-muted)]"), Text(copy)),
+		),
 	}
 	nodes = append(nodes, body...)
-	return Div(Class("flex flex-col gap-4 rounded-xl border border-border bg-background p-4 shadow-xs"), Group(nodes))
+	return Section(Class("flex flex-col gap-5 border-t border-[var(--borderColor-default)] pt-6 first:border-t-0 first:pt-0"), Group(nodes))
 }

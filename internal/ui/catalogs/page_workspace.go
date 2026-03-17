@@ -181,7 +181,7 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 	if d.Panel.Definition != "" {
 		definitionNode = Div(Class(catalogSectionClass()),
 			H3(Class(catalogSectionTitleClass()), Text("Definition")),
-			Pre(Class("rounded-xl border border-border bg-background p-3"), Text(d.Panel.Definition)),
+			Pre(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-3"), Text(d.Panel.Definition)),
 		)
 	}
 
@@ -264,7 +264,7 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 				"explorer",
 			),
 			Section(
-				Class("flex min-w-0 flex-col gap-4 rounded-2xl border border-border bg-background p-5 shadow-xs max-md:p-4"),
+				Class("flex min-w-0 flex-col gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-5 shadow-xs max-md:p-4"),
 				Div(Class("flex flex-wrap items-start justify-between gap-3"),
 					Div(Class("min-w-0 flex-1"),
 						catalogBreadcrumb(d),
@@ -515,7 +515,7 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 			childRows = append(childRows,
 				Tr(
 					data.Show(containsExprSignal(schema.Name+" "+schema.Owner+" "+schema.Created, "childq")),
-					Td(A(Href(schema.URL), Text(schema.Name))),
+					Td(core.TextLink(schema.URL, Text(schema.Name))),
 					Td(Text(dashIfEmpty(schema.Owner))),
 					Td(Text(dashIfEmpty(schema.Created))),
 				),
@@ -534,12 +534,12 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 				table := schema.Tables[j]
 				assetNode := Node(Text("-"))
 				if table.AssetURL != "" {
-					assetNode = A(Href(table.AssetURL), Text(core.FallbackString(table.AssetKey, "Open asset")))
+					assetNode = core.TextLink(table.AssetURL, Text(core.FallbackString(table.AssetKey, "Open asset")))
 				}
 				childRows = append(childRows,
 					Tr(
 						data.Show(containsExprSignal(table.Name+" "+table.Owner+" "+table.Created+" "+table.Kind, "childq")),
-						Td(A(Href(table.URL), Text(table.Name))),
+						Td(core.TextLink(table.URL, Text(table.Name))),
 						Td(Text(dashIfEmpty(table.Owner))),
 						Td(Text(dashIfEmpty(table.Created))),
 						Td(assetNode),
@@ -550,12 +550,12 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 				view := schema.Views[j]
 				assetNode := Node(Text("-"))
 				if view.AssetURL != "" {
-					assetNode = A(Href(view.AssetURL), Text(core.FallbackString(view.AssetKey, "Open asset")))
+					assetNode = core.TextLink(view.AssetURL, Text(core.FallbackString(view.AssetKey, "Open asset")))
 				}
 				childRows = append(childRows,
 					Tr(
 						data.Show(containsExprSignal(view.Name+" "+view.Owner+" "+view.Created+" "+view.Kind, "childq")),
-						Td(A(Href(view.URL), Text(view.Name))),
+						Td(core.TextLink(view.URL, Text(view.Name))),
 						Td(Text(dashIfEmpty(view.Owner))),
 						Td(Text(dashIfEmpty(view.Created))),
 						Td(assetNode),
@@ -583,7 +583,7 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 
 	descriptionNode := Node(nil)
 	if strings.TrimSpace(d.Panel.Description) != "" {
-		descriptionNode = P(Class("m-0 text-sm text-muted"), Text(d.Panel.Description))
+		descriptionNode = P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(d.Panel.Description))
 	}
 
 	headers := []Node{Th(Text("Name")), Th(Text("Owner")), Th(Text("Created at"))}
@@ -596,7 +596,7 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 
 	childTable := Node(P(Class(catalogMutedCopyClass()), Text("No child elements.")))
 	if len(childRows) > 0 {
-		childTable = Div(Class(catalogTableWrapClass()), core.DataTable("border-border-muted", THead(Tr(Group(headers))), TBody(Group(childRows))))
+		childTable = Div(Class(catalogTableWrapClass()), core.DataTable("border-[var(--borderColor-muted)]", THead(Tr(Group(headers))), TBody(Group(childRows))))
 	}
 
 	return Div(
@@ -615,7 +615,7 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 				Label(Class("sr-only"), Text("Filter child elements")),
 				core.InputControl("w-full", Type("search"), Placeholder(filterPlaceholder), data.Bind("childq"), AutoComplete("off")),
 			),
-			P(Class("m-0 whitespace-nowrap text-xs text-muted"), Text(strconv.Itoa(len(childRows))+" "+pluralize(len(childRows), countLabelSingular, countLabelPlural))),
+			P(Class("m-0 whitespace-nowrap text-xs text-[var(--fgColor-muted)]"), Text(strconv.Itoa(len(childRows))+" "+pluralize(len(childRows), countLabelSingular, countLabelPlural))),
 		),
 		childTable,
 	)
@@ -635,13 +635,13 @@ func catalogBreadcrumb(d catalogWorkspacePageData) Node {
 
 	if d.SelectedSchemaName != "" {
 		items = append(items,
-			Li(Class(catalogBreadcrumbItemClass()), Span(Class("catalog-breadcrumb-separator text-muted"), Attr("aria-hidden", "true"), Text("/")), A(Href(catalogExplorerURL(d.ActiveCatalogName, d.SelectedSchemaName, "schema", "")), Title(d.SelectedSchemaName), Span(Class(catalogBreadcrumbLabelClass(false)), Text(d.SelectedSchemaName)))),
+			Li(Class(catalogBreadcrumbItemClass()), Span(Class("catalog-breadcrumb-separator text-[var(--fgColor-muted)]"), Attr("aria-hidden", "true"), Text("/")), A(Href(catalogExplorerURL(d.ActiveCatalogName, d.SelectedSchemaName, "schema", "")), Title(d.SelectedSchemaName), Span(Class(catalogBreadcrumbLabelClass(false)), Text(d.SelectedSchemaName)))),
 		)
 	}
 
 	if d.SelectedName != "" {
 		items = append(items,
-			Li(Class(catalogBreadcrumbItemClass()), Span(Class("catalog-breadcrumb-separator text-muted"), Attr("aria-hidden", "true"), Text("/")), Span(Class(catalogBreadcrumbLabelClass(true)), Title(d.SelectedName), Text(d.SelectedName))),
+			Li(Class(catalogBreadcrumbItemClass()), Span(Class("catalog-breadcrumb-separator text-[var(--fgColor-muted)]"), Attr("aria-hidden", "true"), Text("/")), Span(Class(catalogBreadcrumbLabelClass(true)), Title(d.SelectedName), Text(d.SelectedName))),
 		)
 	}
 

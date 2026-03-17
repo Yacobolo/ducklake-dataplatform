@@ -26,18 +26,18 @@ class SqlEditorSurface extends LitElement {
       height: var(--sql-editor-height, 100%);
       flex: var(--sql-editor-flex, 1);
       direction: ltr;
-      background: var(--color-background);
+      background: var(--bgColor-default);
       overflow: hidden;
     }
 
     .gutter {
       position: relative;
       margin: 0;
-      padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3) calc(var(--spacing) * 2) calc(var(--spacing) * 2);
-      color: var(--color-muted);
-      font-family: var(--font-mono);
+      padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+      color: var(--fgColor-muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: var(--text-sm);
-      line-height: var(--text-sm--line-height);
+      line-height: 1.25rem;
       text-align: right;
       white-space: pre;
       user-select: none;
@@ -49,17 +49,17 @@ class SqlEditorSurface extends LitElement {
     .gutter::after {
       content: "";
       position: absolute;
-      top: var(--sql-gutter-pad-top, calc(var(--spacing) * 2));
-      right: calc(var(--spacing) * 1);
+      top: var(--sql-gutter-pad-top, 0.5rem);
+      right: 0.25rem;
       width: 2px;
       height: var(--sql-gutter-divider-height, 0);
-      background: var(--color-border-accent);
+      background: var(--borderColor-accent-emphasis);
       border-radius: 9999px;
       pointer-events: none;
     }
 
     :host(:focus-within) .gutter::after {
-      background: var(--color-border-accent);
+      background: var(--borderColor-accent-emphasis);
     }
 
     .input-wrap {
@@ -73,14 +73,14 @@ class SqlEditorSurface extends LitElement {
       position: absolute;
       inset: 0;
       margin: 0;
-      padding: calc(var(--spacing) * 2);
+      padding: 0.5rem;
       overflow: hidden;
       pointer-events: none;
       white-space: pre;
-      color: var(--color-foreground);
-      font-family: var(--font-mono);
+      color: var(--fgColor-default);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: var(--text-sm);
-      line-height: var(--text-sm--line-height);
+      line-height: 1.25rem;
       z-index: 1;
     }
 
@@ -90,7 +90,7 @@ class SqlEditorSurface extends LitElement {
     }
 
     .highlight-layer code.hljs {
-      color: var(--color-foreground);
+      color: var(--fgColor-default);
       background: transparent;
       padding: 0;
     }
@@ -98,22 +98,22 @@ class SqlEditorSurface extends LitElement {
     .highlight-layer .hljs-keyword,
     .highlight-layer .hljs-operator,
     .highlight-layer .hljs-selector-tag {
-      color: var(--color-accent);
-      font-weight: var(--font-weight-semibold);
+      color: var(--fgColor-accent);
+      font-weight: 600;
     }
 
     .highlight-layer .hljs-string,
     .highlight-layer .hljs-quote {
-      color: var(--color-success-text);
+      color: var(--fgColor-success);
     }
 
     .highlight-layer .hljs-number,
     .highlight-layer .hljs-literal {
-      color: var(--color-warning-text);
+      color: var(--fgColor-attention);
     }
 
     .highlight-layer .hljs-comment {
-      color: var(--color-muted);
+      color: var(--fgColor-muted);
       font-style: italic;
     }
 
@@ -121,7 +121,7 @@ class SqlEditorSurface extends LitElement {
     .highlight-layer .hljs-type,
     .highlight-layer .hljs-function,
     .highlight-layer .hljs-title {
-      color: var(--color-danger-text);
+      color: var(--fgColor-danger);
     }
 
     .active-line {
@@ -129,10 +129,10 @@ class SqlEditorSurface extends LitElement {
       left: 0;
       right: 0;
       top: 0;
-      background: var(--color-accent-muted);
+      background: var(--bgColor-accent-muted);
       opacity: 0;
       pointer-events: none;
-      transition: opacity var(--base-duration-100) ease;
+      transition: opacity 100ms ease;
       z-index: 0;
     }
 
@@ -149,20 +149,20 @@ class SqlEditorSurface extends LitElement {
       height: 100%;
       max-height: 100%;
       resize: none;
-      padding-left: calc(var(--spacing) * 2);
+      padding-left: 0.5rem;
       background: transparent;
       color: transparent;
-      caret-color: var(--color-foreground);
-      font-family: var(--font-mono);
+      caret-color: var(--fgColor-default);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: var(--text-sm);
-      line-height: var(--text-sm--line-height);
+      line-height: 1.25rem;
       box-shadow: none;
       position: relative;
       z-index: 2;
       -webkit-text-fill-color: transparent;
     }
 
-    @media (max-width: var(--breakpoint-medium)) {
+    @media (max-width: 48rem) {
       :host {
         display: block;
       }
@@ -175,7 +175,7 @@ class SqlEditorSurface extends LitElement {
 
       ::slotted(textarea.sql-editor-textarea) {
         min-height: 12rem;
-        color: var(--color-foreground);
+        color: var(--fgColor-default);
       }
     }
   `;
@@ -281,7 +281,7 @@ class SqlEditorSurface extends LitElement {
     this.textarea.style.backgroundColor = "transparent";
     this.textarea.style.color = "transparent";
     this.textarea.style.webkitTextFillColor = "transparent";
-    this.textarea.style.caretColor = "var(--color-foreground)";
+    this.textarea.style.caretColor = "var(--fgColor-default)";
     textarea.addEventListener("input", this.onInput);
     textarea.addEventListener("scroll", this.onInput);
     textarea.addEventListener("keyup", this.onInput);

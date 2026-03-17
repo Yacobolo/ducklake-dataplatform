@@ -1,12 +1,12 @@
 {{ define "docs_pager" -}}
-<div class="mt-12 flex flex-wrap justify-between gap-4 border-t border-[color:var(--site-border)] pt-6">
+<div class="mt-12 flex flex-wrap justify-between gap-4 border-t border-[var(--borderColor-default)] pt-6">
   {{ if .Prev }}
-    <a class="inline-flex items-center justify-center rounded-full border border-[color:var(--site-border)] bg-[color:var(--site-panel)] px-4 py-2 text-sm font-medium text-[color:var(--site-ink)] no-underline transition hover:border-[color:color-mix(in_srgb,var(--site-brand)_35%,var(--site-border))] hover:bg-[color:var(--site-soft)]" href="{{ siteURL $.SiteRoot .Prev.Path }}">← {{ .Prev.Title }}</a>
+    <a class="inline-flex items-center justify-center rounded-full border border-[var(--button-default-borderColor-rest)] bg-[var(--button-default-bgColor-rest)] px-4 py-2 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] active:border-[var(--button-default-borderColor-active)] active:bg-[var(--button-default-bgColor-active)]" href="{{ siteURL $.SiteRoot .Prev.Path }}">← {{ .Prev.Title }}</a>
   {{ else }}
     <span></span>
   {{ end }}
   {{ if .Next }}
-    <a class="inline-flex items-center justify-center rounded-full border border-[color:var(--site-border)] bg-[color:var(--site-panel)] px-4 py-2 text-sm font-medium text-[color:var(--site-ink)] no-underline transition hover:border-[color:color-mix(in_srgb,var(--site-brand)_35%,var(--site-border))] hover:bg-[color:var(--site-soft)]" href="{{ siteURL $.SiteRoot .Next.Path }}">{{ .Next.Title }} →</a>
+    <a class="inline-flex items-center justify-center rounded-full border border-[var(--button-default-borderColor-rest)] bg-[var(--button-default-bgColor-rest)] px-4 py-2 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] active:border-[var(--button-default-borderColor-active)] active:bg-[var(--button-default-bgColor-active)]" href="{{ siteURL $.SiteRoot .Next.Path }}">{{ .Next.Title }} →</a>
   {{ end }}
 </div>
 {{- end }}

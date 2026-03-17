@@ -28,16 +28,16 @@ They are related because a stale downstream output is often caused by something 
 
 ## Freshness And Impact View
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/lineage-flow.svg" alt="Diagram showing lineage from source tables through models and assets into metrics, with freshness and impact indicators." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/lineage-flow.svg" alt="Diagram showing lineage from source tables through models and assets into metrics, with freshness and impact indicators." loading="lazy" decoding="async">
 </figure>
 
 Read this first diagram left to right. The point is not only that data moves from source to model to asset to metric. The point is that once a downstream metric looks wrong or stale, Duck can trace upstream connections and show impact in both directions.
 
 ## Blocker Tree
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/freshness-blocker-tree.svg" alt="Diagram showing an unhealthy downstream asset tracing freshness blockers back through upstream assets and checks." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/freshness-blocker-tree.svg" alt="Diagram showing an unhealthy downstream asset tracing freshness blockers back through upstream assets and checks." loading="lazy" decoding="async">
 </figure>
 
 Read the second diagram as an incident response view. The downstream asset is unhealthy, but the reason may sit above it in the graph: a failed check, a stale upstream asset, or a missing source update. The purpose of blockers is to avoid vague reasoning like “the dashboard is stale for some reason.”

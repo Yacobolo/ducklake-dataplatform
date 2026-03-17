@@ -30,18 +30,30 @@ func IconButton(size string, nodes ...Node) Node {
 }
 
 func PrimaryLink(href, size string, nodes ...Node) Node {
-	base := []Node{Href(href), Class(linkButtonClass(primaryButtonClass(size)))}
+	base := []Node{Href(href), Class(ClassNames(linkButtonClass(primaryButtonClass(size)), "text-[var(--button-primary-fgColor-rest)] visited:text-[var(--button-primary-fgColor-rest)] hover:text-[var(--button-primary-fgColor-rest)] active:text-[var(--button-primary-fgColor-rest)]"))}
 	return A(append(base, nodes...)...)
 }
 
 func SecondaryLink(href, size string, nodes ...Node) Node {
-	base := []Node{Href(href), Class(linkButtonClass(secondaryButtonClass(size)))}
+	base := []Node{Href(href), Class(ClassNames(linkButtonClass(secondaryButtonClass(size)), "text-[var(--button-default-fgColor-rest)] visited:text-[var(--button-default-fgColor-rest)] hover:text-[var(--button-default-fgColor-rest)] active:text-[var(--button-default-fgColor-rest)]"))}
 	return A(append(base, nodes...)...)
 }
 
 func DangerLink(href, size string, nodes ...Node) Node {
-	base := []Node{Href(href), Class(linkButtonClass(dangerButtonClass(size)))}
+	base := []Node{Href(href), Class(ClassNames(linkButtonClass(dangerButtonClass(size)), "text-[var(--button-danger-fgColor-rest)] visited:text-[var(--button-danger-fgColor-rest)] hover:text-[var(--button-danger-fgColor-hover)] active:text-[var(--button-danger-fgColor-active)]"))}
 	return A(append(base, nodes...)...)
+}
+
+func TextLink(href string, nodes ...Node) Node {
+	base := []Node{
+		Href(href),
+		Class("font-medium text-[var(--fgColor-accent)] no-underline visited:text-[var(--fgColor-accent)] hover:text-[var(--fgColor-accent)] hover:underline active:text-[var(--fgColor-accent)]"),
+	}
+	return A(append(base, nodes...)...)
+}
+
+func FieldLabel(text string) Node {
+	return Label(Class("mb-1 block text-xs font-semibold text-[var(--fgColor-muted)]"), Text(text))
 }
 
 func InputControl(extraClass string, nodes ...Node) Node {
@@ -74,10 +86,10 @@ func Badge(text, tone string) Node {
 }
 
 func ActionMenu(label string, items ...Node) Node {
-	summaryClass := "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-8 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground shadow-xs hover:bg-surface-muted"
+	summaryClass := "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] shadow-xs hover:bg-[var(--bgColor-muted)]"
 	summaryContent := Node(Text(label))
 	if label == "More" || label == "Actions" {
-		summaryClass = "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-border bg-background px-2 text-foreground shadow-xs hover:bg-surface-muted"
+		summaryClass = "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-xs hover:bg-[var(--bgColor-muted)]"
 		summaryContent = Group([]Node{
 			I(Class(IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
 			Span(Class("sr-only"), Text(label)),
@@ -91,15 +103,15 @@ func ActionMenu(label string, items ...Node) Node {
 }
 
 func ActionMenuLink(href, label string) Node {
-	return A(Href(href), Class(DropdownItemClass("text-foreground")), Span(Text(label)))
+	return A(Href(href), Class(DropdownItemClass("text-[var(--fgColor-default)]")), Span(Text(label)))
 }
 
 func ActionMenuPost(action, label string, csrfField func() Node, danger bool) Node {
 	btnClass := DropdownItemClass()
 	if danger {
-		btnClass += " text-danger-text hover:bg-danger-muted"
+		btnClass += " text-[var(--fgColor-danger)] hover:bg-[var(--bgColor-danger-muted)]"
 	} else {
-		btnClass += " text-foreground"
+		btnClass += " text-[var(--fgColor-default)]"
 	}
 	button := Form(
 		Method("post"),
@@ -109,7 +121,7 @@ func ActionMenuPost(action, label string, csrfField func() Node, danger bool) No
 	)
 	if danger {
 		return Group([]Node{
-			Div(Class("dropdown-divider my-1 border-t border-border-muted")),
+			Div(Class("dropdown-divider my-1 border-t border-[var(--borderColor-muted)]")),
 			button,
 		})
 	}
@@ -125,36 +137,103 @@ func EmptyState(iconName, title, message string, action Node) Node {
 	icon := Node(nil)
 	if iconName != "" {
 		icon = Div(
-			Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted text-accent"),
+			Class("flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"),
 			I(Class(NavIconClass()), Attr("data-lucide", iconName), Attr("aria-hidden", "true")),
 		)
 	}
 	return Div(
-		Class(cardClass("text-center")),
-		icon,
+		Class("grid gap-4 rounded-2xl border border-dashed border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-5"),
 		Div(
-			Class("flex flex-col items-center gap-2 text-center"),
-			P(Class("m-0 text-lg font-semibold"), Text(title)),
-			P(Class("m-0 text-sm text-muted"), Text(message)),
-			action,
+			Class("flex items-start gap-3"),
+			icon,
+			Div(
+				Class("flex min-w-0 flex-1 flex-col gap-2"),
+				P(Class("m-0 text-lg font-semibold"), Text(title)),
+				P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text(message)),
+				action,
+			),
+		),
+	)
+}
+
+func MetricCard(label, value, hint string) Node {
+	hintNode := Node(nil)
+	if hint != "" {
+		hintNode = P(Class("m-0 text-xs leading-5 text-[var(--fgColor-muted)]"), Text(hint))
+	}
+	return Div(
+		Class("grid gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4"),
+		P(Class("m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(label)),
+		Div(
+			Class("flex items-end justify-between gap-3"),
+			P(Class("m-0 text-3xl font-semibold leading-none text-[var(--fgColor-default)]"), Text(value)),
+			hintNode,
 		),
 	)
 }
 
 func MetaItem(label, value string) Node {
 	return Div(
-		Class("grid gap-1 border-b border-border pb-2 last:border-b-0 last:pb-0"),
-		Span(Class("text-[11px] font-semibold uppercase tracking-[0.04em] text-muted"), Text(label)),
-		Span(Class("text-sm text-foreground"), Text(value)),
+		Class("grid gap-1 border-b border-[var(--borderColor-default)] pb-2 last:border-b-0 last:pb-0"),
+		Span(Class("text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"), Text(label)),
+		Span(Class("text-sm text-[var(--fgColor-default)]"), Text(value)),
 	)
 }
 
-func MetricCard(label, value, hint string) Node {
-	return Div(
-		Class("flex flex-col gap-1 rounded-xl border border-border bg-surface-muted p-4 shadow-xs"),
-		P(Class("m-0 text-xs font-semibold uppercase tracking-[0.04em] text-muted"), Text(label)),
-		P(Class("m-0 text-2xl font-semibold text-foreground"), Text(value)),
-		P(Class("m-0 text-xs text-muted"), Text(hint)),
+func Checkbox(id, name, value, label string, checked bool) Node {
+	checkedNode := Node(nil)
+	if checked {
+		checkedNode = Checked()
+	}
+	return Label(
+		Class("inline-flex items-center gap-3 text-sm font-medium text-[var(--fgColor-default)]"),
+		Input(
+			Type("checkbox"),
+			ID(id),
+			Name(name),
+			Value(value),
+			checkedNode,
+			Class("m-0 inline-grid h-5 w-5 shrink-0 appearance-none place-content-center rounded-md border border-[var(--borderColor-muted)] bg-[var(--bgColor-default)] transition-colors after:h-2.5 after:w-1.5 after:origin-center after:rotate-45 after:scale-0 after:border-b-[3px] after:border-r-[3px] after:border-b-[var(--button-primary-fgColor-rest)] after:border-r-[var(--button-primary-fgColor-rest)] after:content-[''] checked:border-[var(--control-checked-borderColor-rest)] checked:bg-[var(--control-checked-bgColor-rest)] checked:after:scale-100 hover:border-[var(--control-borderColor-emphasis)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-outlineColor)] focus-visible:outline-offset-0 disabled:cursor-not-allowed disabled:border-[var(--control-borderColor-disabled)] disabled:bg-[var(--control-bgColor-disabled)]"),
+		),
+		Span(Text(label)),
+	)
+}
+
+func Radio(id, name, value, label string, checked bool) Node {
+	checkedNode := Node(nil)
+	if checked {
+		checkedNode = Checked()
+	}
+	return Label(
+		Class("inline-flex items-center gap-3 text-sm font-medium text-[var(--fgColor-default)]"),
+		Input(
+			Type("radio"),
+			ID(id),
+			Name(name),
+			Value(value),
+			checkedNode,
+			Class("m-0 inline-grid h-4 w-4 shrink-0 appearance-none place-content-center rounded-full border border-[var(--borderColor-muted)] bg-[var(--bgColor-default)] transition-colors after:h-2 after:w-2 after:scale-0 after:rounded-full after:bg-[var(--button-primary-fgColor-rest)] after:transition-transform after:content-[''] checked:border-[var(--control-checked-borderColor-rest)] checked:bg-[var(--bgColor-default)] checked:after:scale-100 checked:after:bg-[var(--control-checked-bgColor-rest)] hover:border-[var(--control-borderColor-emphasis)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-outlineColor)] focus-visible:outline-offset-0 disabled:cursor-not-allowed disabled:border-[var(--control-borderColor-disabled)] disabled:bg-[var(--control-bgColor-disabled)]"),
+		),
+		Span(Text(label)),
+	)
+}
+
+func Toggle(id, name, label string, checked bool) Node {
+	checkedNode := Node(nil)
+	stateLabel := "Off"
+	if checked {
+		checkedNode = Checked()
+		stateLabel = "On"
+	}
+	return Label(
+		Class("inline-grid grid-cols-[1fr_auto_auto] items-center gap-3 text-sm font-medium text-[var(--fgColor-default)]"),
+		Span(Class("text-[var(--fgColor-default)]"), Text(label)),
+		Span(Class("min-w-8 text-right text-xs leading-4 text-[var(--fgColor-muted)]"), Text(stateLabel)),
+		Input(Type("checkbox"), ID(id), Name(name), checkedNode, Class("peer sr-only")),
+		Span(
+			Class("relative inline-flex h-5 w-10 items-center justify-start rounded-full border border-[var(--controlTrack-borderColor-rest)] bg-[var(--controlTrack-bgColor-rest)] p-0.5 transition-colors peer-checked:border-[var(--control-checked-borderColor-rest)] peer-checked:bg-[var(--control-checked-bgColor-rest)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-[var(--focus-outlineColor)] peer-focus-visible:outline-offset-0"),
+			Span(Class("h-4 w-4 rounded-full bg-[var(--controlKnob-bgColor-rest)] shadow-xs transition-transform peer-checked:translate-x-5 peer-checked:bg-[var(--bgColor-default)]")),
+		),
 	)
 }
 
@@ -162,9 +241,9 @@ func FactList(items [][2]string) Node {
 	rows := make([]Node, 0, len(items))
 	for i := range items {
 		rows = append(rows, Div(
-			Class("flex items-start justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2"),
-			Span(Class("text-xs font-semibold uppercase tracking-[0.04em] text-muted"), Text(items[i][0])),
-			Span(Class("text-sm text-right text-foreground"), Text(items[i][1])),
+			Class("flex items-start justify-between gap-3 rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-2"),
+			Span(Class("text-xs font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"), Text(items[i][0])),
+			Span(Class("text-sm text-right text-[var(--fgColor-default)]"), Text(items[i][1])),
 		))
 	}
 	return Div(Class("grid gap-2"), Group(rows))
@@ -173,7 +252,7 @@ func FactList(items [][2]string) Node {
 func SubtleLink(href string, nodes ...Node) Node {
 	base := []Node{
 		Href(href),
-		Class("text-muted no-underline hover:text-foreground"),
+		Class("text-[var(--fgColor-muted)] no-underline hover:text-[var(--fgColor-default)]"),
 	}
 	return A(append(base, nodes...)...)
 }
@@ -183,7 +262,7 @@ func DetailShell(nodes ...Node) Node {
 }
 
 func DetailHero(nodes ...Node) Node {
-	return Div(append([]Node{Class("grid gap-4 rounded-2xl border border-border bg-[linear-gradient(135deg,var(--color-surface-muted)_0%,var(--color-background)_65%)] p-5 shadow-sm lg:grid-cols-[minmax(0,1.5fr)_minmax(16rem,0.8fr)]")}, nodes...)...)
+	return Div(append([]Node{Class("grid gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[linear-gradient(135deg,var(--bgColor-muted)_0%,var(--bgColor-default)_65%)] p-5 shadow-sm lg:grid-cols-[minmax(0,1.5fr)_minmax(16rem,0.8fr)]")}, nodes...)...)
 }
 
 func DetailHeroCopy(nodes ...Node) Node {
@@ -191,11 +270,11 @@ func DetailHeroCopy(nodes ...Node) Node {
 }
 
 func DetailHeroMeta(nodes ...Node) Node {
-	return Div(append([]Node{Class("grid gap-2 rounded-xl border border-border bg-background p-4")}, nodes...)...)
+	return Div(append([]Node{Class("grid gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4")}, nodes...)...)
 }
 
 func Kicker(text string) Node {
-	return P(Class("m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted"), Text(text))
+	return P(Class("m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(text))
 }
 
 func DetailTitleRow(nodes ...Node) Node {
@@ -203,11 +282,11 @@ func DetailTitleRow(nodes ...Node) Node {
 }
 
 func DetailTitle(text string) Node {
-	return H2(Class("m-0 text-3xl font-semibold leading-tight text-foreground"), Text(text))
+	return H2(Class("m-0 text-3xl font-semibold leading-tight text-[var(--fgColor-default)]"), Text(text))
 }
 
 func DetailDescription(text string) Node {
-	return P(Class("m-0 max-w-3xl text-sm leading-6 text-muted"), Text(text))
+	return P(Class("m-0 max-w-3xl text-sm leading-6 text-[var(--fgColor-muted)]"), Text(text))
 }
 
 func BadgeRow(nodes ...Node) Node {
@@ -239,5 +318,5 @@ func ItemList(extraClass string, nodes ...Node) Node {
 }
 
 func ItemListEntry(nodes ...Node) Node {
-	return Li(append([]Node{Class("rounded-lg border border-border bg-background px-3 py-2 text-sm")}, nodes...)...)
+	return Li(append([]Node{Class("rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-2 text-sm")}, nodes...)...)
 }

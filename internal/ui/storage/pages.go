@@ -47,13 +47,13 @@ func storageHomePage(principal domain.ContextPrincipal) Node {
 }
 
 func storageCredentialsListPage(principal domain.ContextPrincipal, rows []storageCredentialRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class("text-xs text-muted"), Text("No storage credentials found.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No storage credentials found.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-accent"), Text(row.Name))),
+				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
 				Td(Text(row.Type)),
 				Td(Text(row.Owner)),
 				Td(Text(row.Updated)),
@@ -70,21 +70,21 @@ func storageCredentialsListPage(principal domain.ContextPrincipal, rows []storag
 	return core.AppPage("Storage: Credentials", "storage", principal,
 		storageSectionNav("credentials"),
 		sectionHeader("Storage credentials", "Create and manage governed cloud storage credentials.", "/ui/storage/credentials/new", "New credential"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			table,
-			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" credentials. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" credentials. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
 
 func storageLocationsListPage(principal domain.ContextPrincipal, rows []storageLocationRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class("text-xs text-muted"), Text("No external locations found.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No external locations found.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-accent"), Text(row.Name))),
+				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
 				Td(Text(row.StorageURL)),
 				Td(Text(row.CredentialName)),
 				Td(func() Node {
@@ -106,24 +106,24 @@ func storageLocationsListPage(principal domain.ContextPrincipal, rows []storageL
 	return core.AppPage("Storage: Locations", "storage", principal,
 		storageSectionNav("locations"),
 		sectionHeader("External locations", "Manage external storage locations backed by named credentials.", "/ui/storage/locations/new", "New location"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			table,
-			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" locations. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" locations. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
 
 func storageVolumesListPage(principal domain.ContextPrincipal, catalogName, schemaName string, rows []storageVolumeRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class("text-xs text-muted"), Text("Choose a catalog and schema to load volumes.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Choose a catalog and schema to load volumes.")))
 	if catalogName != "" && schemaName != "" {
-		table = P(Class("text-xs text-muted"), Text("No volumes found for that catalog and schema."))
+		table = P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No volumes found for that catalog and schema."))
 	}
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-accent"), Text(row.Name))),
+				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
 				Td(Text(row.VolumeType)),
 				Td(Text(row.StorageLocation)),
 				Td(Text(row.Owner)),
@@ -140,16 +140,16 @@ func storageVolumesListPage(principal domain.ContextPrincipal, catalogName, sche
 	return core.AppPage("Storage: Volumes", "storage", principal,
 		storageSectionNav("volumes"),
 		sectionHeader("Volumes", "Create and manage governed storage volumes within catalog schemas.", "/ui/storage/volumes/new", "New volume"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			Form(Class("grid gap-3 md:grid-cols-2 md:items-end"), Method("get"), Action("/ui/storage/volumes"),
 				Div(Label(Text("Catalog")), core.InputControl("", Name("catalog"), Value(catalogName))),
 				Div(Label(Text("Schema")), core.InputControl("", Name("schema"), Value(schemaName))),
 				Div(Class("md:col-span-2"), core.SecondaryButton("", Type("submit"), Text("Load volumes"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			table,
-			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" volumes. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" volumes. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
@@ -157,7 +157,7 @@ func storageVolumesListPage(principal domain.ContextPrincipal, catalogName, sche
 func storageCredentialDetailPage(principal domain.ContextPrincipal, item *domain.StorageCredential, csrfFieldProvider func() Node) Node {
 	return core.AppPage("Storage Credential: "+item.Name, "storage", principal,
 		storageSectionNav("credentials"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			sectionTitle("Credential details"),
 			detailMeta("Type", string(item.CredentialType)),
 			detailMeta("Owner", fallbackString(item.Owner, "unknown")),
@@ -174,7 +174,7 @@ func storageCredentialDetailPage(principal domain.ContextPrincipal, item *domain
 func storageLocationDetailPage(principal domain.ContextPrincipal, item *domain.ExternalLocation, csrfFieldProvider func() Node) Node {
 	return core.AppPage("External Location: "+item.Name, "storage", principal,
 		storageSectionNav("locations"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			sectionTitle("Location details"),
 			detailMeta("URL", item.URL),
 			detailMeta("Credential", item.CredentialName),
@@ -197,7 +197,7 @@ func storageVolumeDetailPage(principal domain.ContextPrincipal, item *domain.Vol
 
 	return core.AppPage("Volume: "+item.Name, "storage", principal,
 		storageSectionNav("volumes"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			sectionTitle("Volume details"),
 			detailMeta("Catalog", item.CatalogName),
 			detailMeta("Schema", item.SchemaName),
@@ -321,7 +321,7 @@ func storageFormPage(principal domain.ContextPrincipal, title, action string, cs
 }
 
 func storageSectionNav(active string) Node {
-	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 		Div(Class("flex flex-wrap gap-2"),
 			navButton("Credentials", "/ui/storage/credentials", active == "credentials"),
 			navButton("Locations", "/ui/storage/locations", active == "locations"),
@@ -338,18 +338,18 @@ func navButton(label, href string, active bool) Node {
 }
 
 func sectionHeader(title, copy, href, action string) Node {
-	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 		Div(Class("flex flex-wrap items-start justify-between gap-3"),
-			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-muted"), Text(copy))),
+			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(copy))),
 			core.PrimaryLink(href, "", Text(action)),
 		),
 	)
 }
 
 func storageCard(title, copy, href string) Node {
-	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 		H2(Class("mt-0 text-lg font-semibold"), Text(title)),
-		P(Class("text-sm text-muted"), Text(copy)),
+		P(Class("text-sm text-[var(--fgColor-muted)]"), Text(copy)),
 		core.SecondaryLink(href, "", Text("Open")),
 	)
 }
@@ -366,11 +366,11 @@ func statusPill(text, tone string) Node {
 	className := "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
 	switch tone {
 	case "success":
-		className += " bg-success-muted text-success-text"
+		className += " bg-[var(--bgColor-success-muted)] text-[var(--fgColor-success)]"
 	case "attention":
-		className += " bg-warning-muted text-warning-text"
+		className += " bg-[var(--bgColor-attention-muted)] text-[var(--fgColor-attention)]"
 	default:
-		className += " bg-surface-muted text-foreground"
+		className += " bg-[var(--bgColor-muted)] text-[var(--fgColor-default)]"
 	}
 	return Span(Class(className), Text(text))
 }

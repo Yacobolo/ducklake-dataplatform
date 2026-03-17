@@ -35,7 +35,7 @@ func stringsJoin(values []string) string {
 }
 
 func catalogSectionClass(extra ...string) string {
-	return core.ClassNames("flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4", core.ClassNames(extra...))
+	return core.ClassNames("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4", core.ClassNames(extra...))
 }
 
 func catalogMetaListClass(extra ...string) string {
@@ -55,23 +55,23 @@ func catalogMetaValueClass() string {
 }
 
 func catalogTabsClass() string {
-	return "flex flex-wrap gap-2 border-b border-border pb-3"
+	return "flex flex-wrap gap-2 border-b border-[var(--borderColor-default)] pb-3"
 }
 
 func catalogTabClass(active bool) string {
 	base := "rounded-lg px-3 py-2 text-sm font-medium no-underline transition-colors"
 	if active {
-		return core.ClassNames(base, "bg-accent-muted text-accent")
+		return core.ClassNames(base, "bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]")
 	}
-	return core.ClassNames(base, "text-muted hover:bg-background hover:text-foreground")
+	return core.ClassNames(base, "text-[var(--fgColor-muted)] hover:bg-[var(--bgColor-default)] hover:text-[var(--fgColor-default)]")
 }
 
 func catalogHistoryFilterClass(active bool) string {
 	base := "inline-flex min-h-9 items-center rounded-full border px-3 text-sm no-underline transition-colors"
 	if active {
-		return core.ClassNames(base, "border-border-accent bg-accent-muted text-accent")
+		return core.ClassNames(base, "border-[var(--borderColor-accent-emphasis)] bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]")
 	}
-	return core.ClassNames(base, "border-border-muted text-muted hover:text-foreground")
+	return core.ClassNames(base, "border-[var(--borderColor-muted)] text-[var(--fgColor-muted)] hover:text-[var(--fgColor-default)]")
 }
 
 func catalogBreadcrumbClass() string {
@@ -79,7 +79,7 @@ func catalogBreadcrumbClass() string {
 }
 
 func catalogBreadcrumbListClass() string {
-	return "flex max-w-full min-w-0 flex-wrap items-center gap-1 text-xs text-muted"
+	return "flex max-w-full min-w-0 flex-wrap items-center gap-1 text-xs text-[var(--fgColor-muted)]"
 }
 
 func catalogBreadcrumbItemClass() string {
@@ -89,7 +89,7 @@ func catalogBreadcrumbItemClass() string {
 func catalogBreadcrumbLabelClass(current bool) string {
 	base := "inline-block max-w-[min(32ch,40vw)] overflow-hidden text-ellipsis whitespace-nowrap align-bottom"
 	if current {
-		return core.ClassNames(base, "font-semibold text-foreground")
+		return core.ClassNames(base, "font-semibold text-[var(--fgColor-default)]")
 	}
 	return base
 }
@@ -99,11 +99,11 @@ func catalogOverviewToolbarClass() string {
 }
 
 func catalogSectionTitleClass() string {
-	return "m-0 text-lg font-semibold text-foreground"
+	return "m-0 text-lg font-semibold text-[var(--fgColor-default)]"
 }
 
 func catalogMutedCopyClass() string {
-	return "text-sm text-muted"
+	return "text-sm text-[var(--fgColor-muted)]"
 }
 
 func catalogTableWrapClass(extra ...string) string {

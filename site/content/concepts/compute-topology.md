@@ -28,8 +28,8 @@ Fallback means the platform can route work back to local execution if remote wor
 
 ## Topology Diagram
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/control-plane-remote-compute.svg" alt="Diagram showing the Duck control plane sending authorized work to local execution or remote workers while storage and identity remain centralized." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/control-plane-remote-compute.svg" alt="Diagram showing the Duck control plane sending authorized work to local execution or remote workers while storage and identity remain centralized." loading="lazy" decoding="async">
 </figure>
 
 Read the diagram from the principal inward. Every request still enters the Duck control plane first. From there, Duck may choose local execution or a remote worker. Both paths still depend on the same governance and storage context. The important lesson is that runtime shape can branch while governance remains centralized.

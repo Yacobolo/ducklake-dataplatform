@@ -41,11 +41,11 @@ func assetsListPage(principal domain.ContextPrincipal, rows []assetsListRowData,
 		"assets",
 		principal,
 		Div(
-			Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			Div(Class("mb-4 flex flex-wrap items-start justify-between gap-3"),
 				Div(
 					H2(Class("m-0 text-xl font-semibold"), Text("Runtime assets")),
-					P(Class("m-0 text-sm text-muted"), Text(assetsHeroText(summary, canMaterialize, backfillConfigured))),
+					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(assetsHeroText(summary, canMaterialize, backfillConfigured))),
 				),
 				core.SecondaryLink("/ui/catalogs", "", Text("Browse catalogs")),
 			),
@@ -56,7 +56,7 @@ func assetsListPage(principal domain.ContextPrincipal, rows []assetsListRowData,
 				metricCard("Auto", strconv.Itoa(summary.AutoMaterialized), "Auto materialized assets"),
 			),
 			assetsListTable(rows),
-			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" assets. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" assets. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
@@ -99,7 +99,7 @@ func assetsHeroText(summary assetsListSummary, canMaterialize bool, backfillConf
 
 func assetsListTable(rows []assetsListRowData) Node {
 	if len(rows) == 0 {
-		return P(Class("text-xs text-muted"), Text("No assets found yet."))
+		return P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No assets found yet."))
 	}
 
 	tableRows := make([]Node, 0, len(rows))
@@ -107,8 +107,8 @@ func assetsListTable(rows []assetsListRowData) Node {
 		row := rows[i]
 		tableRows = append(tableRows, Tr(
 			Td(
-				A(Href(row.URL), Class("font-medium text-accent"), Text(row.AssetKey)),
-				P(Class("m-0 text-xs text-muted"), Text(fallbackString(row.Description, "No description yet."))),
+				A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.AssetKey)),
+				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(fallbackString(row.Description, "No description yet."))),
 			),
 			Td(statusPill(strings.ToUpper(row.Type), assetTypeTone(row.Type))),
 			Td(Text(fallbackString(row.Owner, "-"))),
@@ -142,10 +142,10 @@ func assetsListTable(rows []assetsListRowData) Node {
 
 func metricCard(label, value, hint string) Node {
 	return Div(
-		Class("rounded-lg border border-border-muted bg-surface-muted p-3"),
-		P(Class("m-0 text-xs font-medium uppercase tracking-wide text-muted"), Text(label)),
+		Class("rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3"),
+		P(Class("m-0 text-xs font-medium uppercase tracking-wide text-[var(--fgColor-muted)]"), Text(label)),
 		P(Class("my-1 text-2xl font-semibold"), Text(value)),
-		P(Class("m-0 text-xs text-muted"), Text(hint)),
+		P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(hint)),
 	)
 }
 
@@ -153,15 +153,15 @@ func statusPill(text, tone string) Node {
 	className := "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
 	switch tone {
 	case "success":
-		className += " bg-success-muted text-success-text"
+		className += " bg-[var(--bgColor-success-muted)] text-[var(--fgColor-success)]"
 	case "attention":
-		className += " bg-warning-muted text-warning-text"
+		className += " bg-[var(--bgColor-attention-muted)] text-[var(--fgColor-attention)]"
 	case "severe":
-		className += " bg-danger-muted text-danger-text"
+		className += " bg-[var(--bgColor-danger-muted)] text-[var(--fgColor-danger)]"
 	case "neutral":
-		className += " bg-surface-muted text-foreground"
+		className += " bg-[var(--bgColor-muted)] text-[var(--fgColor-default)]"
 	default:
-		className += " bg-accent-muted text-accent"
+		className += " bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
 	}
 	return Span(Class(className), Text(text))
 }

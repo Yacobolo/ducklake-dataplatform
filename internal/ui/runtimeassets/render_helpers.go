@@ -23,9 +23,9 @@ func assetSubGridClass() string {
 }
 
 func assetPanelClass(extra ...string) string {
-	return core.ClassNames("flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4", core.ClassNames(extra...))
+	return core.ClassNames("flex min-w-0 flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4", core.ClassNames(extra...))
 }
 
 func assetTableSubtitleClass() string {
-	return "mt-1 mb-0 text-xs leading-5 text-muted"
+	return "mt-1 mb-0 text-xs leading-5 text-[var(--fgColor-muted)]"
 }

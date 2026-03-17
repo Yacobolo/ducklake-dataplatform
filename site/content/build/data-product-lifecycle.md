@@ -25,8 +25,8 @@ Use this guide when you are turning technical outputs into a reusable, governed 
 
 ## Visual Model
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/data-product-anatomy.svg" alt="Diagram showing outputs and semantic entrypoints grouped into a versioned data product owned by a team within a domain." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/data-product-anatomy.svg" alt="Diagram showing outputs and semantic entrypoints grouped into a versioned data product owned by a team within a domain." loading="lazy" decoding="async">
 </figure>
 
 ## Verification

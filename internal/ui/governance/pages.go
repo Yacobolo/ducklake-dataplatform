@@ -84,7 +84,7 @@ func governanceHomePage(principal domain.ContextPrincipal) Node {
 }
 
 func governanceSearchPage(principal domain.ContextPrincipal, queryText, objectType, catalogName string, rows []domain.SearchResult) Node {
-	resultsNode := Node(P(Class("text-xs text-muted"), Text("Run a search to see matching objects.")))
+	resultsNode := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Run a search to see matching objects.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
@@ -105,7 +105,7 @@ func governanceSearchPage(principal domain.ContextPrincipal, queryText, objectTy
 
 	return core.AppPage("Governance: Search", "governance", principal,
 		governanceSectionNav("search"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text("Search catalog metadata")),
 			Form(Class("grid gap-3 md:grid-cols-3"), Method("get"), Action("/ui/governance/search"),
 				Div(Label(Text("Query")), core.InputControl("", Name("q"), Value(queryText))),
@@ -114,12 +114,12 @@ func governanceSearchPage(principal domain.ContextPrincipal, queryText, objectTy
 				Div(Class("md:col-span-3"), core.PrimaryButton("", Type("submit"), Text("Search"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), resultsNode),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), resultsNode),
 	)
 }
 
 func governanceTagsPage(principal domain.ContextPrincipal, rows []governanceTagRowData, page domain.PageRequest, total int64, csrfFieldProvider func() Node) Node {
-	table := Node(P(Class("text-xs text-muted"), Text("No tags defined yet.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No tags defined yet.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
@@ -140,7 +140,7 @@ func governanceTagsPage(principal domain.ContextPrincipal, rows []governanceTagR
 
 	return core.AppPage("Governance: Tags", "governance", principal,
 		governanceSectionNav("tags"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text("Create tag")),
 			Form(Class("grid gap-3"), Method("post"), Action("/ui/governance/tags"),
 				csrfFieldProvider(),
@@ -151,7 +151,7 @@ func governanceTagsPage(principal domain.ContextPrincipal, rows []governanceTagR
 				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create tag"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text("Assign tag")),
 			Form(Class("grid gap-3"), Method("post"), Action("/ui/governance/tag-assignments"),
 				csrfFieldProvider(),
@@ -166,7 +166,7 @@ func governanceTagsPage(principal domain.ContextPrincipal, rows []governanceTagR
 				Div(Class("mt-2"), core.SecondaryButton("", Type("submit"), Text("Assign tag"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text("Remove tag assignment")),
 			Form(Class("grid gap-3"), Method("post"), Action("/ui/governance/tag-assignments/delete"),
 				csrfFieldProvider(),
@@ -175,15 +175,15 @@ func governanceTagsPage(principal domain.ContextPrincipal, rows []governanceTagR
 				Div(Class("mt-2"), core.DangerButton("", Type("submit"), Text("Remove assignment"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			table,
-			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" tags. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" tags. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
 
 func governanceAuditLogsPage(principal domain.ContextPrincipal, rows []auditRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class("text-xs text-muted"), Text("No audit logs found.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No audit logs found.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
@@ -197,15 +197,15 @@ func governanceAuditLogsPage(principal domain.ContextPrincipal, rows []auditRowD
 	}
 	return core.AppPage("Governance: Audit Logs", "governance", principal,
 		governanceSectionNav("audit"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			table,
-			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" audit events. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" audit events. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
 
 func governanceQueryHistoryPage(principal domain.ContextPrincipal, rows []queryHistoryRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class("text-xs text-muted"), Text("No query history found.")))
+	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No query history found.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
@@ -219,9 +219,9 @@ func governanceQueryHistoryPage(principal domain.ContextPrincipal, rows []queryH
 	}
 	return core.AppPage("Governance: Query History", "governance", principal,
 		governanceSectionNav("history"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			table,
-			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" query history entries. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" query history entries. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
@@ -251,16 +251,16 @@ func governanceManifestPage(d governanceManifestPageData) Node {
 			maskRows = append(maskRows, Tr(Td(Text(column)), Td(Code(Text(d.Result.ColumnMasks[column])))))
 		}
 		resultNode = Group([]Node{
-			Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Manifest summary")), P(Text("Table: "+d.Result.Schema+"."+d.Result.Table)), P(Text("Expires at: "+formatTime(d.Result.ExpiresAt)))),
-			Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Columns")), Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"), THead(Tr(Th(Text("Name")), Th(Text("Type")))), TBody(Group(columnRows))))),
-			Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Files")), Ul(Group(fileRows))),
-			Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Row filters")), Ul(Group(filterRows))),
-			Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Column masks")), Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"), THead(Tr(Th(Text("Column")), Th(Text("Mask")))), TBody(Group(maskRows))))),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Manifest summary")), P(Text("Table: "+d.Result.Schema+"."+d.Result.Table)), P(Text("Expires at: "+formatTime(d.Result.ExpiresAt)))),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Columns")), Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"), THead(Tr(Th(Text("Name")), Th(Text("Type")))), TBody(Group(columnRows))))),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Files")), Ul(Group(fileRows))),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Row filters")), Ul(Group(filterRows))),
+			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Column masks")), Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"), THead(Tr(Th(Text("Column")), Th(Text("Mask")))), TBody(Group(maskRows))))),
 		})
 	}
 	return core.AppPage("Manifest", "governance", d.Principal,
 		governanceSectionNav("manifest"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text("Generate manifest")),
 			Form(Class("grid gap-3"), Method("post"), Action("/ui/governance/manifest"),
 				d.CSRFFieldProvider(),
@@ -278,7 +278,7 @@ func governanceManifestPage(d governanceManifestPageData) Node {
 }
 
 func governanceLineagePage(d governanceLineagePageData) Node {
-	upstreamTable := Node(P(Class("text-xs text-muted"), Text("No upstream lineage found.")))
+	upstreamTable := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No upstream lineage found.")))
 	if len(d.UpstreamRows) > 0 {
 		rows := make([]Node, 0, len(d.UpstreamRows))
 		for i := range d.UpstreamRows {
@@ -303,7 +303,7 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 		)
 	}
 
-	downstreamTable := Node(P(Class("text-xs text-muted"), Text("No downstream lineage found.")))
+	downstreamTable := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No downstream lineage found.")))
 	if len(d.DownstreamRows) > 0 {
 		rows := make([]Node, 0, len(d.DownstreamRows))
 		for i := range d.DownstreamRows {
@@ -328,7 +328,7 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 		)
 	}
 
-	columnTable := Node(P(Class("text-xs text-muted"), Text("No column lineage found.")))
+	columnTable := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No column lineage found.")))
 	if len(d.ColumnRows) > 0 {
 		rows := make([]Node, 0, len(d.ColumnRows))
 		for i := range d.ColumnRows {
@@ -343,7 +343,7 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 		)
 	}
 
-	impactTable := Node(P(Class("text-xs text-muted"), Text("No column impact found.")))
+	impactTable := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No column impact found.")))
 	if len(d.ImpactRows) > 0 {
 		rows := make([]Node, 0, len(d.ImpactRows))
 		for i := range d.ImpactRows {
@@ -360,7 +360,7 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 
 	return core.AppPage("Governance: Lineage", "governance", d.Principal,
 		governanceSectionNav("lineage"),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text("Inspect lineage")),
 			Form(Class("grid gap-3 md:grid-cols-3"), Method("get"), Action("/ui/governance/lineage"),
 				Div(Label(Text("Schema")), core.InputControl("", Name("schema"), Value(d.Schema))),
@@ -369,7 +369,7 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 				Div(Class("md:col-span-3"), core.PrimaryButton("", Type("submit"), Text("Load lineage"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text("Purge lineage")),
 			Form(Class("grid gap-3 md:grid-cols-[minmax(0,18rem)_auto] md:items-end"), Method("post"), Action("/ui/governance/lineage/purge"),
 				d.CSRFFieldProvider(),
@@ -377,15 +377,15 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 				Div(core.DangerButton("", Type("submit"), Text("Purge lineage"))),
 			),
 		),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Upstream")), upstreamTable),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Downstream")), downstreamTable),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Column lineage")), columnTable),
-		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Column impact")), impactTable),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Upstream")), upstreamTable),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Downstream")), downstreamTable),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Column lineage")), columnTable),
+		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Column impact")), impactTable),
 	)
 }
 
 func governanceSectionNav(active string) Node {
-	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 		Div(Class("flex flex-wrap gap-2"),
 			navButton("Search", "/ui/governance/search", active == "search"),
 			navButton("Tags", "/ui/governance/tags", active == "tags"),
@@ -405,5 +405,5 @@ func navButton(label, href string, active bool) Node {
 }
 
 func governanceCard(title, copy, href string) Node {
-	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-muted"), Text(copy)), core.SecondaryLink(href, "", Text("Open")))
+	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-[var(--fgColor-muted)]"), Text(copy)), core.SecondaryLink(href, "", Text("Open")))
 }

@@ -41,6 +41,12 @@
       themeButton.setAttribute("aria-label", "Theme: " + themePreference);
       themeButton.setAttribute("title", "Theme: " + themePreference);
     }
+    document.querySelectorAll("[data-theme-icon]").forEach(function (icon) {
+      icon.classList.toggle(
+        "hidden",
+        icon.getAttribute("data-theme-icon") !== themePreference
+      );
+    });
   }
 
   let theme = "system";
@@ -70,7 +76,9 @@
 
   if (navButton && nav) {
     navButton.addEventListener("click", function () {
-      nav.classList.toggle("is-open");
+      const isOpen = !nav.classList.contains("hidden");
+      nav.classList.toggle("hidden", isOpen);
+      navButton.setAttribute("aria-expanded", String(!isOpen));
     });
   }
 
@@ -123,16 +131,16 @@
     }
     if (!items.length) {
       searchResults.innerHTML =
-        '<div class="site-search-empty">Search pages, headings, and generated reference entries.</div>';
+        '<div class="rounded-[1.5rem] border border-dashed border-[color:color-mix(in_srgb,var(--borderColor-default)_88%,transparent)] bg-[color:color-mix(in_srgb,var(--bgColor-muted)_72%,var(--bgColor-inset))] px-5 py-6 text-sm text-[var(--fgColor-muted)]">Search pages, headings, and generated reference entries.</div>';
       return;
     }
     searchResults.innerHTML = items
       .map(function (item) {
-        return '<a class="site-search-result" href="' +
+        return '<a class="block rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[color:color-mix(in_srgb,var(--bgColor-inset)_92%,transparent)] px-5 py-4 no-underline transition hover:border-[color:color-mix(in_srgb,var(--fgColor-accent)_28%,var(--borderColor-default))] hover:bg-[color:color-mix(in_srgb,var(--bgColor-muted)_78%,var(--bgColor-inset))]" href="' +
           withSiteRoot(item.path) +
-          '"><div class="site-search-result-title">' +
+          '"><div class="text-sm font-semibold text-[var(--fgColor-default)]">' +
           item.title +
-          '</div><div class="site-search-result-description">' +
+          '</div><div class="mt-1 text-sm text-[var(--fgColor-muted)]">' +
           item.description +
           "</div></a>";
       })
@@ -249,7 +257,7 @@
 
   function revealActiveSidebarItem(sidebarScroll) {
     const activeItem = sidebarScroll.querySelector(
-      ".site-side-link.is-active, .site-nav-node-link.is-active"
+      '[data-site-side-link][aria-current="page"], [data-site-nav-node-link][aria-current="page"]'
     );
     if (!(activeItem instanceof HTMLElement)) {
       return;
@@ -280,7 +288,7 @@
   }
 
   function setupSidebarScrollPersistence() {
-    const sidebarScroll = document.querySelector(".site-sidebar-scroll");
+    const sidebarScroll = document.querySelector("[data-site-sidebar-scroll]");
     if (!(sidebarScroll instanceof HTMLElement)) {
       return;
     }
@@ -303,7 +311,7 @@
     }, { passive: true });
   }
 
-  if (document.querySelector(".site-sidebar")) {
+  if (document.querySelector("[data-site-sidebar]")) {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", setupSidebarScrollPersistence, { once: true });
     } else {
@@ -328,12 +336,14 @@
       }
       activeId = id;
       tocLinks.forEach(function (link) {
-        link.classList.toggle("is-active", link.getAttribute("data-site-toc-link") === id);
+        const isActive = link.getAttribute("data-site-toc-link") === id;
+        link.classList.toggle("is-active", isActive);
+        link.setAttribute("aria-current", isActive ? "location" : "false");
       });
     }
 
     const headings = Array.from(
-      document.querySelectorAll(".site-prose h2[id], .site-prose h3[id]")
+      document.querySelectorAll("[data-page-prose] h2[id], [data-page-prose] h3[id]")
     ).filter(function (heading) {
       return tocById.has(heading.id);
     });

@@ -31,8 +31,8 @@ At a high level:
 
 ## Architecture Diagram
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/secure-query-path.svg" alt="Diagram showing a principal flowing through identity, Duck API, policy enforcement, execution, and a governed result." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/secure-query-path.svg" alt="Diagram showing a principal flowing through identity, Duck API, policy enforcement, execution, and a governed result." loading="lazy" decoding="async">
 </figure>
 
 Read the diagram from left to right. The principal is authenticated first. The request then reaches Duck’s API and policy layer, where grants, row filters, and column masks are applied. Only after that does the platform hand work to DuckDB execution. The result that comes back is already governed, which is why consumers do not need a separate mental model for “secure mode” versus “normal mode.”

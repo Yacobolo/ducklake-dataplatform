@@ -1,8 +1,6 @@
 @import "tailwindcss";
-
-@import "./tokens/tailwind-theme.generated.css";
-@import "./base.css";
-@import "./utilities/index.css";
+@import "../tokens/functional/themes/light.css";
+@import "../tokens/functional/themes/dark.css";
 
 @source "../src";
 @source "../../internal/ui";

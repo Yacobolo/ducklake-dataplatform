@@ -24,7 +24,7 @@ func securityHomePage(principal domain.ContextPrincipal, cards []securityCardDat
 	nodes := make([]Node, 0, len(cards))
 	for i := range cards {
 		card := cards[i]
-		nodes = append(nodes, core.Card(H2(Text(card.Title)), P(Text(card.Description)), A(Href(card.Href), Text(card.LinkLabel))))
+		nodes = append(nodes, core.Card(H2(Text(card.Title)), P(Text(card.Description)), core.TextLink(card.Href, Text(card.LinkLabel))))
 	}
 	return core.AppPage("Security", "security", principal, Div(Class("grid gap-3 md:grid-cols-2 xl:grid-cols-3"), Group(nodes)))
 }
@@ -72,7 +72,7 @@ func securityPrincipalsListPage(principal domain.ContextPrincipal, rows []securi
 		if row.IsAdmin {
 			admin = statusLabel("admin", "accent")
 		}
-		tableRows = append(tableRows, Tr(data.Show(containsExpr(row.Filter)), Td(A(Href(row.DetailURL), Text(row.Name))), Td(Text(row.Type)), Td(admin), Td(Text(row.CreatedAt))))
+		tableRows = append(tableRows, Tr(data.Show(containsExpr(row.Filter)), Td(core.TextLink(row.DetailURL, Text(row.Name))), Td(Text(row.Type)), Td(admin), Td(Text(row.CreatedAt))))
 	}
 	tableNode := Node(emptyStateCard("No principals found.", "New principal", "/ui/security/principals/new"))
 	if len(tableRows) > 0 {
@@ -137,12 +137,12 @@ func securityPrincipalDetailPage(d securityPrincipalDetailPageData) Node {
 
 func securityPrincipalFormPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
 	return formPage(principal, "New Principal", "security", "/ui/security/principals", csrfFieldProvider,
-		Label(Text("Name")),
-		Input(Name("name"), Required()),
-		Label(Text("Type")),
-		Select(Name("type"), Option(Value("user"), Text("user")), Option(Value("service_principal"), Text("service_principal"))),
-		Label(Text("Admin")),
-		Label(Input(Type("checkbox"), Name("is_admin")), Text(" Create with admin access")),
+		core.FieldLabel("Name"),
+		core.InputControl("", Name("name"), Required()),
+		core.FieldLabel("Type"),
+		core.SelectControl("", Name("type"), Option(Value("user"), Text("user")), Option(Value("service_principal"), Text("service_principal"))),
+		core.FieldLabel("Admin"),
+		core.Checkbox("principal-is-admin", "is_admin", "true", "Create with admin access", false),
 	)
 }
 
@@ -159,7 +159,7 @@ func securityGroupsListPage(principal domain.ContextPrincipal, rows []securityGr
 	tableRows := make([]Node, 0, len(rows))
 	for i := range rows {
 		row := rows[i]
-		tableRows = append(tableRows, Tr(data.Show(containsExpr(row.Filter)), Td(A(Href(row.DetailURL), Text(row.Name))), Td(Text(row.Members)), Td(Text(row.CreatedAt))))
+		tableRows = append(tableRows, Tr(data.Show(containsExpr(row.Filter)), Td(core.TextLink(row.DetailURL, Text(row.Name))), Td(Text(row.Members)), Td(Text(row.CreatedAt))))
 	}
 	tableNode := Node(emptyStateCard("No groups found.", "New group", "/ui/security/groups/new"))
 	if len(tableRows) > 0 {
@@ -226,10 +226,10 @@ func securityGroupDetailPage(d securityGroupDetailPageData) Node {
 
 func securityGroupFormPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
 	return formPage(principal, "New Group", "security", "/ui/security/groups", csrfFieldProvider,
-		Label(Text("Name")),
-		Input(Name("name"), Required()),
-		Label(Text("Description")),
-		Textarea(Name("description")),
+		core.FieldLabel("Name"),
+		core.InputControl("", Name("name"), Required()),
+		core.FieldLabel("Description"),
+		core.TextareaControl("", Name("description")),
 	)
 }
 
@@ -245,7 +245,7 @@ func formPage(principal domain.ContextPrincipal, title, active, action string, c
 
 func pageToolbar(newHref, newLabel string) Node {
 	return core.Card(Div(Class("flex flex-wrap items-center justify-between gap-3"),
-		Div(Class("flex min-w-0 flex-col gap-1"), Span(Class(labelClass("")), Text("Workspace")), P(Class("m-0 text-xs text-muted"), Text("Browse and manage resources."))),
+		Div(Class("flex min-w-0 flex-col gap-1"), Span(Class(labelClass("")), Text("Workspace")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Browse and manage resources."))),
 		core.PrimaryLink(newHref, "", Text(newLabel)),
 	))
 }
@@ -266,10 +266,10 @@ func paginationCard(basePath string, page domain.PageRequest, total int64) Node 
 	summary := "Showing " + strconv.Itoa(shown) + " of " + strconv.FormatInt(total, 10) + " entries."
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
-		return core.Card(Div(Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"), Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-foreground"), Text("Pagination")), P(Class("m-0 text-xs text-muted"), Text(summary))), Span(Class("inline-flex min-h-8 items-center justify-center rounded-lg border border-border px-3 text-sm font-medium text-foreground opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next"))))
+		return core.Card(Div(Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"), Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))), Span(Class("inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next"))))
 	}
 	u := basePath + "?max_results=" + strconv.Itoa(page.Limit()) + "&page_token=" + nextToken
-	return core.Card(Div(Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"), Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-foreground"), Text("Pagination")), P(Class("m-0 text-xs text-muted"), Text(summary))), core.SecondaryLink(u, "small", Text("Next page"))))
+	return core.Card(Div(Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"), Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))), core.SecondaryLink(u, "small", Text("Next page"))))
 }
 
 func min(a, b int) int {
@@ -283,17 +283,17 @@ func labelClass(tone string) string {
 	base := "inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
 	switch tone {
 	case "accent":
-		return core.ClassNames(base, "bg-accent-muted text-accent")
+		return core.ClassNames(base, "bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]")
 	case "muted":
-		return core.ClassNames(base, "bg-surface-muted text-foreground")
+		return core.ClassNames(base, "bg-[var(--bgColor-muted)] text-[var(--fgColor-default)]")
 	case "success":
-		return core.ClassNames(base, "bg-success-muted text-success-text")
+		return core.ClassNames(base, "bg-[var(--bgColor-success-muted)] text-[var(--fgColor-success)]")
 	case "attention":
-		return core.ClassNames(base, "bg-warning-muted text-warning-text")
+		return core.ClassNames(base, "bg-[var(--bgColor-attention-muted)] text-[var(--fgColor-attention)]")
 	case "severe":
-		return core.ClassNames(base, "bg-danger-muted text-danger-text")
+		return core.ClassNames(base, "bg-[var(--bgColor-danger-muted)] text-[var(--fgColor-danger)]")
 	default:
-		return core.ClassNames(base, "bg-surface-muted text-foreground")
+		return core.ClassNames(base, "bg-[var(--bgColor-muted)] text-[var(--fgColor-default)]")
 	}
 }
 

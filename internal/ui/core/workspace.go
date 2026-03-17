@@ -57,12 +57,12 @@ func WorkspaceLayout(className string, aside Node, main ...Node) Node {
 		Class(classes),
 		Attr("data-workspace-layout", "true"),
 		aside,
-		Section(Class("workspace-main min-w-0 border-l border-border-muted pl-4 max-md:border-l-0 max-md:pl-0"), Group(main)),
+		Section(Class("workspace-main min-w-0 border-l border-[var(--borderColor-muted)] pl-4 max-md:border-l-0 max-md:pl-0"), Group(main)),
 	)
 }
 
 func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defaultTab string) Node {
-	classes := ClassNames("workspace-aside min-w-0 self-stretch rounded-xl border border-border bg-surface-muted pr-2 shadow-xs [.is-aside-collapsed_&]:pr-1 max-md:self-start max-md:mb-1 max-md:border-b max-md:border-border-muted max-md:pb-2 max-md:pr-0", className)
+	classes := ClassNames("workspace-aside min-w-0 self-stretch rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] pr-2 shadow-xs [.is-aside-collapsed_&]:pr-1 max-md:self-start max-md:mb-1 max-md:border-b max-md:border-[var(--borderColor-muted)] max-md:pb-2 max-md:pr-0", className)
 	if len(tabs) == 0 {
 		return Aside(Class(classes))
 	}
@@ -82,11 +82,11 @@ func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defa
 		tabID := "workspace-tab-" + tab.ID
 		panelID := "workspace-panel-" + tab.ID
 
-		tabClass := "workspace-aside-tab inline-flex min-h-10 items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-left text-sm font-medium text-muted transition-colors hover:bg-background hover:text-foreground [.is-aside-collapsed_&]:justify-center [.is-aside-collapsed_&]:border-transparent [.is-aside-collapsed_&]:bg-transparent [.is-aside-collapsed_&]:px-0 [.is-aside-collapsed_&]:text-muted [.is-aside-collapsed_&]:hover:border-border-muted [.is-aside-collapsed_&]:hover:bg-surface-muted [.is-aside-collapsed_&]:hover:text-foreground max-md:[.is-aside-collapsed_&]:justify-start max-md:[.is-aside-collapsed_&]:px-3"
+		tabClass := "workspace-aside-tab inline-flex min-h-10 items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-left text-sm font-medium text-[var(--fgColor-muted)] transition-colors hover:bg-[var(--bgColor-default)] hover:text-[var(--fgColor-default)] [.is-aside-collapsed_&]:justify-center [.is-aside-collapsed_&]:border-transparent [.is-aside-collapsed_&]:bg-transparent [.is-aside-collapsed_&]:px-0 [.is-aside-collapsed_&]:text-[var(--fgColor-muted)] [.is-aside-collapsed_&]:hover:border-[var(--borderColor-muted)] [.is-aside-collapsed_&]:hover:bg-[var(--bgColor-muted)] [.is-aside-collapsed_&]:hover:text-[var(--fgColor-default)] max-md:[.is-aside-collapsed_&]:justify-start max-md:[.is-aside-collapsed_&]:px-3"
 		panelClass := "workspace-aside-panel hidden min-h-0 flex-col gap-4 [.is-active&]:flex [.is-aside-collapsed_.workspace-aside-panels_&]:hidden max-md:[.is-aside-collapsed_.workspace-aside-panels_&]:flex"
 		selected := "false"
 		if tab.ID == activeTab {
-			tabClass += " is-active bg-background text-accent shadow-[inset_2px_0_0_var(--color-border-accent)] [.is-aside-collapsed_&]:border-transparent [.is-aside-collapsed_&]:bg-transparent [.is-aside-collapsed_&]:text-muted [.is-aside-collapsed_&]:shadow-none"
+			tabClass += " is-active bg-[var(--bgColor-default)] text-[var(--fgColor-accent)] shadow-[inset_2px_0_0_var(--borderColor-accent-emphasis)] [.is-aside-collapsed_&]:border-transparent [.is-aside-collapsed_&]:bg-transparent [.is-aside-collapsed_&]:text-[var(--fgColor-muted)] [.is-aside-collapsed_&]:shadow-none"
 			panelClass += " is-active"
 			selected = "true"
 		}
@@ -96,7 +96,7 @@ func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defa
 
 		countNode := Node(nil)
 		if strings.TrimSpace(tab.Count) != "" {
-			countNode = Span(Class("workspace-aside-tab-count ml-auto rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-semibold text-muted [.is-aside-collapsed_&]:hidden max-md:[.is-aside-collapsed_&]:inline"), Text(tab.Count))
+			countNode = Span(Class("workspace-aside-tab-count ml-auto rounded-full bg-[var(--bgColor-muted)] px-2 py-0.5 text-[11px] font-semibold text-[var(--fgColor-muted)] [.is-aside-collapsed_&]:hidden max-md:[.is-aside-collapsed_&]:inline"), Text(tab.Count))
 		}
 
 		tabButtons = append(tabButtons, Button(
@@ -148,7 +148,7 @@ func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defa
 		Div(
 			Class("workspace-aside-shell sticky top-0 flex min-h-0 flex-col gap-2 max-md:static"),
 			Div(
-				Class("workspace-aside-head flex items-start justify-between gap-2 border-b border-border px-3 py-3 [.is-aside-collapsed_&]:flex-col [.is-aside-collapsed_&]:items-stretch [.is-aside-collapsed_&]:gap-1 max-md:items-start max-md:[.is-aside-collapsed_&]:flex-row max-md:[.is-aside-collapsed_&]:items-center"),
+				Class("workspace-aside-head flex items-start justify-between gap-2 border-b border-[var(--borderColor-default)] px-3 py-3 [.is-aside-collapsed_&]:flex-col [.is-aside-collapsed_&]:items-stretch [.is-aside-collapsed_&]:gap-1 max-md:items-start max-md:[.is-aside-collapsed_&]:flex-row max-md:[.is-aside-collapsed_&]:items-center"),
 				Div(Class("workspace-aside-tabs flex min-w-0 flex-1 flex-col gap-1 [.is-aside-collapsed_&]:items-stretch max-md:overflow-x-auto max-md:[.is-aside-collapsed_&]:flex-row max-md:[.is-aside-collapsed_&]:items-center"), Attr("role", "tablist"), Group(tabButtons)),
 				collapseButton,
 			),
@@ -161,17 +161,17 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 	catalogNodes := make([]Node, 0, len(d.Catalogs))
 	for i := range d.Catalogs {
 		catalog := d.Catalogs[i]
-		catalogClass := "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-muted no-underline transition-colors hover:bg-background hover:text-foreground"
+		catalogClass := "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-[var(--fgColor-muted)] no-underline transition-colors hover:bg-[var(--bgColor-default)] hover:text-[var(--fgColor-default)]"
 		if catalog.Active {
-			catalogClass += " bg-accent-muted text-accent"
+			catalogClass += " bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
 		}
 
 		schemaNodes := make([]Node, 0, len(catalog.Schemas))
 		for j := range catalog.Schemas {
 			schema := catalog.Schemas[j]
-			schemaClass := "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-muted no-underline transition-colors hover:bg-background hover:text-foreground"
+			schemaClass := "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-[var(--fgColor-muted)] no-underline transition-colors hover:bg-[var(--bgColor-default)] hover:text-[var(--fgColor-default)]"
 			if schema.Active {
-				schemaClass += " bg-accent-muted text-accent"
+				schemaClass += " bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
 			}
 
 			openAttr := Node(nil)
@@ -182,9 +182,9 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 			objectNodes := make([]Node, 0, len(schema.Objects))
 			for k := range schema.Objects {
 				obj := schema.Objects[k]
-				leafClass := "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted no-underline transition-colors hover:bg-background hover:text-foreground"
+				leafClass := "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-[var(--fgColor-muted)] no-underline transition-colors hover:bg-[var(--bgColor-default)] hover:text-[var(--fgColor-default)]"
 				if obj.Active {
-					leafClass += " bg-accent-muted font-medium text-accent"
+					leafClass += " bg-[var(--bgColor-accent-muted)] font-medium text-[var(--fgColor-accent)]"
 				}
 				icon := strings.TrimSpace(obj.Icon)
 				if icon == "" {
@@ -193,9 +193,9 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 				objectNodes = append(objectNodes, Li(A(Href(obj.URL), Class(leafClass), I(Class(NavIconClass()), Attr("data-lucide", icon), Attr("aria-hidden", "true")), Span(Text(obj.Name)))))
 			}
 
-			objectSection := Node(P(Class("m-0 px-2.5 py-2 text-xs text-muted"), Text(fallbackString(schema.EmptyText, "No objects in this schema."))))
+			objectSection := Node(P(Class("m-0 px-2.5 py-2 text-xs text-[var(--fgColor-muted)]"), Text(fallbackString(schema.EmptyText, "No objects in this schema."))))
 			if len(objectNodes) > 0 {
-				objectSection = Ul(Class("mt-1 grid gap-1 border-l border-border pl-3"), Group(objectNodes))
+				objectSection = Ul(Class("mt-1 grid gap-1 border-l border-[var(--borderColor-default)] pl-3"), Group(objectNodes))
 			}
 
 			schemaFilter := schema.Name + " " + catalogExplorerNames(schema.Objects)
@@ -217,9 +217,9 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 			))
 		}
 
-		childrenNode := Node(P(Class("m-0 px-2.5 py-2 text-xs text-muted"), Text(fallbackString(catalog.EmptyText, "No schemas in this catalog."))))
+		childrenNode := Node(P(Class("m-0 px-2.5 py-2 text-xs text-[var(--fgColor-muted)]"), Text(fallbackString(catalog.EmptyText, "No schemas in this catalog."))))
 		if len(schemaNodes) > 0 {
-			childrenNode = Ul(Class("mt-1 grid gap-2 border-l border-border pl-3"), Group(schemaNodes))
+			childrenNode = Ul(Class("mt-1 grid gap-2 border-l border-[var(--borderColor-default)] pl-3"), Group(schemaNodes))
 		}
 
 		showValue := catalog.Name + " " + catalogExplorerNamesFromSchemas(catalog.Schemas)
@@ -253,7 +253,7 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 		catalogNodes = append(catalogNodes, catalogItem)
 	}
 
-	body := Node(P(Class("m-0 text-sm text-muted"), Text(fallbackString(d.EmptyCatalogsText, "No catalogs found."))))
+	body := Node(P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(fallbackString(d.EmptyCatalogsText, "No catalogs found."))))
 	if len(catalogNodes) > 0 {
 		body = Ul(Class("grid gap-2"), Group(catalogNodes))
 	}
@@ -274,9 +274,9 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 
 	return Div(
 		Class("flex min-h-0 flex-col gap-3"),
-		Div(Class("flex flex-col gap-3 border-b border-border pb-3"),
+		Div(Class("flex flex-col gap-3 border-b border-[var(--borderColor-default)] pb-3"),
 			Div(Class("flex items-center justify-between gap-2"),
-				P(Class("m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted"), Text(fallbackString(d.Title, "Catalog Explorer"))),
+				P(Class("m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(fallbackString(d.Title, "Catalog Explorer"))),
 				newCatalogButton,
 			),
 			filterNode,

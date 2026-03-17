@@ -24,8 +24,8 @@ Teams need more than one-off SQL files. They need a place for transformation log
 
 ## Transformation DAG
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/transformation-dag.svg" alt="Diagram showing source tables flowing through macros into models, tests, notebook promotion, and run outputs." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/transformation-dag.svg" alt="Diagram showing source tables flowing through macros into models, tests, notebook promotion, and run outputs." loading="lazy" decoding="async">
 </figure>
 
 Read the diagram left to right. Source tables feed the builder workflow. Macros sit near the left because they are reused building blocks that shape many downstream models. Staging and curated models form the main transformation chain. Tests branch off the curated model because they validate whether the result is trustworthy. Notebook promotion points back into the curated model because exploration can graduate into maintained production logic. Runs sit at the end because they record what happened when the framework executed.
