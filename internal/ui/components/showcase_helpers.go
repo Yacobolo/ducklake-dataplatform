@@ -51,26 +51,6 @@ type avatarConfig struct {
 	Size  string
 }
 
-func statusLabel(text, tone string) Node {
-	return Span(Class(labelClass(tone)), Text(text))
-}
-
-func labelClass(tone string) string {
-	base := "inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
-	switch tone {
-	case "accent":
-		return core.ClassNames(base, "bg-[var(--label-blue-bgColor-rest)] text-[var(--label-blue-fgColor-rest)]")
-	case "attention":
-		return core.ClassNames(base, "bg-[var(--label-yellow-bgColor-rest)] text-[var(--label-yellow-fgColor-rest)]")
-	case "success":
-		return core.ClassNames(base, "bg-[var(--label-green-bgColor-rest)] text-[var(--label-green-fgColor-rest)]")
-	case "severe":
-		return core.ClassNames(base, "bg-[var(--label-orange-bgColor-rest)] text-[var(--label-orange-fgColor-rest)]")
-	default:
-		return core.ClassNames(base, "bg-[var(--label-gray-bgColor-rest)] text-[var(--label-gray-fgColor-rest)]")
-	}
-}
-
 func breadcrumbs(items []breadcrumbItem) Node {
 	if len(items) == 0 {
 		return nil
@@ -266,7 +246,7 @@ func actionBar() Node {
 		data.Signals(map[string]any{"q": "", "sort": "updated"}),
 		Div(
 			Class("flex flex-col gap-1"),
-			Span(Class(labelClass("")), Text("Component Catalog")),
+			core.Badge("Component Catalog", ""),
 			P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Filter and sort reusable building blocks before composing screens.")),
 		),
 		Div(
@@ -336,7 +316,7 @@ func pageToolbar(newHref, newLabel string) Node {
 			Class("flex flex-wrap items-center justify-between gap-3"),
 			Div(
 				Class("flex min-w-0 flex-col gap-1"),
-				Span(Class(labelClass("")), Text("Workspace")),
+				core.Badge("Workspace", ""),
 				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Browse and manage resources.")),
 			),
 			core.PrimaryLink(newHref, "", Text(newLabel)),
@@ -391,24 +371,6 @@ func min(a, b int) int {
 		return a
 	}
 	return b
-}
-
-func actionMenu(label string, items ...Node) Node {
-	summaryClass := "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"
-	summaryContent := Node(Text(label))
-	if label == "More" || label == "Actions" {
-		summaryClass = "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] min-w-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"
-		summaryContent = Group([]Node{
-			I(Class(core.IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
-			Span(Class("sr-only"), Text(label)),
-		})
-	}
-
-	return Details(
-		Class(core.DetailsClass()),
-		Summary(Class(summaryClass), Title(label), Attr("aria-label", label), summaryContent),
-		Div(Class(core.DropdownMenuClass()), Group(items)),
-	)
 }
 
 func actionMenuLink(href, label string) Node {

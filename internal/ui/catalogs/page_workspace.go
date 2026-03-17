@@ -160,7 +160,7 @@ func catalogWorkspacePage(d catalogWorkspacePageData) Node {
 		)
 	}
 	if d.Panel.DeleteURL != "" {
-		panelActions = append(panelActions, actionMenu("More", actionMenuPost(d.Panel.DeleteURL, "Delete", d.CSRFField, true)))
+		panelActions = append(panelActions, core.ActionMenu("More", core.ActionMenuPost(d.Panel.DeleteURL, "Delete", d.CSRFField, true)))
 	}
 
 	columnsNode := Node(nil)

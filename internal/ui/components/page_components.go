@@ -36,11 +36,11 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 
 	labelShowcase := Div(
 		Class("flex flex-wrap items-center gap-3"),
-		statusLabel("Default", ""),
-		statusLabel("Accent", "accent"),
-		statusLabel("Success", "success"),
-		statusLabel("Attention", "attention"),
-		statusLabel("Severe", "severe"),
+		core.Badge("Default", ""),
+		core.Badge("Accent", "accent"),
+		core.Badge("Success", "success"),
+		core.Badge("Attention", "attention"),
+		core.Badge("Severe", "severe"),
 	)
 
 	breadcrumbShowcase := breadcrumbs([]breadcrumbItem{
@@ -117,16 +117,16 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 				),
 			),
 			TBody(
-				Tr(Td(Text("orders.daily")), Td(statusLabel("table", "accent")), Td(statusLabel("healthy", "success"))),
-				Tr(Td(Text("finance.revenue")), Td(statusLabel("view", "attention")), Td(statusLabel("warning", "attention"))),
-				Tr(Td(Text("billing.settlements")), Td(statusLabel("table", "accent")), Td(statusLabel("failed", "severe"))),
+				Tr(Td(Text("orders.daily")), Td(core.Badge("table", "accent")), Td(core.Badge("healthy", "success"))),
+				Tr(Td(Text("finance.revenue")), Td(core.Badge("view", "attention")), Td(core.Badge("warning", "attention"))),
+				Tr(Td(Text("billing.settlements")), Td(core.Badge("table", "accent")), Td(core.Badge("failed", "severe"))),
 			),
 		),
 	)
 
 	dropdownShowcase := Div(
 		Class("flex flex-wrap items-center gap-3"),
-		actionMenu(
+		core.ActionMenu(
 			"Actions",
 			actionMenuLink("/ui/components", "Open"),
 			actionMenuLink("/ui/components", "Edit"),

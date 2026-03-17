@@ -73,6 +73,49 @@ func Badge(text, tone string) Node {
 	return Span(Class(labelClass(tone)), Text(text))
 }
 
+func ActionMenu(label string, items ...Node) Node {
+	summaryClass := "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"
+	summaryContent := Node(Text(label))
+	if label == "More" || label == "Actions" {
+		summaryClass = "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] min-w-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"
+		summaryContent = Group([]Node{
+			I(Class(IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
+			Span(Class("sr-only"), Text(label)),
+		})
+	}
+	return Details(
+		Class(DetailsClass()),
+		Summary(Class(summaryClass), Title(label), Attr("aria-label", label), summaryContent),
+		Div(Class(DropdownMenuClass()), Group(items)),
+	)
+}
+
+func ActionMenuLink(href, label string) Node {
+	return A(Href(href), Class(DropdownItemClass("text-[var(--fgColor-default)]")), Span(Text(label)))
+}
+
+func ActionMenuPost(action, label string, csrfField func() Node, danger bool) Node {
+	btnClass := DropdownItemClass()
+	if danger {
+		btnClass += " text-[var(--fgColor-danger)] hover:bg-[var(--bgColor-danger-muted)]"
+	} else {
+		btnClass += " text-[var(--fgColor-default)]"
+	}
+	button := Form(
+		Method("post"),
+		Action(action),
+		csrfField(),
+		Button(Type("submit"), Class(btnClass), Span(Text(label))),
+	)
+	if danger {
+		return Group([]Node{
+			Div(Class("dropdown-divider my-1 border-t border-[var(--borderColor-muted)]")),
+			button,
+		})
+	}
+	return button
+}
+
 func ButtonGroup(extraClass string, nodes ...Node) Node {
 	base := []Node{Class(buttonRowClass(extraClass))}
 	return Div(append(base, nodes...)...)
@@ -96,4 +139,105 @@ func EmptyState(iconName, title, message string, action Node) Node {
 			action,
 		),
 	)
+}
+
+func MetaItem(label, value string) Node {
+	return Div(
+		Class("grid gap-1 border-b border-[var(--borderColor-default)] pb-2 last:border-b-0 last:pb-0"),
+		Span(Class("text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"), Text(label)),
+		Span(Class("text-sm text-[var(--fgColor-default)]"), Text(value)),
+	)
+}
+
+func MetricCard(label, value, hint string) Node {
+	return Div(
+		Class("flex flex-col gap-1 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		P(Class("m-0 text-xs font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"), Text(label)),
+		P(Class("m-0 text-2xl font-semibold text-[var(--fgColor-default)]"), Text(value)),
+		P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(hint)),
+	)
+}
+
+func FactList(items [][2]string) Node {
+	rows := make([]Node, 0, len(items))
+	for i := range items {
+		rows = append(rows, Div(
+			Class("flex items-start justify-between gap-3 rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-2"),
+			Span(Class("text-xs font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"), Text(items[i][0])),
+			Span(Class("text-sm text-right text-[var(--fgColor-default)]"), Text(items[i][1])),
+		))
+	}
+	return Div(Class("grid gap-2"), Group(rows))
+}
+
+func SubtleLink(href string, nodes ...Node) Node {
+	base := []Node{
+		Href(href),
+		Class("text-[var(--fgColor-muted)] no-underline hover:text-[var(--fgColor-default)]"),
+	}
+	return A(append(base, nodes...)...)
+}
+
+func DetailShell(nodes ...Node) Node {
+	return Div(append([]Node{Class("flex flex-col gap-4")}, nodes...)...)
+}
+
+func DetailHero(nodes ...Node) Node {
+	return Div(append([]Node{Class("grid gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[linear-gradient(135deg,var(--bgColor-muted)_0%,var(--bgColor-default)_65%)] p-5 shadow-[var(--shadow-resting-small)] lg:grid-cols-[minmax(0,1.5fr)_minmax(16rem,0.8fr)]")}, nodes...)...)
+}
+
+func DetailHeroCopy(nodes ...Node) Node {
+	return Div(append([]Node{Class("flex min-w-0 flex-col gap-3")}, nodes...)...)
+}
+
+func DetailHeroMeta(nodes ...Node) Node {
+	return Div(append([]Node{Class("grid gap-2 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4")}, nodes...)...)
+}
+
+func Kicker(text string) Node {
+	return P(Class("m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(text))
+}
+
+func DetailTitleRow(nodes ...Node) Node {
+	return Div(append([]Node{Class("flex flex-wrap items-center gap-3")}, nodes...)...)
+}
+
+func DetailTitle(text string) Node {
+	return H2(Class("m-0 text-3xl font-semibold leading-tight text-[var(--fgColor-default)]"), Text(text))
+}
+
+func DetailDescription(text string) Node {
+	return P(Class("m-0 max-w-3xl text-sm leading-6 text-[var(--fgColor-muted)]"), Text(text))
+}
+
+func BadgeRow(nodes ...Node) Node {
+	return Div(append([]Node{Class("flex flex-wrap items-center gap-2")}, nodes...)...)
+}
+
+func MetricsGrid(nodes ...Node) Node {
+	return Div(append([]Node{Class("grid gap-3 sm:grid-cols-2 xl:grid-cols-4")}, nodes...)...)
+}
+
+func DetailLayout(nodes ...Node) Node {
+	return Div(append([]Node{Class("grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(18rem,0.8fr)]")}, nodes...)...)
+}
+
+func DetailMain(nodes ...Node) Node {
+	return Div(append([]Node{Class("flex min-w-0 flex-col gap-4")}, nodes...)...)
+}
+
+func DetailRail(nodes ...Node) Node {
+	return Div(append([]Node{Class("flex min-w-0 flex-col gap-4")}, nodes...)...)
+}
+
+func ItemList(extraClass string, nodes ...Node) Node {
+	className := "grid gap-2"
+	if extraClass != "" {
+		className += " " + extraClass
+	}
+	return Ul(append([]Node{Class(className)}, nodes...)...)
+}
+
+func ItemListEntry(nodes ...Node) Node {
+	return Li(append([]Node{Class("rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-2 text-sm")}, nodes...)...)
 }

@@ -27,16 +27,16 @@ func assetDetailPage(d assetDetailPageData) Node {
 		"Asset: "+d.AssetKey,
 		"assets",
 		d.Principal,
-		Div(Class(assetDetailShellClass()),
-			Div(Class(assetHeroClass()),
-				Div(Class(assetHeroCopyClass()),
-					P(Class(assetKickerClass()), Text("Asset command center")),
-					Div(Class(assetTitleRowClass()),
-						H2(Class(assetTitleClass()), Text(d.AssetKey)),
+		core.DetailShell(
+			core.DetailHero(
+				core.DetailHeroCopy(
+					core.Kicker("Asset command center"),
+					core.DetailTitleRow(
+						core.DetailTitle(d.AssetKey),
 						statusLabel(strings.ToUpper(d.AssetType), assetTypeTone(d.AssetType)),
 					),
-					P(Class(assetDescriptionClass()), Text(fallbackString(d.Description, "No description provided yet."))),
-					Div(Class(assetBadgeRowClass()),
+					core.DetailDescription(fallbackString(d.Description, "No description provided yet.")),
+					core.BadgeRow(
 						statusLabel(d.FreshnessLabel, d.FreshnessTone),
 						statusLabel(assetActiveLabel(d.IsActive), assetActiveTone(d.IsActive)),
 						statusLabel(summary.MaterializationMode, "accent"),
@@ -45,25 +45,25 @@ func assetDetailPage(d assetDetailPageData) Node {
 							if strings.TrimSpace(d.ProductSlug) == "" {
 								return statusLabel("Unlinked runtime asset", "attention")
 							}
-							return A(Href("/ui/products/"+d.ProductSlug), Class("text-[var(--fgColor-muted)] no-underline hover:text-[var(--fgColor-default)]"), Text("Product: "+fallbackString(d.ProductName, d.ProductSlug)))
+							return core.SubtleLink("/ui/products/"+d.ProductSlug, Text("Product: "+fallbackString(d.ProductName, d.ProductSlug)))
 						}(),
 					),
 				),
-				Div(Class(assetHeroMetaClass()),
-					assetDetailMetaRow("Owner", fallbackString(d.Owner, "unknown")),
-					assetDetailMetaRow("IO profile", fallbackString(d.IOProfile, "-")),
-					assetDetailMetaRow("Updated", d.UpdatedAt),
-					assetDetailMetaRow("Latest materialization", summary.LatestMaterializedAt),
+				core.DetailHeroMeta(
+					core.MetaItem("Owner", fallbackString(d.Owner, "unknown")),
+					core.MetaItem("IO profile", fallbackString(d.IOProfile, "-")),
+					core.MetaItem("Updated", d.UpdatedAt),
+					core.MetaItem("Latest materialization", summary.LatestMaterializedAt),
 				),
 			),
-			Div(Class(assetMetricsGridClass()),
-				assetDetailMetricCard("Freshness", d.FreshnessLabel, freshnessHelperText(d.FreshnessLabel)),
-				assetDetailMetricCard("Dependencies", strconv.Itoa(dependencyCount), fmt.Sprintf("%d upstream, %d downstream", upstreamCount, downstreamCount)),
-				assetDetailMetricCard("Recent runs", strconv.Itoa(len(d.Runs)), fmt.Sprintf("latest: %s", summary.LatestRunStatus)),
-				assetDetailMetricCard("Partitions", partitionCoverage, summary.PartitionHint),
+			core.MetricsGrid(
+				core.MetricCard("Freshness", d.FreshnessLabel, freshnessHelperText(d.FreshnessLabel)),
+				core.MetricCard("Dependencies", strconv.Itoa(dependencyCount), fmt.Sprintf("%d upstream, %d downstream", upstreamCount, downstreamCount)),
+				core.MetricCard("Recent runs", strconv.Itoa(len(d.Runs)), fmt.Sprintf("latest: %s", summary.LatestRunStatus)),
+				core.MetricCard("Partitions", partitionCoverage, summary.PartitionHint),
 			),
-			Div(Class(assetDetailLayoutClass()),
-				Div(Class(assetDetailMainClass()),
+			core.DetailLayout(
+				core.DetailMain(
 					Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)] flex flex-col gap-4"),
 						Div(Class(assetSectionHeadClass()), H2(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Dependency flow")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("See how this asset fans in and fans out across the runtime graph."))),
 						Div(Class(assetBadgeRowClass()), Group(assetDependencySummaryBadges(d.AssetKey, d.DependencyEdges))),
@@ -100,7 +100,7 @@ func assetDetailPage(d assetDetailPageData) Node {
 						),
 					),
 				),
-				Div(Class(assetDetailRailClass()),
+				core.DetailRail(
 					Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)] flex flex-col gap-4"),
 						H2(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("Operate")),
 						P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Kick the asset manually or request a targeted backfill from the same control rail.")),
@@ -109,7 +109,7 @@ func assetDetailPage(d assetDetailPageData) Node {
 					),
 					Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)] flex flex-col gap-4"),
 						H2(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text("At a glance")),
-						assetFactList([][2]string{{"Owner", fallbackString(d.Owner, "unknown")}, {"Freshness", d.FreshnessLabel}, {"Materializations", strconv.Itoa(len(d.Materializations))}, {"Checks", strconv.Itoa(len(d.Checks))}, {"Runs", strconv.Itoa(len(d.Runs))}, {"Backfills", strconv.Itoa(len(d.Backfills))}}),
+						core.FactList([][2]string{{"Owner", fallbackString(d.Owner, "unknown")}, {"Freshness", d.FreshnessLabel}, {"Materializations", strconv.Itoa(len(d.Materializations))}, {"Checks", strconv.Itoa(len(d.Checks))}, {"Runs", strconv.Itoa(len(d.Runs))}, {"Backfills", strconv.Itoa(len(d.Backfills))}}),
 					),
 				),
 			),
@@ -124,9 +124,9 @@ func assetLinkList(assetKeys []string, emptyMessage string) Node {
 	}
 	items := make([]Node, 0, len(assetKeys))
 	for i := range assetKeys {
-		items = append(items, Li(Class(assetListItemClass()), A(Href("/ui/assets/"+assetKeys[i]), Text(assetKeys[i]))))
+		items = append(items, core.ItemListEntry(A(Href("/ui/assets/"+assetKeys[i]), Text(assetKeys[i]))))
 	}
-	return Ul(Class(assetListClass()), Group(items))
+	return core.ItemList("", Group(items))
 }
 
 func assetDependencySummaryBadges(assetKey string, edges []assetDependencyEdgeData) []Node {
@@ -450,21 +450,6 @@ func inferAssetPartitionLabel(d assetDetailPageData) string {
 	return "Unpartitioned"
 }
 
-func assetDetailMetaRow(label string, value string) Node {
-	return Div(Class(assetMetaRowClass()),
-		Span(Class(assetMetaLabelClass()), Text(label)),
-		Span(Class(assetMetaValueClass()), Text(value)),
-	)
-}
-
-func assetDetailMetricCard(label string, value string, hint string) Node {
-	return Div(Class(assetMetricCardClass()),
-		P(Class(assetMetricLabelClass()), Text(label)),
-		P(Class(assetMetricValueClass()), Text(value)),
-		P(Class(assetMetricHintClass()), Text(hint)),
-	)
-}
-
 func freshnessHelperText(label string) string {
 	switch strings.ToUpper(strings.TrimSpace(label)) {
 	case "HEALTHY":
@@ -476,19 +461,6 @@ func freshnessHelperText(label string) string {
 	default:
 		return "Freshness depends on whether the asset has an SLA policy and recent output."
 	}
-}
-
-func assetFactList(items [][2]string) Node {
-	rows := make([]Node, 0, len(items))
-	for i := range items {
-		rows = append(rows,
-			Div(Class(assetFactRowClass()),
-				Span(Class(assetFactLabelClass()), Text(items[i][0])),
-				Span(Class(assetFactValueClass()), Text(items[i][1])),
-			),
-		)
-	}
-	return Div(Class(assetFactListClass()), Group(rows))
 }
 
 func assetActiveLabel(v bool) string {

@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 
 	"duck-demo/internal/ui/core"
-
-	. "maragu.dev/gomponents"
-	. "maragu.dev/gomponents/html"
 )
 
 type workspaceAsideTab = core.WorkspaceAsideTab
@@ -115,34 +112,4 @@ func catalogTableWrapClass(extra ...string) string {
 
 func catalogButtonRowClass(extra ...string) string {
 	return core.ClassNames("mt-0 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex", core.ClassNames(extra...))
-}
-
-func actionMenu(label string, items ...Node) Node {
-	return Details(
-		Class(core.DetailsClass()),
-		Summary(Class("list-none [&::-webkit-details-marker]:hidden inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] hover:bg-[var(--control-bgColor-hover)]"), Text(label)),
-		Div(Class(core.DropdownMenuClass()), Group(items)),
-	)
-}
-
-func actionMenuPost(action, label string, csrfField func() Node, danger bool) Node {
-	btnClass := core.DropdownItemClass()
-	if danger {
-		btnClass += " text-[var(--fgColor-danger)] hover:bg-[var(--bgColor-danger-muted)]"
-	} else {
-		btnClass += " text-[var(--fgColor-default)]"
-	}
-	button := Form(
-		Method("post"),
-		Action(action),
-		csrfField(),
-		Button(Type("submit"), Class(btnClass), Span(Text(label))),
-	)
-	if danger {
-		return Group([]Node{
-			Div(Class("dropdown-divider my-1 border-t border-[var(--borderColor-muted)]")),
-			button,
-		})
-	}
-	return button
 }

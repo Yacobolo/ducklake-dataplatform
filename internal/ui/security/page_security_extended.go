@@ -49,16 +49,14 @@ func securityGrantsPage(d securityGrantsPageData) Node {
 				Td(Text(row.SecurableType)),
 				Td(Text(row.SecurableID)),
 				Td(Text(row.GrantedAt)),
-				Td(Class("text-right"), actionMenu("Actions", actionMenuPost("/ui/security/grants/"+row.ID+"/delete", "Delete grant", d.CSRFFieldProvider, true))),
+				Td(Class("text-right"), core.ActionMenu("Actions", actionMenuPost("/ui/security/grants/"+row.ID+"/delete", "Delete grant", d.CSRFFieldProvider, true))),
 			),
 		)
 	}
 	tableNode := Node(emptyStateCard("No grants found for the current filter.", "", ""))
 	if len(tableRows) > 0 {
-		tableNode = Div(
-			Class(coreCardClassWithTableWrap()),
-			Table(
-				Class(dataTableClass()),
+		tableNode = core.TableContainer("",
+			core.DataTable("",
 				THead(Tr(Th(Text("Principal ID")), Th(Text("Type")), Th(Text("Privilege")), Th(Text("Securable type")), Th(Text("Securable ID")), Th(Text("Granted")), Th(Class("text-right"), Text("Actions")))),
 				TBody(Group(tableRows)),
 			),
@@ -87,7 +85,7 @@ func securityGrantsPage(d securityGrantsPageData) Node {
 				Input(Name("securable_type"), Value(d.SecurableType), Required()),
 				Label(Text("Securable ID")),
 				Input(Name("securable_id"), Value(d.SecurableID), Required()),
-				Div(Class(formActionsClass()), Button(Type("submit"), Class(primaryButtonClass()), Text("Grant privilege"))),
+				Div(Class(formActionsClass()), core.PrimaryButton("", Type("submit"), Text("Grant privilege"))),
 			),
 		),
 		quickFilterCard("Filter by privilege, principal ID, or securable ID"),
@@ -139,16 +137,14 @@ func securityAPIKeysPage(d securityAPIKeysPageData) Node {
 				Td(Text(row.KeyPrefix)),
 				Td(Text(row.ExpiresAt)),
 				Td(Text(row.CreatedAt)),
-				Td(Class("text-right"), actionMenu("Actions", actionMenuPost("/ui/security/api-keys/"+row.ID+"/delete", "Delete API key", d.CSRFFieldProvider, true))),
+				Td(Class("text-right"), core.ActionMenu("Actions", actionMenuPost("/ui/security/api-keys/"+row.ID+"/delete", "Delete API key", d.CSRFFieldProvider, true))),
 			),
 		)
 	}
 	tableNode := Node(emptyStateCard("No API keys found.", "", ""))
 	if len(tableRows) > 0 {
-		tableNode = Div(
-			Class(coreCardClassWithTableWrap()),
-			Table(
-				Class(dataTableClass()),
+		tableNode = core.TableContainer("",
+			core.DataTable("",
 				THead(Tr(Th(Text("Name")), Th(Text("Principal ID")), Th(Text("Prefix")), Th(Text("Expires")), Th(Text("Created")), Th(Class("text-right"), Text("Actions")))),
 				TBody(Group(tableRows)),
 			),
@@ -184,7 +180,7 @@ func securityAPIKeysPage(d securityAPIKeysPageData) Node {
 			Method("post"),
 			Action("/ui/security/api-keys/cleanup"),
 			d.CSRFFieldProvider(),
-			Button(Type("submit"), Class(secondaryButtonClass()), Text("Cleanup expired keys")),
+			core.SecondaryButton("", Type("submit"), Text("Cleanup expired keys")),
 		)
 	}
 
@@ -201,7 +197,7 @@ func securityAPIKeysPage(d securityAPIKeysPageData) Node {
 				Action("/ui/security/api-keys"),
 				d.CSRFFieldProvider(),
 				Group(createFormNodes),
-				Div(Class(formActionsClass()), Button(Type("submit"), Class(primaryButtonClass()), Text("Create API key")), cleanupNode),
+				Div(Class(formActionsClass()), core.PrimaryButton("", Type("submit"), Text("Create API key")), cleanupNode),
 			),
 		),
 		quickFilterCard("Filter by key name, prefix, or principal ID"),
@@ -229,7 +225,7 @@ func securityAPIKeyCreatedPage(principal domain.ContextPrincipal, principalID, k
 			P(Text("Name: "+keyName)),
 			P(Text("Copy this value now. It will not be shown again.")),
 			Pre(Text(rawKey)),
-			A(Href(apiKeysPagePath(principalID)), Class(primaryButtonClass()), Text("Back to API keys")),
+			core.PrimaryLink(apiKeysPagePath(principalID), "", Text("Back to API keys")),
 		),
 	)
 }
@@ -269,15 +265,15 @@ func securityRowFiltersPage(d securityRowFilterPageData) Node {
 				Td(Text(dashIfEmpty(row.Description))),
 				Td(Text(bindings)),
 				Td(Text(row.CreatedAt)),
-				Td(Class("text-right"), actionMenu("Actions", actionMenuPost("/ui/security/row-filters/"+row.ID+"/delete", "Delete row filter", d.CSRFFieldProvider, true))),
+				Td(Class("text-right"), core.ActionMenu("Actions", actionMenuPost("/ui/security/row-filters/"+row.ID+"/delete", "Delete row filter", d.CSRFFieldProvider, true))),
 			),
 		)
 	}
 
 	tableNode := Node(emptyStateCard("No row filters found for the selected table.", "", ""))
 	if len(rows) > 0 {
-		tableNode = Div(Class(coreCardClassWithTableWrap()),
-			Table(Class(dataTableClass()),
+		tableNode = core.TableContainer("",
+			core.DataTable("",
 				THead(Tr(Th(Text("Table ID")), Th(Text("Filter SQL")), Th(Text("Description")), Th(Text("Bindings")), Th(Text("Created")), Th(Class("text-right"), Text("Actions")))),
 				TBody(Group(rows)),
 			),
@@ -298,7 +294,7 @@ func securityRowFiltersPage(d securityRowFilterPageData) Node {
 				Input(Name("description")),
 				Label(Text("Filter SQL")),
 				Textarea(Name("filter_sql"), Required()),
-				Div(Class(formActionsClass()), Button(Type("submit"), Class(primaryButtonClass()), Text("Create row filter"))),
+				Div(Class(formActionsClass()), core.PrimaryButton("", Type("submit"), Text("Create row filter"))),
 			),
 		),
 		Div(Class(coreCardClass()),
@@ -306,7 +302,7 @@ func securityRowFiltersPage(d securityRowFilterPageData) Node {
 			Form(Class(stackFormClass()), Method("get"), Action("/ui/security/row-filters"),
 				Label(Text("Table ID")),
 				Input(Name("table_id"), Value(d.TableID)),
-				Div(Class(formActionsClass()), Button(Type("submit"), Class(secondaryButtonClass()), Text("Apply filter"))),
+				Div(Class(formActionsClass()), core.SecondaryButton("", Type("submit"), Text("Apply filter"))),
 			),
 		),
 		Div(Class(coreCardClass()),
@@ -319,7 +315,7 @@ func securityRowFiltersPage(d securityRowFilterPageData) Node {
 				Select(Name("principal_type"), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
 				Label(Text("Principal ID")),
 				Input(Name("principal_id"), Required()),
-				Div(Class(formActionsClass()), Button(Type("submit"), Class(secondaryButtonClass()), Text("Bind filter"))),
+				Div(Class(formActionsClass()), core.SecondaryButton("", Type("submit"), Text("Bind filter"))),
 			),
 		),
 		Div(Class(coreCardClass()),
@@ -332,7 +328,7 @@ func securityRowFiltersPage(d securityRowFilterPageData) Node {
 				Select(Name("principal_type"), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
 				Label(Text("Principal ID")),
 				Input(Name("principal_id"), Required()),
-				Div(Class(formActionsClass()), Button(Type("submit"), Class(dangerButtonClass()), Text("Unbind filter"))),
+				Div(Class(formActionsClass()), core.DangerButton("", Type("submit"), Text("Unbind filter"))),
 			),
 		),
 		tableNode,
@@ -380,15 +376,15 @@ func securityColumnMasksPage(d securityColumnMaskPageData) Node {
 				Td(Text(dashIfEmpty(row.Description))),
 				Td(Text(bindings)),
 				Td(Text(row.CreatedAt)),
-				Td(Class("text-right"), actionMenu("Actions", actionMenuPost("/ui/security/column-masks/"+row.ID+"/delete", "Delete column mask", d.CSRFFieldProvider, true))),
+				Td(Class("text-right"), core.ActionMenu("Actions", actionMenuPost("/ui/security/column-masks/"+row.ID+"/delete", "Delete column mask", d.CSRFFieldProvider, true))),
 			),
 		)
 	}
 
 	tableNode := Node(emptyStateCard("No column masks found for the selected table.", "", ""))
 	if len(rows) > 0 {
-		tableNode = Div(Class(coreCardClassWithTableWrap()),
-			Table(Class(dataTableClass()),
+		tableNode = core.TableContainer("",
+			core.DataTable("",
 				THead(Tr(Th(Text("Table ID")), Th(Text("Column")), Th(Text("Mask Expression")), Th(Text("Description")), Th(Text("Bindings")), Th(Text("Created")), Th(Class("text-right"), Text("Actions")))),
 				TBody(Group(rows)),
 			),
@@ -411,7 +407,7 @@ func securityColumnMasksPage(d securityColumnMaskPageData) Node {
 				Input(Name("description")),
 				Label(Text("Mask expression")),
 				Textarea(Name("mask_expression"), Required()),
-				Div(Class(formActionsClass()), Button(Type("submit"), Class(primaryButtonClass()), Text("Create column mask"))),
+				Div(Class(formActionsClass()), core.PrimaryButton("", Type("submit"), Text("Create column mask"))),
 			),
 		),
 		Div(Class(coreCardClass()),
@@ -419,7 +415,7 @@ func securityColumnMasksPage(d securityColumnMaskPageData) Node {
 			Form(Class(stackFormClass()), Method("get"), Action("/ui/security/column-masks"),
 				Label(Text("Table ID")),
 				Input(Name("table_id"), Value(d.TableID)),
-				Div(Class(formActionsClass()), Button(Type("submit"), Class(secondaryButtonClass()), Text("Apply filter"))),
+				Div(Class(formActionsClass()), core.SecondaryButton("", Type("submit"), Text("Apply filter"))),
 			),
 		),
 		Div(Class(coreCardClass()),
@@ -433,7 +429,7 @@ func securityColumnMasksPage(d securityColumnMaskPageData) Node {
 				Label(Text("Principal ID")),
 				Input(Name("principal_id"), Required()),
 				Label(Input(Type("checkbox"), Name("see_original")), Text(" Allow original values")),
-				Div(Class(formActionsClass()), Button(Type("submit"), Class(secondaryButtonClass()), Text("Bind mask"))),
+				Div(Class(formActionsClass()), core.SecondaryButton("", Type("submit"), Text("Bind mask"))),
 			),
 		),
 		Div(Class(coreCardClass()),
@@ -446,7 +442,7 @@ func securityColumnMasksPage(d securityColumnMaskPageData) Node {
 				Select(Name("principal_type"), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
 				Label(Text("Principal ID")),
 				Input(Name("principal_id"), Required()),
-				Div(Class(formActionsClass()), Button(Type("submit"), Class(dangerButtonClass()), Text("Unbind mask"))),
+				Div(Class(formActionsClass()), core.DangerButton("", Type("submit"), Text("Unbind mask"))),
 			),
 		),
 		tableNode,
@@ -474,22 +470,6 @@ func coreAppPage(title string, principal domain.ContextPrincipal, body ...Node) 
 
 func coreCardClass(extra ...string) string {
 	return core.ClassNames("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]", strings.Join(extra, " "))
-}
-
-func coreCardClassWithTableWrap() string {
-	return "overflow-x-auto rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"
-}
-
-func primaryButtonClass() string {
-	return "inline-flex min-h-[var(--control-medium-size)] items-center justify-center rounded-lg border border-[var(--button-primary-borderColor-rest)] bg-[var(--button-primary-bgColor-rest)] px-4 text-sm font-medium text-[var(--button-primary-fgColor-rest)] shadow-[var(--shadow-resting-xsmall)] transition-colors hover:border-[var(--button-primary-borderColor-hover)] hover:bg-[var(--button-primary-bgColor-hover)] hover:text-[var(--button-primary-fgColor-hover)]"
-}
-
-func secondaryButtonClass() string {
-	return "inline-flex min-h-[var(--control-medium-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-4 text-sm font-medium text-[var(--fgColor-default)] shadow-[var(--shadow-resting-xsmall)] transition-colors hover:bg-[var(--control-bgColor-hover)]"
-}
-
-func dangerButtonClass() string {
-	return "inline-flex min-h-[var(--control-medium-size)] items-center justify-center rounded-lg border border-[var(--button-danger-borderColor-rest)] bg-[var(--button-danger-bgColor-rest)] px-4 text-sm font-medium text-[var(--button-danger-fgColor-rest)] shadow-[var(--shadow-resting-xsmall)] transition-colors hover:border-[var(--button-danger-borderColor-hover)] hover:bg-[var(--button-danger-bgColor-hover)] hover:text-[var(--button-danger-fgColor-hover)]"
 }
 
 func stackFormClass() string {
