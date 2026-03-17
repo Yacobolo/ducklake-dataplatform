@@ -66,13 +66,13 @@ type macroImpactPageData struct {
 }
 
 func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No macros yet.")))
+	table := Node(P(Class("text-xs text-muted"), Text("No macros yet.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
+				Td(A(Href(row.URL), Class("font-medium text-accent"), Text(row.Name))),
 				Td(statusPill(row.Type, "accent")),
 				Td(Text(row.Visibility)),
 				Td(statusPill(row.Status, "neutral")),
@@ -87,19 +87,19 @@ func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData,
 	}
 
 	return core.AppPage("Macros", "macros", principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			Div(Class("mb-4 flex flex-wrap items-center justify-between gap-3"),
-				Div(H2(Class("m-0 text-xl font-semibold"), Text("Macros")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Create and manage reusable SQL and transformation helpers."))),
+				Div(H2(Class("m-0 text-xl font-semibold"), Text("Macros")), P(Class("m-0 text-sm text-muted"), Text("Create and manage reusable SQL and transformation helpers."))),
 				core.PrimaryLink("/ui/macros/new", "", Text("New macro")),
 			),
 			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" macros. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" macros. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
 
 func macroDetailPage(d macroDetailPageData) Node {
-	revisions := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No revisions yet.")))
+	revisions := Node(P(Class("text-xs text-muted"), Text("No revisions yet.")))
 	if len(d.Revisions) > 0 {
 		rows := make([]Node, 0, len(d.Revisions))
 		for i := range d.Revisions {
@@ -120,11 +120,11 @@ func macroDetailPage(d macroDetailPageData) Node {
 	}
 
 	return core.AppPage("Macro: "+d.Name, "macros", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			Div(Class("flex flex-wrap items-start justify-between gap-3"),
 				Div(
 					H2(Class("m-0 text-xl font-semibold"), Text(d.Name)),
-					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Owner: "+emptyDash(d.Owner))),
+					P(Class("m-0 text-sm text-muted"), Text("Owner: "+emptyDash(d.Owner))),
 				),
 				Div(Class("mt-0 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
 					core.SecondaryLink(d.EditURL, "", Text("Edit")),
@@ -139,11 +139,11 @@ func macroDetailPage(d macroDetailPageData) Node {
 				metaRow("Status", d.Status),
 			),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Definition")),
-			Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Definition)),
+			Pre(Class("overflow-x-auto rounded-lg border border-border-muted bg-surface-muted p-3 text-sm"), Text(d.Definition)),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Revisions")),
 			revisions,
 		),
@@ -202,7 +202,7 @@ func macroFormPage(principal domain.ContextPrincipal, title, action string, csrf
 	nodes = append(nodes, Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save"))))
 
 	return core.AppPage(title, "macros", principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes)),
 		),
 	)
@@ -211,9 +211,9 @@ func macroFormPage(principal domain.ContextPrincipal, title, action string, csrf
 func macroDiffPage(d macroDiffPageData) Node {
 	if d.Diff == nil {
 		return core.AppPage("Macro Diff: "+d.Name, "macros", d.Principal,
-			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+			Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 				H2(Class("mt-0 text-xl font-semibold"), Text("Macro diff")),
-				P(Class("text-xs text-[var(--fgColor-muted)]"), Text("At least two revisions are required to diff a macro.")),
+				P(Class("text-xs text-muted"), Text("At least two revisions are required to diff a macro.")),
 				core.SecondaryLink("/ui/macros/"+d.Name, "", Text("Back to macro")),
 			),
 		)
@@ -228,7 +228,7 @@ func macroDiffPage(d macroDiffPageData) Node {
 	}
 
 	return core.AppPage("Macro Diff: "+d.Name, "macros", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H2(Class("mt-0 text-xl font-semibold"), Text("Compare revisions")),
 			Form(Class("grid gap-3 md:grid-cols-2"), Method("get"), Action("/ui/macros/"+d.Name+"/diff"),
 				Div(Label(Text("From revision")), core.SelectControl("", Name("from"), Group(fromOptions))),
@@ -243,22 +243,22 @@ func macroDiffPage(d macroDiffPageData) Node {
 				metaRow("Status changed", boolLabel(d.Diff.StatusChanged)),
 			),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Parameters")),
 			P(Text("From: "+stringsJoin(d.Diff.FromParameters))),
 			P(Text("To: "+stringsJoin(d.Diff.ToParameters))),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Description")),
 			P(Text("From: "+emptyDash(d.Diff.FromDescription))),
 			P(Text("To: "+emptyDash(d.Diff.ToDescription))),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Body")),
-			H4(Class("mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--fgColor-muted)]"), Text("From")),
-			Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Diff.FromBody)),
-			H4(Class("mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--fgColor-muted)]"), Text("To")),
-			Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Diff.ToBody)),
+			H4(Class("mb-2 text-sm font-semibold uppercase tracking-wide text-muted"), Text("From")),
+			Pre(Class("overflow-x-auto rounded-lg border border-border-muted bg-surface-muted p-3 text-sm"), Text(d.Diff.FromBody)),
+			H4(Class("mb-2 text-sm font-semibold uppercase tracking-wide text-muted"), Text("To")),
+			Pre(Class("overflow-x-auto rounded-lg border border-border-muted bg-surface-muted p-3 text-sm"), Text(d.Diff.ToBody)),
 		),
 		macroImpactSection("Impact added", d.ImpactAdded, "No newly impacted models."),
 		macroImpactSection("Impact removed", d.ImpactRemoved, "No removed impacted models."),
@@ -274,17 +274,17 @@ func macroImpactPage(d macroImpactPageData) Node {
 
 func macroImpactSection(title string, rowsData []macroImpactRowData, emptyMessage string) Node {
 	if len(rowsData) == 0 {
-		return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text(title)),
-			P(Class("text-xs text-[var(--fgColor-muted)]"), Text(emptyMessage)),
+			P(Class("text-xs text-muted"), Text(emptyMessage)),
 		)
 	}
 	rows := make([]Node, 0, len(rowsData))
 	for i := range rowsData {
 		row := rowsData[i]
-		rows = append(rows, Tr(Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.ModelName))), Td(Text(row.LastSeen))))
+		rows = append(rows, Tr(Td(A(Href(row.URL), Class("font-medium text-accent"), Text(row.ModelName))), Td(Text(row.LastSeen))))
 	}
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 		H2(Class("mt-0 text-lg font-semibold"), Text(title)),
 		Div(Class("overflow-x-auto"),
 			Table(Class("min-w-full text-left text-sm"),
@@ -304,9 +304,9 @@ func optionSelected(value, current string) Node {
 
 func metaRow(label, value string) Node {
 	return Div(
-		Class("rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3"),
-		Dt(Class("text-xs font-medium uppercase tracking-wide text-[var(--fgColor-muted)]"), Text(label)),
-		Dd(Class("mt-1 ml-0 text-sm text-[var(--fgColor-default)]"), Text(emptyDash(value))),
+		Class("rounded-lg border border-border-muted bg-surface-muted p-3"),
+		Dt(Class("text-xs font-medium uppercase tracking-wide text-muted"), Text(label)),
+		Dd(Class("mt-1 ml-0 text-sm text-foreground"), Text(emptyDash(value))),
 	)
 }
 
@@ -314,9 +314,9 @@ func statusPill(text, tone string) Node {
 	className := "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
 	switch tone {
 	case "accent":
-		className += " bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
+		className += " bg-accent-muted text-accent"
 	default:
-		className += " bg-[var(--bgColor-muted)] text-[var(--fgColor-default)]"
+		className += " bg-surface-muted text-foreground"
 	}
 	return Span(Class(className), Text(text))
 }

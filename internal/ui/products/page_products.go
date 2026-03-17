@@ -73,8 +73,8 @@ func productsListPage(principal domain.ContextPrincipal, items []domain.DataProd
 					statusLabel(fallbackString(productListItemCertificationState(item), domain.CertificationDraft), productCertificationTone(productListItemCertificationState(item))),
 					statusLabel(healthLabel, healthTone),
 				),
-				P(Class("mb-1 text-xs text-[var(--fgColor-muted)]"), Text("Primary output: "+outputLabel)),
-				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Steward: "+fallbackString(item.Product.StewardPrincipal, "unassigned"))),
+				P(Class("mb-1 text-xs text-muted"), Text("Primary output: "+outputLabel)),
+				P(Class("m-0 text-xs text-muted"), Text("Steward: "+fallbackString(item.Product.StewardPrincipal, "unassigned"))),
 			),
 		)
 	}
@@ -105,7 +105,7 @@ func productsListPage(principal domain.ContextPrincipal, items []domain.DataProd
 			Div(Class(assetTypeBandClass()),
 				Div(Class(assetSectionHeadClass()),
 					H2(Text("Published catalog")),
-					P(Class("text-sm text-[var(--fgColor-muted)]"), Text("Products link business ownership to runtime assets and semantic entrypoints.")),
+					P(Class("text-sm text-muted"), Text("Products link business ownership to runtime assets and semantic entrypoints.")),
 				),
 				func() Node {
 					if len(cards) == 0 {
@@ -433,7 +433,7 @@ func productVersionPage(principal domain.ContextPrincipal, detail *domain.DataPr
 					),
 					Div(Class(assetSectionCardClass()),
 						H2(Class(sectionTitleClass()), Text("Navigate")),
-						P(Class("text-sm text-[var(--fgColor-muted)]"), Text("Inspect the full product control plane or switch versions.")),
+						P(Class("text-sm text-muted"), Text("Inspect the full product control plane or switch versions.")),
 						core.SecondaryLink("/ui/products/"+url.PathEscape(detail.Product.Slug), "", Text("Back to product")),
 						core.ItemList("mt-3", Group(productVersionLinks(detail))),
 					),
@@ -615,7 +615,7 @@ func quickFilterCardWithValue(placeholder, initialValue string, extraControls ..
 })();`
 
 	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 		data.Signals(map[string]any{"q": initialValue}),
 		Div(Class("flex flex-wrap items-center gap-3"), Group(controls)),
 		Script(Raw(syncScript)),
@@ -628,13 +628,13 @@ func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 		cta = core.PrimaryLink(ctaHref, "", Text(ctaLabel))
 	}
 	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-[var(--shadow-resting-xsmall)]"),
-		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"),
+		Class("rounded-xl border border-border bg-background p-4 text-center shadow-xs"),
+		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted text-accent"),
 			I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true")),
 		),
 		Div(Class("flex flex-col items-center gap-2 text-center"),
 			P(Class("m-0 text-lg font-semibold"), Text("No results yet")),
-			P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(message)),
+			P(Class("m-0 text-sm text-muted"), Text(message)),
 			cta,
 		),
 	)
@@ -646,25 +646,25 @@ func paginationCard(basePath string, page domain.PageRequest, total int64) Node 
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
 		return Div(
-			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+			Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			Div(
 				Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
 				Div(Class("flex min-w-0 flex-col gap-1"),
-					P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")),
-					P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
+					P(Class("m-0 text-sm font-semibold text-foreground"), Text("Pagination")),
+					P(Class("m-0 text-xs text-muted"), Text(summary)),
 				),
-				Span(Class("inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
+				Span(Class("inline-flex min-h-8 items-center justify-center rounded-lg border border-border px-3 text-sm font-medium text-foreground opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
 			),
 		)
 	}
 	u := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
 	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 		Div(
 			Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
 			Div(Class("flex min-w-0 flex-col gap-1"),
-				P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")),
-				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
+				P(Class("m-0 text-sm font-semibold text-foreground"), Text("Pagination")),
+				P(Class("m-0 text-xs text-muted"), Text(summary)),
 			),
 			core.SecondaryLink(u, "small", Text("Next page")),
 		),
@@ -680,57 +680,57 @@ func min(a, b int) int {
 
 func assetShellClass() string { return "flex flex-col gap-4" }
 func assetHeroClass() string {
-	return "grid gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[linear-gradient(135deg,var(--bgColor-muted)_0%,var(--bgColor-default)_65%)] p-5 shadow-[var(--shadow-resting-small)] lg:grid-cols-[minmax(0,1.5fr)_minmax(16rem,0.8fr)]"
+	return "grid gap-4 rounded-2xl border border-border bg-[linear-gradient(135deg,var(--color-surface-muted)_0%,var(--color-background)_65%)] p-5 shadow-sm lg:grid-cols-[minmax(0,1.5fr)_minmax(16rem,0.8fr)]"
 }
 func assetHeroCopyClass() string { return "flex min-w-0 flex-col gap-3" }
 func assetKickerClass() string {
-	return "m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"
+	return "m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted"
 }
 func assetTitleClass() string {
-	return "m-0 text-3xl font-semibold leading-tight text-[var(--fgColor-default)]"
+	return "m-0 text-3xl font-semibold leading-tight text-foreground"
 }
 func assetDescriptionClass() string {
-	return "m-0 max-w-3xl text-sm leading-6 text-[var(--fgColor-muted)]"
+	return "m-0 max-w-3xl text-sm leading-6 text-muted"
 }
 func assetBadgeRowClass() string    { return "flex flex-wrap items-center gap-2" }
 func assetHeroActionsClass() string { return "flex flex-wrap items-center gap-3" }
 func assetMetricsGridClass() string { return "grid gap-3 sm:grid-cols-2 xl:grid-cols-4" }
 func assetTypeBandClass() string {
-	return "flex flex-col gap-4 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"
+	return "flex flex-col gap-4 rounded-xl border border-border bg-background p-4 shadow-xs"
 }
 func assetShowcaseGridClass() string { return "grid gap-3 lg:grid-cols-2 2xl:grid-cols-3" }
 func assetShowcaseCardClass() string {
-	return "flex h-full flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4 text-inherit no-underline shadow-[var(--shadow-resting-xsmall)] transition-colors hover:border-[var(--borderColor-accent-muted)] hover:bg-[var(--control-bgColor-hover)]"
+	return "flex h-full flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4 text-inherit no-underline shadow-xs transition-colors hover:border-border-accent hover:bg-surface-muted"
 }
 func assetShowcaseHeadClass() string { return "flex items-start justify-between gap-3" }
 func assetShowcaseKeyClass() string {
-	return "m-0 text-base font-semibold text-[var(--fgColor-default)]"
+	return "m-0 text-base font-semibold text-foreground"
 }
-func assetShowcaseOwnerClass() string { return "mt-1 mb-0 text-xs text-[var(--fgColor-muted)]" }
+func assetShowcaseOwnerClass() string { return "mt-1 mb-0 text-xs text-muted" }
 func assetShowcaseDescriptionClass() string {
-	return "m-0 text-sm leading-6 text-[var(--fgColor-muted)]"
+	return "m-0 text-sm leading-6 text-muted"
 }
 func assetSectionHeadClass() string { return "flex flex-wrap items-start justify-between gap-2" }
 func assetSectionClass() string     { return "flex flex-col gap-4" }
 func assetSectionCardClass() string {
-	return "flex flex-col gap-4 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"
+	return "flex flex-col gap-4 rounded-xl border border-border bg-background p-4 shadow-xs"
 }
-func sectionTitleClass() string { return "m-0 text-lg font-semibold text-[var(--fgColor-default)]" }
-func sectionCopyClass() string  { return "m-0 text-sm text-[var(--fgColor-muted)]" }
+func sectionTitleClass() string { return "m-0 text-lg font-semibold text-foreground" }
+func sectionCopyClass() string  { return "m-0 text-sm text-muted" }
 
 func labelClass(tone string) string {
 	base := "inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
 	switch tone {
 	case "accent":
-		return core.ClassNames(base, "bg-[var(--label-blue-bgColor-rest)] text-[var(--label-blue-fgColor-rest)]")
+		return core.ClassNames(base, "bg-accent-muted text-accent")
 	case "attention":
-		return core.ClassNames(base, "bg-[var(--label-yellow-bgColor-rest)] text-[var(--label-yellow-fgColor-rest)]")
+		return core.ClassNames(base, "bg-warning-muted text-warning-text")
 	case "success":
-		return core.ClassNames(base, "bg-[var(--label-green-bgColor-rest)] text-[var(--label-green-fgColor-rest)]")
+		return core.ClassNames(base, "bg-success-muted text-success-text")
 	case "severe":
-		return core.ClassNames(base, "bg-[var(--label-orange-bgColor-rest)] text-[var(--label-orange-fgColor-rest)]")
+		return core.ClassNames(base, "bg-danger-muted text-danger-text")
 	default:
-		return core.ClassNames(base, "bg-[var(--label-gray-bgColor-rest)] text-[var(--label-gray-fgColor-rest)]")
+		return core.ClassNames(base, "bg-surface-muted text-foreground")
 	}
 }
 

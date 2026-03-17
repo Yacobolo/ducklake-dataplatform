@@ -1,9 +1,9 @@
 .p-3 {
-  padding: var(--space-4);
+  padding: calc(var(--spacing) * 4);
 }
 
 .mb-3 {
-  margin-bottom: var(--space-4);
+  margin-bottom: calc(var(--spacing) * 4);
 }
 
 .d-flex {
@@ -35,15 +35,15 @@
 }
 
 .mb-2 {
-  margin-bottom: var(--space-2);
+  margin-bottom: calc(var(--spacing) * 2);
 }
 
 .gap-2 {
-  gap: var(--space-2);
+  gap: calc(var(--spacing) * 2);
 }
 
 .text-small {
-  font-size: var(--text-caption-size);
+  font-size: var(--text-xs);
 }
 
 .text-right {
@@ -51,36 +51,36 @@
 }
 
 .color-fg-muted {
-  color: var(--fgColor-muted);
+  color: var(--color-muted);
 }
 
 .color-fg-danger {
-  color: var(--fgColor-danger);
+  color: var(--color-danger-text);
 }
 
 .Link--secondary {
-  color: var(--fgColor-muted);
+  color: var(--color-muted);
 }
 
 .Link--secondary:visited {
-  color: var(--fgColor-muted);
+  color: var(--color-muted);
 }
 
 .Link--secondary:hover {
-  color: var(--fgColor-default);
+  color: var(--color-foreground);
 }
 
 .Link--secondary:focus-visible {
-  outline: var(--focus-outline);
-  outline-offset: var(--outline-focus-offset);
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
 }
 
 .sr-only {
   position: absolute;
-  width: var(--borderWidth-default);
-  height: var(--borderWidth-default);
+  width: 1px;
+  height: 1px;
   padding: 0;
-  margin: calc(var(--borderWidth-default) * -1);
+  margin: -1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;

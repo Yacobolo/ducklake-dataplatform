@@ -9,27 +9,12 @@ const webDir = join(__dirname, "..");
 const outputFile = join(webDir, "styles", "tokens", "tailwind-theme.generated.css");
 
 const importPaths = [
-  "../../tokens/base/size/size.css",
-  "../../tokens/base/motion/motion.css",
-  "../../tokens/base/typography/typography.css",
-  "../../tokens/functional/size/border.css",
-  "../../tokens/functional/size/breakpoints.css",
-  "../../tokens/functional/size/radius.css",
-  "../../tokens/functional/size/size.css",
-  "../../tokens/functional/typography/typography.css",
+  "./legacy-foundation.css",
   "../../tokens/functional/themes/light.css",
   "../../tokens/functional/themes/dark.css",
 ];
 
 const tokenFiles = {
-  baseSize: join(webDir, "tokens", "base", "size", "size.css"),
-  baseMotion: join(webDir, "tokens", "base", "motion", "motion.css"),
-  baseTypography: join(webDir, "tokens", "base", "typography", "typography.css"),
-  functionalBorder: join(webDir, "tokens", "functional", "size", "border.css"),
-  functionalBreakpoints: join(webDir, "tokens", "functional", "size", "breakpoints.css"),
-  functionalRadius: join(webDir, "tokens", "functional", "size", "radius.css"),
-  functionalSize: join(webDir, "tokens", "functional", "size", "size.css"),
-  functionalTypography: join(webDir, "tokens", "functional", "typography", "typography.css"),
   lightTheme: join(webDir, "tokens", "functional", "themes", "light.css"),
   darkTheme: join(webDir, "tokens", "functional", "themes", "dark.css"),
 };
@@ -42,97 +27,74 @@ function extractVars(filePath) {
   }));
 }
 
-function normalizeTokenName(name) {
-  return name
-    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
-    .toLowerCase();
-}
-
 function cssValueFor(name) {
   return `var(--${name})`;
 }
 
-function uniqueByName(tokens) {
-  return [...new Map(tokens.map((token) => [token.name, token])).values()];
+function formatThemeEntries(entries) {
+  return entries.map(([name, token]) => `  --${name}: ${cssValueFor(token)};`).join("\n");
 }
 
-function formatNamespace(namespace, tokens) {
-  if (!tokens.length) {
-    return "";
-  }
+const requiredThemeVars = new Set([
+  ...extractVars(tokenFiles.lightTheme).map((token) => token.name),
+  ...extractVars(tokenFiles.darkTheme).map((token) => token.name),
+]);
 
-  return tokens
-    .map((token) => `  --${namespace}-${normalizeTokenName(token.name)}: ${cssValueFor(token.name)};`)
-    .join("\n");
+const semanticColorEntries = [
+  ["color-background", "bgColor-default"],
+  ["color-foreground", "fgColor-default"],
+  ["color-muted", "fgColor-muted"],
+  ["color-surface", "bgColor-default"],
+  ["color-surface-muted", "bgColor-muted"],
+  ["color-surface-emphasis", "bgColor-emphasis"],
+  ["color-border", "borderColor-default"],
+  ["color-border-muted", "borderColor-muted"],
+  ["color-border-accent", "borderColor-accent-emphasis"],
+  ["color-border-danger", "borderColor-danger-muted"],
+  ["color-border-success", "borderColor-success-emphasis"],
+  ["color-ring", "focus-outlineColor"],
+  ["color-primary", "bgColor-accent-emphasis"],
+  ["color-primary-foreground", "fgColor-onEmphasis"],
+  ["color-accent", "fgColor-accent"],
+  ["color-accent-muted", "bgColor-accent-muted"],
+  ["color-success-text", "fgColor-success"],
+  ["color-success", "bgColor-success-emphasis"],
+  ["color-success-foreground", "fgColor-onEmphasis"],
+  ["color-success-muted", "bgColor-success-muted"],
+  ["color-warning-text", "fgColor-attention"],
+  ["color-warning", "bgColor-attention-emphasis"],
+  ["color-warning-foreground", "fgColor-onEmphasis"],
+  ["color-warning-muted", "bgColor-attention-muted"],
+  ["color-danger-text", "fgColor-danger"],
+  ["color-danger", "bgColor-danger-emphasis"],
+  ["color-danger-foreground", "fgColor-onEmphasis"],
+  ["color-danger-muted", "bgColor-danger-muted"],
+  ["color-info", "bgColor-accent-emphasis"],
+  ["color-info-foreground", "fgColor-onEmphasis"],
+  ["color-input", "bgColor-default"],
+  ["color-input-border", "control-borderColor-rest"],
+  ["color-card", "bgColor-default"],
+  ["color-card-foreground", "fgColor-default"],
+  ["color-popover", "overlay-bgColor"],
+  ["color-popover-foreground", "fgColor-default"],
+  ["color-secondary", "button-default-bgColor-rest"],
+  ["color-secondary-foreground", "button-default-fgColor-rest"],
+];
+
+const missingThemeVars = semanticColorEntries
+  .map(([, token]) => token)
+  .filter((token) => !requiredThemeVars.has(token));
+
+if (missingThemeVars.length > 0) {
+  throw new Error(`Missing required theme tokens: ${missingThemeVars.join(", ")}`);
 }
-
-function isThemeShadow(token) {
-  return token.name.includes("shadow") || /\b(inset|0px|px)\b/.test(token.value) && token.value.includes(",");
-}
-
-function isThemeColor(token) {
-  if (token.name.includes("shadow")) {
-    return false;
-  }
-  if (token.name.startsWith("border-") || token.name === "focus-outline") {
-    return false;
-  }
-  return true;
-}
-
-const themeVars = uniqueByName([
-  ...extractVars(tokenFiles.lightTheme),
-  ...extractVars(tokenFiles.darkTheme),
-]);
-
-const colorVars = themeVars.filter(isThemeColor);
-const shadowVars = themeVars.filter(isThemeShadow);
-const spacingVars = uniqueByName([
-  ...extractVars(tokenFiles.baseSize),
-  ...extractVars(tokenFiles.functionalSize),
-]);
-const radiusVars = extractVars(tokenFiles.functionalRadius);
-const breakpointVars = extractVars(tokenFiles.functionalBreakpoints);
-const fontVars = uniqueByName(
-  extractVars(tokenFiles.functionalTypography).filter((token) => token.name.startsWith("fontStack-")),
-);
-const textSizeVars = uniqueByName([
-  ...extractVars(tokenFiles.baseTypography).filter((token) => token.name.includes("-size-")),
-  ...extractVars(tokenFiles.functionalTypography).filter((token) => token.name.endsWith("-size")),
-]);
-const leadingVars = uniqueByName([
-  ...extractVars(tokenFiles.baseTypography).filter((token) => token.name.includes("lineHeight")),
-  ...extractVars(tokenFiles.functionalTypography).filter((token) => token.name.includes("lineHeight")),
-]);
-const fontWeightVars = uniqueByName([
-  ...extractVars(tokenFiles.baseTypography).filter((token) => token.name.includes("weight")),
-  ...extractVars(tokenFiles.functionalTypography).filter((token) => token.name.includes("weight")),
-]);
-const easeVars = extractVars(tokenFiles.baseMotion).filter((token) => token.name.startsWith("base-easing-"));
-const durationVars = extractVars(tokenFiles.baseMotion).filter((token) => token.name.startsWith("base-duration-"));
-const borderShadowVars = extractVars(tokenFiles.functionalBorder).filter((token) => token.name.startsWith("boxShadow-"));
-
-const sections = [
-  formatNamespace("color", colorVars),
-  formatNamespace("shadow", uniqueByName([...shadowVars, ...borderShadowVars])),
-  formatNamespace("spacing", spacingVars),
-  formatNamespace("radius", radiusVars),
-  formatNamespace("breakpoint", breakpointVars),
-  formatNamespace("font", fontVars),
-  formatNamespace("text", textSizeVars),
-  formatNamespace("leading", leadingVars),
-  formatNamespace("font-weight", fontWeightVars),
-  formatNamespace("ease", easeVars),
-  formatNamespace("duration", durationVars),
-].filter(Boolean);
 
 const contents = `/* eslint-disable */
 /* This file is generated by ./scripts/generate-tailwind-theme.mjs. */
 ${importPaths.map((path) => `@import "${path}";`).join("\n")}
 
 @theme static {
-${sections.join("\n")}
+${formatThemeEntries(semanticColorEntries)}
 }
 `;
 

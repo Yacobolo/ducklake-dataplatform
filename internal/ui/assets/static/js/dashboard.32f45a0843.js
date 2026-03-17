@@ -25,20 +25,20 @@
 
     .frame {
       min-height: 20rem;
-      border: 1px solid var(--borderColor-default);
-      border-radius: var(--borderRadius-medium);
-      background: var(--bgColor-default);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--color-background);
     }
 
     .empty {
       display: grid;
       place-items: center;
       min-height: 20rem;
-      color: var(--fgColor-muted);
-      padding: var(--space-3);
+      color: var(--color-muted);
+      padding: calc(var(--spacing) * 3);
       text-align: center;
-      border: 1px dashed var(--borderColor-muted);
-      border-radius: var(--borderRadius-medium);
+      border: 1px dashed var(--color-border-muted);
+      border-radius: var(--radius-lg);
     }
   `);function jR(r){let e=r.visual,t=new Map(r.columns.map((a,o)=>[a,o])),i=(a,o)=>{if(!o)return null;let s=t.get(o);return s===void 0?null:a[s]},n={aria:{enabled:!0},title:{text:e.title||"",subtext:e.subtitle||""},tooltip:{trigger:"axis"},legend:{show:e.legend!==!1}};switch(e.chart_type){case"pie":case"doughnut":{let a=r.rows.map(o=>({name:String(i(o,e.encodings?.label?.field)??""),value:Number(i(o,e.encodings?.value?.field)??0)}));return{...n,tooltip:{trigger:"item"},series:[{type:"pie",radius:e.chart_type==="doughnut"?["45%","70%"]:"70%",data:a}]}}case"scatter":return{...n,xAxis:{type:"value"},yAxis:{type:"value"},series:[{type:"scatter",data:r.rows.map(a=>[Number(i(a,e.encodings?.x?.field)??0),Number(i(a,e.encodings?.y?.field)??0)])}]};default:{let a=e.encodings?.x?.field,o=e.encodings?.y?.field,s=e.encodings?.series?.field,l=Array.from(new Set(r.rows.map(c=>String(i(c,a)??"")))),u=new Map;for(let c of r.rows){let p=String(i(c,s)??o??"value"),h=String(i(c,a)??""),v=Number(i(c,o)??0);u.has(p)||u.set(p,new Map),u.get(p).set(h,v)}let f=e.chart_type==="line"||e.chart_type==="area"?"line":"bar";return{...n,grid:{left:24,right:24,top:48,bottom:24,containLabel:!0},xAxis:{type:"category",data:l},yAxis:{type:"value"},series:Array.from(u.entries()).map(([c,p])=>({name:c,type:f,stack:e.chart_type==="stacked_bar"||e.stacked?"total":void 0,areaStyle:e.chart_type==="area"?{}:void 0,data:l.map(h=>p.get(h)??0)}))}}}}customElements.get("duck-chart")||customElements.define("duck-chart",Js);})();
 /*! Bundled license information:

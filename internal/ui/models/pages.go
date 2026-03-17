@@ -138,13 +138,13 @@ type modelsDetailPageData struct {
 }
 
 func modelsListPage(principal domain.ContextPrincipal, rows []modelsListRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No models available.")))
+	table := Node(P(Class("text-xs text-muted"), Text("No models available.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.DetailURL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.ModelName))),
+				Td(A(Href(row.DetailURL), Class("font-medium text-accent"), Text(row.ModelName))),
 				Td(Text(row.Materialized)),
 				Td(Text(strconv.Itoa(row.Dependencies))),
 				Td(Text(row.UpdatedAtText)),
@@ -157,15 +157,15 @@ func modelsListPage(principal domain.ContextPrincipal, rows []modelsListRowData,
 	}
 	return core.AppPage("Models", "models", principal,
 		sectionHeader("Models", "Manage dbt-style models and tests.", "/ui/models/new", "New model"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" models. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" models. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
 
 func modelsDetailPage(d modelsDetailPageData) Node {
-	tests := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No tests configured.")))
+	tests := Node(P(Class("text-xs text-muted"), Text("No tests configured.")))
 	if len(d.Tests) > 0 {
 		rows := make([]Node, 0, len(d.Tests))
 		for i := range d.Tests {
@@ -183,7 +183,7 @@ func modelsDetailPage(d modelsDetailPageData) Node {
 		))
 	}
 
-	freshness := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No freshness policy configured.")))
+	freshness := Node(P(Class("text-xs text-muted"), Text("No freshness policy configured.")))
 	if d.FreshnessStatus != nil {
 		freshness = Div(
 			P(Class("m-0 text-sm"), Strong(Text("Fresh: ")), Text(strconv.FormatBool(d.FreshnessStatus.IsFresh))),
@@ -194,7 +194,7 @@ func modelsDetailPage(d modelsDetailPageData) Node {
 	}
 
 	return core.AppPage("Model: "+d.QualifiedName, "models", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text(d.QualifiedName)),
 			P(Class("m-0 text-sm"), Strong(Text("Materialization: ")), Text(d.Materialization)),
 			P(Class("m-0 text-sm"), Strong(Text("Owner: ")), Text(d.Owner)),
@@ -209,12 +209,12 @@ func modelsDetailPage(d modelsDetailPageData) Node {
 				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
 			),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Freshness")),
 			freshness,
 			Form(Method("post"), Action(d.FreshnessURL), d.CSRFFieldProvider(), core.SecondaryButton("", Type("submit"), Text("Refresh freshness status"))),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Trigger model run")),
 			Form(Class("grid gap-3"), Method("post"), Action(d.TriggerRunURL),
 				d.CSRFFieldProvider(),
@@ -229,7 +229,7 @@ func modelsDetailPage(d modelsDetailPageData) Node {
 				core.PrimaryButton("", Type("submit"), Text("Trigger model run")),
 			),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Cancel model run")),
 			Form(Class("grid gap-3"), Method("post"), Action(d.CancelRunURL),
 				d.CSRFFieldProvider(),
@@ -238,11 +238,11 @@ func modelsDetailPage(d modelsDetailPageData) Node {
 				core.SecondaryButton("", Type("submit"), Text("Cancel model run")),
 			),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("SQL")),
-			Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.SQL)),
+			Pre(Class("overflow-x-auto rounded-lg border border-border-muted bg-surface-muted p-3 text-sm"), Text(d.SQL)),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H3(Class("mt-0 text-lg font-semibold"), Text("Tests")),
 			tests,
 		),
@@ -322,13 +322,13 @@ func modelsDAGPage(d modelsDAGPageData) Node {
 		for j := range tier.Nodes {
 			node := tier.Nodes[j]
 			rows = append(rows, Tr(
-				Td(A(Href(node.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(node.Name))),
+				Td(A(Href(node.URL), Class("font-medium text-accent"), Text(node.Name))),
 				Td(Text(node.Materialized)),
 				Td(Text(node.DependsOn)),
 			))
 		}
 		tierNodes = append(tierNodes,
-			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+			Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 				H2(Class("mt-0 text-lg font-semibold"), Text(tier.Label)),
 				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 					THead(Tr(Th(Text("Model")), Th(Text("Materialization")), Th(Text("Depends on")))),
@@ -338,26 +338,26 @@ func modelsDAGPage(d modelsDAGPageData) Node {
 		)
 	}
 	if len(tierNodes) == 0 {
-		tierNodes = append(tierNodes, Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No model DAG available.")), core.SecondaryLink("/ui/models", "", Text("Back to models"))))
+		tierNodes = append(tierNodes, Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), P(Class("text-xs text-muted"), Text("No model DAG available.")), core.SecondaryLink("/ui/models", "", Text("Back to models"))))
 	}
 	title := "Model DAG"
 	if d.ProjectName != nil {
 		title += ": " + *d.ProjectName
 	}
 	content := append([]Node{
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), core.SecondaryLink("/ui/models", "", Text("Back to models"))),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), core.SecondaryLink("/ui/models", "", Text("Back to models"))),
 	}, tierNodes...)
 	return core.AppPage(title, "models", d.Principal, content...)
 }
 
 func modelRunsListPage(d modelRunsListPageData) Node {
-	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No model runs found.")))
+	table := Node(P(Class("text-xs text-muted"), Text("No model runs found.")))
 	if len(d.Rows) > 0 {
 		rows := make([]Node, 0, len(d.Rows))
 		for i := range d.Rows {
 			row := d.Rows[i]
 			rows = append(rows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.ID))),
+				Td(A(Href(row.URL), Class("font-medium text-accent"), Text(row.ID))),
 				Td(Text(row.Status)),
 				Td(Text(row.TriggerType)),
 				Td(Text(row.TriggeredBy)),
@@ -372,10 +372,10 @@ func modelRunsListPage(d modelRunsListPageData) Node {
 		))
 	}
 	return core.AppPage("Model Runs", "models", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), core.SecondaryLink("/ui/models/dag", "", Text("View DAG"))),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), core.SecondaryLink("/ui/models/dag", "", Text("View DAG"))),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(d.Page.MaxResults)+" runs. Total: "+strconv.FormatInt(d.Total, 10))),
+			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(d.Page.MaxResults)+" runs. Total: "+strconv.FormatInt(d.Total, 10))),
 		),
 	)
 }
@@ -400,7 +400,7 @@ func modelRunDetailPage(d modelRunDetailPageData) Node {
 		))
 	}
 	return core.AppPage("Model Run: "+d.RunID, "models", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			P(Class("m-0 text-sm"), Strong(Text("Status: ")), Text(d.Status)),
 			P(Class("m-0 text-sm"), Strong(Text("Trigger type: ")), Text(d.TriggerType)),
 			P(Class("m-0 text-sm"), Strong(Text("Triggered by: ")), Text(d.TriggeredBy)),
@@ -413,8 +413,8 @@ func modelRunDetailPage(d modelRunDetailPageData) Node {
 			P(Class("m-0 text-sm"), Strong(Text("Error: ")), Text(d.ErrorText)),
 			Form(Method("post"), Action(d.CancelURL), d.CSRFFieldProvider(), core.SecondaryButton("", Type("submit"), Text("Cancel run"))),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), H2(Class("mt-0 text-lg font-semibold"), Text("Compile manifest")), Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.CompileManifest))),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), H2(Class("mt-0 text-lg font-semibold"), Text("Steps")),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Compile manifest")), Pre(Class("overflow-x-auto rounded-lg border border-border-muted bg-surface-muted p-3 text-sm"), Text(d.CompileManifest))),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Steps")),
 			Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 				THead(Tr(Th(Text("Model")), Th(Text("Status")), Th(Text("Tier")), Th(Text("Rows")), Th(Text("Started")), Th(Text("Finished")), Th(Text("Tests")), Th(Text("Error")))),
 				TBody(Group(stepRows)),
@@ -426,7 +426,7 @@ func modelRunDetailPage(d modelRunDetailPageData) Node {
 func modelSourceFreshnessPage(d modelSourceFreshnessPageData) Node {
 	resultNode := Node(nil)
 	if d.Result != nil {
-		resultNode = Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		resultNode = Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text("Result")),
 			P(Text("Fresh: "+boolLabel(d.Result.IsFresh))),
 			P(Text("Source: "+d.Result.SourceSchema+"."+d.Result.SourceTable)),
@@ -436,7 +436,7 @@ func modelSourceFreshnessPage(d modelSourceFreshnessPageData) Node {
 		)
 	}
 	return core.AppPage("Source Freshness", "models", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H2(Class("mt-0 text-lg font-semibold"), Text("Check source freshness")),
 			Form(Class("grid gap-3"), Method("post"), Action("/ui/models/source-freshness"),
 				d.CSRFFieldProvider(),
@@ -459,13 +459,13 @@ func modelFormPage(principal domain.ContextPrincipal, title, action string, csrf
 	nodes := []Node{csrfFieldProvider()}
 	nodes = append(nodes, fields...)
 	nodes = append(nodes, Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save"))))
-	return core.AppPage(title, "models", principal, Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes))))
+	return core.AppPage(title, "models", principal, Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"), Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes))))
 }
 
 func sectionHeader(title, copy, href, action string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 		Div(Class("flex flex-wrap items-start justify-between gap-3"),
-			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(copy))),
+			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-muted"), Text(copy))),
 			core.PrimaryLink(href, "", Text(action)),
 		),
 	)

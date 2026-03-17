@@ -40,13 +40,13 @@ type pipelineDetailPageData struct {
 }
 
 func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No pipelines yet.")))
+	table := Node(P(Class("text-xs text-muted"), Text("No pipelines yet.")))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
+				Td(A(Href(row.URL), Class("font-medium text-accent"), Text(row.Name))),
 				Td(statusPill(boolLabel(row.Paused), pausedTone(row.Paused))),
 				Td(Text(row.Schedule)),
 				Td(Text(row.Updated)),
@@ -68,17 +68,17 @@ func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRo
 		principal,
 		core.Card(
 			Div(Class("mb-4 flex flex-wrap items-center justify-between gap-3"),
-				Div(H2(Class("m-0 text-xl font-semibold"), Text("Pipelines")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Manage orchestrated jobs and schedules."))),
+				Div(H2(Class("m-0 text-xl font-semibold"), Text("Pipelines")), P(Class("m-0 text-sm text-muted"), Text("Manage orchestrated jobs and schedules."))),
 				core.PrimaryLink("/ui/pipelines/new", "", Text("New pipeline")),
 			),
 			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" pipelines. Total: "+strconv.FormatInt(total, 10))),
+			P(Class("mt-4 text-sm text-muted"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" pipelines. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
 
 func pipelineDetailPage(d pipelineDetailPageData) Node {
-	jobTable := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No jobs defined yet.")))
+	jobTable := Node(P(Class("text-xs text-muted"), Text("No jobs defined yet.")))
 	if len(d.Jobs) > 0 {
 		rows := make([]Node, 0, len(d.Jobs))
 		for i := range d.Jobs {
@@ -113,7 +113,7 @@ func pipelineDetailPage(d pipelineDetailPageData) Node {
 			Div(Class("flex flex-wrap items-start justify-between gap-3"),
 				Div(
 					H2(Class("m-0 text-xl font-semibold"), Text(d.Name)),
-					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Created by "+emptyDash(d.CreatedBy))),
+					P(Class("m-0 text-sm text-muted"), Text("Created by "+emptyDash(d.CreatedBy))),
 				),
 				core.ButtonGroup("mt-0",
 					core.SecondaryLink(d.EditURL, "", Text("Edit")),
@@ -201,9 +201,9 @@ func pipelineFormPage(principal domain.ContextPrincipal, title, action string, c
 
 func metaRow(label, value string) Node {
 	return Div(
-		Class("rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3"),
-		Dt(Class("text-xs font-medium uppercase tracking-wide text-[var(--fgColor-muted)]"), Text(label)),
-		Dd(Class("mt-1 ml-0 text-sm text-[var(--fgColor-default)]"), Text(emptyDash(value))),
+		Class("rounded-lg border border-border-muted bg-surface-muted p-3"),
+		Dt(Class("text-xs font-medium uppercase tracking-wide text-muted"), Text(label)),
+		Dd(Class("mt-1 ml-0 text-sm text-foreground"), Text(emptyDash(value))),
 	)
 }
 
@@ -211,11 +211,11 @@ func statusPill(text, tone string) Node {
 	className := "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
 	switch tone {
 	case "success":
-		className += " bg-[var(--bgColor-success-muted)] text-[var(--fgColor-success)]"
+		className += " bg-success-muted text-success-text"
 	case "severe":
-		className += " bg-[var(--bgColor-danger-muted)] text-[var(--fgColor-danger)]"
+		className += " bg-danger-muted text-danger-text"
 	default:
-		className += " bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
+		className += " bg-accent-muted text-accent"
 	}
 	return Span(Class(className), Text(text))
 }

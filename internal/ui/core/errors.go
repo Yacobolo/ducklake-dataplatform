@@ -30,8 +30,8 @@ func ErrorPage(title, message string) Node {
 		),
 		Body(
 			Main(
-				Class("mx-auto max-w-[var(--size-layout-max-width)] px-6 py-8"),
-				H1(Class("m-0 text-[calc(var(--text-title-size-medium)+var(--borderWidth-thick))] font-semibold leading-[var(--text-title-lineHeight-medium)]"), Text(title)),
+				Class("mx-auto max-w-[62rem] px-6 py-8"),
+				H1(Class("m-0 text-[calc(var(--text-title-size-medium)+2px)] font-semibold leading-tight"), Text(title)),
 				P(Text(message)),
 				P(A(Href("/ui"), Text("Back to overview"))),
 			),

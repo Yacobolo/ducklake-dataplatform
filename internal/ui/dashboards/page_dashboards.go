@@ -85,7 +85,7 @@ func dashboardsListPage(principal domain.ContextPrincipal, rows []dashboardListR
 	}
 	tableNode := Node(emptyStateCard("No dashboards yet.", "New dashboard", "/ui/dashboards/new"))
 	if len(tableRows) > 0 {
-		tableNode = Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)] overflow-x-auto"), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Description")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
+		tableNode = Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs overflow-x-auto"), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Description")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
 	}
 	return core.AppPage("Dashboards", "dashboards", principal, pageToolbar("/ui/dashboards/new", "New dashboard"), tableNode, paginationCard("/ui/dashboards", page, total))
 }
@@ -133,7 +133,7 @@ func dashboardsDetailPage(d dashboardDetailPageData) Node {
 		Div(
 			Class("grid gap-3"),
 			H1(Class("m-0 text-3xl font-semibold"), Text(d.Dashboard.Name)),
-			P(Class("m-0 text-[var(--fgColor-muted)]"), Text(d.Dashboard.Description)),
+			P(Class("m-0 text-muted"), Text(d.Dashboard.Description)),
 			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
 				core.SecondaryLink(d.EditURL, "", Text("Edit")),
 				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
@@ -159,21 +159,21 @@ func dashboardFreshnessCard(status *domain.AssetFreshnessStatus, explanation *do
 				Text(" "),
 				statusLabel(child.FreshnessStatus, dashboardFreshnessTone(child.FreshnessStatus)),
 				Text(" "),
-				Span(Class("text-xs text-[var(--fgColor-muted)]"), Text(child.Reason)),
+				Span(Class("text-xs text-muted"), Text(child.Reason)),
 			))
 		}
 	}
-	upstreamNode := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No upstream blockers detected.")))
+	upstreamNode := Node(P(Class("text-xs text-muted"), Text("No upstream blockers detected.")))
 	if len(upstream) > 0 {
 		upstreamNode = Ul(Group(upstream))
 	}
 
 	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 		H2(Text("Freshness")),
 		Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
 			statusLabel(status.FreshnessStatus, dashboardFreshnessTone(status.FreshnessStatus)),
-			Span(Class("text-xs text-[var(--fgColor-muted)]"), Text(status.Reason)),
+			Span(Class("text-xs text-muted"), Text(status.Reason)),
 		),
 		P(Text("Effective max lag: "+strconv.FormatInt(status.EffectiveMaxLagSeconds, 10)+"s")),
 		P(Text("Last materialized: "+formatTimePtr(status.LastMaterializedAt))),
@@ -217,9 +217,9 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 	}
 
 	return Div(
-		Class("grid gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-small)]"),
+		Class("grid gap-3 rounded-xl border border-border bg-background p-4 shadow-sm"),
 		H2(Class("m-0 text-xl font-semibold"), Text(widget.Widget.Name)),
-		P(Class("m-0 text-[var(--fgColor-muted)]"), Text(widget.Widget.Description)),
+		P(Class("m-0 text-muted"), Text(widget.Widget.Description)),
 		Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"), core.SecondaryLink(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/edit", "", Text("Edit widget"))),
 		content,
 		dashboardWidgetDataDetails(widget),
@@ -268,7 +268,7 @@ func dashboardFreshnessTone(status string) string {
 
 func dashboardWidgetFormCard(data dashboardWidgetFormData, csrfFieldProvider func() Node) Node {
 	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 		ID("dashboard-widget-form"),
 		H2(Text(data.Title)),
 		Form(
@@ -443,7 +443,7 @@ func formPage(principal domain.ContextPrincipal, title, active, action string, c
 		active,
 		principal,
 		Div(
-			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+			Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			Form(
 				Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
 				Method("post"),
@@ -485,7 +485,7 @@ func formatTimePtr(ts *time.Time) string {
 }
 
 func dataTableClass(extra ...string) string {
-	return core.ClassNames("min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--control-bgColor-hover)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]", strings.Join(extra, " "))
+	return core.ClassNames("min-w-full border-collapse overflow-hidden rounded-xl border border-border bg-background [&_tbody_tr:hover]:bg-surface-muted [&_td]:border-b [&_td]:border-border [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-border [&_th]:bg-surface-muted [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-muted", strings.Join(extra, " "))
 }
 
 func tableWrapClass(extra ...string) string {
@@ -496,15 +496,15 @@ func labelClass(tone string) string {
 	base := "inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
 	switch tone {
 	case "accent":
-		return core.ClassNames(base, "bg-[var(--label-blue-bgColor-rest)] text-[var(--label-blue-fgColor-rest)]")
+		return core.ClassNames(base, "bg-accent-muted text-accent")
 	case "attention":
-		return core.ClassNames(base, "bg-[var(--label-yellow-bgColor-rest)] text-[var(--label-yellow-fgColor-rest)]")
+		return core.ClassNames(base, "bg-warning-muted text-warning-text")
 	case "success":
-		return core.ClassNames(base, "bg-[var(--label-green-bgColor-rest)] text-[var(--label-green-fgColor-rest)]")
+		return core.ClassNames(base, "bg-success-muted text-success-text")
 	case "severe":
-		return core.ClassNames(base, "bg-[var(--label-orange-bgColor-rest)] text-[var(--label-orange-fgColor-rest)]")
+		return core.ClassNames(base, "bg-danger-muted text-danger-text")
 	default:
-		return core.ClassNames(base, "bg-[var(--label-gray-bgColor-rest)] text-[var(--label-gray-fgColor-rest)]")
+		return core.ClassNames(base, "bg-surface-muted text-foreground")
 	}
 }
 
@@ -514,13 +514,13 @@ func statusLabel(text, tone string) Node {
 
 func pageToolbar(newHref, newLabel string) Node {
 	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 		Div(
 			Class("flex flex-wrap items-center justify-between gap-3"),
 			Div(
 				Class("flex min-w-0 flex-col gap-1"),
-				Span(Class("inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium bg-[var(--label-gray-bgColor-rest)] text-[var(--label-gray-fgColor-rest)]"), Text("Workspace")),
-				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Browse and manage resources.")),
+				Span(Class("inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium bg-surface-muted text-foreground"), Text("Workspace")),
+				P(Class("m-0 text-xs text-muted"), Text("Browse and manage resources.")),
 			),
 			core.PrimaryLink(newHref, "", Text(newLabel)),
 		),
@@ -533,12 +533,12 @@ func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 		cta = core.PrimaryLink(ctaHref, "", Text(ctaLabel))
 	}
 	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-[var(--shadow-resting-xsmall)]"),
-		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"), I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true"))),
+		Class("rounded-xl border border-border bg-background p-4 text-center shadow-xs"),
+		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted text-accent"), I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true"))),
 		Div(
 			Class("flex flex-col items-center gap-2 text-center"),
 			P(Class("m-0 text-lg font-semibold"), Text("No results yet")),
-			P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(message)),
+			P(Class("m-0 text-sm text-muted"), Text(message)),
 			cta,
 		),
 	)
@@ -550,20 +550,20 @@ func paginationCard(basePath string, page domain.PageRequest, total int64) Node 
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
 		return Div(
-			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+			Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			Div(
 				Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
-				Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))),
-				Span(Class("inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
+				Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-foreground"), Text("Pagination")), P(Class("m-0 text-xs text-muted"), Text(summary))),
+				Span(Class("inline-flex min-h-8 items-center justify-center rounded-lg border border-border px-3 text-sm font-medium text-foreground opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
 			),
 		)
 	}
 	url := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
 	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 		Div(
 			Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
-			Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))),
+			Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-foreground"), Text("Pagination")), P(Class("m-0 text-xs text-muted"), Text(summary))),
 			core.SecondaryLink(url, "small", Text("Next page")),
 		),
 	)
@@ -589,10 +589,10 @@ func chartPayload(columns []string, rows [][]interface{}, visual *domain.VisualS
 
 func visualMetricCard(title string, value interface{}, secondary string) Node {
 	return Div(
-		Class("relative overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[linear-gradient(135deg,var(--bgColor-accent-muted)_0%,var(--bgColor-default)_45%)] p-4 shadow-[var(--shadow-resting-small)] before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--borderColor-accent-emphasis)] before:content-['']"),
-		P(Class("m-0 text-xs font-semibold text-[var(--fgColor-default)]"), Text(title)),
-		P(Class("my-1 text-3xl font-semibold leading-[var(--text-title-lineHeight-medium)] text-[var(--fgColor-default)]"), Text(fmt.Sprint(value))),
-		P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(secondary)),
+		Class("relative overflow-hidden rounded-xl border border-border bg-[linear-gradient(135deg,var(--color-accent-muted)_0%,var(--color-background)_45%)] p-4 shadow-sm before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-border-accent before:content-['']"),
+		P(Class("m-0 text-xs font-semibold text-foreground"), Text(title)),
+		P(Class("my-1 text-3xl font-semibold leading-tight text-foreground"), Text(fmt.Sprint(value))),
+		P(Class("m-0 text-xs text-muted"), Text(secondary)),
 	)
 }
 

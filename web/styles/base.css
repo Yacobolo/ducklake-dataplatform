@@ -1,26 +1,26 @@
 :root {
-  --bg: var(--bgColor-default);
-  --canvas: var(--bgColor-muted);
-  --canvas-subtle: var(--bgColor-default);
-  --text: var(--fgColor-default);
-  --muted: var(--fgColor-muted);
-  --border: var(--borderColor-default);
-  --accent: var(--fgColor-accent);
-  --danger: var(--fgColor-danger);
-  --radius: var(--borderRadius-medium);
-  --space-1: var(--control-xsmall-gap);
-  --space-2: var(--stack-gap-condensed);
-  --space-3: var(--controlStack-medium-gap-spacious);
-  --space-4: var(--stack-gap-normal);
-  --space-5: var(--stack-gap-spacious);
-  --size-icon: calc(var(--control-small-size) / 2);
-  --size-sidebar-width: calc(var(--overlay-width-xsmall) + var(--control-large-size));
+  --bg: var(--color-background);
+  --canvas: var(--color-surface-muted);
+  --canvas-subtle: var(--color-background);
+  --text: var(--color-foreground);
+  --muted: var(--color-muted);
+  --border: var(--color-border);
+  --accent: var(--color-accent);
+  --danger: var(--color-danger-text);
+  --radius: var(--radius-lg);
+  --space-1: calc(var(--spacing) * 1);
+  --space-2: calc(var(--spacing) * 2);
+  --space-3: calc(var(--spacing) * 3);
+  --space-4: calc(var(--spacing) * 4);
+  --space-5: calc(var(--spacing) * 6);
+  --size-icon: calc(var(--spacing) * 4);
+  --size-sidebar-width: 18rem;
   --size-content-max-width: var(--breakpoint-xlarge);
-  --size-layout-max-width: calc(var(--breakpoint-large) - var(--control-medium-size));
-  --size-login-max-width: calc(var(--overlay-width-small) + var(--overlay-width-xsmall) + var(--control-xlarge-size));
-  --size-sticky-offset: calc(var(--control-xlarge-size) + var(--space-4) + var(--space-3));
-  --size-editor-min-height: calc(var(--control-xlarge-size) * 3);
-  --size-outline-max-height: calc(var(--overlay-height-large) + var(--control-medium-size));
+  --size-layout-max-width: 62rem;
+  --size-login-max-width: 42rem;
+  --size-sticky-offset: calc(var(--spacing) * 18);
+  --size-editor-min-height: 9rem;
+  --size-outline-max-height: 28rem;
 }
 
 * {
@@ -29,48 +29,48 @@
 
 body {
   margin: 0;
-  font-family: var(--fontStack-system);
-  font-size: var(--text-body-size-medium);
-  line-height: var(--text-body-lineHeight-medium);
-  color: var(--text);
-  background: var(--bg);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+  color: var(--color-foreground);
+  background: var(--color-background);
 }
 
 code,
 pre {
-  font-family: var(--fontStack-monospace);
-  font-size: var(--text-caption-size);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
 }
 
 pre {
   margin: 0;
-  background: var(--canvas-subtle);
-  border: var(--borderWidth-default) solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--space-3);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: calc(var(--spacing) * 3);
   overflow-x: auto;
 }
 
 table:not([class]) {
   width: 100%;
   border-collapse: collapse;
-  border: var(--borderWidth-default) solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bgColor-default);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-background);
 }
 
 table:not([class]) th,
 table:not([class]) td {
   text-align: left;
-  padding: var(--space-2) var(--space-3);
-  border-bottom: var(--borderWidth-default) solid var(--border);
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+  border-bottom: 1px solid var(--color-border);
   vertical-align: top;
-  font-size: var(--text-codeBlock-size);
+  font-size: var(--text-sm);
 }
 
 table:not([class]) th {
-  background: var(--bgColor-muted);
-  color: var(--muted);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
   font-weight: var(--base-text-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -86,11 +86,11 @@ input[type="email"]:not([class]),
 input[type="password"]:not([class]) {
   width: 100%;
   max-width: 100%;
-  border: var(--borderWidth-default) solid var(--control-borderColor-rest);
-  border-radius: var(--borderRadius-medium);
-  background: var(--bgColor-default);
-  color: var(--fgColor-default);
-  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-input);
+  color: var(--color-foreground);
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
 }
 
 textarea:not([class]):focus-visible,
@@ -101,47 +101,47 @@ input[type="search"]:not([class]):focus-visible,
 input[type="number"]:not([class]):focus-visible,
 input[type="email"]:not([class]):focus-visible,
 input[type="password"]:not([class]):focus-visible {
-  outline: var(--focus-outline);
+  outline: 2px solid var(--color-ring);
   outline-offset: 0;
-  border-color: var(--focus-outlineColor);
+  border-color: var(--color-ring);
 }
 
 textarea:not([class]) {
-  min-height: var(--size-editor-min-height);
+  min-height: 9rem;
   resize: vertical;
 }
 
 label:not([class]) {
   display: block;
-  margin-bottom: var(--space-1);
-  font-size: var(--text-caption-size);
+  margin-bottom: calc(var(--spacing) * 1);
+  font-size: var(--text-xs);
   font-weight: var(--base-text-weight-semibold);
-  color: var(--fgColor-muted);
+  color: var(--color-muted);
 }
 
 a,
 a:visited {
-  color: var(--fgColor-accent);
+  color: var(--color-accent);
 }
 
 a:hover {
-  color: var(--fgColor-accent);
+  color: var(--color-accent);
 }
 
 a:active {
-  color: var(--fgColor-accent);
+  color: var(--color-accent);
 }
 
 a:focus-visible {
-  outline: var(--focus-outline);
-  outline-offset: var(--outline-focus-offset);
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
 }
 
 .Box {
-  border: var(--borderWidth-default) solid var(--borderColor-default);
-  border-radius: var(--borderRadius-medium);
-  background: var(--bgColor-default);
-  box-shadow: var(--shadow-resting-xsmall);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-background);
+  box-shadow: var(--shadow-xs);
 }
 
 .skip-link {
@@ -149,11 +149,11 @@ a:focus-visible {
   top: 0;
   left: 0;
   transform: translateY(-100%);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--borderRadius-medium);
-  background: var(--bgColor-default);
-  color: var(--fgColor-accent);
-  box-shadow: var(--shadow-floating-small);
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+  border-radius: var(--radius-lg);
+  background: var(--color-background);
+  color: var(--color-accent);
+  box-shadow: var(--shadow-md);
   z-index: 20;
 }
 

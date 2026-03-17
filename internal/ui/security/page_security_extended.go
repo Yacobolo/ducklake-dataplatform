@@ -469,7 +469,7 @@ func coreAppPage(title string, principal domain.ContextPrincipal, body ...Node) 
 }
 
 func coreCardClass(extra ...string) string {
-	return core.ClassNames("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]", strings.Join(extra, " "))
+	return core.ClassNames("rounded-xl border border-border bg-background p-4 shadow-xs", strings.Join(extra, " "))
 }
 
 func stackFormClass() string {

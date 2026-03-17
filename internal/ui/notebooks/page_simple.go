@@ -85,15 +85,15 @@ func notebookJobDetailPage(d notebookJobDetailPageData) Node {
 		"notebooks",
 		d.Principal,
 		pageToolbar("Notebook Job", "Inspect a notebook run.", "/ui/notebooks/"+d.NotebookID+"/jobs", "Back to jobs"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			P(Text("State: "+d.State)),
 			P(Text("Created: "+d.CreatedAt)),
 			P(Text("Updated: "+d.UpdatedAt)),
 			P(Text("Error: "+d.ErrorText)),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H2(Class("m-0 text-lg font-semibold"), Text("Result payload")),
-			Pre(Class("mt-3 overflow-x-auto rounded-lg bg-[var(--bgColor-muted)] p-3 text-xs"), Text(d.Result)),
+			Pre(Class("mt-3 overflow-x-auto rounded-lg bg-surface-muted p-3 text-xs"), Text(d.Result)),
 		),
 	)
 }
@@ -281,7 +281,7 @@ func notebookGitRepoDetailPage(d notebookGitRepoDetailPageData) Node {
 		"notebooks",
 		d.Principal,
 		pageToolbar("Git Repo", "Repository details and sync controls.", "/ui/notebooks/git-repos", "Back to repos"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			P(Text("Repository: "+d.URL)),
 			P(Text("Branch: "+d.Branch)),
 			P(Text("Path: "+d.Path)),
@@ -311,7 +311,7 @@ func notebookGitRepoSyncResultPage(d notebookGitRepoSyncResultPageData) Node {
 		"notebooks",
 		d.Principal,
 		pageToolbar("Git Sync", "Latest sync result.", "/ui/notebooks/git-repos/"+d.GitRepoID, "Back to repo"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			P(Text("Created notebooks: "+strconv.Itoa(d.Result.NotebooksCreated))),
 			P(Text("Updated notebooks: "+strconv.Itoa(d.Result.NotebooksUpdated))),
 			P(Text("Deleted notebooks: "+strconv.Itoa(d.Result.NotebooksDeleted))),
@@ -335,13 +335,13 @@ func notebookGitRepoSyncUnavailablePage(d notebookGitRepoSyncUnavailablePageData
 		"notebooks",
 		d.Principal,
 		pageToolbar("Git Sync", "Sync is not available yet.", "/ui/notebooks/git-repos/"+d.GitRepoID, "Back to repo"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			H2(Class("m-0 text-lg font-semibold"), Text("Sync is not available yet")),
 			P(Text(d.Message)),
 			P(Text("Repository: "+d.RepoURL)),
 			P(Text("Branch: "+d.Branch)),
 			P(Text("Path: "+d.Path)),
-			P(Class("text-xs text-[var(--fgColor-muted)]"), Text("The repo is registered correctly, but server-side sync execution has not been implemented yet.")),
+			P(Class("text-xs text-muted"), Text("The repo is registered correctly, but server-side sync execution has not been implemented yet.")),
 		),
 	)
 }
@@ -354,7 +354,7 @@ func notebookFormPage(principal domain.ContextPrincipal, title, action string, c
 		title,
 		"notebooks",
 		principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			Form(Method("post"), Action(action), Class("grid gap-3"), Group(nodes)),
 		),
 	)
@@ -368,11 +368,11 @@ func optionSelected(value, selected string) Node {
 }
 
 func pageToolbar(title, description, href, label string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 		Div(Class("flex flex-wrap items-center justify-between gap-3"),
 			Div(Class("flex min-w-0 flex-col gap-1"),
-				Span(Class("inline-flex items-center rounded-full bg-[var(--bgColor-muted)] px-2 py-0.5 text-xs font-medium text-[var(--fgColor-muted)]"), Text(title)),
-				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(description)),
+				Span(Class("inline-flex items-center rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-muted"), Text(title)),
+				P(Class("m-0 text-xs text-muted"), Text(description)),
 			),
 			core.PrimaryLink(href, "", Text(label)),
 		),
@@ -384,9 +384,9 @@ func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 	if ctaLabel != "" && ctaHref != "" {
 		cta = core.PrimaryLink(ctaHref, "", Text(ctaLabel))
 	}
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-[var(--shadow-resting-xsmall)]"),
+	return Div(Class("rounded-xl border border-border bg-background p-4 text-center shadow-xs"),
 		P(Class("m-0 text-lg font-semibold"), Text("No results yet")),
-		P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(message)),
+		P(Class("m-0 text-sm text-muted"), Text(message)),
 		cta,
 	)
 }
@@ -394,9 +394,9 @@ func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 func tableCard(headers []string, rows []Node) Node {
 	headerNodes := make([]Node, 0, len(headers))
 	for i := range headers {
-		headerNodes = append(headerNodes, Th(Class("px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.02em] text-[var(--fgColor-muted)]"), Text(headers[i])))
+		headerNodes = append(headerNodes, Th(Class("px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.02em] text-muted"), Text(headers[i])))
 	}
-	return Div(Class("overflow-x-auto rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+	return Div(Class("overflow-x-auto rounded-xl border border-border bg-background p-4 shadow-xs"),
 		Table(Class("min-w-full border-collapse"),
 			THead(Tr(Group(headerNodes))),
 			TBody(Group(rows)),
@@ -412,17 +412,17 @@ func paginationCard(basePath string, page domain.PageRequest, total int64) Node 
 	summary := "Showing " + strconv.Itoa(shown) + " of " + strconv.FormatInt(total, 10) + " entries."
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
 	if nextToken == "" {
-		return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+		return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 			Div(Class("flex items-center justify-between gap-3"),
-				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
-				Span(Class("inline-flex min-h-[var(--control-small-size)] items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
+				P(Class("m-0 text-xs text-muted"), Text(summary)),
+				Span(Class("inline-flex min-h-8 items-center justify-center rounded-lg border border-border px-3 text-sm font-medium text-foreground opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
 			),
 		)
 	}
 	u := basePath + "?max_results=" + strconv.Itoa(page.Limit()) + "&page_token=" + nextToken
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"),
+	return Div(Class("rounded-xl border border-border bg-background p-4 shadow-xs"),
 		Div(Class("flex items-center justify-between gap-3"),
-			P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
+			P(Class("m-0 text-xs text-muted"), Text(summary)),
 			core.SecondaryLink(u, "small", Text("Next page")),
 		),
 	)

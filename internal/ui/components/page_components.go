@@ -14,6 +14,9 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 		core.SecondaryButton("", Type("button"), Text("Default")),
 		core.PrimaryButton("", Type("button"), Text("Primary")),
 		core.DangerButton("", Type("button"), Text("Danger")),
+		core.SecondaryLink("/ui/components", "", Text("Secondary link")),
+		core.PrimaryLink("/ui/components", "", Text("Primary link")),
+		core.DangerLink("/ui/components", "", Text("Danger link")),
 		core.SecondaryButton("small", Type("button"), Text("Small")),
 		core.IconButton("small", Type("button"), Attr("aria-label", "Settings"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "settings"), Attr("aria-hidden", "true"))),
 	)
@@ -85,14 +88,14 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 		Class("grid gap-4 md:grid-cols-2"),
 		Div(
 			Class("flex flex-col gap-3"),
-			P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Checkbox Group")),
+			P(Class("text-xs text-muted"), Text("Checkbox Group")),
 			checkboxOption("feature-audit", "feature", "Enable audit logs", true),
 			checkboxOption("feature-masking", "feature", "Enable column masking", true),
 			checkboxOption("feature-rls", "feature", "Enable row-level security", false),
 		),
 		Div(
 			Class("flex flex-col gap-3"),
-			P(Class("text-xs text-[var(--fgColor-muted)]"), Text("Radio + Toggle")),
+			P(Class("text-xs text-muted"), Text("Radio + Toggle")),
 			radioOption("run-manual", "run-mode", "Manual run", true),
 			radioOption("run-scheduled", "run-mode", "Scheduled run", false),
 			toggleSwitch("notifications", "notifications", "Notify on failed runs", true),
@@ -227,11 +230,11 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 
 	tokenSwatches := Div(
 		Class("grid gap-3 sm:grid-cols-2 xl:grid-cols-5"),
-		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-accent-emphasis)]")), Code(Class("text-xs"), Text("--bgColor-accent-emphasis"))),
-		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-success-emphasis)]")), Code(Class("text-xs"), Text("--bgColor-success-emphasis"))),
-		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-attention-emphasis)]")), Code(Class("text-xs"), Text("--bgColor-attention-emphasis"))),
-		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-danger-emphasis)]")), Code(Class("text-xs"), Text("--bgColor-danger-emphasis"))),
-		Div(Class("flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Div(Class("h-16 rounded-lg bg-[var(--bgColor-muted)]")), Code(Class("text-xs"), Text("--bgColor-muted"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4"), Div(Class("h-16 rounded-lg bg-accent")), Code(Class("text-xs"), Text("--color-accent"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4"), Div(Class("h-16 rounded-lg bg-success")), Code(Class("text-xs"), Text("--color-success"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4"), Div(Class("h-16 rounded-lg bg-warning")), Code(Class("text-xs"), Text("--color-warning"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4"), Div(Class("h-16 rounded-lg bg-danger")), Code(Class("text-xs"), Text("--color-danger"))),
+		Div(Class("flex flex-col gap-3 rounded-xl border border-border bg-surface-muted p-4"), Div(Class("h-16 rounded-lg bg-surface-muted")), Code(Class("text-xs"), Text("--color-surface-muted"))),
 	)
 
 	return core.AppPage(
@@ -264,8 +267,8 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 func componentCard(title, copy string, body ...Node) Node {
 	nodes := []Node{
 		H2(Text(title)),
-		P(Class("text-xs text-[var(--fgColor-muted)]"), Text(copy)),
+		P(Class("text-xs text-muted"), Text(copy)),
 	}
 	nodes = append(nodes, body...)
-	return Div(Class("flex flex-col gap-4 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-[var(--shadow-resting-xsmall)]"), Group(nodes))
+	return Div(Class("flex flex-col gap-4 rounded-xl border border-border bg-background p-4 shadow-xs"), Group(nodes))
 }

@@ -20,24 +20,24 @@ class SqlEditorSurface extends LitElement {
     :host {
       position: relative;
       display: grid;
-      grid-template-columns: calc(var(--control-small-size) + var(--space-4)) minmax(0, 1fr);
+      grid-template-columns: 2.5rem minmax(0, 1fr);
       min-height: 0;
       width: 100%;
       height: var(--sql-editor-height, 100%);
       flex: var(--sql-editor-flex, 1);
       direction: ltr;
-      background: var(--bgColor-default);
+      background: var(--color-background);
       overflow: hidden;
     }
 
     .gutter {
       position: relative;
       margin: 0;
-      padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
-      color: var(--fgColor-muted);
-      font-family: var(--fontStack-monospace);
-      font-size: var(--text-codeBlock-size);
-      line-height: var(--text-codeBlock-lineHeight);
+      padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3) calc(var(--spacing) * 2) calc(var(--spacing) * 2);
+      color: var(--color-muted);
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      line-height: var(--text-sm--line-height);
       text-align: right;
       white-space: pre;
       user-select: none;
@@ -49,17 +49,17 @@ class SqlEditorSurface extends LitElement {
     .gutter::after {
       content: "";
       position: absolute;
-      top: var(--sql-gutter-pad-top, var(--space-2));
-      right: var(--space-1);
-      width: var(--borderWidth-thick);
+      top: var(--sql-gutter-pad-top, calc(var(--spacing) * 2));
+      right: calc(var(--spacing) * 1);
+      width: 2px;
       height: var(--sql-gutter-divider-height, 0);
-      background: var(--borderColor-accent-emphasis);
-      border-radius: var(--borderRadius-full);
+      background: var(--color-border-accent);
+      border-radius: 9999px;
       pointer-events: none;
     }
 
     :host(:focus-within) .gutter::after {
-      background: var(--borderColor-accent-emphasis);
+      background: var(--color-border-accent);
     }
 
     .input-wrap {
@@ -73,14 +73,14 @@ class SqlEditorSurface extends LitElement {
       position: absolute;
       inset: 0;
       margin: 0;
-      padding: var(--space-2) var(--space-2) var(--space-2) var(--space-2);
+      padding: calc(var(--spacing) * 2);
       overflow: hidden;
       pointer-events: none;
       white-space: pre;
-      color: var(--fgColor-default);
-      font-family: var(--fontStack-monospace);
-      font-size: var(--text-codeBlock-size);
-      line-height: var(--text-codeBlock-lineHeight);
+      color: var(--color-foreground);
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      line-height: var(--text-sm--line-height);
       z-index: 1;
     }
 
@@ -90,30 +90,30 @@ class SqlEditorSurface extends LitElement {
     }
 
     .highlight-layer code.hljs {
-      color: var(--fgColor-default);
-      background: var(--bgColor-transparent);
+      color: var(--color-foreground);
+      background: transparent;
       padding: 0;
     }
 
     .highlight-layer .hljs-keyword,
     .highlight-layer .hljs-operator,
     .highlight-layer .hljs-selector-tag {
-      color: var(--fgColor-accent);
-      font-weight: var(--base-text-weight-semibold);
+      color: var(--color-accent);
+      font-weight: var(--font-weight-semibold);
     }
 
     .highlight-layer .hljs-string,
     .highlight-layer .hljs-quote {
-      color: var(--fgColor-success);
+      color: var(--color-success-text);
     }
 
     .highlight-layer .hljs-number,
     .highlight-layer .hljs-literal {
-      color: var(--fgColor-attention);
+      color: var(--color-warning-text);
     }
 
     .highlight-layer .hljs-comment {
-      color: var(--fgColor-muted);
+      color: var(--color-muted);
       font-style: italic;
     }
 
@@ -121,7 +121,7 @@ class SqlEditorSurface extends LitElement {
     .highlight-layer .hljs-type,
     .highlight-layer .hljs-function,
     .highlight-layer .hljs-title {
-      color: var(--fgColor-severe);
+      color: var(--color-danger-text);
     }
 
     .active-line {
@@ -129,7 +129,7 @@ class SqlEditorSurface extends LitElement {
       left: 0;
       right: 0;
       top: 0;
-      background: var(--bgColor-accent-muted);
+      background: var(--color-accent-muted);
       opacity: 0;
       pointer-events: none;
       transition: opacity var(--base-duration-100) ease;
@@ -149,13 +149,13 @@ class SqlEditorSurface extends LitElement {
       height: 100%;
       max-height: 100%;
       resize: none;
-      padding-left: var(--space-2);
-      background: var(--bgColor-transparent);
-      color: var(--bgColor-transparent);
-      caret-color: var(--fgColor-default);
-      font-family: var(--fontStack-monospace);
-      font-size: var(--text-codeBlock-size);
-      line-height: var(--text-codeBlock-lineHeight);
+      padding-left: calc(var(--spacing) * 2);
+      background: transparent;
+      color: transparent;
+      caret-color: var(--color-foreground);
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      line-height: var(--text-sm--line-height);
       box-shadow: none;
       position: relative;
       z-index: 2;
@@ -174,8 +174,8 @@ class SqlEditorSurface extends LitElement {
       }
 
       ::slotted(textarea.sql-editor-textarea) {
-        min-height: calc(var(--size-editor-min-height) + var(--overlay-height-small));
-        color: var(--fgColor-default);
+        min-height: 12rem;
+        color: var(--color-foreground);
       }
     }
   `;
@@ -281,7 +281,7 @@ class SqlEditorSurface extends LitElement {
     this.textarea.style.backgroundColor = "transparent";
     this.textarea.style.color = "transparent";
     this.textarea.style.webkitTextFillColor = "transparent";
-    this.textarea.style.caretColor = "var(--fgColor-default)";
+    this.textarea.style.caretColor = "var(--color-foreground)";
     textarea.addEventListener("input", this.onInput);
     textarea.addEventListener("scroll", this.onInput);
     textarea.addEventListener("keyup", this.onInput);
