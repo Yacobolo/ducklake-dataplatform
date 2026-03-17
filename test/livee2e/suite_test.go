@@ -939,7 +939,27 @@ func (s *liveSuite) inferQueryParams(op liveOperation) (url.Values, bool) {
 		}
 		values.Set(param.Name, fmt.Sprint(value))
 	}
+	if operationUsesCatalogQuery(op) {
+		catalogName := s.fixtures["catalogName"]
+		if catalogName == "" {
+			return nil, false
+		}
+		values.Set("catalog", catalogName)
+	}
 	return values, true
+}
+
+func operationUsesCatalogQuery(op liveOperation) bool {
+	for _, paramRef := range op.spec.Parameters {
+		param := paramRef.Value
+		if param == nil || param.In != "query" {
+			continue
+		}
+		if param.Name == "catalog" {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *liveSuite) inferBodyPayload(op liveOperation) (map[string]any, []string, bool) {
