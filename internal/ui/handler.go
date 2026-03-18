@@ -1,74 +1,57 @@
 package ui
 
 import (
-	"context"
-	"net/http"
-	"strconv"
-	"strings"
-
 	"duck-demo/internal/config"
-	"duck-demo/internal/domain"
 	assetsvc "duck-demo/internal/service/asset"
 	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
-	svccompute "duck-demo/internal/service/compute"
-	"duck-demo/internal/service/dashboard"
-	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/macro"
 	"duck-demo/internal/service/model"
 	"duck-demo/internal/service/notebook"
 	"duck-demo/internal/service/orchestration"
 	"duck-demo/internal/service/pipeline"
-	productsvc "duck-demo/internal/service/product"
 	"duck-demo/internal/service/query"
-	"duck-demo/internal/service/security"
-	"duck-demo/internal/service/semantic"
-	"duck-demo/internal/service/storage"
-
-	gomponents "maragu.dev/gomponents"
+	uiauth "duck-demo/internal/ui/auth"
+	"duck-demo/internal/ui/catalogs"
+	"duck-demo/internal/ui/components"
+	"duck-demo/internal/ui/compute"
+	"duck-demo/internal/ui/core"
+	"duck-demo/internal/ui/dashboards"
+	"duck-demo/internal/ui/governance"
+	"duck-demo/internal/ui/macros"
+	"duck-demo/internal/ui/models"
+	"duck-demo/internal/ui/notebooks"
+	"duck-demo/internal/ui/overview"
+	"duck-demo/internal/ui/pipelines"
+	"duck-demo/internal/ui/products"
+	"duck-demo/internal/ui/runtimeassets"
+	"duck-demo/internal/ui/security"
+	"duck-demo/internal/ui/semantic"
+	"duck-demo/internal/ui/storage"
 )
 
-type Handler struct {
-	CatalogRegistration *catalog.CatalogRegistrationService
-	Catalog             *catalog.CatalogService
-	Query               *query.QueryService
-	Manifest            *query.ManifestService
-	View                *catalog.ViewService
-	Pipeline            *pipeline.Service
-	Product             *productsvc.Service
-	Asset               *assetsvc.Service
-	Backfill            *orchestration.BackfillService
-	Notebook            *notebook.Service
-	SessionManager      *notebook.SessionManager
-	GitService          *notebook.GitService
-	Macro               *macro.Service
-	Model               *model.Service
-	Semantic            *semantic.Service
-	Dashboard           *dashboard.Service
-	Principal           *security.PrincipalService
-	Group               *security.GroupService
-	Grant               *security.GrantService
-	RowFilter           *security.RowFilterService
-	ColumnMask          *security.ColumnMaskService
-	APIKey              *security.APIKeyService
-	StorageCredential   *storage.StorageCredentialService
-	ExternalLocation    *storage.ExternalLocationService
-	Volume              *storage.VolumeService
-	ComputeEndpoint     *svccompute.ComputeEndpointService
-	Search              *catalog.SearchService
-	Tag                 *governance.TagService
-	Audit               *governance.AuditService
-	QueryHistory        *governance.QueryHistoryService
-	Lineage             *governance.LineageService
-	AuthService         *authsvc.Service
-	WebSessionService   *authsvc.SessionService
-	PrincipalResolver   PrincipalResolver
-	Auth                config.AuthConfig
-	Production          bool
-}
+type PrincipalResolver = core.PrincipalResolver
 
-type PrincipalResolver interface {
-	ResolveOrProvision(ctx context.Context, req domain.ResolveOrProvisionRequest) (*domain.Principal, error)
+// Handler is the public UI facade used by cmd/server and integration tests.
+// It composes feature handlers over shared UI dependencies.
+type Handler struct {
+	*core.Dependencies
+	Auth          *uiauth.Handler
+	Catalogs      *catalogs.Handler
+	Compute       *compute.Handler
+	Overview      *overview.Handler
+	Components    *components.Handler
+	Dashboards    *dashboards.Handler
+	Governance    *governance.Handler
+	Macros        *macros.Handler
+	Models        *models.Handler
+	Notebooks     *notebooks.Handler
+	Pipelines     *pipelines.Handler
+	Products      *products.Handler
+	RuntimeAssets *runtimeassets.Handler
+	Security      *security.Handler
+	Semantic      *semantic.Handler
+	Storage       *storage.Handler
 }
 
 func NewHandler(
@@ -86,10 +69,10 @@ func NewHandler(
 	authService *authsvc.Service,
 	webSessionService *authsvc.SessionService,
 	principalResolver PrincipalResolver,
-	auth config.AuthConfig,
+	authCfg config.AuthConfig,
 	production bool,
 ) *Handler {
-	return &Handler{
+	deps := &core.Dependencies{
 		CatalogRegistration: catalogRegistration,
 		Catalog:             catalogSvc,
 		Query:               querySvc,
@@ -104,54 +87,33 @@ func NewHandler(
 		AuthService:         authService,
 		WebSessionService:   webSessionService,
 		PrincipalResolver:   principalResolver,
-		Auth:                auth,
+		Auth:                authCfg,
 		Production:          production,
 	}
+	handler := &Handler{
+		Dependencies: deps,
+		Auth:         uiauth.New(authService, webSessionService, principalResolver, authCfg, production),
+		Overview:     overview.New(),
+		Components:   components.New(),
+	}
+	handler.Catalogs = catalogs.New(handler.Dependencies)
+	handler.Compute = compute.New(handler.Dependencies)
+	handler.Dashboards = dashboards.New(handler.Dependencies)
+	handler.Governance = governance.New(handler.Dependencies)
+	handler.Macros = macros.New(handler.Dependencies)
+	handler.Models = models.New(handler.Dependencies)
+	handler.Notebooks = notebooks.New(handler.Dependencies)
+	handler.Pipelines = pipelines.New(handler.Dependencies)
+	handler.Products = products.New(handler.Dependencies)
+	handler.RuntimeAssets = runtimeassets.New(handler.Dependencies)
+	handler.Security = security.New(handler.Dependencies)
+	handler.Semantic = semantic.New(handler.Dependencies)
+	handler.Storage = storage.New(handler.Dependencies)
+	return handler
 }
 
-func pageFromRequest(r *http.Request, defaultPageSize int) domain.PageRequest {
-	maxResults := defaultPageSize
-	if maxResults <= 0 {
-		maxResults = 25
+func (h *Handler) SyncDependencies() {
+	if h == nil || h.Dependencies == nil {
+		return
 	}
-	if raw := r.URL.Query().Get("max_results"); raw != "" {
-		if parsed, err := strconv.Atoi(raw); err == nil {
-			maxResults = parsed
-		}
-	}
-	if maxResults < 1 {
-		maxResults = 1
-	}
-	if maxResults > 200 {
-		maxResults = 200
-	}
-	return domain.PageRequest{
-		MaxResults: maxResults,
-		PageToken:  r.URL.Query().Get("page_token"),
-	}
-}
-
-func renderHTML(w http.ResponseWriter, status int, node gomponents.Node) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(status)
-	_ = node.Render(w)
-}
-
-func principalFromContext(ctx context.Context) domain.ContextPrincipal {
-	p, ok := domain.PrincipalFromContext(ctx)
-	if !ok {
-		return domain.ContextPrincipal{Name: "unknown", Type: "user"}
-	}
-	return p
-}
-
-func principalLabel(ctx context.Context) (string, bool) {
-	p, ok := domain.PrincipalFromContext(ctx)
-	if !ok {
-		return "unknown", false
-	}
-	if strings.TrimSpace(p.Name) == "" {
-		return "unknown", p.IsAdmin
-	}
-	return p.Name, p.IsAdmin
 }

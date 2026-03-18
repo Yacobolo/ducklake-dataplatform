@@ -1,15 +1,15 @@
 {{ define "docs_toc" -}}
 <aside class="hidden xl:block">
-  <div class="sticky top-[4.5rem] max-h-[calc(100vh-4.5rem)] overflow-y-auto border-l border-[color:var(--site-border)] px-6 py-8">
+  <div class="sticky top-[4.5rem] max-h-[calc(100vh-4.5rem)] overflow-y-auto border-l border-[var(--borderColor-default)] px-6 py-8">
     <nav>
-      <div class="mb-4 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[color:var(--site-ink)]">On this page</div>
+      <div class="mb-4 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-default)]">On this page</div>
       <ul class="space-y-1">
         {{ range .TOC }}
           <li>
-            <a href="#{{ .ID }}" class="site-toc-link" data-site-toc-link="{{ .ID }}">
+            <a href="#{{ .ID }}" class="flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm text-[var(--fgColor-muted)] no-underline transition hover:bg-[color:color-mix(in_srgb,var(--bgColor-muted)_88%,transparent)] hover:text-[var(--fgColor-default)] [&.is-active]:bg-[var(--bgColor-accent-muted)] [&.is-active]:text-[var(--fgColor-accent)]" data-site-toc-link="{{ .ID }}">
               <span>{{ .Title }}</span>
               {{ if .Method }}
-                <span class="site-toc-method" data-api-method="{{ .Method }}">{{ .Method }}</span>
+                <span class="inline-flex shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] {{ if eq .Method `GET` }}bg-[var(--bgColor-success-muted)] text-[var(--fgColor-success)]{{ else if eq .Method `POST` }}bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]{{ else if eq .Method `PUT` }}bg-[var(--bgColor-attention-muted)] text-[var(--fgColor-attention)]{{ else if eq .Method `PATCH` }}bg-[var(--bgColor-done-muted)] text-[var(--fgColor-done)]{{ else if eq .Method `DELETE` }}bg-[var(--bgColor-danger-muted)] text-[var(--fgColor-danger)]{{ end }}" data-api-method="{{ .Method }}">{{ .Method }}</span>
               {{ end }}
             </a>
           </li>

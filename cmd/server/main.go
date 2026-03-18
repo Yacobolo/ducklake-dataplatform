@@ -453,9 +453,10 @@ func run() error {
 	uiHandler.Lineage = svc.Lineage
 	uiHandler.Manifest = svc.Manifest
 	uiHandler.GitService = svc.GitService
-	uiHandler.Semantic = svc.Semantic
+	uiHandler.Dependencies.Semantic = svc.Semantic
 	uiHandler.Dashboard = svc.Dashboard
 	uiHandler.Product = svc.Product
+	uiHandler.SyncDependencies()
 	r.Route("/ui", func(r chi.Router) {
 		ui.MountRoutes(r, uiHandler)
 	})

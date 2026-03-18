@@ -31,7 +31,7 @@
   <link rel="icon" href="{{ siteURL .SiteRoot "/_site/favicon.svg" }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ siteURL .SiteRoot "/_site/site.css" }}">
 </head>
-<body class="bg-[color:var(--site-bg)] text-[color:var(--site-ink)] antialiased">
+<body class="bg-[var(--bgColor-default)] text-[var(--fgColor-default)] antialiased [font-family:'IBM_Plex_Sans',ui-sans-serif,system-ui,sans-serif]">
   <div class="min-h-screen">
     {{ template "site_header" . }}
     {{ template "site_search_modal" . }}

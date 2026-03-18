@@ -1,7 +1,7 @@
 {{ define "home_visual" -}}
 <div class="flex flex-col gap-4" data-home-reveal style="--home-delay: 180ms;">
-  <div class="hidden rounded-[2rem] border border-[color:var(--site-border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--site-panel)_96%,transparent),color-mix(in_srgb,var(--site-soft)_56%,var(--site-panel)))] p-4 shadow-[0_24px_72px_color-mix(in_srgb,var(--site-brand)_8%,transparent)] lg:block">
-    <svg class="home-diagram h-auto w-full text-[color:var(--site-brand)]" viewBox="0 0 960 220" role="img" aria-label="Diagram showing access surfaces, a governed gateway, and DuckLake with DuckDB execution.">
+  <div class="hidden rounded-[2rem] border border-[var(--borderColor-default)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bgColor-inset)_96%,transparent),color-mix(in_srgb,var(--bgColor-muted)_56%,var(--bgColor-inset)))] p-4 shadow-[0_24px_72px_color-mix(in_srgb,var(--fgColor-accent)_8%,transparent)] lg:block">
+    <svg class="home-diagram h-auto w-full text-[var(--fgColor-accent)]" viewBox="0 0 960 220" role="img" aria-label="Diagram showing access surfaces, a governed gateway, and DuckLake with DuckDB execution.">
       <g class="home-diagram-rails" aria-hidden="true">
         <path class="home-diagram-rail" d="M236 74H722"></path>
         <path class="home-diagram-rail" d="M236 110H722"></path>
@@ -58,19 +58,19 @@
     </svg>
   </div>
   <div class="grid gap-3 sm:grid-cols-2 lg:hidden">
-    <div class="rounded-[1.4rem] border border-[color:var(--site-border)] bg-[color:var(--site-panel)] px-4 py-4">
-      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[color:var(--site-brand-strong)]">Access</p>
-      <p class="mt-2 text-base font-medium text-[color:var(--site-ink)]">Browser, SQL, API, CLI</p>
+    <div class="rounded-[1.4rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] px-4 py-4">
+      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-accent)]">Access</p>
+      <p class="mt-2 text-base font-medium text-[var(--fgColor-default)]">Browser, SQL, API, CLI</p>
     </div>
-    <div class="rounded-[1.4rem] border border-[color:color-mix(in_srgb,var(--site-brand)_28%,var(--site-border))] bg-[color:color-mix(in_srgb,var(--site-soft)_88%,var(--site-panel))] px-4 py-4">
-      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[color:var(--site-brand-strong)]">Policy</p>
-      <p class="mt-2 text-base font-medium text-[color:var(--site-ink)]">RBAC, filters, masks</p>
+    <div class="rounded-[1.4rem] border border-[color:color-mix(in_srgb,var(--fgColor-accent)_28%,var(--borderColor-default))] bg-[color:color-mix(in_srgb,var(--bgColor-muted)_88%,var(--bgColor-inset))] px-4 py-4">
+      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-accent)]">Policy</p>
+      <p class="mt-2 text-base font-medium text-[var(--fgColor-default)]">RBAC, filters, masks</p>
     </div>
-    <div class="rounded-[1.4rem] border border-[color:var(--site-border)] bg-[color:var(--site-panel)] px-4 py-4 sm:col-span-2">
-      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[color:var(--site-brand-strong)]">Execution</p>
-      <p class="mt-2 text-base font-medium text-[color:var(--site-ink)]">DuckLake with DuckDB underneath</p>
+    <div class="rounded-[1.4rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] px-4 py-4 sm:col-span-2">
+      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-accent)]">Execution</p>
+      <p class="mt-2 text-base font-medium text-[var(--fgColor-default)]">DuckLake with DuckDB underneath</p>
     </div>
   </div>
-  <p class="max-w-[42rem] text-base leading-7 text-[color:var(--site-muted)]">{{ .Home.Hero.SnapshotNote }}</p>
+  <p class="max-w-[42rem] text-base leading-7 text-[var(--fgColor-muted)]">{{ .Home.Hero.SnapshotNote }}</p>
 </div>
 {{- end }}

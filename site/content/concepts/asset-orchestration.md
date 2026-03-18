@@ -43,8 +43,8 @@ Those fields matter because they change what the platform can explain and automa
 
 ## Asset Graph
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/asset-dag-materialization.svg" alt="Diagram showing source assets flowing through checks and freshness policies into materialized downstream assets and data products." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/asset-dag-materialization.svg" alt="Diagram showing source assets flowing through checks and freshness policies into materialized downstream assets and data products." loading="lazy" decoding="async">
 </figure>
 
 Read the diagram from left to right. A source asset feeds a staging asset, which then feeds a curated asset that is published to a data product. Checks sit alongside the flow because they decide whether the downstream output should be trusted. Freshness policy sits beside the curated asset because it describes how current the output is expected to be. Materialization and backfill actions point back into the curated asset because they are ways of producing or repairing that durable output.

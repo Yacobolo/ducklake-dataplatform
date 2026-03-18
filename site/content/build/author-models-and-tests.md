@@ -24,8 +24,8 @@ Use this guide when you want to move from raw or staging data toward durable ana
 
 ## Visual Model
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/transformation-dag.svg" alt="Diagram showing source tables passing through macros into staged and curated models with tests and run results." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/transformation-dag.svg" alt="Diagram showing source tables passing through macros into staged and curated models with tests and run results." loading="lazy" decoding="async">
 </figure>
 
 ## Verification

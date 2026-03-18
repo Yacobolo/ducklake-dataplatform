@@ -54,7 +54,7 @@ class DuckChart extends LitElement {
     .frame {
       min-height: 20rem;
       border: 1px solid var(--borderColor-default);
-      border-radius: var(--borderRadius-medium);
+      border-radius: 0.5rem;
       background: var(--bgColor-default);
     }
 
@@ -63,10 +63,10 @@ class DuckChart extends LitElement {
       place-items: center;
       min-height: 20rem;
       color: var(--fgColor-muted);
-      padding: var(--space-3);
+      padding: 0.75rem;
       text-align: center;
       border: 1px dashed var(--borderColor-muted);
-      border-radius: var(--borderRadius-medium);
+      border-radius: 0.5rem;
     }
   `;
 

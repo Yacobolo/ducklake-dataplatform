@@ -394,11 +394,11 @@ function renderNotebookResult(cell: HTMLElement, columns: string[], rows: unknow
     .map((row) => `<tr>${row.map((value) => `<td>${escapeHTML(formatCell(value))}</td>`).join("")}</tr>`)
     .join("");
   target.innerHTML = [
-    '<div class="d-flex flex-justify-between flex-wrap flex-items-center gap-2">',
-    "<h4>Output</h4>",
+    '<div class="flex flex-wrap items-center justify-between gap-2">',
+    '<h4 class="m-0 text-[var(--fgColor-muted)]">Output</h4>',
     "</div>",
-    `<p class="color-fg-muted text-small">${rowCount} row(s) · Local DuckDB WASM</p>`,
-    `<table class="data-table"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`,
+    `<p class="m-0 text-sm text-[var(--fgColor-muted)]">${rowCount} row(s) · Local DuckDB WASM</p>`,
+    `<div class="overflow-x-auto"><table class="min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--bgColor-muted)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table></div>`,
   ].join("");
 }
 
@@ -408,8 +408,8 @@ function renderNotebookLocalError(cell: HTMLElement, message: string): void {
     return;
   }
   target.innerHTML = [
-    '<div class="flash flash-error">',
-    "<h4>Local Query Unavailable</h4>",
+    '<div class="rounded-xl border border-[var(--borderColor-danger-muted)] bg-[var(--bgColor-danger-muted)] p-4">',
+    '<h4 class="m-0 text-[var(--fgColor-muted)]">Local Query Unavailable</h4>',
     `<pre>${escapeHTML(message)}</pre>`,
     "</div>",
   ].join("");
@@ -420,7 +420,7 @@ function renderNotebookMessage(cell: HTMLElement, message: string): void {
   if (!target) {
     return;
   }
-  target.innerHTML = `<p class="color-fg-muted text-small">${escapeHTML(message)}</p>`;
+  target.innerHTML = `<p class="m-0 text-sm text-[var(--fgColor-muted)]">${escapeHTML(message)}</p>`;
 }
 
 function formatNotebookPreflight(

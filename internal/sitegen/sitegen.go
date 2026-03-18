@@ -974,7 +974,7 @@ func renderDirective(name string, attrs map[string]string, childHTML, childMirro
 		if title == "" {
 			title = directiveKindTitle(attrs["kind"])
 		}
-		htmlBlock := `<div class="site-callout">`
+		htmlBlock := `<div class="rounded-2xl border-l-4 border-l-[var(--fgColor-accent)] bg-[color:color-mix(in_srgb,var(--fgColor-accent)_7%,var(--bgColor-inset))] p-4">`
 		if title != "" {
 			htmlBlock += `<div class="mb-2 text-sm font-semibold">` + html.EscapeString(title) + `</div>`
 		}
@@ -1671,16 +1671,18 @@ func transformAPIOperationHTML(chunk string, opRE *regexp.Regexp) string {
 		rest = strings.TrimSpace(rest[opID[1]:])
 	}
 
+	methodClass := apiMethodBadgeClass(method)
+
 	var out strings.Builder
-	out.WriteString(`<section class="api-operation">`)
-	out.WriteString(`<header class="api-operation-header">`)
-	out.WriteString(`<h2 id="` + sectionID + `" class="api-operation-title"><span class="api-operation-title-text">` + titleHTML + `</span><span class="api-method" data-api-method="` + method + `">` + method + `</span></h2>`)
-	out.WriteString(`<p class="api-operation-route"><code>` + html.EscapeString(routePath) + `</code></p>`)
+	out.WriteString(`<section class="mt-12 pt-8 first:mt-8">`)
+	out.WriteString(`<header class="mb-6">`)
+	out.WriteString(`<h2 id="` + sectionID + `" class="mt-0 flex flex-wrap items-center justify-between gap-3 text-[1.55rem] font-semibold leading-[1.1]"><span class="min-w-0 flex-1">` + titleHTML + `</span><span class="inline-flex min-w-[4.5rem] items-center justify-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ` + methodClass + `" data-api-method="` + method + `">` + method + `</span></h2>`)
+	out.WriteString(`<p class="mt-3"><code class="bg-transparent p-0 font-mono text-sm text-[var(--fgColor-muted)]">` + html.EscapeString(routePath) + `</code></p>`)
 	if descriptionHTML != "" {
-		out.WriteString(`<p class="api-operation-description">` + descriptionHTML + `</p>`)
+		out.WriteString(`<p class="mt-3 max-w-[56rem]">` + descriptionHTML + `</p>`)
 	}
 	if operationID != "" {
-		out.WriteString(`<div class="api-operation-meta"><span class="api-operation-meta-label">Operation ID</span><code>` + html.EscapeString(operationID) + `</code></div>`)
+		out.WriteString(`<div class="mt-4 flex flex-wrap items-center gap-3"><span class="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--fgColor-muted)]">Operation ID</span><code>` + html.EscapeString(operationID) + `</code></div>`)
 	}
 	out.WriteString(`</header>`)
 	if rest != "" {
@@ -1688,6 +1690,23 @@ func transformAPIOperationHTML(chunk string, opRE *regexp.Regexp) string {
 	}
 	out.WriteString(`</section>`)
 	return out.String()
+}
+
+func apiMethodBadgeClass(method string) string {
+	switch strings.ToUpper(method) {
+	case "GET":
+		return "bg-[var(--bgColor-success-muted)] text-[var(--fgColor-success)]"
+	case "POST":
+		return "bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
+	case "PUT":
+		return "bg-[var(--bgColor-attention-muted)] text-[var(--fgColor-attention)]"
+	case "PATCH":
+		return "bg-[var(--bgColor-done-muted)] text-[var(--fgColor-done)]"
+	case "DELETE":
+		return "bg-[var(--bgColor-danger-muted)] text-[var(--fgColor-danger)]"
+	default:
+		return "bg-[var(--bgColor-muted)] text-[var(--fgColor-default)]"
+	}
 }
 
 func enhanceCodeBlocks(htmlSource string) string {
@@ -1716,12 +1735,12 @@ func enhanceCodeBlocks(htmlSource string) string {
 		index++
 
 		var b strings.Builder
-		b.WriteString(`<div class="site-codeblock">`)
-		b.WriteString(`<div class="site-codeblock-bar">`)
-		b.WriteString(`<span class="site-codeblock-lang">`)
+		b.WriteString(`<div data-site-codeblock class="overflow-hidden rounded-3xl border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] shadow-[0_16px_36px_color-mix(in_srgb,var(--fgColor-default)_10%,transparent)]">`)
+		b.WriteString(`<div class="flex items-center justify-between gap-4 border-b border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] px-4 py-3">`)
+		b.WriteString(`<span class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--fgColor-default)]">`)
 		b.WriteString(html.EscapeString(language))
 		b.WriteString(`</span>`)
-		b.WriteString(`<button type="button" class="site-codeblock-copy" data-site-copy="#`)
+		b.WriteString(`<button type="button" class="rounded-full border border-[var(--button-default-borderColor-rest)] bg-[var(--button-default-bgColor-rest)] px-3 py-1 text-xs font-semibold text-[var(--button-default-fgColor-rest)] transition hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)]" data-site-copy="#`)
 		b.WriteString(codeID)
 		b.WriteString(`">Copy</button>`)
 		b.WriteString(`</div>`)
@@ -1750,7 +1769,7 @@ func enhanceCodeBlocks(htmlSource string) string {
 func enhanceTables(htmlSource string) string {
 	tableRE := regexp.MustCompile(`(?s)<table>.*?</table>`)
 	return tableRE.ReplaceAllStringFunc(htmlSource, func(match string) string {
-		return `<div class="site-table-wrap">` + match + `</div>`
+		return `<div class="my-8 overflow-x-auto">` + match + `</div>`
 	})
 }
 

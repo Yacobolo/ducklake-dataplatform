@@ -1,14 +1,14 @@
 {{ define "docs_sidebar" -}}
 <aside class="hidden lg:block">
-  <div class="site-sidebar site-sidebar-scroll sticky top-[4.5rem] h-[calc(100vh-4.5rem)] overflow-y-auto border-r border-[color:var(--site-border)] px-5 py-6 xl:px-6" data-sidebar-kind="{{ .Page.Kind }}" data-sidebar-section="{{ .Page.Section }}">
+  <div data-site-sidebar data-site-sidebar-scroll class="sticky top-[4.5rem] h-[calc(100vh-4.5rem)] overflow-y-auto border-r border-[var(--borderColor-default)] px-5 py-6 xl:px-6" data-sidebar-kind="{{ .Page.Kind }}" data-sidebar-section="{{ .Page.Section }}">
     <nav>
       <div class="space-y-2">
         {{ range .SidebarGroups }}
           {{ if or .Title .Icon }}
-            <details class="site-nav-group" {{ if .Open }}open{{ end }}>
-              <summary class="site-nav-summary">
+            <details class="group mb-2" {{ if .Open }}open{{ end }}>
+              <summary class="relative cursor-pointer list-none rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--fgColor-default)] transition hover:bg-[color:color-mix(in_srgb,var(--bgColor-muted)_88%,transparent)] [&::-webkit-details-marker]:hidden after:absolute after:right-[0.95rem] after:top-[0.95rem] after:h-[0.45rem] after:w-[0.45rem] after:rotate-45 after:border-b-[1.5px] after:border-r-[1.5px] after:border-current after:opacity-60 after:transition-transform after:content-[''] group-open:after:rotate-[225deg]">
                 <span class="flex min-w-0 items-center gap-2">
-                  {{ if .Icon }}<span class="inline-flex h-4 w-4 shrink-0 text-[color:var(--site-muted-soft)]" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
+                  {{ if .Icon }}<span class="inline-flex h-4 w-4 shrink-0 text-[var(--fgColor-muted)]" aria-hidden="true">{{ navIcon .Icon }}</span>{{ end }}
                   <span>{{ .Title }}</span>
                 </span>
               </summary>
@@ -24,7 +24,7 @@
   <script>
     (function () {
       var sidebar = document.currentScript && document.currentScript.previousElementSibling;
-      if (!sidebar || !sidebar.classList || !sidebar.classList.contains("site-sidebar-scroll")) {
+      if (!sidebar || !(sidebar instanceof HTMLElement) || !sidebar.hasAttribute("data-site-sidebar-scroll")) {
         return;
       }
       var kind = sidebar.getAttribute("data-sidebar-kind") || "docs";

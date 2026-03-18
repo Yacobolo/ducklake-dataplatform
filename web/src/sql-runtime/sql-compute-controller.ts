@@ -382,10 +382,10 @@ function renderLocalError(elements: RuntimeElements, message: string): void {
   renderResultsHTML(
     elements,
     [
-      '<div class="sql-result-card flash flash-error">',
-      '<h2 class="sql-results-title">Local Query Unavailable</h2>',
+      '<div class="rounded-xl border border-[var(--borderColor-danger-muted)] bg-[var(--bgColor-danger-muted)] p-4 shadow-xs">',
+      '<h2 class="m-0 text-lg font-semibold text-[var(--fgColor-default)]">Local Query Unavailable</h2>',
       `<pre>${escapeHTML(message)}</pre>`,
-      '<p class="color-fg-muted text-small">Fallback is explicit. Choose Shared Endpoint or Auto and rerun if this browser-local path is unavailable.</p>',
+      '<p class="m-0 text-sm text-[var(--fgColor-muted)]">Fallback is explicit. Choose Shared Endpoint or Auto and rerun if this browser-local path is unavailable.</p>',
       "</div>",
     ].join(""),
   );
@@ -395,9 +395,9 @@ function renderResultsMessage(elements: RuntimeElements, message: string): void 
   renderResultsHTML(
     elements,
     [
-      '<div class="sql-result-card sql-results-empty">',
-      '<div class="sql-results-empty-body">',
-      `<p class="sql-results-empty-title">${escapeHTML(message)}</p>`,
+      '<div class="grid place-items-center rounded-xl border border-[var(--borderColor-default)] border-dashed bg-[var(--bgColor-default)] p-4 shadow-xs">',
+      '<div class="flex max-w-sm flex-col items-center justify-center gap-3 py-8 text-center">',
+      `<p class="m-0 text-lg font-semibold">${escapeHTML(message)}</p>`,
       "</div>",
       "</div>",
     ].join(""),
@@ -427,15 +427,15 @@ function renderResultTable(elements: RuntimeElements, columns: string[], rows: u
   renderResultsHTML(
     elements,
     [
-      '<div class="sql-result-card table-wrap">',
-      '<div class="sql-results-header">',
-      '<div class="sql-results-meta">',
-      '<h2 class="sql-results-title">Results (Local DuckDB WASM)</h2>',
-      `<p class="color-fg-muted text-small">${rowCount} row(s)</p>`,
+      '<div class="flex h-full min-h-0 flex-col rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs">',
+      '<div class="sticky top-0 z-[2] mb-3 flex flex-wrap items-start justify-between gap-3 border-b border-[var(--borderColor-muted)] bg-[var(--bgColor-default)] pb-3">',
+      '<div class="flex min-w-0 flex-col gap-1">',
+      '<h2 class="m-0 text-lg font-semibold text-[var(--fgColor-default)]">Results (Local DuckDB WASM)</h2>',
+      `<p class="m-0 text-sm text-[var(--fgColor-muted)]">${rowCount} row(s)</p>`,
       "</div>",
       "</div>",
-      '<div class="sql-results-scroll">',
-      `<table class="data-table"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`,
+      '<div class="min-h-0 flex-1 overflow-auto">',
+      `<table class="min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--bgColor-muted)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`,
       "</div>",
       "</div>",
     ].join(""),

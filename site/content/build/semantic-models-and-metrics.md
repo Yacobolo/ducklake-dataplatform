@@ -24,8 +24,8 @@ Use this guide when downstream users need reusable business definitions rather t
 
 ## Query Flow
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/semantic-query-flow.svg" alt="Diagram showing semantic models and metrics being planned into a governed SQL query." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/semantic-query-flow.svg" alt="Diagram showing semantic models and metrics being planned into a governed SQL query." loading="lazy" decoding="async">
 </figure>
 
 ## Verification

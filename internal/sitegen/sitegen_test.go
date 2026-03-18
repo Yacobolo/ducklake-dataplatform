@@ -26,7 +26,7 @@ Run your first secure query.
 
 	htmlOut, mirrorOut, err := transformDirectives(source)
 	require.NoError(t, err)
-	assert.Contains(t, htmlOut, `class="site-callout"`)
+	assert.Contains(t, htmlOut, `border-l-[var(--fgColor-accent)]`)
 	assert.Contains(t, htmlOut, `class="site-card-grid"`)
 	assert.Contains(t, htmlOut, `href="/start-here/quickstart/"`)
 	assert.Contains(t, mirrorOut, "## Start here")
@@ -72,8 +72,8 @@ func TestEnhanceCodeBlocks_AddsChromeAndCopyTarget(t *testing.T) {
 
 	rendered := enhanceCodeBlocks(source)
 
-	assert.Contains(t, rendered, `class="site-codeblock"`)
-	assert.Contains(t, rendered, `class="site-codeblock-lang">BASH<`)
+	assert.Contains(t, rendered, `data-site-codeblock`)
+	assert.Contains(t, rendered, `text-xs font-semibold uppercase tracking-[0.18em] text-[var(--fgColor-default)]">BASH<`)
 	assert.Contains(t, rendered, `data-site-copy="#site-codeblock-0"`)
 	assert.Contains(t, rendered, `id="site-codeblock-0"`)
 }
@@ -83,7 +83,7 @@ func TestEnhanceCodeBlocks_PreservesHighlightedAttributes(t *testing.T) {
 
 	rendered := enhanceCodeBlocks(source)
 
-	assert.Contains(t, rendered, `<div class="site-codeblock">`)
+	assert.Contains(t, rendered, `<div data-site-codeblock class="overflow-hidden rounded-3xl`)
 	assert.Contains(t, rendered, `<pre tabindex="0" class="chroma language-bash" data-code-language="bash">`)
 	assert.Contains(t, rendered, `data-code-language="bash"`)
 	assert.Contains(t, rendered, `id="site-codeblock-0"`)
@@ -104,7 +104,7 @@ func TestEnhanceTables_WrapsTables(t *testing.T) {
 
 	rendered := enhanceTables(source)
 
-	assert.Contains(t, rendered, `class="site-table-wrap"`)
+	assert.Contains(t, rendered, `class="my-8 overflow-x-auto"`)
 	assert.Contains(t, rendered, `<table>`)
 }
 
@@ -224,10 +224,10 @@ func TestEnhanceAPIHTML_AddsMethodDataAttribute(t *testing.T) {
 
 	rendered := enhanceAPIHTML(source)
 
-	assert.Contains(t, rendered, `class="api-operation"`)
-	assert.Contains(t, rendered, `class="api-operation-title-text">List queries<`)
-	assert.Contains(t, rendered, `class="api-method" data-api-method="GET"`)
-	assert.Contains(t, rendered, `class="api-operation-route"><code>/queries</code>`)
+	assert.Contains(t, rendered, `class="mt-12 pt-8 first:mt-8"`)
+	assert.Contains(t, rendered, `class="min-w-0 flex-1">List queries<`)
+	assert.Contains(t, rendered, `data-api-method="GET"`)
+	assert.Contains(t, rendered, `<p class="mt-3"><code class="bg-transparent p-0 font-mono text-sm text-[var(--fgColor-muted)]">/queries</code></p>`)
 	assert.Contains(t, rendered, `Operation ID</span><code>listQueries</code>`)
 }
 

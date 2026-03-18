@@ -29,8 +29,8 @@ Teams often assume access control begins and ends with “can this user query th
 
 ## Governance At A Glance
 
-<figure class="site-mermaid">
-  <img src="/_site/diagrams/platform-object-map.svg" alt="Diagram showing principals and groups connecting to governed objects such as catalogs, tables, models, assets, and data products." loading="lazy" decoding="async">
+<figure class="my-8 overflow-x-auto rounded-[1.5rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] p-5">
+  <img class="mx-auto block h-auto w-max max-w-none rounded-none border-0 bg-transparent" src="/_site/diagrams/platform-object-map.svg" alt="Diagram showing principals and groups connecting to governed objects such as catalogs, tables, models, assets, and data products." loading="lazy" decoding="async">
 </figure>
 
 Read the diagram as a relationship map, not a step-by-step execution flow. Principals and groups sit on the left because governance starts with identity. The governed objects sit on the right because those are the things teams want to expose: tables, models, assets, and products. The point of the diagram is that governance is attached to the objects people actually use, not only to raw storage.
