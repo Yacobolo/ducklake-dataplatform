@@ -262,13 +262,9 @@ func rewriteLink(link string) string {
 func buildHomeView(home homeFrontMatter) homePageView {
 	cards := make([]homeFeatureCardView, 0, len(home.Pillars.Items))
 	for i, item := range home.Pillars.Items {
-		spanClass := "lg:col-span-5"
-		if i == 0 || i == 3 {
-			spanClass = "lg:col-span-7"
-		}
 		cards = append(cards, homeFeatureCardView{
-			SpanClass: spanClass,
-			Item:      item,
+			Wide: i == 0 || i == 3,
+			Item: item,
 		})
 	}
 

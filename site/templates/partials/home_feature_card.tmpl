@@ -1,5 +1,5 @@
 {{ define "home_feature_card" -}}
-<article class="{{ .Card.SpanClass }} rounded-[1.9rem] border border-[var(--borderColor-default)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bgColor-inset)_96%,transparent),color-mix(in_srgb,var(--bgColor-muted)_46%,var(--bgColor-inset)))] px-6 py-6 shadow-[0_20px_60px_color-mix(in_srgb,var(--fgColor-accent)_8%,transparent)] transition duration-200 hover:-translate-y-1 hover:border-[color:color-mix(in_srgb,var(--fgColor-accent)_32%,var(--borderColor-default))]">
+<article class="{{ if .Card.Wide }}lg:col-span-7{{ else }}lg:col-span-5{{ end }} rounded-[1.9rem] border border-[var(--borderColor-default)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bgColor-inset)_96%,transparent),color-mix(in_srgb,var(--bgColor-muted)_46%,var(--bgColor-inset)))] px-6 py-6 shadow-[0_20px_60px_color-mix(in_srgb,var(--fgColor-accent)_8%,transparent)] transition duration-200 hover:-translate-y-1 hover:border-[color:color-mix(in_srgb,var(--fgColor-accent)_32%,var(--borderColor-default))]">
   <div class="mb-6 flex items-center gap-3">
     <span class="inline-flex h-5 w-5 shrink-0 text-[var(--fgColor-accent)]" aria-hidden="true">{{ navIcon .Card.Item.Icon }}</span>
     <span class="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-accent)]">{{ .Card.Item.Label }}</span>

@@ -107,8 +107,8 @@ type homeFeature struct {
 }
 
 type homeFeatureCardView struct {
-	SpanClass string
-	Item      homeFeature
+	Wide bool
+	Item homeFeature
 }
 
 type homeVisualView struct {
