@@ -5,11 +5,24 @@ import "./models/core.tsp";
 import "./models/assets.tsp";
 import "./models/ingestion.tsp";
 import "./models/products.tsp";
-import "./operations/core.tsp";
 import "./operations/assets.tsp";
 import "./operations/auth.tsp";
-import "./operations/extensions.tsp";
+import "./operations/audit.tsp";
+import "./operations/catalogs.tsp";
+import "./operations/compute.tsp";
+import "./operations/dashboards.tsp";
+import "./operations/governance.tsp";
+import "./operations/health.tsp";
+import "./operations/identity.tsp";
+import "./operations/integrations.tsp";
+import "./operations/lineage.tsp";
+import "./operations/models.tsp";
+import "./operations/notebooks.tsp";
+import "./operations/pipelines.tsp";
 import "./operations/products.tsp";
+import "./operations/queries.tsp";
+import "./operations/semantic.tsp";
+import "./operations/storage.tsp";
 import "./extensions/openapi.tsp";
 
 using TypeSpec.Http;
@@ -25,14 +38,16 @@ using TypeSpec.OpenAPI;
 @tagMetadata("Auth", #{ description: "Authentication bootstrap, login, OIDC configuration, and web session administration." })
 @tagMetadata("Identity", #{ description: "Principals, groups, and API key management for authenticated access." })
 @tagMetadata("Governance", #{ description: "Privileges, tags, classifications, row filters, and column masking controls." })
-@tagMetadata("Catalogs", #{ description: "Catalog, schema, table, view, volume, and ingestion management APIs." })
+@tagMetadata("Catalogs", #{ description: "Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs." })
 @tagMetadata("Assets", #{ description: "Data asset definitions, runs, checks, partitions, and materialization workflows." })
 @tagMetadata("Products", #{ description: "Product-first control-plane APIs for domains, teams, product contracts, releases, discovery, and portfolio reporting." })
-@tagMetadata("Queries", #{ description: "Synchronous and asynchronous SQL query execution, search, and query history endpoints." })
+@tagMetadata("Queries", #{ description: "Synchronous and asynchronous SQL query execution and query history endpoints." })
+@tagMetadata("Audit", #{ description: "Audit entry inspection for authorization and query activity." })
 @tagMetadata("Lineage", #{ description: "Table and column lineage inspection together with lineage maintenance operations." })
 @tagMetadata("Storage", #{ description: "Storage credentials and external location configuration for object storage access." })
 @tagMetadata("Compute", #{ description: "Compute endpoint lifecycle, assignments, and health checks." })
 @tagMetadata("Notebooks", #{ description: "Notebook authoring, sessions, cells, and job execution endpoints." })
+@tagMetadata("Dashboards", #{ description: "Dashboard and widget authoring plus resolved dashboard views." })
 @tagMetadata("Integrations", #{ description: "Git repository and external integration lifecycle operations." })
 @tagMetadata("Pipelines", #{ description: "Pipeline definitions, jobs, runs, and orchestration controls." })
 @tagMetadata("Models", #{ description: "Model, macro, and model run management for transformation workflows." })

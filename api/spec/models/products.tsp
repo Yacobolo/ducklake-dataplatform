@@ -32,7 +32,6 @@ model ProductTeam {
 }
 
 model CreateProductTeamRequest {
-  domain_name: string;
   name: string;
   contact_channel?: string;
 }
@@ -337,11 +336,6 @@ model CreateProductSubscriptionRequest {
   channel?: string;
 }
 
-model ProductVersionActionRequest {
-  version?: int32;
-}
-
 model DeprecateProductVersionRequest {
-  version?: int32;
   replacement_slug?: string;
 }

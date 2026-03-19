@@ -271,7 +271,7 @@ Create group member
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /groups/{groupId}/members`
+## `DELETE /groups/{groupId}/members/{memberType}/{memberId}`
 
 Delete group member
 
@@ -282,13 +282,8 @@ Delete group member
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `groupId` | `string` | `true` | - |
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `member_id` | `string` | `true` | - |
-| `member_type` | `PrincipalType` | `true` | - |
+| `memberId` | `string` | `true` | - |
+| `memberType` | `PrincipalType` | `true` | - |
 
 ### Responses
 

@@ -444,6 +444,26 @@ func allAPIEndpoints() []gen.APIGenEndpoint {
 
 func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
 	switch endpoint.OperationID {
+	case "listAuditLogs":
+		endpoint.CLICommand = "audit entries list"
+	case "listCatalogs":
+		endpoint.CLICommand = "catalog registrations list"
+	case "registerCatalog":
+		endpoint.CLICommand = "catalog registrations create"
+	case "deleteCatalogRegistration":
+		endpoint.CLICommand = "catalog registrations delete"
+	case "getCatalogRegistration":
+		endpoint.CLICommand = "catalog registrations get"
+	case "updateCatalogRegistration":
+		endpoint.CLICommand = "catalog registrations update"
+	case "setDefaultCatalog":
+		endpoint.CLICommand = "catalog registrations set-default"
+	case "getMetastoreSummary":
+		endpoint.CLICommand = "catalog metastore summary"
+	case "createManifest":
+		endpoint.CLICommand = "catalog tables manifest get"
+	case "searchCatalog":
+		endpoint.CLICommand = "catalog search"
 	case "listDashboards":
 		endpoint.CLICommand = "dashboards list"
 	case "createDashboard":
@@ -472,6 +492,12 @@ func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
 		endpoint.CLICommand = "assets freshness blockers"
 	case "reconcileAssetFreshness":
 		endpoint.CLICommand = "assets freshness reconcile"
+	case "listQueryHistory":
+		endpoint.CLICommand = "query history list"
+	case "createTagAssignment":
+		endpoint.CLICommand = "governance tags assignments create"
+	case "deleteTagAssignment":
+		endpoint.CLICommand = "governance tags assignments delete"
 	}
 	return endpoint
 }

@@ -4,7 +4,6 @@ info:
   version: 0.1.0
   description: Duck Data Platform exposes a secure SQL query layer over DuckDB together with metadata management, RBAC, row-level security, column masking, lineage, orchestration, and semantic modeling APIs backed by SQLite metadata.
 tags:
-  - name: Dashboards
   - name: Semantic Layer
     description: Semantic models, metrics, relationships, and metric query execution.
   - name: Models
@@ -13,6 +12,8 @@ tags:
     description: Pipeline definitions, jobs, runs, and orchestration controls.
   - name: Integrations
     description: Git repository and external integration lifecycle operations.
+  - name: Dashboards
+    description: Dashboard and widget authoring plus resolved dashboard views.
   - name: Notebooks
     description: Notebook authoring, sessions, cells, and job execution endpoints.
   - name: Compute
@@ -21,14 +22,16 @@ tags:
     description: Storage credentials and external location configuration for object storage access.
   - name: Lineage
     description: Table and column lineage inspection together with lineage maintenance operations.
+  - name: Audit
+    description: Audit entry inspection for authorization and query activity.
   - name: Queries
-    description: Synchronous and asynchronous SQL query execution, search, and query history endpoints.
+    description: Synchronous and asynchronous SQL query execution and query history endpoints.
   - name: Products
     description: Product-first control-plane APIs for domains, teams, product contracts, releases, discovery, and portfolio reporting.
   - name: Assets
     description: Data asset definitions, runs, checks, partitions, and materialization workflows.
   - name: Catalogs
-    description: Catalog, schema, table, view, volume, and ingestion management APIs.
+    description: Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs.
   - name: Governance
     description: Privileges, tags, classifications, row filters, and column masking controls.
   - name: Identity
@@ -401,7 +404,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-    put:
+    patch:
       operationId: updateAsset
       summary: Update asset
       parameters:
@@ -1454,10 +1457,10 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /audit-logs:
+  /audit-entries:
     get:
       operationId: listAuditLogs
-      summary: List audit logs
+      summary: List audit entries
       parameters:
         - name: principal_name
           in: query
@@ -1528,7 +1531,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Queries
+        - Audit
       x-authz:
         mode: admin_only
   /auth/bootstrap/complete:
@@ -1892,7 +1895,7 @@ paths:
       x-authz:
         mode: admin_only
       x-apigen-manual: true
-  /catalogs:
+  /catalog-registrations:
     post:
       operationId: registerCatalog
       summary: Register catalog
@@ -1944,7 +1947,7 @@ paths:
               $ref: '#/components/schemas/CreateCatalogRequest'
     get:
       operationId: listCatalogs
-      summary: List catalogs
+      summary: List catalog registrations
       description: Lists registered catalogs and returns a paginated catalog registration view for management clients.
       parameters:
         - name: max_results
@@ -2001,7 +2004,7 @@ paths:
         - Catalogs
       x-authz:
         mode: admin_only
-  /catalogs/{catalogName}:
+  /catalog-registrations/{catalogName}:
     get:
       operationId: getCatalogRegistration
       summary: Get catalog registration
@@ -2166,6 +2169,61 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+  /catalog-registrations/{catalogName}:set-default:
+    post:
+      operationId: setDefaultCatalog
+      summary: Set default catalog
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogRegistration'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Catalogs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetDefaultCatalogRequest'
   /catalogs/{catalogName}/history:
     get:
       operationId: listCatalogHistory
@@ -3371,6 +3429,71 @@ paths:
           - securable_type: table
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
+  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/manifest:
+    get:
+      operationId: createManifest
+      summary: Get table manifest
+      parameters:
+        - name: catalogName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemaName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManifestResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Catalogs
   /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile:
     post:
       operationId: profileTable
@@ -4096,61 +4219,6 @@ paths:
           - securable_type: volume
             privilege: CREATE_VOLUME
             securable_id_source: runtime_resolved_object_id
-  /catalogs/{catalogName}/set-default:
-    post:
-      operationId: setDefaultCatalog
-      summary: Set default catalog
-      parameters:
-        - name: catalogName
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CatalogRegistration'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Catalogs
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetDefaultCatalogRequest'
   /catalogs/{catalogName}/version-summary:
     get:
       operationId: getCatalogVersionSummary
@@ -4188,6 +4256,75 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Catalogs
+  /catalogs:search:
+    get:
+      operationId: searchCatalog
+      summary: Search catalog
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: catalog
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSearchResults'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
           content:
             application/json:
               schema:
@@ -4420,6 +4557,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ColumnMaskBindingRequest'
+  /column-masks/{columnMaskId}/bindings/{principalType}/{principalId}:
     delete:
       operationId: unbindColumnMask
       summary: Unbind column mask
@@ -4429,18 +4567,16 @@ paths:
           required: true
           schema:
             type: string
-        - name: principal_id
-          in: query
-          required: true
-          schema:
-            type: string
-          explode: false
-        - name: principal_type
-          in: query
+        - name: principalType
+          in: path
           required: true
           schema:
             $ref: '#/components/schemas/PrincipalType'
-          explode: false
+        - name: principalId
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
@@ -5896,7 +6032,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-    put:
+    patch:
       operationId: updateDataProduct
       summary: Update data product
       parameters:
@@ -6125,69 +6261,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateProductDependencyRequest'
-  /data-products/{productSlug}/deprecate:
-    patch:
-      operationId: deprecateDataProductVersion
-      summary: Deprecate data product version
-      parameters:
-        - name: productSlug
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DataProductDetail'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/Error'
-                  - $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Products
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DeprecateProductVersionRequest'
   /data-products/{productSlug}/events:
     get:
       operationId: listDataProductEvents
@@ -6299,132 +6372,6 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /data-products/{productSlug}/publish:
-    patch:
-      operationId: publishDataProductVersion
-      summary: Publish data product version
-      parameters:
-        - name: productSlug
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DataProductDetail'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/Error'
-                  - $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Products
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProductVersionActionRequest'
-  /data-products/{productSlug}/retire:
-    patch:
-      operationId: retireDataProductVersion
-      summary: Retire data product version
-      parameters:
-        - name: productSlug
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DataProductDetail'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/Error'
-                  - $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Products
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProductVersionActionRequest'
   /data-products/{productSlug}/semantic-entrypoints:
     get:
       operationId: listDataProductSemanticEntrypoints
@@ -6870,177 +6817,29 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /domains:
-    get:
-      operationId: listProductDomains
-      summary: List product domains
+  /data-products/{productSlug}/versions/{version}:deprecate:
+    post:
+      operationId: deprecateDataProductVersion
+      summary: Deprecate data product version
       parameters:
-        - name: max_results
-          in: query
-          required: false
+        - name: productSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
           schema:
             type: integer
             format: int32
-          explode: false
-        - name: page_token
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
       responses:
         '200':
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedProductDomains'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Products
-    post:
-      operationId: createProductDomain
-      summary: Create product domain
-      parameters: []
-      responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProductDomain'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '409':
-          description: The request conflicts with the current state of the server.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Products
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateProductDomainRequest'
-  /domains/{domainName}:
-    get:
-      operationId: getProductDomain
-      summary: Get product domain
-      parameters:
-        - name: domainName
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProductDomain'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Products
-    put:
-      operationId: updateProductDomain
-      summary: Update product domain
-      parameters:
-        - name: domainName
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProductDomain'
+                $ref: '#/components/schemas/DataProductDetail'
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -7082,29 +6881,105 @@ paths:
       tags:
         - Products
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateProductDomainRequest'
-    delete:
-      operationId: deleteProductDomain
-      summary: Delete product domain
+              $ref: '#/components/schemas/DeprecateProductVersionRequest'
+  /data-products/{productSlug}/versions/{version}:publish:
+    post:
+      operationId: publishDataProductVersion
+      summary: Publish data product version
       parameters:
-        - name: domainName
+        - name: productSlug
           in: path
           required: true
           schema:
             type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
       responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataProductDetail'
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
             application/json:
               schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Products
+  /data-products/{productSlug}/versions/{version}:retire:
+    post:
+      operationId: retireDataProductVersion
+      summary: Retire data product version
+      parameters:
+        - name: productSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataProductDetail'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
           content:
@@ -8263,6 +8138,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateGroupMemberRequest'
+  /groups/{groupId}/members/{memberType}/{memberId}:
     delete:
       operationId: deleteGroupMember
       summary: Delete group member
@@ -8272,18 +8148,16 @@ paths:
           required: true
           schema:
             type: string
-        - name: member_type
-          in: query
+        - name: memberType
+          in: path
           required: true
           schema:
             $ref: '#/components/schemas/PrincipalType'
-          explode: false
-        - name: member_id
-          in: query
+        - name: memberId
+          in: path
           required: true
           schema:
             type: string
-          explode: false
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
@@ -9269,56 +9143,6 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /manifest:
-    post:
-      operationId: createManifest
-      summary: Create manifest
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ManifestResponse'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Catalogs
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ManifestRequest'
   /metric-queries:explain:
     post:
       operationId: explainMetricQuery
@@ -12367,6 +12191,575 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdatePrincipalAdminRequest'
+  /product-domains:
+    get:
+      operationId: listProductDomains
+      summary: List product domains
+      parameters:
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductDomains'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Products
+    post:
+      operationId: createProductDomain
+      summary: Create product domain
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDomain'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductDomainRequest'
+  /product-domains/{domainName}:
+    get:
+      operationId: getProductDomain
+      summary: Get product domain
+      parameters:
+        - name: domainName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDomain'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Products
+    patch:
+      operationId: updateProductDomain
+      summary: Update product domain
+      parameters:
+        - name: domainName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDomain'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductDomainRequest'
+    delete:
+      operationId: deleteProductDomain
+      summary: Delete product domain
+      parameters:
+        - name: domainName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Products
+  /product-domains/{domainName}/teams:
+    post:
+      operationId: createProductTeam
+      summary: Create product team
+      parameters:
+        - name: domainName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTeam'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductTeamRequest'
+  /product-domains/{domainName}/teams/{teamName}:
+    get:
+      operationId: getProductTeam
+      summary: Get product team
+      parameters:
+        - name: domainName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTeam'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Products
+    patch:
+      operationId: updateProductTeam
+      summary: Update product team
+      parameters:
+        - name: domainName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTeam'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductTeamRequest'
+    delete:
+      operationId: deleteProductTeam
+      summary: Delete product team
+      parameters:
+        - name: domainName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: teamName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Products
+  /product-teams:
+    get:
+      operationId: listProductTeams
+      summary: List product teams
+      parameters:
+        - name: domain_name
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductTeams'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Products
   /queries:
     post:
       operationId: submitQuery
@@ -12418,6 +12811,92 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SubmitQueryRequest'
+  /queries/history:
+    get:
+      operationId: listQueryHistory
+      summary: List query history
+      description: Lists recorded query executions and supports filtering by principal, decision status, and time window.
+      parameters:
+        - name: principal_name
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AuditDecisionStatus'
+          explode: false
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          explode: false
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedQueryHistoryEntries'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Queries
+      x-authz:
+        mode: admin_only
   /queries/{queryId}:
     get:
       operationId: getQuery
@@ -12517,61 +12996,6 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Queries
-  /queries/{queryId}/cancel:
-    post:
-      operationId: cancelQuery
-      summary: Cancel query
-      parameters:
-        - name: queryId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '202':
-          description: The request has been accepted for processing, but processing has not yet completed.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CancelQueryResponse'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Queries
   /queries/{queryId}/results:
     get:
       operationId: getQueryResults
@@ -12641,7 +13065,62 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Queries
-  /query:
+  /queries/{queryId}:cancel:
+    post:
+      operationId: cancelQuery
+      summary: Cancel query
+      parameters:
+        - name: queryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelQueryResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Queries
+  /queries:execute:
     post:
       operationId: executeQuery
       summary: Execute query
@@ -12692,92 +13171,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/QueryRequest'
-  /query-history:
-    get:
-      operationId: listQueryHistory
-      summary: List query history
-      description: Lists recorded query executions and supports filtering by principal, decision status, and time window.
-      parameters:
-        - name: principal_name
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-        - name: status
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/AuditDecisionStatus'
-          explode: false
-        - name: from
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date-time
-          explode: false
-        - name: to
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date-time
-          explode: false
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-          explode: false
-        - name: page_token
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedQueryHistoryEntries'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Queries
-      x-authz:
-        mode: admin_only
   /row-filters/{rowFilterId}:
     delete:
       operationId: deleteRowFilter
@@ -12941,6 +13334,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RowFilterBindingRequest'
+  /row-filters/{rowFilterId}/bindings/{principalType}/{principalId}:
     delete:
       operationId: unbindRowFilter
       summary: Unbind row filter
@@ -12950,18 +13344,16 @@ paths:
           required: true
           schema:
             type: string
-        - name: principal_id
-          in: query
-          required: true
-          schema:
-            type: string
-          explode: false
-        - name: principal_type
-          in: query
+        - name: principalType
+          in: path
           required: true
           schema:
             $ref: '#/components/schemas/PrincipalType'
-          explode: false
+        - name: principalId
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
@@ -12997,75 +13389,6 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
-  /search:
-    get:
-      operationId: searchCatalog
-      summary: Search catalog
-      parameters:
-        - name: query
-          in: query
-          required: true
-          schema:
-            type: string
-          explode: false
-        - name: type
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-        - name: catalog
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-          explode: false
-        - name: page_token
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedSearchResults'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Queries
   /semantic-models:
     get:
       operationId: listSemanticModels
@@ -14616,51 +14939,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateRowFilterRequest'
-  /tag-assignments/{assignmentId}:
-    delete:
-      operationId: deleteTagAssignment
-      summary: Delete tag assignment
-      parameters:
-        - name: assignmentId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Governance
   /tags:
     get:
       operationId: listTags
@@ -14936,192 +15214,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateTagAssignmentRequest'
-  /teams:
-    get:
-      operationId: listProductTeams
-      summary: List product teams
-      parameters:
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-          explode: false
-        - name: page_token
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedProductTeams'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Products
-    post:
-      operationId: createProductTeam
-      summary: Create product team
-      parameters: []
-      responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProductTeam'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/Error'
-                  - $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Products
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateProductTeamRequest'
-  /teams/{domainName}/{teamName}:
-    put:
-      operationId: updateProductTeam
-      summary: Update product team
-      parameters:
-        - name: domainName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: teamName
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProductTeam'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/Error'
-                  - $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Products
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateProductTeamRequest'
+  /tags/{tagId}/assignments/{assignmentId}:
     delete:
-      operationId: deleteProductTeam
-      summary: Delete product team
+      operationId: deleteTagAssignment
+      summary: Delete tag assignment
       parameters:
-        - name: domainName
+        - name: tagId
           in: path
           required: true
           schema:
             type: string
-        - name: teamName
+        - name: assignmentId
           in: path
           required: true
           schema:
@@ -15147,12 +15250,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
         '429':
           description: Client error
           content:
@@ -15166,7 +15263,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       tags:
-        - Products
+        - Governance
 security:
   - BearerAuth: []
   - ApiKeyAuth: []
@@ -16684,11 +16781,8 @@ components:
     CreateProductTeamRequest:
       type: object
       required:
-        - domain_name
         - name
       properties:
-        domain_name:
-          type: string
         name:
           type: string
         contact_channel:
@@ -17360,9 +17454,6 @@ components:
     DeprecateProductVersionRequest:
       type: object
       properties:
-        version:
-          type: integer
-          format: int32
         replacement_slug:
           type: string
     Error:
@@ -17772,15 +17863,6 @@ components:
         name:
           type: string
         type:
-          type: string
-    ManifestRequest:
-      type: object
-      required:
-        - table
-      properties:
-        table:
-          type: string
-        schema:
           type: string
     ManifestResponse:
       type: object
@@ -19483,12 +19565,6 @@ components:
         updated_at:
           type: string
           format: date-time
-    ProductVersionActionRequest:
-      type: object
-      properties:
-        version:
-          type: integer
-          format: int32
     PromoteNotebookRequest:
       type: object
       required:
@@ -20160,10 +20236,6 @@ components:
         - vhost
     UpdateAssetRequest:
       type: object
-      required:
-        - asset_type
-        - product_slug
-        - owner
       properties:
         asset_type:
           type: string
@@ -20263,12 +20335,6 @@ components:
           $ref: '#/components/schemas/DashboardWidgetLayoutUpdate'
     UpdateDataProductRequest:
       type: object
-      required:
-        - name
-        - domain_name
-        - team_name
-        - steward_principal
-        - contact_channel
       properties:
         name:
           type: string

@@ -13,7 +13,7 @@ import (
 func TestDescribe_Platform(t *testing.T) {
 	rec := &requestRecorder{}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalogs", jsonHandler(rec, 200, `{"data":[{"name":"main","status":"active","is_default":true}]}`))
+	mux.HandleFunc("/v1/catalog-registrations", jsonHandler(rec, 200, `{"catalogs":[{"name":"main","status":"active","is_default":true}]}`))
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
@@ -31,7 +31,7 @@ func TestDescribe_Platform(t *testing.T) {
 
 func TestDescribe_Catalog(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalogs/main", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/catalog-registrations/main", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"name":"main","status":"active"}`))
@@ -146,7 +146,7 @@ func TestDescribe_InvalidPath(t *testing.T) {
 func TestDescribe_Catalog_NotFound(t *testing.T) {
 	rec := &requestRecorder{}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalogs/nonexistent", jsonHandler(rec, 404, `{"code":404,"message":"catalog not found"}`))
+	mux.HandleFunc("/v1/catalog-registrations/nonexistent", jsonHandler(rec, 404, `{"code":404,"message":"catalog not found"}`))
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
@@ -432,7 +432,7 @@ func TestDescribe_Table_TextOutput_WithSecurityPolicies(t *testing.T) {
 func TestDescribe_Platform_TextOutput(t *testing.T) {
 	rec := &requestRecorder{}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalogs", jsonHandler(rec, 200, `{"data":[{"name":"main","status":"active","is_default":true},{"name":"staging","status":"active","is_default":false}]}`))
+	mux.HandleFunc("/v1/catalog-registrations", jsonHandler(rec, 200, `{"catalogs":[{"name":"main","status":"active","is_default":true},{"name":"staging","status":"active","is_default":false}]}`))
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 

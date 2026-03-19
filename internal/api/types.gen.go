@@ -829,7 +829,6 @@ type CreateProductSubscriptionRequest struct {
 
 type CreateProductTeamRequest struct {
 	ContactChannel *string `json:"contact_channel,omitempty"`
-	DomainName     string  `json:"domain_name"`
 	Name           string  `json:"name"`
 }
 
@@ -1102,7 +1101,6 @@ type DataProductVersionList struct {
 
 type DeprecateProductVersionRequest struct {
 	ReplacementSlug *string `json:"replacement_slug,omitempty"`
-	Version         *int32  `json:"version,omitempty"`
 }
 
 type Error struct {
@@ -1309,11 +1307,6 @@ const (
 type ManifestColumn struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
-}
-
-type ManifestRequest struct {
-	Schema *string `json:"schema,omitempty"`
-	Table  string  `json:"table"`
 }
 
 type ManifestResponse struct {
@@ -2160,10 +2153,6 @@ type ProductTeam struct {
 	UpdatedAt      *string `json:"updated_at,omitempty"`
 }
 
-type ProductVersionActionRequest struct {
-	Version *int32 `json:"version,omitempty"`
-}
-
 type PromoteNotebookRequest struct {
 	CellIndex       int32                 `json:"cell_index"`
 	Materialization *ModelMaterialization `json:"materialization,omitempty"`
@@ -2853,8 +2842,6 @@ type CheckMetricFreshnessParams = GenCheckMetricFreshnessParams
 
 type CheckSourceFreshnessParams = GenCheckSourceFreshnessParams
 
-type DeleteGroupMemberParams = GenDeleteGroupMemberParams
-
 type DeleteSchemaParams = GenDeleteSchemaParams
 
 type DiffMacroRevisionsParams = GenDiffMacroRevisionsParams
@@ -2971,10 +2958,6 @@ type ListVolumesParams = GenListVolumesParams
 
 type SearchCatalogParams = GenSearchCatalogParams
 
-type UnbindColumnMaskParams = GenUnbindColumnMaskParams
-
-type UnbindRowFilterParams = GenUnbindRowFilterParams
-
 type BindColumnMaskJSONRequestBody = GenBindColumnMaskJSONBody
 
 type BindRowFilterJSONRequestBody = GenBindRowFilterJSONBody
@@ -3022,8 +3005,6 @@ type CreateGroupJSONRequestBody = GenCreateGroupJSONBody
 type CreateGroupMemberJSONRequestBody = GenCreateGroupMemberJSONBody
 
 type CreateMacroJSONRequestBody = GenCreateMacroJSONBody
-
-type CreateManifestJSONRequestBody = GenCreateManifestJSONBody
 
 type CreateModelJSONRequestBody = GenCreateModelJSONBody
 
@@ -3079,15 +3060,11 @@ type LocalLoginJSONRequestBody = LocalLoginRequest
 
 type PromoteNotebookToModelJSONRequestBody = GenPromoteNotebookToModelJSONBody
 
-type PublishDataProductVersionJSONRequestBody = GenPublishDataProductVersionJSONBody
-
 type PurgeLineageJSONRequestBody = GenPurgeLineageJSONBody
 
 type RegisterCatalogJSONRequestBody = GenRegisterCatalogJSONBody
 
 type ReorderCellsJSONRequestBody = GenReorderCellsJSONBody
-
-type RetireDataProductVersionJSONRequestBody = GenRetireDataProductVersionJSONBody
 
 type RevokeAllWebSessionsJSONRequestBody = RevokeWebSessionsRequest
 

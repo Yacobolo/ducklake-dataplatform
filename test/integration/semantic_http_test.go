@@ -212,7 +212,7 @@ func TestSemanticAPI_RunMetricQuery_RLSMaskParityWithRawSQL(t *testing.T) {
 	})
 	require.Equal(t, http.StatusOK, semanticRunResp.StatusCode, responseBodyOnStatusMismatch(t, semanticRunResp, http.StatusOK))
 
-	rawResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/query", env.Keys.Analyst, map[string]interface{}{
+	rawResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/queries:execute", env.Keys.Analyst, map[string]interface{}{
 		"sql": "SELECT Name, COUNT(*) AS passenger_count FROM main.titanic GROUP BY Name ORDER BY Name",
 	})
 	require.Equal(t, http.StatusOK, rawResp.StatusCode, responseBodyOnStatusMismatch(t, rawResp, http.StatusOK))

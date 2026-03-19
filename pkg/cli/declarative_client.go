@@ -509,7 +509,7 @@ func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.De
 		if pageToken != "" {
 			query.Set("page_token", pageToken)
 		}
-		resp, err := c.client.Do(http.MethodGet, "/catalogs", query, nil)
+		resp, err := c.client.Do(http.MethodGet, "/catalog-registrations", query, nil)
 		if err != nil {
 			return err
 		}
@@ -519,6 +519,7 @@ func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.De
 
 		var payload struct {
 			Catalogs      []apiCatalog `json:"catalogs"`
+			Data          []apiCatalog `json:"data"`
 			NextPageToken string       `json:"next_page_token"`
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
@@ -528,6 +529,7 @@ func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.De
 		_ = resp.Body.Close()
 
 		items = append(items, payload.Catalogs...)
+		items = append(items, payload.Data...)
 		if payload.NextPageToken == "" {
 			break
 		}
@@ -1504,7 +1506,7 @@ type apiDataProductVersionDetail struct {
 }
 
 func (c *APIStateClient) readDomains(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/domains")
+	pages, err := c.fetchAllPages(ctx, "/product-domains")
 	if err != nil {
 		return err
 	}
@@ -1530,7 +1532,7 @@ func (c *APIStateClient) readDomains(ctx context.Context, state *declarative.Des
 }
 
 func (c *APIStateClient) readTeams(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/teams")
+	pages, err := c.fetchAllPages(ctx, "/product-teams")
 	if err != nil {
 		return err
 	}
@@ -3265,7 +3267,7 @@ func (c *APIStateClient) executeDomain(_ context.Context, action declarative.Act
 	switch action.Operation {
 	case declarative.OpCreate:
 		item := action.Desired.(declarative.DomainResource)
-		resp, err := c.client.Do(http.MethodPost, "/domains", nil, map[string]interface{}{
+		resp, err := c.client.Do(http.MethodPost, "/product-domains", nil, map[string]interface{}{
 			"name":        item.Name,
 			"description": item.Spec.Description,
 		})
@@ -3278,7 +3280,7 @@ func (c *APIStateClient) executeDomain(_ context.Context, action declarative.Act
 		return apiruntime.CheckError(resp)
 	case declarative.OpUpdate:
 		item := action.Desired.(declarative.DomainResource)
-		resp, err := c.client.Do(http.MethodPut, "/domains/"+item.Name, nil, map[string]interface{}{
+		resp, err := c.client.Do(http.MethodPatch, "/product-domains/"+item.Name, nil, map[string]interface{}{
 			"description": item.Spec.Description,
 		})
 		if err != nil {
@@ -3290,7 +3292,7 @@ func (c *APIStateClient) executeDomain(_ context.Context, action declarative.Act
 		if actual, ok := action.Actual.(declarative.DomainResource); ok && actual.Name != "" {
 			name = actual.Name
 		}
-		resp, err := c.client.Do(http.MethodDelete, "/domains/"+name, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/product-domains/"+name, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -3304,8 +3306,7 @@ func (c *APIStateClient) executeTeam(_ context.Context, action declarative.Actio
 	switch action.Operation {
 	case declarative.OpCreate:
 		item := action.Desired.(declarative.TeamResource)
-		resp, err := c.client.Do(http.MethodPost, "/teams", nil, map[string]interface{}{
-			"domain_name":     item.Spec.DomainRef,
+		resp, err := c.client.Do(http.MethodPost, "/product-domains/"+item.Spec.DomainRef+"/teams", nil, map[string]interface{}{
 			"name":            item.Name,
 			"contact_channel": item.Spec.ContactChannel,
 		})
@@ -3318,7 +3319,7 @@ func (c *APIStateClient) executeTeam(_ context.Context, action declarative.Actio
 		return apiruntime.CheckError(resp)
 	case declarative.OpUpdate:
 		item := action.Desired.(declarative.TeamResource)
-		resp, err := c.client.Do(http.MethodPut, "/teams/"+item.Spec.DomainRef+"/"+item.Name, nil, map[string]interface{}{
+		resp, err := c.client.Do(http.MethodPatch, "/product-domains/"+item.Spec.DomainRef+"/teams/"+item.Name, nil, map[string]interface{}{
 			"contact_channel": item.Spec.ContactChannel,
 		})
 		if err != nil {
@@ -3327,7 +3328,7 @@ func (c *APIStateClient) executeTeam(_ context.Context, action declarative.Actio
 		return apiruntime.CheckError(resp)
 	case declarative.OpDelete:
 		item := action.Actual.(declarative.TeamResource)
-		resp, err := c.client.Do(http.MethodDelete, "/teams/"+item.Spec.DomainRef+"/"+item.Name, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/product-domains/"+item.Spec.DomainRef+"/teams/"+item.Name, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -3373,7 +3374,7 @@ func (c *APIStateClient) applyDataProductCreate(ctx context.Context, item declar
 		}
 	}
 	if len(topLevelPatch) > 0 {
-		resp, err = c.client.Do(http.MethodPut, "/data-products/"+item.Slug, nil, topLevelPatch)
+		resp, err = c.client.Do(http.MethodPatch, "/data-products/"+item.Slug, nil, topLevelPatch)
 		if err != nil {
 			return err
 		}
@@ -3422,7 +3423,7 @@ func (c *APIStateClient) applyDataProductCreate(ctx context.Context, item declar
 }
 
 func (c *APIStateClient) applyDataProductUpdate(ctx context.Context, desired, actual declarative.DataProductResource) error {
-	resp, err := c.client.Do(http.MethodPut, "/data-products/"+desired.Slug, nil, dataProductUpdateBody(desired.Slug, desired.Spec))
+	resp, err := c.client.Do(http.MethodPatch, "/data-products/"+desired.Slug, nil, dataProductUpdateBody(desired.Slug, desired.Spec))
 	if err != nil {
 		return err
 	}
@@ -3553,7 +3554,7 @@ func (c *APIStateClient) applyProductVersionState(_ context.Context, slug, actua
 	case domain.ProductReleaseStatePublished:
 		switch actualState {
 		case "", domain.ProductReleaseStateDraft:
-			resp, err := c.client.Do(http.MethodPatch, "/data-products/"+slug+"/publish", nil, map[string]interface{}{"version": version})
+			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d:publish", slug, version), nil, map[string]interface{}{})
 			if err != nil {
 				return err
 			}
@@ -3566,7 +3567,7 @@ func (c *APIStateClient) applyProductVersionState(_ context.Context, slug, actua
 	case domain.ProductReleaseStateDeprecated:
 		switch actualState {
 		case "", domain.ProductReleaseStateDraft, domain.ProductReleaseStatePublished:
-			resp, err := c.client.Do(http.MethodPatch, "/data-products/"+slug+"/deprecate", nil, map[string]interface{}{"version": version})
+			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d:deprecate", slug, version), nil, map[string]interface{}{})
 			if err != nil {
 				return err
 			}
@@ -3580,7 +3581,7 @@ func (c *APIStateClient) applyProductVersionState(_ context.Context, slug, actua
 		if actualState == domain.ProductReleaseStateRetired {
 			return nil
 		}
-		resp, err := c.client.Do(http.MethodPatch, "/data-products/"+slug+"/retire", nil, map[string]interface{}{"version": version})
+		resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d:retire", slug, version), nil, map[string]interface{}{})
 		if err != nil {
 			return err
 		}
@@ -3731,14 +3732,14 @@ func normalizeProductVersionForMutation(spec declarative.DataProductVersionSpec)
 func (c *APIStateClient) executeAsset(_ context.Context, action declarative.Action) error {
 	toAssetBody := func(asset declarative.AssetResource) map[string]interface{} {
 		body := map[string]interface{}{
-			"asset_key":     asset.Name,
-			"asset_type":    normalizeAssetTypeForAPI(asset.Spec.AssetType),
-			"product_slug":  asset.Spec.ProductRef,
-			"owner":         asset.Spec.Owner,
-			"description":   asset.Spec.Description,
-			"tags":          asset.Spec.Tags,
-			"io_profile":    asset.Spec.IOProfile,
-			"is_active":     true,
+			"asset_key":    asset.Name,
+			"asset_type":   normalizeAssetTypeForAPI(asset.Spec.AssetType),
+			"product_slug": asset.Spec.ProductRef,
+			"owner":        asset.Spec.Owner,
+			"description":  asset.Spec.Description,
+			"tags":         asset.Spec.Tags,
+			"io_profile":   asset.Spec.IOProfile,
+			"is_active":    true,
 		}
 		if len(asset.Spec.DependsOn) > 0 {
 			body["upstream_asset_keys"] = asset.Spec.DependsOn
@@ -5022,7 +5023,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 		if cat.Spec.Comment != "" {
 			body["comment"] = cat.Spec.Comment
 		}
-		resp, err := c.client.Do(http.MethodPost, "/catalogs", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/catalog-registrations", nil, body)
 		if err != nil {
 			return err
 		}
@@ -5045,7 +5046,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 			body["comment"] = cat.Spec.Comment
 		}
 		if len(body) > 0 {
-			resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+action.ResourceName, nil, body)
+			resp, err := c.client.Do(http.MethodPatch, "/catalog-registrations/"+action.ResourceName, nil, body)
 			if err != nil {
 				return err
 			}
@@ -5054,7 +5055,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 			}
 		}
 		if cat.Spec.IsDefault {
-			resp, err := c.client.Do(http.MethodPost, "/catalogs/"+action.ResourceName+"/set-default", nil, map[string]interface{}{})
+			resp, err := c.client.Do(http.MethodPost, "/catalog-registrations/"+action.ResourceName+":set-default", nil, map[string]interface{}{})
 			if err != nil {
 				return err
 			}
@@ -5063,7 +5064,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 		return nil
 
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodDelete, "/catalogs/"+action.ResourceName, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/catalog-registrations/"+action.ResourceName, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -5328,10 +5329,7 @@ func (c *APIStateClient) executeGroupMembership(_ context.Context, action declar
 		default:
 			return fmt.Errorf("cannot delete group membership: member has neither ID nor name")
 		}
-		q := url.Values{}
-		q.Set("member_id", memberID)
-		q.Set("member_type", member.Type)
-		resp, err := c.client.Do(http.MethodDelete, "/groups/"+groupID+"/members", q, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/groups/"+groupID+"/members/"+member.Type+"/"+memberID, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -5411,26 +5409,15 @@ func (c *APIStateClient) executeTagAssignment(ctx context.Context, action declar
 		return apiruntime.CheckError(resp)
 
 	case declarative.OpDelete:
-		// Tag assignment deletes require the assignment ID. Since we don't
-		// track assignment IDs during ReadState, we use the tag ID and
-		// attempt deletion via the composite endpoint.
 		assignment := action.Actual.(declarative.TagAssignmentSpec)
 		tagID, err := c.resolveTagID(assignment.Tag)
 		if err != nil {
 			return fmt.Errorf("resolve tag for assignment delete: %w", err)
 		}
-		securableID, err := c.resolveSecurableID(ctx, assignment.SecurableType, assignment.Securable)
-		if err != nil {
-			return fmt.Errorf("resolve securable for tag assignment delete: %w", err)
+		if assignment.AssignmentID == "" {
+			return fmt.Errorf("delete tag assignment requires assignment id")
 		}
-		q := url.Values{}
-		q.Set("tag_id", tagID)
-		q.Set("securable_id", securableID)
-		q.Set("securable_type", assignment.SecurableType)
-		if assignment.ColumnName != "" {
-			q.Set("column_name", assignment.ColumnName)
-		}
-		resp, err := c.client.Do(http.MethodDelete, "/tag-assignments", q, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/tags/"+tagID+"/assignments/"+assignment.AssignmentID, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -5524,10 +5511,7 @@ func (c *APIStateClient) executeRowFilterBinding(_ context.Context, action decla
 		if err != nil {
 			return fmt.Errorf("resolve principal for row filter binding delete: %w", err)
 		}
-		q := url.Values{}
-		q.Set("principal_id", principalID)
-		q.Set("principal_type", binding.PrincipalType)
-		resp, err := c.client.Do(http.MethodDelete, "/row-filters/"+filterID+"/bindings", q, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/row-filters/"+filterID+"/bindings/"+binding.PrincipalType+"/"+principalID, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -5633,10 +5617,7 @@ func (c *APIStateClient) executeColumnMaskBinding(_ context.Context, action decl
 		if err != nil {
 			return fmt.Errorf("resolve principal for column mask binding delete: %w", err)
 		}
-		q := url.Values{}
-		q.Set("principal_id", principalID)
-		q.Set("principal_type", binding.PrincipalType)
-		resp, err := c.client.Do(http.MethodDelete, "/column-masks/"+maskID+"/bindings", q, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/column-masks/"+maskID+"/bindings/"+binding.PrincipalType+"/"+principalID, nil, nil)
 		if err != nil {
 			return err
 		}

@@ -3,13 +3,12 @@
 # Schema: `UpdateAssetRequest`
 
 - Type: `object`
-- Required fields: `asset_type`, `owner`, `product_slug`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `asset_type` | `string` | `true` | - |
+| `asset_type` | `string` | `false` | - |
 | `auto_materialize_policy` | `AssetAutoMaterializePolicy` | `false` | - |
 | `checks` | `array[AssetCheckInput]` | `false` | - |
 | `description` | `string` | `false` | - |
@@ -17,8 +16,8 @@
 | `io_profile` | `string` | `false` | - |
 | `is_active` | `boolean` | `false` | - |
 | `materialization_policy` | `AssetMaterializationPolicy` | `false` | - |
-| `owner` | `string` | `true` | - |
-| `product_slug` | `string` | `true` | - |
+| `owner` | `string` | `false` | - |
+| `product_slug` | `string` | `false` | - |
 | `tags` | `array[string]` | `false` | - |
 | `upstream_asset_keys` | `array[string]` | `false` | - |
 

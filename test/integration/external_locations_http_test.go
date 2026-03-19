@@ -254,13 +254,13 @@ func TestHTTP_ExternalLocationCreateDoesNotRegisterCatalog(t *testing.T) {
 	require.Equal(t, 201, resp.StatusCode)
 	_ = resp.Body.Close()
 
-	resp = doRequest(t, "GET", env.Server.URL+"/v1/catalogs", env.Keys.Admin, nil)
+	resp = doRequest(t, "GET", env.Server.URL+"/v1/catalog-registrations", env.Keys.Admin, nil)
 	require.Equal(t, 200, resp.StatusCode)
 
 	var result map[string]interface{}
 	decodeJSON(t, resp, &result)
 	assert.Equal(t, float64(0), result["total_count"])
-	assert.Empty(t, result["data"])
+	assert.Empty(t, result["catalogs"])
 }
 
 // TestHTTP_ExternalLocationDuplicate verifies duplicate name returns 409.

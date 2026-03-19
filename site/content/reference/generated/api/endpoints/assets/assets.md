@@ -76,7 +76,7 @@ Get asset
 | `429` | Client error |
 | `500` | Server error |
 
-## `PUT /assets/{assetKey}`
+## `PATCH /assets/{assetKey}`
 
 Update asset
 

@@ -472,14 +472,14 @@ func fetchExistingState(client *apiruntime.Client, desired initDesiredState) (in
 	}
 
 	var catalogs struct {
-		Data []struct {
+		Catalogs []struct {
 			Name string `json:"name"`
-		} `json:"data"`
+		} `json:"catalogs"`
 	}
-	if err := doJSON(client, "GET", "/catalogs", nil, nil, &catalogs); err != nil {
+	if err := doJSON(client, "GET", "/catalog-registrations", nil, nil, &catalogs); err != nil {
 		return state, err
 	}
-	for _, c := range catalogs.Data {
+	for _, c := range catalogs.Catalogs {
 		state.Catalogs[c.Name] = true
 	}
 
@@ -732,7 +732,7 @@ func applyDesiredState(client *apiruntime.Client, desired initDesiredState, exis
 					"dsn":            desired.MetastoreDSN,
 					"data_path":      desired.DataPath,
 				}
-				if err := doNoContentOrJSON(client, "POST", "/catalogs", body); err != nil {
+				if err := doNoContentOrJSON(client, "POST", "/catalog-registrations", body); err != nil {
 					return fmt.Errorf("create catalog %q: %w", desired.CatalogName, err)
 				}
 				return nil
@@ -899,10 +899,8 @@ func destroyDesiredState(client *apiruntime.Client, desired initDesiredState, ex
 					if current.Memberships[groupID] == nil || !current.Memberships[groupID][memberID] {
 						continue
 					}
-					query := url.Values{}
-					query.Set("member_id", memberID)
-					query.Set("member_type", membership.PrincipalType)
-					if err := doDelete(client, "/groups/"+groupID+"/members", query); err != nil {
+					path := fmt.Sprintf("/groups/%s/members/%s/%s", groupID, membership.PrincipalType, memberID)
+					if err := doDelete(client, path, nil); err != nil {
 						return fmt.Errorf("delete membership %q <- %q: %w", membership.GroupName, membership.PrincipalName, err)
 					}
 				}
@@ -962,7 +960,7 @@ func destroyDesiredState(client *apiruntime.Client, desired initDesiredState, ex
 				if !current.Catalogs[desired.CatalogName] {
 					return nil
 				}
-				if err := doDelete(client, "/catalogs/"+desired.CatalogName, nil); err != nil {
+				if err := doDelete(client, "/catalog-registrations/"+desired.CatalogName, nil); err != nil {
 					return fmt.Errorf("delete catalog %q: %w", desired.CatalogName, err)
 				}
 				return nil

@@ -27,29 +27,6 @@ List classifications
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /tag-assignments/{assignmentId}`
-
-Delete tag assignment
-
-- Operation ID: `deleteTagAssignment`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `assignmentId` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `204` | There is no content to send for this request, but the headers may be useful. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
 ## `GET /tags`
 
 List tags
@@ -175,6 +152,30 @@ Create tag assignment
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /tags/{tagId}/assignments/{assignmentId}`
+
+Delete tag assignment
+
+- Operation ID: `deleteTagAssignment`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `assignmentId` | `string` | `true` | - |
+| `tagId` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
 

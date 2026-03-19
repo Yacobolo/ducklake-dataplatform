@@ -678,7 +678,7 @@ func setupIntegrationServer(t *testing.T) *testEnv {
 		nil, nil,
 	)
 
-	// Remaining services (querySvc gets nil engine — we never hit /v1/query)
+	// Remaining services (querySvc gets nil engine — we never hit /v1/queries:execute)
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
 	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
@@ -830,7 +830,7 @@ func setupLocalExtensionServer(t *testing.T) *testEnv {
 		nil, nil,
 	)
 
-	// Remaining services (querySvc gets nil engine — we never hit /v1/query)
+	// Remaining services (querySvc gets nil engine — we never hit /v1/queries:execute)
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 	principalSvc := security.NewPrincipalService(principalRepo, auditRepo)
 	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
@@ -1121,7 +1121,7 @@ type httpTestOpts struct {
 	// WithStorageCredentials wires StorageCredentialService and ExternalLocationService.
 	WithStorageCredentials bool
 	// WithComputeEndpoints wires ComputeEndpointService, a full resolver, and a
-	// SecureEngine so that /v1/query routes through the compute resolver.
+	// SecureEngine so that /v1/queries:execute routes through the compute resolver.
 	WithComputeEndpoints bool
 	// CatalogAttached marks the DuckLake catalog as attached at construction time.
 	// Used when tests need the catalog to be attached without going through full setup.
@@ -1255,7 +1255,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	queryHistorySvc := governance.NewQueryHistoryService(queryHistoryRepo)
 	productSvc := productsvc.NewService(domainRepo, teamRepo, nil, nil, nil, productRepo, auditRepo)
 
-	// querySvc gets nil engine — no /v1/query support unless WithDuckLake+engine
+	// querySvc gets nil engine — no /v1/queries:execute support unless WithDuckLake+engine
 	querySvc := query.NewQueryService(nil, auditRepo, nil)
 
 	// catalogRepoFactory with duckDB=nil is safe — GetSchema only reads ducklake_schema from metaDB
@@ -1780,12 +1780,12 @@ func generateJWT(t *testing.T, secret []byte, subject string, expiry time.Time) 
 	return signed
 }
 
-// fetchAuditLogs calls GET /v1/audit-logs on the test server and returns
+// fetchAuditLogs calls GET /v1/audit-entries on the test server and returns
 // the parsed entries. Used to verify the manifest endpoint writes audit records.
 func fetchAuditLogs(t *testing.T, serverURL, apiKey string) []map[string]interface{} {
 	t.Helper()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", serverURL+"/v1/audit-logs", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", serverURL+"/v1/audit-entries", nil)
 	if err != nil {
 		t.Fatalf("create audit request: %v", err)
 	}

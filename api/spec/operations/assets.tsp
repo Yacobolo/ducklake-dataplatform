@@ -22,7 +22,7 @@ op createAsset(@body body: CreateAssetRequest): Created<Asset> | MutatingErrorRe
 op getAsset(assetKey: string): Ok<Asset> | ResourceErrorResponses;
 
 @route("/assets/{assetKey}")
-@put
+@patch(#{ implicitOptionality: true })
 @tag("Assets")
 @summary("Update asset")
 op updateAsset(assetKey: string, @body body: UpdateAssetRequest): Ok<Asset> | ResourceErrorResponses;

@@ -28,7 +28,7 @@ func TestBuildGeneratedCommandSpecsFromEndpoints_PromotesSingleSegmentRoots(t *t
 	t.Helper()
 
 	specs, err := buildGeneratedCommandSpecsFromEndpoints([]gen.APIGenEndpoint{
-		{OperationID: "executeQuery", CLICommand: "query", Path: "/query"},
+		{OperationID: "executeQuery", CLICommand: "query", Path: "/queries:execute"},
 		{OperationID: "submitQuery", CLICommand: "query submit", Path: "/queries"},
 	})
 	require.NoError(t, err)

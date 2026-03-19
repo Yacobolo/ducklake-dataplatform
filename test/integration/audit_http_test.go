@@ -128,7 +128,7 @@ func TestHTTP_AuditLogs_Filtering(t *testing.T) {
 	}
 
 	t.Run("filter_by_action", func(t *testing.T) {
-		url := env.Server.URL + "/v1/audit-logs?action=CREATE_PRINCIPAL"
+		url := env.Server.URL + "/v1/audit-entries?action=CREATE_PRINCIPAL"
 		resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 		require.Equal(t, 200, resp.StatusCode)
 
@@ -145,7 +145,7 @@ func TestHTTP_AuditLogs_Filtering(t *testing.T) {
 	t.Run("filter_by_principal_name", func(t *testing.T) {
 		// The service logs the authenticated caller's name as the audit principal_name.
 		// Filter by the admin user who performed the operations.
-		url := env.Server.URL + "/v1/audit-logs?principal_name=admin_user"
+		url := env.Server.URL + "/v1/audit-entries?principal_name=admin_user"
 		resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 		require.Equal(t, 200, resp.StatusCode)
 
@@ -160,7 +160,7 @@ func TestHTTP_AuditLogs_Filtering(t *testing.T) {
 	})
 
 	t.Run("filter_by_status", func(t *testing.T) {
-		url := env.Server.URL + "/v1/audit-logs?status=ALLOWED"
+		url := env.Server.URL + "/v1/audit-entries?status=ALLOWED"
 		resp := doRequest(t, "GET", url, env.Keys.Admin, nil)
 		require.Equal(t, 200, resp.StatusCode)
 
@@ -195,7 +195,7 @@ func TestHTTP_AuditLogs_Pagination(t *testing.T) {
 	pageToken := ""
 	pages := 0
 	for {
-		url := env.Server.URL + "/v1/audit-logs?max_results=2"
+		url := env.Server.URL + "/v1/audit-entries?max_results=2"
 		if pageToken != "" {
 			url += "&page_token=" + pageToken
 		}

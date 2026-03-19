@@ -2,34 +2,7 @@
 
 # Queries
 
-Synchronous and asynchronous SQL query execution, search, and query history endpoints.
-
-## `GET /audit-logs`
-
-List audit logs
-
-- Operation ID: `listAuditLogs`
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `action` | `string` | `false` | - |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-| `principal_name` | `string` | `false` | - |
-| `status` | `AuditDecisionStatus` | `false` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
+Synchronous and asynchronous SQL query execution and query history endpoints.
 
 ## `POST /queries`
 
@@ -49,6 +22,36 @@ Submits a SQL query for asynchronous execution and returns a query job identifie
 | Code | Description |
 | --- | --- |
 | `202` | The request has been accepted for processing, but processing has not yet completed. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /queries/history`
+
+List query history
+
+Lists recorded query executions and supports filtering by principal, decision status, and time window.
+
+- Operation ID: `listQueryHistory`
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `from` | `string` | `false` | - |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+| `principal_name` | `string` | `false` | - |
+| `status` | `AuditDecisionStatus` | `false` | - |
+| `to` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
@@ -102,30 +105,6 @@ Delete query
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /queries/{queryId}/cancel`
-
-Cancel query
-
-- Operation ID: `cancelQuery`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `202` | The request has been accepted for processing, but processing has not yet completed. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
 ## `GET /queries/{queryId}/results`
 
 Get query results
@@ -159,7 +138,31 @@ Returns a page of rows for a previously submitted query using the stored query j
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /query`
+## `POST /queries/{queryId}:cancel`
+
+Cancel query
+
+- Operation ID: `cancelQuery`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `queryId` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `202` | The request has been accepted for processing, but processing has not yet completed. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /queries:execute`
 
 Execute query
 
@@ -180,62 +183,6 @@ Executes a SQL statement synchronously and returns the first page of results in 
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /query-history`
-
-List query history
-
-Lists recorded query executions and supports filtering by principal, decision status, and time window.
-
-- Operation ID: `listQueryHistory`
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `from` | `string` | `false` | - |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-| `principal_name` | `string` | `false` | - |
-| `status` | `AuditDecisionStatus` | `false` | - |
-| `to` | `string` | `false` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /search`
-
-Search catalog
-
-- Operation ID: `searchCatalog`
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog` | `string` | `false` | - |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-| `query` | `string` | `true` | - |
-| `type` | `string` | `false` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
 

@@ -80,14 +80,14 @@ func TestHTTP_ColumnMaskCRUD(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"unbind_analyst", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings?principal_id=%s&principal_type=user",
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings/user/%s",
 				env.Server.URL, maskID, analyst.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"unbind_researcher", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings?principal_id=%s&principal_type=user",
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings/user/%s",
 				env.Server.URL, maskID, researcher.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)

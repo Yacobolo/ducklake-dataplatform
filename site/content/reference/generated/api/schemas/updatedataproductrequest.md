@@ -3,7 +3,6 @@
 # Schema: `UpdateDataProductRequest`
 
 - Type: `object`
-- Required fields: `contact_channel`, `domain_name`, `name`, `steward_principal`, `team_name`
 
 ## Properties
 
@@ -12,15 +11,15 @@
 | `access_request_path` | `string` | `false` | - |
 | `business_definitions` | `object` | `false` | - |
 | `consumer_audience` | `string` | `false` | - |
-| `contact_channel` | `string` | `true` | - |
+| `contact_channel` | `string` | `false` | - |
 | `contract` | `ProductContract` | `false` | - |
 | `description` | `string` | `false` | - |
 | `docs_url` | `string` | `false` | - |
-| `domain_name` | `string` | `true` | - |
-| `name` | `string` | `true` | - |
+| `domain_name` | `string` | `false` | - |
+| `name` | `string` | `false` | - |
 | `publication_intent` | `string` | `false` | - |
 | `slo` | `ProductSLO` | `false` | - |
-| `steward_principal` | `string` | `true` | - |
-| `team_name` | `string` | `true` | - |
+| `steward_principal` | `string` | `false` | - |
+| `team_name` | `string` | `false` | - |
 | `visibility` | `string` | `false` | - |
 

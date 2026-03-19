@@ -9,5 +9,4 @@
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `replacement_slug` | `string` | `false` | - |
-| `version` | `integer` | `false` | - |
 

@@ -2,13 +2,15 @@
 
 # Catalogs Endpoints
 
-Catalog, schema, table, view, volume, and ingestion management APIs.
+Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs.
 
 ## Resources
 
-- [Catalogs](./catalogs) (11 operations)
+- [Catalogs](./catalogs) (5 operations)
 - [Schemas](./schemas) (5 operations)
-- [Tables](./tables) (11 operations)
+- [Tables](./tables) (12 operations)
 - [Views](./views) (5 operations)
 - [Volumes](./volumes) (5 operations)
+- [Catalog Registrations](./catalog-registrations) (5 operations)
+- [{catalogname}:set Default](./{catalogname}:set-default) (1 operations)
 

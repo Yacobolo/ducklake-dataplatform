@@ -15,7 +15,8 @@ type productService interface {
 	CreateDomain(ctx context.Context, req domain.CreateDomainRequest) (*domain.Domain, error)
 	UpdateDomain(ctx context.Context, name string, req domain.UpdateDomainRequest) (*domain.Domain, error)
 	DeleteDomain(ctx context.Context, name string) error
-	ListTeams(ctx context.Context, page domain.PageRequest) ([]domain.Team, int64, error)
+	ListTeams(ctx context.Context, page domain.PageRequest, domainName *string) ([]domain.Team, int64, error)
+	GetTeam(ctx context.Context, domainName, teamName string) (*domain.Team, error)
 	CreateTeam(ctx context.Context, req domain.CreateTeamRequest) (*domain.Team, error)
 	UpdateTeam(ctx context.Context, domainName, teamName string, req domain.UpdateTeamRequest) (*domain.Team, error)
 	DeleteTeam(ctx context.Context, domainName, teamName string) error
@@ -196,7 +197,7 @@ func (h *APIHandler) ListProductTeams(ctx context.Context, req GenListProductTea
 	}
 
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	items, total, err := h.products.ListTeams(ctx, page)
+	items, total, err := h.products.ListTeams(ctx, page, req.Params.DomainName)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListProductTeamsResponse]("listProductTeams", err, domainErrorResponder[GenListProductTeamsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListProductTeamsResponse {
@@ -226,13 +227,13 @@ func (h *APIHandler) CreateProductTeam(ctx context.Context, req GenCreateProduct
 	if req.Body == nil {
 		return CreateProductTeam400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
 	}
-	if req.Body.DomainName == "" {
+	if req.DomainName == "" {
 		return CreateProductTeam400JSONResponse{badRequestErrorResponse(domain.ErrValidation("domain_name is required"))}, nil
 	}
 	if req.Body.Name == "" {
 		return CreateProductTeam400JSONResponse{badRequestErrorResponse(domain.ErrValidation("name is required"))}, nil
 	}
-	domainItem, err := h.products.GetDomain(ctx, req.Body.DomainName)
+	domainItem, err := h.products.GetDomain(ctx, req.DomainName)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenCreateProductTeamResponse]("createProductTeam", err, domainErrorResponder[GenCreateProductTeamResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenCreateProductTeamResponse {
@@ -277,6 +278,31 @@ func (h *APIHandler) CreateProductTeam(ctx context.Context, req GenCreateProduct
 	return CreateProductTeam201JSONResponse{
 		Body:    productTeamToAPI(*item),
 		Headers: CreateProductTeam201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) GetProductTeam(ctx context.Context, req GenGetProductTeamRequest) (GenGetProductTeamResponse, error) {
+	item, err := h.products.GetTeam(ctx, req.DomainName, req.TeamName)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetProductTeamResponse]("getProductTeam", err, domainErrorResponder[GenGetProductTeamResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenGetProductTeamResponse {
+				return GetProductTeam400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetProductTeamResponse {
+				return GetProductTeam403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetProductTeamResponse {
+				return GetProductTeam404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	return GetProductTeam200JSONResponse{
+		Body:    productTeamToAPI(*item),
+		Headers: GetProductTeam200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -623,11 +649,7 @@ func (h *APIHandler) DeleteDataProductVersion(ctx context.Context, req GenDelete
 }
 
 func (h *APIHandler) PublishDataProductVersion(ctx context.Context, req GenPublishDataProductVersionRequest) (GenPublishDataProductVersionResponse, error) {
-	version := 1
-	if req.Body != nil && req.Body.Version != nil {
-		version = int(*req.Body.Version)
-	}
-	item, err := h.products.PublishVersion(ctx, req.ProductSlug, version)
+	item, err := h.products.PublishVersion(ctx, req.ProductSlug, int(req.Version))
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenPublishDataProductVersionResponse]("publishDataProductVersion", err, domainErrorResponder[GenPublishDataProductVersionResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenPublishDataProductVersionResponse {
@@ -654,15 +676,11 @@ func (h *APIHandler) PublishDataProductVersion(ctx context.Context, req GenPubli
 }
 
 func (h *APIHandler) DeprecateDataProductVersion(ctx context.Context, req GenDeprecateDataProductVersionRequest) (GenDeprecateDataProductVersionResponse, error) {
-	version := 1
 	var replacement *string
 	if req.Body != nil {
-		if req.Body.Version != nil {
-			version = int(*req.Body.Version)
-		}
 		replacement = req.Body.ReplacementSlug
 	}
-	item, err := h.products.DeprecateVersion(ctx, req.ProductSlug, version, replacement)
+	item, err := h.products.DeprecateVersion(ctx, req.ProductSlug, int(req.Version), replacement)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenDeprecateDataProductVersionResponse]("deprecateDataProductVersion", err, domainErrorResponder[GenDeprecateDataProductVersionResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeprecateDataProductVersionResponse {
@@ -689,11 +707,7 @@ func (h *APIHandler) DeprecateDataProductVersion(ctx context.Context, req GenDep
 }
 
 func (h *APIHandler) RetireDataProductVersion(ctx context.Context, req GenRetireDataProductVersionRequest) (GenRetireDataProductVersionResponse, error) {
-	version := 1
-	if req.Body != nil && req.Body.Version != nil {
-		version = int(*req.Body.Version)
-	}
-	item, err := h.products.RetireVersion(ctx, req.ProductSlug, version)
+	item, err := h.products.RetireVersion(ctx, req.ProductSlug, int(req.Version))
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenRetireDataProductVersionResponse]("retireDataProductVersion", err, domainErrorResponder[GenRetireDataProductVersionResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenRetireDataProductVersionResponse {

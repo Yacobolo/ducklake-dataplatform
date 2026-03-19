@@ -23,7 +23,7 @@ func TestHTTP_SearchCatalog(t *testing.T) {
 	steps := []step{
 		{"search_table", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/search?query=titanic",
+				env.Server.URL+"/v1/catalogs:search?query=titanic",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -46,7 +46,7 @@ func TestHTTP_SearchCatalog(t *testing.T) {
 
 		{"search_column", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/search?query=Survived",
+				env.Server.URL+"/v1/catalogs:search?query=Survived",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -68,7 +68,7 @@ func TestHTTP_SearchCatalog(t *testing.T) {
 
 		{"search_type_filter", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/search?query=main&type=schema",
+				env.Server.URL+"/v1/catalogs:search?query=main&type=schema",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -84,7 +84,7 @@ func TestHTTP_SearchCatalog(t *testing.T) {
 
 		{"search_no_results", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/search?query=zzzznonexistent",
+				env.Server.URL+"/v1/catalogs:search?query=zzzznonexistent",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -97,7 +97,7 @@ func TestHTTP_SearchCatalog(t *testing.T) {
 		{"search_pagination", func(t *testing.T) {
 			// "a" matches many columns (PassengerId, Age, Parch, Fare, Cabin, Embarked, Name, etc.)
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/search?query=a&max_results=2",
+				env.Server.URL+"/v1/catalogs:search?query=a&max_results=2",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -138,7 +138,7 @@ func TestHTTP_SearchByComment(t *testing.T) {
 
 		{"search_by_comment", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/search?query=survival",
+				env.Server.URL+"/v1/catalogs:search?query=survival",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -206,7 +206,7 @@ func TestHTTP_SearchByTag(t *testing.T) {
 
 		{"search_by_tag", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/search?query=maritime",
+				env.Server.URL+"/v1/catalogs:search?query=maritime",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -242,7 +242,7 @@ func TestHTTP_SearchAnyUserCanSearch(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
 	resp := doRequest(t, "GET",
-		env.Server.URL+"/v1/search?query=titanic",
+		env.Server.URL+"/v1/catalogs:search?query=titanic",
 		env.Keys.Analyst, nil)
 	require.Equal(t, 200, resp.StatusCode)
 

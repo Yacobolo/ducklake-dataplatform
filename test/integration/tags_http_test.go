@@ -124,7 +124,7 @@ func TestHTTP_TagCRUD(t *testing.T) {
 
 		{"unassign_tag", func(t *testing.T) {
 			resp := doRequest(t, "DELETE",
-				fmt.Sprintf("%s/v1/tag-assignments/%s", env.Server.URL, assignmentID),
+				fmt.Sprintf("%s/v1/tags/%s/assignments/%s", env.Server.URL, tagID, assignmentID),
 				env.Keys.Admin, nil)
 			defer resp.Body.Close() //nolint:errcheck
 			require.Equal(t, 204, resp.StatusCode)

@@ -79,7 +79,7 @@ Get data product
 | `429` | Client error |
 | `500` | Server error |
 
-## `PUT /data-products/{productSlug}`
+## `PATCH /data-products/{productSlug}`
 
 Update data product
 

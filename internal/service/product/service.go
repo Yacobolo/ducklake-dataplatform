@@ -155,11 +155,48 @@ func (s *Service) DeleteDomain(ctx context.Context, name string) error {
 }
 
 // ListTeams lists normalized owner teams.
-func (s *Service) ListTeams(ctx context.Context, page domain.PageRequest) ([]domain.Team, int64, error) {
+func (s *Service) ListTeams(ctx context.Context, page domain.PageRequest, domainName *string) ([]domain.Team, int64, error) {
 	if s == nil || s.teams == nil {
 		return []domain.Team{}, 0, nil
 	}
-	return s.teams.List(ctx, page)
+	items, total, err := s.teams.List(ctx, page)
+	if err != nil {
+		return nil, 0, err
+	}
+	if domainName == nil || strings.TrimSpace(*domainName) == "" || s.domains == nil {
+		return items, total, nil
+	}
+
+	domainItem, err := s.domains.GetByName(ctx, strings.TrimSpace(*domainName))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	filtered := make([]domain.Team, 0, len(items))
+	for _, item := range items {
+		if item.DomainID == domainItem.ID {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered, int64(len(filtered)), nil
+}
+
+// GetTeam returns a normalized owner team by domain and name.
+func (s *Service) GetTeam(ctx context.Context, domainName, teamName string) (*domain.Team, error) {
+	if strings.TrimSpace(domainName) == "" {
+		return nil, domain.ErrValidation("domain_name is required")
+	}
+	if strings.TrimSpace(teamName) == "" {
+		return nil, domain.ErrValidation("team name is required")
+	}
+	if s == nil || s.teams == nil || s.domains == nil {
+		return nil, domain.ErrNotImplemented("team lookup is not configured")
+	}
+	domainItem, err := s.domains.GetByName(ctx, strings.TrimSpace(domainName))
+	if err != nil {
+		return nil, err
+	}
+	return s.teams.GetByDomainAndName(ctx, domainItem.ID, strings.TrimSpace(teamName))
 }
 
 // CreateTeam creates a normalized owner team.
