@@ -16,7 +16,7 @@ type Handler struct{ deps *core.Dependencies }
 func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
 func (h *Handler) SemanticHome(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, semanticHomePage(core.PrincipalFromContext(r.Context())))
+	http.Redirect(w, r, "/ui/semantic/models", http.StatusSeeOther)
 }
 
 func (h *Handler) SemanticModelsList(w http.ResponseWriter, r *http.Request) {

@@ -327,13 +327,13 @@ func catalogTabLabel(tab string) string {
 func catalogTabsForType(mode string) []string {
 	switch mode {
 	case "catalog":
-		return []string{"overview", "details", "history", "permissions", "policies", "workspaces"}
+		return []string{"overview", "details", "history"}
 	case "schema":
-		return []string{"overview", "details", "history", "permissions", "policies"}
+		return []string{"overview", "details", "history"}
 	case "table":
-		return []string{"overview", "sample-data", "details", "permissions", "policies", "history", "lineage", "insights", "quality"}
+		return []string{"overview", "details", "history"}
 	case "view":
-		return []string{"overview", "details", "permissions", "policies", "history", "lineage", "insights"}
+		return []string{"overview", "details"}
 	default:
 		return []string{"overview"}
 	}

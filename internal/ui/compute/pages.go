@@ -27,15 +27,6 @@ type computeAssignmentRowData struct {
 	FallbackLocal bool
 }
 
-func computeHomePage(principal domain.ContextPrincipal) Node {
-	return core.AppPage("Compute", "compute", principal,
-		computeSectionNav(""),
-		Div(Class("grid gap-3 md:grid-cols-2 xl:grid-cols-3"),
-			computeCard("Endpoints", "Create compute endpoints, manage assignments, and inspect remote health.", "/ui/compute/endpoints"),
-		),
-	)
-}
-
 func computeEndpointsListPage(principal domain.ContextPrincipal, rows []computeEndpointRowData, page domain.PageRequest, total int64) Node {
 	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No compute endpoints found.")))
 	if len(rows) > 0 {
@@ -56,8 +47,9 @@ func computeEndpointsListPage(principal domain.ContextPrincipal, rows []computeE
 	}
 	return core.AppPage("Compute: Endpoints", "compute", principal,
 		computeSectionNav("endpoints"),
-		sectionHeader("Compute endpoints", "Create compute endpoints and manage assignments.", "/ui/compute/endpoints/new", "New endpoint"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
+		core.PageHeader("Operate", "Compute endpoints", "Create compute endpoints, inspect remote health, and route principals onto the right execution plane.", core.PrimaryLink("/ui/compute/endpoints/new", "", Text("New endpoint"))),
+		core.SectionSurface(
+			core.SectionHeader("Endpoint inventory", "Use the list below as the operational starting point for health checks, assignments, and endpoint-level edits."),
 			table,
 			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" endpoints. Total: "+strconv.FormatInt(total, 10))),
 		),
@@ -86,34 +78,53 @@ func computeEndpointDetailPage(principal domain.ContextPrincipal, item *domain.C
 
 	return core.AppPage("Compute Endpoint: "+item.Name, "compute", principal,
 		computeSectionNav("endpoints"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text(item.Name)),
-			P(Class("m-0 text-sm"), Strong(Text("Type: ")), Text(item.Type)),
-			P(Class("m-0 text-sm"), Strong(Text("Status: ")), Text(item.Status)),
-			P(Class("m-0 text-sm"), Strong(Text("URL: ")), Text(item.URL)),
-			P(Class("m-0 text-sm"), Strong(Text("Health: ")), Text(healthText)),
-			P(Class("m-0 text-sm"), Strong(Text("Owner: ")), Text(item.Owner)),
-			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
-				core.SecondaryLink("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/edit", "", Text("Edit")),
-				Form(Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/delete"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+		core.DetailShell(
+			core.DetailHero(
+				core.DetailHeroCopy(
+					core.Kicker("Endpoint summary"),
+					core.DetailTitle(item.Name),
+					core.DetailDescription("Inspect endpoint health first, then manage the principal assignment rules that control where compute runs."),
+					core.BadgeRow(
+						core.Badge(item.Type, "accent"),
+						core.Badge(item.Status, "success"),
+					),
+				),
+				core.DetailHeroMeta(
+					core.MetaItem("Owner", item.Owner),
+					core.MetaItem("URL", item.URL),
+					core.MetaItem("Health", healthText),
+				),
 			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Create assignment")),
-			Form(Class("grid gap-3"), Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/assignments"),
-				csrfFieldProvider(),
-				Label(Text("Principal ID")),
-				core.InputControl("", Name("principal_id"), Required()),
-				Label(Text("Principal type")),
-				core.SelectControl("", Name("principal_type"), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
-				Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("is_default"), Class("h-4 w-4")), Span(Text("Default endpoint"))),
-				Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("fallback_local"), Class("h-4 w-4")), Span(Text("Fallback to local compute"))),
-				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create assignment"))),
+			core.DetailLayout(
+				core.DetailMain(
+					core.SectionSurface(
+						core.SectionHeader("Assignments", "The current routing table for principals using this endpoint."),
+						assignTable,
+					),
+				),
+				core.DetailRail(
+					core.SectionSurface(
+						core.SectionHeader("Actions", "Endpoint-level actions stay separate from assignment management."),
+						Div(Class("flex flex-wrap items-center gap-3 [&_form]:m-0 [&_form]:inline-flex"),
+							core.SecondaryLink("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/edit", "", Text("Edit endpoint")),
+							Form(Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/delete"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete endpoint"))),
+						),
+					),
+					core.SectionSurface(
+						core.SectionHeader("Assign principal", "Add a default or fallback routing rule for a user or group."),
+						Form(Class("grid gap-3"), Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/assignments"),
+							csrfFieldProvider(),
+							Label(Text("Principal ID")),
+							core.InputControl("", Name("principal_id"), Required()),
+							Label(Text("Principal type")),
+							core.SelectControl("", Name("principal_type"), Option(Value("user"), Text("user")), Option(Value("group"), Text("group"))),
+							Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("is_default"), Class("h-4 w-4")), Span(Text("Default endpoint"))),
+							Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("fallback_local"), Class("h-4 w-4")), Span(Text("Fallback to local compute"))),
+							Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create assignment"))),
+						),
+					),
+				),
 			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Assignments")),
-			assignTable,
 		),
 	)
 }
@@ -131,7 +142,8 @@ func computeEndpointFormPage(principal domain.ContextPrincipal, title, action st
 	}
 	return core.AppPage(title, "compute", principal,
 		computeSectionNav("endpoints"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
+		core.SectionSurface(
+			core.SectionHeader(title, "Create or update the endpoint metadata and runtime connection details."),
 			Form(Class("grid gap-3"), Method("post"), Action(action),
 				csrfFieldProvider(),
 				Label(Text("Name")),
@@ -155,23 +167,13 @@ func computeEndpointFormPage(principal domain.ContextPrincipal, title, action st
 }
 
 func computeSectionNav(active string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), Div(Class("flex flex-wrap gap-2"), navButton("Endpoints", "/ui/compute/endpoints", active == "endpoints")))
-}
-
-func navButton(label, href string, active bool) Node {
-	if active {
-		return core.PrimaryLink(href, "", Text(label))
-	}
-	return core.SecondaryLink(href, "", Text(label))
+	return core.SectionTabs([]core.SectionTab{
+		{Label: "Endpoints", Href: "/ui/compute/endpoints", Active: active == "endpoints"},
+	})
 }
 
 func sectionHeader(title, copy, href, action string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		Div(Class("flex flex-wrap items-start justify-between gap-3"),
-			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(copy))),
-			core.PrimaryLink(href, "", Text(action)),
-		),
-	)
+	return core.PageHeader("Operate", title, copy, core.PrimaryLink(href, "", Text(action)))
 }
 
 func computeCard(title, copy, href string) Node {

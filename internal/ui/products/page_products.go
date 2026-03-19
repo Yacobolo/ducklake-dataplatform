@@ -713,7 +713,7 @@ func assetShowcaseDescriptionClass() string {
 func assetSectionHeadClass() string { return "flex flex-wrap items-start justify-between gap-2" }
 func assetSectionClass() string     { return "flex flex-col gap-4" }
 func assetSectionCardClass() string {
-	return "flex flex-col gap-4 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"
+	return "flex flex-col gap-4 border-t border-[var(--borderColor-default)] pt-4 first:border-t-0 first:pt-0"
 }
 func sectionTitleClass() string { return "m-0 text-lg font-semibold text-[var(--fgColor-default)]" }
 func sectionCopyClass() string  { return "m-0 text-sm text-[var(--fgColor-muted)]" }

@@ -466,7 +466,10 @@ func sectionHeader(title, copy, href, action string) Node {
 	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 		Div(Class("flex flex-wrap items-start justify-between gap-3"),
 			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(copy))),
-			core.PrimaryLink(href, "", Text(action)),
+			Div(Class("flex flex-wrap items-center gap-3"),
+				core.SecondaryLink("/ui/macros", "", Text("Open macros")),
+				core.PrimaryLink(href, "", Text(action)),
+			),
 		),
 	)
 }

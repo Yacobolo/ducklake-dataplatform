@@ -105,8 +105,9 @@ func governanceSearchPage(principal domain.ContextPrincipal, queryText, objectTy
 
 	return core.AppPage("Governance: Search", "governance", principal,
 		governanceSectionNav("search"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text("Search catalog metadata")),
+		core.PageHeader("Operate", "Governance search", "Search across catalog metadata, then pivot into the deeper governance workspaces only when you need assignment, lineage, or policy detail."),
+		core.SectionSurface(
+			core.SectionHeader("Search catalog metadata", "Use broad search as the default governance starting point."),
 			Form(Class("grid gap-3 md:grid-cols-3"), Method("get"), Action("/ui/governance/search"),
 				Div(Label(Text("Query")), core.InputControl("", Name("q"), Value(queryText))),
 				Div(Label(Text("Object type")), core.InputControl("", Name("object_type"), Value(objectType))),
@@ -114,7 +115,10 @@ func governanceSearchPage(principal domain.ContextPrincipal, queryText, objectTy
 				Div(Class("md:col-span-3"), core.PrimaryButton("", Type("submit"), Text("Search"))),
 			),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), resultsNode),
+		core.SectionSurface(
+			core.SectionHeader("Results", "Search results stay separate from authoring actions so the page reads as an inspection workspace."),
+			resultsNode,
+		),
 	)
 }
 
@@ -140,44 +144,47 @@ func governanceTagsPage(principal domain.ContextPrincipal, rows []governanceTagR
 
 	return core.AppPage("Governance: Tags", "governance", principal,
 		governanceSectionNav("tags"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text("Create tag")),
-			Form(Class("grid gap-3"), Method("post"), Action("/ui/governance/tags"),
-				csrfFieldProvider(),
-				Label(Text("Key")),
-				core.InputControl("", Name("key"), Required()),
-				Label(Text("Value")),
-				core.InputControl("", Name("value")),
-				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create tag"))),
+		core.PageHeader("Operate", "Governance tags", "Separate tag authoring from inspection so it is obvious whether you are defining governance metadata or reviewing the current tag catalog."),
+		Div(Class("grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.9fr)]"),
+			core.SectionSurface(
+				core.SectionHeader("Tag catalog", "Review current tag definitions before creating or updating assignments."),
+				table,
+				P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" tags. Total: "+strconv.FormatInt(total, 10))),
 			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text("Assign tag")),
-			Form(Class("grid gap-3"), Method("post"), Action("/ui/governance/tag-assignments"),
-				csrfFieldProvider(),
-				Label(Text("Tag ID")),
-				core.InputControl("", Name("tag_id"), Required()),
-				Label(Text("Securable type")),
-				core.InputControl("", Name("securable_type"), Required()),
-				Label(Text("Securable ID")),
-				core.InputControl("", Name("securable_id"), Required()),
-				Label(Text("Column name")),
-				core.InputControl("", Name("column_name")),
-				Div(Class("mt-2"), core.SecondaryButton("", Type("submit"), Text("Assign tag"))),
+			Div(Class("grid gap-4"),
+				core.SectionSurface(
+					core.SectionHeader("Create tag", "Define reusable governance metadata."),
+					Form(Class("grid gap-3"), Method("post"), Action("/ui/governance/tags"),
+						csrfFieldProvider(),
+						Label(Text("Key")),
+						core.InputControl("", Name("key"), Required()),
+						Label(Text("Value")),
+						core.InputControl("", Name("value")),
+						Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create tag"))),
+					),
+				),
+				core.SectionSurface(
+					core.SectionHeader("Manage assignments", "Attach a tag to a securable or remove an existing assignment."),
+					Form(Class("grid gap-3"), Method("post"), Action("/ui/governance/tag-assignments"),
+						csrfFieldProvider(),
+						Label(Text("Tag ID")),
+						core.InputControl("", Name("tag_id"), Required()),
+						Label(Text("Securable type")),
+						core.InputControl("", Name("securable_type"), Required()),
+						Label(Text("Securable ID")),
+						core.InputControl("", Name("securable_id"), Required()),
+						Label(Text("Column name")),
+						core.InputControl("", Name("column_name")),
+						Div(Class("mt-2"), core.SecondaryButton("", Type("submit"), Text("Assign tag"))),
+					),
+					Form(Class("grid gap-3 border-t border-[var(--borderColor-default)] pt-4"), Method("post"), Action("/ui/governance/tag-assignments/delete"),
+						csrfFieldProvider(),
+						Label(Text("Assignment ID")),
+						core.InputControl("", Name("assignment_id"), Required()),
+						Div(Class("mt-2"), core.DangerButton("", Type("submit"), Text("Remove assignment"))),
+					),
+				),
 			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text("Remove tag assignment")),
-			Form(Class("grid gap-3"), Method("post"), Action("/ui/governance/tag-assignments/delete"),
-				csrfFieldProvider(),
-				Label(Text("Assignment ID")),
-				core.InputControl("", Name("assignment_id"), Required()),
-				Div(Class("mt-2"), core.DangerButton("", Type("submit"), Text("Remove assignment"))),
-			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" tags. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
@@ -385,23 +392,14 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 }
 
 func governanceSectionNav(active string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		Div(Class("flex flex-wrap gap-2"),
-			navButton("Search", "/ui/governance/search", active == "search"),
-			navButton("Tags", "/ui/governance/tags", active == "tags"),
-			navButton("Lineage", "/ui/governance/lineage", active == "lineage"),
-			navButton("Audit Logs", "/ui/governance/audit-logs", active == "audit"),
-			navButton("Query History", "/ui/governance/query-history", active == "history"),
-			navButton("Manifest", "/ui/governance/manifest", active == "manifest"),
-		),
-	)
-}
-
-func navButton(label, href string, active bool) Node {
-	if active {
-		return core.PrimaryLink(href, "", Text(label))
-	}
-	return core.SecondaryLink(href, "", Text(label))
+	return core.SectionTabs([]core.SectionTab{
+		{Label: "Search", Href: "/ui/governance/search", Active: active == "search"},
+		{Label: "Tags", Href: "/ui/governance/tags", Active: active == "tags"},
+		{Label: "Lineage", Href: "/ui/governance/lineage", Active: active == "lineage"},
+		{Label: "Audit Logs", Href: "/ui/governance/audit-logs", Active: active == "audit"},
+		{Label: "Query History", Href: "/ui/governance/query-history", Active: active == "history"},
+		{Label: "Manifest", Href: "/ui/governance/manifest", Active: active == "manifest"},
+	})
 }
 
 func governanceCard(title, copy, href string) Node {

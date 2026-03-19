@@ -16,7 +16,7 @@ type Handler struct{ deps *core.Dependencies }
 func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
 func (h *Handler) ComputeHome(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, computeHomePage(core.PrincipalFromContext(r.Context())))
+	http.Redirect(w, r, "/ui/compute/endpoints", http.StatusSeeOther)
 }
 
 func (h *Handler) ComputeEndpointsList(w http.ResponseWriter, r *http.Request) {

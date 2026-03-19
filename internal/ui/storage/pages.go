@@ -321,20 +321,11 @@ func storageFormPage(principal domain.ContextPrincipal, title, action string, cs
 }
 
 func storageSectionNav(active string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		Div(Class("flex flex-wrap gap-2"),
-			navButton("Credentials", "/ui/storage/credentials", active == "credentials"),
-			navButton("Locations", "/ui/storage/locations", active == "locations"),
-			navButton("Volumes", "/ui/storage/volumes", active == "volumes"),
-		),
-	)
-}
-
-func navButton(label, href string, active bool) Node {
-	if active {
-		return core.PrimaryLink(href, "", Text(label))
-	}
-	return core.SecondaryLink(href, "", Text(label))
+	return core.SectionTabs([]core.SectionTab{
+		{Label: "Credentials", Href: "/ui/storage/credentials", Active: active == "credentials"},
+		{Label: "Locations", Href: "/ui/storage/locations", Active: active == "locations"},
+		{Label: "Volumes", Href: "/ui/storage/volumes", Active: active == "volumes"},
+	})
 }
 
 func sectionHeader(title, copy, href, action string) Node {
