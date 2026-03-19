@@ -1,0 +1,8 @@
+{{ define "directive_callout" -}}
+<div class="rounded-2xl border-l-4 border-l-[var(--fgColor-accent)] bg-[color:color-mix(in_srgb,var(--fgColor-accent)_7%,var(--bgColor-inset))] p-4">
+  {{ if .Title }}
+    <div class="mb-2 text-sm font-semibold">{{ .Title }}</div>
+  {{ end }}
+  {{ .BodyHTML }}
+</div>
+{{- end }}

@@ -1,0 +1,10 @@
+{{ define "directive_card" -}}
+<div class="site-card">
+  {{ if .Href }}<a class="no-underline" href="{{ .Href }}">{{ end }}
+  {{ if .Title }}
+    <div class="text-lg font-semibold">{{ .Title }}</div>
+  {{ end }}
+  {{ .BodyHTML }}
+  {{ if .Href }}</a>{{ end }}
+</div>
+{{- end }}

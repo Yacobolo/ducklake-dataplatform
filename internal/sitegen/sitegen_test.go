@@ -24,13 +24,99 @@ Run your first secure query.
 :::
 `)
 
-	htmlOut, mirrorOut, err := transformDirectives(source)
+	templates := loadTestTemplates(t)
+
+	htmlOut, mirrorOut, err := transformDirectives(source, newDirectiveRenderer(templates))
 	require.NoError(t, err)
 	assert.Contains(t, htmlOut, `border-l-[var(--fgColor-accent)]`)
 	assert.Contains(t, htmlOut, `class="site-card-grid"`)
 	assert.Contains(t, htmlOut, `href="/start-here/quickstart/"`)
 	assert.Contains(t, mirrorOut, "## Start here")
 	assert.Contains(t, mirrorOut, "## Quickstart")
+}
+
+func TestRenderHTMLPage_HomeUsesRealTemplates(t *testing.T) {
+	templates := loadTestTemplates(t)
+	outDir := t.TempDir()
+
+	home := homeFrontMatter{
+		Hero: homeHero{
+			Eyebrow:       "Open source data platform",
+			Headline:      "Governed Data Infrastructure",
+			Tagline:       "Query, build, and ship trusted data products on DuckDB and DuckLake.",
+			SnapshotTitle: "What makes Duck different",
+			SnapshotNote:  "Policy stays in the control plane.",
+			Actions: []homeHeroLink{
+				{Theme: "brand", Text: "Quickstart", Link: "/docs/"},
+			},
+			Proofs: []homeHeroProof{
+				{Icon: "shield", Text: "RBAC, row filters, masks"},
+			},
+			Snapshot: []homeHeroSnapshot{
+				{Icon: "database", Label: "Query layer", Value: "Governed DuckDB execution with policy in path."},
+			},
+		},
+		Pillars: homeSection{
+			Eyebrow: "Core features",
+			Items: []homeFeature{
+				{Label: "Dashboards", Title: "Build dashboards on governed sources.", Icon: "layout", Details: "Serve dashboards from SQL.", Link: "/docs/"},
+			},
+		},
+	}
+
+	p := page{
+		RelPath:     "index.md",
+		URLPath:     "/",
+		Title:       "Duck Data Platform",
+		Description: home.Hero.Tagline,
+		Kind:        pageKindHome,
+		IsHome:      true,
+		Home:        home,
+	}
+	data := pageTemplateData{
+		Site:      siteConfig{Title: "Duck Data Platform"},
+		Page:      p,
+		MetaTitle: "Duck Data Platform",
+		Home:      home,
+		HomeView:  buildHomeView(home),
+	}
+
+	require.NoError(t, renderHTMLPage(templates, outDir, p, data))
+
+	body, err := os.ReadFile(filepath.Join(outDir, "index.html"))
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "Governed Data Infrastructure")
+	assert.Contains(t, string(body), "What makes Duck different")
+	assert.Contains(t, string(body), `text-[var(--fgColor-accent)]`)
+}
+
+func TestRenderHTMLPage_DocsUsesRealTemplates(t *testing.T) {
+	templates := loadTestTemplates(t)
+	outDir := t.TempDir()
+
+	p := page{
+		RelPath:     "start-here/quickstart.md",
+		URLPath:     "/docs/start-here/quickstart/",
+		Title:       "Quickstart",
+		Description: "Run your first secure query.",
+		Kind:        pageKindDocs,
+	}
+	data := pageTemplateData{
+		Site:        siteConfig{Title: "Duck Data Platform"},
+		Page:        p,
+		MetaTitle:   "Quickstart | Duck Data Platform",
+		BodyHTML:    `<p>Run your first secure query.</p>`,
+		Breadcrumbs: buildBreadcrumbs(p),
+	}
+
+	require.NoError(t, renderHTMLPage(templates, outDir, p, data))
+
+	body, err := os.ReadFile(filepath.Join(outDir, "docs", "start-here", "quickstart", "index.html"))
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "<h1>Quickstart</h1>")
+	assert.Contains(t, string(body), "Run your first secure query.")
+	assert.Contains(t, string(body), `data-site-sidebar`)
+	assert.Contains(t, string(body), `data-page-prose`)
 }
 
 func TestRouteForRelPath_CleanPaths(t *testing.T) {
@@ -169,25 +255,25 @@ func TestAPIEndpointNavNode_UsesSinglePageEntry(t *testing.T) {
 func TestBuildAutogenNavNodes_NestsGeneratedDirectories(t *testing.T) {
 	pages := []page{
 		{
-			Kind:     pageKindAPI,
-			Title:    "Auth Endpoints",
-			RelPath:  "reference/generated/api/endpoints/auth.md",
-			URLPath:  "/api-reference/endpoints/auth/",
-			Section:  "api-reference",
+			Kind:    pageKindAPI,
+			Title:   "Auth Endpoints",
+			RelPath: "reference/generated/api/endpoints/auth.md",
+			URLPath: "/api-reference/endpoints/auth/",
+			Section: "api-reference",
 		},
 		{
-			Kind:     pageKindAPI,
-			Title:    "Catalogs Endpoints",
-			RelPath:  "reference/generated/api/endpoints/catalogs/index.md",
-			URLPath:  "/api-reference/endpoints/catalogs/",
-			Section:  "api-reference",
+			Kind:    pageKindAPI,
+			Title:   "Catalogs Endpoints",
+			RelPath: "reference/generated/api/endpoints/catalogs/index.md",
+			URLPath: "/api-reference/endpoints/catalogs/",
+			Section: "api-reference",
 		},
 		{
-			Kind:     pageKindAPI,
-			Title:    "Schemas",
-			RelPath:  "reference/generated/api/endpoints/catalogs/schemas.md",
-			URLPath:  "/api-reference/endpoints/catalogs/schemas/",
-			Section:  "api-reference",
+			Kind:    pageKindAPI,
+			Title:   "Schemas",
+			RelPath: "reference/generated/api/endpoints/catalogs/schemas.md",
+			URLPath: "/api-reference/endpoints/catalogs/schemas/",
+			Section: "api-reference",
 		},
 	}
 
@@ -233,7 +319,7 @@ func TestEnhanceAPIHTML_AddsMethodDataAttribute(t *testing.T) {
 
 func TestDocsPages_InternalLinksResolveToKnownRoutes(t *testing.T) {
 	contentRoot := filepath.Join("..", "..", "site", "content")
-	pages, err := loadPages(contentRoot)
+	pages, err := loadPages(contentRoot, loadTestTemplates(t))
 	require.NoError(t, err)
 
 	validRoutes := make(map[string]struct{}, len(pages)*2)
@@ -305,4 +391,12 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func loadTestTemplates(t *testing.T) templateSet {
+	t.Helper()
+
+	templates, err := loadTemplates(filepath.Join("..", "..", "site", "templates"))
+	require.NoError(t, err)
+	return templates
 }
