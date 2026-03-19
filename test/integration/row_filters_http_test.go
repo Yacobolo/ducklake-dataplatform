@@ -67,7 +67,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"unbind", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/row-filters/%s/bindings?principal_id=%s&principal_type=user",
+			url := fmt.Sprintf("%s/v1/row-filters/%s/bindings/user/%s",
 				env.Server.URL, filterID, analyst.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)

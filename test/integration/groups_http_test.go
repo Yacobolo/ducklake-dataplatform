@@ -149,7 +149,7 @@ func TestHTTP_GroupMembership(t *testing.T) {
 			assert.Len(t, data, 2)
 		}},
 		{"remove_member", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/groups/%s/members?member_type=user&member_id=%s", env.Server.URL, groupID, memberIDs[0])
+			url := fmt.Sprintf("%s/v1/groups/%s/members/user/%s", env.Server.URL, groupID, memberIDs[0])
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()

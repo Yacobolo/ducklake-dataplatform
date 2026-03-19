@@ -492,7 +492,7 @@ func TestAdminGuard_ReadEndpointsOpen(t *testing.T) {
 	}{
 		{"list_principals_admin_only", "/v1/principals", 403},
 		{"list_groups_admin_only", "/v1/groups", 403},
-		{"list_audit_logs_admin_only", "/v1/audit-logs", 403},
+		{"list_audit_logs_admin_only", "/v1/audit-entries", 403},
 		{"list_tags", "/v1/tags", 200},
 	}
 

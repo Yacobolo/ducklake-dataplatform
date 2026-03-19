@@ -27,7 +27,7 @@ func TestFind_Search(t *testing.T) {
 	// Verify the search API was called
 	captured := rec.last()
 	assert.Equal(t, "GET", captured.Method)
-	assert.Contains(t, captured.Path, "/v1/search")
+	assert.Contains(t, captured.Path, "/v1/catalogs:search")
 	assert.Contains(t, captured.Query, "query=order")
 
 	// Verify JSON output is valid

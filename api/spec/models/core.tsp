@@ -481,11 +481,6 @@ model PaginatedColumnMaskBindings {
   next_page_token?: string;
 }
 
-model ManifestRequest {
-  table: string;
-  schema?: string;
-}
-
 model ManifestColumn {
   name: string;
   type: string;

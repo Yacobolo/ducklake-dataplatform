@@ -59,7 +59,7 @@ This is designed as the agent's "cat" for reading detailed metadata about any ob
 
 // describePlatform shows all registered catalogs.
 func describePlatform(client *apiruntime.Client, isJSON bool) error {
-	resp, err := client.Do("GET", "/catalogs", nil, nil)
+	resp, err := client.Do("GET", "/catalog-registrations", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -78,16 +78,21 @@ func describePlatform(client *apiruntime.Client, isJSON bool) error {
 	}
 
 	var data struct {
-		Data []map[string]interface{} `json:"data"`
+		Catalogs []map[string]interface{} `json:"catalogs"`
+		Data     []map[string]interface{} `json:"data"`
 	}
 	if err := json.Unmarshal(body, &data); err != nil {
 		return fmt.Errorf("parse response: %w", err)
 	}
+	catalogs := data.Catalogs
+	if len(catalogs) == 0 {
+		catalogs = data.Data
+	}
 
 	_, _ = fmt.Fprintln(os.Stdout, "PLATFORM OVERVIEW")
-	_, _ = fmt.Fprintf(os.Stdout, "catalogs: %d\n\n", len(data.Data))
+	_, _ = fmt.Fprintf(os.Stdout, "catalogs: %d\n\n", len(catalogs))
 	columns := []string{"name", "status", "is_default", "metastore_type"}
-	rows := apiruntime.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(data.Data)}, columns)
+	rows := apiruntime.ExtractRows(map[string]interface{}{"data": toInterfaceSlice(catalogs)}, columns)
 	apiruntime.PrintTable(os.Stdout, columns, rows)
 	return nil
 }
@@ -95,7 +100,7 @@ func describePlatform(client *apiruntime.Client, isJSON bool) error {
 // describeCatalog shows catalog info and its schemas.
 func describeCatalog(client *apiruntime.Client, catalog string, isJSON bool) error {
 	// Fetch catalog registration info
-	regResp, err := client.Do("GET", "/catalogs/"+url.PathEscape(catalog), nil, nil)
+	regResp, err := client.Do("GET", "/catalog-registrations/"+url.PathEscape(catalog), nil, nil)
 	if err != nil {
 		return err
 	}

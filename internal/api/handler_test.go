@@ -209,7 +209,7 @@ func TestAPI_ExecuteQuery_Admin(t *testing.T) {
 	defer srv.Close()
 
 	body := `{"sql": "SELECT count(*) FROM titanic"}`
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query", bytes.NewBufferString(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/queries:execute", bytes.NewBufferString(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -235,7 +235,7 @@ func TestAPI_ExecuteQuery_NoAccess(t *testing.T) {
 	defer srv.Close()
 
 	body := `{"sql": "SELECT * FROM titanic LIMIT 5"}`
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query", bytes.NewBufferString(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/queries:execute", bytes.NewBufferString(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -294,7 +294,7 @@ func TestAPI_AuditLogs(t *testing.T) {
 
 	// Execute a query first to generate audit entries
 	body := `{"sql": "SELECT 1"}`
-	postReq, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query", bytes.NewBufferString(body))
+	postReq, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/queries:execute", bytes.NewBufferString(body))
 	require.NoError(t, err)
 	postReq.Header.Set("Content-Type", "application/json")
 	postResp, err := http.DefaultClient.Do(postReq)
@@ -302,7 +302,7 @@ func TestAPI_AuditLogs(t *testing.T) {
 	_ = postResp.Body.Close()
 
 	// List audit logs
-	getReq, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/audit-logs", nil)
+	getReq, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/audit-entries", nil)
 	require.NoError(t, err)
 	resp, err := http.DefaultClient.Do(getReq)
 	if err != nil {
@@ -1487,7 +1487,7 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 		require.Equal(t, http.StatusNoContent, resp2.StatusCode)
 
 		// Unbind.
-		unbindURL := fmt.Sprintf("%s/row-filters/%s/bindings?principal_id=%s&principal_type=user", srv.URL, filterID, p.Id)
+		unbindURL := fmt.Sprintf("%s/row-filters/%s/bindings/user/%s", srv.URL, filterID, p.Id)
 		resp3 := doRequest(t, http.MethodDelete, unbindURL, "")
 		defer resp3.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusNoContent, resp3.StatusCode)

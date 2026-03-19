@@ -337,8 +337,8 @@ func (h *APIHandler) CreateGroupMember(ctx context.Context, req GenCreateGroupMe
 func (h *APIHandler) DeleteGroupMember(ctx context.Context, req GenDeleteGroupMemberRequest) (GenDeleteGroupMemberResponse, error) {
 	if err := h.groups.RemoveMember(ctx, domain.RemoveGroupMemberRequest{
 		GroupID:    req.GroupId,
-		MemberType: string(req.Params.MemberType),
-		MemberID:   req.Params.MemberId,
+		MemberType: string(req.MemberType),
+		MemberID:   req.MemberId,
 	}); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenDeleteGroupMemberResponse]("deleteGroupMember", err, domainErrorResponder[GenDeleteGroupMemberResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenDeleteGroupMemberResponse {
@@ -572,8 +572,8 @@ func (h *APIHandler) ListRowFilterBindings(ctx context.Context, req GenListRowFi
 func (h *APIHandler) UnbindRowFilter(ctx context.Context, req GenUnbindRowFilterRequest) (GenUnbindRowFilterResponse, error) {
 	if err := h.rowFilters.Unbind(ctx, domain.BindRowFilterRequest{
 		RowFilterID:   req.RowFilterId,
-		PrincipalID:   req.Params.PrincipalId,
-		PrincipalType: string(req.Params.PrincipalType),
+		PrincipalID:   req.PrincipalId,
+		PrincipalType: string(req.PrincipalType),
 	}); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenUnbindRowFilterResponse]("unbindRowFilter", err, domainErrorResponder[GenUnbindRowFilterResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUnbindRowFilterResponse {
@@ -723,8 +723,8 @@ func (h *APIHandler) ListColumnMaskBindings(ctx context.Context, req GenListColu
 func (h *APIHandler) UnbindColumnMask(ctx context.Context, req GenUnbindColumnMaskRequest) (GenUnbindColumnMaskResponse, error) {
 	if err := h.columnMasks.Unbind(ctx, domain.BindColumnMaskRequest{
 		ColumnMaskID:  req.ColumnMaskId,
-		PrincipalID:   req.Params.PrincipalId,
-		PrincipalType: string(req.Params.PrincipalType),
+		PrincipalID:   req.PrincipalId,
+		PrincipalType: string(req.PrincipalType),
 	}); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenUnbindColumnMaskResponse]("unbindColumnMask", err, domainErrorResponder[GenUnbindColumnMaskResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenUnbindColumnMaskResponse {

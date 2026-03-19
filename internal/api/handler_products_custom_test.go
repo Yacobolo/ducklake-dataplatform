@@ -81,8 +81,7 @@ func TestProductRoutes_CreatePublishAndSubscribe(t *testing.T) {
 	require.Equal(t, http.StatusOK, versionRR.Code)
 	assert.Contains(t, versionRR.Body.String(), `"version":1`)
 
-	publishReq := httptest.NewRequest(http.MethodPatch, "/v1/data-products/daily-orders/publish", strings.NewReader(`{"version":1}`))
-	publishReq.Header.Set("Content-Type", "application/json")
+	publishReq := httptest.NewRequest(http.MethodPost, "/v1/data-products/daily-orders/versions/1:publish", nil)
 	publishRR := httptest.NewRecorder()
 	r.ServeHTTP(publishRR, publishReq)
 	require.Equal(t, http.StatusBadRequest, publishRR.Code)
@@ -136,8 +135,7 @@ func TestProductRoutes_CreatePublishAndSubscribe(t *testing.T) {
 	r.ServeHTTP(createVersionRR, createVersionReq)
 	require.Equal(t, http.StatusCreated, createVersionRR.Code)
 
-	publishReq = httptest.NewRequest(http.MethodPatch, "/v1/data-products/daily-orders/publish", strings.NewReader(`{"version":2}`))
-	publishReq.Header.Set("Content-Type", "application/json")
+	publishReq = httptest.NewRequest(http.MethodPost, "/v1/data-products/daily-orders/versions/2:publish", nil)
 	publishRR = httptest.NewRecorder()
 	r.ServeHTTP(publishRR, publishReq)
 	require.Equal(t, http.StatusOK, publishRR.Code)

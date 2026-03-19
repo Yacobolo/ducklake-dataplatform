@@ -141,13 +141,13 @@ func TestHandler_CreateManifest(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		body     GenCreateManifestJSONBody
+		request  GenCreateManifestRequest
 		svcFn    func(ctx context.Context, principalName, catalogName, schemaName, tableName string) (*query.ManifestResult, error)
 		assertFn func(t *testing.T, resp GenCreateManifestResponse, err error)
 	}{
 		{
 			name: "happy path returns 200",
-			body: GenCreateManifestJSONBody{Table: "users", Schema: queryTestStrPtr("main")},
+			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "main", TableName: "users"},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return &query.ManifestResult{
 					Table:       "users",
@@ -177,7 +177,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 		},
 		{
 			name: "not found returns 404",
-			body: GenCreateManifestJSONBody{Table: "nonexistent", Schema: queryTestStrPtr("main")},
+			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "main", TableName: "nonexistent"},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, domain.ErrNotFound("table not found")
 			},
@@ -191,7 +191,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 		},
 		{
 			name: "access denied returns 403",
-			body: GenCreateManifestJSONBody{Table: "secret", Schema: queryTestStrPtr("main")},
+			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "main", TableName: "secret"},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, domain.ErrAccessDenied("not allowed")
 			},
@@ -205,7 +205,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 		},
 		{
 			name: "validation error returns 400",
-			body: GenCreateManifestJSONBody{Table: "", Schema: queryTestStrPtr("main")},
+			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "main", TableName: ""},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, domain.ErrValidation("table name is required")
 			},
@@ -219,7 +219,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 		},
 		{
 			name: "internal error returns 500",
-			body: GenCreateManifestJSONBody{Table: "users", Schema: queryTestStrPtr("main")},
+			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "main", TableName: "users"},
 			svcFn: func(_ context.Context, _, _, _, _ string) (*query.ManifestResult, error) {
 				return nil, assert.AnError
 			},
@@ -232,15 +232,15 @@ func TestHandler_CreateManifest(t *testing.T) {
 			},
 		},
 		{
-			name: "qualified table string is passed through without parsing",
-			body: GenCreateManifestJSONBody{Table: "demo.titanic.passengers"},
+			name: "catalog and table path values are passed through",
+			request: GenCreateManifestRequest{CatalogName: "demo", SchemaName: "titanic", TableName: "passengers"},
 			svcFn: func(_ context.Context, _ string, catalogName, schemaName, tableName string) (*query.ManifestResult, error) {
-				if catalogName != "" || schemaName != "main" || tableName != "demo.titanic.passengers" {
+				if catalogName != "demo" || schemaName != "titanic" || tableName != "passengers" {
 					return nil, domain.ErrValidation("unexpected table reference")
 				}
 				return &query.ManifestResult{
-					Table:       "demo.titanic.passengers",
-					Schema:      "main",
+					Table:       "passengers",
+					Schema:      "titanic",
 					Columns:     []query.ManifestColumn{{Name: "id", Type: "INTEGER"}},
 					Files:       []string{"s3://bucket/data/file.parquet"},
 					RowFilters:  []string{},
@@ -262,8 +262,7 @@ func TestHandler_CreateManifest(t *testing.T) {
 			t.Parallel()
 			svc := &mockManifestService{getManifestFn: tt.svcFn}
 			handler := &APIHandler{manifest: svc}
-			body := tt.body
-			resp, err := handler.CreateManifest(queryTestCtx(), GenCreateManifestRequest{Body: &body})
+			resp, err := handler.CreateManifest(queryTestCtx(), tt.request)
 			tt.assertFn(t, resp, err)
 		})
 	}

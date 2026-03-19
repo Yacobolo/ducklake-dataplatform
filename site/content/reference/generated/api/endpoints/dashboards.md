@@ -2,6 +2,8 @@
 
 # Dashboards
 
+Dashboard and widget authoring plus resolved dashboard views.
+
 ## `GET /dashboards`
 
 List dashboards

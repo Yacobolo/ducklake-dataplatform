@@ -300,6 +300,32 @@ Create upload URL
 | `429` | Client error |
 | `500` | Server error |
 
+## `GET /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/manifest`
+
+Get table manifest
+
+- Operation ID: `createManifest`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalogName` | `string` | `true` | - |
+| `schemaName` | `string` | `true` | - |
+| `tableName` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile`
 
 Profile table

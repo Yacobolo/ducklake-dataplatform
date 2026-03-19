@@ -2,55 +2,61 @@ using TypeSpec.Http;
 
 namespace Duck;
 
-@route("/domains")
+@route("/product-domains")
 @get
 @tag("Products")
 @summary("List product domains")
 op listProductDomains(@query max_results?: int32, @query page_token?: string): Ok<PaginatedProductDomains> | StandardErrorResponses;
 
-@route("/domains")
+@route("/product-domains")
 @post
 @tag("Products")
 @summary("Create product domain")
 op createProductDomain(@body body: CreateProductDomainRequest): Created<ProductDomain> | MutatingErrorResponses | ConflictResponse;
 
-@route("/domains/{domainName}")
+@route("/product-domains/{domainName}")
 @get
 @tag("Products")
 @summary("Get product domain")
 op getProductDomain(domainName: string): Ok<ProductDomain> | LookupErrorResponses;
 
-@route("/domains/{domainName}")
-@put
+@route("/product-domains/{domainName}")
+@patch(#{ implicitOptionality: true })
 @tag("Products")
 @summary("Update product domain")
 op updateProductDomain(domainName: string, @body body: UpdateProductDomainRequest): Ok<ProductDomain> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/domains/{domainName}")
+@route("/product-domains/{domainName}")
 @delete
 @tag("Products")
 @summary("Delete product domain")
 op deleteProductDomain(domainName: string): NoContent | ResourceErrorResponses;
 
-@route("/teams")
+@route("/product-teams")
 @get
 @tag("Products")
 @summary("List product teams")
-op listProductTeams(@query max_results?: int32, @query page_token?: string): Ok<PaginatedProductTeams> | StandardErrorResponses;
+op listProductTeams(@query domain_name?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedProductTeams> | StandardErrorResponses;
 
-@route("/teams")
+@route("/product-domains/{domainName}/teams")
 @post
 @tag("Products")
 @summary("Create product team")
-op createProductTeam(@body body: CreateProductTeamRequest): Created<ProductTeam> | ValidationResourceErrorResponses;
+op createProductTeam(domainName: string, @body body: CreateProductTeamRequest): Created<ProductTeam> | ValidationResourceErrorResponses;
 
-@route("/teams/{domainName}/{teamName}")
-@put
+@route("/product-domains/{domainName}/teams/{teamName}")
+@get
+@tag("Products")
+@summary("Get product team")
+op getProductTeam(domainName: string, teamName: string): Ok<ProductTeam> | ResourceErrorResponses;
+
+@route("/product-domains/{domainName}/teams/{teamName}")
+@patch(#{ implicitOptionality: true })
 @tag("Products")
 @summary("Update product team")
 op updateProductTeam(domainName: string, teamName: string, @body body: UpdateProductTeamRequest): Ok<ProductTeam> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/teams/{domainName}/{teamName}")
+@route("/product-domains/{domainName}/teams/{teamName}")
 @delete
 @tag("Products")
 @summary("Delete product team")
@@ -96,7 +102,7 @@ op getProductPortfolioReport(): Ok<ProductPortfolioReport> | StandardErrorRespon
 op getDataProduct(productSlug: string): Ok<DataProductDetail> | LookupErrorResponses;
 
 @route("/data-products/{productSlug}")
-@put
+@patch(#{ implicitOptionality: true })
 @tag("Products")
 @summary("Update data product")
 op updateDataProduct(productSlug: string, @body body: UpdateDataProductRequest): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
@@ -131,23 +137,23 @@ op deleteDataProductVersion(productSlug: string, version: int32): NoContent | Re
 @summary("Create data product version")
 op createDataProductVersion(productSlug: string, @body body: CreateDataProductVersionRequest): Created<DataProductDetail> | ResourceErrorResponses | BadRequestResponse | ConflictResponse;
 
-@route("/data-products/{productSlug}/publish")
-@patch(#{implicitOptionality: true})
+@route("/data-products/{productSlug}/versions/{version}:publish")
+@post
 @tag("Products")
 @summary("Publish data product version")
-op publishDataProductVersion(productSlug: string, @body body?: ProductVersionActionRequest): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
+op publishDataProductVersion(productSlug: string, version: int32): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/data-products/{productSlug}/deprecate")
-@patch(#{implicitOptionality: true})
+@route("/data-products/{productSlug}/versions/{version}:deprecate")
+@post
 @tag("Products")
 @summary("Deprecate data product version")
-op deprecateDataProductVersion(productSlug: string, @body body?: DeprecateProductVersionRequest): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
+op deprecateDataProductVersion(productSlug: string, version: int32, @body body?: DeprecateProductVersionRequest): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/data-products/{productSlug}/retire")
-@patch(#{implicitOptionality: true})
+@route("/data-products/{productSlug}/versions/{version}:retire")
+@post
 @tag("Products")
 @summary("Retire data product version")
-op retireDataProductVersion(productSlug: string, @body body?: ProductVersionActionRequest): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
+op retireDataProductVersion(productSlug: string, version: int32): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
 
 @route("/data-products/{productSlug}/status")
 @get

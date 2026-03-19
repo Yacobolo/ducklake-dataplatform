@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -94,14 +93,6 @@ func bodyBool(ec execCapture, key string) bool {
 	return v
 }
 
-func queryStr(ec execCapture, key string) string {
-	vals := ec.Query[key]
-	if len(vals) > 0 {
-		return vals[0]
-	}
-	return ""
-}
-
 // === Catalog execution tests (#129) ===
 
 func TestExecuteCatalog_CreateSendsName(t *testing.T) {
@@ -130,7 +121,7 @@ func TestExecuteCatalog_CreateSendsName(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodPost, req.Method)
-	assert.Contains(t, req.Path, "/catalogs")
+	assert.Contains(t, req.Path, "/catalog-registrations")
 	assert.Equal(t, "demo", bodyStr(req, "name"))
 	assert.Equal(t, "sqlite", bodyStr(req, "metastore_type"))
 	assert.Equal(t, "/tmp/meta.sqlite", bodyStr(req, "dsn"))
@@ -163,7 +154,7 @@ func TestExecuteCatalog_Update(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodPatch, req.Method)
-	assert.Contains(t, req.Path, "/catalogs/demo")
+	assert.Contains(t, req.Path, "/catalog-registrations/demo")
 	assert.Equal(t, "/tmp/data2/", bodyStr(req, "data_path"))
 	assert.Empty(t, bodyStr(req, "metastore_type"))
 }
@@ -274,9 +265,7 @@ func TestExecuteGroupMembership_Delete(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodDelete, req.Method)
-	assert.Contains(t, req.Path, "/groups/group-id-analysts/members")
-	assert.Equal(t, "principal-id-alice", queryStr(req, "member_id"))
-	assert.Equal(t, "user", queryStr(req, "member_type"))
+	assert.Equal(t, "/v1/groups/group-id-analysts/members/user/principal-id-alice", req.Path)
 }
 
 // === Tag execution tests (#128) ===
@@ -455,9 +444,7 @@ func TestExecuteRowFilterBinding_Delete(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodDelete, req.Method)
-	assert.Contains(t, req.Path, "/row-filters/rf-id-first/bindings")
-	assert.Equal(t, "principal-id-alice", queryStr(req, "principal_id"))
-	assert.Equal(t, "user", queryStr(req, "principal_type"))
+	assert.Equal(t, "/v1/row-filters/rf-id-first/bindings/user/principal-id-alice", req.Path)
 }
 
 // === Column mask execution tests (#128) ===
@@ -562,9 +549,7 @@ func TestExecuteColumnMaskBinding_Delete(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodDelete, req.Method)
-	assert.Contains(t, req.Path, "/column-masks/cm-id-name/bindings")
-	assert.Equal(t, "principal-id-alice", queryStr(req, "principal_id"))
-	assert.Equal(t, "user", queryStr(req, "principal_type"))
+	assert.Equal(t, "/v1/column-masks/cm-id-name/bindings/user/principal-id-alice", req.Path)
 }
 
 func TestExecuteAsset_CreateUsesSupportedFields(t *testing.T) {
@@ -1053,8 +1038,8 @@ func TestExecuteNotebook_UpdateUnpublishesBeforeRemovingPublishedOutput(t *testi
 	t.Parallel()
 
 	var (
-		mu       sync.Mutex
-		captured []execCapture
+		mu        sync.Mutex
+		captured  []execCapture
 		published = true
 	)
 
@@ -2041,7 +2026,7 @@ func TestReadState_CatalogsWithSchemasAndTables(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/catalog-registrations", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"catalogs": []map[string]interface{}{
@@ -2064,9 +2049,9 @@ func TestReadState_CatalogsWithSchemasAndTables(t *testing.T) {
 			"data": []map[string]interface{}{
 				{
 					"schema_id": "sch-1",
-					"name":    "analytics",
-					"comment": "Analytics schema",
-					"owner":   "alice",
+					"name":      "analytics",
+					"comment":   "Analytics schema",
+					"owner":     "alice",
 				},
 			},
 		}
@@ -2596,7 +2581,7 @@ func TestReadState_GrantsResolvedFromIDs(t *testing.T) {
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
-	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/catalog-registrations", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"catalogs": []map[string]interface{}{
@@ -2866,7 +2851,7 @@ func TestExecuteCatalog_Delete(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodDelete, req.Method)
-	assert.Contains(t, req.Path, "/catalogs/demo")
+	assert.Contains(t, req.Path, "/catalog-registrations/demo")
 }
 
 func TestExecuteGroup_Delete(t *testing.T) {
@@ -3010,7 +2995,7 @@ func TestReadState_ViewsAndVolumes(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/catalog-registrations", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"catalogs": []map[string]interface{}{
@@ -3319,18 +3304,15 @@ func TestExecuteTagAssignment_CreateResolvesTableIDViaLookup(t *testing.T) {
 	assert.Equal(t, "table-fresh-321", assignmentBody["securable_id"])
 }
 
-func TestExecuteTagAssignment_DeleteResolvesTableIDViaLookup(t *testing.T) {
+func TestExecuteTagAssignment_DeleteUsesAssignmentPath(t *testing.T) {
 	t.Parallel()
 
-	var capturedQuery url.Values
+	var capturedPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/catalogs/demo/schemas/bronze/tables/ratings_raw"):
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"table_id":"table-fresh-321","name":"ratings_raw"}`))
-		case r.Method == http.MethodDelete && strings.HasSuffix(r.URL.Path, "/tag-assignments"):
-			capturedQuery = r.URL.Query()
+		case r.Method == http.MethodDelete && strings.HasSuffix(r.URL.Path, "/tags/tag-classification-pii/assignments/assignment-123"):
+			capturedPath = r.URL.Path
 			w.WriteHeader(http.StatusNoContent)
 			_, _ = w.Write([]byte(`{}`))
 		default:
@@ -3353,15 +3335,13 @@ func TestExecuteTagAssignment_DeleteResolvesTableIDViaLookup(t *testing.T) {
 			Tag:           "classification:pii",
 			SecurableType: "table",
 			Securable:     "demo.bronze.ratings_raw",
+			AssignmentID:  "assignment-123",
 		},
 	}
 
 	err := sc.Execute(context.Background(), action)
 	require.NoError(t, err)
-	assert.Equal(t, "table-fresh-321", sc.index.tableIDByPath["demo.bronze.ratings_raw"])
-	require.NotNil(t, capturedQuery)
-	assert.Equal(t, "table-fresh-321", capturedQuery.Get("securable_id"))
-	assert.Equal(t, "tag-classification-pii", capturedQuery.Get("tag_id"))
+	assert.Equal(t, "/v1/tags/tag-classification-pii/assignments/assignment-123", capturedPath)
 }
 
 func TestExecute_CrossLayerResolution(t *testing.T) {
@@ -3480,8 +3460,7 @@ func TestExecuteGroupMembership_DeleteWithMemberID(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodDelete, req.Method)
-	assert.Equal(t, "principal-id-alice", queryStr(req, "member_id"))
-	assert.Equal(t, "user", queryStr(req, "member_type"))
+	assert.Equal(t, "/v1/groups/group-id-analysts/members/user/principal-id-alice", req.Path)
 }
 
 func TestExecuteGroupMembership_DeleteNoNameNoID(t *testing.T) {
@@ -3633,24 +3612,24 @@ func TestExecuteProductControlPlane_UpdateAndDelete(t *testing.T) {
 	}))
 
 	require.Len(t, captured, 6)
-	assert.Equal(t, http.MethodPut, captured[0].Method)
-	assert.Equal(t, "/v1/domains/revenue", captured[0].Path)
+	assert.Equal(t, http.MethodPatch, captured[0].Method)
+	assert.Equal(t, "/v1/product-domains/revenue", captured[0].Path)
 	assert.Equal(t, "Revenue data", bodyStr(captured[0], "description"))
 
-	assert.Equal(t, http.MethodPut, captured[1].Method)
-	assert.Equal(t, "/v1/teams/revenue/analytics-engineering", captured[1].Path)
+	assert.Equal(t, http.MethodPatch, captured[1].Method)
+	assert.Equal(t, "/v1/product-domains/revenue/teams/analytics-engineering", captured[1].Path)
 	assert.Equal(t, "#rev-data", bodyStr(captured[1], "contact_channel"))
 
-	assert.Equal(t, http.MethodPut, captured[2].Method)
+	assert.Equal(t, http.MethodPatch, captured[2].Method)
 	assert.Equal(t, "/v1/data-products/daily-orders", captured[2].Path)
 	assert.Equal(t, "revenue", bodyStr(captured[2], "domain_name"))
 	assert.Equal(t, "analytics-engineering", bodyStr(captured[2], "team_name"))
 
 	assert.Equal(t, http.MethodDelete, captured[3].Method)
-	assert.Equal(t, "/v1/domains/revenue", captured[3].Path)
+	assert.Equal(t, "/v1/product-domains/revenue", captured[3].Path)
 
 	assert.Equal(t, http.MethodDelete, captured[4].Method)
-	assert.Equal(t, "/v1/teams/revenue/analytics-engineering", captured[4].Path)
+	assert.Equal(t, "/v1/product-domains/revenue/teams/analytics-engineering", captured[4].Path)
 
 	assert.Equal(t, http.MethodDelete, captured[5].Method)
 	assert.Equal(t, "/v1/data-products/daily-orders", captured[5].Path)
@@ -3663,7 +3642,7 @@ func TestReadState_ProductControlPlaneAndAssetBindings(t *testing.T) {
 	mux.HandleFunc("/v1/principals", emptyListHandler())
 	mux.HandleFunc("/v1/groups", emptyListHandler())
 	mux.HandleFunc("/v1/api-keys", emptyListHandler())
-	mux.HandleFunc("/v1/catalogs", emptyListHandler())
+	mux.HandleFunc("/v1/catalog-registrations", emptyListHandler())
 	mux.HandleFunc("/v1/storage-credentials", emptyListHandler())
 	mux.HandleFunc("/v1/external-locations", emptyListHandler())
 	mux.HandleFunc("/v1/grants", emptyListHandler())
@@ -3674,7 +3653,7 @@ func TestReadState_ProductControlPlaneAndAssetBindings(t *testing.T) {
 	mux.HandleFunc("/v1/models", emptyListHandler())
 	mux.HandleFunc("/v1/semantic-models", emptyListHandler())
 	mux.HandleFunc("/v1/semantic-relationships", emptyListHandler())
-	mux.HandleFunc("/v1/domains", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/product-domains", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"data": []map[string]any{
@@ -3682,7 +3661,7 @@ func TestReadState_ProductControlPlaneAndAssetBindings(t *testing.T) {
 			},
 		})
 	})
-	mux.HandleFunc("/v1/teams", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/product-teams", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"data": []map[string]any{
@@ -3871,7 +3850,7 @@ func TestExecuteDataProduct_UpdateDeletesRemovedVersions(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, captured, 2)
 
-	assert.Equal(t, http.MethodPut, captured[0].Method)
+	assert.Equal(t, http.MethodPatch, captured[0].Method)
 	assert.Equal(t, "/v1/data-products/daily-orders", captured[0].Path)
 	assert.Equal(t, http.MethodDelete, captured[1].Method)
 	assert.Equal(t, "/v1/data-products/daily-orders/versions/2", captured[1].Path)

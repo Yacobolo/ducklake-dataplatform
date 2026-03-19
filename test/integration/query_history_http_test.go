@@ -78,7 +78,7 @@ func TestHTTP_QueryHistoryList(t *testing.T) {
 
 		{"list_all", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/query-history",
+				env.Server.URL+"/v1/queries/history",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -95,7 +95,7 @@ func TestHTTP_QueryHistoryList(t *testing.T) {
 
 		{"filter_by_principal", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/query-history?principal_name=admin_user",
+				env.Server.URL+"/v1/queries/history?principal_name=admin_user",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -112,7 +112,7 @@ func TestHTTP_QueryHistoryList(t *testing.T) {
 
 		{"filter_by_status", func(t *testing.T) {
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/query-history?status=DENIED",
+				env.Server.URL+"/v1/queries/history?status=DENIED",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -130,7 +130,7 @@ func TestHTTP_QueryHistoryList(t *testing.T) {
 		{"pagination", func(t *testing.T) {
 			// First page: max_results=1
 			resp := doRequest(t, "GET",
-				env.Server.URL+"/v1/query-history?max_results=1",
+				env.Server.URL+"/v1/queries/history?max_results=1",
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
@@ -145,7 +145,7 @@ func TestHTTP_QueryHistoryList(t *testing.T) {
 
 			// Second page
 			resp2 := doRequest(t, "GET",
-				env.Server.URL+"/v1/query-history?max_results=1&page_token="+nextToken.(string),
+				env.Server.URL+"/v1/queries/history?max_results=1&page_token="+nextToken.(string),
 				env.Keys.Admin, nil)
 			require.Equal(t, 200, resp2.StatusCode)
 
@@ -171,14 +171,14 @@ func TestHTTP_QueryHistoryRequiresAdmin(t *testing.T) {
 
 	// Non-admin should get 403.
 	resp := doRequest(t, "GET",
-		env.Server.URL+"/v1/query-history",
+		env.Server.URL+"/v1/queries/history",
 		env.Keys.Analyst, nil)
 	require.Equal(t, 403, resp.StatusCode)
 	_ = resp.Body.Close()
 
 	// Admin should get 200.
 	resp2 := doRequest(t, "GET",
-		env.Server.URL+"/v1/query-history",
+		env.Server.URL+"/v1/queries/history",
 		env.Keys.Admin, nil)
 	require.Equal(t, 200, resp2.StatusCode)
 

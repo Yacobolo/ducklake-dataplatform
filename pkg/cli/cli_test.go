@@ -599,8 +599,8 @@ func TestCLI_CommandTree(t *testing.T) {
 
 	expectedCommands := []string{
 		"catalog", "security", "query", "compute", "storage",
-		"assets", "notebooks", "governance", "observability",
-		"lineage", "manifest", "ingestion",
+		"assets", "notebooks", "governance", "audit",
+		"lineage", "ingestion",
 		"version", "config", "auth",
 		"plan", "apply", "export", "validate",
 		"commands", "api", "find", "describe",
@@ -795,7 +795,7 @@ func TestCLI_GroupMembersListIncludesNestedGroups(t *testing.T) {
 	assert.Contains(t, output, `"member_id": "child-group"`)
 }
 
-func TestCLI_GroupMembersRemoveNestedGroupUsesMemberTypeQuery(t *testing.T) {
+func TestCLI_GroupMembersRemoveNestedGroupUsesPathAddressableDelete(t *testing.T) {
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(jsonHandler(rec, 204, ``))
 	defer srv.Close()
@@ -804,8 +804,8 @@ func TestCLI_GroupMembersRemoveNestedGroupUsesMemberTypeQuery(t *testing.T) {
 	rootCmd.SetArgs([]string{
 		"--host", srv.URL,
 		"security", "members", "remove", "parent-group",
-		"--member-id", "child-group",
-		"--member-type", "group",
+		"group",
+		"child-group",
 		"--yes",
 	})
 
@@ -813,9 +813,8 @@ func TestCLI_GroupMembersRemoveNestedGroupUsesMemberTypeQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	captured := rec.last()
-	assert.Equal(t, "/v1/groups/parent-group/members", captured.Path)
-	assert.Contains(t, captured.Query, "member_id=child-group")
-	assert.Contains(t, captured.Query, "member_type=group")
+	assert.Equal(t, "/v1/groups/parent-group/members/group/child-group", captured.Path)
+	assert.Empty(t, captured.Query)
 }
 
 func TestCLI_ModelCommandsRejectMalformedConfigJSON(t *testing.T) {
@@ -1056,7 +1055,7 @@ func TestCLI_ListWithMultipleQueryParams(t *testing.T) {
 	assert.Contains(t, captured.Query, "page_token=nextpage")
 }
 
-func TestCLI_RequiredQueryFlagEnforced(t *testing.T) {
+func TestCLI_PathDeleteRequiresPrincipalArgs(t *testing.T) {
 	rec := &requestRecorder{}
 	srv := httptest.NewServer(jsonHandler(rec, 204, ``))
 	defer srv.Close()
@@ -1070,8 +1069,8 @@ func TestCLI_RequiredQueryFlagEnforced(t *testing.T) {
 
 	err := rootCmd.Execute()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "required flag(s) \"member-id\", \"member-type\" not set")
-	assert.Empty(t, rec.requests, "no HTTP request should be made when required query flags are missing")
+	assert.Contains(t, err.Error(), "accepts 3 arg(s), received 1")
+	assert.Empty(t, rec.requests, "no HTTP request should be made when required path args are missing")
 }
 
 func TestCLI_UpdateSchemaOnlyComment(t *testing.T) {
@@ -1178,14 +1177,14 @@ func TestCLI_CatalogSetDefault_SendsEmptyJSONObject(t *testing.T) {
 	defer srv.Close()
 
 	rootCmd := newTestRootCmd(t, srv)
-	rootCmd.SetArgs([]string{"--host", srv.URL, "catalog", "set-default", "lake"})
+	rootCmd.SetArgs([]string{"--host", srv.URL, "catalog", "registrations", "set-default", "lake"})
 
 	err := rootCmd.Execute()
 	require.NoError(t, err)
 
 	captured := rec.last()
 	assert.Equal(t, "POST", captured.Method)
-	assert.Equal(t, "/v1/catalogs/lake/set-default", captured.Path)
+	assert.Equal(t, "/v1/catalog-registrations/lake:set-default", captured.Path)
 	assert.JSONEq(t, `{}`, captured.Body)
 }
 

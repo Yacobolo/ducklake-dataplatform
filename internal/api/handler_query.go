@@ -343,12 +343,7 @@ func (h *APIHandler) CreateManifest(ctx context.Context, req GenCreateManifestRe
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
 
-	schemaName := "main"
-	if req.Body.Schema != nil {
-		schemaName = *req.Body.Schema
-	}
-
-	result, err := h.manifest.GetManifest(ctx, principal, "", schemaName, req.Body.Table)
+	result, err := h.manifest.GetManifest(ctx, principal, req.CatalogName, req.SchemaName, req.TableName)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenCreateManifestResponse]("createManifest", err, domainErrorResponder[GenCreateManifestResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateManifestResponse {

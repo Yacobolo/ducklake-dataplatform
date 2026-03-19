@@ -86,7 +86,7 @@ Bind column mask
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /column-masks/{columnMaskId}/bindings`
+## `DELETE /column-masks/{columnMaskId}/bindings/{principalType}/{principalId}`
 
 Unbind column mask
 
@@ -97,13 +97,8 @@ Unbind column mask
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `columnMaskId` | `string` | `true` | - |
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `principal_id` | `string` | `true` | - |
-| `principal_type` | `PrincipalType` | `true` | - |
+| `principalId` | `string` | `true` | - |
+| `principalType` | `PrincipalType` | `true` | - |
 
 ### Responses
 
@@ -198,7 +193,7 @@ Bind row filter
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /row-filters/{rowFilterId}/bindings`
+## `DELETE /row-filters/{rowFilterId}/bindings/{principalType}/{principalId}`
 
 Unbind row filter
 
@@ -208,14 +203,9 @@ Unbind row filter
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
+| `principalId` | `string` | `true` | - |
+| `principalType` | `PrincipalType` | `true` | - |
 | `rowFilterId` | `string` | `true` | - |
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `principal_id` | `string` | `true` | - |
-| `principal_type` | `PrincipalType` | `true` | - |
 
 ### Responses
 

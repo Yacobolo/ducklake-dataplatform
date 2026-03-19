@@ -589,11 +589,9 @@ func TestHandler_DeleteGroupMember(t *testing.T) {
 			svc := &mockGroupService{removeMemberFn: tt.svcFn}
 			handler := &APIHandler{groups: svc}
 			resp, err := handler.DeleteGroupMember(secTestCtx(), GenDeleteGroupMemberRequest{
-				GroupId: "g-1",
-				Params: GenDeleteGroupMemberParams{
-					MemberId:   "p-1",
-					MemberType: PrincipalType("user"),
-				},
+				GroupId:    "g-1",
+				MemberId:   "p-1",
+				MemberType: PrincipalType("user"),
 			})
 			tt.assertFn(t, resp, err)
 		})
@@ -1166,11 +1164,9 @@ func TestHandler_UnbindColumnMask(t *testing.T) {
 			svc := &mockColumnMaskService{unbindFn: tt.svcFn}
 			handler := &APIHandler{columnMasks: svc}
 			resp, err := handler.UnbindColumnMask(secTestCtx(), GenUnbindColumnMaskRequest{
-				ColumnMaskId: "m-1",
-				Params: GenUnbindColumnMaskParams{
-					PrincipalId:   "p-1",
-					PrincipalType: "user",
-				},
+				ColumnMaskId:  "m-1",
+				PrincipalId:   "p-1",
+				PrincipalType: "user",
 			})
 			tt.assertFn(t, resp, err)
 		})

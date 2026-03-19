@@ -545,8 +545,8 @@ func (f *fakeInitAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeInitListJSON(w, "data", sortedNames(f.credentials))
 	case r.Method == http.MethodGet && r.URL.Path == "/v1/external-locations":
 		writeInitListJSON(w, "data", sortedNames(f.locations))
-	case r.Method == http.MethodGet && r.URL.Path == "/v1/catalogs":
-		writeInitListJSON(w, "data", sortedNames(f.catalogs))
+	case r.Method == http.MethodGet && r.URL.Path == "/v1/catalog-registrations":
+		writeInitListJSON(w, "catalogs", sortedNames(f.catalogs))
 	case r.Method == http.MethodGet && r.URL.Path == "/v1/groups":
 		writeIDListJSON(w, sortedNamedIDs(f.groups))
 	case r.Method == http.MethodGet && r.URL.Path == "/v1/principals":
@@ -600,7 +600,7 @@ func (f *fakeInitAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		f.locations[name] = true
 		writeJSON(w, http.StatusCreated, map[string]any{"name": name})
-	case r.Method == http.MethodPost && r.URL.Path == "/v1/catalogs":
+	case r.Method == http.MethodPost && r.URL.Path == "/v1/catalog-registrations":
 		name := decodeName(r)
 		f.createCounts["catalog:"+name]++
 		if f.catalogs[name] {
@@ -676,9 +676,15 @@ func (f *fakeInitAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"status": "deleted"})
-	case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/v1/groups/") && strings.HasSuffix(r.URL.Path, "/members"):
-		groupID := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/v1/groups/"), "/members")
-		memberID := r.URL.Query().Get("member_id")
+	case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/v1/groups/") && strings.Contains(r.URL.Path, "/members/"):
+		memberPath := strings.TrimPrefix(r.URL.Path, "/v1/groups/")
+		parts := strings.Split(memberPath, "/")
+		if len(parts) != 4 || parts[1] != "members" {
+			writeJSON(w, http.StatusNotFound, map[string]any{"code": 404, "message": "not found"})
+			return
+		}
+		groupID := parts[0]
+		memberID := parts[3]
 		if f.memberships[groupID] == nil || !f.memberships[groupID][memberID] {
 			writeJSON(w, http.StatusNotFound, map[string]any{"code": 404, "message": "not found"})
 			return
@@ -724,7 +730,7 @@ func (f *fakeInitAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		delete(f.schemas, schemaName)
 		writeJSON(w, http.StatusOK, map[string]any{"status": "deleted"})
-	case r.Method == http.MethodDelete && r.URL.Path == "/v1/catalogs/lake":
+	case r.Method == http.MethodDelete && r.URL.Path == "/v1/catalog-registrations/lake":
 		if !f.catalogs["lake"] {
 			writeJSON(w, http.StatusNotFound, map[string]any{"code": 404, "message": "not found"})
 			return

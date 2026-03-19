@@ -3,13 +3,12 @@
 # Schema: `CreateProductTeamRequest`
 
 - Type: `object`
-- Required fields: `domain_name`, `name`
+- Required fields: `name`
 
 ## Properties
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `contact_channel` | `string` | `false` | - |
-| `domain_name` | `string` | `true` | - |
 | `name` | `string` | `true` | - |
 

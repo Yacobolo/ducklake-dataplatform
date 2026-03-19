@@ -170,7 +170,7 @@ func TestWorkflow_GroupInheritance(t *testing.T) {
 	})
 
 	t.Run("remove_from_group", func(t *testing.T) {
-		url := fmt.Sprintf("%s/v1/groups/%s/members?member_type=user&member_id=%s", env.Server.URL, groupID, userID)
+		url := fmt.Sprintf("%s/v1/groups/%s/members/user/%s", env.Server.URL, groupID, userID)
 		resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 		require.Equal(t, 204, resp.StatusCode)
 		_ = resp.Body.Close()
@@ -244,7 +244,7 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 			assert.True(t, found, "new filter should appear in list")
 		}},
 		{"unbind_from_group", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/row-filters/%s/bindings?principal_id=%s&principal_type=group",
+			url := fmt.Sprintf("%s/v1/row-filters/%s/bindings/group/%s",
 				env.Server.URL, filterID, analystsGroup.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
@@ -334,14 +334,14 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			assert.True(t, found, "new mask should appear in list")
 		}},
 		{"cleanup_unbind_analyst", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings?principal_id=%s&principal_type=user",
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings/user/%s",
 				env.Server.URL, maskID, analyst.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"cleanup_unbind_researcher", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings?principal_id=%s&principal_type=user",
+			url := fmt.Sprintf("%s/v1/column-masks/%s/bindings/user/%s",
 				env.Server.URL, maskID, researcher.ID)
 			resp := doRequest(t, "DELETE", url, env.Keys.Admin, nil)
 			require.Equal(t, 204, resp.StatusCode)

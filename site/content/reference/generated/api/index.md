@@ -9,8 +9,9 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 ## Endpoint Groups
 
 - [Assets](./endpoints/assets/) (20 operations)
+- [Audit](./endpoints/audit) (1 operations)
 - [Auth](./endpoints/auth) (7 operations)
-- [Catalogs](./endpoints/catalogs/) (37 operations)
+- [Catalogs](./endpoints/catalogs/) (38 operations)
 - [Compute](./endpoints/compute) (11 operations)
 - [Dashboards](./endpoints/dashboards) (9 operations)
 - [Governance](./endpoints/governance/) (22 operations)
@@ -21,8 +22,8 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 - [Models](./endpoints/models/) (26 operations)
 - [Notebooks](./endpoints/notebooks) (16 operations)
 - [Pipelines](./endpoints/pipelines) (13 operations)
-- [Products](./endpoints/products/) (31 operations)
-- [Queries](./endpoints/queries) (9 operations)
+- [Products](./endpoints/products/) (32 operations)
+- [Queries](./endpoints/queries) (7 operations)
 - [Semantic Layer](./endpoints/semantic-layer/) (21 operations)
 - [Storage](./endpoints/storage) (10 operations)
 
@@ -184,7 +185,6 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 - [MacroType](./schemas/macrotype)
 - [MacroVisibility](./schemas/macrovisibility)
 - [ManifestColumn](./schemas/manifestcolumn)
-- [ManifestRequest](./schemas/manifestrequest)
 - [ManifestResponse](./schemas/manifestresponse)
 - [MetastoreSummary](./schemas/metastoresummary)
 - [MetastoreType](./schemas/metastoretype)
@@ -302,7 +302,6 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 - [ProductSubscription](./schemas/productsubscription)
 - [ProductSubscriptionList](./schemas/productsubscriptionlist)
 - [ProductTeam](./schemas/productteam)
-- [ProductVersionActionRequest](./schemas/productversionactionrequest)
 - [PromoteNotebookRequest](./schemas/promotenotebookrequest)
 - [PurgeLineageRequest](./schemas/purgelineagerequest)
 - [PurgeLineageResponse](./schemas/purgelineageresponse)

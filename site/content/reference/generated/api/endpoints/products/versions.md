@@ -4,93 +4,6 @@
 
 Versions and Releases operations within the Products API group.
 
-## `PATCH /data-products/{productSlug}/deprecate`
-
-Deprecate data product version
-
-- Operation ID: `deprecateDataProductVersion`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
-
-### Request Body
-
-- Required: `false`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `PATCH /data-products/{productSlug}/publish`
-
-Publish data product version
-
-- Operation ID: `publishDataProductVersion`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
-
-### Request Body
-
-- Required: `false`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `PATCH /data-products/{productSlug}/retire`
-
-Retire data product version
-
-- Operation ID: `retireDataProductVersion`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
-
-### Request Body
-
-- Required: `false`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
 ## `GET /data-products/{productSlug}/versions`
 
 List data product versions
@@ -186,6 +99,86 @@ Delete data product version
 | Code | Description |
 | --- | --- |
 | `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /data-products/{productSlug}/versions/{version}:deprecate`
+
+Deprecate data product version
+
+- Operation ID: `deprecateDataProductVersion`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `productSlug` | `string` | `true` | - |
+| `version` | `integer` | `true` | - |
+
+### Request Body
+
+- Required: `false`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /data-products/{productSlug}/versions/{version}:publish`
+
+Publish data product version
+
+- Operation ID: `publishDataProductVersion`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `productSlug` | `string` | `true` | - |
+| `version` | `integer` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /data-products/{productSlug}/versions/{version}:retire`
+
+Retire data product version
+
+- Operation ID: `retireDataProductVersion`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `productSlug` | `string` | `true` | - |
+| `version` | `integer` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |

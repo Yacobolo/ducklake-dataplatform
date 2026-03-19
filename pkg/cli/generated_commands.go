@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/spf13/cobra"
 
@@ -442,12 +443,30 @@ func selectPositionalBodyName(endpoint gen.APIGenEndpoint, pathParams []string, 
 }
 
 func pathParameterNames(path string) []string {
-	segments := strings.Split(path, "/")
-	params := make([]string, 0, len(segments))
-	for _, segment := range segments {
-		if len(segment) > 2 && strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}") {
-			params = append(params, strings.TrimSuffix(strings.TrimPrefix(segment, "{"), "}"))
+	params := make([]string, 0, strings.Count(path, "{"))
+	for i := 0; i < len(path); i++ {
+		if path[i] != '{' {
+			continue
 		}
+		j := i + 1
+		for j < len(path) && path[j] != '}' {
+			j++
+		}
+		if j >= len(path) || j == i+1 {
+			continue
+		}
+		name := path[i+1 : j]
+		valid := true
+		for _, r := range name {
+			if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' {
+				valid = false
+				break
+			}
+		}
+		if valid {
+			params = append(params, name)
+		}
+		i = j
 	}
 	return params
 }

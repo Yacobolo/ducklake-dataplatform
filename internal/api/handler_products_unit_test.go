@@ -12,8 +12,9 @@ import (
 )
 
 type mockProductService struct {
-	listTeamsFn  func(ctx context.Context, page domain.PageRequest) ([]domain.Team, int64, error)
+	listTeamsFn  func(ctx context.Context, page domain.PageRequest, domainName *string) ([]domain.Team, int64, error)
 	getDomainFn  func(ctx context.Context, name string) (*domain.Domain, error)
+	getTeamFn    func(ctx context.Context, domainName, teamName string) (*domain.Team, error)
 	createTeamFn func(ctx context.Context, req domain.CreateTeamRequest) (*domain.Team, error)
 }
 
@@ -33,11 +34,17 @@ func (m *mockProductService) UpdateDomain(context.Context, string, domain.Update
 	panic("not implemented")
 }
 func (m *mockProductService) DeleteDomain(context.Context, string) error { panic("not implemented") }
-func (m *mockProductService) ListTeams(ctx context.Context, page domain.PageRequest) ([]domain.Team, int64, error) {
+func (m *mockProductService) ListTeams(ctx context.Context, page domain.PageRequest, domainName *string) ([]domain.Team, int64, error) {
 	if m.listTeamsFn == nil {
 		panic("mockProductService.ListTeams called but not configured")
 	}
-	return m.listTeamsFn(ctx, page)
+	return m.listTeamsFn(ctx, page, domainName)
+}
+func (m *mockProductService) GetTeam(ctx context.Context, domainName, teamName string) (*domain.Team, error) {
+	if m.getTeamFn == nil {
+		panic("mockProductService.GetTeam called but not configured")
+	}
+	return m.getTeamFn(ctx, domainName, teamName)
 }
 func (m *mockProductService) CreateTeam(ctx context.Context, req domain.CreateTeamRequest) (*domain.Team, error) {
 	if m.createTeamFn == nil {
@@ -101,7 +108,7 @@ func TestHandler_ListProductTeams_UnexpectedErrorReturns500(t *testing.T) {
 
 	handler := &APIHandler{
 		products: &mockProductService{
-			listTeamsFn: func(_ context.Context, _ domain.PageRequest) ([]domain.Team, int64, error) {
+			listTeamsFn: func(_ context.Context, _ domain.PageRequest, _ *string) ([]domain.Team, int64, error) {
 				return nil, 0, assert.AnError
 			},
 		},
@@ -117,10 +124,7 @@ func TestHandler_ListProductTeams_UnexpectedErrorReturns500(t *testing.T) {
 func TestHandler_CreateProductTeam_MapsDomainErrors(t *testing.T) {
 	t.Parallel()
 
-	baseBody := GenCreateProductTeamJSONBody{
-		DomainName: "revenue",
-		Name:       "analytics",
-	}
+	baseBody := GenCreateProductTeamJSONBody{Name: "analytics"}
 	sampleDomain := &domain.Domain{
 		ID:        "domain-1",
 		Name:      "revenue",
@@ -160,7 +164,7 @@ func TestHandler_CreateProductTeam_MapsDomainErrors(t *testing.T) {
 		},
 		{
 			name: "missing name returns 400",
-			body: &GenCreateProductTeamJSONBody{DomainName: "revenue"},
+			body: &GenCreateProductTeamJSONBody{},
 			service: &mockProductService{},
 			assertFn: func(t *testing.T, resp GenCreateProductTeamResponse, err error) {
 				t.Helper()
@@ -230,7 +234,14 @@ func TestHandler_CreateProductTeam_MapsDomainErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			handler := &APIHandler{products: tt.service}
-			resp, err := handler.CreateProductTeam(context.Background(), GenCreateProductTeamRequest{Body: tt.body})
+			req := GenCreateProductTeamRequest{Body: tt.body}
+			if tt.body != nil {
+				req.DomainName = "revenue"
+			}
+			if tt.name == "missing domain name returns 400" {
+				req.DomainName = ""
+			}
+			resp, err := handler.CreateProductTeam(context.Background(), req)
 			tt.assertFn(t, resp, err)
 		})
 	}
