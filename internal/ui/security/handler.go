@@ -19,12 +19,7 @@ type Handler struct{ deps *core.Dependencies }
 func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
 func (h *Handler) SecurityHome(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, securityHomePage(core.PrincipalFromContext(r.Context()), []securityCardData{
-		{Title: "Principals", Description: "Create principals, inspect admin access, and review owned credentials.", Href: "/ui/security/principals", LinkLabel: "Open principals ->"},
-		{Title: "Groups", Description: "Manage membership and review group-level grants.", Href: "/ui/security/groups", LinkLabel: "Open groups ->"},
-		{Title: "Grants", Description: "Inspect and issue privilege grants across securables.", Href: "/ui/security/grants", LinkLabel: "Open grants ->"},
-		{Title: "API Keys", Description: "Issue, revoke, and clean up programmatic access keys.", Href: "/ui/security/api-keys", LinkLabel: "Open API keys ->"},
-	}))
+	http.Redirect(w, r, "/ui/security/principals", http.StatusSeeOther)
 }
 
 func (h *Handler) SecurityPrincipalsList(w http.ResponseWriter, r *http.Request) {

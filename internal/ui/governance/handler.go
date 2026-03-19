@@ -15,7 +15,7 @@ type Handler struct{ deps *core.Dependencies }
 func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
 func (h *Handler) GovernanceHome(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, governanceHomePage(core.PrincipalFromContext(r.Context())))
+	http.Redirect(w, r, "/ui/governance/search", http.StatusSeeOther)
 }
 
 func (h *Handler) GovernanceSearch(w http.ResponseWriter, r *http.Request) {

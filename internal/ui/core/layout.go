@@ -12,43 +12,107 @@ type navItem struct {
 	Href  string
 	Key   string
 	Icon  string
+	Kids  []navItem
 }
 
-var navItems = []navItem{
-	{Label: "Overview", Href: "/ui", Key: "home", Icon: "house"},
-	{Label: "Products", Href: "/ui/products", Key: "products", Icon: "package-open"},
-	{Label: "Components", Href: "/ui/components", Key: "components", Icon: "layout-grid"},
-	{Label: "Catalogs", Href: "/ui/catalogs", Key: "catalogs", Icon: "database"},
-	{Label: "Security", Href: "/ui/security", Key: "security", Icon: "shield"},
-	{Label: "Storage", Href: "/ui/storage", Key: "storage", Icon: "hard-drive"},
-	{Label: "Compute", Href: "/ui/compute", Key: "compute", Icon: "server"},
-	{Label: "Governance", Href: "/ui/governance", Key: "governance", Icon: "scan-search"},
-	{Label: "Runtime Assets", Href: "/ui/assets", Key: "assets", Icon: "git-fork"},
-	{Label: "Notebooks", Href: "/ui/notebooks", Key: "notebooks", Icon: "notebook-text"},
-	{Label: "Dashboards", Href: "/ui/dashboards", Key: "dashboards", Icon: "chart-column"},
-	{Label: "Macros", Href: "/ui/macros", Key: "macros", Icon: "braces"},
-	{Label: "Models", Href: "/ui/models", Key: "models", Icon: "boxes"},
-	{Label: "Semantic", Href: "/ui/semantic", Key: "semantic", Icon: "waypoints"},
+type navGroup struct {
+	Label string
+	Items []navItem
+}
+
+var navGroups = []navGroup{
+	{
+		Label: "Discover",
+		Items: []navItem{
+			{Label: "Overview", Href: "/ui", Key: "home", Icon: "house"},
+			{Label: "Products", Href: "/ui/products", Key: "products", Icon: "package-open"},
+			{Label: "Catalogs", Href: "/ui/catalogs", Key: "catalogs", Icon: "database"},
+			{Label: "Runtime Assets", Href: "/ui/assets", Key: "assets", Icon: "git-fork"},
+			{Label: "Dashboards", Href: "/ui/dashboards", Key: "dashboards", Icon: "chart-column"},
+		},
+	},
+	{
+		Label: "Build",
+		Items: []navItem{
+			{Label: "Notebooks", Href: "/ui/notebooks", Key: "notebooks", Icon: "notebook-text"},
+			{
+				Label: "Models",
+				Href:  "/ui/models",
+				Key:   "models",
+				Icon:  "boxes",
+				Kids: []navItem{
+					{Label: "Macros", Href: "/ui/macros", Key: "macros", Icon: "braces"},
+				},
+			},
+			{Label: "Semantic", Href: "/ui/semantic", Key: "semantic", Icon: "waypoints"},
+		},
+	},
+	{
+		Label: "Operate",
+		Items: []navItem{
+			{Label: "Security", Href: "/ui/security", Key: "security", Icon: "shield"},
+			{Label: "Governance", Href: "/ui/governance", Key: "governance", Icon: "scan-search"},
+			{Label: "Storage", Href: "/ui/storage", Key: "storage", Icon: "hard-drive"},
+			{Label: "Compute", Href: "/ui/compute", Key: "compute", Icon: "server"},
+		},
+	},
+	{
+		Label: "Internal",
+		Items: []navItem{
+			{Label: "Components", Href: "/ui/components", Key: "components", Icon: "layout-grid"},
+		},
+	},
 }
 
 func AppPage(title, active string, principal domain.ContextPrincipal, body ...Node) Node {
-	nav := make([]Node, 0, len(navItems))
-	for _, item := range navItems {
-		className := ClassNames(
-			"app-nav-link",
-			"group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-[var(--fgColor-muted)] transition-colors hover:bg-[var(--bgColor-muted)] hover:text-[var(--fgColor-default)] [.app-shell.sidebar-compact_&]:justify-center [.app-shell.sidebar-compact_&]:px-1 max-md:[.app-shell.sidebar-compact_&]:justify-start max-md:[.app-shell.sidebar-compact_&]:px-3",
-		)
-		currentAttr := Node(nil)
-		if item.Key == active {
-			className = ClassNames(className, "active bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)] shadow-[inset_3px_0_0_var(--borderColor-accent-emphasis)]")
-			currentAttr = Attr("aria-current", "page")
+	nav := make([]Node, 0, len(navGroups))
+	for _, group := range navGroups {
+		items := make([]Node, 0, len(group.Items))
+		for _, item := range group.Items {
+			itemActive := navItemActive(item, active)
+			className := ClassNames(
+				"app-nav-link",
+				"group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-[var(--fgColor-muted)] transition-colors hover:bg-[var(--bgColor-muted)] hover:text-[var(--fgColor-default)] [.app-shell.sidebar-compact_&]:justify-center [.app-shell.sidebar-compact_&]:px-1 max-md:[.app-shell.sidebar-compact_&]:justify-start max-md:[.app-shell.sidebar-compact_&]:px-3",
+			)
+			currentAttr := Node(nil)
+			if item.Key == active {
+				className = ClassNames(className, "active bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)] shadow-[inset_3px_0_0_var(--borderColor-accent-emphasis)]")
+				currentAttr = Attr("aria-current", "page")
+			} else if itemActive {
+				className = ClassNames(className, "text-[var(--fgColor-default)]")
+			}
+
+			children := Node(nil)
+			if len(item.Kids) > 0 && itemActive {
+				kids := make([]Node, 0, len(item.Kids))
+				for _, kid := range item.Kids {
+					kidClass := "ml-9 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--fgColor-muted)] transition-colors hover:bg-[var(--bgColor-muted)] hover:text-[var(--fgColor-default)] [.app-shell.sidebar-compact_&]:hidden max-md:[.app-shell.sidebar-compact_&]:inline-flex"
+					kidCurrent := Node(nil)
+					if kid.Key == active {
+						kidClass = ClassNames(kidClass, "bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]")
+						kidCurrent = Attr("aria-current", "page")
+					}
+					kids = append(kids, A(Href(kid.Href), Class(kidClass), kidCurrent, Text(kid.Label)))
+				}
+				children = Div(Class("grid gap-1"), Group(kids))
+			}
+
+			items = append(items, Div(
+				Class("grid gap-1"),
+				A(
+					Href(item.Href),
+					Class(className),
+					currentAttr,
+					I(Class(NavIconClass()), Attr("data-lucide", item.Icon), Attr("aria-hidden", "true")),
+					Span(Class("app-nav-text [.app-shell.sidebar-compact_&]:hidden max-md:[.app-shell.sidebar-compact_&]:inline"), Text(item.Label)),
+				),
+				children,
+			))
 		}
-		nav = append(nav, A(
-			Href(item.Href),
-			Class(className),
-			currentAttr,
-			I(Class(NavIconClass()), Attr("data-lucide", item.Icon), Attr("aria-hidden", "true")),
-			Span(Class("app-nav-text [.app-shell.sidebar-compact_&]:hidden max-md:[.app-shell.sidebar-compact_&]:inline"), Text(item.Label)),
+		nav = append(nav, Section(
+			Class("grid gap-2 border-b border-[var(--borderColor-default)] pb-3 last:border-b-0 last:pb-0"),
+			P(Class("px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)] [.app-shell.sidebar-compact_&]:hidden max-md:[.app-shell.sidebar-compact_&]:block"), Text(group.Label)),
+			Div(Class("grid gap-1"), Group(items)),
 		))
 	}
 
@@ -96,7 +160,7 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
 				),
 				Div(
 					Class("app-body grid min-h-0 flex-1 overflow-hidden [grid-template-columns:18rem_minmax(0,1fr)] max-md:grid-cols-1"),
-					Aside(Class("app-sidebar relative h-full overflow-y-auto border-r border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-2 py-4 shadow-xs transition-transform duration-100 ease-out [.app-shell.sidebar-compact_&]:px-1 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:h-screen max-md:w-72 max-md:-translate-x-full max-md:[.app-shell.nav-open_&]:translate-x-0"), ID("app-sidebar"), Nav(Class("app-nav grid gap-1 max-md:flex max-md:flex-wrap max-md:gap-2"), Group(nav))),
+					Aside(Class("app-sidebar relative h-full overflow-y-auto border-r border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-2 py-4 shadow-xs transition-transform duration-100 ease-out [.app-shell.sidebar-compact_&]:px-1 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:h-screen max-md:w-72 max-md:-translate-x-full max-md:[.app-shell.nav-open_&]:translate-x-0"), ID("app-sidebar"), Nav(Class("app-nav grid gap-4"), Group(nav))),
 					Section(Class(ClassNames(mainClass, "flex min-h-0 flex-col overflow-auto bg-[var(--bgColor-default)] px-[clamp(0.75rem,3vw,1.5rem)] py-4 max-md:px-3 max-md:py-3")), ID("main-content"), Attr("tabindex", "-1"), H1(Class("sr-only"), Text(title)), Div(Class(ClassNames("app-main-content", contentClass, "flex min-h-0 w-full flex-1 flex-col")), Group(body))),
 				),
 				Div(Class("app-overlay pointer-events-none fixed inset-0 z-10 hidden bg-black/40 opacity-0 transition-opacity duration-100 ease-out [.app-shell.nav-open_&]:opacity-100 [.app-shell.nav-open_&]:pointer-events-auto max-md:block"), ID("app-overlay"), Attr("aria-hidden", "true")),
@@ -106,4 +170,16 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
 			Script(Raw("if (window.lucide) { window.lucide.createIcons(); } document.addEventListener('click', function(e){ var t=e.target; if(!(t instanceof Element)){return;} document.querySelectorAll('details.dropdown[open]').forEach(function(d){ if(!d.contains(t)){ d.removeAttribute('open'); }}); });")),
 		),
 	)
+}
+
+func navItemActive(item navItem, active string) bool {
+	if item.Key == active {
+		return true
+	}
+	for _, kid := range item.Kids {
+		if kid.Key == active {
+			return true
+		}
+	}
+	return false
 }

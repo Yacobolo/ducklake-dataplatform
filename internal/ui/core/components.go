@@ -5,6 +5,12 @@ import (
 	. "maragu.dev/gomponents/html"
 )
 
+type SectionTab struct {
+	Label  string
+	Href   string
+	Active bool
+}
+
 func Card(nodes ...Node) Node {
 	return Div(append([]Node{Class(cardClass())}, nodes...)...)
 }
@@ -287,6 +293,86 @@ func DetailTitle(text string) Node {
 
 func DetailDescription(text string) Node {
 	return P(Class("m-0 max-w-3xl text-sm leading-6 text-[var(--fgColor-muted)]"), Text(text))
+}
+
+func PageHeader(kicker, title, description string, actions ...Node) Node {
+	kickerNode := Node(nil)
+	if kicker != "" {
+		kickerNode = Kicker(kicker)
+	}
+	descriptionNode := Node(nil)
+	if description != "" {
+		descriptionNode = DetailDescription(description)
+	}
+	actionGroup := Node(nil)
+	if len(actions) > 0 {
+		actionGroup = Div(Class("flex flex-wrap items-center gap-3"), Group(actions))
+	}
+	return Div(
+		Class("grid gap-4 border-b border-[var(--borderColor-default)] pb-4"),
+		kickerNode,
+		Div(Class("flex flex-wrap items-start justify-between gap-4"),
+			Div(Class("flex min-w-0 max-w-3xl flex-col gap-2"),
+				H1(Class("m-0 text-3xl font-semibold leading-tight text-[var(--fgColor-default)]"), Text(title)),
+				descriptionNode,
+			),
+			actionGroup,
+		),
+	)
+}
+
+func SectionSurface(nodes ...Node) Node {
+	return Div(append([]Node{Class("grid gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-5 max-md:p-4")}, nodes...)...)
+}
+
+func SectionHeader(title, description string, actions ...Node) Node {
+	descriptionNode := Node(nil)
+	if description != "" {
+		descriptionNode = P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text(description))
+	}
+	actionGroup := Node(nil)
+	if len(actions) > 0 {
+		actionGroup = Div(Class("flex flex-wrap items-center gap-3"), Group(actions))
+	}
+	return Div(
+		Class("flex flex-wrap items-start justify-between gap-4"),
+		Div(Class("flex min-w-0 max-w-3xl flex-col gap-1"),
+			H2(Class("m-0 text-xl font-semibold text-[var(--fgColor-default)]"), Text(title)),
+			descriptionNode,
+		),
+		actionGroup,
+	)
+}
+
+func SectionTabs(tabs []SectionTab) Node {
+	nodes := make([]Node, 0, len(tabs))
+	for i := range tabs {
+		tab := tabs[i]
+		className := "inline-flex min-h-10 items-center border-b-2 border-transparent px-1 text-sm font-medium text-[var(--fgColor-muted)] no-underline transition-colors hover:text-[var(--fgColor-default)]"
+		current := Node(nil)
+		if tab.Active {
+			className = "inline-flex min-h-10 items-center border-b-2 border-[var(--borderColor-accent-emphasis)] px-1 text-sm font-semibold text-[var(--fgColor-default)] no-underline"
+			current = Attr("aria-current", "page")
+		}
+		nodes = append(nodes, A(Href(tab.Href), Class(className), current, Text(tab.Label)))
+	}
+	return Nav(
+		Class("flex flex-wrap items-center gap-5 border-b border-[var(--borderColor-default)]"),
+		Attr("aria-label", "Section navigation"),
+		Group(nodes),
+	)
+}
+
+func DetailSummaryList(items [][2]string) Node {
+	rows := make([]Node, 0, len(items))
+	for i := range items {
+		rows = append(rows, Div(
+			Class("grid gap-1 border-b border-[var(--borderColor-default)] pb-3 last:border-b-0 last:pb-0"),
+			Span(Class("text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"), Text(items[i][0])),
+			Span(Class("text-sm text-[var(--fgColor-default)]"), Text(items[i][1])),
+		))
+	}
+	return Div(Class("grid gap-3"), Group(rows))
 }
 
 func BadgeRow(nodes ...Node) Node {

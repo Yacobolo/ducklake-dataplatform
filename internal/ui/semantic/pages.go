@@ -86,15 +86,6 @@ type semanticQueryResultPageData struct {
 	CSRFFieldProvider func() Node
 }
 
-func semanticHomePage(principal domain.ContextPrincipal) Node {
-	return core.AppPage("Semantic", "semantic", principal,
-		Div(Class("grid gap-3 md:grid-cols-2 xl:grid-cols-3"),
-			semanticCard("Semantic Models", "Manage semantic models, metrics, and pre-aggregations.", "/ui/semantic/models"),
-			semanticCard("Relationships", "Define join paths between semantic models.", "/ui/semantic/relationships"),
-		),
-	)
-}
-
 func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticModelRowData, page domain.PageRequest, total int64) Node {
 	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No semantic models defined.")))
 	if len(rows) > 0 {
@@ -114,8 +105,10 @@ func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticMo
 		))
 	}
 	return core.AppPage("Semantic Models", "semantic", principal,
-		sectionHeader("Semantic models", "Manage semantic models and their runtime semantics.", "/ui/semantic/models/new", "New semantic model"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
+		semanticSectionNav("models"),
+		core.PageHeader("Build", "Semantic models", "Use the semantic workspace for the consumer-facing model layer. Relationship paths stay nearby, but model management remains the default landing surface.", core.PrimaryLink("/ui/semantic/models/new", "", Text("New semantic model"))),
+		core.SectionSurface(
+			core.SectionHeader("Model inventory", "Review the semantic layer before drilling into metrics or pre-aggregations."),
 			table,
 			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" semantic models. Total: "+strconv.FormatInt(total, 10))),
 		),
@@ -184,66 +177,90 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 	}
 
 	return core.AppPage("Semantic Model: "+d.ProjectName+"."+d.ModelName, "semantic", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text(d.ProjectName+"."+d.ModelName)),
-			P(Class("m-0 text-sm"), Strong(Text("Base model: ")), Text(d.BaseModelRef)),
-			P(Class("m-0 text-sm"), Strong(Text("Default time dimension: ")), Text(d.DefaultTimeDim)),
-			P(Class("m-0 text-sm"), Strong(Text("Description: ")), Text(valueOrDash(d.Description))),
-			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
-				core.SecondaryLink(d.EditURL, "", Text("Edit")),
-				core.SecondaryLink("/ui/semantic/relationships", "", Text("Relationships")),
-				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+		semanticSectionNav("models"),
+		core.DetailShell(
+			core.DetailHero(
+				core.DetailHeroCopy(
+					core.Kicker("Semantic model"),
+					core.DetailTitle(d.ProjectName+"."+d.ModelName),
+					core.DetailDescription(valueOrDash(d.Description)),
+					core.BadgeRow(core.Badge("Base "+d.BaseModelRef, "accent"), core.Badge("Time "+d.DefaultTimeDim, "")),
+				),
+				core.DetailHeroMeta(
+					core.MetaItem("Base model", d.BaseModelRef),
+					core.MetaItem("Default time dimension", d.DefaultTimeDim),
+				),
+			),
+			core.DetailLayout(
+				core.DetailMain(
+					core.SectionSurface(
+						core.SectionHeader("Metrics", "Manage the current metric definitions before adding more."),
+						metricRows,
+					),
+					core.SectionSurface(
+						core.SectionHeader("Pre-aggregations", "Inspect materialized semantic accelerators tied to this model."),
+						preAggRows,
+					),
+					semanticQueryCard(d.ProjectName, d.ModelName, d.QueryExplainURL, d.QueryRunURL, d.CSRFFieldProvider),
+				),
+				core.DetailRail(
+					core.SectionSurface(
+						core.SectionHeader("Actions", "Core model-level actions and nearby semantic navigation."),
+						Div(Class("flex flex-wrap items-center gap-3 [&_form]:m-0 [&_form]:inline-flex"),
+							core.SecondaryLink(d.EditURL, "", Text("Edit model")),
+							core.SecondaryLink("/ui/semantic/relationships", "", Text("Relationships")),
+							Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+						),
+					),
+					core.SectionSurface(
+						core.SectionHeader("Add metric", "Create metric definitions from a compact side workflow."),
+						Form(Class("grid gap-3"), Method("post"), Action(d.MetricsCreateURL),
+							d.CSRFFieldProvider(),
+							Label(Text("Name")),
+							core.InputControl("", Name("name"), Required()),
+							Label(Text("Label")),
+							core.InputControl("", Name("label")),
+							Label(Text("Description")),
+							core.InputControl("", Name("description")),
+							Label(Text("Metric type")),
+							core.SelectControl("", Name("metric_type"), Option(Value("SUM"), Text("SUM")), Option(Value("COUNT"), Text("COUNT")), Option(Value("COUNT_DISTINCT"), Text("COUNT_DISTINCT")), Option(Value("AVG"), Text("AVG")), Option(Value("MIN"), Text("MIN")), Option(Value("MAX"), Text("MAX")), Option(Value("RATIO"), Text("RATIO"))),
+							Label(Text("Expression mode")),
+							core.SelectControl("", Name("expression_mode"), Option(Value("DSL"), Text("DSL")), Option(Value("SQL"), Text("SQL"))),
+							Label(Text("Expression")),
+							core.TextareaControl("min-h-24", Name("expression"), Required()),
+							Label(Text("Metric filter SQL")),
+							core.InputControl("", Name("filter_sql")),
+							Label(Text("Default time grain")),
+							core.InputControl("", Name("default_time_grain")),
+							Label(Text("Format")),
+							core.InputControl("", Name("format")),
+							Label(Text("Certification state")),
+							core.SelectControl("", Name("certification_state"), Option(Value("DRAFT"), Text("DRAFT")), Option(Value("CERTIFIED"), Text("CERTIFIED")), Option(Value("DEPRECATED"), Text("DEPRECATED"))),
+							Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create metric"))),
+						),
+					),
+					core.SectionSurface(
+						core.SectionHeader("Add pre-aggregation", "Keep acceleration authoring close, but secondary to the existing model inventory."),
+						Form(Class("grid gap-3"), Method("post"), Action(d.PreAggCreateURL),
+							d.CSRFFieldProvider(),
+							Label(Text("Name")),
+							core.InputControl("", Name("name"), Required()),
+							Label(Text("Metric set (comma separated)")),
+							core.InputControl("", Name("metric_set")),
+							Label(Text("Dimension set (comma separated)")),
+							core.InputControl("", Name("dimension_set")),
+							Label(Text("Grain")),
+							core.InputControl("", Name("grain")),
+							Label(Text("Target relation")),
+							core.InputControl("", Name("target_relation"), Required()),
+							Label(Text("Refresh policy")),
+							core.InputControl("", Name("refresh_policy")),
+							Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create pre-aggregation"))),
+						),
+					),
+				),
 			),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Create metric")),
-			Form(Class("grid gap-3"), Method("post"), Action(d.MetricsCreateURL),
-				d.CSRFFieldProvider(),
-				Label(Text("Name")),
-				core.InputControl("", Name("name"), Required()),
-				Label(Text("Label")),
-				core.InputControl("", Name("label")),
-				Label(Text("Description")),
-				core.InputControl("", Name("description")),
-				Label(Text("Metric type")),
-				core.SelectControl("", Name("metric_type"), Option(Value("SUM"), Text("SUM")), Option(Value("COUNT"), Text("COUNT")), Option(Value("COUNT_DISTINCT"), Text("COUNT_DISTINCT")), Option(Value("AVG"), Text("AVG")), Option(Value("MIN"), Text("MIN")), Option(Value("MAX"), Text("MAX")), Option(Value("RATIO"), Text("RATIO"))),
-				Label(Text("Expression mode")),
-				core.SelectControl("", Name("expression_mode"), Option(Value("DSL"), Text("DSL")), Option(Value("SQL"), Text("SQL"))),
-				Label(Text("Expression")),
-				core.TextareaControl("min-h-24", Name("expression"), Required()),
-				Label(Text("Metric filter SQL")),
-				core.InputControl("", Name("filter_sql")),
-				Label(Text("Default time grain")),
-				core.InputControl("", Name("default_time_grain")),
-				Label(Text("Format")),
-				core.InputControl("", Name("format")),
-				Label(Text("Certification state")),
-				core.SelectControl("", Name("certification_state"), Option(Value("DRAFT"), Text("DRAFT")), Option(Value("CERTIFIED"), Text("CERTIFIED")), Option(Value("DEPRECATED"), Text("DEPRECATED"))),
-				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create metric"))),
-			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Metrics")), metricRows),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Create pre-aggregation")),
-			Form(Class("grid gap-3"), Method("post"), Action(d.PreAggCreateURL),
-				d.CSRFFieldProvider(),
-				Label(Text("Name")),
-				core.InputControl("", Name("name"), Required()),
-				Label(Text("Metric set (comma separated)")),
-				core.InputControl("", Name("metric_set")),
-				Label(Text("Dimension set (comma separated)")),
-				core.InputControl("", Name("dimension_set")),
-				Label(Text("Grain")),
-				core.InputControl("", Name("grain")),
-				Label(Text("Target relation")),
-				core.InputControl("", Name("target_relation"), Required()),
-				Label(Text("Refresh policy")),
-				core.InputControl("", Name("refresh_policy")),
-				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create pre-aggregation"))),
-			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Pre-aggregations")), preAggRows),
-		semanticQueryCard(d.ProjectName, d.ModelName, d.QueryExplainURL, d.QueryRunURL, d.CSRFFieldProvider),
 	)
 }
 
@@ -277,8 +294,10 @@ func semanticRelationshipsPage(d semanticRelationshipsPageData) Node {
 	}
 
 	return core.AppPage("Semantic Relationships", "semantic", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text("Create relationship")),
+		semanticSectionNav("relationships"),
+		core.PageHeader("Build", "Semantic relationships", "Model relationships stay adjacent to the semantic model inventory, but they are a secondary workflow to the core model workspace."),
+		core.SectionSurface(
+			core.SectionHeader("Create relationship", "Define reusable join paths between semantic models."),
 			Form(Class("grid gap-3"), Method("post"), Action("/ui/semantic/relationships"),
 				d.CSRFFieldProvider(),
 				Label(Text("Name")),
@@ -299,7 +318,8 @@ func semanticRelationshipsPage(d semanticRelationshipsPageData) Node {
 				Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Create relationship"))),
 			),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
+		core.SectionSurface(
+			core.SectionHeader("Existing relationships", "Review and maintain relationship paths independently from model authoring."),
 			table,
 			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(d.Page.MaxResults)+" relationships. Total: "+strconv.FormatInt(d.Total, 10))),
 		),
@@ -494,20 +514,24 @@ func semanticFormPage(principal domain.ContextPrincipal, title, action string, c
 	nodes := []Node{csrfFieldProvider()}
 	nodes = append(nodes, fields...)
 	nodes = append(nodes, Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save"))))
-	return core.AppPage(title, "semantic", principal, core.Card(Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes))))
-}
-
-func semanticCard(title, copy, href string) Node {
-	return core.Card(H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-[var(--fgColor-muted)]"), Text(copy)), core.SecondaryLink(href, "", Text("Open")))
+	return core.AppPage(title, "semantic", principal,
+		semanticSectionNav("models"),
+		core.SectionSurface(
+			core.SectionHeader(title, "Create or update semantic workspace records."),
+			Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes)),
+		),
+	)
 }
 
 func sectionHeader(title, copy, href, action string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		Div(Class("flex flex-wrap items-start justify-between gap-3"),
-			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(copy))),
-			core.PrimaryLink(href, "", Text(action)),
-		),
-	)
+	return core.PageHeader("Build", title, copy, core.PrimaryLink(href, "", Text(action)))
+}
+
+func semanticSectionNav(active string) Node {
+	return core.SectionTabs([]core.SectionTab{
+		{Label: "Models", Href: "/ui/semantic/models", Active: active == "models"},
+		{Label: "Relationships", Href: "/ui/semantic/relationships", Active: active == "relationships"},
+	})
 }
 
 func optionSelected(value, selected string) Node {
