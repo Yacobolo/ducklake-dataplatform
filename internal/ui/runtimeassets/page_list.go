@@ -40,23 +40,21 @@ func assetsListPage(principal domain.ContextPrincipal, rows []assetsListRowData,
 		"Assets",
 		"assets",
 		principal,
-		Div(
-			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			Div(Class("mb-4 flex flex-wrap items-start justify-between gap-3"),
-				Div(
-					H2(Class("m-0 text-xl font-semibold"), Text("Runtime assets")),
-					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(assetsHeroText(summary, canMaterialize, backfillConfigured))),
+		core.ListPageLayout(
+			core.ListPageHeader("Runtime assets", assetsHeroText(summary, canMaterialize, backfillConfigured), core.SecondaryLink("/ui/catalogs", "", Text("Browse catalogs"))),
+			core.SectionSurface(
+				core.SectionHeader("Asset signals", "Keep high-level asset coverage metrics separate from the detailed registry table."),
+				core.MetricsGrid(
+					core.MetricCard("Total", strconv.Itoa(summary.Total), "Registered runtime objects"),
+					core.MetricCard("Active", strconv.Itoa(summary.Active), "Assets ready to run"),
+					core.MetricCard("Freshness", strconv.Itoa(summary.FreshnessTracked), "Assets with SLAs"),
+					core.MetricCard("Auto", strconv.Itoa(summary.AutoMaterialized), "Auto materialized assets"),
 				),
-				core.SecondaryLink("/ui/catalogs", "", Text("Browse catalogs")),
 			),
-			Div(Class("mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"),
-				metricCard("Total", strconv.Itoa(summary.Total), "Registered runtime objects"),
-				metricCard("Active", strconv.Itoa(summary.Active), "Assets ready to run"),
-				metricCard("Freshness", strconv.Itoa(summary.FreshnessTracked), "Assets with SLAs"),
-				metricCard("Auto", strconv.Itoa(summary.AutoMaterialized), "Auto materialized assets"),
+			core.ListPageBody(
+				assetsListTable(rows),
+				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" assets. Total: "+strconv.FormatInt(total, 10)),
 			),
-			assetsListTable(rows),
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" assets. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
@@ -137,15 +135,6 @@ func assetsListTable(rows []assetsListRowData) Node {
 			THead(Tr(Th(Text("Asset key")), Th(Text("Type")), Th(Text("Owner")), Th(Text("Signals")), Th(Text("Active")), Th(Text("Updated")))),
 			TBody(Group(tableRows)),
 		),
-	)
-}
-
-func metricCard(label, value, hint string) Node {
-	return Div(
-		Class("rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3"),
-		P(Class("m-0 text-xs font-medium uppercase tracking-wide text-[var(--fgColor-muted)]"), Text(label)),
-		P(Class("my-1 text-2xl font-semibold"), Text(value)),
-		P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(hint)),
 	)
 }
 

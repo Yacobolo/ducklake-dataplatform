@@ -156,10 +156,12 @@ func modelsListPage(principal domain.ContextPrincipal, rows []modelsListRowData,
 		))
 	}
 	return core.AppPage("Models", "models", principal,
-		sectionHeader("Models", "Manage dbt-style models and tests.", "/ui/models/new", "New model"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" models. Total: "+strconv.FormatInt(total, 10))),
+		core.ListPageLayout(
+			core.ListPageHeader("Models", "Manage dbt-style models and tests.", core.SecondaryLink("/ui/macros", "", Text("Open macros")), core.PrimaryLink("/ui/models/new", "", Text("New model"))),
+			core.ListPageBody(
+				table,
+				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" models. Total: "+strconv.FormatInt(total, 10)),
+			),
 		),
 	)
 }
@@ -194,57 +196,73 @@ func modelsDetailPage(d modelsDetailPageData) Node {
 	}
 
 	return core.AppPage("Model: "+d.QualifiedName, "models", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text(d.QualifiedName)),
-			P(Class("m-0 text-sm"), Strong(Text("Materialization: ")), Text(d.Materialization)),
-			P(Class("m-0 text-sm"), Strong(Text("Owner: ")), Text(d.Owner)),
-			P(Class("m-0 text-sm"), Strong(Text("Depends on: ")), Text(d.DependsOn)),
-			P(Class("m-0 text-sm"), Strong(Text("Config: ")), Text(d.ConfigText)),
-			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
-				core.SecondaryLink(d.EditURL, "", Text("Edit")),
-				core.PrimaryLink(d.NewTestURL, "", Text("New test")),
-				core.SecondaryLink(d.RunsURL, "", Text("Runs")),
-				core.SecondaryLink(d.DAGURL, "", Text("DAG")),
-				core.SecondaryLink(d.SourceFreshnessURL, "", Text("Source freshness")),
-				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+		core.DetailShell(
+			core.DetailHero(
+				core.DetailHeroCopy(
+					core.Kicker("Build"),
+					core.DetailTitle(d.QualifiedName),
+					core.DetailDescription("Model detail now prioritizes current state in the main column and keeps run/test actions in a secondary rail."),
+				),
+				core.DetailHeroMeta(
+					core.BadgeRow(core.Badge(d.Materialization, "accent")),
+					core.DetailSummaryList([][2]string{
+						{"Owner", emptyDash(d.Owner)},
+						{"Depends on", emptyDash(d.DependsOn)},
+						{"Config", emptyDash(d.ConfigText)},
+					}),
+				),
 			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Freshness")),
-			freshness,
-			Form(Method("post"), Action(d.FreshnessURL), d.CSRFFieldProvider(), core.SecondaryButton("", Type("submit"), Text("Refresh freshness status"))),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Trigger model run")),
-			Form(Class("grid gap-3"), Method("post"), Action(d.TriggerRunURL),
-				d.CSRFFieldProvider(),
-				Input(Type("hidden"), Name("project_name"), Value(d.TriggerProject)),
-				Input(Type("hidden"), Name("model_name"), Value(d.TriggerModel)),
-				Label(Text("Target catalog")),
-				core.InputControl("", Name("target_catalog"), Required()),
-				Label(Text("Target schema")),
-				core.InputControl("", Name("target_schema"), Required()),
-				Label(Text("Selector")),
-				core.InputControl("", Name("selector"), Value(d.DefaultSelector)),
-				core.PrimaryButton("", Type("submit"), Text("Trigger model run")),
+			core.DetailLayout(
+				core.DetailMain(
+					core.SectionSurface(
+						core.SectionHeader("Freshness", "Keep SLA and staleness context near the model summary."),
+						freshness,
+						Form(Method("post"), Action(d.FreshnessURL), d.CSRFFieldProvider(), core.SecondaryButton("", Type("submit"), Text("Refresh freshness status"))),
+					),
+					core.SectionSurface(
+						core.SectionHeader("SQL", "Model SQL remains in the primary content column for review."),
+						Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.SQL)),
+					),
+					core.SectionSurface(
+						core.SectionHeader("Tests", "Inspect and remove configured tests from the same workspace."),
+						tests,
+					),
+				),
+				core.DetailRail(
+					core.DetailRailCard("Actions", "Navigation and mutations live in the rail so the page reads as a detail workspace.",
+						core.ButtonGroup("",
+							core.SecondaryLink(d.EditURL, "", Text("Edit")),
+							core.PrimaryLink(d.NewTestURL, "", Text("New test")),
+							core.SecondaryLink(d.RunsURL, "", Text("Runs")),
+							core.SecondaryLink(d.DAGURL, "", Text("DAG")),
+							core.SecondaryLink(d.SourceFreshnessURL, "", Text("Source freshness")),
+							Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+						),
+					),
+					core.DetailRailCard("Trigger model run", "Execution controls stay secondary to the model definition.",
+						Form(Class("grid gap-3"), Method("post"), Action(d.TriggerRunURL),
+							d.CSRFFieldProvider(),
+							Input(Type("hidden"), Name("project_name"), Value(d.TriggerProject)),
+							Input(Type("hidden"), Name("model_name"), Value(d.TriggerModel)),
+							Label(Text("Target catalog")),
+							core.InputControl("", Name("target_catalog"), Required()),
+							Label(Text("Target schema")),
+							core.InputControl("", Name("target_schema"), Required()),
+							Label(Text("Selector")),
+							core.InputControl("", Name("selector"), Value(d.DefaultSelector)),
+							core.PrimaryButton("", Type("submit"), Text("Trigger model run")),
+						),
+					),
+					core.DetailRailCard("Cancel model run", "Keep the interrupt path available without giving it equal weight to the definition.",
+						Form(Class("grid gap-3"), Method("post"), Action(d.CancelRunURL),
+							d.CSRFFieldProvider(),
+							Label(Text("Run ID to cancel")),
+							core.InputControl("", Name("run_id")),
+							core.SecondaryButton("", Type("submit"), Text("Cancel model run")),
+						),
+					),
+				),
 			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Cancel model run")),
-			Form(Class("grid gap-3"), Method("post"), Action(d.CancelRunURL),
-				d.CSRFFieldProvider(),
-				Label(Text("Run ID to cancel")),
-				core.InputControl("", Name("run_id")),
-				core.SecondaryButton("", Type("submit"), Text("Cancel model run")),
-			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("SQL")),
-			Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.SQL)),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Tests")),
-			tests,
 		),
 	)
 }
@@ -328,8 +346,8 @@ func modelsDAGPage(d modelsDAGPageData) Node {
 			))
 		}
 		tierNodes = append(tierNodes,
-			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-				H2(Class("mt-0 text-lg font-semibold"), Text(tier.Label)),
+			core.SectionSurface(
+				core.SectionHeader(tier.Label, ""),
 				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
 					THead(Tr(Th(Text("Model")), Th(Text("Materialization")), Th(Text("Depends on")))),
 					TBody(Group(rows)),
@@ -338,14 +356,14 @@ func modelsDAGPage(d modelsDAGPageData) Node {
 		)
 	}
 	if len(tierNodes) == 0 {
-		tierNodes = append(tierNodes, Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No model DAG available.")), core.SecondaryLink("/ui/models", "", Text("Back to models"))))
+		tierNodes = append(tierNodes, core.SectionSurface(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No model DAG available.")), core.SecondaryLink("/ui/models", "", Text("Back to models"))))
 	}
 	title := "Model DAG"
 	if d.ProjectName != nil {
 		title += ": " + *d.ProjectName
 	}
 	content := append([]Node{
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), core.SecondaryLink("/ui/models", "", Text("Back to models"))),
+		core.PageHeader("Build", title, "Inspect dependency tiers without switching back to a separate hub.", core.SecondaryLink("/ui/models", "", Text("Back to models"))),
 	}, tierNodes...)
 	return core.AppPage(title, "models", d.Principal, content...)
 }
@@ -372,10 +390,12 @@ func modelRunsListPage(d modelRunsListPageData) Node {
 		))
 	}
 	return core.AppPage("Model Runs", "models", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), core.SecondaryLink("/ui/models/dag", "", Text("View DAG"))),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(d.Page.MaxResults)+" runs. Total: "+strconv.FormatInt(d.Total, 10))),
+		core.ListPageLayout(
+			core.ListPageHeader("Model runs", "Review execution history separately from model authoring.", core.SecondaryLink("/ui/models/dag", "", Text("View DAG"))),
+			core.ListPageBody(
+				table,
+				core.ListPageFooter("Showing up to "+strconv.Itoa(d.Page.MaxResults)+" runs. Total: "+strconv.FormatInt(d.Total, 10)),
+			),
 		),
 	)
 }
@@ -400,25 +420,41 @@ func modelRunDetailPage(d modelRunDetailPageData) Node {
 		))
 	}
 	return core.AppPage("Model Run: "+d.RunID, "models", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			P(Class("m-0 text-sm"), Strong(Text("Status: ")), Text(d.Status)),
-			P(Class("m-0 text-sm"), Strong(Text("Trigger type: ")), Text(d.TriggerType)),
-			P(Class("m-0 text-sm"), Strong(Text("Triggered by: ")), Text(d.TriggeredBy)),
-			P(Class("m-0 text-sm"), Strong(Text("Target: ")), Text(d.TargetCatalog+"."+d.TargetSchema)),
-			P(Class("m-0 text-sm"), Strong(Text("Selector: ")), Text(d.Selector)),
-			P(Class("m-0 text-sm"), Strong(Text("Variables: ")), Text(d.Variables)),
-			P(Class("m-0 text-sm"), Strong(Text("Created: ")), Text(d.CreatedAtText)),
-			P(Class("m-0 text-sm"), Strong(Text("Started: ")), Text(d.StartedAtText)),
-			P(Class("m-0 text-sm"), Strong(Text("Finished: ")), Text(d.FinishedAtText)),
-			P(Class("m-0 text-sm"), Strong(Text("Error: ")), Text(d.ErrorText)),
-			Form(Method("post"), Action(d.CancelURL), d.CSRFFieldProvider(), core.SecondaryButton("", Type("submit"), Text("Cancel run"))),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Compile manifest")), Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.CompileManifest))),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Steps")),
-			Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-				THead(Tr(Th(Text("Model")), Th(Text("Status")), Th(Text("Tier")), Th(Text("Rows")), Th(Text("Started")), Th(Text("Finished")), Th(Text("Tests")), Th(Text("Error")))),
-				TBody(Group(stepRows)),
-			)),
+		core.ResultPageLayout("Build", "Model run: "+d.RunID, "Execution details are split into a report-style main column and a compact rail for control actions.",
+			core.DetailLayout(
+				core.DetailMain(
+					core.SectionSurface(
+						core.SectionHeader("Steps", "Inspect execution and test summaries by model step."),
+						Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
+							THead(Tr(Th(Text("Model")), Th(Text("Status")), Th(Text("Tier")), Th(Text("Rows")), Th(Text("Started")), Th(Text("Finished")), Th(Text("Tests")), Th(Text("Error")))),
+							TBody(Group(stepRows)),
+						)),
+					),
+					core.SectionSurface(
+						core.SectionHeader("Compile manifest", "Manifest output reads as a result report instead of another generic card."),
+						Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.CompileManifest)),
+					),
+				),
+				core.DetailRail(
+					core.DetailRailCard("Run summary", "Key execution facts stay visible without pushing report content down the page.",
+						core.KeyValueGrid([][2]string{
+							{"Status", d.Status},
+							{"Trigger type", d.TriggerType},
+							{"Triggered by", d.TriggeredBy},
+							{"Target", d.TargetCatalog + "." + d.TargetSchema},
+							{"Selector", d.Selector},
+							{"Variables", emptyDash(d.Variables)},
+							{"Created", d.CreatedAtText},
+							{"Started", d.StartedAtText},
+							{"Finished", d.FinishedAtText},
+							{"Error", emptyDash(d.ErrorText)},
+						}),
+					),
+					core.DetailRailCard("Actions", "Control actions stay secondary to the run report.",
+						Form(Method("post"), Action(d.CancelURL), d.CSRFFieldProvider(), core.SecondaryButton("", Type("submit"), Text("Cancel run"))),
+					),
+				),
+			),
 		),
 	)
 }
@@ -426,32 +462,36 @@ func modelRunDetailPage(d modelRunDetailPageData) Node {
 func modelSourceFreshnessPage(d modelSourceFreshnessPageData) Node {
 	resultNode := Node(nil)
 	if d.Result != nil {
-		resultNode = Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text("Result")),
-			P(Text("Fresh: "+boolLabel(d.Result.IsFresh))),
-			P(Text("Source: "+d.Result.SourceSchema+"."+d.Result.SourceTable)),
-			P(Text("Timestamp column: "+d.Result.TimestampCol)),
-			P(Text("Last loaded at: "+formatTimePtr(d.Result.LastLoadedAt))),
-			P(Text("Stale since: "+formatTimePtr(d.Result.StaleSince))),
+		resultNode = core.SectionSurface(
+			core.SectionHeader("Result", "Freshness checks render as a report block below the input form."),
+			core.KeyValueGrid([][2]string{
+				{"Fresh", boolLabel(d.Result.IsFresh)},
+				{"Source", d.Result.SourceSchema + "." + d.Result.SourceTable},
+				{"Timestamp column", d.Result.TimestampCol},
+				{"Last loaded at", formatTimePtr(d.Result.LastLoadedAt)},
+				{"Stale since", formatTimePtr(d.Result.StaleSince)},
+			}),
 		)
 	}
 	return core.AppPage("Source Freshness", "models", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text("Check source freshness")),
-			Form(Class("grid gap-3"), Method("post"), Action("/ui/models/source-freshness"),
-				d.CSRFFieldProvider(),
-				Label(Text("Source schema")),
-				core.InputControl("", Name("source_schema"), Value(d.SourceSchema), Required()),
-				Label(Text("Source table")),
-				core.InputControl("", Name("source_table"), Value(d.SourceTable), Required()),
-				Label(Text("Timestamp column")),
-				core.InputControl("", Name("timestamp_column"), Value(d.TimestampColumn)),
-				Label(Text("Max lag seconds")),
-				core.InputControl("", Name("max_lag_seconds"), Value(defaultString(d.MaxLagSecondsText, "3600")), Required()),
-				core.PrimaryButton("", Type("submit"), Text("Check freshness")),
+		core.ResultPageLayout("Build", "Source freshness", "Use a focused input surface, then review the resulting freshness report below.",
+			core.SectionSurface(
+				core.SectionHeader("Check source freshness", "Run a one-off freshness check for a source table."),
+				Form(Class("grid gap-3"), Method("post"), Action("/ui/models/source-freshness"),
+					d.CSRFFieldProvider(),
+					Label(Text("Source schema")),
+					core.InputControl("", Name("source_schema"), Value(d.SourceSchema), Required()),
+					Label(Text("Source table")),
+					core.InputControl("", Name("source_table"), Value(d.SourceTable), Required()),
+					Label(Text("Timestamp column")),
+					core.InputControl("", Name("timestamp_column"), Value(d.TimestampColumn)),
+					Label(Text("Max lag seconds")),
+					core.InputControl("", Name("max_lag_seconds"), Value(defaultString(d.MaxLagSecondsText, "3600")), Required()),
+					core.PrimaryButton("", Type("submit"), Text("Check freshness")),
+				),
 			),
+			resultNode,
 		),
-		resultNode,
 	)
 }
 
@@ -459,17 +499,9 @@ func modelFormPage(principal domain.ContextPrincipal, title, action string, csrf
 	nodes := []Node{csrfFieldProvider()}
 	nodes = append(nodes, fields...)
 	nodes = append(nodes, Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save"))))
-	return core.AppPage(title, "models", principal, Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes))))
-}
-
-func sectionHeader(title, copy, href, action string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		Div(Class("flex flex-wrap items-start justify-between gap-3"),
-			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(copy))),
-			Div(Class("flex flex-wrap items-center gap-3"),
-				core.SecondaryLink("/ui/macros", "", Text("Open macros")),
-				core.PrimaryLink(href, "", Text(action)),
-			),
+	return core.AppPage(title, "models", principal,
+		core.FormPageLayout("Build", title, "Model authoring uses one primary form surface so the page intent is obvious at a glance.",
+			Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes)),
 		),
 	)
 }
@@ -479,4 +511,11 @@ func optionSelected(value, current string) Node {
 		return Option(Value(value), Selected(), Text(value))
 	}
 	return Option(Value(value), Text(value))
+}
+
+func emptyDash(v string) string {
+	if v == "" {
+		return "-"
+	}
+	return v
 }

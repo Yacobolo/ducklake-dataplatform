@@ -87,13 +87,12 @@ func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData,
 	}
 
 	return core.AppPage("Macros", "macros", principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			Div(Class("mb-4 flex flex-wrap items-center justify-between gap-3"),
-				Div(H2(Class("m-0 text-xl font-semibold"), Text("Macros")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Create and manage reusable SQL and transformation helpers."))),
-				core.PrimaryLink("/ui/macros/new", "", Text("New macro")),
+		core.ListPageLayout(
+			core.ListPageHeader("Macros", "Create and manage reusable SQL and transformation helpers.", core.PrimaryLink("/ui/macros/new", "", Text("New macro"))),
+			core.ListPageBody(
+				table,
+				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" macros. Total: "+strconv.FormatInt(total, 10)),
 			),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" macros. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
@@ -120,32 +119,50 @@ func macroDetailPage(d macroDetailPageData) Node {
 	}
 
 	return core.AppPage("Macro: "+d.Name, "macros", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			Div(Class("flex flex-wrap items-start justify-between gap-3"),
-				Div(
-					H2(Class("m-0 text-xl font-semibold"), Text(d.Name)),
-					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Owner: "+emptyDash(d.Owner))),
+		core.DetailShell(
+			core.DetailHero(
+				core.DetailHeroCopy(
+					core.Kicker("Build"),
+					core.DetailTitle(d.Name),
+					core.DetailDescription("Macros now follow the same build-workspace structure as models, with summary in the hero and actions in the rail."),
 				),
-				Div(Class("mt-0 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
-					core.SecondaryLink(d.EditURL, "", Text("Edit")),
-					core.SecondaryLink(d.DiffURL, "", Text("Diff revisions")),
-					core.SecondaryLink(d.ImpactURL, "", Text("Impact")),
-					Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), core.DangerButton("", Type("submit"), Text("Delete"))),
+				core.DetailHeroMeta(
+					core.BadgeRow(statusPill(d.Type, "accent"), statusPill(d.Status, "neutral")),
+					core.DetailSummaryList([][2]string{
+						{"Visibility", d.Visibility},
+						{"Owner", emptyDash(d.Owner)},
+					}),
 				),
 			),
-			Dl(Class("mt-4 grid gap-3 sm:grid-cols-3"),
-				metaRow("Type", d.Type),
-				metaRow("Visibility", d.Visibility),
-				metaRow("Status", d.Status),
+			core.DetailLayout(
+				core.DetailMain(
+					core.SectionSurface(
+						core.SectionHeader("Definition", "Keep the macro body in the primary workspace."),
+						Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Definition)),
+					),
+					core.SectionSurface(
+						core.SectionHeader("Revisions", "Revision history belongs in the main detail stream."),
+						revisions,
+					),
+				),
+				core.DetailRail(
+					core.DetailRailCard("Summary", "A compact build summary keeps the current macro state easy to scan.",
+						core.MetadataSummary([][2]string{
+							{"Type", d.Type},
+							{"Visibility", d.Visibility},
+							{"Status", d.Status},
+						}),
+					),
+					core.DetailRailCard("Actions", "Editing, diffing, and impact analysis stay together in the rail.",
+						core.ButtonGroup("",
+							core.SecondaryLink(d.EditURL, "", Text("Edit")),
+							core.SecondaryLink(d.DiffURL, "", Text("Diff revisions")),
+							core.SecondaryLink(d.ImpactURL, "", Text("Impact")),
+							Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), core.DangerButton("", Type("submit"), Text("Delete"))),
+						),
+					),
+				),
 			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Definition")),
-			Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Definition)),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Revisions")),
-			revisions,
 		),
 	)
 }
@@ -202,7 +219,7 @@ func macroFormPage(principal domain.ContextPrincipal, title, action string, csrf
 	nodes = append(nodes, Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save"))))
 
 	return core.AppPage(title, "macros", principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
+		core.FormPageLayout("Build", title, "Macro authoring now uses the shared single-surface form layout.",
 			Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes)),
 		),
 	)
@@ -211,10 +228,12 @@ func macroFormPage(principal domain.ContextPrincipal, title, action string, csrf
 func macroDiffPage(d macroDiffPageData) Node {
 	if d.Diff == nil {
 		return core.AppPage("Macro Diff: "+d.Name, "macros", d.Principal,
-			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-				H2(Class("mt-0 text-xl font-semibold"), Text("Macro diff")),
-				P(Class("text-xs text-[var(--fgColor-muted)]"), Text("At least two revisions are required to diff a macro.")),
-				core.SecondaryLink("/ui/macros/"+d.Name, "", Text("Back to macro")),
+			core.ResultPageLayout("Build", "Macro diff", "Revision comparison renders as a result workspace instead of a stack of unrelated cards.",
+				core.SectionSurface(
+					core.SectionHeader("Compare revisions", "At least two revisions are required before a diff can be shown."),
+					P(Class("text-xs text-[var(--fgColor-muted)]"), Text("At least two revisions are required to diff a macro.")),
+					core.SecondaryLink("/ui/macros/"+d.Name, "", Text("Back to macro")),
+				),
 			),
 		)
 	}
@@ -228,41 +247,43 @@ func macroDiffPage(d macroDiffPageData) Node {
 	}
 
 	return core.AppPage("Macro Diff: "+d.Name, "macros", d.Principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-xl font-semibold"), Text("Compare revisions")),
-			Form(Class("grid gap-3 md:grid-cols-2"), Method("get"), Action("/ui/macros/"+d.Name+"/diff"),
-				Div(Label(Text("From revision")), core.SelectControl("", Name("from"), Group(fromOptions))),
-				Div(Label(Text("To revision")), core.SelectControl("", Name("to"), Group(toOptions))),
-				Div(Class("md:col-span-2"), core.PrimaryButton("", Type("submit"), Text("Compare revisions"))),
+		core.ResultPageLayout("Build", "Macro diff", "Compare revisions in a report-style layout with summary up front and detailed changes below.",
+			core.SectionSurface(
+				core.SectionHeader("Compare revisions", "Choose the revisions to compare, then inspect the diff sections below."),
+				Form(Class("grid gap-3 md:grid-cols-2"), Method("get"), Action("/ui/macros/"+d.Name+"/diff"),
+					Div(Label(Text("From revision")), core.SelectControl("", Name("from"), Group(fromOptions))),
+					Div(Label(Text("To revision")), core.SelectControl("", Name("to"), Group(toOptions))),
+					Div(Class("md:col-span-2"), core.PrimaryButton("", Type("submit"), Text("Compare revisions"))),
+				),
+				core.MetadataSummary([][2]string{
+					{"Changed", boolLabel(d.Diff.Changed)},
+					{"Parameters changed", boolLabel(d.Diff.ParametersChanged)},
+					{"Body changed", boolLabel(d.Diff.BodyChanged)},
+					{"Description changed", boolLabel(d.Diff.DescriptionChanged)},
+					{"Status changed", boolLabel(d.Diff.StatusChanged)},
+				}),
 			),
-			Dl(Class("mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5"),
-				metaRow("Changed", boolLabel(d.Diff.Changed)),
-				metaRow("Parameters changed", boolLabel(d.Diff.ParametersChanged)),
-				metaRow("Body changed", boolLabel(d.Diff.BodyChanged)),
-				metaRow("Description changed", boolLabel(d.Diff.DescriptionChanged)),
-				metaRow("Status changed", boolLabel(d.Diff.StatusChanged)),
+			core.SectionSurface(
+				core.SectionHeader("Parameters", "Review parameter changes separately from body changes."),
+				P(Text("From: "+stringsJoin(d.Diff.FromParameters))),
+				P(Text("To: "+stringsJoin(d.Diff.ToParameters))),
 			),
+			core.SectionSurface(
+				core.SectionHeader("Description", "Description changes stay separate from the SQL body diff."),
+				P(Text("From: "+emptyDash(d.Diff.FromDescription))),
+				P(Text("To: "+emptyDash(d.Diff.ToDescription))),
+			),
+			core.SectionSurface(
+				core.SectionHeader("Body", "Read both revisions side by side in the same result workspace."),
+				H4(Class("mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--fgColor-muted)]"), Text("From")),
+				Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Diff.FromBody)),
+				H4(Class("mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--fgColor-muted)]"), Text("To")),
+				Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Diff.ToBody)),
+			),
+			macroImpactSection("Impact added", d.ImpactAdded, "No newly impacted models."),
+			macroImpactSection("Impact removed", d.ImpactRemoved, "No removed impacted models."),
+			macroImpactSection("Impact unchanged", d.ImpactUnchanged, "No unchanged impacted models."),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Parameters")),
-			P(Text("From: "+stringsJoin(d.Diff.FromParameters))),
-			P(Text("To: "+stringsJoin(d.Diff.ToParameters))),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Description")),
-			P(Text("From: "+emptyDash(d.Diff.FromDescription))),
-			P(Text("To: "+emptyDash(d.Diff.ToDescription))),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H3(Class("mt-0 text-lg font-semibold"), Text("Body")),
-			H4(Class("mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--fgColor-muted)]"), Text("From")),
-			Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Diff.FromBody)),
-			H4(Class("mb-2 text-sm font-semibold uppercase tracking-wide text-[var(--fgColor-muted)]"), Text("To")),
-			Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Diff.ToBody)),
-		),
-		macroImpactSection("Impact added", d.ImpactAdded, "No newly impacted models."),
-		macroImpactSection("Impact removed", d.ImpactRemoved, "No removed impacted models."),
-		macroImpactSection("Impact unchanged", d.ImpactUnchanged, "No unchanged impacted models."),
 	)
 }
 
@@ -274,8 +295,8 @@ func macroImpactPage(d macroImpactPageData) Node {
 
 func macroImpactSection(title string, rowsData []macroImpactRowData, emptyMessage string) Node {
 	if len(rowsData) == 0 {
-		return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text(title)),
+		return core.SectionSurface(
+			core.SectionHeader(title, ""),
 			P(Class("text-xs text-[var(--fgColor-muted)]"), Text(emptyMessage)),
 		)
 	}
@@ -284,8 +305,8 @@ func macroImpactSection(title string, rowsData []macroImpactRowData, emptyMessag
 		row := rowsData[i]
 		rows = append(rows, Tr(Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.ModelName))), Td(Text(row.LastSeen))))
 	}
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		H2(Class("mt-0 text-lg font-semibold"), Text(title)),
+	return core.SectionSurface(
+		core.SectionHeader(title, ""),
 		Div(Class("overflow-x-auto"),
 			Table(Class("min-w-full text-left text-sm"),
 				THead(Tr(Th(Text("Model")), Th(Text("Last seen")))),

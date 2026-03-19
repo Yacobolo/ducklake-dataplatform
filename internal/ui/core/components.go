@@ -1,6 +1,10 @@
 package core
 
 import (
+	"fmt"
+
+	"duck-demo/internal/domain"
+
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
@@ -325,6 +329,62 @@ func SectionSurface(nodes ...Node) Node {
 	return Div(append([]Node{Class("grid gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-5 max-md:p-4")}, nodes...)...)
 }
 
+func ListPageLayout(nodes ...Node) Node {
+	return Div(append([]Node{Class("grid gap-4")}, nodes...)...)
+}
+
+func ListPageHeader(title, description string, actions ...Node) Node {
+	return PageHeader("", title, description, actions...)
+}
+
+func ListPageBody(nodes ...Node) Node {
+	return SectionSurface(nodes...)
+}
+
+func ListPageFooter(summary string) Node {
+	return P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(summary))
+}
+
+func ListPagination(basePath string, page domain.PageRequest, total int64) Node {
+	shown := page.Limit()
+	if total < int64(shown) {
+		shown = int(total)
+	}
+	summary := fmt.Sprintf("Showing %d of %d entries.", shown, total)
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	if nextToken == "" {
+		return ListPageBody(
+			Div(
+				Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
+				ListPageFooter(summary),
+				Span(Class("inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
+			),
+		)
+	}
+	url := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
+	return ListPageBody(
+		Div(
+			Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
+			ListPageFooter(summary),
+			SecondaryLink(url, "small", Text("Next page")),
+		),
+	)
+}
+
+func FormPageLayout(kicker, title, description string, nodes ...Node) Node {
+	parts := []Node{PageHeader(kicker, title, description)}
+	if len(nodes) > 0 {
+		parts = append(parts, SectionSurface(nodes...))
+	}
+	return ListPageLayout(parts...)
+}
+
+func ResultPageLayout(kicker, title, description string, nodes ...Node) Node {
+	parts := []Node{PageHeader(kicker, title, description)}
+	parts = append(parts, nodes...)
+	return ListPageLayout(parts...)
+}
+
 func SectionHeader(title, description string, actions ...Node) Node {
 	descriptionNode := Node(nil)
 	if description != "" {
@@ -393,6 +453,39 @@ func DetailMain(nodes ...Node) Node {
 
 func DetailRail(nodes ...Node) Node {
 	return Div(append([]Node{Class("flex min-w-0 flex-col gap-4")}, nodes...)...)
+}
+
+func DetailRailCard(title, description string, nodes ...Node) Node {
+	parts := make([]Node, 0, len(nodes)+1)
+	if title != "" || description != "" {
+		parts = append(parts, SectionHeader(title, description))
+	}
+	parts = append(parts, nodes...)
+	return SectionSurface(parts...)
+}
+
+func MetadataSummary(items [][2]string) Node {
+	cards := make([]Node, 0, len(items))
+	for i := range items {
+		cards = append(cards, Div(
+			Class("grid gap-1 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-3 py-3"),
+			Span(Class("text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"), Text(items[i][0])),
+			Span(Class("text-sm text-[var(--fgColor-default)]"), Text(items[i][1])),
+		))
+	}
+	return Div(Class("grid gap-3 sm:grid-cols-2 xl:grid-cols-3"), Group(cards))
+}
+
+func KeyValueGrid(items [][2]string) Node {
+	rows := make([]Node, 0, len(items))
+	for i := range items {
+		rows = append(rows, Div(
+			Class("grid gap-1 border-b border-[var(--borderColor-default)] pb-3 last:border-b-0 last:pb-0"),
+			Span(Class("text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"), Text(items[i][0])),
+			Span(Class("text-sm text-[var(--fgColor-default)]"), Text(items[i][1])),
+		))
+	}
+	return Div(Class("grid gap-3"), Group(rows))
 }
 
 func ItemList(extraClass string, nodes ...Node) Node {

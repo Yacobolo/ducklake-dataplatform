@@ -73,12 +73,12 @@ func governanceHomePage(principal domain.ContextPrincipal) Node {
 	return core.AppPage("Governance", "governance", principal,
 		governanceSectionNav(""),
 		Div(Class("grid gap-3 md:grid-cols-2 xl:grid-cols-3"),
-			governanceCard("Search", "Search schemas, tables, and columns across catalogs.", "/ui/governance/search"),
-			governanceCard("Tags", "Manage tag definitions and assignments.", "/ui/governance/tags"),
-			governanceCard("Lineage", "Inspect upstream, downstream, and column-level lineage.", "/ui/governance/lineage"),
-			governanceCard("Audit Logs", "Inspect platform audit activity.", "/ui/governance/audit-logs"),
-			governanceCard("Query History", "Review query execution history.", "/ui/governance/query-history"),
-			governanceCard("Manifest", "Generate secure table manifests with files, filters, and masks.", "/ui/governance/manifest"),
+			core.SectionSurface(core.SectionHeader("Search", "Search schemas, tables, and columns across catalogs.", core.SecondaryLink("/ui/governance/search", "", Text("Open")))),
+			core.SectionSurface(core.SectionHeader("Tags", "Manage tag definitions and assignments.", core.SecondaryLink("/ui/governance/tags", "", Text("Open")))),
+			core.SectionSurface(core.SectionHeader("Lineage", "Inspect upstream, downstream, and column-level lineage.", core.SecondaryLink("/ui/governance/lineage", "", Text("Open")))),
+			core.SectionSurface(core.SectionHeader("Audit Logs", "Inspect platform audit activity.", core.SecondaryLink("/ui/governance/audit-logs", "", Text("Open")))),
+			core.SectionSurface(core.SectionHeader("Query History", "Review query execution history.", core.SecondaryLink("/ui/governance/query-history", "", Text("Open")))),
+			core.SectionSurface(core.SectionHeader("Manifest", "Generate secure table manifests with files, filters, and masks.", core.SecondaryLink("/ui/governance/manifest", "", Text("Open")))),
 		),
 	)
 }
@@ -204,9 +204,12 @@ func governanceAuditLogsPage(principal domain.ContextPrincipal, rows []auditRowD
 	}
 	return core.AppPage("Governance: Audit Logs", "governance", principal,
 		governanceSectionNav("audit"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" audit events. Total: "+strconv.FormatInt(total, 10))),
+		core.ListPageLayout(
+			core.ListPageHeader("Audit logs", "Review governance activity in a dedicated inspection workspace."),
+			core.ListPageBody(
+				table,
+				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" audit events. Total: "+strconv.FormatInt(total, 10)),
+			),
 		),
 	)
 }
@@ -226,9 +229,12 @@ func governanceQueryHistoryPage(principal domain.ContextPrincipal, rows []queryH
 	}
 	return core.AppPage("Governance: Query History", "governance", principal,
 		governanceSectionNav("history"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" query history entries. Total: "+strconv.FormatInt(total, 10))),
+		core.ListPageLayout(
+			core.ListPageHeader("Query history", "Keep query inspection separate from policy authoring workflows."),
+			core.ListPageBody(
+				table,
+				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" query history entries. Total: "+strconv.FormatInt(total, 10)),
+			),
 		),
 	)
 }
@@ -258,29 +264,49 @@ func governanceManifestPage(d governanceManifestPageData) Node {
 			maskRows = append(maskRows, Tr(Td(Text(column)), Td(Code(Text(d.Result.ColumnMasks[column])))))
 		}
 		resultNode = Group([]Node{
-			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Manifest summary")), P(Text("Table: "+d.Result.Schema+"."+d.Result.Table)), P(Text("Expires at: "+formatTime(d.Result.ExpiresAt)))),
-			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Columns")), Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"), THead(Tr(Th(Text("Name")), Th(Text("Type")))), TBody(Group(columnRows))))),
-			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Files")), Ul(Group(fileRows))),
-			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Row filters")), Ul(Group(filterRows))),
-			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H3(Class("mt-0 text-lg font-semibold"), Text("Column masks")), Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"), THead(Tr(Th(Text("Column")), Th(Text("Mask")))), TBody(Group(maskRows))))),
+			core.SectionSurface(
+				core.SectionHeader("Manifest summary", "Manifest output reads like a report instead of a stack of generic cards."),
+				core.KeyValueGrid([][2]string{
+					{"Table", d.Result.Schema + "." + d.Result.Table},
+					{"Expires at", formatTime(d.Result.ExpiresAt)},
+				}),
+			),
+			core.SectionSurface(
+				core.SectionHeader("Columns", ""),
+				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"), THead(Tr(Th(Text("Name")), Th(Text("Type")))), TBody(Group(columnRows)))),
+			),
+			core.SectionSurface(
+				core.SectionHeader("Files", ""),
+				Ul(Group(fileRows)),
+			),
+			core.SectionSurface(
+				core.SectionHeader("Row filters", ""),
+				Ul(Group(filterRows)),
+			),
+			core.SectionSurface(
+				core.SectionHeader("Column masks", ""),
+				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"), THead(Tr(Th(Text("Column")), Th(Text("Mask")))), TBody(Group(maskRows)))),
+			),
 		})
 	}
 	return core.AppPage("Manifest", "governance", d.Principal,
 		governanceSectionNav("manifest"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text("Generate manifest")),
-			Form(Class("grid gap-3"), Method("post"), Action("/ui/governance/manifest"),
-				d.CSRFFieldProvider(),
-				Label(Text("Catalog")),
-				core.InputControl("", Name("catalog_name"), Value(d.CatalogName)),
-				Label(Text("Schema")),
-				core.InputControl("", Name("schema_name"), Value(d.SchemaName), Required()),
-				Label(Text("Table")),
-				core.InputControl("", Name("table_name"), Value(d.TableName), Required()),
-				core.PrimaryButton("", Type("submit"), Text("Generate manifest")),
+		core.ResultPageLayout("Operate", "Manifest", "Manifest generation uses a shared result layout so the request form and output read as one workflow.",
+			core.SectionSurface(
+				core.SectionHeader("Generate manifest", "Generate secure table manifests with files, filters, and masks."),
+				Form(Class("grid gap-3"), Method("post"), Action("/ui/governance/manifest"),
+					d.CSRFFieldProvider(),
+					Label(Text("Catalog")),
+					core.InputControl("", Name("catalog_name"), Value(d.CatalogName)),
+					Label(Text("Schema")),
+					core.InputControl("", Name("schema_name"), Value(d.SchemaName), Required()),
+					Label(Text("Table")),
+					core.InputControl("", Name("table_name"), Value(d.TableName), Required()),
+					core.PrimaryButton("", Type("submit"), Text("Generate manifest")),
+				),
 			),
+			resultNode,
 		),
-		resultNode,
 	)
 }
 
@@ -367,27 +393,29 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 
 	return core.AppPage("Governance: Lineage", "governance", d.Principal,
 		governanceSectionNav("lineage"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text("Inspect lineage")),
-			Form(Class("grid gap-3 md:grid-cols-3"), Method("get"), Action("/ui/governance/lineage"),
-				Div(Label(Text("Schema")), core.InputControl("", Name("schema"), Value(d.Schema))),
-				Div(Label(Text("Table")), core.InputControl("", Name("table"), Value(d.Table))),
-				Div(Label(Text("Source column impact")), core.InputControl("", Name("column"), Value(d.Column))),
-				Div(Class("md:col-span-3"), core.PrimaryButton("", Type("submit"), Text("Load lineage"))),
+		core.ResultPageLayout("Operate", "Governance lineage", "Lineage inspection now follows the same report-style governance layout as manifest and search results.",
+			core.SectionSurface(
+				core.SectionHeader("Inspect lineage", "Load lineage by schema, table, and optional source column."),
+				Form(Class("grid gap-3 md:grid-cols-3"), Method("get"), Action("/ui/governance/lineage"),
+					Div(Label(Text("Schema")), core.InputControl("", Name("schema"), Value(d.Schema))),
+					Div(Label(Text("Table")), core.InputControl("", Name("table"), Value(d.Table))),
+					Div(Label(Text("Source column impact")), core.InputControl("", Name("column"), Value(d.Column))),
+					Div(Class("md:col-span-3"), core.PrimaryButton("", Type("submit"), Text("Load lineage"))),
+				),
 			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("mt-0 text-lg font-semibold"), Text("Purge lineage")),
-			Form(Class("grid gap-3 md:grid-cols-[minmax(0,18rem)_auto] md:items-end"), Method("post"), Action("/ui/governance/lineage/purge"),
-				d.CSRFFieldProvider(),
-				Div(Label(Text("Delete edges older than days")), core.InputControl("", Name("older_than_days"), Value("30"))),
-				Div(core.DangerButton("", Type("submit"), Text("Purge lineage"))),
+			core.SectionSurface(
+				core.SectionHeader("Purge lineage", "Administrative cleanup remains available, but separate from inspection results."),
+				Form(Class("grid gap-3 md:grid-cols-[minmax(0,18rem)_auto] md:items-end"), Method("post"), Action("/ui/governance/lineage/purge"),
+					d.CSRFFieldProvider(),
+					Div(Label(Text("Delete edges older than days")), core.InputControl("", Name("older_than_days"), Value("30"))),
+					Div(core.DangerButton("", Type("submit"), Text("Purge lineage"))),
+				),
 			),
+			core.SectionSurface(core.SectionHeader("Upstream", ""), upstreamTable),
+			core.SectionSurface(core.SectionHeader("Downstream", ""), downstreamTable),
+			core.SectionSurface(core.SectionHeader("Column lineage", ""), columnTable),
+			core.SectionSurface(core.SectionHeader("Column impact", ""), impactTable),
 		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Upstream")), upstreamTable),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Downstream")), downstreamTable),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Column lineage")), columnTable),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Column impact")), impactTable),
 	)
 }
 
@@ -400,8 +428,4 @@ func governanceSectionNav(active string) Node {
 		{Label: "Query History", Href: "/ui/governance/query-history", Active: active == "history"},
 		{Label: "Manifest", Href: "/ui/governance/manifest", Active: active == "manifest"},
 	})
-}
-
-func governanceCard(title, copy, href string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text(title)), P(Class("text-sm text-[var(--fgColor-muted)]"), Text(copy)), core.SecondaryLink(href, "", Text("Open")))
 }

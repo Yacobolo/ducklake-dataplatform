@@ -38,10 +38,40 @@ type storageVolumeRowData struct {
 func storageHomePage(principal domain.ContextPrincipal) Node {
 	return core.AppPage("Storage", "storage", principal,
 		storageSectionNav(""),
-		Div(Class("grid gap-3 md:grid-cols-2 xl:grid-cols-3"),
-			storageCard("Credentials", "Create and manage governed cloud storage credentials.", "/ui/storage/credentials"),
-			storageCard("Locations", "Manage external locations backed by storage credentials.", "/ui/storage/locations"),
-			storageCard("Volumes", "Create and manage governed volumes in catalog schemas.", "/ui/storage/volumes"),
+		core.ListPageLayout(
+			core.PageHeader("Operate", "Storage workspaces", "Manage storage credentials, external locations, and governed volumes from the same operating surface."),
+			core.SectionSurface(
+				core.SectionHeader("Choose a storage workspace", "Each area maps to a concrete operational job instead of a hub of equal-weight cards."),
+				core.ItemList("md:grid-cols-3",
+					core.ItemListEntry(
+						Div(Class("flex flex-wrap items-center justify-between gap-3"),
+							Div(Class("grid gap-1"),
+								Strong(Text("Credentials")),
+								P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Create and manage governed cloud storage credentials.")),
+							),
+							core.SecondaryLink("/ui/storage/credentials", "small", Text("Open")),
+						),
+					),
+					core.ItemListEntry(
+						Div(Class("flex flex-wrap items-center justify-between gap-3"),
+							Div(Class("grid gap-1"),
+								Strong(Text("Locations")),
+								P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Manage external locations backed by named credentials.")),
+							),
+							core.SecondaryLink("/ui/storage/locations", "small", Text("Open")),
+						),
+					),
+					core.ItemListEntry(
+						Div(Class("flex flex-wrap items-center justify-between gap-3"),
+							Div(Class("grid gap-1"),
+								Strong(Text("Volumes")),
+								P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Create and manage governed storage volumes in catalog schemas.")),
+							),
+							core.SecondaryLink("/ui/storage/volumes", "small", Text("Open")),
+						),
+					),
+				),
+			),
 		),
 	)
 }
@@ -69,10 +99,12 @@ func storageCredentialsListPage(principal domain.ContextPrincipal, rows []storag
 
 	return core.AppPage("Storage: Credentials", "storage", principal,
 		storageSectionNav("credentials"),
-		sectionHeader("Storage credentials", "Create and manage governed cloud storage credentials.", "/ui/storage/credentials/new", "New credential"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" credentials. Total: "+strconv.FormatInt(total, 10))),
+		core.ListPageLayout(
+			core.ListPageHeader("Storage credentials", "Create and manage governed cloud storage credentials.", core.PrimaryLink("/ui/storage/credentials/new", "", Text("New credential"))),
+			core.ListPageBody(
+				table,
+				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" credentials. Total: "+strconv.FormatInt(total, 10)),
+			),
 		),
 	)
 }
@@ -105,10 +137,12 @@ func storageLocationsListPage(principal domain.ContextPrincipal, rows []storageL
 
 	return core.AppPage("Storage: Locations", "storage", principal,
 		storageSectionNav("locations"),
-		sectionHeader("External locations", "Manage external storage locations backed by named credentials.", "/ui/storage/locations/new", "New location"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" locations. Total: "+strconv.FormatInt(total, 10))),
+		core.ListPageLayout(
+			core.ListPageHeader("External locations", "Manage external storage locations backed by named credentials.", core.PrimaryLink("/ui/storage/locations/new", "", Text("New location"))),
+			core.ListPageBody(
+				table,
+				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" locations. Total: "+strconv.FormatInt(total, 10)),
+			),
 		),
 	)
 }
@@ -139,17 +173,20 @@ func storageVolumesListPage(principal domain.ContextPrincipal, catalogName, sche
 
 	return core.AppPage("Storage: Volumes", "storage", principal,
 		storageSectionNav("volumes"),
-		sectionHeader("Volumes", "Create and manage governed storage volumes within catalog schemas.", "/ui/storage/volumes/new", "New volume"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			Form(Class("grid gap-3 md:grid-cols-2 md:items-end"), Method("get"), Action("/ui/storage/volumes"),
-				Div(Label(Text("Catalog")), core.InputControl("", Name("catalog"), Value(catalogName))),
-				Div(Label(Text("Schema")), core.InputControl("", Name("schema"), Value(schemaName))),
-				Div(Class("md:col-span-2"), core.SecondaryButton("", Type("submit"), Text("Load volumes"))),
+		core.ListPageLayout(
+			core.ListPageHeader("Volumes", "Create and manage governed storage volumes within catalog schemas.", core.PrimaryLink("/ui/storage/volumes/new", "", Text("New volume"))),
+			core.SectionSurface(
+				core.SectionHeader("Scope volumes", "Load the volume workspace for a specific catalog and schema before inspecting records."),
+				Form(Class("grid gap-3 md:grid-cols-2 md:items-end"), Method("get"), Action("/ui/storage/volumes"),
+					Div(Label(Text("Catalog")), core.InputControl("", Name("catalog"), Value(catalogName))),
+					Div(Label(Text("Schema")), core.InputControl("", Name("schema"), Value(schemaName))),
+					Div(Class("md:col-span-2"), core.SecondaryButton("", Type("submit"), Text("Load volumes"))),
+				),
 			),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" volumes. Total: "+strconv.FormatInt(total, 10))),
+			core.ListPageBody(
+				table,
+				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" volumes. Total: "+strconv.FormatInt(total, 10)),
+			),
 		),
 	)
 }
@@ -157,15 +194,41 @@ func storageVolumesListPage(principal domain.ContextPrincipal, catalogName, sche
 func storageCredentialDetailPage(principal domain.ContextPrincipal, item *domain.StorageCredential, csrfFieldProvider func() Node) Node {
 	return core.AppPage("Storage Credential: "+item.Name, "storage", principal,
 		storageSectionNav("credentials"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			sectionTitle("Credential details"),
-			detailMeta("Type", string(item.CredentialType)),
-			detailMeta("Owner", fallbackString(item.Owner, "unknown")),
-			detailMeta("Comment", fallbackString(item.Comment, "-")),
-			detailMeta("Updated", formatTime(item.UpdatedAt)),
-			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
-				core.SecondaryLink("/ui/storage/credentials/"+url.PathEscape(item.Name)+"/edit", "", Text("Edit")),
-				Form(Method("post"), Action("/ui/storage/credentials/"+url.PathEscape(item.Name)+"/delete"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+		core.DetailShell(
+			core.DetailHero(
+				core.DetailHeroCopy(
+					core.Kicker("Operate"),
+					core.DetailTitle(item.Name),
+					core.DetailDescription("Storage credentials hold the cloud auth and connection details that downstream locations rely on."),
+				),
+				core.DetailHeroMeta(
+					core.BadgeRow(statusPill(string(item.CredentialType), "success")),
+					core.DetailSummaryList([][2]string{
+						{"Owner", fallbackString(item.Owner, "unknown")},
+						{"Updated", formatTime(item.UpdatedAt)},
+					}),
+				),
+			),
+			core.DetailLayout(
+				core.DetailMain(
+					core.SectionSurface(
+						core.SectionHeader("Credential details", "Review the persisted metadata before editing or deleting the credential."),
+						core.KeyValueGrid([][2]string{
+							{"Type", string(item.CredentialType)},
+							{"Owner", fallbackString(item.Owner, "unknown")},
+							{"Comment", fallbackString(item.Comment, "-")},
+							{"Updated", formatTime(item.UpdatedAt)},
+						}),
+					),
+				),
+				core.DetailRail(
+					core.DetailRailCard("Actions", "Use the rail for changes so the main column stays focused on current state.",
+						core.ButtonGroup("",
+							core.SecondaryLink("/ui/storage/credentials/"+url.PathEscape(item.Name)+"/edit", "", Text("Edit")),
+							Form(Method("post"), Action("/ui/storage/credentials/"+url.PathEscape(item.Name)+"/delete"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+						),
+					),
+				),
 			),
 		),
 	)
@@ -174,17 +237,43 @@ func storageCredentialDetailPage(principal domain.ContextPrincipal, item *domain
 func storageLocationDetailPage(principal domain.ContextPrincipal, item *domain.ExternalLocation, csrfFieldProvider func() Node) Node {
 	return core.AppPage("External Location: "+item.Name, "storage", principal,
 		storageSectionNav("locations"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			sectionTitle("Location details"),
-			detailMeta("URL", item.URL),
-			detailMeta("Credential", item.CredentialName),
-			detailMeta("Type", string(item.StorageType)),
-			detailMeta("Read only", strconv.FormatBool(item.ReadOnly)),
-			detailMeta("Owner", fallbackString(item.Owner, "unknown")),
-			detailMeta("Comment", fallbackString(item.Comment, "-")),
-			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
-				core.SecondaryLink("/ui/storage/locations/"+url.PathEscape(item.Name)+"/edit", "", Text("Edit")),
-				Form(Method("post"), Action("/ui/storage/locations/"+url.PathEscape(item.Name)+"/delete"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+		core.DetailShell(
+			core.DetailHero(
+				core.DetailHeroCopy(
+					core.Kicker("Operate"),
+					core.DetailTitle(item.Name),
+					core.DetailDescription("External locations map a named credential onto a concrete storage URL for governed access."),
+				),
+				core.DetailHeroMeta(
+					core.BadgeRow(statusPill(string(item.StorageType), "accent"), statusPill(strconv.FormatBool(item.ReadOnly), readOnlyTone(item.ReadOnly))),
+					core.DetailSummaryList([][2]string{
+						{"Credential", item.CredentialName},
+						{"Owner", fallbackString(item.Owner, "unknown")},
+					}),
+				),
+			),
+			core.DetailLayout(
+				core.DetailMain(
+					core.SectionSurface(
+						core.SectionHeader("Location details", "Keep metadata and configuration in the main column; move editing into the rail."),
+						core.KeyValueGrid([][2]string{
+							{"URL", item.URL},
+							{"Credential", item.CredentialName},
+							{"Type", string(item.StorageType)},
+							{"Read only", strconv.FormatBool(item.ReadOnly)},
+							{"Owner", fallbackString(item.Owner, "unknown")},
+							{"Comment", fallbackString(item.Comment, "-")},
+						}),
+					),
+				),
+				core.DetailRail(
+					core.DetailRailCard("Actions", "Editing and deletion stay secondary to the current configuration view.",
+						core.ButtonGroup("",
+							core.SecondaryLink("/ui/storage/locations/"+url.PathEscape(item.Name)+"/edit", "", Text("Edit")),
+							Form(Method("post"), Action("/ui/storage/locations/"+url.PathEscape(item.Name)+"/delete"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+						),
+					),
+				),
 			),
 		),
 	)
@@ -197,17 +286,44 @@ func storageVolumeDetailPage(principal domain.ContextPrincipal, item *domain.Vol
 
 	return core.AppPage("Volume: "+item.Name, "storage", principal,
 		storageSectionNav("volumes"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			sectionTitle("Volume details"),
-			detailMeta("Catalog", item.CatalogName),
-			detailMeta("Schema", item.SchemaName),
-			detailMeta("Type", item.VolumeType),
-			detailMeta("Location", item.StorageLocation),
-			detailMeta("Owner", fallbackString(item.Owner, "unknown")),
-			detailMeta("Comment", fallbackString(item.Comment, "-")),
-			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
-				core.SecondaryLink("/ui/storage/volumes/"+catalogPath+"/"+schemaPath+"/"+namePath+"/edit", "", Text("Edit")),
-				Form(Method("post"), Action("/ui/storage/volumes/"+catalogPath+"/"+schemaPath+"/"+namePath+"/delete"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+		core.DetailShell(
+			core.DetailHero(
+				core.DetailHeroCopy(
+					core.Kicker("Operate"),
+					core.DetailTitle(item.Name),
+					core.DetailDescription("Volumes package catalog storage into a governed object that teams can manage without scanning a long card stack."),
+				),
+				core.DetailHeroMeta(
+					core.BadgeRow(statusPill(item.VolumeType, "success")),
+					core.DetailSummaryList([][2]string{
+						{"Catalog", item.CatalogName},
+						{"Schema", item.SchemaName},
+						{"Owner", fallbackString(item.Owner, "unknown")},
+					}),
+				),
+			),
+			core.DetailLayout(
+				core.DetailMain(
+					core.SectionSurface(
+						core.SectionHeader("Volume details", "The primary column is reserved for the current storage configuration."),
+						core.KeyValueGrid([][2]string{
+							{"Catalog", item.CatalogName},
+							{"Schema", item.SchemaName},
+							{"Type", item.VolumeType},
+							{"Location", item.StorageLocation},
+							{"Owner", fallbackString(item.Owner, "unknown")},
+							{"Comment", fallbackString(item.Comment, "-")},
+						}),
+					),
+				),
+				core.DetailRail(
+					core.DetailRailCard("Actions", "Mutations stay in the rail to keep the page easy to scan.",
+						core.ButtonGroup("",
+							core.SecondaryLink("/ui/storage/volumes/"+catalogPath+"/"+schemaPath+"/"+namePath+"/edit", "", Text("Edit")),
+							Form(Method("post"), Action("/ui/storage/volumes/"+catalogPath+"/"+schemaPath+"/"+namePath+"/delete"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
+						),
+					),
+				),
 			),
 		),
 	)
@@ -310,11 +426,11 @@ func storageVolumeFormPage(principal domain.ContextPrincipal, title, action stri
 func storageFormPage(principal domain.ContextPrincipal, title, action string, csrfFieldProvider func() Node, fields ...Node) Node {
 	nodes := []Node{csrfFieldProvider()}
 	nodes = append(nodes, fields...)
-	nodes = append(nodes, Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save"))))
+	nodes = append(nodes, Div(Class("mt-2"), core.PrimaryButton("", Type("submit"), Text("Save"))))
 
 	return core.AppPage(title, "storage", principal,
 		storageSectionNav(""),
-		core.Card(
+		core.FormPageLayout("Operate", title, "Use a single, focused form surface for storage configuration instead of stacking several generic cards.",
 			Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes)),
 		),
 	)
@@ -328,31 +444,6 @@ func storageSectionNav(active string) Node {
 	})
 }
 
-func sectionHeader(title, copy, href, action string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		Div(Class("flex flex-wrap items-start justify-between gap-3"),
-			Div(H2(Class("m-0 text-xl font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(copy))),
-			core.PrimaryLink(href, "", Text(action)),
-		),
-	)
-}
-
-func storageCard(title, copy, href string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		H2(Class("mt-0 text-lg font-semibold"), Text(title)),
-		P(Class("text-sm text-[var(--fgColor-muted)]"), Text(copy)),
-		core.SecondaryLink(href, "", Text("Open")),
-	)
-}
-
-func sectionTitle(value string) Node {
-	return H2(Class("mt-0 text-lg font-semibold"), Text(value))
-}
-
-func detailMeta(label, value string) Node {
-	return P(Class("m-0 text-sm"), Strong(Text(label+": ")), Text(value))
-}
-
 func statusPill(text, tone string) Node {
 	className := "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
 	switch tone {
@@ -360,10 +451,19 @@ func statusPill(text, tone string) Node {
 		className += " bg-[var(--bgColor-success-muted)] text-[var(--fgColor-success)]"
 	case "attention":
 		className += " bg-[var(--bgColor-attention-muted)] text-[var(--fgColor-attention)]"
+	case "accent":
+		className += " bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
 	default:
 		className += " bg-[var(--bgColor-muted)] text-[var(--fgColor-default)]"
 	}
 	return Span(Class(className), Text(text))
+}
+
+func readOnlyTone(readOnly bool) string {
+	if readOnly {
+		return "attention"
+	}
+	return "success"
 }
 
 func optionSelected(value, current string) Node {

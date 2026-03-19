@@ -66,13 +66,12 @@ func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRo
 		"Pipelines",
 		"pipelines",
 		principal,
-		core.Card(
-			Div(Class("mb-4 flex flex-wrap items-center justify-between gap-3"),
-				Div(H2(Class("m-0 text-xl font-semibold"), Text("Pipelines")), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Manage orchestrated jobs and schedules."))),
-				core.PrimaryLink("/ui/pipelines/new", "", Text("New pipeline")),
+		core.ListPageLayout(
+			core.ListPageHeader("Pipelines", "Manage orchestrated jobs and schedules.", core.PrimaryLink("/ui/pipelines/new", "", Text("New pipeline"))),
+			core.ListPageBody(
+				table,
+				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" pipelines. Total: "+strconv.FormatInt(total, 10)),
 			),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" pipelines. Total: "+strconv.FormatInt(total, 10))),
 		),
 	)
 }
@@ -109,27 +108,45 @@ func pipelineDetailPage(d pipelineDetailPageData) Node {
 		"Pipeline: "+d.Name,
 		"pipelines",
 		d.Principal,
-		core.Card(
-			Div(Class("flex flex-wrap items-start justify-between gap-3"),
-				Div(
-					H2(Class("m-0 text-xl font-semibold"), Text(d.Name)),
-					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Created by "+emptyDash(d.CreatedBy))),
+		core.DetailShell(
+			core.DetailHero(
+				core.DetailHeroCopy(
+					core.Kicker("Operate"),
+					core.DetailTitle(d.Name),
+					core.DetailDescription("Pipeline detail separates current schedule state from the job-management actions that change it."),
 				),
-				core.ButtonGroup("mt-0",
-					core.SecondaryLink(d.EditURL, "", Text("Edit")),
-					core.SecondaryLink(d.NewJobURL, "", Text("New job")),
-					Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), core.DangerButton("", Type("submit"), Text("Delete pipeline"))),
+				core.DetailHeroMeta(
+					core.DetailSummaryList([][2]string{
+						{"Created by", emptyDash(d.CreatedBy)},
+						{"Schedule", emptyDash(d.Schedule)},
+						{"Concurrency", emptyDash(d.Concurrency)},
+					}),
 				),
 			),
-			Dl(Class("mt-4 grid gap-3 sm:grid-cols-3"),
-				metaRow("Schedule", d.Schedule),
-				metaRow("Concurrency", d.Concurrency),
-				metaRow("Jobs", strconv.Itoa(len(d.Jobs))),
+			core.DetailLayout(
+				core.DetailMain(
+					core.SectionSurface(
+						core.SectionHeader("Jobs", "Inspect the pipeline job graph without mixing it into the action controls."),
+						jobTable,
+					),
+				),
+				core.DetailRail(
+					core.DetailRailCard("Summary", "Keep key schedule metadata pinned in the secondary rail.",
+						core.MetadataSummary([][2]string{
+							{"Schedule", d.Schedule},
+							{"Concurrency", d.Concurrency},
+							{"Jobs", strconv.Itoa(len(d.Jobs))},
+						}),
+					),
+					core.DetailRailCard("Actions", "Authoring actions stay secondary to the pipeline state view.",
+						core.ButtonGroup("",
+							core.SecondaryLink(d.EditURL, "", Text("Edit")),
+							core.SecondaryLink(d.NewJobURL, "", Text("New job")),
+							Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), core.DangerButton("", Type("submit"), Text("Delete pipeline"))),
+						),
+					),
+				),
 			),
-		),
-		core.Card(
-			H3(Class("mt-0 text-lg font-semibold"), Text("Jobs")),
-			jobTable,
 		),
 	)
 }
@@ -193,7 +210,7 @@ func pipelineFormPage(principal domain.ContextPrincipal, title, action string, c
 		title,
 		"pipelines",
 		principal,
-		core.Card(
+		core.FormPageLayout("Operate", title, "Pipeline authoring follows the shared single-surface form layout.",
 			Form(Class("grid gap-3"), Method("post"), Action(action), Group(nodes)),
 		),
 	)
