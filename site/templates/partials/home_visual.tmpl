@@ -59,18 +59,32 @@
   </div>
   <div class="grid gap-3 sm:grid-cols-2 lg:hidden">
     <div class="rounded-[1.4rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] px-4 py-4">
-      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-accent)]">Access</p>
-      <p class="mt-2 text-base font-medium text-[var(--fgColor-default)]">Browser, SQL, API, CLI</p>
+      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-accent)]">{{ .HomeView.Hero.Visual.AccessTitle }}</p>
+      <p class="mt-2 text-base font-medium text-[var(--fgColor-default)]">{{ .HomeView.Hero.Visual.AccessValue }}</p>
     </div>
     <div class="rounded-[1.4rem] border border-[color:color-mix(in_srgb,var(--fgColor-accent)_28%,var(--borderColor-default))] bg-[color:color-mix(in_srgb,var(--bgColor-muted)_88%,var(--bgColor-inset))] px-4 py-4">
-      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-accent)]">Policy</p>
-      <p class="mt-2 text-base font-medium text-[var(--fgColor-default)]">RBAC, filters, masks</p>
+      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-accent)]">{{ .HomeView.Hero.Visual.PolicyTitle }}</p>
+      <p class="mt-2 text-base font-medium text-[var(--fgColor-default)]">{{ .HomeView.Hero.Visual.PolicyValue }}</p>
     </div>
     <div class="rounded-[1.4rem] border border-[var(--borderColor-default)] bg-[var(--bgColor-inset)] px-4 py-4 sm:col-span-2">
-      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-accent)]">Execution</p>
-      <p class="mt-2 text-base font-medium text-[var(--fgColor-default)]">DuckLake with DuckDB underneath</p>
+      <p class="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[var(--fgColor-accent)]">{{ .HomeView.Hero.Visual.ExecutionTitle }}</p>
+      <p class="mt-2 text-base font-medium text-[var(--fgColor-default)]">{{ .HomeView.Hero.Visual.ExecutionValue }}</p>
     </div>
   </div>
-  <p class="max-w-[42rem] text-base leading-7 text-[var(--fgColor-muted)]">{{ .Home.Hero.SnapshotNote }}</p>
+  <div class="rounded-[1.6rem] border border-[var(--borderColor-default)] bg-[color:color-mix(in_srgb,var(--bgColor-inset)_92%,transparent)] p-5">
+    <p class="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[var(--fgColor-accent)]">{{ .HomeView.Hero.SnapshotTitle }}</p>
+    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+      {{ range .HomeView.Hero.Snapshot }}
+        <div class="rounded-[1.1rem] border border-[var(--borderColor-muted)] bg-[var(--bgColor-default)] px-4 py-4">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-5 w-5 shrink-0 text-[var(--fgColor-accent)]" aria-hidden="true">{{ navIcon .Icon }}</span>
+            <p class="text-sm font-semibold text-[var(--fgColor-default)]">{{ .Label }}</p>
+          </div>
+          <p class="mt-2 text-sm leading-6 text-[var(--fgColor-muted)]">{{ .Value }}</p>
+        </div>
+      {{ end }}
+    </div>
+  </div>
+  <p class="max-w-[42rem] text-base leading-7 text-[var(--fgColor-muted)]">{{ .HomeView.Hero.SnapshotNote }}</p>
 </div>
 {{- end }}
