@@ -89,9 +89,9 @@ func storageCredentialsListPage(principal domain.ContextPrincipal, rows []storag
 				Td(Text(row.Updated)),
 			))
 		}
-		table = Div(Class("overflow-x-auto"),
-			Table(Class("min-w-full text-left text-sm"),
-				THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Owner")), Th(Text("Updated")))),
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Scope("col"), Text("Name")), Th(Scope("col"), Text("Type")), Th(Scope("col"), Text("Owner")), Th(Scope("col"), Text("Updated")))),
 				TBody(Group(tableRows)),
 			),
 		)
@@ -103,7 +103,7 @@ func storageCredentialsListPage(principal domain.ContextPrincipal, rows []storag
 			core.ListPageHeader("Storage credentials", "Create and manage governed cloud storage credentials.", core.PrimaryLink("/ui/storage/credentials/new", "", Text("New credential"))),
 			core.ListPageBody(
 				table,
-				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" credentials. Total: "+strconv.FormatInt(total, 10)),
+				core.ListPagination("/ui/storage/credentials", page, total),
 			),
 		),
 	)
@@ -127,9 +127,9 @@ func storageLocationsListPage(principal domain.ContextPrincipal, rows []storageL
 				}()),
 			))
 		}
-		table = Div(Class("overflow-x-auto"),
-			Table(Class("min-w-full text-left text-sm"),
-				THead(Tr(Th(Text("Name")), Th(Text("URL")), Th(Text("Credential")), Th(Text("Read Only")))),
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Scope("col"), Text("Name")), Th(Scope("col"), Text("URL")), Th(Scope("col"), Text("Credential")), Th(Scope("col"), Text("Read Only")))),
 				TBody(Group(tableRows)),
 			),
 		)
@@ -141,7 +141,7 @@ func storageLocationsListPage(principal domain.ContextPrincipal, rows []storageL
 			core.ListPageHeader("External locations", "Manage external storage locations backed by named credentials.", core.PrimaryLink("/ui/storage/locations/new", "", Text("New location"))),
 			core.ListPageBody(
 				table,
-				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" locations. Total: "+strconv.FormatInt(total, 10)),
+				core.ListPagination("/ui/storage/locations", page, total),
 			),
 		),
 	)
@@ -163,9 +163,9 @@ func storageVolumesListPage(principal domain.ContextPrincipal, catalogName, sche
 				Td(Text(row.Owner)),
 			))
 		}
-		table = Div(Class("overflow-x-auto"),
-			Table(Class("min-w-full text-left text-sm"),
-				THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Location")), Th(Text("Owner")))),
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Scope("col"), Text("Name")), Th(Scope("col"), Text("Type")), Th(Scope("col"), Text("Location")), Th(Scope("col"), Text("Owner")))),
 				TBody(Group(tableRows)),
 			),
 		)
@@ -185,7 +185,7 @@ func storageVolumesListPage(principal domain.ContextPrincipal, catalogName, sche
 			),
 			core.ListPageBody(
 				table,
-				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" volumes. Total: "+strconv.FormatInt(total, 10)),
+				core.ListPagination("/ui/storage/volumes", page, total),
 			),
 		),
 	)

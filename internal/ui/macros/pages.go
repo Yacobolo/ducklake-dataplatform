@@ -78,9 +78,9 @@ func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData,
 				Td(statusPill(row.Status, "neutral")),
 			))
 		}
-		table = Div(Class("overflow-x-auto"),
-			Table(Class("min-w-full text-left text-sm"),
-				THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Visibility")), Th(Text("Status")))),
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Scope("col"), Text("Name")), Th(Scope("col"), Text("Type")), Th(Scope("col"), Text("Visibility")), Th(Scope("col"), Text("Status")))),
 				TBody(Group(tableRows)),
 			),
 		)
@@ -91,7 +91,7 @@ func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData,
 			core.ListPageHeader("Macros", "Create and manage reusable SQL and transformation helpers.", core.PrimaryLink("/ui/macros/new", "", Text("New macro"))),
 			core.ListPageBody(
 				table,
-				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" macros. Total: "+strconv.FormatInt(total, 10)),
+				core.ListPagination("/ui/macros", page, total),
 			),
 		),
 	)

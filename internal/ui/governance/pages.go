@@ -197,10 +197,12 @@ func governanceAuditLogsPage(principal domain.ContextPrincipal, rows []auditRowD
 			row := rows[i]
 			tableRows = append(tableRows, Tr(Td(Text(row.Principal)), Td(Text(row.Action)), Td(Text(row.Status)), Td(Text(row.CreatedAt))))
 		}
-		table = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Principal")), Th(Text("Action")), Th(Text("Status")), Th(Text("Created")))),
-			TBody(Group(tableRows)),
-		))
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Scope("col"), Text("Principal")), Th(Scope("col"), Text("Action")), Th(Scope("col"), Text("Status")), Th(Scope("col"), Text("Created")))),
+				TBody(Group(tableRows)),
+			),
+		)
 	}
 	return core.AppPage("Governance: Audit Logs", "governance", principal,
 		governanceSectionNav("audit"),
@@ -208,7 +210,7 @@ func governanceAuditLogsPage(principal domain.ContextPrincipal, rows []auditRowD
 			core.ListPageHeader("Audit logs", "Review governance activity in a dedicated inspection workspace."),
 			core.ListPageBody(
 				table,
-				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" audit events. Total: "+strconv.FormatInt(total, 10)),
+				core.ListPagination("/ui/governance/audit-logs", page, total),
 			),
 		),
 	)
@@ -222,10 +224,12 @@ func governanceQueryHistoryPage(principal domain.ContextPrincipal, rows []queryH
 			row := rows[i]
 			tableRows = append(tableRows, Tr(Td(Text(row.Principal)), Td(Text(row.Statement)), Td(Text(row.Status)), Td(Text(row.CreatedAt))))
 		}
-		table = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Principal")), Th(Text("Statement")), Th(Text("Status")), Th(Text("Created")))),
-			TBody(Group(tableRows)),
-		))
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Scope("col"), Text("Principal")), Th(Scope("col"), Text("Statement")), Th(Scope("col"), Text("Status")), Th(Scope("col"), Text("Created")))),
+				TBody(Group(tableRows)),
+			),
+		)
 	}
 	return core.AppPage("Governance: Query History", "governance", principal,
 		governanceSectionNav("history"),
@@ -233,7 +237,7 @@ func governanceQueryHistoryPage(principal domain.ContextPrincipal, rows []queryH
 			core.ListPageHeader("Query history", "Keep query inspection separate from policy authoring workflows."),
 			core.ListPageBody(
 				table,
-				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" query history entries. Total: "+strconv.FormatInt(total, 10)),
+				core.ListPagination("/ui/governance/query-history", page, total),
 			),
 		),
 	)

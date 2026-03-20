@@ -21,21 +21,47 @@ func notebooksListPage(principal domain.ContextPrincipal, rows []notebookListRow
 	tableRows := make([]Node, 0, len(rows))
 	for i := range rows {
 		row := rows[i]
-		tableRows = append(tableRows, Tr(Td(core.TextLink(row.URL, Text(row.Name))), Td(Text(row.Owner)), Td(Text(row.Updated))))
+		tableRows = append(tableRows, Tr(
+			Td(
+				Div(Class("flex items-center gap-3"),
+					Span(Class("inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"),
+						I(Class(core.NavIconClass("h-4 w-4")), Attr("data-lucide", "file-text"), Attr("aria-hidden", "true")),
+					),
+					Div(Class("min-w-0"),
+						core.TextLink(row.URL, Text(row.Name)),
+					),
+				),
+			),
+			Td(core.Badge(row.Owner, "")),
+			Td(Span(Class("text-[var(--fgColor-muted)]"), Text(row.Updated))),
+		))
 	}
 
 	body := []Node{
-		core.PageHeader("Build", "Notebooks", "Create and manage notebooks.", core.PrimaryLink("/ui/notebooks/new", "", Text("New notebook"))),
-		core.SectionSurface(
-			core.SectionHeader("Sources", "Manage notebook Git sources.", core.SecondaryLink("/ui/notebooks/git-repos", "", Text("Git repos"))),
+		core.PageHeader(
+			"Build",
+			"Notebooks",
+			"Create and manage notebooks.",
+			core.SecondaryLink("/ui/notebooks/git-repos", "",
+				I(Class(core.IconGlyphClass()), Attr("data-lucide", "github"), Attr("aria-hidden", "true")),
+				Span(Text("Git repos")),
+			),
+			core.PrimaryLink("/ui/notebooks/new", "",
+				I(Class(core.IconGlyphClass()), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")),
+				Span(Text("New notebook")),
+			),
 		),
 	}
 	if len(tableRows) == 0 {
-		body = append(body, core.SectionSurface(core.EmptyState("inbox", "No notebooks yet.", "Create your first notebook to start building notebook workflows.", core.PrimaryLink("/ui/notebooks/new", "", Text("Create your first notebook")))))
+		body = append(body, core.ListPageBody(
+			core.WorkspaceEmptyState("inbox", "No notebooks yet.", "Create your first notebook to start building notebook workflows. Manage Git repos only when you need sync-backed notebooks.", core.PrimaryLink("/ui/notebooks/new", "", Text("Create your first notebook"))),
+		))
 	} else {
-		body = append(body, notebookTable([]string{"Name", "Owner", "Updated"}, tableRows))
+		body = append(body, core.ListPageBody(
+			notebookTable([]string{"Name", "Owner", "Last updated"}, tableRows),
+			core.ListPagination("/ui/notebooks", page, total),
+		))
 	}
-	body = append(body, core.ListPagination("/ui/notebooks", page, total))
 	return core.AppPage("Notebooks", "notebooks", principal, body...)
 }
 
@@ -62,11 +88,15 @@ func notebookJobsListPage(d notebookJobsListPageData) Node {
 	}
 	body := []Node{core.PageHeader("Build", "Notebook jobs", "Async runs for this notebook.", core.SecondaryLink("/ui/notebooks/"+d.NotebookID, "", Text("Back to notebook")))}
 	if len(rows) == 0 {
-		body = append(body, core.SectionSurface(core.EmptyState("inbox", "No notebook jobs found.", "Runs will appear here after notebook execution starts.", core.SecondaryLink("/ui/notebooks/"+d.NotebookID, "", Text("Back to notebook")))))
+		body = append(body, core.ListPageBody(
+			core.WorkspaceEmptyState("history", "No notebook jobs found.", "Runs will appear here after notebook execution starts.", core.SecondaryLink("/ui/notebooks/"+d.NotebookID, "", Text("Back to notebook"))),
+		))
 	} else {
-		body = append(body, notebookTable([]string{"Job ID", "State", "Updated"}, rows))
+		body = append(body, core.ListPageBody(
+			notebookTable([]string{"Job ID", "State", "Updated"}, rows),
+			core.ListPagination("/ui/notebooks/"+d.NotebookID+"/jobs", d.Page, d.Total),
+		))
 	}
-	body = append(body, core.ListPagination("/ui/notebooks/"+d.NotebookID+"/jobs", d.Page, d.Total))
 	return core.AppPage("Notebook Jobs", "notebooks", d.Principal, body...)
 }
 
@@ -141,11 +171,15 @@ func notebookGitReposListPage(d notebookGitReposListPageData) Node {
 	}
 	body := []Node{core.PageHeader("Build", "Git repos", "Registered sources for notebook sync.", core.PrimaryLink("/ui/notebooks/git-repos/new", "", Text("Register Git repo")))}
 	if len(rows) == 0 {
-		body = append(body, core.SectionSurface(core.EmptyState("inbox", "No Git repositories registered.", "Register a repository to connect notebook sync.", core.PrimaryLink("/ui/notebooks/git-repos/new", "", Text("Register Git repo")))))
+		body = append(body, core.ListPageBody(
+			core.WorkspaceEmptyState("git-branch", "No Git repositories registered.", "Register a repository to connect notebook sync.", core.PrimaryLink("/ui/notebooks/git-repos/new", "", Text("Register Git repo"))),
+		))
 	} else {
-		body = append(body, notebookTable([]string{"Repository", "Branch", "Path", "Owner", "Last sync"}, rows))
+		body = append(body, core.ListPageBody(
+			notebookTable([]string{"Repository", "Branch", "Path", "Owner", "Last sync"}, rows),
+			core.ListPagination("/ui/notebooks/git-repos", d.Page, d.Total),
+		))
 	}
-	body = append(body, core.ListPagination("/ui/notebooks/git-repos", d.Page, d.Total))
 	return core.AppPage("Notebook Git Repos", "notebooks", d.Principal, body...)
 }
 
@@ -329,7 +363,7 @@ type notebookGitRepoSyncResultPageData struct {
 
 func notebookGitRepoSyncResultPage(d notebookGitRepoSyncResultPageData) Node {
 	if d.Result == nil {
-		return core.AppPage("Git Sync", "notebooks", d.Principal, core.SectionSurface(core.EmptyState("inbox", "No sync result available.", "Run a sync first to generate a result summary.", core.SecondaryLink("/ui/notebooks/git-repos/"+d.GitRepoID, "", Text("Back to repo")))))
+		return core.AppPage("Git Sync", "notebooks", d.Principal, core.ListPageBody(core.WorkspaceEmptyState("git-branch", "No sync result available.", "Run a sync first to generate a result summary.", core.SecondaryLink("/ui/notebooks/git-repos/"+d.GitRepoID, "", Text("Back to repo")))))
 	}
 	return core.AppPage(
 		"Git Sync",
@@ -403,14 +437,12 @@ func optionSelected(value, selected string) Node {
 func notebookTable(headers []string, rows []Node) Node {
 	headerNodes := make([]Node, 0, len(headers))
 	for i := range headers {
-		headerNodes = append(headerNodes, Th(Class("px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.02em] text-[var(--fgColor-muted)]"), Text(headers[i])))
+		headerNodes = append(headerNodes, Th(Scope("col"), Text(headers[i])))
 	}
-	return core.ListPageBody(
-		Div(Class("overflow-x-auto"),
-			Table(Class("min-w-full border-collapse"),
-				THead(Tr(Group(headerNodes))),
-				TBody(Group(rows)),
-			),
+	return core.TableContainer("",
+		core.DataTable("",
+			THead(Tr(Group(headerNodes))),
+			TBody(Group(rows)),
 		),
 	)
 }

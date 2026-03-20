@@ -88,14 +88,14 @@ func formatTime(ts time.Time) string {
 	if ts.IsZero() {
 		return "-"
 	}
-	return ts.Format(time.RFC3339)
+	return core.FormatTimeDisplay(ts)
 }
 
 func formatTimePtr(ts *time.Time) string {
 	if ts == nil || ts.IsZero() {
 		return "-"
 	}
-	return ts.Format(time.RFC3339)
+	return core.FormatTimeDisplay(*ts)
 }
 
 func strOrDash(v *string) string {

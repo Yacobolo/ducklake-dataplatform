@@ -40,7 +40,7 @@ type pipelineDetailPageData struct {
 }
 
 func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRowData, page domain.PageRequest, total int64) Node {
-	table := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No pipelines yet.")))
+	table := Node(core.WorkspaceEmptyState("workflow", "No pipelines yet.", "Create a pipeline when you are ready to orchestrate notebook or model execution.", core.PrimaryLink("/ui/pipelines/new", "", Text("New pipeline"))))
 	if len(rows) > 0 {
 		tableRows := make([]Node, 0, len(rows))
 		for i := range rows {
@@ -52,10 +52,8 @@ func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRo
 				Td(Text(row.Updated)),
 			))
 		}
-		table = Div(
-			Class("overflow-x-auto"),
-			Table(
-				Class("min-w-full text-left text-sm"),
+		table = core.TableContainer("",
+			core.DataTable("",
 				THead(Tr(Th(Text("Name")), Th(Text("Paused")), Th(Text("Schedule")), Th(Text("Updated")))),
 				TBody(Group(tableRows)),
 			),
@@ -70,7 +68,7 @@ func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRo
 			core.ListPageHeader("Pipelines", "Manage orchestrated jobs and schedules.", core.PrimaryLink("/ui/pipelines/new", "", Text("New pipeline"))),
 			core.ListPageBody(
 				table,
-				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" pipelines. Total: "+strconv.FormatInt(total, 10)),
+				core.ListPagination("/ui/pipelines", page, total),
 			),
 		),
 	)

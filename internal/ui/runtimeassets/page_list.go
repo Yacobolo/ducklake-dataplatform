@@ -53,7 +53,7 @@ func assetsListPage(principal domain.ContextPrincipal, rows []assetsListRowData,
 			),
 			core.ListPageBody(
 				assetsListTable(rows),
-				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" assets. Total: "+strconv.FormatInt(total, 10)),
+				core.ListPagination("/ui/assets", page, total),
 			),
 		),
 	)
@@ -130,9 +130,9 @@ func assetsListTable(rows []assetsListRowData) Node {
 		))
 	}
 
-	return Div(Class("overflow-x-auto"),
-		Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Asset key")), Th(Text("Type")), Th(Text("Owner")), Th(Text("Signals")), Th(Text("Active")), Th(Text("Updated")))),
+	return core.TableContainer("",
+		core.DataTable("",
+			THead(Tr(Th(Scope("col"), Text("Asset key")), Th(Scope("col"), Text("Type")), Th(Scope("col"), Text("Owner")), Th(Scope("col"), Text("Signals")), Th(Scope("col"), Text("Active")), Th(Scope("col"), Text("Updated")))),
 			TBody(Group(tableRows)),
 		),
 	)

@@ -150,17 +150,19 @@ func modelsListPage(principal domain.ContextPrincipal, rows []modelsListRowData,
 				Td(Text(row.UpdatedAtText)),
 			))
 		}
-		table = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Model")), Th(Text("Materialization")), Th(Text("Dependencies")), Th(Text("Updated")))),
-			TBody(Group(tableRows)),
-		))
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Scope("col"), Text("Model")), Th(Scope("col"), Text("Materialization")), Th(Scope("col"), Text("Dependencies")), Th(Scope("col"), Text("Updated")))),
+				TBody(Group(tableRows)),
+			),
+		)
 	}
 	return core.AppPage("Models", "models", principal,
 		core.ListPageLayout(
 			core.ListPageHeader("Models", "Manage dbt-style models and tests.", core.SecondaryLink("/ui/macros", "", Text("Open macros")), core.PrimaryLink("/ui/models/new", "", Text("New model"))),
 			core.ListPageBody(
 				table,
-				core.ListPageFooter("Showing up to "+strconv.Itoa(page.MaxResults)+" models. Total: "+strconv.FormatInt(total, 10)),
+				core.ListPagination("/ui/models", page, total),
 			),
 		),
 	)
@@ -384,17 +386,19 @@ func modelRunsListPage(d modelRunsListPageData) Node {
 				Td(Text(row.CreatedAtText)),
 			))
 		}
-		table = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Run ID")), Th(Text("Status")), Th(Text("Trigger")), Th(Text("By")), Th(Text("Target")), Th(Text("Selector")), Th(Text("Created")))),
-			TBody(Group(rows)),
-		))
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Scope("col"), Text("Run ID")), Th(Scope("col"), Text("Status")), Th(Scope("col"), Text("Trigger")), Th(Scope("col"), Text("By")), Th(Scope("col"), Text("Target")), Th(Scope("col"), Text("Selector")), Th(Scope("col"), Text("Created")))),
+				TBody(Group(rows)),
+			),
+		)
 	}
 	return core.AppPage("Model Runs", "models", d.Principal,
 		core.ListPageLayout(
 			core.ListPageHeader("Model runs", "Review execution history separately from model authoring.", core.SecondaryLink("/ui/models/dag", "", Text("View DAG"))),
 			core.ListPageBody(
 				table,
-				core.ListPageFooter("Showing up to "+strconv.Itoa(d.Page.MaxResults)+" runs. Total: "+strconv.FormatInt(d.Total, 10)),
+				core.ListPagination("/ui/models/runs", d.Page, d.Total),
 			),
 		),
 	)

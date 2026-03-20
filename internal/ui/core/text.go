@@ -36,3 +36,10 @@ func FormatTimeUTC(ts time.Time) string {
 	}
 	return ts.UTC().Format("2006-01-02 15:04 UTC")
 }
+
+func FormatTimeDisplay(ts time.Time) string {
+	if ts.IsZero() {
+		return "-"
+	}
+	return ts.UTC().Format("Jan 2, 2006 15:04 UTC")
+}

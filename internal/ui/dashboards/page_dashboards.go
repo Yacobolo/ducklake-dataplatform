@@ -83,19 +83,20 @@ func dashboardsListPage(principal domain.ContextPrincipal, rows []dashboardListR
 			Td(Text(row.Updated)),
 		))
 	}
-	tableNode := Node(core.SectionSurface(core.EmptyState("inbox", "No dashboards yet.", "Create a dashboard to start collecting widgets and semantic views.", core.PrimaryLink("/ui/dashboards/new", "", Text("New dashboard")))))
+	tableNode := Node(core.ListPageBody(
+		core.WorkspaceEmptyState("layout-panel-top", "No dashboards yet.", "Create a dashboard to start collecting widgets and semantic views.", core.PrimaryLink("/ui/dashboards/new", "", Text("New dashboard"))),
+	))
 	if len(tableRows) > 0 {
 		tableNode = core.ListPageBody(core.TableContainer("",
 			core.DataTable("",
 				THead(Tr(Th(Text("Name")), Th(Text("Description")), Th(Text("Owner")), Th(Text("Updated")))),
 				TBody(Group(tableRows)),
 			),
-		))
+		), core.ListPagination("/ui/dashboards", page, total))
 	}
 	return core.AppPage("Dashboards", "dashboards", principal,
 		core.PageHeader("Discover", "Dashboards", "Browse and manage dashboard resources.", core.PrimaryLink("/ui/dashboards/new", "", Text("New dashboard"))),
 		tableNode,
-		core.ListPagination("/ui/dashboards", page, total),
 	)
 }
 
@@ -475,14 +476,14 @@ func formatTime(ts time.Time) string {
 	if ts.IsZero() {
 		return "-"
 	}
-	return ts.Format(time.RFC3339)
+	return core.FormatTimeDisplay(ts)
 }
 
 func formatTimePtr(ts *time.Time) string {
 	if ts == nil || ts.IsZero() {
 		return "-"
 	}
-	return ts.Format(time.RFC3339)
+	return core.FormatTimeDisplay(*ts)
 }
 
 func labelClass(tone string) string {
