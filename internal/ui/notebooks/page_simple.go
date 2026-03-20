@@ -21,19 +21,47 @@ func notebooksListPage(principal domain.ContextPrincipal, rows []notebookListRow
 	tableRows := make([]Node, 0, len(rows))
 	for i := range rows {
 		row := rows[i]
-		tableRows = append(tableRows, Tr(Td(core.TextLink(row.URL, Text(row.Name))), Td(Text(row.Owner)), Td(Text(row.Updated))))
+		tableRows = append(tableRows, Tr(
+			Td(
+				Div(Class("flex items-center gap-3"),
+					Span(Class("inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"),
+						I(Class(core.NavIconClass("h-4 w-4")), Attr("data-lucide", "file-text"), Attr("aria-hidden", "true")),
+					),
+					Div(Class("min-w-0"),
+						core.TextLink(row.URL, Text(row.Name)),
+					),
+				),
+			),
+			Td(core.Badge(row.Owner, "")),
+			Td(Span(Class("text-[var(--fgColor-muted)]"), Text(row.Updated))),
+		))
 	}
 
 	body := []Node{
-		pageToolbar("Workspaces", "Create and manage notebooks.", "/ui/notebooks/new", "New notebook"),
-		pageToolbar("Sources", "Manage notebook Git sources.", "/ui/notebooks/git-repos", "Git repos"),
+		core.PageHeader(
+			"Build",
+			"Notebooks",
+			"Create and manage notebooks.",
+			core.SecondaryLink("/ui/notebooks/git-repos", "",
+				I(Class(core.IconGlyphClass()), Attr("data-lucide", "github"), Attr("aria-hidden", "true")),
+				Span(Text("Git repos")),
+			),
+			core.PrimaryLink("/ui/notebooks/new", "",
+				I(Class(core.IconGlyphClass()), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")),
+				Span(Text("New notebook")),
+			),
+		),
 	}
 	if len(tableRows) == 0 {
-		body = append(body, emptyStateCard("No notebooks yet.", "Create your first notebook", "/ui/notebooks/new"))
+		body = append(body, core.ListPageBody(
+			core.WorkspaceEmptyState("inbox", "No notebooks yet.", "Create your first notebook to start building notebook workflows. Manage Git repos only when you need sync-backed notebooks.", core.PrimaryLink("/ui/notebooks/new", "", Text("Create your first notebook"))),
+		))
 	} else {
-		body = append(body, tableCard([]string{"Name", "Owner", "Updated"}, tableRows))
+		body = append(body, core.ListPageBody(
+			notebookTable([]string{"Name", "Owner", "Last updated"}, tableRows),
+			core.ListPagination("/ui/notebooks", page, total),
+		))
 	}
-	body = append(body, paginationCard("/ui/notebooks", page, total))
 	return core.AppPage("Notebooks", "notebooks", principal, body...)
 }
 
@@ -58,13 +86,17 @@ func notebookJobsListPage(d notebookJobsListPageData) Node {
 		row := d.Rows[i]
 		rows = append(rows, Tr(Td(core.TextLink(row.URL, Text(row.ID))), Td(Text(row.State)), Td(Text(row.Updated))))
 	}
-	body := []Node{pageToolbar("Notebook Jobs", "Async runs for this notebook.", "/ui/notebooks/"+d.NotebookID, "Back to notebook")}
+	body := []Node{core.PageHeader("Build", "Notebook jobs", "Async runs for this notebook.", core.SecondaryLink("/ui/notebooks/"+d.NotebookID, "", Text("Back to notebook")))}
 	if len(rows) == 0 {
-		body = append(body, emptyStateCard("No notebook jobs found.", "Back to notebook", "/ui/notebooks/"+d.NotebookID))
+		body = append(body, core.ListPageBody(
+			core.WorkspaceEmptyState("history", "No notebook jobs found.", "Runs will appear here after notebook execution starts.", core.SecondaryLink("/ui/notebooks/"+d.NotebookID, "", Text("Back to notebook"))),
+		))
 	} else {
-		body = append(body, tableCard([]string{"Job ID", "State", "Updated"}, rows))
+		body = append(body, core.ListPageBody(
+			notebookTable([]string{"Job ID", "State", "Updated"}, rows),
+			core.ListPagination("/ui/notebooks/"+d.NotebookID+"/jobs", d.Page, d.Total),
+		))
 	}
-	body = append(body, paginationCard("/ui/notebooks/"+d.NotebookID+"/jobs", d.Page, d.Total))
 	return core.AppPage("Notebook Jobs", "notebooks", d.Principal, body...)
 }
 
@@ -84,16 +116,26 @@ func notebookJobDetailPage(d notebookJobDetailPageData) Node {
 		"Notebook Job: "+d.JobID,
 		"notebooks",
 		d.Principal,
-		pageToolbar("Notebook Job", "Inspect a notebook run.", "/ui/notebooks/"+d.NotebookID+"/jobs", "Back to jobs"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			P(Text("State: "+d.State)),
-			P(Text("Created: "+d.CreatedAt)),
-			P(Text("Updated: "+d.UpdatedAt)),
-			P(Text("Error: "+d.ErrorText)),
-		),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("m-0 text-lg font-semibold"), Text("Result payload")),
-			Pre(Class("mt-3 overflow-x-auto rounded-lg bg-[var(--bgColor-muted)] p-3 text-xs"), Text(d.Result)),
+		core.ResultPageLayout("Build", "Notebook job: "+d.JobID, "Inspect notebook execution as a result workspace instead of a stack of generic cards.",
+			core.PageHeader("", "Notebook job", "Inspect a notebook run.", core.SecondaryLink("/ui/notebooks/"+d.NotebookID+"/jobs", "", Text("Back to jobs"))),
+			core.DetailLayout(
+				core.DetailMain(
+					core.SectionSurface(
+						core.SectionHeader("Result payload", "Execution output lives in the main report column."),
+						Pre(Class("mt-0 overflow-x-auto rounded-lg bg-[var(--bgColor-muted)] p-3 text-xs"), Text(d.Result)),
+					),
+				),
+				core.DetailRail(
+					core.DetailRailCard("Run summary", "Keep status and timestamps visible while reviewing the payload.",
+						core.KeyValueGrid([][2]string{
+							{"State", d.State},
+							{"Created", d.CreatedAt},
+							{"Updated", d.UpdatedAt},
+							{"Error", emptyDash(d.ErrorText)},
+						}),
+					),
+				),
+			),
 		),
 	)
 }
@@ -127,13 +169,17 @@ func notebookGitReposListPage(d notebookGitReposListPageData) Node {
 			Td(Text(row.LastSync)),
 		))
 	}
-	body := []Node{pageToolbar("Git Repos", "Registered sources for notebook sync.", "/ui/notebooks/git-repos/new", "Register Git repo")}
+	body := []Node{core.PageHeader("Build", "Git repos", "Registered sources for notebook sync.", core.PrimaryLink("/ui/notebooks/git-repos/new", "", Text("Register Git repo")))}
 	if len(rows) == 0 {
-		body = append(body, emptyStateCard("No Git repositories registered.", "Register Git repo", "/ui/notebooks/git-repos/new"))
+		body = append(body, core.ListPageBody(
+			core.WorkspaceEmptyState("git-branch", "No Git repositories registered.", "Register a repository to connect notebook sync.", core.PrimaryLink("/ui/notebooks/git-repos/new", "", Text("Register Git repo"))),
+		))
 	} else {
-		body = append(body, tableCard([]string{"Repository", "Branch", "Path", "Owner", "Last sync"}, rows))
+		body = append(body, core.ListPageBody(
+			notebookTable([]string{"Repository", "Branch", "Path", "Owner", "Last sync"}, rows),
+			core.ListPagination("/ui/notebooks/git-repos", d.Page, d.Total),
+		))
 	}
-	body = append(body, paginationCard("/ui/notebooks/git-repos", d.Page, d.Total))
 	return core.AppPage("Notebook Git Repos", "notebooks", d.Principal, body...)
 }
 
@@ -280,17 +326,30 @@ func notebookGitRepoDetailPage(d notebookGitRepoDetailPageData) Node {
 		"Git Repo",
 		"notebooks",
 		d.Principal,
-		pageToolbar("Git Repo", "Repository details and sync controls.", "/ui/notebooks/git-repos", "Back to repos"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			P(Text("Repository: "+d.URL)),
-			P(Text("Branch: "+d.Branch)),
-			P(Text("Path: "+d.Path)),
-			P(Text("Owner: "+d.Owner)),
-			P(Text("Last sync: "+d.LastSync)),
-			P(Text("Last commit: "+d.LastCommit)),
-			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
-				Form(Method("post"), Action(d.SyncURL), d.CSRFFieldFunc(), core.PrimaryButton("", Type("submit"), Text("Sync repo"))),
-				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), core.DangerButton("", Type("submit"), Text("Delete repo"))),
+		core.DetailShell(
+			core.PageHeader("Build", "Git repo", "Repository details and sync controls.", core.SecondaryLink("/ui/notebooks/git-repos", "", Text("Back to repos"))),
+			core.DetailLayout(
+				core.DetailMain(
+					core.SectionSurface(
+						core.SectionHeader("Repository details", "Keep current sync configuration in the main detail column."),
+						core.KeyValueGrid([][2]string{
+							{"Repository", d.URL},
+							{"Branch", d.Branch},
+							{"Path", d.Path},
+							{"Owner", d.Owner},
+							{"Last sync", d.LastSync},
+							{"Last commit", d.LastCommit},
+						}),
+					),
+				),
+				core.DetailRail(
+					core.DetailRailCard("Actions", "Sync and deletion stay together in the secondary rail.",
+						core.ButtonGroup("",
+							Form(Method("post"), Action(d.SyncURL), d.CSRFFieldFunc(), core.PrimaryButton("", Type("submit"), Text("Sync repo"))),
+							Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), core.DangerButton("", Type("submit"), Text("Delete repo"))),
+						),
+					),
+				),
 			),
 		),
 	)
@@ -304,18 +363,23 @@ type notebookGitRepoSyncResultPageData struct {
 
 func notebookGitRepoSyncResultPage(d notebookGitRepoSyncResultPageData) Node {
 	if d.Result == nil {
-		return core.AppPage("Git Sync", "notebooks", d.Principal, emptyStateCard("No sync result available.", "Back to repo", "/ui/notebooks/git-repos/"+d.GitRepoID))
+		return core.AppPage("Git Sync", "notebooks", d.Principal, core.ListPageBody(core.WorkspaceEmptyState("git-branch", "No sync result available.", "Run a sync first to generate a result summary.", core.SecondaryLink("/ui/notebooks/git-repos/"+d.GitRepoID, "", Text("Back to repo")))))
 	}
 	return core.AppPage(
 		"Git Sync",
 		"notebooks",
 		d.Principal,
-		pageToolbar("Git Sync", "Latest sync result.", "/ui/notebooks/git-repos/"+d.GitRepoID, "Back to repo"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			P(Text("Created notebooks: "+strconv.Itoa(d.Result.NotebooksCreated))),
-			P(Text("Updated notebooks: "+strconv.Itoa(d.Result.NotebooksUpdated))),
-			P(Text("Deleted notebooks: "+strconv.Itoa(d.Result.NotebooksDeleted))),
-			P(Text("Commit: "+d.Result.CommitSHA)),
+		core.ResultPageLayout("Build", "Git sync", "Sync outcomes use the shared result layout so they read like execution reports.",
+			core.PageHeader("", "Git sync", "Latest sync result.", core.SecondaryLink("/ui/notebooks/git-repos/"+d.GitRepoID, "", Text("Back to repo"))),
+			core.SectionSurface(
+				core.SectionHeader("Sync result", ""),
+				core.MetadataSummary([][2]string{
+					{"Created notebooks", strconv.Itoa(d.Result.NotebooksCreated)},
+					{"Updated notebooks", strconv.Itoa(d.Result.NotebooksUpdated)},
+					{"Deleted notebooks", strconv.Itoa(d.Result.NotebooksDeleted)},
+					{"Commit", d.Result.CommitSHA},
+				}),
+			),
 		),
 	)
 }
@@ -334,14 +398,17 @@ func notebookGitRepoSyncUnavailablePage(d notebookGitRepoSyncUnavailablePageData
 		"Git Sync Unavailable",
 		"notebooks",
 		d.Principal,
-		pageToolbar("Git Sync", "Sync is not available yet.", "/ui/notebooks/git-repos/"+d.GitRepoID, "Back to repo"),
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			H2(Class("m-0 text-lg font-semibold"), Text("Sync is not available yet")),
-			P(Text(d.Message)),
-			P(Text("Repository: "+d.RepoURL)),
-			P(Text("Branch: "+d.Branch)),
-			P(Text("Path: "+d.Path)),
-			P(Class("text-xs text-[var(--fgColor-muted)]"), Text("The repo is registered correctly, but server-side sync execution has not been implemented yet.")),
+		core.ResultPageLayout("Build", "Git sync unavailable", "Unavailable states use the same result-oriented layout as other notebook outcomes.",
+			core.PageHeader("", "Git sync", "Sync is not available yet.", core.SecondaryLink("/ui/notebooks/git-repos/"+d.GitRepoID, "", Text("Back to repo"))),
+			core.SectionSurface(
+				core.SectionHeader("Sync is not available yet", "The repo is registered correctly, but server-side sync execution has not been implemented yet."),
+				P(Text(d.Message)),
+				core.KeyValueGrid([][2]string{
+					{"Repository", d.RepoURL},
+					{"Branch", d.Branch},
+					{"Path", d.Path},
+				}),
+			),
 		),
 	)
 }
@@ -354,7 +421,7 @@ func notebookFormPage(principal domain.ContextPrincipal, title, action string, c
 		title,
 		"notebooks",
 		principal,
-		Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
+		core.FormPageLayout("Build", title, "Notebook authoring uses the shared single-surface form layout.",
 			Form(Method("post"), Action(action), Class("grid gap-3"), Group(nodes)),
 		),
 	)
@@ -367,63 +434,22 @@ func optionSelected(value, selected string) Node {
 	return Option(Value(value), Text(value))
 }
 
-func pageToolbar(title, description, href, label string) Node {
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		Div(Class("flex flex-wrap items-center justify-between gap-3"),
-			Div(Class("flex min-w-0 flex-col gap-1"),
-				Span(Class("inline-flex items-center rounded-full bg-[var(--bgColor-muted)] px-2 py-0.5 text-xs font-medium text-[var(--fgColor-muted)]"), Text(title)),
-				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(description)),
-			),
-			core.PrimaryLink(href, "", Text(label)),
-		),
-	)
-}
-
-func emptyStateCard(message, ctaLabel, ctaHref string) Node {
-	cta := Node(nil)
-	if ctaLabel != "" && ctaHref != "" {
-		cta = core.PrimaryLink(ctaHref, "", Text(ctaLabel))
-	}
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-xs"),
-		P(Class("m-0 text-lg font-semibold"), Text("No results yet")),
-		P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(message)),
-		cta,
-	)
-}
-
-func tableCard(headers []string, rows []Node) Node {
+func notebookTable(headers []string, rows []Node) Node {
 	headerNodes := make([]Node, 0, len(headers))
 	for i := range headers {
-		headerNodes = append(headerNodes, Th(Class("px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.02em] text-[var(--fgColor-muted)]"), Text(headers[i])))
+		headerNodes = append(headerNodes, Th(Scope("col"), Text(headers[i])))
 	}
-	return Div(Class("overflow-x-auto rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		Table(Class("min-w-full border-collapse"),
+	return core.TableContainer("",
+		core.DataTable("",
 			THead(Tr(Group(headerNodes))),
 			TBody(Group(rows)),
 		),
 	)
 }
 
-func paginationCard(basePath string, page domain.PageRequest, total int64) Node {
-	shown := page.MaxResults
-	if total < int64(shown) {
-		shown = int(total)
+func emptyDash(v string) string {
+	if v == "" {
+		return "-"
 	}
-	summary := "Showing " + strconv.Itoa(shown) + " of " + strconv.FormatInt(total, 10) + " entries."
-	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	if nextToken == "" {
-		return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			Div(Class("flex items-center justify-between gap-3"),
-				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
-				Span(Class("inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
-			),
-		)
-	}
-	u := basePath + "?max_results=" + strconv.Itoa(page.Limit()) + "&page_token=" + nextToken
-	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		Div(Class("flex items-center justify-between gap-3"),
-			P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary)),
-			core.SecondaryLink(u, "small", Text("Next page")),
-		),
-	)
+	return v
 }

@@ -1,6 +1,11 @@
 package core
 
 import (
+	"fmt"
+	"net/url"
+
+	"duck-demo/internal/domain"
+
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
@@ -79,7 +84,7 @@ func SelectControl(extraClass string, nodes ...Node) Node {
 
 func TableContainer(extraClass string, nodes ...Node) Node {
 	base := []Node{Class(tableWrapClass(extraClass))}
-	return Div(append(base, nodes...)...)
+	return Div(append(base, Div(Class("overflow-x-auto"), Group(nodes)))...)
 }
 
 func DataTable(extraClass string, nodes ...Node) Node {
@@ -155,6 +160,29 @@ func EmptyState(iconName, title, message string, action Node) Node {
 			Div(
 				Class("flex min-w-0 flex-1 flex-col gap-2"),
 				P(Class("m-0 text-lg font-semibold"), Text(title)),
+				P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text(message)),
+				action,
+			),
+		),
+	)
+}
+
+func WorkspaceEmptyState(iconName, title, message string, action Node) Node {
+	icon := Node(nil)
+	if iconName != "" {
+		icon = Div(
+			Class("flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"),
+			I(Class(NavIconClass()), Attr("data-lucide", iconName), Attr("aria-hidden", "true")),
+		)
+	}
+	return Div(
+		Class("grid min-h-[12rem] place-items-center"),
+		Div(
+			Class("flex max-w-xl items-start gap-4"),
+			icon,
+			Div(
+				Class("grid gap-2"),
+				P(Class("m-0 text-lg font-semibold text-[var(--fgColor-default)]"), Text(title)),
 				P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text(message)),
 				action,
 			),
@@ -280,7 +308,7 @@ func DetailHeroMeta(nodes ...Node) Node {
 }
 
 func Kicker(text string) Node {
-	return P(Class("m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(text))
+	return P(Class("m-0 text-xs font-bold uppercase tracking-[0.14em] text-[var(--fgColor-accent)]"), Text(text))
 }
 
 func DetailTitleRow(nodes ...Node) Node {
@@ -306,14 +334,14 @@ func PageHeader(kicker, title, description string, actions ...Node) Node {
 	}
 	actionGroup := Node(nil)
 	if len(actions) > 0 {
-		actionGroup = Div(Class("flex flex-wrap items-center gap-3"), Group(actions))
+		actionGroup = Div(Class("flex flex-wrap items-center justify-end gap-3 [&>a]:shrink-0 [&>form]:m-0 [&>form]:inline-flex"), Group(actions))
 	}
 	return Div(
-		Class("grid gap-4 border-b border-[var(--borderColor-default)] pb-4"),
+		Class("grid gap-4 border-b border-[var(--borderColor-default)] pb-6"),
 		kickerNode,
-		Div(Class("flex flex-wrap items-start justify-between gap-4"),
-			Div(Class("flex min-w-0 max-w-3xl flex-col gap-2"),
-				H1(Class("m-0 text-3xl font-semibold leading-tight text-[var(--fgColor-default)]"), Text(title)),
+		Div(Class("flex flex-col gap-4 md:flex-row md:items-center md:justify-between"),
+			Div(Class("flex min-w-0 max-w-3xl flex-col gap-1.5"),
+				H1(Class("m-0 text-3xl font-extrabold tracking-tight text-[var(--fgColor-default)]"), Text(title)),
 				descriptionNode,
 			),
 			actionGroup,
@@ -323,6 +351,100 @@ func PageHeader(kicker, title, description string, actions ...Node) Node {
 
 func SectionSurface(nodes ...Node) Node {
 	return Div(append([]Node{Class("grid gap-4 rounded-2xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-5 max-md:p-4")}, nodes...)...)
+}
+
+func ListPageLayout(nodes ...Node) Node {
+	return Div(append([]Node{Class("grid gap-6")}, nodes...)...)
+}
+
+func ListPageHeader(title, description string, actions ...Node) Node {
+	return PageHeader("", title, description, actions...)
+}
+
+func ListPageBody(nodes ...Node) Node {
+	return Div(append([]Node{Class("grid gap-0")}, nodes...)...)
+}
+
+func ListPageFooter(summary string) Node {
+	return P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(summary))
+}
+
+func ListPagination(basePath string, page domain.PageRequest, total int64) Node {
+	offset := page.Offset()
+	limit := page.Limit()
+	shown := limit
+	if remaining := int(total) - offset; remaining < shown {
+		shown = remaining
+	}
+	if shown < 0 {
+		shown = 0
+	}
+	summary := Span(
+		Class("text-sm text-[var(--fgColor-muted)]"),
+		Text("Showing "),
+		Span(Class("font-semibold text-[var(--fgColor-default)]"), Text(fmt.Sprintf("%d", shown))),
+		Text(" of "),
+		Span(Class("font-semibold text-[var(--fgColor-default)]"), Text(fmt.Sprintf("%d", total))),
+		Text(" entries."),
+	)
+	prevOffset := offset - limit
+	if prevOffset < 0 {
+		prevOffset = 0
+	}
+	prevToken := domain.EncodePageToken(prevOffset)
+	nextToken := domain.NextPageToken(offset, limit, total)
+
+	prevNode := Node(Span(Class("inline-flex min-h-10 items-center justify-center rounded-l-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Previous")))
+	if offset > 0 {
+		prevNode = A(
+			Href(listPageURL(basePath, limit, prevToken)),
+			Class("inline-flex min-h-10 items-center justify-center rounded-l-lg border border-[var(--button-default-borderColor-rest)] border-r-0 bg-[var(--button-default-bgColor-rest)] px-3 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition-colors duration-100 ease-out hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] hover:text-[var(--button-default-fgColor-rest)]"),
+			Text("Previous"),
+		)
+	}
+
+	nextNode := Node(Span(Class("inline-flex min-h-10 items-center justify-center rounded-r-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")))
+	if nextToken != "" {
+		nextNode = A(
+			Href(listPageURL(basePath, limit, nextToken)),
+			Class("inline-flex min-h-10 items-center justify-center rounded-r-lg border border-[var(--button-default-borderColor-rest)] bg-[var(--button-default-bgColor-rest)] px-3 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition-colors duration-100 ease-out hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] hover:text-[var(--button-default-fgColor-rest)]"),
+			Text("Next"),
+		)
+	}
+
+	return Div(
+		Class("flex items-center justify-between gap-4 border-t border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-6 py-4 max-sm:flex-col max-sm:items-start max-sm:px-4"),
+		summary,
+		Nav(Attr("aria-label", "Pagination"),
+			Div(Class("inline-flex items-center"),
+				prevNode,
+				nextNode,
+			),
+		),
+	)
+}
+
+func listPageURL(basePath string, limit int, token string) string {
+	q := url.Values{}
+	q.Set("max_results", fmt.Sprintf("%d", limit))
+	if token != "" {
+		q.Set("page_token", token)
+	}
+	return basePath + "?" + q.Encode()
+}
+
+func FormPageLayout(kicker, title, description string, nodes ...Node) Node {
+	parts := []Node{PageHeader(kicker, title, description)}
+	if len(nodes) > 0 {
+		parts = append(parts, SectionSurface(nodes...))
+	}
+	return ListPageLayout(parts...)
+}
+
+func ResultPageLayout(kicker, title, description string, nodes ...Node) Node {
+	parts := []Node{PageHeader(kicker, title, description)}
+	parts = append(parts, nodes...)
+	return ListPageLayout(parts...)
 }
 
 func SectionHeader(title, description string, actions ...Node) Node {
@@ -393,6 +515,39 @@ func DetailMain(nodes ...Node) Node {
 
 func DetailRail(nodes ...Node) Node {
 	return Div(append([]Node{Class("flex min-w-0 flex-col gap-4")}, nodes...)...)
+}
+
+func DetailRailCard(title, description string, nodes ...Node) Node {
+	parts := make([]Node, 0, len(nodes)+1)
+	if title != "" || description != "" {
+		parts = append(parts, SectionHeader(title, description))
+	}
+	parts = append(parts, nodes...)
+	return SectionSurface(parts...)
+}
+
+func MetadataSummary(items [][2]string) Node {
+	cards := make([]Node, 0, len(items))
+	for i := range items {
+		cards = append(cards, Div(
+			Class("grid gap-1 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-3 py-3"),
+			Span(Class("text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"), Text(items[i][0])),
+			Span(Class("text-sm text-[var(--fgColor-default)]"), Text(items[i][1])),
+		))
+	}
+	return Div(Class("grid gap-3 sm:grid-cols-2 xl:grid-cols-3"), Group(cards))
+}
+
+func KeyValueGrid(items [][2]string) Node {
+	rows := make([]Node, 0, len(items))
+	for i := range items {
+		rows = append(rows, Div(
+			Class("grid gap-1 border-b border-[var(--borderColor-default)] pb-3 last:border-b-0 last:pb-0"),
+			Span(Class("text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--fgColor-muted)]"), Text(items[i][0])),
+			Span(Class("text-sm text-[var(--fgColor-default)]"), Text(items[i][1])),
+		))
+	}
+	return Div(Class("grid gap-3"), Group(rows))
 }
 
 func ItemList(extraClass string, nodes ...Node) Node {

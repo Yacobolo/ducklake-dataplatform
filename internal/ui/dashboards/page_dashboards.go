@@ -83,11 +83,21 @@ func dashboardsListPage(principal domain.ContextPrincipal, rows []dashboardListR
 			Td(Text(row.Updated)),
 		))
 	}
-	tableNode := Node(emptyStateCard("No dashboards yet.", "New dashboard", "/ui/dashboards/new"))
+	tableNode := Node(core.ListPageBody(
+		core.WorkspaceEmptyState("layout-panel-top", "No dashboards yet.", "Create a dashboard to start collecting widgets and semantic views.", core.PrimaryLink("/ui/dashboards/new", "", Text("New dashboard"))),
+	))
 	if len(tableRows) > 0 {
-		tableNode = Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs overflow-x-auto"), Table(Class(dataTableClass()), THead(Tr(Th(Text("Name")), Th(Text("Description")), Th(Text("Owner")), Th(Text("Updated")))), TBody(Group(tableRows))))
+		tableNode = core.ListPageBody(core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Text("Name")), Th(Text("Description")), Th(Text("Owner")), Th(Text("Updated")))),
+				TBody(Group(tableRows)),
+			),
+		), core.ListPagination("/ui/dashboards", page, total))
 	}
-	return core.AppPage("Dashboards", "dashboards", principal, pageToolbar("/ui/dashboards/new", "New dashboard"), tableNode, paginationCard("/ui/dashboards", page, total))
+	return core.AppPage("Dashboards", "dashboards", principal,
+		core.PageHeader("Discover", "Dashboards", "Browse and manage dashboard resources.", core.PrimaryLink("/ui/dashboards/new", "", Text("New dashboard"))),
+		tableNode,
+	)
 }
 
 func dashboardsNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
@@ -123,21 +133,16 @@ func dashboardsDetailPage(d dashboardDetailPageData) Node {
 		widgetNodes = append(widgetNodes, dashboardWidgetCard(widget, d.BaseURL, d.CSRFFieldProvider))
 	}
 	if len(widgetNodes) == 0 {
-		widgetNodes = append(widgetNodes, emptyStateCard("No widgets yet.", "Add widget below", "#dashboard-widget-form"))
+		widgetNodes = append(widgetNodes, core.SectionSurface(core.EmptyState("inbox", "No widgets yet.", "Add the first widget below to turn this dashboard into a working surface.", core.PrimaryLink("#dashboard-widget-form", "", Text("Add widget below")))))
 	}
 
 	return core.AppPage(
 		"Dashboard: "+d.Dashboard.Name,
 		"dashboards",
 		d.Principal,
-		Div(
-			Class("grid gap-3"),
-			H1(Class("m-0 text-3xl font-semibold"), Text(d.Dashboard.Name)),
-			P(Class("m-0 text-[var(--fgColor-muted)]"), Text(d.Dashboard.Description)),
-			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
-				core.SecondaryLink(d.EditURL, "", Text("Edit")),
-				Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
-			),
+		core.PageHeader("Discover", d.Dashboard.Name, d.Dashboard.Description,
+			core.SecondaryLink(d.EditURL, "", Text("Edit")),
+			Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
 		),
 		dashboardFreshnessCard(d.Freshness, d.FreshnessExplain),
 		Div(Class("grid gap-4 md:grid-cols-2 xl:grid-cols-12 [&>*]:xl:col-span-6"), Group(widgetNodes)),
@@ -218,9 +223,7 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 
 	return Div(
 		Class("grid gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-sm"),
-		H2(Class("m-0 text-xl font-semibold"), Text(widget.Widget.Name)),
-		P(Class("m-0 text-[var(--fgColor-muted)]"), Text(widget.Widget.Description)),
-		Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"), core.SecondaryLink(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/edit", "", Text("Edit widget"))),
+		core.SectionHeader(widget.Widget.Name, widget.Widget.Description, core.SecondaryLink(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/edit", "", Text("Edit widget"))),
 		content,
 		dashboardWidgetDataDetails(widget),
 		generatedSQL,
@@ -248,7 +251,7 @@ func dashboardWidgetTable(widget dashboardsvc.ResolvedWidget) Node {
 		}
 		rows = append(rows, Tr(Group(cells)))
 	}
-	return Div(Class(tableWrapClass()), Table(Class(dataTableClass()), THead(Tr(Group(headers))), TBody(Group(rows))))
+	return core.TableContainer("", core.DataTable("", THead(Tr(Group(headers))), TBody(Group(rows))))
 }
 
 func dashboardFreshnessTone(status string) string {
@@ -267,11 +270,11 @@ func dashboardFreshnessTone(status string) string {
 }
 
 func dashboardWidgetFormCard(data dashboardWidgetFormData, csrfFieldProvider func() Node) Node {
-	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
+	return core.SectionSurface(
 		ID("dashboard-widget-form"),
-		H2(Text(data.Title)),
+		core.SectionHeader(data.Title, "Widget authoring uses the shared single-surface form framing."),
 		Form(
+			Class("grid gap-3"),
 			Method("post"),
 			Action(data.Action),
 			csrfFieldProvider(),
@@ -442,8 +445,7 @@ func formPage(principal domain.ContextPrincipal, title, active, action string, c
 		title,
 		active,
 		principal,
-		Div(
-			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
+		core.FormPageLayout("Discover", title, "Dashboard authoring uses the shared single-surface form layout.",
 			Form(
 				Class("stack-form [&>:not(label):not(.form-actions)]:mb-3 [&>:last-child]:mb-0"),
 				Method("post"),
@@ -474,22 +476,14 @@ func formatTime(ts time.Time) string {
 	if ts.IsZero() {
 		return "-"
 	}
-	return ts.Format(time.RFC3339)
+	return core.FormatTimeDisplay(ts)
 }
 
 func formatTimePtr(ts *time.Time) string {
 	if ts == nil || ts.IsZero() {
 		return "-"
 	}
-	return ts.Format(time.RFC3339)
-}
-
-func dataTableClass(extra ...string) string {
-	return core.ClassNames("min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--bgColor-muted)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]", strings.Join(extra, " "))
-}
-
-func tableWrapClass(extra ...string) string {
-	return core.ClassNames("overflow-x-auto", strings.Join(extra, " "))
+	return core.FormatTimeDisplay(*ts)
 }
 
 func labelClass(tone string) string {
@@ -510,63 +504,6 @@ func labelClass(tone string) string {
 
 func statusLabel(text, tone string) Node {
 	return Span(Class(labelClass(tone)), Text(text))
-}
-
-func pageToolbar(newHref, newLabel string) Node {
-	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		Div(
-			Class("flex flex-wrap items-center justify-between gap-3"),
-			Div(
-				Class("flex min-w-0 flex-col gap-1"),
-				Span(Class("inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium bg-[var(--bgColor-muted)] text-[var(--fgColor-default)]"), Text("Workspace")),
-				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Browse and manage resources.")),
-			),
-			core.PrimaryLink(newHref, "", Text(newLabel)),
-		),
-	)
-}
-
-func emptyStateCard(message, ctaLabel, ctaHref string) Node {
-	cta := Node(nil)
-	if ctaLabel != "" && ctaHref != "" {
-		cta = core.PrimaryLink(ctaHref, "", Text(ctaLabel))
-	}
-	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-xs"),
-		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"), I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true"))),
-		Div(
-			Class("flex flex-col items-center gap-2 text-center"),
-			P(Class("m-0 text-lg font-semibold"), Text("No results yet")),
-			P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(message)),
-			cta,
-		),
-	)
-}
-
-func paginationCard(basePath string, page domain.PageRequest, total int64) Node {
-	shown := min(page.Limit(), int(total))
-	summary := fmt.Sprintf("Showing %d of %d entries.", shown, total)
-	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	if nextToken == "" {
-		return Div(
-			Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-			Div(
-				Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
-				Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))),
-				Span(Class("inline-flex min-h-8 items-center justify-center rounded-lg border border-[var(--borderColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")),
-			),
-		)
-	}
-	url := fmt.Sprintf("%s?max_results=%d&page_token=%s", basePath, page.Limit(), nextToken)
-	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-		Div(
-			Class("flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start"),
-			Div(Class("flex min-w-0 flex-col gap-1"), P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text("Pagination")), P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(summary))),
-			core.SecondaryLink(url, "small", Text("Next page")),
-		),
-	)
 }
 
 func chartHost(columns []string, rows [][]interface{}, visual *domain.VisualSpec) Node {

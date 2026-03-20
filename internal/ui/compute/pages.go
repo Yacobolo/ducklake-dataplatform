@@ -40,18 +40,21 @@ func computeEndpointsListPage(principal domain.ContextPrincipal, rows []computeE
 				Td(Text(row.URLText)),
 			))
 		}
-		table = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Status")), Th(Text("URL")))),
-			TBody(Group(tableRows)),
-		))
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Scope("col"), Text("Name")), Th(Scope("col"), Text("Type")), Th(Scope("col"), Text("Status")), Th(Scope("col"), Text("URL")))),
+				TBody(Group(tableRows)),
+			),
+		)
 	}
 	return core.AppPage("Compute: Endpoints", "compute", principal,
 		computeSectionNav("endpoints"),
-		core.PageHeader("Operate", "Compute endpoints", "Create compute endpoints, inspect remote health, and route principals onto the right execution plane.", core.PrimaryLink("/ui/compute/endpoints/new", "", Text("New endpoint"))),
-		core.SectionSurface(
-			core.SectionHeader("Endpoint inventory", "Use the list below as the operational starting point for health checks, assignments, and endpoint-level edits."),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" endpoints. Total: "+strconv.FormatInt(total, 10))),
+		core.ListPageLayout(
+			core.ListPageHeader("Compute endpoints", "Create compute endpoints, inspect remote health, and route principals onto the right execution plane.", core.PrimaryLink("/ui/compute/endpoints/new", "", Text("New endpoint"))),
+			core.ListPageBody(
+				table,
+				core.ListPagination("/ui/compute/endpoints", page, total),
+			),
 		),
 	)
 }

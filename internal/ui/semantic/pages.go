@@ -99,18 +99,21 @@ func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticMo
 				Td(Text(row.UpdatedAt)),
 			))
 		}
-		table = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Model")), Th(Text("Base model")), Th(Text("Owner")), Th(Text("Updated")))),
-			TBody(Group(tableRows)),
-		))
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Scope("col"), Text("Model")), Th(Scope("col"), Text("Base model")), Th(Scope("col"), Text("Owner")), Th(Scope("col"), Text("Updated")))),
+				TBody(Group(tableRows)),
+			),
+		)
 	}
 	return core.AppPage("Semantic Models", "semantic", principal,
 		semanticSectionNav("models"),
-		core.PageHeader("Build", "Semantic models", "Use the semantic workspace for the consumer-facing model layer. Relationship paths stay nearby, but model management remains the default landing surface.", core.PrimaryLink("/ui/semantic/models/new", "", Text("New semantic model"))),
-		core.SectionSurface(
-			core.SectionHeader("Model inventory", "Review the semantic layer before drilling into metrics or pre-aggregations."),
-			table,
-			P(Class("mt-4 text-sm text-[var(--fgColor-muted)]"), Text("Showing up to "+strconv.Itoa(page.MaxResults)+" semantic models. Total: "+strconv.FormatInt(total, 10))),
+		core.ListPageLayout(
+			core.ListPageHeader("Semantic models", "Use the semantic workspace for the consumer-facing model layer. Relationship paths stay nearby, but model management remains the default landing surface.", core.PrimaryLink("/ui/semantic/models/new", "", Text("New semantic model"))),
+			core.ListPageBody(
+				table,
+				core.ListPagination("/ui/semantic/models", page, total),
+			),
 		),
 	)
 }

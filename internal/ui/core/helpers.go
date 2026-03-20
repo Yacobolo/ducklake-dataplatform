@@ -37,7 +37,7 @@ func buttonBaseClass(size string) string {
 		sizeClasses = "min-h-10 px-3 py-2 text-sm"
 	}
 	return ClassNames(
-		"inline-flex items-center justify-center gap-2 rounded-lg border font-medium transition-colors duration-100 ease-out focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[var(--focus-outlineColor)] disabled:cursor-not-allowed",
+		"inline-flex items-center justify-center gap-2 rounded-md border font-semibold shadow-xs transition-colors duration-100 ease-out focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[var(--focus-outlineColor)] disabled:cursor-not-allowed",
 		sizeClasses,
 	)
 }
@@ -113,7 +113,7 @@ func formControlClass(extra ...string) string {
 }
 
 func tableWrapClass(extra ...string) string {
-	return ClassNames("overflow-x-auto", strings.Join(extra, " "))
+	return ClassNames("overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] shadow-xs", strings.Join(extra, " "))
 }
 
 func buttonRowClass(extra ...string) string {
@@ -147,7 +147,7 @@ func subtleLinkClass() string {
 }
 
 func dataTableClass(extra ...string) string {
-	return ClassNames("min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--bgColor-muted)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]", strings.Join(extra, " "))
+	return ClassNames("min-w-full border-collapse bg-[var(--bgColor-default)] [&_thead]:bg-[var(--bgColor-muted)] [&_tbody_tr]:border-b [&_tbody_tr]:border-[var(--borderColor-default)] [&_tbody_tr:hover]:bg-[color-mix(in_srgb,var(--bgColor-muted)_70%,transparent)] [&_tbody_tr:last-child]:border-b-0 [&_td]:px-6 [&_td]:py-4 [&_td]:align-middle [&_td]:text-sm [&_th]:px-6 [&_th]:py-4 [&_th]:text-left [&_th]:text-xs [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.08em] [&_th]:text-[var(--fgColor-muted)]", strings.Join(extra, " "))
 }
 
 func labelClass(tone string) string {
