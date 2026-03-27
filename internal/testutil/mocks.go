@@ -248,6 +248,210 @@ func (m *MockLineageRepo) PurgeOlderThan(ctx context.Context, before time.Time) 
 
 var _ domain.LineageRepository = (*MockLineageRepo)(nil)
 
+// === Folder Repository Mock ===
+
+type MockFolderRepo struct {
+	CreateFn             func(ctx context.Context, folder *domain.Folder) (*domain.Folder, error)
+	GetByIDFn            func(ctx context.Context, id string) (*domain.Folder, error)
+	ListAllFn            func(ctx context.Context) ([]domain.Folder, error)
+	ListByOwnerFn        func(ctx context.Context, owner string) ([]domain.Folder, error)
+	UpdateFn             func(ctx context.Context, id string, req domain.UpdateFolderRequest) (*domain.Folder, error)
+	DeleteFn             func(ctx context.Context, id string) error
+	EnsurePersonalRootFn func(ctx context.Context, owner string) (*domain.Folder, error)
+	EnsureGitSyncRootFn  func(ctx context.Context, owner string, repo *domain.GitRepo) (*domain.Folder, error)
+	ListAncestorsFn      func(ctx context.Context, folderID string) ([]domain.Folder, error)
+}
+
+func (m *MockFolderRepo) Create(ctx context.Context, folder *domain.Folder) (*domain.Folder, error) {
+	if m.CreateFn != nil {
+		return m.CreateFn(ctx, folder)
+	}
+	panic("unexpected call to MockFolderRepo.Create")
+}
+
+func (m *MockFolderRepo) GetByID(ctx context.Context, id string) (*domain.Folder, error) {
+	if m.GetByIDFn != nil {
+		return m.GetByIDFn(ctx, id)
+	}
+	panic("unexpected call to MockFolderRepo.GetByID")
+}
+
+func (m *MockFolderRepo) ListAll(ctx context.Context) ([]domain.Folder, error) {
+	if m.ListAllFn != nil {
+		return m.ListAllFn(ctx)
+	}
+	panic("unexpected call to MockFolderRepo.ListAll")
+}
+
+func (m *MockFolderRepo) ListByOwner(ctx context.Context, owner string) ([]domain.Folder, error) {
+	if m.ListByOwnerFn != nil {
+		return m.ListByOwnerFn(ctx, owner)
+	}
+	panic("unexpected call to MockFolderRepo.ListByOwner")
+}
+
+func (m *MockFolderRepo) Update(ctx context.Context, id string, req domain.UpdateFolderRequest) (*domain.Folder, error) {
+	if m.UpdateFn != nil {
+		return m.UpdateFn(ctx, id, req)
+	}
+	panic("unexpected call to MockFolderRepo.Update")
+}
+
+func (m *MockFolderRepo) Delete(ctx context.Context, id string) error {
+	if m.DeleteFn != nil {
+		return m.DeleteFn(ctx, id)
+	}
+	panic("unexpected call to MockFolderRepo.Delete")
+}
+
+func (m *MockFolderRepo) EnsurePersonalRoot(ctx context.Context, owner string) (*domain.Folder, error) {
+	if m.EnsurePersonalRootFn != nil {
+		return m.EnsurePersonalRootFn(ctx, owner)
+	}
+	panic("unexpected call to MockFolderRepo.EnsurePersonalRoot")
+}
+
+func (m *MockFolderRepo) EnsureGitSyncRoot(ctx context.Context, owner string, repo *domain.GitRepo) (*domain.Folder, error) {
+	if m.EnsureGitSyncRootFn != nil {
+		return m.EnsureGitSyncRootFn(ctx, owner, repo)
+	}
+	panic("unexpected call to MockFolderRepo.EnsureGitSyncRoot")
+}
+
+func (m *MockFolderRepo) ListAncestors(ctx context.Context, folderID string) ([]domain.Folder, error) {
+	if m.ListAncestorsFn != nil {
+		return m.ListAncestorsFn(ctx, folderID)
+	}
+	panic("unexpected call to MockFolderRepo.ListAncestors")
+}
+
+var _ domain.FolderRepository = (*MockFolderRepo)(nil)
+
+// === Folder Share Repository Mock ===
+
+type MockFolderShareRepo struct {
+	UpsertFn          func(ctx context.Context, share *domain.FolderShare) (*domain.FolderShare, error)
+	DeleteFn          func(ctx context.Context, folderID string, principalName string) error
+	ListByFolderFn    func(ctx context.Context, folderID string) ([]domain.FolderShare, error)
+	ListByPrincipalFn func(ctx context.Context, principalName string) ([]domain.FolderShare, error)
+}
+
+func (m *MockFolderShareRepo) Upsert(ctx context.Context, share *domain.FolderShare) (*domain.FolderShare, error) {
+	if m.UpsertFn != nil {
+		return m.UpsertFn(ctx, share)
+	}
+	panic("unexpected call to MockFolderShareRepo.Upsert")
+}
+
+func (m *MockFolderShareRepo) Delete(ctx context.Context, folderID string, principalName string) error {
+	if m.DeleteFn != nil {
+		return m.DeleteFn(ctx, folderID, principalName)
+	}
+	panic("unexpected call to MockFolderShareRepo.Delete")
+}
+
+func (m *MockFolderShareRepo) ListByFolder(ctx context.Context, folderID string) ([]domain.FolderShare, error) {
+	if m.ListByFolderFn != nil {
+		return m.ListByFolderFn(ctx, folderID)
+	}
+	return []domain.FolderShare{}, nil
+}
+
+func (m *MockFolderShareRepo) ListByPrincipal(ctx context.Context, principalName string) ([]domain.FolderShare, error) {
+	if m.ListByPrincipalFn != nil {
+		return m.ListByPrincipalFn(ctx, principalName)
+	}
+	return []domain.FolderShare{}, nil
+}
+
+var _ domain.FolderShareRepository = (*MockFolderShareRepo)(nil)
+
+// === Notebook Share Repository Mock ===
+
+type MockNotebookShareRepo struct {
+	UpsertFn          func(ctx context.Context, share *domain.NotebookShare) (*domain.NotebookShare, error)
+	DeleteFn          func(ctx context.Context, notebookID string, principalName string) error
+	ListByNotebookFn  func(ctx context.Context, notebookID string) ([]domain.NotebookShare, error)
+	ListByPrincipalFn func(ctx context.Context, principalName string) ([]domain.NotebookShare, error)
+}
+
+func (m *MockNotebookShareRepo) Upsert(ctx context.Context, share *domain.NotebookShare) (*domain.NotebookShare, error) {
+	if m.UpsertFn != nil {
+		return m.UpsertFn(ctx, share)
+	}
+	panic("unexpected call to MockNotebookShareRepo.Upsert")
+}
+
+func (m *MockNotebookShareRepo) Delete(ctx context.Context, notebookID string, principalName string) error {
+	if m.DeleteFn != nil {
+		return m.DeleteFn(ctx, notebookID, principalName)
+	}
+	panic("unexpected call to MockNotebookShareRepo.Delete")
+}
+
+func (m *MockNotebookShareRepo) ListByNotebook(ctx context.Context, notebookID string) ([]domain.NotebookShare, error) {
+	if m.ListByNotebookFn != nil {
+		return m.ListByNotebookFn(ctx, notebookID)
+	}
+	return []domain.NotebookShare{}, nil
+}
+
+func (m *MockNotebookShareRepo) ListByPrincipal(ctx context.Context, principalName string) ([]domain.NotebookShare, error) {
+	if m.ListByPrincipalFn != nil {
+		return m.ListByPrincipalFn(ctx, principalName)
+	}
+	return []domain.NotebookShare{}, nil
+}
+
+var _ domain.NotebookShareRepository = (*MockNotebookShareRepo)(nil)
+
+// === Orchestration Event Repository Mock ===
+
+type MockOrchestrationEventRepo struct {
+	EnqueueFn          func(ctx context.Context, event *domain.OrchestrationEvent) (*domain.OrchestrationEvent, error)
+	ClaimNextPendingFn func(ctx context.Context, now time.Time) (*domain.OrchestrationEvent, error)
+	MarkProcessedFn    func(ctx context.Context, id string) error
+	MarkFailedFn       func(ctx context.Context, id string, errMsg string, retryAt *time.Time) error
+	ListFn             func(ctx context.Context, filter domain.OrchestrationEventFilter) ([]domain.OrchestrationEvent, int64, error)
+}
+
+func (m *MockOrchestrationEventRepo) Enqueue(ctx context.Context, event *domain.OrchestrationEvent) (*domain.OrchestrationEvent, error) {
+	if m.EnqueueFn != nil {
+		return m.EnqueueFn(ctx, event)
+	}
+	panic("unexpected call to MockOrchestrationEventRepo.Enqueue")
+}
+
+func (m *MockOrchestrationEventRepo) ClaimNextPending(ctx context.Context, now time.Time) (*domain.OrchestrationEvent, error) {
+	if m.ClaimNextPendingFn != nil {
+		return m.ClaimNextPendingFn(ctx, now)
+	}
+	panic("unexpected call to MockOrchestrationEventRepo.ClaimNextPending")
+}
+
+func (m *MockOrchestrationEventRepo) MarkProcessed(ctx context.Context, id string) error {
+	if m.MarkProcessedFn != nil {
+		return m.MarkProcessedFn(ctx, id)
+	}
+	return nil
+}
+
+func (m *MockOrchestrationEventRepo) MarkFailed(ctx context.Context, id string, errMsg string, retryAt *time.Time) error {
+	if m.MarkFailedFn != nil {
+		return m.MarkFailedFn(ctx, id, errMsg, retryAt)
+	}
+	return nil
+}
+
+func (m *MockOrchestrationEventRepo) List(ctx context.Context, filter domain.OrchestrationEventFilter) ([]domain.OrchestrationEvent, int64, error) {
+	if m.ListFn != nil {
+		return m.ListFn(ctx, filter)
+	}
+	return []domain.OrchestrationEvent{}, 0, nil
+}
+
+var _ domain.OrchestrationEventRepository = (*MockOrchestrationEventRepo)(nil)
+
 // === Query History Repository Mock ===
 
 // MockQueryHistoryRepo implements domain.QueryHistoryRepository for testing.
@@ -938,21 +1142,21 @@ var _ domain.IntrospectionRepository = (*MockIntrospectionRepo)(nil)
 
 // MockNotebookRepo implements domain.NotebookRepository for testing.
 type MockNotebookRepo struct {
-	CreateNotebookFn   func(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error)
-	GetNotebookFn      func(ctx context.Context, id string) (*domain.Notebook, error)
-	ListNotebooksFn    func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
-	UpdateNotebookFn   func(ctx context.Context, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
+	CreateNotebookFn     func(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error)
+	GetNotebookFn        func(ctx context.Context, id string) (*domain.Notebook, error)
+	ListNotebooksFn      func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
+	UpdateNotebookFn     func(ctx context.Context, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
 	UpdateNotebookSyncFn func(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error)
-	DeleteNotebookFn   func(ctx context.Context, id string) error
-	CreateCellFn       func(ctx context.Context, cell *domain.Cell) (*domain.Cell, error)
-	GetCellFn          func(ctx context.Context, id string) (*domain.Cell, error)
-	ListCellsFn        func(ctx context.Context, notebookID string) ([]domain.Cell, error)
-	UpdateCellFn       func(ctx context.Context, id string, req domain.UpdateCellRequest) (*domain.Cell, error)
-	UpdateCellSyncFn   func(ctx context.Context, cell *domain.Cell) (*domain.Cell, error)
-	DeleteCellFn       func(ctx context.Context, id string) error
-	UpdateCellResultFn func(ctx context.Context, cellID string, result *string) error
-	ReorderCellsFn     func(ctx context.Context, notebookID string, cellIDs []string) error
-	GetMaxPositionFn   func(ctx context.Context, notebookID string) (int, error)
+	DeleteNotebookFn     func(ctx context.Context, id string) error
+	CreateCellFn         func(ctx context.Context, cell *domain.Cell) (*domain.Cell, error)
+	GetCellFn            func(ctx context.Context, id string) (*domain.Cell, error)
+	ListCellsFn          func(ctx context.Context, notebookID string) ([]domain.Cell, error)
+	UpdateCellFn         func(ctx context.Context, id string, req domain.UpdateCellRequest) (*domain.Cell, error)
+	UpdateCellSyncFn     func(ctx context.Context, cell *domain.Cell) (*domain.Cell, error)
+	DeleteCellFn         func(ctx context.Context, id string) error
+	UpdateCellResultFn   func(ctx context.Context, cellID string, result *string) error
+	ReorderCellsFn       func(ctx context.Context, notebookID string, cellIDs []string) error
+	GetMaxPositionFn     func(ctx context.Context, notebookID string) (int, error)
 }
 
 // CreateNotebook implements the interface method for testing.

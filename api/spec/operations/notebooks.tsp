@@ -8,6 +8,54 @@ namespace Duck;
 @summary("List notebooks")
 op listNotebooks(@query owner?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedNotebooks> | StandardErrorResponses;
 
+@route("/notebooks/folders")
+@get
+@tag("Notebooks")
+@summary("List notebook folders")
+op listNotebookFolders(@query owner?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedFolders> | StandardErrorResponses;
+
+@route("/notebooks/folders")
+@post
+@tag("Notebooks")
+@summary("Create notebook folder")
+op createNotebookFolder(@body body: CreateFolderRequest): Created<Folder> | MutatingErrorResponses;
+
+@route("/notebooks/folders/{folderId}")
+@get
+@tag("Notebooks")
+@summary("Get notebook folder")
+op getNotebookFolder(folderId: string): Ok<Folder> | ResourceErrorResponses;
+
+@route("/notebooks/folders/{folderId}")
+@patch(#{ implicitOptionality: true })
+@tag("Notebooks")
+@summary("Update notebook folder")
+op updateNotebookFolder(folderId: string, @body body: UpdateFolderRequest): Ok<Folder> | ResourceErrorResponses;
+
+@route("/notebooks/folders/{folderId}")
+@delete
+@tag("Notebooks")
+@summary("Delete notebook folder")
+op deleteNotebookFolder(folderId: string): NoContent | ResourceErrorResponses;
+
+@route("/notebooks/folders/{folderId}/shares")
+@get
+@tag("Notebooks")
+@summary("List notebook folder shares")
+op listNotebookFolderShares(folderId: string): Ok<FolderShare[]> | ResourceErrorResponses;
+
+@route("/notebooks/folders/{folderId}/shares")
+@post
+@tag("Notebooks")
+@summary("Share notebook folder")
+op shareNotebookFolder(folderId: string, @body body: ShareFolderRequest): Ok<FolderShare> | ResourceErrorResponses;
+
+@route("/notebooks/folders/{folderId}/shares/{principalName}")
+@delete
+@tag("Notebooks")
+@summary("Remove notebook folder share")
+op unshareNotebookFolder(folderId: string, principalName: string): NoContent | ResourceErrorResponses;
+
 @route("/notebooks")
 @post
 @tag("Notebooks")
@@ -25,6 +73,36 @@ op getNotebook(notebookId: string): Ok<NotebookDetail> | ResourceErrorResponses;
 @tag("Notebooks")
 @summary("Update notebook")
 op updateNotebook(notebookId: string, @body body: UpdateNotebookRequest): Ok<Notebook> | ResourceErrorResponses;
+
+@route("/notebooks/{notebookId}/move")
+@post
+@tag("Notebooks")
+@summary("Move notebook")
+op moveNotebook(notebookId: string, @body body: MoveNotebookRequest): Ok<Notebook> | ResourceErrorResponses;
+
+@route("/notebooks/{notebookId}/duplicate")
+@post
+@tag("Notebooks")
+@summary("Duplicate notebook")
+op duplicateNotebook(notebookId: string, @body body: DuplicateNotebookRequest): Created<Notebook> | ResourceErrorResponses;
+
+@route("/notebooks/{notebookId}/shares")
+@get
+@tag("Notebooks")
+@summary("List notebook shares")
+op listNotebookShares(notebookId: string): Ok<NotebookShare[]> | ResourceErrorResponses;
+
+@route("/notebooks/{notebookId}/shares")
+@post
+@tag("Notebooks")
+@summary("Share notebook")
+op shareNotebook(notebookId: string, @body body: ShareNotebookRequest): Ok<NotebookShare> | ResourceErrorResponses;
+
+@route("/notebooks/{notebookId}/shares/{principalName}")
+@delete
+@tag("Notebooks")
+@summary("Remove notebook share")
+op unshareNotebook(notebookId: string, principalName: string): NoContent | ResourceErrorResponses;
 
 @route("/notebooks/{notebookId}")
 @delete

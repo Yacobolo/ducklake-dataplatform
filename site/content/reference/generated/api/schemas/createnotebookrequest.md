@@ -10,6 +10,7 @@
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `description` | `string` | `false` | - |
+| `folder_id` | `string` | `false` | - |
 | `name` | `string` | `true` | - |
 | `source` | `string` | `false` | - |
 

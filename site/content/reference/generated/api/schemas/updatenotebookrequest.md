@@ -9,5 +9,7 @@
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `description` | `string` | `false` | - |
+| `environment_override_id` | `string` | `false` | - |
 | `name` | `string` | `false` | - |
+| `project_override_id` | `string` | `false` | - |
 

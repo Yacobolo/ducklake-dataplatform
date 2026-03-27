@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"duck-demo/internal/db/dbstore"
 	"duck-demo/internal/db/mapper"
@@ -32,9 +33,21 @@ func (r *NotebookRepo) CreateNotebook(ctx context.Context, nb *domain.Notebook) 
 		notebookID = domain.NewID()
 	}
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO notebooks (id, name, description, owner, git_repo_id, git_path)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`, notebookID, nb.Name, mapper.NullStrFromPtr(nb.Description), nb.Owner, mapper.NullStrFromPtr(nb.GitRepoID), mapper.NullStrFromPtr(nb.GitPath))
+		INSERT INTO notebooks (
+			id, folder_id, name, description, owner, git_repo_id, git_path,
+			project_override_id, environment_override_id
+		)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, notebookID,
+		mapper.NullStrFromPtr(stringPtrOrNil(strings.TrimSpace(nb.FolderID))),
+		nb.Name,
+		mapper.NullStrFromPtr(nb.Description),
+		nb.Owner,
+		mapper.NullStrFromPtr(nb.GitRepoID),
+		mapper.NullStrFromPtr(nb.GitPath),
+		mapper.NullStrFromPtr(nb.ProjectOverrideID),
+		mapper.NullStrFromPtr(nb.EnvironmentOverrideID),
+	)
 	if err != nil {
 		return nil, mapDBError(err)
 	}
@@ -43,37 +56,60 @@ func (r *NotebookRepo) CreateNotebook(ctx context.Context, nb *domain.Notebook) 
 
 // GetNotebook returns a notebook by its ID.
 func (r *NotebookRepo) GetNotebook(ctx context.Context, id string) (*domain.Notebook, error) {
-	row, err := r.q.GetNotebook(ctx, id)
-	if err != nil {
-		return nil, mapDBError(err)
-	}
-	return mapper.NotebookFromDB(row), nil
+	row := r.db.QueryRowContext(ctx, `
+		SELECT
+			id, folder_id, name, description, owner, created_at, updated_at,
+			git_repo_id, git_path, project_override_id, environment_override_id
+		FROM notebooks
+		WHERE id = ?
+	`, id)
+	return scanNotebook(row)
 }
 
 // ListNotebooks returns a paginated list of notebooks, optionally filtered by owner.
 func (r *NotebookRepo) ListNotebooks(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error) {
-	total, err := r.q.CountNotebooks(ctx, mapper.InterfaceFromPtr(owner))
-	if err != nil {
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM notebooks
+		WHERE (? IS NULL OR owner = ?)
+	`, mapper.InterfaceFromPtr(owner), mapper.InterfaceFromPtr(owner)).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	rows, err := r.q.ListNotebooks(ctx, dbstore.ListNotebooksParams{
-		Owner:  mapper.InterfaceFromPtr(owner),
-		Limit:  int64(page.Limit()),
-		Offset: int64(page.Offset()),
-	})
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT
+			id, folder_id, name, description, owner, created_at, updated_at,
+			git_repo_id, git_path, project_override_id, environment_override_id
+		FROM notebooks
+		WHERE (? IS NULL OR owner = ?)
+		ORDER BY updated_at DESC
+		LIMIT ? OFFSET ?
+	`, mapper.InterfaceFromPtr(owner), mapper.InterfaceFromPtr(owner), page.Limit(), page.Offset())
 	if err != nil {
 		return nil, 0, err
 	}
+	defer rows.Close()
 
-	return mapper.NotebooksFromDB(rows), total, nil
+	notebooks := []domain.Notebook{}
+	for rows.Next() {
+		notebook, scanErr := scanNotebook(rows)
+		if scanErr != nil {
+			return nil, 0, scanErr
+		}
+		notebooks = append(notebooks, *notebook)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return notebooks, total, nil
 }
 
 // UpdateNotebook applies partial updates to an existing notebook.
 func (r *NotebookRepo) UpdateNotebook(ctx context.Context, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error) {
-	existing, err := r.q.GetNotebook(ctx, id)
+	existing, err := r.GetNotebook(ctx, id)
 	if err != nil {
-		return nil, mapDBError(err)
+		return nil, err
 	}
 
 	name := existing.Name
@@ -83,18 +119,44 @@ func (r *NotebookRepo) UpdateNotebook(ctx context.Context, id string, req domain
 
 	description := existing.Description
 	if req.Description != nil {
-		description = mapper.NullStrFromPtr(req.Description)
+		description = req.Description
 	}
 
-	row, err := r.q.UpdateNotebook(ctx, dbstore.UpdateNotebookParams{
-		Name:        name,
-		Description: description,
-		ID:          id,
-	})
+	folderID := existing.FolderID
+	if req.FolderID != nil {
+		folderID = strings.TrimSpace(*req.FolderID)
+	}
+	projectOverrideID := existing.ProjectOverrideID
+	if req.ProjectOverrideID != nil {
+		projectOverrideID = req.ProjectOverrideID
+	}
+	environmentOverrideID := existing.EnvironmentOverrideID
+	if req.EnvironmentOverrideID != nil {
+		environmentOverrideID = req.EnvironmentOverrideID
+	}
+
+	_, err = r.db.ExecContext(ctx, `
+		UPDATE notebooks
+		SET
+			folder_id = ?,
+			name = ?,
+			description = ?,
+			project_override_id = ?,
+			environment_override_id = ?,
+			updated_at = datetime('now')
+		WHERE id = ?
+	`,
+		mapper.NullStrFromPtr(stringPtrOrNil(folderID)),
+		name,
+		mapper.NullStrFromPtr(description),
+		mapper.NullStrFromPtr(projectOverrideID),
+		mapper.NullStrFromPtr(environmentOverrideID),
+		id,
+	)
 	if err != nil {
 		return nil, mapDBError(err)
 	}
-	return mapper.NotebookFromDB(row), nil
+	return r.GetNotebook(ctx, id)
 }
 
 // UpdateNotebookSync applies Git-backed notebook metadata updates.
@@ -107,9 +169,28 @@ func (r *NotebookRepo) UpdateNotebookSync(ctx context.Context, nb *domain.Notebo
 	}
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE notebooks
-		SET name = ?, description = ?, owner = ?, git_repo_id = ?, git_path = ?, updated_at = datetime('now')
+		SET
+			folder_id = ?,
+			name = ?,
+			description = ?,
+			owner = ?,
+			git_repo_id = ?,
+			git_path = ?,
+			project_override_id = ?,
+			environment_override_id = ?,
+			updated_at = datetime('now')
 		WHERE id = ?
-	`, nb.Name, mapper.NullStrFromPtr(nb.Description), nb.Owner, mapper.NullStrFromPtr(nb.GitRepoID), mapper.NullStrFromPtr(nb.GitPath), nb.ID)
+	`,
+		mapper.NullStrFromPtr(stringPtrOrNil(strings.TrimSpace(nb.FolderID))),
+		nb.Name,
+		mapper.NullStrFromPtr(nb.Description),
+		nb.Owner,
+		mapper.NullStrFromPtr(nb.GitRepoID),
+		mapper.NullStrFromPtr(nb.GitPath),
+		mapper.NullStrFromPtr(nb.ProjectOverrideID),
+		mapper.NullStrFromPtr(nb.EnvironmentOverrideID),
+		nb.ID,
+	)
 	if err != nil {
 		return nil, mapDBError(err)
 	}
@@ -118,7 +199,8 @@ func (r *NotebookRepo) UpdateNotebookSync(ctx context.Context, nb *domain.Notebo
 
 // DeleteNotebook removes a notebook by ID.
 func (r *NotebookRepo) DeleteNotebook(ctx context.Context, id string) error {
-	return r.q.DeleteNotebook(ctx, id)
+	_, err := r.db.ExecContext(ctx, `DELETE FROM notebooks WHERE id = ?`, id)
+	return mapDBError(err)
 }
 
 // CreateCell inserts a new cell into a notebook.
@@ -189,6 +271,73 @@ func (r *NotebookRepo) CreateCell(ctx context.Context, cell *domain.Cell) (*doma
 		return nil, fmt.Errorf("commit create cell: %w", err)
 	}
 	return mapper.CellFromDB(row), nil
+}
+
+func scanNotebook(row interface{ Scan(dest ...any) error }) (*domain.Notebook, error) {
+	var (
+		id                    string
+		folderID              sql.NullString
+		name                  string
+		description           sql.NullString
+		owner                 string
+		createdAtRaw          string
+		updatedAtRaw          string
+		gitRepoID             sql.NullString
+		gitPath               sql.NullString
+		projectOverrideID     sql.NullString
+		environmentOverrideID sql.NullString
+	)
+	if err := row.Scan(
+		&id,
+		&folderID,
+		&name,
+		&description,
+		&owner,
+		&createdAtRaw,
+		&updatedAtRaw,
+		&gitRepoID,
+		&gitPath,
+		&projectOverrideID,
+		&environmentOverrideID,
+	); err != nil {
+		return nil, mapDBError(err)
+	}
+	return &domain.Notebook{
+		ID:                    id,
+		FolderID:              strings.TrimSpace(nullStringToString(folderID)),
+		Name:                  name,
+		Description:           ptrFromNullString(description),
+		Owner:                 owner,
+		GitRepoID:             ptrFromNullString(gitRepoID),
+		GitPath:               ptrFromNullString(gitPath),
+		ProjectOverrideID:     ptrFromNullString(projectOverrideID),
+		EnvironmentOverrideID: ptrFromNullString(environmentOverrideID),
+		CreatedAt:             mustParseNotebookTime(createdAtRaw),
+		UpdatedAt:             mustParseNotebookTime(updatedAtRaw),
+	}, nil
+}
+
+func mustParseNotebookTime(raw string) time.Time {
+	parsed, err := time.Parse("2006-01-02 15:04:05", raw)
+	if err != nil {
+		return time.Time{}
+	}
+	return parsed
+}
+
+func stringPtrOrNil(value string) *string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	v := strings.TrimSpace(value)
+	return &v
+}
+
+func nullStringToString(v sql.NullString) string {
+	if !v.Valid {
+		return ""
+	}
+	return v.String
 }
 
 // GetCell returns a cell by its ID.

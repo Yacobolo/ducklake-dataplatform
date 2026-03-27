@@ -26,6 +26,7 @@ type APIHandler struct {
 	apiKeys             apiKeyService
 	pipelines           pipelineService
 	notebooks           notebookService
+	notebookFolders     notebookFolderService
 	sessions            sessionService
 	gitRepos            gitRepoService
 	assets              assetService
@@ -108,6 +109,11 @@ func NewHandler(
 		semantics:           semantics,
 		dashboards:          dashboardSvc,
 	}
+}
+
+// SetNotebookFolders configures the optional notebook folder service for folder endpoints.
+func (h *APIHandler) SetNotebookFolders(service notebookFolderService) {
+	h.notebookFolders = service
 }
 
 // Ensure Handler implements the interface.

@@ -1,6 +1,7 @@
 package notebooks
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,12 +21,40 @@ type Handler struct{ deps *core.Dependencies }
 func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
 func (h *Handler) NotebooksList(w http.ResponseWriter, r *http.Request) {
+	principal := core.PrincipalFromContext(r.Context())
 	pageReq := pageFromRequest(r, 30)
-	items, total, err := h.deps.Notebook.ListNotebooks(r.Context(), nil, pageReq)
+	selectedFolderID := strings.TrimSpace(r.URL.Query().Get("folder_id"))
+	allItems, _, err := h.deps.Notebook.ListNotebooksForPrincipal(r.Context(), principal.Name, principal.IsAdmin, nil, domain.PageRequest{MaxResults: domain.MaxMaxResults})
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
+	folderPaths, folderItems, err := h.folderPathMap(r.Context(), principal.Name, principal.IsAdmin)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	selectedFolderPath := strings.TrimSpace(folderPaths[selectedFolderID])
+
+	filtered := make([]domain.Notebook, 0, len(allItems))
+	for i := range allItems {
+		item := allItems[i]
+		itemPath := strings.TrimSpace(folderPaths[item.FolderID])
+		if selectedFolderPath == "" || itemPath == selectedFolderPath || strings.HasPrefix(itemPath, selectedFolderPath+"/") {
+			filtered = append(filtered, item)
+		}
+	}
+
+	offset := pageReq.Offset()
+	if offset > len(filtered) {
+		offset = len(filtered)
+	}
+	end := offset + pageReq.Limit()
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	items := filtered[offset:end]
+	folderNav := h.folderNavItems(folderItems, folderPaths, allItems, selectedFolderID)
 
 	rows := make([]notebookListRow, 0, len(items))
 	for i := range items {
@@ -34,11 +63,157 @@ func (h *Handler) NotebooksList(w http.ResponseWriter, r *http.Request) {
 			Name:    n.Name,
 			URL:     "/ui/notebooks/" + n.ID,
 			Owner:   n.Owner,
+			Folder:  valueOrDash(folderPaths[n.FolderID]),
 			Updated: formatTime(n.UpdatedAt),
 		})
 	}
 
-	core.RenderHTML(w, http.StatusOK, notebooksListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total))
+	core.RenderHTML(w, http.StatusOK, notebooksListPage(principal, rows, folderNav, selectedFolderID, pageReq, int64(len(filtered))))
+}
+
+func (h *Handler) NotebookFoldersList(w http.ResponseWriter, r *http.Request) {
+	principal := core.PrincipalFromContext(r.Context())
+	items, err := h.deps.NotebookFolders.ListFoldersForPrincipal(r.Context(), principal.Name, principal.IsAdmin, nil)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+
+	rows := make([]folderListRow, 0, len(items))
+	for i := range items {
+		item := items[i]
+		rows = append(rows, folderListRow{
+			Name:          item.Name,
+			URL:           "/ui/notebooks/folders/" + item.ID + "/edit",
+			Owner:         item.Owner,
+			Path:          item.Path,
+			SystemRole:    stringPtr(item.SystemRole),
+			ProjectID:     stringPtr(item.DefaultProjectID),
+			EnvironmentID: stringPtr(item.DefaultEnvironmentID),
+			GitRepoID:     stringPtr(item.GitRepoID),
+			CanManage:     item.SystemRole == nil || *item.SystemRole != domain.FolderSystemRolePersonalRoot,
+			Updated:       formatTime(item.UpdatedAt),
+		})
+	}
+	core.RenderHTML(w, http.StatusOK, notebookFoldersListPage(principal, rows))
+}
+
+func (h *Handler) NotebookFoldersNew(w http.ResponseWriter, r *http.Request) {
+	principal := core.PrincipalFromContext(r.Context())
+	folders, err := h.folderOptions(r.Context(), principal.Name, principal.IsAdmin, "")
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	repos, err := h.gitRepoOptions(r.Context(), principal.Name, principal.IsAdmin, "")
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	core.RenderHTML(w, http.StatusOK, notebookFoldersNewPage(principal, folders, repos, h.deps.CSRFFieldProvider(r)))
+}
+
+func (h *Handler) NotebookFoldersCreate(w http.ResponseWriter, r *http.Request) {
+	principal := core.PrincipalFromContext(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	_, err := h.deps.NotebookFolders.CreateFolder(r.Context(), principal.Name, domain.CreateFolderRequest{
+		Name:                 formString(r.Form, "name"),
+		ParentFolderID:       formOptionalString(r.Form, "parent_folder_id"),
+		GitRepoID:            formOptionalString(r.Form, "git_repo_id"),
+		GitRootPath:          formOptionalString(r.Form, "git_root_path"),
+		DefaultProjectID:     formOptionalString(r.Form, "default_project_id"),
+		DefaultEnvironmentID: formOptionalString(r.Form, "default_environment_id"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/notebooks/folders", http.StatusSeeOther)
+}
+
+func (h *Handler) NotebookFoldersEdit(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	principal := core.PrincipalFromContext(r.Context())
+	folder, err := h.deps.NotebookFolders.GetFolderForPrincipal(r.Context(), principal.Name, principal.IsAdmin, folderID)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	selectedGitRepoID := ""
+	if folder.GitRepoID != nil {
+		selectedGitRepoID = *folder.GitRepoID
+	}
+	repos, err := h.gitRepoOptions(r.Context(), principal.Name, principal.IsAdmin, selectedGitRepoID)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	shares, err := h.deps.NotebookFolders.ListFolderShares(r.Context(), principal.Name, principal.IsAdmin, folderID)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	core.RenderHTML(w, http.StatusOK, notebookFoldersEditPage(principal, folder, repos, folderShareRows(folderID, shares), h.deps.CSRFFieldProvider(r)))
+}
+
+func (h *Handler) NotebookFoldersUpdate(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	principal := core.PrincipalFromContext(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	_, err := h.deps.NotebookFolders.UpdateFolder(r.Context(), principal.Name, principal.IsAdmin, folderID, domain.UpdateFolderRequest{
+		Name:                 formOptionalString(r.Form, "name"),
+		GitRepoID:            formOptionalString(r.Form, "git_repo_id"),
+		GitRootPath:          formOptionalString(r.Form, "git_root_path"),
+		DefaultProjectID:     formOptionalString(r.Form, "default_project_id"),
+		DefaultEnvironmentID: formOptionalString(r.Form, "default_environment_id"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/notebooks/folders", http.StatusSeeOther)
+}
+
+func (h *Handler) NotebookFoldersDelete(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	principal := core.PrincipalFromContext(r.Context())
+	if err := h.deps.NotebookFolders.DeleteFolder(r.Context(), principal.Name, principal.IsAdmin, folderID); err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/notebooks/folders", http.StatusSeeOther)
+}
+
+func (h *Handler) NotebookFoldersShare(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	principal := core.PrincipalFromContext(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	_, err := h.deps.NotebookFolders.ShareFolder(r.Context(), principal.Name, principal.IsAdmin, folderID, domain.FolderShare{
+		PrincipalName: formString(r.Form, "principal_name"),
+		Role:          formString(r.Form, "role"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/notebooks/folders/"+folderID+"/edit", http.StatusSeeOther)
+}
+
+func (h *Handler) NotebookFoldersUnshare(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	targetPrincipal := chi.URLParam(r, "principalName")
+	principal := core.PrincipalFromContext(r.Context())
+	if err := h.deps.NotebookFolders.UnshareFolder(r.Context(), principal.Name, principal.IsAdmin, folderID, targetPrincipal); err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/notebooks/folders/"+folderID+"/edit", http.StatusSeeOther)
 }
 
 func (h *Handler) NotebookGitReposList(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +333,18 @@ func (h *Handler) NotebookGitReposSync(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "notebookID")
-	nb, cells, err := h.deps.Notebook.GetNotebook(r.Context(), id)
+	principal := core.PrincipalFromContext(r.Context())
+	nb, cells, err := h.deps.Notebook.GetNotebookForPrincipal(r.Context(), principal.Name, principal.IsAdmin, id)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	notebookContext, err := h.deps.Notebook.GetNotebookContext(r.Context(), principal.Name, principal.IsAdmin, id)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	shares, err := h.deps.Notebook.ListNotebookShares(r.Context(), principal.Name, principal.IsAdmin, id)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -203,7 +389,9 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gitRepoURL := "/ui/notebooks/git-repos"
-	if nb.GitRepoID != nil && *nb.GitRepoID != "" {
+	if notebookContext != nil && notebookContext.EffectiveGitRepoID != nil && *notebookContext.EffectiveGitRepoID != "" {
+		gitRepoURL = "/ui/notebooks/git-repos/" + *notebookContext.EffectiveGitRepoID
+	} else if nb.GitRepoID != nil && *nb.GitRepoID != "" {
 		gitRepoURL = "/ui/notebooks/git-repos/" + *nb.GitRepoID
 	}
 
@@ -264,18 +452,22 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	core.RenderHTML(w, http.StatusOK, notebookDetailPage(notebookDetailPageData{
-		Principal:       core.PrincipalFromContext(r.Context()),
+		Principal:       principal,
 		NotebookID:      id,
 		Name:            nb.Name,
 		Owner:           nb.Owner,
 		Description:     stringPtr(nb.Description),
+		Context:         notebookContext,
 		SelectedCatalog: selectedCatalog,
 		SelectedSchema:  selectedSchema,
 		BrowserRuntime:  query.DefaultManifestBrowserRuntimeSpec(),
 		ComputeTargets:  computeTargets,
 		ComputeRequest:  computeReq,
 		EditURL:         "/ui/notebooks/" + id + "/edit",
+		MoveURL:         "/ui/notebooks/" + id + "/move",
+		DuplicateURL:    "/ui/notebooks/" + id + "/duplicate",
 		DeleteURL:       "/ui/notebooks/" + id + "/delete",
+		ShareURL:        "/ui/notebooks/" + id + "/share",
 		NewCellURL:      "/ui/notebooks/" + id + "/cells/new",
 		RunAllURL:       "/ui/notebooks/" + id + "/run-all",
 		RunAllAsyncURL:  "/ui/notebooks/" + id + "/run-all-async",
@@ -283,11 +475,40 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 		JobsURL:         "/ui/notebooks/" + id + "/jobs",
 		GitRepoURL:      gitRepoURL,
 		PromoteURL:      "/ui/models/promote",
+		Shares:          notebookShareRows(id, shares),
 		Jobs:            jobRows,
 		Cells:           cellNodes,
 		Explorer:        explorerCatalogs,
 		CSRFFieldFunc:   h.deps.CSRFFieldProvider(r),
 	}))
+}
+
+func (h *Handler) NotebooksShare(w http.ResponseWriter, r *http.Request) {
+	notebookID := chi.URLParam(r, "notebookID")
+	principal := core.PrincipalFromContext(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	_, err := h.deps.Notebook.ShareNotebook(r.Context(), principal.Name, principal.IsAdmin, notebookID, domain.NotebookShare{
+		PrincipalName: formString(r.Form, "principal_name"),
+		Role:          formString(r.Form, "role"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/notebooks/"+notebookID, http.StatusSeeOther)
+}
+
+func (h *Handler) NotebooksUnshare(w http.ResponseWriter, r *http.Request) {
+	notebookID := chi.URLParam(r, "notebookID")
+	targetPrincipal := chi.URLParam(r, "principalName")
+	principal := core.PrincipalFromContext(r.Context())
+	if err := h.deps.Notebook.UnshareNotebook(r.Context(), principal.Name, principal.IsAdmin, notebookID, targetPrincipal); err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/notebooks/"+notebookID, http.StatusSeeOther)
 }
 
 func (h *Handler) NotebookJobsList(w http.ResponseWriter, r *http.Request) {
@@ -338,7 +559,14 @@ func (h *Handler) NotebookJobsDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) NotebooksNew(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, notebooksNewPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
+	principal := core.PrincipalFromContext(r.Context())
+	selectedFolderID := strings.TrimSpace(r.URL.Query().Get("folder_id"))
+	folders, err := h.folderOptions(r.Context(), principal.Name, principal.IsAdmin, selectedFolderID)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	core.RenderHTML(w, http.StatusOK, notebooksNewPage(principal, folders, h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) NotebooksCreate(w http.ResponseWriter, r *http.Request) {
@@ -350,6 +578,7 @@ func (h *Handler) NotebooksCreate(w http.ResponseWriter, r *http.Request) {
 		Name:        formString(r.Form, "name"),
 		Description: formOptionalString(r.Form, "description"),
 		Source:      formOptionalString(r.Form, "source"),
+		FolderID:    formOptionalString(r.Form, "folder_id"),
 	})
 	if err != nil {
 		renderServiceError(w, err)
@@ -385,6 +614,75 @@ func (h *Handler) NotebooksUpdate(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/ui/notebooks/"+id, http.StatusSeeOther)
 }
 
+func (h *Handler) NotebooksMove(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "notebookID")
+	principal := core.PrincipalFromContext(r.Context())
+	nb, _, err := h.deps.Notebook.GetNotebookForPrincipal(r.Context(), principal.Name, principal.IsAdmin, id)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	folders, err := h.folderOptions(r.Context(), principal.Name, principal.IsAdmin, nb.FolderID)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	core.RenderHTML(w, http.StatusOK, notebooksMovePage(principal, nb, folders, h.deps.CSRFFieldProvider(r)))
+}
+
+func (h *Handler) NotebooksMoveSubmit(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "notebookID")
+	principal := core.PrincipalFromContext(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	_, err := h.deps.Notebook.MoveNotebook(r.Context(), principal.Name, principal.IsAdmin, id, domain.MoveNotebookRequest{
+		FolderID:             formString(r.Form, "folder_id"),
+		GitPath:              formOptionalString(r.Form, "git_path"),
+		ConfirmLeaveGit:      formBool(r.Form, "confirm_leave_git"),
+		ConfirmContextChange: formBool(r.Form, "confirm_context_change"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/notebooks/"+id, http.StatusSeeOther)
+}
+
+func (h *Handler) NotebooksDuplicate(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "notebookID")
+	principal := core.PrincipalFromContext(r.Context())
+	nb, _, err := h.deps.Notebook.GetNotebookForPrincipal(r.Context(), principal.Name, principal.IsAdmin, id)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	folders, err := h.folderOptions(r.Context(), principal.Name, principal.IsAdmin, "")
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	core.RenderHTML(w, http.StatusOK, notebooksDuplicatePage(principal, nb, folders, h.deps.CSRFFieldProvider(r)))
+}
+
+func (h *Handler) NotebooksDuplicateSubmit(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "notebookID")
+	principal := core.PrincipalFromContext(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	duplicated, err := h.deps.Notebook.DuplicateNotebook(r.Context(), principal.Name, principal.IsAdmin, id, domain.DuplicateNotebookRequest{
+		FolderID: formString(r.Form, "folder_id"),
+		Name:     formOptionalString(r.Form, "name"),
+		GitPath:  formOptionalString(r.Form, "git_path"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/notebooks/"+duplicated.ID, http.StatusSeeOther)
+}
+
 func (h *Handler) NotebooksDelete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "notebookID")
 	principal := core.PrincipalFromContext(r.Context())
@@ -393,6 +691,111 @@ func (h *Handler) NotebooksDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/ui/notebooks", http.StatusSeeOther)
+}
+
+func (h *Handler) folderOptions(ctx context.Context, principal string, isAdmin bool, selectedID string) ([]folderSelectOption, error) {
+	items, err := h.deps.NotebookFolders.ListFoldersForPrincipal(ctx, principal, isAdmin, nil)
+	if err != nil {
+		return nil, err
+	}
+	options := make([]folderSelectOption, 0, len(items))
+	for i := range items {
+		item := items[i]
+		options = append(options, folderSelectOption{
+			ID:          item.ID,
+			Label:       item.Name,
+			Description: item.Path,
+			Selected:    item.ID == selectedID,
+		})
+	}
+	return options, nil
+}
+
+func (h *Handler) folderPathMap(ctx context.Context, principal string, isAdmin bool) (map[string]string, []domain.Folder, error) {
+	owners := []string{principal}
+	if isAdmin {
+		notebooks, _, err := h.deps.Notebook.ListNotebooks(ctx, nil, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+		if err != nil {
+			return nil, nil, err
+		}
+		ownerSet := map[string]struct{}{}
+		for i := range notebooks {
+			if strings.TrimSpace(notebooks[i].Owner) == "" {
+				continue
+			}
+			ownerSet[notebooks[i].Owner] = struct{}{}
+		}
+		owners = owners[:0]
+		for owner := range ownerSet {
+			owners = append(owners, owner)
+		}
+	}
+
+	paths := map[string]string{}
+	ordered := []domain.Folder{}
+	for _, owner := range owners {
+		items, err := h.deps.NotebookFolders.ListFoldersForPrincipal(ctx, principal, isAdmin, &owner)
+		if err != nil {
+			return nil, nil, err
+		}
+		for i := range items {
+			paths[items[i].ID] = items[i].Path
+			ordered = append(ordered, items[i])
+		}
+	}
+	return paths, ordered, nil
+}
+
+func (h *Handler) gitRepoOptions(ctx context.Context, principal string, isAdmin bool, selectedID string) ([]gitRepoSelectOption, error) {
+	items, _, err := h.deps.GitService.ListGitReposForPrincipal(ctx, principal, isAdmin, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+	if err != nil {
+		return nil, err
+	}
+	options := make([]gitRepoSelectOption, 0, len(items))
+	for i := range items {
+		item := items[i]
+		label := item.URL
+		if strings.TrimSpace(item.Branch) != "" {
+			label += " (" + item.Branch + ")"
+		}
+		options = append(options, gitRepoSelectOption{
+			ID:       item.ID,
+			Label:    label,
+			Selected: item.ID == selectedID,
+		})
+	}
+	return options, nil
+}
+
+func (h *Handler) folderNavItems(folders []domain.Folder, folderPaths map[string]string, notebooks []domain.Notebook, selectedFolderID string) []notebookFolderNavItem {
+	items := make([]notebookFolderNavItem, 0, len(folders)+1)
+	allCount := len(notebooks)
+	items = append(items, notebookFolderNavItem{
+		Label:  "All notebooks",
+		URL:    "/ui/notebooks",
+		Depth:  0,
+		Count:  fmt.Sprintf("%d", allCount),
+		Active: selectedFolderID == "",
+	})
+	for i := range folders {
+		folder := folders[i]
+		count := 0
+		folderPath := strings.TrimSpace(folderPaths[folder.ID])
+		for j := range notebooks {
+			notebookPath := strings.TrimSpace(folderPaths[notebooks[j].FolderID])
+			if notebookPath == folderPath || strings.HasPrefix(notebookPath, folderPath+"/") {
+				count++
+			}
+		}
+		items = append(items, notebookFolderNavItem{
+			Label:  folder.Name,
+			URL:    notebookListPageURL(domain.DefaultMaxResults, "", folder.ID),
+			Depth:  folder.Depth,
+			Count:  fmt.Sprintf("%d", count),
+			Active: folder.ID == selectedFolderID,
+		})
+	}
+	return items
 }
 
 func (h *Handler) NotebookCellsNew(w http.ResponseWriter, r *http.Request) {

@@ -43,14 +43,17 @@ func (s *session) setLastUsed(t time.Time) {
 
 // SessionManager manages notebook sessions with pinned DuckDB connections.
 type SessionManager struct {
-	mu       sync.RWMutex
-	sessions map[string]*session
-	duckDB   *sql.DB
-	engine   domain.SessionEngine
-	repo     domain.NotebookRepository
-	jobRepo  domain.NotebookJobRepository
-	audit    domain.AuditRepository
-	ttl      time.Duration
+	mu             sync.RWMutex
+	sessions       map[string]*session
+	duckDB         *sql.DB
+	engine         domain.SessionEngine
+	repo           domain.NotebookRepository
+	folders        domain.FolderRepository
+	folderShares   domain.FolderShareRepository
+	notebookShares domain.NotebookShareRepository
+	jobRepo        domain.NotebookJobRepository
+	audit          domain.AuditRepository
+	ttl            time.Duration
 }
 
 // NewSessionManager creates a new SessionManager.
@@ -70,6 +73,17 @@ func NewSessionManager(
 		audit:    audit,
 		ttl:      30 * time.Minute,
 	}
+}
+
+// SetAccessRepositories configures folder and share repositories for session authorization.
+func (m *SessionManager) SetAccessRepositories(
+	folders domain.FolderRepository,
+	folderShares domain.FolderShareRepository,
+	notebookShares domain.NotebookShareRepository,
+) {
+	m.folders = folders
+	m.folderShares = folderShares
+	m.notebookShares = notebookShares
 }
 
 // CreateSession creates a new session with a pinned DuckDB connection.
@@ -117,15 +131,35 @@ func (m *SessionManager) CreateSession(ctx context.Context, notebookID, principa
 	}, nil
 }
 
-func (m *SessionManager) requireNotebookAccess(ctx context.Context, notebookID, principal string, isAdmin bool) (*domain.Notebook, error) {
+func (m *SessionManager) accessResolver(ctx context.Context, principal string, isAdmin bool) (*principalAccessResolver, error) {
+	return newPrincipalAccessResolver(ctx, m.folders, m.folderShares, m.notebookShares, principal, isAdmin)
+}
+
+func (m *SessionManager) requireNotebookRole(ctx context.Context, notebookID, principal string, isAdmin bool, allowed func(string) bool, action string) (*domain.Notebook, error) {
 	nb, err := m.repo.GetNotebook(ctx, notebookID)
 	if err != nil {
 		return nil, err
 	}
-	if !isAdmin && nb.Owner != principal {
-		return nil, domain.ErrAccessDenied("only the notebook owner or admin can access notebook %q", notebookID)
+	resolver, err := m.accessResolver(ctx, principal, isAdmin)
+	if err != nil {
+		return nil, fmt.Errorf("resolve notebook access: %w", err)
+	}
+	role, err := resolver.notebookRole(ctx, nb)
+	if err != nil {
+		return nil, fmt.Errorf("resolve notebook access: %w", err)
+	}
+	if !allowed(role) {
+		return nil, domain.ErrAccessDenied("principal %q cannot %s notebook %q", principal, action, notebookID)
 	}
 	return nb, nil
+}
+
+func (m *SessionManager) requireNotebookReadAccess(ctx context.Context, notebookID, principal string, isAdmin bool) (*domain.Notebook, error) {
+	return m.requireNotebookRole(ctx, notebookID, principal, isAdmin, roleAllowsRead, "read")
+}
+
+func (m *SessionManager) requireNotebookWriteAccess(ctx context.Context, notebookID, principal string, isAdmin bool) (*domain.Notebook, error) {
+	return m.requireNotebookRole(ctx, notebookID, principal, isAdmin, roleAllowsWrite, "execute")
 }
 
 func (m *SessionManager) requireSessionAccess(ctx context.Context, notebookID, sessionID, principal string, isAdmin bool) (*session, error) {
@@ -141,7 +175,7 @@ func (m *SessionManager) requireSessionAccess(ctx context.Context, notebookID, s
 			return nil, err
 		}
 	}
-	if _, err := m.requireNotebookAccess(ctx, notebookID, principal, isAdmin); err != nil {
+	if _, err := m.requireNotebookWriteAccess(ctx, notebookID, principal, isAdmin); err != nil {
 		return nil, err
 	}
 	return s, nil
@@ -213,7 +247,7 @@ func (m *SessionManager) CloseSession(_ context.Context, sessionID string, princ
 
 // CreateSessionForNotebook creates a session only when the caller can access the notebook.
 func (m *SessionManager) CreateSessionForNotebook(ctx context.Context, notebookID, principal string, isAdmin bool) (*domain.NotebookSession, error) {
-	if _, err := m.requireNotebookAccess(ctx, notebookID, principal, isAdmin); err != nil {
+	if _, err := m.requireNotebookWriteAccess(ctx, notebookID, principal, isAdmin); err != nil {
 		return nil, err
 	}
 	return m.CreateSession(ctx, notebookID, principal)
@@ -228,6 +262,30 @@ func (m *SessionManager) CloseNotebookSession(ctx context.Context, notebookID, s
 		return m.CloseSession(ctx, sessionID)
 	}
 	return m.CloseSession(ctx, sessionID, principal)
+}
+
+// InvalidateNotebook closes all active sessions for a notebook after its effective context changes.
+func (m *SessionManager) InvalidateNotebook(ctx context.Context, notebookID string) error {
+	m.mu.RLock()
+	sessionIDs := make([]string, 0)
+	for id, sess := range m.sessions {
+		if sess.notebookID == notebookID {
+			sessionIDs = append(sessionIDs, id)
+		}
+	}
+	m.mu.RUnlock()
+
+	var errs []error
+	for _, sessionID := range sessionIDs {
+		if err := m.CloseSession(ctx, sessionID); err != nil {
+			var notFound *domain.NotFoundError
+			if errors.As(err, &notFound) {
+				continue
+			}
+			errs = append(errs, fmt.Errorf("close session %s: %w", sessionID, err))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 func (m *SessionManager) persistCellResult(ctx context.Context, cellID string, result *domain.CellExecutionResult) error {
@@ -625,7 +683,7 @@ func (m *SessionManager) GetJob(ctx context.Context, jobID string) (*domain.Note
 
 // GetNotebookJob returns a notebook job after validating its parent notebook and caller access.
 func (m *SessionManager) GetNotebookJob(ctx context.Context, notebookID, jobID, principal string, isAdmin bool) (*domain.NotebookJob, error) {
-	if _, err := m.requireNotebookAccess(ctx, notebookID, principal, isAdmin); err != nil {
+	if _, err := m.requireNotebookReadAccess(ctx, notebookID, principal, isAdmin); err != nil {
 		return nil, err
 	}
 	job, err := m.jobRepo.GetJob(ctx, jobID)
@@ -645,7 +703,7 @@ func (m *SessionManager) ListJobs(ctx context.Context, notebookID string, page d
 
 // ListNotebookJobs lists jobs for a notebook only when the caller can access that notebook.
 func (m *SessionManager) ListNotebookJobs(ctx context.Context, notebookID, principal string, isAdmin bool, page domain.PageRequest) ([]domain.NotebookJob, int64, error) {
-	if _, err := m.requireNotebookAccess(ctx, notebookID, principal, isAdmin); err != nil {
+	if _, err := m.requireNotebookReadAccess(ctx, notebookID, principal, isAdmin); err != nil {
 		return nil, 0, err
 	}
 	return m.jobRepo.ListJobs(ctx, notebookID, page)

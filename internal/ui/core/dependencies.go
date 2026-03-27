@@ -43,6 +43,7 @@ type Dependencies struct {
 	Asset               *assetsvc.Service
 	Backfill            *orchestration.BackfillService
 	Notebook            *notebook.Service
+	NotebookFolders     *notebook.FolderService
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
 	Macro               *macro.Service

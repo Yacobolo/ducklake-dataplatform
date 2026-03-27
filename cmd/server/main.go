@@ -232,6 +232,7 @@ func run() error {
 		svc.Dashboard,
 	)
 	handler.SetProductService(svc.Product)
+	handler.SetNotebookFolders(svc.NotebookFolders)
 
 	authHandler := api.NewAuthHTTPHandler(svc.Auth, svc.WebSessionAuth)
 
@@ -427,6 +428,7 @@ func run() error {
 		svc.Asset,
 		svc.Backfill,
 		svc.Notebook,
+		svc.NotebookFolders,
 		svc.SessionManager,
 		svc.Macro,
 		svc.Model,

@@ -48,13 +48,17 @@ type notebookDetailPageData struct {
 	Name            string
 	Owner           string
 	Description     string
+	Context         *domain.NotebookContext
 	SelectedCatalog string
 	SelectedSchema  string
 	BrowserRuntime  query.ManifestBrowserRuntimeSpec
 	ComputeTargets  []sqlComputeTarget
 	ComputeRequest  domain.ComputeExecutionRequest
 	EditURL         string
+	MoveURL         string
+	DuplicateURL    string
 	DeleteURL       string
+	ShareURL        string
 	NewCellURL      string
 	RunAllURL       string
 	RunAllAsyncURL  string
@@ -62,6 +66,7 @@ type notebookDetailPageData struct {
 	JobsURL         string
 	GitRepoURL      string
 	PromoteURL      string
+	Shares          []accessShareRow
 	Jobs            []notebookJobRow
 	Cells           []notebookCellRow
 	Explorer        []core.CatalogExplorerCatalogItem
@@ -255,11 +260,16 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 	if strings.TrimSpace(d.Description) != "" {
 		descriptionNode = Span(Class("text-sm text-[var(--fgColor-muted)]"), Text(d.Description))
 	}
+	contextMeta := notebookContextSummary(d.Context)
 
 	toolbarNode := Div(
 		Class("sticky top-0 z-20 mb-2 border-b border-[var(--borderColor-muted)] bg-[var(--bgColor-default)] pb-2"),
 		Div(Class("flex flex-wrap items-start justify-between gap-2"),
-			Div(H2(Class("m-0 text-2xl font-semibold"), Text(d.Name)), Div(Class("mt-1 flex flex-wrap gap-2"), Span(Class("text-sm text-[var(--fgColor-muted)]"), Text("Owner "+d.Owner)), descriptionNode)),
+			Div(
+				H2(Class("m-0 text-2xl font-semibold"), Text(d.Name)),
+				Div(Class("mt-1 flex flex-wrap gap-2"), Span(Class("text-sm text-[var(--fgColor-muted)]"), Text("Owner "+d.Owner)), descriptionNode),
+				contextMeta,
+			),
 			Div(Class("mt-0 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
 				Form(Method("post"), Action(d.RunAllURL), Attr("data-notebook-run-all-form", "true"), d.CSRFFieldFunc(), Input(Type("hidden"), Name("compute_mode"), Value(d.ComputeRequest.Mode)), Input(Type("hidden"), Name("endpoint_name"), Value(d.ComputeRequest.EndpointName)), Input(Type("hidden"), Name("workload_type"), Value(domain.ComputeWorkloadInteractive)), core.PrimaryButton("", Type("submit"), ID("notebook-run-all"), Text("Run all"))),
 				Form(Method("post"), Action(d.RunAllAsyncURL), Attr("data-notebook-run-all-async-form", "true"), d.CSRFFieldFunc(), Input(Type("hidden"), Name("compute_mode"), Value(d.ComputeRequest.Mode)), Input(Type("hidden"), Name("endpoint_name"), Value(d.ComputeRequest.EndpointName)), Input(Type("hidden"), Name("workload_type"), Value(domain.ComputeWorkloadInteractive)), core.SecondaryButton("", Type("submit"), ID("notebook-run-all-async"), Text("Run async"))),
@@ -269,7 +279,13 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Details(
 					Class("relative inline-block"),
 					Summary(Class("list-none [&::-webkit-details-marker]:hidden inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-xs hover:bg-[var(--bgColor-muted)]"), Title("Notebook actions"), Attr("aria-label", "Notebook actions"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Notebook actions"))),
-					Div(Class(dropdownMenuClass("min-w-[14rem]")), actionMenuLink(d.EditURL, "Notebook settings"), actionMenuPost(d.DeleteURL, "Delete notebook", d.CSRFFieldFunc, true)),
+					Div(
+						Class(dropdownMenuClass("min-w-[14rem]")),
+						actionMenuLink(d.EditURL, "Notebook settings"),
+						actionMenuLink(d.MoveURL, "Move notebook"),
+						actionMenuLink(d.DuplicateURL, "Duplicate notebook"),
+						actionMenuPost(d.DeleteURL, "Delete notebook", d.CSRFFieldFunc, true),
+					),
 				),
 			),
 		),
@@ -291,6 +307,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			Class("min-w-0"),
 			toolbarNode,
 			notebookComputeCard(d),
+			notebookShareCard(d),
 			notebookPromoteCard(d),
 			Div(Class("grid min-w-0 gap-0"), Attr("data-notebook-selected-catalog", d.SelectedCatalog), Attr("data-notebook-selected-schema", d.SelectedSchema), Attr("data-reorder-url", d.ReorderURL), Group(cellNodes)),
 		),
@@ -304,6 +321,41 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 		workspaceNode,
 		Script(Src(core.UIScriptHref("sql-editor.js"))),
 		Script(Src(core.UIScriptHref("notebook.js"))),
+	)
+}
+
+func notebookShareCard(d notebookDetailPageData) Node {
+	return Div(Class("mb-4"), shareManagementSection("Notebook sharing", d.Shares, d.ShareURL, d.CSRFFieldFunc))
+}
+
+func notebookContextSummary(ctx *domain.NotebookContext) Node {
+	if ctx == nil {
+		return nil
+	}
+	items := []Node{
+		notebookContextPill("Folder", ctx.FolderID),
+	}
+	if ctx.EffectiveProjectID != nil && strings.TrimSpace(*ctx.EffectiveProjectID) != "" {
+		items = append(items, notebookContextPill("Project", *ctx.EffectiveProjectID))
+	}
+	if ctx.EffectiveEnvironmentID != nil && strings.TrimSpace(*ctx.EffectiveEnvironmentID) != "" {
+		items = append(items, notebookContextPill("Environment", *ctx.EffectiveEnvironmentID))
+	}
+	if ctx.EffectiveGitRepoID != nil && strings.TrimSpace(*ctx.EffectiveGitRepoID) != "" {
+		items = append(items, notebookContextPill("Git repo", *ctx.EffectiveGitRepoID))
+	}
+	return Div(Class("mt-3 flex flex-wrap gap-2"), Group(items))
+}
+
+func notebookContextPill(label, value string) Node {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	return Span(
+		Class("inline-flex items-center gap-2 rounded-full border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] px-3 py-1 text-xs text-[var(--fgColor-muted)]"),
+		Span(Class("font-semibold text-[var(--fgColor-default)]"), Text(label)),
+		Span(Text(value)),
 	)
 }
 

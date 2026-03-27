@@ -1,6 +1,8 @@
 package notebooks
 
 import (
+	"fmt"
+	"net/url"
 	"strconv"
 
 	"duck-demo/internal/domain"
@@ -14,10 +16,19 @@ type notebookListRow struct {
 	Name    string
 	URL     string
 	Owner   string
+	Folder  string
 	Updated string
 }
 
-func notebooksListPage(principal domain.ContextPrincipal, rows []notebookListRow, page domain.PageRequest, total int64) Node {
+type notebookFolderNavItem struct {
+	Label  string
+	URL    string
+	Depth  int
+	Count  string
+	Active bool
+}
+
+func notebooksListPage(principal domain.ContextPrincipal, rows []notebookListRow, folders []notebookFolderNavItem, selectedFolderID string, page domain.PageRequest, total int64) Node {
 	tableRows := make([]Node, 0, len(rows))
 	for i := range rows {
 		row := rows[i]
@@ -29,6 +40,7 @@ func notebooksListPage(principal domain.ContextPrincipal, rows []notebookListRow
 					),
 					Div(Class("min-w-0"),
 						core.TextLink(row.URL, Text(row.Name)),
+						Div(Class("mt-1 text-xs font-mono text-[var(--fgColor-muted)]"), Text(row.Folder)),
 					),
 				),
 			),
@@ -37,32 +49,189 @@ func notebooksListPage(principal domain.ContextPrincipal, rows []notebookListRow
 		))
 	}
 
-	body := []Node{
+	mainContent := Node(core.ListPageBody(
+		core.WorkspaceEmptyState("inbox", "No notebooks yet.", "Create your first notebook to start building notebook workflows. Manage Git repos only when you need sync-backed notebooks.", core.PrimaryLink(notebookNewURL(selectedFolderID), "", Text("Create your first notebook"))),
+	))
+	if len(tableRows) > 0 {
+		mainContent = core.ListPageBody(
+			notebookTable([]string{"Name", "Owner", "Last updated"}, tableRows),
+			notebookListPagination(selectedFolderID, page, total),
+		)
+	}
+
+	return core.AppPage(
+		"Notebooks",
+		"notebooks",
+		principal,
 		core.PageHeader(
 			"Build",
 			"Notebooks",
 			"Create and manage notebooks.",
+			core.SecondaryLink("/ui/notebooks/folders", "",
+				I(Class(core.IconGlyphClass()), Attr("data-lucide", "folder-tree"), Attr("aria-hidden", "true")),
+				Span(Text("Folders")),
+			),
 			core.SecondaryLink("/ui/notebooks/git-repos", "",
 				I(Class(core.IconGlyphClass()), Attr("data-lucide", "github"), Attr("aria-hidden", "true")),
 				Span(Text("Git repos")),
 			),
-			core.PrimaryLink("/ui/notebooks/new", "",
+			core.PrimaryLink(notebookNewURL(selectedFolderID), "",
 				I(Class(core.IconGlyphClass()), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")),
 				Span(Text("New notebook")),
+			),
+		),
+		core.WorkspaceLayout(
+			"",
+			core.WorkspaceAside(
+				"notebook-folder-filter",
+				"notebook-folder-aside",
+				[]core.WorkspaceAsideTab{
+					{ID: "folders", Label: "Folders", Icon: "folder-tree", Count: strconv.Itoa(len(folders)), Content: notebookFolderFilterPanel(folders)},
+				},
+				"folders",
+			),
+			mainContent,
+		),
+	)
+}
+
+type folderListRow struct {
+	Name          string
+	URL           string
+	Owner         string
+	Path          string
+	SystemRole    string
+	ProjectID     string
+	EnvironmentID string
+	GitRepoID     string
+	CanManage     bool
+	Updated       string
+}
+
+type folderSelectOption struct {
+	ID          string
+	Label       string
+	Description string
+	Selected    bool
+}
+
+type gitRepoSelectOption struct {
+	ID       string
+	Label    string
+	Selected bool
+}
+
+func shareRoleSelectNodes(selected string) []Node {
+	roles := []struct {
+		Value string
+		Label string
+	}{
+		{Value: domain.FolderShareRoleViewer, Label: "Viewer"},
+		{Value: domain.FolderShareRoleEditor, Label: "Editor"},
+		{Value: domain.FolderShareRoleManager, Label: "Manager"},
+	}
+	nodes := make([]Node, 0, len(roles)+1)
+	nodes = append(nodes, Name("role"))
+	for _, role := range roles {
+		option := Option(Value(role.Value), Text(role.Label))
+		if selected == role.Value {
+			option = Option(Value(role.Value), Selected(), Text(role.Label))
+		}
+		nodes = append(nodes, option)
+	}
+	return nodes
+}
+
+func shareManagementSection(title string, shares []accessShareRow, createURL string, csrfFieldProvider func() Node) Node {
+	rows := make([]Node, 0, len(shares))
+	for i := range shares {
+		share := shares[i]
+		rows = append(rows, Tr(
+			Td(Text(share.Principal)),
+			Td(core.Badge(share.Role, "")),
+			Td(Form(Method("post"), Action(share.DeleteURL), Class("m-0"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Remove")))),
+		))
+	}
+
+	body := Node(P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("No explicit shares yet. Inherited folder access still applies where relevant.")))
+	if len(rows) > 0 {
+		body = notebookTable([]string{"Principal", "Role", "Action"}, rows)
+	}
+
+	return core.SectionSurface(
+		core.SectionHeader(title, "Manage direct access for collaborators."),
+		Form(Method("post"), Action(createURL), Class("grid gap-3 rounded-xl border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-4"), csrfFieldProvider(),
+			Label(Text("Principal")),
+			core.InputControl("", Name("principal_name"), Placeholder("analyst@example.com"), Required()),
+			Label(Text("Role")),
+			core.SelectControl("", shareRoleSelectNodes(domain.FolderShareRoleViewer)...),
+			Div(Class("flex justify-end"), core.PrimaryButton("", Type("submit"), Text("Add share"))),
+		),
+		body,
+	)
+}
+
+func notebookFoldersListPage(principal domain.ContextPrincipal, rows []folderListRow) Node {
+	tableRows := make([]Node, 0, len(rows))
+	for i := range rows {
+		row := rows[i]
+		nameNode := Node(Span(Text(row.Name)))
+		if row.CanManage {
+			nameNode = core.TextLink(row.URL, Text(row.Name))
+		}
+		contextParts := []Node{}
+		if row.SystemRole != "-" {
+			contextParts = append(contextParts, core.Badge(row.SystemRole, "accent"))
+		}
+		if row.ProjectID != "-" {
+			contextParts = append(contextParts, core.Badge("Project "+row.ProjectID, ""))
+		}
+		if row.EnvironmentID != "-" {
+			contextParts = append(contextParts, core.Badge("Env "+row.EnvironmentID, ""))
+		}
+		if row.GitRepoID != "-" {
+			contextParts = append(contextParts, core.Badge("Git "+row.GitRepoID, "success"))
+		}
+		contextNode := Node(Span(Class("text-[var(--fgColor-muted)]"), Text("-")))
+		if len(contextParts) > 0 {
+			contextNode = Div(Class("flex flex-wrap gap-2"), Group(contextParts))
+		}
+		tableRows = append(tableRows, Tr(
+			Td(
+				Div(Class("flex items-center gap-3"),
+					Span(Class("inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"),
+						I(Class(core.NavIconClass("h-4 w-4")), Attr("data-lucide", "folder"), Attr("aria-hidden", "true")),
+					),
+					Div(Class("min-w-0"), nameNode),
+				),
+			),
+			Td(Span(Class("font-mono text-xs text-[var(--fgColor-muted)]"), Text(row.Path))),
+			Td(contextNode),
+			Td(core.Badge(row.Owner, "")),
+			Td(Span(Class("text-[var(--fgColor-muted)]"), Text(row.Updated))),
+		))
+	}
+
+	body := []Node{
+		core.PageHeader(
+			"Build",
+			"Notebook folders",
+			"Organize notebooks with inherited project, environment, and Git defaults.",
+			core.SecondaryLink("/ui/notebooks", "", Text("Back to notebooks")),
+			core.PrimaryLink("/ui/notebooks/folders/new", "",
+				I(Class(core.IconGlyphClass()), Attr("data-lucide", "folder-plus"), Attr("aria-hidden", "true")),
+				Span(Text("New folder")),
 			),
 		),
 	}
 	if len(tableRows) == 0 {
 		body = append(body, core.ListPageBody(
-			core.WorkspaceEmptyState("inbox", "No notebooks yet.", "Create your first notebook to start building notebook workflows. Manage Git repos only when you need sync-backed notebooks.", core.PrimaryLink("/ui/notebooks/new", "", Text("Create your first notebook"))),
+			core.WorkspaceEmptyState("folder-tree", "No folders yet.", "Create a folder to define shared notebook organization and inherited execution defaults.", core.PrimaryLink("/ui/notebooks/folders/new", "", Text("Create folder"))),
 		))
 	} else {
-		body = append(body, core.ListPageBody(
-			notebookTable([]string{"Name", "Owner", "Last updated"}, tableRows),
-			core.ListPagination("/ui/notebooks", page, total),
-		))
+		body = append(body, core.ListPageBody(notebookTable([]string{"Name", "Path", "Inherited context", "Owner", "Updated"}, tableRows)))
 	}
-	return core.AppPage("Notebooks", "notebooks", principal, body...)
+	return core.AppPage("Notebook Folders", "notebooks", principal, body...)
 }
 
 type notebookJobRow struct {
@@ -183,7 +352,85 @@ func notebookGitReposListPage(d notebookGitReposListPageData) Node {
 	return core.AppPage("Notebook Git Repos", "notebooks", d.Principal, body...)
 }
 
-func notebooksNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
+func notebookFoldersNewPage(principal domain.ContextPrincipal, folderOptions []folderSelectOption, gitRepoOptions []gitRepoSelectOption, csrfFieldProvider func() Node) Node {
+	parentFolderNodes := append([]Node{Name("parent_folder_id"), Option(Value(""), Text("Personal root"))}, folderSelectNodes(folderOptions)...)
+	gitRepoNodes := append([]Node{Name("git_repo_id"), Option(Value(""), Text("No Git repo"))}, gitRepoSelectNodes(gitRepoOptions)...)
+	return notebookFormPage(principal, "New Folder", "/ui/notebooks/folders", csrfFieldProvider,
+		Label(Text("Name")),
+		core.InputControl("", Name("name"), Required()),
+		Label(Text("Parent folder")),
+		core.SelectControl("", parentFolderNodes...),
+		Label(Text("Default project ID")),
+		core.InputControl("", Name("default_project_id")),
+		Label(Text("Default environment ID")),
+		core.InputControl("", Name("default_environment_id")),
+		Label(Text("Git repo")),
+		core.SelectControl("", gitRepoNodes...),
+		Label(Text("Git root path")),
+		core.InputControl("", Name("git_root_path")),
+	)
+}
+
+func notebookFoldersEditPage(principal domain.ContextPrincipal, folder *domain.Folder, gitRepoOptions []gitRepoSelectOption, shares []accessShareRow, csrfFieldProvider func() Node) Node {
+	gitRepoID := ""
+	if folder.GitRepoID != nil {
+		gitRepoID = *folder.GitRepoID
+	}
+	gitRootPath := ""
+	if folder.GitRootPath != nil {
+		gitRootPath = *folder.GitRootPath
+	}
+	defaultProjectID := ""
+	if folder.DefaultProjectID != nil {
+		defaultProjectID = *folder.DefaultProjectID
+	}
+	defaultEnvironmentID := ""
+	if folder.DefaultEnvironmentID != nil {
+		defaultEnvironmentID = *folder.DefaultEnvironmentID
+	}
+	gitRepoNodes := append([]Node{Name("git_repo_id"), Option(Value(""), Text("No Git repo"))}, gitRepoSelectNodes(selectGitRepo(gitRepoOptions, gitRepoID))...)
+
+	fields := []Node{
+		Label(Text("Name")),
+		core.InputControl("", Name("name"), Value(folder.Name), Required()),
+		Label(Text("Default project ID")),
+		core.InputControl("", Name("default_project_id"), Value(defaultProjectID)),
+		Label(Text("Default environment ID")),
+		core.InputControl("", Name("default_environment_id"), Value(defaultEnvironmentID)),
+		Label(Text("Git repo")),
+		core.SelectControl("", gitRepoNodes...),
+		Label(Text("Git root path")),
+		core.InputControl("", Name("git_root_path"), Value(gitRootPath)),
+	}
+
+	deleteNode := Node(nil)
+	if folder.SystemRole == nil || *folder.SystemRole != domain.FolderSystemRolePersonalRoot {
+		deleteNode = Div(Class("mt-2"),
+			Form(Method("post"), Action("/ui/notebooks/folders/"+folder.ID+"/delete"), Class("m-0"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete folder"))),
+		)
+	}
+	formNodes := []Node{csrfFieldProvider()}
+	formNodes = append(formNodes, fields...)
+	formNodes = append(formNodes, Div(Class("mt-3"), core.PrimaryButton("", Type("submit"), Text("Save"))))
+
+	return core.AppPage(
+		"Edit Folder",
+		"notebooks",
+		principal,
+		core.FormPageLayout("Build", "Edit Folder", "Folder defaults control notebook organization and inherited execution context.",
+			core.SectionSurface(
+				core.SectionHeader("Folder details", "Update folder-level defaults. Personal roots are protected."),
+				P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Path: "+folder.Path)),
+				Form(Method("post"), Action("/ui/notebooks/folders/"+folder.ID+"/update"), Class("grid gap-3"), Group(formNodes)),
+				deleteNode,
+			),
+			shareManagementSection("Folder sharing", shares, "/ui/notebooks/folders/"+folder.ID+"/share", csrfFieldProvider),
+		),
+	)
+}
+
+func notebooksNewPage(principal domain.ContextPrincipal, folderOptions []folderSelectOption, csrfFieldProvider func() Node) Node {
+	folderNodes := append([]Node{Name("folder_id"), Option(Value(""), Text("My notebooks"))}, folderSelectNodes(folderOptions)...)
 	return notebookFormPage(principal, "New Notebook", "/ui/notebooks", csrfFieldProvider,
 		Label(Text("Name")),
 		core.InputControl("", Name("name"), Required()),
@@ -191,6 +438,8 @@ func notebooksNewPage(principal domain.ContextPrincipal, csrfFieldProvider func(
 		core.TextareaControl("min-h-28", Name("description")),
 		Label(Text("Source")),
 		core.InputControl("", Name("source")),
+		Label(Text("Folder")),
+		core.SelectControl("", folderNodes...),
 	)
 }
 
@@ -204,6 +453,30 @@ func notebooksEditPage(principal domain.ContextPrincipal, notebookID string, not
 		core.InputControl("", Name("name"), Value(notebook.Name), Required()),
 		Label(Text("Description")),
 		core.TextareaControl("min-h-28", Name("description"), Text(description)),
+	)
+}
+
+func notebooksMovePage(principal domain.ContextPrincipal, notebook *domain.Notebook, folderOptions []folderSelectOption, csrfFieldProvider func() Node) Node {
+	folderNodes := append([]Node{Name("folder_id")}, folderSelectNodes(folderOptions)...)
+	return notebookFormPage(principal, "Move Notebook", "/ui/notebooks/"+notebook.ID+"/move", csrfFieldProvider,
+		Label(Text("Destination folder")),
+		core.SelectControl("", folderNodes...),
+		Label(Text("Destination Git path (optional)")),
+		core.InputControl("", Name("git_path")),
+		Label(Class("flex items-center gap-2"), Input(Type("checkbox"), Name("confirm_context_change"), Value("true")), Span(Text("Confirm project/environment context change if required"))),
+		Label(Class("flex items-center gap-2"), Input(Type("checkbox"), Name("confirm_leave_git"), Value("true")), Span(Text("Confirm leaving Git governance if required"))),
+	)
+}
+
+func notebooksDuplicatePage(principal domain.ContextPrincipal, notebook *domain.Notebook, folderOptions []folderSelectOption, csrfFieldProvider func() Node) Node {
+	folderNodes := append([]Node{Name("folder_id")}, folderSelectNodes(folderOptions)...)
+	return notebookFormPage(principal, "Duplicate Notebook", "/ui/notebooks/"+notebook.ID+"/duplicate", csrfFieldProvider,
+		Label(Text("Destination folder")),
+		core.SelectControl("", folderNodes...),
+		Label(Text("New notebook name (optional)")),
+		core.InputControl("", Name("name"), Placeholder(notebook.Name+" copy")),
+		Label(Text("Destination Git path (optional)")),
+		core.InputControl("", Name("git_path")),
 	)
 }
 
@@ -445,6 +718,150 @@ func notebookTable(headers []string, rows []Node) Node {
 			TBody(Group(rows)),
 		),
 	)
+}
+
+func notebookFolderFilterPanel(items []notebookFolderNavItem) Node {
+	if len(items) == 0 {
+		return P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No folders available."))
+	}
+	nodes := make([]Node, 0, len(items))
+	for i := range items {
+		item := items[i]
+		className := "flex items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm text-[var(--fgColor-muted)] no-underline transition-colors hover:bg-[var(--bgColor-default)] hover:text-[var(--fgColor-default)]"
+		if item.Active {
+			className += " bg-[var(--bgColor-accent-muted)] font-medium text-[var(--fgColor-accent)]"
+		}
+		nodes = append(nodes, Li(
+			A(
+				Href(item.URL),
+				Class(className),
+				Span(Class(folderIndentClass(item.Depth)), Text(item.Label)),
+				Span(Class("rounded-full bg-[var(--bgColor-default)] px-2 py-0.5 text-[11px] font-semibold text-[var(--fgColor-muted)]"), Text(item.Count)),
+			),
+		))
+	}
+	return Ul(Class("m-0 grid list-none gap-1 p-0"), Group(nodes))
+}
+
+func folderIndentClass(depth int) string {
+	switch {
+	case depth <= 0:
+		return "truncate"
+	case depth == 1:
+		return "truncate pl-3"
+	case depth == 2:
+		return "truncate pl-5"
+	default:
+		return "truncate pl-7"
+	}
+}
+
+func notebookListPagination(folderID string, page domain.PageRequest, total int64) Node {
+	offset := page.Offset()
+	limit := page.Limit()
+	shown := limit
+	if remaining := int(total) - offset; remaining < shown {
+		shown = remaining
+	}
+	if shown < 0 {
+		shown = 0
+	}
+	summary := Span(
+		Class("text-sm text-[var(--fgColor-muted)]"),
+		Text("Showing "),
+		Span(Class("font-semibold text-[var(--fgColor-default)]"), Text(fmt.Sprintf("%d", shown))),
+		Text(" of "),
+		Span(Class("font-semibold text-[var(--fgColor-default)]"), Text(fmt.Sprintf("%d", total))),
+		Text(" entries."),
+	)
+	prevOffset := offset - limit
+	if prevOffset < 0 {
+		prevOffset = 0
+	}
+	prevToken := domain.EncodePageToken(prevOffset)
+	nextToken := domain.NextPageToken(offset, limit, total)
+
+	prevNode := Node(Span(Class("inline-flex min-h-10 items-center justify-center rounded-l-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Previous")))
+	if offset > 0 {
+		prevNode = A(Href(notebookListPageURL(limit, prevToken, folderID)), Class("inline-flex min-h-10 items-center justify-center rounded-l-lg border border-[var(--button-default-borderColor-rest)] border-r-0 bg-[var(--button-default-bgColor-rest)] px-3 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition-colors duration-100 ease-out hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] hover:text-[var(--button-default-fgColor-rest)]"), Text("Previous"))
+	}
+
+	nextNode := Node(Span(Class("inline-flex min-h-10 items-center justify-center rounded-r-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")))
+	if nextToken != "" {
+		nextNode = A(Href(notebookListPageURL(limit, nextToken, folderID)), Class("inline-flex min-h-10 items-center justify-center rounded-r-lg border border-[var(--button-default-borderColor-rest)] bg-[var(--button-default-bgColor-rest)] px-3 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition-colors duration-100 ease-out hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] hover:text-[var(--button-default-fgColor-rest)]"), Text("Next"))
+	}
+
+	return Div(
+		Class("flex items-center justify-between gap-4 border-t border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-6 py-4 max-sm:flex-col max-sm:items-start max-sm:px-4"),
+		summary,
+		Nav(Attr("aria-label", "Pagination"),
+			Div(Class("inline-flex items-center"),
+				prevNode,
+				nextNode,
+			),
+		),
+	)
+}
+
+func notebookListPageURL(limit int, token, folderID string) string {
+	q := url.Values{}
+	q.Set("max_results", fmt.Sprintf("%d", limit))
+	if token != "" {
+		q.Set("page_token", token)
+	}
+	if folderID != "" {
+		q.Set("folder_id", folderID)
+	}
+	return "/ui/notebooks?" + q.Encode()
+}
+
+func notebookNewURL(folderID string) string {
+	if folderID == "" {
+		return "/ui/notebooks/new"
+	}
+	q := url.Values{}
+	q.Set("folder_id", folderID)
+	return "/ui/notebooks/new?" + q.Encode()
+}
+
+func folderSelectNodes(options []folderSelectOption) []Node {
+	nodes := make([]Node, 0, len(options))
+	for i := range options {
+		option := options[i]
+		label := option.Label
+		if option.Description != "" {
+			label += " - " + option.Description
+		}
+		if option.Selected {
+			nodes = append(nodes, Option(Value(option.ID), Selected(), Text(label)))
+			continue
+		}
+		nodes = append(nodes, Option(Value(option.ID), Text(label)))
+	}
+	return nodes
+}
+
+func gitRepoSelectNodes(options []gitRepoSelectOption) []Node {
+	nodes := make([]Node, 0, len(options))
+	for i := range options {
+		option := options[i]
+		if option.Selected {
+			nodes = append(nodes, Option(Value(option.ID), Selected(), Text(option.Label)))
+			continue
+		}
+		nodes = append(nodes, Option(Value(option.ID), Text(option.Label)))
+	}
+	return nodes
+}
+
+func selectGitRepo(options []gitRepoSelectOption, selectedID string) []gitRepoSelectOption {
+	items := make([]gitRepoSelectOption, 0, len(options))
+	for i := range options {
+		option := options[i]
+		option.Selected = option.ID == selectedID
+		items = append(items, option)
+	}
+	return items
 }
 
 func emptyDash(v string) string {

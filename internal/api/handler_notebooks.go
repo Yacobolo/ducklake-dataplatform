@@ -13,15 +13,32 @@ type notebookService interface {
 	CreateNotebook(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error)
 	GetNotebook(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error)
 	GetNotebookForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, []domain.Cell, error)
+	GetNotebookContext(ctx context.Context, principal string, isAdmin bool, id string) (*domain.NotebookContext, error)
 	GetPublishModel(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error)
 	ListNotebooks(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
 	ListNotebooksForPrincipal(ctx context.Context, principal string, isAdmin bool, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
 	UpdateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
+	MoveNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.MoveNotebookRequest) (*domain.Notebook, error)
+	DuplicateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.DuplicateNotebookRequest) (*domain.Notebook, error)
 	DeleteNotebook(ctx context.Context, principal string, isAdmin bool, id string) error
+	ListNotebookShares(ctx context.Context, principal string, isAdmin bool, notebookID string) ([]domain.NotebookShare, error)
+	ShareNotebook(ctx context.Context, principal string, isAdmin bool, notebookID string, share domain.NotebookShare) (*domain.NotebookShare, error)
+	UnshareNotebook(ctx context.Context, principal string, isAdmin bool, notebookID string, principalName string) error
 	CreateCell(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error)
 	UpdateCell(ctx context.Context, principal string, isAdmin bool, cellID string, req domain.UpdateCellRequest) (*domain.Cell, error)
 	DeleteCell(ctx context.Context, principal string, isAdmin bool, cellID string) error
 	ReorderCells(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.ReorderCellsRequest) ([]domain.Cell, error)
+}
+
+type notebookFolderService interface {
+	CreateFolder(ctx context.Context, principal string, req domain.CreateFolderRequest) (*domain.Folder, error)
+	GetFolderForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Folder, error)
+	ListFoldersForPrincipal(ctx context.Context, principal string, isAdmin bool, owner *string) ([]domain.Folder, error)
+	UpdateFolder(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateFolderRequest) (*domain.Folder, error)
+	DeleteFolder(ctx context.Context, principal string, isAdmin bool, id string) error
+	ListFolderShares(ctx context.Context, principal string, isAdmin bool, folderID string) ([]domain.FolderShare, error)
+	ShareFolder(ctx context.Context, principal string, isAdmin bool, folderID string, share domain.FolderShare) (*domain.FolderShare, error)
+	UnshareFolder(ctx context.Context, principal string, isAdmin bool, folderID string, principalName string) error
 }
 
 // sessionService defines session and execution operations.
@@ -55,6 +72,215 @@ type gitRepoService interface {
 
 // === Notebooks ===
 
+// ListNotebookFolders implements the endpoint for listing notebook folders.
+func (h *APIHandler) ListNotebookFolders(ctx context.Context, req GenListNotebookFoldersRequest) (GenListNotebookFoldersResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	items, err := h.notebookFolders.ListFoldersForPrincipal(ctx, cp.Name, cp.IsAdmin, req.Params.Owner)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenListNotebookFoldersResponse]("listNotebookFolders", err, domainErrorResponder[GenListNotebookFoldersResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookFoldersResponse { return ListNotebookFolders403JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	total := int64(len(items))
+	start := page.Offset()
+	if start > len(items) {
+		start = len(items)
+	}
+	end := start + page.Limit()
+	if end > len(items) {
+		end = len(items)
+	}
+	data := make([]Folder, 0, end-start)
+	for _, item := range items[start:end] {
+		data = append(data, folderToAPI(item))
+	}
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return GenListNotebookFolders200JSONResponse{
+		Body:    PaginatedFolders{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListNotebookFolders200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// CreateNotebookFolder implements the endpoint for creating a notebook folder.
+func (h *APIHandler) CreateNotebookFolder(ctx context.Context, req GenCreateNotebookFolderRequest) (GenCreateNotebookFolderResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.notebookFolders.CreateFolder(ctx, cp.Name, domain.CreateFolderRequest{
+		Name:                 req.Body.Name,
+		ParentFolderID:       req.Body.ParentFolderId,
+		GitRepoID:            req.Body.GitRepoId,
+		GitRootPath:          req.Body.GitRootPath,
+		DefaultProjectID:     req.Body.DefaultProjectId,
+		DefaultEnvironmentID: req.Body.DefaultEnvironmentId,
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenCreateNotebookFolderResponse]("createNotebookFolder", err, domainErrorResponder[GenCreateNotebookFolderResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateNotebookFolderResponse { return CreateNotebookFolder400JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenCreateNotebookFolderResponse { return CreateNotebookFolder409JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateNotebookFolderResponse { return CreateNotebookFolder403JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenCreateNotebookFolder201JSONResponse{
+		Body:    folderToAPI(*result),
+		Headers: GenCreateNotebookFolder201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetNotebookFolder implements the endpoint for retrieving a notebook folder.
+func (h *APIHandler) GetNotebookFolder(ctx context.Context, req GenGetNotebookFolderRequest) (GenGetNotebookFolderResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.notebookFolders.GetFolderForPrincipal(ctx, cp.Name, cp.IsAdmin, req.FolderId)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetNotebookFolderResponse]("getNotebookFolder", err, domainErrorResponder[GenGetNotebookFolderResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetNotebookFolderResponse { return GetNotebookFolder403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenGetNotebookFolderResponse { return GetNotebookFolder404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenGetNotebookFolder200JSONResponse{
+		Body:    folderToAPI(*result),
+		Headers: GenGetNotebookFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// UpdateNotebookFolder implements the endpoint for updating a notebook folder.
+func (h *APIHandler) UpdateNotebookFolder(ctx context.Context, req GenUpdateNotebookFolderRequest) (GenUpdateNotebookFolderResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.notebookFolders.UpdateFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId, domain.UpdateFolderRequest{
+		Name:                 req.Body.Name,
+		GitRepoID:            req.Body.GitRepoId,
+		GitRootPath:          req.Body.GitRootPath,
+		DefaultProjectID:     req.Body.DefaultProjectId,
+		DefaultEnvironmentID: req.Body.DefaultEnvironmentId,
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenUpdateNotebookFolderResponse]("updateNotebookFolder", err, domainErrorResponder[GenUpdateNotebookFolderResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateNotebookFolderResponse { return UpdateNotebookFolder400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenUpdateNotebookFolderResponse { return UpdateNotebookFolder403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenUpdateNotebookFolderResponse { return UpdateNotebookFolder404JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenUpdateNotebookFolderResponse { return UpdateNotebookFolder409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenUpdateNotebookFolder200JSONResponse{
+		Body:    folderToAPI(*result),
+		Headers: GenUpdateNotebookFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// DeleteNotebookFolder implements the endpoint for deleting a notebook folder.
+func (h *APIHandler) DeleteNotebookFolder(ctx context.Context, req GenDeleteNotebookFolderRequest) (GenDeleteNotebookFolderResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	if err := h.notebookFolders.DeleteFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId); err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenDeleteNotebookFolderResponse]("deleteNotebookFolder", err, domainErrorResponder[GenDeleteNotebookFolderResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteNotebookFolderResponse { return DeleteNotebookFolder403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenDeleteNotebookFolderResponse { return DeleteNotebookFolder404JSONResponse{resp} },
+			Conflict:  func(resp ConflictJSONResponse) GenDeleteNotebookFolderResponse { return DeleteNotebookFolder409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenDeleteNotebookFolder204Response{}, nil
+}
+
+// ListNotebookFolderShares implements the endpoint for listing explicit folder shares.
+func (h *APIHandler) ListNotebookFolderShares(ctx context.Context, req GenListNotebookFolderSharesRequest) (GenListNotebookFolderSharesResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	items, err := h.notebookFolders.ListFolderShares(ctx, cp.Name, cp.IsAdmin, req.FolderId)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenListNotebookFolderSharesResponse]("listNotebookFolderShares", err, domainErrorResponder[GenListNotebookFolderSharesResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookFolderSharesResponse { return ListNotebookFolderShares403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenListNotebookFolderSharesResponse { return ListNotebookFolderShares404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	data := make([]FolderShare, 0, len(items))
+	for _, item := range items {
+		data = append(data, folderShareToAPI(item))
+	}
+	return GenListNotebookFolderShares200JSONResponse{
+		Body:    data,
+		Headers: GenListNotebookFolderShares200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// ShareNotebookFolder implements the endpoint for granting folder access.
+func (h *APIHandler) ShareNotebookFolder(ctx context.Context, req GenShareNotebookFolderRequest) (GenShareNotebookFolderResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	share, err := h.notebookFolders.ShareFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId, domain.FolderShare{
+		PrincipalName: req.Body.PrincipalName,
+		Role:          notebookShareRoleFromAPI(req.Body.Role),
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenShareNotebookFolderResponse]("shareNotebookFolder", err, domainErrorResponder[GenShareNotebookFolderResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenShareNotebookFolderResponse { return ShareNotebookFolder400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenShareNotebookFolderResponse { return ShareNotebookFolder403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenShareNotebookFolderResponse { return ShareNotebookFolder404JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenShareNotebookFolderResponse { return ShareNotebookFolder409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenShareNotebookFolder200JSONResponse{
+		Body:    folderShareToAPI(*share),
+		Headers: GenShareNotebookFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// UnshareNotebookFolder implements the endpoint for removing a folder share.
+func (h *APIHandler) UnshareNotebookFolder(ctx context.Context, req GenUnshareNotebookFolderRequest) (GenUnshareNotebookFolderResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	if err := h.notebookFolders.UnshareFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId, req.PrincipalName); err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenUnshareNotebookFolderResponse]("unshareNotebookFolder", err, domainErrorResponder[GenUnshareNotebookFolderResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenUnshareNotebookFolderResponse { return UnshareNotebookFolder403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenUnshareNotebookFolderResponse { return UnshareNotebookFolder404JSONResponse{resp} },
+			Conflict:  func(resp ConflictJSONResponse) GenUnshareNotebookFolderResponse { return UnshareNotebookFolder409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenUnshareNotebookFolder204Response{}, nil
+}
+
 // ListNotebooks implements the endpoint for listing notebooks.
 func (h *APIHandler) ListNotebooks(ctx context.Context, req GenListNotebooksRequest) (GenListNotebooksResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
@@ -86,6 +312,7 @@ func (h *APIHandler) CreateNotebook(ctx context.Context, req GenCreateNotebookRe
 		Name:        req.Body.Name,
 		Description: req.Body.Description,
 		Source:      req.Body.Source,
+		FolderID:    req.Body.FolderId,
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -131,8 +358,32 @@ func (h *APIHandler) GetNotebook(ctx context.Context, req GenGetNotebookRequest)
 	if model, err := h.notebooks.GetPublishModel(ctx, req.NotebookId); err == nil && model != nil {
 		publishModel = notebookPublishModelToAPI(model)
 	}
+	notebookContext, err := h.notebooks.GetNotebookContext(ctx, cp.Name, cp.IsAdmin, req.NotebookId)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetNotebookResponse]("getNotebook", err, domainErrorResponder[GenGetNotebookResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetNotebookResponse { return GenGetNotebook403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenGetNotebookResponse { return GenGetNotebook404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	shareItems, err := h.notebooks.ListNotebookShares(ctx, cp.Name, cp.IsAdmin, req.NotebookId)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetNotebookResponse]("getNotebook", err, domainErrorResponder[GenGetNotebookResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetNotebookResponse { return GenGetNotebook403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenGetNotebookResponse { return GenGetNotebook404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	apiShares := make([]NotebookShare, 0, len(shareItems))
+	for _, item := range shareItems {
+		apiShares = append(apiShares, notebookShareToAPI(item))
+	}
 	return GenGetNotebook200JSONResponse{
-		Body:    NotebookDetail{Notebook: &apiNb, Cells: &apiCells, PublishModel: publishModel},
+		Body:    NotebookDetail{Notebook: &apiNb, Cells: &apiCells, Context: notebookContextToAPI(notebookContext), Shares: &apiShares, PublishModel: publishModel},
 		Headers: GenGetNotebook200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
@@ -140,8 +391,10 @@ func (h *APIHandler) GetNotebook(ctx context.Context, req GenGetNotebookRequest)
 // UpdateNotebook implements the endpoint for updating notebook metadata.
 func (h *APIHandler) UpdateNotebook(ctx context.Context, req GenUpdateNotebookRequest) (GenUpdateNotebookResponse, error) {
 	domReq := domain.UpdateNotebookRequest{
-		Name:        req.Body.Name,
-		Description: req.Body.Description,
+		Name:                  req.Body.Name,
+		Description:           req.Body.Description,
+		ProjectOverrideID:     req.Body.ProjectOverrideId,
+		EnvironmentOverrideID: req.Body.EnvironmentOverrideId,
 	}
 
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -167,6 +420,57 @@ func (h *APIHandler) UpdateNotebook(ctx context.Context, req GenUpdateNotebookRe
 	}, nil
 }
 
+// MoveNotebook implements the endpoint for moving a notebook.
+func (h *APIHandler) MoveNotebook(ctx context.Context, req GenMoveNotebookRequest) (GenMoveNotebookResponse, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.notebooks.MoveNotebook(ctx, cp.Name, cp.IsAdmin, req.NotebookId, domain.MoveNotebookRequest{
+		FolderID:             req.Body.FolderId,
+		GitPath:              req.Body.GitPath,
+		ConfirmLeaveGit:      req.Body.ConfirmLeaveGit != nil && *req.Body.ConfirmLeaveGit,
+		ConfirmContextChange: req.Body.ConfirmContextChange != nil && *req.Body.ConfirmContextChange,
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenMoveNotebookResponse]("moveNotebook", err, domainErrorResponder[GenMoveNotebookResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenMoveNotebookResponse { return MoveNotebook400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenMoveNotebookResponse { return MoveNotebook403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenMoveNotebookResponse { return MoveNotebook404JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenMoveNotebookResponse { return MoveNotebook409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenMoveNotebook200JSONResponse{
+		Body:    notebookToAPI(*result),
+		Headers: GenMoveNotebook200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// DuplicateNotebook implements the endpoint for duplicating a notebook.
+func (h *APIHandler) DuplicateNotebook(ctx context.Context, req GenDuplicateNotebookRequest) (GenDuplicateNotebookResponse, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.notebooks.DuplicateNotebook(ctx, cp.Name, cp.IsAdmin, req.NotebookId, domain.DuplicateNotebookRequest{
+		FolderID: req.Body.FolderId,
+		Name:     req.Body.Name,
+		GitPath:  req.Body.GitPath,
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenDuplicateNotebookResponse]("duplicateNotebook", err, domainErrorResponder[GenDuplicateNotebookResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenDuplicateNotebookResponse { return DuplicateNotebook400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenDuplicateNotebookResponse { return DuplicateNotebook403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenDuplicateNotebookResponse { return DuplicateNotebook404JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenDuplicateNotebookResponse { return DuplicateNotebook409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenDuplicateNotebook201JSONResponse{
+		Body:    notebookToAPI(*result),
+		Headers: GenDuplicateNotebook201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
 // DeleteNotebook implements the endpoint for deleting a notebook.
 func (h *APIHandler) DeleteNotebook(ctx context.Context, req GenDeleteNotebookRequest) (GenDeleteNotebookResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -183,6 +487,69 @@ func (h *APIHandler) DeleteNotebook(ctx context.Context, req GenDeleteNotebookRe
 		return nil, err
 	}
 	return GenDeleteNotebook204Response{}, nil
+}
+
+// ListNotebookShares implements the endpoint for listing direct notebook shares.
+func (h *APIHandler) ListNotebookShares(ctx context.Context, req GenListNotebookSharesRequest) (GenListNotebookSharesResponse, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	items, err := h.notebooks.ListNotebookShares(ctx, cp.Name, cp.IsAdmin, req.NotebookId)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenListNotebookSharesResponse]("listNotebookShares", err, domainErrorResponder[GenListNotebookSharesResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookSharesResponse { return ListNotebookShares403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenListNotebookSharesResponse { return ListNotebookShares404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	data := make([]NotebookShare, 0, len(items))
+	for _, item := range items {
+		data = append(data, notebookShareToAPI(item))
+	}
+	return GenListNotebookShares200JSONResponse{
+		Body:    data,
+		Headers: GenListNotebookShares200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// ShareNotebook implements the endpoint for granting direct notebook access.
+func (h *APIHandler) ShareNotebook(ctx context.Context, req GenShareNotebookRequest) (GenShareNotebookResponse, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	share, err := h.notebooks.ShareNotebook(ctx, cp.Name, cp.IsAdmin, req.NotebookId, domain.NotebookShare{
+		PrincipalName: req.Body.PrincipalName,
+		Role:          notebookShareRoleFromAPI(req.Body.Role),
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenShareNotebookResponse]("shareNotebook", err, domainErrorResponder[GenShareNotebookResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenShareNotebookResponse { return ShareNotebook400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenShareNotebookResponse { return ShareNotebook403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenShareNotebookResponse { return ShareNotebook404JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenShareNotebookResponse { return ShareNotebook409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenShareNotebook200JSONResponse{
+		Body:    notebookShareToAPI(*share),
+		Headers: GenShareNotebook200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// UnshareNotebook implements the endpoint for removing a direct notebook share.
+func (h *APIHandler) UnshareNotebook(ctx context.Context, req GenUnshareNotebookRequest) (GenUnshareNotebookResponse, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	if err := h.notebooks.UnshareNotebook(ctx, cp.Name, cp.IsAdmin, req.NotebookId, req.PrincipalName); err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenUnshareNotebookResponse]("unshareNotebook", err, domainErrorResponder[GenUnshareNotebookResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenUnshareNotebookResponse { return UnshareNotebook403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenUnshareNotebookResponse { return UnshareNotebook404JSONResponse{resp} },
+			Conflict:  func(resp ConflictJSONResponse) GenUnshareNotebookResponse { return UnshareNotebook409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenUnshareNotebook204Response{}, nil
 }
 
 // === Cells ===
@@ -639,13 +1006,91 @@ func (h *APIHandler) SyncGitRepo(ctx context.Context, req GenSyncGitRepoRequest)
 
 func notebookToAPI(nb domain.Notebook) Notebook {
 	return Notebook{
-		Id:          &nb.ID,
-		Name:        &nb.Name,
-		Description: nb.Description,
-		Owner:       &nb.Owner,
-		CreatedAt:   formatTimePtr(&nb.CreatedAt),
-		UpdatedAt:   formatTimePtr(&nb.UpdatedAt),
+		Id:                    &nb.ID,
+		FolderId:              optStr(nb.FolderID),
+		Name:                  &nb.Name,
+		Description:           nb.Description,
+		Owner:                 &nb.Owner,
+		GitRepoId:             nb.GitRepoID,
+		GitPath:               nb.GitPath,
+		ProjectOverrideId:     nb.ProjectOverrideID,
+		EnvironmentOverrideId: nb.EnvironmentOverrideID,
+		CreatedAt:             formatTimePtr(&nb.CreatedAt),
+		UpdatedAt:             formatTimePtr(&nb.UpdatedAt),
 	}
+}
+
+func folderToAPI(folder domain.Folder) Folder {
+	depth := int32(folder.Depth)
+	return Folder{
+		Id:                   &folder.ID,
+		Name:                 &folder.Name,
+		Owner:                &folder.Owner,
+		ParentFolderId:       folder.ParentFolderID,
+		Path:                 &folder.Path,
+		Depth:                &depth,
+		SystemRole:           folder.SystemRole,
+		GitRepoId:            folder.GitRepoID,
+		GitRootPath:          folder.GitRootPath,
+		DefaultProjectId:     folder.DefaultProjectID,
+		DefaultEnvironmentId: folder.DefaultEnvironmentID,
+		CreatedAt:            formatTimePtr(&folder.CreatedAt),
+		UpdatedAt:            formatTimePtr(&folder.UpdatedAt),
+	}
+}
+
+func notebookContextToAPI(ctx *domain.NotebookContext) *NotebookContext {
+	if ctx == nil {
+		return nil
+	}
+	return &NotebookContext{
+		NotebookId:             optStr(ctx.NotebookID),
+		FolderId:               optStr(ctx.FolderID),
+		EffectiveProjectId:     ctx.EffectiveProjectID,
+		EffectiveEnvironmentId: ctx.EffectiveEnvironmentID,
+		EffectiveGitRepoId:     ctx.EffectiveGitRepoID,
+		EffectiveGitRootPath:   ctx.EffectiveGitRootPath,
+		ProjectSourceFolderId:  ctx.ProjectSourceFolderID,
+		EnvironmentSourceId:    ctx.EnvironmentSourceID,
+		GitSourceFolderId:      ctx.GitSourceFolderID,
+	}
+}
+
+func notebookShareToAPI(share domain.NotebookShare) NotebookShare {
+	return NotebookShare{
+		PrincipalName: &share.PrincipalName,
+		Role:          notebookShareRoleToAPI(share.Role),
+	}
+}
+
+func folderShareToAPI(share domain.FolderShare) FolderShare {
+	return FolderShare{
+		PrincipalName: &share.PrincipalName,
+		Role:          notebookShareRoleToAPI(share.Role),
+	}
+}
+
+func notebookShareRoleToAPI(role string) *NotebookShareRole {
+	switch role {
+	case domain.FolderShareRoleViewer:
+		value := NotebookShareRoleViewer
+		return &value
+	case domain.FolderShareRoleEditor:
+		value := NotebookShareRoleEditor
+		return &value
+	case domain.FolderShareRoleManager:
+		value := NotebookShareRoleManager
+		return &value
+	default:
+		return nil
+	}
+}
+
+func notebookShareRoleFromAPI(role *NotebookShareRole) string {
+	if role == nil {
+		return ""
+	}
+	return string(*role)
 }
 
 type syncGitRepo501JSONResponse struct {

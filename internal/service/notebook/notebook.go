@@ -4,16 +4,26 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
+	"strings"
 
 	"duck-demo/internal/domain"
 )
 
+type notebookContextInvalidator interface {
+	InvalidateNotebook(ctx context.Context, notebookID string) error
+}
+
 // Service provides business logic for notebook and cell operations.
 type Service struct {
-	repo   domain.NotebookRepository
-	audit  domain.AuditRepository
-	models domain.ModelRepository
-	links  domain.NotebookModelLinkRepository
+	repo           domain.NotebookRepository
+	folders        domain.FolderRepository
+	folderShares   domain.FolderShareRepository
+	notebookShares domain.NotebookShareRepository
+	audit          domain.AuditRepository
+	models         domain.ModelRepository
+	links          domain.NotebookModelLinkRepository
+	invalidator    notebookContextInvalidator
 }
 
 // New creates a new Service.
@@ -21,10 +31,30 @@ func New(repo domain.NotebookRepository, audit domain.AuditRepository) *Service 
 	return &Service{repo: repo, audit: audit}
 }
 
+// SetFolderRepository configures folder defaults for notebook creation and context resolution.
+func (s *Service) SetFolderRepository(folders domain.FolderRepository) {
+	s.folders = folders
+}
+
+// SetShareRepositories configures inherited and direct notebook sharing repositories.
+func (s *Service) SetShareRepositories(folderShares domain.FolderShareRepository, notebookShares domain.NotebookShareRepository) {
+	s.folderShares = folderShares
+	s.notebookShares = notebookShares
+}
+
 // SetPublishRepositories configures optional repositories for notebook publish metadata lookups.
 func (s *Service) SetPublishRepositories(models domain.ModelRepository, links domain.NotebookModelLinkRepository) {
 	s.models = models
 	s.links = links
+}
+
+// SetContextInvalidator configures runtime session invalidation for context-changing notebook mutations.
+func (s *Service) SetContextInvalidator(invalidator notebookContextInvalidator) {
+	s.invalidator = invalidator
+}
+
+func (s *Service) accessResolver(ctx context.Context, principal string, isAdmin bool) (*principalAccessResolver, error) {
+	return newPrincipalAccessResolver(ctx, s.folders, s.folderShares, s.notebookShares, principal, isAdmin)
 }
 
 // CreateNotebook creates a new notebook owned by the given principal.
@@ -38,6 +68,18 @@ func (s *Service) CreateNotebook(ctx context.Context, principal string, req doma
 		Description: req.Description,
 		Owner:       principal,
 	}
+	if req.FolderID != nil && strings.TrimSpace(*req.FolderID) != "" {
+		nb.FolderID = strings.TrimSpace(*req.FolderID)
+	} else if s.folders != nil {
+		root, err := s.folders.EnsurePersonalRoot(ctx, principal)
+		if err != nil {
+			return nil, fmt.Errorf("ensure personal notebook folder: %w", err)
+		}
+		nb.FolderID = root.ID
+	}
+	if err := s.requireFolderWriteAccess(ctx, principal, false, nb.FolderID); err != nil {
+		return nil, err
+	}
 	result, err := s.repo.CreateNotebook(ctx, nb)
 	if err != nil {
 		return nil, fmt.Errorf("create notebook: %w", err)
@@ -50,19 +92,57 @@ func (s *Service) CreateNotebook(ctx context.Context, principal string, req doma
 	return result, nil
 }
 
-func canAccessNotebook(nb *domain.Notebook, principal string, isAdmin bool) bool {
-	return isAdmin || nb.Owner == principal
-}
-
-func (s *Service) requireNotebookAccess(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, error) {
+func (s *Service) requireNotebookRole(ctx context.Context, principal string, isAdmin bool, id string, allowed func(string) bool, action string) (*domain.Notebook, error) {
 	nb, err := s.repo.GetNotebook(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if !canAccessNotebook(nb, principal, isAdmin) {
-		return nil, domain.ErrAccessDenied("only the notebook owner or admin can access notebook %q", id)
+	resolver, err := s.accessResolver(ctx, principal, isAdmin)
+	if err != nil {
+		return nil, fmt.Errorf("resolve notebook access: %w", err)
+	}
+	role, err := resolver.notebookRole(ctx, nb)
+	if err != nil {
+		return nil, fmt.Errorf("resolve notebook access: %w", err)
+	}
+	if !allowed(role) {
+		return nil, domain.ErrAccessDenied("principal %q cannot %s notebook %q", principal, action, id)
 	}
 	return nb, nil
+}
+
+func (s *Service) requireNotebookReadAccess(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, error) {
+	return s.requireNotebookRole(ctx, principal, isAdmin, id, roleAllowsRead, "read")
+}
+
+func (s *Service) requireNotebookWriteAccess(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, error) {
+	return s.requireNotebookRole(ctx, principal, isAdmin, id, roleAllowsWrite, "modify")
+}
+
+func (s *Service) requireNotebookManageAccess(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, error) {
+	return s.requireNotebookRole(ctx, principal, isAdmin, id, roleAllowsManage, "manage")
+}
+
+func (s *Service) requireFolderWriteAccess(ctx context.Context, principal string, isAdmin bool, folderID string) error {
+	if s.folders == nil || strings.TrimSpace(folderID) == "" {
+		return nil
+	}
+	resolver, err := s.accessResolver(ctx, principal, isAdmin)
+	if err != nil {
+		return fmt.Errorf("resolve folder access: %w", err)
+	}
+	folder, err := s.folders.GetByID(ctx, folderID)
+	if err != nil {
+		return err
+	}
+	role, err := resolver.folderRole(ctx, folder)
+	if err != nil {
+		return fmt.Errorf("resolve folder access: %w", err)
+	}
+	if !roleAllowsWrite(role) {
+		return domain.ErrAccessDenied("principal %q cannot create notebooks in folder %q", principal, folderID)
+	}
+	return nil
 }
 
 // GetNotebook retrieves a notebook and its cells.
@@ -80,7 +160,7 @@ func (s *Service) GetNotebook(ctx context.Context, id string) (*domain.Notebook,
 
 // GetNotebookForPrincipal retrieves a notebook and its cells for the owner or an admin.
 func (s *Service) GetNotebookForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, []domain.Cell, error) {
-	nb, err := s.requireNotebookAccess(ctx, principal, isAdmin, id)
+	nb, err := s.requireNotebookReadAccess(ctx, principal, isAdmin, id)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,6 +169,15 @@ func (s *Service) GetNotebookForPrincipal(ctx context.Context, principal string,
 		return nil, nil, fmt.Errorf("list cells: %w", err)
 	}
 	return nb, cells, nil
+}
+
+// GetNotebookContext resolves the effective project/environment/git context for a notebook.
+func (s *Service) GetNotebookContext(ctx context.Context, principal string, isAdmin bool, id string) (*domain.NotebookContext, error) {
+	nb, err := s.requireNotebookReadAccess(ctx, principal, isAdmin, id)
+	if err != nil {
+		return nil, err
+	}
+	return s.resolveContextForNotebook(ctx, nb)
 }
 
 // GetPublishModel resolves model publish metadata for a notebook.
@@ -131,23 +220,64 @@ func (s *Service) ListNotebooksForPrincipal(ctx context.Context, principal strin
 	if isAdmin {
 		return s.repo.ListNotebooks(ctx, owner, page)
 	}
-
-	if owner != nil && *owner != principal {
-		return nil, 0, domain.ErrAccessDenied("non-admin principals can only list their own notebooks")
+	resolver, err := s.accessResolver(ctx, principal, isAdmin)
+	if err != nil {
+		return nil, 0, fmt.Errorf("resolve notebook access: %w", err)
 	}
-
-	ownerName := principal
-	return s.repo.ListNotebooks(ctx, &ownerName, page)
+	items, _, err := s.repo.ListNotebooks(ctx, nil, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+	if err != nil {
+		return nil, 0, err
+	}
+	filtered := make([]domain.Notebook, 0, len(items))
+	for _, item := range items {
+		if owner != nil && strings.TrimSpace(*owner) != "" && item.Owner != strings.TrimSpace(*owner) {
+			continue
+		}
+		role, roleErr := resolver.notebookRole(ctx, &item)
+		if roleErr != nil {
+			return nil, 0, fmt.Errorf("resolve notebook access: %w", roleErr)
+		}
+		if roleAllowsRead(role) {
+			filtered = append(filtered, item)
+		}
+	}
+	total := int64(len(filtered))
+	start := page.Offset()
+	if start >= len(filtered) {
+		return []domain.Notebook{}, total, nil
+	}
+	end := start + page.Limit()
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	return filtered[start:end], total, nil
 }
 
 // UpdateNotebook updates notebook metadata. Only the owner or admin can update.
 func (s *Service) UpdateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error) {
-	if _, err := s.requireNotebookAccess(ctx, principal, isAdmin, id); err != nil {
+	nb, err := s.requireNotebookWriteAccess(ctx, principal, isAdmin, id)
+	if err != nil {
 		return nil, err
+	}
+	if req.FolderID != nil && strings.TrimSpace(*req.FolderID) != "" && strings.TrimSpace(*req.FolderID) != strings.TrimSpace(nb.FolderID) {
+		return nil, domain.ErrValidation("use move notebook to change folder placement")
+	}
+	beforeCtx, err := s.resolveContextForNotebook(ctx, nb)
+	if err != nil {
+		return nil, fmt.Errorf("resolve notebook context before update: %w", err)
 	}
 	result, err := s.repo.UpdateNotebook(ctx, id, req)
 	if err != nil {
 		return nil, fmt.Errorf("update notebook: %w", err)
+	}
+	afterCtx, err := s.resolveContextForNotebook(ctx, result)
+	if err != nil {
+		return nil, fmt.Errorf("resolve notebook context after update: %w", err)
+	}
+	if contextsDiffer(beforeCtx, afterCtx) {
+		if err := s.invalidateNotebookContext(ctx, result.ID); err != nil {
+			return nil, err
+		}
 	}
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{
 		PrincipalName: principal,
@@ -157,9 +287,186 @@ func (s *Service) UpdateNotebook(ctx context.Context, principal string, isAdmin 
 	return result, nil
 }
 
+// MoveNotebook moves a notebook between folders while enforcing git and project-context boundaries.
+func (s *Service) MoveNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.MoveNotebookRequest) (*domain.Notebook, error) {
+	nb, err := s.requireNotebookManageAccess(ctx, principal, isAdmin, id)
+	if err != nil {
+		return nil, err
+	}
+	if s.folders == nil {
+		return nil, domain.ErrValidation("folder repository is not configured")
+	}
+	targetFolderID := strings.TrimSpace(req.FolderID)
+	if targetFolderID == "" {
+		return nil, domain.ErrValidation("folder_id is required")
+	}
+	targetFolder, err := s.folders.GetByID(ctx, targetFolderID)
+	if err != nil {
+		return nil, fmt.Errorf("get destination folder: %w", err)
+	}
+	if err := s.requireFolderWriteAccess(ctx, principal, isAdmin, targetFolder.ID); err != nil {
+		return nil, err
+	}
+	ownerResolver, err := s.accessResolver(ctx, nb.Owner, false)
+	if err != nil {
+		return nil, fmt.Errorf("resolve owner folder access: %w", err)
+	}
+	ownerRole, err := ownerResolver.folderRole(ctx, targetFolder)
+	if err != nil {
+		return nil, fmt.Errorf("resolve owner folder access: %w", err)
+	}
+	if !roleAllowsRead(ownerRole) {
+		return nil, domain.ErrValidation("destination folder must remain readable to the notebook owner")
+	}
+
+	currentCtx, err := s.resolveContextForNotebook(ctx, nb)
+	if err != nil {
+		return nil, fmt.Errorf("resolve current notebook context: %w", err)
+	}
+	targetCtx, err := s.resolveContextForNotebook(ctx, &domain.Notebook{
+		ID:                    nb.ID,
+		FolderID:              targetFolder.ID,
+		Name:                  nb.Name,
+		Owner:                 nb.Owner,
+		ProjectOverrideID:     nb.ProjectOverrideID,
+		EnvironmentOverrideID: nb.EnvironmentOverrideID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("resolve destination notebook context: %w", err)
+	}
+	if currentCtx.EffectiveGitRepoID != nil && targetCtx.EffectiveGitRepoID == nil && !req.ConfirmLeaveGit {
+		return nil, domain.ErrValidation("moving a git-backed notebook into a non-git folder requires confirmation")
+	}
+	if notebookStringValue(currentCtx.EffectiveGitRepoID) != "" &&
+		notebookStringValue(targetCtx.EffectiveGitRepoID) != "" &&
+		notebookStringValue(currentCtx.EffectiveGitRepoID) != notebookStringValue(targetCtx.EffectiveGitRepoID) {
+		return nil, domain.ErrConflict("moving notebooks across git repositories is not supported; duplicate the notebook into the destination repo folder instead")
+	}
+	if projectOrEnvironmentChanged(currentCtx, targetCtx) && !req.ConfirmContextChange {
+		return nil, domain.ErrValidation("moving this notebook changes its execution context and requires confirmation")
+	}
+
+	targetGitPath, err := s.resolveTargetGitPath(ctx, targetCtx, targetFolder.ID, nb.Name, req.GitPath)
+	if err != nil {
+		return nil, err
+	}
+	if targetCtx.EffectiveGitRepoID != nil {
+		if err := s.ensureUniqueGitPath(ctx, nb.ID, *targetCtx.EffectiveGitRepoID, *targetGitPath); err != nil {
+			return nil, err
+		}
+	}
+
+	result, err := s.repo.UpdateNotebookSync(ctx, &domain.Notebook{
+		ID:                    nb.ID,
+		FolderID:              targetFolder.ID,
+		Name:                  nb.Name,
+		Description:           nb.Description,
+		Owner:                 nb.Owner,
+		GitRepoID:             targetCtx.EffectiveGitRepoID,
+		GitPath:               targetGitPath,
+		ProjectOverrideID:     nb.ProjectOverrideID,
+		EnvironmentOverrideID: nb.EnvironmentOverrideID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("move notebook: %w", err)
+	}
+	if contextsDiffer(currentCtx, targetCtx) {
+		if err := s.invalidateNotebookContext(ctx, result.ID); err != nil {
+			return nil, err
+		}
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        "MOVE_NOTEBOOK",
+		Status:        "ALLOWED",
+	})
+	return result, nil
+}
+
+// DuplicateNotebook copies a notebook and its cells into a destination folder.
+func (s *Service) DuplicateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.DuplicateNotebookRequest) (*domain.Notebook, error) {
+	source, err := s.requireNotebookReadAccess(ctx, principal, isAdmin, id)
+	if err != nil {
+		return nil, err
+	}
+	if s.folders == nil {
+		return nil, domain.ErrValidation("folder repository is not configured")
+	}
+	targetFolderID := strings.TrimSpace(req.FolderID)
+	if targetFolderID == "" {
+		return nil, domain.ErrValidation("folder_id is required")
+	}
+	targetFolder, err := s.folders.GetByID(ctx, targetFolderID)
+	if err != nil {
+		return nil, fmt.Errorf("get destination folder: %w", err)
+	}
+	if err := s.requireFolderWriteAccess(ctx, principal, isAdmin, targetFolder.ID); err != nil {
+		return nil, err
+	}
+
+	targetName := source.Name
+	if req.Name != nil && strings.TrimSpace(*req.Name) != "" {
+		targetName = strings.TrimSpace(*req.Name)
+	}
+	targetCtx, err := s.resolveContextForNotebook(ctx, &domain.Notebook{
+		FolderID:              targetFolder.ID,
+		Name:                  targetName,
+		Owner:                 source.Owner,
+		ProjectOverrideID:     source.ProjectOverrideID,
+		EnvironmentOverrideID: source.EnvironmentOverrideID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("resolve destination notebook context: %w", err)
+	}
+	targetGitPath, err := s.resolveTargetGitPath(ctx, targetCtx, targetFolder.ID, targetName, req.GitPath)
+	if err != nil {
+		return nil, err
+	}
+	if targetCtx.EffectiveGitRepoID != nil {
+		if err := s.ensureUniqueGitPath(ctx, "", *targetCtx.EffectiveGitRepoID, *targetGitPath); err != nil {
+			return nil, err
+		}
+	}
+
+	created, err := s.repo.CreateNotebook(ctx, &domain.Notebook{
+		ID:                    domain.NewID(),
+		FolderID:              targetFolder.ID,
+		Name:                  targetName,
+		Description:           source.Description,
+		Owner:                 source.Owner,
+		GitRepoID:             targetCtx.EffectiveGitRepoID,
+		GitPath:               targetGitPath,
+		ProjectOverrideID:     source.ProjectOverrideID,
+		EnvironmentOverrideID: source.EnvironmentOverrideID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create duplicated notebook: %w", err)
+	}
+
+	cells, err := s.repo.ListCells(ctx, source.ID)
+	if err != nil {
+		return nil, fmt.Errorf("list source cells: %w", err)
+	}
+	for _, cell := range cells {
+		copied := cell
+		copied.ID = domain.NewID()
+		copied.NotebookID = created.ID
+		if _, err := s.repo.CreateCell(ctx, &copied); err != nil {
+			return nil, fmt.Errorf("copy notebook cell %q: %w", cell.ID, err)
+		}
+	}
+
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        "DUPLICATE_NOTEBOOK",
+		Status:        "ALLOWED",
+	})
+	return created, nil
+}
+
 // DeleteNotebook deletes a notebook. Only the owner or admin can delete.
 func (s *Service) DeleteNotebook(ctx context.Context, principal string, isAdmin bool, id string) error {
-	if _, err := s.requireNotebookAccess(ctx, principal, isAdmin, id); err != nil {
+	if _, err := s.requireNotebookManageAccess(ctx, principal, isAdmin, id); err != nil {
 		return err
 	}
 	if err := s.repo.DeleteNotebook(ctx, id); err != nil {
@@ -173,12 +480,75 @@ func (s *Service) DeleteNotebook(ctx context.Context, principal string, isAdmin 
 	return nil
 }
 
+// ShareNotebook grants or updates direct notebook access.
+func (s *Service) ShareNotebook(ctx context.Context, principal string, isAdmin bool, notebookID string, share domain.NotebookShare) (*domain.NotebookShare, error) {
+	if s.notebookShares == nil {
+		return nil, domain.ErrValidation("notebook sharing is not configured")
+	}
+	if _, err := s.requireNotebookManageAccess(ctx, principal, isAdmin, notebookID); err != nil {
+		return nil, err
+	}
+	share.NotebookID = notebookID
+	share.PrincipalName = strings.TrimSpace(share.PrincipalName)
+	share.Role = strings.TrimSpace(share.Role)
+	if share.PrincipalName == "" {
+		return nil, domain.ErrValidation("principal_name is required")
+	}
+	if share.Role == "" {
+		share.Role = domain.FolderShareRoleViewer
+	}
+	created, err := s.notebookShares.Upsert(ctx, &share)
+	if err != nil {
+		return nil, fmt.Errorf("share notebook: %w", err)
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        "SHARE_NOTEBOOK",
+		Status:        "ALLOWED",
+	})
+	return created, nil
+}
+
+// UnshareNotebook removes direct notebook access.
+func (s *Service) UnshareNotebook(ctx context.Context, principal string, isAdmin bool, notebookID string, principalName string) error {
+	if s.notebookShares == nil {
+		return domain.ErrValidation("notebook sharing is not configured")
+	}
+	if _, err := s.requireNotebookManageAccess(ctx, principal, isAdmin, notebookID); err != nil {
+		return err
+	}
+	if err := s.notebookShares.Delete(ctx, notebookID, strings.TrimSpace(principalName)); err != nil {
+		return fmt.Errorf("unshare notebook: %w", err)
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: principal,
+		Action:        "UNSHARE_NOTEBOOK",
+		Status:        "ALLOWED",
+	})
+	return nil
+}
+
+// ListNotebookShares returns direct notebook shares.
+func (s *Service) ListNotebookShares(ctx context.Context, principal string, isAdmin bool, notebookID string) ([]domain.NotebookShare, error) {
+	if s.notebookShares == nil {
+		return nil, nil
+	}
+	if _, err := s.requireNotebookReadAccess(ctx, principal, isAdmin, notebookID); err != nil {
+		return nil, err
+	}
+	items, err := s.notebookShares.ListByNotebook(ctx, notebookID)
+	if err != nil {
+		return nil, fmt.Errorf("list notebook shares: %w", err)
+	}
+	return items, nil
+}
+
 // CreateCell adds a new cell to a notebook. Owner or admin required.
 func (s *Service) CreateCell(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
-	if _, err := s.requireNotebookAccess(ctx, principal, isAdmin, notebookID); err != nil {
+	if _, err := s.requireNotebookWriteAccess(ctx, principal, isAdmin, notebookID); err != nil {
 		return nil, err
 	}
 
@@ -234,12 +604,8 @@ func (s *Service) UpdateCell(ctx context.Context, principal string, isAdmin bool
 		return nil, err
 	}
 
-	nb, err := s.repo.GetNotebook(ctx, cell.NotebookID)
-	if err != nil {
+	if _, err := s.requireNotebookWriteAccess(ctx, principal, isAdmin, cell.NotebookID); err != nil {
 		return nil, err
-	}
-	if nb.Owner != principal && !isAdmin {
-		return nil, domain.ErrAccessDenied("only the notebook owner or admin can update cells")
 	}
 
 	newRole := cell.Role
@@ -314,12 +680,8 @@ func (s *Service) DeleteCell(ctx context.Context, principal string, isAdmin bool
 	if err != nil {
 		return err
 	}
-	nb, err := s.repo.GetNotebook(ctx, cell.NotebookID)
-	if err != nil {
+	if _, err := s.requireNotebookWriteAccess(ctx, principal, isAdmin, cell.NotebookID); err != nil {
 		return err
-	}
-	if nb.Owner != principal && !isAdmin {
-		return domain.ErrAccessDenied("only the notebook owner or admin can delete cells")
 	}
 	if err := s.repo.DeleteCell(ctx, cellID); err != nil {
 		return err
@@ -336,12 +698,8 @@ func (s *Service) DeleteCell(ctx context.Context, principal string, isAdmin bool
 
 // ReorderCells reorders cells in a notebook. Owner or admin required.
 func (s *Service) ReorderCells(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.ReorderCellsRequest) ([]domain.Cell, error) {
-	nb, err := s.repo.GetNotebook(ctx, notebookID)
-	if err != nil {
+	if _, err := s.requireNotebookWriteAccess(ctx, principal, isAdmin, notebookID); err != nil {
 		return nil, err
-	}
-	if nb.Owner != principal && !isAdmin {
-		return nil, domain.ErrAccessDenied("only the notebook owner or admin can reorder cells")
 	}
 	if err := s.repo.ReorderCells(ctx, notebookID, req.CellIDs); err != nil {
 		return nil, err
@@ -354,4 +712,188 @@ func (s *Service) ReorderCells(ctx context.Context, principal string, isAdmin bo
 	})
 
 	return s.repo.ListCells(ctx, notebookID)
+}
+
+func (s *Service) resolveContextForNotebook(ctx context.Context, nb *domain.Notebook) (*domain.NotebookContext, error) {
+	if nb == nil {
+		return nil, domain.ErrValidation("notebook is required")
+	}
+	resolved := &domain.NotebookContext{
+		NotebookID:             nb.ID,
+		FolderID:               nb.FolderID,
+		EffectiveProjectID:     nb.ProjectOverrideID,
+		EffectiveEnvironmentID: nb.EnvironmentOverrideID,
+	}
+	if s.folders != nil && strings.TrimSpace(nb.FolderID) != "" {
+		ancestors, err := s.folders.ListAncestors(ctx, nb.FolderID)
+		if err != nil {
+			return nil, fmt.Errorf("list folder ancestors: %w", err)
+		}
+		for _, folder := range ancestors {
+			if resolved.EffectiveProjectID == nil && folder.DefaultProjectID != nil {
+				resolved.EffectiveProjectID = folder.DefaultProjectID
+				resolved.ProjectSourceFolderID = &folder.ID
+			}
+			if resolved.EffectiveEnvironmentID == nil && folder.DefaultEnvironmentID != nil {
+				resolved.EffectiveEnvironmentID = folder.DefaultEnvironmentID
+				resolved.EnvironmentSourceID = &folder.ID
+			}
+			if resolved.EffectiveGitRepoID == nil && folder.GitRepoID != nil {
+				resolved.EffectiveGitRepoID = folder.GitRepoID
+				resolved.EffectiveGitRootPath = folder.GitRootPath
+				resolved.GitSourceFolderID = &folder.ID
+			}
+		}
+	}
+	if resolved.EffectiveGitRepoID == nil && nb.GitRepoID != nil {
+		resolved.EffectiveGitRepoID = nb.GitRepoID
+	}
+	return resolved, nil
+}
+
+func (s *Service) resolveTargetGitPath(ctx context.Context, resolved *domain.NotebookContext, folderID string, notebookName string, requestedPath *string) (*string, error) {
+	if resolved == nil || resolved.EffectiveGitRepoID == nil {
+		return nil, nil
+	}
+	if requestedPath != nil && strings.TrimSpace(*requestedPath) != "" {
+		pathValue, err := normalizeGitPath(*requestedPath, resolved.EffectiveGitRootPath)
+		if err != nil {
+			return nil, err
+		}
+		return &pathValue, nil
+	}
+	derived, err := s.deriveGitPathFromFolder(ctx, folderID, notebookName, resolved)
+	if err != nil {
+		return nil, err
+	}
+	return &derived, nil
+}
+
+func (s *Service) deriveGitPathFromFolder(ctx context.Context, folderID, notebookName string, resolved *domain.NotebookContext) (string, error) {
+	if s.folders == nil {
+		return "", domain.ErrValidation("folder repository is not configured")
+	}
+	ancestors, err := s.folders.ListAncestors(ctx, folderID)
+	if err != nil {
+		return "", fmt.Errorf("list destination folder ancestors: %w", err)
+	}
+	segments := make([]string, 0, len(ancestors)+1)
+	for _, folder := range ancestors {
+		if resolved.GitSourceFolderID != nil && folder.ID == *resolved.GitSourceFolderID {
+			break
+		}
+		segments = append(segments, sanitizeGitPathSegment(folder.Name))
+	}
+	for i, j := 0, len(segments)-1; i < j; i, j = i+1, j-1 {
+		segments[i], segments[j] = segments[j], segments[i]
+	}
+	segments = append(segments, notebookFileName(notebookName))
+	relativePath := path.Join(segments...)
+	if strings.TrimSpace(relativePath) == "" {
+		relativePath = notebookFileName(notebookName)
+	}
+	root := notebookStringValue(resolved.EffectiveGitRootPath)
+	if root == "" {
+		return relativePath, nil
+	}
+	return path.Join(root, relativePath), nil
+}
+
+func (s *Service) ensureUniqueGitPath(ctx context.Context, notebookID, repoID, gitPath string) error {
+	items, _, err := s.repo.ListNotebooks(ctx, nil, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+	if err != nil {
+		return fmt.Errorf("list notebooks for git collision check: %w", err)
+	}
+	for _, item := range items {
+		if item.ID == notebookID {
+			continue
+		}
+		if notebookStringValue(item.GitRepoID) == repoID && notebookStringValue(item.GitPath) == gitPath {
+			return domain.ErrConflict("git path %q is already used by notebook %q", gitPath, item.ID)
+		}
+	}
+	return nil
+}
+
+func (s *Service) invalidateNotebookContext(ctx context.Context, notebookID string) error {
+	if s.invalidator == nil {
+		return nil
+	}
+	if err := s.invalidator.InvalidateNotebook(ctx, notebookID); err != nil {
+		return fmt.Errorf("invalidate notebook runtime context: %w", err)
+	}
+	return nil
+}
+
+func contextsDiffer(left, right *domain.NotebookContext) bool {
+	return notebookStringValue(left.EffectiveProjectID) != notebookStringValue(right.EffectiveProjectID) ||
+		notebookStringValue(left.EffectiveEnvironmentID) != notebookStringValue(right.EffectiveEnvironmentID) ||
+		notebookStringValue(left.EffectiveGitRepoID) != notebookStringValue(right.EffectiveGitRepoID)
+}
+
+func projectOrEnvironmentChanged(left, right *domain.NotebookContext) bool {
+	return notebookStringValue(left.EffectiveProjectID) != notebookStringValue(right.EffectiveProjectID) ||
+		notebookStringValue(left.EffectiveEnvironmentID) != notebookStringValue(right.EffectiveEnvironmentID)
+}
+
+func notebookStringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(*value)
+}
+
+func normalizeGitPath(requestedPath string, gitRootPath *string) (string, error) {
+	cleaned := path.Clean(strings.ReplaceAll(strings.TrimSpace(requestedPath), "\\", "/"))
+	switch {
+	case cleaned == "." || cleaned == "":
+		return "", domain.ErrValidation("git path is required")
+	case strings.HasPrefix(cleaned, "/"), cleaned == "..", strings.HasPrefix(cleaned, "../"):
+		return "", domain.ErrValidation("git path must be relative to the repository root")
+	}
+	root := notebookStringValue(gitRootPath)
+	if root == "" {
+		return cleaned, nil
+	}
+	if cleaned == root || strings.HasPrefix(cleaned, root+"/") {
+		return cleaned, nil
+	}
+	return path.Join(root, cleaned), nil
+}
+
+func notebookFileName(name string) string {
+	base := sanitizeGitPathSegment(name)
+	if base == "" {
+		base = "notebook"
+	}
+	return base + ".yaml"
+}
+
+func sanitizeGitPathSegment(name string) string {
+	trimmed := strings.TrimSpace(strings.ToLower(name))
+	if trimmed == "" {
+		return "untitled"
+	}
+	var builder strings.Builder
+	lastDash := false
+	for _, r := range trimmed {
+		switch {
+		case r >= 'a' && r <= 'z':
+			builder.WriteRune(r)
+			lastDash = false
+		case r >= '0' && r <= '9':
+			builder.WriteRune(r)
+			lastDash = false
+		default:
+			if !lastDash {
+				builder.WriteRune('-')
+				lastDash = true
+			}
+		}
+	}
+	value := strings.Trim(builder.String(), "-")
+	if value == "" {
+		return "untitled"
+	}
+	return value
 }

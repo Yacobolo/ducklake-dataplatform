@@ -71,6 +71,7 @@ type Services struct {
 	Auth                *authsvc.Service
 	WebSessionAuth      *authsvc.SessionService
 	Notebook            *notebook.Service
+	NotebookFolders     *notebook.FolderService
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
 	Pipeline            *pipeline.Service
@@ -331,11 +332,21 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 
 	// === Notebook services ===
 	notebookRepo := repository.NewNotebookRepo(deps.WriteDB)
+	folderRepo := repository.NewFolderRepo(deps.WriteDB)
+	folderShareRepo := repository.NewFolderShareRepo(deps.WriteDB)
+	notebookShareRepo := repository.NewNotebookShareRepo(deps.WriteDB)
 	notebookJobRepo := repository.NewNotebookJobRepo(deps.WriteDB)
 	notebookSvc := notebook.New(notebookRepo, auditRepo)
+	notebookSvc.SetFolderRepository(folderRepo)
+	notebookSvc.SetShareRepositories(folderShareRepo, notebookShareRepo)
+	folderSvc := notebook.NewFolderService(folderRepo, auditRepo)
+	folderSvc.SetShareRepository(folderShareRepo)
 	sessionMgr := notebook.NewSessionManager(deps.DuckDB, eng, notebookRepo, notebookJobRepo, auditRepo)
+	sessionMgr.SetAccessRepositories(folderRepo, folderShareRepo, notebookShareRepo)
+	notebookSvc.SetContextInvalidator(sessionMgr)
 	gitRepoRepo := repository.NewGitRepoRepo(deps.WriteDB)
 	gitSvc := notebook.NewGitService(gitRepoRepo, notebookRepo, auditRepo)
+	gitSvc.SetFolderRepository(folderRepo)
 	notebookModelLinkRepo := repository.NewNotebookModelLinkRepo(deps.WriteDB)
 
 	// === Asset orchestration ===
@@ -466,6 +477,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		),
 	)
 	backfillRunner := orchestration.NewBackfillRunner(backfillRepo, assetDepRepo, assetRunRepo, assetScheduler, assetExecutor)
+	folderSvc.SetContextInvalidation(notebookRepo, orchEventRepo)
 	reconciler := orchestration.NewReconciler(
 		orchEventRepo,
 		assetRepo,
@@ -474,6 +486,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		assetExecutor,
 		backfillRunner,
 		cfg.FeatureReconcilerShadow,
+		notebook.NewOrchestrationEventHandler(sessionMgr),
 	)
 
 	// === API Key ===
@@ -506,6 +519,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			Auth:                authService,
 			WebSessionAuth:      webSessionAuth,
 			Notebook:            notebookSvc,
+			NotebookFolders:     folderSvc,
 			SessionManager:      sessionMgr,
 			GitService:          gitSvc,
 			Pipeline:            pipelineSvc,
