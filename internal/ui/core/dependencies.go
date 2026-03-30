@@ -12,6 +12,7 @@ import (
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
 	"duck-demo/internal/service/dashboard"
+	exploresvc "duck-demo/internal/service/explore"
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/macro"
 	"duck-demo/internal/service/model"
@@ -44,7 +45,7 @@ type Dependencies struct {
 	Backfill            *orchestration.BackfillService
 	Notebook            *notebook.Service
 	NotebookFolders     *notebook.FolderService
-	NotebookExplore     *notebook.ExploreService
+	Explore             *exploresvc.Service
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
 	Macro               *macro.Service

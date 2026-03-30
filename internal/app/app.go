@@ -20,6 +20,7 @@ import (
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
 	"duck-demo/internal/service/dashboard"
+	exploresvc "duck-demo/internal/service/explore"
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/ingestion"
 	"duck-demo/internal/service/macro"
@@ -72,7 +73,7 @@ type Services struct {
 	WebSessionAuth      *authsvc.SessionService
 	Notebook            *notebook.Service
 	NotebookFolders     *notebook.FolderService
-	NotebookExplore     *notebook.ExploreService
+	Explore             *exploresvc.Service
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
 	Pipeline            *pipeline.Service
@@ -461,7 +462,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	dashboardWidgetRepo := repository.NewDashboardWidgetRepo(deps.WriteDB)
 	dashboardSvc := dashboard.NewService(dashboardRepo, dashboardWidgetRepo, notebookRepo, auditRepo, querySvc, semanticSvc)
 	dashboardSvc.SetFolderRepository(folderRepo)
-	exploreSvc := notebook.NewExploreService(folderRepo, notebookRepo, dashboardRepo, pipelineRepo, projectRepo, modelRepo, macroRepo, semanticModelRepo)
+	exploreSvc := exploresvc.NewService(folderRepo, notebookRepo, dashboardRepo, pipelineRepo, projectRepo, modelRepo, macroRepo, semanticModelRepo)
 	exploreSvc.SetAccessRepositories(folderShareRepo, notebookShareRepo)
 	exploreSvc.SetAuthorization(authSvc)
 	if err := pipeline.SyncSemanticResourcesToAssets(ctx, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, modelRepo, assetRepo, assetDepRepo, semanticProduct.Product.ID); err != nil {
@@ -533,7 +534,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			WebSessionAuth:      webSessionAuth,
 			Notebook:            notebookSvc,
 			NotebookFolders:     folderSvc,
-			NotebookExplore:     exploreSvc,
+			Explore:             exploreSvc,
 			SessionManager:      sessionMgr,
 			GitService:          gitSvc,
 			Pipeline:            pipelineSvc,

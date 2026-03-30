@@ -1,0 +1,661 @@
+package explore
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"sort"
+	"strings"
+	"time"
+
+	"duck-demo/internal/domain"
+	"duck-demo/internal/ui/core"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/starfederation/datastar-go/datastar"
+	g "maragu.dev/gomponents"
+)
+
+type Handler struct {
+	deps           *core.Dependencies
+	exploreUpdates *exploreUpdateHub
+}
+
+func New(deps *core.Dependencies) *Handler {
+	return &Handler{
+		deps:           deps,
+		exploreUpdates: newExploreUpdateHub(),
+	}
+}
+
+type viewData struct {
+	Principal        domain.ContextPrincipal
+	Rows             []listRow
+	Breadcrumbs      []breadcrumbItem
+	SelectedFolderID string
+	SelectedKinds    []string
+	SelectedOwners   []string
+	SearchQuery      string
+	OwnerOptions     []string
+	StreamID         string
+	CSRFToken        string
+	Page             domain.PageRequest
+	Total            int64
+}
+
+func (h *Handler) ExploreList(w http.ResponseWriter, r *http.Request) {
+	view, err := h.buildViewData(r, domain.NewID())
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	core.RenderHTML(w, http.StatusOK, listPage(
+		view.Principal,
+		view.Rows,
+		view.Breadcrumbs,
+		view.SelectedFolderID,
+		view.SelectedKinds,
+		view.SelectedOwners,
+		view.SearchQuery,
+		view.OwnerOptions,
+		view.StreamID,
+		view.CSRFToken,
+		view.Page,
+		view.Total,
+	))
+}
+
+func (h *Handler) ExploreFragment(w http.ResponseWriter, r *http.Request) {
+	view, err := h.buildViewData(r, "")
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	if err := writeDatastarElementPatch(w, r, mainContent(
+		view.Rows,
+		view.Breadcrumbs,
+		view.SelectedFolderID,
+		view.SelectedKinds,
+		view.SelectedOwners,
+		view.SearchQuery,
+		view.OwnerOptions,
+		view.StreamID,
+		view.CSRFToken,
+		view.Page,
+		view.Total,
+	)); err != nil {
+		renderServiceError(w, fmt.Errorf("render explore fragment: %w", err))
+		return
+	}
+}
+
+func (h *Handler) ExploreUpdatesStream(w http.ResponseWriter, r *http.Request) {
+	streamID := strings.TrimSpace(chi.URLParam(r, "streamID"))
+	if streamID == "" {
+		http.Error(w, "missing stream id", http.StatusBadRequest)
+		return
+	}
+
+	ch, unsubscribe := h.exploreUpdates.subscribe(streamID)
+	defer unsubscribe()
+
+	sse := datastar.NewSSE(w, r)
+	principal := core.PrincipalFromContext(r.Context())
+
+	ticker := time.NewTicker(25 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case <-ticker.C:
+			if err := sse.Send(datastar.EventTypePatchSignals, []string{"signals {}"}); err != nil {
+				return
+			}
+		case update := <-ch:
+			view, err := h.buildViewDataForFilter(r.Context(), principal, domain.PageRequest{MaxResults: defaultPageSize}, update.FolderID, update.Kinds, update.Owners, update.Query, streamID)
+			if err != nil {
+				_ = sse.ConsoleError(err)
+				return
+			}
+			if err := sse.PatchElementGostar(
+				mainContent(
+					view.Rows,
+					view.Breadcrumbs,
+					view.SelectedFolderID,
+					view.SelectedKinds,
+					view.SelectedOwners,
+					view.SearchQuery,
+					view.OwnerOptions,
+					streamID,
+					h.deps.CSRFToken(r),
+					view.Page,
+					view.Total,
+				),
+				datastar.WithSelectorID("main-content"),
+			); err != nil {
+				return
+			}
+		}
+	}
+}
+
+func (h *Handler) ExploreUpdatesApply(w http.ResponseWriter, r *http.Request) {
+	streamID := strings.TrimSpace(chi.URLParam(r, "streamID"))
+	if streamID == "" {
+		http.Error(w, "missing stream id", http.StatusBadRequest)
+		return
+	}
+	params, err := decodeUpdateParams(r)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	h.exploreUpdates.publish(streamID, params)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) buildViewData(r *http.Request, streamID string) (viewData, error) {
+	principal := core.PrincipalFromContext(r.Context())
+	if h.deps.Explore == nil {
+		return viewData{}, domain.ErrNotImplemented("explore service is not configured")
+	}
+	pageReq := pageFromRequest(r, defaultPageSize)
+	selectedFolderID := strings.TrimSpace(r.URL.Query().Get("folder_id"))
+	selectedKinds := selectedKindsFromRequest(r)
+	selectedOwners := selectedOwnersFromRequest(r)
+	searchQuery := selectedQueryFromRequest(r)
+	view, err := h.buildViewDataForFilter(r.Context(), principal, pageReq, selectedFolderID, selectedKinds, selectedOwners, searchQuery, streamID)
+	if err != nil {
+		return viewData{}, err
+	}
+	view.CSRFToken = h.deps.CSRFToken(r)
+	return view, nil
+}
+
+func (h *Handler) buildViewDataForFilter(ctx context.Context, principal domain.ContextPrincipal, pageReq domain.PageRequest, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, streamID string) (viewData, error) {
+	allItems, err := h.deps.Explore.List(ctx, principal.Name, principal.IsAdmin, domain.ExploreFilter{
+		FolderID: selectedFolderID,
+		Kinds:    selectedKinds,
+		Owners:   selectedOwners,
+		Query:    searchQuery,
+		Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
+	})
+	if err != nil {
+		return viewData{}, err
+	}
+	folderPaths, folderItems, err := h.folderPathMap(ctx, principal.Name, principal.IsAdmin)
+	if err != nil {
+		return viewData{}, err
+	}
+
+	offset := pageReq.Offset()
+	if offset > len(allItems) {
+		offset = len(allItems)
+	}
+	end := offset + pageReq.Limit()
+	if end > len(allItems) {
+		end = len(allItems)
+	}
+	items := allItems[offset:end]
+	rows := make([]listRow, 0, len(items)+8)
+	if pageReq.Offset() == 0 && folderKindAllowed(selectedKinds) {
+		rows = append(rows, h.folderRows(folderItems, folderPaths, principal.Name, selectedFolderID, selectedOwners, searchQuery)...)
+	}
+	for i := range items {
+		item := items[i]
+		rows = append(rows, listRow{
+			Name:         item.Name,
+			URL:          itemURL(item),
+			Kind:         item.Kind,
+			Owner:        item.Owner,
+			Scope:        item.Scope,
+			Folder:       valueOrDash(folderPaths[stringValue(item.FolderID)]),
+			Project:      stringValue(item.ProjectName),
+			Updated:      formatTime(item.UpdatedAt),
+			Shared:       item.Shared,
+			ProjectBound: item.ProjectBound,
+		})
+	}
+
+	return viewData{
+		Principal:        principal,
+		Rows:             rows,
+		Breadcrumbs:      breadcrumbItems(folderItems, selectedFolderID, pageReq, selectedKinds, selectedOwners, searchQuery),
+		SelectedFolderID: selectedFolderID,
+		SelectedKinds:    selectedKinds,
+		SelectedOwners:   selectedOwners,
+		SearchQuery:      searchQuery,
+		OwnerOptions:     filterOwners(folderItems, allItems),
+		StreamID:         streamID,
+		Page:             pageReq,
+		Total:            int64(len(allItems)),
+	}, nil
+}
+
+func (h *Handler) folderPathMap(ctx context.Context, principal string, isAdmin bool) (map[string]string, []domain.Folder, error) {
+	owners := []string{principal}
+	if isAdmin {
+		notebookItems, _, err := h.deps.Notebook.ListNotebooks(ctx, nil, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+		if err != nil {
+			return nil, nil, err
+		}
+		ownerSet := map[string]struct{}{}
+		for i := range notebookItems {
+			owner := strings.TrimSpace(notebookItems[i].Owner)
+			if owner == "" {
+				continue
+			}
+			ownerSet[owner] = struct{}{}
+		}
+		owners = owners[:0]
+		for owner := range ownerSet {
+			owners = append(owners, owner)
+		}
+	}
+
+	paths := map[string]string{}
+	ordered := []domain.Folder{}
+	for _, owner := range owners {
+		items, err := h.deps.NotebookFolders.ListFoldersForPrincipal(ctx, principal, isAdmin, &owner)
+		if err != nil {
+			return nil, nil, err
+		}
+		ordered = append(ordered, items...)
+	}
+	for id, label := range folderDisplayPathMap(ordered) {
+		paths[id] = label
+	}
+	return paths, ordered, nil
+}
+
+func (h *Handler) folderRows(folders []domain.Folder, folderPaths map[string]string, principal, selectedFolderID string, selectedOwners []string, searchQuery string) []listRow {
+	visible := make([]domain.Folder, 0, len(folders))
+	query := strings.ToLower(strings.TrimSpace(searchQuery))
+	for i := range folders {
+		folder := folders[i]
+		if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot {
+			continue
+		}
+		if selectedFolderID == "" {
+			if folder.ParentFolderID != nil && strings.TrimSpace(*folder.ParentFolderID) != "" {
+				continue
+			}
+		} else if stringValue(folder.ParentFolderID) != selectedFolderID {
+			continue
+		}
+		if len(selectedOwners) > 0 && !containsString(selectedOwners, folder.Owner) {
+			continue
+		}
+		if query != "" && !textMatch(query, folder.Name, folder.Owner, valueOrDash(folderPaths[stringValue(folder.ParentFolderID)])) {
+			continue
+		}
+		visible = append(visible, folder)
+	}
+
+	sort.Slice(visible, func(i, j int) bool {
+		return strings.ToLower(visible[i].Name) < strings.ToLower(visible[j].Name)
+	})
+
+	rows := make([]listRow, 0, len(visible))
+	for _, folder := range visible {
+		contextParts := make([]string, 0, 3)
+		if folder.DefaultProjectID != nil && strings.TrimSpace(*folder.DefaultProjectID) != "" {
+			contextParts = append(contextParts, "Project "+strings.TrimSpace(*folder.DefaultProjectID))
+		}
+		if folder.DefaultEnvironmentID != nil && strings.TrimSpace(*folder.DefaultEnvironmentID) != "" {
+			contextParts = append(contextParts, "Env "+strings.TrimSpace(*folder.DefaultEnvironmentID))
+		}
+		if folder.GitRepoID != nil && strings.TrimSpace(*folder.GitRepoID) != "" {
+			contextParts = append(contextParts, "Git-backed")
+		}
+		scope := "Folder"
+		if len(contextParts) > 0 {
+			scope = strings.Join(contextParts, " · ")
+		}
+		location := "Top level"
+		if parentID := stringValue(folder.ParentFolderID); parentID != "" {
+			location = valueOrDash(folderPaths[parentID])
+		}
+		rows = append(rows, listRow{
+			Name:         folder.Name,
+			URL:          pageURL(domain.PageRequest{MaxResults: defaultPageSize}, nil, selectedOwners, searchQuery, folder.ID),
+			MetaURL:      "/ui/explore/folders/" + folder.ID + "/edit",
+			MetaLabel:    "Settings",
+			Kind:         "folder",
+			Owner:        folder.Owner,
+			Scope:        scope,
+			Folder:       location,
+			Updated:      formatTime(folder.UpdatedAt),
+			Shared:       strings.TrimSpace(folder.Owner) != strings.TrimSpace(principal),
+			ProjectBound: folder.DefaultProjectID != nil && strings.TrimSpace(*folder.DefaultProjectID) != "",
+		})
+	}
+	return rows
+}
+
+func breadcrumbItems(folders []domain.Folder, selectedFolderID string, page domain.PageRequest, selectedKinds []string, selectedOwners []string, searchQuery string) []breadcrumbItem {
+	breadcrumbs := []breadcrumbItem{{
+		Label:   "Explore",
+		URL:     pageURL(domain.PageRequest{MaxResults: page.Limit()}, selectedKinds, selectedOwners, searchQuery, ""),
+		Current: selectedFolderID == "",
+	}}
+	if strings.TrimSpace(selectedFolderID) == "" {
+		return breadcrumbs
+	}
+	byID := make(map[string]domain.Folder, len(folders))
+	for i := range folders {
+		byID[folders[i].ID] = folders[i]
+	}
+	chain := make([]domain.Folder, 0, 4)
+	currentID := strings.TrimSpace(selectedFolderID)
+	for currentID != "" {
+		folder, ok := byID[currentID]
+		if !ok {
+			break
+		}
+		chain = append(chain, folder)
+		currentID = stringValue(folder.ParentFolderID)
+	}
+	for i, j := 0, len(chain)-1; i < j; i, j = i+1, j-1 {
+		chain[i], chain[j] = chain[j], chain[i]
+	}
+	for i := range chain {
+		folder := chain[i]
+		breadcrumbs = append(breadcrumbs, breadcrumbItem{
+			Label:   folder.Name,
+			URL:     pageURL(domain.PageRequest{MaxResults: page.Limit()}, selectedKinds, selectedOwners, searchQuery, folder.ID),
+			Current: i == len(chain)-1,
+		})
+	}
+	return breadcrumbs
+}
+
+func (h *Handler) FoldersList(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/ui/explore", http.StatusSeeOther)
+}
+func (h *Handler) FoldersNew(w http.ResponseWriter, r *http.Request) {
+	principal := core.PrincipalFromContext(r.Context())
+	selectedParentID := strings.TrimSpace(r.URL.Query().Get("parent_folder_id"))
+	folders, err := h.folderOptions(r.Context(), principal.Name, principal.IsAdmin, selectedParentID)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	repos, err := h.gitRepoOptions(r.Context(), principal.Name, principal.IsAdmin, "")
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	core.RenderHTML(w, http.StatusOK, folderNewPage(principal, folders, repos, h.deps.CSRFFieldProvider(r)))
+}
+func (h *Handler) FoldersCreate(w http.ResponseWriter, r *http.Request) {
+	principal := core.PrincipalFromContext(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	_, err := h.deps.NotebookFolders.CreateFolder(r.Context(), principal.Name, domain.CreateFolderRequest{
+		Name:                 formString(r.Form, "name"),
+		ParentFolderID:       formOptionalString(r.Form, "parent_folder_id"),
+		GitRepoID:            formOptionalString(r.Form, "git_repo_id"),
+		GitRootPath:          formOptionalString(r.Form, "git_root_path"),
+		DefaultProjectID:     formOptionalString(r.Form, "default_project_id"),
+		DefaultEnvironmentID: formOptionalString(r.Form, "default_environment_id"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/explore/folders", http.StatusSeeOther)
+}
+func (h *Handler) FoldersEdit(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	principal := core.PrincipalFromContext(r.Context())
+	folder, err := h.deps.NotebookFolders.GetFolderForPrincipal(r.Context(), principal.Name, principal.IsAdmin, folderID)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	repos, err := h.gitRepoOptions(r.Context(), principal.Name, principal.IsAdmin, stringValue(folder.GitRepoID))
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	parentOptions, err := h.folderOptions(r.Context(), principal.Name, principal.IsAdmin, stringValue(folder.ParentFolderID))
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	parentOptions = filterFolderOptions(parentOptions, folder.ID)
+	shares, err := h.deps.NotebookFolders.ListFolderShares(r.Context(), principal.Name, principal.IsAdmin, folderID)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	core.RenderHTML(w, http.StatusOK, folderEditPage(principal, folder, parentOptions, repos, folderShareRows(folderID, shares), h.deps.CSRFFieldProvider(r)))
+}
+func (h *Handler) FoldersUpdate(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	principal := core.PrincipalFromContext(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	_, err := h.deps.NotebookFolders.UpdateFolder(r.Context(), principal.Name, principal.IsAdmin, folderID, domain.UpdateFolderRequest{
+		Name:                 formOptionalString(r.Form, "name"),
+		GitRepoID:            formOptionalString(r.Form, "git_repo_id"),
+		GitRootPath:          formOptionalString(r.Form, "git_root_path"),
+		DefaultProjectID:     formOptionalString(r.Form, "default_project_id"),
+		DefaultEnvironmentID: formOptionalString(r.Form, "default_environment_id"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/explore/folders", http.StatusSeeOther)
+}
+func (h *Handler) FoldersMove(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	principal := core.PrincipalFromContext(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	_, err := h.deps.NotebookFolders.MoveFolder(r.Context(), principal.Name, principal.IsAdmin, folderID, domain.MoveFolderRequest{
+		ParentFolderID:       formOptionalString(r.Form, "parent_folder_id"),
+		ConfirmLeaveGit:      formBool(r.Form, "confirm_leave_git"),
+		ConfirmContextChange: formBool(r.Form, "confirm_context_change"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/explore/folders", http.StatusSeeOther)
+}
+func (h *Handler) FoldersDelete(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	principal := core.PrincipalFromContext(r.Context())
+	if err := h.deps.NotebookFolders.DeleteFolder(r.Context(), principal.Name, principal.IsAdmin, folderID); err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/explore/folders", http.StatusSeeOther)
+}
+func (h *Handler) FoldersShare(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	principal := core.PrincipalFromContext(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	_, err := h.deps.NotebookFolders.ShareFolder(r.Context(), principal.Name, principal.IsAdmin, folderID, domain.FolderShare{
+		PrincipalName: formString(r.Form, "principal_name"),
+		Role:          formString(r.Form, "role"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/explore/folders/"+folderID+"/edit", http.StatusSeeOther)
+}
+func (h *Handler) FoldersUnshare(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	targetPrincipal := chi.URLParam(r, "principalName")
+	principal := core.PrincipalFromContext(r.Context())
+	if err := h.deps.NotebookFolders.UnshareFolder(r.Context(), principal.Name, principal.IsAdmin, folderID, targetPrincipal); err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/explore/folders/"+folderID+"/edit", http.StatusSeeOther)
+}
+func (h *Handler) GitReposList(w http.ResponseWriter, r *http.Request) {
+	pageReq := pageFromRequest(r, defaultPageSize)
+	items, total, err := h.deps.GitService.ListGitRepos(r.Context(), pageReq)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	rows := make([]gitRepoRow, 0, len(items))
+	for i := range items {
+		item := items[i]
+		rows = append(rows, gitRepoRow{
+			ID:         item.ID,
+			URL:        "/ui/explore/git-repos/" + item.ID,
+			Repository: item.URL,
+			Branch:     item.Branch,
+			Path:       valueOrDash(item.Path),
+			Owner:      item.Owner,
+			LastSync:   formatTimePtr(item.LastSyncAt),
+		})
+	}
+	core.RenderHTML(w, http.StatusOK, gitReposListPage(gitReposListPageData{
+		Principal: core.PrincipalFromContext(r.Context()),
+		Rows:      rows,
+		Page:      pageReq,
+		Total:     total,
+	}))
+}
+func (h *Handler) GitReposNew(w http.ResponseWriter, r *http.Request) {
+	core.RenderHTML(w, http.StatusOK, gitReposNewPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
+}
+func (h *Handler) GitReposCreate(w http.ResponseWriter, r *http.Request) {
+	principal := principalName(r)
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	repo, err := h.deps.GitService.CreateGitRepo(r.Context(), principal, domain.CreateGitRepoRequest{
+		URL:       formString(r.Form, "url"),
+		Branch:    formString(r.Form, "branch"),
+		Path:      formString(r.Form, "path"),
+		AuthToken: formString(r.Form, "auth_token"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/explore/git-repos/"+repo.ID, http.StatusSeeOther)
+}
+func (h *Handler) GitReposDetail(w http.ResponseWriter, r *http.Request) {
+	gitRepoID := chi.URLParam(r, "gitRepoID")
+	item, err := h.deps.GitService.GetGitRepo(r.Context(), gitRepoID)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	core.RenderHTML(w, http.StatusOK, gitRepoDetailPage(gitRepoDetailPageData{
+		Principal:     core.PrincipalFromContext(r.Context()),
+		ID:            item.ID,
+		URL:           item.URL,
+		Branch:        item.Branch,
+		Path:          valueOrDash(item.Path),
+		Owner:         item.Owner,
+		LastSync:      formatTimePtr(item.LastSyncAt),
+		LastCommit:    strOrDash(item.LastCommit),
+		DeleteURL:     "/ui/explore/git-repos/" + item.ID + "/delete",
+		SyncURL:       "/ui/explore/git-repos/" + item.ID + "/sync",
+		CSRFFieldFunc: h.deps.CSRFFieldProvider(r),
+	}))
+}
+func (h *Handler) GitReposDelete(w http.ResponseWriter, r *http.Request) {
+	gitRepoID := chi.URLParam(r, "gitRepoID")
+	principal := core.PrincipalFromContext(r.Context())
+	if err := h.deps.GitService.DeleteGitRepo(r.Context(), principal.Name, principal.IsAdmin, gitRepoID); err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/explore/git-repos", http.StatusSeeOther)
+}
+func (h *Handler) GitReposSync(w http.ResponseWriter, r *http.Request) {
+	gitRepoID := chi.URLParam(r, "gitRepoID")
+	principal := core.PrincipalFromContext(r.Context())
+	result, err := h.deps.GitService.SyncGitRepo(r.Context(), principal.Name, principal.IsAdmin, gitRepoID)
+	if err != nil {
+		var notImplemented *domain.NotImplementedError
+		if errors.As(err, &notImplemented) {
+			repo, repoErr := h.deps.GitService.GetGitRepo(r.Context(), gitRepoID)
+			if repoErr != nil {
+				renderServiceError(w, repoErr)
+				return
+			}
+			core.RenderHTML(w, http.StatusOK, gitRepoSyncUnavailablePage(gitRepoSyncUnavailablePageData{
+				Principal: core.PrincipalFromContext(r.Context()),
+				GitRepoID: gitRepoID,
+				RepoURL:   repo.URL,
+				Branch:    repo.Branch,
+				Path:      valueOrDash(repo.Path),
+				Message:   notImplemented.Error(),
+			}))
+			return
+		}
+		renderServiceError(w, err)
+		return
+	}
+	core.RenderHTML(w, http.StatusOK, gitRepoSyncResultPage(gitRepoSyncResultPageData{
+		Principal: core.PrincipalFromContext(r.Context()),
+		GitRepoID: gitRepoID,
+		Result:    result,
+	}))
+}
+
+func (h *Handler) folderOptions(ctx context.Context, principal string, isAdmin bool, selectedID string) ([]folderSelectOption, error) {
+	items, err := h.deps.NotebookFolders.ListFoldersForPrincipal(ctx, principal, isAdmin, nil)
+	if err != nil {
+		return nil, err
+	}
+	options := make([]folderSelectOption, 0, len(items))
+	for i := range items {
+		item := items[i]
+		options = append(options, folderSelectOption{
+			ID:          item.ID,
+			Label:       item.Name,
+			Description: item.Path,
+			Selected:    item.ID == selectedID,
+		})
+	}
+	return options, nil
+}
+
+func (h *Handler) gitRepoOptions(ctx context.Context, principal string, isAdmin bool, selectedID string) ([]gitRepoSelectOption, error) {
+	items, _, err := h.deps.GitService.ListGitReposForPrincipal(ctx, principal, isAdmin, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+	if err != nil {
+		return nil, err
+	}
+	options := make([]gitRepoSelectOption, 0, len(items))
+	for i := range items {
+		item := items[i]
+		label := item.URL
+		if strings.TrimSpace(item.Branch) != "" {
+			label += " (" + item.Branch + ")"
+		}
+		options = append(options, gitRepoSelectOption{
+			ID:       item.ID,
+			Label:    label,
+			Selected: item.ID == selectedID,
+		})
+	}
+	return options, nil
+}
+
+func writeDatastarElementPatch(w http.ResponseWriter, r *http.Request, node g.Node) error {
+	sse := datastar.NewSSE(w, r)
+	return sse.PatchElementGostar(node, datastar.WithSelectorID("main-content"))
+}

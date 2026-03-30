@@ -7,10 +7,6 @@ import (
 )
 
 type Routes interface {
-	ExploreList(http.ResponseWriter, *http.Request)
-	ExploreFragment(http.ResponseWriter, *http.Request)
-	ExploreUpdatesStream(http.ResponseWriter, *http.Request)
-	ExploreUpdatesApply(http.ResponseWriter, *http.Request)
 	NotebooksList(http.ResponseWriter, *http.Request)
 	NotebookFoldersList(http.ResponseWriter, *http.Request)
 	NotebookFoldersNew(http.ResponseWriter, *http.Request)
@@ -56,26 +52,6 @@ type Routes interface {
 }
 
 func MountRoutes(r chi.Router, h Routes) {
-	r.Get("/explore", h.ExploreList)
-	r.Get("/explore/", h.ExploreList)
-	r.Get("/explore/fragment", h.ExploreFragment)
-	r.Get("/explore/updates/{streamID}", h.ExploreUpdatesStream)
-	r.Post("/explore/updates/{streamID}", h.ExploreUpdatesApply)
-	r.Get("/explore/folders", h.NotebookFoldersList)
-	r.Get("/explore/folders/new", h.NotebookFoldersNew)
-	r.Post("/explore/folders", h.NotebookFoldersCreate)
-	r.Get("/explore/folders/{folderID}/edit", h.NotebookFoldersEdit)
-	r.Post("/explore/folders/{folderID}/update", h.NotebookFoldersUpdate)
-	r.Post("/explore/folders/{folderID}/move", h.NotebookFoldersMove)
-	r.Post("/explore/folders/{folderID}/delete", h.NotebookFoldersDelete)
-	r.Post("/explore/folders/{folderID}/share", h.NotebookFoldersShare)
-	r.Post("/explore/folders/{folderID}/shares/{principalName}/delete", h.NotebookFoldersUnshare)
-	r.Get("/explore/git-repos", h.NotebookGitReposList)
-	r.Get("/explore/git-repos/new", h.NotebookGitReposNew)
-	r.Post("/explore/git-repos", h.NotebookGitReposCreate)
-	r.Get("/explore/git-repos/{gitRepoID}", h.NotebookGitReposDetail)
-	r.Post("/explore/git-repos/{gitRepoID}/delete", h.NotebookGitReposDelete)
-	r.Post("/explore/git-repos/{gitRepoID}/sync", h.NotebookGitReposSync)
 	r.Get("/notebooks", h.NotebooksList)
 	r.Get("/notebooks/folders", h.NotebookFoldersList)
 	r.Get("/notebooks/folders/new", h.NotebookFoldersNew)

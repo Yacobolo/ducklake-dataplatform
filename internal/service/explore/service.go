@@ -1,4 +1,4 @@
-package notebook
+package explore
 
 import (
 	"context"
@@ -11,9 +11,9 @@ import (
 	"duck-demo/internal/domain"
 )
 
-// ExploreService composes folder-backed and project-backed authored assets into
+// Service composes folder-backed and project-backed authored assets into
 // a single browse surface for the active folder context.
-type ExploreService struct {
+type Service struct {
 	folders        domain.FolderRepository
 	folderShares   domain.FolderShareRepository
 	auth           domain.AuthorizationService
@@ -27,8 +27,8 @@ type ExploreService struct {
 	semantics      domain.SemanticModelRepository
 }
 
-// NewExploreService creates a new ExploreService.
-func NewExploreService(
+// NewService creates a new Service.
+func NewService(
 	folders domain.FolderRepository,
 	notebooks domain.NotebookRepository,
 	dashboards domain.DashboardRepository,
@@ -37,8 +37,8 @@ func NewExploreService(
 	models domain.ModelRepository,
 	macros domain.MacroRepository,
 	semantics domain.SemanticModelRepository,
-) *ExploreService {
-	return &ExploreService{
+) *Service {
+	return &Service{
 		folders:    folders,
 		notebooks:  notebooks,
 		dashboards: dashboards,
@@ -52,18 +52,18 @@ func NewExploreService(
 
 // SetAccessRepositories configures optional ACL repositories used for inherited
 // folder access and direct notebook shares.
-func (s *ExploreService) SetAccessRepositories(folderShares domain.FolderShareRepository, notebookShares domain.NotebookShareRepository) {
+func (s *Service) SetAccessRepositories(folderShares domain.FolderShareRepository, notebookShares domain.NotebookShareRepository) {
 	s.folderShares = folderShares
 	s.notebookShares = notebookShares
 }
 
 // SetAuthorization configures the shared authorization service used for grant-backed folder access.
-func (s *ExploreService) SetAuthorization(auth domain.AuthorizationService) {
+func (s *Service) SetAuthorization(auth domain.AuthorizationService) {
 	s.auth = auth
 }
 
 // List returns normalized authored assets visible within the current folder scope.
-func (s *ExploreService) List(ctx context.Context, principal string, isAdmin bool, filter domain.ExploreFilter) ([]domain.ExploreItem, error) {
+func (s *Service) List(ctx context.Context, principal string, isAdmin bool, filter domain.ExploreFilter) ([]domain.ExploreItem, error) {
 	if s.folders == nil {
 		return nil, domain.ErrNotImplemented("explore folders are not configured")
 	}
@@ -129,62 +129,58 @@ func (s *ExploreService) List(ctx context.Context, principal string, isAdmin boo
 			})
 		}
 	}
-	if !rootBrowse && kindAllowed(selectedKinds, domain.ExploreKindDashboard) {
-		if s.dashboards != nil {
-			dashboards, err := s.dashboards.ListByFolders(ctx, subtreeIDs)
-			if err != nil {
-				return nil, fmt.Errorf("list dashboards by folders: %w", err)
+	if !rootBrowse && kindAllowed(selectedKinds, domain.ExploreKindDashboard) && s.dashboards != nil {
+		dashboards, err := s.dashboards.ListByFolders(ctx, subtreeIDs)
+		if err != nil {
+			return nil, fmt.Errorf("list dashboards by folders: %w", err)
+		}
+		for _, dashboard := range dashboards {
+			if !ownerAllowed(selectedOwners, dashboard.Owner) {
+				continue
 			}
-			for _, dashboard := range dashboards {
-				if !ownerAllowed(selectedOwners, dashboard.Owner) {
-					continue
-				}
-				if !exploreSearchMatch(query, dashboard.Name, dashboard.Owner) {
-					continue
-				}
-				folder := folderByID(subtreeFolders, dashboard.FolderID)
-				items = append(items, domain.ExploreItem{
-					Kind:         domain.ExploreKindDashboard,
-					Scope:        domain.ExploreScopeFolder,
-					ID:           dashboard.ID,
-					Name:         dashboard.Name,
-					Owner:        dashboard.Owner,
-					FolderID:     ptrString(dashboard.FolderID),
-					UpdatedAt:    dashboard.UpdatedAt,
-					GitRepoID:    folderGitRepo(folder, allFolders),
-					Shared:       strings.TrimSpace(dashboard.Owner) != strings.TrimSpace(principal),
-					ProjectBound: folder != nil && s.resolveProjectID(*folder, allFolders) != nil,
-				})
+			if !exploreSearchMatch(query, dashboard.Name, dashboard.Owner) {
+				continue
 			}
+			folder := folderByID(subtreeFolders, dashboard.FolderID)
+			items = append(items, domain.ExploreItem{
+				Kind:         domain.ExploreKindDashboard,
+				Scope:        domain.ExploreScopeFolder,
+				ID:           dashboard.ID,
+				Name:         dashboard.Name,
+				Owner:        dashboard.Owner,
+				FolderID:     ptrString(dashboard.FolderID),
+				UpdatedAt:    dashboard.UpdatedAt,
+				GitRepoID:    folderGitRepo(folder, allFolders),
+				Shared:       strings.TrimSpace(dashboard.Owner) != strings.TrimSpace(principal),
+				ProjectBound: folder != nil && s.resolveProjectID(*folder, allFolders) != nil,
+			})
 		}
 	}
-	if !rootBrowse && kindAllowed(selectedKinds, domain.ExploreKindPipeline) {
-		if s.pipelines != nil {
-			pipelines, err := s.pipelines.ListPipelinesByFolders(ctx, subtreeIDs)
-			if err != nil {
-				return nil, fmt.Errorf("list pipelines by folders: %w", err)
+	if !rootBrowse && kindAllowed(selectedKinds, domain.ExploreKindPipeline) && s.pipelines != nil {
+		pipelines, err := s.pipelines.ListPipelinesByFolders(ctx, subtreeIDs)
+		if err != nil {
+			return nil, fmt.Errorf("list pipelines by folders: %w", err)
+		}
+		for _, pipeline := range pipelines {
+			if !ownerAllowed(selectedOwners, pipeline.CreatedBy) {
+				continue
 			}
-			for _, pipeline := range pipelines {
-				if !ownerAllowed(selectedOwners, pipeline.CreatedBy) {
-					continue
-				}
-				if !exploreSearchMatch(query, pipeline.Name, pipeline.CreatedBy) {
-					continue
-				}
-				folder := folderByID(subtreeFolders, pipeline.FolderID)
-				items = append(items, domain.ExploreItem{
-					Kind:         domain.ExploreKindPipeline,
-					Scope:        domain.ExploreScopeFolder,
-					ID:           pipeline.ID,
-					Name:         pipeline.Name,
-					Owner:        pipeline.CreatedBy,
-					FolderID:     ptrString(pipeline.FolderID),
-					UpdatedAt:    pipeline.UpdatedAt,
-					GitRepoID:    folderGitRepo(folder, allFolders),
-					Shared:       strings.TrimSpace(pipeline.CreatedBy) != strings.TrimSpace(principal),
-					ProjectBound: folder != nil && s.resolveProjectID(*folder, allFolders) != nil,
-				})
+			if !exploreSearchMatch(query, pipeline.Name, pipeline.CreatedBy) {
+				continue
 			}
+			folder := folderByID(subtreeFolders, pipeline.FolderID)
+			items = append(items, domain.ExploreItem{
+				Kind:         domain.ExploreKindPipeline,
+				Scope:        domain.ExploreScopeFolder,
+				ID:           pipeline.ID,
+				Name:         pipeline.Name,
+				Owner:        pipeline.CreatedBy,
+				FolderID:     ptrString(pipeline.FolderID),
+				UpdatedAt:    pipeline.UpdatedAt,
+				GitRepoID:    folderGitRepo(folder, allFolders),
+				Shared:       strings.TrimSpace(pipeline.CreatedBy) != strings.TrimSpace(principal),
+				ProjectBound: folder != nil && s.resolveProjectID(*folder, allFolders) != nil,
+			})
 		}
 	}
 
@@ -297,7 +293,7 @@ func (s *ExploreService) List(ctx context.Context, principal string, isAdmin boo
 	return items, nil
 }
 
-func (s *ExploreService) accessibleFolders(ctx context.Context, principal string, isAdmin bool, allFolders []domain.Folder) ([]domain.Folder, *principalAccessResolver, error) {
+func (s *Service) accessibleFolders(ctx context.Context, principal string, isAdmin bool, allFolders []domain.Folder) ([]domain.Folder, *principalAccessResolver, error) {
 	resolver, err := newPrincipalAccessResolver(ctx, s.folders, s.folderShares, s.auth, s.notebookShares, principal, isAdmin)
 	if err != nil {
 		return nil, nil, fmt.Errorf("build access resolver: %w", err)
@@ -319,7 +315,7 @@ func (s *ExploreService) accessibleFolders(ctx context.Context, principal string
 	return accessible, resolver, nil
 }
 
-func (s *ExploreService) resolveSelectedFolders(ctx context.Context, selectedFolderID string, accessible []domain.Folder, allFolders []domain.Folder) (*domain.Folder, []domain.Folder, error) {
+func (s *Service) resolveSelectedFolders(ctx context.Context, selectedFolderID string, accessible []domain.Folder, allFolders []domain.Folder) (*domain.Folder, []domain.Folder, error) {
 	if strings.TrimSpace(selectedFolderID) == "" {
 		return nil, accessible, nil
 	}
@@ -344,7 +340,7 @@ func (s *ExploreService) resolveSelectedFolders(ctx context.Context, selectedFol
 	return selected, subtree, nil
 }
 
-func (s *ExploreService) resolveProjectID(folder domain.Folder, allFolders []domain.Folder) *string {
+func (s *Service) resolveProjectID(folder domain.Folder, allFolders []domain.Folder) *string {
 	for _, ancestor := range ancestorsForFolder(folder, allFolders) {
 		if ancestor.DefaultProjectID != nil && strings.TrimSpace(*ancestor.DefaultProjectID) != "" {
 			return ancestor.DefaultProjectID
@@ -353,7 +349,7 @@ func (s *ExploreService) resolveProjectID(folder domain.Folder, allFolders []dom
 	return nil
 }
 
-func (s *ExploreService) resolveProjectName(ctx context.Context, projectID string) (*string, error) {
+func (s *Service) resolveProjectName(ctx context.Context, projectID string) (*string, error) {
 	if s.projects == nil || strings.TrimSpace(projectID) == "" {
 		return nil, nil
 	}
@@ -380,11 +376,12 @@ func normalizeExploreKinds(kinds []string) []string {
 			return nil
 		case domain.ExploreKindFolder, domain.ExploreKindNotebook, domain.ExploreKindModel, domain.ExploreKindMacro,
 			domain.ExploreKindDashboard, domain.ExploreKindPipeline, domain.ExploreKindSemanticModel:
-			if _, ok := seen[strings.TrimSpace(kind)]; ok {
+			kind = strings.TrimSpace(kind)
+			if _, ok := seen[kind]; ok {
 				continue
 			}
-			seen[strings.TrimSpace(kind)] = struct{}{}
-			normalized = append(normalized, strings.TrimSpace(kind))
+			seen[kind] = struct{}{}
+			normalized = append(normalized, kind)
 		}
 	}
 	return normalized
