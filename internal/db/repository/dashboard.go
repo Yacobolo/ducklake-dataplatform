@@ -30,6 +30,7 @@ func (r *DashboardRepo) Create(ctx context.Context, d *domain.Dashboard) (*domai
 		Name:        d.Name,
 		Description: d.Description,
 		Owner:       d.Owner,
+		FolderID:    nullStringPtr(stringPtr(d.FolderID)),
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -48,14 +49,18 @@ func (r *DashboardRepo) GetByID(ctx context.Context, id string) (*domain.Dashboa
 
 // List returns dashboards matching the optional owner filter.
 func (r *DashboardRepo) List(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Dashboard, int64, error) {
-	total, err := r.q.CountDashboards(ctx, nullableString(owner))
+	total, err := r.q.CountDashboards(ctx, dbstore.CountDashboardsParams{
+		Owner:    nullableString(owner),
+		FolderID: nil,
+	})
 	if err != nil {
 		return nil, 0, mapDBError(err)
 	}
 	rows, err := r.q.ListDashboards(ctx, dbstore.ListDashboardsParams{
-		Owner:  nullableString(owner),
-		Limit:  int64(page.Limit()),
-		Offset: int64(page.Offset()),
+		Owner:    nullableString(owner),
+		FolderID: nil,
+		Limit:    int64(page.Limit()),
+		Offset:   int64(page.Offset()),
 	})
 	if err != nil {
 		return nil, 0, mapDBError(err)
@@ -65,6 +70,25 @@ func (r *DashboardRepo) List(ctx context.Context, owner *string, page domain.Pag
 		out = append(out, *dashboardFromDB(row))
 	}
 	return out, total, nil
+}
+
+func (r *DashboardRepo) ListByFolders(ctx context.Context, folderIDs []string) ([]domain.Dashboard, error) {
+	if len(folderIDs) == 0 {
+		return []domain.Dashboard{}, nil
+	}
+	params := make([]sql.NullString, 0, len(folderIDs))
+	for _, folderID := range folderIDs {
+		params = append(params, sql.NullString{String: folderID, Valid: folderID != ""})
+	}
+	rows, err := r.q.ListDashboardsByFolders(ctx, params)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	out := make([]domain.Dashboard, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, *dashboardFromDB(row))
+	}
+	return out, nil
 }
 
 // Update applies partial updates to a dashboard.
@@ -84,6 +108,7 @@ func (r *DashboardRepo) Update(ctx context.Context, id string, req domain.Update
 	row, err := r.q.UpdateDashboard(ctx, dbstore.UpdateDashboardParams{
 		Name:        name,
 		Description: description,
+		FolderID:    nullStringPtr(req.FolderID),
 		ID:          id,
 	})
 	if err != nil {

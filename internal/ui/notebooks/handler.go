@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -20,87 +21,79 @@ type Handler struct{ deps *core.Dependencies }
 
 func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
-func (h *Handler) NotebooksList(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ExploreList(w http.ResponseWriter, r *http.Request) {
 	principal := core.PrincipalFromContext(r.Context())
+	if h.deps.NotebookExplore == nil {
+		renderServiceError(w, domain.ErrNotImplemented("explore service is not configured"))
+		return
+	}
+
 	pageReq := pageFromRequest(r, 30)
 	selectedFolderID := strings.TrimSpace(r.URL.Query().Get("folder_id"))
-	allItems, _, err := h.deps.Notebook.ListNotebooksForPrincipal(r.Context(), principal.Name, principal.IsAdmin, nil, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+	selectedKind := strings.TrimSpace(r.URL.Query().Get("kind"))
+	allItems, err := h.deps.NotebookExplore.List(r.Context(), principal.Name, principal.IsAdmin, domain.ExploreFilter{
+		FolderID: selectedFolderID,
+		Kind:     selectedKind,
+		Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
+	})
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
+
 	folderPaths, folderItems, err := h.folderPathMap(r.Context(), principal.Name, principal.IsAdmin)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	selectedFolderPath := strings.TrimSpace(folderPaths[selectedFolderID])
-
-	filtered := make([]domain.Notebook, 0, len(allItems))
-	for i := range allItems {
-		item := allItems[i]
-		itemPath := strings.TrimSpace(folderPaths[item.FolderID])
-		if selectedFolderPath == "" || itemPath == selectedFolderPath || strings.HasPrefix(itemPath, selectedFolderPath+"/") {
-			filtered = append(filtered, item)
-		}
-	}
 
 	offset := pageReq.Offset()
-	if offset > len(filtered) {
-		offset = len(filtered)
+	if offset > len(allItems) {
+		offset = len(allItems)
 	}
 	end := offset + pageReq.Limit()
-	if end > len(filtered) {
-		end = len(filtered)
+	if end > len(allItems) {
+		end = len(allItems)
 	}
-	items := filtered[offset:end]
-	folderNav := h.folderNavItems(folderItems, folderPaths, allItems, selectedFolderID)
-
-	rows := make([]notebookListRow, 0, len(items))
+	items := allItems[offset:end]
+	rows := make([]exploreListRow, 0, len(items)+8)
+	if pageReq.Offset() == 0 && normalizeExploreKind(selectedKind) == domain.ExploreKindAll {
+		for _, folderRow := range h.exploreFolderRows(folderItems, folderPaths, principal.Name, selectedFolderID) {
+			rows = append(rows, folderRow)
+		}
+	}
 	for i := range items {
-		n := items[i]
-		rows = append(rows, notebookListRow{
-			Name:    n.Name,
-			URL:     "/ui/notebooks/" + n.ID,
-			Owner:   n.Owner,
-			Folder:  valueOrDash(folderPaths[n.FolderID]),
-			Updated: formatTime(n.UpdatedAt),
+		item := items[i]
+		rows = append(rows, exploreListRow{
+			Name:         item.Name,
+			URL:          exploreItemURL(item),
+			Kind:         item.Kind,
+			Owner:        item.Owner,
+			Scope:        item.Scope,
+			Folder:       valueOrDash(folderPaths[stringValue(item.FolderID)]),
+			Project:      stringValue(item.ProjectName),
+			Updated:      formatTime(item.UpdatedAt),
+			Shared:       item.Shared,
+			ProjectBound: item.ProjectBound,
 		})
 	}
 
-	core.RenderHTML(w, http.StatusOK, notebooksListPage(principal, rows, folderNav, selectedFolderID, pageReq, int64(len(filtered))))
+	core.RenderHTML(w, http.StatusOK, exploreListPage(principal, rows, h.exploreBreadcrumbItems(folderItems, selectedFolderID, pageReq, selectedKind), selectedFolderID, selectedKind, pageReq, int64(len(allItems))))
+}
+
+func (h *Handler) NotebooksList(w http.ResponseWriter, r *http.Request) {
+	target := explorePageURL(pageFromRequest(r, 30), selectedExploreKind(r, domain.ExploreKindNotebook), strings.TrimSpace(r.URL.Query().Get("folder_id")))
+	http.Redirect(w, r, target, http.StatusSeeOther)
 }
 
 func (h *Handler) NotebookFoldersList(w http.ResponseWriter, r *http.Request) {
-	principal := core.PrincipalFromContext(r.Context())
-	items, err := h.deps.NotebookFolders.ListFoldersForPrincipal(r.Context(), principal.Name, principal.IsAdmin, nil)
-	if err != nil {
-		renderServiceError(w, err)
-		return
-	}
-
-	rows := make([]folderListRow, 0, len(items))
-	for i := range items {
-		item := items[i]
-		rows = append(rows, folderListRow{
-			Name:          item.Name,
-			URL:           "/ui/notebooks/folders/" + item.ID + "/edit",
-			Owner:         item.Owner,
-			Path:          item.Path,
-			SystemRole:    stringPtr(item.SystemRole),
-			ProjectID:     stringPtr(item.DefaultProjectID),
-			EnvironmentID: stringPtr(item.DefaultEnvironmentID),
-			GitRepoID:     stringPtr(item.GitRepoID),
-			CanManage:     item.SystemRole == nil || *item.SystemRole != domain.FolderSystemRolePersonalRoot,
-			Updated:       formatTime(item.UpdatedAt),
-		})
-	}
-	core.RenderHTML(w, http.StatusOK, notebookFoldersListPage(principal, rows))
+	http.Redirect(w, r, "/ui/explore", http.StatusSeeOther)
 }
 
 func (h *Handler) NotebookFoldersNew(w http.ResponseWriter, r *http.Request) {
 	principal := core.PrincipalFromContext(r.Context())
-	folders, err := h.folderOptions(r.Context(), principal.Name, principal.IsAdmin, "")
+	selectedParentID := strings.TrimSpace(r.URL.Query().Get("parent_folder_id"))
+	folders, err := h.folderOptions(r.Context(), principal.Name, principal.IsAdmin, selectedParentID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -130,7 +123,7 @@ func (h *Handler) NotebookFoldersCreate(w http.ResponseWriter, r *http.Request) 
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/notebooks/folders", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/explore/folders", http.StatusSeeOther)
 }
 
 func (h *Handler) NotebookFoldersEdit(w http.ResponseWriter, r *http.Request) {
@@ -150,12 +143,18 @@ func (h *Handler) NotebookFoldersEdit(w http.ResponseWriter, r *http.Request) {
 		renderServiceError(w, err)
 		return
 	}
+	parentOptions, err := h.folderOptions(r.Context(), principal.Name, principal.IsAdmin, stringValue(folder.ParentFolderID))
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	parentOptions = filterFolderOptions(parentOptions, folder.ID)
 	shares, err := h.deps.NotebookFolders.ListFolderShares(r.Context(), principal.Name, principal.IsAdmin, folderID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	core.RenderHTML(w, http.StatusOK, notebookFoldersEditPage(principal, folder, repos, folderShareRows(folderID, shares), h.deps.CSRFFieldProvider(r)))
+	core.RenderHTML(w, http.StatusOK, notebookFoldersEditPage(principal, folder, parentOptions, repos, folderShareRows(folderID, shares), h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) NotebookFoldersUpdate(w http.ResponseWriter, r *http.Request) {
@@ -175,7 +174,25 @@ func (h *Handler) NotebookFoldersUpdate(w http.ResponseWriter, r *http.Request) 
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/notebooks/folders", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/explore/folders", http.StatusSeeOther)
+}
+
+func (h *Handler) NotebookFoldersMove(w http.ResponseWriter, r *http.Request) {
+	folderID := chi.URLParam(r, "folderID")
+	principal := core.PrincipalFromContext(r.Context())
+	if !parseFormOrRenderBadRequest(w, r) {
+		return
+	}
+	_, err := h.deps.NotebookFolders.MoveFolder(r.Context(), principal.Name, principal.IsAdmin, folderID, domain.MoveFolderRequest{
+		ParentFolderID:       formOptionalString(r.Form, "parent_folder_id"),
+		ConfirmLeaveGit:      formBool(r.Form, "confirm_leave_git"),
+		ConfirmContextChange: formBool(r.Form, "confirm_context_change"),
+	})
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+	http.Redirect(w, r, "/ui/explore/folders", http.StatusSeeOther)
 }
 
 func (h *Handler) NotebookFoldersDelete(w http.ResponseWriter, r *http.Request) {
@@ -185,7 +202,7 @@ func (h *Handler) NotebookFoldersDelete(w http.ResponseWriter, r *http.Request) 
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/notebooks/folders", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/explore/folders", http.StatusSeeOther)
 }
 
 func (h *Handler) NotebookFoldersShare(w http.ResponseWriter, r *http.Request) {
@@ -202,7 +219,7 @@ func (h *Handler) NotebookFoldersShare(w http.ResponseWriter, r *http.Request) {
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/notebooks/folders/"+folderID+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/explore/folders/"+folderID+"/edit", http.StatusSeeOther)
 }
 
 func (h *Handler) NotebookFoldersUnshare(w http.ResponseWriter, r *http.Request) {
@@ -213,7 +230,7 @@ func (h *Handler) NotebookFoldersUnshare(w http.ResponseWriter, r *http.Request)
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/notebooks/folders/"+folderID+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/explore/folders/"+folderID+"/edit", http.StatusSeeOther)
 }
 
 func (h *Handler) NotebookGitReposList(w http.ResponseWriter, r *http.Request) {
@@ -229,7 +246,7 @@ func (h *Handler) NotebookGitReposList(w http.ResponseWriter, r *http.Request) {
 		item := items[i]
 		rows = append(rows, gitRepoRow{
 			ID:         item.ID,
-			URL:        "/ui/notebooks/git-repos/" + item.ID,
+			URL:        "/ui/explore/git-repos/" + item.ID,
 			Repository: item.URL,
 			Branch:     item.Branch,
 			Path:       valueOrDash(item.Path),
@@ -264,7 +281,7 @@ func (h *Handler) NotebookGitReposCreate(w http.ResponseWriter, r *http.Request)
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/notebooks/git-repos/"+repo.ID, http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/explore/git-repos/"+repo.ID, http.StatusSeeOther)
 }
 
 func (h *Handler) NotebookGitReposDetail(w http.ResponseWriter, r *http.Request) {
@@ -283,8 +300,8 @@ func (h *Handler) NotebookGitReposDetail(w http.ResponseWriter, r *http.Request)
 		Owner:         item.Owner,
 		LastSync:      formatTimePtr(item.LastSyncAt),
 		LastCommit:    strOrDash(item.LastCommit),
-		DeleteURL:     "/ui/notebooks/git-repos/" + item.ID + "/delete",
-		SyncURL:       "/ui/notebooks/git-repos/" + item.ID + "/sync",
+		DeleteURL:     "/ui/explore/git-repos/" + item.ID + "/delete",
+		SyncURL:       "/ui/explore/git-repos/" + item.ID + "/sync",
 		CSRFFieldFunc: h.deps.CSRFFieldProvider(r),
 	}))
 }
@@ -296,7 +313,7 @@ func (h *Handler) NotebookGitReposDelete(w http.ResponseWriter, r *http.Request)
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/notebooks/git-repos", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/explore/git-repos", http.StatusSeeOther)
 }
 
 func (h *Handler) NotebookGitReposSync(w http.ResponseWriter, r *http.Request) {
@@ -388,11 +405,11 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	gitRepoURL := "/ui/notebooks/git-repos"
+	gitRepoURL := "/ui/explore/git-repos"
 	if notebookContext != nil && notebookContext.EffectiveGitRepoID != nil && *notebookContext.EffectiveGitRepoID != "" {
-		gitRepoURL = "/ui/notebooks/git-repos/" + *notebookContext.EffectiveGitRepoID
+		gitRepoURL = "/ui/explore/git-repos/" + *notebookContext.EffectiveGitRepoID
 	} else if nb.GitRepoID != nil && *nb.GitRepoID != "" {
-		gitRepoURL = "/ui/notebooks/git-repos/" + *nb.GitRepoID
+		gitRepoURL = "/ui/explore/git-repos/" + *nb.GitRepoID
 	}
 
 	selectedCatalog := strings.TrimSpace(r.URL.Query().Get("catalog"))
@@ -738,12 +755,61 @@ func (h *Handler) folderPathMap(ctx context.Context, principal string, isAdmin b
 		if err != nil {
 			return nil, nil, err
 		}
-		for i := range items {
-			paths[items[i].ID] = items[i].Path
-			ordered = append(ordered, items[i])
-		}
+		ordered = append(ordered, items...)
+	}
+	for id, label := range folderDisplayPathMap(ordered) {
+		paths[id] = label
 	}
 	return paths, ordered, nil
+}
+
+func folderDisplayPathMap(folders []domain.Folder) map[string]string {
+	byID := make(map[string]domain.Folder, len(folders))
+	for i := range folders {
+		byID[folders[i].ID] = folders[i]
+	}
+
+	paths := make(map[string]string, len(folders))
+	var build func(string) string
+	build = func(id string) string {
+		if path, ok := paths[id]; ok {
+			return path
+		}
+		folder, ok := byID[id]
+		if !ok {
+			return ""
+		}
+		label := strings.TrimSpace(folder.Name)
+		if label == "" {
+			label = id
+		}
+		parentID := stringValue(folder.ParentFolderID)
+		if parentID == "" {
+			paths[id] = label
+			return label
+		}
+		parent, ok := byID[parentID]
+		if !ok {
+			paths[id] = label
+			return label
+		}
+		parentPath := build(parentID)
+		if parent.SystemRole != nil && *parent.SystemRole == domain.FolderSystemRolePersonalRoot {
+			paths[id] = label
+			return label
+		}
+		if parentPath == "" {
+			paths[id] = label
+			return label
+		}
+		paths[id] = parentPath + " / " + label
+		return paths[id]
+	}
+
+	for id := range byID {
+		build(id)
+	}
+	return paths
 }
 
 func (h *Handler) gitRepoOptions(ctx context.Context, principal string, isAdmin bool, selectedID string) ([]gitRepoSelectOption, error) {
@@ -796,6 +862,192 @@ func (h *Handler) folderNavItems(folders []domain.Folder, folderPaths map[string
 		})
 	}
 	return items
+}
+
+func (h *Handler) exploreFolderNavItems(folders []domain.Folder, folderPaths map[string]string, items []domain.ExploreItem, selectedFolderID string, selectedKind string) []notebookFolderNavItem {
+	kind := normalizeExploreKind(selectedKind)
+	nav := make([]notebookFolderNavItem, 0, len(folders)+1)
+	nav = append(nav, notebookFolderNavItem{
+		Label:  "All assets",
+		URL:    explorePageURL(domain.PageRequest{MaxResults: domain.DefaultMaxResults}, kind, ""),
+		Depth:  0,
+		Count:  fmt.Sprintf("%d", len(items)),
+		Active: selectedFolderID == "",
+	})
+	for i := range folders {
+		folder := folders[i]
+		count := 0
+		folderPath := strings.TrimSpace(folderPaths[folder.ID])
+		for j := range items {
+			itemFolderPath := strings.TrimSpace(folderPaths[stringValue(items[j].FolderID)])
+			if itemFolderPath == "" {
+				continue
+			}
+			if itemFolderPath == folderPath || strings.HasPrefix(itemFolderPath, folderPath+"/") {
+				count++
+			}
+		}
+		nav = append(nav, notebookFolderNavItem{
+			Label:  folder.Name,
+			URL:    explorePageURL(domain.PageRequest{MaxResults: domain.DefaultMaxResults}, kind, folder.ID),
+			Depth:  folder.Depth,
+			Count:  fmt.Sprintf("%d", count),
+			Active: folder.ID == selectedFolderID,
+		})
+	}
+	return nav
+}
+
+func (h *Handler) exploreFolderRows(folders []domain.Folder, folderPaths map[string]string, principal, selectedFolderID string) []exploreListRow {
+	visible := make([]domain.Folder, 0, len(folders))
+	for i := range folders {
+		folder := folders[i]
+		if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot {
+			continue
+		}
+		if selectedFolderID == "" {
+			if folder.ParentFolderID != nil && strings.TrimSpace(*folder.ParentFolderID) != "" {
+				continue
+			}
+		} else if stringValue(folder.ParentFolderID) != selectedFolderID {
+			continue
+		}
+		visible = append(visible, folder)
+	}
+
+	sort.Slice(visible, func(i, j int) bool {
+		return strings.ToLower(visible[i].Name) < strings.ToLower(visible[j].Name)
+	})
+
+	rows := make([]exploreListRow, 0, len(visible))
+	for _, folder := range visible {
+		contextParts := make([]string, 0, 3)
+		if folder.DefaultProjectID != nil && strings.TrimSpace(*folder.DefaultProjectID) != "" {
+			contextParts = append(contextParts, "Project "+strings.TrimSpace(*folder.DefaultProjectID))
+		}
+		if folder.DefaultEnvironmentID != nil && strings.TrimSpace(*folder.DefaultEnvironmentID) != "" {
+			contextParts = append(contextParts, "Env "+strings.TrimSpace(*folder.DefaultEnvironmentID))
+		}
+		if folder.GitRepoID != nil && strings.TrimSpace(*folder.GitRepoID) != "" {
+			contextParts = append(contextParts, "Git-backed")
+		}
+		scope := "Folder"
+		if len(contextParts) > 0 {
+			scope = strings.Join(contextParts, " · ")
+		}
+		location := "Top level"
+		if parentID := stringValue(folder.ParentFolderID); parentID != "" {
+			location = valueOrDash(folderPaths[parentID])
+		}
+		rows = append(rows, exploreListRow{
+			Name:         folder.Name,
+			URL:          explorePageURL(domain.PageRequest{MaxResults: domain.DefaultMaxResults}, domain.ExploreKindAll, folder.ID),
+			MetaURL:      "/ui/explore/folders/" + folder.ID + "/edit",
+			MetaLabel:    "Settings",
+			Kind:         "folder",
+			Owner:        folder.Owner,
+			Scope:        scope,
+			Folder:       location,
+			Updated:      formatTime(folder.UpdatedAt),
+			Shared:       strings.TrimSpace(folder.Owner) != strings.TrimSpace(principal),
+			ProjectBound: folder.DefaultProjectID != nil && strings.TrimSpace(*folder.DefaultProjectID) != "",
+		})
+	}
+	return rows
+}
+
+func (h *Handler) exploreBreadcrumbItems(folders []domain.Folder, selectedFolderID string, page domain.PageRequest, selectedKind string) []exploreBreadcrumbItem {
+	kind := normalizeExploreKind(selectedKind)
+	breadcrumbs := []exploreBreadcrumbItem{{
+		Label:   "All assets",
+		URL:     explorePageURL(domain.PageRequest{MaxResults: page.Limit()}, kind, ""),
+		Current: selectedFolderID == "",
+	}}
+	if strings.TrimSpace(selectedFolderID) == "" {
+		return breadcrumbs
+	}
+
+	byID := make(map[string]domain.Folder, len(folders))
+	for i := range folders {
+		byID[folders[i].ID] = folders[i]
+	}
+
+	chain := make([]domain.Folder, 0, 4)
+	currentID := strings.TrimSpace(selectedFolderID)
+	for currentID != "" {
+		folder, ok := byID[currentID]
+		if !ok {
+			break
+		}
+		chain = append(chain, folder)
+		currentID = stringValue(folder.ParentFolderID)
+	}
+	for i, j := 0, len(chain)-1; i < j; i, j = i+1, j-1 {
+		chain[i], chain[j] = chain[j], chain[i]
+	}
+	for i := range chain {
+		folder := chain[i]
+		breadcrumbs = append(breadcrumbs, exploreBreadcrumbItem{
+			Label:   folder.Name,
+			URL:     explorePageURL(domain.PageRequest{MaxResults: page.Limit()}, kind, folder.ID),
+			Current: i == len(chain)-1,
+		})
+	}
+	return breadcrumbs
+}
+
+func selectedExploreKind(r *http.Request, fallback string) string {
+	kind := strings.TrimSpace(r.URL.Query().Get("kind"))
+	if kind == "" {
+		return fallback
+	}
+	return kind
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(*value)
+}
+
+func filterFolderOptions(options []folderSelectOption, excludeIDs ...string) []folderSelectOption {
+	exclude := make(map[string]struct{}, len(excludeIDs))
+	for _, id := range excludeIDs {
+		if strings.TrimSpace(id) != "" {
+			exclude[id] = struct{}{}
+		}
+	}
+	filtered := make([]folderSelectOption, 0, len(options))
+	for _, option := range options {
+		if _, skip := exclude[option.ID]; skip {
+			continue
+		}
+		filtered = append(filtered, option)
+	}
+	return filtered
+}
+
+func exploreItemURL(item domain.ExploreItem) string {
+	switch item.Kind {
+	case domain.ExploreKindNotebook:
+		return "/ui/notebooks/" + item.ID
+	case domain.ExploreKindDashboard:
+		return "/ui/dashboards/" + item.ID
+	case domain.ExploreKindPipeline:
+		return "/ui/pipelines/" + item.Name
+	case domain.ExploreKindModel:
+		if item.ProjectName != nil && strings.TrimSpace(*item.ProjectName) != "" {
+			return "/ui/models/" + *item.ProjectName + "/" + item.Name
+		}
+	case domain.ExploreKindMacro:
+		return "/ui/macros/" + item.Name
+	case domain.ExploreKindSemanticModel:
+		if item.ProjectName != nil && strings.TrimSpace(*item.ProjectName) != "" {
+			return "/ui/semantic/models/" + *item.ProjectName + "/" + item.Name
+		}
+	}
+	return "#"
 }
 
 func (h *Handler) NotebookCellsNew(w http.ResponseWriter, r *http.Request) {

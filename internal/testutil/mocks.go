@@ -256,6 +256,7 @@ type MockFolderRepo struct {
 	ListAllFn            func(ctx context.Context) ([]domain.Folder, error)
 	ListByOwnerFn        func(ctx context.Context, owner string) ([]domain.Folder, error)
 	UpdateFn             func(ctx context.Context, id string, req domain.UpdateFolderRequest) (*domain.Folder, error)
+	MoveFn               func(ctx context.Context, id string, parentFolderID *string) (*domain.Folder, error)
 	DeleteFn             func(ctx context.Context, id string) error
 	EnsurePersonalRootFn func(ctx context.Context, owner string) (*domain.Folder, error)
 	EnsureGitSyncRootFn  func(ctx context.Context, owner string, repo *domain.GitRepo) (*domain.Folder, error)
@@ -295,6 +296,13 @@ func (m *MockFolderRepo) Update(ctx context.Context, id string, req domain.Updat
 		return m.UpdateFn(ctx, id, req)
 	}
 	panic("unexpected call to MockFolderRepo.Update")
+}
+
+func (m *MockFolderRepo) Move(ctx context.Context, id string, parentFolderID *string) (*domain.Folder, error) {
+	if m.MoveFn != nil {
+		return m.MoveFn(ctx, id, parentFolderID)
+	}
+	panic("unexpected call to MockFolderRepo.Move")
 }
 
 func (m *MockFolderRepo) Delete(ctx context.Context, id string) error {
@@ -1145,6 +1153,7 @@ type MockNotebookRepo struct {
 	CreateNotebookFn     func(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error)
 	GetNotebookFn        func(ctx context.Context, id string) (*domain.Notebook, error)
 	ListNotebooksFn      func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
+	ListByFoldersFn      func(ctx context.Context, folderIDs []string) ([]domain.Notebook, error)
 	UpdateNotebookFn     func(ctx context.Context, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
 	UpdateNotebookSyncFn func(ctx context.Context, nb *domain.Notebook) (*domain.Notebook, error)
 	DeleteNotebookFn     func(ctx context.Context, id string) error
@@ -1181,6 +1190,13 @@ func (m *MockNotebookRepo) ListNotebooks(ctx context.Context, owner *string, pag
 		return m.ListNotebooksFn(ctx, owner, page)
 	}
 	panic("unexpected call to MockNotebookRepo.ListNotebooks")
+}
+
+func (m *MockNotebookRepo) ListByFolders(ctx context.Context, folderIDs []string) ([]domain.Notebook, error) {
+	if m.ListByFoldersFn != nil {
+		return m.ListByFoldersFn(ctx, folderIDs)
+	}
+	panic("unexpected call to MockNotebookRepo.ListByFolders")
 }
 
 // UpdateNotebook implements the interface method for testing.
@@ -1386,6 +1402,7 @@ type MockPipelineRepo struct {
 	GetPipelineByIDFn        func(ctx context.Context, id string) (*domain.Pipeline, error)
 	GetPipelineByNameFn      func(ctx context.Context, name string) (*domain.Pipeline, error)
 	ListPipelinesFn          func(ctx context.Context, page domain.PageRequest) ([]domain.Pipeline, int64, error)
+	ListPipelinesByFoldersFn func(ctx context.Context, folderIDs []string) ([]domain.Pipeline, error)
 	UpdatePipelineFn         func(ctx context.Context, id string, req domain.UpdatePipelineRequest) (*domain.Pipeline, error)
 	DeletePipelineFn         func(ctx context.Context, id string) error
 	ListScheduledPipelinesFn func(ctx context.Context) ([]domain.Pipeline, error)
@@ -1426,6 +1443,13 @@ func (m *MockPipelineRepo) ListPipelines(ctx context.Context, page domain.PageRe
 		return m.ListPipelinesFn(ctx, page)
 	}
 	panic("unexpected call to MockPipelineRepo.ListPipelines")
+}
+
+func (m *MockPipelineRepo) ListPipelinesByFolders(ctx context.Context, folderIDs []string) ([]domain.Pipeline, error) {
+	if m.ListPipelinesByFoldersFn != nil {
+		return m.ListPipelinesByFoldersFn(ctx, folderIDs)
+	}
+	panic("unexpected call to MockPipelineRepo.ListPipelinesByFolders")
 }
 
 // UpdatePipeline implements the interface method for testing.

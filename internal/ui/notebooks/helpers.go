@@ -161,7 +161,7 @@ func folderShareRows(folderID string, shares []domain.FolderShare) []accessShare
 		rows = append(rows, accessShareRow{
 			Principal: share.PrincipalName,
 			Role:      share.Role,
-			DeleteURL: "/ui/notebooks/folders/" + folderID + "/shares/" + url.PathEscape(share.PrincipalName) + "/delete",
+			DeleteURL: "/ui/explore/folders/" + folderID + "/shares/" + url.PathEscape(share.PrincipalName) + "/delete",
 		})
 	}
 	return rows
@@ -205,6 +205,18 @@ func formBool(values map[string][]string, key string) bool {
 	}
 	value := strings.TrimSpace(strings.ToLower(first(values[key])))
 	return value == "true" || value == "1" || value == "on" || value == "yes"
+}
+
+func normalizeExploreKind(kind string) string {
+	switch strings.TrimSpace(kind) {
+	case "", domain.ExploreKindAll:
+		return domain.ExploreKindAll
+	case domain.ExploreKindNotebook, domain.ExploreKindModel, domain.ExploreKindMacro,
+		domain.ExploreKindDashboard, domain.ExploreKindPipeline, domain.ExploreKindSemanticModel:
+		return strings.TrimSpace(kind)
+	default:
+		return domain.ExploreKindAll
+	}
 }
 
 type sqlComputeTarget struct {

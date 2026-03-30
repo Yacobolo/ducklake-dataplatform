@@ -44,6 +44,7 @@ type Dependencies struct {
 	Backfill            *orchestration.BackfillService
 	Notebook            *notebook.Service
 	NotebookFolders     *notebook.FolderService
+	NotebookExplore     *notebook.ExploreService
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
 	Macro               *macro.Service

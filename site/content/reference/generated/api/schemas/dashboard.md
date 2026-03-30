@@ -10,6 +10,7 @@
 | --- | --- | --- | --- |
 | `created_at` | `string` | `false` | - |
 | `description` | `string` | `false` | - |
+| `folder_id` | `string` | `false` | - |
 | `id` | `string` | `false` | - |
 | `name` | `string` | `false` | - |
 | `owner` | `string` | `false` | - |

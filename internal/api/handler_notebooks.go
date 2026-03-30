@@ -35,10 +35,15 @@ type notebookFolderService interface {
 	GetFolderForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Folder, error)
 	ListFoldersForPrincipal(ctx context.Context, principal string, isAdmin bool, owner *string) ([]domain.Folder, error)
 	UpdateFolder(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateFolderRequest) (*domain.Folder, error)
+	MoveFolder(ctx context.Context, principal string, isAdmin bool, id string, req domain.MoveFolderRequest) (*domain.Folder, error)
 	DeleteFolder(ctx context.Context, principal string, isAdmin bool, id string) error
 	ListFolderShares(ctx context.Context, principal string, isAdmin bool, folderID string) ([]domain.FolderShare, error)
 	ShareFolder(ctx context.Context, principal string, isAdmin bool, folderID string, share domain.FolderShare) (*domain.FolderShare, error)
 	UnshareFolder(ctx context.Context, principal string, isAdmin bool, folderID string, principalName string) error
+}
+
+type exploreService interface {
+	List(ctx context.Context, principal string, isAdmin bool, filter domain.ExploreFilter) ([]domain.ExploreItem, error)
 }
 
 // sessionService defines session and execution operations.
@@ -187,6 +192,34 @@ func (h *APIHandler) UpdateNotebookFolder(ctx context.Context, req GenUpdateNote
 	return GenUpdateNotebookFolder200JSONResponse{
 		Body:    folderToAPI(*result),
 		Headers: GenUpdateNotebookFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// MoveNotebookFolder implements the endpoint for re-parenting a notebook folder subtree.
+func (h *APIHandler) MoveNotebookFolder(ctx context.Context, req GenMoveNotebookFolderRequest) (GenMoveNotebookFolderResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.notebookFolders.MoveFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId, domain.MoveFolderRequest{
+		ParentFolderID:       req.Body.ParentFolderId,
+		ConfirmLeaveGit:      req.Body.ConfirmLeaveGit != nil && *req.Body.ConfirmLeaveGit,
+		ConfirmContextChange: req.Body.ConfirmContextChange != nil && *req.Body.ConfirmContextChange,
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenMoveNotebookFolderResponse]("moveNotebookFolder", err, domainErrorResponder[GenMoveNotebookFolderResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenMoveNotebookFolderResponse { return MoveNotebookFolder400JSONResponse{resp} },
+			Forbidden:  func(resp ForbiddenJSONResponse) GenMoveNotebookFolderResponse { return MoveNotebookFolder403JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenMoveNotebookFolderResponse { return MoveNotebookFolder404JSONResponse{resp} },
+			Conflict:   func(resp ConflictJSONResponse) GenMoveNotebookFolderResponse { return MoveNotebookFolder409JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenMoveNotebookFolder200JSONResponse{
+		Body:    folderToAPI(*result),
+		Headers: GenMoveNotebookFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -869,6 +902,47 @@ func (h *APIHandler) GetNotebookJob(ctx context.Context, req GenGetNotebookJobRe
 	}, nil
 }
 
+// ListExploreItems implements the endpoint for browsing authored assets in folder/project context.
+func (h *APIHandler) ListExploreItems(ctx context.Context, req GenListExploreItemsRequest) (GenListExploreItemsResponse, error) {
+	if h.explore == nil {
+		return nil, domain.ErrNotImplemented("explore service is not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	items, err := h.explore.List(ctx, cp.Name, cp.IsAdmin, domain.ExploreFilter{
+		FolderID: valOrEmpty(req.Params.FolderId),
+		Kind:     valOrEmpty(req.Params.Kind),
+		Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenListExploreItemsResponse]("listExploreItems", err, domainErrorResponder[GenListExploreItemsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListExploreItemsResponse { return ListExploreItems403JSONResponse{resp} },
+			NotFound:  func(resp NotFoundJSONResponse) GenListExploreItemsResponse { return ListExploreItems404JSONResponse{resp} },
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	total := int64(len(items))
+	start := page.Offset()
+	if start > len(items) {
+		start = len(items)
+	}
+	end := start + page.Limit()
+	if end > len(items) {
+		end = len(items)
+	}
+	data := make([]ExploreItem, 0, end-start)
+	for _, item := range items[start:end] {
+		data = append(data, exploreItemToAPI(item))
+	}
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return GenListExploreItems200JSONResponse{
+		Body:    PaginatedExploreItems{Data: data, NextPageToken: optStr(nextToken)},
+		Headers: GenListExploreItems200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
 // === Git Repos ===
 
 // ListGitRepos implements the endpoint for listing Git repositories.
@@ -1068,6 +1142,26 @@ func folderShareToAPI(share domain.FolderShare) FolderShare {
 		PrincipalName: &share.PrincipalName,
 		Role:          notebookShareRoleToAPI(share.Role),
 	}
+}
+
+func exploreItemToAPI(item domain.ExploreItem) ExploreItem {
+	return ExploreItem{
+		Kind:         optStr(item.Kind),
+		Scope:        optStr(item.Scope),
+		Id:           optStr(item.ID),
+		Name:         optStr(item.Name),
+		Owner:        optStr(item.Owner),
+		FolderId:     item.FolderID,
+		ProjectName:  item.ProjectName,
+		UpdatedAt:    formatTimePtr(&item.UpdatedAt),
+		GitRepoId:    item.GitRepoID,
+		Shared:       optBool(item.Shared),
+		ProjectBound: optBool(item.ProjectBound),
+	}
+}
+
+func optBool(value bool) *bool {
+	return &value
 }
 
 func notebookShareRoleToAPI(role string) *NotebookShareRole {

@@ -35,6 +35,7 @@ type Pipeline struct {
 	IsPaused         bool
 	ConcurrencyLimit int
 	CreatedBy        string
+	FolderID         string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -97,6 +98,7 @@ type CreatePipelineRequest struct {
 	ScheduleCron     *string
 	IsPaused         bool
 	ConcurrencyLimit int
+	FolderID         *string
 }
 
 // Validate checks that the request is well-formed.
@@ -121,6 +123,7 @@ type UpdatePipelineRequest struct {
 	ScheduleCron     *string // pointer-to-pointer semantics: nil=no change, non-nil sets
 	IsPaused         *bool
 	ConcurrencyLimit *int
+	FolderID         *string
 }
 
 // CreatePipelineJobRequest holds parameters for creating a pipeline job.

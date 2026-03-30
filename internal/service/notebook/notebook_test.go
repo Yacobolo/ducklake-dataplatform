@@ -35,6 +35,18 @@ func setupNotebookService(t *testing.T) (*Service, *testutil.MockNotebookRepo, *
 	svc := New(repo, audit)
 	svc.SetFolderRepository(folders)
 	svc.SetShareRepositories(folderShares, notebookShares)
+	folders.ListAncestorsFn = func(_ context.Context, folderID string) ([]domain.Folder, error) {
+		if folderID == "" {
+			return nil, nil
+		}
+		if folders.GetByIDFn != nil {
+			folder, err := folders.GetByID(context.Background(), folderID)
+			if err == nil && folder != nil {
+				return []domain.Folder{*folder}, nil
+			}
+		}
+		return []domain.Folder{{ID: folderID, Owner: "alice"}}, nil
+	}
 	return svc, repo, folders, audit
 }
 
@@ -55,6 +67,18 @@ func setupNotebookServiceWithShares(t *testing.T) (
 	svc := New(repo, audit)
 	svc.SetFolderRepository(folders)
 	svc.SetShareRepositories(folderShares, notebookShares)
+	folders.ListAncestorsFn = func(_ context.Context, folderID string) ([]domain.Folder, error) {
+		if folderID == "" {
+			return nil, nil
+		}
+		if folders.GetByIDFn != nil {
+			folder, err := folders.GetByID(context.Background(), folderID)
+			if err == nil && folder != nil {
+				return []domain.Folder{*folder}, nil
+			}
+		}
+		return []domain.Folder{{ID: folderID, Owner: "alice"}}, nil
+	}
 	return svc, repo, folders, folderShares, notebookShares, audit
 }
 

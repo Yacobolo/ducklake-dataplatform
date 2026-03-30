@@ -53,6 +53,7 @@ func (h *APIHandler) CreateDashboard(ctx context.Context, req GenCreateDashboard
 	item, err := h.dashboards.CreateDashboard(ctx, cp.Name, domain.CreateDashboardRequest{
 		Name:        req.Body.Name,
 		Description: valOrEmpty(req.Body.Description),
+		FolderID:    req.Body.FolderId,
 	})
 	if err != nil {
 		switch {
@@ -139,6 +140,7 @@ func (h *APIHandler) UpdateDashboard(ctx context.Context, req GenUpdateDashboard
 	item, err := h.dashboards.UpdateDashboard(ctx, cp.Name, cp.IsAdmin, req.DashboardId, domain.UpdateDashboardRequest{
 		Name:        req.Body.Name,
 		Description: req.Body.Description,
+		FolderID:    req.Body.FolderId,
 	})
 	if err != nil {
 		switch {
@@ -259,6 +261,7 @@ func dashboardToAPI(item domain.Dashboard) Dashboard {
 		Name:        optStr(item.Name),
 		Description: optStr(item.Description),
 		Owner:       optStr(item.Owner),
+		FolderId:    optStr(item.FolderID),
 		CreatedAt:   formatTimePtr(&item.CreatedAt),
 		UpdatedAt:   formatTimePtr(&item.UpdatedAt),
 	}

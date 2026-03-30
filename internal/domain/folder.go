@@ -105,3 +105,10 @@ type UpdateFolderRequest struct {
 	DefaultProjectID     *string
 	DefaultEnvironmentID *string
 }
+
+// MoveFolderRequest re-parents a folder subtree.
+type MoveFolderRequest struct {
+	ParentFolderID       *string
+	ConfirmLeaveGit      bool
+	ConfirmContextChange bool
+}

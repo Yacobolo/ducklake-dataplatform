@@ -32,6 +32,12 @@ op getNotebookFolder(folderId: string): Ok<Folder> | ResourceErrorResponses;
 @summary("Update notebook folder")
 op updateNotebookFolder(folderId: string, @body body: UpdateFolderRequest): Ok<Folder> | ResourceErrorResponses;
 
+@route("/notebooks/folders/{folderId}/move")
+@post
+@tag("Notebooks")
+@summary("Move notebook folder")
+op moveNotebookFolder(folderId: string, @body body: MoveFolderRequest): Ok<Folder> | ResourceErrorResponses;
+
 @route("/notebooks/folders/{folderId}")
 @delete
 @tag("Notebooks")
@@ -175,3 +181,14 @@ op listNotebookJobs(notebookId: string, @query max_results?: int32, @query page_
 @tag("Notebooks")
 @summary("Get notebook job")
 op getNotebookJob(notebookId: string, jobId: string): Ok<NotebookJob> | ResourceErrorResponses;
+
+@route("/explore")
+@get
+@tag("Notebooks")
+@summary("List authored assets for the active folder context")
+op listExploreItems(
+  @query folder_id?: string,
+  @query kind?: string,
+  @query max_results?: int32,
+  @query page_token?: string,
+): Ok<PaginatedExploreItems> | StandardErrorResponses;

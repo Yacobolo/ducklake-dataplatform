@@ -25,6 +25,7 @@ type Service struct {
 	runs        domain.PipelineRunRepository
 	audit       domain.AuditRepository
 	notebooks   domain.NotebookProvider
+	folders     domain.FolderRepository
 	modelRunner domain.ModelRunner
 	engine      domain.SessionEngine
 	duckDB      *sql.DB
@@ -81,6 +82,11 @@ func (s *Service) SetScheduleReloader(r ScheduleReloader) {
 // SetModelRunner sets the model runner for MODEL_RUN pipeline jobs.
 func (s *Service) SetModelRunner(runner domain.ModelRunner) {
 	s.modelRunner = runner
+}
+
+// SetFolderRepository enables folder-backed pipeline placement.
+func (s *Service) SetFolderRepository(folders domain.FolderRepository) {
+	s.folders = folders
 }
 
 // SetAssetOrchestration wires asset-centric orchestration dependencies.
@@ -205,6 +211,15 @@ func (s *Service) CreatePipeline(ctx context.Context, principal string, req doma
 		IsPaused:         req.IsPaused,
 		ConcurrencyLimit: req.ConcurrencyLimit,
 		CreatedBy:        principal,
+	}
+	if req.FolderID != nil && *req.FolderID != "" {
+		p.FolderID = *req.FolderID
+	} else if s.folders != nil {
+		root, err := s.folders.EnsurePersonalRoot(ctx, principal)
+		if err != nil {
+			return nil, err
+		}
+		p.FolderID = root.ID
 	}
 
 	result, err := s.pipelines.CreatePipeline(ctx, p)

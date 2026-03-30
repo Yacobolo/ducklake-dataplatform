@@ -1162,6 +1162,12 @@ model UpdateFolderRequest {
   default_environment_id?: string;
 }
 
+model MoveFolderRequest {
+  parent_folder_id?: string;
+  confirm_leave_git?: boolean;
+  confirm_context_change?: boolean;
+}
+
 model MoveNotebookRequest {
   folder_id: string;
   git_path?: string;
@@ -1364,6 +1370,7 @@ model CreatePipelineRequest {
   schedule_cron?: string;
   is_paused?: boolean;
   concurrency_limit?: int32;
+  folder_id?: string;
 }
 
 model UpdatePipelineRequest {
@@ -1371,6 +1378,7 @@ model UpdatePipelineRequest {
   schedule_cron?: string;
   is_paused?: boolean;
   concurrency_limit?: int32;
+  folder_id?: string;
 }
 
 model Pipeline {
@@ -1381,6 +1389,7 @@ model Pipeline {
   is_paused?: boolean;
   concurrency_limit?: int32;
   created_by?: string;
+  folder_id?: string;
   created_at?: utcDateTime;
   updated_at?: utcDateTime;
 }
@@ -1803,6 +1812,7 @@ model Dashboard {
   name?: string;
   description?: string;
   owner?: string;
+  folder_id?: string;
   created_at?: utcDateTime;
   updated_at?: utcDateTime;
 }
@@ -1887,11 +1897,32 @@ model ResolvedDashboardDetail {
 model CreateDashboardRequest {
   name: string;
   description?: string;
+  folder_id?: string;
 }
 
 model UpdateDashboardRequest {
   name?: string;
   description?: string;
+  folder_id?: string;
+}
+
+model ExploreItem {
+  kind?: string;
+  scope?: string;
+  id?: string;
+  name?: string;
+  owner?: string;
+  folder_id?: string;
+  project_name?: string;
+  updated_at?: utcDateTime;
+  git_repo_id?: string;
+  shared?: boolean;
+  project_bound?: boolean;
+}
+
+model PaginatedExploreItems {
+  data: ExploreItem[];
+  next_page_token?: string;
 }
 
 model CreateDashboardWidgetRequest {

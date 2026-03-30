@@ -14,6 +14,38 @@ type OrchestrationEventHandler struct {
 	invalidator notebookContextInvalidator
 }
 
+// OrchestrationEventEnqueuer converts notebook invalidation requests into orchestration events.
+type OrchestrationEventEnqueuer struct {
+	events domain.OrchestrationEventRepository
+}
+
+// NewOrchestrationEventEnqueuer creates a queue-backed notebook invalidator.
+func NewOrchestrationEventEnqueuer(events domain.OrchestrationEventRepository) *OrchestrationEventEnqueuer {
+	return &OrchestrationEventEnqueuer{events: events}
+}
+
+// InvalidateNotebook enqueues a context invalidation event for a notebook.
+func (e *OrchestrationEventEnqueuer) InvalidateNotebook(ctx context.Context, notebookID string) error {
+	if e == nil || e.events == nil {
+		return nil
+	}
+	notebookID = strings.TrimSpace(notebookID)
+	if notebookID == "" {
+		return nil
+	}
+	key := fmt.Sprintf("%s:%s", domain.NotebookEventTypeInvalidateContext, notebookID)
+	_, err := e.events.Enqueue(ctx, &domain.OrchestrationEvent{
+		EventType:      domain.NotebookEventTypeInvalidateContext,
+		PayloadJSON:    map[string]any{domain.NotebookEventPayloadNotebookID: notebookID},
+		Status:         domain.OrchestrationEventStatusPending,
+		IdempotencyKey: &key,
+	})
+	if err != nil {
+		return fmt.Errorf("enqueue notebook invalidation: %w", err)
+	}
+	return nil
+}
+
 // NewOrchestrationEventHandler creates a notebook event handler for queue-driven invalidation.
 func NewOrchestrationEventHandler(invalidator notebookContextInvalidator) *OrchestrationEventHandler {
 	return &OrchestrationEventHandler{invalidator: invalidator}

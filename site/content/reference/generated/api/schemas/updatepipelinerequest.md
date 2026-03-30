@@ -10,6 +10,7 @@
 | --- | --- | --- | --- |
 | `concurrency_limit` | `integer` | `false` | - |
 | `description` | `string` | `false` | - |
+| `folder_id` | `string` | `false` | - |
 | `is_paused` | `boolean` | `false` | - |
 | `schedule_cron` | `string` | `false` | - |
 

@@ -11,6 +11,7 @@
 | --- | --- | --- | --- |
 | `concurrency_limit` | `integer` | `false` | - |
 | `description` | `string` | `false` | - |
+| `folder_id` | `string` | `false` | - |
 | `is_paused` | `boolean` | `false` | - |
 | `name` | `string` | `true` | - |
 | `schedule_cron` | `string` | `false` | - |

@@ -7012,6 +7012,69 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
+  /explore:
+    get:
+      operationId: listExploreItems
+      summary: List authored assets for the active folder context
+      parameters:
+        - name: folder_id
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExploreItems'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
   /external-locations:
     get:
       operationId: listExternalLocations
@@ -10665,6 +10728,67 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+  /notebooks/folders/{folderId}/move:
+    post:
+      operationId: moveNotebookFolder
+      summary: Move notebook folder
+      parameters:
+        - name: folderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveFolderRequest'
   /notebooks/folders/{folderId}/shares:
     get:
       operationId: listNotebookFolderShares
@@ -17184,6 +17308,8 @@ components:
           type: string
         description:
           type: string
+        folder_id:
+          type: string
     CreateDashboardWidgetRequest:
       type: object
       required:
@@ -17497,6 +17623,8 @@ components:
         concurrency_limit:
           type: integer
           format: int32
+        folder_id:
+          type: string
     CreatePrincipalRequest:
       type: object
       required:
@@ -17767,6 +17895,8 @@ components:
         description:
           type: string
         owner:
+          type: string
+        folder_id:
           type: string
         created_at:
           type: string
@@ -18242,6 +18372,32 @@ components:
             type: string
       description: Errors use a shared schema across the API so clients can handle failure responses consistently.
       title: Standard API error response.
+    ExploreItem:
+      type: object
+      properties:
+        kind:
+          type: string
+        scope:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        owner:
+          type: string
+        folder_id:
+          type: string
+        project_name:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+        git_repo_id:
+          type: string
+        shared:
+          type: boolean
+        project_bound:
+          type: boolean
     ExternalLocation:
       type: object
       required:
@@ -19130,6 +19286,15 @@ components:
         - accepted_values
         - relationships
         - custom_sql
+    MoveFolderRequest:
+      type: object
+      properties:
+        parent_folder_id:
+          type: string
+        confirm_leave_git:
+          type: boolean
+        confirm_context_change:
+          type: boolean
     MoveNotebookRequest:
       type: object
       required:
@@ -19523,6 +19688,17 @@ components:
             $ref: '#/components/schemas/DataProductListItem'
         next_page_token:
           type: string
+    PaginatedExploreItems:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExploreItem'
+        next_page_token:
+          type: string
     PaginatedExternalLocations:
       type: object
       required:
@@ -19870,6 +20046,8 @@ components:
           type: integer
           format: int32
         created_by:
+          type: string
+        folder_id:
           type: string
         created_at:
           type: string
@@ -21220,6 +21398,8 @@ components:
           type: string
         description:
           type: string
+        folder_id:
+          type: string
     UpdateDashboardWidgetRequest:
       type: object
       properties:
@@ -21366,6 +21546,8 @@ components:
         concurrency_limit:
           type: integer
           format: int32
+        folder_id:
+          type: string
     UpdatePrincipalAdminRequest:
       type: object
       required:

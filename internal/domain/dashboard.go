@@ -11,6 +11,7 @@ type Dashboard struct {
 	Name        string
 	Description string
 	Owner       string
+	FolderID    string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -85,12 +86,14 @@ type DashboardWidget struct {
 type CreateDashboardRequest struct {
 	Name        string
 	Description string
+	FolderID    *string
 }
 
 // UpdateDashboardRequest applies partial dashboard updates.
 type UpdateDashboardRequest struct {
 	Name        *string
 	Description *string
+	FolderID    *string
 }
 
 // CreateDashboardWidgetRequest creates a dashboard widget.

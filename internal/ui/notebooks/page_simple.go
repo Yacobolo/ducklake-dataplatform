@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/ui/core"
@@ -26,6 +27,114 @@ type notebookFolderNavItem struct {
 	Depth  int
 	Count  string
 	Active bool
+}
+
+type exploreListRow struct {
+	Name         string
+	URL          string
+	MetaURL      string
+	MetaLabel    string
+	Kind         string
+	Owner        string
+	Scope        string
+	Folder       string
+	Project      string
+	Updated      string
+	Shared       bool
+	ProjectBound bool
+}
+
+type exploreBreadcrumbItem struct {
+	Label   string
+	URL     string
+	Current bool
+}
+
+func exploreListPage(principal domain.ContextPrincipal, rows []exploreListRow, breadcrumbs []exploreBreadcrumbItem, selectedFolderID string, selectedKind string, page domain.PageRequest, total int64) Node {
+	kindLinks := []struct {
+		Label string
+		Kind  string
+	}{
+		{Label: "All", Kind: domain.ExploreKindAll},
+		{Label: "Notebooks", Kind: domain.ExploreKindNotebook},
+		{Label: "Models", Kind: domain.ExploreKindModel},
+		{Label: "Macros", Kind: domain.ExploreKindMacro},
+		{Label: "Dashboards", Kind: domain.ExploreKindDashboard},
+		{Label: "Pipelines", Kind: domain.ExploreKindPipeline},
+		{Label: "Semantic Models", Kind: domain.ExploreKindSemanticModel},
+	}
+	kindNodes := make([]Node, 0, len(kindLinks))
+	for _, item := range kindLinks {
+		attrs := []Node{Href(explorePageURL(page, item.Kind, selectedFolderID))}
+		className := "inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium no-underline transition-colors duration-100 ease-out"
+		if normalizeExploreKind(selectedKind) == item.Kind {
+			className += " border-[var(--button-primary-borderColor-rest)] bg-[var(--button-primary-bgColor-rest)] text-[var(--button-primary-fgColor-rest)]"
+		} else {
+			className += " border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] text-[var(--fgColor-default)] hover:border-[var(--borderColor-accent-muted)] hover:text-[var(--fgColor-accent)]"
+		}
+		linkNodes := append(attrs, Class(className), Text(item.Label))
+		kindNodes = append(kindNodes, A(linkNodes...))
+	}
+
+	tableRows := make([]Node, 0, len(rows))
+	for i := range rows {
+		row := rows[i]
+		tableRows = append(tableRows, Tr(
+			Td(
+				Div(Class("flex items-start gap-3"),
+					Span(Class(exploreKindIconWrapClass(row.Kind)),
+						I(Class(core.NavIconClass("h-4 w-4")), Attr("data-lucide", exploreKindIcon(row.Kind)), Attr("aria-hidden", "true")),
+					),
+					Div(Class("min-w-0 flex-1"),
+						Div(Class("flex flex-wrap items-center gap-2"),
+							core.TextLink(row.URL, Text(row.Name)),
+							Span(Class("text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(exploreKindLabel(row.Kind))),
+						),
+						exploreLocationText(row),
+					),
+				),
+			),
+			Td(exploreContextCell(row)),
+			Td(core.Badge(row.Owner, "")),
+			Td(Span(Class("text-[var(--fgColor-muted)]"), Text(row.Updated))),
+			Td(Class("text-right"), exploreRowActions(row)),
+		))
+	}
+
+	mainContent := Node(core.ListPageBody(
+		core.WorkspaceEmptyState("search", "No authored assets found.", "Choose another folder or switch the filter to browse authored work across notebooks, dashboards, pipelines, and project-managed assets.", core.PrimaryLink(notebookNewURL(selectedFolderID), "", Text("Create notebook"))),
+	))
+	listNodes := make([]Node, 0, 4)
+	if len(breadcrumbs) > 0 {
+		listNodes = append(listNodes, exploreBreadcrumbs(breadcrumbs))
+	}
+	listNodes = append(listNodes, Div(Class("flex flex-wrap gap-2"), Group(kindNodes)))
+	if len(tableRows) > 0 {
+		listNodes = append(listNodes, notebookTable([]string{"Name", "Context", "Owner", "Last updated", "Actions"}, tableRows))
+		if total > 0 {
+			listNodes = append(listNodes, exploreListPagination(selectedKind, selectedFolderID, page, total))
+		}
+		mainContent = core.ListPageBody(Group(listNodes))
+	} else if len(listNodes) > 1 {
+		mainContent = core.ListPageBody(Group(listNodes))
+	}
+
+	return core.AppPage(
+		"Explore",
+		"explore",
+		principal,
+		core.PageHeader(
+			"Discover",
+			"Explore",
+			"Browse folders and authored assets in the active project context.",
+			core.SecondaryLink("/ui/explore/git-repos", "",
+				I(Class(core.IconGlyphClass()), Attr("data-lucide", "github"), Attr("aria-hidden", "true")),
+				Span(Text("Git repos")),
+			),
+			exploreCreateMenu(selectedFolderID),
+		),
+		mainContent,
+	)
 }
 
 func notebooksListPage(principal domain.ContextPrincipal, rows []notebookListRow, folders []notebookFolderNavItem, selectedFolderID string, page domain.PageRequest, total int64) Node {
@@ -61,17 +170,17 @@ func notebooksListPage(principal domain.ContextPrincipal, rows []notebookListRow
 
 	return core.AppPage(
 		"Notebooks",
-		"notebooks",
+		"explore",
 		principal,
 		core.PageHeader(
 			"Build",
 			"Notebooks",
 			"Create and manage notebooks.",
-			core.SecondaryLink("/ui/notebooks/folders", "",
+			core.SecondaryLink("/ui/explore/folders", "",
 				I(Class(core.IconGlyphClass()), Attr("data-lucide", "folder-tree"), Attr("aria-hidden", "true")),
 				Span(Text("Folders")),
 			),
-			core.SecondaryLink("/ui/notebooks/git-repos", "",
+			core.SecondaryLink("/ui/explore/git-repos", "",
 				I(Class(core.IconGlyphClass()), Attr("data-lucide", "github"), Attr("aria-hidden", "true")),
 				Span(Text("Git repos")),
 			),
@@ -214,11 +323,11 @@ func notebookFoldersListPage(principal domain.ContextPrincipal, rows []folderLis
 
 	body := []Node{
 		core.PageHeader(
-			"Build",
-			"Notebook folders",
-			"Organize notebooks with inherited project, environment, and Git defaults.",
-			core.SecondaryLink("/ui/notebooks", "", Text("Back to notebooks")),
-			core.PrimaryLink("/ui/notebooks/folders/new", "",
+			"Discover",
+			"Explore folders",
+			"Organize authored assets with inherited project, environment, and Git defaults.",
+			core.SecondaryLink("/ui/explore", "", Text("Back to Explore")),
+			core.PrimaryLink("/ui/explore/folders/new", "",
 				I(Class(core.IconGlyphClass()), Attr("data-lucide", "folder-plus"), Attr("aria-hidden", "true")),
 				Span(Text("New folder")),
 			),
@@ -226,12 +335,12 @@ func notebookFoldersListPage(principal domain.ContextPrincipal, rows []folderLis
 	}
 	if len(tableRows) == 0 {
 		body = append(body, core.ListPageBody(
-			core.WorkspaceEmptyState("folder-tree", "No folders yet.", "Create a folder to define shared notebook organization and inherited execution defaults.", core.PrimaryLink("/ui/notebooks/folders/new", "", Text("Create folder"))),
+			core.WorkspaceEmptyState("folder-tree", "No folders yet.", "Create a folder to define shared asset organization and inherited execution defaults.", core.PrimaryLink("/ui/explore/folders/new", "", Text("Create folder"))),
 		))
 	} else {
 		body = append(body, core.ListPageBody(notebookTable([]string{"Name", "Path", "Inherited context", "Owner", "Updated"}, tableRows)))
 	}
-	return core.AppPage("Notebook Folders", "notebooks", principal, body...)
+	return core.AppPage("Explore Folders", "explore", principal, body...)
 }
 
 type notebookJobRow struct {
@@ -266,7 +375,7 @@ func notebookJobsListPage(d notebookJobsListPageData) Node {
 			core.ListPagination("/ui/notebooks/"+d.NotebookID+"/jobs", d.Page, d.Total),
 		))
 	}
-	return core.AppPage("Notebook Jobs", "notebooks", d.Principal, body...)
+	return core.AppPage("Notebook Jobs", "explore", d.Principal, body...)
 }
 
 type notebookJobDetailPageData struct {
@@ -283,7 +392,7 @@ type notebookJobDetailPageData struct {
 func notebookJobDetailPage(d notebookJobDetailPageData) Node {
 	return core.AppPage(
 		"Notebook Job: "+d.JobID,
-		"notebooks",
+		"explore",
 		d.Principal,
 		core.ResultPageLayout("Build", "Notebook job: "+d.JobID, "Inspect notebook execution as a result workspace instead of a stack of generic cards.",
 			core.PageHeader("", "Notebook job", "Inspect a notebook run.", core.SecondaryLink("/ui/notebooks/"+d.NotebookID+"/jobs", "", Text("Back to jobs"))),
@@ -338,24 +447,24 @@ func notebookGitReposListPage(d notebookGitReposListPageData) Node {
 			Td(Text(row.LastSync)),
 		))
 	}
-	body := []Node{core.PageHeader("Build", "Git repos", "Registered sources for notebook sync.", core.PrimaryLink("/ui/notebooks/git-repos/new", "", Text("Register Git repo")))}
+	body := []Node{core.PageHeader("Discover", "Git repos", "Registered sources for folder-backed authoring sync.", core.PrimaryLink("/ui/explore/git-repos/new", "", Text("Register Git repo")))}
 	if len(rows) == 0 {
 		body = append(body, core.ListPageBody(
-			core.WorkspaceEmptyState("git-branch", "No Git repositories registered.", "Register a repository to connect notebook sync.", core.PrimaryLink("/ui/notebooks/git-repos/new", "", Text("Register Git repo"))),
+			core.WorkspaceEmptyState("git-branch", "No Git repositories registered.", "Register a repository to connect folder-backed sync.", core.PrimaryLink("/ui/explore/git-repos/new", "", Text("Register Git repo"))),
 		))
 	} else {
 		body = append(body, core.ListPageBody(
 			notebookTable([]string{"Repository", "Branch", "Path", "Owner", "Last sync"}, rows),
-			core.ListPagination("/ui/notebooks/git-repos", d.Page, d.Total),
+			core.ListPagination("/ui/explore/git-repos", d.Page, d.Total),
 		))
 	}
-	return core.AppPage("Notebook Git Repos", "notebooks", d.Principal, body...)
+	return core.AppPage("Notebook Git Repos", "explore", d.Principal, body...)
 }
 
 func notebookFoldersNewPage(principal domain.ContextPrincipal, folderOptions []folderSelectOption, gitRepoOptions []gitRepoSelectOption, csrfFieldProvider func() Node) Node {
 	parentFolderNodes := append([]Node{Name("parent_folder_id"), Option(Value(""), Text("Personal root"))}, folderSelectNodes(folderOptions)...)
 	gitRepoNodes := append([]Node{Name("git_repo_id"), Option(Value(""), Text("No Git repo"))}, gitRepoSelectNodes(gitRepoOptions)...)
-	return notebookFormPage(principal, "New Folder", "/ui/notebooks/folders", csrfFieldProvider,
+	return notebookFormPage(principal, "New Folder", "/ui/explore/folders", csrfFieldProvider,
 		Label(Text("Name")),
 		core.InputControl("", Name("name"), Required()),
 		Label(Text("Parent folder")),
@@ -371,7 +480,7 @@ func notebookFoldersNewPage(principal domain.ContextPrincipal, folderOptions []f
 	)
 }
 
-func notebookFoldersEditPage(principal domain.ContextPrincipal, folder *domain.Folder, gitRepoOptions []gitRepoSelectOption, shares []accessShareRow, csrfFieldProvider func() Node) Node {
+func notebookFoldersEditPage(principal domain.ContextPrincipal, folder *domain.Folder, parentFolderOptions []folderSelectOption, gitRepoOptions []gitRepoSelectOption, shares []accessShareRow, csrfFieldProvider func() Node) Node {
 	gitRepoID := ""
 	if folder.GitRepoID != nil {
 		gitRepoID = *folder.GitRepoID
@@ -389,6 +498,7 @@ func notebookFoldersEditPage(principal domain.ContextPrincipal, folder *domain.F
 		defaultEnvironmentID = *folder.DefaultEnvironmentID
 	}
 	gitRepoNodes := append([]Node{Name("git_repo_id"), Option(Value(""), Text("No Git repo"))}, gitRepoSelectNodes(selectGitRepo(gitRepoOptions, gitRepoID))...)
+	parentFolderNodes := append([]Node{Name("parent_folder_id"), Option(Value(""), Text("Personal root"))}, folderSelectNodes(parentFolderOptions)...)
 
 	fields := []Node{
 		Label(Text("Name")),
@@ -406,7 +516,7 @@ func notebookFoldersEditPage(principal domain.ContextPrincipal, folder *domain.F
 	deleteNode := Node(nil)
 	if folder.SystemRole == nil || *folder.SystemRole != domain.FolderSystemRolePersonalRoot {
 		deleteNode = Div(Class("mt-2"),
-			Form(Method("post"), Action("/ui/notebooks/folders/"+folder.ID+"/delete"), Class("m-0"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete folder"))),
+			Form(Method("post"), Action("/ui/explore/folders/"+folder.ID+"/delete"), Class("m-0"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete folder"))),
 		)
 	}
 	formNodes := []Node{csrfFieldProvider()}
@@ -415,16 +525,26 @@ func notebookFoldersEditPage(principal domain.ContextPrincipal, folder *domain.F
 
 	return core.AppPage(
 		"Edit Folder",
-		"notebooks",
+		"explore",
 		principal,
-		core.FormPageLayout("Build", "Edit Folder", "Folder defaults control notebook organization and inherited execution context.",
+		core.FormPageLayout("Discover", "Edit Folder", "Folder defaults control asset organization and inherited execution context.",
 			core.SectionSurface(
 				core.SectionHeader("Folder details", "Update folder-level defaults. Personal roots are protected."),
 				P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Path: "+folder.Path)),
-				Form(Method("post"), Action("/ui/notebooks/folders/"+folder.ID+"/update"), Class("grid gap-3"), Group(formNodes)),
+				Form(Method("post"), Action("/ui/explore/folders/"+folder.ID+"/update"), Class("grid gap-3"), Group(formNodes)),
 				deleteNode,
 			),
-			shareManagementSection("Folder sharing", shares, "/ui/notebooks/folders/"+folder.ID+"/share", csrfFieldProvider),
+			core.SectionSurface(
+				core.SectionHeader("Move folder", "Re-parent this folder beneath a different parent. Cross-repo moves stay blocked."),
+				Form(Method("post"), Action("/ui/explore/folders/"+folder.ID+"/move"), Class("grid gap-3"), csrfFieldProvider(),
+					Label(Text("New parent folder")),
+					core.SelectControl("", parentFolderNodes...),
+					Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("confirm_leave_git"), Value("true")), Span(Text("I understand this move may remove inherited Git governance."))),
+					Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("confirm_context_change"), Value("true")), Span(Text("I understand this move may change project or environment context."))),
+					Div(Class("mt-3"), core.PrimaryButton("", Type("submit"), Text("Move folder"))),
+				),
+			),
+			shareManagementSection("Folder sharing", shares, "/ui/explore/folders/"+folder.ID+"/share", csrfFieldProvider),
 		),
 	)
 }
@@ -568,7 +688,7 @@ func notebookCellsEditPage(principal domain.ContextPrincipal, notebookID, cellID
 }
 
 func notebookGitReposNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
-	return notebookFormPage(principal, "Register Git Repo", "/ui/notebooks/git-repos", csrfFieldProvider,
+	return notebookFormPage(principal, "Register Git Repo", "/ui/explore/git-repos", csrfFieldProvider,
 		Label(Text("Repository URL")),
 		core.InputControl("", Name("url"), Required()),
 		Label(Text("Branch")),
@@ -597,10 +717,10 @@ type notebookGitRepoDetailPageData struct {
 func notebookGitRepoDetailPage(d notebookGitRepoDetailPageData) Node {
 	return core.AppPage(
 		"Git Repo",
-		"notebooks",
+		"explore",
 		d.Principal,
 		core.DetailShell(
-			core.PageHeader("Build", "Git repo", "Repository details and sync controls.", core.SecondaryLink("/ui/notebooks/git-repos", "", Text("Back to repos"))),
+			core.PageHeader("Discover", "Git repo", "Repository details and sync controls.", core.SecondaryLink("/ui/explore/git-repos", "", Text("Back to repos"))),
 			core.DetailLayout(
 				core.DetailMain(
 					core.SectionSurface(
@@ -636,14 +756,14 @@ type notebookGitRepoSyncResultPageData struct {
 
 func notebookGitRepoSyncResultPage(d notebookGitRepoSyncResultPageData) Node {
 	if d.Result == nil {
-		return core.AppPage("Git Sync", "notebooks", d.Principal, core.ListPageBody(core.WorkspaceEmptyState("git-branch", "No sync result available.", "Run a sync first to generate a result summary.", core.SecondaryLink("/ui/notebooks/git-repos/"+d.GitRepoID, "", Text("Back to repo")))))
+		return core.AppPage("Git Sync", "explore", d.Principal, core.ListPageBody(core.WorkspaceEmptyState("git-branch", "No sync result available.", "Run a sync first to generate a result summary.", core.SecondaryLink("/ui/explore/git-repos/"+d.GitRepoID, "", Text("Back to repo")))))
 	}
 	return core.AppPage(
 		"Git Sync",
-		"notebooks",
+		"explore",
 		d.Principal,
-		core.ResultPageLayout("Build", "Git sync", "Sync outcomes use the shared result layout so they read like execution reports.",
-			core.PageHeader("", "Git sync", "Latest sync result.", core.SecondaryLink("/ui/notebooks/git-repos/"+d.GitRepoID, "", Text("Back to repo"))),
+		core.ResultPageLayout("Discover", "Git sync", "Sync outcomes use the shared result layout so they read like execution reports.",
+			core.PageHeader("", "Git sync", "Latest sync result.", core.SecondaryLink("/ui/explore/git-repos/"+d.GitRepoID, "", Text("Back to repo"))),
 			core.SectionSurface(
 				core.SectionHeader("Sync result", ""),
 				core.MetadataSummary([][2]string{
@@ -669,10 +789,10 @@ type notebookGitRepoSyncUnavailablePageData struct {
 func notebookGitRepoSyncUnavailablePage(d notebookGitRepoSyncUnavailablePageData) Node {
 	return core.AppPage(
 		"Git Sync Unavailable",
-		"notebooks",
+		"explore",
 		d.Principal,
-		core.ResultPageLayout("Build", "Git sync unavailable", "Unavailable states use the same result-oriented layout as other notebook outcomes.",
-			core.PageHeader("", "Git sync", "Sync is not available yet.", core.SecondaryLink("/ui/notebooks/git-repos/"+d.GitRepoID, "", Text("Back to repo"))),
+		core.ResultPageLayout("Discover", "Git sync unavailable", "Unavailable states use the same result-oriented layout as other notebook outcomes.",
+			core.PageHeader("", "Git sync", "Sync is not available yet.", core.SecondaryLink("/ui/explore/git-repos/"+d.GitRepoID, "", Text("Back to repo"))),
 			core.SectionSurface(
 				core.SectionHeader("Sync is not available yet", "The repo is registered correctly, but server-side sync execution has not been implemented yet."),
 				P(Text(d.Message)),
@@ -692,7 +812,7 @@ func notebookFormPage(principal domain.ContextPrincipal, title, action string, c
 	nodes = append(nodes, Div(Class("mt-3"), core.PrimaryButton("", Type("submit"), Text("Save"))))
 	return core.AppPage(
 		title,
-		"notebooks",
+		"explore",
 		principal,
 		core.FormPageLayout("Build", title, "Notebook authoring uses the shared single-surface form layout.",
 			Form(Method("post"), Action(action), Class("grid gap-3"), Group(nodes)),
@@ -707,6 +827,30 @@ func optionSelected(value, selected string) Node {
 	return Option(Value(value), Text(value))
 }
 
+func exploreBreadcrumbs(items []exploreBreadcrumbItem) Node {
+	if len(items) == 0 {
+		return nil
+	}
+	nodes := make([]Node, 0, len(items)*2)
+	for i := range items {
+		item := items[i]
+		label := Span(Class("truncate"), Text(item.Label))
+		if item.Current {
+			nodes = append(nodes, Span(Class("inline-flex max-w-full items-center rounded-full bg-[var(--bgColor-muted)] px-3 py-1 text-sm font-medium text-[var(--fgColor-default)]"), label))
+		} else {
+			nodes = append(nodes, A(Href(item.URL), Class("inline-flex max-w-full items-center rounded-full border border-[var(--borderColor-default)] px-3 py-1 text-sm font-medium text-[var(--fgColor-muted)] no-underline hover:border-[var(--borderColor-accent-muted)] hover:text-[var(--fgColor-accent)]"), label))
+		}
+		if i < len(items)-1 {
+			nodes = append(nodes, Span(Class("text-[var(--fgColor-muted)]"), Text("/")))
+		}
+	}
+	return Nav(
+		Class("flex flex-wrap items-center gap-2"),
+		Attr("aria-label", "Folder breadcrumbs"),
+		Group(nodes),
+	)
+}
+
 func notebookTable(headers []string, rows []Node) Node {
 	headerNodes := make([]Node, 0, len(headers))
 	for i := range headers {
@@ -718,6 +862,95 @@ func notebookTable(headers []string, rows []Node) Node {
 			TBody(Group(rows)),
 		),
 	)
+}
+
+func exploreCreateMenu(folderID string) Node {
+	return Details(
+		Class(core.DetailsClass()),
+		Summary(
+			Class(core.DetailsSummaryClass("inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--button-primary-borderColor-rest)] bg-[var(--button-primary-bgColor-rest)] px-4 py-2 text-sm font-semibold text-[var(--button-primary-fgColor-rest)] shadow-xs transition-colors duration-100 ease-out hover:bg-[var(--button-primary-bgColor-hover)]")),
+			Title("Create new"),
+			Attr("aria-label", "Create new"),
+			I(Class(core.IconGlyphClass()), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")),
+			Span(Text("New")),
+			I(Class("h-4 w-4"), Attr("data-lucide", "chevron-down"), Attr("aria-hidden", "true")),
+		),
+		Div(
+			Class(core.DropdownMenuClass("min-w-[13rem]")),
+			exploreCreateMenuLink(folderNewURL(folderID), "folder-plus", "New folder"),
+			exploreCreateMenuLink(notebookNewURL(folderID), "notebook-text", "New notebook"),
+			exploreCreateMenuLink(dashboardNewURL(folderID), "chart-column", "New dashboard"),
+			exploreCreateMenuLink(pipelineNewURL(folderID), "workflow", "New pipeline"),
+		),
+	)
+}
+
+func exploreCreateMenuLink(href, icon, label string) Node {
+	return A(
+		Href(href),
+		Class(core.DropdownItemClass("text-[var(--fgColor-default)]")),
+		I(Class("h-4 w-4"), Attr("data-lucide", icon), Attr("aria-hidden", "true")),
+		Span(Text(label)),
+	)
+}
+
+func exploreLocationText(row exploreListRow) Node {
+	location := strings.TrimSpace(row.Folder)
+	if location == "" || location == "-" {
+		if row.Kind == "folder" {
+			location = "Top level"
+		}
+	}
+	if location == "" {
+		return nil
+	}
+	return P(Class("m-0 mt-1 text-xs leading-5 text-[var(--fgColor-muted)]"), Text(location))
+}
+
+func exploreContextCell(row exploreListRow) Node {
+	badges := make([]Node, 0, 4)
+	if row.ProjectBound {
+		badges = append(badges, core.Badge("Project-bound", "accent"))
+	}
+	if row.Shared {
+		badges = append(badges, core.Badge("Shared", "success"))
+	}
+	if strings.TrimSpace(row.Project) != "" {
+		badges = append(badges, core.Badge("Project "+strings.TrimSpace(row.Project), ""))
+	}
+
+	summary := strings.TrimSpace(row.Scope)
+	switch {
+	case summary == "":
+		summary = ""
+	case strings.EqualFold(summary, "folder"):
+		summary = ""
+	case strings.EqualFold(summary, strings.TrimSpace(row.Project)):
+		summary = ""
+	case summary == "Project "+strings.TrimSpace(row.Project):
+		summary = ""
+	}
+
+	if len(badges) == 0 && summary == "" {
+		return Span(Class("text-[var(--fgColor-muted)]"), Text("-"))
+	}
+
+	nodes := make([]Node, 0, 2)
+	if len(badges) > 0 {
+		nodes = append(nodes, Div(Class("flex flex-wrap gap-2"), Group(badges)))
+	}
+	if summary != "" {
+		nodes = append(nodes, P(Class("m-0 text-xs leading-5 text-[var(--fgColor-muted)]"), Text(summary)))
+	}
+	return Div(Class("grid gap-1"), Group(nodes))
+}
+
+func exploreRowActions(row exploreListRow) Node {
+	items := []Node{core.ActionMenuLink(row.URL, "Open")}
+	if strings.TrimSpace(row.MetaURL) != "" && strings.TrimSpace(row.MetaLabel) != "" {
+		items = append(items, core.ActionMenuLink(row.MetaURL, row.MetaLabel))
+	}
+	return core.ActionMenu("Actions", items...)
 }
 
 func notebookFolderFilterPanel(items []notebookFolderNavItem) Node {
@@ -815,6 +1048,133 @@ func notebookListPageURL(limit int, token, folderID string) string {
 	return "/ui/notebooks?" + q.Encode()
 }
 
+func folderNewURL(parentFolderID string) string {
+	if parentFolderID == "" {
+		return "/ui/explore/folders/new"
+	}
+	q := url.Values{}
+	q.Set("parent_folder_id", parentFolderID)
+	return "/ui/explore/folders/new?" + q.Encode()
+}
+
+func exploreKindLabel(kind string) string {
+	switch kind {
+	case "folder":
+		return "Folder"
+	case domain.ExploreKindNotebook:
+		return "Notebook"
+	case domain.ExploreKindModel:
+		return "Model"
+	case domain.ExploreKindMacro:
+		return "Macro"
+	case domain.ExploreKindDashboard:
+		return "Dashboard"
+	case domain.ExploreKindPipeline:
+		return "Pipeline"
+	case domain.ExploreKindSemanticModel:
+		return "Semantic Model"
+	default:
+		return "Asset"
+	}
+}
+
+func exploreKindIcon(kind string) string {
+	switch kind {
+	case "folder":
+		return "folder"
+	case domain.ExploreKindNotebook:
+		return "notebook-text"
+	case domain.ExploreKindModel:
+		return "boxes"
+	case domain.ExploreKindMacro:
+		return "braces"
+	case domain.ExploreKindDashboard:
+		return "chart-column"
+	case domain.ExploreKindPipeline:
+		return "workflow"
+	case domain.ExploreKindSemanticModel:
+		return "waypoints"
+	default:
+		return "file-stack"
+	}
+}
+
+func exploreKindIconWrapClass(kind string) string {
+	base := "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+	switch kind {
+	case "folder":
+		return base + " bg-[var(--display-gray-scale-0)] text-[var(--display-gray-scale-7)]"
+	case domain.ExploreKindNotebook:
+		return base + " bg-[var(--display-blue-scale-0)] text-[var(--display-blue-scale-6)]"
+	case domain.ExploreKindModel:
+		return base + " bg-[var(--display-green-scale-0)] text-[var(--display-green-scale-6)]"
+	case domain.ExploreKindMacro:
+		return base + " bg-[var(--display-orange-scale-0)] text-[var(--display-orange-scale-6)]"
+	case domain.ExploreKindDashboard:
+		return base + " bg-[var(--display-plum-scale-0)] text-[var(--display-plum-scale-6)]"
+	case domain.ExploreKindPipeline:
+		return base + " bg-[var(--display-teal-scale-0)] text-[var(--display-teal-scale-6)]"
+	case domain.ExploreKindSemanticModel:
+		return base + " bg-[var(--display-indigo-scale-0)] text-[var(--display-indigo-scale-6)]"
+	default:
+		return base + " bg-[var(--bgColor-muted)] text-[var(--fgColor-muted)]"
+	}
+}
+
+func exploreListPagination(kind, folderID string, page domain.PageRequest, total int64) Node {
+	offset := page.Offset()
+	limit := page.Limit()
+	shownStart := min(total, int64(offset)+1)
+	shownEnd := min(total, int64(offset+limit))
+	if total == 0 {
+		shownStart = 0
+	}
+
+	summary := P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(fmt.Sprintf("Showing %d-%d of %d assets", shownStart, shownEnd, total)))
+	prevOffset := offset - limit
+	if prevOffset < 0 {
+		prevOffset = 0
+	}
+	prevToken := domain.EncodePageToken(prevOffset)
+	nextToken := domain.NextPageToken(offset, limit, total)
+
+	prevNode := Node(Span(Class("inline-flex min-h-10 items-center justify-center rounded-l-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Previous")))
+	if offset > 0 {
+		prevNode = A(Href(explorePageURL(domain.PageRequest{MaxResults: limit, PageToken: prevToken}, kind, folderID)), Class("inline-flex min-h-10 items-center justify-center rounded-l-lg border border-[var(--button-default-borderColor-rest)] border-r-0 bg-[var(--button-default-bgColor-rest)] px-3 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition-colors duration-100 ease-out hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] hover:text-[var(--button-default-fgColor-rest)]"), Text("Previous"))
+	}
+
+	nextNode := Node(Span(Class("inline-flex min-h-10 items-center justify-center rounded-r-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")))
+	if nextToken != "" {
+		nextNode = A(Href(explorePageURL(domain.PageRequest{MaxResults: limit, PageToken: nextToken}, kind, folderID)), Class("inline-flex min-h-10 items-center justify-center rounded-r-lg border border-[var(--button-default-borderColor-rest)] bg-[var(--button-default-bgColor-rest)] px-3 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition-colors duration-100 ease-out hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] hover:text-[var(--button-default-fgColor-rest)]"), Text("Next"))
+	}
+
+	return Div(
+		Class("flex items-center justify-between gap-4 border-t border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-6 py-4 max-sm:flex-col max-sm:items-start max-sm:px-4"),
+		summary,
+		Nav(Attr("aria-label", "Pagination"),
+			Div(Class("inline-flex items-center"),
+				prevNode,
+				nextNode,
+			),
+		),
+	)
+}
+
+func explorePageURL(page domain.PageRequest, kind, folderID string) string {
+	q := url.Values{}
+	q.Set("max_results", fmt.Sprintf("%d", page.Limit()))
+	if strings.TrimSpace(page.PageToken) != "" {
+		q.Set("page_token", page.PageToken)
+	}
+	if strings.TrimSpace(kind) != "" {
+		q.Set("kind", kind)
+	}
+	if strings.TrimSpace(folderID) != "" {
+		q.Set("folder_id", folderID)
+	}
+	return "/ui/explore?" + q.Encode()
+}
+
 func notebookNewURL(folderID string) string {
 	if folderID == "" {
 		return "/ui/notebooks/new"
@@ -822,6 +1182,24 @@ func notebookNewURL(folderID string) string {
 	q := url.Values{}
 	q.Set("folder_id", folderID)
 	return "/ui/notebooks/new?" + q.Encode()
+}
+
+func dashboardNewURL(folderID string) string {
+	if folderID == "" {
+		return "/ui/dashboards/new"
+	}
+	q := url.Values{}
+	q.Set("folder_id", folderID)
+	return "/ui/dashboards/new?" + q.Encode()
+}
+
+func pipelineNewURL(folderID string) string {
+	if folderID == "" {
+		return "/ui/pipelines/new"
+	}
+	q := url.Values{}
+	q.Set("folder_id", folderID)
+	return "/ui/pipelines/new?" + q.Encode()
 }
 
 func folderSelectNodes(options []folderSelectOption) []Node {

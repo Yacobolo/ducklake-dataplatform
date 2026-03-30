@@ -50,6 +50,7 @@ type SessionManager struct {
 	repo           domain.NotebookRepository
 	folders        domain.FolderRepository
 	folderShares   domain.FolderShareRepository
+	auth           domain.AuthorizationService
 	notebookShares domain.NotebookShareRepository
 	jobRepo        domain.NotebookJobRepository
 	audit          domain.AuditRepository
@@ -73,6 +74,11 @@ func NewSessionManager(
 		audit:    audit,
 		ttl:      30 * time.Minute,
 	}
+}
+
+// SetAuthorization configures folder privilege checks for session access.
+func (m *SessionManager) SetAuthorization(auth domain.AuthorizationService) {
+	m.auth = auth
 }
 
 // SetAccessRepositories configures folder and share repositories for session authorization.
@@ -132,7 +138,7 @@ func (m *SessionManager) CreateSession(ctx context.Context, notebookID, principa
 }
 
 func (m *SessionManager) accessResolver(ctx context.Context, principal string, isAdmin bool) (*principalAccessResolver, error) {
-	return newPrincipalAccessResolver(ctx, m.folders, m.folderShares, m.notebookShares, principal, isAdmin)
+	return newPrincipalAccessResolver(ctx, m.folders, m.folderShares, m.auth, m.notebookShares, principal, isAdmin)
 }
 
 func (m *SessionManager) requireNotebookRole(ctx context.Context, notebookID, principal string, isAdmin bool, allowed func(string) bool, action string) (*domain.Notebook, error) {

@@ -10,6 +10,7 @@ import (
 type accessResolver struct {
 	folders        domain.FolderRepository
 	folderShares   domain.FolderShareRepository
+	auth           domain.AuthorizationService
 	notebookShares domain.NotebookShareRepository
 }
 
@@ -26,6 +27,7 @@ func newPrincipalAccessResolver(
 	ctx context.Context,
 	folders domain.FolderRepository,
 	folderShares domain.FolderShareRepository,
+	auth domain.AuthorizationService,
 	notebookShares domain.NotebookShareRepository,
 	principal string,
 	isAdmin bool,
@@ -34,6 +36,7 @@ func newPrincipalAccessResolver(
 		accessResolver: accessResolver{
 			folders:        folders,
 			folderShares:   folderShares,
+			auth:           auth,
 			notebookShares: notebookShares,
 		},
 		principal:           strings.TrimSpace(principal),
@@ -45,7 +48,7 @@ func newPrincipalAccessResolver(
 	if isAdmin || resolver.principal == "" {
 		return resolver, nil
 	}
-	if folderShares != nil {
+	if auth == nil && folderShares != nil {
 		items, err := folderShares.ListByPrincipal(ctx, resolver.principal)
 		if err != nil {
 			return nil, err
@@ -73,8 +76,41 @@ func (r *principalAccessResolver) folderRole(ctx context.Context, folder *domain
 	if r.isAdmin || strings.TrimSpace(folder.Owner) == r.principal {
 		return domain.FolderShareRoleManager, nil
 	}
-	role := maxShareRole("", r.folderRolesByFolder[folder.ID])
-	if r.folders != nil {
+	if cached, ok := r.folderRolesByFolder[folder.ID]; ok {
+		return cached, nil
+	}
+	role := ""
+	if r.folders != nil && r.auth != nil {
+		ancestors, err := r.folderAncestors(ctx, folder.ID)
+		if err != nil {
+			return "", err
+		}
+		for _, ancestor := range ancestors {
+			allowed, err := r.auth.CheckPrivilege(ctx, r.principal, domain.SecurableFolder, ancestor.ID, domain.PrivManage)
+			if err != nil {
+				return "", err
+			}
+			if allowed {
+				role = maxShareRole(role, domain.FolderShareRoleManager)
+				continue
+			}
+			allowed, err = r.auth.CheckPrivilege(ctx, r.principal, domain.SecurableFolder, ancestor.ID, domain.PrivModify)
+			if err != nil {
+				return "", err
+			}
+			if allowed {
+				role = maxShareRole(role, domain.FolderShareRoleEditor)
+				continue
+			}
+			allowed, err = r.auth.CheckPrivilege(ctx, r.principal, domain.SecurableFolder, ancestor.ID, domain.PrivSelect)
+			if err != nil {
+				return "", err
+			}
+			if allowed {
+				role = maxShareRole(role, domain.FolderShareRoleViewer)
+			}
+		}
+	} else if r.folders != nil {
 		ancestors, err := r.folderAncestors(ctx, folder.ID)
 		if err != nil {
 			return "", err
@@ -83,6 +119,7 @@ func (r *principalAccessResolver) folderRole(ctx context.Context, folder *domain
 			role = maxShareRole(role, r.folderRolesByFolder[ancestor.ID])
 		}
 	}
+	r.folderRolesByFolder[folder.ID] = role
 	return role, nil
 }
 
@@ -95,13 +132,15 @@ func (r *principalAccessResolver) notebookRole(ctx context.Context, nb *domain.N
 	}
 	role := maxShareRole("", r.notebookRolesByID[nb.ID])
 	if r.folders != nil && strings.TrimSpace(nb.FolderID) != "" {
-		ancestors, err := r.folderAncestors(ctx, nb.FolderID)
+		folder, err := r.folders.GetByID(ctx, nb.FolderID)
 		if err != nil {
 			return "", err
 		}
-		for _, ancestor := range ancestors {
-			role = maxShareRole(role, r.folderRolesByFolder[ancestor.ID])
+		folderRole, err := r.folderRole(ctx, folder)
+		if err != nil {
+			return "", err
 		}
+		role = maxShareRole(role, folderRole)
 	}
 	return role, nil
 }

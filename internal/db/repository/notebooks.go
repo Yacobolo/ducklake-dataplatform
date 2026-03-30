@@ -105,6 +105,48 @@ func (r *NotebookRepo) ListNotebooks(ctx context.Context, owner *string, page do
 	return notebooks, total, nil
 }
 
+// ListByFolders returns all notebooks directly placed in the provided folders.
+func (r *NotebookRepo) ListByFolders(ctx context.Context, folderIDs []string) ([]domain.Notebook, error) {
+	if len(folderIDs) == 0 {
+		return []domain.Notebook{}, nil
+	}
+
+	placeholders := make([]string, 0, len(folderIDs))
+	args := make([]any, 0, len(folderIDs))
+	for _, id := range folderIDs {
+		placeholders = append(placeholders, "?")
+		args = append(args, strings.TrimSpace(id))
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			id, folder_id, name, description, owner, created_at, updated_at,
+			git_repo_id, git_path, project_override_id, environment_override_id
+		FROM notebooks
+		WHERE folder_id IN (%s)
+		ORDER BY updated_at DESC
+	`, strings.Join(placeholders, ", "))
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]domain.Notebook, 0, len(folderIDs))
+	for rows.Next() {
+		notebook, scanErr := scanNotebook(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		items = append(items, *notebook)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 // UpdateNotebook applies partial updates to an existing notebook.
 func (r *NotebookRepo) UpdateNotebook(ctx context.Context, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error) {
 	existing, err := r.GetNotebook(ctx, id)

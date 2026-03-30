@@ -100,13 +100,20 @@ func dashboardsListPage(principal domain.ContextPrincipal, rows []dashboardListR
 	)
 }
 
-func dashboardsNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
-	return formPage(principal, "New Dashboard", "dashboards", "/ui/dashboards", csrfFieldProvider,
+func dashboardsNewPage(principal domain.ContextPrincipal, folderID string, csrfFieldProvider func() Node) Node {
+	fields := []Node{
 		core.FieldLabel("Name"),
 		core.InputControl("", Name("name"), Required()),
 		core.FieldLabel("Description"),
 		core.TextareaControl("", Name("description")),
-	)
+	}
+	if strings.TrimSpace(folderID) != "" {
+		fields = append(fields,
+			Input(Type("hidden"), Name("folder_id"), Value(folderID)),
+			P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("This dashboard will be created in the current Explore folder.")),
+		)
+	}
+	return formPage(principal, "New Dashboard", "dashboards", "/ui/dashboards", csrfFieldProvider, fields...)
 }
 
 func dashboardsEditPage(principal domain.ContextPrincipal, dashboard *domain.Dashboard, csrfFieldProvider func() Node) Node {

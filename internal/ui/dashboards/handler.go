@@ -3,6 +3,7 @@ package dashboards
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"duck-demo/internal/domain"
 	dashboardsvc "duck-demo/internal/service/dashboard"
@@ -47,7 +48,8 @@ func (h *Handler) DashboardsList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) DashboardsNew(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, dashboardsNewPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
+	selectedFolderID := strings.TrimSpace(r.URL.Query().Get("folder_id"))
+	core.RenderHTML(w, http.StatusOK, dashboardsNewPage(core.PrincipalFromContext(r.Context()), selectedFolderID, h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) DashboardsCreate(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +61,7 @@ func (h *Handler) DashboardsCreate(w http.ResponseWriter, r *http.Request) {
 	item, err := h.deps.Dashboard.CreateDashboard(r.Context(), principal, domain.CreateDashboardRequest{
 		Name:        formString(r.Form, "name"),
 		Description: formString(r.Form, "description"),
+		FolderID:    formOptionalString(r.Form, "folder_id"),
 	})
 	if err != nil {
 		renderServiceError(w, err)

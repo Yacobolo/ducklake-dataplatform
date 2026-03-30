@@ -2,6 +2,7 @@ package pipelines
 
 import (
 	"strconv"
+	"strings"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/ui/core"
@@ -149,8 +150,8 @@ func pipelineDetailPage(d pipelineDetailPageData) Node {
 	)
 }
 
-func pipelinesNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
-	return pipelineFormPage(principal, "New Pipeline", "/ui/pipelines", csrfFieldProvider,
+func pipelinesNewPage(principal domain.ContextPrincipal, folderID string, csrfFieldProvider func() Node) Node {
+	fields := []Node{
 		Label(Text("Name")),
 		core.InputControl("", Name("name"), Required()),
 		Label(Text("Description")),
@@ -160,7 +161,14 @@ func pipelinesNewPage(principal domain.ContextPrincipal, csrfFieldProvider func(
 		Label(Text("Concurrency Limit")),
 		core.InputControl("", Name("concurrency_limit"), Value("1")),
 		Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("is_paused")), Span(Text("Paused"))),
-	)
+	}
+	if strings.TrimSpace(folderID) != "" {
+		fields = append(fields,
+			Input(Type("hidden"), Name("folder_id"), Value(folderID)),
+			P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("This pipeline will be created in the current Explore folder.")),
+		)
+	}
+	return pipelineFormPage(principal, "New Pipeline", "/ui/pipelines", csrfFieldProvider, fields...)
 }
 
 func pipelinesEditPage(principal domain.ContextPrincipal, pipelineName string, pipeline *domain.Pipeline, csrfFieldProvider func() Node) Node {

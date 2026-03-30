@@ -432,6 +432,7 @@ type NotebookRepository interface {
 	CreateNotebook(ctx context.Context, nb *Notebook) (*Notebook, error)
 	GetNotebook(ctx context.Context, id string) (*Notebook, error)
 	ListNotebooks(ctx context.Context, owner *string, page PageRequest) ([]Notebook, int64, error)
+	ListByFolders(ctx context.Context, folderIDs []string) ([]Notebook, error)
 	UpdateNotebook(ctx context.Context, id string, req UpdateNotebookRequest) (*Notebook, error)
 	UpdateNotebookSync(ctx context.Context, nb *Notebook) (*Notebook, error)
 	DeleteNotebook(ctx context.Context, id string) error
@@ -454,6 +455,7 @@ type FolderRepository interface {
 	ListAll(ctx context.Context) ([]Folder, error)
 	ListByOwner(ctx context.Context, owner string) ([]Folder, error)
 	Update(ctx context.Context, id string, req UpdateFolderRequest) (*Folder, error)
+	Move(ctx context.Context, id string, parentFolderID *string) (*Folder, error)
 	Delete(ctx context.Context, id string) error
 	EnsurePersonalRoot(ctx context.Context, owner string) (*Folder, error)
 	EnsureGitSyncRoot(ctx context.Context, owner string, repo *GitRepo) (*Folder, error)
@@ -481,6 +483,7 @@ type DashboardRepository interface {
 	Create(ctx context.Context, d *Dashboard) (*Dashboard, error)
 	GetByID(ctx context.Context, id string) (*Dashboard, error)
 	List(ctx context.Context, owner *string, page PageRequest) ([]Dashboard, int64, error)
+	ListByFolders(ctx context.Context, folderIDs []string) ([]Dashboard, error)
 	Update(ctx context.Context, id string, req UpdateDashboardRequest) (*Dashboard, error)
 	Delete(ctx context.Context, id string) error
 }
@@ -525,6 +528,7 @@ type PipelineRepository interface {
 	GetPipelineByID(ctx context.Context, id string) (*Pipeline, error)
 	GetPipelineByName(ctx context.Context, name string) (*Pipeline, error)
 	ListPipelines(ctx context.Context, page PageRequest) ([]Pipeline, int64, error)
+	ListPipelinesByFolders(ctx context.Context, folderIDs []string) ([]Pipeline, error)
 	UpdatePipeline(ctx context.Context, id string, req UpdatePipelineRequest) (*Pipeline, error)
 	DeletePipeline(ctx context.Context, id string) error
 	ListScheduledPipelines(ctx context.Context) ([]Pipeline, error)

@@ -19,7 +19,11 @@ type Service struct {
 	repo           domain.NotebookRepository
 	folders        domain.FolderRepository
 	folderShares   domain.FolderShareRepository
+	auth           domain.AuthorizationService
+	grants         domain.GrantRepository
 	notebookShares domain.NotebookShareRepository
+	projects       domain.ProjectRepository
+	environments   domain.EnvironmentRepository
 	audit          domain.AuditRepository
 	models         domain.ModelRepository
 	links          domain.NotebookModelLinkRepository
@@ -36,7 +40,23 @@ func (s *Service) SetFolderRepository(folders domain.FolderRepository) {
 	s.folders = folders
 }
 
-// SetShareRepositories configures inherited and direct notebook sharing repositories.
+// SetAuthorization configures folder privilege checks.
+func (s *Service) SetAuthorization(auth domain.AuthorizationService) {
+	s.auth = auth
+}
+
+// SetGrantRepository configures folder share wrappers backed by privilege grants.
+func (s *Service) SetGrantRepository(grants domain.GrantRepository) {
+	s.grants = grants
+}
+
+// SetProjectRepositories configures project/environment validation helpers.
+func (s *Service) SetProjectRepositories(projects domain.ProjectRepository, environments domain.EnvironmentRepository) {
+	s.projects = projects
+	s.environments = environments
+}
+
+// SetShareRepositories configures direct notebook sharing repositories.
 func (s *Service) SetShareRepositories(folderShares domain.FolderShareRepository, notebookShares domain.NotebookShareRepository) {
 	s.folderShares = folderShares
 	s.notebookShares = notebookShares
@@ -54,7 +74,7 @@ func (s *Service) SetContextInvalidator(invalidator notebookContextInvalidator) 
 }
 
 func (s *Service) accessResolver(ctx context.Context, principal string, isAdmin bool) (*principalAccessResolver, error) {
-	return newPrincipalAccessResolver(ctx, s.folders, s.folderShares, s.notebookShares, principal, isAdmin)
+	return newPrincipalAccessResolver(ctx, s.folders, s.folderShares, s.auth, s.notebookShares, principal, isAdmin)
 }
 
 // CreateNotebook creates a new notebook owned by the given principal.
@@ -78,6 +98,9 @@ func (s *Service) CreateNotebook(ctx context.Context, principal string, req doma
 		nb.FolderID = root.ID
 	}
 	if err := s.requireFolderWriteAccess(ctx, principal, false, nb.FolderID); err != nil {
+		return nil, err
+	}
+	if err := s.validateNotebookEffectiveContext(ctx, nb); err != nil {
 		return nil, err
 	}
 	result, err := s.repo.CreateNotebook(ctx, nb)
@@ -266,6 +289,16 @@ func (s *Service) UpdateNotebook(ctx context.Context, principal string, isAdmin 
 	if err != nil {
 		return nil, fmt.Errorf("resolve notebook context before update: %w", err)
 	}
+	candidate := *nb
+	if req.ProjectOverrideID != nil {
+		candidate.ProjectOverrideID = req.ProjectOverrideID
+	}
+	if req.EnvironmentOverrideID != nil {
+		candidate.EnvironmentOverrideID = req.EnvironmentOverrideID
+	}
+	if err := s.validateNotebookEffectiveContext(ctx, &candidate); err != nil {
+		return nil, err
+	}
 	result, err := s.repo.UpdateNotebook(ctx, id, req)
 	if err != nil {
 		return nil, fmt.Errorf("update notebook: %w", err)
@@ -355,6 +388,9 @@ func (s *Service) MoveNotebook(ctx context.Context, principal string, isAdmin bo
 			return nil, err
 		}
 	}
+	if err := s.validateResolvedContext(ctx, targetCtx); err != nil {
+		return nil, err
+	}
 
 	result, err := s.repo.UpdateNotebookSync(ctx, &domain.Notebook{
 		ID:                    nb.ID,
@@ -426,6 +462,9 @@ func (s *Service) DuplicateNotebook(ctx context.Context, principal string, isAdm
 		if err := s.ensureUniqueGitPath(ctx, "", *targetCtx.EffectiveGitRepoID, *targetGitPath); err != nil {
 			return nil, err
 		}
+	}
+	if err := s.validateResolvedContext(ctx, targetCtx); err != nil {
+		return nil, err
 	}
 
 	created, err := s.repo.CreateNotebook(ctx, &domain.Notebook{
@@ -821,6 +860,34 @@ func (s *Service) invalidateNotebookContext(ctx context.Context, notebookID stri
 	}
 	if err := s.invalidator.InvalidateNotebook(ctx, notebookID); err != nil {
 		return fmt.Errorf("invalidate notebook runtime context: %w", err)
+	}
+	return nil
+}
+
+func (s *Service) validateNotebookEffectiveContext(ctx context.Context, nb *domain.Notebook) error {
+	resolved, err := s.resolveContextForNotebook(ctx, nb)
+	if err != nil {
+		return fmt.Errorf("resolve notebook context: %w", err)
+	}
+	return s.validateResolvedContext(ctx, resolved)
+}
+
+func (s *Service) validateResolvedContext(ctx context.Context, resolved *domain.NotebookContext) error {
+	if resolved == nil || resolved.EffectiveEnvironmentID == nil || strings.TrimSpace(*resolved.EffectiveEnvironmentID) == "" {
+		return nil
+	}
+	if resolved.EffectiveProjectID == nil || strings.TrimSpace(*resolved.EffectiveProjectID) == "" {
+		return domain.ErrValidation("environment override requires an effective project context")
+	}
+	if s.environments == nil {
+		return nil
+	}
+	environment, err := s.environments.GetByID(ctx, strings.TrimSpace(*resolved.EffectiveEnvironmentID))
+	if err != nil {
+		return fmt.Errorf("get environment %q: %w", strings.TrimSpace(*resolved.EffectiveEnvironmentID), err)
+	}
+	if strings.TrimSpace(environment.ProjectID) != strings.TrimSpace(*resolved.EffectiveProjectID) {
+		return domain.ErrValidation("effective environment must belong to the effective project")
 	}
 	return nil
 }

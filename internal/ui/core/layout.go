@@ -25,6 +25,7 @@ var navGroups = []navGroup{
 		Label: "Discover",
 		Items: []navItem{
 			{Label: "Overview", Href: "/ui", Key: "home", Icon: "house"},
+			{Label: "Explore", Href: "/ui/explore", Key: "explore", Icon: "compass"},
 			{Label: "Products", Href: "/ui/products", Key: "products", Icon: "package-open"},
 			{Label: "Catalogs", Href: "/ui/catalogs", Key: "catalogs", Icon: "database"},
 			{Label: "Runtime Assets", Href: "/ui/assets", Key: "assets", Icon: "git-fork"},
@@ -34,7 +35,6 @@ var navGroups = []navGroup{
 	{
 		Label: "Build",
 		Items: []navItem{
-			{Label: "Notebooks", Href: "/ui/notebooks", Key: "notebooks", Icon: "notebook-text"},
 			{
 				Label: "Models",
 				Href:  "/ui/models",

@@ -668,6 +668,7 @@ type CreateComputeEndpointRequest struct {
 
 type CreateDashboardRequest struct {
 	Description *string `json:"description,omitempty"`
+	FolderId    *string `json:"folder_id,omitempty"`
 	Name        string  `json:"name"`
 }
 
@@ -811,6 +812,7 @@ type CreatePipelineJobRequest struct {
 type CreatePipelineRequest struct {
 	ConcurrencyLimit *int32  `json:"concurrency_limit,omitempty"`
 	Description      *string `json:"description,omitempty"`
+	FolderId         *string `json:"folder_id,omitempty"`
 	IsPaused         *bool   `json:"is_paused,omitempty"`
 	Name             string  `json:"name"`
 	ScheduleCron     *string `json:"schedule_cron,omitempty"`
@@ -952,6 +954,7 @@ type CreateVolumeRequest struct {
 type Dashboard struct {
 	CreatedAt   *string `json:"created_at,omitempty"`
 	Description *string `json:"description,omitempty"`
+	FolderId    *string `json:"folder_id,omitempty"`
 	Id          *string `json:"id,omitempty"`
 	Name        *string `json:"name,omitempty"`
 	Owner       *string `json:"owner,omitempty"`
@@ -1122,6 +1125,20 @@ type DuplicateNotebookRequest struct {
 type Error struct {
 	Code    int32  `json:"code"`
 	Message string `json:"message"`
+}
+
+type ExploreItem struct {
+	FolderId     *string `json:"folder_id,omitempty"`
+	GitRepoId    *string `json:"git_repo_id,omitempty"`
+	Id           *string `json:"id,omitempty"`
+	Kind         *string `json:"kind,omitempty"`
+	Name         *string `json:"name,omitempty"`
+	Owner        *string `json:"owner,omitempty"`
+	ProjectBound *bool   `json:"project_bound,omitempty"`
+	ProjectName  *string `json:"project_name,omitempty"`
+	Scope        *string `json:"scope,omitempty"`
+	Shared       *bool   `json:"shared,omitempty"`
+	UpdatedAt    *string `json:"updated_at,omitempty"`
 }
 
 type ExternalLocation struct {
@@ -1597,6 +1614,12 @@ const (
 	ModelTestTestTypeCustomSql      ModelTestTestType = "custom_sql"
 )
 
+type MoveFolderRequest struct {
+	ConfirmContextChange *bool   `json:"confirm_context_change,omitempty"`
+	ConfirmLeaveGit      *bool   `json:"confirm_leave_git,omitempty"`
+	ParentFolderId       *string `json:"parent_folder_id,omitempty"`
+}
+
 type MoveNotebookRequest struct {
 	ConfirmContextChange *bool   `json:"confirm_context_change,omitempty"`
 	ConfirmLeaveGit      *bool   `json:"confirm_leave_git,omitempty"`
@@ -1812,6 +1835,11 @@ type PaginatedDataProducts struct {
 	NextPageToken *string               `json:"next_page_token,omitempty"`
 }
 
+type PaginatedExploreItems struct {
+	Data          []ExploreItem `json:"data"`
+	NextPageToken *string       `json:"next_page_token,omitempty"`
+}
+
 type PaginatedExternalLocations struct {
 	Data          []ExternalLocation `json:"data"`
 	NextPageToken *string            `json:"next_page_token,omitempty"`
@@ -1967,6 +1995,7 @@ type Pipeline struct {
 	CreatedAt        *string `json:"created_at,omitempty"`
 	CreatedBy        *string `json:"created_by,omitempty"`
 	Description      *string `json:"description,omitempty"`
+	FolderId         *string `json:"folder_id,omitempty"`
 	Id               *string `json:"id,omitempty"`
 	IsPaused         *bool   `json:"is_paused,omitempty"`
 	Name             *string `json:"name,omitempty"`
@@ -2666,6 +2695,7 @@ type UpdateComputeEndpointRequest struct {
 
 type UpdateDashboardRequest struct {
 	Description *string `json:"description,omitempty"`
+	FolderId    *string `json:"folder_id,omitempty"`
 	Name        *string `json:"name,omitempty"`
 }
 
@@ -2746,6 +2776,7 @@ type UpdateNotebookRequest struct {
 type UpdatePipelineRequest struct {
 	ConcurrencyLimit *int32  `json:"concurrency_limit,omitempty"`
 	Description      *string `json:"description,omitempty"`
+	FolderId         *string `json:"folder_id,omitempty"`
 	IsPaused         *bool   `json:"is_paused,omitempty"`
 	ScheduleCron     *string `json:"schedule_cron,omitempty"`
 }
@@ -2999,6 +3030,8 @@ type ListDataProductEventsParams = GenListDataProductEventsParams
 
 type ListDataProductsParams = GenListDataProductsParams
 
+type ListExploreItemsParams = GenListExploreItemsParams
+
 type ListExternalLocationsParams = GenListExternalLocationsParams
 
 type ListGitReposParams = GenListGitReposParams
@@ -3164,6 +3197,8 @@ type ExplainMetricQueryJSONRequestBody = GenExplainMetricQueryJSONBody
 type LoadTableExternalFilesJSONRequestBody = GenLoadTableExternalFilesJSONBody
 
 type LocalLoginJSONRequestBody = LocalLoginRequest
+
+type MoveNotebookFolderJSONRequestBody = GenMoveNotebookFolderJSONBody
 
 type MoveNotebookJSONRequestBody = GenMoveNotebookJSONBody
 

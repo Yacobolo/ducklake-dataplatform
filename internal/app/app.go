@@ -72,6 +72,7 @@ type Services struct {
 	WebSessionAuth      *authsvc.SessionService
 	Notebook            *notebook.Service
 	NotebookFolders     *notebook.FolderService
+	NotebookExplore     *notebook.ExploreService
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
 	Pipeline            *pipeline.Service
@@ -338,12 +339,16 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	notebookJobRepo := repository.NewNotebookJobRepo(deps.WriteDB)
 	notebookSvc := notebook.New(notebookRepo, auditRepo)
 	notebookSvc.SetFolderRepository(folderRepo)
+	notebookSvc.SetAuthorization(authSvc)
+	notebookSvc.SetGrantRepository(grantRepo)
 	notebookSvc.SetShareRepositories(folderShareRepo, notebookShareRepo)
 	folderSvc := notebook.NewFolderService(folderRepo, auditRepo)
+	folderSvc.SetAuthorization(authSvc)
+	folderSvc.SetGrantRepository(grantRepo)
 	folderSvc.SetShareRepository(folderShareRepo)
 	sessionMgr := notebook.NewSessionManager(deps.DuckDB, eng, notebookRepo, notebookJobRepo, auditRepo)
+	sessionMgr.SetAuthorization(authSvc)
 	sessionMgr.SetAccessRepositories(folderRepo, folderShareRepo, notebookShareRepo)
-	notebookSvc.SetContextInvalidator(sessionMgr)
 	gitRepoRepo := repository.NewGitRepoRepo(deps.WriteDB)
 	gitSvc := notebook.NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 	gitSvc.SetFolderRepository(folderRepo)
@@ -372,6 +377,10 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 		deps.DuckDB,
 		deps.Logger.With("component", "pipeline"),
 	)
+	pipelineSvc.SetFolderRepository(folderRepo)
+	notebookSvc.SetProjectRepositories(projectRepo, environmentRepo)
+	folderSvc.SetProjectRepositories(projectRepo, environmentRepo)
+	notebookSvc.SetContextInvalidator(notebook.NewOrchestrationEventEnqueuer(orchEventRepo))
 	assetScheduler := orchestration.NewAssetScheduler(assetRepo, assetDepRepo, assetRunRepo)
 	ioManager, err := newOrchestrationIOManager(cfg)
 	if err != nil {
@@ -451,6 +460,10 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	dashboardRepo := repository.NewDashboardRepo(deps.WriteDB)
 	dashboardWidgetRepo := repository.NewDashboardWidgetRepo(deps.WriteDB)
 	dashboardSvc := dashboard.NewService(dashboardRepo, dashboardWidgetRepo, notebookRepo, auditRepo, querySvc, semanticSvc)
+	dashboardSvc.SetFolderRepository(folderRepo)
+	exploreSvc := notebook.NewExploreService(folderRepo, notebookRepo, dashboardRepo, pipelineRepo, projectRepo, modelRepo, macroRepo, semanticModelRepo)
+	exploreSvc.SetAccessRepositories(folderShareRepo, notebookShareRepo)
+	exploreSvc.SetAuthorization(authSvc)
 	if err := pipeline.SyncSemanticResourcesToAssets(ctx, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, modelRepo, assetRepo, assetDepRepo, semanticProduct.Product.ID); err != nil {
 		return nil, fmt.Errorf("sync semantic resources to assets: %w", err)
 	}
@@ -520,6 +533,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			WebSessionAuth:      webSessionAuth,
 			Notebook:            notebookSvc,
 			NotebookFolders:     folderSvc,
+			NotebookExplore:     exploreSvc,
 			SessionManager:      sessionMgr,
 			GitService:          gitSvc,
 			Pipeline:            pipelineSvc,

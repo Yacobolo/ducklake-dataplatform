@@ -21,6 +21,7 @@ type Service struct {
 	dashboards domain.DashboardRepository
 	widgets    domain.DashboardWidgetRepository
 	notebooks  domain.NotebookRepository
+	folders    domain.FolderRepository
 	audit      domain.AuditRepository
 	queryExec  queryExecutor
 	semantic   *semantic.Service
@@ -45,6 +46,11 @@ func NewService(
 	}
 }
 
+// SetFolderRepository enables folder-backed dashboard placement.
+func (s *Service) SetFolderRepository(folders domain.FolderRepository) {
+	s.folders = folders
+}
+
 // ResolvedWidget contains a widget definition plus resolved tabular data.
 type ResolvedWidget struct {
 	Widget       domain.DashboardWidget
@@ -59,10 +65,21 @@ func (s *Service) CreateDashboard(ctx context.Context, owner string, req domain.
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
+	folderID := ""
+	if req.FolderID != nil && *req.FolderID != "" {
+		folderID = *req.FolderID
+	} else if s.folders != nil {
+		root, err := s.folders.EnsurePersonalRoot(ctx, owner)
+		if err != nil {
+			return nil, err
+		}
+		folderID = root.ID
+	}
 	item, err := s.dashboards.Create(ctx, &domain.Dashboard{
 		Name:        req.Name,
 		Description: req.Description,
 		Owner:       owner,
+		FolderID:    folderID,
 	})
 	if err != nil {
 		return nil, err

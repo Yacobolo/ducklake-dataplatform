@@ -315,7 +315,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 	return core.AppPage(
 		"Notebook: "+d.Name,
-		"notebooks",
+		"explore",
 		d.Principal,
 		data.Signals(map[string]any{"q": ""}),
 		workspaceNode,

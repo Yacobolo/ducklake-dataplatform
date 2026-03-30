@@ -218,6 +218,70 @@ func (r *FolderRepo) Update(ctx context.Context, id string, req domain.UpdateFol
 	return r.GetByID(ctx, id)
 }
 
+func (r *FolderRepo) Move(ctx context.Context, id string, parentFolderID *string) (*domain.Folder, error) {
+	current, err := r.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		newParentID *string
+		newPath     string
+		newDepth    int
+	)
+	if parentFolderID != nil && strings.TrimSpace(*parentFolderID) != "" {
+		parent, err := r.GetByID(ctx, strings.TrimSpace(*parentFolderID))
+		if err != nil {
+			return nil, err
+		}
+		if parent.ID == current.ID {
+			return nil, domain.ErrValidation("folder cannot be its own parent")
+		}
+		if parent.Path == current.Path || strings.HasPrefix(parent.Path, current.Path+"/") {
+			return nil, domain.ErrValidation("folder cannot be moved into its own subtree")
+		}
+		newParentID = &parent.ID
+		newPath = parent.Path + "/" + current.ID
+		newDepth = parent.Depth + 1
+	} else {
+		newPath = "/" + current.ID
+		newDepth = 0
+	}
+	if newPath == current.Path && ptrTrimmedValue(newParentID) == ptrTrimmedValue(current.ParentFolderID) {
+		return current, nil
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin folder move tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE folders
+		SET parent_folder_id = ?, path = ?, depth = ?, updated_at = datetime('now')
+		WHERE id = ?
+	`, nullStringPtr(newParentID), newPath, newDepth, current.ID); err != nil {
+		return nil, mapDBError(err)
+	}
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE folders
+		SET
+			path = ? || substr(path, ?),
+			depth = depth + ?,
+			updated_at = datetime('now')
+		WHERE path LIKE ?
+	`, newPath, len(current.Path)+1, newDepth-current.Depth, current.Path+"/%"); err != nil {
+		return nil, mapDBError(err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit folder move tx: %w", err)
+	}
+	return r.GetByID(ctx, id)
+}
+
 func (r *FolderRepo) Delete(ctx context.Context, id string) error {
 	result, err := r.db.ExecContext(ctx, `DELETE FROM folders WHERE id = ?`, id)
 	if err != nil {
@@ -414,6 +478,13 @@ func stringPtr(s string) *string {
 	}
 	v := strings.TrimSpace(s)
 	return &v
+}
+
+func ptrTrimmedValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(*value)
 }
 
 func mustParseFolderTime(raw string) time.Time {
