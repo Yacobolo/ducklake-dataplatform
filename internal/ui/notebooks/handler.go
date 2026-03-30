@@ -15,36 +15,193 @@ import (
 	"duck-demo/internal/ui/core"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/starfederation/datastar-go/datastar"
+	g "maragu.dev/gomponents"
 )
 
-type Handler struct{ deps *core.Dependencies }
+type Handler struct {
+	deps           *core.Dependencies
+	exploreUpdates *exploreUpdateHub
+}
 
-func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
+func New(deps *core.Dependencies) *Handler {
+	return &Handler{
+		deps:           deps,
+		exploreUpdates: newExploreUpdateHub(),
+	}
+}
+
+type exploreViewData struct {
+	Principal        domain.ContextPrincipal
+	Rows             []exploreListRow
+	Breadcrumbs      []exploreBreadcrumbItem
+	SelectedFolderID string
+	SelectedKinds    []string
+	SelectedOwners   []string
+	SearchQuery      string
+	OwnerOptions     []string
+	StreamID         string
+	CSRFToken        string
+	Page             domain.PageRequest
+	Total            int64
+}
 
 func (h *Handler) ExploreList(w http.ResponseWriter, r *http.Request) {
-	principal := core.PrincipalFromContext(r.Context())
-	if h.deps.NotebookExplore == nil {
-		renderServiceError(w, domain.ErrNotImplemented("explore service is not configured"))
+	view, err := h.buildExploreViewData(r, domain.NewID())
+	if err != nil {
+		renderServiceError(w, err)
 		return
 	}
 
-	pageReq := pageFromRequest(r, 30)
+	core.RenderHTML(w, http.StatusOK, exploreListPage(
+		view.Principal,
+		view.Rows,
+		view.Breadcrumbs,
+		view.SelectedFolderID,
+		view.SelectedKinds,
+		view.SelectedOwners,
+		view.SearchQuery,
+		view.OwnerOptions,
+		view.StreamID,
+		view.CSRFToken,
+		view.Page,
+		view.Total,
+	))
+}
+
+func (h *Handler) ExploreFragment(w http.ResponseWriter, r *http.Request) {
+	view, err := h.buildExploreViewData(r, "")
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+
+	if err := writeDatastarElementPatch(w, r, exploreMainContent(
+		view.Rows,
+		view.Breadcrumbs,
+		view.SelectedFolderID,
+		view.SelectedKinds,
+		view.SelectedOwners,
+		view.SearchQuery,
+		view.OwnerOptions,
+		view.StreamID,
+		view.CSRFToken,
+		view.Page,
+		view.Total,
+	)); err != nil {
+		renderServiceError(w, fmt.Errorf("render explore fragment: %w", err))
+		return
+	}
+}
+
+func (h *Handler) ExploreUpdatesStream(w http.ResponseWriter, r *http.Request) {
+	streamID := strings.TrimSpace(chi.URLParam(r, "streamID"))
+	if streamID == "" {
+		http.Error(w, "missing stream id", http.StatusBadRequest)
+		return
+	}
+
+	ch, unsubscribe := h.exploreUpdates.subscribe(streamID)
+	defer unsubscribe()
+
+	sse := datastar.NewSSE(w, r)
+	principal := core.PrincipalFromContext(r.Context())
+
+	ticker := time.NewTicker(25 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case <-ticker.C:
+			if err := sse.Send(datastar.EventTypePatchSignals, []string{"signals {}"}); err != nil {
+				return
+			}
+		case update := <-ch:
+			view, err := h.buildExploreViewDataForFilter(r.Context(), principal, domain.PageRequest{MaxResults: defaultExplorePageSize}, update.FolderID, update.Kinds, update.Owners, update.Query, streamID)
+			if err != nil {
+				_ = sse.ConsoleError(err)
+				return
+			}
+			if err := sse.PatchElementGostar(
+				exploreMainContent(
+					view.Rows,
+					view.Breadcrumbs,
+					view.SelectedFolderID,
+					view.SelectedKinds,
+					view.SelectedOwners,
+					view.SearchQuery,
+					view.OwnerOptions,
+					streamID,
+					h.deps.CSRFToken(r),
+					view.Page,
+					view.Total,
+				),
+				datastar.WithSelectorID("main-content"),
+			); err != nil {
+				return
+			}
+		}
+	}
+}
+
+func (h *Handler) ExploreUpdatesApply(w http.ResponseWriter, r *http.Request) {
+	streamID := strings.TrimSpace(chi.URLParam(r, "streamID"))
+	if streamID == "" {
+		http.Error(w, "missing stream id", http.StatusBadRequest)
+		return
+	}
+
+	params, err := decodeExploreUpdateParams(r)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+
+	h.exploreUpdates.publish(streamID, params)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) NotebooksList(w http.ResponseWriter, r *http.Request) {
+	target := explorePageURL(pageFromRequest(r, defaultExplorePageSize), []string{domain.ExploreKindNotebook}, nil, "", strings.TrimSpace(r.URL.Query().Get("folder_id")))
+	http.Redirect(w, r, target, http.StatusSeeOther)
+}
+
+func (h *Handler) buildExploreViewData(r *http.Request, streamID string) (exploreViewData, error) {
+	principal := core.PrincipalFromContext(r.Context())
+	if h.deps.NotebookExplore == nil {
+		return exploreViewData{}, domain.ErrNotImplemented("explore service is not configured")
+	}
+
+	pageReq := pageFromRequest(r, defaultExplorePageSize)
 	selectedFolderID := strings.TrimSpace(r.URL.Query().Get("folder_id"))
-	selectedKind := strings.TrimSpace(r.URL.Query().Get("kind"))
-	allItems, err := h.deps.NotebookExplore.List(r.Context(), principal.Name, principal.IsAdmin, domain.ExploreFilter{
+	selectedKinds := selectedExploreKinds(r)
+	selectedOwners := selectedExploreOwners(r)
+	searchQuery := selectedExploreQuery(r)
+	view, err := h.buildExploreViewDataForFilter(r.Context(), principal, pageReq, selectedFolderID, selectedKinds, selectedOwners, searchQuery, streamID)
+	if err != nil {
+		return exploreViewData{}, err
+	}
+	view.CSRFToken = h.deps.CSRFToken(r)
+	return view, nil
+}
+
+func (h *Handler) buildExploreViewDataForFilter(ctx context.Context, principal domain.ContextPrincipal, pageReq domain.PageRequest, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, streamID string) (exploreViewData, error) {
+	allItems, err := h.deps.NotebookExplore.List(ctx, principal.Name, principal.IsAdmin, domain.ExploreFilter{
 		FolderID: selectedFolderID,
-		Kind:     selectedKind,
+		Kinds:    selectedKinds,
+		Owners:   selectedOwners,
+		Query:    searchQuery,
 		Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
 	})
 	if err != nil {
-		renderServiceError(w, err)
-		return
+		return exploreViewData{}, err
 	}
 
-	folderPaths, folderItems, err := h.folderPathMap(r.Context(), principal.Name, principal.IsAdmin)
+	folderPaths, folderItems, err := h.folderPathMap(ctx, principal.Name, principal.IsAdmin)
 	if err != nil {
-		renderServiceError(w, err)
-		return
+		return exploreViewData{}, err
 	}
 
 	offset := pageReq.Offset()
@@ -57,10 +214,8 @@ func (h *Handler) ExploreList(w http.ResponseWriter, r *http.Request) {
 	}
 	items := allItems[offset:end]
 	rows := make([]exploreListRow, 0, len(items)+8)
-	if pageReq.Offset() == 0 && normalizeExploreKind(selectedKind) == domain.ExploreKindAll {
-		for _, folderRow := range h.exploreFolderRows(folderItems, folderPaths, principal.Name, selectedFolderID) {
-			rows = append(rows, folderRow)
-		}
+	if pageReq.Offset() == 0 && folderKindAllowed(selectedKinds) {
+		rows = append(rows, h.exploreFolderRows(folderItems, folderPaths, principal.Name, selectedFolderID, selectedOwners, searchQuery)...)
 	}
 	for i := range items {
 		item := items[i]
@@ -78,12 +233,72 @@ func (h *Handler) ExploreList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	core.RenderHTML(w, http.StatusOK, exploreListPage(principal, rows, h.exploreBreadcrumbItems(folderItems, selectedFolderID, pageReq, selectedKind), selectedFolderID, selectedKind, pageReq, int64(len(allItems))))
+	return exploreViewData{
+		Principal:        principal,
+		Rows:             rows,
+		Breadcrumbs:      h.exploreBreadcrumbItems(folderItems, selectedFolderID, pageReq, selectedKinds, selectedOwners, searchQuery),
+		SelectedFolderID: selectedFolderID,
+		SelectedKinds:    selectedKinds,
+		SelectedOwners:   selectedOwners,
+		SearchQuery:      searchQuery,
+		OwnerOptions:     exploreFilterOwners(folderItems, allItems),
+		StreamID:         streamID,
+		Page:             pageReq,
+		Total:            int64(len(allItems)),
+	}, nil
 }
 
-func (h *Handler) NotebooksList(w http.ResponseWriter, r *http.Request) {
-	target := explorePageURL(pageFromRequest(r, 30), selectedExploreKind(r, domain.ExploreKindNotebook), strings.TrimSpace(r.URL.Query().Get("folder_id")))
-	http.Redirect(w, r, target, http.StatusSeeOther)
+type exploreUpdateParams struct {
+	FolderID string
+	Kinds    []string
+	Owners   []string
+	Query    string
+}
+
+func decodeExploreUpdateParams(r *http.Request) (exploreUpdateParams, error) {
+	type urlParamsPayload struct {
+		FolderID string   `json:"folder_id"`
+		Kinds    []string `json:"kind"`
+		Owners   []string `json:"owner"`
+		Query    string   `json:"q"`
+	}
+	type wrapper struct {
+		URLParams urlParamsPayload `json:"urlParams"`
+	}
+
+	var signals wrapper
+	if err := datastar.ReadSignals(r, &signals); err != nil {
+		return exploreUpdateParams{}, fmt.Errorf("read explore update signals: %w", err)
+	}
+
+	return exploreUpdateParams{
+		FolderID: strings.TrimSpace(signals.URLParams.FolderID),
+		Kinds:    normalizeExploreValues(signals.URLParams.Kinds),
+		Owners:   normalizeExploreValues(signals.URLParams.Owners),
+		Query:    strings.TrimSpace(signals.URLParams.Query),
+	}, nil
+}
+
+func normalizeExploreValues(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	normalized := make([]string, 0, len(values))
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+		if _, ok := seen[trimmed]; ok {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		normalized = append(normalized, trimmed)
+	}
+	return normalized
+}
+
+func writeDatastarElementPatch(w http.ResponseWriter, r *http.Request, node g.Node) error {
+	sse := datastar.NewSSE(w, r)
+	return sse.PatchElementGostar(node, datastar.WithSelectorID("main-content"))
 }
 
 func (h *Handler) NotebookFoldersList(w http.ResponseWriter, r *http.Request) {
@@ -234,7 +449,7 @@ func (h *Handler) NotebookFoldersUnshare(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Handler) NotebookGitReposList(w http.ResponseWriter, r *http.Request) {
-	pageReq := pageFromRequest(r, 30)
+	pageReq := pageFromRequest(r, defaultExplorePageSize)
 	items, total, err := h.deps.GitService.ListGitRepos(r.Context(), pageReq)
 	if err != nil {
 		renderServiceError(w, err)
@@ -530,7 +745,7 @@ func (h *Handler) NotebooksUnshare(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) NotebookJobsList(w http.ResponseWriter, r *http.Request) {
 	notebookID := chi.URLParam(r, "notebookID")
-	pageReq := pageFromRequest(r, 30)
+	pageReq := pageFromRequest(r, defaultExplorePageSize)
 	jobs, total, err := h.deps.SessionManager.ListJobs(r.Context(), notebookID, pageReq)
 	if err != nil {
 		renderServiceError(w, err)
@@ -864,42 +1079,9 @@ func (h *Handler) folderNavItems(folders []domain.Folder, folderPaths map[string
 	return items
 }
 
-func (h *Handler) exploreFolderNavItems(folders []domain.Folder, folderPaths map[string]string, items []domain.ExploreItem, selectedFolderID string, selectedKind string) []notebookFolderNavItem {
-	kind := normalizeExploreKind(selectedKind)
-	nav := make([]notebookFolderNavItem, 0, len(folders)+1)
-	nav = append(nav, notebookFolderNavItem{
-		Label:  "All assets",
-		URL:    explorePageURL(domain.PageRequest{MaxResults: domain.DefaultMaxResults}, kind, ""),
-		Depth:  0,
-		Count:  fmt.Sprintf("%d", len(items)),
-		Active: selectedFolderID == "",
-	})
-	for i := range folders {
-		folder := folders[i]
-		count := 0
-		folderPath := strings.TrimSpace(folderPaths[folder.ID])
-		for j := range items {
-			itemFolderPath := strings.TrimSpace(folderPaths[stringValue(items[j].FolderID)])
-			if itemFolderPath == "" {
-				continue
-			}
-			if itemFolderPath == folderPath || strings.HasPrefix(itemFolderPath, folderPath+"/") {
-				count++
-			}
-		}
-		nav = append(nav, notebookFolderNavItem{
-			Label:  folder.Name,
-			URL:    explorePageURL(domain.PageRequest{MaxResults: domain.DefaultMaxResults}, kind, folder.ID),
-			Depth:  folder.Depth,
-			Count:  fmt.Sprintf("%d", count),
-			Active: folder.ID == selectedFolderID,
-		})
-	}
-	return nav
-}
-
-func (h *Handler) exploreFolderRows(folders []domain.Folder, folderPaths map[string]string, principal, selectedFolderID string) []exploreListRow {
+func (h *Handler) exploreFolderRows(folders []domain.Folder, folderPaths map[string]string, principal, selectedFolderID string, selectedOwners []string, searchQuery string) []exploreListRow {
 	visible := make([]domain.Folder, 0, len(folders))
+	query := strings.ToLower(strings.TrimSpace(searchQuery))
 	for i := range folders {
 		folder := folders[i]
 		if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot {
@@ -910,6 +1092,12 @@ func (h *Handler) exploreFolderRows(folders []domain.Folder, folderPaths map[str
 				continue
 			}
 		} else if stringValue(folder.ParentFolderID) != selectedFolderID {
+			continue
+		}
+		if len(selectedOwners) > 0 && !containsString(selectedOwners, folder.Owner) {
+			continue
+		}
+		if query != "" && !exploreTextMatch(query, folder.Name, folder.Owner, valueOrDash(folderPaths[stringValue(folder.ParentFolderID)])) {
 			continue
 		}
 		visible = append(visible, folder)
@@ -941,7 +1129,7 @@ func (h *Handler) exploreFolderRows(folders []domain.Folder, folderPaths map[str
 		}
 		rows = append(rows, exploreListRow{
 			Name:         folder.Name,
-			URL:          explorePageURL(domain.PageRequest{MaxResults: domain.DefaultMaxResults}, domain.ExploreKindAll, folder.ID),
+			URL:          explorePageURL(domain.PageRequest{MaxResults: defaultExplorePageSize}, nil, selectedOwners, searchQuery, folder.ID),
 			MetaURL:      "/ui/explore/folders/" + folder.ID + "/edit",
 			MetaLabel:    "Settings",
 			Kind:         "folder",
@@ -956,11 +1144,10 @@ func (h *Handler) exploreFolderRows(folders []domain.Folder, folderPaths map[str
 	return rows
 }
 
-func (h *Handler) exploreBreadcrumbItems(folders []domain.Folder, selectedFolderID string, page domain.PageRequest, selectedKind string) []exploreBreadcrumbItem {
-	kind := normalizeExploreKind(selectedKind)
+func (h *Handler) exploreBreadcrumbItems(folders []domain.Folder, selectedFolderID string, page domain.PageRequest, selectedKinds []string, selectedOwners []string, searchQuery string) []exploreBreadcrumbItem {
 	breadcrumbs := []exploreBreadcrumbItem{{
-		Label:   "All assets",
-		URL:     explorePageURL(domain.PageRequest{MaxResults: page.Limit()}, kind, ""),
+		Label:   "Explore",
+		URL:     explorePageURL(domain.PageRequest{MaxResults: page.Limit()}, selectedKinds, selectedOwners, searchQuery, ""),
 		Current: selectedFolderID == "",
 	}}
 	if strings.TrimSpace(selectedFolderID) == "" {
@@ -989,19 +1176,82 @@ func (h *Handler) exploreBreadcrumbItems(folders []domain.Folder, selectedFolder
 		folder := chain[i]
 		breadcrumbs = append(breadcrumbs, exploreBreadcrumbItem{
 			Label:   folder.Name,
-			URL:     explorePageURL(domain.PageRequest{MaxResults: page.Limit()}, kind, folder.ID),
+			URL:     explorePageURL(domain.PageRequest{MaxResults: page.Limit()}, selectedKinds, selectedOwners, searchQuery, folder.ID),
 			Current: i == len(chain)-1,
 		})
 	}
 	return breadcrumbs
 }
 
-func selectedExploreKind(r *http.Request, fallback string) string {
-	kind := strings.TrimSpace(r.URL.Query().Get("kind"))
-	if kind == "" {
-		return fallback
+func selectedExploreKinds(r *http.Request) []string {
+	return normalizeExploreKinds(r.URL.Query()["kind"])
+}
+
+func selectedExploreOwners(r *http.Request) []string {
+	return normalizeExploreOwners(r.URL.Query()["owner"])
+}
+
+func selectedExploreQuery(r *http.Request) string {
+	return strings.TrimSpace(r.URL.Query().Get("q"))
+}
+
+func exploreTextMatch(query string, values ...string) bool {
+	query = strings.ToLower(strings.TrimSpace(query))
+	if query == "" {
+		return true
 	}
-	return kind
+	for _, value := range values {
+		if strings.Contains(strings.ToLower(strings.TrimSpace(value)), query) {
+			return true
+		}
+	}
+	return false
+}
+
+func folderKindAllowed(selectedKinds []string) bool {
+	if len(selectedKinds) == 0 {
+		return true
+	}
+	return containsString(selectedKinds, domain.ExploreKindFolder)
+}
+
+func containsString(values []string, target string) bool {
+	target = strings.TrimSpace(target)
+	for _, value := range values {
+		if strings.TrimSpace(value) == target {
+			return true
+		}
+	}
+	return false
+}
+
+func exploreFilterOwners(folders []domain.Folder, items []domain.ExploreItem) []string {
+	seen := map[string]struct{}{}
+	owners := make([]string, 0, len(folders)+len(items))
+	for _, folder := range folders {
+		owner := strings.TrimSpace(folder.Owner)
+		if owner == "" {
+			continue
+		}
+		if _, ok := seen[owner]; ok {
+			continue
+		}
+		seen[owner] = struct{}{}
+		owners = append(owners, owner)
+	}
+	for _, item := range items {
+		owner := strings.TrimSpace(item.Owner)
+		if owner == "" {
+			continue
+		}
+		if _, ok := seen[owner]; ok {
+			continue
+		}
+		seen[owner] = struct{}{}
+		owners = append(owners, owner)
+	}
+	sort.Strings(owners)
+	return owners
 }
 
 func stringValue(value *string) string {

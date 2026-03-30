@@ -109,7 +109,7 @@ func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defa
 			Attr("aria-selected", selected),
 			Attr("aria-controls", panelID),
 			Attr("data-workspace-aside-tab", tab.ID),
-			I(Class("workspace-aside-tab-icon h-4 w-4 shrink-0"), Attr("data-lucide", tab.Icon), Attr("aria-hidden", "true")),
+			Icon(tab.Icon, Class("workspace-aside-tab-icon h-4 w-4 shrink-0")),
 			Span(Class("workspace-aside-tab-label truncate [.is-aside-collapsed_&]:hidden max-md:[.is-aside-collapsed_&]:inline"), Text(tab.Label)),
 			countNode,
 		))
@@ -136,7 +136,7 @@ func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defa
 		Attr("aria-label", "Collapse sidebar"),
 		Attr("aria-expanded", "true"),
 		Title("Collapse sidebar"),
-		I(Class(IconGlyphClass()), Attr("data-lucide", "panel-left-close"), Attr("aria-hidden", "true")),
+		Icon("panel-left-close", Class(IconGlyphClass())),
 		Span(Class("sr-only"), Text("Collapse sidebar")),
 	)
 
@@ -190,7 +190,7 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 				if icon == "" {
 					icon = "table"
 				}
-				objectNodes = append(objectNodes, Li(A(Href(obj.URL), Class(leafClass), I(Class(NavIconClass()), Attr("data-lucide", icon), Attr("aria-hidden", "true")), Span(Text(obj.Name)))))
+				objectNodes = append(objectNodes, Li(A(Href(obj.URL), Class(leafClass), Icon(icon, Class(NavIconClass())), Span(Text(obj.Name)))))
 			}
 
 			objectSection := Node(P(Class("m-0 px-2.5 py-2 text-xs text-[var(--fgColor-muted)]"), Text(fallbackString(schema.EmptyText, "No objects in this schema."))))
@@ -208,8 +208,8 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 					Summary(
 						Class(detailsSummaryClass()),
 						Div(Class("flex min-w-0 items-center gap-2"),
-							I(Class(NavIconClass("transition-transform group-open:rotate-90")), Attr("data-lucide", "chevron-right"), Attr("aria-hidden", "true")),
-							A(Href(schema.URL), Class(schemaClass), I(Class(NavIconClass()), Attr("data-lucide", "folder"), Attr("aria-hidden", "true")), Span(Text(schema.Name))),
+							Icon("chevron-right", Class(NavIconClass("transition-transform group-open:rotate-90"))),
+							A(Href(schema.URL), Class(schemaClass), Icon("folder", Class(NavIconClass())), Span(Text(schema.Name))),
 						),
 					),
 					Div(Class("pt-1"), objectSection),
@@ -226,7 +226,7 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 		catalogItem := Node(Li(
 			Class("min-w-0"),
 			data.Show(containsExpr(showValue)),
-			A(Href(catalog.URL), Class(catalogClass), I(Class(NavIconClass()), Attr("data-lucide", "database"), Attr("aria-hidden", "true")), Span(Text(catalog.Name))),
+			A(Href(catalog.URL), Class(catalogClass), Icon("database", Class(NavIconClass())), Span(Text(catalog.Name))),
 		))
 		if catalog.Open || len(schemaNodes) > 0 {
 			openAttr := Node(nil)
@@ -242,8 +242,8 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 					Summary(
 						Class(detailsSummaryClass()),
 						Div(Class("flex min-w-0 items-center gap-2"),
-							I(Class(NavIconClass("transition-transform group-open:rotate-90")), Attr("data-lucide", "chevron-right"), Attr("aria-hidden", "true")),
-							A(Href(catalog.URL), Class(catalogClass), I(Class(NavIconClass()), Attr("data-lucide", "database"), Attr("aria-hidden", "true")), Span(Text(catalog.Name))),
+							Icon("chevron-right", Class(NavIconClass("transition-transform group-open:rotate-90"))),
+							A(Href(catalog.URL), Class(catalogClass), Icon("database", Class(NavIconClass())), Span(Text(catalog.Name))),
 						),
 					),
 					childrenNode,
@@ -260,13 +260,13 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 
 	newCatalogButton := Node(nil)
 	if strings.TrimSpace(d.NewCatalogURL) != "" {
-		newCatalogButton = A(Href(d.NewCatalogURL), Class(iconButtonClass("small")), Title("New catalog"), Attr("aria-label", "New catalog"), I(Class(IconGlyphClass()), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("New catalog")))
+		newCatalogButton = A(Href(d.NewCatalogURL), Class(iconButtonClass("small")), Title("New catalog"), Attr("aria-label", "New catalog"), Icon("plus", Class(IconGlyphClass())), Span(Class("sr-only"), Text("New catalog")))
 	}
 
 	filterNode := Node(nil)
 	if strings.TrimSpace(d.FilterPlaceholder) != "" {
 		filterNode = Div(Class("relative"),
-			I(Class(NavIconClass()), Attr("data-lucide", "search"), Attr("aria-hidden", "true")),
+			Icon("search", Class(NavIconClass())),
 			Label(Class("sr-only"), Text("Filter catalog explorer")),
 			Input(Type("search"), Class(formControlClass("pl-9")), Placeholder(d.FilterPlaceholder), data.Bind("q"), AutoComplete("off")),
 		)

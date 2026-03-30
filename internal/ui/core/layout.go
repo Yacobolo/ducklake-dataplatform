@@ -1,6 +1,9 @@
 package core
 
 import (
+	"os"
+	"strings"
+
 	"duck-demo/internal/domain"
 
 	. "maragu.dev/gomponents"
@@ -65,6 +68,7 @@ var navGroups = []navGroup{
 }
 
 func AppPage(title, active string, principal domain.ContextPrincipal, body ...Node) Node {
+	devInspector := shouldShowDatastarInspector()
 	nav := make([]Node, 0, len(navGroups))
 	for _, group := range navGroups {
 		items := make([]Node, 0, len(group.Items))
@@ -103,7 +107,7 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
 					Href(item.Href),
 					Class(className),
 					currentAttr,
-					I(Class(NavIconClass()), Attr("data-lucide", item.Icon), Attr("aria-hidden", "true")),
+					Icon(item.Icon, Class(NavIconClass())),
 					Span(Class("app-nav-text [.app-shell.sidebar-compact_&]:hidden max-md:[.app-shell.sidebar-compact_&]:inline"), Text(item.Label)),
 				),
 				children,
@@ -121,9 +125,6 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
 		principalLabel = "unknown"
 	}
 
-	mainClass := "app-main"
-	contentClass := "content"
-
 	return HTML(
 		Lang("en"),
 		Attr("data-color-mode", "auto"),
@@ -136,8 +137,13 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
 			Link(Rel("icon"), Href("data:,")),
 			Script(Raw(ThemeInitScript)),
 			Link(Rel("stylesheet"), Href(UIStylesheetHref())),
-			Script(Src("https://unpkg.com/lucide@latest/dist/umd/lucide.min.js")),
 			Script(Type("module"), Src("https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js")),
+			func() Node {
+				if !devInspector {
+					return nil
+				}
+				return Script(Type("module"), Src(UIScriptHref("datastar-inspector.js")))
+			}(),
 		),
 		Body(
 			Class("app-frame min-h-screen h-screen overflow-hidden bg-[var(--bgColor-default)] text-[var(--fgColor-default)]"),
@@ -147,29 +153,54 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
 					Class("app-header flex items-center justify-between gap-4 border-b border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-4 py-3 shadow-xs max-md:flex-wrap"),
 					Div(
 						Class("app-header-brand inline-flex items-center gap-2"),
-						Button(Type("button"), ID("nav-toggle"), Class(ClassNames(iconButtonClass("small"), "app-header-menu hidden max-md:inline-flex")), Attr("aria-label", "Toggle navigation"), Attr("aria-controls", "app-sidebar"), Attr("aria-expanded", "false"), I(Class(IconGlyphClass()), Attr("data-lucide", "menu"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Toggle navigation"))),
+						Button(Type("button"), ID("nav-toggle"), Class(ClassNames(iconButtonClass("small"), "app-header-menu hidden max-md:inline-flex")), Attr("aria-label", "Toggle navigation"), Attr("aria-controls", "app-sidebar"), Attr("aria-expanded", "false"), Icon("menu", Class(IconGlyphClass())), Span(Class("sr-only"), Text("Toggle navigation"))),
 						Strong(Class("block text-[0.8125rem] font-semibold uppercase tracking-[0.04em]"), Text("Duck Platform")),
 					),
 					Div(
 						Class("app-header-meta inline-flex items-center gap-2 max-md:w-full max-md:justify-between"),
-						Button(Type("button"), ID("sidebar-toggle"), Class(ClassNames(iconButtonClass("small"), "max-md:hidden")), Attr("aria-label", "Toggle compact sidebar"), Title("Toggle compact sidebar"), I(Class(IconGlyphClass()), Attr("data-lucide", "panel-left"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Toggle compact sidebar"))),
+						Button(Type("button"), ID("sidebar-toggle"), Class(ClassNames(iconButtonClass("small"), "max-md:hidden")), Attr("aria-label", "Toggle compact sidebar"), Title("Toggle compact sidebar"), Icon("panel-left", Class(IconGlyphClass())), Span(Class("sr-only"), Text("Toggle compact sidebar"))),
 						P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text("Signed in as "+principalLabel)),
-						Button(Type("button"), ID("theme-toggle"), Class(iconButtonClass("small")), Title("Toggle theme"), Attr("aria-label", "Toggle theme"), Span(ID("theme-icon-sun"), I(Class(IconGlyphClass()), Attr("data-lucide", "sun"), Attr("aria-hidden", "true"))), Span(ID("theme-icon-moon"), Class("hidden"), I(Class(IconGlyphClass()), Attr("data-lucide", "moon"), Attr("aria-hidden", "true"))), Span(Class("sr-only"), Text("Toggle theme"))),
+						Button(Type("button"), ID("theme-toggle"), Class(iconButtonClass("small")), Title("Toggle theme"), Attr("aria-label", "Toggle theme"), Span(ID("theme-icon-sun"), Icon("sun", Class(IconGlyphClass()))), Span(ID("theme-icon-moon"), Class("hidden"), Icon("moon", Class(IconGlyphClass()))), Span(Class("sr-only"), Text("Toggle theme"))),
 						Form(Method("post"), Action("/ui/logout"), Button(Type("submit"), Class(secondaryButtonClass("small")), Text("Sign out"))),
 					),
 				),
 				Div(
 					Class("app-body grid min-h-0 flex-1 overflow-hidden [grid-template-columns:18rem_minmax(0,1fr)] max-md:grid-cols-1"),
 					Aside(Class("app-sidebar relative h-full overflow-y-auto border-r border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-2 py-4 shadow-xs transition-transform duration-100 ease-out [.app-shell.sidebar-compact_&]:px-1 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:h-screen max-md:w-72 max-md:-translate-x-full max-md:[.app-shell.nav-open_&]:translate-x-0"), ID("app-sidebar"), Nav(Class("app-nav grid gap-4"), Group(nav))),
-					Section(Class(ClassNames(mainClass, "flex min-h-0 flex-col overflow-auto bg-[var(--bgColor-default)] px-[clamp(0.75rem,3vw,1.5rem)] py-5 max-md:px-3 max-md:py-4")), ID("main-content"), Attr("tabindex", "-1"), H1(Class("sr-only"), Text(title)), Div(Class(ClassNames("app-main-content", contentClass, "mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 max-md:gap-5")), Group(body))),
+					MainContentSection(title, Group(body)),
 				),
 				Div(Class("app-overlay pointer-events-none fixed inset-0 z-10 hidden bg-black/40 opacity-0 transition-opacity duration-100 ease-out [.app-shell.nav-open_&]:opacity-100 [.app-shell.nav-open_&]:pointer-events-auto max-md:block"), ID("app-overlay"), Attr("aria-hidden", "true")),
 			),
 			Script(Raw(ThemeBehaviorScript)),
 			Script(Raw(ShellBehaviorScript)),
-			Script(Raw("if (window.lucide) { window.lucide.createIcons(); } document.addEventListener('click', function(e){ var t=e.target; if(!(t instanceof Element)){return;} document.querySelectorAll('details.dropdown[open]').forEach(function(d){ if(!d.contains(t)){ d.removeAttribute('open'); }}); });")),
+			Script(Raw("document.addEventListener('click', function(e){ var t=e.target; if(!(t instanceof Element)){return;} document.querySelectorAll('details.dropdown[open]').forEach(function(d){ if(!d.contains(t)){ d.removeAttribute('open'); }}); });")),
+			func() Node {
+				if !devInspector {
+					return nil
+				}
+				return El("datastar-inspector")
+			}(),
 		),
 	)
+}
+
+func MainContentSection(title string, body ...Node) Node {
+	return Section(
+		Class(ClassNames("app-main", "flex min-h-0 flex-col overflow-auto bg-[var(--bgColor-default)] px-[clamp(0.75rem,3vw,1.5rem)] py-5 max-md:px-3 max-md:py-4")),
+		ID("main-content"),
+		Attr("tabindex", "-1"),
+		H1(Class("sr-only"), Text(title)),
+		Div(Class(ClassNames("app-main-content", "content", "mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 max-md:gap-5")), Group(body)),
+	)
+}
+
+func shouldShowDatastarInspector() bool {
+	env := strings.TrimSpace(strings.ToLower(os.Getenv("ENV")))
+	if env == "development" {
+		return true
+	}
+	bypass := strings.TrimSpace(strings.ToLower(os.Getenv("AUTH_UI_DEV_BYPASS")))
+	return bypass == "1" || bypass == "true" || bypass == "yes" || bypass == "on"
 }
 
 func navItemActive(item navItem, active string) bool {

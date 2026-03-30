@@ -3,6 +3,7 @@ package domain
 import "time"
 
 const (
+	ExploreKindFolder        = "folder"
 	ExploreKindAll           = "all"
 	ExploreKindNotebook      = "notebook"
 	ExploreKindModel         = "model"
@@ -20,7 +21,9 @@ const (
 // ExploreFilter defines the current folder and kind selection.
 type ExploreFilter struct {
 	FolderID string
-	Kind     string
+	Kinds    []string
+	Owners   []string
+	Query    string
 	Page     PageRequest
 }
 

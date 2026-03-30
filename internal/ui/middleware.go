@@ -1,10 +1,13 @@
 package ui
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -55,6 +58,9 @@ func (h *Handler) RequireCSRF(next http.Handler) http.Handler {
 		}
 
 		formToken := strings.TrimSpace(r.Header.Get("X-CSRF-Token"))
+		if formToken == "" && isDatastarSignalRequest(r) {
+			formToken = strings.TrimSpace(readDatastarCSRFToken(r))
+		}
 		if formToken == "" {
 			_ = r.ParseForm()
 			formToken = strings.TrimSpace(r.Form.Get("csrf_token"))
@@ -185,4 +191,36 @@ func randomToken(size int) string {
 	b := make([]byte, size)
 	_, _ = rand.Read(b)
 	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+func readDatastarCSRFToken(r *http.Request) string {
+	if r.Body == nil {
+		return ""
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		r.Body = http.NoBody
+		return ""
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	if len(bytes.TrimSpace(body)) == 0 {
+		return ""
+	}
+
+	var payload struct {
+		CSRFToken string `json:"csrfToken"`
+		Legacy    string `json:"csrf_token"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return ""
+	}
+	if token := strings.TrimSpace(payload.CSRFToken); token != "" {
+		return token
+	}
+	return strings.TrimSpace(payload.Legacy)
+}
+
+func isDatastarSignalRequest(r *http.Request) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type"))), "application/json")
 }

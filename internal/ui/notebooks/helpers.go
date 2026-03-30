@@ -22,6 +22,8 @@ type accessShareRow struct {
 	DeleteURL string
 }
 
+const defaultExplorePageSize = 30
+
 func parseFormOrRenderBadRequest(w http.ResponseWriter, r *http.Request) bool {
 	if err := r.ParseForm(); err != nil {
 		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "Unable to parse form."))
@@ -208,15 +210,54 @@ func formBool(values map[string][]string, key string) bool {
 }
 
 func normalizeExploreKind(kind string) string {
-	switch strings.TrimSpace(kind) {
-	case "", domain.ExploreKindAll:
-		return domain.ExploreKindAll
-	case domain.ExploreKindNotebook, domain.ExploreKindModel, domain.ExploreKindMacro,
-		domain.ExploreKindDashboard, domain.ExploreKindPipeline, domain.ExploreKindSemanticModel:
-		return strings.TrimSpace(kind)
-	default:
+	kinds := normalizeExploreKinds([]string{kind})
+	if len(kinds) == 0 {
 		return domain.ExploreKindAll
 	}
+	return kinds[0]
+}
+
+func normalizeExploreKinds(kinds []string) []string {
+	if len(kinds) == 0 {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	normalized := make([]string, 0, len(kinds))
+	for _, kind := range kinds {
+		switch strings.TrimSpace(kind) {
+		case "", domain.ExploreKindAll:
+			return nil
+		case domain.ExploreKindFolder, domain.ExploreKindNotebook, domain.ExploreKindModel, domain.ExploreKindMacro,
+			domain.ExploreKindDashboard, domain.ExploreKindPipeline, domain.ExploreKindSemanticModel:
+			kind = strings.TrimSpace(kind)
+			if _, ok := seen[kind]; ok {
+				continue
+			}
+			seen[kind] = struct{}{}
+			normalized = append(normalized, kind)
+		}
+	}
+	return normalized
+}
+
+func normalizeExploreOwners(owners []string) []string {
+	if len(owners) == 0 {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	normalized := make([]string, 0, len(owners))
+	for _, owner := range owners {
+		owner = strings.TrimSpace(owner)
+		if owner == "" {
+			continue
+		}
+		if _, ok := seen[owner]; ok {
+			continue
+		}
+		seen[owner] = struct{}{}
+		normalized = append(normalized, owner)
+	}
+	return normalized
 }
 
 type sqlComputeTarget struct {

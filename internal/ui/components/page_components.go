@@ -18,7 +18,7 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 		core.PrimaryLink("/ui/components", "", Text("Primary link")),
 		core.DangerLink("/ui/components", "", Text("Danger link")),
 		core.SecondaryButton("small", Type("button"), Text("Small")),
-		core.IconButton("small", Type("button"), Attr("aria-label", "Settings"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "settings"), Attr("aria-hidden", "true"))),
+		core.IconButton("small", Type("button"), Attr("aria-label", "Settings"), core.Icon("settings", Class(core.IconGlyphClass()))),
 	)
 
 	buttonGroupShowcase := Div(
@@ -31,9 +31,9 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 		),
 		Div(
 			Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
-			core.IconButton("small", Type("button"), Attr("aria-label", "Refresh"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "refresh-cw"), Attr("aria-hidden", "true"))),
-			core.IconButton("small", Type("button"), Attr("aria-label", "Download"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "download"), Attr("aria-hidden", "true"))),
-			core.IconButton("small", Type("button"), Attr("aria-label", "Share"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "share-2"), Attr("aria-hidden", "true"))),
+			core.IconButton("small", Type("button"), Attr("aria-label", "Refresh"), core.Icon("refresh-cw", Class(core.IconGlyphClass()))),
+			core.IconButton("small", Type("button"), Attr("aria-label", "Download"), core.Icon("download", Class(core.IconGlyphClass()))),
+			core.IconButton("small", Type("button"), Attr("aria-label", "Share"), core.Icon("share-2", Class(core.IconGlyphClass()))),
 		),
 	)
 
@@ -62,7 +62,9 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 	formShowcase := Div(
 		Class("flex flex-col gap-3"),
 		Label(Text("Search assets")),
-		core.InputControl("", Type("search"), Placeholder("orders.daily")),
+		core.InputWithIcon("search", "max-w-md", Type("search"), Placeholder("Search assets")),
+		Label(Text("Notebook Git path")),
+		core.InputWithIcon("git-branch", "max-w-md", Type("text"), Placeholder("analytics/notebooks/revenue_daily.ipynb")),
 		Label(Text("Catalog")),
 		core.SelectControl("", Option(Text("analytics")), Option(Text("warehouse"))),
 		Label(Text("Description")),

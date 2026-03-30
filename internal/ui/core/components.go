@@ -3,10 +3,12 @@ package core
 import (
 	"fmt"
 	"net/url"
+	"sort"
 
 	"duck-demo/internal/domain"
 
 	. "maragu.dev/gomponents"
+	data "maragu.dev/gomponents-datastar"
 	. "maragu.dev/gomponents/html"
 )
 
@@ -14,6 +16,35 @@ type SectionTab struct {
 	Label  string
 	Href   string
 	Active bool
+}
+
+type FilterMenuOption struct {
+	Label    string
+	Value    string
+	Icon     string
+	Selected bool
+}
+
+type FilterMenuGroup struct {
+	Name     string
+	Label    string
+	Expanded bool
+	Options  []FilterMenuOption
+}
+
+type FilterMenuConfig struct {
+	Label             string
+	Action            string
+	ClearURL          string
+	SelectedCount     int
+	SelectedCountExpr string
+	HiddenFields      map[string]string
+	RootAttrs         []Node
+	FormAttrs         []Node
+	ClearAttrs        []Node
+	OptionInputAttrs  []Node
+	HideApply         bool
+	Groups            []FilterMenuGroup
 }
 
 func Card(nodes ...Node) Node {
@@ -72,6 +103,20 @@ func InputControl(extraClass string, nodes ...Node) Node {
 	return Input(append(base, nodes...)...)
 }
 
+func InputWithIcon(iconName, extraClass string, inputNodes ...Node) Node {
+	inputAttrs := append([]Node{
+		Class("block min-w-0 flex-1 border-0 bg-transparent px-0 py-2 text-sm text-[var(--fgColor-default)] placeholder:text-[var(--fgColor-muted)] focus-visible:outline-none"),
+	}, inputNodes...)
+	return Div(
+		Class(ClassNames("flex w-full items-center gap-2 rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 shadow-xs transition-colors focus-within:border-[var(--borderColor-accent-emphasis)] focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--focus-outlineColor)]", extraClass)),
+		Span(
+			Class("pointer-events-none inline-flex h-4 w-4 shrink-0 items-center justify-center text-[var(--fgColor-muted)]"),
+			Icon(iconName, Class("h-4 w-4")),
+		),
+		Input(inputAttrs...),
+	)
+}
+
 func TextareaControl(extraClass string, nodes ...Node) Node {
 	base := []Node{Class(formControlClass(extraClass))}
 	return Textarea(append(base, nodes...)...)
@@ -102,7 +147,7 @@ func ActionMenu(label string, items ...Node) Node {
 	if label == "More" || label == "Actions" {
 		summaryClass = "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-xs hover:bg-[var(--bgColor-muted)]"
 		summaryContent = Group([]Node{
-			I(Class(IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
+			Icon("ellipsis", Class(IconGlyphClass())),
 			Span(Class("sr-only"), Text(label)),
 		})
 	}
@@ -139,6 +184,141 @@ func ActionMenuPost(action, label string, csrfField func() Node, danger bool) No
 	return button
 }
 
+func FilterMenu(cfg FilterMenuConfig) Node {
+	label := cfg.Label
+	if label == "" {
+		label = "Filter"
+	}
+
+	countNode := Node(nil)
+	if cfg.SelectedCountExpr != "" {
+		countNode = Span(
+			data.Show(cfg.SelectedCountExpr+" > 0"),
+			Class("inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--bgColor-accent-muted)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--fgColor-accent)]"),
+			data.Text(cfg.SelectedCountExpr),
+		)
+	} else if cfg.SelectedCount > 0 {
+		countNode = Span(
+			Class("inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--bgColor-accent-muted)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--fgColor-accent)]"),
+			Text(fmt.Sprintf("%d", cfg.SelectedCount)),
+		)
+	}
+
+	hiddenKeys := make([]string, 0, len(cfg.HiddenFields))
+	for key := range cfg.HiddenFields {
+		hiddenKeys = append(hiddenKeys, key)
+	}
+	sort.Strings(hiddenKeys)
+	hiddenNodes := make([]Node, 0, len(hiddenKeys))
+	for _, key := range hiddenKeys {
+		value := cfg.HiddenFields[key]
+		if value == "" {
+			continue
+		}
+		hiddenNodes = append(hiddenNodes, Input(Type("hidden"), Name(key), Value(value)))
+	}
+
+	groupNodes := make([]Node, 0, len(cfg.Groups))
+	for _, group := range cfg.Groups {
+		options := make([]Node, 0, len(group.Options))
+		for _, option := range group.Options {
+			checkedNode := Node(nil)
+			if option.Selected {
+				checkedNode = Checked()
+			}
+			iconNode := Node(nil)
+			if option.Icon != "" {
+				iconNode = Span(
+					Class("inline-flex h-5 w-5 items-center justify-center text-[var(--fgColor-muted)]"),
+					Icon(option.Icon, Class("h-4 w-4")),
+				)
+			}
+			inputAttrs := append([]Node{
+				Type("checkbox"),
+				Name(group.Name),
+				Value(option.Value),
+				checkedNode,
+				Class("m-0 inline-grid h-4 w-4 shrink-0 appearance-none place-content-center rounded border border-[var(--borderColor-muted)] bg-[var(--bgColor-default)] transition-colors after:h-2 after:w-1 after:origin-center after:rotate-45 after:scale-0 after:border-b-2 after:border-r-2 after:border-b-[var(--button-primary-fgColor-rest)] after:border-r-[var(--button-primary-fgColor-rest)] after:content-[''] checked:border-[var(--control-checked-borderColor-rest)] checked:bg-[var(--control-checked-bgColor-rest)] checked:after:scale-100"),
+			}, cfg.OptionInputAttrs...)
+			options = append(options, Label(
+				Class("flex cursor-pointer items-center gap-3 px-2 py-2 text-sm text-[var(--fgColor-default)] hover:bg-[var(--bgColor-muted)]"),
+				Input(inputAttrs...),
+				iconNode,
+				Span(Class("truncate"), Text(option.Label)),
+			))
+		}
+		groupNodes = append(groupNodes, Details(
+			Class("border-b border-[var(--borderColor-default)] last:border-b-0"),
+			OpenIf(group.Expanded),
+			Summary(
+				Class("list-none [&::-webkit-details-marker]:hidden flex cursor-pointer items-center justify-between px-2 py-2 text-sm font-medium text-[var(--fgColor-default)]"),
+				Span(Text(group.Label)),
+				Icon("chevron-down", Class("h-4 w-4 text-[var(--fgColor-muted)]")),
+			),
+			Div(Class("grid pb-1"), Group(options)),
+		))
+	}
+
+	clearNode := Node(nil)
+	if cfg.ClearURL != "" {
+		clearAttrs := append([]Node{
+			Href(cfg.ClearURL),
+			Class("flex items-center gap-2 border-b border-[var(--borderColor-default)] px-2 py-2 text-sm font-medium text-[var(--fgColor-muted)] no-underline hover:bg-[var(--bgColor-muted)] hover:text-[var(--fgColor-default)]"),
+		}, cfg.ClearAttrs...)
+		clearAttrs = append(clearAttrs,
+			Icon("filter-x", Class("h-4 w-4")),
+			Span(Text("Clear all")),
+		)
+		clearNode = A(clearAttrs...)
+	}
+
+	formAttrs := append([]Node{
+		Method("get"),
+		Action(cfg.Action),
+		Class("grid"),
+	}, cfg.FormAttrs...)
+	formAttrs = append(formAttrs,
+		Group(hiddenNodes),
+		clearNode,
+		Group(groupNodes),
+	)
+	if !cfg.HideApply {
+		formAttrs = append(formAttrs,
+			Div(
+				Class("flex items-center justify-end gap-2 border-t border-[var(--borderColor-default)] p-2"),
+				PrimaryButton("small", Type("submit"), Text("Apply")),
+			),
+		)
+	}
+
+	rootAttrs := append([]Node{
+		Class(DetailsClass()),
+	}, cfg.RootAttrs...)
+	rootAttrs = append(rootAttrs,
+		Summary(
+			Class(DetailsSummaryClass("inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--button-default-borderColor-rest)] bg-[var(--button-default-bgColor-rest)] px-3 py-2 text-sm font-medium text-[var(--button-default-fgColor-rest)] shadow-xs hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)]")),
+			Title(label),
+			Attr("aria-label", label),
+			Icon("filter", Class("h-4 w-4")),
+			Span(Text(label)),
+			countNode,
+			Icon("chevron-down", Class("h-4 w-4")),
+		),
+		Div(
+			Class(DropdownMenuClass("w-[15rem] min-w-[15rem] max-w-[15rem] p-0")),
+			Form(formAttrs...),
+		),
+	)
+	return Details(rootAttrs...)
+}
+
+func OpenIf(open bool) Node {
+	if !open {
+		return nil
+	}
+	return Attr("open", "")
+}
+
 func ButtonGroup(extraClass string, nodes ...Node) Node {
 	base := []Node{Class(buttonRowClass(extraClass))}
 	return Div(append(base, nodes...)...)
@@ -149,7 +329,7 @@ func EmptyState(iconName, title, message string, action Node) Node {
 	if iconName != "" {
 		icon = Div(
 			Class("flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"),
-			I(Class(NavIconClass()), Attr("data-lucide", iconName), Attr("aria-hidden", "true")),
+			Icon(iconName, Class(NavIconClass())),
 		)
 	}
 	return Div(
@@ -172,7 +352,7 @@ func WorkspaceEmptyState(iconName, title, message string, action Node) Node {
 	if iconName != "" {
 		icon = Div(
 			Class("flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"),
-			I(Class(NavIconClass()), Attr("data-lucide", iconName), Attr("aria-hidden", "true")),
+			Icon(iconName, Class(NavIconClass())),
 		)
 	}
 	return Div(

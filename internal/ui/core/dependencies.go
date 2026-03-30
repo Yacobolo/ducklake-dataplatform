@@ -75,16 +75,21 @@ type Dependencies struct {
 
 func (d *Dependencies) CSRFFieldProvider(r *http.Request) func() gomponents.Node {
 	return func() gomponents.Node {
-		token, _ := r.Context().Value(csrfContextKey{}).(string)
-		if token == "" {
-			token = readCSRFCookie(r)
-		}
+		token := d.CSRFToken(r)
 		return html.Input(
 			html.Type("hidden"),
 			html.Name("csrf_token"),
 			html.Value(token),
 		)
 	}
+}
+
+func (d *Dependencies) CSRFToken(r *http.Request) string {
+	token, _ := r.Context().Value(csrfContextKey{}).(string)
+	if token == "" {
+		token = readCSRFCookie(r)
+	}
+	return token
 }
 
 type csrfContextKey struct{}

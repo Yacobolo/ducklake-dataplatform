@@ -5,13 +5,17 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/ui/core"
 
 	. "maragu.dev/gomponents"
+	data "maragu.dev/gomponents-datastar"
 	. "maragu.dev/gomponents/html"
 )
+
+const exploreContentID = "explore-results"
 
 type notebookListRow struct {
 	Name    string
@@ -50,32 +54,56 @@ type exploreBreadcrumbItem struct {
 	Current bool
 }
 
-func exploreListPage(principal domain.ContextPrincipal, rows []exploreListRow, breadcrumbs []exploreBreadcrumbItem, selectedFolderID string, selectedKind string, page domain.PageRequest, total int64) Node {
-	kindLinks := []struct {
-		Label string
-		Kind  string
-	}{
-		{Label: "All", Kind: domain.ExploreKindAll},
-		{Label: "Notebooks", Kind: domain.ExploreKindNotebook},
-		{Label: "Models", Kind: domain.ExploreKindModel},
-		{Label: "Macros", Kind: domain.ExploreKindMacro},
-		{Label: "Dashboards", Kind: domain.ExploreKindDashboard},
-		{Label: "Pipelines", Kind: domain.ExploreKindPipeline},
-		{Label: "Semantic Models", Kind: domain.ExploreKindSemanticModel},
-	}
-	kindNodes := make([]Node, 0, len(kindLinks))
-	for _, item := range kindLinks {
-		attrs := []Node{Href(explorePageURL(page, item.Kind, selectedFolderID))}
-		className := "inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium no-underline transition-colors duration-100 ease-out"
-		if normalizeExploreKind(selectedKind) == item.Kind {
-			className += " border-[var(--button-primary-borderColor-rest)] bg-[var(--button-primary-bgColor-rest)] text-[var(--button-primary-fgColor-rest)]"
-		} else {
-			className += " border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] text-[var(--fgColor-default)] hover:border-[var(--borderColor-accent-muted)] hover:text-[var(--fgColor-accent)]"
-		}
-		linkNodes := append(attrs, Class(className), Text(item.Label))
-		kindNodes = append(kindNodes, A(linkNodes...))
-	}
+func exploreListPage(principal domain.ContextPrincipal, rows []exploreListRow, breadcrumbs []exploreBreadcrumbItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) Node {
+	nodes := explorePageBody(rows, breadcrumbs, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, streamID, csrfToken, page, total)
+	nodes = append(nodes, Script(Src(core.UIScriptHref("explore.js"))))
+	return core.AppPage(
+		"Explore",
+		"explore",
+		principal,
+		nodes...,
+	)
+}
 
+func exploreMainContent(rows []exploreListRow, breadcrumbs []exploreBreadcrumbItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) Node {
+	return core.MainContentSection("Explore", explorePageBody(rows, breadcrumbs, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, streamID, csrfToken, page, total)...)
+}
+
+func explorePageBody(rows []exploreListRow, breadcrumbs []exploreBreadcrumbItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) []Node {
+	signalKinds := append([]string{}, selectedKinds...)
+	signalOwners := append([]string{}, selectedOwners...)
+	return []Node{
+		core.PageHeader(
+			"Discover",
+			"Explore",
+			"Browse folders and authored assets in the active project context.",
+			core.SecondaryLink("/ui/explore/git-repos", "",
+				core.Icon("git-branch", Class(core.IconGlyphClass())),
+				Span(Text("Git repos")),
+			),
+			exploreCreateMenu(selectedFolderID),
+		),
+		core.ListPageBody(
+			Div(
+				data.Signals(map[string]any{
+					"streamID":  streamID,
+					"csrfToken": strings.TrimSpace(csrfToken),
+					"urlParams": map[string]any{
+						"folder_id": strings.TrimSpace(selectedFolderID),
+						"kind":      signalKinds,
+						"owner":     signalOwners,
+						"q":         strings.TrimSpace(searchQuery),
+					},
+					"filterOpen": false,
+				}),
+				data.Init("@get('/ui/explore/updates/' + $streamID)"),
+				exploreContent(rows, breadcrumbs, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, page, total),
+			),
+		),
+	}
+}
+
+func exploreContent(rows []exploreListRow, breadcrumbs []exploreBreadcrumbItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, page domain.PageRequest, total int64) Node {
 	tableRows := make([]Node, 0, len(rows))
 	for i := range rows {
 		row := rows[i]
@@ -83,7 +111,7 @@ func exploreListPage(principal domain.ContextPrincipal, rows []exploreListRow, b
 			Td(
 				Div(Class("flex items-start gap-3"),
 					Span(Class(exploreKindIconWrapClass(row.Kind)),
-						I(Class(core.NavIconClass("h-4 w-4")), Attr("data-lucide", exploreKindIcon(row.Kind)), Attr("aria-hidden", "true")),
+						core.Icon(exploreKindIcon(row.Kind), Class(core.NavIconClass("h-4 w-4"))),
 					),
 					Div(Class("min-w-0 flex-1"),
 						Div(Class("flex flex-wrap items-center gap-2"),
@@ -101,39 +129,23 @@ func exploreListPage(principal domain.ContextPrincipal, rows []exploreListRow, b
 		))
 	}
 
-	mainContent := Node(core.ListPageBody(
-		core.WorkspaceEmptyState("search", "No authored assets found.", "Choose another folder or switch the filter to browse authored work across notebooks, dashboards, pipelines, and project-managed assets.", core.PrimaryLink(notebookNewURL(selectedFolderID), "", Text("Create notebook"))),
-	))
-	listNodes := make([]Node, 0, 4)
+	contentNodes := make([]Node, 0, 4)
 	if len(breadcrumbs) > 0 {
-		listNodes = append(listNodes, exploreBreadcrumbs(breadcrumbs))
+		contentNodes = append(contentNodes, exploreBreadcrumbs(breadcrumbs, exploreHasActiveFilters(selectedKinds, selectedOwners, searchQuery)))
 	}
-	listNodes = append(listNodes, Div(Class("flex flex-wrap gap-2"), Group(kindNodes)))
+	contentNodes = append(contentNodes, exploreFilterBar(page, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions))
 	if len(tableRows) > 0 {
-		listNodes = append(listNodes, notebookTable([]string{"Name", "Context", "Owner", "Last updated", "Actions"}, tableRows))
+		contentNodes = append(contentNodes, notebookTable([]string{"Name", "Context", "Owner", "Last updated", "Actions"}, tableRows))
 		if total > 0 {
-			listNodes = append(listNodes, exploreListPagination(selectedKind, selectedFolderID, page, total))
+			contentNodes = append(contentNodes, exploreListPagination(selectedKinds, selectedOwners, searchQuery, selectedFolderID, page, total))
 		}
-		mainContent = core.ListPageBody(Group(listNodes))
-	} else if len(listNodes) > 1 {
-		mainContent = core.ListPageBody(Group(listNodes))
+	} else {
+		contentNodes = append(contentNodes, exploreEmptyState(exploreHasActiveFilters(selectedKinds, selectedOwners, searchQuery)))
 	}
-
-	return core.AppPage(
-		"Explore",
-		"explore",
-		principal,
-		core.PageHeader(
-			"Discover",
-			"Explore",
-			"Browse folders and authored assets in the active project context.",
-			core.SecondaryLink("/ui/explore/git-repos", "",
-				I(Class(core.IconGlyphClass()), Attr("data-lucide", "github"), Attr("aria-hidden", "true")),
-				Span(Text("Git repos")),
-			),
-			exploreCreateMenu(selectedFolderID),
-		),
-		mainContent,
+	return Div(
+		ID(exploreContentID),
+		Class("grid gap-4"),
+		Group(contentNodes),
 	)
 }
 
@@ -145,7 +157,7 @@ func notebooksListPage(principal domain.ContextPrincipal, rows []notebookListRow
 			Td(
 				Div(Class("flex items-center gap-3"),
 					Span(Class("inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"),
-						I(Class(core.NavIconClass("h-4 w-4")), Attr("data-lucide", "file-text"), Attr("aria-hidden", "true")),
+						core.Icon("file-text", Class(core.NavIconClass("h-4 w-4"))),
 					),
 					Div(Class("min-w-0"),
 						core.TextLink(row.URL, Text(row.Name)),
@@ -177,15 +189,15 @@ func notebooksListPage(principal domain.ContextPrincipal, rows []notebookListRow
 			"Notebooks",
 			"Create and manage notebooks.",
 			core.SecondaryLink("/ui/explore/folders", "",
-				I(Class(core.IconGlyphClass()), Attr("data-lucide", "folder-tree"), Attr("aria-hidden", "true")),
+				core.Icon("folder-tree", Class(core.IconGlyphClass())),
 				Span(Text("Folders")),
 			),
 			core.SecondaryLink("/ui/explore/git-repos", "",
-				I(Class(core.IconGlyphClass()), Attr("data-lucide", "github"), Attr("aria-hidden", "true")),
+				core.Icon("git-branch", Class(core.IconGlyphClass())),
 				Span(Text("Git repos")),
 			),
 			core.PrimaryLink(notebookNewURL(selectedFolderID), "",
-				I(Class(core.IconGlyphClass()), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")),
+				core.Icon("plus", Class(core.IconGlyphClass())),
 				Span(Text("New notebook")),
 			),
 		),
@@ -309,7 +321,7 @@ func notebookFoldersListPage(principal domain.ContextPrincipal, rows []folderLis
 			Td(
 				Div(Class("flex items-center gap-3"),
 					Span(Class("inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"),
-						I(Class(core.NavIconClass("h-4 w-4")), Attr("data-lucide", "folder"), Attr("aria-hidden", "true")),
+						core.Icon("folder", Class(core.NavIconClass("h-4 w-4"))),
 					),
 					Div(Class("min-w-0"), nameNode),
 				),
@@ -328,7 +340,7 @@ func notebookFoldersListPage(principal domain.ContextPrincipal, rows []folderLis
 			"Organize authored assets with inherited project, environment, and Git defaults.",
 			core.SecondaryLink("/ui/explore", "", Text("Back to Explore")),
 			core.PrimaryLink("/ui/explore/folders/new", "",
-				I(Class(core.IconGlyphClass()), Attr("data-lucide", "folder-plus"), Attr("aria-hidden", "true")),
+				core.Icon("folder-plus", Class(core.IconGlyphClass())),
 				Span(Text("New folder")),
 			),
 		),
@@ -827,11 +839,11 @@ func optionSelected(value, selected string) Node {
 	return Option(Value(value), Text(value))
 }
 
-func exploreBreadcrumbs(items []exploreBreadcrumbItem) Node {
+func exploreBreadcrumbs(items []exploreBreadcrumbItem, hasFilters bool) Node {
 	if len(items) == 0 {
 		return nil
 	}
-	nodes := make([]Node, 0, len(items)*2)
+	nodes := make([]Node, 0, len(items)*2+2)
 	for i := range items {
 		item := items[i]
 		label := Span(Class("truncate"), Text(item.Label))
@@ -844,10 +856,50 @@ func exploreBreadcrumbs(items []exploreBreadcrumbItem) Node {
 			nodes = append(nodes, Span(Class("text-[var(--fgColor-muted)]"), Text("/")))
 		}
 	}
+	if hasFilters {
+		nodes = append(nodes,
+			Span(Class("text-[var(--fgColor-muted)]"), Text("/")),
+			Span(
+				Class("inline-flex max-w-full items-center gap-2 rounded-full bg-[var(--bgColor-muted)] px-3 py-1 text-sm font-medium text-[var(--fgColor-default)]"),
+				core.Icon("filter", Class("h-4 w-4 shrink-0 text-[var(--fgColor-muted)]")),
+				Span(Class("truncate"), Text("Filtered results")),
+			),
+		)
+	}
 	return Nav(
 		Class("flex flex-wrap items-center gap-2"),
 		Attr("aria-label", "Folder breadcrumbs"),
 		Group(nodes),
+	)
+}
+
+func exploreHasActiveFilters(selectedKinds []string, selectedOwners []string, searchQuery string) bool {
+	return len(selectedKinds) > 0 || len(selectedOwners) > 0 || strings.TrimSpace(searchQuery) != ""
+}
+
+func exploreEmptyState(hasFilters bool) Node {
+	iconName := "folder-search"
+	title := "No assets in this folder yet"
+	message := "Open another folder or use the New menu to add notebooks, dashboards, pipelines, and other authored work."
+	if hasFilters {
+		iconName = "search"
+		title = "Unable to find any search results"
+		message = "Change your keyword or filters, and try again."
+	}
+	return Div(
+		Class("grid min-h-[18rem] place-items-center rounded-2xl border border-dashed border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-6 py-12"),
+		Div(
+			Class("grid max-w-xl justify-items-center gap-4 text-center"),
+			Div(
+				Class("flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--bgColor-muted)] text-[var(--fgColor-muted)]"),
+				core.Icon(iconName, Class("h-9 w-9 shrink-0")),
+			),
+			Div(
+				Class("grid gap-2"),
+				H2(Class("m-0 text-2xl font-semibold tracking-tight text-[var(--fgColor-default)]"), Text(title)),
+				P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text(message)),
+			),
+		),
 	)
 }
 
@@ -871,9 +923,9 @@ func exploreCreateMenu(folderID string) Node {
 			Class(core.DetailsSummaryClass("inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--button-primary-borderColor-rest)] bg-[var(--button-primary-bgColor-rest)] px-4 py-2 text-sm font-semibold text-[var(--button-primary-fgColor-rest)] shadow-xs transition-colors duration-100 ease-out hover:bg-[var(--button-primary-bgColor-hover)]")),
 			Title("Create new"),
 			Attr("aria-label", "Create new"),
-			I(Class(core.IconGlyphClass()), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")),
+			core.Icon("plus", Class(core.IconGlyphClass())),
 			Span(Text("New")),
-			I(Class("h-4 w-4"), Attr("data-lucide", "chevron-down"), Attr("aria-hidden", "true")),
+			core.Icon("chevron-down", Class("h-4 w-4")),
 		),
 		Div(
 			Class(core.DropdownMenuClass("min-w-[13rem]")),
@@ -889,9 +941,119 @@ func exploreCreateMenuLink(href, icon, label string) Node {
 	return A(
 		Href(href),
 		Class(core.DropdownItemClass("text-[var(--fgColor-default)]")),
-		I(Class("h-4 w-4"), Attr("data-lucide", icon), Attr("aria-hidden", "true")),
+		core.Icon(icon, Class("h-4 w-4")),
 		Span(Text(label)),
 	)
+}
+
+func exploreFilterBar(page domain.PageRequest, folderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string) Node {
+	groupOptions := []core.FilterMenuGroup{
+		{
+			Name:     "kind",
+			Label:    "Type",
+			Expanded: true,
+			Options:  exploreTypeFilterOptions(selectedKinds),
+		},
+		{
+			Name:     "owner",
+			Label:    "Owner",
+			Expanded: len(selectedOwners) > 0,
+			Options:  exploreOwnerFilterOptions(ownerOptions, selectedOwners),
+		},
+	}
+	hidden := map[string]string{}
+	if strings.TrimSpace(folderID) != "" {
+		hidden["folder_id"] = folderID
+	}
+
+	searchInput := core.InputWithIcon(
+		"search",
+		"min-w-[16rem] flex-1 max-w-sm",
+		Type("search"),
+		Placeholder("Search assets"),
+		Value(searchQuery),
+		data.On("input", exploreDatastarSearchExpr(), data.ModifierDebounce, data.Duration(250*time.Millisecond)),
+	)
+
+	nodes := []Node{
+		searchInput,
+		core.FilterMenu(core.FilterMenuConfig{
+			Label:             "Filter",
+			Action:            "/ui/explore",
+			ClearURL:          explorePageURL(domain.PageRequest{MaxResults: page.Limit()}, nil, nil, "", folderID),
+			SelectedCount:     len(selectedKinds) + len(selectedOwners),
+			SelectedCountExpr: "$urlParams.kind.length + $urlParams.owner.length",
+			HiddenFields:      hidden,
+			RootAttrs: []Node{
+				ID("explore-filter-menu"),
+				data.PreserveAttr("open"),
+				data.On("toggle", "$filterOpen = evt.currentTarget.open"),
+			},
+			FormAttrs: []Node{
+				data.On("submit", exploreDatastarFilterSubmitExpr(), data.ModifierPrevent),
+			},
+			ClearAttrs: []Node{
+				data.On("click", exploreDatastarClearExpr(), data.ModifierPrevent),
+			},
+			OptionInputAttrs: []Node{
+				data.On("change", exploreDatastarFilterChangeExpr()),
+			},
+			HideApply: true,
+			Groups:    groupOptions,
+		}),
+	}
+	return Div(Class("flex w-full flex-wrap items-center justify-end gap-3"), Group(nodes))
+}
+
+func exploreDatastarFilterSubmitExpr() string {
+	return "const next = window.DuckUIURLParams.toURL('/ui/explore', $urlParams); @post('/ui/explore/updates/' + $streamID); history.replaceState({}, '', next)"
+}
+
+func exploreDatastarFilterChangeExpr() string {
+	return "const menu = evt.target.closest('details'); if (menu) { menu.open = true; } $filterOpen = true; $urlParams = window.DuckUIURLParams.toggleArrayValue($urlParams, evt.target.name, evt.target.value, evt.target.checked); const next = window.DuckUIURLParams.toURL('/ui/explore', $urlParams); @post('/ui/explore/updates/' + $streamID); history.replaceState({}, '', next)"
+}
+
+func exploreDatastarClearExpr() string {
+	return "const menu = evt.currentTarget.closest('details'); if (menu) { menu.open = true; } $filterOpen = true; $urlParams = window.DuckUIURLParams.clear($urlParams, ['kind', 'owner', 'q']); const next = window.DuckUIURLParams.toURL('/ui/explore', $urlParams); @post('/ui/explore/updates/' + $streamID); history.replaceState({}, '', next)"
+}
+
+func exploreDatastarSearchExpr() string {
+	return "$urlParams = { ...$urlParams, q: evt.target.value?.trim?.() ?? '' }; const next = window.DuckUIURLParams.toURL('/ui/explore', $urlParams); @post('/ui/explore/updates/' + $streamID); history.replaceState({}, '', next)"
+}
+
+func exploreTypeFilterOptions(selectedKinds []string) []core.FilterMenuOption {
+	items := []string{
+		domain.ExploreKindFolder,
+		domain.ExploreKindNotebook,
+		domain.ExploreKindModel,
+		domain.ExploreKindMacro,
+		domain.ExploreKindDashboard,
+		domain.ExploreKindPipeline,
+		domain.ExploreKindSemanticModel,
+	}
+	options := make([]core.FilterMenuOption, 0, len(items))
+	for _, kind := range items {
+		options = append(options, core.FilterMenuOption{
+			Label:    exploreKindLabel(kind),
+			Value:    kind,
+			Icon:     exploreKindIcon(kind),
+			Selected: containsString(selectedKinds, kind),
+		})
+	}
+	return options
+}
+
+func exploreOwnerFilterOptions(ownerOptions []string, selectedOwners []string) []core.FilterMenuOption {
+	options := make([]core.FilterMenuOption, 0, len(ownerOptions))
+	for _, owner := range ownerOptions {
+		options = append(options, core.FilterMenuOption{
+			Label:    owner,
+			Value:    owner,
+			Icon:     "user",
+			Selected: containsString(selectedOwners, owner),
+		})
+	}
+	return options
 }
 
 func exploreLocationText(row exploreListRow) Node {
@@ -1121,7 +1283,7 @@ func exploreKindIconWrapClass(kind string) string {
 	}
 }
 
-func exploreListPagination(kind, folderID string, page domain.PageRequest, total int64) Node {
+func exploreListPagination(kinds []string, owners []string, searchQuery string, folderID string, page domain.PageRequest, total int64) Node {
 	offset := page.Offset()
 	limit := page.Limit()
 	shownStart := min(total, int64(offset)+1)
@@ -1140,12 +1302,12 @@ func exploreListPagination(kind, folderID string, page domain.PageRequest, total
 
 	prevNode := Node(Span(Class("inline-flex min-h-10 items-center justify-center rounded-l-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Previous")))
 	if offset > 0 {
-		prevNode = A(Href(explorePageURL(domain.PageRequest{MaxResults: limit, PageToken: prevToken}, kind, folderID)), Class("inline-flex min-h-10 items-center justify-center rounded-l-lg border border-[var(--button-default-borderColor-rest)] border-r-0 bg-[var(--button-default-bgColor-rest)] px-3 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition-colors duration-100 ease-out hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] hover:text-[var(--button-default-fgColor-rest)]"), Text("Previous"))
+		prevNode = A(Href(explorePageURL(domain.PageRequest{MaxResults: limit, PageToken: prevToken}, kinds, owners, searchQuery, folderID)), Class("inline-flex min-h-10 items-center justify-center rounded-l-lg border border-[var(--button-default-borderColor-rest)] border-r-0 bg-[var(--button-default-bgColor-rest)] px-3 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition-colors duration-100 ease-out hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] hover:text-[var(--button-default-fgColor-rest)]"), Text("Previous"))
 	}
 
 	nextNode := Node(Span(Class("inline-flex min-h-10 items-center justify-center rounded-r-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] opacity-60 pointer-events-none"), Attr("aria-disabled", "true"), Text("Next")))
 	if nextToken != "" {
-		nextNode = A(Href(explorePageURL(domain.PageRequest{MaxResults: limit, PageToken: nextToken}, kind, folderID)), Class("inline-flex min-h-10 items-center justify-center rounded-r-lg border border-[var(--button-default-borderColor-rest)] bg-[var(--button-default-bgColor-rest)] px-3 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition-colors duration-100 ease-out hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] hover:text-[var(--button-default-fgColor-rest)]"), Text("Next"))
+		nextNode = A(Href(explorePageURL(domain.PageRequest{MaxResults: limit, PageToken: nextToken}, kinds, owners, searchQuery, folderID)), Class("inline-flex min-h-10 items-center justify-center rounded-r-lg border border-[var(--button-default-borderColor-rest)] bg-[var(--button-default-bgColor-rest)] px-3 text-sm font-medium text-[var(--button-default-fgColor-rest)] no-underline transition-colors duration-100 ease-out hover:border-[var(--button-default-borderColor-hover)] hover:bg-[var(--button-default-bgColor-hover)] hover:text-[var(--button-default-fgColor-rest)]"), Text("Next"))
 	}
 
 	return Div(
@@ -1160,17 +1322,28 @@ func exploreListPagination(kind, folderID string, page domain.PageRequest, total
 	)
 }
 
-func explorePageURL(page domain.PageRequest, kind, folderID string) string {
+func explorePageURL(page domain.PageRequest, kinds []string, owners []string, searchQuery string, folderID string) string {
 	q := url.Values{}
-	q.Set("max_results", fmt.Sprintf("%d", page.Limit()))
+	if page.Limit() != defaultExplorePageSize {
+		q.Set("max_results", fmt.Sprintf("%d", page.Limit()))
+	}
 	if strings.TrimSpace(page.PageToken) != "" {
 		q.Set("page_token", page.PageToken)
 	}
-	if strings.TrimSpace(kind) != "" {
-		q.Set("kind", kind)
+	for _, kind := range normalizeExploreKinds(kinds) {
+		q.Add("kind", kind)
+	}
+	for _, owner := range normalizeExploreOwners(owners) {
+		q.Add("owner", owner)
+	}
+	if strings.TrimSpace(searchQuery) != "" {
+		q.Set("q", strings.TrimSpace(searchQuery))
 	}
 	if strings.TrimSpace(folderID) != "" {
 		q.Set("folder_id", folderID)
+	}
+	if len(q) == 0 {
+		return "/ui/explore"
 	}
 	return "/ui/explore?" + q.Encode()
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"duck-demo/internal/domain"
 )
@@ -87,7 +88,9 @@ func (h *APIHandler) ListNotebookFolders(ctx context.Context, req GenListNoteboo
 	items, err := h.notebookFolders.ListFoldersForPrincipal(ctx, cp.Name, cp.IsAdmin, req.Params.Owner)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListNotebookFoldersResponse]("listNotebookFolders", err, domainErrorResponder[GenListNotebookFoldersResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookFoldersResponse { return ListNotebookFolders403JSONResponse{resp} },
+			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookFoldersResponse {
+				return ListNotebookFolders403JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -129,9 +132,15 @@ func (h *APIHandler) CreateNotebookFolder(ctx context.Context, req GenCreateNote
 	})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenCreateNotebookFolderResponse]("createNotebookFolder", err, domainErrorResponder[GenCreateNotebookFolderResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenCreateNotebookFolderResponse { return CreateNotebookFolder400JSONResponse{resp} },
-			Conflict:   func(resp ConflictJSONResponse) GenCreateNotebookFolderResponse { return CreateNotebookFolder409JSONResponse{resp} },
-			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateNotebookFolderResponse { return CreateNotebookFolder403JSONResponse{resp} },
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateNotebookFolderResponse {
+				return CreateNotebookFolder400JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenCreateNotebookFolderResponse {
+				return CreateNotebookFolder409JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateNotebookFolderResponse {
+				return CreateNotebookFolder403JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -152,8 +161,12 @@ func (h *APIHandler) GetNotebookFolder(ctx context.Context, req GenGetNotebookFo
 	result, err := h.notebookFolders.GetFolderForPrincipal(ctx, cp.Name, cp.IsAdmin, req.FolderId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenGetNotebookFolderResponse]("getNotebookFolder", err, domainErrorResponder[GenGetNotebookFolderResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenGetNotebookFolderResponse { return GetNotebookFolder403JSONResponse{resp} },
-			NotFound:  func(resp NotFoundJSONResponse) GenGetNotebookFolderResponse { return GetNotebookFolder404JSONResponse{resp} },
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetNotebookFolderResponse {
+				return GetNotebookFolder403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetNotebookFolderResponse {
+				return GetNotebookFolder404JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -180,10 +193,18 @@ func (h *APIHandler) UpdateNotebookFolder(ctx context.Context, req GenUpdateNote
 	})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenUpdateNotebookFolderResponse]("updateNotebookFolder", err, domainErrorResponder[GenUpdateNotebookFolderResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenUpdateNotebookFolderResponse { return UpdateNotebookFolder400JSONResponse{resp} },
-			Forbidden:  func(resp ForbiddenJSONResponse) GenUpdateNotebookFolderResponse { return UpdateNotebookFolder403JSONResponse{resp} },
-			NotFound:   func(resp NotFoundJSONResponse) GenUpdateNotebookFolderResponse { return UpdateNotebookFolder404JSONResponse{resp} },
-			Conflict:   func(resp ConflictJSONResponse) GenUpdateNotebookFolderResponse { return UpdateNotebookFolder409JSONResponse{resp} },
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateNotebookFolderResponse {
+				return UpdateNotebookFolder400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateNotebookFolderResponse {
+				return UpdateNotebookFolder403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateNotebookFolderResponse {
+				return UpdateNotebookFolder404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenUpdateNotebookFolderResponse {
+				return UpdateNotebookFolder409JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -208,10 +229,18 @@ func (h *APIHandler) MoveNotebookFolder(ctx context.Context, req GenMoveNotebook
 	})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenMoveNotebookFolderResponse]("moveNotebookFolder", err, domainErrorResponder[GenMoveNotebookFolderResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenMoveNotebookFolderResponse { return MoveNotebookFolder400JSONResponse{resp} },
-			Forbidden:  func(resp ForbiddenJSONResponse) GenMoveNotebookFolderResponse { return MoveNotebookFolder403JSONResponse{resp} },
-			NotFound:   func(resp NotFoundJSONResponse) GenMoveNotebookFolderResponse { return MoveNotebookFolder404JSONResponse{resp} },
-			Conflict:   func(resp ConflictJSONResponse) GenMoveNotebookFolderResponse { return MoveNotebookFolder409JSONResponse{resp} },
+			BadRequest: func(resp BadRequestJSONResponse) GenMoveNotebookFolderResponse {
+				return MoveNotebookFolder400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenMoveNotebookFolderResponse {
+				return MoveNotebookFolder403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenMoveNotebookFolderResponse {
+				return MoveNotebookFolder404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenMoveNotebookFolderResponse {
+				return MoveNotebookFolder409JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -231,9 +260,15 @@ func (h *APIHandler) DeleteNotebookFolder(ctx context.Context, req GenDeleteNote
 	cp, _ := domain.PrincipalFromContext(ctx)
 	if err := h.notebookFolders.DeleteFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenDeleteNotebookFolderResponse]("deleteNotebookFolder", err, domainErrorResponder[GenDeleteNotebookFolderResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteNotebookFolderResponse { return DeleteNotebookFolder403JSONResponse{resp} },
-			NotFound:  func(resp NotFoundJSONResponse) GenDeleteNotebookFolderResponse { return DeleteNotebookFolder404JSONResponse{resp} },
-			Conflict:  func(resp ConflictJSONResponse) GenDeleteNotebookFolderResponse { return DeleteNotebookFolder409JSONResponse{resp} },
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteNotebookFolderResponse {
+				return DeleteNotebookFolder403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteNotebookFolderResponse {
+				return DeleteNotebookFolder404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenDeleteNotebookFolderResponse {
+				return DeleteNotebookFolder409JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -251,8 +286,12 @@ func (h *APIHandler) ListNotebookFolderShares(ctx context.Context, req GenListNo
 	items, err := h.notebookFolders.ListFolderShares(ctx, cp.Name, cp.IsAdmin, req.FolderId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListNotebookFolderSharesResponse]("listNotebookFolderShares", err, domainErrorResponder[GenListNotebookFolderSharesResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookFolderSharesResponse { return ListNotebookFolderShares403JSONResponse{resp} },
-			NotFound:  func(resp NotFoundJSONResponse) GenListNotebookFolderSharesResponse { return ListNotebookFolderShares404JSONResponse{resp} },
+			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookFolderSharesResponse {
+				return ListNotebookFolderShares403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListNotebookFolderSharesResponse {
+				return ListNotebookFolderShares404JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -280,10 +319,18 @@ func (h *APIHandler) ShareNotebookFolder(ctx context.Context, req GenShareNotebo
 	})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenShareNotebookFolderResponse]("shareNotebookFolder", err, domainErrorResponder[GenShareNotebookFolderResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenShareNotebookFolderResponse { return ShareNotebookFolder400JSONResponse{resp} },
-			Forbidden:  func(resp ForbiddenJSONResponse) GenShareNotebookFolderResponse { return ShareNotebookFolder403JSONResponse{resp} },
-			NotFound:   func(resp NotFoundJSONResponse) GenShareNotebookFolderResponse { return ShareNotebookFolder404JSONResponse{resp} },
-			Conflict:   func(resp ConflictJSONResponse) GenShareNotebookFolderResponse { return ShareNotebookFolder409JSONResponse{resp} },
+			BadRequest: func(resp BadRequestJSONResponse) GenShareNotebookFolderResponse {
+				return ShareNotebookFolder400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenShareNotebookFolderResponse {
+				return ShareNotebookFolder403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenShareNotebookFolderResponse {
+				return ShareNotebookFolder404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenShareNotebookFolderResponse {
+				return ShareNotebookFolder409JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -303,9 +350,15 @@ func (h *APIHandler) UnshareNotebookFolder(ctx context.Context, req GenUnshareNo
 	cp, _ := domain.PrincipalFromContext(ctx)
 	if err := h.notebookFolders.UnshareFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId, req.PrincipalName); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenUnshareNotebookFolderResponse]("unshareNotebookFolder", err, domainErrorResponder[GenUnshareNotebookFolderResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenUnshareNotebookFolderResponse { return UnshareNotebookFolder403JSONResponse{resp} },
-			NotFound:  func(resp NotFoundJSONResponse) GenUnshareNotebookFolderResponse { return UnshareNotebookFolder404JSONResponse{resp} },
-			Conflict:  func(resp ConflictJSONResponse) GenUnshareNotebookFolderResponse { return UnshareNotebookFolder409JSONResponse{resp} },
+			Forbidden: func(resp ForbiddenJSONResponse) GenUnshareNotebookFolderResponse {
+				return UnshareNotebookFolder403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUnshareNotebookFolderResponse {
+				return UnshareNotebookFolder404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenUnshareNotebookFolderResponse {
+				return UnshareNotebookFolder409JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -489,10 +542,18 @@ func (h *APIHandler) DuplicateNotebook(ctx context.Context, req GenDuplicateNote
 	})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenDuplicateNotebookResponse]("duplicateNotebook", err, domainErrorResponder[GenDuplicateNotebookResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenDuplicateNotebookResponse { return DuplicateNotebook400JSONResponse{resp} },
-			Forbidden:  func(resp ForbiddenJSONResponse) GenDuplicateNotebookResponse { return DuplicateNotebook403JSONResponse{resp} },
-			NotFound:   func(resp NotFoundJSONResponse) GenDuplicateNotebookResponse { return DuplicateNotebook404JSONResponse{resp} },
-			Conflict:   func(resp ConflictJSONResponse) GenDuplicateNotebookResponse { return DuplicateNotebook409JSONResponse{resp} },
+			BadRequest: func(resp BadRequestJSONResponse) GenDuplicateNotebookResponse {
+				return DuplicateNotebook400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenDuplicateNotebookResponse {
+				return DuplicateNotebook403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDuplicateNotebookResponse {
+				return DuplicateNotebook404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenDuplicateNotebookResponse {
+				return DuplicateNotebook409JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -528,8 +589,12 @@ func (h *APIHandler) ListNotebookShares(ctx context.Context, req GenListNotebook
 	items, err := h.notebooks.ListNotebookShares(ctx, cp.Name, cp.IsAdmin, req.NotebookId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListNotebookSharesResponse]("listNotebookShares", err, domainErrorResponder[GenListNotebookSharesResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookSharesResponse { return ListNotebookShares403JSONResponse{resp} },
-			NotFound:  func(resp NotFoundJSONResponse) GenListNotebookSharesResponse { return ListNotebookShares404JSONResponse{resp} },
+			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookSharesResponse {
+				return ListNotebookShares403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListNotebookSharesResponse {
+				return ListNotebookShares404JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -574,9 +639,15 @@ func (h *APIHandler) UnshareNotebook(ctx context.Context, req GenUnshareNotebook
 	cp, _ := domain.PrincipalFromContext(ctx)
 	if err := h.notebooks.UnshareNotebook(ctx, cp.Name, cp.IsAdmin, req.NotebookId, req.PrincipalName); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenUnshareNotebookResponse]("unshareNotebook", err, domainErrorResponder[GenUnshareNotebookResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenUnshareNotebookResponse { return UnshareNotebook403JSONResponse{resp} },
-			NotFound:  func(resp NotFoundJSONResponse) GenUnshareNotebookResponse { return UnshareNotebook404JSONResponse{resp} },
-			Conflict:  func(resp ConflictJSONResponse) GenUnshareNotebookResponse { return UnshareNotebook409JSONResponse{resp} },
+			Forbidden: func(resp ForbiddenJSONResponse) GenUnshareNotebookResponse {
+				return UnshareNotebook403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUnshareNotebookResponse {
+				return UnshareNotebook404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenUnshareNotebookResponse {
+				return UnshareNotebook409JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -911,13 +982,17 @@ func (h *APIHandler) ListExploreItems(ctx context.Context, req GenListExploreIte
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	items, err := h.explore.List(ctx, cp.Name, cp.IsAdmin, domain.ExploreFilter{
 		FolderID: valOrEmpty(req.Params.FolderId),
-		Kind:     valOrEmpty(req.Params.Kind),
+		Kinds:    exploreKindsFromParam(req.Params.Kind),
 		Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
 	})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListExploreItemsResponse]("listExploreItems", err, domainErrorResponder[GenListExploreItemsResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenListExploreItemsResponse { return ListExploreItems403JSONResponse{resp} },
-			NotFound:  func(resp NotFoundJSONResponse) GenListExploreItemsResponse { return ListExploreItems404JSONResponse{resp} },
+			Forbidden: func(resp ForbiddenJSONResponse) GenListExploreItemsResponse {
+				return ListExploreItems403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListExploreItemsResponse {
+				return ListExploreItems404JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -1046,7 +1121,7 @@ func (h *APIHandler) SyncGitRepo(ctx context.Context, req GenSyncGitRepoRequest)
 		if resp, ok := respondDomainErrorForOperation[GenSyncGitRepoResponse]("syncGitRepo", err, domainErrorResponder[GenSyncGitRepoResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo400JSONResponse{resp} },
 			Forbidden:  func(resp ForbiddenJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo403JSONResponse{resp} },
-			NotFound: func(resp NotFoundJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo404JSONResponse{resp} },
+			NotFound:   func(resp NotFoundJSONResponse) GenSyncGitRepoResponse { return SyncGitRepo404JSONResponse{resp} },
 			Internal: func(resp InternalErrorJSONResponse) GenSyncGitRepoResponse {
 				if httpStatusFromDomainError(err) == 501 {
 					return syncGitRepo501JSONResponse{
@@ -1328,4 +1403,15 @@ func gitRepoToAPI(r domain.GitRepo) GitRepo {
 		CreatedAt:  formatTimePtr(&r.CreatedAt),
 		UpdatedAt:  formatTimePtr(&r.UpdatedAt),
 	}
+}
+
+func exploreKindsFromParam(kind *string) []string {
+	if kind == nil {
+		return nil
+	}
+	value := strings.TrimSpace(*kind)
+	if value == "" || value == domain.ExploreKindAll {
+		return nil
+	}
+	return []string{value}
 }

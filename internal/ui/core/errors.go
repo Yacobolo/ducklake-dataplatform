@@ -23,7 +23,6 @@ func ErrorPage(title, message string) Node {
 			Link(Rel("icon"), Href("data:,")),
 			Script(Raw(ThemeInitScript)),
 			Link(Rel("stylesheet"), Href(UIStylesheetHref())),
-			Script(Src("https://unpkg.com/lucide@latest/dist/umd/lucide.min.js")),
 		),
 		Body(
 			Main(
@@ -33,7 +32,6 @@ func ErrorPage(title, message string) Node {
 				P(Class("m-0"), TextLink("/ui", Text("Back to overview"))),
 			),
 			Script(Raw(ThemeBehaviorScript)),
-			Script(Raw("if (window.lucide) { window.lucide.createIcons(); }")),
 		),
 	)
 }

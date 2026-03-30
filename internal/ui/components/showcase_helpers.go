@@ -286,7 +286,7 @@ func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 	}
 	return Div(
 		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-xs"),
-		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"), I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true"))),
+		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"), core.Icon("inbox", Class(core.NavIconClass()))),
 		Div(
 			Class("flex flex-col items-center gap-2 text-center"),
 			P(Class("m-0 text-lg font-semibold"), Text("No results yet")),
@@ -330,7 +330,7 @@ func min(a, b int) int {
 
 func actionMenuLink(href, label string) Node {
 	icon := actionIconForLabel(label)
-	return A(Href(href), Class(core.DropdownItemClass("text-[var(--fgColor-default)]")), I(Class(core.NavIconClass()), Attr("data-lucide", icon), Attr("aria-hidden", "true")), Span(Text(label)))
+	return A(Href(href), Class(core.DropdownItemClass("text-[var(--fgColor-default)]")), core.Icon(icon, Class(core.NavIconClass())), Span(Text(label)))
 }
 
 func actionMenuPost(action, label string, csrfField func() Node, danger bool) Node {
@@ -345,7 +345,7 @@ func actionMenuPost(action, label string, csrfField func() Node, danger bool) No
 		Method("post"),
 		Action(action),
 		csrfField(),
-		Button(Type("submit"), Class(btnClass), I(Class(core.NavIconClass()), Attr("data-lucide", icon), Attr("aria-hidden", "true")), Span(Text(label))),
+		Button(Type("submit"), Class(btnClass), core.Icon(icon, Class(core.NavIconClass())), Span(Text(label))),
 	)
 	if danger {
 		return Group([]Node{Div(Class("dropdown-divider my-1 border-t border-[var(--borderColor-muted)]")), button})
@@ -386,7 +386,7 @@ func banner(level, title, message string) Node {
 
 	return Div(
 		Class(className),
-		I(Class(core.NavIconClass("mt-0.5")), Attr("data-lucide", icon), Attr("aria-hidden", "true")),
+		core.Icon(icon, Class(core.NavIconClass("mt-0.5"))),
 		Div(Class("flex min-w-0 flex-col gap-1"), Strong(Class("font-semibold"), Text(title)), P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(message))),
 	)
 }
@@ -481,7 +481,7 @@ func treeViewNode(item treeViewItem) Node {
 		linkClass += " bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"
 	}
 
-	link := A(Href(core.FallbackString(item.Href, "#")), Class(linkClass), I(Class(core.NavIconClass()), Attr("data-lucide", icon), Attr("aria-hidden", "true")), Span(Text(item.Label)))
+	link := A(Href(core.FallbackString(item.Href, "#")), Class(linkClass), core.Icon(icon, Class(core.NavIconClass())), Span(Text(item.Label)))
 	if len(item.Children) == 0 {
 		return Li(link)
 	}
@@ -500,7 +500,7 @@ func treeViewNode(item treeViewItem) Node {
 		Details(
 			Class("group"),
 			openAttr,
-			Summary(Class(core.DetailsSummaryClass("flex items-center gap-2")), I(Class(core.NavIconClass("transition-transform group-open:rotate-90")), Attr("data-lucide", "chevron-right"), Attr("aria-hidden", "true")), link),
+			Summary(Class(core.DetailsSummaryClass("flex items-center gap-2")), core.Icon("chevron-right", Class(core.NavIconClass("transition-transform group-open:rotate-90"))), link),
 			Ul(Class("ml-6 mt-1 grid gap-1 border-l border-[var(--borderColor-muted)] pl-2"), Group(childNodes)),
 		),
 	)

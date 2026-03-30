@@ -8,6 +8,9 @@ import (
 
 type Routes interface {
 	ExploreList(http.ResponseWriter, *http.Request)
+	ExploreFragment(http.ResponseWriter, *http.Request)
+	ExploreUpdatesStream(http.ResponseWriter, *http.Request)
+	ExploreUpdatesApply(http.ResponseWriter, *http.Request)
 	NotebooksList(http.ResponseWriter, *http.Request)
 	NotebookFoldersList(http.ResponseWriter, *http.Request)
 	NotebookFoldersNew(http.ResponseWriter, *http.Request)
@@ -55,6 +58,9 @@ type Routes interface {
 func MountRoutes(r chi.Router, h Routes) {
 	r.Get("/explore", h.ExploreList)
 	r.Get("/explore/", h.ExploreList)
+	r.Get("/explore/fragment", h.ExploreFragment)
+	r.Get("/explore/updates/{streamID}", h.ExploreUpdatesStream)
+	r.Post("/explore/updates/{streamID}", h.ExploreUpdatesApply)
 	r.Get("/explore/folders", h.NotebookFoldersList)
 	r.Get("/explore/folders/new", h.NotebookFoldersNew)
 	r.Post("/explore/folders", h.NotebookFoldersCreate)

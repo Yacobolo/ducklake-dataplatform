@@ -13,6 +13,8 @@ const entryFiles = [
   join(webDir, "src", "sql-editor.ts"),
   join(webDir, "src", "notebook.ts"),
   join(webDir, "src", "dashboard.ts"),
+  join(webDir, "src", "explore.ts"),
+  join(webDir, "src", "datastar-inspector.ts"),
 ];
 
 const outputDir = join(rootDir, "internal", "ui", "assets", "static", "js");
@@ -30,6 +32,7 @@ const result = await build({
   absWorkingDir: webDir,
   entryPoints: entryFiles,
   outdir: outputDir,
+  tsconfig: join(webDir, "tsconfig.json"),
   bundle: true,
   format: "iife",
   target: "es2020",
