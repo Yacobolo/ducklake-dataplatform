@@ -37,6 +37,7 @@ const (
 	SecurableCatalog           = domain.SecurableCatalog
 	SecurableSchema            = domain.SecurableSchema
 	SecurableTable             = domain.SecurableTable
+	SecurableFolder            = domain.SecurableFolder
 	SecurableExternalLocation  = domain.SecurableExternalLocation
 	SecurableStorageCredential = domain.SecurableStorageCredential
 	SecurableVolume            = domain.SecurableVolume
@@ -1353,4 +1354,54 @@ func TestAllPrivileges_GroupGrant_ExpandsToSelect(t *testing.T) {
 	ok, err := svc.CheckPrivilege(ctx, "analyst", SecurableTable, "1", PrivSelect)
 	require.NoError(t, err)
 	require.True(t, ok, "group ALL_PRIVILEGES on schema should grant SELECT on table to group member")
+}
+
+func TestFolderPrivilege_DirectGrant(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "analyst", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: user.ID, PrincipalType: "user",
+		SecurableType: SecurableFolder, SecurableID: "folder-1",
+		Privilege: PrivSelect,
+	})
+	require.NoError(t, err)
+
+	ok, err := svc.CheckPrivilege(ctx, "analyst", SecurableFolder, "folder-1", PrivSelect)
+	require.NoError(t, err)
+	require.True(t, ok, "direct folder SELECT grant should be allowed")
+}
+
+func TestFolderPrivilege_GroupGrant(t *testing.T) {
+	svc, q, ctx := setupTestService(t)
+
+	user, err := q.CreatePrincipal(ctx, dbstore.CreatePrincipalParams{
+		ID: uuid.New().String(), Name: "analyst", Type: "user", IsAdmin: 0,
+	})
+	require.NoError(t, err)
+
+	group, err := q.CreateGroup(ctx, dbstore.CreateGroupParams{
+		ID: uuid.New().String(), Name: "workspace-readers",
+	})
+	require.NoError(t, err)
+
+	err = q.AddGroupMember(ctx, dbstore.AddGroupMemberParams{
+		GroupID: group.ID, MemberType: "user", MemberID: user.ID,
+	})
+	require.NoError(t, err)
+
+	_, err = q.GrantPrivilege(ctx, dbstore.GrantPrivilegeParams{
+		ID: uuid.New().String(), PrincipalID: group.ID, PrincipalType: "group",
+		SecurableType: SecurableFolder, SecurableID: "folder-2",
+		Privilege: PrivAllPrivileges,
+	})
+	require.NoError(t, err)
+
+	ok, err := svc.CheckPrivilege(ctx, "analyst", SecurableFolder, "folder-2", PrivSelect)
+	require.NoError(t, err)
+	require.True(t, ok, "group ALL_PRIVILEGES on folder should grant folder SELECT")
 }
