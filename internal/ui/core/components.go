@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"sort"
+	"strings"
 
 	"duck-demo/internal/domain"
 
@@ -115,6 +116,26 @@ func InputWithIcon(iconName, extraClass string, inputNodes ...Node) Node {
 		),
 		Input(inputAttrs...),
 	)
+}
+
+func SearchInput(label, placeholder, extraClass string, inputNodes ...Node) Node {
+	labelText := strings.TrimSpace(label)
+	if labelText == "" {
+		labelText = "Search"
+	}
+
+	placeholderText := strings.TrimSpace(placeholder)
+	inputAttrs := []Node{
+		Type("search"),
+		Placeholder(placeholderText),
+		Attr("aria-label", labelText),
+	}
+	inputAttrs = append(inputAttrs, inputNodes...)
+
+	return Group([]Node{
+		Label(Class("sr-only"), Text(labelText)),
+		InputWithIcon("search", extraClass, inputAttrs...),
+	})
 }
 
 func TextareaControl(extraClass string, nodes ...Node) Node {

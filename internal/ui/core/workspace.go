@@ -51,6 +51,22 @@ type CatalogExplorerPanelData struct {
 	EmptyCatalogsText string
 }
 
+type ExploreNavigatorItem struct {
+	Name     string
+	URL      string
+	Icon     string
+	Active   bool
+	Open     bool
+	Children []ExploreNavigatorItem
+}
+
+type ExploreNavigatorPanelData struct {
+	Title             string
+	FilterPlaceholder string
+	Items             []ExploreNavigatorItem
+	EmptyText         string
+}
+
 func WorkspaceLayout(className string, aside Node, main ...Node) Node {
 	classes := ClassNames("workspace-layout relative grid min-h-0 gap-4 md:[grid-template-columns:18rem_minmax(0,1fr)] [.is-aside-collapsed&]:md:[grid-template-columns:3.5rem_minmax(0,1fr)]", className)
 	return Div(
@@ -62,7 +78,7 @@ func WorkspaceLayout(className string, aside Node, main ...Node) Node {
 }
 
 func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defaultTab string) Node {
-	classes := ClassNames("workspace-aside min-w-0 self-stretch rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] pr-2 shadow-xs [.is-aside-collapsed_&]:pr-1 max-md:self-start max-md:mb-1 max-md:border-b max-md:border-[var(--borderColor-muted)] max-md:pb-2 max-md:pr-0", className)
+	classes := ClassNames("workspace-aside min-w-0 self-stretch rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] pr-2 shadow-xs [.is-aside-collapsed_&]:pr-1 max-md:mb-1 max-md:border-b max-md:border-[var(--borderColor-muted)] max-md:pb-2 max-md:pr-0", className)
 	if len(tabs) == 0 {
 		return Aside(Class(classes))
 	}
@@ -83,7 +99,7 @@ func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defa
 		panelID := "workspace-panel-" + tab.ID
 
 		tabClass := "workspace-aside-tab inline-flex min-h-10 items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-left text-sm font-medium text-[var(--fgColor-muted)] transition-colors hover:bg-[var(--bgColor-default)] hover:text-[var(--fgColor-default)] [.is-aside-collapsed_&]:justify-center [.is-aside-collapsed_&]:border-transparent [.is-aside-collapsed_&]:bg-transparent [.is-aside-collapsed_&]:px-0 [.is-aside-collapsed_&]:text-[var(--fgColor-muted)] [.is-aside-collapsed_&]:hover:border-[var(--borderColor-muted)] [.is-aside-collapsed_&]:hover:bg-[var(--bgColor-muted)] [.is-aside-collapsed_&]:hover:text-[var(--fgColor-default)] max-md:[.is-aside-collapsed_&]:justify-start max-md:[.is-aside-collapsed_&]:px-3"
-		panelClass := "workspace-aside-panel hidden min-h-0 flex-col gap-4 [.is-active&]:flex [.is-aside-collapsed_.workspace-aside-panels_&]:hidden max-md:[.is-aside-collapsed_.workspace-aside-panels_&]:flex"
+		panelClass := "workspace-aside-panel hidden min-h-0 flex-col gap-4 [.is-active&]:flex [.is-aside-collapsed_.workspace-aside-panels_&]:hidden"
 		selected := "false"
 		if tab.ID == activeTab {
 			tabClass += " is-active bg-[var(--bgColor-default)] text-[var(--fgColor-accent)] shadow-[inset_2px_0_0_var(--borderColor-accent-emphasis)] [.is-aside-collapsed_&]:border-transparent [.is-aside-collapsed_&]:bg-transparent [.is-aside-collapsed_&]:text-[var(--fgColor-muted)] [.is-aside-collapsed_&]:shadow-none"
@@ -133,11 +149,11 @@ func WorkspaceAside(storageKey, className string, tabs []WorkspaceAsideTab, defa
 		Type("button"),
 		Class(ClassNames("workspace-aside-toggle shrink-0 [.is-aside-collapsed_&]:hidden", iconButtonClass("small"))),
 		Attr("data-workspace-aside-toggle", "true"),
-		Attr("aria-label", "Collapse sidebar"),
+		Attr("aria-label", "Collapse panel"),
 		Attr("aria-expanded", "true"),
-		Title("Collapse sidebar"),
+		Title("Collapse panel"),
 		Icon("panel-left-close", Class(IconGlyphClass())),
-		Span(Class("sr-only"), Text("Collapse sidebar")),
+		Span(Class("sr-only"), Text("Collapse panel")),
 	)
 
 	return Aside(
@@ -203,12 +219,12 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 				Class("min-w-0"),
 				data.Show(containsExpr(schemaFilter)),
 				Details(
-					Class("group"),
+					Class(disclosureDetailsClass()),
 					openAttr,
 					Summary(
 						Class(detailsSummaryClass()),
 						Div(Class("flex min-w-0 items-center gap-2"),
-							Icon("chevron-right", Class(NavIconClass("transition-transform group-open:rotate-90"))),
+							Icon("chevron-right", Attr("data-disclosure-icon", "true"), Class(NavIconClass("transition-transform duration-150 ease-out"))),
 							A(Href(schema.URL), Class(schemaClass), Icon("folder", Class(NavIconClass())), Span(Text(schema.Name))),
 						),
 					),
@@ -237,12 +253,12 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 				Class("min-w-0"),
 				data.Show(containsExpr(showValue)),
 				Details(
-					Class("group"),
+					Class(disclosureDetailsClass()),
 					openAttr,
 					Summary(
 						Class(detailsSummaryClass()),
 						Div(Class("flex min-w-0 items-center gap-2"),
-							Icon("chevron-right", Class(NavIconClass("transition-transform group-open:rotate-90"))),
+							Icon("chevron-right", Attr("data-disclosure-icon", "true"), Class(NavIconClass("transition-transform duration-150 ease-out"))),
 							A(Href(catalog.URL), Class(catalogClass), Icon("database", Class(NavIconClass())), Span(Text(catalog.Name))),
 						),
 					),
@@ -265,10 +281,12 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 
 	filterNode := Node(nil)
 	if strings.TrimSpace(d.FilterPlaceholder) != "" {
-		filterNode = Div(Class("relative"),
-			Icon("search", Class(NavIconClass())),
-			Label(Class("sr-only"), Text("Filter catalog explorer")),
-			Input(Type("search"), Class(formControlClass("pl-9")), Placeholder(d.FilterPlaceholder), data.Bind("q"), AutoComplete("off")),
+		filterNode = SearchInput(
+			"Filter catalog explorer",
+			d.FilterPlaceholder,
+			"",
+			data.Bind("q"),
+			AutoComplete("off"),
 		)
 	}
 
@@ -279,6 +297,33 @@ func CatalogExplorerPanel(d CatalogExplorerPanelData) Node {
 				P(Class("m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(fallbackString(d.Title, "Catalog Explorer"))),
 				newCatalogButton,
 			),
+			filterNode,
+		),
+		body,
+	)
+}
+
+func ExploreNavigatorPanel(d ExploreNavigatorPanelData) Node {
+	body := Node(P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(fallbackString(d.EmptyText, "No resources found."))))
+	if len(d.Items) > 0 {
+		body = Ul(Class("grid gap-2"), Group(renderExploreNavigatorItems(d.Items)))
+	}
+
+	filterNode := Node(nil)
+	if strings.TrimSpace(d.FilterPlaceholder) != "" {
+		filterNode = SearchInput(
+			"Filter explorer",
+			d.FilterPlaceholder,
+			"",
+			data.Bind("q"),
+			AutoComplete("off"),
+		)
+	}
+
+	return Div(
+		Class("flex min-h-0 flex-col gap-3"),
+		Div(Class("flex flex-col gap-3 border-b border-[var(--borderColor-default)] pb-3"),
+			P(Class("m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(fallbackString(d.Title, "Explorer"))),
 			filterNode,
 		),
 		body,
@@ -323,6 +368,74 @@ func containsExpr(value string) string {
 	return "$q === '' || " + strconv.Quote(lower) + ".includes($q.toLowerCase())"
 }
 
+func renderExploreNavigatorItems(items []ExploreNavigatorItem) []Node {
+	nodes := make([]Node, 0, len(items))
+	for i := range items {
+		item := items[i]
+		nodes = append(nodes, renderExploreNavigatorItem(item))
+	}
+	return nodes
+}
+
+func renderExploreNavigatorItem(item ExploreNavigatorItem) Node {
+	filterText := strings.TrimSpace(item.Name + " " + exploreNavigatorNames(item.Children))
+	linkClass := "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-[var(--fgColor-muted)] no-underline transition-colors hover:bg-[var(--bgColor-default)] hover:text-[var(--fgColor-default)]"
+	if item.Active {
+		linkClass += " bg-[var(--bgColor-accent-muted)] font-medium text-[var(--fgColor-accent)]"
+	}
+
+	icon := strings.TrimSpace(item.Icon)
+	if icon == "" {
+		icon = "file-stack"
+	}
+
+	if len(item.Children) == 0 {
+		return Li(
+			Class("min-w-0"),
+			data.Show(containsExpr(filterText)),
+			A(Href(item.URL), Class(linkClass), Icon(icon, Class(NavIconClass())), Span(Text(item.Name))),
+		)
+	}
+
+	openAttr := Node(nil)
+	if item.Open {
+		openAttr = Attr("open", "")
+	}
+
+	return Li(
+		Class("min-w-0"),
+		data.Show(containsExpr(filterText)),
+		Details(
+			Class(disclosureDetailsClass()),
+			openAttr,
+			Summary(
+				Class(detailsSummaryClass()),
+				Div(Class("flex min-w-0 items-center gap-2"),
+					Icon("chevron-right", Attr("data-disclosure-icon", "true"), Class(NavIconClass("transition-transform duration-150 ease-out"))),
+					A(Href(item.URL), Class(linkClass), Icon(icon, Class(NavIconClass())), Span(Text(item.Name))),
+				),
+			),
+			Ul(Class("mt-1 grid gap-1 border-l border-[var(--borderColor-default)] pl-3"), Group(renderExploreNavigatorItems(item.Children))),
+		),
+	)
+}
+
+func exploreNavigatorNames(items []ExploreNavigatorItem) string {
+	names := make([]string, 0, len(items)*2)
+	for i := range items {
+		names = append(names, items[i].Name)
+		childNames := strings.TrimSpace(exploreNavigatorNames(items[i].Children))
+		if childNames != "" {
+			names = append(names, childNames)
+		}
+	}
+	return strings.Join(names, " ")
+}
+
 func detailsSummaryClass(extra ...string) string {
 	return ClassNames("list-none [&::-webkit-details-marker]:hidden", strings.Join(extra, " "))
+}
+
+func disclosureDetailsClass(extra ...string) string {
+	return ClassNames("[&[open]_summary_[data-disclosure-icon='true']]:rotate-90", strings.Join(extra, " "))
 }
