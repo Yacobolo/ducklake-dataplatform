@@ -93,6 +93,10 @@ func (d *Dependencies) CSRFToken(r *http.Request) string {
 	return token
 }
 
+func WithCSRFToken(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, csrfContextKey{}, strings.TrimSpace(token))
+}
+
 type csrfContextKey struct{}
 
 const csrfCookieName = "ui_csrf"

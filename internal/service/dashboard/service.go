@@ -310,7 +310,7 @@ func (s *Service) resolveWidgetWithContext(ctx context.Context, principal string
 			TimeGrain:         widget.Source.SemanticQuery.TimeGrain,
 		}
 		if interactionCtx != nil && widgetParticipatesInDashboardInteraction(widget, interactionCtx) {
-			req.Filters = append(req.Filters, buildDashboardFilterClauses(interactionCtx.ActiveFilters, interactionCtx.FilterSpecs)...)
+			req.Filters = append(req.Filters, buildDashboardFilterClauses(widgetQueryFilters(widget, interactionCtx), interactionCtx.FilterSpecs)...)
 		}
 		result, err := s.semantic.RunMetricQuery(ctx, principal, req)
 		if err != nil {

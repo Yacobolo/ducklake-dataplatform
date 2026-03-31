@@ -39,6 +39,7 @@ func (h *Handler) EnsureCSRFToken(next http.Handler) http.Handler {
 			})
 		}
 		ctx := context.WithValue(r.Context(), uiCSRFContextKey{}, token)
+		ctx = core.WithCSRFToken(ctx, token)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

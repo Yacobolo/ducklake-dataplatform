@@ -1,6 +1,7 @@
 import "./chart";
 
 type ChartFilterSelection = {
+  widgetId: string;
   dimension: string;
   value: string;
 };
@@ -9,11 +10,46 @@ type DashboardChartFilterEventDetail = {
   selections: ChartFilterSelection[];
 };
 
+type DashboardChartPayload = {
+  name?: string;
+  columns: string[];
+  rows: unknown[][];
+  visual?: Record<string, unknown> | null;
+  interaction?: Record<string, unknown> | null;
+};
+
+type DashboardChartPayloadEnvelope = {
+  filter_key?: string;
+  widgets?: Record<string, DashboardChartPayload>;
+};
+
+type DuckChartElement = HTMLElement & {
+  setPayload: (payload: DashboardChartPayload | null) => void;
+};
+
+type OriginFilter = {
+  widgetId: string;
+  dimension: string;
+  value: string;
+};
+
 class DashboardSurfaceController {
-  private requestToken = 0;
+  private dataStream: EventSource | null = null;
+  private dataStreamURL = "";
+  private pendingFilterKey: string | null = null;
+  private pendingShell = false;
+  private pendingData = false;
+  private readonly mutationObserver: MutationObserver;
 
   constructor() {
+    this.mutationObserver = new MutationObserver(() => {
+      this.completePendingShellIfReady();
+    });
+
+    document.documentElement.setAttribute("data-dashboard-loading", "false");
     this.bindEvents();
+    this.observeSurface();
+    this.connectDataStream();
   }
 
   private bindEvents(): void {
@@ -26,7 +62,7 @@ class DashboardSurfaceController {
     });
 
     window.addEventListener("popstate", () => {
-      void this.refreshFromLocation();
+      void this.applyFiltersFromLocation(false);
     });
   }
 
@@ -36,12 +72,12 @@ class DashboardSurfaceController {
       return;
     }
 
-    const nextFilters = this.readFiltersFromURL(window.location.href);
+    const nextFilters = this.readOriginFiltersFromURL(window.location.href);
     for (const selection of event.detail.selections) {
-      this.toggleFilter(nextFilters, selection.dimension, selection.value);
+      this.toggleFilter(nextFilters, selection.widgetId, selection.dimension, selection.value);
     }
 
-    await this.navigate(surface, nextFilters, true);
+    await this.applyFilters(surface, nextFilters, true);
   }
 
   private async handleClick(event: Event): Promise<void> {
@@ -55,10 +91,10 @@ class DashboardSurfaceController {
       return;
     }
 
-    const nextFilters = this.readFiltersFromURL(window.location.href);
+    const nextFilters = this.readOriginFiltersFromURL(window.location.href);
     if (target.hasAttribute("data-dashboard-clear-filters")) {
-      nextFilters.clear();
-      await this.navigate(surface, nextFilters, true);
+      nextFilters.length = 0;
+      await this.applyFilters(surface, nextFilters, true);
       return;
     }
 
@@ -68,116 +104,253 @@ class DashboardSurfaceController {
       return;
     }
 
-    this.toggleFilter(nextFilters, dimension, value);
-    await this.navigate(surface, nextFilters, true);
+    this.removeFilter(nextFilters, dimension, value);
+    await this.applyFilters(surface, nextFilters, true);
   }
 
-  private async refreshFromLocation(): Promise<void> {
+  private async applyFiltersFromLocation(pushState: boolean): Promise<void> {
     const surface = this.getSurface();
     if (!surface) {
       return;
     }
 
-    const filters = this.readFiltersFromURL(window.location.href);
-    await this.navigate(surface, filters, false);
+    const filters = this.readOriginFiltersFromURL(window.location.href);
+    await this.applyFilters(surface, filters, pushState);
   }
 
   private getSurface(): HTMLElement | null {
     return document.querySelector<HTMLElement>("#dashboard-view-surface[data-dashboard-surface='true']");
   }
 
-  private readFiltersFromURL(rawURL: string): Map<string, Set<string>> {
+  private readOriginFiltersFromURL(rawURL: string): OriginFilter[] {
     const url = new URL(rawURL, window.location.origin);
-    const filters = new Map<string, Set<string>>();
+    return this.parseOriginFilters(url.searchParams.getAll("fo"));
+  }
 
-    for (const rawFilter of url.searchParams.getAll("f")) {
-      const separatorIndex = rawFilter.indexOf(":");
-      if (separatorIndex < 1 || separatorIndex === rawFilter.length - 1) {
+  private parseOriginFilters(rawFilters: string[]): OriginFilter[] {
+    const filters: OriginFilter[] = [];
+    const seen = new Set<string>();
+    for (const rawFilter of rawFilters) {
+      const [widgetID, remainder] = rawFilter.split("|", 2);
+      if (!widgetID || !remainder) {
         continue;
       }
-
-      const dimension = rawFilter.slice(0, separatorIndex).trim();
-      const value = rawFilter.slice(separatorIndex + 1).trim();
-      if (!dimension || !value) {
+      const separatorIndex = remainder.indexOf(":");
+      if (separatorIndex < 1 || separatorIndex === remainder.length - 1) {
         continue;
       }
-
-      const current = filters.get(dimension) ?? new Set<string>();
-      current.add(value);
-      filters.set(dimension, current);
+      const filter: OriginFilter = {
+        widgetId: widgetID.trim(),
+        dimension: remainder.slice(0, separatorIndex).trim(),
+        value: remainder.slice(separatorIndex + 1).trim(),
+      };
+      const key = this.originFilterKey(filter);
+      if (!filter.widgetId || !filter.dimension || !filter.value || seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      filters.push(filter);
     }
-
     return filters;
   }
 
-  private toggleFilter(filters: Map<string, Set<string>>, dimension: string, value: string): void {
-    const current = filters.get(dimension) ?? new Set<string>();
-    if (current.has(value)) {
-      current.delete(value);
-    } else {
-      current.add(value);
-    }
+  private serializeOriginFilters(filters: OriginFilter[]): string[] {
+    return [...filters]
+      .sort((left, right) => this.originFilterKey(left).localeCompare(this.originFilterKey(right)))
+      .filter((filter) => Boolean(filter.widgetId.trim() && filter.dimension.trim() && filter.value.trim()))
+      .map((filter) => `${filter.widgetId}|${filter.dimension}:${filter.value}`);
+  }
 
-    if (current.size === 0) {
-      filters.delete(dimension);
+  private buildFilterKey(filters: OriginFilter[]): string {
+    return [...filters]
+      .map((filter) => this.originFilterKey(filter))
+      .sort((left, right) => left.localeCompare(right))
+      .join("|");
+  }
+
+  private originFilterKey(filter: OriginFilter): string {
+    return `${filter.widgetId.trim()}|${filter.dimension.trim()}:${filter.value.trim()}`;
+  }
+
+  private toggleFilter(filters: OriginFilter[], widgetId: string, dimension: string, value: string): void {
+    const filter: OriginFilter = {
+      widgetId: widgetId.trim(),
+      dimension: dimension.trim(),
+      value: value.trim(),
+    };
+    if (!filter.widgetId || !filter.dimension || !filter.value) {
       return;
     }
 
-    filters.set(dimension, current);
+    const targetKey = this.originFilterKey(filter);
+    const existingIndex = filters.findIndex((item) => this.originFilterKey(item) === targetKey);
+    if (existingIndex >= 0) {
+      filters.splice(existingIndex, 1);
+      return;
+    }
+
+    filters.push(filter);
   }
 
-  private buildViewURL(surface: HTMLElement, filters: Map<string, Set<string>>): URL {
+  private removeFilter(filters: OriginFilter[], dimension: string, value: string): void {
+    const normalizedDimension = dimension.trim();
+    const normalizedValue = value.trim();
+    for (let index = filters.length - 1; index >= 0; index -= 1) {
+      const filter = filters[index];
+      if (filter.dimension === normalizedDimension && filter.value === normalizedValue) {
+        filters.splice(index, 1);
+      }
+    }
+  }
+
+  private buildViewURL(surface: HTMLElement, filters: OriginFilter[]): URL {
     const nextURL = new URL(window.location.href);
     const viewPath = surface.dataset.dashboardViewUrl;
     if (viewPath) {
       nextURL.pathname = viewPath;
     }
-    nextURL.searchParams.delete("f");
-    for (const [dimension, values] of filters.entries()) {
-      for (const value of values.values()) {
-        nextURL.searchParams.append("f", `${dimension}:${value}`);
-      }
+    nextURL.searchParams.delete("fo");
+    for (const filter of this.serializeOriginFilters(filters)) {
+      nextURL.searchParams.append("fo", filter);
     }
     return nextURL;
   }
 
-  private buildSurfaceURL(surface: HTMLElement, viewURL: URL): URL {
-    const surfaceURL = new URL(viewURL.toString());
-    const surfacePath = surface.dataset.dashboardSurfaceUrl;
-    if (surfacePath) {
-      surfaceURL.pathname = surfacePath;
+  private async applyFilters(surface: HTMLElement, filters: OriginFilter[], pushState: boolean): Promise<void> {
+    const applyURL = surface.dataset.dashboardApplyUrl;
+    if (!applyURL) {
+      return;
     }
-    return surfaceURL;
-  }
 
-  private async navigate(surface: HTMLElement, filters: Map<string, Set<string>>, pushState: boolean): Promise<void> {
     const viewURL = this.buildViewURL(surface, filters);
-    const surfaceURL = this.buildSurfaceURL(surface, viewURL);
-    const requestToken = ++this.requestToken;
-
     if (pushState) {
       window.history.pushState({}, "", viewURL);
     }
 
-    const response = await fetch(surfaceURL.toString(), {
+    this.startLoading(this.buildFilterKey(filters));
+
+    const response = await fetch(applyURL, {
+      method: "POST",
+      credentials: "same-origin",
       headers: {
-        "X-Requested-With": "fetch",
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        csrfToken: this.readCSRFToken(surface),
+        originFilters: this.serializeOriginFilters(filters),
+      }),
     });
     if (!response.ok) {
+      this.resetLoading();
+      return;
+    }
+  }
+
+  private connectDataStream(): void {
+    const surface = this.getSurface();
+    const nextURL = surface?.dataset.dashboardDataStreamUrl ?? "";
+    if (!nextURL || this.dataStreamURL === nextURL) {
       return;
     }
 
-    const html = await response.text();
-    if (requestToken !== this.requestToken) {
+    this.dataStream?.close();
+    this.dataStreamURL = nextURL;
+    this.dataStream = new EventSource(nextURL);
+    this.dataStream.addEventListener("dashboard-chart-payloads", (event) => {
+      this.handleChartPayloads(event as MessageEvent<string>);
+    });
+  }
+
+  private handleChartPayloads(event: MessageEvent<string>): void {
+    const surface = this.getSurface();
+    if (!surface) {
       return;
     }
 
-    const currentSurface = this.getSurface();
-    if (!currentSurface) {
+    let payloads: DashboardChartPayloadEnvelope;
+    try {
+      payloads = JSON.parse(event.data) as DashboardChartPayloadEnvelope;
+    } catch {
       return;
     }
-    currentSurface.outerHTML = html;
+
+    this.completePendingDataIfReady(payloads.filter_key ?? "");
+
+    const widgetPayloads = payloads.widgets ?? {};
+    const charts = surface.querySelectorAll("duck-chart[data-widget-id]");
+    for (const chart of charts) {
+      const element = chart as DuckChartElement;
+      const widgetID = element.dataset.widgetId ?? "";
+      element.setPayload(widgetPayloads[widgetID] ?? null);
+    }
+  }
+
+  private readCSRFToken(surface: HTMLElement): string {
+    const attrToken = surface.dataset.dashboardCsrfToken?.trim();
+    if (attrToken) {
+      return attrToken;
+    }
+
+    const input = surface.querySelector<HTMLInputElement>("input[name='csrf_token']") ?? document.querySelector<HTMLInputElement>("input[name='csrf_token']");
+    return input?.value?.trim() ?? "";
+  }
+
+  private observeSurface(): void {
+    this.mutationObserver.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["data-dashboard-filter-key"],
+    });
+  }
+
+  private startLoading(filterKey: string): void {
+    this.pendingFilterKey = filterKey;
+    this.pendingShell = true;
+    this.pendingData = true;
+    document.documentElement.setAttribute("data-dashboard-loading", "true");
+    this.completePendingShellIfReady();
+  }
+
+  private completePendingShellIfReady(): void {
+    if (!this.pendingShell) {
+      return;
+    }
+
+    const currentKey = this.getSurface()?.dataset.dashboardFilterKey ?? "";
+    if (currentKey !== (this.pendingFilterKey ?? "")) {
+      return;
+    }
+
+    this.pendingShell = false;
+    this.connectDataStream();
+    this.finishLoadingIfReady();
+  }
+
+  private completePendingDataIfReady(filterKey: string): void {
+    if (!this.pendingData) {
+      return;
+    }
+    if ((this.pendingFilterKey ?? "") !== filterKey) {
+      return;
+    }
+
+    this.pendingData = false;
+    this.finishLoadingIfReady();
+  }
+
+  private finishLoadingIfReady(): void {
+    if (this.pendingShell || this.pendingData) {
+      return;
+    }
+    this.resetLoading();
+  }
+
+  private resetLoading(): void {
+    this.pendingFilterKey = null;
+    this.pendingShell = false;
+    this.pendingData = false;
+    document.documentElement.setAttribute("data-dashboard-loading", "false");
   }
 }
 

@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -17,6 +18,7 @@ const (
 
 // InteractiveFilter captures one active dashboard filter dimension with one or more selected values.
 type InteractiveFilter struct {
+	WidgetID  string   `json:"widget_id,omitempty"`
 	Dimension string   `json:"dimension"`
 	Values    []string `json:"values"`
 }
@@ -204,6 +206,27 @@ func widgetCanInitiateDashboardFilters(widget domain.DashboardWidget, bindings [
 	return len(bindings) > 0
 }
 
+func widgetQueryFilters(widget domain.DashboardWidget, interactionCtx *dashboardInteractionContext) []InteractiveFilter {
+	if interactionCtx == nil || !interactionCtx.Interactive {
+		return nil
+	}
+	if len(interactionCtx.ActiveFilters) == 0 {
+		return nil
+	}
+	if !widgetParticipatesInDashboardInteraction(widget, interactionCtx) {
+		return interactionCtx.ActiveFilters
+	}
+
+	filtered := make([]InteractiveFilter, 0, len(interactionCtx.ActiveFilters))
+	for _, filter := range interactionCtx.ActiveFilters {
+		if strings.TrimSpace(filter.WidgetID) != "" && strings.TrimSpace(filter.WidgetID) == strings.TrimSpace(widget.ID) {
+			continue
+		}
+		filtered = append(filtered, filter)
+	}
+	return filtered
+}
+
 func semanticFieldToDashboardFilterDimension(source *domain.DashboardSemanticQuerySource, boundModel *domain.SemanticModel, field string) string {
 	field = strings.TrimSpace(field)
 	if source == nil || field == "" {
@@ -226,8 +249,11 @@ func sanitizeDashboardInteractiveFilters(filters []InteractiveFilter, specs map[
 	}
 
 	out := make([]InteractiveFilter, 0, len(filters))
+	order := make([]string, 0, len(filters))
+	grouped := make(map[string]InteractiveFilter, len(filters))
 	seen := make(map[string]map[string]struct{}, len(filters))
 	for _, filter := range filters {
+		widgetID := strings.TrimSpace(filter.WidgetID)
 		dimension := strings.TrimSpace(filter.Dimension)
 		if dimension == "" {
 			continue
@@ -235,28 +261,38 @@ func sanitizeDashboardInteractiveFilters(filters []InteractiveFilter, specs map[
 		if _, ok := specs[dimension]; !ok {
 			continue
 		}
-		if _, ok := seen[dimension]; !ok {
-			seen[dimension] = make(map[string]struct{})
+		groupKey := widgetID + "\x00" + dimension
+		if _, ok := grouped[groupKey]; !ok {
+			grouped[groupKey] = InteractiveFilter{
+				WidgetID:  widgetID,
+				Dimension: dimension,
+			}
+			order = append(order, groupKey)
 		}
-		values := make([]string, 0, len(filter.Values))
+		if _, ok := seen[groupKey]; !ok {
+			seen[groupKey] = make(map[string]struct{})
+		}
 		for _, value := range filter.Values {
 			value = strings.TrimSpace(value)
 			if value == "" {
 				continue
 			}
-			if _, ok := seen[dimension][value]; ok {
+			if _, ok := seen[groupKey][value]; ok {
 				continue
 			}
-			seen[dimension][value] = struct{}{}
-			values = append(values, value)
+			seen[groupKey][value] = struct{}{}
+			groupedFilter := grouped[groupKey]
+			groupedFilter.Values = append(groupedFilter.Values, value)
+			grouped[groupKey] = groupedFilter
 		}
-		if len(values) == 0 {
+	}
+
+	for _, groupKey := range order {
+		groupedFilter := grouped[groupKey]
+		if len(groupedFilter.Values) == 0 {
 			continue
 		}
-		out = append(out, InteractiveFilter{
-			Dimension: dimension,
-			Values:    values,
-		})
+		out = append(out, groupedFilter)
 	}
 	return out
 }
@@ -266,8 +302,26 @@ func interactiveFilterMap(filters []InteractiveFilter) map[string][]string {
 		return nil
 	}
 	out := make(map[string][]string, len(filters))
+	seen := make(map[string]map[string]struct{}, len(filters))
 	for _, filter := range filters {
-		out[filter.Dimension] = append([]string(nil), filter.Values...)
+		dimension := strings.TrimSpace(filter.Dimension)
+		if dimension == "" {
+			continue
+		}
+		if _, ok := seen[dimension]; !ok {
+			seen[dimension] = make(map[string]struct{})
+		}
+		for _, value := range filter.Values {
+			value = strings.TrimSpace(value)
+			if value == "" {
+				continue
+			}
+			if _, ok := seen[dimension][value]; ok {
+				continue
+			}
+			seen[dimension][value] = struct{}{}
+			out[dimension] = append(out[dimension], value)
+		}
 	}
 	return out
 }
@@ -277,28 +331,51 @@ func buildDashboardFilterClauses(filters []InteractiveFilter, specs map[string]i
 		return nil
 	}
 
-	clauses := make([]string, 0, len(filters))
+	grouped := make(map[string][]string, len(filters))
+	seen := make(map[string]map[string]struct{}, len(filters))
 	for _, filter := range filters {
-		spec, ok := specs[filter.Dimension]
+		dimension := strings.TrimSpace(filter.Dimension)
+		_, ok := specs[dimension]
 		if !ok {
 			continue
 		}
+		if _, ok := seen[dimension]; !ok {
+			seen[dimension] = make(map[string]struct{})
+		}
+		for _, value := range filter.Values {
+			value = strings.TrimSpace(value)
+			if value == "" {
+				continue
+			}
+			if _, ok := seen[dimension][value]; ok {
+				continue
+			}
+			seen[dimension][value] = struct{}{}
+			grouped[dimension] = append(grouped[dimension], value)
+		}
+	}
+
+	clauses := make([]string, 0, len(grouped))
+	dimensions := make([]string, 0, len(grouped))
+	for dimension := range grouped {
+		dimensions = append(dimensions, dimension)
+	}
+	sort.Strings(dimensions)
+	for _, dimension := range dimensions {
+		spec := specs[dimension]
 		expr := spec.Dimension
 		if spec.TimeGrain != "" {
 			expr = fmt.Sprintf("date_trunc('%s', %s)", escapeSQLString(spec.TimeGrain), spec.Dimension)
 		}
-		valueClauses := make([]string, 0, len(filter.Values))
-		for _, value := range filter.Values {
+		valueClauses := make([]string, 0, len(grouped[dimension]))
+		for _, value := range grouped[dimension] {
 			valueClauses = append(valueClauses, fmt.Sprintf("%s = %s", expr, dashboardFilterSQLLiteral(value, spec.TimeGrain != "")))
-		}
-		if len(valueClauses) == 0 {
-			continue
 		}
 		if len(valueClauses) == 1 {
 			clauses = append(clauses, valueClauses[0])
-			continue
+		} else if len(valueClauses) > 1 {
+			clauses = append(clauses, "("+strings.Join(valueClauses, " OR ")+")")
 		}
-		clauses = append(clauses, "("+strings.Join(valueClauses, " OR ")+")")
 	}
 	return clauses
 }

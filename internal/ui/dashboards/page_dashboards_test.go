@@ -40,16 +40,21 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 				},
 			},
 		},
-		BaseURL:         "/ui/dashboards/dash-1",
-		ViewURL:         "/ui/dashboards/dash-1",
-		StudioURL:       "/ui/dashboards/dash-1?mode=edit",
-		EditURL:         "/ui/dashboards/dash-1/edit",
-		DeleteURL:       "/ui/dashboards/dash-1/delete",
-		CreateWidgetURL: "/ui/dashboards/dash-1/widgets",
-		SurfaceURL:      "/ui/dashboards/dash-1/surface",
+		BaseURL:          "/ui/dashboards/dash-1",
+		ViewURL:          "/ui/dashboards/dash-1",
+		StudioURL:        "/ui/dashboards/dash-1?mode=edit",
+		EditURL:          "/ui/dashboards/dash-1/edit",
+		DeleteURL:        "/ui/dashboards/dash-1/delete",
+		CreateWidgetURL:  "/ui/dashboards/dash-1/widgets",
+		SurfaceURL:       "/ui/dashboards/dash-1/surface",
+		UpdatesStreamURL: "/ui/dashboards/dash-1/updates/stream-1",
+		DataStreamURL:    "/ui/dashboards/dash-1/updates/stream-1/data",
+		UpdatesApplyURL:  "/ui/dashboards/dash-1/updates/stream-1",
+		StreamID:         "stream-1",
 		ActiveFilters: []dashboardsvc.InteractiveFilter{
 			{Dimension: "borough", Values: []string{"Queens"}},
 		},
+		CSRFToken: "token-123",
 		CSRFFieldProvider: func() gomponents.Node {
 			return nil
 		},
@@ -118,14 +123,18 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 	assert.NotContains(t, html, "Generated SQL")
 	assert.NotContains(t, html, "View data")
 	assert.NotContains(t, html, "Edit widget")
-	assert.Contains(t, html, "data-chart-payload")
+	assert.NotContains(t, html, "data-chart-payload")
+	assert.Contains(t, html, "data-ignore-morph")
+	assert.Contains(t, html, "data-widget-id=\"widget-chart\"")
 	assert.Contains(t, html, "Total Revenue")
 	assert.Contains(t, html, "Studio")
 	assert.Contains(t, html, "Cross Filters")
 	assert.Contains(t, html, "Queens")
 	assert.Contains(t, html, "data-dashboard-clear-filters")
 	assert.Contains(t, html, "data-dashboard-remove-filter")
-	assert.Contains(t, html, "data-dashboard-surface-url")
+	assert.Contains(t, html, "data-dashboard-updates-url")
+	assert.Contains(t, html, "data-dashboard-data-stream-url")
+	assert.Contains(t, html, "data-dashboard-apply-url")
 	assert.Contains(t, html, "Not interactive in this dashboard.")
 	assert.NotContains(t, html, "Freshness")
 	assert.NotContains(t, html, "metric.sales.orders.revenue")
@@ -142,17 +151,22 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 			Name:        "Revenue Dashboard",
 			Description: "Executive view",
 		},
-		EditMode:        true,
-		BaseURL:         "/ui/dashboards/dash-1",
-		ViewURL:         "/ui/dashboards/dash-1",
-		StudioURL:       "/ui/dashboards/dash-1?mode=edit",
-		EditURL:         "/ui/dashboards/dash-1/edit",
-		DeleteURL:       "/ui/dashboards/dash-1/delete",
-		CreateWidgetURL: "/ui/dashboards/dash-1/widgets",
-		SurfaceURL:      "/ui/dashboards/dash-1/surface",
+		EditMode:         true,
+		BaseURL:          "/ui/dashboards/dash-1",
+		ViewURL:          "/ui/dashboards/dash-1",
+		StudioURL:        "/ui/dashboards/dash-1?mode=edit",
+		EditURL:          "/ui/dashboards/dash-1/edit",
+		DeleteURL:        "/ui/dashboards/dash-1/delete",
+		CreateWidgetURL:  "/ui/dashboards/dash-1/widgets",
+		SurfaceURL:       "/ui/dashboards/dash-1/surface",
+		UpdatesStreamURL: "/ui/dashboards/dash-1/updates/stream-1",
+		DataStreamURL:    "/ui/dashboards/dash-1/updates/stream-1/data",
+		UpdatesApplyURL:  "/ui/dashboards/dash-1/updates/stream-1",
+		StreamID:         "stream-1",
 		ActiveFilters: []dashboardsvc.InteractiveFilter{
 			{Dimension: "borough", Values: []string{"Queens"}},
 		},
+		CSRFToken:         "token-123",
 		CSRFFieldProvider: func() gomponents.Node { return nil },
 		Widgets: []dashboardsvc.ResolvedWidget{
 			{
@@ -188,4 +202,5 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 	assert.Contains(t, html, "Edit widget")
 	assert.Contains(t, html, "Delete widget")
 	assert.NotContains(t, html, "Cross Filters")
+	assert.Contains(t, html, "data-chart-payload")
 }

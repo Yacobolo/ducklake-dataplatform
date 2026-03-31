@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -42,7 +43,12 @@ type dashboardDetailPageData struct {
 	DeleteURL         string
 	CreateWidgetURL   string
 	SurfaceURL        string
+	UpdatesStreamURL  string
+	DataStreamURL     string
+	UpdatesApplyURL   string
+	StreamID          string
 	ActiveFilters     []dashboardsvc.InteractiveFilter
+	CSRFToken         string
 	CSRFFieldProvider func() Node
 }
 
@@ -216,9 +222,37 @@ func dashboardViewSurface(d dashboardDetailPageData, widgetNodes []Node) Node {
 		ID("dashboard-view-surface"),
 		Class("shrink-0 grid gap-4"),
 		Attr("data-dashboard-surface", "true"),
+		Attr("data-dashboard-filter-key", dashboardFilterKey(d.ActiveFilters)),
 		Attr("data-dashboard-view-url", d.ViewURL),
 		Attr("data-dashboard-surface-url", d.SurfaceURL),
-		data.Signals(map[string]any{"filters": dashboardFilterSignalMap(d.ActiveFilters)}),
+		Attr("data-dashboard-stream-id", d.StreamID),
+		Attr("data-dashboard-updates-url", d.UpdatesStreamURL),
+		Attr("data-dashboard-data-stream-url", d.DataStreamURL),
+		Attr("data-dashboard-apply-url", d.UpdatesApplyURL),
+		Attr("data-dashboard-csrf-token", d.CSRFToken),
+		func() Node {
+			if d.EditMode || strings.TrimSpace(d.UpdatesStreamURL) == "" {
+				return nil
+			}
+			return data.Init("@get('" + d.UpdatesStreamURL + "')")
+		}(),
+		Iff(!d.EditMode && strings.TrimSpace(d.UpdatesApplyURL) != "", func() Node {
+			return Div(Class("hidden"), d.CSRFFieldProvider())
+		}),
+		Iff(!d.EditMode, func() Node {
+			return El("style", Raw(`
+html[data-dashboard-loading='true'] [data-dashboard-loading-indicator='true'] {
+  opacity: 1;
+  transform: translateY(0);
+}
+html[data-dashboard-loading='true'] [data-dashboard-loading-surface='true'] {
+  cursor: progress;
+}
+html[data-dashboard-loading='true'] [data-dashboard-loading-canvas='true'] {
+  opacity: 0.68;
+}
+`))
+		}),
 		Group(body),
 	)
 }
@@ -239,16 +273,17 @@ func dashboardFilterSignalMap(filters []dashboardsvc.InteractiveFilter) map[stri
 }
 
 func dashboardInteractiveToolbar(filters []dashboardsvc.InteractiveFilter) Node {
+	displayFilters := dashboardAggregateDisplayFilters(filters)
 	chips := []Node{
 		P(Class("m-0 text-[10px] font-black uppercase tracking-[0.15em] text-[var(--fgColor-muted)]"), Text("Cross Filters")),
 	}
-	if len(filters) == 0 {
+	if len(displayFilters) == 0 {
 		chips = append(chips,
 			P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("No active filters")),
 		)
 	} else {
 		filterNodes := make([]Node, 0)
-		for _, filter := range filters {
+		for _, filter := range displayFilters {
 			for _, value := range filter.Values {
 				filterNodes = append(filterNodes, Button(
 					Type("button"),
@@ -266,7 +301,7 @@ func dashboardInteractiveToolbar(filters []dashboardsvc.InteractiveFilter) Node 
 	}
 
 	clearAction := Node(nil)
-	if len(filters) > 0 {
+	if len(displayFilters) > 0 {
 		clearAction = Button(
 			Type("button"),
 			Class("inline-flex items-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-1.5 text-xs font-semibold text-[var(--fgColor-muted)] transition-colors hover:border-[var(--borderColor-accent-emphasis)] hover:text-[var(--fgColor-accent)]"),
@@ -279,9 +314,61 @@ func dashboardInteractiveToolbar(filters []dashboardsvc.InteractiveFilter) Node 
 		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-4 py-3 shadow-sm"),
 		Div(Class("flex flex-wrap items-start justify-between gap-3"),
 			Div(Class("grid gap-2"), Group(chips)),
-			clearAction,
+			Div(Class("flex flex-wrap items-center gap-2"),
+				Span(
+					Class("inline-flex translate-y-1 items-center gap-2 rounded-full border border-[var(--borderColor-accent-emphasis)] bg-[var(--bgColor-accent-muted)] px-3 py-1 text-[11px] font-semibold text-[var(--fgColor-accent)] opacity-0 transition-all duration-150"),
+					Attr("data-dashboard-loading-indicator", "true"),
+					Raw(`<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`),
+					Span(Text("Updating")),
+				),
+				clearAction,
+			),
 		),
 	)
+}
+
+func dashboardAggregateDisplayFilters(filters []dashboardsvc.InteractiveFilter) []dashboardsvc.InteractiveFilter {
+	if len(filters) == 0 {
+		return nil
+	}
+
+	order := make([]string, 0, len(filters))
+	grouped := make(map[string][]string, len(filters))
+	seen := make(map[string]map[string]struct{}, len(filters))
+	for _, filter := range filters {
+		dimension := strings.TrimSpace(filter.Dimension)
+		if dimension == "" {
+			continue
+		}
+		if _, ok := grouped[dimension]; !ok {
+			grouped[dimension] = []string{}
+			order = append(order, dimension)
+			seen[dimension] = make(map[string]struct{})
+		}
+		for _, value := range filter.Values {
+			value = strings.TrimSpace(value)
+			if value == "" {
+				continue
+			}
+			if _, ok := seen[dimension][value]; ok {
+				continue
+			}
+			seen[dimension][value] = struct{}{}
+			grouped[dimension] = append(grouped[dimension], value)
+		}
+	}
+
+	out := make([]dashboardsvc.InteractiveFilter, 0, len(order))
+	for _, dimension := range order {
+		if len(grouped[dimension]) == 0 {
+			continue
+		}
+		out = append(out, dashboardsvc.InteractiveFilter{
+			Dimension: dimension,
+			Values:    grouped[dimension],
+		})
+	}
+	return out
 }
 
 func dashboardDisplayFilterDimension(dimension string) string {
@@ -360,7 +447,7 @@ func dashboardCanvas(widgetNodes []Node, editMode bool) Node {
   }
 }
 `)),
-		Div(Class(canvasClass), Group(widgetNodes)),
+		Div(Class(canvasClass), Attr("data-dashboard-loading-canvas", "true"), Group(widgetNodes)),
 	}
 	if editMode {
 		canvasBody = append([]Node{
@@ -374,6 +461,7 @@ func dashboardCanvas(widgetNodes []Node, editMode bool) Node {
 	}
 	return Div(
 		Class(shellClass),
+		Attr("data-dashboard-loading-surface", "true"),
 		Style(shellStyle),
 		Group(canvasBody),
 	)
@@ -472,7 +560,7 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 		}
 		content = visualMetricCard(defaultVisualTitle(widget.Widget.VisualSpec, widget.Widget.Name), value, dashboardRowCountLabel(widget.RowCount))
 	case widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputChart:
-		content = chartHost(widget.Widget.Name, widget.Columns, widget.Rows, widget.Widget.VisualSpec, widget.Interaction)
+		content = chartHost(widget, editMode)
 	default:
 		content = dashboardWidgetTable(widget)
 	}
@@ -926,8 +1014,17 @@ func statusLabel(text, tone string) Node {
 	return Span(Class(labelClass(tone)), Text(text))
 }
 
-func chartHost(name string, columns []string, rows [][]interface{}, visual *domain.VisualSpec, interaction *dashboardsvc.ResolvedWidgetInteraction) Node {
-	return El("duck-chart", Class("dashboard-chart-host block min-h-[19rem] w-full"), Attr("data-chart-payload", chartPayload(name, columns, rows, dashboardChartVisual(visual), interaction)))
+func chartHost(widget dashboardsvc.ResolvedWidget, editMode bool) Node {
+	nodes := []Node{
+		Class("dashboard-chart-host block min-h-[19rem] w-full"),
+		Attr("data-widget-id", widget.Widget.ID),
+	}
+	if editMode {
+		nodes = append(nodes, Attr("data-chart-payload", chartPayload(widget.Widget.Name, widget.Columns, widget.Rows, dashboardChartVisual(widget.Widget.VisualSpec), widget.Interaction)))
+	} else {
+		nodes = append(nodes, Attr("data-ignore-morph", ""))
+	}
+	return El("duck-chart", nodes...)
 }
 
 type chartRenderPayload struct {
@@ -954,6 +1051,51 @@ func chartPayload(name string, columns []string, rows [][]interface{}, visual *d
 		return "{}"
 	}
 	return string(payload)
+}
+
+type dashboardChartPayloadEvent struct {
+	FilterKey string                        `json:"filter_key"`
+	Widgets   map[string]chartRenderPayload `json:"widgets"`
+}
+
+func dashboardChartPayloadEnvelope(widgets []dashboardsvc.ResolvedWidget, filters []dashboardsvc.InteractiveFilter) dashboardChartPayloadEvent {
+	payloads := make(map[string]chartRenderPayload)
+	for _, widget := range widgets {
+		if widget.Widget.ID == "" || widget.Widget.VisualSpec == nil || widget.Widget.VisualSpec.Kind != domain.VisualOutputChart {
+			continue
+		}
+		payloads[widget.Widget.ID] = chartRenderPayload{
+			Name:        widget.Widget.Name,
+			Columns:     widget.Columns,
+			Rows:        widget.Rows,
+			Visual:      dashboardChartVisual(widget.Widget.VisualSpec),
+			Interaction: widget.Interaction,
+		}
+	}
+	return dashboardChartPayloadEvent{
+		FilterKey: dashboardFilterKey(filters),
+		Widgets:   payloads,
+	}
+}
+
+func dashboardFilterKey(filters []dashboardsvc.InteractiveFilter) string {
+	if len(filters) == 0 {
+		return ""
+	}
+	parts := make([]string, 0)
+	for _, filter := range filters {
+		values := append([]string(nil), filter.Values...)
+		sort.Strings(values)
+		for _, value := range values {
+			part := strings.TrimSpace(filter.Dimension) + ":" + strings.TrimSpace(value)
+			if widgetID := strings.TrimSpace(filter.WidgetID); widgetID != "" {
+				part = widgetID + "|" + part
+			}
+			parts = append(parts, part)
+		}
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, "|")
 }
 
 func visualMetricCard(title string, value interface{}, secondary string) Node {

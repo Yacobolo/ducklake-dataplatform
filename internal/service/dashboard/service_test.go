@@ -4,6 +4,7 @@ package dashboard
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -18,15 +19,23 @@ import (
 )
 
 type dashboardQueryExecutorStub struct {
-	lastSQL string
-	result  *query.QueryResult
-	err     error
+	lastSQL          string
+	sqls             []string
+	result           *query.QueryResult
+	resultsByContain map[string]*query.QueryResult
+	err              error
 }
 
 func (s *dashboardQueryExecutorStub) Execute(_ context.Context, _ string, sqlQuery string) (*query.QueryResult, error) {
 	s.lastSQL = sqlQuery
+	s.sqls = append(s.sqls, sqlQuery)
 	if s.err != nil {
 		return nil, s.err
+	}
+	for needle, result := range s.resultsByContain {
+		if needle != "" && strings.Contains(sqlQuery, needle) {
+			return result, nil
+		}
 	}
 	if s.result != nil {
 		return s.result, nil
@@ -323,7 +332,7 @@ func TestService_ResolveWidgetsForDashboard_AppliesDashboardFiltersAndTimeBucket
 		},
 	}, []InteractiveFilter{
 		{Dimension: "order_date@month", Values: []string{"2024-01-01T00:00:00Z"}},
-		{Dimension: "region", Values: []string{"APAC", "EMEA"}},
+		{WidgetID: "widget-1", Dimension: "region", Values: []string{"APAC", "EMEA"}},
 	})
 	require.NoError(t, err)
 	require.Len(t, resolved, 1)
@@ -332,7 +341,100 @@ func TestService_ResolveWidgetsForDashboard_AppliesDashboardFiltersAndTimeBucket
 	assert.True(t, resolved[0].Interaction.CanInitiate)
 	assert.Equal(t, "region", resolved[0].Interaction.Bindings[0].Dimension)
 	assert.Contains(t, queryExec.lastSQL, "date_trunc('month', order_date) = CAST('2024-01-01T00:00:00Z' AS TIMESTAMP)")
-	assert.Contains(t, queryExec.lastSQL, "(region = 'APAC' OR region = 'EMEA')")
+	assert.NotContains(t, queryExec.lastSQL, "(region = 'APAC' OR region = 'EMEA')")
+	assert.Equal(t, []string{"APAC", "EMEA"}, resolved[0].Interaction.ActiveFilters["region"])
+}
+
+func TestService_ResolveWidgetsForDashboard_SourceChartKeepsOwnDimensionUnfiltered(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, semanticSvc, queryExec := setupDashboardService(t)
+	ctx := context.Background()
+	queryExec.result = &query.QueryResult{
+		Columns:  []string{"region", "sales_owner", "revenue"},
+		Rows:     [][]interface{}{{"APAC", "Taylor", 42}},
+		RowCount: 1,
+	}
+
+	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.sales",
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID:    "ignored",
+		Name:               "revenue",
+		MetricType:         domain.MetricTypeSum,
+		ExpressionMode:     domain.MetricExpressionModeSQL,
+		Expression:         "SUM(revenue)",
+		CertificationState: domain.CertificationCertified,
+	})
+	require.NoError(t, err)
+
+	pieChart := domain.VisualChartDoughnut
+	barChart := domain.VisualChartBar
+	resolved, err := svc.ResolveWidgetsForDashboard(ctx, "alice", &domain.Dashboard{
+		ID:                  "dash-1",
+		Name:                "Revenue Dashboard",
+		Owner:               "alice",
+		SemanticProjectName: "analytics",
+		SemanticModelName:   "sales",
+	}, []domain.DashboardWidget{
+		{
+			ID:   "widget-pie",
+			Name: "Revenue by Region",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"revenue"},
+					Dimensions:        []string{"region"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind:      domain.VisualOutputChart,
+				ChartType: &pieChart,
+				Encodings: domain.VisualEncodings{
+					Label: &domain.VisualFieldBinding{Field: "region"},
+					Value: &domain.VisualFieldBinding{Field: "revenue"},
+				},
+			},
+		},
+		{
+			ID:   "widget-bar",
+			Name: "Revenue by Owner",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"revenue"},
+					Dimensions:        []string{"sales_owner"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind:      domain.VisualOutputChart,
+				ChartType: &barChart,
+				Encodings: domain.VisualEncodings{
+					X: &domain.VisualFieldBinding{Field: "sales_owner"},
+					Y: &domain.VisualFieldBinding{Field: "revenue"},
+				},
+			},
+		},
+	}, []InteractiveFilter{
+		{WidgetID: "widget-pie", Dimension: "region", Values: []string{"APAC"}},
+	})
+	require.NoError(t, err)
+	require.Len(t, resolved, 2)
+	require.NotNil(t, resolved[0].Interaction)
+	require.NotNil(t, resolved[1].Interaction)
+	assert.Equal(t, []string{"APAC"}, resolved[0].Interaction.ActiveFilters["region"])
+	assert.Equal(t, []string{"APAC"}, resolved[1].Interaction.ActiveFilters["region"])
+	require.Len(t, queryExec.sqls, 2)
+	assert.NotContains(t, queryExec.sqls[0], "region = 'APAC'")
+	assert.Contains(t, queryExec.sqls[1], "region = 'APAC'")
 }
 
 func TestService_ResolveWidgetsForDashboard_ExcludesNonInteractiveWidgets(t *testing.T) {
