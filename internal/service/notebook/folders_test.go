@@ -14,6 +14,10 @@ import (
 func setupFolderService(t *testing.T) (*FolderService, *testutil.MockFolderRepo, *testutil.MockAuditRepo) {
 	t.Helper()
 	repo := &testutil.MockFolderRepo{}
+	repo.EnsurePersonalRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
+		role := domain.FolderSystemRolePersonalRoot
+		return &domain.Folder{ID: "personal-root-" + owner, Owner: owner, SystemRole: &role}, nil
+	}
 	folderShares := &testutil.MockFolderShareRepo{}
 	audit := &testutil.MockAuditRepo{}
 	svc := NewFolderService(repo, audit)
@@ -24,6 +28,10 @@ func setupFolderService(t *testing.T) (*FolderService, *testutil.MockFolderRepo,
 func setupFolderServiceWithShares(t *testing.T) (*FolderService, *testutil.MockFolderRepo, *testutil.MockFolderShareRepo, *testutil.MockAuditRepo) {
 	t.Helper()
 	repo := &testutil.MockFolderRepo{}
+	repo.EnsurePersonalRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
+		role := domain.FolderSystemRolePersonalRoot
+		return &domain.Folder{ID: "personal-root-" + owner, Owner: owner, SystemRole: &role}, nil
+	}
 	folderShares := &testutil.MockFolderShareRepo{}
 	audit := &testutil.MockAuditRepo{}
 	svc := NewFolderService(repo, audit)
@@ -34,6 +42,10 @@ func setupFolderServiceWithShares(t *testing.T) (*FolderService, *testutil.MockF
 func setupFolderServiceWithInvalidation(t *testing.T) (*FolderService, *testutil.MockFolderRepo, *testutil.MockNotebookRepo, *testutil.MockOrchestrationEventRepo, *testutil.MockAuditRepo) {
 	t.Helper()
 	repo := &testutil.MockFolderRepo{}
+	repo.EnsurePersonalRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
+		role := domain.FolderSystemRolePersonalRoot
+		return &domain.Folder{ID: "personal-root-" + owner, Owner: owner, SystemRole: &role}, nil
+	}
 	notebooks := &testutil.MockNotebookRepo{}
 	events := &testutil.MockOrchestrationEventRepo{}
 	audit := &testutil.MockAuditRepo{}

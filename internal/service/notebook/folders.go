@@ -120,6 +120,16 @@ func (s *FolderService) GetFolderForPrincipal(ctx context.Context, principal str
 
 // ListFoldersForPrincipal lists folders visible to the caller.
 func (s *FolderService) ListFoldersForPrincipal(ctx context.Context, principal string, isAdmin bool, owner *string) ([]domain.Folder, error) {
+	targetOwner := strings.TrimSpace(principal)
+	if owner != nil && strings.TrimSpace(*owner) != "" {
+		targetOwner = strings.TrimSpace(*owner)
+	}
+	if targetOwner != "" {
+		if _, err := s.repo.EnsurePersonalRoot(ctx, targetOwner); err != nil {
+			return nil, fmt.Errorf("ensure personal root: %w", err)
+		}
+	}
+
 	if isAdmin {
 		if owner != nil && strings.TrimSpace(*owner) != "" {
 			return s.repo.ListByOwner(ctx, strings.TrimSpace(*owner))

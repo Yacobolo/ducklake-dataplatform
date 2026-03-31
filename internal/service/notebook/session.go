@@ -164,6 +164,10 @@ func (m *SessionManager) requireNotebookReadAccess(ctx context.Context, notebook
 	return m.requireNotebookRole(ctx, notebookID, principal, isAdmin, roleAllowsRead, "read")
 }
 
+func (m *SessionManager) requireNotebookAccess(ctx context.Context, notebookID, principal string, isAdmin bool) (*domain.Notebook, error) {
+	return m.requireNotebookReadAccess(ctx, notebookID, principal, isAdmin)
+}
+
 func (m *SessionManager) requireNotebookWriteAccess(ctx context.Context, notebookID, principal string, isAdmin bool) (*domain.Notebook, error) {
 	return m.requireNotebookRole(ctx, notebookID, principal, isAdmin, roleAllowsWrite, "execute")
 }
@@ -689,7 +693,7 @@ func (m *SessionManager) GetJob(ctx context.Context, jobID string) (*domain.Note
 
 // GetNotebookJob returns a notebook job after validating its parent notebook and caller access.
 func (m *SessionManager) GetNotebookJob(ctx context.Context, notebookID, jobID, principal string, isAdmin bool) (*domain.NotebookJob, error) {
-	if _, err := m.requireNotebookReadAccess(ctx, notebookID, principal, isAdmin); err != nil {
+	if _, err := m.requireNotebookAccess(ctx, notebookID, principal, isAdmin); err != nil {
 		return nil, err
 	}
 	job, err := m.jobRepo.GetJob(ctx, jobID)
@@ -709,7 +713,7 @@ func (m *SessionManager) ListJobs(ctx context.Context, notebookID string, page d
 
 // ListNotebookJobs lists jobs for a notebook only when the caller can access that notebook.
 func (m *SessionManager) ListNotebookJobs(ctx context.Context, notebookID, principal string, isAdmin bool, page domain.PageRequest) ([]domain.NotebookJob, int64, error) {
-	if _, err := m.requireNotebookReadAccess(ctx, notebookID, principal, isAdmin); err != nil {
+	if _, err := m.requireNotebookAccess(ctx, notebookID, principal, isAdmin); err != nil {
 		return nil, 0, err
 	}
 	return m.jobRepo.ListJobs(ctx, notebookID, page)

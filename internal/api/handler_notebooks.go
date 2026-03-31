@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"net/http"
 	"strings"
 
@@ -1170,7 +1171,10 @@ func notebookToAPI(nb domain.Notebook) Notebook {
 }
 
 func folderToAPI(folder domain.Folder) Folder {
-	depth := int32(folder.Depth)
+	depth := int32(math.MaxInt32)
+	if folder.Depth >= 0 && folder.Depth <= math.MaxInt32 {
+		depth = int32(folder.Depth)
+	}
 	return Folder{
 		Id:                   &folder.ID,
 		Name:                 &folder.Name,

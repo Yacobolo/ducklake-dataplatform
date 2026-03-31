@@ -202,7 +202,11 @@ func (h *Handler) buildViewDataForFilter(ctx context.Context, principal domain.C
 	items := allItems[offset:end]
 	rows := make([]listRow, 0, len(items)+8)
 	if pageReq.Offset() == 0 && folderKindAllowed(selectedKinds) {
-		rows = append(rows, h.folderRows(folderItems, folderPaths, principal.Name, selectedFolderID, selectedOwners, searchQuery)...)
+		folderRows, err := h.folderRows(ctx, folderItems, folderPaths, principal.Name, principal.IsAdmin, selectedFolderID, selectedOwners, searchQuery)
+		if err != nil {
+			return viewData{}, err
+		}
+		rows = append(rows, folderRows...)
 	}
 	for i := range items {
 		item := items[i]
@@ -217,6 +221,7 @@ func (h *Handler) buildViewDataForFilter(ctx context.Context, principal domain.C
 			Updated:      formatTime(item.UpdatedAt),
 			Shared:       item.Shared,
 			ProjectBound: item.ProjectBound,
+			GitBacked:    item.GitRepoID != nil && strings.TrimSpace(*item.GitRepoID) != "",
 		})
 	}
 
@@ -271,14 +276,11 @@ func (h *Handler) folderPathMap(ctx context.Context, principal string, isAdmin b
 	return paths, ordered, nil
 }
 
-func (h *Handler) folderRows(folders []domain.Folder, folderPaths map[string]string, principal, selectedFolderID string, selectedOwners []string, searchQuery string) []listRow {
+func (h *Handler) folderRows(ctx context.Context, folders []domain.Folder, folderPaths map[string]string, principal string, isAdmin bool, selectedFolderID string, selectedOwners []string, searchQuery string) ([]listRow, error) {
 	visible := make([]domain.Folder, 0, len(folders))
 	query := strings.ToLower(strings.TrimSpace(searchQuery))
 	for i := range folders {
 		folder := folders[i]
-		if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot {
-			continue
-		}
 		if selectedFolderID == "" {
 			if folder.ParentFolderID != nil && strings.TrimSpace(*folder.ParentFolderID) != "" {
 				continue
@@ -289,7 +291,7 @@ func (h *Handler) folderRows(folders []domain.Folder, folderPaths map[string]str
 		if len(selectedOwners) > 0 && !containsString(selectedOwners, folder.Owner) {
 			continue
 		}
-		if query != "" && !textMatch(query, folder.Name, folder.Owner, valueOrDash(folderPaths[stringValue(folder.ParentFolderID)])) {
+		if query != "" && !textMatch(query, folderDisplayName(folder), folder.Owner, valueOrDash(folderPaths[stringValue(folder.ParentFolderID)])) {
 			continue
 		}
 		visible = append(visible, folder)
@@ -299,41 +301,89 @@ func (h *Handler) folderRows(folders []domain.Folder, folderPaths map[string]str
 		return strings.ToLower(visible[i].Name) < strings.ToLower(visible[j].Name)
 	})
 
+	updatedByFolder, err := h.folderLatestUpdates(ctx, principal, isAdmin, visible)
+	if err != nil {
+		return nil, err
+	}
+
 	rows := make([]listRow, 0, len(visible))
 	for _, folder := range visible {
-		contextParts := make([]string, 0, 3)
-		if folder.DefaultProjectID != nil && strings.TrimSpace(*folder.DefaultProjectID) != "" {
-			contextParts = append(contextParts, "Project "+strings.TrimSpace(*folder.DefaultProjectID))
-		}
-		if folder.DefaultEnvironmentID != nil && strings.TrimSpace(*folder.DefaultEnvironmentID) != "" {
-			contextParts = append(contextParts, "Env "+strings.TrimSpace(*folder.DefaultEnvironmentID))
-		}
-		if folder.GitRepoID != nil && strings.TrimSpace(*folder.GitRepoID) != "" {
-			contextParts = append(contextParts, "Git-backed")
-		}
-		scope := "Folder"
-		if len(contextParts) > 0 {
-			scope = strings.Join(contextParts, " · ")
-		}
 		location := "Top level"
 		if parentID := stringValue(folder.ParentFolderID); parentID != "" {
 			location = valueOrDash(folderPaths[parentID])
 		}
+		projectID := effectiveFolderProjectID(folder, folders)
 		rows = append(rows, listRow{
-			Name:         folder.Name,
+			Name:         folderDisplayName(folder),
 			URL:          pageURL(domain.PageRequest{MaxResults: defaultPageSize}, nil, selectedOwners, searchQuery, folder.ID),
 			MetaURL:      "/ui/explore/folders/" + folder.ID + "/edit",
 			MetaLabel:    "Settings",
 			Kind:         "folder",
 			Owner:        folder.Owner,
-			Scope:        scope,
 			Folder:       location,
-			Updated:      formatTime(folder.UpdatedAt),
+			Project:      projectID,
+			Updated:      formatTime(updatedByFolder[folder.ID]),
 			Shared:       strings.TrimSpace(folder.Owner) != strings.TrimSpace(principal),
-			ProjectBound: folder.DefaultProjectID != nil && strings.TrimSpace(*folder.DefaultProjectID) != "",
+			ProjectBound: projectID != "",
+			GitBacked:    effectiveFolderGitBacked(folder, folders),
+			PersonalRoot: folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot,
 		})
 	}
-	return rows
+	return rows, nil
+}
+
+func (h *Handler) folderLatestUpdates(ctx context.Context, principal string, isAdmin bool, folders []domain.Folder) (map[string]time.Time, error) {
+	updatedByFolder := make(map[string]time.Time, len(folders))
+	for _, folder := range folders {
+		items, err := h.deps.Explore.List(ctx, principal, isAdmin, domain.ExploreFilter{
+			FolderID: folder.ID,
+			Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("list explore items for folder %s: %w", folder.ID, err)
+		}
+		var latest time.Time
+		for _, item := range items {
+			if item.UpdatedAt.After(latest) {
+				latest = item.UpdatedAt
+			}
+		}
+		updatedByFolder[folder.ID] = latest
+	}
+	return updatedByFolder, nil
+}
+
+func effectiveFolderProjectID(folder domain.Folder, allFolders []domain.Folder) string {
+	ancestors := ancestorFolders(folder, allFolders)
+	for _, ancestor := range ancestors {
+		if ancestor.DefaultProjectID != nil && strings.TrimSpace(*ancestor.DefaultProjectID) != "" {
+			return strings.TrimSpace(*ancestor.DefaultProjectID)
+		}
+	}
+	return ""
+}
+
+func effectiveFolderGitBacked(folder domain.Folder, allFolders []domain.Folder) bool {
+	ancestors := ancestorFolders(folder, allFolders)
+	for _, ancestor := range ancestors {
+		if ancestor.GitRepoID != nil && strings.TrimSpace(*ancestor.GitRepoID) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func ancestorFolders(folder domain.Folder, allFolders []domain.Folder) []domain.Folder {
+	ancestors := make([]domain.Folder, 0, folder.Depth+1)
+	for _, candidate := range allFolders {
+		if candidate.Path == folder.Path || strings.HasPrefix(folder.Path, candidate.Path+"/") {
+			ancestors = append(ancestors, candidate)
+		}
+	}
+	sort.Slice(ancestors, func(i, j int) bool {
+		return ancestors[i].Depth > ancestors[j].Depth
+	})
+	return ancestors
 }
 
 func breadcrumbItems(folders []domain.Folder, selectedFolderID string, page domain.PageRequest, selectedKinds []string, selectedOwners []string, searchQuery string) []breadcrumbItem {
@@ -365,7 +415,7 @@ func breadcrumbItems(folders []domain.Folder, selectedFolderID string, page doma
 	for i := range chain {
 		folder := chain[i]
 		breadcrumbs = append(breadcrumbs, breadcrumbItem{
-			Label:   folder.Name,
+			Label:   folderDisplayName(folder),
 			URL:     pageURL(domain.PageRequest{MaxResults: page.Limit()}, selectedKinds, selectedOwners, searchQuery, folder.ID),
 			Current: i == len(chain)-1,
 		})

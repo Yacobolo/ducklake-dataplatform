@@ -29,6 +29,8 @@ type listRow struct {
 	Updated      string
 	Shared       bool
 	ProjectBound bool
+	GitBacked    bool
+	PersonalRoot bool
 }
 
 type breadcrumbItem struct {
@@ -83,24 +85,33 @@ func content(rows []listRow, breadcrumbs []breadcrumbItem, selectedFolderID stri
 	for i := range rows {
 		row := rows[i]
 		tableRows = append(tableRows, Tr(
+			Class("border-b border-[var(--borderColor-default)] transition-colors last:border-b-0 hover:bg-[var(--bgColor-muted)]"),
 			Td(
-				Div(Class("flex items-start gap-3"),
-					Span(Class(kindIconWrapClass(row.Kind)),
-						core.Icon(kindIcon(row.Kind), Class(core.NavIconClass("h-4 w-4"))),
+				Class("px-6 py-4 align-middle"),
+				Div(Class("flex items-center gap-3"),
+					Span(Class(kindIconWrapClass(row)),
+						core.Icon(
+							rowKindIcon(row),
+							Class("h-[18px] w-[18px] shrink-0"),
+							Attr("style", "stroke-width:1.5"),
+						),
 					),
 					Div(Class("min-w-0 flex-1"),
 						Div(Class("flex flex-wrap items-center gap-2"),
-							core.TextLink(row.URL, Text(row.Name)),
-							Span(Class("text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(kindLabel(row.Kind))),
+							nameLink(row),
+							nameMetaBadge("Git", row.GitBacked && row.Kind != "folder"),
 						),
-						locationText(row),
 					),
 				),
 			),
-			Td(contextCell(row)),
-			Td(core.Badge(row.Owner, "")),
-			Td(Span(Class("text-[var(--fgColor-muted)]"), Text(row.Updated))),
-			Td(Class("text-right"), rowActions(row)),
+			Td(
+				Class("px-6 py-4 align-middle"),
+				Span(Class("text-sm font-medium text-[var(--fgColor-default)]"), Text(kindLabel(row.Kind))),
+			),
+			Td(Class("px-6 py-4 align-middle"), projectCell(row)),
+			Td(Class("px-6 py-4 align-middle"), ownerCell(row)),
+			Td(Class("px-6 py-4 align-middle"), updatedCell(row)),
+			Td(Class("px-6 py-4 align-middle text-right"), rowActions(row)),
 		))
 	}
 
@@ -110,7 +121,7 @@ func content(rows []listRow, breadcrumbs []breadcrumbItem, selectedFolderID stri
 	}
 	contentNodes = append(contentNodes, filterBar(page, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions))
 	if len(tableRows) > 0 {
-		contentNodes = append(contentNodes, table([]string{"Name", "Context", "Owner", "Last updated", "Actions"}, tableRows))
+		contentNodes = append(contentNodes, table([]string{"Name", "Type", "Project", "Owner", "Last updated", "Actions"}, tableRows))
 		if total > 0 {
 			contentNodes = append(contentNodes, pagination(selectedKinds, selectedOwners, searchQuery, selectedFolderID, page, total))
 		}
@@ -179,9 +190,22 @@ func emptyState(hasFilters bool) Node {
 func table(headers []string, rows []Node) Node {
 	headerNodes := make([]Node, 0, len(headers))
 	for i := range headers {
-		headerNodes = append(headerNodes, Th(Scope("col"), Text(headers[i])))
+		if headers[i] == "Actions" {
+			headerNodes = append(headerNodes, Th(Scope("col"), Class("relative px-6 py-3"), Span(Class("sr-only"), Text(headers[i]))))
+			continue
+		}
+		headerNodes = append(headerNodes, Th(Scope("col"), Class("px-6 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(headers[i])))
 	}
-	return core.TableContainer("", core.DataTable("", THead(Tr(Group(headerNodes))), TBody(Group(rows))))
+	return Div(
+		Class("overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] shadow-xs"),
+		Div(Class("overflow-x-auto"),
+			Table(
+				Class("w-full border-collapse text-left text-sm"),
+				THead(Class("border-b border-[var(--borderColor-default)] bg-[var(--bgColor-muted)]"), Tr(Group(headerNodes))),
+				TBody(Group(rows)),
+			),
+		),
+	)
 }
 
 func createMenu(folderID string) Node {
@@ -259,7 +283,7 @@ func typeFilterOptions(selectedKinds []string) []core.FilterMenuOption {
 	items := []string{domain.ExploreKindFolder, domain.ExploreKindNotebook, domain.ExploreKindModel, domain.ExploreKindMacro, domain.ExploreKindDashboard, domain.ExploreKindPipeline, domain.ExploreKindSemanticModel}
 	options := make([]core.FilterMenuOption, 0, len(items))
 	for _, kind := range items {
-		options = append(options, core.FilterMenuOption{Label: kindLabel(kind), Value: kind, Icon: kindIcon(kind), Selected: containsString(selectedKinds, kind)})
+		options = append(options, core.FilterMenuOption{Label: kindLabel(kind), Value: kind, Icon: kindIcon(kind, false), Selected: containsString(selectedKinds, kind)})
 	}
 	return options
 }
@@ -272,46 +296,39 @@ func ownerFilterOptions(ownerOptions []string, selectedOwners []string) []core.F
 	return options
 }
 
-func locationText(row listRow) Node {
-	location := strings.TrimSpace(row.Folder)
-	if location == "" || location == "-" {
-		if row.Kind == "folder" {
-			location = "Top level"
-		}
-	}
-	if location == "" {
+func nameMetaBadge(label string, show bool) Node {
+	if !show {
 		return nil
 	}
-	return P(Class("m-0 mt-1 text-xs leading-5 text-[var(--fgColor-muted)]"), Text(location))
+	return Span(Class("inline-flex items-center rounded-full border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--fgColor-muted)]"), Text(label))
 }
 
-func contextCell(row listRow) Node {
-	badges := make([]Node, 0, 4)
-	if row.ProjectBound {
-		badges = append(badges, core.Badge("Project-bound", "accent"))
+func projectCell(row listRow) Node {
+	project := strings.TrimSpace(row.Project)
+	if project == "" {
+		return Span(Class("text-xs text-[var(--fgColor-muted)]"), Text("-"))
 	}
-	if row.Shared {
-		badges = append(badges, core.Badge("Shared", "success"))
+	return Span(Class("font-mono text-xs text-[var(--fgColor-muted)]"), Text(project))
+}
+
+func ownerCell(row listRow) Node {
+	return Span(
+		Class("inline-flex items-center rounded-full border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-2 py-0.5 text-xs font-medium text-[var(--fgColor-default)]"),
+		Text(row.Owner),
+	)
+}
+
+func updatedCell(row listRow) Node {
+	return Span(Class("text-xs text-[var(--fgColor-muted)]"), Text(row.Updated))
+}
+
+func nameLink(row listRow) Node {
+	className := "font-semibold text-[var(--fgColor-accent)] no-underline visited:text-[var(--fgColor-accent)] hover:text-[var(--fgColor-accent)] hover:underline active:text-[var(--fgColor-accent)]"
+	switch row.Kind {
+	case domain.ExploreKindModel, domain.ExploreKindMacro, domain.ExploreKindPipeline, domain.ExploreKindSemanticModel:
+		className = "font-mono text-[13px] font-semibold text-[var(--fgColor-accent)] no-underline visited:text-[var(--fgColor-accent)] hover:text-[var(--fgColor-accent)] hover:underline active:text-[var(--fgColor-accent)]"
 	}
-	if strings.TrimSpace(row.Project) != "" {
-		badges = append(badges, core.Badge("Project "+strings.TrimSpace(row.Project), ""))
-	}
-	summary := strings.TrimSpace(row.Scope)
-	switch {
-	case summary == "", strings.EqualFold(summary, "folder"), strings.EqualFold(summary, strings.TrimSpace(row.Project)), summary == "Project "+strings.TrimSpace(row.Project):
-		summary = ""
-	}
-	if len(badges) == 0 && summary == "" {
-		return Span(Class("text-[var(--fgColor-muted)]"), Text("-"))
-	}
-	nodes := make([]Node, 0, 2)
-	if len(badges) > 0 {
-		nodes = append(nodes, Div(Class("flex flex-wrap gap-2"), Group(badges)))
-	}
-	if summary != "" {
-		nodes = append(nodes, P(Class("m-0 text-xs leading-5 text-[var(--fgColor-muted)]"), Text(summary)))
-	}
-	return Div(Class("grid gap-1"), Group(nodes))
+	return A(Href(row.URL), Class(className), Text(row.Name))
 }
 
 func rowActions(row listRow) Node {
@@ -343,9 +360,12 @@ func kindLabel(kind string) string {
 	}
 }
 
-func kindIcon(kind string) string {
+func kindIcon(kind string, gitBacked bool) string {
 	switch kind {
 	case "folder":
+		if gitBacked {
+			return "folder-git-2"
+		}
 		return "folder"
 	case domain.ExploreKindNotebook:
 		return "notebook-text"
@@ -364,9 +384,16 @@ func kindIcon(kind string) string {
 	}
 }
 
-func kindIconWrapClass(kind string) string {
+func rowKindIcon(row listRow) string {
+	if row.Kind == "folder" && row.PersonalRoot {
+		return "folder-lock"
+	}
+	return kindIcon(row.Kind, row.GitBacked)
+}
+
+func kindIconWrapClass(row listRow) string {
 	base := "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
-	switch kind {
+	switch row.Kind {
 	case "folder":
 		return base + " bg-[var(--display-gray-scale-0)] text-[var(--display-gray-scale-7)]"
 	case domain.ExploreKindNotebook:

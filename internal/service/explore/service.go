@@ -315,7 +315,7 @@ func (s *Service) accessibleFolders(ctx context.Context, principal string, isAdm
 	return accessible, resolver, nil
 }
 
-func (s *Service) resolveSelectedFolders(ctx context.Context, selectedFolderID string, accessible []domain.Folder, allFolders []domain.Folder) (*domain.Folder, []domain.Folder, error) {
+func (s *Service) resolveSelectedFolders(ctx context.Context, selectedFolderID string, accessible []domain.Folder, _ []domain.Folder) (*domain.Folder, []domain.Folder, error) {
 	if strings.TrimSpace(selectedFolderID) == "" {
 		return nil, accessible, nil
 	}

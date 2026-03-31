@@ -11,6 +11,8 @@ import (
 	"duck-demo/internal/domain"
 )
 
+//revive:disable:exported
+
 // === Audit Repository Mock ===
 
 // MockAuditRepo implements domain.AuditRepository for testing.

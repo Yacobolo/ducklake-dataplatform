@@ -12,10 +12,12 @@ type ContextResolver struct {
 	folders   domain.FolderRepository
 }
 
+// NewContextResolver creates a notebook context resolver over notebook and folder repositories.
 func NewContextResolver(notebooks domain.NotebookRepository, folders domain.FolderRepository) *ContextResolver {
 	return &ContextResolver{notebooks: notebooks, folders: folders}
 }
 
+// Resolve returns the effective notebook context after applying notebook overrides and folder inheritance.
 func (r *ContextResolver) Resolve(ctx context.Context, notebookID string) (*domain.NotebookContext, error) {
 	notebook, err := r.notebooks.GetNotebook(ctx, notebookID)
 	if err != nil {

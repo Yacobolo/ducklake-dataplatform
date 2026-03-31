@@ -1,3 +1,4 @@
+// Package explore resolves accessible folder and authored-asset browse state.
 package explore
 
 import (

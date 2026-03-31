@@ -25,6 +25,8 @@ var iconFactories = map[string]func(children ...Node) Node{
 	"filter":            lucide.ListFilter,
 	"filter-x":          lucide.FunnelX,
 	"folder":            lucide.Folder,
+	"folder-git-2":      lucide.FolderGit2,
+	"folder-lock":       lucide.FolderLock,
 	"folder-plus":       lucide.FolderPlus,
 	"folder-tree":       lucide.FolderTree,
 	"git-branch":        lucide.GitBranch,

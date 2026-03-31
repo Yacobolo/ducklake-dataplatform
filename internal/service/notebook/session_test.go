@@ -186,11 +186,11 @@ func TestSessionManager_InvalidateNotebook(t *testing.T) {
 	err = sm.CloseSession(ctx, first.ID)
 	require.Error(t, err)
 	var notFound *domain.NotFoundError
-	assert.ErrorAs(t, err, &notFound)
+	require.ErrorAs(t, err, &notFound)
 
 	err = sm.CloseSession(ctx, second.ID)
 	require.Error(t, err)
-	assert.ErrorAs(t, err, &notFound)
+	require.ErrorAs(t, err, &notFound)
 
 	err = sm.CloseSession(ctx, third.ID)
 	require.NoError(t, err)

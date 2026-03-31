@@ -6,12 +6,16 @@ import (
 )
 
 const (
+	// FolderSystemRolePersonalRoot marks a user's private top-level workspace folder.
 	FolderSystemRolePersonalRoot = "PERSONAL_ROOT"
 )
 
 const (
-	FolderShareRoleViewer  = "viewer"
-	FolderShareRoleEditor  = "editor"
+	// FolderShareRoleViewer grants read-only access to a folder.
+	FolderShareRoleViewer = "viewer"
+	// FolderShareRoleEditor grants edit access to a folder.
+	FolderShareRoleEditor = "editor"
+	// FolderShareRoleManager grants administrative access to a folder.
 	FolderShareRoleManager = "manager"
 )
 

@@ -84,6 +84,7 @@ func (r *PipelineRepo) ListPipelines(ctx context.Context, page domain.PageReques
 	return pipelines, total, nil
 }
 
+// ListPipelinesByFolders returns pipelines directly assigned to the provided folders.
 func (r *PipelineRepo) ListPipelinesByFolders(ctx context.Context, folderIDs []string) ([]domain.Pipeline, error) {
 	if len(folderIDs) == 0 {
 		return []domain.Pipeline{}, nil

@@ -12,6 +12,8 @@ import (
 	"duck-demo/internal/domain"
 )
 
+//revive:disable:exported
+
 var _ domain.FolderRepository = (*FolderRepo)(nil)
 
 type FolderRepo struct {
@@ -105,7 +107,7 @@ func (r *FolderRepo) ListAll(ctx context.Context) ([]domain.Folder, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list all folders: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	out := []domain.Folder{}
 	for rows.Next() {
@@ -134,7 +136,7 @@ func (r *FolderRepo) ListByOwner(ctx context.Context, owner string) ([]domain.Fo
 	if err != nil {
 		return nil, fmt.Errorf("list folders by owner: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	out := []domain.Folder{}
 	for rows.Next() {
@@ -385,7 +387,7 @@ func (r *FolderRepo) ListAncestors(ctx context.Context, folderID string) ([]doma
 	if err != nil {
 		return nil, fmt.Errorf("list folder ancestors: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	out := []domain.Folder{}
 	for rows.Next() {

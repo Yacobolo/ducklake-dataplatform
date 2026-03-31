@@ -9,6 +9,8 @@ import (
 	"duck-demo/internal/domain"
 )
 
+//revive:disable:exported
+
 var _ domain.FolderShareRepository = (*FolderShareRepo)(nil)
 var _ domain.NotebookShareRepository = (*NotebookShareRepo)(nil)
 
@@ -94,7 +96,7 @@ func (r *FolderShareRepo) ListByFolder(ctx context.Context, folderID string) ([]
 	if err != nil {
 		return nil, fmt.Errorf("list folder shares: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	items := []domain.FolderShare{}
 	for rows.Next() {
@@ -120,7 +122,7 @@ func (r *FolderShareRepo) ListByPrincipal(ctx context.Context, principalName str
 	if err != nil {
 		return nil, fmt.Errorf("list principal folder shares: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	items := []domain.FolderShare{}
 	for rows.Next() {
@@ -218,7 +220,7 @@ func (r *NotebookShareRepo) ListByNotebook(ctx context.Context, notebookID strin
 	if err != nil {
 		return nil, fmt.Errorf("list notebook shares: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	items := []domain.NotebookShare{}
 	for rows.Next() {
@@ -244,7 +246,7 @@ func (r *NotebookShareRepo) ListByPrincipal(ctx context.Context, principalName s
 	if err != nil {
 		return nil, fmt.Errorf("list principal notebook shares: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	items := []domain.NotebookShare{}
 	for rows.Next() {

@@ -72,6 +72,7 @@ func (r *DashboardRepo) List(ctx context.Context, owner *string, page domain.Pag
 	return out, total, nil
 }
 
+// ListByFolders returns dashboards directly assigned to the provided folders.
 func (r *DashboardRepo) ListByFolders(ctx context.Context, folderIDs []string) ([]domain.Dashboard, error) {
 	if len(folderIDs) == 0 {
 		return []domain.Dashboard{}, nil

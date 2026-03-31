@@ -138,6 +138,10 @@ func (s *Service) requireNotebookReadAccess(ctx context.Context, principal strin
 	return s.requireNotebookRole(ctx, principal, isAdmin, id, roleAllowsRead, "read")
 }
 
+func (s *Service) requireNotebookAccess(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, error) {
+	return s.requireNotebookReadAccess(ctx, principal, isAdmin, id)
+}
+
 func (s *Service) requireNotebookWriteAccess(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, error) {
 	return s.requireNotebookRole(ctx, principal, isAdmin, id, roleAllowsWrite, "modify")
 }
@@ -183,7 +187,7 @@ func (s *Service) GetNotebook(ctx context.Context, id string) (*domain.Notebook,
 
 // GetNotebookForPrincipal retrieves a notebook and its cells for the owner or an admin.
 func (s *Service) GetNotebookForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, []domain.Cell, error) {
-	nb, err := s.requireNotebookReadAccess(ctx, principal, isAdmin, id)
+	nb, err := s.requireNotebookAccess(ctx, principal, isAdmin, id)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -243,6 +247,11 @@ func (s *Service) ListNotebooksForPrincipal(ctx context.Context, principal strin
 	if isAdmin {
 		return s.repo.ListNotebooks(ctx, owner, page)
 	}
+	requestedOwner := strings.TrimSpace(derefString(owner))
+	if requestedOwner == principal {
+		ownerName := requestedOwner
+		return s.repo.ListNotebooks(ctx, &ownerName, page)
+	}
 	resolver, err := s.accessResolver(ctx, principal, isAdmin)
 	if err != nil {
 		return nil, 0, fmt.Errorf("resolve notebook access: %w", err)
@@ -265,6 +274,9 @@ func (s *Service) ListNotebooksForPrincipal(ctx context.Context, principal strin
 		}
 	}
 	total := int64(len(filtered))
+	if requestedOwner != "" && requestedOwner != principal && total == 0 {
+		return nil, 0, domain.ErrAccessDenied("principal %q cannot list notebooks owned by %q", principal, requestedOwner)
+	}
 	start := page.Offset()
 	if start >= len(filtered) {
 		return []domain.Notebook{}, total, nil
@@ -274,6 +286,13 @@ func (s *Service) ListNotebooksForPrincipal(ctx context.Context, principal strin
 		end = len(filtered)
 	}
 	return filtered[start:end], total, nil
+}
+
+func derefString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 // UpdateNotebook updates notebook metadata. Only the owner or admin can update.

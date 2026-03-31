@@ -89,7 +89,7 @@ func (r *NotebookRepo) ListNotebooks(ctx context.Context, owner *string, page do
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	notebooks := []domain.Notebook{}
 	for rows.Next() {
@@ -118,20 +118,21 @@ func (r *NotebookRepo) ListByFolders(ctx context.Context, folderIDs []string) ([
 		args = append(args, strings.TrimSpace(id))
 	}
 
-	query := fmt.Sprintf(`
+	//nolint:gosec // The only interpolated values are "?" placeholders derived from folderIDs length.
+	query := `
 		SELECT
 			id, folder_id, name, description, owner, created_at, updated_at,
 			git_repo_id, git_path, project_override_id, environment_override_id
 		FROM notebooks
-		WHERE folder_id IN (%s)
+		WHERE folder_id IN (` + strings.Join(placeholders, ", ") + `)
 		ORDER BY updated_at DESC
-	`, strings.Join(placeholders, ", "))
+	`
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	items := make([]domain.Notebook, 0, len(folderIDs))
 	for rows.Next() {

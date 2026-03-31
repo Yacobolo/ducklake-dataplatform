@@ -9,6 +9,7 @@ import (
 
 	"duck-demo/internal/ui/core"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,8 +21,10 @@ func TestRequireCSRF_AcceptsDatastarSignalTokenAndPreservesBody(t *testing.T) {
 	h := &Handler{Dependencies: &core.Dependencies{}}
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		payload, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		require.Equal(t, body, string(payload))
+		if err != nil {
+			t.Fatalf("read datastar payload: %v", err)
+		}
+		assert.JSONEq(t, body, string(payload))
 		w.WriteHeader(http.StatusNoContent)
 	})
 
