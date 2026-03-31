@@ -17,6 +17,7 @@ import (
 	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
+	dashboardsvc "duck-demo/internal/service/dashboard"
 )
 
 const (
@@ -130,6 +131,12 @@ func Bootstrap(ctx context.Context, controlDB, duckDB *sql.DB, logger *slog.Logg
 	}
 	if err := ensureSampleGrants(ctx, grantRepo, schema.SchemaID); err != nil {
 		return err
+	}
+	dashboardRepo := repository.NewDashboardRepo(controlDB)
+	widgetRepo := repository.NewDashboardWidgetRepo(controlDB)
+	dashboardService := dashboardsvc.NewService(dashboardRepo, widgetRepo, nil, sampleAuditRepo{}, nil, nil)
+	if err := ensureSampleDashboards(ctx, dashboardService); err != nil {
+		return fmt.Errorf("ensure sample dashboards: %w", err)
 	}
 
 	logger.Info("sample data ready", "catalog", domain.SampleDataCatalogName, "schema", nycTaxiSchemaName)

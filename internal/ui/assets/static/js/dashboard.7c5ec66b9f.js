@@ -25,9 +25,6 @@
 
     .frame {
       min-height: 20rem;
-      border: 1px solid var(--borderColor-default);
-      border-radius: 0.5rem;
-      background: var(--bgColor-default);
     }
 
     .empty {

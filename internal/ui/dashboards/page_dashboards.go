@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -30,9 +31,12 @@ type dashboardDetailPageData struct {
 	Principal         domain.ContextPrincipal
 	Dashboard         *domain.Dashboard
 	Widgets           []dashboardsvc.ResolvedWidget
+	EditMode          bool
 	Freshness         *domain.AssetFreshnessStatus
 	FreshnessExplain  *domain.AssetFreshnessNode
 	BaseURL           string
+	ViewURL           string
+	StudioURL         string
 	EditURL           string
 	DeleteURL         string
 	CreateWidgetURL   string
@@ -137,24 +141,167 @@ func dashboardWidgetEditPage(principal domain.ContextPrincipal, dashboard *domai
 func dashboardsDetailPage(d dashboardDetailPageData) Node {
 	widgetNodes := make([]Node, 0, len(d.Widgets))
 	for _, widget := range d.Widgets {
-		widgetNodes = append(widgetNodes, dashboardWidgetCard(widget, d.BaseURL, d.CSRFFieldProvider))
+		widgetNodes = append(widgetNodes, dashboardWidgetCard(widget, d.BaseURL, d.CSRFFieldProvider, d.EditMode))
 	}
 	if len(widgetNodes) == 0 {
-		widgetNodes = append(widgetNodes, core.SectionSurface(core.EmptyState("inbox", "No widgets yet.", "Add the first widget below to turn this dashboard into a working surface.", core.PrimaryLink("#dashboard-widget-form", "", Text("Add widget below")))))
+		emptyAction := Node(nil)
+		if d.EditMode {
+			emptyAction = core.PrimaryLink("#dashboard-widget-form", "", Text("Add widget in Studio"))
+		}
+		widgetNodes = append(widgetNodes, Div(
+			Class("dashboard-canvas-empty rounded-[1.75rem] border border-dashed border-[var(--borderColor-default)] bg-[color-mix(in_srgb,var(--bgColor-default)_84%,white_16%)] p-6"),
+			core.EmptyState("inbox", "No widgets yet.", "Switch to Studio mode to start arranging tiles and authoring widget queries.", emptyAction),
+		))
+	}
+
+	viewModeTabs := core.SectionTabs([]core.SectionTab{
+		{Label: "View", Href: d.ViewURL, Active: !d.EditMode},
+		{Label: "Studio", Href: d.StudioURL, Active: d.EditMode},
+	})
+
+	headerActions := []Node{
+		viewModeTabs,
+		core.SecondaryLink(d.EditURL, "", Text("Edit metadata")),
+	}
+	if d.EditMode {
+		headerActions = append(headerActions, Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))))
+	}
+
+	body := []Node{
+		dashboardCanvas(widgetNodes, d.EditMode),
+	}
+	if d.EditMode {
+		body = append([]Node{
+			dashboardHero(d),
+			dashboardFreshnessCard(d.Freshness, d.FreshnessExplain),
+		}, body...)
+		body = append(body, dashboardStudioRail(d))
 	}
 
 	return core.AppPage(
 		"Dashboard: "+d.Dashboard.Name,
 		"dashboards",
 		d.Principal,
-		core.PageHeader("Discover", d.Dashboard.Name, d.Dashboard.Description,
-			core.SecondaryLink(d.EditURL, "", Text("Edit")),
-			Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
-		),
-		dashboardFreshnessCard(d.Freshness, d.FreshnessExplain),
-		Div(Class("grid gap-4 md:grid-cols-2 xl:grid-cols-12 [&>*]:xl:col-span-6"), Group(widgetNodes)),
-		dashboardWidgetFormCard(defaultWidgetFormData(d.CreateWidgetURL), d.CSRFFieldProvider),
+		core.PageHeader("Discover", d.Dashboard.Name, d.Dashboard.Description, headerActions...),
+		Group(body),
 		Script(Src(core.UIScriptHref("dashboard.js"))),
+	)
+}
+
+func dashboardHero(d dashboardDetailPageData) Node {
+	modeBadge := core.Badge("View Mode", "accent")
+	modeCopy := "Read-only dashboard surface tuned for review and presentation."
+	if d.EditMode {
+		modeBadge = core.Badge("Studio Mode", "attention")
+		modeCopy = "Arrange tiles, inspect backing queries, and manage widget definitions without mixing controls into the viewer."
+	}
+
+	stats := []Node{
+		dashboardHeroStat("Widgets", strconv.Itoa(len(d.Widgets))),
+		dashboardHeroStat("Owner", dashIfEmpty(d.Dashboard.Owner)),
+	}
+	if d.Freshness != nil {
+		stats = append(stats, dashboardHeroStat("Freshness", d.Freshness.FreshnessStatus))
+	}
+
+	return Div(
+		Class("shrink-0 overflow-hidden rounded-[2rem] border border-[var(--borderColor-default)] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--bgColor-accent-muted)_78%,white_22%)_0%,color-mix(in_srgb,var(--bgColor-default)_92%,white_8%)_48%,color-mix(in_srgb,var(--bgColor-muted)_78%,white_22%)_100%)] p-6 shadow-sm"),
+		Div(Class("grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(18rem,0.9fr)]"),
+			Div(Class("grid gap-4"),
+				Div(Class("flex flex-wrap items-center gap-3"),
+					modeBadge,
+					Span(Class("text-xs font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text("Dashboard Canvas")),
+				),
+				H2(Class("m-0 text-4xl font-black tracking-tight text-[var(--fgColor-default)]"), Text(d.Dashboard.Name)),
+				P(Class("m-0 max-w-3xl text-sm leading-7 text-[var(--fgColor-muted)]"), Text(modeCopy)),
+			),
+			Div(Class("grid gap-3 sm:grid-cols-3 xl:grid-cols-1"), Group(stats)),
+		),
+	)
+}
+
+func dashboardHeroStat(label, value string) Node {
+	return Div(
+		Class("rounded-2xl border border-[var(--borderColor-default)] bg-[color-mix(in_srgb,var(--bgColor-default)_88%,white_12%)] p-4 shadow-xs"),
+		P(Class("m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(label)),
+		P(Class("mt-2 mb-0 text-xl font-semibold text-[var(--fgColor-default)]"), Text(value)),
+	)
+}
+
+func dashboardCanvas(widgetNodes []Node, editMode bool) Node {
+	canvasClass := "dashboard-canvas-grid grid auto-rows-[minmax(8rem,auto)] gap-5 md:grid-cols-2 xl:gap-6"
+	if editMode {
+		canvasClass += " dashboard-canvas-grid--edit"
+	}
+	shellClass := "dashboard-canvas-shell shrink-0 overflow-hidden rounded-[2rem] border p-4 sm:p-5"
+	shellStyle := ""
+	if editMode {
+		shellClass += " border-[var(--borderColor-default)] bg-[radial-gradient(circle_at_top_left,color-mix(in_srgb,var(--bgColor-accent-muted)_55%,transparent)_0%,transparent_32%),linear-gradient(180deg,color-mix(in_srgb,var(--bgColor-muted)_86%,white_14%)_0%,var(--bgColor-default)_100%)] shadow-sm"
+	} else {
+		shellClass += " border-[var(--borderColor-default)]"
+		shellStyle = "background-color: var(--bgColor-muted); background-image: radial-gradient(color-mix(in srgb, var(--fgColor-muted) 26%, transparent) 1.5px, transparent 1.5px); background-size: 24px 24px;"
+	}
+	canvasBody := []Node{
+		El("style", Raw(`
+@media (min-width: 1280px) {
+  .dashboard-canvas-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .dashboard-canvas-grid > .dashboard-widget-tile {
+    grid-column: var(--dash-col-start) / span var(--dash-col-span);
+    grid-row: var(--dash-row-start) / span var(--dash-row-span);
+  }
+}
+`)),
+		Div(Class(canvasClass), Group(widgetNodes)),
+	}
+	if editMode {
+		canvasBody = append([]Node{
+			Div(Class("mb-4 flex items-center justify-between gap-3"),
+				Div(
+					P(Class("m-0 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--fgColor-muted)]"), Text("Canvas")),
+					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("Tiles now read as a single dashboard surface instead of isolated admin cards.")),
+				),
+			),
+		}, canvasBody...)
+	}
+	return Div(
+		Class(shellClass),
+		Style(shellStyle),
+		Group(canvasBody),
+	)
+}
+
+func dashboardStudioRail(d dashboardDetailPageData) Node {
+	widgetItems := make([]Node, 0, len(d.Widgets))
+	for _, widget := range d.Widgets {
+		widgetItems = append(widgetItems, dashboardStudioWidgetItem(widget, d.BaseURL, d.CSRFFieldProvider))
+	}
+	if len(widgetItems) == 0 {
+		widgetItems = append(widgetItems, P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("No widgets yet. Use the form below to add the first tile.")))
+	}
+
+	return Div(
+		Class("shrink-0 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.85fr)]"),
+		Div(Class("min-w-0"),
+			core.SectionSurface(
+				core.SectionHeader("Canvas Guidance", "Keep the dashboard viewer quiet by moving authoring controls into Studio mode."),
+				Ul(
+					Class("m-0 grid gap-2 pl-5 text-sm leading-6 text-[var(--fgColor-muted)]"),
+					Li(Text("Use View mode for presentation and stakeholder review.")),
+					Li(Text("Use Studio mode to add widgets, inspect source SQL, and manage tile metadata.")),
+					Li(Text("Treat widget layout width and height as canvas slots rather than separate page sections.")),
+				),
+			),
+		),
+		Div(Class("grid gap-4"),
+			core.SectionSurface(
+				ID("dashboard-widget-form"),
+				core.SectionHeader("Studio Rail", "Manage existing tiles and add new ones from a dedicated authoring panel."),
+				Div(Class("grid gap-3"), Group(widgetItems)),
+			),
+			dashboardWidgetFormCard(defaultWidgetFormData(d.CreateWidgetURL), d.CSRFFieldProvider),
+		),
 	)
 }
 
@@ -181,7 +328,7 @@ func dashboardFreshnessCard(status *domain.AssetFreshnessStatus, explanation *do
 	}
 
 	return Div(
-		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
+		Class("shrink-0 rounded-2xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 		H2(Text("Freshness")),
 		Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
 			statusLabel(status.FreshnessStatus, dashboardFreshnessTone(status.FreshnessStatus)),
@@ -195,7 +342,7 @@ func dashboardFreshnessCard(status *domain.AssetFreshnessStatus, explanation *do
 	)
 }
 
-func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL string, csrfFieldProvider func() Node) Node {
+func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL string, csrfFieldProvider func() Node, editMode bool) Node {
 	content := Node(nil)
 	switch {
 	case widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputMetric:
@@ -203,7 +350,7 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 		if widget.Widget.VisualSpec.Encodings.Value != nil {
 			field = widget.Widget.VisualSpec.Encodings.Value.Field
 		}
-		value := "-"
+		var value interface{} = "-"
 		if len(widget.Rows) > 0 {
 			idx := 0
 			for i, col := range widget.Columns {
@@ -213,10 +360,10 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 				}
 			}
 			if len(widget.Rows[0]) > idx {
-				value = fmt.Sprint(widget.Rows[0][idx])
+				value = widget.Rows[0][idx]
 			}
 		}
-		content = visualMetricCard(defaultVisualTitle(widget.Widget.VisualSpec, widget.Widget.Name), value, fmt.Sprintf("%d row(s)", widget.RowCount))
+		content = visualMetricCard(defaultVisualTitle(widget.Widget.VisualSpec, widget.Widget.Name), value, dashboardRowCountLabel(widget.RowCount))
 	case widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputChart:
 		content = chartHost(widget.Columns, widget.Rows, widget.Widget.VisualSpec)
 	default:
@@ -224,18 +371,89 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 	}
 
 	generatedSQL := Node(nil)
-	if widget.GeneratedSQL != "" {
+	if editMode && widget.GeneratedSQL != "" {
 		generatedSQL = Details(Summary(Text("Generated SQL")), Pre(Text(widget.GeneratedSQL)))
 	}
 
+	actions := Node(nil)
+	if editMode {
+		actions = core.ActionMenu("Actions",
+			core.ActionMenuLink(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/edit", "Edit widget"),
+			core.ActionMenuPost(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/delete", "Delete widget", csrfFieldProvider, true),
+		)
+	}
+
+	details := Node(nil)
+	if editMode {
+		details = dashboardWidgetDataDetails(widget)
+	}
+
+	auxiliary := []Node{}
+	if details != nil {
+		auxiliary = append(auxiliary, details)
+	}
+	if generatedSQL != nil {
+		auxiliary = append(auxiliary, generatedSQL)
+	}
+
 	return Div(
-		Class("grid gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-sm"),
-		core.SectionHeader(widget.Widget.Name, widget.Widget.Description, core.SecondaryLink(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/edit", "", Text("Edit widget"))),
-		content,
-		dashboardWidgetDataDetails(widget),
-		generatedSQL,
-		Form(Method("post"), Action(deleteBaseURL+"/widgets/"+widget.Widget.ID+"/delete"), csrfFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete widget"))),
+		Class("dashboard-widget-tile group flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] shadow-sm transition-all duration-150 hover:-translate-y-[1px] hover:border-[var(--borderColor-accent-emphasis)] hover:shadow-md md:col-span-2"),
+		Style(fmt.Sprintf("--dash-col-start:%d;--dash-row-start:%d;--dash-col-span:%d;--dash-row-span:%d;", dashboardCanvasColStart(widget.Widget.Layout), dashboardCanvasRowStart(widget.Widget.Layout), dashboardCanvasColSpan(widget.Widget.Layout), dashboardCanvasRowSpan(widget.Widget.Layout))),
+		dashboardWidgetHeader(widget, actions, editMode),
+		Div(Class(dashboardWidgetBodyClass(widget)), content),
+		Iff(editMode && len(auxiliary) > 0, func() Node {
+			return Div(
+				Class("grid gap-3 border-t border-[color-mix(in_srgb,var(--borderColor-default)_72%,transparent)] px-5 py-4"),
+				Group(auxiliary),
+			)
+		}),
 	)
+}
+
+func dashboardWidgetHeader(widget dashboardsvc.ResolvedWidget, actions Node, editMode bool) Node {
+	descriptionNode := Node(nil)
+	if editMode && strings.TrimSpace(widget.Widget.Description) != "" {
+		descriptionNode = P(Class("mt-1 mb-0 max-w-2xl text-xs leading-5 text-[var(--fgColor-muted)]"), Text(widget.Widget.Description))
+	}
+
+	return Div(
+		Class("flex items-center justify-between gap-3 border-b border-[var(--borderColor-default)] px-4 py-3"),
+		Div(Class("min-w-0"),
+			P(Class("m-0 text-[10px] font-black uppercase tracking-[0.15em] text-[var(--fgColor-muted)]"), Text(widget.Widget.Name)),
+			descriptionNode,
+		),
+		dashboardWidgetHeaderAction(actions, editMode),
+	)
+}
+
+func dashboardWidgetHeaderAction(actions Node, editMode bool) Node {
+	if editMode {
+		return actions
+	}
+	return Button(
+		Type("button"),
+		Class("rounded p-1 text-[var(--fgColor-muted)] transition-colors hover:bg-[var(--bgColor-muted)] hover:text-[var(--fgColor-default)]"),
+		Title("Widget options"),
+		Attr("aria-label", "Widget options"),
+		Raw(`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>`),
+	)
+}
+
+func dashboardRowCountLabel(count int) string {
+	if count == 1 {
+		return "1 row"
+	}
+	return fmt.Sprintf("%d rows", count)
+}
+
+func dashboardWidgetBodyClass(widget dashboardsvc.ResolvedWidget) string {
+	if widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputMetric {
+		return "flex min-h-0 flex-1 px-6 py-6"
+	}
+	if widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputTable {
+		return "min-h-0 flex-1"
+	}
+	return "min-h-0 flex-1 px-5 pb-5 pt-5"
 }
 
 func dashboardWidgetDataDetails(widget dashboardsvc.ResolvedWidget) Node {
@@ -248,17 +466,102 @@ func dashboardWidgetDataDetails(widget dashboardsvc.ResolvedWidget) Node {
 func dashboardWidgetTable(widget dashboardsvc.ResolvedWidget) Node {
 	headers := make([]Node, 0, len(widget.Columns))
 	for _, col := range widget.Columns {
-		headers = append(headers, Th(Text(col)))
+		alignClass := "text-left"
+		if dashboardColumnLooksNumeric(col) {
+			alignClass = "text-right"
+		}
+		headers = append(headers, Th(Class("px-5 py-3 "+alignClass), Text(strings.ReplaceAll(col, "_", " "))))
 	}
 	rows := make([]Node, 0, len(widget.Rows))
 	for _, row := range widget.Rows {
 		cells := make([]Node, 0, len(row))
-		for _, cell := range row {
-			cells = append(cells, Td(Text(fmt.Sprint(cell))))
+		for i, cell := range row {
+			col := ""
+			if i < len(widget.Columns) {
+				col = widget.Columns[i]
+			}
+			cellClass := "px-5 py-4 align-middle text-sm text-[var(--fgColor-default)]"
+			if i == 0 {
+				cellClass += " font-semibold"
+			}
+			if dashboardValueIsNumeric(cell) || dashboardColumnLooksNumeric(col) {
+				cellClass += " text-right font-medium tabular-nums text-[color-mix(in_srgb,var(--fgColor-default)_82%,var(--fgColor-muted)_18%)]"
+			}
+			cells = append(cells, Td(Class(cellClass), Text(formatDashboardCellValue(col, cell))))
 		}
-		rows = append(rows, Tr(Group(cells)))
+		rows = append(rows, Tr(Class("border-b border-[color-mix(in_srgb,var(--borderColor-default)_56%,transparent)] transition-colors hover:bg-[color-mix(in_srgb,var(--bgColor-accent-muted)_32%,transparent)]"), Group(cells)))
 	}
-	return core.TableContainer("", core.DataTable("", THead(Tr(Group(headers))), TBody(Group(rows))))
+	return Div(
+		Class("min-h-0 overflow-auto"),
+		Table(
+			Class("min-w-full border-separate border-spacing-0 text-left text-[13px]"),
+			THead(Class("sticky top-0 z-[1] bg-[color-mix(in_srgb,var(--bgColor-muted)_82%,white_18%)] text-[10px] font-black uppercase tracking-[0.14em] text-[var(--fgColor-muted)] backdrop-blur-sm"),
+				Tr(Group(headers)),
+			),
+			TBody(Class("bg-transparent"), Group(rows)),
+		),
+	)
+}
+
+func dashboardStudioWidgetItem(widget dashboardsvc.ResolvedWidget, baseURL string, csrfFieldProvider func() Node) Node {
+	return Div(
+		Class("rounded-2xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-3"),
+		Div(Class("flex items-start justify-between gap-3"),
+			Div(Class("min-w-0"),
+				P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text(widget.Widget.Name)),
+				P(Class("m-0 text-xs leading-5 text-[var(--fgColor-muted)]"), Text(widget.Widget.Description)),
+				P(Class("m-0 text-[11px] uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(fmt.Sprintf("%d row(s) rendered", widget.RowCount))),
+			),
+			core.ActionMenu("Actions",
+				core.ActionMenuLink(baseURL+"/widgets/"+widget.Widget.ID+"/edit", "Edit widget"),
+				core.ActionMenuPost(baseURL+"/widgets/"+widget.Widget.ID+"/delete", "Delete widget", csrfFieldProvider, true),
+			),
+		),
+	)
+}
+
+func dashboardCanvasColStart(layout domain.DashboardWidgetLayout) int {
+	switch {
+	case layout.X < 0:
+		return 1
+	case layout.X >= 12:
+		return 12
+	default:
+		return layout.X + 1
+	}
+}
+
+func dashboardCanvasRowStart(layout domain.DashboardWidgetLayout) int {
+	switch {
+	case layout.Y < 0:
+		return 1
+	case layout.Y >= 24:
+		return 24
+	default:
+		return layout.Y + 1
+	}
+}
+
+func dashboardCanvasColSpan(layout domain.DashboardWidgetLayout) int {
+	switch {
+	case layout.W <= 0:
+		return 4
+	case layout.W > 12:
+		return 12
+	default:
+		return layout.W
+	}
+}
+
+func dashboardCanvasRowSpan(layout domain.DashboardWidgetLayout) int {
+	switch {
+	case layout.H <= 0:
+		return 3
+	case layout.H > 8:
+		return 8
+	default:
+		return layout.H
+	}
 }
 
 func dashboardFreshnessTone(status string) string {
@@ -514,13 +817,23 @@ func statusLabel(text, tone string) Node {
 }
 
 func chartHost(columns []string, rows [][]interface{}, visual *domain.VisualSpec) Node {
-	return El("duck-chart", Class("block min-h-[20rem]"), Attr("data-chart-payload", chartPayload(columns, rows, visual)))
+	return El("duck-chart", Class("dashboard-chart-host block min-h-[19rem] w-full"), Attr("data-chart-payload", chartPayload(columns, rows, dashboardChartVisual(visual))))
 }
 
 type chartRenderPayload struct {
 	Columns []string           `json:"columns"`
 	Rows    [][]interface{}    `json:"rows"`
 	Visual  *domain.VisualSpec `json:"visual"`
+}
+
+func dashboardChartVisual(visual *domain.VisualSpec) *domain.VisualSpec {
+	if visual == nil {
+		return nil
+	}
+	copy := *visual
+	copy.Title = ""
+	copy.Subtitle = ""
+	return &copy
 }
 
 func chartPayload(columns []string, rows [][]interface{}, visual *domain.VisualSpec) string {
@@ -533,11 +846,155 @@ func chartPayload(columns []string, rows [][]interface{}, visual *domain.VisualS
 
 func visualMetricCard(title string, value interface{}, secondary string) Node {
 	return Div(
-		Class("relative overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[linear-gradient(135deg,var(--bgColor-accent-muted)_0%,var(--bgColor-default)_45%)] p-4 shadow-sm before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--borderColor-accent-emphasis)] before:content-['']"),
-		P(Class("m-0 text-xs font-semibold text-[var(--fgColor-default)]"), Text(title)),
-		P(Class("my-1 text-3xl font-semibold leading-tight text-[var(--fgColor-default)]"), Text(fmt.Sprint(value))),
-		P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(secondary)),
+		Class("flex min-h-[10.5rem] flex-1 flex-col items-center justify-center gap-3 text-center"),
+		P(Class("m-0 text-[clamp(2.9rem,6vw,4.9rem)] font-black leading-none tracking-[-0.06em] text-[var(--fgColor-default)]"), Text(formatDashboardMetricValue(title, value))),
+		P(Class("m-0 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--fgColor-muted)]"), Text(secondary)),
 	)
+}
+
+func formatDashboardMetricValue(title string, value interface{}) string {
+	numeric, ok := dashboardNumericValue(value)
+	if !ok {
+		return fmt.Sprint(value)
+	}
+	if dashboardColumnLooksCurrency(title) {
+		return formatDashboardCompactCurrency(numeric)
+	}
+	if math.Abs(numeric-math.Round(numeric)) < 0.000001 {
+		return formatDashboardInteger(int64(math.Round(numeric)))
+	}
+	return formatDashboardDecimal(numeric, 2)
+}
+
+func formatDashboardCellValue(column string, value interface{}) string {
+	numeric, ok := dashboardNumericValue(value)
+	if !ok {
+		return fmt.Sprint(value)
+	}
+	if dashboardColumnLooksCurrency(column) {
+		return formatDashboardDecimal(numeric, 2)
+	}
+	if math.Abs(numeric-math.Round(numeric)) < 0.000001 {
+		return formatDashboardInteger(int64(math.Round(numeric)))
+	}
+	return formatDashboardDecimal(numeric, 2)
+}
+
+func dashboardColumnLooksCurrency(text string) bool {
+	text = strings.ToLower(text)
+	for _, token := range []string{"revenue", "amount", "gross", "price", "fare", "sales", "cost"} {
+		if strings.Contains(text, token) {
+			return true
+		}
+	}
+	return false
+}
+
+func dashboardColumnLooksNumeric(text string) bool {
+	text = strings.ToLower(text)
+	for _, token := range []string{"count", "total", "sum", "number", "amount", "revenue", "fare", "price", "share"} {
+		if strings.Contains(text, token) {
+			return true
+		}
+	}
+	return false
+}
+
+func dashboardValueIsNumeric(value interface{}) bool {
+	_, ok := dashboardNumericValue(value)
+	return ok
+}
+
+func dashboardNumericValue(value interface{}) (float64, bool) {
+	switch v := value.(type) {
+	case int:
+		return float64(v), true
+	case int8:
+		return float64(v), true
+	case int16:
+		return float64(v), true
+	case int32:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case uint:
+		return float64(v), true
+	case uint8:
+		return float64(v), true
+	case uint16:
+		return float64(v), true
+	case uint32:
+		return float64(v), true
+	case uint64:
+		return float64(v), true
+	case float32:
+		return float64(v), true
+	case float64:
+		return v, true
+	default:
+		return 0, false
+	}
+}
+
+func formatDashboardCompactCurrency(value float64) string {
+	sign := ""
+	if value < 0 {
+		sign = "-"
+		value = math.Abs(value)
+	}
+	switch {
+	case value >= 1_000_000_000:
+		return fmt.Sprintf("%s$%sB", sign, trimTrailingZeros(value/1_000_000_000, 2))
+	case value >= 1_000_000:
+		return fmt.Sprintf("%s$%sM", sign, trimTrailingZeros(value/1_000_000, 2))
+	case value >= 1_000:
+		return fmt.Sprintf("%s$%sK", sign, trimTrailingZeros(value/1_000, 1))
+	default:
+		return fmt.Sprintf("%s$%s", sign, formatDashboardDecimal(value, 2))
+	}
+}
+
+func formatDashboardDecimal(value float64, decimals int) string {
+	sign := ""
+	if value < 0 {
+		sign = "-"
+		value = math.Abs(value)
+	}
+	rounded := fmt.Sprintf("%.*f", decimals, value)
+	parts := strings.SplitN(rounded, ".", 2)
+	if len(parts) == 1 {
+		return sign + formatDashboardIntegerString(parts[0])
+	}
+	return sign + formatDashboardIntegerString(parts[0]) + "." + parts[1]
+}
+
+func formatDashboardInteger(value int64) string {
+	sign := ""
+	if value < 0 {
+		sign = "-"
+		value = -value
+	}
+	return sign + formatDashboardIntegerString(strconv.FormatInt(value, 10))
+}
+
+func formatDashboardIntegerString(raw string) string {
+	if len(raw) <= 3 {
+		return raw
+	}
+	var parts []string
+	for len(raw) > 3 {
+		parts = append([]string{raw[len(raw)-3:]}, parts...)
+		raw = raw[:len(raw)-3]
+	}
+	parts = append([]string{raw}, parts...)
+	return strings.Join(parts, ",")
+}
+
+func trimTrailingZeros(value float64, decimals int) string {
+	out := strconv.FormatFloat(value, 'f', decimals, 64)
+	out = strings.TrimRight(out, "0")
+	out = strings.TrimRight(out, ".")
+	return out
 }
 
 func defaultVisualTitle(spec *domain.VisualSpec, fallback string) string {
@@ -595,6 +1052,13 @@ func first(values []string) string {
 		return ""
 	}
 	return values[0]
+}
+
+func dashIfEmpty(v string) string {
+	if v == "" {
+		return "-"
+	}
+	return v
 }
 
 func visualSpecFromForm(values url.Values) (*domain.VisualSpec, error) {

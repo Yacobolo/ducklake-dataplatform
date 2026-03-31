@@ -73,6 +73,7 @@ func (h *Handler) DashboardsCreate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 	dashboardID := chi.URLParam(r, "dashboardID")
+	editMode := r.URL.Query().Get("mode") == "edit"
 	item, widgets, err := h.deps.Dashboard.GetDashboard(r.Context(), dashboardID)
 	if err != nil {
 		renderServiceError(w, err)
@@ -110,9 +111,12 @@ func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 		Principal:         core.PrincipalFromContext(r.Context()),
 		Dashboard:         item,
 		Widgets:           resolved,
+		EditMode:          editMode,
 		Freshness:         freshness,
 		FreshnessExplain:  freshnessExplain,
 		BaseURL:           "/ui/dashboards/" + dashboardID,
+		ViewURL:           "/ui/dashboards/" + dashboardID,
+		StudioURL:         "/ui/dashboards/" + dashboardID + "?mode=edit",
 		EditURL:           "/ui/dashboards/" + dashboardID + "/edit",
 		DeleteURL:         "/ui/dashboards/" + dashboardID + "/delete",
 		CreateWidgetURL:   "/ui/dashboards/" + dashboardID + "/widgets",

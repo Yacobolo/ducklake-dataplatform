@@ -49,6 +49,8 @@ func TestBootstrap_SeedsQueryableReadOnlySampleData(t *testing.T) {
 	principalRepo := repository.NewPrincipalRepo(writeDB)
 	groupRepo := repository.NewGroupRepo(writeDB)
 	grantRepo := repository.NewGrantRepo(writeDB)
+	dashboardRepo := repository.NewDashboardRepo(writeDB)
+	widgetRepo := repository.NewDashboardWidgetRepo(writeDB)
 	rowFilterRepo := repository.NewRowFilterRepo(writeDB)
 	columnMaskRepo := repository.NewColumnMaskRepo(writeDB)
 	introspectionRepo := repository.NewIntrospectionRepo(readDB)
@@ -119,6 +121,26 @@ func TestBootstrap_SeedsQueryableReadOnlySampleData(t *testing.T) {
 	}
 	require.NoError(t, rows.Err())
 	assert.Len(t, gotDates, 3)
+
+	dashboards, total, err := dashboardRepo.List(ctx, nil, domain.PageRequest{MaxResults: domain.MaxMaxResults})
+	require.NoError(t, err)
+	assert.Positive(t, total)
+
+	var seededDashboard *domain.Dashboard
+	for i := range dashboards {
+		if dashboards[i].Name == sampleDashboardName {
+			seededDashboard = &dashboards[i]
+			break
+		}
+	}
+	require.NotNil(t, seededDashboard)
+	assert.Equal(t, sampleDashboardOwner, seededDashboard.Owner)
+
+	widgets, err := widgetRepo.ListByDashboard(ctx, seededDashboard.ID)
+	require.NoError(t, err)
+	assert.Len(t, widgets, 4)
+	assert.Equal(t, "Total Revenue", widgets[0].Name)
+	assert.Equal(t, "Trips by Day", widgets[1].Name)
 
 	blockedRows, err := secureEngine.Query(ctx, principal.Name, `INSERT INTO sample_data.nyc_taxi.zones VALUES (999, 'Nowhere', 'Blocked', 'Boro')`)
 	if blockedRows != nil {

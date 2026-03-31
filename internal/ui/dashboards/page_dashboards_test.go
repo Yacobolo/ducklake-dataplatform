@@ -12,7 +12,7 @@ import (
 	gomponents "maragu.dev/gomponents"
 )
 
-func TestDashboardsDetailPage_RendersWidgetStates(t *testing.T) {
+func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 	chartType := domain.VisualChartBar
 	page := dashboardsDetailPage(dashboardDetailPageData{
 		Principal: domain.ContextPrincipal{Name: "alice", Type: "user"},
@@ -39,6 +39,8 @@ func TestDashboardsDetailPage_RendersWidgetStates(t *testing.T) {
 			},
 		},
 		BaseURL:         "/ui/dashboards/dash-1",
+		ViewURL:         "/ui/dashboards/dash-1",
+		StudioURL:       "/ui/dashboards/dash-1?mode=edit",
 		EditURL:         "/ui/dashboards/dash-1/edit",
 		DeleteURL:       "/ui/dashboards/dash-1/delete",
 		CreateWidgetURL: "/ui/dashboards/dash-1/widgets",
@@ -87,11 +89,66 @@ func TestDashboardsDetailPage_RendersWidgetStates(t *testing.T) {
 	require.NoError(t, page.Render(&buf))
 	html := buf.String()
 	assert.Contains(t, html, "Revenue Dashboard")
-	assert.Contains(t, html, "Generated SQL")
-	assert.Contains(t, html, "View data")
-	assert.Contains(t, html, "Edit widget")
+	assert.NotContains(t, html, "Generated SQL")
+	assert.NotContains(t, html, "View data")
+	assert.NotContains(t, html, "Edit widget")
 	assert.Contains(t, html, "data-chart-payload")
 	assert.Contains(t, html, "Total Revenue")
-	assert.Contains(t, html, "Freshness")
-	assert.Contains(t, html, "metric.sales.orders.revenue")
+	assert.Contains(t, html, "Studio")
+	assert.NotContains(t, html, "Freshness")
+	assert.NotContains(t, html, "metric.sales.orders.revenue")
+	assert.NotContains(t, html, "View Mode")
+	assert.NotContains(t, html, "Dashboard Canvas")
+}
+
+func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
+	chartType := domain.VisualChartBar
+	page := dashboardsDetailPage(dashboardDetailPageData{
+		Principal: domain.ContextPrincipal{Name: "alice", Type: "user"},
+		Dashboard: &domain.Dashboard{
+			ID:          "dash-1",
+			Name:        "Revenue Dashboard",
+			Description: "Executive view",
+		},
+		EditMode:          true,
+		BaseURL:           "/ui/dashboards/dash-1",
+		ViewURL:           "/ui/dashboards/dash-1",
+		StudioURL:         "/ui/dashboards/dash-1?mode=edit",
+		EditURL:           "/ui/dashboards/dash-1/edit",
+		DeleteURL:         "/ui/dashboards/dash-1/delete",
+		CreateWidgetURL:   "/ui/dashboards/dash-1/widgets",
+		CSRFFieldProvider: func() gomponents.Node { return nil },
+		Widgets: []dashboardsvc.ResolvedWidget{
+			{
+				Widget: domain.DashboardWidget{
+					ID:          "widget-chart",
+					Name:        "Revenue by Region",
+					Description: "Chart widget",
+					Layout:      domain.DashboardWidgetLayout{W: 6, H: 4},
+					VisualSpec: &domain.VisualSpec{
+						Kind:      domain.VisualOutputChart,
+						ChartType: &chartType,
+						Encodings: domain.VisualEncodings{
+							X: &domain.VisualFieldBinding{Field: "region"},
+							Y: &domain.VisualFieldBinding{Field: "revenue"},
+						},
+					},
+				},
+				Columns:      []string{"region", "revenue"},
+				Rows:         [][]interface{}{{"APAC", 42}},
+				RowCount:     1,
+				GeneratedSQL: "select region, revenue from summary",
+			},
+		},
+	})
+
+	var buf bytes.Buffer
+	require.NoError(t, page.Render(&buf))
+	html := buf.String()
+	assert.Contains(t, html, "Studio Mode")
+	assert.Contains(t, html, "Generated SQL")
+	assert.Contains(t, html, "View data")
+	assert.Contains(t, html, "Studio Rail")
+	assert.Contains(t, html, "Edit widget")
+	assert.Contains(t, html, "Delete widget")
 }
