@@ -630,7 +630,7 @@ func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 	return Div(
 		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 text-center shadow-xs"),
 		Div(Class("mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bgColor-muted)] text-[var(--fgColor-accent)]"),
-			I(Class(core.NavIconClass()), Attr("data-lucide", "inbox"), Attr("aria-hidden", "true")),
+			core.Icon("inbox", Class(core.NavIconClass())),
 		),
 		Div(Class("flex flex-col items-center gap-2 text-center"),
 			P(Class("m-0 text-lg font-semibold"), Text("No results yet")),

@@ -14,6 +14,7 @@ func dashboardFromDB(row dbstore.Dashboard) *domain.Dashboard {
 		Name:        row.Name,
 		Description: row.Description,
 		Owner:       row.Owner,
+		FolderID:    row.FolderID.String,
 		CreatedAt:   parseDBTime(row.CreatedAt, "dashboards.created_at"),
 		UpdatedAt:   parseDBTime(row.UpdatedAt, "dashboards.updated_at"),
 	}

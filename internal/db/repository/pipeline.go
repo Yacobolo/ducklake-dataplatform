@@ -36,6 +36,7 @@ func (r *PipelineRepo) CreatePipeline(ctx context.Context, p *domain.Pipeline) (
 		IsPaused:         boolToInt(p.IsPaused),
 		ConcurrencyLimit: int64(p.ConcurrencyLimit),
 		CreatedBy:        p.CreatedBy,
+		FolderID:         nullStringPtr(stringPtr(p.FolderID)),
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -83,6 +84,26 @@ func (r *PipelineRepo) ListPipelines(ctx context.Context, page domain.PageReques
 	return pipelines, total, nil
 }
 
+// ListPipelinesByFolders returns pipelines directly assigned to the provided folders.
+func (r *PipelineRepo) ListPipelinesByFolders(ctx context.Context, folderIDs []string) ([]domain.Pipeline, error) {
+	if len(folderIDs) == 0 {
+		return []domain.Pipeline{}, nil
+	}
+	params := make([]sql.NullString, 0, len(folderIDs))
+	for _, folderID := range folderIDs {
+		params = append(params, sql.NullString{String: folderID, Valid: folderID != ""})
+	}
+	rows, err := r.q.ListPipelinesByFolders(ctx, params)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	pipelines := make([]domain.Pipeline, 0, len(rows))
+	for _, row := range rows {
+		pipelines = append(pipelines, *pipelineFromDB(row))
+	}
+	return pipelines, nil
+}
+
 // UpdatePipeline applies partial updates to a pipeline.
 func (r *PipelineRepo) UpdatePipeline(ctx context.Context, id string, req domain.UpdatePipelineRequest) (*domain.Pipeline, error) {
 	current, err := r.GetPipelineByID(ctx, id)
@@ -112,6 +133,7 @@ func (r *PipelineRepo) UpdatePipeline(ctx context.Context, id string, req domain
 		ScheduleCron:     sched,
 		IsPaused:         boolToInt(paused),
 		ConcurrencyLimit: int64(concLimit),
+		FolderID:         nullStringPtr(req.FolderID),
 		ID:               id,
 	})
 	if err != nil {
@@ -228,6 +250,7 @@ func pipelineFromDB(row dbstore.Pipeline) *domain.Pipeline {
 		IsPaused:         row.IsPaused != 0,
 		ConcurrencyLimit: int(row.ConcurrencyLimit),
 		CreatedBy:        row.CreatedBy,
+		FolderID:         row.FolderID.String,
 		CreatedAt:        createdAt,
 		UpdatedAt:        updatedAt,
 	}

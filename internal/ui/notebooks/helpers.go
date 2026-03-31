@@ -16,6 +16,14 @@ import (
 	"duck-demo/internal/ui/core"
 )
 
+type accessShareRow struct {
+	Principal string
+	Role      string
+	DeleteURL string
+}
+
+const defaultExplorePageSize = 30
+
 func parseFormOrRenderBadRequest(w http.ResponseWriter, r *http.Request) bool {
 	if err := r.ParseForm(); err != nil {
 		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "Unable to parse form."))
@@ -135,6 +143,32 @@ func notebookExplorerURL(notebookID, catalogName, schemaName string) string {
 	return base + "?" + encoded
 }
 
+func notebookShareRows(notebookID string, shares []domain.NotebookShare) []accessShareRow {
+	rows := make([]accessShareRow, 0, len(shares))
+	for i := range shares {
+		share := shares[i]
+		rows = append(rows, accessShareRow{
+			Principal: share.PrincipalName,
+			Role:      share.Role,
+			DeleteURL: "/ui/notebooks/" + notebookID + "/shares/" + url.PathEscape(share.PrincipalName) + "/delete",
+		})
+	}
+	return rows
+}
+
+func folderShareRows(folderID string, shares []domain.FolderShare) []accessShareRow {
+	rows := make([]accessShareRow, 0, len(shares))
+	for i := range shares {
+		share := shares[i]
+		rows = append(rows, accessShareRow{
+			Principal: share.PrincipalName,
+			Role:      share.Role,
+			DeleteURL: "/ui/explore/folders/" + folderID + "/shares/" + url.PathEscape(share.PrincipalName) + "/delete",
+		})
+	}
+	return rows
+}
+
 func formOptionalInt(values map[string][]string, key string) (*int, error) {
 	value := formString(values, key)
 	if value == "" {
@@ -165,6 +199,65 @@ func formCSV(values map[string][]string, key string) []string {
 		return nil
 	}
 	return out
+}
+
+func formBool(values map[string][]string, key string) bool {
+	if values == nil {
+		return false
+	}
+	value := strings.TrimSpace(strings.ToLower(first(values[key])))
+	return value == "true" || value == "1" || value == "on" || value == "yes"
+}
+
+func normalizeExploreKind(kind string) string {
+	kinds := normalizeExploreKinds([]string{kind})
+	if len(kinds) == 0 {
+		return domain.ExploreKindAll
+	}
+	return kinds[0]
+}
+
+func normalizeExploreKinds(kinds []string) []string {
+	if len(kinds) == 0 {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	normalized := make([]string, 0, len(kinds))
+	for _, kind := range kinds {
+		switch strings.TrimSpace(kind) {
+		case "", domain.ExploreKindAll:
+			return nil
+		case domain.ExploreKindFolder, domain.ExploreKindNotebook, domain.ExploreKindModel, domain.ExploreKindMacro,
+			domain.ExploreKindDashboard, domain.ExploreKindPipeline, domain.ExploreKindSemanticModel:
+			kind = strings.TrimSpace(kind)
+			if _, ok := seen[kind]; ok {
+				continue
+			}
+			seen[kind] = struct{}{}
+			normalized = append(normalized, kind)
+		}
+	}
+	return normalized
+}
+
+func normalizeExploreOwners(owners []string) []string {
+	if len(owners) == 0 {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	normalized := make([]string, 0, len(owners))
+	for _, owner := range owners {
+		owner = strings.TrimSpace(owner)
+		if owner == "" {
+			continue
+		}
+		if _, ok := seen[owner]; ok {
+			continue
+		}
+		seen[owner] = struct{}{}
+		normalized = append(normalized, owner)
+	}
+	return normalized
 }
 
 type sqlComputeTarget struct {

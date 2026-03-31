@@ -20,6 +20,7 @@ func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 			StartLabel:  "Start in Products",
 			StartCopy:   "Products package ownership, contract, trust signals, and linked runtime assets into the clearest consumer-facing entry point.",
 			Links: []overviewLinkData{
+				{Label: "Explore", Copy: "Browse folders and mixed authored assets from one shared workspace-style browser.", Href: "/ui/explore"},
 				{Label: "Catalogs", Copy: "Browse schemas, tables, and version-aware metastore detail from the explorer workspace.", Href: "/ui/catalogs"},
 				{Label: "Runtime Assets", Copy: "Inspect freshness, orchestration state, and asset-level runtime signals.", Href: "/ui/assets"},
 				{Label: "Dashboards", Copy: "Review published dashboard surfaces and their supporting widgets.", Href: "/ui/dashboards"},
@@ -33,7 +34,7 @@ func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 			StartLabel:  "Start in Models",
 			StartCopy:   "Models are the backbone of the transformation layer, with macros tucked alongside them as implementation support rather than primary navigation.",
 			Links: []overviewLinkData{
-				{Label: "Notebooks", Copy: "Inspect notebook metadata, jobs, and Git-backed notebook resources.", Href: "/ui/notebooks"},
+				{Label: "Explore", Copy: "Work across notebooks, dashboards, pipelines, and project-bound assets from one browser.", Href: "/ui/explore"},
 				{Label: "Semantic", Copy: "Manage semantic models, pre-aggregations, and relationship paths for consumer queries.", Href: "/ui/semantic"},
 				{Label: "Macros", Copy: "Open reusable SQL helper definitions from the build toolchain workspace.", Href: "/ui/macros"},
 			},

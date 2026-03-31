@@ -26,11 +26,17 @@ type mockNotebookService struct {
 	createNotebookFn            func(ctx context.Context, principal string, req domain.CreateNotebookRequest) (*domain.Notebook, error)
 	getNotebookFn               func(ctx context.Context, id string) (*domain.Notebook, []domain.Cell, error)
 	getNotebookForPrincipalFn   func(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Notebook, []domain.Cell, error)
+	getNotebookContextFn        func(ctx context.Context, principal string, isAdmin bool, id string) (*domain.NotebookContext, error)
 	getPublishModelFn           func(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error)
 	listNotebooksFn             func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
 	listNotebooksForPrincipalFn func(ctx context.Context, principal string, isAdmin bool, owner *string, page domain.PageRequest) ([]domain.Notebook, int64, error)
 	updateNotebookFn            func(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateNotebookRequest) (*domain.Notebook, error)
+	moveNotebookFn              func(ctx context.Context, principal string, isAdmin bool, id string, req domain.MoveNotebookRequest) (*domain.Notebook, error)
+	duplicateNotebookFn         func(ctx context.Context, principal string, isAdmin bool, id string, req domain.DuplicateNotebookRequest) (*domain.Notebook, error)
 	deleteNotebookFn            func(ctx context.Context, principal string, isAdmin bool, id string) error
+	listNotebookSharesFn        func(ctx context.Context, principal string, isAdmin bool, notebookID string) ([]domain.NotebookShare, error)
+	shareNotebookFn             func(ctx context.Context, principal string, isAdmin bool, notebookID string, share domain.NotebookShare) (*domain.NotebookShare, error)
+	unshareNotebookFn           func(ctx context.Context, principal string, isAdmin bool, notebookID string, principalName string) error
 	createCellFn                func(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error)
 	updateCellFn                func(ctx context.Context, principal string, isAdmin bool, cellID string, req domain.UpdateCellRequest) (*domain.Cell, error)
 	deleteCellFn                func(ctx context.Context, principal string, isAdmin bool, cellID string) error
@@ -54,6 +60,12 @@ func (m *mockNotebookService) GetNotebookForPrincipal(ctx context.Context, princ
 		return m.getNotebookForPrincipalFn(ctx, principal, isAdmin, id)
 	}
 	return m.GetNotebook(ctx, id)
+}
+func (m *mockNotebookService) GetNotebookContext(ctx context.Context, principal string, isAdmin bool, id string) (*domain.NotebookContext, error) {
+	if m.getNotebookContextFn != nil {
+		return m.getNotebookContextFn(ctx, principal, isAdmin, id)
+	}
+	return nil, nil
 }
 func (m *mockNotebookService) GetPublishModel(ctx context.Context, notebookID string) (*domain.NotebookPublishModel, error) {
 	if m.getPublishModelFn != nil {
@@ -79,11 +91,41 @@ func (m *mockNotebookService) UpdateNotebook(ctx context.Context, principal stri
 	}
 	panic("UpdateNotebook not implemented")
 }
+func (m *mockNotebookService) MoveNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.MoveNotebookRequest) (*domain.Notebook, error) {
+	if m.moveNotebookFn != nil {
+		return m.moveNotebookFn(ctx, principal, isAdmin, id, req)
+	}
+	panic("MoveNotebook not implemented")
+}
+func (m *mockNotebookService) DuplicateNotebook(ctx context.Context, principal string, isAdmin bool, id string, req domain.DuplicateNotebookRequest) (*domain.Notebook, error) {
+	if m.duplicateNotebookFn != nil {
+		return m.duplicateNotebookFn(ctx, principal, isAdmin, id, req)
+	}
+	panic("DuplicateNotebook not implemented")
+}
 func (m *mockNotebookService) DeleteNotebook(ctx context.Context, principal string, isAdmin bool, id string) error {
 	if m.deleteNotebookFn != nil {
 		return m.deleteNotebookFn(ctx, principal, isAdmin, id)
 	}
 	panic("DeleteNotebook not implemented")
+}
+func (m *mockNotebookService) ListNotebookShares(ctx context.Context, principal string, isAdmin bool, notebookID string) ([]domain.NotebookShare, error) {
+	if m.listNotebookSharesFn != nil {
+		return m.listNotebookSharesFn(ctx, principal, isAdmin, notebookID)
+	}
+	return nil, nil
+}
+func (m *mockNotebookService) ShareNotebook(ctx context.Context, principal string, isAdmin bool, notebookID string, share domain.NotebookShare) (*domain.NotebookShare, error) {
+	if m.shareNotebookFn != nil {
+		return m.shareNotebookFn(ctx, principal, isAdmin, notebookID, share)
+	}
+	panic("ShareNotebook not implemented")
+}
+func (m *mockNotebookService) UnshareNotebook(ctx context.Context, principal string, isAdmin bool, notebookID string, principalName string) error {
+	if m.unshareNotebookFn != nil {
+		return m.unshareNotebookFn(ctx, principal, isAdmin, notebookID, principalName)
+	}
+	panic("UnshareNotebook not implemented")
 }
 func (m *mockNotebookService) CreateCell(ctx context.Context, principal string, isAdmin bool, notebookID string, req domain.CreateCellRequest) (*domain.Cell, error) {
 	if m.createCellFn != nil {

@@ -10,59 +10,61 @@ import (
 	. "maragu.dev/gomponents/html"
 )
 
-type notebookListRow struct {
-	Name    string
-	URL     string
-	Owner   string
-	Updated string
+type folderSelectOption struct {
+	ID          string
+	Label       string
+	Description string
+	Selected    bool
 }
 
-func notebooksListPage(principal domain.ContextPrincipal, rows []notebookListRow, page domain.PageRequest, total int64) Node {
-	tableRows := make([]Node, 0, len(rows))
-	for i := range rows {
-		row := rows[i]
-		tableRows = append(tableRows, Tr(
-			Td(
-				Div(Class("flex items-center gap-3"),
-					Span(Class("inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--bgColor-accent-muted)] text-[var(--fgColor-accent)]"),
-						I(Class(core.NavIconClass("h-4 w-4")), Attr("data-lucide", "file-text"), Attr("aria-hidden", "true")),
-					),
-					Div(Class("min-w-0"),
-						core.TextLink(row.URL, Text(row.Name)),
-					),
-				),
-			),
-			Td(core.Badge(row.Owner, "")),
-			Td(Span(Class("text-[var(--fgColor-muted)]"), Text(row.Updated))),
+func shareRoleSelectNodes(selected string) []Node {
+	roles := []struct {
+		Value string
+		Label string
+	}{
+		{Value: domain.FolderShareRoleViewer, Label: "Viewer"},
+		{Value: domain.FolderShareRoleEditor, Label: "Editor"},
+		{Value: domain.FolderShareRoleManager, Label: "Manager"},
+	}
+	nodes := make([]Node, 0, len(roles)+1)
+	nodes = append(nodes, Name("role"))
+	for _, role := range roles {
+		option := Option(Value(role.Value), Text(role.Label))
+		if selected == role.Value {
+			option = Option(Value(role.Value), Selected(), Text(role.Label))
+		}
+		nodes = append(nodes, option)
+	}
+	return nodes
+}
+
+func shareManagementSection(title string, shares []accessShareRow, createURL string, csrfFieldProvider func() Node) Node {
+	rows := make([]Node, 0, len(shares))
+	for i := range shares {
+		share := shares[i]
+		rows = append(rows, Tr(
+			Td(Text(share.Principal)),
+			Td(core.Badge(share.Role, "")),
+			Td(Form(Method("post"), Action(share.DeleteURL), Class("m-0"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Remove")))),
 		))
 	}
 
-	body := []Node{
-		core.PageHeader(
-			"Build",
-			"Notebooks",
-			"Create and manage notebooks.",
-			core.SecondaryLink("/ui/notebooks/git-repos", "",
-				I(Class(core.IconGlyphClass()), Attr("data-lucide", "github"), Attr("aria-hidden", "true")),
-				Span(Text("Git repos")),
-			),
-			core.PrimaryLink("/ui/notebooks/new", "",
-				I(Class(core.IconGlyphClass()), Attr("data-lucide", "plus"), Attr("aria-hidden", "true")),
-				Span(Text("New notebook")),
-			),
+	body := Node(P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("No explicit shares yet. Inherited folder access still applies where relevant.")))
+	if len(rows) > 0 {
+		body = notebookTable([]string{"Principal", "Role", "Action"}, rows)
+	}
+
+	return core.SectionSurface(
+		core.SectionHeader(title, "Manage direct access for collaborators."),
+		Form(Method("post"), Action(createURL), Class("grid gap-3 rounded-xl border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-4"), csrfFieldProvider(),
+			Label(Text("Principal")),
+			core.InputControl("", Name("principal_name"), Placeholder("analyst@example.com"), Required()),
+			Label(Text("Role")),
+			core.SelectControl("", shareRoleSelectNodes(domain.FolderShareRoleViewer)...),
+			Div(Class("flex justify-end"), core.PrimaryButton("", Type("submit"), Text("Add share"))),
 		),
-	}
-	if len(tableRows) == 0 {
-		body = append(body, core.ListPageBody(
-			core.WorkspaceEmptyState("inbox", "No notebooks yet.", "Create your first notebook to start building notebook workflows. Manage Git repos only when you need sync-backed notebooks.", core.PrimaryLink("/ui/notebooks/new", "", Text("Create your first notebook"))),
-		))
-	} else {
-		body = append(body, core.ListPageBody(
-			notebookTable([]string{"Name", "Owner", "Last updated"}, tableRows),
-			core.ListPagination("/ui/notebooks", page, total),
-		))
-	}
-	return core.AppPage("Notebooks", "notebooks", principal, body...)
+		body,
+	)
 }
 
 type notebookJobRow struct {
@@ -97,7 +99,7 @@ func notebookJobsListPage(d notebookJobsListPageData) Node {
 			core.ListPagination("/ui/notebooks/"+d.NotebookID+"/jobs", d.Page, d.Total),
 		))
 	}
-	return core.AppPage("Notebook Jobs", "notebooks", d.Principal, body...)
+	return core.AppPage("Notebook Jobs", "explore", d.Principal, body...)
 }
 
 type notebookJobDetailPageData struct {
@@ -114,7 +116,7 @@ type notebookJobDetailPageData struct {
 func notebookJobDetailPage(d notebookJobDetailPageData) Node {
 	return core.AppPage(
 		"Notebook Job: "+d.JobID,
-		"notebooks",
+		"explore",
 		d.Principal,
 		core.ResultPageLayout("Build", "Notebook job: "+d.JobID, "Inspect notebook execution as a result workspace instead of a stack of generic cards.",
 			core.PageHeader("", "Notebook job", "Inspect a notebook run.", core.SecondaryLink("/ui/notebooks/"+d.NotebookID+"/jobs", "", Text("Back to jobs"))),
@@ -131,7 +133,7 @@ func notebookJobDetailPage(d notebookJobDetailPageData) Node {
 							{"State", d.State},
 							{"Created", d.CreatedAt},
 							{"Updated", d.UpdatedAt},
-							{"Error", emptyDash(d.ErrorText)},
+							{"Error", valueOrDash(d.ErrorText)},
 						}),
 					),
 				),
@@ -140,50 +142,8 @@ func notebookJobDetailPage(d notebookJobDetailPageData) Node {
 	)
 }
 
-type gitRepoRow struct {
-	ID         string
-	URL        string
-	Repository string
-	Branch     string
-	Path       string
-	Owner      string
-	LastSync   string
-}
-
-type notebookGitReposListPageData struct {
-	Principal domain.ContextPrincipal
-	Rows      []gitRepoRow
-	Page      domain.PageRequest
-	Total     int64
-}
-
-func notebookGitReposListPage(d notebookGitReposListPageData) Node {
-	rows := make([]Node, 0, len(d.Rows))
-	for i := range d.Rows {
-		row := d.Rows[i]
-		rows = append(rows, Tr(
-			Td(core.TextLink(row.URL, Text(row.Repository))),
-			Td(Text(row.Branch)),
-			Td(Text(row.Path)),
-			Td(Text(row.Owner)),
-			Td(Text(row.LastSync)),
-		))
-	}
-	body := []Node{core.PageHeader("Build", "Git repos", "Registered sources for notebook sync.", core.PrimaryLink("/ui/notebooks/git-repos/new", "", Text("Register Git repo")))}
-	if len(rows) == 0 {
-		body = append(body, core.ListPageBody(
-			core.WorkspaceEmptyState("git-branch", "No Git repositories registered.", "Register a repository to connect notebook sync.", core.PrimaryLink("/ui/notebooks/git-repos/new", "", Text("Register Git repo"))),
-		))
-	} else {
-		body = append(body, core.ListPageBody(
-			notebookTable([]string{"Repository", "Branch", "Path", "Owner", "Last sync"}, rows),
-			core.ListPagination("/ui/notebooks/git-repos", d.Page, d.Total),
-		))
-	}
-	return core.AppPage("Notebook Git Repos", "notebooks", d.Principal, body...)
-}
-
-func notebooksNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
+func notebooksNewPage(principal domain.ContextPrincipal, folderOptions []folderSelectOption, csrfFieldProvider func() Node) Node {
+	folderNodes := append([]Node{Name("folder_id"), Option(Value(""), Text("My notebooks"))}, folderSelectNodes(folderOptions)...)
 	return notebookFormPage(principal, "New Notebook", "/ui/notebooks", csrfFieldProvider,
 		Label(Text("Name")),
 		core.InputControl("", Name("name"), Required()),
@@ -191,6 +151,8 @@ func notebooksNewPage(principal domain.ContextPrincipal, csrfFieldProvider func(
 		core.TextareaControl("min-h-28", Name("description")),
 		Label(Text("Source")),
 		core.InputControl("", Name("source")),
+		Label(Text("Folder")),
+		core.SelectControl("", folderNodes...),
 	)
 }
 
@@ -204,6 +166,30 @@ func notebooksEditPage(principal domain.ContextPrincipal, notebookID string, not
 		core.InputControl("", Name("name"), Value(notebook.Name), Required()),
 		Label(Text("Description")),
 		core.TextareaControl("min-h-28", Name("description"), Text(description)),
+	)
+}
+
+func notebooksMovePage(principal domain.ContextPrincipal, notebook *domain.Notebook, folderOptions []folderSelectOption, csrfFieldProvider func() Node) Node {
+	folderNodes := append([]Node{Name("folder_id")}, folderSelectNodes(folderOptions)...)
+	return notebookFormPage(principal, "Move Notebook", "/ui/notebooks/"+notebook.ID+"/move", csrfFieldProvider,
+		Label(Text("Destination folder")),
+		core.SelectControl("", folderNodes...),
+		Label(Text("Destination Git path (optional)")),
+		core.InputControl("", Name("git_path")),
+		Label(Class("flex items-center gap-2"), Input(Type("checkbox"), Name("confirm_context_change"), Value("true")), Span(Text("Confirm project/environment context change if required"))),
+		Label(Class("flex items-center gap-2"), Input(Type("checkbox"), Name("confirm_leave_git"), Value("true")), Span(Text("Confirm leaving Git governance if required"))),
+	)
+}
+
+func notebooksDuplicatePage(principal domain.ContextPrincipal, notebook *domain.Notebook, folderOptions []folderSelectOption, csrfFieldProvider func() Node) Node {
+	folderNodes := append([]Node{Name("folder_id")}, folderSelectNodes(folderOptions)...)
+	return notebookFormPage(principal, "Duplicate Notebook", "/ui/notebooks/"+notebook.ID+"/duplicate", csrfFieldProvider,
+		Label(Text("Destination folder")),
+		core.SelectControl("", folderNodes...),
+		Label(Text("New notebook name (optional)")),
+		core.InputControl("", Name("name"), Placeholder(notebook.Name+" copy")),
+		Label(Text("Destination Git path (optional)")),
+		core.InputControl("", Name("git_path")),
 	)
 }
 
@@ -294,132 +280,13 @@ func notebookCellsEditPage(principal domain.ContextPrincipal, notebookID, cellID
 	return notebookFormPage(principal, "Edit Notebook Cell", "/ui/notebooks/"+notebookID+"/cells/"+cellID+"/update", csrfFieldProvider, nodes...)
 }
 
-func notebookGitReposNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
-	return notebookFormPage(principal, "Register Git Repo", "/ui/notebooks/git-repos", csrfFieldProvider,
-		Label(Text("Repository URL")),
-		core.InputControl("", Name("url"), Required()),
-		Label(Text("Branch")),
-		core.InputControl("", Name("branch"), Value("main"), Required()),
-		Label(Text("Path")),
-		core.InputControl("", Name("path")),
-		Label(Text("Auth token")),
-		core.InputControl("", Name("auth_token"), Type("password")),
-	)
-}
-
-type notebookGitRepoDetailPageData struct {
-	Principal     domain.ContextPrincipal
-	ID            string
-	URL           string
-	Branch        string
-	Path          string
-	Owner         string
-	LastSync      string
-	LastCommit    string
-	DeleteURL     string
-	SyncURL       string
-	CSRFFieldFunc func() Node
-}
-
-func notebookGitRepoDetailPage(d notebookGitRepoDetailPageData) Node {
-	return core.AppPage(
-		"Git Repo",
-		"notebooks",
-		d.Principal,
-		core.DetailShell(
-			core.PageHeader("Build", "Git repo", "Repository details and sync controls.", core.SecondaryLink("/ui/notebooks/git-repos", "", Text("Back to repos"))),
-			core.DetailLayout(
-				core.DetailMain(
-					core.SectionSurface(
-						core.SectionHeader("Repository details", "Keep current sync configuration in the main detail column."),
-						core.KeyValueGrid([][2]string{
-							{"Repository", d.URL},
-							{"Branch", d.Branch},
-							{"Path", d.Path},
-							{"Owner", d.Owner},
-							{"Last sync", d.LastSync},
-							{"Last commit", d.LastCommit},
-						}),
-					),
-				),
-				core.DetailRail(
-					core.DetailRailCard("Actions", "Sync and deletion stay together in the secondary rail.",
-						core.ButtonGroup("",
-							Form(Method("post"), Action(d.SyncURL), d.CSRFFieldFunc(), core.PrimaryButton("", Type("submit"), Text("Sync repo"))),
-							Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldFunc(), core.DangerButton("", Type("submit"), Text("Delete repo"))),
-						),
-					),
-				),
-			),
-		),
-	)
-}
-
-type notebookGitRepoSyncResultPageData struct {
-	Principal domain.ContextPrincipal
-	GitRepoID string
-	Result    *domain.GitSyncResult
-}
-
-func notebookGitRepoSyncResultPage(d notebookGitRepoSyncResultPageData) Node {
-	if d.Result == nil {
-		return core.AppPage("Git Sync", "notebooks", d.Principal, core.ListPageBody(core.WorkspaceEmptyState("git-branch", "No sync result available.", "Run a sync first to generate a result summary.", core.SecondaryLink("/ui/notebooks/git-repos/"+d.GitRepoID, "", Text("Back to repo")))))
-	}
-	return core.AppPage(
-		"Git Sync",
-		"notebooks",
-		d.Principal,
-		core.ResultPageLayout("Build", "Git sync", "Sync outcomes use the shared result layout so they read like execution reports.",
-			core.PageHeader("", "Git sync", "Latest sync result.", core.SecondaryLink("/ui/notebooks/git-repos/"+d.GitRepoID, "", Text("Back to repo"))),
-			core.SectionSurface(
-				core.SectionHeader("Sync result", ""),
-				core.MetadataSummary([][2]string{
-					{"Created notebooks", strconv.Itoa(d.Result.NotebooksCreated)},
-					{"Updated notebooks", strconv.Itoa(d.Result.NotebooksUpdated)},
-					{"Deleted notebooks", strconv.Itoa(d.Result.NotebooksDeleted)},
-					{"Commit", d.Result.CommitSHA},
-				}),
-			),
-		),
-	)
-}
-
-type notebookGitRepoSyncUnavailablePageData struct {
-	Principal domain.ContextPrincipal
-	GitRepoID string
-	RepoURL   string
-	Branch    string
-	Path      string
-	Message   string
-}
-
-func notebookGitRepoSyncUnavailablePage(d notebookGitRepoSyncUnavailablePageData) Node {
-	return core.AppPage(
-		"Git Sync Unavailable",
-		"notebooks",
-		d.Principal,
-		core.ResultPageLayout("Build", "Git sync unavailable", "Unavailable states use the same result-oriented layout as other notebook outcomes.",
-			core.PageHeader("", "Git sync", "Sync is not available yet.", core.SecondaryLink("/ui/notebooks/git-repos/"+d.GitRepoID, "", Text("Back to repo"))),
-			core.SectionSurface(
-				core.SectionHeader("Sync is not available yet", "The repo is registered correctly, but server-side sync execution has not been implemented yet."),
-				P(Text(d.Message)),
-				core.KeyValueGrid([][2]string{
-					{"Repository", d.RepoURL},
-					{"Branch", d.Branch},
-					{"Path", d.Path},
-				}),
-			),
-		),
-	)
-}
-
 func notebookFormPage(principal domain.ContextPrincipal, title, action string, csrfFieldProvider func() Node, fields ...Node) Node {
 	nodes := []Node{csrfFieldProvider()}
 	nodes = append(nodes, fields...)
 	nodes = append(nodes, Div(Class("mt-3"), core.PrimaryButton("", Type("submit"), Text("Save"))))
 	return core.AppPage(
 		title,
-		"notebooks",
+		"explore",
 		principal,
 		core.FormPageLayout("Build", title, "Notebook authoring uses the shared single-surface form layout.",
 			Form(Method("post"), Action(action), Class("grid gap-3"), Group(nodes)),
@@ -447,9 +314,19 @@ func notebookTable(headers []string, rows []Node) Node {
 	)
 }
 
-func emptyDash(v string) string {
-	if v == "" {
-		return "-"
+func folderSelectNodes(options []folderSelectOption) []Node {
+	nodes := make([]Node, 0, len(options))
+	for i := range options {
+		option := options[i]
+		label := option.Label
+		if option.Description != "" {
+			label += " - " + option.Description
+		}
+		if option.Selected {
+			nodes = append(nodes, Option(Value(option.ID), Selected(), Text(label)))
+			continue
+		}
+		nodes = append(nodes, Option(Value(option.ID), Text(label)))
 	}
-	return v
+	return nodes
 }

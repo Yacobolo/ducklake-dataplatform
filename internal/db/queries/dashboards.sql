@@ -1,6 +1,6 @@
 -- name: CreateDashboard :one
-INSERT INTO dashboards (id, name, description, owner)
-VALUES (?, ?, ?, ?)
+INSERT INTO dashboards (id, name, description, owner, folder_id)
+VALUES (?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetDashboard :one
@@ -9,16 +9,23 @@ SELECT * FROM dashboards WHERE id = ?;
 -- name: ListDashboards :many
 SELECT * FROM dashboards
 WHERE (sqlc.narg('owner') IS NULL OR owner = sqlc.narg('owner'))
+  AND (sqlc.narg('folder_id') IS NULL OR folder_id = sqlc.narg('folder_id'))
 ORDER BY updated_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: CountDashboards :one
 SELECT COUNT(*) FROM dashboards
-WHERE (sqlc.narg('owner') IS NULL OR owner = sqlc.narg('owner'));
+WHERE (sqlc.narg('owner') IS NULL OR owner = sqlc.narg('owner'))
+  AND (sqlc.narg('folder_id') IS NULL OR folder_id = sqlc.narg('folder_id'));
+
+-- name: ListDashboardsByFolders :many
+SELECT * FROM dashboards
+WHERE folder_id IN (sqlc.slice('folder_ids'))
+ORDER BY updated_at DESC;
 
 -- name: UpdateDashboard :one
 UPDATE dashboards
-SET name = ?, description = ?, updated_at = datetime('now')
+SET name = ?, description = ?, folder_id = ?, updated_at = datetime('now')
 WHERE id = ?
 RETURNING *;
 

@@ -26,6 +26,7 @@ type APIHandler struct {
 	apiKeys             apiKeyService
 	pipelines           pipelineService
 	notebooks           notebookService
+	notebookFolders     notebookFolderService
 	sessions            sessionService
 	gitRepos            gitRepoService
 	assets              assetService
@@ -35,6 +36,7 @@ type APIHandler struct {
 	macros              macroService
 	semantics           semanticService
 	dashboards          dashboardService
+	explore             exploreService
 }
 
 // NewHandler creates a new APIHandler with all required service dependencies.
@@ -108,6 +110,16 @@ func NewHandler(
 		semantics:           semantics,
 		dashboards:          dashboardSvc,
 	}
+}
+
+// SetNotebookFolders configures the optional notebook folder service for folder endpoints.
+func (h *APIHandler) SetNotebookFolders(service notebookFolderService) {
+	h.notebookFolders = service
+}
+
+// SetExplore configures the optional authored-asset explore service.
+func (h *APIHandler) SetExplore(service exploreService) {
+	h.explore = service
 }
 
 // Ensure Handler implements the interface.

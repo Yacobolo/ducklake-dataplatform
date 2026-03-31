@@ -31,7 +31,13 @@ type Reconciler struct {
 	executor   *AssetExecutor
 	backfills  *BackfillRunner
 	runs       domain.AssetRunRepository
+	handlers   []EventHandler
 	shadowMode bool
+}
+
+// EventHandler can intercept orchestration events before asset reconciliation logic runs.
+type EventHandler interface {
+	HandleOrchestrationEvent(ctx context.Context, event *domain.OrchestrationEvent) (handled bool, retryAt *time.Time, err error)
 }
 
 func NewReconciler(
@@ -42,6 +48,7 @@ func NewReconciler(
 	executor *AssetExecutor,
 	backfills *BackfillRunner,
 	shadowMode bool,
+	handlers ...EventHandler,
 ) *Reconciler {
 	var deps domain.AssetDependencyRepository
 	if scheduler != nil {
@@ -56,6 +63,7 @@ func NewReconciler(
 		executor:   executor,
 		backfills:  backfills,
 		runs:       runs,
+		handlers:   handlers,
 		shadowMode: shadowMode,
 	}
 }
@@ -68,6 +76,19 @@ func (r *Reconciler) Tick(ctx context.Context) error {
 			return nil
 		}
 		return err
+	}
+
+	for _, handler := range r.handlers {
+		handled, retryAt, handleErr := handler.HandleOrchestrationEvent(ctx, event)
+		if !handled {
+			continue
+		}
+		if handleErr != nil {
+			_ = r.events.MarkFailed(ctx, event.ID, handleErr.Error(), retryAt)
+			return handleErr
+		}
+		_ = r.events.MarkProcessed(ctx, event.ID)
+		return nil
 	}
 
 	if event.AssetID == nil || *event.AssetID == "" {

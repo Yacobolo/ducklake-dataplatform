@@ -47,6 +47,7 @@ import (
 	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
+	exploresvc "duck-demo/internal/service/explore"
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/macro"
 	svcmodel "duck-demo/internal/service/model"
@@ -1423,10 +1424,24 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// Wire notebook, git repo, and pipeline services so declarative export can
 	// read these resources without endpoint panics.
 	notebookRepo := repository.NewNotebookRepo(metaDB)
+	folderRepo := repository.NewFolderRepo(metaDB)
+	folderShareRepo := repository.NewFolderShareRepo(metaDB)
+	notebookShareRepo := repository.NewNotebookShareRepo(metaDB)
+	notebookJobRepo := repository.NewNotebookJobRepo(metaDB)
 	notebookSvc := svcnotebook.New(notebookRepo, auditRepo)
+	notebookSvc.SetFolderRepository(folderRepo)
+	notebookSvc.SetAuthorization(authSvc)
+	notebookSvc.SetShareRepositories(folderShareRepo, notebookShareRepo)
+	notebookFolderSvc := svcnotebook.NewFolderService(folderRepo, auditRepo)
+	notebookFolderSvc.SetAuthorization(authSvc)
+	notebookFolderSvc.SetShareRepository(folderShareRepo)
+	sessionManager := svcnotebook.NewSessionManager(duckDB, nil, notebookRepo, notebookJobRepo, auditRepo)
+	sessionManager.SetAuthorization(authSvc)
+	sessionManager.SetAccessRepositories(folderRepo, folderShareRepo, notebookShareRepo)
 	notebookProvider := svcpipeline.NewDBNotebookProvider(notebookRepo)
 	gitRepoRepo := repository.NewGitRepoRepo(metaDB)
 	gitRepoSvc := svcnotebook.NewGitService(gitRepoRepo, notebookRepo, auditRepo)
+	gitRepoSvc.SetFolderRepository(folderRepo)
 	pipelineRepo := repository.NewPipelineRepo(metaDB)
 	pipelineRunRepo := repository.NewPipelineRunRepo(metaDB)
 	pipelineSvc := svcpipeline.NewService(
@@ -1438,11 +1453,17 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		nil,
 		slog.New(slog.NewTextHandler(io.Discard, nil)),
 	)
+	pipelineSvc.SetFolderRepository(folderRepo)
+	dashboardRepo := repository.NewDashboardRepo(metaDB)
 
 	var (
-		assetSvc    *assetsvc.Service
-		backfillSvc *orchestration.BackfillService
-		reconciler  *orchestration.Reconciler
+		assetSvc          *assetsvc.Service
+		backfillSvc       *orchestration.BackfillService
+		reconciler        *orchestration.Reconciler
+		projectRepo       domain.ProjectRepository
+		modelRepo         domain.ModelRepository
+		macroRepo         domain.MacroRepository
+		semanticModelRepo domain.SemanticModelRepository
 	)
 	if opts.WithAssets {
 		assetRepo := repository.NewDataAssetRepo(metaDB)
@@ -1500,14 +1521,14 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			t.Fatalf("create analytics schema for model service: %v", err)
 		}
 
-		modelRepo := repository.NewModelRepo(metaDB)
+		modelRepo = repository.NewModelRepo(metaDB)
 		notebookModelLinkRepo := repository.NewNotebookModelLinkRepo(metaDB)
 		modelRunRepo := repository.NewModelRunRepo(metaDB)
 		modelTestRepo := repository.NewModelTestRepo(metaDB)
 		modelTestResultRepo := repository.NewModelTestResultRepo(metaDB)
 		colLineageRepo := repository.NewColumnLineageRepo(metaDB)
-		macroRepo := repository.NewMacroRepo(metaDB)
-		projectRepo := repository.NewProjectRepo(metaDB)
+		macroRepo = repository.NewMacroRepo(metaDB)
+		projectRepo = repository.NewProjectRepo(metaDB)
 		environmentRepo := repository.NewEnvironmentRepo(metaDB)
 		buildRepo := repository.NewBuildRepo(metaDB)
 		macroSvc = macro.NewService(macroRepo, auditRepo)
@@ -1555,7 +1576,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// Optionally wire Semantic service.
 	var semanticSvc *svcsemantic.Service
 	if opts.WithSemantic {
-		semanticModelRepo := repository.NewSemanticModelRepo(metaDB)
+		semanticModelRepo = repository.NewSemanticModelRepo(metaDB)
 		semanticMetricRepo := repository.NewSemanticMetricRepo(metaDB)
 		semanticRelationshipRepo := repository.NewSemanticRelationshipRepo(metaDB)
 		semanticPreAggRepo := repository.NewSemanticPreAggregationRepo(metaDB)
@@ -1568,6 +1589,10 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		semanticSvc.SetQueryExecutor(querySvc)
 		productSvc.SetSemanticModelRepository(semanticModelRepo)
 	}
+
+	exploreSvc := exploresvc.NewService(folderRepo, notebookRepo, dashboardRepo, pipelineRepo, projectRepo, modelRepo, macroRepo, semanticModelRepo)
+	exploreSvc.SetAccessRepositories(folderShareRepo, notebookShareRepo)
+	exploreSvc.SetAuthorization(authSvc)
 
 	handler := api.NewHandler(
 		querySvc, principalSvc, groupSvc, grantSvc,
@@ -1648,7 +1673,9 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		assetSvc,
 		backfillSvc,
 		notebookSvc,
-		nil,
+		notebookFolderSvc,
+		exploreSvc,
+		sessionManager,
 		macroSvc,
 		modelSvc,
 		authService,

@@ -12,7 +12,7 @@
     "build:js:dev": "node ./scripts/build-js.mjs --mode=dev",
     "build:js:prod": "node ./scripts/build-js.mjs --mode=prod",
     "watch:css": "npm run sync:tokens && node ./scripts/build-css.mjs --mode=dev --watch",
-    "watch:js": "esbuild ./src/sql-editor.ts ./src/notebook.ts ./src/dashboard.ts --bundle --format=iife --outdir=../internal/ui/assets/static/js --sourcemap --watch"
+    "watch:js": "esbuild ./src/sql-editor.ts ./src/notebook.ts ./src/dashboard.ts ./src/explore.ts ./src/datastar-inspector.ts --bundle --format=iife --outdir=../internal/ui/assets/static/js --sourcemap --watch"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",

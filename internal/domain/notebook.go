@@ -41,14 +41,17 @@ type NotebookCellTestConfig struct {
 
 // Notebook represents a SQL notebook document.
 type Notebook struct {
-	ID          string
-	Name        string
-	Description *string
-	Owner       string
-	GitRepoID   *string
-	GitPath     *string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID                    string
+	FolderID              string
+	Name                  string
+	Description           *string
+	Owner                 string
+	GitRepoID             *string
+	GitPath               *string
+	ProjectOverrideID     *string
+	EnvironmentOverrideID *string
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
 }
 
 // NotebookModelLink stores the 1:1 relationship between a notebook and a published model.
@@ -99,6 +102,7 @@ type CreateNotebookRequest struct {
 	Name        string
 	Description *string
 	Source      *string
+	FolderID    *string
 }
 
 // Validate validates the create notebook request.
@@ -111,8 +115,26 @@ func (r *CreateNotebookRequest) Validate() error {
 
 // UpdateNotebookRequest holds partial-update parameters for a notebook.
 type UpdateNotebookRequest struct {
-	Name        *string
-	Description *string
+	Name                  *string
+	Description           *string
+	FolderID              *string
+	ProjectOverrideID     *string
+	EnvironmentOverrideID *string
+}
+
+// MoveNotebookRequest defines the target folder and confirmation flags for moving a notebook.
+type MoveNotebookRequest struct {
+	FolderID             string
+	GitPath              *string
+	ConfirmLeaveGit      bool
+	ConfirmContextChange bool
+}
+
+// DuplicateNotebookRequest defines the target folder and optional destination name/path.
+type DuplicateNotebookRequest struct {
+	FolderID string
+	Name     *string
+	GitPath  *string
 }
 
 // CreateCellRequest holds parameters for creating a cell.

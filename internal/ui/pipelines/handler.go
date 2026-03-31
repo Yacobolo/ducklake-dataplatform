@@ -3,6 +3,7 @@ package pipelines
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -75,7 +76,8 @@ func (h *Handler) PipelinesDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PipelinesNew(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, pipelinesNewPage(core.PrincipalFromContext(r.Context()), h.deps.CSRFFieldProvider(r)))
+	selectedFolderID := strings.TrimSpace(r.URL.Query().Get("folder_id"))
+	core.RenderHTML(w, http.StatusOK, pipelinesNewPage(core.PrincipalFromContext(r.Context()), selectedFolderID, h.deps.CSRFFieldProvider(r)))
 }
 
 func (h *Handler) PipelinesCreate(w http.ResponseWriter, r *http.Request) {
@@ -93,6 +95,7 @@ func (h *Handler) PipelinesCreate(w http.ResponseWriter, r *http.Request) {
 		ScheduleCron:     formOptionalString(r.Form, "schedule_cron"),
 		IsPaused:         formBool(r.Form, "is_paused"),
 		ConcurrencyLimit: concurrency,
+		FolderID:         formOptionalString(r.Form, "folder_id"),
 	})
 	if err != nil {
 		renderServiceError(w, err)

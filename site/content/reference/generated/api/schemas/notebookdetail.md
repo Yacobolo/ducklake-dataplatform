@@ -9,6 +9,8 @@
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `cells` | `array[Cell]` | `false` | - |
+| `context` | `NotebookContext` | `false` | - |
 | `notebook` | `Notebook` | `false` | - |
 | `publish_model` | `NotebookPublishModel` | `false` | - |
+| `shares` | `array[NotebookShare]` | `false` | - |
 

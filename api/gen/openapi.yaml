@@ -7012,6 +7012,69 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
+  /explore:
+    get:
+      operationId: listExploreItems
+      summary: List authored assets for the active folder context
+      parameters:
+        - name: folder_id
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExploreItems'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
   /external-locations:
     get:
       operationId: listExternalLocations
@@ -10394,6 +10457,511 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateNotebookRequest'
+  /notebooks/folders:
+    get:
+      operationId: listNotebookFolders
+      summary: List notebook folders
+      parameters:
+        - name: owner
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFolders'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+    post:
+      operationId: createNotebookFolder
+      summary: Create notebook folder
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFolderRequest'
+  /notebooks/folders/{folderId}:
+    get:
+      operationId: getNotebookFolder
+      summary: Get notebook folder
+      parameters:
+        - name: folderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+    patch:
+      operationId: updateNotebookFolder
+      summary: Update notebook folder
+      parameters:
+        - name: folderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFolderRequest'
+    delete:
+      operationId: deleteNotebookFolder
+      summary: Delete notebook folder
+      parameters:
+        - name: folderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+  /notebooks/folders/{folderId}/move:
+    post:
+      operationId: moveNotebookFolder
+      summary: Move notebook folder
+      parameters:
+        - name: folderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveFolderRequest'
+  /notebooks/folders/{folderId}/shares:
+    get:
+      operationId: listNotebookFolderShares
+      summary: List notebook folder shares
+      parameters:
+        - name: folderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FolderShare'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+    post:
+      operationId: shareNotebookFolder
+      summary: Share notebook folder
+      parameters:
+        - name: folderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FolderShare'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareFolderRequest'
+  /notebooks/folders/{folderId}/shares/{principalName}:
+    delete:
+      operationId: unshareNotebookFolder
+      summary: Remove notebook folder share
+      parameters:
+        - name: folderId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: principalName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
   /notebooks/{notebookId}:
     get:
       operationId: getNotebook
@@ -10808,6 +11376,67 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+  /notebooks/{notebookId}/duplicate:
+    post:
+      operationId: duplicateNotebook
+      summary: Duplicate notebook
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notebook'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateNotebookRequest'
   /notebooks/{notebookId}/jobs:
     get:
       operationId: listNotebookJobs
@@ -10936,6 +11565,67 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+  /notebooks/{notebookId}/move:
+    post:
+      operationId: moveNotebook
+      summary: Move notebook
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notebook'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveNotebookRequest'
   /notebooks/{notebookId}/sessions:
     post:
       operationId: createNotebookSession
@@ -11196,6 +11886,179 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotebookJob'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+  /notebooks/{notebookId}/shares:
+    get:
+      operationId: listNotebookShares
+      summary: List notebook shares
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotebookShare'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+    post:
+      operationId: shareNotebook
+      summary: Share notebook
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotebookShare'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Notebooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareNotebookRequest'
+  /notebooks/{notebookId}/shares/{principalName}:
+    delete:
+      operationId: unshareNotebook
+      summary: Remove notebook share
+      parameters:
+        - name: notebookId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: principalName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -16445,6 +17308,8 @@ components:
           type: string
         description:
           type: string
+        folder_id:
+          type: string
     CreateDashboardWidgetRequest:
       type: object
       required:
@@ -16555,6 +17420,23 @@ components:
           type: string
         read_only:
           type: boolean
+    CreateFolderRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        parent_folder_id:
+          type: string
+        git_repo_id:
+          type: string
+        git_root_path:
+          type: string
+        default_project_id:
+          type: string
+        default_environment_id:
+          type: string
     CreateGitRepoRequest:
       type: object
       required:
@@ -16695,6 +17577,8 @@ components:
           type: string
         source:
           type: string
+        folder_id:
+          type: string
     CreatePipelineJobRequest:
       type: object
       required:
@@ -16739,6 +17623,8 @@ components:
         concurrency_limit:
           type: integer
           format: int32
+        folder_id:
+          type: string
     CreatePrincipalRequest:
       type: object
       required:
@@ -17009,6 +17895,8 @@ components:
         description:
           type: string
         owner:
+          type: string
+        folder_id:
           type: string
         created_at:
           type: string
@@ -17456,6 +18344,17 @@ components:
       properties:
         replacement_slug:
           type: string
+    DuplicateNotebookRequest:
+      type: object
+      required:
+        - folder_id
+      properties:
+        folder_id:
+          type: string
+        name:
+          type: string
+        git_path:
+          type: string
     Error:
       type: object
       required:
@@ -17473,6 +18372,32 @@ components:
             type: string
       description: Errors use a shared schema across the API so clients can handle failure responses consistently.
       title: Standard API error response.
+    ExploreItem:
+      type: object
+      properties:
+        kind:
+          type: string
+        scope:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        owner:
+          type: string
+        folder_id:
+          type: string
+        project_name:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+        git_repo_id:
+          type: string
+        shared:
+          type: boolean
+        project_bound:
+          type: boolean
     ExternalLocation:
       type: object
       required:
@@ -17502,6 +18427,45 @@ components:
         updated_at:
           type: string
           format: date-time
+    Folder:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        owner:
+          type: string
+        parent_folder_id:
+          type: string
+        path:
+          type: string
+        depth:
+          type: integer
+          format: int32
+        system_role:
+          type: string
+        git_repo_id:
+          type: string
+        git_root_path:
+          type: string
+        default_project_id:
+          type: string
+        default_environment_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    FolderShare:
+      type: object
+      properties:
+        principal_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/NotebookShareRole'
     FreshnessPolicy:
       type: object
       properties:
@@ -18322,16 +19286,48 @@ components:
         - accepted_values
         - relationships
         - custom_sql
+    MoveFolderRequest:
+      type: object
+      properties:
+        parent_folder_id:
+          type: string
+        confirm_leave_git:
+          type: boolean
+        confirm_context_change:
+          type: boolean
+    MoveNotebookRequest:
+      type: object
+      required:
+        - folder_id
+      properties:
+        folder_id:
+          type: string
+        git_path:
+          type: string
+        confirm_leave_git:
+          type: boolean
+        confirm_context_change:
+          type: boolean
     Notebook:
       type: object
       properties:
         id:
+          type: string
+        folder_id:
           type: string
         name:
           type: string
         description:
           type: string
         owner:
+          type: string
+        git_repo_id:
+          type: string
+        git_path:
+          type: string
+        project_override_id:
+          type: string
+        environment_override_id:
           type: string
         created_at:
           type: string
@@ -18344,6 +19340,27 @@ components:
       properties:
         severity:
           $ref: '#/components/schemas/NotebookTestSeverity'
+    NotebookContext:
+      type: object
+      properties:
+        notebook_id:
+          type: string
+        folder_id:
+          type: string
+        effective_project_id:
+          type: string
+        effective_environment_id:
+          type: string
+        effective_git_repo_id:
+          type: string
+        effective_git_root_path:
+          type: string
+        project_source_folder_id:
+          type: string
+        environment_source_id:
+          type: string
+        git_source_folder_id:
+          type: string
     NotebookDetail:
       type: object
       properties:
@@ -18353,6 +19370,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Cell'
+        context:
+          $ref: '#/components/schemas/NotebookContext'
+        shares:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotebookShare'
         publish_model:
           $ref: '#/components/schemas/NotebookPublishModel'
     NotebookJob:
@@ -18416,6 +19439,19 @@ components:
       enum:
         - active
         - closed
+    NotebookShare:
+      type: object
+      properties:
+        principal_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/NotebookShareRole'
+    NotebookShareRole:
+      type: string
+      enum:
+        - viewer
+        - editor
+        - manager
     NotebookTestSeverity:
       type: string
       enum:
@@ -18652,6 +19688,17 @@ components:
             $ref: '#/components/schemas/DataProductListItem'
         next_page_token:
           type: string
+    PaginatedExploreItems:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExploreItem'
+        next_page_token:
+          type: string
     PaginatedExternalLocations:
       type: object
       required:
@@ -18661,6 +19708,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ExternalLocation'
+        next_page_token:
+          type: string
+    PaginatedFolders:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Folder'
         next_page_token:
           type: string
     PaginatedGitRepos:
@@ -18988,6 +20046,8 @@ components:
           type: integer
           format: int32
         created_by:
+          type: string
+        folder_id:
           type: string
         created_at:
           type: string
@@ -20012,6 +21072,24 @@ components:
         - MANY_TO_MANY
     SetDefaultCatalogRequest:
       type: object
+    ShareFolderRequest:
+      type: object
+      required:
+        - principal_name
+      properties:
+        principal_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/NotebookShareRole'
+    ShareNotebookRequest:
+      type: object
+      required:
+        - principal_name
+      properties:
+        principal_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/NotebookShareRole'
     SourceFreshnessStatus:
       type: object
       properties:
@@ -20320,6 +21398,8 @@ components:
           type: string
         description:
           type: string
+        folder_id:
+          type: string
     UpdateDashboardWidgetRequest:
       type: object
       properties:
@@ -20377,6 +21457,19 @@ components:
           type: string
         read_only:
           type: boolean
+    UpdateFolderRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        git_repo_id:
+          type: string
+        git_root_path:
+          type: string
+        default_project_id:
+          type: string
+        default_environment_id:
+          type: string
     UpdateGroupRequest:
       type: object
       properties:
@@ -20437,6 +21530,10 @@ components:
           type: string
         description:
           type: string
+        project_override_id:
+          type: string
+        environment_override_id:
+          type: string
     UpdatePipelineRequest:
       type: object
       properties:
@@ -20449,6 +21546,8 @@ components:
         concurrency_limit:
           type: integer
           format: int32
+        folder_id:
+          type: string
     UpdatePrincipalAdminRequest:
       type: object
       required:

@@ -54,9 +54,13 @@ func setupSessionManager(t *testing.T) (*SessionManager, *testutil.MockNotebookR
 	db := openTestDB(t)
 	repo := &testutil.MockNotebookRepo{}
 	jobRepo := &testutil.MockNotebookJobRepo{}
+	folderRepo := &testutil.MockFolderRepo{}
+	folderShareRepo := &testutil.MockFolderShareRepo{}
+	notebookShareRepo := &testutil.MockNotebookShareRepo{}
 	audit := &testutil.MockAuditRepo{}
 	engine := &mockSessionEngine{}
 	sm := NewSessionManager(db, engine, repo, jobRepo, audit)
+	sm.SetAccessRepositories(folderRepo, folderShareRepo, notebookShareRepo)
 	t.Cleanup(func() { sm.CloseAll() })
 	return sm, repo, jobRepo, engine, db
 }
@@ -159,6 +163,37 @@ func TestSessionManager_CloseSession(t *testing.T) {
 		var notFound *domain.NotFoundError
 		assert.ErrorAs(t, err, &notFound)
 	})
+}
+
+func TestSessionManager_InvalidateNotebook(t *testing.T) {
+	sm, repo, _, _, _ := setupSessionManager(t)
+	ctx := context.Background()
+
+	repo.GetNotebookFn = func(_ context.Context, id string) (*domain.Notebook, error) {
+		return &domain.Notebook{ID: id, Owner: "alice"}, nil
+	}
+
+	first, err := sm.CreateSession(ctx, "nb-1", "alice")
+	require.NoError(t, err)
+	second, err := sm.CreateSession(ctx, "nb-1", "alice")
+	require.NoError(t, err)
+	third, err := sm.CreateSession(ctx, "nb-2", "alice")
+	require.NoError(t, err)
+
+	err = sm.InvalidateNotebook(ctx, "nb-1")
+	require.NoError(t, err)
+
+	err = sm.CloseSession(ctx, first.ID)
+	require.Error(t, err)
+	var notFound *domain.NotFoundError
+	require.ErrorAs(t, err, &notFound)
+
+	err = sm.CloseSession(ctx, second.ID)
+	require.Error(t, err)
+	require.ErrorAs(t, err, &notFound)
+
+	err = sm.CloseSession(ctx, third.ID)
+	require.NoError(t, err)
 }
 
 // === ExecuteCell ===

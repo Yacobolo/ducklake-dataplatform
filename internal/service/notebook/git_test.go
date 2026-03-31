@@ -861,6 +861,25 @@ func (r *memoryNotebookRepo) ListNotebooks(_ context.Context, owner *string, pag
 	return items[start:end], total, nil
 }
 
+func (r *memoryNotebookRepo) ListByFolders(_ context.Context, folderIDs []string) ([]domain.Notebook, error) {
+	if len(folderIDs) == 0 {
+		return []domain.Notebook{}, nil
+	}
+	folderSet := make(map[string]struct{}, len(folderIDs))
+	for _, folderID := range folderIDs {
+		folderSet[strings.TrimSpace(folderID)] = struct{}{}
+	}
+	items := make([]domain.Notebook, 0, len(r.notebooks))
+	for _, nb := range r.notebooks {
+		if _, ok := folderSet[strings.TrimSpace(nb.FolderID)]; !ok {
+			continue
+		}
+		items = append(items, *cloneNotebook(nb))
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].Name < items[j].Name })
+	return items, nil
+}
+
 func (r *memoryNotebookRepo) UpdateNotebook(_ context.Context, _ string, _ domain.UpdateNotebookRequest) (*domain.Notebook, error) {
 	panic("unexpected call")
 }

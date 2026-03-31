@@ -195,6 +195,9 @@ func (s notebookRepoStub) GetNotebook(_ context.Context, id string) (*domain.Not
 func (s notebookRepoStub) ListNotebooks(context.Context, *string, domain.PageRequest) ([]domain.Notebook, int64, error) {
 	panic("unexpected call")
 }
+func (s notebookRepoStub) ListByFolders(context.Context, []string) ([]domain.Notebook, error) {
+	panic("unexpected call")
+}
 func (s notebookRepoStub) UpdateNotebook(context.Context, string, domain.UpdateNotebookRequest) (*domain.Notebook, error) {
 	panic("unexpected call")
 }

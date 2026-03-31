@@ -61,6 +61,7 @@ func (h *APIHandler) CreatePipeline(ctx context.Context, req GenCreatePipelineRe
 	if req.Body.ConcurrencyLimit != nil {
 		domReq.ConcurrencyLimit = int(*req.Body.ConcurrencyLimit)
 	}
+	domReq.FolderID = req.Body.FolderId
 
 	cp, _ := domain.PrincipalFromContext(ctx)
 	principal := cp.Name
@@ -108,6 +109,7 @@ func (h *APIHandler) UpdatePipeline(ctx context.Context, req GenUpdatePipelineRe
 		Description:  req.Body.Description,
 		ScheduleCron: req.Body.ScheduleCron,
 		IsPaused:     req.Body.IsPaused,
+		FolderID:     req.Body.FolderId,
 	}
 	if req.Body.ConcurrencyLimit != nil {
 		v := int(*req.Body.ConcurrencyLimit)
@@ -420,6 +422,7 @@ func pipelineToAPI(p domain.Pipeline) Pipeline {
 		IsPaused:         &isPaused,
 		ConcurrencyLimit: &concLimit,
 		CreatedBy:        &p.CreatedBy,
+		FolderId:         optStr(p.FolderID),
 		CreatedAt:        formatTimePtr(&p.CreatedAt),
 		UpdatedAt:        formatTimePtr(&p.UpdatedAt),
 	}

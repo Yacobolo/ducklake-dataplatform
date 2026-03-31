@@ -20,6 +20,7 @@ import (
 // GitService provides business logic for Git repository operations.
 type GitService struct {
 	repo          domain.GitRepoRepository
+	folders       domain.FolderRepository
 	notebooks     domain.NotebookRepository
 	audit         domain.AuditRepository
 	models        notebookPromoter
@@ -33,6 +34,11 @@ type notebookPromoter interface {
 // NewGitService creates a new GitService.
 func NewGitService(repo domain.GitRepoRepository, notebooks domain.NotebookRepository, audit domain.AuditRepository) *GitService {
 	return &GitService{repo: repo, notebooks: notebooks, audit: audit}
+}
+
+// SetFolderRepository configures folder placement for synced notebooks.
+func (s *GitService) SetFolderRepository(folders domain.FolderRepository) {
+	s.folders = folders
 }
 
 // SetPublishDependencies configures optional model promotion dependencies for declarative notebook publish sync.
@@ -203,11 +209,20 @@ func (s *GitService) SyncGitRepo(ctx context.Context, principal string, isAdmin 
 	sort.Strings(paths)
 
 	result := &domain.GitSyncResult{CommitSHA: commitSHA}
+	var targetFolderID string
+	if s.folders != nil {
+		folder, folderErr := s.folders.EnsureGitSyncRoot(ctx, repo.Owner, repo)
+		if folderErr != nil {
+			return nil, fmt.Errorf("ensure git notebook folder: %w", folderErr)
+		}
+		targetFolderID = folder.ID
+	}
 	for _, gitPath := range paths {
 		resource := desired[gitPath]
 		existingNotebook, found := linked[gitPath]
 		if !found {
 			notebook, err := s.notebooks.CreateNotebook(ctx, &domain.Notebook{
+				FolderID:    targetFolderID,
 				Name:        resource.Name,
 				Description: stringPtrOrNil(resource.Spec.Description),
 				Owner:       repo.Owner,
@@ -231,6 +246,7 @@ func (s *GitService) SyncGitRepo(ctx context.Context, principal string, isAdmin 
 		if metaChanged {
 			updated, err := s.notebooks.UpdateNotebookSync(ctx, &domain.Notebook{
 				ID:          existingNotebook.ID,
+				FolderID:    firstNonEmpty(existingNotebook.FolderID, targetFolderID),
 				Name:        resource.Name,
 				Description: stringPtrOrNil(resource.Spec.Description),
 				Owner:       repo.Owner,
@@ -273,6 +289,15 @@ func (s *GitService) SyncGitRepo(ctx context.Context, principal string, isAdmin 
 	})
 
 	return result, nil
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
 }
 
 func (s *GitService) cloneRepo(ctx context.Context, repo *domain.GitRepo) (string, string, error) {

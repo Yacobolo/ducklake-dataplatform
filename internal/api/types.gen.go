@@ -668,6 +668,7 @@ type CreateComputeEndpointRequest struct {
 
 type CreateDashboardRequest struct {
 	Description *string `json:"description,omitempty"`
+	FolderId    *string `json:"folder_id,omitempty"`
 	Name        string  `json:"name"`
 }
 
@@ -719,6 +720,15 @@ type CreateExternalLocationRequest struct {
 	ReadOnly       *bool        `json:"read_only,omitempty"`
 	StorageType    *StorageType `json:"storage_type,omitempty"`
 	Url            string       `json:"url"`
+}
+
+type CreateFolderRequest struct {
+	DefaultEnvironmentId *string `json:"default_environment_id,omitempty"`
+	DefaultProjectId     *string `json:"default_project_id,omitempty"`
+	GitRepoId            *string `json:"git_repo_id,omitempty"`
+	GitRootPath          *string `json:"git_root_path,omitempty"`
+	Name                 string  `json:"name"`
+	ParentFolderId       *string `json:"parent_folder_id,omitempty"`
 }
 
 type CreateGitRepoRequest struct {
@@ -782,6 +792,7 @@ type CreateModelTestRequest struct {
 
 type CreateNotebookRequest struct {
 	Description *string `json:"description,omitempty"`
+	FolderId    *string `json:"folder_id,omitempty"`
 	Name        string  `json:"name"`
 	Source      *string `json:"source,omitempty"`
 }
@@ -801,6 +812,7 @@ type CreatePipelineJobRequest struct {
 type CreatePipelineRequest struct {
 	ConcurrencyLimit *int32  `json:"concurrency_limit,omitempty"`
 	Description      *string `json:"description,omitempty"`
+	FolderId         *string `json:"folder_id,omitempty"`
 	IsPaused         *bool   `json:"is_paused,omitempty"`
 	Name             string  `json:"name"`
 	ScheduleCron     *string `json:"schedule_cron,omitempty"`
@@ -942,6 +954,7 @@ type CreateVolumeRequest struct {
 type Dashboard struct {
 	CreatedAt   *string `json:"created_at,omitempty"`
 	Description *string `json:"description,omitempty"`
+	FolderId    *string `json:"folder_id,omitempty"`
 	Id          *string `json:"id,omitempty"`
 	Name        *string `json:"name,omitempty"`
 	Owner       *string `json:"owner,omitempty"`
@@ -1103,9 +1116,29 @@ type DeprecateProductVersionRequest struct {
 	ReplacementSlug *string `json:"replacement_slug,omitempty"`
 }
 
+type DuplicateNotebookRequest struct {
+	FolderId string  `json:"folder_id"`
+	GitPath  *string `json:"git_path,omitempty"`
+	Name     *string `json:"name,omitempty"`
+}
+
 type Error struct {
 	Code    int32  `json:"code"`
 	Message string `json:"message"`
+}
+
+type ExploreItem struct {
+	FolderId     *string `json:"folder_id,omitempty"`
+	GitRepoId    *string `json:"git_repo_id,omitempty"`
+	Id           *string `json:"id,omitempty"`
+	Kind         *string `json:"kind,omitempty"`
+	Name         *string `json:"name,omitempty"`
+	Owner        *string `json:"owner,omitempty"`
+	ProjectBound *bool   `json:"project_bound,omitempty"`
+	ProjectName  *string `json:"project_name,omitempty"`
+	Scope        *string `json:"scope,omitempty"`
+	Shared       *bool   `json:"shared,omitempty"`
+	UpdatedAt    *string `json:"updated_at,omitempty"`
 }
 
 type ExternalLocation struct {
@@ -1119,6 +1152,27 @@ type ExternalLocation struct {
 	StorageType    *StorageType `json:"storage_type,omitempty"`
 	UpdatedAt      *string      `json:"updated_at,omitempty"`
 	Url            string       `json:"url"`
+}
+
+type Folder struct {
+	CreatedAt            *string `json:"created_at,omitempty"`
+	DefaultEnvironmentId *string `json:"default_environment_id,omitempty"`
+	DefaultProjectId     *string `json:"default_project_id,omitempty"`
+	Depth                *int32  `json:"depth,omitempty"`
+	GitRepoId            *string `json:"git_repo_id,omitempty"`
+	GitRootPath          *string `json:"git_root_path,omitempty"`
+	Id                   *string `json:"id,omitempty"`
+	Name                 *string `json:"name,omitempty"`
+	Owner                *string `json:"owner,omitempty"`
+	ParentFolderId       *string `json:"parent_folder_id,omitempty"`
+	Path                 *string `json:"path,omitempty"`
+	SystemRole           *string `json:"system_role,omitempty"`
+	UpdatedAt            *string `json:"updated_at,omitempty"`
+}
+
+type FolderShare struct {
+	PrincipalName *string            `json:"principal_name,omitempty"`
+	Role          *NotebookShareRole `json:"role,omitempty"`
 }
 
 type FreshnessPolicy struct {
@@ -1560,23 +1614,55 @@ const (
 	ModelTestTestTypeCustomSql      ModelTestTestType = "custom_sql"
 )
 
+type MoveFolderRequest struct {
+	ConfirmContextChange *bool   `json:"confirm_context_change,omitempty"`
+	ConfirmLeaveGit      *bool   `json:"confirm_leave_git,omitempty"`
+	ParentFolderId       *string `json:"parent_folder_id,omitempty"`
+}
+
+type MoveNotebookRequest struct {
+	ConfirmContextChange *bool   `json:"confirm_context_change,omitempty"`
+	ConfirmLeaveGit      *bool   `json:"confirm_leave_git,omitempty"`
+	FolderId             string  `json:"folder_id"`
+	GitPath              *string `json:"git_path,omitempty"`
+}
+
 type Notebook struct {
-	CreatedAt   *string `json:"created_at,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Id          *string `json:"id,omitempty"`
-	Name        *string `json:"name,omitempty"`
-	Owner       *string `json:"owner,omitempty"`
-	UpdatedAt   *string `json:"updated_at,omitempty"`
+	CreatedAt             *string `json:"created_at,omitempty"`
+	Description           *string `json:"description,omitempty"`
+	EnvironmentOverrideId *string `json:"environment_override_id,omitempty"`
+	FolderId              *string `json:"folder_id,omitempty"`
+	GitPath               *string `json:"git_path,omitempty"`
+	GitRepoId             *string `json:"git_repo_id,omitempty"`
+	Id                    *string `json:"id,omitempty"`
+	Name                  *string `json:"name,omitempty"`
+	Owner                 *string `json:"owner,omitempty"`
+	ProjectOverrideId     *string `json:"project_override_id,omitempty"`
+	UpdatedAt             *string `json:"updated_at,omitempty"`
 }
 
 type NotebookCellTestConfig struct {
 	Severity *NotebookTestSeverity `json:"severity,omitempty"`
 }
 
+type NotebookContext struct {
+	EffectiveEnvironmentId *string `json:"effective_environment_id,omitempty"`
+	EffectiveGitRepoId     *string `json:"effective_git_repo_id,omitempty"`
+	EffectiveGitRootPath   *string `json:"effective_git_root_path,omitempty"`
+	EffectiveProjectId     *string `json:"effective_project_id,omitempty"`
+	EnvironmentSourceId    *string `json:"environment_source_id,omitempty"`
+	FolderId               *string `json:"folder_id,omitempty"`
+	GitSourceFolderId      *string `json:"git_source_folder_id,omitempty"`
+	NotebookId             *string `json:"notebook_id,omitempty"`
+	ProjectSourceFolderId  *string `json:"project_source_folder_id,omitempty"`
+}
+
 type NotebookDetail struct {
 	Cells        *[]Cell               `json:"cells,omitempty"`
+	Context      *NotebookContext      `json:"context,omitempty"`
 	Notebook     *Notebook             `json:"notebook,omitempty"`
 	PublishModel *NotebookPublishModel `json:"publish_model,omitempty"`
+	Shares       *[]NotebookShare      `json:"shares,omitempty"`
 }
 
 type NotebookJob struct {
@@ -1620,6 +1706,19 @@ type NotebookSessionState string
 const (
 	NotebookSessionStateActive NotebookSessionState = "active"
 	NotebookSessionStateClosed NotebookSessionState = "closed"
+)
+
+type NotebookShare struct {
+	PrincipalName *string            `json:"principal_name,omitempty"`
+	Role          *NotebookShareRole `json:"role,omitempty"`
+}
+
+type NotebookShareRole string
+
+const (
+	NotebookShareRoleViewer  NotebookShareRole = "viewer"
+	NotebookShareRoleEditor  NotebookShareRole = "editor"
+	NotebookShareRoleManager NotebookShareRole = "manager"
 )
 
 type NotebookTestSeverity string
@@ -1736,9 +1835,19 @@ type PaginatedDataProducts struct {
 	NextPageToken *string               `json:"next_page_token,omitempty"`
 }
 
+type PaginatedExploreItems struct {
+	Data          []ExploreItem `json:"data"`
+	NextPageToken *string       `json:"next_page_token,omitempty"`
+}
+
 type PaginatedExternalLocations struct {
 	Data          []ExternalLocation `json:"data"`
 	NextPageToken *string            `json:"next_page_token,omitempty"`
+}
+
+type PaginatedFolders struct {
+	Data          []Folder `json:"data"`
+	NextPageToken *string  `json:"next_page_token,omitempty"`
 }
 
 type PaginatedGitRepos struct {
@@ -1886,6 +1995,7 @@ type Pipeline struct {
 	CreatedAt        *string `json:"created_at,omitempty"`
 	CreatedBy        *string `json:"created_by,omitempty"`
 	Description      *string `json:"description,omitempty"`
+	FolderId         *string `json:"folder_id,omitempty"`
 	Id               *string `json:"id,omitempty"`
 	IsPaused         *bool   `json:"is_paused,omitempty"`
 	Name             *string `json:"name,omitempty"`
@@ -2402,6 +2512,16 @@ const (
 type SetDefaultCatalogRequest struct {
 }
 
+type ShareFolderRequest struct {
+	PrincipalName string             `json:"principal_name"`
+	Role          *NotebookShareRole `json:"role,omitempty"`
+}
+
+type ShareNotebookRequest struct {
+	PrincipalName string             `json:"principal_name"`
+	Role          *NotebookShareRole `json:"role,omitempty"`
+}
+
 type SourceFreshnessStatus struct {
 	IsFresh         *bool   `json:"is_fresh,omitempty"`
 	LastLoadedAt    *string `json:"last_loaded_at,omitempty"`
@@ -2575,6 +2695,7 @@ type UpdateComputeEndpointRequest struct {
 
 type UpdateDashboardRequest struct {
 	Description *string `json:"description,omitempty"`
+	FolderId    *string `json:"folder_id,omitempty"`
 	Name        *string `json:"name,omitempty"`
 }
 
@@ -2610,6 +2731,14 @@ type UpdateExternalLocationRequest struct {
 	Url            *string `json:"url,omitempty"`
 }
 
+type UpdateFolderRequest struct {
+	DefaultEnvironmentId *string `json:"default_environment_id,omitempty"`
+	DefaultProjectId     *string `json:"default_project_id,omitempty"`
+	GitRepoId            *string `json:"git_repo_id,omitempty"`
+	GitRootPath          *string `json:"git_root_path,omitempty"`
+	Name                 *string `json:"name,omitempty"`
+}
+
 type UpdateGroupRequest struct {
 	Description *string `json:"description,omitempty"`
 }
@@ -2638,13 +2767,16 @@ type UpdateModelRequest struct {
 }
 
 type UpdateNotebookRequest struct {
-	Description *string `json:"description,omitempty"`
-	Name        *string `json:"name,omitempty"`
+	Description           *string `json:"description,omitempty"`
+	EnvironmentOverrideId *string `json:"environment_override_id,omitempty"`
+	Name                  *string `json:"name,omitempty"`
+	ProjectOverrideId     *string `json:"project_override_id,omitempty"`
 }
 
 type UpdatePipelineRequest struct {
 	ConcurrencyLimit *int32  `json:"concurrency_limit,omitempty"`
 	Description      *string `json:"description,omitempty"`
+	FolderId         *string `json:"folder_id,omitempty"`
 	IsPaused         *bool   `json:"is_paused,omitempty"`
 	ScheduleCron     *string `json:"schedule_cron,omitempty"`
 }
@@ -2898,6 +3030,8 @@ type ListDataProductEventsParams = GenListDataProductEventsParams
 
 type ListDataProductsParams = GenListDataProductsParams
 
+type ListExploreItemsParams = GenListExploreItemsParams
+
 type ListExternalLocationsParams = GenListExternalLocationsParams
 
 type ListGitReposParams = GenListGitReposParams
@@ -2913,6 +3047,8 @@ type ListMacrosParams = GenListMacrosParams
 type ListModelRunsParams = GenListModelRunsParams
 
 type ListModelsParams = GenListModelsParams
+
+type ListNotebookFoldersParams = GenListNotebookFoldersParams
 
 type ListNotebookJobsParams = GenListNotebookJobsParams
 
@@ -3010,6 +3146,8 @@ type CreateModelJSONRequestBody = GenCreateModelJSONBody
 
 type CreateModelTestJSONRequestBody = GenCreateModelTestJSONBody
 
+type CreateNotebookFolderJSONRequestBody = GenCreateNotebookFolderJSONBody
+
 type CreateNotebookJSONRequestBody = GenCreateNotebookJSONBody
 
 type CreatePipelineJSONRequestBody = GenCreatePipelineJSONBody
@@ -3050,6 +3188,8 @@ type CreateVolumeJSONRequestBody = GenCreateVolumeJSONBody
 
 type DeprecateDataProductVersionJSONRequestBody = GenDeprecateDataProductVersionJSONBody
 
+type DuplicateNotebookJSONRequestBody = GenDuplicateNotebookJSONBody
+
 type ExecuteQueryJSONRequestBody = GenExecuteQueryJSONBody
 
 type ExplainMetricQueryJSONRequestBody = GenExplainMetricQueryJSONBody
@@ -3057,6 +3197,10 @@ type ExplainMetricQueryJSONRequestBody = GenExplainMetricQueryJSONBody
 type LoadTableExternalFilesJSONRequestBody = GenLoadTableExternalFilesJSONBody
 
 type LocalLoginJSONRequestBody = LocalLoginRequest
+
+type MoveNotebookFolderJSONRequestBody = GenMoveNotebookFolderJSONBody
+
+type MoveNotebookJSONRequestBody = GenMoveNotebookJSONBody
 
 type PromoteNotebookToModelJSONRequestBody = GenPromoteNotebookToModelJSONBody
 
@@ -3071,6 +3215,10 @@ type RevokeAllWebSessionsJSONRequestBody = RevokeWebSessionsRequest
 type RunMetricQueryJSONRequestBody = GenRunMetricQueryJSONBody
 
 type SetDefaultCatalogJSONRequestBody = GenSetDefaultCatalogJSONBody
+
+type ShareNotebookFolderJSONRequestBody = GenShareNotebookFolderJSONBody
+
+type ShareNotebookJSONRequestBody = GenShareNotebookJSONBody
 
 type SubmitQueryJSONRequestBody = GenSubmitQueryJSONBody
 
@@ -3105,6 +3253,8 @@ type UpdateGroupJSONRequestBody = GenUpdateGroupJSONBody
 type UpdateMacroJSONRequestBody = GenUpdateMacroJSONBody
 
 type UpdateModelJSONRequestBody = GenUpdateModelJSONBody
+
+type UpdateNotebookFolderJSONRequestBody = GenUpdateNotebookFolderJSONBody
 
 type UpdateNotebookJSONRequestBody = GenUpdateNotebookJSONBody
 

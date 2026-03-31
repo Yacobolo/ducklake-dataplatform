@@ -432,6 +432,7 @@ type NotebookRepository interface {
 	CreateNotebook(ctx context.Context, nb *Notebook) (*Notebook, error)
 	GetNotebook(ctx context.Context, id string) (*Notebook, error)
 	ListNotebooks(ctx context.Context, owner *string, page PageRequest) ([]Notebook, int64, error)
+	ListByFolders(ctx context.Context, folderIDs []string) ([]Notebook, error)
 	UpdateNotebook(ctx context.Context, id string, req UpdateNotebookRequest) (*Notebook, error)
 	UpdateNotebookSync(ctx context.Context, nb *Notebook) (*Notebook, error)
 	DeleteNotebook(ctx context.Context, id string) error
@@ -447,11 +448,42 @@ type NotebookRepository interface {
 	GetMaxPosition(ctx context.Context, notebookID string) (int, error)
 }
 
+// FolderRepository provides CRUD and inheritance helpers for notebook folders.
+type FolderRepository interface {
+	Create(ctx context.Context, folder *Folder) (*Folder, error)
+	GetByID(ctx context.Context, id string) (*Folder, error)
+	ListAll(ctx context.Context) ([]Folder, error)
+	ListByOwner(ctx context.Context, owner string) ([]Folder, error)
+	Update(ctx context.Context, id string, req UpdateFolderRequest) (*Folder, error)
+	Move(ctx context.Context, id string, parentFolderID *string) (*Folder, error)
+	Delete(ctx context.Context, id string) error
+	EnsurePersonalRoot(ctx context.Context, owner string) (*Folder, error)
+	EnsureGitSyncRoot(ctx context.Context, owner string, repo *GitRepo) (*Folder, error)
+	ListAncestors(ctx context.Context, folderID string) ([]Folder, error)
+}
+
+// FolderShareRepository manages inherited folder ACL entries.
+type FolderShareRepository interface {
+	Upsert(ctx context.Context, share *FolderShare) (*FolderShare, error)
+	Delete(ctx context.Context, folderID string, principalName string) error
+	ListByFolder(ctx context.Context, folderID string) ([]FolderShare, error)
+	ListByPrincipal(ctx context.Context, principalName string) ([]FolderShare, error)
+}
+
+// NotebookShareRepository manages notebook-level ACL entries.
+type NotebookShareRepository interface {
+	Upsert(ctx context.Context, share *NotebookShare) (*NotebookShare, error)
+	Delete(ctx context.Context, notebookID string, principalName string) error
+	ListByNotebook(ctx context.Context, notebookID string) ([]NotebookShare, error)
+	ListByPrincipal(ctx context.Context, principalName string) ([]NotebookShare, error)
+}
+
 // DashboardRepository provides CRUD operations for dashboards.
 type DashboardRepository interface {
 	Create(ctx context.Context, d *Dashboard) (*Dashboard, error)
 	GetByID(ctx context.Context, id string) (*Dashboard, error)
 	List(ctx context.Context, owner *string, page PageRequest) ([]Dashboard, int64, error)
+	ListByFolders(ctx context.Context, folderIDs []string) ([]Dashboard, error)
 	Update(ctx context.Context, id string, req UpdateDashboardRequest) (*Dashboard, error)
 	Delete(ctx context.Context, id string) error
 }
@@ -496,6 +528,7 @@ type PipelineRepository interface {
 	GetPipelineByID(ctx context.Context, id string) (*Pipeline, error)
 	GetPipelineByName(ctx context.Context, name string) (*Pipeline, error)
 	ListPipelines(ctx context.Context, page PageRequest) ([]Pipeline, int64, error)
+	ListPipelinesByFolders(ctx context.Context, folderIDs []string) ([]Pipeline, error)
 	UpdatePipeline(ctx context.Context, id string, req UpdatePipelineRequest) (*Pipeline, error)
 	DeletePipeline(ctx context.Context, id string) error
 	ListScheduledPipelines(ctx context.Context) ([]Pipeline, error)

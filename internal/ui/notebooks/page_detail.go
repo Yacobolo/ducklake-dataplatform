@@ -48,13 +48,17 @@ type notebookDetailPageData struct {
 	Name            string
 	Owner           string
 	Description     string
+	Context         *domain.NotebookContext
 	SelectedCatalog string
 	SelectedSchema  string
 	BrowserRuntime  query.ManifestBrowserRuntimeSpec
 	ComputeTargets  []sqlComputeTarget
 	ComputeRequest  domain.ComputeExecutionRequest
 	EditURL         string
+	MoveURL         string
+	DuplicateURL    string
 	DeleteURL       string
+	ShareURL        string
 	NewCellURL      string
 	RunAllURL       string
 	RunAllAsyncURL  string
@@ -62,6 +66,7 @@ type notebookDetailPageData struct {
 	JobsURL         string
 	GitRepoURL      string
 	PromoteURL      string
+	Shares          []accessShareRow
 	Jobs            []notebookJobRow
 	Cells           []notebookCellRow
 	Explorer        []core.CatalogExplorerCatalogItem
@@ -96,7 +101,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Attr("data-notebook-run-cell", "true"),
 				Title("Run cell"),
 				Attr("aria-label", "Run cell"),
-				I(Class(core.IconGlyphClass()), Attr("data-lucide", "play"), Attr("aria-hidden", "true")),
+				core.Icon("play", Class(core.IconGlyphClass())),
 				Span(Class("sr-only"), Text("Run")),
 			)
 		}
@@ -151,7 +156,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				Class("list-none [&::-webkit-details-marker]:hidden inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-xs hover:bg-[var(--bgColor-muted)]"),
 				Title("Cell actions"),
 				Attr("aria-label", "Cell actions"),
-				I(Class(core.IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")),
+				core.Icon("ellipsis", Class(core.IconGlyphClass())),
 				Span(Class("sr-only"), Text("Cell actions")),
 			),
 			Div(Class(dropdownMenuClass("min-w-[14rem]")), Group(cellMenuItems)),
@@ -159,7 +164,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 		cellActions := Div(
 			Class("flex flex-col items-center gap-2 opacity-0 pointer-events-none transition-opacity group-hover/notebook-cell:opacity-100 group-hover/notebook-cell:pointer-events-auto max-md:flex-row max-md:opacity-100 max-md:pointer-events-auto"),
-			core.IconButton("small", Type("button"), Attr("data-drag-handle", "true"), Title("Reorder cell (drag)"), Attr("aria-label", "Reorder cell (drag)"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "grip-vertical"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Reorder cell (drag)"))),
+			core.IconButton("small", Type("button"), Attr("data-drag-handle", "true"), Title("Reorder cell (drag)"), Attr("aria-label", "Reorder cell (drag)"), core.Icon("grip-vertical", Class(core.IconGlyphClass())), Span(Class("sr-only"), Text("Reorder cell (drag)"))),
 			cellMenu,
 		)
 
@@ -219,7 +224,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			data.Show(coreContainsExpr(outlineText+" "+c.CellType+" "+c.Content)),
 			A(Href("#cell-"+c.ID), Class(core.ClassNames("flex items-center justify-between gap-2 rounded-lg px-2 py-2 text-sm text-[var(--fgColor-default)] no-underline transition-colors visited:text-[var(--fgColor-default)] hover:text-[var(--fgColor-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-[var(--focus-outlineColor)] [&.is-active-outline-link]:text-[var(--fgColor-accent)]", outlineIndentClass)), Attr("data-outline-link", "true"), Attr("data-cell-anchor", "cell-"+c.ID), Attr("data-outline-level", strconv.Itoa(outlineLevel)),
 				Span(Class("notebook-outline-label min-w-0 flex-1 truncate"), Text(outlineText)),
-				Span(Class("inline-flex items-center text-[var(--fgColor-muted)]"), I(Class("h-4 w-4"), Attr("data-lucide", outlineKindIcon), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text(outlineKindLabel))),
+				Span(Class("inline-flex items-center text-[var(--fgColor-muted)]"), core.Icon(outlineKindIcon, Class("h-4 w-4")), Span(Class("sr-only"), Text(outlineKindLabel))),
 			),
 		))
 	}
@@ -255,11 +260,16 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 	if strings.TrimSpace(d.Description) != "" {
 		descriptionNode = Span(Class("text-sm text-[var(--fgColor-muted)]"), Text(d.Description))
 	}
+	contextMeta := notebookContextSummary(d.Context)
 
 	toolbarNode := Div(
 		Class("sticky top-0 z-20 mb-2 border-b border-[var(--borderColor-muted)] bg-[var(--bgColor-default)] pb-2"),
 		Div(Class("flex flex-wrap items-start justify-between gap-2"),
-			Div(H2(Class("m-0 text-2xl font-semibold"), Text(d.Name)), Div(Class("mt-1 flex flex-wrap gap-2"), Span(Class("text-sm text-[var(--fgColor-muted)]"), Text("Owner "+d.Owner)), descriptionNode)),
+			Div(
+				H2(Class("m-0 text-2xl font-semibold"), Text(d.Name)),
+				Div(Class("mt-1 flex flex-wrap gap-2"), Span(Class("text-sm text-[var(--fgColor-muted)]"), Text("Owner "+d.Owner)), descriptionNode),
+				contextMeta,
+			),
 			Div(Class("mt-0 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
 				Form(Method("post"), Action(d.RunAllURL), Attr("data-notebook-run-all-form", "true"), d.CSRFFieldFunc(), Input(Type("hidden"), Name("compute_mode"), Value(d.ComputeRequest.Mode)), Input(Type("hidden"), Name("endpoint_name"), Value(d.ComputeRequest.EndpointName)), Input(Type("hidden"), Name("workload_type"), Value(domain.ComputeWorkloadInteractive)), core.PrimaryButton("", Type("submit"), ID("notebook-run-all"), Text("Run all"))),
 				Form(Method("post"), Action(d.RunAllAsyncURL), Attr("data-notebook-run-all-async-form", "true"), d.CSRFFieldFunc(), Input(Type("hidden"), Name("compute_mode"), Value(d.ComputeRequest.Mode)), Input(Type("hidden"), Name("endpoint_name"), Value(d.ComputeRequest.EndpointName)), Input(Type("hidden"), Name("workload_type"), Value(domain.ComputeWorkloadInteractive)), core.SecondaryButton("", Type("submit"), ID("notebook-run-all-async"), Text("Run async"))),
@@ -268,8 +278,14 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 				core.SecondaryLink(d.GitRepoURL, "", Text("Git repos")),
 				Details(
 					Class("relative inline-block"),
-					Summary(Class("list-none [&::-webkit-details-marker]:hidden inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-xs hover:bg-[var(--bgColor-muted)]"), Title("Notebook actions"), Attr("aria-label", "Notebook actions"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "ellipsis"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Notebook actions"))),
-					Div(Class(dropdownMenuClass("min-w-[14rem]")), actionMenuLink(d.EditURL, "Notebook settings"), actionMenuPost(d.DeleteURL, "Delete notebook", d.CSRFFieldFunc, true)),
+					Summary(Class("list-none [&::-webkit-details-marker]:hidden inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-xs hover:bg-[var(--bgColor-muted)]"), Title("Notebook actions"), Attr("aria-label", "Notebook actions"), core.Icon("ellipsis", Class(core.IconGlyphClass())), Span(Class("sr-only"), Text("Notebook actions"))),
+					Div(
+						Class(dropdownMenuClass("min-w-[14rem]")),
+						actionMenuLink(d.EditURL, "Notebook settings"),
+						actionMenuLink(d.MoveURL, "Move notebook"),
+						actionMenuLink(d.DuplicateURL, "Duplicate notebook"),
+						actionMenuPost(d.DeleteURL, "Delete notebook", d.CSRFFieldFunc, true),
+					),
 				),
 			),
 		),
@@ -291,6 +307,7 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 			Class("min-w-0"),
 			toolbarNode,
 			notebookComputeCard(d),
+			notebookShareCard(d),
 			notebookPromoteCard(d),
 			Div(Class("grid min-w-0 gap-0"), Attr("data-notebook-selected-catalog", d.SelectedCatalog), Attr("data-notebook-selected-schema", d.SelectedSchema), Attr("data-reorder-url", d.ReorderURL), Group(cellNodes)),
 		),
@@ -298,12 +315,47 @@ func notebookDetailPage(d notebookDetailPageData) Node {
 
 	return core.AppPage(
 		"Notebook: "+d.Name,
-		"notebooks",
+		"explore",
 		d.Principal,
 		data.Signals(map[string]any{"q": ""}),
 		workspaceNode,
 		Script(Src(core.UIScriptHref("sql-editor.js"))),
 		Script(Src(core.UIScriptHref("notebook.js"))),
+	)
+}
+
+func notebookShareCard(d notebookDetailPageData) Node {
+	return Div(Class("mb-4"), shareManagementSection("Notebook sharing", d.Shares, d.ShareURL, d.CSRFFieldFunc))
+}
+
+func notebookContextSummary(ctx *domain.NotebookContext) Node {
+	if ctx == nil {
+		return nil
+	}
+	items := []Node{
+		notebookContextPill("Folder", ctx.FolderID),
+	}
+	if ctx.EffectiveProjectID != nil && strings.TrimSpace(*ctx.EffectiveProjectID) != "" {
+		items = append(items, notebookContextPill("Project", *ctx.EffectiveProjectID))
+	}
+	if ctx.EffectiveEnvironmentID != nil && strings.TrimSpace(*ctx.EffectiveEnvironmentID) != "" {
+		items = append(items, notebookContextPill("Environment", *ctx.EffectiveEnvironmentID))
+	}
+	if ctx.EffectiveGitRepoID != nil && strings.TrimSpace(*ctx.EffectiveGitRepoID) != "" {
+		items = append(items, notebookContextPill("Git repo", *ctx.EffectiveGitRepoID))
+	}
+	return Div(Class("mt-3 flex flex-wrap gap-2"), Group(items))
+}
+
+func notebookContextPill(label, value string) Node {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	return Span(
+		Class("inline-flex items-center gap-2 rounded-full border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] px-3 py-1 text-xs text-[var(--fgColor-muted)]"),
+		Span(Class("font-semibold text-[var(--fgColor-default)]"), Text(label)),
+		Span(Text(value)),
 	)
 }
 
@@ -372,11 +424,11 @@ func notebookComputeCard(d notebookDetailPageData) Node {
 		Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
 			core.SelectControl("sql-compute-select w-auto min-w-[11rem]", ID("notebook-compute-mode"), Name("notebook_compute_mode"), Group(modeOptions)),
 			core.SelectControl("sql-compute-select w-auto min-w-[12rem]", ID("notebook-compute-endpoint"), Name("notebook_endpoint_name"), Group(endpointOptions)),
-			core.SecondaryButton("", Type("button"), ID("notebook-reset-local-runtime"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "rotate-ccw"), Attr("aria-hidden", "true")), Span(Text("Reset local runtime"))),
-			core.SecondaryButton("", Type("button"), ID("notebook-cancel-local-run"), Disabled(), I(Class(core.IconGlyphClass()), Attr("data-lucide", "square"), Attr("aria-hidden", "true")), Span(Text("Cancel local run"))),
+			core.SecondaryButton("", Type("button"), ID("notebook-reset-local-runtime"), core.Icon("rotate-ccw", Class(core.IconGlyphClass())), Span(Text("Reset local runtime"))),
+			core.SecondaryButton("", Type("button"), ID("notebook-cancel-local-run"), Disabled(), core.Icon("square", Class(core.IconGlyphClass())), Span(Text("Cancel local run"))),
 		),
 		Div(Class("flex items-start gap-3 rounded-xl border border-[var(--borderColor-attention-emphasis)] bg-[var(--bgColor-attention-muted)] px-4 py-3 text-sm"), Attr("data-notebook-runtime-banner", "true"),
-			I(Class(core.NavIconClass("mt-0.5")), Attr("data-lucide", "cpu"), Attr("aria-hidden", "true")),
+			core.Icon("cpu", Class(core.NavIconClass("mt-0.5"))),
 			Div(Strong(Attr("data-notebook-browser-runtime-title", "true"), Text("Browser runtime")), P(Attr("data-notebook-browser-runtime-message", "true"), Text(d.BrowserRuntime.StatusReason))),
 		),
 		P(Class("text-xs text-[var(--fgColor-muted)]"), Attr("data-notebook-browser-runtime-preflight", "true"), Text("")),
@@ -447,7 +499,7 @@ func notebookTableResultNode(c notebookCellRow) Node {
 	return Div(Class("notebook-output flex flex-col gap-3 rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] p-4"), Attr("data-notebook-cell-output", "true"),
 		Div(Class("flex flex-wrap items-center justify-between gap-2"), H4(Text("Output")),
 			Div(Class("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex"),
-				core.SecondaryLink(c.DownloadURL, "small", Title("Download result CSV"), Attr("aria-label", "Download result CSV"), I(Class(core.IconGlyphClass()), Attr("data-lucide", "download"), Attr("aria-hidden", "true")), Span(Class("sr-only"), Text("Download result CSV"))),
+				core.SecondaryLink(c.DownloadURL, "small", Title("Download result CSV"), Attr("aria-label", "Download result CSV"), core.Icon("download", Class(core.IconGlyphClass())), Span(Class("sr-only"), Text("Download result CSV"))),
 			),
 		),
 		P(Class("text-xs text-[var(--fgColor-muted)]"), Text(meta)),

@@ -12,6 +12,7 @@
 | `created_at` | `string` | `false` | - |
 | `created_by` | `string` | `false` | - |
 | `description` | `string` | `false` | - |
+| `folder_id` | `string` | `false` | - |
 | `id` | `string` | `false` | - |
 | `is_paused` | `boolean` | `false` | - |
 | `name` | `string` | `false` | - |

@@ -1067,18 +1067,26 @@ model CreateNotebookRequest {
   name: string;
   description?: string;
   source?: string;
+  folder_id?: string;
 }
 
 model UpdateNotebookRequest {
   name?: string;
   description?: string;
+  project_override_id?: string;
+  environment_override_id?: string;
 }
 
 model Notebook {
   id?: string;
+  folder_id?: string;
   name?: string;
   description?: string;
   owner?: string;
+  git_repo_id?: string;
+  git_path?: string;
+  project_override_id?: string;
+  environment_override_id?: string;
   created_at?: utcDateTime;
   updated_at?: utcDateTime;
 }
@@ -1086,6 +1094,101 @@ model Notebook {
 model PaginatedNotebooks {
   data: Notebook[];
   next_page_token?: string;
+}
+
+enum NotebookShareRole {
+  viewer,
+  editor,
+  manager,
+}
+
+model NotebookContext {
+  notebook_id?: string;
+  folder_id?: string;
+  effective_project_id?: string;
+  effective_environment_id?: string;
+  effective_git_repo_id?: string;
+  effective_git_root_path?: string;
+  project_source_folder_id?: string;
+  environment_source_id?: string;
+  git_source_folder_id?: string;
+}
+
+model NotebookShare {
+  principal_name?: string;
+  role?: NotebookShareRole;
+}
+
+model Folder {
+  id?: string;
+  name?: string;
+  owner?: string;
+  parent_folder_id?: string;
+  path?: string;
+  depth?: int32;
+  system_role?: string;
+  git_repo_id?: string;
+  git_root_path?: string;
+  default_project_id?: string;
+  default_environment_id?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model FolderShare {
+  principal_name?: string;
+  role?: NotebookShareRole;
+}
+
+model PaginatedFolders {
+  data: Folder[];
+  next_page_token?: string;
+}
+
+model CreateFolderRequest {
+  name: string;
+  parent_folder_id?: string;
+  git_repo_id?: string;
+  git_root_path?: string;
+  default_project_id?: string;
+  default_environment_id?: string;
+}
+
+model UpdateFolderRequest {
+  name?: string;
+  git_repo_id?: string;
+  git_root_path?: string;
+  default_project_id?: string;
+  default_environment_id?: string;
+}
+
+model MoveFolderRequest {
+  parent_folder_id?: string;
+  confirm_leave_git?: boolean;
+  confirm_context_change?: boolean;
+}
+
+model MoveNotebookRequest {
+  folder_id: string;
+  git_path?: string;
+  confirm_leave_git?: boolean;
+  confirm_context_change?: boolean;
+}
+
+model DuplicateNotebookRequest {
+  folder_id: string;
+  name?: string;
+  git_path?: string;
+}
+
+model ShareNotebookRequest {
+  principal_name: string;
+  role?: NotebookShareRole;
+}
+
+model ShareFolderRequest {
+  principal_name: string;
+  role?: NotebookShareRole;
 }
 
 enum VisualOutputKind {
@@ -1197,6 +1300,8 @@ model ReorderCellsRequest {
 model NotebookDetail {
   notebook?: Notebook;
   cells?: Cell[];
+  context?: NotebookContext;
+  shares?: NotebookShare[];
   publish_model?: NotebookPublishModel;
 }
 
@@ -1265,6 +1370,7 @@ model CreatePipelineRequest {
   schedule_cron?: string;
   is_paused?: boolean;
   concurrency_limit?: int32;
+  folder_id?: string;
 }
 
 model UpdatePipelineRequest {
@@ -1272,6 +1378,7 @@ model UpdatePipelineRequest {
   schedule_cron?: string;
   is_paused?: boolean;
   concurrency_limit?: int32;
+  folder_id?: string;
 }
 
 model Pipeline {
@@ -1282,6 +1389,7 @@ model Pipeline {
   is_paused?: boolean;
   concurrency_limit?: int32;
   created_by?: string;
+  folder_id?: string;
   created_at?: utcDateTime;
   updated_at?: utcDateTime;
 }
@@ -1704,6 +1812,7 @@ model Dashboard {
   name?: string;
   description?: string;
   owner?: string;
+  folder_id?: string;
   created_at?: utcDateTime;
   updated_at?: utcDateTime;
 }
@@ -1788,11 +1897,32 @@ model ResolvedDashboardDetail {
 model CreateDashboardRequest {
   name: string;
   description?: string;
+  folder_id?: string;
 }
 
 model UpdateDashboardRequest {
   name?: string;
   description?: string;
+  folder_id?: string;
+}
+
+model ExploreItem {
+  kind?: string;
+  scope?: string;
+  id?: string;
+  name?: string;
+  owner?: string;
+  folder_id?: string;
+  project_name?: string;
+  updated_at?: utcDateTime;
+  git_repo_id?: string;
+  shared?: boolean;
+  project_bound?: boolean;
+}
+
+model PaginatedExploreItems {
+  data: ExploreItem[];
+  next_page_token?: string;
 }
 
 model CreateDashboardWidgetRequest {

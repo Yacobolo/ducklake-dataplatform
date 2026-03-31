@@ -1,6 +1,6 @@
 -- name: CreatePipeline :one
-INSERT INTO pipelines (id, name, description, schedule_cron, is_paused, concurrency_limit, created_by)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO pipelines (id, name, description, schedule_cron, is_paused, concurrency_limit, created_by, folder_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetPipelineByID :one
@@ -15,12 +15,18 @@ SELECT * FROM pipelines ORDER BY name LIMIT ? OFFSET ?;
 -- name: CountPipelines :one
 SELECT COUNT(*) FROM pipelines;
 
+-- name: ListPipelinesByFolders :many
+SELECT * FROM pipelines
+WHERE folder_id IN (sqlc.slice('folder_ids'))
+ORDER BY name;
+
 -- name: UpdatePipeline :exec
 UPDATE pipelines
 SET description = COALESCE(?, description),
     schedule_cron = COALESCE(?, schedule_cron),
     is_paused = COALESCE(?, is_paused),
     concurrency_limit = COALESCE(?, concurrency_limit),
+    folder_id = COALESCE(?, folder_id),
     updated_at = datetime('now')
 WHERE id = ?;
 

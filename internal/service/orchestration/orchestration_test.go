@@ -13,6 +13,19 @@ import (
 	"duck-demo/internal/domain"
 )
 
+type stubEventHandler struct {
+	handledEventTypes []string
+	err               error
+}
+
+func (s *stubEventHandler) HandleOrchestrationEvent(_ context.Context, event *domain.OrchestrationEvent) (bool, *time.Time, error) {
+	if event == nil || event.EventType != domain.NotebookEventTypeInvalidateContext {
+		return false, nil, nil
+	}
+	s.handledEventTypes = append(s.handledEventTypes, event.EventType)
+	return true, nil, s.err
+}
+
 func TestAssetRunStateMachine_CanTransition(t *testing.T) {
 	sm := NewAssetRunStateMachine()
 	assert.True(t, sm.CanTransition(domain.AssetRunStatusQueued, domain.AssetRunStatusRunning))
@@ -121,6 +134,26 @@ func TestAssetExecutor_ExecutePlan(t *testing.T) {
 		assert.Equal(t, "ASSET_EXECUTION_RETRY", runs.events[0].EventType)
 		assert.Equal(t, "ASSET_EXECUTED", runs.events[1].EventType)
 	})
+}
+
+func TestReconciler_Tick_HandlesNotebookInvalidationEvent(t *testing.T) {
+	eventRepo := &memEventRepo{}
+	_, err := eventRepo.Enqueue(context.Background(), &domain.OrchestrationEvent{
+		EventType:   domain.NotebookEventTypeInvalidateContext,
+		PayloadJSON: map[string]any{domain.NotebookEventPayloadNotebookID: "nb-1"},
+		Status:      domain.OrchestrationEventStatusPending,
+	})
+	require.NoError(t, err)
+
+	handler := &stubEventHandler{}
+	reconciler := NewReconciler(eventRepo, &fakeAssets{items: map[string]*domain.DataAsset{}}, &fakeRunRepo{runs: map[string]*domain.AssetRun{}}, nil, nil, nil, false, handler)
+
+	err = reconciler.Tick(context.Background())
+	require.NoError(t, err)
+	require.Len(t, handler.handledEventTypes, 1)
+	assert.Equal(t, domain.NotebookEventTypeInvalidateContext, handler.handledEventTypes[0])
+	require.Len(t, eventRepo.events, 1)
+	assert.Equal(t, domain.OrchestrationEventStatusProcessed, eventRepo.events[0].Status)
 }
 
 type fakeAssets struct {

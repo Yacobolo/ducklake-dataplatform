@@ -12,6 +12,7 @@ import (
 	"duck-demo/internal/ui/components"
 	"duck-demo/internal/ui/compute"
 	"duck-demo/internal/ui/dashboards"
+	"duck-demo/internal/ui/explore"
 	"duck-demo/internal/ui/governance"
 	"duck-demo/internal/ui/macros"
 	"duck-demo/internal/ui/models"
@@ -47,6 +48,7 @@ func MountRoutes(r chi.Router, h *Handler) {
 		governance.MountRoutes(r, h.Governance)
 		products.MountRoutes(r, h.Products)
 		runtimeassets.MountRoutes(r, h.RuntimeAssets)
+		explore.MountRoutes(r, h.Explore)
 		notebooks.MountRoutes(r, h.Notebooks)
 		dashboards.MountRoutes(r, h.Dashboards)
 		macros.MountRoutes(r, h.Macros)

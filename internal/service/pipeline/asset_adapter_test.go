@@ -439,6 +439,23 @@ func (m *mockNotebookRepo) ListNotebooks(_ context.Context, _ *string, _ domain.
 	return append([]domain.Notebook(nil), m.notebooks...), int64(len(m.notebooks)), nil
 }
 
+func (m *mockNotebookRepo) ListByFolders(_ context.Context, folderIDs []string) ([]domain.Notebook, error) {
+	if len(folderIDs) == 0 {
+		return []domain.Notebook{}, nil
+	}
+	folderSet := make(map[string]struct{}, len(folderIDs))
+	for _, folderID := range folderIDs {
+		folderSet[folderID] = struct{}{}
+	}
+	items := make([]domain.Notebook, 0, len(m.notebooks))
+	for _, notebook := range m.notebooks {
+		if _, ok := folderSet[notebook.FolderID]; ok {
+			items = append(items, notebook)
+		}
+	}
+	return items, nil
+}
+
 func (m *mockNotebookRepo) UpdateNotebook(context.Context, string, domain.UpdateNotebookRequest) (*domain.Notebook, error) {
 	panic("unexpected call")
 }

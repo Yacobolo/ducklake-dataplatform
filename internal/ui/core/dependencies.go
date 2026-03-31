@@ -12,6 +12,7 @@ import (
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
 	"duck-demo/internal/service/dashboard"
+	exploresvc "duck-demo/internal/service/explore"
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/macro"
 	"duck-demo/internal/service/model"
@@ -43,6 +44,8 @@ type Dependencies struct {
 	Asset               *assetsvc.Service
 	Backfill            *orchestration.BackfillService
 	Notebook            *notebook.Service
+	NotebookFolders     *notebook.FolderService
+	Explore             *exploresvc.Service
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
 	Macro               *macro.Service
@@ -73,16 +76,21 @@ type Dependencies struct {
 
 func (d *Dependencies) CSRFFieldProvider(r *http.Request) func() gomponents.Node {
 	return func() gomponents.Node {
-		token, _ := r.Context().Value(csrfContextKey{}).(string)
-		if token == "" {
-			token = readCSRFCookie(r)
-		}
+		token := d.CSRFToken(r)
 		return html.Input(
 			html.Type("hidden"),
 			html.Name("csrf_token"),
 			html.Value(token),
 		)
 	}
+}
+
+func (d *Dependencies) CSRFToken(r *http.Request) string {
+	token, _ := r.Context().Value(csrfContextKey{}).(string)
+	if token == "" {
+		token = readCSRFCookie(r)
+	}
+	return token
 }
 
 type csrfContextKey struct{}

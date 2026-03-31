@@ -10,8 +10,13 @@
 | --- | --- | --- | --- |
 | `created_at` | `string` | `false` | - |
 | `description` | `string` | `false` | - |
+| `environment_override_id` | `string` | `false` | - |
+| `folder_id` | `string` | `false` | - |
+| `git_path` | `string` | `false` | - |
+| `git_repo_id` | `string` | `false` | - |
 | `id` | `string` | `false` | - |
 | `name` | `string` | `false` | - |
 | `owner` | `string` | `false` | - |
+| `project_override_id` | `string` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 

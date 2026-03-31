@@ -611,7 +611,7 @@ func catalogOverviewContent(d catalogWorkspacePageData) Node {
 		),
 		Div(Class(catalogOverviewToolbarClass()),
 			Div(Class("flex min-w-0 max-w-[22rem] flex-1 items-center gap-2"),
-				I(Class(core.NavIconClass()), Attr("data-lucide", "search"), Attr("aria-hidden", "true")),
+				core.Icon("search", Class(core.NavIconClass())),
 				Label(Class("sr-only"), Text("Filter child elements")),
 				core.InputControl("w-full", Type("search"), Placeholder(filterPlaceholder), data.Bind("childq"), AutoComplete("off")),
 			),
