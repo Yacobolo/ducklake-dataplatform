@@ -39,19 +39,25 @@ type breadcrumbItem struct {
 	Current bool
 }
 
-func listPage(principal domain.ContextPrincipal, rows []listRow, breadcrumbs []breadcrumbItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) Node {
-	nodes := pageBody(rows, breadcrumbs, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, streamID, csrfToken, page, total)
+func listPage(principal domain.ContextPrincipal, rows []listRow, breadcrumbs []breadcrumbItem, asideItems []core.ExploreNavigatorItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) Node {
+	nodes := pageBody(rows, breadcrumbs, asideItems, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, streamID, csrfToken, page, total)
 	nodes = append(nodes, Script(Src(core.UIScriptHref("explore.js"))))
 	return core.AppPage("Explore", "explore", principal, nodes...)
 }
 
-func mainContent(rows []listRow, breadcrumbs []breadcrumbItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) Node {
-	return core.MainContentSection("Explore", pageBody(rows, breadcrumbs, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, streamID, csrfToken, page, total)...)
+func mainContent(rows []listRow, breadcrumbs []breadcrumbItem, asideItems []core.ExploreNavigatorItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) Node {
+	return core.MainContentSection("Explore", pageBody(rows, breadcrumbs, asideItems, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, streamID, csrfToken, page, total)...)
 }
 
-func pageBody(rows []listRow, breadcrumbs []breadcrumbItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) []Node {
+func pageBody(rows []listRow, breadcrumbs []breadcrumbItem, asideItems []core.ExploreNavigatorItem, selectedFolderID string, selectedKinds []string, selectedOwners []string, searchQuery string, ownerOptions []string, streamID, csrfToken string, page domain.PageRequest, total int64) []Node {
 	signalKinds := append([]string{}, selectedKinds...)
 	signalOwners := append([]string{}, selectedOwners...)
+	asidePanel := core.ExploreNavigatorPanel(core.ExploreNavigatorPanelData{
+		Title:             "Resource navigator",
+		FilterPlaceholder: "Search folders and resources",
+		Items:             asideItems,
+		EmptyText:         "No folders or resources found.",
+	})
 	return []Node{
 		core.PageHeader(
 			"Discover",
@@ -63,6 +69,7 @@ func pageBody(rows []listRow, breadcrumbs []breadcrumbItem, selectedFolderID str
 		core.ListPageBody(
 			Div(
 				data.Signals(map[string]any{
+					"q":         "",
 					"streamID":  streamID,
 					"csrfToken": strings.TrimSpace(csrfToken),
 					"urlParams": map[string]any{
@@ -74,7 +81,23 @@ func pageBody(rows []listRow, breadcrumbs []breadcrumbItem, selectedFolderID str
 					"filterOpen": false,
 				}),
 				data.Init("@get('/ui/explore/updates/' + $streamID)"),
-				content(rows, breadcrumbs, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, page, total),
+				core.WorkspaceLayout(
+					"min-h-0",
+					core.WorkspaceAside(
+						"explore-workspace",
+						"explore-aside",
+						[]core.WorkspaceAsideTab{
+							{
+								ID:      "navigator",
+								Label:   "Navigator",
+								Icon:    "folder-tree",
+								Content: asidePanel,
+							},
+						},
+						"navigator",
+					),
+					Div(Class("min-w-0"), content(rows, breadcrumbs, selectedFolderID, selectedKinds, selectedOwners, searchQuery, ownerOptions, page, total)),
+				),
 			),
 		),
 	}
@@ -241,9 +264,7 @@ func filterBar(page domain.PageRequest, folderID string, selectedKinds []string,
 	if strings.TrimSpace(folderID) != "" {
 		hidden["folder_id"] = folderID
 	}
-	searchInput := core.InputWithIcon("search", "min-w-[16rem] flex-1 max-w-sm",
-		Type("search"),
-		Placeholder("Search assets"),
+	searchInput := core.SearchInput("Search assets", "Search assets", "min-w-[16rem] flex-1 max-w-sm",
 		Value(searchQuery),
 		data.On("input", datastarSearchExpr(), data.ModifierDebounce, data.Duration(250*time.Millisecond)),
 	)
@@ -389,6 +410,16 @@ func rowKindIcon(row listRow) string {
 		return "folder-lock"
 	}
 	return kindIcon(row.Kind, row.GitBacked)
+}
+
+func folderNavIcon(folder domain.Folder, allFolders []domain.Folder) string {
+	if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot {
+		return "folder-lock"
+	}
+	if effectiveFolderGitBacked(folder, allFolders) {
+		return "folder-git-2"
+	}
+	return "folder"
 }
 
 func kindIconWrapClass(row listRow) string {

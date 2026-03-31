@@ -20,6 +20,18 @@ const ShellBehaviorScript = `(function(){
   var overlay=document.getElementById('app-overlay');
   var sidebar=document.getElementById('app-sidebar');
   var compactKey='duck-ui-sidebar-compact';
+  var sidebarCompactMedia=window.matchMedia('(max-width: 48rem)');
+
+  function bindMediaListener(query, listener){
+    if(!query){ return; }
+    if(typeof query.addEventListener==='function'){
+      query.addEventListener('change', listener);
+      return;
+    }
+    if(typeof query.addListener==='function'){
+      query.addListener(listener);
+    }
+  }
 
   function syncNavState(){
     var open=shell.classList.contains('nav-open');
@@ -38,12 +50,16 @@ const ShellBehaviorScript = `(function(){
     setCompact(localStorage.getItem(compactKey)==='1', false);
   } catch (_) {}
 
-  try {
-    var hasCompactPreference=localStorage.getItem(compactKey)!==null;
-    if(!hasCompactPreference && window.matchMedia('(max-width: 48rem)').matches){
-      setCompact(true, false);
+  function syncResponsiveCompact(){
+    var hasCompactPreference=false;
+    try { hasCompactPreference=localStorage.getItem(compactKey)!==null; } catch (_) {}
+    if(!hasCompactPreference){
+      setCompact(sidebarCompactMedia.matches, false);
     }
-  } catch (_) {}
+  }
+
+  syncResponsiveCompact();
+  bindMediaListener(sidebarCompactMedia, syncResponsiveCompact);
 
   if(sidebarToggle){
     sidebarToggle.addEventListener('click', function(){
@@ -85,21 +101,31 @@ const ShellBehaviorScript = `(function(){
     if(!(layout instanceof HTMLElement)){ return; }
     var defaultTab=aside.getAttribute('data-workspace-aside-default')||'';
     var storageName=aside.getAttribute('data-workspace-aside-storage')||'';
+    var asideCollapseMedia=window.matchMedia('(max-width: 40rem)');
     var buttons=aside.querySelectorAll('[data-workspace-aside-tab]');
     var panels=aside.querySelectorAll('[data-workspace-aside-panel]');
     var toggle=aside.querySelector('[data-workspace-aside-toggle="true"]');
     if(!buttons.length || !panels.length){ return; }
+    var hasCollapsedPreference=false;
 
     function setCollapsed(collapsed, persist){
       layout.classList.toggle('is-aside-collapsed', collapsed);
       if(toggle instanceof HTMLElement){
         toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-        toggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
-        toggle.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        toggle.setAttribute('aria-label', collapsed ? 'Expand panel' : 'Collapse panel');
+        toggle.setAttribute('title', collapsed ? 'Expand panel' : 'Collapse panel');
       }
       if(persist && storageName){
+        hasCollapsedPreference=true;
         try { localStorage.setItem(asideCollapsedPrefix+storageName, collapsed ? '1' : '0'); } catch (_) {}
       }
+    }
+
+    function syncResponsiveCollapsed(){
+      if(hasCollapsedPreference){
+        return;
+      }
+      setCollapsed(asideCollapseMedia.matches, false);
     }
 
     function setActive(tabID, persist){
@@ -144,11 +170,17 @@ const ShellBehaviorScript = `(function(){
     if(storageName){
       try {
         var collapsedState=localStorage.getItem(asideCollapsedPrefix+storageName);
+        hasCollapsedPreference=collapsedState!==null;
         if(collapsedState==='1'){
           setCollapsed(true, false);
+        } else if(collapsedState==='0'){
+          setCollapsed(false, false);
         }
       } catch (_) {}
     }
+
+    syncResponsiveCollapsed();
+    bindMediaListener(asideCollapseMedia, syncResponsiveCollapsed);
 
     aside.addEventListener('click', function(e){
       var t=e.target;

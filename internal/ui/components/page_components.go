@@ -62,7 +62,7 @@ func componentsPage(principal domain.ContextPrincipal) Node {
 	formShowcase := Div(
 		Class("flex flex-col gap-3"),
 		Label(Text("Search assets")),
-		core.InputWithIcon("search", "max-w-md", Type("search"), Placeholder("Search assets")),
+		core.SearchInput("Search assets", "Search assets", "max-w-md"),
 		Label(Text("Notebook Git path")),
 		core.InputWithIcon("git-branch", "max-w-md", Type("text"), Placeholder("analytics/notebooks/revenue_daily.ipynb")),
 		Label(Text("Catalog")),
