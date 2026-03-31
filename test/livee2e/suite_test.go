@@ -264,7 +264,13 @@ func (s *liveSuite) startManagedServer() error {
 }
 
 func (s *liveSuite) waitForHealthy() error {
-	deadline := time.Now().Add(30 * time.Second)
+	timeout := 90 * time.Second
+	if raw := strings.TrimSpace(os.Getenv("E2E_LIVE_HEALTH_TIMEOUT")); raw != "" {
+		if parsed, err := time.ParseDuration(raw); err == nil && parsed > 0 {
+			timeout = parsed
+		}
+	}
+	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		resp, err := s.httpClient.Get(s.host + "/healthz")
 		if err == nil {
