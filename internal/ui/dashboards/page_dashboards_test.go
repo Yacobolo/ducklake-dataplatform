@@ -17,9 +17,11 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 	page := dashboardsDetailPage(dashboardDetailPageData{
 		Principal: domain.ContextPrincipal{Name: "alice", Type: "user"},
 		Dashboard: &domain.Dashboard{
-			ID:          "dash-1",
-			Name:        "Revenue Dashboard",
-			Description: "Executive view",
+			ID:                  "dash-1",
+			Name:                "Revenue Dashboard",
+			Description:         "Executive view",
+			SemanticProjectName: "analytics",
+			SemanticModelName:   "sales",
 		},
 		Freshness: &domain.AssetFreshnessStatus{
 			AssetKey:               "dashboard.dash-1",
@@ -44,6 +46,10 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 		EditURL:         "/ui/dashboards/dash-1/edit",
 		DeleteURL:       "/ui/dashboards/dash-1/delete",
 		CreateWidgetURL: "/ui/dashboards/dash-1/widgets",
+		SurfaceURL:      "/ui/dashboards/dash-1/surface",
+		ActiveFilters: []dashboardsvc.InteractiveFilter{
+			{Dimension: "borough", Values: []string{"Queens"}},
+		},
 		CSRFFieldProvider: func() gomponents.Node {
 			return nil
 		},
@@ -66,6 +72,10 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 				Rows:         [][]interface{}{{"APAC", 42}},
 				RowCount:     1,
 				GeneratedSQL: "select region, revenue from summary",
+				Interaction: &dashboardsvc.ResolvedWidgetInteraction{
+					Participates: true,
+					CanInitiate:  true,
+				},
 			},
 			{
 				Widget: domain.DashboardWidget{
@@ -82,6 +92,22 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 				Rows:     [][]interface{}{{42}},
 				RowCount: 1,
 			},
+			{
+				Widget: domain.DashboardWidget{
+					ID:   "widget-sql",
+					Name: "SQL Helper",
+					Source: domain.DashboardWidgetSource{
+						Kind:     domain.DashboardWidgetSourceSQLQuery,
+						SQLQuery: &domain.DashboardSQLQuerySource{SQL: "select 1"},
+					},
+				},
+				Columns: []string{"value"},
+				Rows:    [][]interface{}{{1}},
+				Interaction: &dashboardsvc.ResolvedWidgetInteraction{
+					Participates:   false,
+					DisabledReason: "Not interactive in this dashboard.",
+				},
+			},
 		},
 	})
 
@@ -95,6 +121,12 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 	assert.Contains(t, html, "data-chart-payload")
 	assert.Contains(t, html, "Total Revenue")
 	assert.Contains(t, html, "Studio")
+	assert.Contains(t, html, "Cross Filters")
+	assert.Contains(t, html, "Queens")
+	assert.Contains(t, html, "data-dashboard-clear-filters")
+	assert.Contains(t, html, "data-dashboard-remove-filter")
+	assert.Contains(t, html, "data-dashboard-surface-url")
+	assert.Contains(t, html, "Not interactive in this dashboard.")
 	assert.NotContains(t, html, "Freshness")
 	assert.NotContains(t, html, "metric.sales.orders.revenue")
 	assert.NotContains(t, html, "View Mode")
@@ -110,13 +142,17 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 			Name:        "Revenue Dashboard",
 			Description: "Executive view",
 		},
-		EditMode:          true,
-		BaseURL:           "/ui/dashboards/dash-1",
-		ViewURL:           "/ui/dashboards/dash-1",
-		StudioURL:         "/ui/dashboards/dash-1?mode=edit",
-		EditURL:           "/ui/dashboards/dash-1/edit",
-		DeleteURL:         "/ui/dashboards/dash-1/delete",
-		CreateWidgetURL:   "/ui/dashboards/dash-1/widgets",
+		EditMode:        true,
+		BaseURL:         "/ui/dashboards/dash-1",
+		ViewURL:         "/ui/dashboards/dash-1",
+		StudioURL:       "/ui/dashboards/dash-1?mode=edit",
+		EditURL:         "/ui/dashboards/dash-1/edit",
+		DeleteURL:       "/ui/dashboards/dash-1/delete",
+		CreateWidgetURL: "/ui/dashboards/dash-1/widgets",
+		SurfaceURL:      "/ui/dashboards/dash-1/surface",
+		ActiveFilters: []dashboardsvc.InteractiveFilter{
+			{Dimension: "borough", Values: []string{"Queens"}},
+		},
 		CSRFFieldProvider: func() gomponents.Node { return nil },
 		Widgets: []dashboardsvc.ResolvedWidget{
 			{
@@ -151,4 +187,5 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 	assert.Contains(t, html, "Studio Rail")
 	assert.Contains(t, html, "Edit widget")
 	assert.Contains(t, html, "Delete widget")
+	assert.NotContains(t, html, "Cross Filters")
 }

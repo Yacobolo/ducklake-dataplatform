@@ -137,6 +137,12 @@ Get resolved dashboard
 | --- | --- | --- | --- |
 | `dashboardId` | `string` | `true` | - |
 
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `f` | `array[string]` | `false` | - |
+
 ### Responses
 
 | Code | Description |

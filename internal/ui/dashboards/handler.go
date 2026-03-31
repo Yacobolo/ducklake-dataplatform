@@ -59,9 +59,11 @@ func (h *Handler) DashboardsCreate(w http.ResponseWriter, r *http.Request) {
 
 	principal, _ := principalLabel(r)
 	item, err := h.deps.Dashboard.CreateDashboard(r.Context(), principal, domain.CreateDashboardRequest{
-		Name:        formString(r.Form, "name"),
-		Description: formString(r.Form, "description"),
-		FolderID:    formOptionalString(r.Form, "folder_id"),
+		Name:                formString(r.Form, "name"),
+		Description:         formString(r.Form, "description"),
+		FolderID:            formOptionalString(r.Form, "folder_id"),
+		SemanticProjectName: formString(r.Form, "semantic_project_name"),
+		SemanticModelName:   formString(r.Form, "semantic_model_name"),
 	})
 	if err != nil {
 		renderServiceError(w, err)
@@ -81,10 +83,21 @@ func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	principal, _ := principalLabel(r)
-	resolved, err := h.deps.Dashboard.ResolveWidgets(r.Context(), principal, widgets)
-	if err != nil {
-		renderServiceError(w, err)
-		return
+	activeFilters := []dashboardsvc.InteractiveFilter(nil)
+	var resolved []dashboardsvc.ResolvedWidget
+	if editMode {
+		resolved, err = h.deps.Dashboard.ResolveWidgets(r.Context(), principal, widgets)
+		if err != nil {
+			renderServiceError(w, err)
+			return
+		}
+	} else {
+		activeFilters = dashboardFiltersFromRequest(r)
+		resolved, err = h.deps.Dashboard.ResolveWidgetsForDashboard(r.Context(), principal, item, widgets, activeFilters)
+		if err != nil {
+			renderServiceError(w, err)
+			return
+		}
 	}
 
 	var freshness *domain.AssetFreshnessStatus
@@ -120,8 +133,52 @@ func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 		EditURL:           "/ui/dashboards/" + dashboardID + "/edit",
 		DeleteURL:         "/ui/dashboards/" + dashboardID + "/delete",
 		CreateWidgetURL:   "/ui/dashboards/" + dashboardID + "/widgets",
+		SurfaceURL:        "/ui/dashboards/" + dashboardID + "/surface",
+		ActiveFilters:     activeFilters,
 		CSRFFieldProvider: h.deps.CSRFFieldProvider(r),
 	}))
+}
+
+func (h *Handler) DashboardsSurface(w http.ResponseWriter, r *http.Request) {
+	dashboardID := chi.URLParam(r, "dashboardID")
+	item, widgets, err := h.deps.Dashboard.GetDashboard(r.Context(), dashboardID)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+
+	principal, _ := principalLabel(r)
+	activeFilters := dashboardFiltersFromRequest(r)
+	resolved, err := h.deps.Dashboard.ResolveWidgetsForDashboard(r.Context(), principal, item, widgets, activeFilters)
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+
+	data := dashboardDetailPageData{
+		Principal:         core.PrincipalFromContext(r.Context()),
+		Dashboard:         item,
+		Widgets:           resolved,
+		BaseURL:           "/ui/dashboards/" + dashboardID,
+		ViewURL:           "/ui/dashboards/" + dashboardID,
+		StudioURL:         "/ui/dashboards/" + dashboardID + "?mode=edit",
+		EditURL:           "/ui/dashboards/" + dashboardID + "/edit",
+		DeleteURL:         "/ui/dashboards/" + dashboardID + "/delete",
+		CreateWidgetURL:   "/ui/dashboards/" + dashboardID + "/widgets",
+		SurfaceURL:        "/ui/dashboards/" + dashboardID + "/surface",
+		ActiveFilters:     activeFilters,
+		CSRFFieldProvider: h.deps.CSRFFieldProvider(r),
+	}
+
+	html, err := renderHTMLString(dashboardViewSurface(data, dashboardWidgetNodes(data.Widgets, data.BaseURL, data.CSRFFieldProvider, false)))
+	if err != nil {
+		renderServiceError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(html))
 }
 
 func (h *Handler) DashboardsEdit(w http.ResponseWriter, r *http.Request) {
@@ -143,8 +200,10 @@ func (h *Handler) DashboardsUpdate(w http.ResponseWriter, r *http.Request) {
 	dashboardID := chi.URLParam(r, "dashboardID")
 	principal, isAdmin := principalLabel(r)
 	_, err := h.deps.Dashboard.UpdateDashboard(r.Context(), principal, isAdmin, dashboardID, domain.UpdateDashboardRequest{
-		Name:        formOptionalString(r.Form, "name"),
-		Description: formOptionalString(r.Form, "description"),
+		Name:                formOptionalString(r.Form, "name"),
+		Description:         formOptionalString(r.Form, "description"),
+		SemanticProjectName: formOptionalString(r.Form, "semantic_project_name"),
+		SemanticModelName:   formOptionalString(r.Form, "semantic_model_name"),
 	})
 	if err != nil {
 		renderServiceError(w, err)
@@ -326,6 +385,37 @@ func pageFromRequest(r *http.Request, defaultPageSize int) domain.PageRequest {
 		MaxResults: maxResults,
 		PageToken:  r.URL.Query().Get("page_token"),
 	}
+}
+
+func dashboardFiltersFromRequest(r *http.Request) []dashboardsvc.InteractiveFilter {
+	rawFilters := r.URL.Query()["f"]
+	if len(rawFilters) == 0 {
+		return nil
+	}
+
+	order := make([]string, 0, len(rawFilters))
+	grouped := make(map[string][]string)
+	for _, raw := range rawFilters {
+		dimension, value, ok := strings.Cut(raw, ":")
+		dimension = strings.TrimSpace(dimension)
+		value = strings.TrimSpace(value)
+		if !ok || dimension == "" || value == "" {
+			continue
+		}
+		if _, seen := grouped[dimension]; !seen {
+			order = append(order, dimension)
+		}
+		grouped[dimension] = append(grouped[dimension], value)
+	}
+
+	out := make([]dashboardsvc.InteractiveFilter, 0, len(order))
+	for _, dimension := range order {
+		out = append(out, dashboardsvc.InteractiveFilter{
+			Dimension: dimension,
+			Values:    grouped[dimension],
+		})
+	}
+	return out
 }
 
 var _ dashboardsvc.ResolvedWidget

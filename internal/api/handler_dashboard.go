@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"duck-demo/internal/domain"
 	dashboardsvc "duck-demo/internal/service/dashboard"
@@ -14,6 +15,7 @@ type dashboardService interface {
 	ListDashboards(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Dashboard, int64, error)
 	GetDashboard(ctx context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error)
 	ResolveWidgets(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error)
+	ResolveWidgetsForDashboard(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []dashboardsvc.InteractiveFilter) ([]dashboardsvc.ResolvedWidget, error)
 	UpdateDashboard(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateDashboardRequest) (*domain.Dashboard, error)
 	DeleteDashboard(ctx context.Context, principal string, isAdmin bool, id string) error
 	CreateWidget(ctx context.Context, principal string, isAdmin bool, dashboardID string, req domain.CreateDashboardWidgetRequest) (*domain.DashboardWidget, error)
@@ -51,9 +53,11 @@ func (h *APIHandler) ListDashboards(ctx context.Context, req GenListDashboardsRe
 func (h *APIHandler) CreateDashboard(ctx context.Context, req GenCreateDashboardRequest) (GenCreateDashboardResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	item, err := h.dashboards.CreateDashboard(ctx, cp.Name, domain.CreateDashboardRequest{
-		Name:        req.Body.Name,
-		Description: valOrEmpty(req.Body.Description),
-		FolderID:    req.Body.FolderId,
+		Name:                req.Body.Name,
+		Description:         valOrEmpty(req.Body.Description),
+		FolderID:            req.Body.FolderId,
+		SemanticProjectName: valOrEmpty(req.Body.SemanticProjectName),
+		SemanticModelName:   valOrEmpty(req.Body.SemanticModelName),
 	})
 	if err != nil {
 		switch {
@@ -104,7 +108,7 @@ func (h *APIHandler) GetResolvedDashboard(ctx context.Context, req GenGetResolve
 		}
 		return nil, err
 	}
-	resolved, err := h.dashboards.ResolveWidgets(ctx, cp.Name, widgets)
+	resolved, err := h.dashboards.ResolveWidgetsForDashboard(ctx, cp.Name, item, widgets, dashboardFiltersFromAPI(req.Params.F))
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
@@ -138,9 +142,11 @@ func (h *APIHandler) GetResolvedDashboard(ctx context.Context, req GenGetResolve
 func (h *APIHandler) UpdateDashboard(ctx context.Context, req GenUpdateDashboardRequest) (GenUpdateDashboardResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	item, err := h.dashboards.UpdateDashboard(ctx, cp.Name, cp.IsAdmin, req.DashboardId, domain.UpdateDashboardRequest{
-		Name:        req.Body.Name,
-		Description: req.Body.Description,
-		FolderID:    req.Body.FolderId,
+		Name:                req.Body.Name,
+		Description:         req.Body.Description,
+		FolderID:            req.Body.FolderId,
+		SemanticProjectName: req.Body.SemanticProjectName,
+		SemanticModelName:   req.Body.SemanticModelName,
 	})
 	if err != nil {
 		switch {
@@ -257,14 +263,46 @@ func (h *APIHandler) DeleteDashboardWidget(ctx context.Context, req GenDeleteDas
 
 func dashboardToAPI(item domain.Dashboard) Dashboard {
 	return Dashboard{
-		Id:          optStr(item.ID),
-		Name:        optStr(item.Name),
-		Description: optStr(item.Description),
-		Owner:       optStr(item.Owner),
-		FolderId:    optStr(item.FolderID),
-		CreatedAt:   formatTimePtr(&item.CreatedAt),
-		UpdatedAt:   formatTimePtr(&item.UpdatedAt),
+		Id:                  optStr(item.ID),
+		Name:                optStr(item.Name),
+		Description:         optStr(item.Description),
+		Owner:               optStr(item.Owner),
+		FolderId:            optStr(item.FolderID),
+		SemanticProjectName: optStr(item.SemanticProjectName),
+		SemanticModelName:   optStr(item.SemanticModelName),
+		CreatedAt:           formatTimePtr(&item.CreatedAt),
+		UpdatedAt:           formatTimePtr(&item.UpdatedAt),
 	}
+}
+
+func dashboardFiltersFromAPI(rawFilters *[]string) []dashboardsvc.InteractiveFilter {
+	if rawFilters == nil || len(*rawFilters) == 0 {
+		return nil
+	}
+
+	order := make([]string, 0, len(*rawFilters))
+	grouped := make(map[string][]string)
+	for _, raw := range *rawFilters {
+		dimension, value, ok := strings.Cut(raw, ":")
+		dimension = strings.TrimSpace(dimension)
+		value = strings.TrimSpace(value)
+		if !ok || dimension == "" || value == "" {
+			continue
+		}
+		if _, exists := grouped[dimension]; !exists {
+			order = append(order, dimension)
+		}
+		grouped[dimension] = append(grouped[dimension], value)
+	}
+
+	out := make([]dashboardsvc.InteractiveFilter, 0, len(order))
+	for _, dimension := range order {
+		out = append(out, dashboardsvc.InteractiveFilter{
+			Dimension: dimension,
+			Values:    grouped[dimension],
+		})
+	}
+	return out
 }
 
 func dashboardWidgetToAPI(item domain.DashboardWidget) DashboardWidget {

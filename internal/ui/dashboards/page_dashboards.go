@@ -16,6 +16,7 @@ import (
 	"duck-demo/internal/ui/core"
 
 	. "maragu.dev/gomponents"
+	data "maragu.dev/gomponents-datastar"
 	. "maragu.dev/gomponents/html"
 )
 
@@ -40,6 +41,8 @@ type dashboardDetailPageData struct {
 	EditURL           string
 	DeleteURL         string
 	CreateWidgetURL   string
+	SurfaceURL        string
+	ActiveFilters     []dashboardsvc.InteractiveFilter
 	CSRFFieldProvider func() Node
 }
 
@@ -110,6 +113,10 @@ func dashboardsNewPage(principal domain.ContextPrincipal, folderID string, csrfF
 		core.InputControl("", Name("name"), Required()),
 		core.FieldLabel("Description"),
 		core.TextareaControl("", Name("description")),
+		core.FieldLabel("Semantic project"),
+		core.InputControl("", Name("semantic_project_name")),
+		core.FieldLabel("Semantic model"),
+		core.InputControl("", Name("semantic_model_name")),
 	}
 	if strings.TrimSpace(folderID) != "" {
 		fields = append(fields,
@@ -126,6 +133,10 @@ func dashboardsEditPage(principal domain.ContextPrincipal, dashboard *domain.Das
 		core.InputControl("", Name("name"), Value(dashboard.Name), Required()),
 		core.FieldLabel("Description"),
 		core.TextareaControl("", Name("description"), Text(dashboard.Description)),
+		core.FieldLabel("Semantic project"),
+		core.InputControl("", Name("semantic_project_name"), Value(dashboard.SemanticProjectName)),
+		core.FieldLabel("Semantic model"),
+		core.InputControl("", Name("semantic_model_name"), Value(dashboard.SemanticModelName)),
 	)
 }
 
@@ -139,10 +150,7 @@ func dashboardWidgetEditPage(principal domain.ContextPrincipal, dashboard *domai
 }
 
 func dashboardsDetailPage(d dashboardDetailPageData) Node {
-	widgetNodes := make([]Node, 0, len(d.Widgets))
-	for _, widget := range d.Widgets {
-		widgetNodes = append(widgetNodes, dashboardWidgetCard(widget, d.BaseURL, d.CSRFFieldProvider, d.EditMode))
-	}
+	widgetNodes := dashboardWidgetNodes(d.Widgets, d.BaseURL, d.CSRFFieldProvider, d.EditMode)
 	if len(widgetNodes) == 0 {
 		emptyAction := Node(nil)
 		if d.EditMode {
@@ -168,7 +176,7 @@ func dashboardsDetailPage(d dashboardDetailPageData) Node {
 	}
 
 	body := []Node{
-		dashboardCanvas(widgetNodes, d.EditMode),
+		dashboardViewSurface(d, widgetNodes),
 	}
 	if d.EditMode {
 		body = append([]Node{
@@ -186,6 +194,105 @@ func dashboardsDetailPage(d dashboardDetailPageData) Node {
 		Group(body),
 		Script(Src(core.UIScriptHref("dashboard.js"))),
 	)
+}
+
+func dashboardWidgetNodes(widgets []dashboardsvc.ResolvedWidget, baseURL string, csrfFieldProvider func() Node, editMode bool) []Node {
+	widgetNodes := make([]Node, 0, len(widgets))
+	for _, widget := range widgets {
+		widgetNodes = append(widgetNodes, dashboardWidgetCard(widget, baseURL, csrfFieldProvider, editMode))
+	}
+	return widgetNodes
+}
+
+func dashboardViewSurface(d dashboardDetailPageData, widgetNodes []Node) Node {
+	body := []Node{
+		dashboardCanvas(widgetNodes, d.EditMode),
+	}
+	if !d.EditMode && dashboardShowsInteractiveToolbar(d.Dashboard) {
+		body = append([]Node{dashboardInteractiveToolbar(d.ActiveFilters)}, body...)
+	}
+
+	return Div(
+		ID("dashboard-view-surface"),
+		Class("shrink-0 grid gap-4"),
+		Attr("data-dashboard-surface", "true"),
+		Attr("data-dashboard-view-url", d.ViewURL),
+		Attr("data-dashboard-surface-url", d.SurfaceURL),
+		data.Signals(map[string]any{"filters": dashboardFilterSignalMap(d.ActiveFilters)}),
+		Group(body),
+	)
+}
+
+func dashboardShowsInteractiveToolbar(dashboard *domain.Dashboard) bool {
+	return dashboard != nil && strings.TrimSpace(dashboard.SemanticProjectName) != "" && strings.TrimSpace(dashboard.SemanticModelName) != ""
+}
+
+func dashboardFilterSignalMap(filters []dashboardsvc.InteractiveFilter) map[string][]string {
+	if len(filters) == 0 {
+		return map[string][]string{}
+	}
+	out := make(map[string][]string, len(filters))
+	for _, filter := range filters {
+		out[filter.Dimension] = append([]string(nil), filter.Values...)
+	}
+	return out
+}
+
+func dashboardInteractiveToolbar(filters []dashboardsvc.InteractiveFilter) Node {
+	chips := []Node{
+		P(Class("m-0 text-[10px] font-black uppercase tracking-[0.15em] text-[var(--fgColor-muted)]"), Text("Cross Filters")),
+	}
+	if len(filters) == 0 {
+		chips = append(chips,
+			P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text("No active filters")),
+		)
+	} else {
+		filterNodes := make([]Node, 0)
+		for _, filter := range filters {
+			for _, value := range filter.Values {
+				filterNodes = append(filterNodes, Button(
+					Type("button"),
+					Class("inline-flex items-center gap-2 rounded-full border border-[var(--borderColor-default)] bg-[var(--bgColor-muted)] px-3 py-1 text-xs font-semibold text-[var(--fgColor-default)] transition-colors hover:border-[var(--borderColor-accent-emphasis)] hover:text-[var(--fgColor-accent)]"),
+					Attr("data-dashboard-remove-filter", "true"),
+					Attr("data-dashboard-filter-dimension", filter.Dimension),
+					Attr("data-dashboard-filter-value", value),
+					Span(Text(dashboardDisplayFilterDimension(filter.Dimension))),
+					Span(Class("text-[var(--fgColor-muted)]"), Text(value)),
+					Span(Class("text-[var(--fgColor-muted)]"), Raw("&times;")),
+				))
+			}
+		}
+		chips = append(chips, Div(Class("flex flex-wrap items-center gap-2"), Group(filterNodes)))
+	}
+
+	clearAction := Node(nil)
+	if len(filters) > 0 {
+		clearAction = Button(
+			Type("button"),
+			Class("inline-flex items-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 py-1.5 text-xs font-semibold text-[var(--fgColor-muted)] transition-colors hover:border-[var(--borderColor-accent-emphasis)] hover:text-[var(--fgColor-accent)]"),
+			Attr("data-dashboard-clear-filters", "true"),
+			Text("Clear all"),
+		)
+	}
+
+	return Div(
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-4 py-3 shadow-sm"),
+		Div(Class("flex flex-wrap items-start justify-between gap-3"),
+			Div(Class("grid gap-2"), Group(chips)),
+			clearAction,
+		),
+	)
+}
+
+func dashboardDisplayFilterDimension(dimension string) string {
+	parts := strings.SplitN(strings.TrimSpace(dimension), "@", 2)
+	label := strings.ReplaceAll(parts[0], "_", " ")
+	label = strings.ReplaceAll(label, ".", " ")
+	label = strings.TrimSpace(label)
+	if len(parts) == 2 && strings.TrimSpace(parts[1]) != "" {
+		label += " (" + strings.TrimSpace(parts[1]) + ")"
+	}
+	return label
 }
 
 func dashboardHero(d dashboardDetailPageData) Node {
@@ -365,7 +472,7 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 		}
 		content = visualMetricCard(defaultVisualTitle(widget.Widget.VisualSpec, widget.Widget.Name), value, dashboardRowCountLabel(widget.RowCount))
 	case widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputChart:
-		content = chartHost(widget.Columns, widget.Rows, widget.Widget.VisualSpec)
+		content = chartHost(widget.Widget.Name, widget.Columns, widget.Rows, widget.Widget.VisualSpec, widget.Interaction)
 	default:
 		content = dashboardWidgetTable(widget)
 	}
@@ -395,13 +502,16 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 	if generatedSQL != nil {
 		auxiliary = append(auxiliary, generatedSQL)
 	}
+	if !editMode && widget.Interaction != nil && !widget.Interaction.Participates && strings.TrimSpace(widget.Interaction.DisabledReason) != "" {
+		auxiliary = append(auxiliary, P(Class("m-0 text-xs font-medium text-[var(--fgColor-muted)]"), Text(widget.Interaction.DisabledReason)))
+	}
 
 	return Div(
 		Class("dashboard-widget-tile group flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] shadow-sm transition-all duration-150 hover:-translate-y-[1px] hover:border-[var(--borderColor-accent-emphasis)] hover:shadow-md md:col-span-2"),
 		Style(fmt.Sprintf("--dash-col-start:%d;--dash-row-start:%d;--dash-col-span:%d;--dash-row-span:%d;", dashboardCanvasColStart(widget.Widget.Layout), dashboardCanvasRowStart(widget.Widget.Layout), dashboardCanvasColSpan(widget.Widget.Layout), dashboardCanvasRowSpan(widget.Widget.Layout))),
 		dashboardWidgetHeader(widget, actions, editMode),
 		Div(Class(dashboardWidgetBodyClass(widget)), content),
-		Iff(editMode && len(auxiliary) > 0, func() Node {
+		Iff(len(auxiliary) > 0, func() Node {
 			return Div(
 				Class("grid gap-3 border-t border-[color-mix(in_srgb,var(--borderColor-default)_72%,transparent)] px-5 py-4"),
 				Group(auxiliary),
@@ -816,14 +926,16 @@ func statusLabel(text, tone string) Node {
 	return Span(Class(labelClass(tone)), Text(text))
 }
 
-func chartHost(columns []string, rows [][]interface{}, visual *domain.VisualSpec) Node {
-	return El("duck-chart", Class("dashboard-chart-host block min-h-[19rem] w-full"), Attr("data-chart-payload", chartPayload(columns, rows, dashboardChartVisual(visual))))
+func chartHost(name string, columns []string, rows [][]interface{}, visual *domain.VisualSpec, interaction *dashboardsvc.ResolvedWidgetInteraction) Node {
+	return El("duck-chart", Class("dashboard-chart-host block min-h-[19rem] w-full"), Attr("data-chart-payload", chartPayload(name, columns, rows, dashboardChartVisual(visual), interaction)))
 }
 
 type chartRenderPayload struct {
-	Columns []string           `json:"columns"`
-	Rows    [][]interface{}    `json:"rows"`
-	Visual  *domain.VisualSpec `json:"visual"`
+	Name        string                                  `json:"name"`
+	Columns     []string                                `json:"columns"`
+	Rows        [][]interface{}                         `json:"rows"`
+	Visual      *domain.VisualSpec                      `json:"visual"`
+	Interaction *dashboardsvc.ResolvedWidgetInteraction `json:"interaction,omitempty"`
 }
 
 func dashboardChartVisual(visual *domain.VisualSpec) *domain.VisualSpec {
@@ -836,8 +948,8 @@ func dashboardChartVisual(visual *domain.VisualSpec) *domain.VisualSpec {
 	return &copy
 }
 
-func chartPayload(columns []string, rows [][]interface{}, visual *domain.VisualSpec) string {
-	payload, err := json.Marshal(chartRenderPayload{Columns: columns, Rows: rows, Visual: visual})
+func chartPayload(name string, columns []string, rows [][]interface{}, visual *domain.VisualSpec, interaction *dashboardsvc.ResolvedWidgetInteraction) string {
+	payload, err := json.Marshal(chartRenderPayload{Name: name, Columns: columns, Rows: rows, Visual: visual, Interaction: interaction})
 	if err != nil {
 		return "{}"
 	}

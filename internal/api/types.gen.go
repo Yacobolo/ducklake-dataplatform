@@ -667,9 +667,11 @@ type CreateComputeEndpointRequest struct {
 }
 
 type CreateDashboardRequest struct {
-	Description *string `json:"description,omitempty"`
-	FolderId    *string `json:"folder_id,omitempty"`
-	Name        string  `json:"name"`
+	Description         *string `json:"description,omitempty"`
+	FolderId            *string `json:"folder_id,omitempty"`
+	Name                string  `json:"name"`
+	SemanticModelName   *string `json:"semantic_model_name,omitempty"`
+	SemanticProjectName *string `json:"semantic_project_name,omitempty"`
 }
 
 type CreateDashboardWidgetRequest struct {
@@ -952,13 +954,15 @@ type CreateVolumeRequest struct {
 }
 
 type Dashboard struct {
-	CreatedAt   *string `json:"created_at,omitempty"`
-	Description *string `json:"description,omitempty"`
-	FolderId    *string `json:"folder_id,omitempty"`
-	Id          *string `json:"id,omitempty"`
-	Name        *string `json:"name,omitempty"`
-	Owner       *string `json:"owner,omitempty"`
-	UpdatedAt   *string `json:"updated_at,omitempty"`
+	CreatedAt           *string `json:"created_at,omitempty"`
+	Description         *string `json:"description,omitempty"`
+	FolderId            *string `json:"folder_id,omitempty"`
+	Id                  *string `json:"id,omitempty"`
+	Name                *string `json:"name,omitempty"`
+	Owner               *string `json:"owner,omitempty"`
+	SemanticModelName   *string `json:"semantic_model_name,omitempty"`
+	SemanticProjectName *string `json:"semantic_project_name,omitempty"`
+	UpdatedAt           *string `json:"updated_at,omitempty"`
 }
 
 type DashboardDetail struct {
@@ -2694,9 +2698,11 @@ type UpdateComputeEndpointRequest struct {
 }
 
 type UpdateDashboardRequest struct {
-	Description *string `json:"description,omitempty"`
-	FolderId    *string `json:"folder_id,omitempty"`
-	Name        *string `json:"name,omitempty"`
+	Description         *string `json:"description,omitempty"`
+	FolderId            *string `json:"folder_id,omitempty"`
+	Name                *string `json:"name,omitempty"`
+	SemanticModelName   *string `json:"semantic_model_name,omitempty"`
+	SemanticProjectName *string `json:"semantic_project_name,omitempty"`
 }
 
 type UpdateDashboardWidgetRequest struct {
@@ -2989,6 +2995,8 @@ type GetMacroImpactParams = GenGetMacroImpactParams
 type GetModelDAGParams = GenGetModelDAGParams
 
 type GetQueryResultsParams = GenGetQueryResultsParams
+
+type GetResolvedDashboardParams = GenGetResolvedDashboardParams
 
 type GetTableLineageParams = GenGetTableLineageParams
 

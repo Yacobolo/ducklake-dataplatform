@@ -7,13 +7,15 @@ import (
 
 // Dashboard is a persisted dashboard resource.
 type Dashboard struct {
-	ID          string
-	Name        string
-	Description string
-	Owner       string
-	FolderID    string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID                  string
+	Name                string
+	Description         string
+	Owner               string
+	FolderID            string
+	SemanticProjectName string
+	SemanticModelName   string
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 // DashboardWidgetSourceKind defines where a widget gets its data.
@@ -84,16 +86,20 @@ type DashboardWidget struct {
 
 // CreateDashboardRequest creates a dashboard.
 type CreateDashboardRequest struct {
-	Name        string
-	Description string
-	FolderID    *string
+	Name                string
+	Description         string
+	FolderID            *string
+	SemanticProjectName string
+	SemanticModelName   string
 }
 
 // UpdateDashboardRequest applies partial dashboard updates.
 type UpdateDashboardRequest struct {
-	Name        *string
-	Description *string
-	FolderID    *string
+	Name                *string
+	Description         *string
+	FolderID            *string
+	SemanticProjectName *string
+	SemanticModelName   *string
 }
 
 // CreateDashboardWidgetRequest creates a dashboard widget.
@@ -118,6 +124,19 @@ type UpdateDashboardWidgetRequest struct {
 func (r *CreateDashboardRequest) Validate() error {
 	if strings.TrimSpace(r.Name) == "" {
 		return ErrValidation("dashboard name is required")
+	}
+	if err := ValidateDashboardSemanticBinding(r.SemanticProjectName, r.SemanticModelName); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ValidateDashboardSemanticBinding validates the optional dashboard-level semantic model binding.
+func ValidateDashboardSemanticBinding(projectName, modelName string) error {
+	projectName = strings.TrimSpace(projectName)
+	modelName = strings.TrimSpace(modelName)
+	if (projectName == "") != (modelName == "") {
+		return ErrValidation("dashboard semantic binding requires both project_name and semantic_model_name")
 	}
 	return nil
 }

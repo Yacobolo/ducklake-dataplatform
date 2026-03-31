@@ -13,15 +13,16 @@ import (
 )
 
 type mockDashboardService struct {
-	createDashboardFn func(ctx context.Context, owner string, req domain.CreateDashboardRequest) (*domain.Dashboard, error)
-	listDashboardsFn  func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Dashboard, int64, error)
-	getDashboardFn    func(ctx context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error)
-	resolveWidgetsFn  func(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error)
-	updateDashboardFn func(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateDashboardRequest) (*domain.Dashboard, error)
-	deleteDashboardFn func(ctx context.Context, principal string, isAdmin bool, id string) error
-	createWidgetFn    func(ctx context.Context, principal string, isAdmin bool, dashboardID string, req domain.CreateDashboardWidgetRequest) (*domain.DashboardWidget, error)
-	updateWidgetFn    func(ctx context.Context, principal string, isAdmin bool, widgetID string, req domain.UpdateDashboardWidgetRequest) (*domain.DashboardWidget, error)
-	deleteWidgetFn    func(ctx context.Context, principal string, isAdmin bool, widgetID string) error
+	createDashboardFn            func(ctx context.Context, owner string, req domain.CreateDashboardRequest) (*domain.Dashboard, error)
+	listDashboardsFn             func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Dashboard, int64, error)
+	getDashboardFn               func(ctx context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error)
+	resolveWidgetsFn             func(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error)
+	resolveWidgetsForDashboardFn func(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []dashboardsvc.InteractiveFilter) ([]dashboardsvc.ResolvedWidget, error)
+	updateDashboardFn            func(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateDashboardRequest) (*domain.Dashboard, error)
+	deleteDashboardFn            func(ctx context.Context, principal string, isAdmin bool, id string) error
+	createWidgetFn               func(ctx context.Context, principal string, isAdmin bool, dashboardID string, req domain.CreateDashboardWidgetRequest) (*domain.DashboardWidget, error)
+	updateWidgetFn               func(ctx context.Context, principal string, isAdmin bool, widgetID string, req domain.UpdateDashboardWidgetRequest) (*domain.DashboardWidget, error)
+	deleteWidgetFn               func(ctx context.Context, principal string, isAdmin bool, widgetID string) error
 }
 
 func (m *mockDashboardService) CreateDashboard(ctx context.Context, owner string, req domain.CreateDashboardRequest) (*domain.Dashboard, error) {
@@ -38,6 +39,10 @@ func (m *mockDashboardService) GetDashboard(ctx context.Context, id string) (*do
 
 func (m *mockDashboardService) ResolveWidgets(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error) {
 	return m.resolveWidgetsFn(ctx, principal, widgets)
+}
+
+func (m *mockDashboardService) ResolveWidgetsForDashboard(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []dashboardsvc.InteractiveFilter) ([]dashboardsvc.ResolvedWidget, error) {
+	return m.resolveWidgetsForDashboardFn(ctx, principal, dashboard, widgets, filters)
 }
 
 func (m *mockDashboardService) UpdateDashboard(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateDashboardRequest) (*domain.Dashboard, error) {
@@ -71,22 +76,30 @@ func TestHandler_CreateDashboard_UsesPrincipalAndMapsRequest(t *testing.T) {
 				assert.Equal(t, "alice", owner)
 				assert.Equal(t, "Executive Overview", req.Name)
 				assert.Equal(t, "KPI dashboard", req.Description)
+				assert.Equal(t, "analytics", req.SemanticProjectName)
+				assert.Equal(t, "sales", req.SemanticModelName)
 				return &domain.Dashboard{
-					ID:          "dash-1",
-					Name:        req.Name,
-					Description: req.Description,
-					Owner:       owner,
-					CreatedAt:   now,
-					UpdatedAt:   now,
+					ID:                  "dash-1",
+					Name:                req.Name,
+					Description:         req.Description,
+					Owner:               owner,
+					SemanticProjectName: req.SemanticProjectName,
+					SemanticModelName:   req.SemanticModelName,
+					CreatedAt:           now,
+					UpdatedAt:           now,
 				}, nil
 			},
 		},
 	}
 
 	desc := "KPI dashboard"
+	semanticProjectName := "analytics"
+	semanticModelName := "sales"
 	resp, err := h.CreateDashboard(ctx, GenCreateDashboardRequest{Body: &GenCreateDashboardJSONBody{
-		Name:        "Executive Overview",
-		Description: &desc,
+		Name:                "Executive Overview",
+		Description:         &desc,
+		SemanticProjectName: &semanticProjectName,
+		SemanticModelName:   &semanticModelName,
 	}})
 	require.NoError(t, err)
 
@@ -96,6 +109,10 @@ func TestHandler_CreateDashboard_UsesPrincipalAndMapsRequest(t *testing.T) {
 	assert.Equal(t, "dash-1", *created.Body.Id)
 	require.NotNil(t, created.Body.Name)
 	assert.Equal(t, "Executive Overview", *created.Body.Name)
+	require.NotNil(t, created.Body.SemanticProjectName)
+	assert.Equal(t, "analytics", *created.Body.SemanticProjectName)
+	require.NotNil(t, created.Body.SemanticModelName)
+	assert.Equal(t, "sales", *created.Body.SemanticModelName)
 }
 
 func TestHandler_CreateDashboardWidget_MapsSourceAndVisualSpec(t *testing.T) {
@@ -218,7 +235,7 @@ func TestHandler_GetDashboard_MapsWidgets(t *testing.T) {
 		dashboards: &mockDashboardService{
 			getDashboardFn: func(_ context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error) {
 				assert.Equal(t, "dash-1", id)
-				return &domain.Dashboard{ID: id, Name: "Revenue", Owner: "alice"}, []domain.DashboardWidget{
+				return &domain.Dashboard{ID: id, Name: "Revenue", Owner: "alice", SemanticProjectName: "analytics", SemanticModelName: "sales"}, []domain.DashboardWidget{
 					{
 						ID:          "widget-1",
 						DashboardID: id,
@@ -250,6 +267,8 @@ func TestHandler_GetDashboard_MapsWidgets(t *testing.T) {
 	okResp, ok := resp.(GenGetDashboard200JSONResponse)
 	require.True(t, ok)
 	require.NotNil(t, okResp.Body.Dashboard)
+	require.NotNil(t, okResp.Body.Dashboard.SemanticProjectName)
+	assert.Equal(t, "analytics", *okResp.Body.Dashboard.SemanticProjectName)
 	require.NotNil(t, okResp.Body.Widgets)
 	require.Len(t, *okResp.Body.Widgets, 1)
 	require.NotNil(t, (*okResp.Body.Widgets)[0].Source)
@@ -288,11 +307,17 @@ func TestHandler_GetResolvedDashboard_MapsResolvedWidgets(t *testing.T) {
 	h := &APIHandler{
 		dashboards: &mockDashboardService{
 			getDashboardFn: func(_ context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error) {
-				return &domain.Dashboard{ID: id, Name: "Revenue", Owner: "alice"}, []domain.DashboardWidget{widget}, nil
+				return &domain.Dashboard{ID: id, Name: "Revenue", Owner: "alice", SemanticProjectName: "analytics", SemanticModelName: "sales"}, []domain.DashboardWidget{widget}, nil
 			},
-			resolveWidgetsFn: func(_ context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error) {
+			resolveWidgetsForDashboardFn: func(_ context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []dashboardsvc.InteractiveFilter) ([]dashboardsvc.ResolvedWidget, error) {
 				assert.Equal(t, "alice", principal)
+				require.NotNil(t, dashboard)
+				assert.Equal(t, "analytics", dashboard.SemanticProjectName)
 				require.Len(t, widgets, 1)
+				assert.Equal(t, []dashboardsvc.InteractiveFilter{
+					{Dimension: "region", Values: []string{"APAC", "EMEA"}},
+					{Dimension: "borough", Values: []string{"Queens"}},
+				}, filters)
 				return []dashboardsvc.ResolvedWidget{{
 					Widget:       widgets[0],
 					Columns:      []string{"region", "revenue"},
@@ -304,7 +329,12 @@ func TestHandler_GetResolvedDashboard_MapsResolvedWidgets(t *testing.T) {
 		},
 	}
 
-	resp, err := h.GetResolvedDashboard(ctx, GenGetResolvedDashboardRequest{DashboardId: "dash-1"})
+	resp, err := h.GetResolvedDashboard(ctx, GenGetResolvedDashboardRequest{
+		DashboardId: "dash-1",
+		Params: GenGetResolvedDashboardParams{
+			F: &[]string{"region:APAC", "region:EMEA", "borough:Queens"},
+		},
+	})
 	require.NoError(t, err)
 
 	okResp, ok := resp.(GenGetResolvedDashboard200JSONResponse)
@@ -333,15 +363,23 @@ func TestHandler_UpdateDashboard_MapsRequestAndAccessDenied(t *testing.T) {
 				assert.Equal(t, "dash-1", id)
 				require.NotNil(t, req.Name)
 				assert.Equal(t, "Updated dashboard", *req.Name)
+				require.NotNil(t, req.SemanticProjectName)
+				assert.Equal(t, "analytics", *req.SemanticProjectName)
+				require.NotNil(t, req.SemanticModelName)
+				assert.Equal(t, "sales", *req.SemanticModelName)
 				return nil, domain.ErrAccessDenied("forbidden")
 			},
 		},
 	}
 
+	semanticProjectName := "analytics"
+	semanticModelName := "sales"
 	resp, err := h.UpdateDashboard(ctx, GenUpdateDashboardRequest{
 		DashboardId: "dash-1",
 		Body: &GenUpdateDashboardJSONBody{
-			Name: strPtr("Updated dashboard"),
+			Name:                strPtr("Updated dashboard"),
+			SemanticProjectName: &semanticProjectName,
+			SemanticModelName:   &semanticModelName,
 		},
 	})
 	require.NoError(t, err)

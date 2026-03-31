@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -34,11 +35,41 @@ func bindQueryParameter(values url.Values, name string, required bool, dest any)
 		return nil
 	}
 
+	if isSliceBindingDestination(dest) {
+		if err := bindQuerySliceParameter(dest, rawValues); err != nil {
+			return fmt.Errorf("invalid query parameter %q: %w", name, err)
+		}
+		return nil
+	}
+
 	if err := bindParameterValue(dest, rawValues[0]); err != nil {
 		return fmt.Errorf("invalid query parameter %q: %w", name, err)
 	}
 
 	return nil
+}
+
+func isSliceBindingDestination(dest any) bool {
+	destType := reflect.TypeOf(dest)
+	if destType == nil || destType.Kind() != reflect.Ptr {
+		return false
+	}
+
+	targetType := destType.Elem()
+	for targetType.Kind() == reflect.Ptr {
+		targetType = targetType.Elem()
+	}
+
+	return targetType.Kind() == reflect.Slice
+}
+
+func bindQuerySliceParameter(dest any, rawValues []string) error {
+	destValue := reflect.ValueOf(dest)
+	if !destValue.IsValid() || destValue.Kind() != reflect.Ptr || destValue.IsNil() {
+		return fmt.Errorf("destination must be a non-nil pointer")
+	}
+
+	return assignQuerySlice(destValue.Elem(), rawValues)
 }
 
 func bindParameterValue(dest any, raw string) error {
@@ -48,6 +79,38 @@ func bindParameterValue(dest any, raw string) error {
 	}
 
 	return assignBoundValue(destValue.Elem(), raw)
+}
+
+func assignQuerySlice(target reflect.Value, rawValues []string) error {
+	if target.Kind() == reflect.Ptr {
+		bound := reflect.New(target.Type().Elem())
+		if err := assignQuerySlice(bound.Elem(), rawValues); err != nil {
+			return err
+		}
+		target.Set(bound)
+		return nil
+	}
+
+	if target.Kind() != reflect.Slice {
+		return fmt.Errorf("unsupported destination type %s", target.Type())
+	}
+
+	flattened := make([]string, 0, len(rawValues))
+	for _, raw := range rawValues {
+		flattened = append(flattened, strings.Split(raw, ",")...)
+	}
+
+	slice := reflect.MakeSlice(target.Type(), 0, len(flattened))
+	for _, raw := range flattened {
+		elem := reflect.New(target.Type().Elem()).Elem()
+		if err := assignBoundValue(elem, raw); err != nil {
+			return err
+		}
+		slice = reflect.Append(slice, elem)
+	}
+
+	target.Set(slice)
+	return nil
 }
 
 func assignBoundValue(target reflect.Value, raw string) error {

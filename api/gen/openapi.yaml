@@ -5541,6 +5541,14 @@ paths:
           required: true
           schema:
             type: string
+        - name: f
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -17310,6 +17318,10 @@ components:
           type: string
         folder_id:
           type: string
+        semantic_project_name:
+          type: string
+        semantic_model_name:
+          type: string
     CreateDashboardWidgetRequest:
       type: object
       required:
@@ -17897,6 +17909,10 @@ components:
         owner:
           type: string
         folder_id:
+          type: string
+        semantic_project_name:
+          type: string
+        semantic_model_name:
           type: string
         created_at:
           type: string
@@ -21399,6 +21415,10 @@ components:
         description:
           type: string
         folder_id:
+          type: string
+        semantic_project_name:
+          type: string
+        semantic_model_name:
           type: string
     UpdateDashboardWidgetRequest:
       type: object

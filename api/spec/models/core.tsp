@@ -1813,6 +1813,8 @@ model Dashboard {
   description?: string;
   owner?: string;
   folder_id?: string;
+  semantic_project_name?: string;
+  semantic_model_name?: string;
   created_at?: utcDateTime;
   updated_at?: utcDateTime;
 }
@@ -1898,12 +1900,16 @@ model CreateDashboardRequest {
   name: string;
   description?: string;
   folder_id?: string;
+  semantic_project_name?: string;
+  semantic_model_name?: string;
 }
 
 model UpdateDashboardRequest {
   name?: string;
   description?: string;
   folder_id?: string;
+  semantic_project_name?: string;
+  semantic_model_name?: string;
 }
 
 model ExploreItem {

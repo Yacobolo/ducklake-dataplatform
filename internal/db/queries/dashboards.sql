@@ -1,6 +1,6 @@
 -- name: CreateDashboard :one
-INSERT INTO dashboards (id, name, description, owner, folder_id)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO dashboards (id, name, description, owner, folder_id, semantic_project_name, semantic_model_name)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetDashboard :one
@@ -25,7 +25,12 @@ ORDER BY updated_at DESC;
 
 -- name: UpdateDashboard :one
 UPDATE dashboards
-SET name = ?, description = ?, folder_id = ?, updated_at = datetime('now')
+SET name = ?,
+    description = ?,
+    folder_id = ?,
+    semantic_project_name = ?,
+    semantic_model_name = ?,
+    updated_at = datetime('now')
 WHERE id = ?
 RETURNING *;
 

@@ -262,6 +262,188 @@ func TestService_ResolveWidget_SemanticQuery(t *testing.T) {
 	assert.Contains(t, queryExec.lastSQL, "SUM(sales.amount)")
 }
 
+func TestService_ResolveWidgetsForDashboard_AppliesDashboardFiltersAndTimeBuckets(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, semanticSvc, queryExec := setupDashboardService(t)
+	ctx := context.Background()
+	queryExec.result = &query.QueryResult{
+		Columns:  []string{"region", "__time_grain", "revenue"},
+		Rows:     [][]interface{}{{"APAC", "2024-01-01T00:00:00Z", 42}},
+		RowCount: 1,
+	}
+
+	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
+		ProjectName:          "analytics",
+		Name:                 "sales",
+		BaseModelRef:         "analytics.sales",
+		DefaultTimeDimension: "order_date",
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID:    "ignored",
+		Name:               "revenue",
+		MetricType:         domain.MetricTypeSum,
+		ExpressionMode:     domain.MetricExpressionModeSQL,
+		Expression:         "SUM(revenue)",
+		DefaultTimeGrain:   "month",
+		CertificationState: domain.CertificationCertified,
+	})
+	require.NoError(t, err)
+
+	chartType := domain.VisualChartLine
+	resolved, err := svc.ResolveWidgetsForDashboard(ctx, "alice", &domain.Dashboard{
+		ID:                  "dash-1",
+		Name:                "Revenue Dashboard",
+		Owner:               "alice",
+		SemanticProjectName: "analytics",
+		SemanticModelName:   "sales",
+	}, []domain.DashboardWidget{
+		{
+			ID:   "widget-1",
+			Name: "Revenue by Month",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"revenue"},
+					Dimensions:        []string{"region"},
+					TimeGrain:         strPtr("month"),
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind:      domain.VisualOutputChart,
+				ChartType: &chartType,
+				Encodings: domain.VisualEncodings{
+					X: &domain.VisualFieldBinding{Field: "region"},
+					Y: &domain.VisualFieldBinding{Field: "revenue"},
+				},
+			},
+		},
+	}, []InteractiveFilter{
+		{Dimension: "order_date@month", Values: []string{"2024-01-01T00:00:00Z"}},
+		{Dimension: "region", Values: []string{"APAC", "EMEA"}},
+	})
+	require.NoError(t, err)
+	require.Len(t, resolved, 1)
+	require.NotNil(t, resolved[0].Interaction)
+	assert.True(t, resolved[0].Interaction.Participates)
+	assert.True(t, resolved[0].Interaction.CanInitiate)
+	assert.Equal(t, "region", resolved[0].Interaction.Bindings[0].Dimension)
+	assert.Contains(t, queryExec.lastSQL, "date_trunc('month', order_date) = CAST('2024-01-01T00:00:00Z' AS TIMESTAMP)")
+	assert.Contains(t, queryExec.lastSQL, "(region = 'APAC' OR region = 'EMEA')")
+}
+
+func TestService_ResolveWidgetsForDashboard_ExcludesNonInteractiveWidgets(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, semanticSvc, queryExec := setupDashboardService(t)
+	ctx := context.Background()
+	queryExec.result = &query.QueryResult{
+		Columns:  []string{"revenue"},
+		Rows:     [][]interface{}{{42}},
+		RowCount: 1,
+	}
+
+	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.sales",
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "marketing",
+		BaseModelRef: "analytics.marketing",
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID:    "ignored",
+		Name:               "revenue",
+		MetricType:         domain.MetricTypeSum,
+		ExpressionMode:     domain.MetricExpressionModeSQL,
+		Expression:         "SUM(revenue)",
+		CertificationState: domain.CertificationCertified,
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "marketing", domain.CreateSemanticMetricRequest{
+		SemanticModelID:    "ignored",
+		Name:               "revenue",
+		MetricType:         domain.MetricTypeSum,
+		ExpressionMode:     domain.MetricExpressionModeSQL,
+		Expression:         "SUM(revenue)",
+		CertificationState: domain.CertificationCertified,
+	})
+	require.NoError(t, err)
+
+	resolved, err := svc.ResolveWidgetsForDashboard(ctx, "alice", &domain.Dashboard{
+		ID:                  "dash-1",
+		Name:                "Revenue Dashboard",
+		Owner:               "alice",
+		SemanticProjectName: "analytics",
+		SemanticModelName:   "sales",
+	}, []domain.DashboardWidget{
+		{
+			ID:   "widget-metric",
+			Name: "Revenue",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"revenue"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind: domain.VisualOutputMetric,
+				Encodings: domain.VisualEncodings{
+					Value: &domain.VisualFieldBinding{Field: "revenue"},
+				},
+			},
+		},
+		{
+			ID:   "widget-sql",
+			Name: "SQL Widget",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSQLQuery,
+				SQLQuery: &domain.DashboardSQLQuerySource{
+					SQL: "select revenue",
+				},
+			},
+		},
+		{
+			ID:   "widget-other-model",
+			Name: "Other Model",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "marketing",
+					Metrics:           []string{"revenue"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind: domain.VisualOutputMetric,
+				Encodings: domain.VisualEncodings{
+					Value: &domain.VisualFieldBinding{Field: "revenue"},
+				},
+			},
+		},
+	}, nil)
+	require.NoError(t, err)
+	require.Len(t, resolved, 3)
+	require.NotNil(t, resolved[0].Interaction)
+	assert.True(t, resolved[0].Interaction.Participates)
+	assert.False(t, resolved[0].Interaction.CanInitiate)
+	require.NotNil(t, resolved[1].Interaction)
+	assert.False(t, resolved[1].Interaction.Participates)
+	assert.Equal(t, "Not interactive in this dashboard.", resolved[1].Interaction.DisabledReason)
+	require.NotNil(t, resolved[2].Interaction)
+	assert.False(t, resolved[2].Interaction.Participates)
+	assert.Equal(t, "Not interactive in this dashboard.", resolved[2].Interaction.DisabledReason)
+}
+
 func TestService_UpdateWidget_AuthorizationAndValidation(t *testing.T) {
 	t.Parallel()
 
@@ -307,4 +489,8 @@ func TestService_UpdateWidget_AuthorizationAndValidation(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "Updated", updated.Name)
 	})
+}
+
+func strPtr(v string) *string {
+	return &v
 }

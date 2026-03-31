@@ -12,4 +12,6 @@
 | `description` | `string` | `false` | - |
 | `folder_id` | `string` | `false` | - |
 | `name` | `string` | `true` | - |
+| `semantic_model_name` | `string` | `false` | - |
+| `semantic_project_name` | `string` | `false` | - |
 

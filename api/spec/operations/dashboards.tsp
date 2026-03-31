@@ -24,7 +24,7 @@ op getDashboard(dashboardId: string): Ok<DashboardDetail> | ResourceErrorRespons
 @get
 @tag("Dashboards")
 @summary("Get resolved dashboard")
-op getResolvedDashboard(dashboardId: string): Ok<ResolvedDashboardDetail> | ResourceErrorResponses;
+op getResolvedDashboard(dashboardId: string, @query f?: string[]): Ok<ResolvedDashboardDetail> | ResourceErrorResponses;
 
 @route("/dashboards/{dashboardId}")
 @patch(#{ implicitOptionality: true })

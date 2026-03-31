@@ -9,8 +9,10 @@ import (
 )
 
 const (
-	sampleDashboardOwner = "dev-admin"
-	sampleDashboardName  = "NYC Taxi Ops Overview"
+	sampleDashboardOwner         = "dev-admin"
+	sampleDashboardName          = "NYC Taxi Ops Overview"
+	sampleDashboardSemanticProj  = "sample_data"
+	sampleDashboardSemanticModel = "dashboard_metrics"
 )
 
 func ensureSampleDashboards(ctx context.Context, dashboardSvc *dashboard.Service) error {
@@ -48,9 +50,13 @@ func ensureSampleDashboard(ctx context.Context, dashboardSvc *dashboard.Service)
 
 	for _, item := range items {
 		if item.Name == sampleDashboardName && item.Owner == sampleDashboardOwner {
-			if item.Description != sampleDashboardDescription {
+			if item.Description != sampleDashboardDescription ||
+				item.SemanticProjectName != sampleDashboardSemanticProj ||
+				item.SemanticModelName != sampleDashboardSemanticModel {
 				updated, err := dashboardSvc.UpdateDashboard(ctx, sampleDashboardOwner, true, item.ID, domain.UpdateDashboardRequest{
-					Description: strPtr(sampleDashboardDescription),
+					Description:         strPtr(sampleDashboardDescription),
+					SemanticProjectName: strPtr(sampleDashboardSemanticProj),
+					SemanticModelName:   strPtr(sampleDashboardSemanticModel),
 				})
 				if err != nil {
 					return nil, err
@@ -62,8 +68,10 @@ func ensureSampleDashboard(ctx context.Context, dashboardSvc *dashboard.Service)
 	}
 
 	return dashboardSvc.CreateDashboard(ctx, sampleDashboardOwner, domain.CreateDashboardRequest{
-		Name:        sampleDashboardName,
-		Description: sampleDashboardDescription,
+		Name:                sampleDashboardName,
+		Description:         sampleDashboardDescription,
+		SemanticProjectName: sampleDashboardSemanticProj,
+		SemanticModelName:   sampleDashboardSemanticModel,
 	})
 }
 
@@ -129,17 +137,18 @@ func sampleDashboardWidgets(_ string) []sampleDashboardWidget {
 			Name:        "Total Revenue",
 			Description: "Gross revenue summed across the full sample period.",
 			Source: domain.DashboardWidgetSource{
-				Kind: domain.DashboardWidgetSourceSQLQuery,
-				SQLQuery: &domain.DashboardSQLQuerySource{
-					SQL: `SELECT ROUND(SUM(gross_revenue), 2) AS total_revenue
-FROM sample_data.nyc_taxi.daily_metrics`,
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       sampleDashboardSemanticProj,
+					SemanticModelName: sampleDashboardSemanticModel,
+					Metrics:           []string{"gross_revenue"},
 				},
 			},
 			VisualSpec: &domain.VisualSpec{
 				Kind:  domain.VisualOutputMetric,
 				Title: "Gross Revenue",
 				Encodings: domain.VisualEncodings{
-					Value: &domain.VisualFieldBinding{Field: "total_revenue"},
+					Value: &domain.VisualFieldBinding{Field: "gross_revenue"},
 				},
 			},
 			Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 3, H: 2},
@@ -148,11 +157,13 @@ FROM sample_data.nyc_taxi.daily_metrics`,
 			Name:        "Trips by Day",
 			Description: "Daily ride volume across the seeded January taxi sample.",
 			Source: domain.DashboardWidgetSource{
-				Kind: domain.DashboardWidgetSourceSQLQuery,
-				SQLQuery: &domain.DashboardSQLQuerySource{
-					SQL: `SELECT pickup_date, trip_count
-FROM sample_data.nyc_taxi.daily_metrics
-ORDER BY pickup_date`,
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       sampleDashboardSemanticProj,
+					SemanticModelName: sampleDashboardSemanticModel,
+					Metrics:           []string{"trip_count"},
+					Dimensions:        []string{"pickup_date"},
+					OrderBy:           []string{"pickup_date"},
 				},
 			},
 			VisualSpec: &domain.VisualSpec{
@@ -170,12 +181,13 @@ ORDER BY pickup_date`,
 			Name:        "Revenue by Borough",
 			Description: "Which pickup boroughs contribute the most revenue.",
 			Source: domain.DashboardWidgetSource{
-				Kind: domain.DashboardWidgetSourceSQLQuery,
-				SQLQuery: &domain.DashboardSQLQuerySource{
-					SQL: `SELECT borough, ROUND(SUM(gross_revenue), 2) AS gross_revenue
-FROM sample_data.nyc_taxi.zone_metrics
-GROUP BY borough
-ORDER BY gross_revenue DESC`,
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       sampleDashboardSemanticProj,
+					SemanticModelName: sampleDashboardSemanticModel,
+					Metrics:           []string{"gross_revenue"},
+					Dimensions:        []string{"borough"},
+					OrderBy:           []string{"gross_revenue DESC"},
 				},
 			},
 			VisualSpec: &domain.VisualSpec{
@@ -193,12 +205,14 @@ ORDER BY gross_revenue DESC`,
 			Name:        "Top Pickup Zones",
 			Description: "Highest-revenue pickup zones for a quick ranking cut.",
 			Source: domain.DashboardWidgetSource{
-				Kind: domain.DashboardWidgetSourceSQLQuery,
-				SQLQuery: &domain.DashboardSQLQuerySource{
-					SQL: `SELECT pickup_zone, gross_revenue
-FROM sample_data.nyc_taxi.zone_metrics
-ORDER BY gross_revenue DESC
-LIMIT 8`,
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       sampleDashboardSemanticProj,
+					SemanticModelName: sampleDashboardSemanticModel,
+					Metrics:           []string{"gross_revenue"},
+					Dimensions:        []string{"pickup_zone"},
+					OrderBy:           []string{"gross_revenue DESC"},
+					Limit:             intPtr(8),
 				},
 			},
 			VisualSpec: &domain.VisualSpec{

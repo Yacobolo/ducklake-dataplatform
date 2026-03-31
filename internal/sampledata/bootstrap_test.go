@@ -135,12 +135,16 @@ func TestBootstrap_SeedsQueryableReadOnlySampleData(t *testing.T) {
 	}
 	require.NotNil(t, seededDashboard)
 	assert.Equal(t, sampleDashboardOwner, seededDashboard.Owner)
+	assert.Equal(t, sampleDashboardSemanticProj, seededDashboard.SemanticProjectName)
+	assert.Equal(t, sampleDashboardSemanticModel, seededDashboard.SemanticModelName)
 
 	widgets, err := widgetRepo.ListByDashboard(ctx, seededDashboard.ID)
 	require.NoError(t, err)
 	assert.Len(t, widgets, 4)
 	assert.Equal(t, "Total Revenue", widgets[0].Name)
 	assert.Equal(t, "Trips by Day", widgets[1].Name)
+	assert.Equal(t, domain.DashboardWidgetSourceSemanticQuery, widgets[0].Source.Kind)
+	assert.Equal(t, domain.DashboardWidgetSourceSemanticQuery, widgets[1].Source.Kind)
 
 	blockedRows, err := secureEngine.Query(ctx, principal.Name, `INSERT INTO sample_data.nyc_taxi.zones VALUES (999, 'Nowhere', 'Blocked', 'Boro')`)
 	if blockedRows != nil {

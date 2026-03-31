@@ -26,11 +26,13 @@ func NewDashboardRepo(db *sql.DB) *DashboardRepo {
 // Create inserts a dashboard record.
 func (r *DashboardRepo) Create(ctx context.Context, d *domain.Dashboard) (*domain.Dashboard, error) {
 	row, err := r.q.CreateDashboard(ctx, dbstore.CreateDashboardParams{
-		ID:          newID(),
-		Name:        d.Name,
-		Description: d.Description,
-		Owner:       d.Owner,
-		FolderID:    nullStringPtr(stringPtr(d.FolderID)),
+		ID:                  newID(),
+		Name:                d.Name,
+		Description:         d.Description,
+		Owner:               d.Owner,
+		FolderID:            nullStringPtr(stringPtr(d.FolderID)),
+		SemanticProjectName: d.SemanticProjectName,
+		SemanticModelName:   d.SemanticModelName,
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -106,11 +108,28 @@ func (r *DashboardRepo) Update(ctx context.Context, id string, req domain.Update
 	if req.Description != nil {
 		description = *req.Description
 	}
+	folderID := current.FolderID
+	if req.FolderID != nil {
+		folderID = *req.FolderID
+	}
+	semanticProjectName := current.SemanticProjectName
+	if req.SemanticProjectName != nil {
+		semanticProjectName = *req.SemanticProjectName
+	}
+	semanticModelName := current.SemanticModelName
+	if req.SemanticModelName != nil {
+		semanticModelName = *req.SemanticModelName
+	}
+	if err := domain.ValidateDashboardSemanticBinding(semanticProjectName, semanticModelName); err != nil {
+		return nil, err
+	}
 	row, err := r.q.UpdateDashboard(ctx, dbstore.UpdateDashboardParams{
-		Name:        name,
-		Description: description,
-		FolderID:    nullStringPtr(req.FolderID),
-		ID:          id,
+		Name:                name,
+		Description:         description,
+		FolderID:            nullStringPtr(stringPtr(folderID)),
+		SemanticProjectName: semanticProjectName,
+		SemanticModelName:   semanticModelName,
+		ID:                  id,
 	})
 	if err != nil {
 		return nil, mapDBError(err)

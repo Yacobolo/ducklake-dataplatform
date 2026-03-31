@@ -10,13 +10,15 @@ import (
 
 func dashboardFromDB(row dbstore.Dashboard) *domain.Dashboard {
 	return &domain.Dashboard{
-		ID:          row.ID,
-		Name:        row.Name,
-		Description: row.Description,
-		Owner:       row.Owner,
-		FolderID:    row.FolderID.String,
-		CreatedAt:   parseDBTime(row.CreatedAt, "dashboards.created_at"),
-		UpdatedAt:   parseDBTime(row.UpdatedAt, "dashboards.updated_at"),
+		ID:                  row.ID,
+		Name:                row.Name,
+		Description:         row.Description,
+		Owner:               row.Owner,
+		FolderID:            row.FolderID.String,
+		SemanticProjectName: row.SemanticProjectName,
+		SemanticModelName:   row.SemanticModelName,
+		CreatedAt:           parseDBTime(row.CreatedAt, "dashboards.created_at"),
+		UpdatedAt:           parseDBTime(row.UpdatedAt, "dashboards.updated_at"),
 	}
 }
 

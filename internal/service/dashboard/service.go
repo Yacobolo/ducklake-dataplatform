@@ -58,6 +58,7 @@ type ResolvedWidget struct {
 	Rows         [][]interface{}
 	RowCount     int
 	GeneratedSQL string
+	Interaction  *ResolvedWidgetInteraction
 }
 
 // CreateDashboard creates a new dashboard owned by the caller.
@@ -76,10 +77,12 @@ func (s *Service) CreateDashboard(ctx context.Context, owner string, req domain.
 		folderID = root.ID
 	}
 	item, err := s.dashboards.Create(ctx, &domain.Dashboard{
-		Name:        req.Name,
-		Description: req.Description,
-		Owner:       owner,
-		FolderID:    folderID,
+		Name:                req.Name,
+		Description:         req.Description,
+		Owner:               owner,
+		FolderID:            folderID,
+		SemanticProjectName: req.SemanticProjectName,
+		SemanticModelName:   req.SemanticModelName,
 	})
 	if err != nil {
 		return nil, err
@@ -226,7 +229,7 @@ func (s *Service) DeleteWidget(ctx context.Context, principal string, isAdmin bo
 func (s *Service) ResolveWidgets(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]ResolvedWidget, error) {
 	out := make([]ResolvedWidget, 0, len(widgets))
 	for _, widget := range widgets {
-		resolved, err := s.ResolveWidget(ctx, principal, widget)
+		resolved, err := s.resolveWidgetWithContext(ctx, principal, widget, nil)
 		if err != nil {
 			return nil, fmt.Errorf("resolve widget %q: %w", widget.Name, err)
 		}
@@ -237,8 +240,15 @@ func (s *Service) ResolveWidgets(ctx context.Context, principal string, widgets 
 
 // ResolveWidget resolves a single widget to tabular data.
 func (s *Service) ResolveWidget(ctx context.Context, principal string, widget domain.DashboardWidget) (*ResolvedWidget, error) {
+	return s.resolveWidgetWithContext(ctx, principal, widget, nil)
+}
+
+func (s *Service) resolveWidgetWithContext(ctx context.Context, principal string, widget domain.DashboardWidget, interactionCtx *dashboardInteractionContext) (*ResolvedWidget, error) {
 	switch widget.Source.Kind {
 	case domain.DashboardWidgetSourceSQLQuery:
+		if s.queryExec == nil {
+			return nil, domain.ErrValidation("dashboard query execution is not configured")
+		}
 		result, err := s.queryExec.Execute(ctx, principal, widget.Source.SQLQuery.SQL)
 		if err != nil {
 			return nil, err
@@ -246,14 +256,21 @@ func (s *Service) ResolveWidget(ctx context.Context, principal string, widget do
 		if err := widget.VisualSpec.ValidateColumns(result.Columns); err != nil {
 			return nil, err
 		}
-		return &ResolvedWidget{
+		resolved := &ResolvedWidget{
 			Widget:       widget,
 			Columns:      result.Columns,
 			Rows:         result.Rows,
 			RowCount:     result.RowCount,
 			GeneratedSQL: widget.Source.SQLQuery.SQL,
-		}, nil
+		}
+		if interactionCtx != nil && interactionCtx.Interactive {
+			resolved.Interaction = buildResolvedWidgetInteraction(widget, interactionCtx)
+		}
+		return resolved, nil
 	case domain.DashboardWidgetSourceNotebookCell:
+		if s.notebooks == nil {
+			return nil, domain.ErrValidation("dashboard notebook access is not configured")
+		}
 		cell, err := s.notebooks.GetCell(ctx, widget.Source.NotebookCell.CellID)
 		if err != nil {
 			return nil, err
@@ -268,22 +285,32 @@ func (s *Service) ResolveWidget(ctx context.Context, principal string, widget do
 		if err := widget.VisualSpec.ValidateColumns(result.Columns); err != nil {
 			return nil, err
 		}
-		return &ResolvedWidget{
+		resolved := &ResolvedWidget{
 			Widget:   widget,
 			Columns:  result.Columns,
 			Rows:     result.Rows,
 			RowCount: result.RowCount,
-		}, nil
+		}
+		if interactionCtx != nil && interactionCtx.Interactive {
+			resolved.Interaction = buildResolvedWidgetInteraction(widget, interactionCtx)
+		}
+		return resolved, nil
 	case domain.DashboardWidgetSourceSemanticQuery:
+		if s.semantic == nil {
+			return nil, domain.ErrValidation("dashboard semantic query execution is not configured")
+		}
 		req := semantic.MetricQueryRequest{
 			ProjectName:       widget.Source.SemanticQuery.ProjectName,
 			SemanticModelName: widget.Source.SemanticQuery.SemanticModelName,
 			Metrics:           widget.Source.SemanticQuery.Metrics,
 			Dimensions:        widget.Source.SemanticQuery.Dimensions,
-			Filters:           widget.Source.SemanticQuery.Filters,
+			Filters:           append([]string(nil), widget.Source.SemanticQuery.Filters...),
 			OrderBy:           widget.Source.SemanticQuery.OrderBy,
 			Limit:             widget.Source.SemanticQuery.Limit,
 			TimeGrain:         widget.Source.SemanticQuery.TimeGrain,
+		}
+		if interactionCtx != nil && widgetParticipatesInDashboardInteraction(widget, interactionCtx) {
+			req.Filters = append(req.Filters, buildDashboardFilterClauses(interactionCtx.ActiveFilters, interactionCtx.FilterSpecs)...)
 		}
 		result, err := s.semantic.RunMetricQuery(ctx, principal, req)
 		if err != nil {
@@ -292,13 +319,17 @@ func (s *Service) ResolveWidget(ctx context.Context, principal string, widget do
 		if err := widget.VisualSpec.ValidateColumns(result.Result.Columns); err != nil {
 			return nil, err
 		}
-		return &ResolvedWidget{
+		resolved := &ResolvedWidget{
 			Widget:       widget,
 			Columns:      result.Result.Columns,
 			Rows:         result.Result.Rows,
 			RowCount:     result.Result.RowCount,
 			GeneratedSQL: result.Plan.GeneratedSQL,
-		}, nil
+		}
+		if interactionCtx != nil && interactionCtx.Interactive {
+			resolved.Interaction = buildResolvedWidgetInteraction(widget, interactionCtx)
+		}
+		return resolved, nil
 	default:
 		return nil, domain.ErrValidation("unsupported widget source kind %q", string(widget.Source.Kind))
 	}
