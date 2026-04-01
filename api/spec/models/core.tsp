@@ -1700,6 +1700,10 @@ model PaginatedSemanticRelationships {
   next_page_token?: string;
 }
 
+model SemanticRelationshipList {
+  data: SemanticRelationship[];
+}
+
 model TriggerModelRunRequest {
   project_name: string;
   environment_name?: string;

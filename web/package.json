@@ -12,7 +12,7 @@
     "build:js:dev": "node ./scripts/build-js.mjs --mode=dev",
     "build:js:prod": "node ./scripts/build-js.mjs --mode=prod",
     "watch:css": "npm run sync:tokens && node ./scripts/build-css.mjs --mode=dev --watch",
-    "watch:js": "esbuild ./src/sql-editor.ts ./src/notebook.ts ./src/dashboard.ts ./src/explore.ts ./src/datastar-inspector.ts --bundle --format=iife --outdir=../internal/ui/assets/static/js --sourcemap --watch"
+    "watch:js": "esbuild ./src/sql-editor.ts ./src/notebook.ts ./src/dashboard.ts ./src/explore.ts ./src/datastar-inspector.ts ./src/semantic-model-flow.tsx --bundle --format=iife --outdir=../internal/ui/assets/static/js --sourcemap --watch --loader:.tsx=tsx --loader:.css=text"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.13",
@@ -25,9 +25,12 @@
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.30.0",
     "@primer/primitives": "11.4.0",
+    "@xyflow/react": "^12.9.3",
     "echarts": "^6.0.0",
     "highlight.js": "11.11.1",
     "lit": "3.3.1",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "sql-formatter": "15.6.10"
   }
 }

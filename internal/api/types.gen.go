@@ -1955,11 +1955,6 @@ type PaginatedSemanticModels struct {
 	NextPageToken *string         `json:"next_page_token,omitempty"`
 }
 
-type PaginatedSemanticRelationships struct {
-	Data          []SemanticRelationship `json:"data"`
-	NextPageToken *string                `json:"next_page_token,omitempty"`
-}
-
 type PaginatedStorageCredentials struct {
 	Data          []StorageCredential `json:"data"`
 	NextPageToken *string             `json:"next_page_token,omitempty"`
@@ -2494,6 +2489,10 @@ type SemanticRelationship struct {
 	RelationshipType *SemanticRelationshipRelationshipType `json:"relationship_type,omitempty"`
 	ToSemanticId     *string                               `json:"to_semantic_id,omitempty"`
 	UpdatedAt        *string                               `json:"updated_at,omitempty"`
+}
+
+type SemanticRelationshipList struct {
+	Data []SemanticRelationship `json:"data"`
 }
 
 type SemanticRelationshipRelationshipType string
@@ -3076,8 +3075,6 @@ type ListSchemasParams = GenListSchemasParams
 
 type ListSemanticModelsParams = GenListSemanticModelsParams
 
-type ListSemanticRelationshipsParams = GenListSemanticRelationshipsParams
-
 type ListStorageCredentialsParams = GenListStorageCredentialsParams
 
 type ListTableColumnsParams = GenListTableColumnsParams
@@ -3168,9 +3165,9 @@ type CreateSemanticMetricJSONRequestBody = GenCreateSemanticMetricJSONBody
 
 type CreateSemanticModelJSONRequestBody = GenCreateSemanticModelJSONBody
 
-type CreateSemanticPreAggregationJSONRequestBody = GenCreateSemanticPreAggregationJSONBody
+type CreateSemanticModelRelationshipJSONRequestBody = GenCreateSemanticModelRelationshipJSONBody
 
-type CreateSemanticRelationshipJSONRequestBody = GenCreateSemanticRelationshipJSONBody
+type CreateSemanticPreAggregationJSONRequestBody = GenCreateSemanticPreAggregationJSONBody
 
 type CreateStorageCredentialJSONRequestBody = GenCreateStorageCredentialJSONBody
 
@@ -3272,9 +3269,9 @@ type UpdateSemanticMetricJSONRequestBody = GenUpdateSemanticMetricJSONBody
 
 type UpdateSemanticModelJSONRequestBody = GenUpdateSemanticModelJSONBody
 
-type UpdateSemanticPreAggregationJSONRequestBody = GenUpdateSemanticPreAggregationJSONBody
+type UpdateSemanticModelRelationshipJSONRequestBody = GenUpdateSemanticModelRelationshipJSONBody
 
-type UpdateSemanticRelationshipJSONRequestBody = GenUpdateSemanticRelationshipJSONBody
+type UpdateSemanticPreAggregationJSONRequestBody = GenUpdateSemanticPreAggregationJSONBody
 
 type UpdateStorageCredentialJSONRequestBody = GenUpdateStorageCredentialJSONBody
 

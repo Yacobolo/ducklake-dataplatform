@@ -340,6 +340,7 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 - [SemanticPreAggregation](./schemas/semanticpreaggregation)
 - [SemanticPreAggregationList](./schemas/semanticpreaggregationlist)
 - [SemanticRelationship](./schemas/semanticrelationship)
+- [SemanticRelationshipList](./schemas/semanticrelationshiplist)
 - [SemanticRelationshipRelationshipType](./schemas/semanticrelationshiprelationshiptype)
 - [SetDefaultCatalogRequest](./schemas/setdefaultcatalogrequest)
 - [ShareFolderRequest](./schemas/sharefolderrequest)

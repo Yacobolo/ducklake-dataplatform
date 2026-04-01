@@ -14,15 +14,19 @@ import (
 )
 
 type mockSemanticService struct {
-	createSemanticModelFn func(ctx context.Context, principal string, req domain.CreateSemanticModelRequest) (*domain.SemanticModel, error)
-	listSemanticModelsFn  func(ctx context.Context, projectName *string, page domain.PageRequest) ([]domain.SemanticModel, int64, error)
-	getSemanticModelFn    func(ctx context.Context, projectName, name string) (*domain.SemanticModel, error)
-	createMetricFn        func(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error)
-	listMetricsFn         func(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error)
-	updateMetricFn        func(ctx context.Context, projectName, semanticModelName, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error)
-	deleteMetricFn        func(ctx context.Context, projectName, semanticModelName, metricName string) error
-	explainMetricQueryFn  func(ctx context.Context, req semantic.MetricQueryRequest) (*semantic.MetricQueryPlan, error)
-	runMetricQueryFn      func(ctx context.Context, principal string, req semantic.MetricQueryRequest) (*semantic.MetricQueryResult, error)
+	createSemanticModelFn        func(ctx context.Context, principal string, req domain.CreateSemanticModelRequest) (*domain.SemanticModel, error)
+	listSemanticModelsFn         func(ctx context.Context, projectName *string, page domain.PageRequest) ([]domain.SemanticModel, int64, error)
+	getSemanticModelFn           func(ctx context.Context, projectName, name string) (*domain.SemanticModel, error)
+	createMetricFn               func(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error)
+	listMetricsFn                func(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error)
+	updateMetricFn               func(ctx context.Context, projectName, semanticModelName, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error)
+	deleteMetricFn               func(ctx context.Context, projectName, semanticModelName, metricName string) error
+	createRelationshipForModelFn func(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
+	listRelationshipsForModelFn  func(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticRelationship, error)
+	updateRelationshipForModelFn func(ctx context.Context, projectName, semanticModelName, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
+	deleteRelationshipForModelFn func(ctx context.Context, projectName, semanticModelName, relationshipName string) error
+	explainMetricQueryFn         func(ctx context.Context, req semantic.MetricQueryRequest) (*semantic.MetricQueryPlan, error)
+	runMetricQueryFn             func(ctx context.Context, principal string, req semantic.MetricQueryRequest) (*semantic.MetricQueryResult, error)
 }
 
 func (m *mockSemanticService) CreateSemanticModel(ctx context.Context, principal string, req domain.CreateSemanticModelRequest) (*domain.SemanticModel, error) {
@@ -98,20 +102,32 @@ func (m *mockSemanticService) DeletePreAggregation(context.Context, string, stri
 	panic("DeletePreAggregation not implemented")
 }
 
-func (m *mockSemanticService) CreateRelationship(context.Context, string, domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
-	panic("CreateRelationship not implemented")
+func (m *mockSemanticService) CreateRelationshipForModel(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+	if m.createRelationshipForModelFn != nil {
+		return m.createRelationshipForModelFn(ctx, principal, projectName, semanticModelName, req)
+	}
+	panic("CreateRelationshipForModel not implemented")
 }
 
-func (m *mockSemanticService) ListRelationships(context.Context, domain.PageRequest) ([]domain.SemanticRelationship, int64, error) {
-	panic("ListRelationships not implemented")
+func (m *mockSemanticService) ListRelationshipsForModel(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticRelationship, error) {
+	if m.listRelationshipsForModelFn != nil {
+		return m.listRelationshipsForModelFn(ctx, projectName, semanticModelName)
+	}
+	panic("ListRelationshipsForModel not implemented")
 }
 
-func (m *mockSemanticService) UpdateRelationship(context.Context, string, domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
-	panic("UpdateRelationship not implemented")
+func (m *mockSemanticService) UpdateRelationshipForModel(ctx context.Context, projectName, semanticModelName, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+	if m.updateRelationshipForModelFn != nil {
+		return m.updateRelationshipForModelFn(ctx, projectName, semanticModelName, relationshipName, req)
+	}
+	panic("UpdateRelationshipForModel not implemented")
 }
 
-func (m *mockSemanticService) DeleteRelationship(context.Context, string) error {
-	panic("DeleteRelationship not implemented")
+func (m *mockSemanticService) DeleteRelationshipForModel(ctx context.Context, projectName, semanticModelName, relationshipName string) error {
+	if m.deleteRelationshipForModelFn != nil {
+		return m.deleteRelationshipForModelFn(ctx, projectName, semanticModelName, relationshipName)
+	}
+	panic("DeleteRelationshipForModel not implemented")
 }
 
 func (m *mockSemanticService) ExplainMetricQuery(ctx context.Context, req semantic.MetricQueryRequest) (*semantic.MetricQueryPlan, error) {
@@ -466,6 +482,187 @@ func TestHandler_DeleteSemanticMetric_MapsRequest(t *testing.T) {
 	})
 	require.NoError(t, err)
 	_, ok := resp.(GenDeleteSemanticMetric204Response)
+	require.True(t, ok, "expected 204 response, got %T", resp)
+}
+
+func TestHandler_ListSemanticModelRelationships_MapsNestedRequest(t *testing.T) {
+	t.Parallel()
+
+	h := &APIHandler{
+		semantics: &mockSemanticService{
+			listRelationshipsForModelFn: func(_ context.Context, projectName, semanticModelName string) ([]domain.SemanticRelationship, error) {
+				assert.Equal(t, "analytics", projectName)
+				assert.Equal(t, "sales", semanticModelName)
+				return []domain.SemanticRelationship{{
+					ID:               "rel-1",
+					Name:             "sales_to_customers",
+					FromSemanticID:   "sm-sales",
+					ToSemanticID:     "sm-customers",
+					RelationshipType: domain.RelationshipTypeManyToOne,
+					JoinSQL:          "sales.customer_id = customers.customer_id",
+					IsDefault:        true,
+					Cost:             1,
+					MaxHops:          2,
+				}}, nil
+			},
+		},
+	}
+
+	resp, err := h.ListSemanticModelRelationships(context.Background(), GenListSemanticModelRelationshipsRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+	})
+	require.NoError(t, err)
+
+	okResp, ok := resp.(GenListSemanticModelRelationships200JSONResponse)
+	require.True(t, ok, "expected 200 response, got %T", resp)
+	require.Len(t, okResp.Body.Data, 1)
+	require.NotNil(t, okResp.Body.Data[0].Name)
+	assert.Equal(t, "sales_to_customers", *okResp.Body.Data[0].Name)
+	require.NotNil(t, okResp.Body.Data[0].RelationshipType)
+	assert.Equal(t, SemanticRelationshipRelationshipTypeMANYTOONE, *okResp.Body.Data[0].RelationshipType)
+}
+
+func TestHandler_CreateSemanticModelRelationship_UsesPrincipalAndModelContext(t *testing.T) {
+	t.Parallel()
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true, Type: "user"})
+	isDefault := true
+	cost := int32(3)
+	maxHops := int32(1)
+
+	h := &APIHandler{
+		semantics: &mockSemanticService{
+			createRelationshipForModelFn: func(_ context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+				assert.Equal(t, "alice", principal)
+				assert.Equal(t, "analytics", projectName)
+				assert.Equal(t, "sales", semanticModelName)
+				assert.Equal(t, "sales_to_customers", req.Name)
+				assert.Equal(t, "sm-sales", req.FromSemanticID)
+				assert.Equal(t, "sm-customers", req.ToSemanticID)
+				assert.Equal(t, domain.RelationshipTypeManyToOne, req.RelationshipType)
+				assert.Equal(t, "sales.customer_id = customers.customer_id", req.JoinSQL)
+				assert.True(t, req.IsDefault)
+				assert.Equal(t, 3, req.Cost)
+				assert.Equal(t, 1, req.MaxHops)
+				return &domain.SemanticRelationship{
+					ID:               "rel-1",
+					Name:             req.Name,
+					FromSemanticID:   req.FromSemanticID,
+					ToSemanticID:     req.ToSemanticID,
+					RelationshipType: req.RelationshipType,
+					JoinSQL:          req.JoinSQL,
+					IsDefault:        req.IsDefault,
+					Cost:             req.Cost,
+					MaxHops:          req.MaxHops,
+				}, nil
+			},
+		},
+	}
+
+	resp, err := h.CreateSemanticModelRelationship(ctx, GenCreateSemanticModelRelationshipRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		Body: &GenCreateSemanticModelRelationshipJSONBody{
+			Name:             "sales_to_customers",
+			FromSemanticId:   "sm-sales",
+			ToSemanticId:     "sm-customers",
+			RelationshipType: SemanticRelationshipRelationshipTypeMANYTOONE,
+			JoinSql:          "sales.customer_id = customers.customer_id",
+			IsDefault:        &isDefault,
+			Cost:             &cost,
+			MaxHops:          &maxHops,
+		},
+	})
+	require.NoError(t, err)
+
+	created, ok := resp.(GenCreateSemanticModelRelationship201JSONResponse)
+	require.True(t, ok, "expected 201 response, got %T", resp)
+	require.NotNil(t, created.Body.ToSemanticId)
+	assert.Equal(t, "sm-customers", *created.Body.ToSemanticId)
+}
+
+func TestHandler_UpdateSemanticModelRelationship_MapsNestedRequest(t *testing.T) {
+	t.Parallel()
+
+	isDefault := false
+	cost := int32(7)
+	maxHops := int32(4)
+	relationshipType := SemanticRelationshipRelationshipTypeONETOMANY
+	joinSQL := "customers.customer_id = sales.customer_id"
+
+	h := &APIHandler{
+		semantics: &mockSemanticService{
+			updateRelationshipForModelFn: func(_ context.Context, projectName, semanticModelName, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+				assert.Equal(t, "analytics", projectName)
+				assert.Equal(t, "sales", semanticModelName)
+				assert.Equal(t, "sales_to_customers", relationshipName)
+				require.NotNil(t, req.RelationshipType)
+				assert.Equal(t, domain.RelationshipTypeOneToMany, *req.RelationshipType)
+				require.NotNil(t, req.JoinSQL)
+				assert.Equal(t, joinSQL, *req.JoinSQL)
+				require.NotNil(t, req.IsDefault)
+				assert.False(t, *req.IsDefault)
+				require.NotNil(t, req.Cost)
+				assert.Equal(t, 7, *req.Cost)
+				require.NotNil(t, req.MaxHops)
+				assert.Equal(t, 4, *req.MaxHops)
+				return &domain.SemanticRelationship{
+					ID:               "rel-1",
+					Name:             relationshipName,
+					FromSemanticID:   "sm-customers",
+					ToSemanticID:     "sm-sales",
+					RelationshipType: *req.RelationshipType,
+					JoinSQL:          *req.JoinSQL,
+					IsDefault:        *req.IsDefault,
+					Cost:             *req.Cost,
+					MaxHops:          *req.MaxHops,
+				}, nil
+			},
+		},
+	}
+
+	resp, err := h.UpdateSemanticModelRelationship(context.Background(), GenUpdateSemanticModelRelationshipRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		RelationshipName:  "sales_to_customers",
+		Body: &GenUpdateSemanticModelRelationshipJSONBody{
+			RelationshipType: &relationshipType,
+			JoinSql:          &joinSQL,
+			IsDefault:        &isDefault,
+			Cost:             &cost,
+			MaxHops:          &maxHops,
+		},
+	})
+	require.NoError(t, err)
+
+	updated, ok := resp.(GenUpdateSemanticModelRelationship200JSONResponse)
+	require.True(t, ok, "expected 200 response, got %T", resp)
+	require.NotNil(t, updated.Body.RelationshipType)
+	assert.Equal(t, SemanticRelationshipRelationshipTypeONETOMANY, *updated.Body.RelationshipType)
+}
+
+func TestHandler_DeleteSemanticModelRelationship_MapsNestedRequest(t *testing.T) {
+	t.Parallel()
+
+	h := &APIHandler{
+		semantics: &mockSemanticService{
+			deleteRelationshipForModelFn: func(_ context.Context, projectName, semanticModelName, relationshipName string) error {
+				assert.Equal(t, "analytics", projectName)
+				assert.Equal(t, "sales", semanticModelName)
+				assert.Equal(t, "sales_to_customers", relationshipName)
+				return nil
+			},
+		},
+	}
+
+	resp, err := h.DeleteSemanticModelRelationship(context.Background(), GenDeleteSemanticModelRelationshipRequest{
+		ProjectName:       "analytics",
+		SemanticModelName: "sales",
+		RelationshipName:  "sales_to_customers",
+	})
+	require.NoError(t, err)
+	_, ok := resp.(GenDeleteSemanticModelRelationship204Response)
 	require.True(t, ok, "expected 204 response, got %T", resp)
 }
 
