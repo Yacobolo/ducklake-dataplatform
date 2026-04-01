@@ -196,14 +196,10 @@ func table(headers []string, rows []Node) Node {
 		}
 		headerNodes = append(headerNodes, Th(Scope("col"), Class("px-6 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(headers[i])))
 	}
-	return Div(
-		Class("overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] shadow-xs"),
-		Div(Class("overflow-x-auto"),
-			Table(
-				Class("w-full border-collapse text-left text-sm"),
-				THead(Class("border-b border-[var(--borderColor-default)] bg-[var(--bgColor-muted)]"), Tr(Group(headerNodes))),
-				TBody(Group(rows)),
-			),
+	return core.TableContainer("",
+		core.DataTable("",
+			THead(Tr(Group(headerNodes))),
+			TBody(Group(rows)),
 		),
 	)
 }

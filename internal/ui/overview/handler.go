@@ -3,54 +3,89 @@ package overview
 import (
 	"net/http"
 
+	"duck-demo/internal/domain"
 	"duck-demo/internal/ui/core"
 )
 
-type Handler struct{}
+const overviewListLimit = 6
 
-func New() *Handler { return &Handler{} }
+type Handler struct {
+	deps *core.Dependencies
+}
+
+func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
 func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
-	core.RenderHTML(w, http.StatusOK, overviewPage(core.PrincipalFromContext(r.Context()), []overviewSectionData{
-		{
-			Kicker:      "Discover",
-			Title:       "Find governed data consumers should trust first",
-			Description: "Start with the published interface layer, then drill into operational detail only when you need to validate runtime state or ownership.",
-			StartHref:   "/ui/products",
-			StartLabel:  "Start in Products",
-			StartCopy:   "Products package ownership, contract, trust signals, and linked runtime assets into the clearest consumer-facing entry point.",
-			Links: []overviewLinkData{
-				{Label: "Explore", Copy: "Browse folders and mixed authored assets from one shared workspace-style browser.", Href: "/ui/explore"},
-				{Label: "Catalogs", Copy: "Browse schemas, tables, and version-aware metastore detail from the explorer workspace.", Href: "/ui/catalogs"},
-				{Label: "Runtime Assets", Copy: "Inspect freshness, orchestration state, and asset-level runtime signals.", Href: "/ui/assets"},
-				{Label: "Dashboards", Copy: "Review published dashboard surfaces and their supporting widgets.", Href: "/ui/dashboards"},
-			},
-		},
-		{
-			Kicker:      "Build",
-			Title:       "Create semantic, notebook, and transformation assets",
-			Description: "Use build workspaces when you are authoring logic, defining reusable models, or shaping the semantic layer that products expose.",
-			StartHref:   "/ui/models",
-			StartLabel:  "Start in Models",
-			StartCopy:   "Models are the backbone of the transformation layer, with macros tucked alongside them as implementation support rather than primary navigation.",
-			Links: []overviewLinkData{
-				{Label: "Explore", Copy: "Work across notebooks, dashboards, pipelines, and project-bound assets from one browser.", Href: "/ui/explore"},
-				{Label: "Semantic", Copy: "Manage semantic models, pre-aggregations, and relationship paths for consumer queries.", Href: "/ui/semantic"},
-				{Label: "Macros", Copy: "Open reusable SQL helper definitions from the build toolchain workspace.", Href: "/ui/macros"},
-			},
-		},
-		{
-			Kicker:      "Operate",
-			Title:       "Manage access, policy, storage, and platform health",
-			Description: "Operational workspaces focus on who can access data, how the platform executes work, and where governance and storage controls are enforced.",
-			StartHref:   "/ui/security/principals",
-			StartLabel:  "Start in Security",
-			StartCopy:   "Principals and groups are the operational backbone for permissions, API keys, row filters, and masking policies.",
-			Links: []overviewLinkData{
-				{Label: "Governance", Copy: "Search metadata, inspect query history, and manage tags, lineage, and manifests.", Href: "/ui/governance/search"},
-				{Label: "Storage", Copy: "Manage credentials, external locations, and volumes used by the platform.", Href: "/ui/storage"},
-				{Label: "Compute", Copy: "Inspect endpoints, health, and principal assignments for remote execution.", Href: "/ui/compute/endpoints"},
-			},
-		},
+	principal := core.PrincipalFromContext(r.Context())
+	var recent []domain.ResourceAccessEvent
+	var saved []domain.SavedResource
+	if h.deps != nil {
+		var err error
+		if h.deps.ResourceAccess != nil {
+			recent, err = h.deps.ResourceAccess.ListRecent(r.Context(), principal, overviewListLimit)
+			if err != nil {
+				core.RenderHTML(w, http.StatusInternalServerError, core.ErrorPage("Unable to load home", "Recent resources could not be loaded."))
+				return
+			}
+		}
+		if h.deps.SavedResource != nil {
+			saved, err = h.deps.SavedResource.ListSaved(r.Context(), principal, overviewListLimit)
+			if err != nil {
+				core.RenderHTML(w, http.StatusInternalServerError, core.ErrorPage("Unable to load home", "Saved resources could not be loaded."))
+				return
+			}
+		}
+	}
+
+	core.RenderHTML(w, http.StatusOK, overviewPage(overviewPageData{
+		Principal: principal,
+		Recent:    recent,
+		Saved:     saved,
+		CSRFField: h.deps.CSRFFieldProvider(r),
 	}))
+}
+
+func (h *Handler) SaveResource(w http.ResponseWriter, r *http.Request) {
+	if h.deps == nil || h.deps.SavedResource == nil {
+		core.RenderHTML(w, http.StatusNotFound, core.ErrorPage("Not Found", "Saved resources are not configured."))
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "Unable to parse resource form."))
+		return
+	}
+
+	resource := domain.ResourceRef{
+		ResourceType: r.FormValue("resource_type"),
+		ResourceKey:  r.FormValue("resource_key"),
+		DisplayName:  r.FormValue("display_name"),
+		ResourcePath: r.FormValue("resource_path"),
+		Section:      r.FormValue("section"),
+	}
+	if err := h.deps.SavedResource.Save(r.Context(), core.PrincipalFromContext(r.Context()), resource); err != nil {
+		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", err.Error()))
+		return
+	}
+	http.Redirect(w, r, core.SafeUIReturnPath(r.FormValue("return_to")), http.StatusSeeOther)
+}
+
+func (h *Handler) UnsaveResource(w http.ResponseWriter, r *http.Request) {
+	if h.deps == nil || h.deps.SavedResource == nil {
+		core.RenderHTML(w, http.StatusNotFound, core.ErrorPage("Not Found", "Saved resources are not configured."))
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "Unable to parse resource form."))
+		return
+	}
+	if err := h.deps.SavedResource.Unsave(
+		r.Context(),
+		core.PrincipalFromContext(r.Context()),
+		r.FormValue("resource_type"),
+		r.FormValue("resource_key"),
+	); err != nil {
+		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", err.Error()))
+		return
+	}
+	http.Redirect(w, r, core.SafeUIReturnPath(r.FormValue("return_to")), http.StatusSeeOther)
 }

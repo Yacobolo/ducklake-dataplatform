@@ -50,6 +50,12 @@ func (h *Handler) ExploreList(w http.ResponseWriter, r *http.Request) {
 		renderServiceError(w, err)
 		return
 	}
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "explore",
+		DisplayName:  "Explore",
+		Section:      "Discover",
+	})
 	core.RenderHTML(w, http.StatusOK, listPage(
 		view.Principal,
 		view.Rows,

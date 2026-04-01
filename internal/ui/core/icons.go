@@ -9,10 +9,12 @@ import (
 
 var iconFactories = map[string]func(children ...Node) Node{
 	"boxes":             lucide.Boxes,
+	"bookmark":          lucide.Bookmark,
 	"braces":            lucide.Braces,
 	"chart-column":      lucide.ChartColumn,
 	"chevron-down":      lucide.ChevronDown,
 	"chevron-right":     lucide.ChevronRight,
+	"clock-3":           lucide.Clock3,
 	"compass":           lucide.Compass,
 	"cpu":               lucide.Cpu,
 	"database":          lucide.Database,
@@ -59,6 +61,7 @@ var iconFactories = map[string]func(children ...Node) Node{
 	"user":              lucide.User,
 	"waypoints":         lucide.Waypoints,
 	"workflow":          lucide.Workflow,
+	"x":                 lucide.X,
 }
 
 func Icon(name string, attrs ...Node) Node {

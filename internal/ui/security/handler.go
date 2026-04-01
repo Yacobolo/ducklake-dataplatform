@@ -43,6 +43,12 @@ func (h *Handler) SecurityPrincipalsList(w http.ResponseWriter, r *http.Request)
 			DetailURL: "/ui/security/principals/" + item.ID,
 		})
 	}
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "security/principals",
+		DisplayName:  "Security",
+		Section:      "Operate",
+	})
 	core.RenderHTML(w, http.StatusOK, securityPrincipalsListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total))
 }
 

@@ -15,6 +15,12 @@ type Handler struct{ deps *core.Dependencies }
 func New(deps *core.Dependencies) *Handler { return &Handler{deps: deps} }
 
 func (h *Handler) StorageHome(w http.ResponseWriter, r *http.Request) {
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "storage",
+		DisplayName:  "Storage",
+		Section:      "Operate",
+	})
 	core.RenderHTML(w, http.StatusOK, storageHomePage(core.PrincipalFromContext(r.Context())))
 }
 

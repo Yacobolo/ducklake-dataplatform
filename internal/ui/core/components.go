@@ -137,6 +137,77 @@ func DataTable(extraClass string, nodes ...Node) Node {
 	return Table(append(base, nodes...)...)
 }
 
+func ResourceKindLabel(kind string) string {
+	switch kind {
+	case "runtime-asset":
+		return "Runtime Asset"
+	case "semantic-model":
+		return "Semantic Model"
+	case "compute-endpoint":
+		return "Compute Endpoint"
+	default:
+		return TitleizeWords(kind)
+	}
+}
+
+func ResourceKindIcon(kind string) string {
+	switch kind {
+	case "notebook":
+		return "notebook-text"
+	case "dashboard":
+		return "chart-column"
+	case "product":
+		return "package-open"
+	case "runtime-asset":
+		return "git-fork"
+	case "model":
+		return "boxes"
+	case "semantic-model":
+		return "waypoints"
+	case "pipeline":
+		return "workflow"
+	case "compute-endpoint":
+		return "server"
+	default:
+		return "file-stack"
+	}
+}
+
+func ResourceKindIconWrapClass(kind string) string {
+	base := "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+	switch kind {
+	case "notebook":
+		return base + " bg-[var(--display-blue-scale-0)] text-[var(--display-blue-scale-6)]"
+	case "dashboard":
+		return base + " bg-[var(--display-plum-scale-0)] text-[var(--display-plum-scale-6)]"
+	case "product":
+		return base + " bg-[var(--display-orange-scale-0)] text-[var(--display-orange-scale-6)]"
+	case "runtime-asset":
+		return base + " bg-[var(--display-gray-scale-0)] text-[var(--display-gray-scale-7)]"
+	case "model":
+		return base + " bg-[var(--display-green-scale-0)] text-[var(--display-green-scale-6)]"
+	case "semantic-model":
+		return base + " bg-[var(--display-indigo-scale-0)] text-[var(--display-indigo-scale-6)]"
+	case "pipeline":
+		return base + " bg-[var(--display-teal-scale-0)] text-[var(--display-teal-scale-6)]"
+	case "compute-endpoint":
+		return base + " bg-[var(--display-red-scale-0)] text-[var(--display-red-scale-6)]"
+	default:
+		return base + " bg-[var(--bgColor-muted)] text-[var(--fgColor-muted)]"
+	}
+}
+
+func ResourceIcon(kind string) Node {
+	return Span(
+		Class(ResourceKindIconWrapClass(kind)),
+		Icon(
+			ResourceKindIcon(kind),
+			Class("h-5 w-5 shrink-0"),
+			Attr("style", "stroke-width:1.75"),
+		),
+	)
+}
+
 func Badge(text, tone string) Node {
 	return Span(Class(labelClass(tone)), Text(text))
 }

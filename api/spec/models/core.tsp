@@ -534,6 +534,54 @@ model PaginatedQueryHistoryEntries {
   next_page_token?: string;
 }
 
+model ResourceSummary {
+  resource_type: string;
+  resource_key: string;
+  display_name: string;
+  resource_path?: string;
+  href?: string;
+  section?: string;
+}
+
+model RecentResource {
+  resource_type: string;
+  resource_key: string;
+  display_name: string;
+  resource_path?: string;
+  href?: string;
+  section?: string;
+  accessed_at?: utcDateTime;
+}
+
+model SavedResource {
+  resource_type: string;
+  resource_key: string;
+  display_name: string;
+  resource_path?: string;
+  href?: string;
+  section?: string;
+  saved_at?: utcDateTime;
+  last_accessed_at?: utcDateTime;
+}
+
+model PaginatedRecentResources {
+  data: RecentResource[];
+  next_page_token?: string;
+}
+
+model PaginatedSavedResources {
+  data: SavedResource[];
+  next_page_token?: string;
+}
+
+model CreateSavedResourceRequest {
+  resource_type: string;
+  resource_key: string;
+  display_name?: string;
+  resource_path?: string;
+  section?: string;
+}
+
 model MetastoreSummary {
   catalog_name: string;
   metastore_type?: string;

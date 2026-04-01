@@ -147,7 +147,14 @@ func subtleLinkClass() string {
 }
 
 func dataTableClass(extra ...string) string {
-	return ClassNames("min-w-full border-collapse bg-[var(--bgColor-default)] [&_thead]:bg-[var(--bgColor-muted)] [&_tbody_tr]:border-b [&_tbody_tr]:border-[var(--borderColor-default)] [&_tbody_tr:hover]:bg-[color-mix(in_srgb,var(--bgColor-muted)_70%,transparent)] [&_tbody_tr:last-child]:border-b-0 [&_td]:px-6 [&_td]:py-4 [&_td]:align-middle [&_td]:text-sm [&_th]:px-6 [&_th]:py-4 [&_th]:text-left [&_th]:text-xs [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.08em] [&_th]:text-[var(--fgColor-muted)]", strings.Join(extra, " "))
+	return ClassNames(
+		"w-full border-collapse bg-[var(--bgColor-default)] text-left text-sm",
+		"[&_thead]:border-b [&_thead]:border-[var(--borderColor-default)] [&_thead]:bg-[var(--bgColor-muted)]",
+		"[&_tbody_tr]:border-b [&_tbody_tr]:border-[var(--borderColor-muted)] [&_tbody_tr]:transition-colors [&_tbody_tr]:duration-150 [&_tbody_tr]:ease-out [&_tbody_tr:hover]:bg-[var(--bgColor-muted)] [&_tbody_tr:last-child]:border-b-0",
+		"[&_td]:px-6 [&_td]:py-4 [&_td]:align-middle",
+		"[&_th]:px-6 [&_th]:py-3 [&_th]:text-left [&_th]:text-xs [&_th]:font-bold [&_th]:uppercase [&_th]:tracking-[0.1em] [&_th]:text-[var(--fgColor-muted)]",
+		strings.Join(extra, " "),
+	)
 }
 
 func labelClass(tone string) string {

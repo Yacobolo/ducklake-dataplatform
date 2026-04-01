@@ -53,6 +53,12 @@ func (h *Handler) CatalogsList(w http.ResponseWriter, r *http.Request) {
 		selectedCatalog = items[0].Name
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "catalogs",
+		DisplayName:  "Catalogs",
+		Section:      "Discover",
+	})
 	h.renderCatalogWorkspace(w, r, items, selectedCatalog)
 }
 
