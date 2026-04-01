@@ -52,7 +52,9 @@ func TestSemanticModelDetailPage_RendersReadOnlyOverview(t *testing.T) {
 	assert.Contains(t, html, "/ui/static/js/semantic-model-flow")
 	assert.Contains(t, html, "Connected relationships")
 	assert.Contains(t, html, "Metrics")
-	assert.Contains(t, html, "Edit model")
+	assert.Contains(t, html, "Edit semantic model")
+	assert.Contains(t, html, "Base relation analytics.fct_sales")
+	assert.Contains(t, html, "1 connected relations")
 	assert.Contains(t, html, "sales_to_customers")
 	assert.NotContains(t, html, "New relationship")
 	assert.NotContains(t, html, "New metric")
@@ -61,7 +63,7 @@ func TestSemanticModelDetailPage_RendersReadOnlyOverview(t *testing.T) {
 	assert.NotContains(t, html, ">Relationships</a>")
 
 	titleIndex := strings.Index(html, "analytics.sales")
-	modelMapIndex := strings.Index(html, "Model map")
+	modelMapIndex := strings.Index(html, "Semantic model map")
 	relationshipsIndex := strings.Index(html, "Connected relationships")
 	metricsIndex := strings.Index(html, "Metrics")
 	require.NotEqual(t, -1, titleIndex)
@@ -99,7 +101,7 @@ func TestSemanticModelEditPage_RendersModelScopedAuthoring(t *testing.T) {
 				Type:           "MANY_TO_ONE",
 				Cardinality:    "N:1",
 				JoinSQL:        "sales.customer_id = customers.customer_id",
-				Direction:      "Current model -> related model",
+				Direction:      "Current relation -> related relation",
 				IsDefault:      true,
 				Cost:           0,
 				MaxHops:        0,
@@ -121,10 +123,12 @@ func TestSemanticModelEditPage_RendersModelScopedAuthoring(t *testing.T) {
 	html := buf.String()
 
 	assert.Contains(t, html, "Back to overview")
-	assert.Contains(t, html, "Model metadata")
+	assert.Contains(t, html, "Semantic model metadata")
 	assert.Contains(t, html, "Relationships")
 	assert.Contains(t, html, "New relationship")
-	assert.Contains(t, html, "Current model -&gt; related model")
+	assert.Contains(t, html, "Current relation -&gt; related relation")
+	assert.Contains(t, html, "Base relation reference")
+	assert.Contains(t, html, "Related relation")
 	assert.Contains(t, html, "Create relationship")
 	assert.Contains(t, html, "Metrics")
 	assert.Contains(t, html, "New metric")
@@ -134,7 +138,7 @@ func TestSemanticModelEditPage_RendersModelScopedAuthoring(t *testing.T) {
 	assert.NotContains(t, html, "/ui/semantic/relationships")
 	assert.NotContains(t, html, ">Relationships</a>")
 
-	metadataIndex := strings.Index(html, "Model metadata")
+	metadataIndex := strings.Index(html, "Semantic model metadata")
 	relationshipsIndex := strings.Index(html, "Relationships")
 	metricsIndex := strings.Index(html, "Metrics")
 	advancedIndex := strings.Index(html, "Advanced tools")

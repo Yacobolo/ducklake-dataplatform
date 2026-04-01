@@ -126,14 +126,14 @@ func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticMo
 		}
 		table = core.TableContainer("",
 			core.DataTable("",
-				THead(Tr(Th(Scope("col"), Text("Model")), Th(Scope("col"), Text("Base model")), Th(Scope("col"), Text("Owner")), Th(Scope("col"), Text("Updated")))),
+				THead(Tr(Th(Scope("col"), Text("Semantic model")), Th(Scope("col"), Text("Base relation")), Th(Scope("col"), Text("Owner")), Th(Scope("col"), Text("Updated")))),
 				TBody(Group(tableRows)),
 			),
 		)
 	}
 	return core.AppPage("Semantic Models", "semantic", principal,
 		core.ListPageLayout(
-			core.ListPageHeader("Semantic models", "Use the semantic workspace for the consumer-facing model layer. Relationship paths stay nearby, but model management remains the default landing surface.", core.PrimaryLink("/ui/semantic/models/new", "", Text("New semantic model"))),
+			core.ListPageHeader("Semantic models", "Use the semantic workspace for the consumer-facing semantic layer. Relationship paths stay nearby, but semantic model management remains the default landing surface.", core.PrimaryLink("/ui/semantic/models/new", "", Text("New semantic model"))),
 			core.ListPageBody(
 				table,
 				core.ListPagination("/ui/semantic/models", page, total),
@@ -150,7 +150,7 @@ func semanticModelsNewPage(principal domain.ContextPrincipal, csrfFieldProvider 
 		core.InputControl("", Name("name"), Required()),
 		Label(Text("Description")),
 		core.TextareaControl("min-h-24", Name("description")),
-		Label(Text("Base model reference")),
+		Label(Text("Base relation reference")),
 		core.InputControl("", Name("base_model_ref"), Required()),
 		Label(Text("Default time dimension")),
 		core.InputControl("", Name("default_time_dimension")),
@@ -176,23 +176,23 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 						H1(Class("m-0 text-3xl font-semibold tracking-tight"), Text(d.ProjectName+"."+d.ModelName)),
 						descriptionNode,
 						core.BadgeRow(
-							core.Badge("Base "+d.BaseModelRef, "accent"),
+							core.Badge("Base relation "+d.BaseModelRef, "accent"),
 							core.Badge("Time "+valueOrDash(d.DefaultTimeDim), ""),
 							core.Badge(strconv.Itoa(d.RelationshipCount)+" relationships", ""),
 							core.Badge(strconv.Itoa(len(d.Metrics))+" metrics", ""),
-							core.Badge(strconv.Itoa(d.ConnectedModelCount)+" connected models", ""),
+							core.Badge(strconv.Itoa(d.ConnectedModelCount)+" connected relations", ""),
 						),
 					),
 					Div(Class("flex flex-wrap items-center gap-3 [&_form]:m-0 [&_form]:inline-flex"),
-						core.SecondaryLink(d.EditURL, "", Text("Edit model")),
+						core.SecondaryLink(d.EditURL, "", Text("Edit semantic model")),
 						core.ActionMenu("More",
-							core.ActionMenuPost(d.DeleteURL, "Delete model", d.CSRFFieldProvider, true),
+							core.ActionMenuPost(d.DeleteURL, "Delete semantic model", d.CSRFFieldProvider, true),
 						),
 					),
 				),
 			),
 			core.SectionSurface(
-				core.SectionHeader("Model map", "Power BI-style overview of the semantic model and its direct joins before you edit anything."),
+				core.SectionHeader("Semantic model map", "Power BI-style overview of the semantic model and its direct joins before you edit anything."),
 				El("semantic-model-flow",
 					Class("block"),
 					Attr("nodes", d.GraphNodesJSON),
@@ -214,7 +214,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 
 func semanticRelatedRelationshipsTable(rows []semanticRelatedRelationshipRowData, showActions bool) Node {
 	if len(rows) == 0 {
-		return core.EmptyState("waypoints", "No direct relationships yet", "Add a relationship from the model edit page to see join paths appear here and in the model map.", nil)
+		return core.EmptyState("waypoints", "No direct relationships yet", "Add a relationship from the semantic model edit page to see join paths appear here and in the semantic model map.", nil)
 	}
 
 	tableRows := make([]Node, 0, len(rows))
@@ -244,7 +244,7 @@ func semanticRelatedRelationshipsTable(rows []semanticRelatedRelationshipRowData
 
 	headers := []Node{
 		Th(Text("Relationship")),
-		Th(Text("Connected model")),
+		Th(Text("Connected relation")),
 		Th(Text("Type")),
 		Th(Text("Join")),
 		Th(Text("Default")),
@@ -421,7 +421,7 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 		resultNode = Group([]Node{
 			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 				H2(Class("mt-0 text-lg font-semibold"), Text("Query plan")),
-				P(Text("Base model: "+d.Plan.BaseModelName)),
+				P(Text("Semantic model: "+d.Plan.BaseModelName)),
 				P(Text("Base relation: "+d.Plan.BaseRelation)),
 				P(Text("Metrics: "+stringsJoin(d.Plan.Metrics))),
 				P(Text("Dimensions: "+stringsJoin(d.Plan.Dimensions))),
@@ -594,31 +594,31 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 				),
 			),
 			core.SectionSurface(
-				core.SectionHeader("Model metadata", "Update the core definition for this semantic model."),
+				core.SectionHeader("Semantic model metadata", "Update the core definition for this semantic model."),
 				Div(Class("grid gap-3"),
 					Form(Class("grid gap-3"), Method("post"), Action(d.UpdateURL),
 						d.CSRFFieldProvider(),
 						Label(Text("Description")),
 						core.TextareaControl("min-h-24", Name("description"), Text(d.Description)),
-						Label(Text("Base model reference")),
+						Label(Text("Base relation reference")),
 						core.InputControl("", Name("base_model_ref"), Value(d.BaseModelRef), Required()),
 						Label(Text("Default time dimension")),
 						core.InputControl("", Name("default_time_dimension"), Value(d.DefaultTimeDim)),
 						Label(Text("Tags (comma separated)")),
 						core.InputControl("", Name("tags"), Value(d.TagsCSV)),
-						Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save model"))),
+						Div(Class("mt-4"), core.PrimaryButton("", Type("submit"), Text("Save semantic model"))),
 					),
-					Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete model"))),
+					Form(Method("post"), Action(d.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete semantic model"))),
 				),
 			),
 			core.SectionSurface(
-				core.SectionHeader("Relationships", "Manage joins that touch this model. Relationships are edited here, not in a separate workspace."),
+				core.SectionHeader("Relationships", "Manage joins that touch this semantic model. Relationships are edited here, not in a separate workspace."),
 				Div(Class("grid gap-4"), Group(relationshipCards)),
 				Details(
 					Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 					Summary(Class("cursor-pointer list-none text-sm font-medium text-[var(--fgColor-default)] [&::-webkit-details-marker]:hidden"), Text("New relationship")),
 					Div(Class("grid gap-3 pt-4"),
-						P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text("The current model is fixed. Choose the related model and whether the join flows out from or into this model.")),
+						P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text("The current semantic model is fixed. Choose the related relation and whether the join flows out from or into this semantic model.")),
 						Form(Class("grid gap-3 sm:grid-cols-2"), Method("post"), Action(d.RelationshipCreateURL),
 							d.CSRFFieldProvider(),
 							Div(Class("grid gap-2"),
@@ -626,14 +626,14 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 								core.InputControl("", Name("name"), Required()),
 							),
 							Div(Class("grid gap-2"),
-								Label(Text("Related model")),
+								Label(Text("Related relation")),
 								core.SelectControl("", Name("related_semantic_id"), Group(createModelOptions)),
 							),
 							Div(Class("grid gap-2"),
 								Label(Text("Direction")),
 								core.SelectControl("", Name("direction"),
-									Option(Value("outgoing"), Text("Current model -> related model")),
-									Option(Value("incoming"), Text("Related model -> current model")),
+									Option(Value("outgoing"), Text("Current relation -> related relation")),
+									Option(Value("incoming"), Text("Related relation -> current relation")),
 								),
 							),
 							Div(Class("grid gap-2"),
