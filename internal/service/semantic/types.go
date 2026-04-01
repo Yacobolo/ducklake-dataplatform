@@ -11,6 +11,7 @@ type MetricQueryRequest struct {
 	Filters           []string
 	OrderBy           []string
 	Limit             *int
+	Offset            *int
 	TimeGrain         *string
 }
 

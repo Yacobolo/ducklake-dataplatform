@@ -155,6 +155,7 @@ func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 		UpdatesStreamURL:  "/ui/dashboards/" + dashboardID + "/updates/" + streamID,
 		DataStreamURL:     dataStreamURL,
 		UpdatesApplyURL:   "/ui/dashboards/" + dashboardID + "/updates/" + streamID,
+		TablePageURL:      "/ui/dashboards/" + dashboardID + "/updates/" + streamID + "/table-page",
 		StreamID:          streamID,
 		ActiveFilters:     activeFilters,
 		CSRFToken:         h.deps.CSRFToken(r),
@@ -218,6 +219,7 @@ func (h *Handler) DashboardsSurface(w http.ResponseWriter, r *http.Request) {
 		ActiveFilters:     activeFilters,
 		CSRFToken:         h.deps.CSRFToken(r),
 		CSRFFieldProvider: h.deps.CSRFFieldProvider(r),
+		TablePageURL:      "",
 	}
 
 	html, err := renderHTMLString(dashboardViewSurface(data, dashboardWidgetNodes(data.Widgets, data.BaseURL, data.CSRFFieldProvider, false)))
@@ -255,8 +257,11 @@ func (h *Handler) DashboardsUpdatesStream(w http.ResponseWriter, r *http.Request
 			if err := sse.Send(datastar.EventTypePatchSignals, []string{"signals {}"}); err != nil {
 				return
 			}
-		case filters := <-ch:
-			if err := h.writeDashboardSurfacePatch(r.Context(), principal, dashboardID, streamID, filters, r, sse); err != nil {
+		case update := <-ch:
+			if update.TablePage != nil {
+				continue
+			}
+			if err := h.writeDashboardSurfacePatch(r.Context(), principal, dashboardID, streamID, update.Filters, r, sse); err != nil {
 				_ = sse.ConsoleError(err)
 				return
 			}
@@ -275,7 +280,7 @@ func (h *Handler) DashboardsDataStream(w http.ResponseWriter, r *http.Request) {
 	sse := datastar.NewSSE(w, r)
 
 	principal, _ := principalLabel(r)
-	if err := h.writeDashboardChartPayloadEvent(r.Context(), principal, dashboardID, dashboardFiltersFromRequest(r), sse); err != nil {
+	if err := h.writeDashboardWidgetPayloadEvent(r.Context(), principal, dashboardID, dashboardFiltersFromRequest(r), sse); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -294,8 +299,14 @@ func (h *Handler) DashboardsDataStream(w http.ResponseWriter, r *http.Request) {
 			if err := sse.Send(datastar.EventType("dashboard-ping"), []string{"{}"}); err != nil {
 				return
 			}
-		case filters := <-ch:
-			if err := h.writeDashboardChartPayloadEvent(r.Context(), principal, dashboardID, filters, sse); err != nil {
+		case update := <-ch:
+			if update.TablePage != nil {
+				if err := h.writeDashboardWidgetPagePayloadEvent(r.Context(), principal, dashboardID, *update.TablePage, sse); err != nil {
+					return
+				}
+				continue
+			}
+			if err := h.writeDashboardWidgetPayloadEvent(r.Context(), principal, dashboardID, update.Filters, sse); err != nil {
 				return
 			}
 		}
@@ -315,7 +326,28 @@ func (h *Handler) DashboardsUpdatesApply(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	h.updates.publish(streamID, filters)
+	h.updates.publishFilters(streamID, filters)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) DashboardsTablePageApply(w http.ResponseWriter, r *http.Request) {
+	streamID := strings.TrimSpace(chi.URLParam(r, "streamID"))
+	if streamID == "" {
+		http.Error(w, "missing stream id", http.StatusBadRequest)
+		return
+	}
+
+	req, err := decodeDashboardTablePageRequest(r)
+	if err != nil {
+		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "Unable to decode dashboard table page request."))
+		return
+	}
+	if req == nil || strings.TrimSpace(req.WidgetID) == "" {
+		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "Missing table widget id."))
+		return
+	}
+
+	h.updates.publishTablePage(streamID, *req)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -537,7 +569,7 @@ func (h *Handler) resolveDashboardViewData(ctx context.Context, principal, dashb
 		return dashboardDetailPageData{}, err
 	}
 
-	resolved, err := h.deps.Dashboard.ResolveWidgetsForDashboard(ctx, principal, item, widgets, filters)
+	resolved, err := h.deps.Dashboard.ResolveWidgetsForDashboardPaged(ctx, principal, item, widgets, filters, dashboardInitialTablePageRequests(widgets))
 	if err != nil {
 		return dashboardDetailPageData{}, err
 	}
@@ -556,6 +588,7 @@ func (h *Handler) resolveDashboardViewData(ctx context.Context, principal, dashb
 		UpdatesStreamURL:  "/ui/dashboards/" + dashboardID + "/updates/" + streamID,
 		DataStreamURL:     "/ui/dashboards/" + dashboardID + "/updates/" + streamID + "/data",
 		UpdatesApplyURL:   "/ui/dashboards/" + dashboardID + "/updates/" + streamID,
+		TablePageURL:      "/ui/dashboards/" + dashboardID + "/updates/" + streamID + "/table-page",
 		StreamID:          streamID,
 		ActiveFilters:     cloneInteractiveFilters(filters),
 		CSRFToken:         h.deps.CSRFToken(r),
@@ -575,21 +608,58 @@ func (h *Handler) writeDashboardSurfacePatch(ctx context.Context, principal, das
 	)
 }
 
-func (h *Handler) writeDashboardChartPayloadEvent(ctx context.Context, principal, dashboardID string, filters []dashboardsvc.InteractiveFilter, sse *datastar.ServerSentEventGenerator) error {
+func (h *Handler) writeDashboardWidgetPayloadEvent(ctx context.Context, principal, dashboardID string, filters []dashboardsvc.InteractiveFilter, sse *datastar.ServerSentEventGenerator) error {
 	item, widgets, err := h.deps.Dashboard.GetDashboard(ctx, dashboardID)
 	if err != nil {
 		return err
 	}
 
-	resolved, err := h.deps.Dashboard.ResolveWidgetsForDashboard(ctx, principal, item, widgets, filters)
+	resolved, err := h.deps.Dashboard.ResolveWidgetsForDashboardPaged(ctx, principal, item, widgets, filters, dashboardInitialTablePageRequests(widgets))
 	if err != nil {
 		return err
 	}
 
-	payload, err := json.Marshal(dashboardChartPayloadEnvelope(resolved, filters))
+	payload, err := json.Marshal(dashboardWidgetPayloadEnvelope(resolved, filters))
 	if err != nil {
-		return fmt.Errorf("marshal dashboard chart payloads: %w", err)
+		return fmt.Errorf("marshal dashboard widget payloads: %w", err)
 	}
 
-	return sse.Send(datastar.EventType("dashboard-chart-payloads"), []string{string(payload)})
+	return sse.Send(datastar.EventType("dashboard-widget-payloads"), []string{string(payload)})
+}
+
+func (h *Handler) writeDashboardWidgetPagePayloadEvent(ctx context.Context, principal, dashboardID string, req dashboardTablePageRequest, sse *datastar.ServerSentEventGenerator) error {
+	item, widgets, err := h.deps.Dashboard.GetDashboard(ctx, dashboardID)
+	if err != nil {
+		return err
+	}
+
+	resolved, err := h.deps.Dashboard.ResolveWidgetForDashboardPage(ctx, principal, item, widgets, req.WidgetID, req.Filters, dashboardsvc.TablePageRequest{
+		Offset: req.Offset,
+		Limit:  req.Limit,
+		Append: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	payload, err := json.Marshal(dashboardWidgetPayloadEnvelope([]dashboardsvc.ResolvedWidget{*resolved}, req.Filters))
+	if err != nil {
+		return fmt.Errorf("marshal dashboard widget page payload: %w", err)
+	}
+	return sse.Send(datastar.EventType("dashboard-widget-payloads"), []string{string(payload)})
+}
+
+func dashboardInitialTablePageRequests(widgets []domain.DashboardWidget) map[string]dashboardsvc.TablePageRequest {
+	out := make(map[string]dashboardsvc.TablePageRequest)
+	for _, widget := range widgets {
+		if widget.ID == "" || widget.VisualSpec == nil || widget.VisualSpec.Kind != domain.VisualOutputTable {
+			continue
+		}
+		out[widget.ID] = dashboardsvc.TablePageRequest{
+			Offset: 0,
+			Limit:  50,
+			Append: false,
+		}
+	}
+	return out
 }

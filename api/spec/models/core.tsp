@@ -1227,6 +1227,7 @@ model VisualSpec {
   title?: string;
   subtitle?: string;
   legend?: boolean;
+  legend_position?: "top" | "right" | "bottom" | "left";
   stacked?: boolean;
   color_palette?: string;
 }

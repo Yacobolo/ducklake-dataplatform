@@ -1,4 +1,7 @@
 import "./chart";
+import "./table";
+
+import type { DashboardWidgetPayload, DashboardWidgetPayloadEnvelope } from "./dashboard-widget-payload";
 
 type ChartFilterSelection = {
   widgetId: string;
@@ -10,21 +13,14 @@ type DashboardChartFilterEventDetail = {
   selections: ChartFilterSelection[];
 };
 
-type DashboardChartPayload = {
-  name?: string;
-  columns: string[];
-  rows: unknown[][];
-  visual?: Record<string, unknown> | null;
-  interaction?: Record<string, unknown> | null;
+type DashboardTablePageEventDetail = {
+  widgetId: string;
+  offset: number;
+  limit: number;
 };
 
-type DashboardChartPayloadEnvelope = {
-  filter_key?: string;
-  widgets?: Record<string, DashboardChartPayload>;
-};
-
-type DuckChartElement = HTMLElement & {
-  setPayload: (payload: DashboardChartPayload | null) => void;
+type DuckWidgetElement = HTMLElement & {
+  setPayload: (payload: DashboardWidgetPayload | null) => void;
 };
 
 type OriginFilter = {
@@ -56,6 +52,9 @@ class DashboardSurfaceController {
     document.addEventListener("dashboard-chart-filter", (event) => {
       void this.handleChartFilter(event as CustomEvent<DashboardChartFilterEventDetail>);
     });
+    document.addEventListener("dashboard-table-page-request", (event) => {
+      void this.handleTablePageRequest(event as CustomEvent<DashboardTablePageEventDetail>);
+    });
 
     document.addEventListener("click", (event) => {
       void this.handleClick(event);
@@ -64,6 +63,30 @@ class DashboardSurfaceController {
     window.addEventListener("popstate", () => {
       void this.applyFiltersFromLocation(false);
     });
+  }
+
+  private async handleTablePageRequest(event: CustomEvent<DashboardTablePageEventDetail>): Promise<void> {
+    const surface = this.getSurface();
+    const tablePageURL = surface?.dataset.dashboardTablePageUrl;
+    if (!surface || !tablePageURL) {
+      return;
+    }
+
+    const response = await fetch(tablePageURL, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        csrfToken: this.readCSRFToken(surface),
+        originFilters: this.serializeOriginFilters(this.readOriginFiltersFromURL(window.location.href)),
+        widgetId: event.detail.widgetId,
+        offset: event.detail.offset,
+        limit: event.detail.limit,
+      }),
+    });
+    void response;
   }
 
   private async handleChartFilter(event: CustomEvent<DashboardChartFilterEventDetail>): Promise<void> {
@@ -256,20 +279,20 @@ class DashboardSurfaceController {
     this.dataStream?.close();
     this.dataStreamURL = nextURL;
     this.dataStream = new EventSource(nextURL);
-    this.dataStream.addEventListener("dashboard-chart-payloads", (event) => {
-      this.handleChartPayloads(event as MessageEvent<string>);
+    this.dataStream.addEventListener("dashboard-widget-payloads", (event) => {
+      this.handleWidgetPayloads(event as MessageEvent<string>);
     });
   }
 
-  private handleChartPayloads(event: MessageEvent<string>): void {
+  private handleWidgetPayloads(event: MessageEvent<string>): void {
     const surface = this.getSurface();
     if (!surface) {
       return;
     }
 
-    let payloads: DashboardChartPayloadEnvelope;
+    let payloads: DashboardWidgetPayloadEnvelope;
     try {
-      payloads = JSON.parse(event.data) as DashboardChartPayloadEnvelope;
+      payloads = JSON.parse(event.data) as DashboardWidgetPayloadEnvelope;
     } catch {
       return;
     }
@@ -277,10 +300,13 @@ class DashboardSurfaceController {
     this.completePendingDataIfReady(payloads.filter_key ?? "");
 
     const widgetPayloads = payloads.widgets ?? {};
-    const charts = surface.querySelectorAll("duck-chart[data-widget-id]");
-    for (const chart of charts) {
-      const element = chart as DuckChartElement;
+    const widgets = surface.querySelectorAll("duck-chart[data-widget-id], duck-table[data-widget-id]");
+    for (const widget of widgets) {
+      const element = widget as DuckWidgetElement;
       const widgetID = element.dataset.widgetId ?? "";
+      if (!(widgetID in widgetPayloads)) {
+        continue;
+      }
       element.setPayload(widgetPayloads[widgetID] ?? null);
     }
   }

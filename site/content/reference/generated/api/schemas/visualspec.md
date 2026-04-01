@@ -14,6 +14,7 @@
 | `encodings` | `VisualEncodings` | `false` | - |
 | `kind` | `VisualOutputKind` | `true` | - |
 | `legend` | `boolean` | `false` | - |
+| `legend_position` | `string` | `false` | - |
 | `stacked` | `boolean` | `false` | - |
 | `subtitle` | `string` | `false` | - |
 | `title` | `string` | `false` | - |

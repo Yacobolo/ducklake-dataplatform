@@ -56,6 +56,9 @@ func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest
 	if req.Limit != nil && *req.Limit <= 0 {
 		return nil, domain.ErrValidation("limit must be > 0")
 	}
+	if req.Offset != nil && *req.Offset < 0 {
+		return nil, domain.ErrValidation("offset must be >= 0")
+	}
 	if err := validateRequestSQLFragments(req); err != nil {
 		return nil, err
 	}
@@ -479,6 +482,12 @@ func buildSafeMetricQuery(args buildMetricQueryArgs) (string, error) {
 	if args.Request.Limit != nil && *args.Request.Limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", *args.Request.Limit)
 	}
+	if args.Request.Offset != nil && *args.Request.Offset > 0 {
+		if args.Request.Limit == nil || *args.Request.Limit <= 0 {
+			query += " LIMIT ALL"
+		}
+		query += fmt.Sprintf(" OFFSET %d", *args.Request.Offset)
+	}
 	return query, nil
 }
 
@@ -582,6 +591,12 @@ func buildUnsafeMetricQuery(args buildMetricQueryArgs, uniqueKeys []string) (str
 	}
 	if args.Request.Limit != nil && *args.Request.Limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", *args.Request.Limit)
+	}
+	if args.Request.Offset != nil && *args.Request.Offset > 0 {
+		if args.Request.Limit == nil || *args.Request.Limit <= 0 {
+			query += " LIMIT ALL"
+		}
+		query += fmt.Sprintf(" OFFSET %d", *args.Request.Offset)
 	}
 	return query, nil
 }

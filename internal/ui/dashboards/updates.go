@@ -11,21 +11,33 @@ import (
 
 type dashboardUpdateHub struct {
 	mu      sync.Mutex
-	streams map[string]map[chan []dashboardsvc.InteractiveFilter]struct{}
+	streams map[string]map[chan dashboardUpdateMessage]struct{}
 }
 
 func newDashboardUpdateHub() *dashboardUpdateHub {
 	return &dashboardUpdateHub{
-		streams: make(map[string]map[chan []dashboardsvc.InteractiveFilter]struct{}),
+		streams: make(map[string]map[chan dashboardUpdateMessage]struct{}),
 	}
 }
 
-func (h *dashboardUpdateHub) subscribe(streamID string) (<-chan []dashboardsvc.InteractiveFilter, func()) {
-	ch := make(chan []dashboardsvc.InteractiveFilter, 8)
+type dashboardUpdateMessage struct {
+	Filters   []dashboardsvc.InteractiveFilter
+	TablePage *dashboardTablePageRequest
+}
+
+type dashboardTablePageRequest struct {
+	WidgetID string
+	Offset   int
+	Limit    int
+	Filters  []dashboardsvc.InteractiveFilter
+}
+
+func (h *dashboardUpdateHub) subscribe(streamID string) (<-chan dashboardUpdateMessage, func()) {
+	ch := make(chan dashboardUpdateMessage, 8)
 
 	h.mu.Lock()
 	if _, ok := h.streams[streamID]; !ok {
-		h.streams[streamID] = make(map[chan []dashboardsvc.InteractiveFilter]struct{})
+		h.streams[streamID] = make(map[chan dashboardUpdateMessage]struct{})
 	}
 	h.streams[streamID][ch] = struct{}{}
 	h.mu.Unlock()
@@ -46,10 +58,10 @@ func (h *dashboardUpdateHub) subscribe(streamID string) (<-chan []dashboardsvc.I
 	}
 }
 
-func (h *dashboardUpdateHub) publish(streamID string, filters []dashboardsvc.InteractiveFilter) {
+func (h *dashboardUpdateHub) publishFilters(streamID string, filters []dashboardsvc.InteractiveFilter) {
 	h.mu.Lock()
 	subscribers := h.streams[streamID]
-	channels := make([]chan []dashboardsvc.InteractiveFilter, 0, len(subscribers))
+	channels := make([]chan dashboardUpdateMessage, 0, len(subscribers))
 	for ch := range subscribers {
 		channels = append(channels, ch)
 	}
@@ -57,7 +69,32 @@ func (h *dashboardUpdateHub) publish(streamID string, filters []dashboardsvc.Int
 
 	for _, ch := range channels {
 		select {
-		case ch <- cloneInteractiveFilters(filters):
+		case ch <- dashboardUpdateMessage{Filters: cloneInteractiveFilters(filters)}:
+		default:
+		}
+	}
+}
+
+func (h *dashboardUpdateHub) publishTablePage(streamID string, req dashboardTablePageRequest) {
+	h.mu.Lock()
+	subscribers := h.streams[streamID]
+	channels := make([]chan dashboardUpdateMessage, 0, len(subscribers))
+	for ch := range subscribers {
+		channels = append(channels, ch)
+	}
+	h.mu.Unlock()
+
+	for _, ch := range channels {
+		select {
+		case ch <- dashboardUpdateMessage{
+			Filters: cloneInteractiveFilters(req.Filters),
+			TablePage: &dashboardTablePageRequest{
+				WidgetID: req.WidgetID,
+				Offset:   req.Offset,
+				Limit:    req.Limit,
+				Filters:  cloneInteractiveFilters(req.Filters),
+			},
+		}:
 		default:
 		}
 	}
@@ -67,6 +104,15 @@ type dashboardUpdateRequest struct {
 	CSRFToken     string     `json:"csrfToken"`
 	OriginFilters []string   `json:"originFilters"`
 	URLParams     filterData `json:"urlParams"`
+}
+
+type dashboardTablePageUpdateRequest struct {
+	CSRFToken     string     `json:"csrfToken"`
+	OriginFilters []string   `json:"originFilters"`
+	URLParams     filterData `json:"urlParams"`
+	WidgetID      string     `json:"widgetId"`
+	Offset        int        `json:"offset"`
+	Limit         int        `json:"limit"`
 }
 
 type filterData struct {
@@ -84,6 +130,36 @@ func decodeDashboardUpdateRequest(r *http.Request) ([]dashboardsvc.InteractiveFi
 		rawOriginFilters = payload.URLParams.OriginFilters
 	}
 	return interactiveFiltersFromOriginRaw(rawOriginFilters), nil
+}
+
+func decodeDashboardTablePageRequest(r *http.Request) (*dashboardTablePageRequest, error) {
+	var payload dashboardTablePageUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		return nil, err
+	}
+
+	rawOriginFilters := payload.OriginFilters
+	if len(rawOriginFilters) == 0 {
+		rawOriginFilters = payload.URLParams.OriginFilters
+	}
+	limit := payload.Limit
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	offset := payload.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	return &dashboardTablePageRequest{
+		WidgetID: strings.TrimSpace(payload.WidgetID),
+		Offset:   offset,
+		Limit:    limit,
+		Filters:  interactiveFiltersFromOriginRaw(rawOriginFilters),
+	}, nil
 }
 
 func interactiveFiltersFromOriginRaw(rawOriginFilters []string) []dashboardsvc.InteractiveFilter {

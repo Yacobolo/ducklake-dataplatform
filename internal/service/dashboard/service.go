@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/query"
@@ -59,6 +60,19 @@ type ResolvedWidget struct {
 	RowCount     int
 	GeneratedSQL string
 	Interaction  *ResolvedWidgetInteraction
+	Page         *ResolvedWidgetPage
+}
+
+type ResolvedWidgetPage struct {
+	Offset  int  `json:"offset"`
+	Append  bool `json:"append"`
+	HasMore bool `json:"has_more"`
+}
+
+type TablePageRequest struct {
+	Offset int
+	Limit  int
+	Append bool
 }
 
 // CreateDashboard creates a new dashboard owned by the caller.
@@ -243,7 +257,51 @@ func (s *Service) ResolveWidget(ctx context.Context, principal string, widget do
 	return s.resolveWidgetWithContext(ctx, principal, widget, nil)
 }
 
+func (s *Service) ResolveWidgetsForDashboardPaged(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []InteractiveFilter, tablePages map[string]TablePageRequest) ([]ResolvedWidget, error) {
+	interactionCtx, err := s.buildDashboardInteractionContext(ctx, dashboard, widgets, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]ResolvedWidget, 0, len(widgets))
+	for _, widget := range widgets {
+		var pageReq *TablePageRequest
+		if widget.VisualSpec != nil && widget.VisualSpec.Kind == domain.VisualOutputTable {
+			if page, ok := tablePages[widget.ID]; ok {
+				pageCopy := page
+				pageReq = &pageCopy
+			}
+		}
+		resolved, err := s.resolveWidgetWithContextAndPage(ctx, principal, widget, interactionCtx, pageReq)
+		if err != nil {
+			return nil, fmt.Errorf("resolve widget %q: %w", widget.Name, err)
+		}
+		out = append(out, *resolved)
+	}
+	return out, nil
+}
+
+func (s *Service) ResolveWidgetForDashboardPage(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, widgetID string, filters []InteractiveFilter, page TablePageRequest) (*ResolvedWidget, error) {
+	interactionCtx, err := s.buildDashboardInteractionContext(ctx, dashboard, widgets, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, widget := range widgets {
+		if widget.ID != widgetID {
+			continue
+		}
+		return s.resolveWidgetWithContextAndPage(ctx, principal, widget, interactionCtx, &page)
+	}
+
+	return nil, domain.ErrNotFound("dashboard widget not found")
+}
+
 func (s *Service) resolveWidgetWithContext(ctx context.Context, principal string, widget domain.DashboardWidget, interactionCtx *dashboardInteractionContext) (*ResolvedWidget, error) {
+	return s.resolveWidgetWithContextAndPage(ctx, principal, widget, interactionCtx, nil)
+}
+
+func (s *Service) resolveWidgetWithContextAndPage(ctx context.Context, principal string, widget domain.DashboardWidget, interactionCtx *dashboardInteractionContext, pageReq *TablePageRequest) (*ResolvedWidget, error) {
 	switch widget.Source.Kind {
 	case domain.DashboardWidgetSourceSQLQuery:
 		if s.queryExec == nil {
@@ -256,12 +314,19 @@ func (s *Service) resolveWidgetWithContext(ctx context.Context, principal string
 		if err := widget.VisualSpec.ValidateColumns(result.Columns); err != nil {
 			return nil, err
 		}
+		rows := result.Rows
+		rowCount := result.RowCount
+		var page *ResolvedWidgetPage
+		if pageReq != nil && widget.VisualSpec != nil && widget.VisualSpec.Kind == domain.VisualOutputTable {
+			rows, page = sliceWidgetRows(rows, rowCount, *pageReq)
+		}
 		resolved := &ResolvedWidget{
 			Widget:       widget,
 			Columns:      result.Columns,
-			Rows:         result.Rows,
-			RowCount:     result.RowCount,
+			Rows:         rows,
+			RowCount:     rowCount,
 			GeneratedSQL: widget.Source.SQLQuery.SQL,
+			Page:         page,
 		}
 		if interactionCtx != nil && interactionCtx.Interactive {
 			resolved.Interaction = buildResolvedWidgetInteraction(widget, interactionCtx)
@@ -285,11 +350,18 @@ func (s *Service) resolveWidgetWithContext(ctx context.Context, principal string
 		if err := widget.VisualSpec.ValidateColumns(result.Columns); err != nil {
 			return nil, err
 		}
+		rows := result.Rows
+		rowCount := result.RowCount
+		var page *ResolvedWidgetPage
+		if pageReq != nil && widget.VisualSpec != nil && widget.VisualSpec.Kind == domain.VisualOutputTable {
+			rows, page = sliceWidgetRows(rows, rowCount, *pageReq)
+		}
 		resolved := &ResolvedWidget{
 			Widget:   widget,
 			Columns:  result.Columns,
-			Rows:     result.Rows,
-			RowCount: result.RowCount,
+			Rows:     rows,
+			RowCount: rowCount,
+			Page:     page,
 		}
 		if interactionCtx != nil && interactionCtx.Interactive {
 			resolved.Interaction = buildResolvedWidgetInteraction(widget, interactionCtx)
@@ -309,6 +381,12 @@ func (s *Service) resolveWidgetWithContext(ctx context.Context, principal string
 			Limit:             widget.Source.SemanticQuery.Limit,
 			TimeGrain:         widget.Source.SemanticQuery.TimeGrain,
 		}
+		if pageReq != nil && widget.VisualSpec != nil && widget.VisualSpec.Kind == domain.VisualOutputTable {
+			limit := pageReq.Limit + 1
+			offset := pageReq.Offset
+			req.Limit = &limit
+			req.Offset = &offset
+		}
 		if interactionCtx != nil && widgetParticipatesInDashboardInteraction(widget, interactionCtx) {
 			req.Filters = append(req.Filters, buildDashboardFilterClauses(widgetQueryFilters(widget, interactionCtx), interactionCtx.FilterSpecs)...)
 		}
@@ -319,12 +397,23 @@ func (s *Service) resolveWidgetWithContext(ctx context.Context, principal string
 		if err := widget.VisualSpec.ValidateColumns(result.Result.Columns); err != nil {
 			return nil, err
 		}
+		rows := result.Result.Rows
+		rowCount := result.Result.RowCount
+		var page *ResolvedWidgetPage
+		if pageReq != nil && widget.VisualSpec != nil && widget.VisualSpec.Kind == domain.VisualOutputTable {
+			totalCount, countErr := s.countSemanticQueryRows(ctx, principal, req)
+			if countErr == nil && totalCount >= len(rows) {
+				rowCount = totalCount
+			}
+			rows, page = trimPagedSemanticRows(rows, *pageReq)
+		}
 		resolved := &ResolvedWidget{
 			Widget:       widget,
 			Columns:      result.Result.Columns,
-			Rows:         result.Result.Rows,
-			RowCount:     result.Result.RowCount,
+			Rows:         rows,
+			RowCount:     rowCount,
 			GeneratedSQL: result.Plan.GeneratedSQL,
+			Page:         page,
 		}
 		if interactionCtx != nil && interactionCtx.Interactive {
 			resolved.Interaction = buildResolvedWidgetInteraction(widget, interactionCtx)
@@ -332,6 +421,102 @@ func (s *Service) resolveWidgetWithContext(ctx context.Context, principal string
 		return resolved, nil
 	default:
 		return nil, domain.ErrValidation("unsupported widget source kind %q", string(widget.Source.Kind))
+	}
+}
+
+func sliceWidgetRows(rows [][]interface{}, total int, pageReq TablePageRequest) ([][]interface{}, *ResolvedWidgetPage) {
+	if pageReq.Limit <= 0 {
+		return rows, nil
+	}
+	if total <= 0 {
+		total = len(rows)
+	}
+	offset := pageReq.Offset
+	if offset < 0 {
+		offset = 0
+	}
+	if offset >= len(rows) {
+		return [][]interface{}{}, &ResolvedWidgetPage{Offset: offset, Append: pageReq.Append, HasMore: false}
+	}
+	end := offset + pageReq.Limit
+	if end > len(rows) {
+		end = len(rows)
+	}
+	return rows[offset:end], &ResolvedWidgetPage{
+		Offset:  offset,
+		Append:  pageReq.Append,
+		HasMore: end < total,
+	}
+}
+
+func trimPagedSemanticRows(rows [][]interface{}, pageReq TablePageRequest) ([][]interface{}, *ResolvedWidgetPage) {
+	if pageReq.Limit <= 0 {
+		return rows, nil
+	}
+	offset := pageReq.Offset
+	if offset < 0 {
+		offset = 0
+	}
+	hasMore := len(rows) > pageReq.Limit
+	if hasMore {
+		rows = rows[:pageReq.Limit]
+	}
+	return rows, &ResolvedWidgetPage{
+		Offset:  offset,
+		Append:  pageReq.Append,
+		HasMore: hasMore,
+	}
+}
+
+func (s *Service) countSemanticQueryRows(ctx context.Context, principal string, req semantic.MetricQueryRequest) (int, error) {
+	if s.semantic == nil || s.queryExec == nil {
+		return 0, domain.ErrValidation("dashboard semantic query counting is not configured")
+	}
+
+	countReq := req
+	countReq.Limit = nil
+	countReq.Offset = nil
+	countReq.OrderBy = nil
+
+	plan, err := s.semantic.ExplainMetricQuery(ctx, countReq)
+	if err != nil {
+		return 0, err
+	}
+
+	countSQL := fmt.Sprintf("SELECT COUNT(*) AS row_count FROM (%s) AS dashboard_widget_count", plan.GeneratedSQL)
+	result, err := s.queryExec.Execute(ctx, principal, countSQL)
+	if err != nil {
+		return 0, err
+	}
+	if len(result.Rows) == 0 || len(result.Rows[0]) == 0 {
+		return 0, fmt.Errorf("count widget rows: empty result")
+	}
+	return countValue(result.Rows[0][0])
+}
+
+func countValue(value interface{}) (int, error) {
+	switch typed := value.(type) {
+	case int:
+		return typed, nil
+	case int32:
+		return int(typed), nil
+	case int64:
+		return int(typed), nil
+	case float64:
+		return int(typed), nil
+	case string:
+		trimmed := strings.TrimSpace(typed)
+		if trimmed == "" {
+			return 0, fmt.Errorf("count widget rows: blank count")
+		}
+		var parsed int
+		_, err := fmt.Sscanf(trimmed, "%d", &parsed)
+		if err != nil {
+			return 0, fmt.Errorf("count widget rows: %w", err)
+		}
+		return parsed, nil
+	default:
+		return 0, fmt.Errorf("count widget rows: unsupported count type %T", value)
 	}
 }
 

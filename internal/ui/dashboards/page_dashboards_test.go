@@ -113,6 +113,18 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 					DisabledReason: "Not interactive in this dashboard.",
 				},
 			},
+			{
+				Widget: domain.DashboardWidget{
+					ID:   "widget-table",
+					Name: "Zone Revenue Detail",
+					VisualSpec: &domain.VisualSpec{
+						Kind: domain.VisualOutputTable,
+					},
+				},
+				Columns:  []string{"pickup_zone", "gross_revenue"},
+				Rows:     [][]interface{}{{"JFK Airport", 1338981.25}},
+				RowCount: 1,
+			},
 		},
 	})
 
@@ -126,6 +138,8 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 	assert.NotContains(t, html, "data-chart-payload")
 	assert.Contains(t, html, "data-ignore-morph")
 	assert.Contains(t, html, "data-widget-id=\"widget-chart\"")
+	assert.Contains(t, html, "data-widget-id=\"widget-table\"")
+	assert.Contains(t, html, "<duck-table")
 	assert.Contains(t, html, "Total Revenue")
 	assert.Contains(t, html, "Studio")
 	assert.Contains(t, html, "Cross Filters")
@@ -189,6 +203,21 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 				RowCount:     1,
 				GeneratedSQL: "select region, revenue from summary",
 			},
+			{
+				Widget: domain.DashboardWidget{
+					ID:          "widget-table",
+					Name:        "Zone Revenue Detail",
+					Description: "Table widget",
+					Layout:      domain.DashboardWidgetLayout{W: 12, H: 4},
+					VisualSpec: &domain.VisualSpec{
+						Kind: domain.VisualOutputTable,
+					},
+				},
+				Columns:      []string{"pickup_zone", "gross_revenue"},
+				Rows:         [][]interface{}{{"JFK Airport", 1338981.25}},
+				RowCount:     1,
+				GeneratedSQL: "select pickup_zone, gross_revenue from summary",
+			},
 		},
 	})
 
@@ -203,4 +232,5 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 	assert.Contains(t, html, "Delete widget")
 	assert.NotContains(t, html, "Cross Filters")
 	assert.Contains(t, html, "data-chart-payload")
+	assert.Contains(t, html, "data-table-payload")
 }

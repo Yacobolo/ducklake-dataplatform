@@ -34,6 +34,16 @@ const (
 	VisualChartStackedBar VisualChartType = "stacked_bar"
 )
 
+// VisualLegendPosition defines where a chart legend should be placed.
+type VisualLegendPosition string
+
+const (
+	VisualLegendPositionTop    VisualLegendPosition = "top"
+	VisualLegendPositionRight  VisualLegendPosition = "right"
+	VisualLegendPositionBottom VisualLegendPosition = "bottom"
+	VisualLegendPositionLeft   VisualLegendPosition = "left"
+)
+
 // VisualFieldBinding maps semantic meaning to a result column name.
 type VisualFieldBinding struct {
 	Field string `json:"field"`
@@ -51,14 +61,15 @@ type VisualEncodings struct {
 
 // VisualSpec is the product-owned visualization contract used by notebooks and dashboards.
 type VisualSpec struct {
-	Kind         VisualOutputKind `json:"kind"`
-	ChartType    *VisualChartType `json:"chart_type,omitempty"`
-	Encodings    VisualEncodings  `json:"encodings,omitempty"`
-	Title        string           `json:"title,omitempty"`
-	Subtitle     string           `json:"subtitle,omitempty"`
-	Legend       *bool            `json:"legend,omitempty"`
-	Stacked      *bool            `json:"stacked,omitempty"`
-	ColorPalette string           `json:"color_palette,omitempty"`
+	Kind           VisualOutputKind      `json:"kind"`
+	ChartType      *VisualChartType      `json:"chart_type,omitempty"`
+	Encodings      VisualEncodings       `json:"encodings,omitempty"`
+	Title          string                `json:"title,omitempty"`
+	Subtitle       string                `json:"subtitle,omitempty"`
+	Legend         *bool                 `json:"legend,omitempty"`
+	LegendPosition *VisualLegendPosition `json:"legend_position,omitempty"`
+	Stacked        *bool                 `json:"stacked,omitempty"`
+	ColorPalette   string                `json:"color_palette,omitempty"`
 }
 
 // Validate checks that the visualization spec is structurally sound.
@@ -77,6 +88,13 @@ func (s *VisualSpec) Validate() error {
 	case VisualOutputChart:
 		if s.ChartType == nil {
 			return ErrValidation("chart visuals require chart_type")
+		}
+		if s.LegendPosition != nil {
+			switch *s.LegendPosition {
+			case VisualLegendPositionTop, VisualLegendPositionRight, VisualLegendPositionBottom, VisualLegendPositionLeft:
+			default:
+				return ErrValidation("unsupported legend_position %q", string(*s.LegendPosition))
+			}
 		}
 		switch *s.ChartType {
 		case VisualChartBar, VisualChartLine, VisualChartArea, VisualChartStackedBar:

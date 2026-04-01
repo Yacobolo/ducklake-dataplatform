@@ -4,6 +4,7 @@ package dashboard
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -343,6 +344,95 @@ func TestService_ResolveWidgetsForDashboard_AppliesDashboardFiltersAndTimeBucket
 	assert.Contains(t, queryExec.lastSQL, "date_trunc('month', order_date) = CAST('2024-01-01T00:00:00Z' AS TIMESTAMP)")
 	assert.NotContains(t, queryExec.lastSQL, "(region = 'APAC' OR region = 'EMEA')")
 	assert.Equal(t, []string{"APAC", "EMEA"}, resolved[0].Interaction.ActiveFilters["region"])
+}
+
+func TestService_ResolveWidgetsForDashboardPaged_TablePagesSemanticResults(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, semanticSvc, queryExec := setupDashboardService(t)
+	ctx := context.Background()
+
+	rows := make([][]interface{}, 0, 101)
+	for index := 0; index < 101; index += 1 {
+		rows = append(rows, []interface{}{fmt.Sprintf("zone-%03d", index), float64(index)})
+	}
+	queryExec.result = &query.QueryResult{
+		Columns:  []string{"pickup_zone", "gross_revenue"},
+		Rows:     rows,
+		RowCount: len(rows),
+	}
+	queryExec.resultsByContain = map[string]*query.QueryResult{
+		"dashboard_widget_count": {
+			Columns:  []string{"row_count"},
+			Rows:     [][]interface{}{{101}},
+			RowCount: 1,
+		},
+	}
+
+	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.sales",
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "ignored",
+		Name:            "gross_revenue",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(amount)",
+	})
+	require.NoError(t, err)
+
+	widgets, err := svc.ResolveWidgetsForDashboardPaged(ctx, "alice", &domain.Dashboard{
+		ID:                  "dash-1",
+		Name:                "Revenue Dashboard",
+		Owner:               "alice",
+		SemanticProjectName: "analytics",
+		SemanticModelName:   "sales",
+	}, []domain.DashboardWidget{
+		{
+			ID:   "widget-table",
+			Name: "Zone Revenue Detail",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"gross_revenue"},
+					Dimensions:        []string{"pickup_zone"},
+					OrderBy:           []string{"gross_revenue DESC"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{Kind: domain.VisualOutputTable},
+		},
+	}, nil, map[string]TablePageRequest{
+		"widget-table": {
+			Offset: 100,
+			Limit:  100,
+			Append: true,
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, widgets, 1)
+	require.NotNil(t, widgets[0].Page)
+	assert.True(t, widgets[0].Page.Append)
+	assert.Equal(t, 100, widgets[0].Page.Offset)
+	assert.True(t, widgets[0].Page.HasMore)
+	assert.Equal(t, 101, widgets[0].RowCount)
+	assert.Len(t, widgets[0].Rows, 100)
+	assert.True(t, containsSQLFragment(queryExec.sqls, "LIMIT 101"))
+	assert.True(t, containsSQLFragment(queryExec.sqls, "OFFSET 100"))
+	assert.True(t, containsSQLFragment(queryExec.sqls, "dashboard_widget_count"))
+}
+
+func containsSQLFragment(sqls []string, fragment string) bool {
+	for _, sql := range sqls {
+		if strings.Contains(sql, fragment) {
+			return true
+		}
+	}
+	return false
 }
 
 func TestService_ResolveWidgetsForDashboard_SourceChartKeepsOwnDimensionUnfiltered(t *testing.T) {

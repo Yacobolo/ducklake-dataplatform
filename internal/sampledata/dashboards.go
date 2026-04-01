@@ -226,5 +226,24 @@ func sampleDashboardWidgets(_ string) []sampleDashboardWidget {
 			},
 			Layout: domain.DashboardWidgetLayout{X: 6, Y: 4, W: 6, H: 4},
 		},
+		{
+			Name:        "Zone Revenue Detail",
+			Description: "Tabular ranking of the top pickup zones with borough context, trip volume, and revenue.",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       sampleDashboardSemanticProj,
+					SemanticModelName: sampleDashboardSemanticModel,
+					Metrics:           []string{"gross_revenue", "trip_count"},
+					Dimensions:        []string{"pickup_zone", "borough"},
+					OrderBy:           []string{"gross_revenue DESC"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind:  domain.VisualOutputTable,
+				Title: "Zone Revenue Detail",
+			},
+			Layout: domain.DashboardWidgetLayout{X: 0, Y: 8, W: 12, H: 4},
+		},
 	}
 }

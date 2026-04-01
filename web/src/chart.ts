@@ -4,6 +4,8 @@ import { AriaComponent, DatasetComponent, GridComponent, LegendComponent, TitleC
 import { BarChart, LineChart, PieChart, ScatterChart } from "echarts/charts";
 import { CanvasRenderer } from "echarts/renderers";
 
+import type { DashboardWidgetPayload, InteractionBinding, InteractionSpec, VisualSpec } from "./dashboard-widget-payload";
+
 echarts.use([
   AriaComponent,
   BarChart,
@@ -18,42 +20,7 @@ echarts.use([
   TooltipComponent,
 ]);
 
-type VisualSpec = {
-  kind: "table" | "metric" | "chart";
-  chart_type?: "bar" | "line" | "area" | "pie" | "doughnut" | "scatter" | "stacked_bar";
-  encodings?: {
-    x?: { field: string };
-    y?: { field: string };
-    series?: { field: string };
-    label?: { field: string };
-    value?: { field: string };
-  };
-  title?: string;
-  subtitle?: string;
-  legend?: boolean;
-  stacked?: boolean;
-};
-
-type InteractionBinding = {
-  encoding: "x" | "series" | "label";
-  dimension: string;
-};
-
-type InteractionSpec = {
-  participates: boolean;
-  can_initiate: boolean;
-  disabled_reason?: string;
-  bindings?: InteractionBinding[];
-  active_filters?: Record<string, string[]>;
-};
-
-type ChartPayload = {
-  name?: string;
-  columns: string[];
-  rows: unknown[][];
-  visual?: VisualSpec | null;
-  interaction?: InteractionSpec | null;
-};
+type ChartPayload = DashboardWidgetPayload;
 
 type ChartFilterSelection = {
   widgetId: string;
@@ -203,13 +170,6 @@ function buildOption(payload: ChartPayload): echarts.EChartsCoreOption {
     return idx === undefined ? null : row[idx];
   };
 
-  const common = {
-    aria: { enabled: true },
-    title: { text: "", subtext: "" },
-    tooltip: { trigger: "axis" },
-    legend: { show: visual.legend !== false },
-  } satisfies echarts.EChartsCoreOption;
-
   switch (visual.chart_type) {
     case "pie":
     case "doughnut": {
@@ -222,20 +182,29 @@ function buildOption(payload: ChartPayload): echarts.EChartsCoreOption {
           itemStyle: { opacity: dimmed ? 0.28 : 1 },
         };
       });
+      const legend = resolveLegendConfig(visual, seriesData.length > 0 ? 1 : 0);
 
       return {
-        ...common,
+        aria: { enabled: true },
+        title: { text: "", subtext: "" },
         tooltip: { trigger: "item" },
+        legend: legend.option,
         series: [{
           type: "pie",
-          radius: visual.chart_type === "doughnut" ? ["45%", "70%"] : "70%",
+          radius: visual.chart_type === "doughnut" ? ["45%", "68%"] : "66%",
+          center: legend.pieCenter,
           data: seriesData,
         }],
       };
     }
-    case "scatter":
+    case "scatter": {
+      const legend = resolveLegendConfig(visual, 0);
       return {
-        ...common,
+        aria: { enabled: true },
+        title: { text: "", subtext: "" },
+        tooltip: { trigger: "item" },
+        legend: legend.option,
+        grid: legend.grid,
         xAxis: { type: "value" },
         yAxis: { type: "value" },
         series: [{
@@ -246,6 +215,7 @@ function buildOption(payload: ChartPayload): echarts.EChartsCoreOption {
           ]),
         }],
       };
+    }
     default: {
       const xField = visual.encodings?.x?.field;
       const yField = visual.encodings?.y?.field;
@@ -264,9 +234,13 @@ function buildOption(payload: ChartPayload): echarts.EChartsCoreOption {
       }
 
       const seriesType = visual.chart_type === "line" || visual.chart_type === "area" ? "line" : "bar";
+      const legend = resolveLegendConfig(visual, grouped.size);
       return {
-        ...common,
-        grid: { left: 24, right: 24, top: 32, bottom: 24, containLabel: true },
+        aria: { enabled: true },
+        title: { text: "", subtext: "" },
+        tooltip: { trigger: "axis" },
+        legend: legend.option,
+        grid: legend.grid,
         xAxis: { type: "category", data: xLabels },
         yAxis: { type: "value" },
         series: Array.from(grouped.entries()).map(([seriesName, values]) => {
@@ -288,6 +262,77 @@ function buildOption(payload: ChartPayload): echarts.EChartsCoreOption {
         }),
       };
     }
+  }
+}
+
+function resolveLegendConfig(visual: VisualSpec, seriesCount: number): {
+  option: Record<string, unknown>;
+  grid: { left: number; right: number; top: number; bottom: number; containLabel: boolean };
+  pieCenter: [string, string];
+} {
+  const position = visual.legend_position ?? "top";
+  const show = shouldShowLegend(visual, seriesCount);
+
+  const grid = { left: 24, right: 24, top: 24, bottom: 24, containLabel: true };
+  const pieCenter: [string, string] = ["50%", "56%"];
+
+  if (!show) {
+    return {
+      option: { show: false },
+      grid,
+      pieCenter: ["50%", "52%"],
+    };
+  }
+
+  switch (position) {
+    case "bottom":
+      return {
+        option: { show: true, bottom: 0, left: 0, right: 24, orient: "horizontal" },
+        grid: { ...grid, top: 24, bottom: 64 },
+        pieCenter: ["50%", "44%"],
+      };
+    case "left":
+      return {
+        option: { show: true, top: "middle", left: 0, orient: "vertical" },
+        grid: { ...grid, left: 156, right: 24, top: 24, bottom: 24 },
+        pieCenter: ["62%", "52%"],
+      };
+    case "right":
+      return {
+        option: { show: true, top: "middle", right: 0, orient: "vertical" },
+        grid: { ...grid, left: 24, right: 156, top: 24, bottom: 24 },
+        pieCenter: ["38%", "52%"],
+      };
+    case "top":
+    default:
+      return {
+        option: { show: true, top: 0, left: 0, right: 24, orient: "horizontal" },
+        grid: { ...grid, top: 64, bottom: 24 },
+        pieCenter,
+      };
+  }
+}
+
+function shouldShowLegend(visual: VisualSpec, seriesCount: number): boolean {
+  if (visual.legend === true) {
+    return true;
+  }
+  if (visual.legend === false) {
+    return false;
+  }
+
+  switch (visual.chart_type) {
+    case "pie":
+    case "doughnut":
+      return true;
+    case "line":
+    case "area":
+    case "stacked_bar":
+      return seriesCount > 1;
+    case "bar":
+      return seriesCount > 1;
+    default:
+      return false;
   }
 }
 

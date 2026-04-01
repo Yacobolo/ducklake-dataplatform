@@ -22,9 +22,11 @@ func TestVisualSpec_Validate(t *testing.T) {
 
 	t.Run("pie accepts label value", func(t *testing.T) {
 		chartType := VisualChartPie
+		legendPosition := VisualLegendPositionTop
 		spec := &VisualSpec{
-			Kind:      VisualOutputChart,
-			ChartType: &chartType,
+			Kind:           VisualOutputChart,
+			ChartType:      &chartType,
+			LegendPosition: &legendPosition,
 			Encodings: VisualEncodings{
 				Label: &VisualFieldBinding{Field: "region"},
 				Value: &VisualFieldBinding{Field: "revenue"},
@@ -32,5 +34,20 @@ func TestVisualSpec_Validate(t *testing.T) {
 		}
 		require.NoError(t, spec.Validate())
 		require.NoError(t, spec.ValidateColumns([]string{"region", "revenue"}))
+	})
+
+	t.Run("invalid legend position rejected", func(t *testing.T) {
+		chartType := VisualChartBar
+		legendPosition := VisualLegendPosition("center")
+		spec := &VisualSpec{
+			Kind:           VisualOutputChart,
+			ChartType:      &chartType,
+			LegendPosition: &legendPosition,
+			Encodings: VisualEncodings{
+				X: &VisualFieldBinding{Field: "region"},
+				Y: &VisualFieldBinding{Field: "revenue"},
+			},
+		}
+		require.Error(t, spec.Validate())
 	})
 }

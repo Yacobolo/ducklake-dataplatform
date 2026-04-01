@@ -20,6 +20,10 @@ func visualSpecFromAPI(spec *VisualSpec) *domain.VisualSpec {
 		legend := *spec.Legend
 		out.Legend = &legend
 	}
+	if spec.LegendPosition != nil {
+		legendPosition := domain.VisualLegendPosition(*spec.LegendPosition)
+		out.LegendPosition = &legendPosition
+	}
 	if spec.Stacked != nil {
 		stacked := *spec.Stacked
 		out.Stacked = &stacked
@@ -62,6 +66,10 @@ func visualSpecToAPI(spec *domain.VisualSpec) *VisualSpec {
 	if spec.Legend != nil {
 		legend := *spec.Legend
 		out.Legend = &legend
+	}
+	if spec.LegendPosition != nil {
+		legendPosition := string(*spec.LegendPosition)
+		out.LegendPosition = &legendPosition
 	}
 	if spec.Stacked != nil {
 		stacked := *spec.Stacked

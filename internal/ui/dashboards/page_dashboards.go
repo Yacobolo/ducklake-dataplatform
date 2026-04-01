@@ -46,6 +46,7 @@ type dashboardDetailPageData struct {
 	UpdatesStreamURL  string
 	DataStreamURL     string
 	UpdatesApplyURL   string
+	TablePageURL      string
 	StreamID          string
 	ActiveFilters     []dashboardsvc.InteractiveFilter
 	CSRFToken         string
@@ -74,6 +75,8 @@ type dashboardWidgetFormData struct {
 	ChartType         string
 	VisualTitle       string
 	VisualSubtitle    string
+	VisualLegendMode  string
+	VisualLegendPos   string
 	VisualX           string
 	VisualY           string
 	VisualSeries      string
@@ -229,6 +232,7 @@ func dashboardViewSurface(d dashboardDetailPageData, widgetNodes []Node) Node {
 		Attr("data-dashboard-updates-url", d.UpdatesStreamURL),
 		Attr("data-dashboard-data-stream-url", d.DataStreamURL),
 		Attr("data-dashboard-apply-url", d.UpdatesApplyURL),
+		Attr("data-dashboard-table-page-url", d.TablePageURL),
 		Attr("data-dashboard-csrf-token", d.CSRFToken),
 		func() Node {
 			if d.EditMode || strings.TrimSpace(d.UpdatesStreamURL) == "" {
@@ -440,6 +444,7 @@ func dashboardCanvas(widgetNodes []Node, editMode bool) Node {
 @media (min-width: 1280px) {
   .dashboard-canvas-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: 7.5rem;
   }
   .dashboard-canvas-grid > .dashboard-widget-tile {
     grid-column: var(--dash-col-start) / span var(--dash-col-span);
@@ -539,6 +544,7 @@ func dashboardFreshnessCard(status *domain.AssetFreshnessStatus, explanation *do
 
 func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL string, csrfFieldProvider func() Node, editMode bool) Node {
 	content := Node(nil)
+	tileStyle := fmt.Sprintf("--dash-col-start:%d;--dash-row-start:%d;--dash-col-span:%d;--dash-row-span:%d;", dashboardCanvasColStart(widget.Widget.Layout), dashboardCanvasRowStart(widget.Widget.Layout), dashboardCanvasColSpan(widget.Widget.Layout), dashboardCanvasRowSpan(widget.Widget.Layout))
 	switch {
 	case widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputMetric:
 		field := ""
@@ -561,6 +567,9 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 		content = visualMetricCard(defaultVisualTitle(widget.Widget.VisualSpec, widget.Widget.Name), value, dashboardRowCountLabel(widget.RowCount))
 	case widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputChart:
 		content = chartHost(widget, editMode)
+	case widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputTable:
+		content = tableHost(widget, editMode)
+		tileStyle += fmt.Sprintf("height:%.2frem;", float64(dashboardCanvasRowSpan(widget.Widget.Layout))*7.5)
 	default:
 		content = dashboardWidgetTable(widget)
 	}
@@ -595,8 +604,8 @@ func dashboardWidgetCard(widget dashboardsvc.ResolvedWidget, deleteBaseURL strin
 	}
 
 	return Div(
-		Class("dashboard-widget-tile group flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] shadow-sm transition-all duration-150 hover:-translate-y-[1px] hover:border-[var(--borderColor-accent-emphasis)] hover:shadow-md md:col-span-2"),
-		Style(fmt.Sprintf("--dash-col-start:%d;--dash-row-start:%d;--dash-col-span:%d;--dash-row-span:%d;", dashboardCanvasColStart(widget.Widget.Layout), dashboardCanvasRowStart(widget.Widget.Layout), dashboardCanvasColSpan(widget.Widget.Layout), dashboardCanvasRowSpan(widget.Widget.Layout))),
+		Class("dashboard-widget-tile group flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] shadow-sm transition-all duration-150 hover:-translate-y-[1px] hover:border-[var(--borderColor-accent-emphasis)] hover:shadow-md md:col-span-2"),
+		Style(tileStyle),
 		dashboardWidgetHeader(widget, actions, editMode),
 		Div(Class(dashboardWidgetBodyClass(widget)), content),
 		Iff(len(auxiliary) > 0, func() Node {
@@ -649,7 +658,7 @@ func dashboardWidgetBodyClass(widget dashboardsvc.ResolvedWidget) string {
 		return "flex min-h-0 flex-1 px-6 py-6"
 	}
 	if widget.Widget.VisualSpec != nil && widget.Widget.VisualSpec.Kind == domain.VisualOutputTable {
-		return "min-h-0 flex-1"
+		return "min-h-0 h-0 flex-1 overflow-hidden"
 	}
 	return "min-h-0 flex-1 px-5 pb-5 pt-5"
 }
@@ -838,6 +847,19 @@ func dashboardWidgetFormCard(data dashboardWidgetFormData, csrfFieldProvider fun
 			core.InputControl("", Name("visual_title"), Value(data.VisualTitle)),
 			core.FieldLabel("Subtitle"),
 			core.InputControl("", Name("visual_subtitle"), Value(data.VisualSubtitle)),
+			core.FieldLabel("Legend"),
+			core.SelectControl("", Name("visual_legend_mode"),
+				Option(Value("auto"), selectedValue(data.VisualLegendMode, "auto"), Text("auto")),
+				Option(Value("show"), selectedValue(data.VisualLegendMode, "show"), Text("show")),
+				Option(Value("hide"), selectedValue(data.VisualLegendMode, "hide"), Text("hide")),
+			),
+			core.FieldLabel("Legend position"),
+			core.SelectControl("", Name("visual_legend_position"),
+				Option(Value("top"), selectedValue(data.VisualLegendPos, "top"), Text("top")),
+				Option(Value("right"), selectedValue(data.VisualLegendPos, "right"), Text("right")),
+				Option(Value("bottom"), selectedValue(data.VisualLegendPos, "bottom"), Text("bottom")),
+				Option(Value("left"), selectedValue(data.VisualLegendPos, "left"), Text("left")),
+			),
 			core.FieldLabel("X field"),
 			core.InputControl("", Name("visual_x"), Value(data.VisualX)),
 			core.FieldLabel("Y field"),
@@ -865,15 +887,17 @@ func dashboardWidgetFormCard(data dashboardWidgetFormData, csrfFieldProvider fun
 
 func defaultWidgetFormData(action string) dashboardWidgetFormData {
 	return dashboardWidgetFormData{
-		Title:       "Add widget",
-		Action:      action,
-		SubmitLabel: "Create widget",
-		SourceKind:  "sql_query",
-		VisualKind:  "table",
-		LayoutX:     "0",
-		LayoutY:     "0",
-		LayoutW:     "4",
-		LayoutH:     "3",
+		Title:            "Add widget",
+		Action:           action,
+		SubmitLabel:      "Create widget",
+		SourceKind:       "sql_query",
+		VisualKind:       "table",
+		VisualLegendMode: "auto",
+		VisualLegendPos:  "top",
+		LayoutX:          "0",
+		LayoutY:          "0",
+		LayoutW:          "4",
+		LayoutH:          "3",
 	}
 }
 
@@ -920,6 +944,18 @@ func widgetFormDataFromWidget(widget *domain.DashboardWidget, action, submitLabe
 		data.VisualKind = string(widget.VisualSpec.Kind)
 		data.VisualTitle = widget.VisualSpec.Title
 		data.VisualSubtitle = widget.VisualSpec.Subtitle
+		data.VisualLegendMode = "auto"
+		if widget.VisualSpec.Legend != nil {
+			if *widget.VisualSpec.Legend {
+				data.VisualLegendMode = "show"
+			} else {
+				data.VisualLegendMode = "hide"
+			}
+		}
+		data.VisualLegendPos = "top"
+		if widget.VisualSpec.LegendPosition != nil && strings.TrimSpace(string(*widget.VisualSpec.LegendPosition)) != "" {
+			data.VisualLegendPos = string(*widget.VisualSpec.LegendPosition)
+		}
 		if widget.VisualSpec.ChartType != nil {
 			data.ChartType = string(*widget.VisualSpec.ChartType)
 		}
@@ -1020,19 +1056,34 @@ func chartHost(widget dashboardsvc.ResolvedWidget, editMode bool) Node {
 		Attr("data-widget-id", widget.Widget.ID),
 	}
 	if editMode {
-		nodes = append(nodes, Attr("data-chart-payload", chartPayload(widget.Widget.Name, widget.Columns, widget.Rows, dashboardChartVisual(widget.Widget.VisualSpec), widget.Interaction)))
+		nodes = append(nodes, Attr("data-chart-payload", widgetPayload(widget.Widget.Name, widget.Columns, widget.Rows, widget.RowCount, dashboardChartVisual(widget.Widget.VisualSpec), widget.Interaction, widget.Page)))
 	} else {
 		nodes = append(nodes, Attr("data-ignore-morph", ""))
 	}
 	return El("duck-chart", nodes...)
 }
 
-type chartRenderPayload struct {
+func tableHost(widget dashboardsvc.ResolvedWidget, editMode bool) Node {
+	nodes := []Node{
+		Class("dashboard-table-host block h-full min-h-0 w-full"),
+		Attr("data-widget-id", widget.Widget.ID),
+	}
+	if editMode {
+		nodes = append(nodes, Attr("data-table-payload", widgetPayload(widget.Widget.Name, widget.Columns, widget.Rows, widget.RowCount, widget.Widget.VisualSpec, widget.Interaction, widget.Page)))
+	} else {
+		nodes = append(nodes, Attr("data-ignore-morph", ""))
+	}
+	return El("duck-table", nodes...)
+}
+
+type widgetRenderPayload struct {
 	Name        string                                  `json:"name"`
 	Columns     []string                                `json:"columns"`
 	Rows        [][]interface{}                         `json:"rows"`
+	RowCount    int                                     `json:"row_count"`
 	Visual      *domain.VisualSpec                      `json:"visual"`
 	Interaction *dashboardsvc.ResolvedWidgetInteraction `json:"interaction,omitempty"`
+	Page        *dashboardsvc.ResolvedWidgetPage        `json:"page,omitempty"`
 }
 
 func dashboardChartVisual(visual *domain.VisualSpec) *domain.VisualSpec {
@@ -1045,34 +1096,41 @@ func dashboardChartVisual(visual *domain.VisualSpec) *domain.VisualSpec {
 	return &copy
 }
 
-func chartPayload(name string, columns []string, rows [][]interface{}, visual *domain.VisualSpec, interaction *dashboardsvc.ResolvedWidgetInteraction) string {
-	payload, err := json.Marshal(chartRenderPayload{Name: name, Columns: columns, Rows: rows, Visual: visual, Interaction: interaction})
+func widgetPayload(name string, columns []string, rows [][]interface{}, rowCount int, visual *domain.VisualSpec, interaction *dashboardsvc.ResolvedWidgetInteraction, page *dashboardsvc.ResolvedWidgetPage) string {
+	payload, err := json.Marshal(widgetRenderPayload{Name: name, Columns: columns, Rows: rows, RowCount: rowCount, Visual: visual, Interaction: interaction, Page: page})
 	if err != nil {
 		return "{}"
 	}
 	return string(payload)
 }
 
-type dashboardChartPayloadEvent struct {
-	FilterKey string                        `json:"filter_key"`
-	Widgets   map[string]chartRenderPayload `json:"widgets"`
+type dashboardWidgetPayloadEvent struct {
+	FilterKey string                         `json:"filter_key"`
+	Widgets   map[string]widgetRenderPayload `json:"widgets"`
 }
 
-func dashboardChartPayloadEnvelope(widgets []dashboardsvc.ResolvedWidget, filters []dashboardsvc.InteractiveFilter) dashboardChartPayloadEvent {
-	payloads := make(map[string]chartRenderPayload)
+func dashboardWidgetPayloadEnvelope(widgets []dashboardsvc.ResolvedWidget, filters []dashboardsvc.InteractiveFilter) dashboardWidgetPayloadEvent {
+	payloads := make(map[string]widgetRenderPayload)
 	for _, widget := range widgets {
-		if widget.Widget.ID == "" || widget.Widget.VisualSpec == nil || widget.Widget.VisualSpec.Kind != domain.VisualOutputChart {
+		if widget.Widget.ID == "" || widget.Widget.VisualSpec == nil {
 			continue
 		}
-		payloads[widget.Widget.ID] = chartRenderPayload{
+		switch widget.Widget.VisualSpec.Kind {
+		case domain.VisualOutputChart, domain.VisualOutputTable:
+		default:
+			continue
+		}
+		payloads[widget.Widget.ID] = widgetRenderPayload{
 			Name:        widget.Widget.Name,
 			Columns:     widget.Columns,
 			Rows:        widget.Rows,
+			RowCount:    widget.RowCount,
 			Visual:      dashboardChartVisual(widget.Widget.VisualSpec),
 			Interaction: widget.Interaction,
+			Page:        widget.Page,
 		}
 	}
-	return dashboardChartPayloadEvent{
+	return dashboardWidgetPayloadEvent{
 		FilterKey: dashboardFilterKey(filters),
 		Widgets:   payloads,
 	}
@@ -1335,9 +1393,17 @@ func visualSpecFromForm(values url.Values) (*domain.VisualSpec, error) {
 		Subtitle:     formString(values, "visual_subtitle"),
 		ColorPalette: formString(values, "visual_palette"),
 	}
-	if legend := values.Get("visual_legend"); legend != "" {
-		v := legend == "on" || legend == "true"
+	switch legendMode := formString(values, "visual_legend_mode"); legendMode {
+	case "show":
+		v := true
 		spec.Legend = &v
+	case "hide":
+		v := false
+		spec.Legend = &v
+	}
+	if legendPosition := formString(values, "visual_legend_position"); legendPosition != "" {
+		position := domain.VisualLegendPosition(legendPosition)
+		spec.LegendPosition = &position
 	}
 	if stacked := values.Get("visual_stacked"); stacked != "" {
 		v := stacked == "on" || stacked == "true"

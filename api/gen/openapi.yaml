@@ -21851,6 +21851,13 @@ components:
           type: string
         legend:
           type: boolean
+        legend_position:
+          type: string
+          enum:
+            - top
+            - right
+            - bottom
+            - left
         stacked:
           type: boolean
         color_palette:
@@ -21870,6 +21877,13 @@ components:
           type: string
         legend:
           type: boolean
+        legend_position:
+          type: string
+          enum:
+            - top
+            - right
+            - bottom
+            - left
         stacked:
           type: boolean
         color_palette:

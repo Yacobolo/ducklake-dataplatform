@@ -2933,14 +2933,15 @@ const (
 )
 
 type VisualSpec struct {
-	ChartType    *VisualChartType `json:"chart_type,omitempty"`
-	ColorPalette *string          `json:"color_palette,omitempty"`
-	Encodings    *VisualEncodings `json:"encodings,omitempty"`
-	Kind         VisualOutputKind `json:"kind"`
-	Legend       *bool            `json:"legend,omitempty"`
-	Stacked      *bool            `json:"stacked,omitempty"`
-	Subtitle     *string          `json:"subtitle,omitempty"`
-	Title        *string          `json:"title,omitempty"`
+	ChartType      *VisualChartType `json:"chart_type,omitempty"`
+	ColorPalette   *string          `json:"color_palette,omitempty"`
+	Encodings      *VisualEncodings `json:"encodings,omitempty"`
+	Kind           VisualOutputKind `json:"kind"`
+	Legend         *bool            `json:"legend,omitempty"`
+	LegendPosition *string          `json:"legend_position,omitempty"`
+	Stacked        *bool            `json:"stacked,omitempty"`
+	Subtitle       *string          `json:"subtitle,omitempty"`
+	Title          *string          `json:"title,omitempty"`
 }
 
 type VolumeDetail struct {

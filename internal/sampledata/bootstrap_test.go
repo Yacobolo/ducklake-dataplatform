@@ -140,9 +140,10 @@ func TestBootstrap_SeedsQueryableReadOnlySampleData(t *testing.T) {
 
 	widgets, err := widgetRepo.ListByDashboard(ctx, seededDashboard.ID)
 	require.NoError(t, err)
-	assert.Len(t, widgets, 4)
+	assert.Len(t, widgets, 5)
 	assert.Equal(t, "Total Revenue", widgets[0].Name)
 	assert.Equal(t, "Trips by Day", widgets[1].Name)
+	assert.Equal(t, "Zone Revenue Detail", widgets[4].Name)
 	assert.Equal(t, domain.DashboardWidgetSourceSemanticQuery, widgets[0].Source.Kind)
 	assert.Equal(t, domain.DashboardWidgetSourceSemanticQuery, widgets[1].Source.Kind)
 
