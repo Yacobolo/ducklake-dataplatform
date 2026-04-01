@@ -2,6 +2,18 @@ import { LitElement, css, html } from "lit";
 import { styleMap } from "lit/directives/style-map.js";
 
 import type { DashboardWidgetPayload } from "./dashboard-widget-payload";
+import {
+  applyPayloadToSparseTableStore,
+  collectChunkOffsetsForWindow,
+  computeVisibleTableWindow,
+  countLoadedRows,
+  createEmptySparseTableStore,
+  dashboardTableEstimatedRowHeight,
+  dashboardTableOverscan,
+  dashboardTablePageSize,
+  isDashboardTablePayload,
+  resolveTableRowCount,
+} from "./table-virtualization";
 
 type SortDirection = "asc" | "desc";
 
@@ -21,10 +33,6 @@ type ActiveResize = {
   startX: number;
   startWidth: number;
 };
-
-const dashboardTablePageSize = 50;
-const dashboardTableEstimatedRowHeight = 44;
-const dashboardTableOverscan = 8;
 
 class DuckTable extends LitElement {
   static properties = {
@@ -261,9 +269,9 @@ class DuckTable extends LitElement {
   private activeResize: ActiveResize | null = null;
   private resizedColumnWidths: Record<string, number> = {};
   private payloadState: DashboardWidgetPayload | null = null;
-  private sparseRows: Array<unknown[] | null> = [];
-  private loadedChunkOffsets = new Set<number>();
-  private pendingChunkOffsets = new Set<number>();
+  private sparseRows = createEmptySparseTableStore().rows;
+  private loadedChunkOffsets = createEmptySparseTableStore().loadedChunkOffsets;
+  private pendingChunkOffsets = createEmptySparseTableStore().pendingChunkOffsets;
   private scrollOffset = 0;
   private viewportHeight = 0;
   private resizeObserver: ResizeObserver | null = null;
@@ -296,40 +304,28 @@ class DuckTable extends LitElement {
     if (!payload) {
       this.payloadState = null;
       this.payloadJSON = "";
-      this.sparseRows = [];
-      this.loadedChunkOffsets.clear();
-      this.pendingChunkOffsets.clear();
+      const emptyStore = createEmptySparseTableStore();
+      this.sparseRows = emptyStore.rows;
+      this.loadedChunkOffsets = emptyStore.loadedChunkOffsets;
+      this.pendingChunkOffsets = emptyStore.pendingChunkOffsets;
       this.requestUpdate();
       return;
     }
 
     const current = this.payloadState ?? this.parsePayload();
     const nextRowCount = this.totalRowCount(payload, current);
-    const offset = payload.page?.offset ?? 0;
-    const isReset = !payload.page?.append;
-
-    if (isReset) {
-      this.sparseRows = new Array<unknown[] | null>(nextRowCount).fill(null);
-      this.loadedChunkOffsets.clear();
-      this.pendingChunkOffsets.clear();
-    } else if (this.sparseRows.length !== nextRowCount) {
-      const nextSparseRows = new Array<unknown[] | null>(nextRowCount).fill(null);
-      const copyLength = Math.min(this.sparseRows.length, nextRowCount);
-      for (let index = 0; index < copyLength; index += 1) {
-        nextSparseRows[index] = this.sparseRows[index];
-      }
-      this.sparseRows = nextSparseRows;
-    }
-
-    payload.rows.forEach((row, index) => {
-      const targetIndex = offset + index;
-      if (targetIndex >= 0 && targetIndex < this.sparseRows.length) {
-        this.sparseRows[targetIndex] = row;
-      }
-    });
-
-    this.loadedChunkOffsets.add(offset);
-    this.pendingChunkOffsets.delete(offset);
+    const nextStore = applyPayloadToSparseTableStore(
+      {
+        rows: this.sparseRows,
+        loadedChunkOffsets: this.loadedChunkOffsets,
+        pendingChunkOffsets: this.pendingChunkOffsets,
+      },
+      payload,
+      nextRowCount,
+    );
+    this.sparseRows = nextStore.rows;
+    this.loadedChunkOffsets = nextStore.loadedChunkOffsets;
+    this.pendingChunkOffsets = nextStore.pendingChunkOffsets;
     this.payloadState = {
       ...(current ?? payload),
       ...payload,
@@ -469,7 +465,7 @@ class DuckTable extends LitElement {
   private parsePayload(): DashboardWidgetPayload | null {
     try {
       const payload = JSON.parse(this.payloadJSON || "null") as DashboardWidgetPayload | null;
-      if (!payload || !Array.isArray(payload.columns) || !Array.isArray(payload.rows)) {
+      if (!isDashboardTablePayload(payload)) {
         return null;
       }
       return payload;
@@ -479,19 +475,11 @@ class DuckTable extends LitElement {
   }
 
   private totalRowCount(payload: DashboardWidgetPayload, fallback?: DashboardWidgetPayload | null): number {
-    const payloadRowCount = Array.isArray(payload.rows) ? payload.rows.length : 0;
-    const fallbackRowCount = fallback && Array.isArray(fallback.rows) ? fallback.rows.length : 0;
-    return Math.max(payload.row_count ?? 0, fallback?.row_count ?? 0, payloadRowCount, fallbackRowCount, this.sparseRows.length);
+    return resolveTableRowCount(payload, fallback, this.sparseRows.length);
   }
 
   private loadedRowCount(): number {
-    let count = 0;
-    for (const row of this.sparseRows) {
-      if (row) {
-        count += 1;
-      }
-    }
-    return count;
+    return countLoadedRows(this.sparseRows);
   }
 
   private canSort(): boolean {
@@ -662,10 +650,6 @@ class DuckTable extends LitElement {
     this.requestUpdate();
   };
 
-  private chunkOffsetForIndex(index: number): number {
-    return Math.floor(index / dashboardTablePageSize) * dashboardTablePageSize;
-  }
-
   private ensureVisibleChunks(payload: DashboardWidgetPayload | null): void {
     if (!payload) {
       return;
@@ -677,15 +661,19 @@ class DuckTable extends LitElement {
     }
 
     const visible = this.visibleRows(payload);
-    const firstChunk = this.chunkOffsetForIndex(visible.startIndex);
-    const lastChunk = this.chunkOffsetForIndex(Math.max(0, visible.endIndex - 1));
-    for (let offset = firstChunk - dashboardTablePageSize; offset <= lastChunk + dashboardTablePageSize; offset += dashboardTablePageSize) {
-      if (offset < 0 || offset >= totalRows) {
-        continue;
-      }
-      if (this.loadedChunkOffsets.has(offset) || this.pendingChunkOffsets.has(offset)) {
-        continue;
-      }
+    const offsets = collectChunkOffsetsForWindow(
+      {
+        startIndex: visible.startIndex,
+        endIndex: visible.endIndex,
+        topSpacerHeight: visible.topSpacerHeight,
+        bottomSpacerHeight: visible.bottomSpacerHeight,
+      },
+      totalRows,
+      this.loadedChunkOffsets,
+      this.pendingChunkOffsets,
+      dashboardTablePageSize,
+    );
+    for (const offset of offsets) {
       this.pendingChunkOffsets.add(offset);
       this.dispatchEvent(new CustomEvent("dashboard-table-page-request", {
         bubbles: true,
@@ -707,22 +695,25 @@ class DuckTable extends LitElement {
     bottomSpacerHeight: number;
   } {
     const totalRows = this.totalRowCount(payload);
-    const rowHeight = dashboardTableEstimatedRowHeight;
     const headerHeight = this.shadowRoot?.querySelector<HTMLElement>(".header-row")?.getBoundingClientRect().height ?? 0;
-    const viewportHeight = Math.max(0, this.viewportHeight - headerHeight);
-    const visibleCount = Math.max(1, Math.ceil((viewportHeight || (rowHeight * 8)) / rowHeight) + (dashboardTableOverscan * 2));
-    const startIndex = Math.max(0, Math.floor(this.scrollOffset / rowHeight) - dashboardTableOverscan);
-    const endIndex = Math.min(totalRows, startIndex + visibleCount);
+    const window = computeVisibleTableWindow({
+      scrollOffset: this.scrollOffset,
+      viewportHeight: this.viewportHeight,
+      headerHeight,
+      totalRows,
+      rowHeight: dashboardTableEstimatedRowHeight,
+      overscan: dashboardTableOverscan,
+    });
 
     const rows: VisibleTableRow[] = [];
     if (this.canSort() && this.sortColumn) {
       const sortedRows = this.sortedRows(payload);
-      const slice = sortedRows.slice(startIndex, endIndex);
+      const slice = sortedRows.slice(window.startIndex, window.endIndex);
       slice.forEach((row, index) => {
-        rows.push({ index: startIndex + index, row });
+        rows.push({ index: window.startIndex + index, row });
       });
     } else {
-      for (let index = startIndex; index < endIndex; index += 1) {
+      for (let index = window.startIndex; index < window.endIndex; index += 1) {
         const slot = this.sparseRows[index] ?? null;
         if (!slot) {
           rows.push({ index, row: null });
@@ -740,11 +731,11 @@ class DuckTable extends LitElement {
     }
 
     return {
-      startIndex,
-      endIndex,
+      startIndex: window.startIndex,
+      endIndex: window.endIndex,
       rows,
-      topSpacerHeight: startIndex * rowHeight,
-      bottomSpacerHeight: Math.max(0, totalRows - endIndex) * rowHeight,
+      topSpacerHeight: window.topSpacerHeight,
+      bottomSpacerHeight: window.bottomSpacerHeight,
     };
   }
 
