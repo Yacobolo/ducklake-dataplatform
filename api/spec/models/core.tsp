@@ -534,15 +534,6 @@ model PaginatedQueryHistoryEntries {
   next_page_token?: string;
 }
 
-model ResourceSummary {
-  resource_type: string;
-  resource_key: string;
-  display_name: string;
-  resource_path?: string;
-  href?: string;
-  section?: string;
-}
-
 model RecentResource {
   resource_type: string;
   resource_key: string;

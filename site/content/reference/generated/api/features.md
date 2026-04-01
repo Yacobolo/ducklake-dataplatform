@@ -22,5 +22,6 @@ This page is generated from OpenAPI tags and operations.
 | [Pipelines](./endpoints/pipelines) | Pipeline definitions, jobs, runs, and orchestration controls. | 13 operations |
 | [Products](./endpoints/products/) | Product-first control-plane APIs for domains, teams, product contracts, releases, discovery, and portfolio reporting. | 32 operations |
 | [Queries](./endpoints/queries) | Synchronous and asynchronous SQL query execution and query history endpoints. | 7 operations |
+| [Resources](./endpoints/resources) | Recent and saved resource APIs for personalized navigation and activity tracking. | 4 operations |
 | [Semantic Layer](./endpoints/semantic-layer/) | Semantic models, metrics, relationships, and metric query execution. | 21 operations |
 | [Storage](./endpoints/storage) | Storage credentials and external location configuration for object storage access. | 10 operations |

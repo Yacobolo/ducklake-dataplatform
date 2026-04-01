@@ -18,6 +18,7 @@ type savedResourceService interface {
 	ListSaved(ctx context.Context, principal domain.ContextPrincipal, limit int) ([]domain.SavedResource, error)
 }
 
+// ListRecentResources returns the authenticated principal's recent UUID-backed resources.
 func (h *APIHandler) ListRecentResources(ctx context.Context, req GenListRecentResourcesRequest) (GenListRecentResourcesResponse, error) {
 	if isNilService(h.resourceAccess) {
 		return ListRecentResources500JSONResponse{internalErrorResponse(domain.ErrNotImplemented("resource access service is not configured"))}, nil
@@ -32,9 +33,15 @@ func (h *APIHandler) ListRecentResources(ctx context.Context, req GenListRecentR
 	items, err := h.resourceAccess.ListRecent(ctx, cp, limit)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListRecentResourcesResponse]("listRecentResources", err, domainErrorResponder[GenListRecentResourcesResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenListRecentResourcesResponse { return ListRecentResources400JSONResponse{resp} },
-			Forbidden:  func(resp ForbiddenJSONResponse) GenListRecentResourcesResponse { return ListRecentResources403JSONResponse{resp} },
-			Internal:   func(resp InternalErrorJSONResponse) GenListRecentResourcesResponse { return ListRecentResources500JSONResponse{resp} },
+			BadRequest: func(resp BadRequestJSONResponse) GenListRecentResourcesResponse {
+				return ListRecentResources400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenListRecentResourcesResponse {
+				return ListRecentResources403JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenListRecentResourcesResponse {
+				return ListRecentResources500JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -52,6 +59,7 @@ func (h *APIHandler) ListRecentResources(ctx context.Context, req GenListRecentR
 	}, nil
 }
 
+// ListSavedResources returns the authenticated principal's saved UUID-backed resources.
 func (h *APIHandler) ListSavedResources(ctx context.Context, req GenListSavedResourcesRequest) (GenListSavedResourcesResponse, error) {
 	if isNilService(h.savedResources) {
 		return ListSavedResources500JSONResponse{internalErrorResponse(domain.ErrNotImplemented("saved resource service is not configured"))}, nil
@@ -66,9 +74,15 @@ func (h *APIHandler) ListSavedResources(ctx context.Context, req GenListSavedRes
 	items, err := h.savedResources.ListSaved(ctx, cp, limit)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListSavedResourcesResponse]("listSavedResources", err, domainErrorResponder[GenListSavedResourcesResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenListSavedResourcesResponse { return ListSavedResources400JSONResponse{resp} },
-			Forbidden:  func(resp ForbiddenJSONResponse) GenListSavedResourcesResponse { return ListSavedResources403JSONResponse{resp} },
-			Internal:   func(resp InternalErrorJSONResponse) GenListSavedResourcesResponse { return ListSavedResources500JSONResponse{resp} },
+			BadRequest: func(resp BadRequestJSONResponse) GenListSavedResourcesResponse {
+				return ListSavedResources400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenListSavedResourcesResponse {
+				return ListSavedResources403JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenListSavedResourcesResponse {
+				return ListSavedResources500JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -86,6 +100,7 @@ func (h *APIHandler) ListSavedResources(ctx context.Context, req GenListSavedRes
 	}, nil
 }
 
+// CreateSavedResource persists a saved resource for the authenticated principal.
 func (h *APIHandler) CreateSavedResource(ctx context.Context, req GenCreateSavedResourceRequest) (GenCreateSavedResourceResponse, error) {
 	if isNilService(h.savedResources) {
 		return CreateSavedResource500JSONResponse{internalErrorResponse(domain.ErrNotImplemented("saved resource service is not configured"))}, nil
@@ -112,9 +127,15 @@ func (h *APIHandler) CreateSavedResource(ctx context.Context, req GenCreateSaved
 	cp, _ := domain.PrincipalFromContext(ctx)
 	if err := h.savedResources.Save(ctx, cp, resource); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenCreateSavedResourceResponse]("createSavedResource", err, domainErrorResponder[GenCreateSavedResourceResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenCreateSavedResourceResponse { return CreateSavedResource400JSONResponse{resp} },
-			Forbidden:  func(resp ForbiddenJSONResponse) GenCreateSavedResourceResponse { return CreateSavedResource403JSONResponse{resp} },
-			Internal:   func(resp InternalErrorJSONResponse) GenCreateSavedResourceResponse { return CreateSavedResource500JSONResponse{resp} },
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateSavedResourceResponse {
+				return CreateSavedResource400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateSavedResourceResponse {
+				return CreateSavedResource403JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenCreateSavedResourceResponse {
+				return CreateSavedResource500JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}
@@ -127,6 +148,7 @@ func (h *APIHandler) CreateSavedResource(ctx context.Context, req GenCreateSaved
 	}, nil
 }
 
+// DeleteSavedResource removes a saved resource for the authenticated principal.
 func (h *APIHandler) DeleteSavedResource(ctx context.Context, req GenDeleteSavedResourceRequest) (GenDeleteSavedResourceResponse, error) {
 	if isNilService(h.savedResources) {
 		return DeleteSavedResource500JSONResponse{internalErrorResponse(domain.ErrNotImplemented("saved resource service is not configured"))}, nil
@@ -135,9 +157,15 @@ func (h *APIHandler) DeleteSavedResource(ctx context.Context, req GenDeleteSaved
 	cp, _ := domain.PrincipalFromContext(ctx)
 	if err := h.savedResources.Unsave(ctx, cp, req.ResourceType, req.ResourceKey); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenDeleteSavedResourceResponse]("deleteSavedResource", err, domainErrorResponder[GenDeleteSavedResourceResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenDeleteSavedResourceResponse { return DeleteSavedResource400JSONResponse{resp} },
-			Forbidden:  func(resp ForbiddenJSONResponse) GenDeleteSavedResourceResponse { return DeleteSavedResource403JSONResponse{resp} },
-			Internal:   func(resp InternalErrorJSONResponse) GenDeleteSavedResourceResponse { return DeleteSavedResource500JSONResponse{resp} },
+			BadRequest: func(resp BadRequestJSONResponse) GenDeleteSavedResourceResponse {
+				return DeleteSavedResource400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteSavedResourceResponse {
+				return DeleteSavedResource403JSONResponse{resp}
+			},
+			Internal: func(resp InternalErrorJSONResponse) GenDeleteSavedResourceResponse {
+				return DeleteSavedResource500JSONResponse{resp}
+			},
 		}); ok {
 			return resp, nil
 		}

@@ -9,16 +9,19 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// SavedResourceRepo stores principal-scoped saved resources in SQLite.
 type SavedResourceRepo struct {
 	db *sql.DB
 }
 
+// NewSavedResourceRepo creates a repository for saved resources.
 func NewSavedResourceRepo(db *sql.DB) *SavedResourceRepo {
 	return &SavedResourceRepo{db: db}
 }
 
 var _ domain.SavedResourceRepository = (*SavedResourceRepo)(nil)
 
+// Save upserts a saved resource for the principal.
 func (r *SavedResourceRepo) Save(ctx context.Context, principalID string, resource domain.ResourceRef) error {
 	now := time.Now().UTC()
 	_, err := r.db.ExecContext(ctx, `
@@ -38,6 +41,7 @@ func (r *SavedResourceRepo) Save(ctx context.Context, principalID string, resour
 	return nil
 }
 
+// Unsave removes a saved resource for the principal.
 func (r *SavedResourceRepo) Unsave(ctx context.Context, principalID string, resourceType string, resourceKey string) error {
 	_, err := r.db.ExecContext(ctx, `
 		DELETE FROM saved_resources
@@ -49,6 +53,7 @@ func (r *SavedResourceRepo) Unsave(ctx context.Context, principalID string, reso
 	return nil
 }
 
+// ListSaved returns saved resources for the principal ordered by most recently saved.
 func (r *SavedResourceRepo) ListSaved(ctx context.Context, principalID string, limit int) ([]domain.SavedResource, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		WITH latest_events AS (
@@ -87,7 +92,9 @@ func (r *SavedResourceRepo) ListSaved(ctx context.Context, principalID string, l
 	if err != nil {
 		return nil, fmt.Errorf("list saved resources: %w", mapDBError(err))
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	return scanSavedRows(rows)
 }

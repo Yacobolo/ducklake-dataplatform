@@ -1,3 +1,4 @@
+// Package savedresource provides principal-scoped saved resource services.
 package savedresource
 
 import (
@@ -8,16 +9,20 @@ import (
 	"duck-demo/internal/service/resourceref"
 )
 
+// DefaultSavedLimit is the default number of saved resources returned to callers.
 const DefaultSavedLimit = 6
 
+// Service manages saved resources for a principal.
 type Service struct {
 	repo domain.SavedResourceRepository
 }
 
+// NewService constructs a saved resource service.
 func NewService(repo domain.SavedResourceRepository) *Service {
 	return &Service{repo: repo}
 }
 
+// Save persists a saved resource for the principal.
 func (s *Service) Save(ctx context.Context, principal domain.ContextPrincipal, resource domain.ResourceRef) error {
 	normalized, err := resourceref.Normalize(resource)
 	if err != nil {
@@ -32,6 +37,7 @@ func (s *Service) Save(ctx context.Context, principal domain.ContextPrincipal, r
 	return s.repo.Save(ctx, principal.ID, normalized)
 }
 
+// Unsave removes a saved resource for the principal.
 func (s *Service) Unsave(ctx context.Context, principal domain.ContextPrincipal, resourceType string, resourceKey string) error {
 	if err := requirePrincipal(principal); err != nil {
 		return err
@@ -47,6 +53,7 @@ func (s *Service) Unsave(ctx context.Context, principal domain.ContextPrincipal,
 	return s.repo.Unsave(ctx, principal.ID, resourceType, ref.ResourceKey)
 }
 
+// ListSaved returns hydrated saved resources for the principal.
 func (s *Service) ListSaved(ctx context.Context, principal domain.ContextPrincipal, limit int) ([]domain.SavedResource, error) {
 	if err := requirePrincipal(principal); err != nil {
 		return nil, err

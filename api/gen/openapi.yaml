@@ -14049,6 +14049,12 @@ paths:
             type: integer
             format: int32
           explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -14100,6 +14106,12 @@ paths:
           schema:
             type: integer
             format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
           explode: false
       responses:
         '200':
@@ -21061,25 +21073,6 @@ components:
           type: integer
           format: int64
         generated_sql:
-          type: string
-    ResourceSummary:
-      type: object
-      required:
-        - resource_type
-        - resource_key
-        - display_name
-      properties:
-        resource_type:
-          type: string
-        resource_key:
-          type: string
-        display_name:
-          type: string
-        resource_path:
-          type: string
-        href:
-          type: string
-        section:
           type: string
     RevokeWebSessionsRequest:
       type: object

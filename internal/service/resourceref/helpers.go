@@ -1,3 +1,4 @@
+// Package resourceref normalizes resource references into stable internal identities and hrefs.
 package resourceref
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// NormalizeHref validates and canonicalizes an internal UI href.
 func NormalizeHref(raw string) (string, error) {
 	value := strings.TrimSpace(raw)
 	if value == "" {
@@ -45,6 +47,7 @@ func NormalizeHref(raw string) (string, error) {
 	return cleaned, nil
 }
 
+// HrefForResource derives the canonical UI href for a resource reference.
 func HrefForResource(resourceType string, resourceKey string) (string, error) {
 	resourceType = strings.TrimSpace(resourceType)
 	resourceKey, err := normalizeResourceKey(resourceType, resourceKey)
@@ -84,6 +87,7 @@ func HrefForResource(resourceType string, resourceKey string) (string, error) {
 	}
 }
 
+// Normalize canonicalizes a resource reference and derives its href and defaults.
 func Normalize(resource domain.ResourceRef) (domain.ResourceRef, error) {
 	resource.ResourceType = strings.TrimSpace(resource.ResourceType)
 	if resource.ResourceType == "" {
@@ -116,6 +120,7 @@ func Normalize(resource domain.ResourceRef) (domain.ResourceRef, error) {
 	return resource, nil
 }
 
+// HydrateRecent normalizes recent resource events and drops invalid or unsupported entries.
 func HydrateRecent(items []domain.ResourceAccessEvent) ([]domain.ResourceAccessEvent, error) {
 	out := make([]domain.ResourceAccessEvent, 0, len(items))
 	for i := range items {
@@ -132,6 +137,7 @@ func HydrateRecent(items []domain.ResourceAccessEvent) ([]domain.ResourceAccessE
 	return out, nil
 }
 
+// HydrateSaved normalizes saved resources and drops invalid or unsupported entries.
 func HydrateSaved(items []domain.SavedResource) ([]domain.SavedResource, error) {
 	out := make([]domain.SavedResource, 0, len(items))
 	for i := range items {
@@ -148,6 +154,7 @@ func HydrateSaved(items []domain.SavedResource) ([]domain.SavedResource, error) 
 	return out, nil
 }
 
+// IsRecentResource reports whether a resource is eligible for recent/saved history.
 func IsRecentResource(resource domain.ResourceRef) bool {
 	if strings.TrimSpace(resource.ResourceType) == "workspace" {
 		return false

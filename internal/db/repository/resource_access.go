@@ -9,16 +9,19 @@ import (
 	"duck-demo/internal/domain"
 )
 
+// ResourceAccessRepo stores resource access events in SQLite.
 type ResourceAccessRepo struct {
 	db *sql.DB
 }
 
+// NewResourceAccessRepo creates a repository for resource access events.
 func NewResourceAccessRepo(db *sql.DB) *ResourceAccessRepo {
 	return &ResourceAccessRepo{db: db}
 }
 
 var _ domain.ResourceAccessRepository = (*ResourceAccessRepo)(nil)
 
+// TrackVisit appends a resource access event for the principal.
 func (r *ResourceAccessRepo) TrackVisit(ctx context.Context, principalID string, resource domain.ResourceRef) error {
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO resource_access_events (
@@ -31,6 +34,7 @@ func (r *ResourceAccessRepo) TrackVisit(ctx context.Context, principalID string,
 	return nil
 }
 
+// ListRecent returns the latest access event per resource for the principal.
 func (r *ResourceAccessRepo) ListRecent(ctx context.Context, principalID string, limit int) ([]domain.ResourceAccessEvent, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		WITH latest_events AS (
@@ -66,7 +70,9 @@ func (r *ResourceAccessRepo) ListRecent(ctx context.Context, principalID string,
 	if err != nil {
 		return nil, fmt.Errorf("list recent resources: %w", mapDBError(err))
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	return scanRecentRows(rows)
 }

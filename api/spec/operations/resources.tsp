@@ -9,6 +9,7 @@ namespace Duck;
 @doc("Lists the authenticated principal's recent UUID-backed resources for personalized navigation.")
 op listRecentResources(
   @query max_results?: int32,
+  @query page_token?: string,
 ): Ok<PaginatedRecentResources> | GuardedReadErrorResponses;
 
 @route("/resources/saved")
@@ -18,6 +19,7 @@ op listRecentResources(
 @doc("Lists the authenticated principal's saved UUID-backed resources.")
 op listSavedResources(
   @query max_results?: int32,
+  @query page_token?: string,
 ): Ok<PaginatedSavedResources> | GuardedReadErrorResponses;
 
 @route("/resources/saved")

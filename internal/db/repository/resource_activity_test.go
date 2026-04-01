@@ -14,8 +14,6 @@ import (
 )
 
 func TestResourceAccessRepo_TrackVisitAppendsEventsAndKeepsLatestProjection(t *testing.T) {
-	t.Parallel()
-
 	writeDB, _ := dbpkg.OpenTestSQLite(t)
 	principal := createResourceTestPrincipal(t, writeDB, "alice")
 	repo := NewResourceAccessRepo(writeDB)
@@ -49,8 +47,6 @@ func TestResourceAccessRepo_TrackVisitAppendsEventsAndKeepsLatestProjection(t *t
 }
 
 func TestResourceAccessRepo_ListRecentAllowsNullResourcePath(t *testing.T) {
-	t.Parallel()
-
 	writeDB, _ := dbpkg.OpenTestSQLite(t)
 	principal := createResourceTestPrincipal(t, writeDB, "alice")
 	repo := NewResourceAccessRepo(writeDB)
@@ -66,12 +62,10 @@ func TestResourceAccessRepo_ListRecentAllowsNullResourcePath(t *testing.T) {
 	items, err := repo.ListRecent(ctx, principal.ID, 10)
 	require.NoError(t, err)
 	require.Len(t, items, 1)
-	assert.Equal(t, "", items[0].ResourcePath)
+	assert.Empty(t, items[0].ResourcePath)
 }
 
 func TestSavedResourceRepo_SaveAndUnsaveReuseSameRow(t *testing.T) {
-	t.Parallel()
-
 	writeDB, _ := dbpkg.OpenTestSQLite(t)
 	principal := createResourceTestPrincipal(t, writeDB, "alice")
 	accessRepo := NewResourceAccessRepo(writeDB)
@@ -108,8 +102,6 @@ func TestSavedResourceRepo_SaveAndUnsaveReuseSameRow(t *testing.T) {
 }
 
 func TestResourceAccessAndSavedResourceRepos_ListOrdering(t *testing.T) {
-	t.Parallel()
-
 	writeDB, _ := dbpkg.OpenTestSQLite(t)
 	principal := createResourceTestPrincipal(t, writeDB, "alice")
 	accessRepo := NewResourceAccessRepo(writeDB)
