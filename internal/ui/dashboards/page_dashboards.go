@@ -7,7 +7,6 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -49,6 +48,7 @@ type dashboardDetailPageData struct {
 	TablePageURL      string
 	StreamID          string
 	ActiveFilters     []dashboardsvc.InteractiveFilter
+	FilterKey         string
 	CSRFToken         string
 	CSRFFieldProvider func() Node
 }
@@ -225,7 +225,7 @@ func dashboardViewSurface(d dashboardDetailPageData, widgetNodes []Node) Node {
 		ID("dashboard-view-surface"),
 		Class("shrink-0 grid gap-4"),
 		Attr("data-dashboard-surface", "true"),
-		Attr("data-dashboard-filter-key", dashboardFilterKey(d.ActiveFilters)),
+		Attr("data-dashboard-filter-key", d.FilterKey),
 		Attr("data-dashboard-view-url", d.ViewURL),
 		Attr("data-dashboard-surface-url", d.SurfaceURL),
 		Attr("data-dashboard-stream-id", d.StreamID),
@@ -1054,6 +1054,7 @@ func chartHost(widget dashboardsvc.ResolvedWidget, editMode bool) Node {
 	nodes := []Node{
 		Class("dashboard-chart-host block min-h-[19rem] w-full"),
 		Attr("data-widget-id", widget.Widget.ID),
+		Attr("data-widget-origin-key", widget.Widget.FilterOriginKey),
 	}
 	if editMode {
 		nodes = append(nodes, Attr("data-chart-payload", widgetPayload(widget.Widget.Name, widget.Columns, widget.Rows, widget.RowCount, dashboardChartVisual(widget.Widget.VisualSpec), widget.Interaction, widget.Page)))
@@ -1067,6 +1068,7 @@ func tableHost(widget dashboardsvc.ResolvedWidget, editMode bool) Node {
 	nodes := []Node{
 		Class("dashboard-table-host block h-full min-h-0 w-full"),
 		Attr("data-widget-id", widget.Widget.ID),
+		Attr("data-widget-origin-key", widget.Widget.FilterOriginKey),
 	}
 	if editMode {
 		nodes = append(nodes, Attr("data-table-payload", widgetPayload(widget.Widget.Name, widget.Columns, widget.Rows, widget.RowCount, widget.Widget.VisualSpec, widget.Interaction, widget.Page)))
@@ -1084,6 +1086,7 @@ type widgetRenderPayload struct {
 	Visual      *domain.VisualSpec                      `json:"visual"`
 	Interaction *dashboardsvc.ResolvedWidgetInteraction `json:"interaction,omitempty"`
 	Page        *dashboardsvc.ResolvedWidgetPage        `json:"page,omitempty"`
+	Sort        *dashboardsvc.ResolvedWidgetSort        `json:"sort,omitempty"`
 }
 
 func dashboardChartVisual(visual *domain.VisualSpec) *domain.VisualSpec {
@@ -1109,7 +1112,7 @@ type dashboardWidgetPayloadEvent struct {
 	Widgets   map[string]widgetRenderPayload `json:"widgets"`
 }
 
-func dashboardWidgetPayloadEnvelope(widgets []dashboardsvc.ResolvedWidget, filters []dashboardsvc.InteractiveFilter) dashboardWidgetPayloadEvent {
+func dashboardWidgetPayloadEnvelope(widgets []dashboardsvc.ResolvedWidget, filterKey string) dashboardWidgetPayloadEvent {
 	payloads := make(map[string]widgetRenderPayload)
 	for _, widget := range widgets {
 		if widget.Widget.ID == "" || widget.Widget.VisualSpec == nil {
@@ -1128,32 +1131,13 @@ func dashboardWidgetPayloadEnvelope(widgets []dashboardsvc.ResolvedWidget, filte
 			Visual:      dashboardChartVisual(widget.Widget.VisualSpec),
 			Interaction: widget.Interaction,
 			Page:        widget.Page,
+			Sort:        widget.Sort,
 		}
 	}
 	return dashboardWidgetPayloadEvent{
-		FilterKey: dashboardFilterKey(filters),
+		FilterKey: filterKey,
 		Widgets:   payloads,
 	}
-}
-
-func dashboardFilterKey(filters []dashboardsvc.InteractiveFilter) string {
-	if len(filters) == 0 {
-		return ""
-	}
-	parts := make([]string, 0)
-	for _, filter := range filters {
-		values := append([]string(nil), filter.Values...)
-		sort.Strings(values)
-		for _, value := range values {
-			part := strings.TrimSpace(filter.Dimension) + ":" + strings.TrimSpace(value)
-			if widgetID := strings.TrimSpace(filter.WidgetID); widgetID != "" {
-				part = widgetID + "|" + part
-			}
-			parts = append(parts, part)
-		}
-	}
-	sort.Strings(parts)
-	return strings.Join(parts, "|")
 }
 
 func visualMetricCard(title string, value interface{}, secondary string) Node {

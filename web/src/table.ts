@@ -27,6 +27,16 @@ type VisibleTableRow = {
   row: TableRow | null;
 };
 
+type WidgetFilterSelection = {
+  widgetKey: string;
+  dimension: string;
+  value: string;
+};
+
+type DashboardFilterEventDetail = {
+  selections: WidgetFilterSelection[];
+};
+
 type ActiveResize = {
   column: string;
   pointerId: number;
@@ -37,6 +47,7 @@ type ActiveResize = {
 class DuckTable extends LitElement {
   static properties = {
     widgetId: { attribute: "data-widget-id" },
+    widgetOriginKey: { attribute: "data-widget-origin-key" },
     payloadJSON: { attribute: "data-table-payload" },
   };
 
@@ -192,6 +203,15 @@ class DuckTable extends LitElement {
       background: color-mix(in srgb, var(--bgColor-accent-muted) 24%, transparent);
     }
 
+    .body-row--interactive {
+      cursor: pointer;
+    }
+
+    .body-row--selected {
+      background: color-mix(in srgb, var(--bgColor-accent-muted) 44%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--borderColor-accent-emphasis) 50%, transparent);
+    }
+
     .cell {
       display: flex;
       align-items: center;
@@ -264,6 +284,7 @@ class DuckTable extends LitElement {
 
   payloadJSON = "";
   widgetId = "";
+  widgetOriginKey = "";
   private sortColumn: string | null = null;
   private sortDirection: SortDirection = "asc";
   private activeResize: ActiveResize | null = null;
@@ -332,6 +353,13 @@ class DuckTable extends LitElement {
       row_count: nextRowCount,
     };
     this.payloadJSON = JSON.stringify(this.payloadState);
+    if (this.shouldReloadForActiveSort(this.payloadState)) {
+      this.resetRowsForFreshPage(nextRowCount);
+      this.scrollToTop();
+      this.requestTopPage(false);
+      this.requestUpdate();
+      return;
+    }
     this.ensureVisibleChunks(this.payloadState);
     this.requestUpdate();
   }
@@ -385,7 +413,7 @@ class DuckTable extends LitElement {
   }
 
   private renderHeaderCell(column: string) {
-    const sortable = this.canSort();
+    const sortable = true;
     const numeric = this.columnLooksNumeric(column);
     const active = this.sortColumn === column;
     const direction = active ? this.sortDirection : null;
@@ -398,7 +426,7 @@ class DuckTable extends LitElement {
           type="button"
           ?disabled=${!sortable}
           @click=${() => this.toggleSort(column)}
-          title=${sortable ? `Sort by ${this.formatColumnLabel(column)}` : "Sorting is available after all rows load"}
+          title=${`Sort by ${this.formatColumnLabel(column)}`}
         >
           <span class="header-label">${this.formatColumnLabel(column)}</span>
           <span class="sort-indicator" data-active=${active ? "true" : "false"}>${indicator}</span>
@@ -440,8 +468,23 @@ class DuckTable extends LitElement {
   }
 
   private renderBodyRow(columns: string[], row: TableRow, index: number) {
+    const payload = this.payloadState ?? this.parsePayload();
+    const canInitiate = Boolean(payload?.interaction?.can_initiate);
+    const selected = payload ? this.isRowSelected(payload, row.values) : false;
     return html`
-      <div class="body-row" data-row-index=${index}>
+      <div
+        class=${[
+          "body-row",
+          canInitiate ? "body-row--interactive" : "",
+          selected ? "body-row--selected" : "",
+        ].filter(Boolean).join(" ")}
+        data-row-index=${index}
+        role=${canInitiate ? "button" : "row"}
+        tabindex=${canInitiate ? "0" : "-1"}
+        aria-pressed=${canInitiate ? String(selected) : "false"}
+        @click=${() => this.handleRowActivate(row)}
+        @keydown=${(event: KeyboardEvent) => this.handleRowKeyDown(event, row)}
+      >
         ${columns.map((column, columnIndex) => {
           const value = row.values[column];
           const numeric = this.valueIsNumeric(value) || this.columnLooksNumeric(column);
@@ -460,6 +503,32 @@ class DuckTable extends LitElement {
         })}
       </div>
     `;
+  }
+
+  private handleRowActivate(row: TableRow): void {
+    const payload = this.payloadState ?? this.parsePayload();
+    if (!payload?.interaction?.can_initiate) {
+      return;
+    }
+
+    const selections = this.extractSelectionsFromRow(payload, row.values);
+    if (selections.length === 0) {
+      return;
+    }
+
+    this.dispatchEvent(new CustomEvent<DashboardFilterEventDetail>("dashboard-filter-select", {
+      bubbles: true,
+      composed: true,
+      detail: { selections },
+    }));
+  }
+
+  private handleRowKeyDown(event: KeyboardEvent, row: TableRow): void {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    event.preventDefault();
+    this.handleRowActivate(row);
   }
 
   private parsePayload(): DashboardWidgetPayload | null {
@@ -482,85 +551,148 @@ class DuckTable extends LitElement {
     return countLoadedRows(this.sparseRows);
   }
 
-  private canSort(): boolean {
-    return this.sparseRows.length > 0 && this.loadedRowCount() === this.sparseRows.length;
-  }
-
-  private sortedRows(payload: DashboardWidgetPayload): TableRow[] {
-    const rows = this.sparseRows
-      .map((row, rowIndex) => {
-        if (!row) {
-          return null;
-        }
-        const values: Record<string, unknown> = {};
-        payload.columns.forEach((column, columnIndex) => {
-          values[column] = row[columnIndex];
-        });
-        return { id: `${rowIndex}`, values };
-      })
-      .filter((row): row is TableRow => row !== null);
-
-    if (!this.sortColumn || !this.canSort()) {
-      return rows;
+  private extractSelectionsFromRow(payload: DashboardWidgetPayload, values: Record<string, unknown>): WidgetFilterSelection[] {
+    if (!payload.interaction?.can_initiate || !this.widgetOriginKey.trim()) {
+      return [];
     }
 
-    const column = this.sortColumn;
-    const direction = this.sortDirection === "asc" ? 1 : -1;
-    return [...rows].sort((left, right) => {
-      const comparison = this.compareValues(left.values[column], right.values[column]);
-      if (comparison !== 0) {
-        return comparison * direction;
+    const selections: WidgetFilterSelection[] = [];
+    for (const binding of payload.interaction.bindings ?? []) {
+      const field = binding.field?.trim();
+      if (!field) {
+        continue;
       }
-      return Number(left.id) - Number(right.id);
-    });
+      const rawValue = values[field];
+      if (rawValue === null || rawValue === undefined) {
+        continue;
+      }
+      const value = String(rawValue).trim();
+      if (!value) {
+        continue;
+      }
+      selections.push({
+        widgetKey: this.widgetOriginKey,
+        dimension: binding.dimension,
+        value,
+      });
+    }
+    return selections;
+  }
+
+  private isRowSelected(payload: DashboardWidgetPayload, values: Record<string, unknown>): boolean {
+    const bindings = payload.interaction?.bindings ?? [];
+    if (bindings.length === 0) {
+      return false;
+    }
+
+    let hasRelevantFilter = false;
+    for (const binding of bindings) {
+      const activeValues = payload.interaction?.active_filters?.[binding.dimension] ?? [];
+      if (activeValues.length === 0) {
+        continue;
+      }
+      const field = binding.field?.trim();
+      if (!field) {
+        continue;
+      }
+      hasRelevantFilter = true;
+      const rawValue = values[field];
+      const candidate = rawValue === null || rawValue === undefined ? "" : String(rawValue).trim();
+      if (!candidate || !activeValues.includes(candidate)) {
+        return false;
+      }
+    }
+
+    return hasRelevantFilter;
   }
 
   private toggleSort(column: string): void {
-    if (!this.canSort()) {
-      return;
-    }
-
     if (this.sortColumn !== column) {
       this.sortColumn = column;
       this.sortDirection = "asc";
+      this.resetRowsForFreshPage(this.currentTotalRows());
+      this.scrollToTop();
+      this.requestTopPage(false);
       this.requestUpdate();
       return;
     }
 
     if (this.sortDirection === "asc") {
       this.sortDirection = "desc";
+      this.resetRowsForFreshPage(this.currentTotalRows());
+      this.scrollToTop();
+      this.requestTopPage(false);
       this.requestUpdate();
       return;
     }
 
     this.sortColumn = null;
     this.sortDirection = "asc";
+    this.resetRowsForFreshPage(this.currentTotalRows());
+    this.scrollToTop();
+    this.requestTopPage(false);
     this.requestUpdate();
   }
 
-  private compareValues(left: unknown, right: unknown): number {
-    const leftNumber = this.toNumber(left);
-    const rightNumber = this.toNumber(right);
-    if (leftNumber !== null && rightNumber !== null) {
-      if (leftNumber < rightNumber) {
-        return -1;
-      }
-      if (leftNumber > rightNumber) {
-        return 1;
-      }
-      return 0;
-    }
-
-    const leftText = this.normalizeString(left);
-    const rightText = this.normalizeString(right);
-    return leftText.localeCompare(rightText, undefined, { numeric: true, sensitivity: "base" });
+  private currentTotalRows(): number {
+    const payload = this.payloadState ?? this.parsePayload();
+    return payload ? this.totalRowCount(payload) : this.sparseRows.length;
   }
 
-  private normalizeString(value: unknown): string {
-    if (value === null || value === undefined) {
-      return "";
+  private currentSortPayload(): { column: string; direction: "asc" | "desc" } | null {
+    if (!this.sortColumn) {
+      return null;
     }
-    return String(value);
+    return {
+      column: this.sortColumn,
+      direction: this.sortDirection,
+    };
+  }
+
+  private payloadMatchesCurrentSort(payload: DashboardWidgetPayload | null): boolean {
+    const activeSort = this.currentSortPayload();
+    if (!activeSort) {
+      return !payload?.sort;
+    }
+    return payload?.sort?.column === activeSort.column && payload?.sort?.direction === activeSort.direction;
+  }
+
+  private shouldReloadForActiveSort(payload: DashboardWidgetPayload | null): boolean {
+    if (!payload) {
+      return false;
+    }
+    return !this.payloadMatchesCurrentSort(payload);
+  }
+
+  private resetRowsForFreshPage(totalRows: number): void {
+    const emptyStore = createEmptySparseTableStore();
+    this.sparseRows = new Array(Math.max(0, totalRows)).fill(null);
+    this.loadedChunkOffsets = emptyStore.loadedChunkOffsets;
+    this.pendingChunkOffsets = emptyStore.pendingChunkOffsets;
+  }
+
+  private scrollToTop(): void {
+    this.scrollOffset = 0;
+    const scroller = this.shadowRoot?.querySelector<HTMLElement>(".scroller");
+    if (scroller) {
+      scroller.scrollTop = 0;
+      this.viewportHeight = scroller.clientHeight;
+    }
+  }
+
+  private requestTopPage(append: boolean): void {
+    this.dispatchEvent(new CustomEvent("dashboard-table-page-request", {
+      bubbles: true,
+      composed: true,
+      detail: {
+        widgetId: this.widgetId,
+        offset: 0,
+        limit: dashboardTablePageSize,
+        append,
+        sortColumn: this.sortColumn,
+        sortDirection: this.sortColumn ? this.sortDirection : null,
+      },
+    }));
   }
 
   private toNumber(value: unknown): number | null {
@@ -682,6 +814,9 @@ class DuckTable extends LitElement {
           widgetId: this.widgetId,
           offset,
           limit: dashboardTablePageSize,
+          append: true,
+          sortColumn: this.sortColumn,
+          sortDirection: this.sortColumn ? this.sortDirection : null,
         },
       }));
     }
@@ -706,28 +841,20 @@ class DuckTable extends LitElement {
     });
 
     const rows: VisibleTableRow[] = [];
-    if (this.canSort() && this.sortColumn) {
-      const sortedRows = this.sortedRows(payload);
-      const slice = sortedRows.slice(window.startIndex, window.endIndex);
-      slice.forEach((row, index) => {
-        rows.push({ index: window.startIndex + index, row });
-      });
-    } else {
-      for (let index = window.startIndex; index < window.endIndex; index += 1) {
-        const slot = this.sparseRows[index] ?? null;
-        if (!slot) {
-          rows.push({ index, row: null });
-          continue;
-        }
-        const values: Record<string, unknown> = {};
-        payload.columns.forEach((column, columnIndex) => {
-          values[column] = slot[columnIndex];
-        });
-        rows.push({
-          index,
-          row: { id: `${index}`, values },
-        });
+    for (let index = window.startIndex; index < window.endIndex; index += 1) {
+      const slot = this.sparseRows[index] ?? null;
+      if (!slot) {
+        rows.push({ index, row: null });
+        continue;
       }
+      const values: Record<string, unknown> = {};
+      payload.columns.forEach((column, columnIndex) => {
+        values[column] = slot[columnIndex];
+      });
+      rows.push({
+        index,
+        row: { id: `${index}`, values },
+      });
     }
 
     return {

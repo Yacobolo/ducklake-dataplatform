@@ -22,14 +22,14 @@ echarts.use([
 
 type ChartPayload = DashboardWidgetPayload;
 
-type ChartFilterSelection = {
-  widgetId: string;
+type WidgetFilterSelection = {
+  widgetKey: string;
   dimension: string;
   value: string;
 };
 
-type DashboardChartFilterEventDetail = {
-  selections: ChartFilterSelection[];
+type DashboardFilterEventDetail = {
+  selections: WidgetFilterSelection[];
 };
 
 type PointSelectionContext = Partial<Record<InteractionBinding["encoding"], string>>;
@@ -37,6 +37,7 @@ type PointSelectionContext = Partial<Record<InteractionBinding["encoding"], stri
 class DuckChart extends LitElement {
   static properties = {
     widgetId: { attribute: "data-widget-id" },
+    widgetOriginKey: { attribute: "data-widget-origin-key" },
     payloadJSON: { attribute: "data-chart-payload" },
   };
 
@@ -67,6 +68,7 @@ class DuckChart extends LitElement {
 
   payloadJSON = "";
   widgetId = "";
+  widgetOriginKey = "";
   private chart: echarts.ECharts | null = null;
   private resizeObserver: ResizeObserver | null = null;
 
@@ -146,12 +148,12 @@ class DuckChart extends LitElement {
       return;
     }
 
-    const selections = extractSelectionsFromClick(this.widgetId, payload, params as { name?: unknown; seriesName?: unknown });
+    const selections = extractSelectionsFromClick(this.widgetOriginKey, payload, params as { name?: unknown; seriesName?: unknown });
     if (selections.length === 0) {
       return;
     }
 
-    this.dispatchEvent(new CustomEvent<DashboardChartFilterEventDetail>("dashboard-chart-filter", {
+    this.dispatchEvent(new CustomEvent<DashboardFilterEventDetail>("dashboard-filter-select", {
       bubbles: true,
       composed: true,
       detail: { selections },
@@ -336,10 +338,10 @@ function shouldShowLegend(visual: VisualSpec, seriesCount: number): boolean {
   }
 }
 
-function extractSelectionsFromClick(widgetId: string, payload: ChartPayload, params: { name?: unknown; seriesName?: unknown }): ChartFilterSelection[] {
+function extractSelectionsFromClick(widgetKey: string, payload: ChartPayload, params: { name?: unknown; seriesName?: unknown }): WidgetFilterSelection[] {
   const bindings = payload.interaction?.bindings ?? [];
-  const selections: ChartFilterSelection[] = [];
-  if (!widgetId.trim()) {
+  const selections: WidgetFilterSelection[] = [];
+  if (!widgetKey.trim()) {
     return selections;
   }
 
@@ -353,7 +355,7 @@ function extractSelectionsFromClick(widgetId: string, payload: ChartPayload, par
       continue;
     }
     selections.push({
-      widgetId,
+      widgetKey,
       dimension: binding.dimension,
       value,
     });

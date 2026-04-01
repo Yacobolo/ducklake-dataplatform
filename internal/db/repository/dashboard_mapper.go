@@ -37,12 +37,13 @@ func dashboardWidgetFromDB(row dbstore.DashboardWidget) (*domain.DashboardWidget
 	}
 
 	return &domain.DashboardWidget{
-		ID:          row.ID,
-		DashboardID: row.DashboardID,
-		Name:        row.Name,
-		Description: row.Description,
-		Source:      source,
-		VisualSpec:  visualSpec,
+		ID:              row.ID,
+		DashboardID:     row.DashboardID,
+		FilterOriginKey: row.FilterOriginKey,
+		Name:            row.Name,
+		Description:     row.Description,
+		Source:          source,
+		VisualSpec:      visualSpec,
 		Layout: domain.DashboardWidgetLayout{
 			X: int(row.LayoutX),
 			Y: int(row.LayoutY),

@@ -6,7 +6,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
+	"unicode"
 
 	"duck-demo/internal/domain"
 	"duck-demo/internal/service/query"
@@ -61,6 +64,7 @@ type ResolvedWidget struct {
 	GeneratedSQL string
 	Interaction  *ResolvedWidgetInteraction
 	Page         *ResolvedWidgetPage
+	Sort         *ResolvedWidgetSort
 }
 
 type ResolvedWidgetPage struct {
@@ -69,10 +73,17 @@ type ResolvedWidgetPage struct {
 	HasMore bool `json:"has_more"`
 }
 
+type ResolvedWidgetSort struct {
+	Column    string `json:"column"`
+	Direction string `json:"direction"`
+}
+
 type TablePageRequest struct {
-	Offset int
-	Limit  int
-	Append bool
+	Offset        int
+	Limit         int
+	Append        bool
+	SortColumn    string
+	SortDirection string
 }
 
 // CreateDashboard creates a new dashboard owned by the caller.
@@ -168,19 +179,86 @@ func (s *Service) CreateWidget(ctx context.Context, principal string, isAdmin bo
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
+	existingWidgets, err := s.widgets.ListByDashboard(ctx, dashboardID)
+	if err != nil {
+		return nil, err
+	}
 	item, err := s.widgets.Create(ctx, &domain.DashboardWidget{
-		DashboardID: dashboardID,
-		Name:        req.Name,
-		Description: req.Description,
-		Source:      req.Source,
-		VisualSpec:  req.VisualSpec,
-		Layout:      req.Layout,
+		DashboardID:     dashboardID,
+		FilterOriginKey: nextDashboardWidgetFilterOriginKey(req.Name, req.VisualSpec, existingWidgets),
+		Name:            req.Name,
+		Description:     req.Description,
+		Source:          req.Source,
+		VisualSpec:      req.VisualSpec,
+		Layout:          req.Layout,
 	})
 	if err != nil {
 		return nil, err
 	}
 	_ = s.audit.Insert(ctx, &domain.AuditEntry{PrincipalName: principal, Action: "CREATE_DASHBOARD_WIDGET", Status: "ALLOWED"})
 	return item, nil
+}
+
+func nextDashboardWidgetFilterOriginKey(name string, visual *domain.VisualSpec, existing []domain.DashboardWidget) string {
+	base := dashboardWidgetFilterOriginKeyBase(name, visual)
+	if base == "" {
+		base = "widget"
+	}
+
+	used := make(map[string]struct{}, len(existing))
+	for _, widget := range existing {
+		key := strings.TrimSpace(widget.FilterOriginKey)
+		if key == "" {
+			continue
+		}
+		used[key] = struct{}{}
+	}
+	if _, exists := used[base]; !exists {
+		return base
+	}
+
+	for index := 2; ; index += 1 {
+		candidate := fmt.Sprintf("%s-%d", base, index)
+		if _, exists := used[candidate]; !exists {
+			return candidate
+		}
+	}
+}
+
+func dashboardWidgetFilterOriginKeyBase(name string, visual *domain.VisualSpec) string {
+	prefix := "widget"
+	if visual != nil {
+		switch visual.Kind {
+		case domain.VisualOutputChart:
+			prefix = "chart"
+		case domain.VisualOutputTable:
+			prefix = "table"
+		case domain.VisualOutputMetric:
+			prefix = "metric"
+		}
+	}
+
+	slug := slugifyDashboardWidgetOriginPart(name)
+	if slug == "" {
+		return prefix
+	}
+	return prefix + "-" + slug
+}
+
+func slugifyDashboardWidgetOriginPart(value string) string {
+	var builder strings.Builder
+	lastDash := false
+	for _, r := range strings.ToLower(strings.TrimSpace(value)) {
+		switch {
+		case unicode.IsLetter(r) || unicode.IsDigit(r):
+			builder.WriteRune(r)
+			lastDash = false
+		case !lastDash:
+			builder.WriteByte('-')
+			lastDash = true
+		}
+	}
+	return strings.Trim(builder.String(), "-")
 }
 
 // UpdateWidget updates widget metadata and visualization settings.
@@ -317,6 +395,10 @@ func (s *Service) resolveWidgetWithContextAndPage(ctx context.Context, principal
 		rows := result.Rows
 		rowCount := result.RowCount
 		var page *ResolvedWidgetPage
+		sortState := resolveTablePageSort(result.Columns, pageReq)
+		if sortState != nil {
+			rows = sortWidgetRows(result.Columns, rows, *sortState)
+		}
 		if pageReq != nil && widget.VisualSpec != nil && widget.VisualSpec.Kind == domain.VisualOutputTable {
 			rows, page = sliceWidgetRows(rows, rowCount, *pageReq)
 		}
@@ -327,6 +409,7 @@ func (s *Service) resolveWidgetWithContextAndPage(ctx context.Context, principal
 			RowCount:     rowCount,
 			GeneratedSQL: widget.Source.SQLQuery.SQL,
 			Page:         page,
+			Sort:         sortState,
 		}
 		if interactionCtx != nil && interactionCtx.Interactive {
 			resolved.Interaction = buildResolvedWidgetInteraction(widget, interactionCtx)
@@ -353,6 +436,10 @@ func (s *Service) resolveWidgetWithContextAndPage(ctx context.Context, principal
 		rows := result.Rows
 		rowCount := result.RowCount
 		var page *ResolvedWidgetPage
+		sortState := resolveTablePageSort(result.Columns, pageReq)
+		if sortState != nil {
+			rows = sortWidgetRows(result.Columns, rows, *sortState)
+		}
 		if pageReq != nil && widget.VisualSpec != nil && widget.VisualSpec.Kind == domain.VisualOutputTable {
 			rows, page = sliceWidgetRows(rows, rowCount, *pageReq)
 		}
@@ -362,6 +449,7 @@ func (s *Service) resolveWidgetWithContextAndPage(ctx context.Context, principal
 			Rows:     rows,
 			RowCount: rowCount,
 			Page:     page,
+			Sort:     sortState,
 		}
 		if interactionCtx != nil && interactionCtx.Interactive {
 			resolved.Interaction = buildResolvedWidgetInteraction(widget, interactionCtx)
@@ -380,6 +468,10 @@ func (s *Service) resolveWidgetWithContextAndPage(ctx context.Context, principal
 			OrderBy:           widget.Source.SemanticQuery.OrderBy,
 			Limit:             widget.Source.SemanticQuery.Limit,
 			TimeGrain:         widget.Source.SemanticQuery.TimeGrain,
+		}
+		sortState := resolveTablePageSort(dashboardSemanticQueryColumns(widget), pageReq)
+		if sortState != nil {
+			req.OrderBy = []string{sortState.Column + " " + strings.ToUpper(sortState.Direction)}
 		}
 		if pageReq != nil && widget.VisualSpec != nil && widget.VisualSpec.Kind == domain.VisualOutputTable {
 			limit := pageReq.Limit + 1
@@ -414,6 +506,7 @@ func (s *Service) resolveWidgetWithContextAndPage(ctx context.Context, principal
 			RowCount:     rowCount,
 			GeneratedSQL: result.Plan.GeneratedSQL,
 			Page:         page,
+			Sort:         sortState,
 		}
 		if interactionCtx != nil && interactionCtx.Interactive {
 			resolved.Interaction = buildResolvedWidgetInteraction(widget, interactionCtx)
@@ -421,6 +514,121 @@ func (s *Service) resolveWidgetWithContextAndPage(ctx context.Context, principal
 		return resolved, nil
 	default:
 		return nil, domain.ErrValidation("unsupported widget source kind %q", string(widget.Source.Kind))
+	}
+}
+
+func resolveTablePageSort(columns []string, pageReq *TablePageRequest) *ResolvedWidgetSort {
+	if pageReq == nil {
+		return nil
+	}
+	column := strings.TrimSpace(pageReq.SortColumn)
+	if column == "" {
+		return nil
+	}
+	direction := strings.ToLower(strings.TrimSpace(pageReq.SortDirection))
+	if direction != "asc" && direction != "desc" {
+		direction = "asc"
+	}
+	for _, candidate := range columns {
+		if strings.EqualFold(strings.TrimSpace(candidate), column) {
+			return &ResolvedWidgetSort{
+				Column:    candidate,
+				Direction: direction,
+			}
+		}
+	}
+	return nil
+}
+
+func dashboardSemanticQueryColumns(widget domain.DashboardWidget) []string {
+	if widget.Source.SemanticQuery == nil {
+		return nil
+	}
+	columns := make([]string, 0, len(widget.Source.SemanticQuery.Dimensions)+len(widget.Source.SemanticQuery.Metrics))
+	columns = append(columns, widget.Source.SemanticQuery.Dimensions...)
+	columns = append(columns, widget.Source.SemanticQuery.Metrics...)
+	return columns
+}
+
+func sortWidgetRows(columns []string, rows [][]interface{}, sortState ResolvedWidgetSort) [][]interface{} {
+	if len(rows) <= 1 {
+		return rows
+	}
+
+	columnIndex := -1
+	for index, column := range columns {
+		if strings.EqualFold(strings.TrimSpace(column), strings.TrimSpace(sortState.Column)) {
+			columnIndex = index
+			break
+		}
+	}
+	if columnIndex < 0 {
+		return rows
+	}
+
+	sorted := make([][]interface{}, len(rows))
+	copy(sorted, rows)
+	direction := 1
+	if strings.EqualFold(sortState.Direction, "desc") {
+		direction = -1
+	}
+	sort.SliceStable(sorted, func(i, j int) bool {
+		left := interface{}(nil)
+		right := interface{}(nil)
+		if columnIndex < len(sorted[i]) {
+			left = sorted[i][columnIndex]
+		}
+		if columnIndex < len(sorted[j]) {
+			right = sorted[j][columnIndex]
+		}
+		return compareWidgetRowValues(left, right)*direction < 0
+	})
+	return sorted
+}
+
+func compareWidgetRowValues(left, right interface{}) int {
+	leftNumber, leftOK := widgetRowNumberValue(left)
+	rightNumber, rightOK := widgetRowNumberValue(right)
+	if leftOK && rightOK {
+		switch {
+		case leftNumber < rightNumber:
+			return -1
+		case leftNumber > rightNumber:
+			return 1
+		default:
+			return 0
+		}
+	}
+
+	leftText := strings.TrimSpace(fmt.Sprint(left))
+	rightText := strings.TrimSpace(fmt.Sprint(right))
+	return strings.Compare(strings.ToLower(leftText), strings.ToLower(rightText))
+}
+
+func widgetRowNumberValue(value interface{}) (float64, bool) {
+	switch typed := value.(type) {
+	case int:
+		return float64(typed), true
+	case int32:
+		return float64(typed), true
+	case int64:
+		return float64(typed), true
+	case float32:
+		return float64(typed), true
+	case float64:
+		return typed, true
+	case string:
+		trimmed := strings.TrimSpace(typed)
+		if trimmed == "" {
+			return 0, false
+		}
+		parsed, err := strconv.ParseFloat(trimmed, 64)
+		if err != nil {
+			return 0, false
+		}
+		return parsed, true
+	default:
+		return 0, false
 	}
 }
 

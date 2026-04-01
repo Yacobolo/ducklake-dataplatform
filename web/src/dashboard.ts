@@ -3,20 +3,23 @@ import "./table";
 
 import type { DashboardWidgetPayload, DashboardWidgetPayloadEnvelope } from "./dashboard-widget-payload";
 
-type ChartFilterSelection = {
-  widgetId: string;
+type WidgetFilterSelection = {
+  widgetKey: string;
   dimension: string;
   value: string;
 };
 
-type DashboardChartFilterEventDetail = {
-  selections: ChartFilterSelection[];
+type DashboardFilterEventDetail = {
+  selections: WidgetFilterSelection[];
 };
 
 type DashboardTablePageEventDetail = {
   widgetId: string;
   offset: number;
   limit: number;
+  append: boolean;
+  sortColumn?: string | null;
+  sortDirection?: "asc" | "desc" | null;
 };
 
 type DuckWidgetElement = HTMLElement & {
@@ -24,7 +27,7 @@ type DuckWidgetElement = HTMLElement & {
 };
 
 type OriginFilter = {
-  widgetId: string;
+  widgetKey: string;
   dimension: string;
   value: string;
 };
@@ -49,8 +52,8 @@ class DashboardSurfaceController {
   }
 
   private bindEvents(): void {
-    document.addEventListener("dashboard-chart-filter", (event) => {
-      void this.handleChartFilter(event as CustomEvent<DashboardChartFilterEventDetail>);
+    document.addEventListener("dashboard-filter-select", (event) => {
+      void this.handleWidgetFilter(event as CustomEvent<DashboardFilterEventDetail>);
     });
     document.addEventListener("dashboard-table-page-request", (event) => {
       void this.handleTablePageRequest(event as CustomEvent<DashboardTablePageEventDetail>);
@@ -84,12 +87,15 @@ class DashboardSurfaceController {
         widgetId: event.detail.widgetId,
         offset: event.detail.offset,
         limit: event.detail.limit,
+        append: event.detail.append,
+        sortColumn: event.detail.sortColumn ?? "",
+        sortDirection: event.detail.sortDirection ?? "",
       }),
     });
     void response;
   }
 
-  private async handleChartFilter(event: CustomEvent<DashboardChartFilterEventDetail>): Promise<void> {
+  private async handleWidgetFilter(event: CustomEvent<DashboardFilterEventDetail>): Promise<void> {
     const surface = this.getSurface();
     if (!surface) {
       return;
@@ -97,7 +103,7 @@ class DashboardSurfaceController {
 
     const nextFilters = this.readOriginFiltersFromURL(window.location.href);
     for (const selection of event.detail.selections) {
-      this.toggleFilter(nextFilters, selection.widgetId, selection.dimension, selection.value);
+      this.toggleFilter(nextFilters, selection.widgetKey, selection.dimension, selection.value);
     }
 
     await this.applyFilters(surface, nextFilters, true);
@@ -154,8 +160,8 @@ class DashboardSurfaceController {
     const filters: OriginFilter[] = [];
     const seen = new Set<string>();
     for (const rawFilter of rawFilters) {
-      const [widgetID, remainder] = rawFilter.split("|", 2);
-      if (!widgetID || !remainder) {
+      const [widgetKey, remainder] = rawFilter.split("|", 2);
+      if (!widgetKey || !remainder) {
         continue;
       }
       const separatorIndex = remainder.indexOf(":");
@@ -163,12 +169,12 @@ class DashboardSurfaceController {
         continue;
       }
       const filter: OriginFilter = {
-        widgetId: widgetID.trim(),
+        widgetKey: widgetKey.trim(),
         dimension: remainder.slice(0, separatorIndex).trim(),
         value: remainder.slice(separatorIndex + 1).trim(),
       };
       const key = this.originFilterKey(filter);
-      if (!filter.widgetId || !filter.dimension || !filter.value || seen.has(key)) {
+      if (!filter.widgetKey || !filter.dimension || !filter.value || seen.has(key)) {
         continue;
       }
       seen.add(key);
@@ -180,8 +186,8 @@ class DashboardSurfaceController {
   private serializeOriginFilters(filters: OriginFilter[]): string[] {
     return [...filters]
       .sort((left, right) => this.originFilterKey(left).localeCompare(this.originFilterKey(right)))
-      .filter((filter) => Boolean(filter.widgetId.trim() && filter.dimension.trim() && filter.value.trim()))
-      .map((filter) => `${filter.widgetId}|${filter.dimension}:${filter.value}`);
+      .filter((filter) => Boolean(filter.widgetKey.trim() && filter.dimension.trim() && filter.value.trim()))
+      .map((filter) => `${filter.widgetKey}|${filter.dimension}:${filter.value}`);
   }
 
   private buildFilterKey(filters: OriginFilter[]): string {
@@ -192,16 +198,16 @@ class DashboardSurfaceController {
   }
 
   private originFilterKey(filter: OriginFilter): string {
-    return `${filter.widgetId.trim()}|${filter.dimension.trim()}:${filter.value.trim()}`;
+    return `${filter.widgetKey.trim()}|${filter.dimension.trim()}:${filter.value.trim()}`;
   }
 
-  private toggleFilter(filters: OriginFilter[], widgetId: string, dimension: string, value: string): void {
+  private toggleFilter(filters: OriginFilter[], widgetKey: string, dimension: string, value: string): void {
     const filter: OriginFilter = {
-      widgetId: widgetId.trim(),
+      widgetKey: widgetKey.trim(),
       dimension: dimension.trim(),
       value: value.trim(),
     };
-    if (!filter.widgetId || !filter.dimension || !filter.value) {
+    if (!filter.widgetKey || !filter.dimension || !filter.value) {
       return;
     }
 

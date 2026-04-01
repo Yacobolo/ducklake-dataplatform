@@ -408,9 +408,11 @@ func TestService_ResolveWidgetsForDashboardPaged_TablePagesSemanticResults(t *te
 		},
 	}, nil, map[string]TablePageRequest{
 		"widget-table": {
-			Offset: 100,
-			Limit:  100,
-			Append: true,
+			Offset:        100,
+			Limit:         100,
+			Append:        true,
+			SortColumn:    "pickup_zone",
+			SortDirection: "desc",
 		},
 	})
 	require.NoError(t, err)
@@ -420,10 +422,121 @@ func TestService_ResolveWidgetsForDashboardPaged_TablePagesSemanticResults(t *te
 	assert.Equal(t, 100, widgets[0].Page.Offset)
 	assert.True(t, widgets[0].Page.HasMore)
 	assert.Equal(t, 101, widgets[0].RowCount)
+	require.NotNil(t, widgets[0].Sort)
+	assert.Equal(t, "pickup_zone", widgets[0].Sort.Column)
+	assert.Equal(t, "desc", widgets[0].Sort.Direction)
 	assert.Len(t, widgets[0].Rows, 100)
 	assert.True(t, containsSQLFragment(queryExec.sqls, "LIMIT 101"))
 	assert.True(t, containsSQLFragment(queryExec.sqls, "OFFSET 100"))
+	assert.True(t, containsSQLFragment(queryExec.sqls, "ORDER BY pickup_zone DESC"))
 	assert.True(t, containsSQLFragment(queryExec.sqls, "dashboard_widget_count"))
+}
+
+func TestService_ResolveWidgetForDashboardPage_SortsSQLTablePageBeforeSlice(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, _, queryExec := setupDashboardService(t)
+	ctx := context.Background()
+
+	queryExec.result = &query.QueryResult{
+		Columns:  []string{"pickup_zone", "gross_revenue"},
+		Rows:     [][]interface{}{{"Queens Plaza", 10.0}, {"JFK Airport", 30.0}, {"East Village", 20.0}},
+		RowCount: 3,
+	}
+
+	dashboard := &domain.Dashboard{ID: "dash-1", Name: "Revenue Dashboard", Owner: "alice"}
+	widgets := []domain.DashboardWidget{
+		{
+			ID:   "widget-table",
+			Name: "Zone Revenue Detail",
+			Source: domain.DashboardWidgetSource{
+				Kind:     domain.DashboardWidgetSourceSQLQuery,
+				SQLQuery: &domain.DashboardSQLQuerySource{SQL: "select pickup_zone, gross_revenue from zone_metrics"},
+			},
+			VisualSpec: &domain.VisualSpec{Kind: domain.VisualOutputTable},
+		},
+	}
+
+	resolved, err := svc.ResolveWidgetForDashboardPage(ctx, "alice", dashboard, widgets, "widget-table", nil, TablePageRequest{
+		Offset:        0,
+		Limit:         2,
+		Append:        false,
+		SortColumn:    "gross_revenue",
+		SortDirection: "desc",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resolved)
+	require.NotNil(t, resolved.Page)
+	require.NotNil(t, resolved.Sort)
+	assert.Equal(t, "gross_revenue", resolved.Sort.Column)
+	assert.Equal(t, "desc", resolved.Sort.Direction)
+	assert.Equal(t, [][]interface{}{
+		{"JFK Airport", 30.0},
+		{"East Village", 20.0},
+	}, resolved.Rows)
+	assert.True(t, resolved.Page.HasMore)
+	assert.False(t, resolved.Page.Append)
+}
+
+func TestService_ResolveWidgetsForDashboard_TableWidgetsCanInitiateFilters(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, semanticSvc, queryExec := setupDashboardService(t)
+	ctx := context.Background()
+	queryExec.result = &query.QueryResult{
+		Columns:  []string{"pickup_zone", "borough", "gross_revenue"},
+		Rows:     [][]interface{}{{"JFK Airport", "Queens", 10.0}},
+		RowCount: 1,
+	}
+
+	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.sales",
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "ignored",
+		Name:            "gross_revenue",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(amount)",
+	})
+	require.NoError(t, err)
+
+	widgets, err := svc.ResolveWidgetsForDashboard(ctx, "alice", &domain.Dashboard{
+		ID:                  "dash-1",
+		Name:                "Revenue Dashboard",
+		Owner:               "alice",
+		SemanticProjectName: "analytics",
+		SemanticModelName:   "sales",
+	}, []domain.DashboardWidget{
+		{
+			ID:   "widget-table",
+			Name: "Zone Revenue Detail",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"gross_revenue"},
+					Dimensions:        []string{"pickup_zone", "borough"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{Kind: domain.VisualOutputTable},
+		},
+	}, nil)
+	require.NoError(t, err)
+	require.Len(t, widgets, 1)
+	require.NotNil(t, widgets[0].Interaction)
+	assert.True(t, widgets[0].Interaction.Participates)
+	assert.True(t, widgets[0].Interaction.CanInitiate)
+	require.Len(t, widgets[0].Interaction.Bindings, 2)
+	assert.Equal(t, "column", widgets[0].Interaction.Bindings[0].Encoding)
+	assert.Equal(t, "pickup_zone", widgets[0].Interaction.Bindings[0].Field)
+	assert.Equal(t, "pickup_zone", widgets[0].Interaction.Bindings[0].Dimension)
+	assert.Equal(t, "borough", widgets[0].Interaction.Bindings[1].Field)
+	assert.Equal(t, "borough", widgets[0].Interaction.Bindings[1].Dimension)
 }
 
 func containsSQLFragment(sqls []string, fragment string) bool {
@@ -681,6 +794,36 @@ func TestService_UpdateWidget_AuthorizationAndValidation(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "Updated", updated.Name)
 	})
+}
+
+func TestService_CreateWidget_AssignsUniqueFilterOriginKeys(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, _, _ := setupDashboardService(t)
+	ctx := context.Background()
+	dashboard := createDashboardForTest(t, svc, "alice")
+
+	createWidget := func(name string) *domain.DashboardWidget {
+		widget, err := svc.CreateWidget(ctx, "alice", false, dashboard.ID, domain.CreateDashboardWidgetRequest{
+			Name: name,
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSQLQuery,
+				SQLQuery: &domain.DashboardSQLQuerySource{
+					SQL: "select region, revenue from summary",
+				},
+			},
+			VisualSpec: &domain.VisualSpec{Kind: domain.VisualOutputTable},
+			Layout:     domain.DashboardWidgetLayout{X: 0, Y: 0, W: 4, H: 3},
+		})
+		require.NoError(t, err)
+		return widget
+	}
+
+	first := createWidget("Revenue Detail")
+	second := createWidget("Revenue Detail")
+
+	assert.Equal(t, "table-revenue-detail", first.FilterOriginKey)
+	assert.Equal(t, "table-revenue-detail-2", second.FilterOriginKey)
 }
 
 func strPtr(v string) *string {

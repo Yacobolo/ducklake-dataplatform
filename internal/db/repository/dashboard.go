@@ -159,16 +159,17 @@ func (r *DashboardWidgetRepo) Create(ctx context.Context, w *domain.DashboardWid
 		return nil, err
 	}
 	row, err := r.q.CreateDashboardWidget(ctx, dbstore.CreateDashboardWidgetParams{
-		ID:          newID(),
-		DashboardID: w.DashboardID,
-		Name:        w.Name,
-		Description: w.Description,
-		SourceJson:  sourceJSON,
-		VisualSpec:  visualJSON,
-		LayoutX:     int64(w.Layout.X),
-		LayoutY:     int64(w.Layout.Y),
-		LayoutW:     int64(w.Layout.W),
-		LayoutH:     int64(w.Layout.H),
+		ID:              newID(),
+		DashboardID:     w.DashboardID,
+		FilterOriginKey: w.FilterOriginKey,
+		Name:            w.Name,
+		Description:     w.Description,
+		SourceJson:      sourceJSON,
+		VisualSpec:      visualJSON,
+		LayoutX:         int64(w.Layout.X),
+		LayoutY:         int64(w.Layout.Y),
+		LayoutW:         int64(w.Layout.W),
+		LayoutH:         int64(w.Layout.H),
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -233,15 +234,16 @@ func (r *DashboardWidgetRepo) Update(ctx context.Context, id string, req domain.
 		return nil, err
 	}
 	row, err := r.q.UpdateDashboardWidget(ctx, dbstore.UpdateDashboardWidgetParams{
-		Name:        name,
-		Description: description,
-		SourceJson:  sourceJSON,
-		VisualSpec:  visualJSON,
-		LayoutX:     int64(layout.X),
-		LayoutY:     int64(layout.Y),
-		LayoutW:     int64(layout.W),
-		LayoutH:     int64(layout.H),
-		ID:          id,
+		FilterOriginKey: current.FilterOriginKey,
+		Name:            name,
+		Description:     description,
+		SourceJson:      sourceJSON,
+		VisualSpec:      visualJSON,
+		LayoutX:         int64(layout.X),
+		LayoutY:         int64(layout.Y),
+		LayoutW:         int64(layout.W),
+		LayoutH:         int64(layout.H),
+		ID:              id,
 	})
 	if err != nil {
 		return nil, mapDBError(err)

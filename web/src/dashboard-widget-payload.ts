@@ -16,7 +16,8 @@ export type VisualSpec = {
 };
 
 export type InteractionBinding = {
-  encoding: "x" | "series" | "label";
+  encoding: "x" | "series" | "label" | "column";
+  field?: string;
   dimension: string;
 };
 
@@ -39,6 +40,10 @@ export type DashboardWidgetPayload = {
     offset: number;
     append: boolean;
     has_more: boolean;
+  } | null;
+  sort?: {
+    column: string;
+    direction: "asc" | "desc";
   } | null;
 };
 

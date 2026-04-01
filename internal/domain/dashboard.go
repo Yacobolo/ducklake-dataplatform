@@ -73,15 +73,16 @@ type DashboardWidgetSource struct {
 
 // DashboardWidget is a persisted widget inside a dashboard.
 type DashboardWidget struct {
-	ID          string
-	DashboardID string
-	Name        string
-	Description string
-	Source      DashboardWidgetSource
-	VisualSpec  *VisualSpec
-	Layout      DashboardWidgetLayout
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID              string
+	DashboardID     string
+	FilterOriginKey string
+	Name            string
+	Description     string
+	Source          DashboardWidgetSource
+	VisualSpec      *VisualSpec
+	Layout          DashboardWidgetLayout
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 // CreateDashboardRequest creates a dashboard.

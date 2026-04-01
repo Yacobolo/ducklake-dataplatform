@@ -3,9 +3,11 @@ package dashboards
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 
+	"duck-demo/internal/domain"
 	dashboardsvc "duck-demo/internal/service/dashboard"
 )
 
@@ -21,15 +23,21 @@ func newDashboardUpdateHub() *dashboardUpdateHub {
 }
 
 type dashboardUpdateMessage struct {
+	FilterKey string
 	Filters   []dashboardsvc.InteractiveFilter
 	TablePage *dashboardTablePageRequest
 }
 
 type dashboardTablePageRequest struct {
-	WidgetID string
-	Offset   int
-	Limit    int
-	Filters  []dashboardsvc.InteractiveFilter
+	WidgetID         string
+	Offset           int
+	Limit            int
+	Append           bool
+	SortColumn       string
+	SortDirection    string
+	FilterKey        string
+	RawOriginFilters []string
+	Filters          []dashboardsvc.InteractiveFilter
 }
 
 func (h *dashboardUpdateHub) subscribe(streamID string) (<-chan dashboardUpdateMessage, func()) {
@@ -58,7 +66,7 @@ func (h *dashboardUpdateHub) subscribe(streamID string) (<-chan dashboardUpdateM
 	}
 }
 
-func (h *dashboardUpdateHub) publishFilters(streamID string, filters []dashboardsvc.InteractiveFilter) {
+func (h *dashboardUpdateHub) publishFilters(streamID, filterKey string, filters []dashboardsvc.InteractiveFilter) {
 	h.mu.Lock()
 	subscribers := h.streams[streamID]
 	channels := make([]chan dashboardUpdateMessage, 0, len(subscribers))
@@ -69,7 +77,7 @@ func (h *dashboardUpdateHub) publishFilters(streamID string, filters []dashboard
 
 	for _, ch := range channels {
 		select {
-		case ch <- dashboardUpdateMessage{Filters: cloneInteractiveFilters(filters)}:
+		case ch <- dashboardUpdateMessage{FilterKey: filterKey, Filters: cloneInteractiveFilters(filters)}:
 		default:
 		}
 	}
@@ -89,10 +97,15 @@ func (h *dashboardUpdateHub) publishTablePage(streamID string, req dashboardTabl
 		case ch <- dashboardUpdateMessage{
 			Filters: cloneInteractiveFilters(req.Filters),
 			TablePage: &dashboardTablePageRequest{
-				WidgetID: req.WidgetID,
-				Offset:   req.Offset,
-				Limit:    req.Limit,
-				Filters:  cloneInteractiveFilters(req.Filters),
+				WidgetID:         req.WidgetID,
+				Offset:           req.Offset,
+				Limit:            req.Limit,
+				Append:           req.Append,
+				SortColumn:       req.SortColumn,
+				SortDirection:    req.SortDirection,
+				FilterKey:        req.FilterKey,
+				RawOriginFilters: append([]string(nil), req.RawOriginFilters...),
+				Filters:          cloneInteractiveFilters(req.Filters),
 			},
 		}:
 		default:
@@ -113,13 +126,16 @@ type dashboardTablePageUpdateRequest struct {
 	WidgetID      string     `json:"widgetId"`
 	Offset        int        `json:"offset"`
 	Limit         int        `json:"limit"`
+	Append        bool       `json:"append"`
+	SortColumn    string     `json:"sortColumn"`
+	SortDirection string     `json:"sortDirection"`
 }
 
 type filterData struct {
 	OriginFilters []string `json:"fo"`
 }
 
-func decodeDashboardUpdateRequest(r *http.Request) ([]dashboardsvc.InteractiveFilter, error) {
+func decodeDashboardUpdateRequest(r *http.Request) ([]string, error) {
 	var payload dashboardUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return nil, err
@@ -129,7 +145,7 @@ func decodeDashboardUpdateRequest(r *http.Request) ([]dashboardsvc.InteractiveFi
 	if len(rawOriginFilters) == 0 {
 		rawOriginFilters = payload.URLParams.OriginFilters
 	}
-	return interactiveFiltersFromOriginRaw(rawOriginFilters), nil
+	return sanitizeOriginFilterRaw(rawOriginFilters), nil
 }
 
 func decodeDashboardTablePageRequest(r *http.Request) (*dashboardTablePageRequest, error) {
@@ -155,26 +171,38 @@ func decodeDashboardTablePageRequest(r *http.Request) (*dashboardTablePageReques
 	}
 
 	return &dashboardTablePageRequest{
-		WidgetID: strings.TrimSpace(payload.WidgetID),
-		Offset:   offset,
-		Limit:    limit,
-		Filters:  interactiveFiltersFromOriginRaw(rawOriginFilters),
+		WidgetID:         strings.TrimSpace(payload.WidgetID),
+		Offset:           offset,
+		Limit:            limit,
+		Append:           payload.Append,
+		SortColumn:       strings.TrimSpace(payload.SortColumn),
+		SortDirection:    strings.ToLower(strings.TrimSpace(payload.SortDirection)),
+		RawOriginFilters: sanitizeOriginFilterRaw(rawOriginFilters),
 	}, nil
 }
 
-func interactiveFiltersFromOriginRaw(rawOriginFilters []string) []dashboardsvc.InteractiveFilter {
+func interactiveFiltersFromOriginRaw(rawOriginFilters []string, widgets []domain.DashboardWidget) []dashboardsvc.InteractiveFilter {
 	if len(rawOriginFilters) == 0 {
 		return nil
 	}
+	originKeyToID := make(map[string]string, len(widgets))
+	for _, widget := range widgets {
+		key := strings.TrimSpace(widget.FilterOriginKey)
+		if key == "" {
+			continue
+		}
+		originKeyToID[key] = strings.TrimSpace(widget.ID)
+	}
 	return interactiveFiltersFromGroupedRaw(rawOriginFilters, func(raw string) (dashboardsvc.InteractiveFilter, bool) {
-		widgetID, remainder, ok := strings.Cut(raw, "|")
+		widgetKey, remainder, ok := strings.Cut(raw, "|")
 		if !ok {
 			return dashboardsvc.InteractiveFilter{}, false
 		}
 		dimension, value, ok := strings.Cut(remainder, ":")
-		widgetID = strings.TrimSpace(widgetID)
+		widgetKey = strings.TrimSpace(widgetKey)
 		dimension = strings.TrimSpace(dimension)
 		value = strings.TrimSpace(value)
+		widgetID := originKeyToID[widgetKey]
 		if widgetID == "" || !ok || dimension == "" || value == "" {
 			return dashboardsvc.InteractiveFilter{}, false
 		}
@@ -184,6 +212,37 @@ func interactiveFiltersFromOriginRaw(rawOriginFilters []string) []dashboardsvc.I
 			Values:    []string{value},
 		}, true
 	})
+}
+
+func sanitizeOriginFilterRaw(rawOriginFilters []string) []string {
+	if len(rawOriginFilters) == 0 {
+		return nil
+	}
+
+	out := make([]string, 0, len(rawOriginFilters))
+	seen := make(map[string]struct{}, len(rawOriginFilters))
+	for _, raw := range rawOriginFilters {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+		if _, ok := seen[raw]; ok {
+			continue
+		}
+		seen[raw] = struct{}{}
+		out = append(out, raw)
+	}
+	return out
+}
+
+func dashboardFilterKeyFromOriginRaw(rawOriginFilters []string) string {
+	rawOriginFilters = sanitizeOriginFilterRaw(rawOriginFilters)
+	if len(rawOriginFilters) == 0 {
+		return ""
+	}
+	parts := append([]string(nil), rawOriginFilters...)
+	sort.Strings(parts)
+	return strings.Join(parts, "|")
 }
 
 func interactiveFiltersFromGroupedRaw[T ~string](rawFilters []T, parser func(string) (dashboardsvc.InteractiveFilter, bool)) []dashboardsvc.InteractiveFilter {

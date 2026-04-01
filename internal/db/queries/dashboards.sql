@@ -39,10 +39,10 @@ DELETE FROM dashboards WHERE id = ?;
 
 -- name: CreateDashboardWidget :one
 INSERT INTO dashboard_widgets (
-    id, dashboard_id, name, description, source_json, visual_spec,
+    id, dashboard_id, filter_origin_key, name, description, source_json, visual_spec,
     layout_x, layout_y, layout_w, layout_h
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetDashboardWidget :one
@@ -53,7 +53,8 @@ SELECT * FROM dashboard_widgets WHERE dashboard_id = ? ORDER BY layout_y, layout
 
 -- name: UpdateDashboardWidget :one
 UPDATE dashboard_widgets
-SET name = ?,
+SET filter_origin_key = ?,
+    name = ?,
     description = ?,
     source_json = ?,
     visual_spec = ?,

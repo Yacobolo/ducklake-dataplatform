@@ -32,9 +32,10 @@ type ResolvedWidgetInteraction struct {
 	ActiveFilters  map[string][]string              `json:"active_filters,omitempty"`
 }
 
-// ResolvedWidgetInteractionField maps a clickable chart encoding to a dashboard filter dimension key.
+// ResolvedWidgetInteractionField maps a clickable widget field to a dashboard filter dimension key.
 type ResolvedWidgetInteractionField struct {
 	Encoding  string `json:"encoding"`
+	Field     string `json:"field,omitempty"`
 	Dimension string `json:"dimension"`
 }
 
@@ -162,48 +163,67 @@ func widgetInteractionBindings(widget domain.DashboardWidget, boundModel *domain
 	if widget.Source.Kind != domain.DashboardWidgetSourceSemanticQuery || widget.Source.SemanticQuery == nil || widget.VisualSpec == nil {
 		return nil
 	}
-	if widget.VisualSpec.Kind != domain.VisualOutputChart || widget.VisualSpec.ChartType == nil {
-		return nil
-	}
 
 	addBinding := func(bindings []ResolvedWidgetInteractionField, encoding, field string) []ResolvedWidgetInteractionField {
+		field = strings.TrimSpace(field)
+		if field == "" {
+			return bindings
+		}
 		dimension := semanticFieldToDashboardFilterDimension(widget.Source.SemanticQuery, boundModel, field)
 		if dimension == "" {
 			return bindings
 		}
 		return append(bindings, ResolvedWidgetInteractionField{
 			Encoding:  encoding,
+			Field:     field,
 			Dimension: dimension,
 		})
 	}
 
-	bindings := make([]ResolvedWidgetInteractionField, 0, 2)
-	switch *widget.VisualSpec.ChartType {
-	case domain.VisualChartPie, domain.VisualChartDoughnut:
-		if widget.VisualSpec.Encodings.Label != nil {
-			bindings = addBinding(bindings, "label", widget.VisualSpec.Encodings.Label.Field)
+	switch widget.VisualSpec.Kind {
+	case domain.VisualOutputChart:
+		if widget.VisualSpec.ChartType == nil {
+			return nil
 		}
-	case domain.VisualChartScatter:
-		return nil
+		bindings := make([]ResolvedWidgetInteractionField, 0, 2)
+		switch *widget.VisualSpec.ChartType {
+		case domain.VisualChartPie, domain.VisualChartDoughnut:
+			if widget.VisualSpec.Encodings.Label != nil {
+				bindings = addBinding(bindings, "label", widget.VisualSpec.Encodings.Label.Field)
+			}
+		case domain.VisualChartScatter:
+			return nil
+		default:
+			if widget.VisualSpec.Encodings.X != nil {
+				bindings = addBinding(bindings, "x", widget.VisualSpec.Encodings.X.Field)
+			}
+			if widget.VisualSpec.Encodings.Series != nil {
+				bindings = addBinding(bindings, "series", widget.VisualSpec.Encodings.Series.Field)
+			}
+		}
+		return bindings
+	case domain.VisualOutputTable:
+		bindings := make([]ResolvedWidgetInteractionField, 0, len(widget.Source.SemanticQuery.Dimensions)+1)
+		for _, field := range widget.Source.SemanticQuery.Dimensions {
+			bindings = addBinding(bindings, "column", field)
+		}
+		if widget.Source.SemanticQuery.TimeGrain != nil {
+			bindings = addBinding(bindings, "column", dashboardTimeGrainResultAlias)
+		}
+		return bindings
 	default:
-		if widget.VisualSpec.Encodings.X != nil {
-			bindings = addBinding(bindings, "x", widget.VisualSpec.Encodings.X.Field)
-		}
-		if widget.VisualSpec.Encodings.Series != nil {
-			bindings = addBinding(bindings, "series", widget.VisualSpec.Encodings.Series.Field)
-		}
+		return nil
 	}
-	return bindings
 }
 
 func widgetCanInitiateDashboardFilters(widget domain.DashboardWidget, bindings []ResolvedWidgetInteractionField) bool {
-	if widget.VisualSpec == nil || widget.VisualSpec.Kind != domain.VisualOutputChart || widget.VisualSpec.ChartType == nil {
+	if widget.VisualSpec == nil || len(bindings) == 0 {
 		return false
 	}
-	if *widget.VisualSpec.ChartType == domain.VisualChartScatter {
+	if widget.VisualSpec.Kind == domain.VisualOutputChart && widget.VisualSpec.ChartType != nil && *widget.VisualSpec.ChartType == domain.VisualChartScatter {
 		return false
 	}
-	return len(bindings) > 0
+	return widget.VisualSpec.Kind == domain.VisualOutputChart || widget.VisualSpec.Kind == domain.VisualOutputTable
 }
 
 func widgetQueryFilters(widget domain.DashboardWidget, interactionCtx *dashboardInteractionContext) []InteractiveFilter {
