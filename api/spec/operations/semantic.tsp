@@ -110,13 +110,13 @@ op updateSemanticModelRelationship(projectName: string, semanticModelName: strin
 @summary("Delete semantic relationship for a semantic model")
 op deleteSemanticModelRelationship(projectName: string, semanticModelName: string, relationshipName: string): NoContent | MutatingErrorResponses;
 
-@route("/metric-queries:explain")
+@route("/semantic-queries:explain")
 @post
 @tag("Semantic Layer")
 @summary("Explain metric query")
 op explainMetricQuery(@body body: MetricQueryRequest): Ok<MetricQueryExplainResponse> | MutatingErrorResponses;
 
-@route("/metric-queries:run")
+@route("/semantic-queries:run")
 @post
 @tag("Semantic Layer")
 @summary("Run metric query")
