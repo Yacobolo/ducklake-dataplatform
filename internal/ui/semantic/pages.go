@@ -20,12 +20,13 @@ type semanticModelRowData struct {
 }
 
 type semanticMetricRowData struct {
-	Name       string
-	Type       string
-	Expression string
-	Status     string
-	EditURL    string
-	DeleteURL  string
+	Name              string
+	Type              string
+	Expression        string
+	RelationshipNames []string
+	Status            string
+	EditURL           string
+	DeleteURL         string
 }
 
 type semanticPreAggRowData struct {
@@ -60,17 +61,15 @@ type semanticModelDetailPageData struct {
 }
 
 type semanticEditableRelationshipRowData struct {
-	Name           string
-	ConnectedModel string
-	Type           string
-	Cardinality    string
-	JoinSQL        string
-	Direction      string
-	IsDefault      bool
-	Cost           int
-	MaxHops        int
-	UpdateURL      string
-	DeleteURL      string
+	Name            string
+	RelatedRelation string
+	Type            string
+	Cardinality     string
+	JoinSQL         string
+	Cost            int
+	MaxHops         int
+	UpdateURL       string
+	DeleteURL       string
 }
 
 type semanticModelEditPageData struct {
@@ -176,11 +175,11 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 						H1(Class("m-0 text-3xl font-semibold tracking-tight"), Text(d.ProjectName+"."+d.ModelName)),
 						descriptionNode,
 						core.BadgeRow(
-							core.Badge("Base relation "+d.BaseModelRef, "accent"),
-							core.Badge("Time "+valueOrDash(d.DefaultTimeDim), ""),
-							core.Badge(strconv.Itoa(d.RelationshipCount)+" relationships", ""),
-							core.Badge(strconv.Itoa(len(d.Metrics))+" metrics", ""),
-							core.Badge(strconv.Itoa(d.ConnectedModelCount)+" connected relations", ""),
+				core.Badge("Base relation "+d.BaseModelRef, "accent"),
+				core.Badge("Time "+valueOrDash(d.DefaultTimeDim), ""),
+				core.Badge(strconv.Itoa(d.RelationshipCount)+" join paths", ""),
+				core.Badge(strconv.Itoa(len(d.Metrics))+" metrics", ""),
+				core.Badge(strconv.Itoa(d.ConnectedModelCount)+" connected relations", ""),
 						),
 					),
 					Div(Class("flex flex-wrap items-center gap-3 [&_form]:m-0 [&_form]:inline-flex"),
@@ -200,7 +199,7 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				),
 			),
 			core.SectionSurface(
-				core.SectionHeader("Connected relationships", "Direct joins touching this model. Use the edit page to create or change joins."),
+				core.SectionHeader("Join paths", "Directed join paths owned by this semantic model, shown the same way they are authored."),
 				relationshipRows,
 			),
 			core.SectionSurface(
@@ -220,43 +219,39 @@ func semanticRelatedRelationshipsTable(rows []semanticRelatedRelationshipRowData
 	tableRows := make([]Node, 0, len(rows))
 	for i := range rows {
 		row := rows[i]
-		defaultLabel := "No"
-		if row.IsDefault {
-			defaultLabel = "Default"
-		}
 		cells := []Node{
 			Td(Text(row.Name)),
-			Td(Text(row.ConnectedModel)),
-			Td(Text(row.Type + " (" + row.Cardinality + ")")),
 			Td(
 				Div(Class("grid gap-1"),
 					Span(Class("font-medium text-[var(--fgColor-default)]"), Text(row.JoinLabel)),
 					Span(Class("text-xs text-[var(--fgColor-muted)]"), Text(row.JoinSQL)),
 				),
 			),
-			Td(Text(defaultLabel)),
+			Td(Text(row.RelatedRelation)),
+			Td(Text(row.Cardinality)),
 		}
 		if showActions {
-			cells = append(cells, Td(Class("text-right"), core.SecondaryLink(row.EditURL, "small", Text("Edit"))))
+			cells = append(cells, core.TableActionCell(core.SecondaryLink(row.EditURL, "small", Text("Edit"))))
 		}
 		tableRows = append(tableRows, Tr(Group(cells)))
 	}
 
 	headers := []Node{
-		Th(Text("Relationship")),
-		Th(Text("Connected relation")),
-		Th(Text("Type")),
+		Th(Text("Join path")),
 		Th(Text("Join")),
-		Th(Text("Default")),
+		Th(Text("Related relation")),
+		Th(Text("Cardinality")),
 	}
 	if showActions {
-		headers = append(headers, Th(Class("text-right"), Text("Actions")))
+		headers = append(headers, core.TableActionHeader())
 	}
 
-	return Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-		THead(Tr(Group(headers))),
-		TBody(Group(tableRows)),
-	))
+	return core.TableContainer("",
+		core.DataTable("",
+			THead(Tr(Group(headers))),
+			TBody(Group(tableRows)),
+		),
+	)
 }
 
 func semanticMetricsTable(rows []semanticMetricRowData, csrfFieldProvider func() Node, showActions bool) Node {
@@ -271,26 +266,29 @@ func semanticMetricsTable(rows []semanticMetricRowData, csrfFieldProvider func()
 			Td(Text(metric.Name)),
 			Td(Text(metric.Type)),
 			Td(Text(metric.Expression)),
+			Td(Text(valueOrDash(csvValues(metric.RelationshipNames)))),
 			Td(Text(metric.Status)),
 		}
 		if showActions {
-			cells = append(cells, Td(Class("text-right"), Div(Class("mt-0 flex flex-wrap items-center justify-end gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+			cells = append(cells, core.TableActionCell(
 				core.SecondaryLink(metric.EditURL, "small", Text("Edit")),
 				Form(Method("post"), Action(metric.DeleteURL), csrfFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete"))),
-			)))
+			))
 		}
 		tableRows = append(tableRows, Tr(Group(cells)))
 	}
 
-	headers := []Node{Th(Text("Name")), Th(Text("Type")), Th(Text("Expression")), Th(Text("Status"))}
+	headers := []Node{Th(Text("Name")), Th(Text("Type")), Th(Text("Expression")), Th(Text("Join paths")), Th(Text("Status"))}
 	if showActions {
-		headers = append(headers, Th(Class("text-right"), Text("Actions")))
+		headers = append(headers, core.TableActionHeader())
 	}
 
-	return Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-		THead(Tr(Group(headers))),
-		TBody(Group(tableRows)),
-	))
+	return core.TableContainer("",
+		core.DataTable("",
+			THead(Tr(Group(headers))),
+			TBody(Group(tableRows)),
+		),
+	)
 }
 
 func semanticPreAggregationsTable(rows []semanticPreAggRowData, csrfFieldProvider func() Node, showActions bool) Node {
@@ -307,23 +305,25 @@ func semanticPreAggregationsTable(rows []semanticPreAggRowData, csrfFieldProvide
 			Td(Text(item.Target)),
 		}
 		if showActions {
-			cells = append(cells, Td(Class("text-right"), Div(Class("mt-0 flex flex-wrap items-center justify-end gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+			cells = append(cells, core.TableActionCell(
 				core.SecondaryLink(item.EditURL, "small", Text("Edit")),
 				Form(Method("post"), Action(item.DeleteURL), csrfFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete"))),
-			)))
+			))
 		}
 		tableRows = append(tableRows, Tr(Group(cells)))
 	}
 
 	headers := []Node{Th(Text("Name")), Th(Text("Grain")), Th(Text("Target"))}
 	if showActions {
-		headers = append(headers, Th(Class("text-right"), Text("Actions")))
+		headers = append(headers, core.TableActionHeader())
 	}
 
-	return Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-		THead(Tr(Group(headers))),
-		TBody(Group(tableRows)),
-	))
+	return core.TableContainer("",
+		core.DataTable("",
+			THead(Tr(Group(headers))),
+			TBody(Group(tableRows)),
+		),
+	)
 }
 
 func semanticMetricCreateForm(d semanticModelDetailPageData) Node {
@@ -354,6 +354,10 @@ func semanticMetricCreateForm(d semanticModelDetailPageData) Node {
 			Div(Class("grid gap-2 sm:col-span-2"),
 				Label(Text("Expression")),
 				core.TextareaControl("min-h-24", Name("expression"), Required()),
+			),
+			Div(Class("grid gap-2 sm:col-span-2"),
+				Label(Text("Join paths (comma separated)")),
+				core.InputControl("", Name("relationship_names")),
 			),
 			Div(Class("grid gap-2"),
 				Label(Text("Metric filter SQL")),
@@ -481,9 +485,11 @@ func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string
 	filters := ""
 	orderBy := ""
 	limit := ""
+	relationshipNames := ""
 	timeGrain := ""
 	if request != nil {
 		metrics = csvValues(request.Metrics)
+		relationshipNames = csvValues(request.RelationshipNames)
 		dimensions = csvValues(request.Dimensions)
 		filters = csvValues(request.Filters)
 		orderBy = csvValues(request.OrderBy)
@@ -504,6 +510,8 @@ func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string
 			core.InputControl("", Name("semantic_model_name"), Value(semanticModelName), Required()),
 			Label(Text("Metrics (comma separated)")),
 			core.InputControl("", Name("metrics"), Value(metrics), Required()),
+			Label(Text("Join paths (comma separated)")),
+			core.InputControl("", Name("relationship_names"), Value(relationshipNames)),
 			Label(Text("Dimensions (comma separated)")),
 			core.InputControl("", Name("dimensions"), Value(dimensions)),
 			Label(Text("Filters (comma separated)")),
@@ -538,24 +546,16 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 			Details(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 				Summary(Class("cursor-pointer list-none text-sm font-medium text-[var(--fgColor-default)] [&::-webkit-details-marker]:hidden"),
 					Div(Class("flex flex-wrap items-center justify-between gap-3"),
-						Span(Text(row.Name+" -> "+row.ConnectedModel)),
+						Span(Text(row.Name+" -> "+row.RelatedRelation)),
 						Span(Class("text-xs text-[var(--fgColor-muted)]"), Text(row.Type+" ("+row.Cardinality+")")),
 					),
 				),
 				Div(Class("grid gap-4 pt-4"),
-					P(Class("m-0 text-sm text-[var(--fgColor-muted)]"), Text(row.Direction)),
 					Form(Class("grid gap-3 sm:grid-cols-2"), Method("post"), Action(row.UpdateURL),
 						d.CSRFFieldProvider(),
 						Div(Class("grid gap-2"),
 							Label(Text("Relationship type")),
 							core.SelectControl("", Name("relationship_type"), optionSelected("ONE_TO_ONE", row.Type), optionSelected("ONE_TO_MANY", row.Type), optionSelected("MANY_TO_ONE", row.Type), optionSelected("MANY_TO_MANY", row.Type)),
-						),
-						Div(Class("grid gap-2"),
-							Label(Text("Default relationship")),
-							Label(Class("inline-flex min-h-10 items-center gap-2 rounded-lg border border-[var(--borderColor-default)] px-3"),
-								Input(Type("checkbox"), Name("is_default"), Value("true"), checkedIf(row.IsDefault), Class("h-4 w-4")),
-								Span(Text("Use as the default path")),
-							),
 						),
 						Div(Class("grid gap-2 sm:col-span-2"),
 							Label(Text("Join SQL")),
@@ -570,7 +570,7 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 							core.InputControl("", Name("max_hops"), Value(strconv.Itoa(row.MaxHops))),
 						),
 						Div(Class("sm:col-span-2"),
-							core.PrimaryButton("", Type("submit"), Text("Save relationship")),
+							core.PrimaryButton("", Type("submit"), Text("Save join path")),
 						),
 					),
 					Form(Method("post"), Action(row.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete"))),
@@ -579,7 +579,7 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 		)
 	}
 	if len(relationshipCards) == 0 {
-		relationshipCards = append(relationshipCards, core.EmptyState("waypoints", "No relationships yet", "Create the first model-local join below.", nil))
+		relationshipCards = append(relationshipCards, core.EmptyState("waypoints", "No join paths yet", "Create the first model-local join path below.", nil))
 	}
 
 	return core.AppPage("Edit Semantic Model: "+d.ProjectName+"."+d.ModelName, "semantic", d.Principal,
@@ -612,29 +612,22 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 				),
 			),
 			core.SectionSurface(
-				core.SectionHeader("Relationships", "Manage joins that touch this semantic model. Relationships are edited here, not in a separate workspace."),
+				core.SectionHeader("Join paths", "Manage directed join paths owned by this semantic model."),
 				Div(Class("grid gap-4"), Group(relationshipCards)),
 				Details(
 					Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
-					Summary(Class("cursor-pointer list-none text-sm font-medium text-[var(--fgColor-default)] [&::-webkit-details-marker]:hidden"), Text("New relationship")),
+					Summary(Class("cursor-pointer list-none text-sm font-medium text-[var(--fgColor-default)] [&::-webkit-details-marker]:hidden"), Text("New join path")),
 					Div(Class("grid gap-3 pt-4"),
-						P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text("The current semantic model is fixed. Choose the related relation and whether the join flows out from or into this semantic model.")),
+						P(Class("m-0 text-sm leading-6 text-[var(--fgColor-muted)]"), Text("The current semantic model is the fixed source for every join path. Choose the related relation and define the join SQL.")),
 						Form(Class("grid gap-3 sm:grid-cols-2"), Method("post"), Action(d.RelationshipCreateURL),
 							d.CSRFFieldProvider(),
 							Div(Class("grid gap-2"),
-								Label(Text("Name")),
+								Label(Text("Join path name")),
 								core.InputControl("", Name("name"), Required()),
 							),
 							Div(Class("grid gap-2"),
 								Label(Text("Related relation")),
 								core.SelectControl("", Name("related_semantic_id"), Group(createModelOptions)),
-							),
-							Div(Class("grid gap-2"),
-								Label(Text("Direction")),
-								core.SelectControl("", Name("direction"),
-									Option(Value("outgoing"), Text("Current relation -> related relation")),
-									Option(Value("incoming"), Text("Related relation -> current relation")),
-								),
 							),
 							Div(Class("grid gap-2"),
 								Label(Text("Relationship type")),
@@ -652,10 +645,7 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 								Label(Text("Max hops")),
 								core.InputControl("", Name("max_hops"), Value("0")),
 							),
-							Div(Class("grid gap-2 sm:col-span-2"),
-								Label(Class("inline-flex items-center gap-2"), Input(Type("checkbox"), Name("is_default"), Value("true"), Class("h-4 w-4")), Span(Text("Default relationship"))),
-							),
-							Div(Class("sm:col-span-2"), core.PrimaryButton("", Type("submit"), Text("Create relationship"))),
+							Div(Class("sm:col-span-2"), core.PrimaryButton("", Type("submit"), Text("Create join path"))),
 						),
 					),
 				),
@@ -705,12 +695,14 @@ func semanticMetricEditPage(principal domain.ContextPrincipal, projectName, sema
 		core.TextareaControl("min-h-24", Name("description"), Text(metric.Description)),
 		Label(Text("Metric type")),
 		core.SelectControl("", Name("metric_type"), optionSelected("SUM", metric.MetricType), optionSelected("COUNT", metric.MetricType), optionSelected("COUNT_DISTINCT", metric.MetricType), optionSelected("AVG", metric.MetricType), optionSelected("MIN", metric.MetricType), optionSelected("MAX", metric.MetricType), optionSelected("RATIO", metric.MetricType)),
-		Label(Text("Expression mode")),
-		core.SelectControl("", Name("expression_mode"), optionSelected("DSL", metric.ExpressionMode), optionSelected("SQL", metric.ExpressionMode)),
-		Label(Text("Expression")),
-		core.TextareaControl("min-h-24", Name("expression"), Required(), Text(metric.Expression)),
-		Label(Text("Metric filter SQL")),
-		core.InputControl("", Name("filter_sql"), Value(metric.FilterSQL)),
+	Label(Text("Expression mode")),
+	core.SelectControl("", Name("expression_mode"), optionSelected("DSL", metric.ExpressionMode), optionSelected("SQL", metric.ExpressionMode)),
+	Label(Text("Expression")),
+	core.TextareaControl("min-h-24", Name("expression"), Required(), Text(metric.Expression)),
+	Label(Text("Join paths (comma separated)")),
+	core.InputControl("", Name("relationship_names"), Value(csvValues(metric.RelationshipNames))),
+	Label(Text("Metric filter SQL")),
+	core.InputControl("", Name("filter_sql"), Value(metric.FilterSQL)),
 		Label(Text("Default time grain")),
 		core.InputControl("", Name("default_time_grain"), Value(metric.DefaultTimeGrain)),
 		Label(Text("Format")),

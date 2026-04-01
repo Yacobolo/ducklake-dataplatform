@@ -31,7 +31,6 @@ func (r *SemanticRelationshipRepo) Create(ctx context.Context, rel *domain.Seman
 		ToSemanticID:     rel.ToSemanticID,
 		RelationshipType: rel.RelationshipType,
 		JoinSql:          rel.JoinSQL,
-		IsDefault:        boolToInt(rel.IsDefault),
 		Cost:             int64(rel.Cost),
 		MaxHops:          int64(rel.MaxHops),
 		CreatedBy:        rel.CreatedBy,
@@ -51,9 +50,12 @@ func (r *SemanticRelationshipRepo) GetByID(ctx context.Context, id string) (*dom
 	return semanticRelationshipFromDB(row), nil
 }
 
-// GetByName returns a semantic relationship by unique name.
-func (r *SemanticRelationshipRepo) GetByName(ctx context.Context, name string) (*domain.SemanticRelationship, error) {
-	row, err := r.q.GetSemanticRelationshipByName(ctx, name)
+// GetByName returns a semantic relationship by source semantic model and path name.
+func (r *SemanticRelationshipRepo) GetByName(ctx context.Context, fromSemanticID, name string) (*domain.SemanticRelationship, error) {
+	row, err := r.q.GetSemanticRelationshipByName(ctx, dbstore.GetSemanticRelationshipByNameParams{
+		FromSemanticID: fromSemanticID,
+		Name:           name,
+	})
 	if err != nil {
 		return nil, mapDBError(err)
 	}
@@ -82,14 +84,14 @@ func (r *SemanticRelationshipRepo) List(ctx context.Context, page domain.PageReq
 	return rels, total, nil
 }
 
-// ListByModel returns all semantic relationships touching a semantic model.
+// ListByModel returns all semantic relationships owned by a semantic model.
 func (r *SemanticRelationshipRepo) ListByModel(ctx context.Context, semanticModelID string) ([]domain.SemanticRelationship, error) {
 	rows, err := r.db.QueryContext(ctx, `
-SELECT id, name, from_semantic_id, to_semantic_id, relationship_type, join_sql, is_default, cost, max_hops, created_by, created_at, updated_at
+SELECT id, name, from_semantic_id, to_semantic_id, relationship_type, join_sql, cost, max_hops, created_by, created_at, updated_at
 FROM semantic_relationships
-WHERE from_semantic_id = ? OR to_semantic_id = ?
+WHERE from_semantic_id = ?
 ORDER BY name
-`, semanticModelID, semanticModelID)
+`, semanticModelID)
 	if err != nil {
 		return nil, mapDBError(err)
 	}
@@ -107,7 +109,6 @@ ORDER BY name
 			&row.ToSemanticID,
 			&row.RelationshipType,
 			&row.JoinSql,
-			&row.IsDefault,
 			&row.Cost,
 			&row.MaxHops,
 			&row.CreatedBy,
@@ -139,10 +140,6 @@ func (r *SemanticRelationshipRepo) Update(ctx context.Context, id string, req do
 	if req.JoinSQL != nil {
 		joinSQL = *req.JoinSQL
 	}
-	isDefault := current.IsDefault
-	if req.IsDefault != nil {
-		isDefault = *req.IsDefault
-	}
 	cost := current.Cost
 	if req.Cost != nil {
 		cost = *req.Cost
@@ -155,7 +152,6 @@ func (r *SemanticRelationshipRepo) Update(ctx context.Context, id string, req do
 	err = r.q.UpdateSemanticRelationship(ctx, dbstore.UpdateSemanticRelationshipParams{
 		RelationshipType: relType,
 		JoinSql:          joinSQL,
-		IsDefault:        boolToInt(isDefault),
 		Cost:             int64(cost),
 		MaxHops:          int64(maxHops),
 		ID:               id,

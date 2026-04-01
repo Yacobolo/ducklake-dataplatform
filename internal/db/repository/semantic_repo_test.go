@@ -76,7 +76,6 @@ func TestSemanticRepos_EndToEndCRUD(t *testing.T) {
 		ToSemanticID:     createdModel.ID,
 		RelationshipType: domain.RelationshipTypeManyToOne,
 		JoinSQL:          "sales.customer_id = customers.customer_id",
-		IsDefault:        true,
 		Cost:             1,
 		MaxHops:          2,
 		CreatedBy:        "admin",

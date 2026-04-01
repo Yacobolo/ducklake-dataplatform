@@ -841,6 +841,7 @@ type SemanticMetricSpec struct {
 	MetricType         string `yaml:"metric_type"`
 	ExpressionMode     string `yaml:"expression_mode,omitempty"`
 	Expression         string `yaml:"expression"`
+	RelationshipNames  []string `yaml:"relationship_names,omitempty"`
 	DefaultTimeGrain   string `yaml:"default_time_grain,omitempty"`
 	Format             string `yaml:"format,omitempty"`
 	CertificationState string `yaml:"certification_state,omitempty"`
@@ -852,7 +853,6 @@ type SemanticRelationshipSpec struct {
 	ToModel          string `yaml:"to_model"`
 	RelationshipType string `yaml:"relationship_type"`
 	JoinSQL          string `yaml:"join_sql"`
-	IsDefault        bool   `yaml:"is_default,omitempty"`
 	Cost             int    `yaml:"cost,omitempty"`
 	MaxHops          int    `yaml:"max_hops,omitempty"`
 }

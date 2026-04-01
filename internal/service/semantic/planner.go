@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"regexp"
 	"sort"
 	"strings"
@@ -85,6 +84,11 @@ func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest
 		}
 		selectedMetrics = append(selectedMetrics, m)
 	}
+	for _, name := range req.RelationshipNames {
+		if strings.TrimSpace(name) == "" {
+			return nil, domain.ErrValidation("relationship_names must not include empty values")
+		}
+	}
 	resolvedMetricSQL := make(map[string]string, len(selectedMetrics))
 	for _, metric := range selectedMetrics {
 		sqlExpr, err := resolveMetricExpression(metric.Name, metricByName, map[string]bool{})
@@ -128,11 +132,23 @@ func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest
 	joinSteps := []JoinStep{}
 	joins := []string{}
 	joinedNames := map[string]bool{baseModel.Name: true}
+	explicitJoinSteps, err := compileExplicitJoinSteps(baseModel.Name, req.RelationshipNames, selectedMetrics, relationships, modelByID)
+	if err != nil {
+		return nil, err
+	}
+	for _, step := range explicitJoinSteps {
+		if joinedNames[step.ToModel] {
+			continue
+		}
+		joins = append(joins, fmt.Sprintf("LEFT JOIN %s AS %s ON %s", modelByName[step.ToModel].BaseModelRef, step.ToModel, step.JoinSQL))
+		joinedNames[step.ToModel] = true
+		joinSteps = append(joinSteps, step)
+	}
 	for needed := range needModels {
 		if needed == baseModel.Name {
 			continue
 		}
-		path, err := shortestPath(baseModel.Name, needed, relationships, modelByID)
+		path, err := uniqueDirectedPath(baseModel.Name, needed, relationships, modelByID)
 		if err != nil {
 			return nil, err
 		}
@@ -1001,11 +1017,116 @@ func dedupeStrings(items []string) []string {
 	return out
 }
 
-func shortestPath(baseName, targetName string, relationships []domain.SemanticRelationship, modelByID map[string]domain.SemanticModel) ([]JoinStep, error) {
+func compileExplicitJoinSteps(baseModelName string, requestRelationshipNames []string, selectedMetrics []domain.SemanticMetric, relationships []domain.SemanticRelationship, modelByID map[string]domain.SemanticModel) ([]JoinStep, error) {
+	stepLists := make([][]JoinStep, 0, len(selectedMetrics)+1)
+	if len(requestRelationshipNames) > 0 {
+		steps, err := resolveExplicitJoinPath(baseModelName, requestRelationshipNames, relationships, modelByID)
+		if err != nil {
+			return nil, err
+		}
+		stepLists = append(stepLists, steps)
+	}
+	for _, metric := range selectedMetrics {
+		if len(metric.RelationshipNames) == 0 {
+			continue
+		}
+		steps, err := resolveExplicitJoinPath(baseModelName, metric.RelationshipNames, relationships, modelByID)
+		if err != nil {
+			return nil, domain.ErrValidation("metric %q has invalid relationship_names: %v", metric.Name, err)
+		}
+		stepLists = append(stepLists, steps)
+	}
+
+	seen := map[string]struct{}{}
+	out := make([]JoinStep, 0)
+	for _, steps := range stepLists {
+		for _, step := range steps {
+			key := step.FromModel + "->" + step.RelationshipName + "->" + step.ToModel
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			out = append(out, step)
+		}
+	}
+	return out, nil
+}
+
+func resolveExplicitJoinPath(baseName string, relationshipNames []string, relationships []domain.SemanticRelationship, modelByID map[string]domain.SemanticModel) ([]JoinStep, error) {
+	if len(relationshipNames) == 0 {
+		return nil, nil
+	}
+	outgoing := directedRelationshipIndex(relationships, modelByID)
+	current := baseName
+	steps := make([]JoinStep, 0, len(relationshipNames))
+	for _, relationshipName := range relationshipNames {
+		modelEdges := outgoing[current]
+		edge, ok := modelEdges[relationshipName]
+		if !ok {
+			return nil, domain.ErrValidation("join path %q is not available from semantic model %q", relationshipName, current)
+		}
+		steps = append(steps, JoinStep{
+			RelationshipName: edge.rel.Name,
+			FromModel:        edge.from,
+			ToModel:          edge.to,
+			RelationshipType: edge.rel.RelationshipType,
+			JoinSQL:          edge.rel.JoinSQL,
+		})
+		current = edge.to
+	}
+	return steps, nil
+}
+
+func uniqueDirectedPath(baseName, targetName string, relationships []domain.SemanticRelationship, modelByID map[string]domain.SemanticModel) ([]JoinStep, error) {
 	if baseName == targetName {
 		return nil, nil
 	}
 
+	adj := directedRelationshipsByModel(relationships, modelByID)
+	paths := make([][]edge, 0, 2)
+	var walk func(current string, visited map[string]bool, path []edge)
+	walk = func(current string, visited map[string]bool, path []edge) {
+		if len(paths) > 1 {
+			return
+		}
+		if current == targetName {
+			copied := append([]edge(nil), path...)
+			paths = append(paths, copied)
+			return
+		}
+		for _, next := range adj[current] {
+			if visited[next.to] {
+				continue
+			}
+			visited[next.to] = true
+			walk(next.to, visited, append(path, next))
+			delete(visited, next.to)
+		}
+	}
+
+	visited := map[string]bool{baseName: true}
+	walk(baseName, visited, nil)
+	if len(paths) == 0 {
+		return nil, domain.ErrValidation("no join path from %q to %q", baseName, targetName)
+	}
+	if len(paths) > 1 {
+		return nil, domain.ErrValidation("ambiguous join path from %q to %q; specify relationship_names explicitly", baseName, targetName)
+	}
+
+	steps := make([]JoinStep, 0, len(paths[0]))
+	for _, e := range paths[0] {
+		steps = append(steps, JoinStep{
+			RelationshipName: e.rel.Name,
+			FromModel:        e.from,
+			ToModel:          e.to,
+			RelationshipType: e.rel.RelationshipType,
+			JoinSQL:          e.rel.JoinSQL,
+		})
+	}
+	return steps, nil
+}
+
+func directedRelationshipsByModel(relationships []domain.SemanticRelationship, modelByID map[string]domain.SemanticModel) map[string][]edge {
 	adj := map[string][]edge{}
 	for _, rel := range relationships {
 		fromModel, okFrom := modelByID[rel.FromSemanticID]
@@ -1014,61 +1135,24 @@ func shortestPath(baseName, targetName string, relationships []domain.SemanticRe
 			continue
 		}
 		adj[fromModel.Name] = append(adj[fromModel.Name], edge{from: fromModel.Name, to: toModel.Name, rel: rel})
-		adj[toModel.Name] = append(adj[toModel.Name], edge{from: toModel.Name, to: fromModel.Name, rel: rel})
 	}
+	return adj
+}
 
-	dist := map[string]int{baseName: 0}
-	pathCount := map[string]int{baseName: 1}
-	parent := map[string]edge{}
-	queue := []string{baseName}
-
-	for len(queue) > 0 {
-		cur := queue[0]
-		queue = queue[1:]
-		for _, next := range adj[cur] {
-			nd := dist[cur] + 1
-			cd, ok := dist[next.to]
-			if !ok {
-				cd = math.MaxInt
-			}
-
-			if nd < cd {
-				dist[next.to] = nd
-				pathCount[next.to] = pathCount[cur]
-				parent[next.to] = edge{from: cur, to: next.to, rel: next.rel}
-				queue = append(queue, next.to)
-			} else if nd == cd {
-				pathCount[next.to] += pathCount[cur]
-			}
+func directedRelationshipIndex(relationships []domain.SemanticRelationship, modelByID map[string]domain.SemanticModel) map[string]map[string]edge {
+	index := map[string]map[string]edge{}
+	for _, rel := range relationships {
+		fromModel, okFrom := modelByID[rel.FromSemanticID]
+		toModel, okTo := modelByID[rel.ToSemanticID]
+		if !okFrom || !okTo {
+			continue
 		}
+		if _, ok := index[fromModel.Name]; !ok {
+			index[fromModel.Name] = map[string]edge{}
+		}
+		index[fromModel.Name][rel.Name] = edge{from: fromModel.Name, to: toModel.Name, rel: rel}
 	}
-
-	if _, ok := dist[targetName]; !ok {
-		return nil, domain.ErrValidation("no join path from %q to %q", baseName, targetName)
-	}
-
-	if pathCount[targetName] > 1 {
-		return nil, domain.ErrValidation("ambiguous join path from %q to %q (%d shortest paths)", baseName, targetName, pathCount[targetName])
-	}
-
-	steps := []JoinStep{}
-	cur := targetName
-	for cur != baseName {
-		e := parent[cur]
-		steps = append(steps, JoinStep{
-			RelationshipName: e.rel.Name,
-			FromModel:        e.from,
-			ToModel:          e.to,
-			RelationshipType: e.rel.RelationshipType,
-			JoinSQL:          e.rel.JoinSQL,
-		})
-		cur = e.from
-	}
-
-	for i, j := 0, len(steps)-1; i < j; i, j = i+1, j-1 {
-		steps[i], steps[j] = steps[j], steps[i]
-	}
-	return steps, nil
+	return index
 }
 
 func (s *Service) matchPreAggregation(ctx context.Context, semanticModelID string, req MetricQueryRequest, opts explainMetricQueryOptions) (*string, string) {

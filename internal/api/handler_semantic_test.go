@@ -500,7 +500,6 @@ func TestHandler_ListSemanticModelRelationships_MapsNestedRequest(t *testing.T) 
 					ToSemanticID:     "sm-customers",
 					RelationshipType: domain.RelationshipTypeManyToOne,
 					JoinSQL:          "sales.customer_id = customers.customer_id",
-					IsDefault:        true,
 					Cost:             1,
 					MaxHops:          2,
 				}}, nil
@@ -527,7 +526,6 @@ func TestHandler_CreateSemanticModelRelationship_UsesPrincipalAndModelContext(t 
 	t.Parallel()
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", IsAdmin: true, Type: "user"})
-	isDefault := true
 	cost := int32(3)
 	maxHops := int32(1)
 
@@ -542,7 +540,6 @@ func TestHandler_CreateSemanticModelRelationship_UsesPrincipalAndModelContext(t 
 				assert.Equal(t, "sm-customers", req.ToSemanticID)
 				assert.Equal(t, domain.RelationshipTypeManyToOne, req.RelationshipType)
 				assert.Equal(t, "sales.customer_id = customers.customer_id", req.JoinSQL)
-				assert.True(t, req.IsDefault)
 				assert.Equal(t, 3, req.Cost)
 				assert.Equal(t, 1, req.MaxHops)
 				return &domain.SemanticRelationship{
@@ -552,7 +549,6 @@ func TestHandler_CreateSemanticModelRelationship_UsesPrincipalAndModelContext(t 
 					ToSemanticID:     req.ToSemanticID,
 					RelationshipType: req.RelationshipType,
 					JoinSQL:          req.JoinSQL,
-					IsDefault:        req.IsDefault,
 					Cost:             req.Cost,
 					MaxHops:          req.MaxHops,
 				}, nil
@@ -569,7 +565,6 @@ func TestHandler_CreateSemanticModelRelationship_UsesPrincipalAndModelContext(t 
 			ToSemanticId:     "sm-customers",
 			RelationshipType: SemanticRelationshipRelationshipTypeMANYTOONE,
 			JoinSql:          "sales.customer_id = customers.customer_id",
-			IsDefault:        &isDefault,
 			Cost:             &cost,
 			MaxHops:          &maxHops,
 		},
@@ -585,7 +580,6 @@ func TestHandler_CreateSemanticModelRelationship_UsesPrincipalAndModelContext(t 
 func TestHandler_UpdateSemanticModelRelationship_MapsNestedRequest(t *testing.T) {
 	t.Parallel()
 
-	isDefault := false
 	cost := int32(7)
 	maxHops := int32(4)
 	relationshipType := SemanticRelationshipRelationshipTypeONETOMANY
@@ -601,8 +595,6 @@ func TestHandler_UpdateSemanticModelRelationship_MapsNestedRequest(t *testing.T)
 				assert.Equal(t, domain.RelationshipTypeOneToMany, *req.RelationshipType)
 				require.NotNil(t, req.JoinSQL)
 				assert.Equal(t, joinSQL, *req.JoinSQL)
-				require.NotNil(t, req.IsDefault)
-				assert.False(t, *req.IsDefault)
 				require.NotNil(t, req.Cost)
 				assert.Equal(t, 7, *req.Cost)
 				require.NotNil(t, req.MaxHops)
@@ -614,7 +606,6 @@ func TestHandler_UpdateSemanticModelRelationship_MapsNestedRequest(t *testing.T)
 					ToSemanticID:     "sm-sales",
 					RelationshipType: *req.RelationshipType,
 					JoinSQL:          *req.JoinSQL,
-					IsDefault:        *req.IsDefault,
 					Cost:             *req.Cost,
 					MaxHops:          *req.MaxHops,
 				}, nil
@@ -629,7 +620,6 @@ func TestHandler_UpdateSemanticModelRelationship_MapsNestedRequest(t *testing.T)
 		Body: &GenUpdateSemanticModelRelationshipJSONBody{
 			RelationshipType: &relationshipType,
 			JoinSql:          &joinSQL,
-			IsDefault:        &isDefault,
 			Cost:             &cost,
 			MaxHops:          &maxHops,
 		},

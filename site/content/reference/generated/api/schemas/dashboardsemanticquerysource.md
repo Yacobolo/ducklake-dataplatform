@@ -15,6 +15,7 @@
 | `metrics` | `array[string]` | `true` | - |
 | `order_by` | `array[string]` | `false` | - |
 | `project_name` | `string` | `true` | - |
+| `relationship_names` | `array[string]` | `false` | - |
 | `semantic_model_name` | `string` | `true` | - |
 | `time_grain` | `string` | `false` | - |
 

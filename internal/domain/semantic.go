@@ -91,6 +91,7 @@ type SemanticMetric struct {
 	MetricType         string
 	ExpressionMode     string
 	Expression         string
+	RelationshipNames  []string
 	FilterSQL          string
 	DefaultTimeGrain   string
 	Format             string
@@ -110,6 +111,7 @@ type CreateSemanticMetricRequest struct {
 	MetricType         string
 	ExpressionMode     string
 	Expression         string
+	RelationshipNames  []string
 	FilterSQL          string
 	DefaultTimeGrain   string
 	Format             string
@@ -149,6 +151,11 @@ func (r *CreateSemanticMetricRequest) Validate() error {
 	if r.CertificationState != CertificationDraft && r.CertificationState != CertificationCertified && r.CertificationState != CertificationDeprecated {
 		return ErrValidation("certification_state must be DRAFT, CERTIFIED, or DEPRECATED")
 	}
+	for _, name := range r.RelationshipNames {
+		if name == "" {
+			return ErrValidation("relationship_names must not include empty values")
+		}
+	}
 	return nil
 }
 
@@ -159,6 +166,7 @@ type UpdateSemanticMetricRequest struct {
 	MetricType         *string
 	ExpressionMode     *string
 	Expression         *string
+	RelationshipNames  []string
 	FilterSQL          *string
 	DefaultTimeGrain   *string
 	Format             *string
@@ -174,7 +182,6 @@ type SemanticRelationship struct {
 	ToSemanticID     string
 	RelationshipType string
 	JoinSQL          string
-	IsDefault        bool
 	Cost             int
 	MaxHops          int
 	CreatedBy        string
@@ -189,7 +196,6 @@ type CreateSemanticRelationshipRequest struct {
 	ToSemanticID     string
 	RelationshipType string
 	JoinSQL          string
-	IsDefault        bool
 	Cost             int
 	MaxHops          int
 }
@@ -230,7 +236,6 @@ func (r *CreateSemanticRelationshipRequest) Validate() error {
 type UpdateSemanticRelationshipRequest struct {
 	RelationshipType *string
 	JoinSQL          *string
-	IsDefault        *bool
 	Cost             *int
 	MaxHops          *int
 }

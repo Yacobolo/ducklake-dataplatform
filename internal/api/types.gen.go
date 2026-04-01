@@ -877,6 +877,7 @@ type CreateSemanticMetricRequest struct {
 	Label              *string                                        `json:"label,omitempty"`
 	MetricType         SemanticMetricMetricType                       `json:"metric_type"`
 	Name               string                                         `json:"name"`
+	RelationshipNames  *[]string                                      `json:"relationship_names,omitempty"`
 }
 
 type CreateSemanticMetricRequestCertificationState string
@@ -910,7 +911,6 @@ type CreateSemanticPreAggregationRequest struct {
 type CreateSemanticRelationshipRequest struct {
 	Cost             *int32                               `json:"cost,omitempty"`
 	FromSemanticId   string                               `json:"from_semantic_id"`
-	IsDefault        *bool                                `json:"is_default,omitempty"`
 	JoinSql          string                               `json:"join_sql"`
 	MaxHops          *int32                               `json:"max_hops,omitempty"`
 	Name             string                               `json:"name"`
@@ -992,6 +992,7 @@ type DashboardSemanticQuerySource struct {
 	Metrics           []string  `json:"metrics"`
 	OrderBy           *[]string `json:"order_by,omitempty"`
 	ProjectName       string    `json:"project_name"`
+	RelationshipNames *[]string `json:"relationship_names,omitempty"`
 	SemanticModelName string    `json:"semantic_model_name"`
 	TimeGrain         *string   `json:"time_grain,omitempty"`
 }
@@ -1439,6 +1440,7 @@ type MetricQueryRequest struct {
 	Metrics           []string  `json:"metrics"`
 	OrderBy           *[]string `json:"order_by,omitempty"`
 	ProjectName       string    `json:"project_name"`
+	RelationshipNames *[]string `json:"relationship_names,omitempty"`
 	SemanticModelName string    `json:"semantic_model_name"`
 	TimeGrain         *string   `json:"time_grain,omitempty"`
 }
@@ -2447,6 +2449,7 @@ type SemanticMetric struct {
 	MetricType         *SemanticMetricMetricType                      `json:"metric_type,omitempty"`
 	Name               *string                                        `json:"name,omitempty"`
 	Owner              *string                                        `json:"owner,omitempty"`
+	RelationshipNames  *[]string                                      `json:"relationship_names,omitempty"`
 	SemanticModelId    *string                                        `json:"semantic_model_id,omitempty"`
 	UpdatedAt          *string                                        `json:"updated_at,omitempty"`
 }
@@ -2521,7 +2524,6 @@ type SemanticRelationship struct {
 	CreatedBy        *string                               `json:"created_by,omitempty"`
 	FromSemanticId   *string                               `json:"from_semantic_id,omitempty"`
 	Id               *string                               `json:"id,omitempty"`
-	IsDefault        *bool                                 `json:"is_default,omitempty"`
 	JoinSql          *string                               `json:"join_sql,omitempty"`
 	MaxHops          *int32                                `json:"max_hops,omitempty"`
 	Name             *string                               `json:"name,omitempty"`
@@ -2847,6 +2849,7 @@ type UpdateSemanticMetricRequest struct {
 	Label              *string                                        `json:"label,omitempty"`
 	MetricType         *SemanticMetricMetricType                      `json:"metric_type,omitempty"`
 	Owner              *string                                        `json:"owner,omitempty"`
+	RelationshipNames  *[]string                                      `json:"relationship_names,omitempty"`
 }
 
 type UpdateSemanticModelRequest struct {
@@ -2867,7 +2870,6 @@ type UpdateSemanticPreAggregationRequest struct {
 
 type UpdateSemanticRelationshipRequest struct {
 	Cost             *int32                                `json:"cost,omitempty"`
-	IsDefault        *bool                                 `json:"is_default,omitempty"`
 	JoinSql          *string                               `json:"join_sql,omitempty"`
 	MaxHops          *int32                                `json:"max_hops,omitempty"`
 	RelationshipType *SemanticRelationshipRelationshipType `json:"relationship_type,omitempty"`

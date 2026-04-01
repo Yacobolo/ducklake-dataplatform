@@ -104,12 +104,13 @@ func (h *Handler) SemanticModelsDetail(w http.ResponseWriter, r *http.Request) {
 	for i := range metrics {
 		metric := metrics[i]
 		metricRows = append(metricRows, semanticMetricRowData{
-			Name:       metric.Name,
-			Type:       metric.MetricType,
-			Expression: metric.Expression,
-			Status:     metric.CertificationState,
-			EditURL:    "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/edit",
-			DeleteURL:  "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/delete",
+			Name:              metric.Name,
+			Type:              metric.MetricType,
+			Expression:        metric.Expression,
+			RelationshipNames: metric.RelationshipNames,
+			Status:            metric.CertificationState,
+			EditURL:           "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/edit",
+			DeleteURL:         "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/delete",
 		})
 	}
 
@@ -180,28 +181,20 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 	relationshipRows := make([]semanticEditableRelationshipRowData, 0, len(relationships))
 	for i := range relationships {
 		rel := relationships[i]
-		connectedModelID := rel.ToSemanticID
-		direction := "Current relation -> related relation"
-		if rel.ToSemanticID == item.ID {
-			connectedModelID = rel.FromSemanticID
-			direction = "Related relation -> current relation"
-		}
-		connectedLabel := connectedModelID
-		if connectedModel, ok := modelByID[connectedModelID]; ok {
+		connectedLabel := rel.ToSemanticID
+		if connectedModel, ok := modelByID[rel.ToSemanticID]; ok {
 			connectedLabel = connectedModel.ProjectName + "." + connectedModel.Name
 		}
 		relationshipRows = append(relationshipRows, semanticEditableRelationshipRowData{
-			Name:           rel.Name,
-			ConnectedModel: connectedLabel,
-			Type:           rel.RelationshipType,
-			Cardinality:    semanticRelationshipCardinality(rel.RelationshipType),
-			JoinSQL:        rel.JoinSQL,
-			Direction:      direction,
-			IsDefault:      rel.IsDefault,
-			Cost:           rel.Cost,
-			MaxHops:        rel.MaxHops,
-			UpdateURL:      "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/relationships/" + rel.Name + "/update",
-			DeleteURL:      "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/relationships/" + rel.Name + "/delete",
+			Name:            rel.Name,
+			RelatedRelation: connectedLabel,
+			Type:            rel.RelationshipType,
+			Cardinality:     semanticRelationshipCardinality(rel.RelationshipType),
+			JoinSQL:         rel.JoinSQL,
+			Cost:            rel.Cost,
+			MaxHops:         rel.MaxHops,
+			UpdateURL:       "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/relationships/" + rel.Name + "/update",
+			DeleteURL:       "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/relationships/" + rel.Name + "/delete",
 		})
 	}
 
@@ -209,12 +202,13 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 	for i := range metrics {
 		metric := metrics[i]
 		metricRows = append(metricRows, semanticMetricRowData{
-			Name:       metric.Name,
-			Type:       metric.MetricType,
-			Expression: metric.Expression,
-			Status:     metric.CertificationState,
-			EditURL:    "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/edit",
-			DeleteURL:  "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/delete",
+			Name:              metric.Name,
+			Type:              metric.MetricType,
+			Expression:        metric.Expression,
+			RelationshipNames: metric.RelationshipNames,
+			Status:            metric.CertificationState,
+			EditURL:           "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/edit",
+			DeleteURL:         "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/delete",
 		})
 	}
 
@@ -331,6 +325,7 @@ func (h *Handler) SemanticMetricsUpdate(w http.ResponseWriter, r *http.Request) 
 		MetricType:         &metricType,
 		ExpressionMode:     &expressionMode,
 		Expression:         &expression,
+		RelationshipNames:  formCSV(r.Form, "relationship_names"),
 		FilterSQL:          &filterSQL,
 		DefaultTimeGrain:   &defaultTimeGrain,
 		Format:             &format,
@@ -356,6 +351,7 @@ func (h *Handler) SemanticMetricsCreate(w http.ResponseWriter, r *http.Request) 
 		MetricType:         formString(r.Form, "metric_type"),
 		ExpressionMode:     formString(r.Form, "expression_mode"),
 		Expression:         formString(r.Form, "expression"),
+		RelationshipNames:  formCSV(r.Form, "relationship_names"),
 		FilterSQL:          formString(r.Form, "filter_sql"),
 		DefaultTimeGrain:   formString(r.Form, "default_time_grain"),
 		Format:             formString(r.Form, "format"),
@@ -475,7 +471,6 @@ func (h *Handler) SemanticModelRelationshipsUpdate(w http.ResponseWriter, r *htt
 	_, err = h.deps.Semantic.UpdateRelationshipForModel(r.Context(), projectName, semanticModelName, relationshipName, domain.UpdateSemanticRelationshipRequest{
 		RelationshipType: &relationshipType,
 		JoinSQL:          &joinSQL,
-		IsDefault:        boolPtr(formString(r.Form, "is_default") != ""),
 		Cost:             intPtr(cost),
 		MaxHops:          intPtr(maxHops),
 	})
@@ -502,34 +497,18 @@ func (h *Handler) SemanticModelRelationshipsCreate(w http.ResponseWriter, r *htt
 		return
 	}
 	relatedSemanticID := formString(r.Form, "related_semantic_id")
-	var fromSemanticID, toSemanticID string
-	switch formString(r.Form, "direction") {
-	case "incoming":
-		fromSemanticID = relatedSemanticID
-		toSemanticID = ""
-	default:
-		fromSemanticID = ""
-		toSemanticID = relatedSemanticID
-	}
 	currentModel, err := h.deps.Semantic.GetSemanticModel(r.Context(), projectName, semanticModelName)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	if fromSemanticID == "" {
-		fromSemanticID = currentModel.ID
-	}
-	if toSemanticID == "" {
-		toSemanticID = currentModel.ID
-	}
 
 	_, err = h.deps.Semantic.CreateRelationshipForModel(r.Context(), principalName(r), projectName, semanticModelName, domain.CreateSemanticRelationshipRequest{
 		Name:             formString(r.Form, "name"),
-		FromSemanticID:   fromSemanticID,
-		ToSemanticID:     toSemanticID,
+		FromSemanticID:   currentModel.ID,
+		ToSemanticID:     relatedSemanticID,
 		RelationshipType: formString(r.Form, "relationship_type"),
 		JoinSQL:          formString(r.Form, "join_sql"),
-		IsDefault:        formString(r.Form, "is_default") != "",
 		Cost:             cost,
 		MaxHops:          maxHops,
 	})
@@ -564,6 +543,7 @@ func (h *Handler) semanticQueryRender(w http.ResponseWriter, r *http.Request, ex
 		ProjectName:       formString(r.Form, "project_name"),
 		SemanticModelName: formString(r.Form, "semantic_model_name"),
 		Metrics:           formCSV(r.Form, "metrics"),
+		RelationshipNames: formCSV(r.Form, "relationship_names"),
 		Dimensions:        formCSV(r.Form, "dimensions"),
 		Filters:           formCSV(r.Form, "filters"),
 		OrderBy:           formCSV(r.Form, "order_by"),

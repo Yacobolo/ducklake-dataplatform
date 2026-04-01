@@ -39,7 +39,6 @@ func TestBuildSemanticModelFlowData_DirectRelationshipsOnly(t *testing.T) {
 				ToSemanticID:     customers.ID,
 				RelationshipType: domain.RelationshipTypeManyToOne,
 				JoinSQL:          "sales.customer_id = customers.customer_id",
-				IsDefault:        true,
 			},
 			{
 				Name:             "regions_to_sales",
@@ -58,27 +57,25 @@ func TestBuildSemanticModelFlowData_DirectRelationshipsOnly(t *testing.T) {
 		},
 	)
 
-	require.Len(t, flow.Nodes, 3)
-	assert.ElementsMatch(t, []string{current.ID, customers.ID, regions.ID}, semanticNodeIDs(flow.Nodes))
-	require.Len(t, flow.Edges, 2)
-	assert.ElementsMatch(t, []string{"sales_to_customers", "regions_to_sales"}, semanticEdgeIDs(flow.Edges))
+	require.Len(t, flow.Nodes, 2)
+	assert.ElementsMatch(t, []string{current.ID, customers.ID}, semanticNodeIDs(flow.Nodes))
+	require.Len(t, flow.Edges, 1)
+	assert.ElementsMatch(t, []string{"sales_to_customers"}, semanticEdgeIDs(flow.Edges))
 	assert.Equal(t, "source:sales_customer_id", semanticEdgeByID(flow.Edges, "sales_to_customers").SourceHandle)
 	assert.Equal(t, "target:customers_customer_id", semanticEdgeByID(flow.Edges, "sales_to_customers").TargetHandle)
 	assert.Contains(t, semanticNodeFieldLabels(flow.Nodes, current.ID), "customer_id")
-	assert.Contains(t, semanticNodeFieldLabels(flow.Nodes, current.ID), "region_id")
 	assert.Contains(t, semanticNodeFieldLabels(flow.Nodes, customers.ID), "customer_id")
 
-	require.Len(t, rows, 2)
-	assert.Equal(t, "analytics.regions", rows[0].ConnectedModel)
-	assert.Equal(t, "analytics.customers", rows[1].ConnectedModel)
-	assert.Equal(t, "N:1", rows[1].Cardinality)
-	assert.Equal(t, "customer_id = customer_id", rows[1].JoinLabel)
-	assert.Equal(t, "customer_id", rows[1].SourceField)
-	assert.Equal(t, "customer_id", rows[1].TargetField)
-	assert.True(t, rows[1].IsDefault)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "sales_to_customers", rows[0].Name)
+	assert.Equal(t, "analytics.customers", rows[0].RelatedRelation)
+	assert.Equal(t, "N:1", rows[0].Cardinality)
+	assert.Equal(t, "customer_id = customer_id", rows[0].JoinLabel)
+	assert.Equal(t, "customer_id", rows[0].SourceField)
+	assert.Equal(t, "customer_id", rows[0].TargetField)
 }
 
-func TestBuildSemanticModelFlowData_AssignsIncomingOutgoingAndMixedRoles(t *testing.T) {
+func TestBuildSemanticModelFlowData_AssignsOutgoingRoles(t *testing.T) {
 	current := semanticTestModel("model-sales", "analytics", "sales")
 	customers := semanticTestModel("model-customers", "analytics", "customers")
 	regions := semanticTestModel("model-regions", "analytics", "regions")
@@ -95,20 +92,6 @@ func TestBuildSemanticModelFlowData_AssignsIncomingOutgoingAndMixedRoles(t *test
 				JoinSQL:          "sales.customer_id = customers.customer_id",
 			},
 			{
-				Name:             "regions_to_sales",
-				FromSemanticID:   regions.ID,
-				ToSemanticID:     current.ID,
-				RelationshipType: domain.RelationshipTypeOneToMany,
-				JoinSQL:          "regions.region_id = sales.region_id",
-			},
-			{
-				Name:             "products_to_sales",
-				FromSemanticID:   products.ID,
-				ToSemanticID:     current.ID,
-				RelationshipType: domain.RelationshipTypeOneToMany,
-				JoinSQL:          "products.product_id = sales.product_id",
-			},
-			{
 				Name:             "sales_to_products",
 				FromSemanticID:   current.ID,
 				ToSemanticID:     products.ID,
@@ -119,8 +102,8 @@ func TestBuildSemanticModelFlowData_AssignsIncomingOutgoingAndMixedRoles(t *test
 	)
 
 	assert.Equal(t, "outgoing", semanticNodeRole(flow.Nodes, customers.ID))
-	assert.Equal(t, "incoming", semanticNodeRole(flow.Nodes, regions.ID))
-	assert.Equal(t, "mixed", semanticNodeRole(flow.Nodes, products.ID))
+	assert.Equal(t, "", semanticNodeRole(flow.Nodes, regions.ID))
+	assert.Equal(t, "outgoing", semanticNodeRole(flow.Nodes, products.ID))
 }
 
 func TestSemanticJoinLabel_SimpleJoinWhitespace(t *testing.T) {

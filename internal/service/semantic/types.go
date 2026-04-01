@@ -7,6 +7,7 @@ type MetricQueryRequest struct {
 	ProjectName       string
 	SemanticModelName string
 	Metrics           []string
+	RelationshipNames []string
 	Dimensions        []string
 	Filters           []string
 	OrderBy           []string

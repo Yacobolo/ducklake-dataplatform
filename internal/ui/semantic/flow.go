@@ -54,7 +54,6 @@ type semanticFlowEdgeData struct {
 	TargetField   string `json:"targetField"`
 	SourceFieldID string `json:"sourceFieldId"`
 	TargetFieldID string `json:"targetFieldId"`
-	IsDefault     bool   `json:"isDefault"`
 }
 
 type semanticModelFlowData struct {
@@ -63,21 +62,15 @@ type semanticModelFlowData struct {
 }
 
 type semanticRelatedRelationshipRowData struct {
-	Name           string
-	ConnectedModel string
-	Type           string
-	Cardinality    string
-	JoinLabel      string
-	JoinSQL        string
-	SourceField    string
-	TargetField    string
-	IsDefault      bool
-	EditURL        string
-}
-
-type semanticNeighborDirection struct {
-	Incoming bool
-	Outgoing bool
+	Name            string
+	RelatedRelation string
+	Type            string
+	Cardinality     string
+	JoinLabel       string
+	JoinSQL         string
+	SourceField     string
+	TargetField     string
+	EditURL         string
 }
 
 type semanticFieldRegistry struct {
@@ -98,20 +91,14 @@ func buildSemanticModelFlowData(current domain.SemanticModel, models []domain.Se
 	}
 
 	directRelationships := make([]domain.SemanticRelationship, 0)
-	neighborDirections := map[string]*semanticNeighborDirection{}
+	neighborIDs := map[string]struct{}{}
 	for i := range relationships {
 		relationship := relationships[i]
-		switch {
-		case relationship.FromSemanticID == current.ID && relationship.ToSemanticID == current.ID:
+		if relationship.FromSemanticID == current.ID {
 			directRelationships = append(directRelationships, relationship)
-		case relationship.FromSemanticID == current.ID:
-			directRelationships = append(directRelationships, relationship)
-			state := ensureNeighborDirection(neighborDirections, relationship.ToSemanticID)
-			state.Outgoing = true
-		case relationship.ToSemanticID == current.ID:
-			directRelationships = append(directRelationships, relationship)
-			state := ensureNeighborDirection(neighborDirections, relationship.FromSemanticID)
-			state.Incoming = true
+			if relationship.ToSemanticID != current.ID {
+				neighborIDs[relationship.ToSemanticID] = struct{}{}
+			}
 		}
 	}
 
@@ -132,22 +119,16 @@ func buildSemanticModelFlowData(current domain.SemanticModel, models []domain.Se
 		sourceField := fields.Add(relationship.FromSemanticID, sourceExpr, "join")
 		targetField := fields.Add(relationship.ToSemanticID, targetExpr, "join")
 
-		connectedModelID := relationship.ToSemanticID
-		if relationship.ToSemanticID == current.ID {
-			connectedModelID = relationship.FromSemanticID
-		}
-
 		rows = append(rows, semanticRelatedRelationshipRowData{
-			Name:           relationship.Name,
-			ConnectedModel: defaultString(modelNames[connectedModelID], connectedModelID),
-			Type:           relationship.RelationshipType,
-			Cardinality:    semanticRelationshipCardinality(relationship.RelationshipType),
-			JoinLabel:      semanticJoinLabel(relationship.JoinSQL),
-			JoinSQL:        compactWhitespace(relationship.JoinSQL),
-			SourceField:    sourceField.Label,
-			TargetField:    targetField.Label,
-			IsDefault:      relationship.IsDefault,
-			EditURL:        "/ui/semantic/models/" + current.ProjectName + "/" + current.Name + "/edit",
+			Name:            relationship.Name,
+			RelatedRelation: defaultString(modelNames[relationship.ToSemanticID], relationship.ToSemanticID),
+			Type:            relationship.RelationshipType,
+			Cardinality:     semanticRelationshipCardinality(relationship.RelationshipType),
+			JoinLabel:       semanticJoinLabel(relationship.JoinSQL),
+			JoinSQL:         compactWhitespace(relationship.JoinSQL),
+			SourceField:     sourceField.Label,
+			TargetField:     targetField.Label,
+			EditURL:         "/ui/semantic/models/" + current.ProjectName + "/" + current.Name + "/edit",
 		})
 
 		if relationship.FromSemanticID == relationship.ToSemanticID {
@@ -167,19 +148,18 @@ func buildSemanticModelFlowData(current domain.SemanticModel, models []domain.Se
 			TargetField:   targetField.Label,
 			SourceFieldID: sourceField.ID,
 			TargetFieldID: targetField.ID,
-			IsDefault:     relationship.IsDefault,
 		})
 	}
 
-	nodes := buildSemanticFlowNodes(current, modelByID, modelNames, neighborDirections, fields)
+	nodes := buildSemanticFlowNodes(current, modelByID, modelNames, neighborIDs, fields)
 	return semanticModelFlowData{
 		Nodes: nodes,
 		Edges: edges,
 	}, rows
 }
 
-func buildSemanticFlowNodes(current domain.SemanticModel, modelByID map[string]domain.SemanticModel, modelNames map[string]string, neighborDirections map[string]*semanticNeighborDirection, registry *semanticFieldRegistry) []semanticFlowNodeData {
-	nodes := make([]semanticFlowNodeData, 0, len(neighborDirections)+1)
+func buildSemanticFlowNodes(current domain.SemanticModel, modelByID map[string]domain.SemanticModel, modelNames map[string]string, neighborIDs map[string]struct{}, registry *semanticFieldRegistry) []semanticFlowNodeData {
+	nodes := make([]semanticFlowNodeData, 0, len(neighborIDs)+1)
 	nodes = append(nodes, semanticFlowNodeData{
 		ID:                   current.ID,
 		Label:                semanticModelLabel(current),
@@ -190,27 +170,12 @@ func buildSemanticFlowNodes(current domain.SemanticModel, modelByID map[string]d
 		Position:             map[string]int{"x": semanticFlowColumnXCenter, "y": semanticFlowColumnYTop + semanticFlowNodeGapY/2},
 	})
 
-	incomingIDs := make([]string, 0)
-	outgoingIDs := make([]string, 0)
-	mixedIDs := make([]string, 0)
-	for modelID, direction := range neighborDirections {
-		switch {
-		case direction.Incoming && direction.Outgoing:
-			mixedIDs = append(mixedIDs, modelID)
-		case direction.Incoming:
-			incomingIDs = append(incomingIDs, modelID)
-		default:
-			outgoingIDs = append(outgoingIDs, modelID)
-		}
+	outgoingIDs := make([]string, 0, len(neighborIDs))
+	for modelID := range neighborIDs {
+		outgoingIDs = append(outgoingIDs, modelID)
 	}
-
-	sortSemanticFlowIDs(incomingIDs, modelNames)
 	sortSemanticFlowIDs(outgoingIDs, modelNames)
-	sortSemanticFlowIDs(mixedIDs, modelNames)
-
-	nodes = append(nodes, semanticFlowNodesForIDs(incomingIDs, modelByID, modelNames, registry, "incoming", semanticFlowColumnXLeft, semanticFlowColumnYTop)...)
 	nodes = append(nodes, semanticFlowNodesForIDs(outgoingIDs, modelByID, modelNames, registry, "outgoing", semanticFlowColumnXRight, semanticFlowColumnYTop)...)
-	nodes = append(nodes, semanticFlowNodesForIDs(mixedIDs, modelByID, modelNames, registry, "mixed", semanticFlowColumnXCenter, semanticFlowColumnYTop+semanticFlowNodeGapY)...)
 	return nodes
 }
 
@@ -319,15 +284,6 @@ func semanticRelationshipCardinality(value string) string {
 
 func semanticModelLabel(model domain.SemanticModel) string {
 	return model.ProjectName + "." + model.Name
-}
-
-func ensureNeighborDirection(items map[string]*semanticNeighborDirection, modelID string) *semanticNeighborDirection {
-	if direction, ok := items[modelID]; ok {
-		return direction
-	}
-	direction := &semanticNeighborDirection{}
-	items[modelID] = direction
-	return direction
 }
 
 func newSemanticFieldRegistry() *semanticFieldRegistry {

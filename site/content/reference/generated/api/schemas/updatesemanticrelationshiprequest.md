@@ -9,7 +9,6 @@
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `cost` | `integer` | `false` | - |
-| `is_default` | `boolean` | `false` | - |
 | `join_sql` | `string` | `false` | - |
 | `max_hops` | `integer` | `false` | - |
 | `relationship_type` | `SemanticRelationshipRelationshipType` | `false` | - |

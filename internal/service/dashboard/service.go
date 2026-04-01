@@ -279,6 +279,7 @@ func (s *Service) ResolveWidget(ctx context.Context, principal string, widget do
 			ProjectName:       widget.Source.SemanticQuery.ProjectName,
 			SemanticModelName: widget.Source.SemanticQuery.SemanticModelName,
 			Metrics:           widget.Source.SemanticQuery.Metrics,
+			RelationshipNames: widget.Source.SemanticQuery.RelationshipNames,
 			Dimensions:        widget.Source.SemanticQuery.Dimensions,
 			Filters:           widget.Source.SemanticQuery.Filters,
 			OrderBy:           widget.Source.SemanticQuery.OrderBy,

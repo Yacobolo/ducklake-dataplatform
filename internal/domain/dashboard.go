@@ -54,6 +54,7 @@ type DashboardSemanticQuerySource struct {
 	ProjectName       string   `json:"project_name"`
 	SemanticModelName string   `json:"semantic_model_name"`
 	Metrics           []string `json:"metrics,omitempty"`
+	RelationshipNames []string `json:"relationship_names,omitempty"`
 	Dimensions        []string `json:"dimensions,omitempty"`
 	Filters           []string `json:"filters,omitempty"`
 	OrderBy           []string `json:"order_by,omitempty"`

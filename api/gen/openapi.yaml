@@ -17995,6 +17995,10 @@ components:
           $ref: '#/components/schemas/SemanticMetricExpressionMode'
         expression:
           type: string
+        relationship_names:
+          type: array
+          items:
+            type: string
         filter_sql:
           type: string
         default_time_grain:
@@ -18071,8 +18075,6 @@ components:
           $ref: '#/components/schemas/SemanticRelationshipRelationshipType'
         join_sql:
           type: string
-        is_default:
-          type: boolean
         cost:
           type: integer
           format: int32
@@ -18239,6 +18241,10 @@ components:
           type: array
           items:
             type: string
+        relationship_names:
+          type: array
+          items:
+            type: string
         dimensions:
           type: array
           items:
@@ -18264,6 +18270,10 @@ components:
         semantic_model_name:
           type: string
         metrics:
+          type: array
+          items:
+            type: string
+        relationship_names:
           type: array
           items:
             type: string
@@ -19235,6 +19245,10 @@ components:
         semantic_model_name:
           type: string
         metrics:
+          type: array
+          items:
+            type: string
+        relationship_names:
           type: array
           items:
             type: string
@@ -21264,6 +21278,10 @@ components:
           $ref: '#/components/schemas/SemanticMetricExpressionMode'
         expression:
           type: string
+        relationship_names:
+          type: array
+          items:
+            type: string
         filter_sql:
           type: string
         default_time_grain:
@@ -21390,8 +21408,6 @@ components:
           $ref: '#/components/schemas/SemanticRelationshipRelationshipType'
         join_sql:
           type: string
-        is_default:
-          type: boolean
         cost:
           type: integer
           format: int32
@@ -21939,6 +21955,10 @@ components:
           $ref: '#/components/schemas/SemanticMetricExpressionMode'
         expression:
           type: string
+        relationship_names:
+          type: array
+          items:
+            type: string
         filter_sql:
           type: string
         default_time_grain:
@@ -21988,8 +22008,6 @@ components:
           $ref: '#/components/schemas/SemanticRelationshipRelationshipType'
         join_sql:
           type: string
-        is_default:
-          type: boolean
         cost:
           type: integer
           format: int32

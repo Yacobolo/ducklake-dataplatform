@@ -720,7 +720,7 @@ type SemanticMetricRepository interface {
 type SemanticRelationshipRepository interface {
 	Create(ctx context.Context, r *SemanticRelationship) (*SemanticRelationship, error)
 	GetByID(ctx context.Context, id string) (*SemanticRelationship, error)
-	GetByName(ctx context.Context, name string) (*SemanticRelationship, error)
+	GetByName(ctx context.Context, fromSemanticID, name string) (*SemanticRelationship, error)
 	List(ctx context.Context, page PageRequest) ([]SemanticRelationship, int64, error)
 	ListByModel(ctx context.Context, semanticModelID string) ([]SemanticRelationship, error)
 	Update(ctx context.Context, id string, req UpdateSemanticRelationshipRequest) (*SemanticRelationship, error)

@@ -1997,6 +1997,7 @@ type apiSemanticMetric struct {
 	MetricType         string `json:"metric_type"`
 	ExpressionMode     string `json:"expression_mode"`
 	Expression         string `json:"expression"`
+	RelationshipNames  []string `json:"relationship_names"`
 	DefaultTimeGrain   string `json:"default_time_grain"`
 	Format             string `json:"format"`
 	CertificationState string `json:"certification_state"`
@@ -2008,7 +2009,6 @@ type apiSemanticRelationship struct {
 	ToSemanticID     string `json:"to_semantic_id"`
 	RelationshipType string `json:"relationship_type"`
 	JoinSQL          string `json:"join_sql"`
-	IsDefault        bool   `json:"is_default"`
 	Cost             int    `json:"cost"`
 	MaxHops          int    `json:"max_hops"`
 }
@@ -2252,6 +2252,7 @@ func (c *APIStateClient) readSemanticModels(ctx context.Context, state *declarat
 				MetricType:         metric.MetricType,
 				ExpressionMode:     metric.ExpressionMode,
 				Expression:         metric.Expression,
+				RelationshipNames:  append([]string(nil), metric.RelationshipNames...),
 				DefaultTimeGrain:   metric.DefaultTimeGrain,
 				Format:             metric.Format,
 				CertificationState: metric.CertificationState,
@@ -2274,29 +2275,33 @@ func (c *APIStateClient) readSemanticModels(ctx context.Context, state *declarat
 		}
 	}
 
-	relationships, err := c.listSemanticRelationships(ctx)
-	if err != nil {
-		return fmt.Errorf("list semantic relationships: %w", err)
-	}
-	for _, rel := range relationships {
-		fromIdx, ok := modelIndexByID[rel.FromSemanticID]
+	for _, model := range items {
+		if model.ID == "" {
+			continue
+		}
+		relationships, err := c.listSemanticRelationships(ctx, model.ProjectName, model.Name)
+		if err != nil {
+			return fmt.Errorf("list semantic relationships for %s.%s: %w", model.ProjectName, model.Name, err)
+		}
+		fromIdx, ok := modelIndexByID[model.ID]
 		if !ok {
-			return fmt.Errorf("semantic relationship %q references unknown from_semantic_id %q", rel.Name, rel.FromSemanticID)
+			return fmt.Errorf("semantic model %q missing from index", model.ID)
 		}
-		toModel := modelNameByID[rel.ToSemanticID]
-		if toModel == "" {
-			toModel = rel.ToSemanticID
-		}
+		for _, rel := range relationships {
+			toModel := modelNameByID[rel.ToSemanticID]
+			if toModel == "" {
+				toModel = rel.ToSemanticID
+			}
 
-		state.SemanticModels[fromIdx].Spec.Relationships = append(state.SemanticModels[fromIdx].Spec.Relationships, declarative.SemanticRelationshipSpec{
-			Name:             rel.Name,
-			ToModel:          toModel,
-			RelationshipType: rel.RelationshipType,
-			JoinSQL:          rel.JoinSQL,
-			IsDefault:        rel.IsDefault,
-			Cost:             rel.Cost,
-			MaxHops:          rel.MaxHops,
-		})
+			state.SemanticModels[fromIdx].Spec.Relationships = append(state.SemanticModels[fromIdx].Spec.Relationships, declarative.SemanticRelationshipSpec{
+				Name:             rel.Name,
+				ToModel:          toModel,
+				RelationshipType: rel.RelationshipType,
+				JoinSQL:          rel.JoinSQL,
+				Cost:             rel.Cost,
+				MaxHops:          rel.MaxHops,
+			})
+		}
 	}
 
 	return nil
@@ -2334,8 +2339,8 @@ func (c *APIStateClient) listSemanticPreAggregations(ctx context.Context, projec
 	return preAggs, nil
 }
 
-func (c *APIStateClient) listSemanticRelationships(ctx context.Context) ([]apiSemanticRelationship, error) {
-	pages, err := c.fetchAllPages(ctx, "/semantic-relationships")
+func (c *APIStateClient) listSemanticRelationships(ctx context.Context, projectName, modelName string) ([]apiSemanticRelationship, error) {
+	pages, err := c.fetchAllPages(ctx, "/semantic-models/"+projectName+"/"+modelName+"/relationships")
 	if err != nil {
 		return nil, err
 	}
@@ -2847,6 +2852,7 @@ func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectNa
 			"metric_type":         metric.MetricType,
 			"expression_mode":     metric.ExpressionMode,
 			"expression":          metric.Expression,
+			"relationship_names":  metric.RelationshipNames,
 			"default_time_grain":  metric.DefaultTimeGrain,
 			"format":              metric.Format,
 			"certification_state": metric.CertificationState,
@@ -2948,17 +2954,15 @@ func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, p
 	return nil
 }
 
-func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, modelID, projectName string, desired []declarative.SemanticRelationshipSpec) error {
-	actual, err := c.listSemanticRelationships(ctx)
+func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, modelID, projectName, modelName string, desired []declarative.SemanticRelationshipSpec) error {
+	actual, err := c.listSemanticRelationships(ctx, projectName, modelName)
 	if err != nil {
 		return err
 	}
 
 	actualByName := make(map[string]apiSemanticRelationship)
 	for _, rel := range actual {
-		if rel.FromSemanticID == modelID {
-			actualByName[rel.Name] = rel
-		}
+		actualByName[rel.Name] = rel
 	}
 
 	seen := make(map[string]struct{}, len(desired))
@@ -2972,13 +2976,12 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 		body := map[string]interface{}{
 			"relationship_type": rel.RelationshipType,
 			"join_sql":          rel.JoinSQL,
-			"is_default":        rel.IsDefault,
 			"cost":              rel.Cost,
 			"max_hops":          rel.MaxHops,
 		}
 
 		if _, exists := actualByName[rel.Name]; exists {
-			resp, err := c.client.Do(http.MethodPatch, "/semantic-relationships/"+rel.Name, nil, body)
+			resp, err := c.client.Do(http.MethodPatch, "/semantic-models/"+projectName+"/"+modelName+"/relationships/"+rel.Name, nil, body)
 			if err != nil {
 				return err
 			}
@@ -2991,7 +2994,7 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 		body["name"] = rel.Name
 		body["from_semantic_id"] = modelID
 		body["to_semantic_id"] = toModelID
-		resp, err := c.client.Do(http.MethodPost, "/semantic-relationships", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/semantic-models/"+projectName+"/"+modelName+"/relationships", nil, body)
 		if err != nil {
 			return err
 		}
@@ -3004,7 +3007,7 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 		if _, ok := seen[name]; ok {
 			continue
 		}
-		resp, err := c.client.Do(http.MethodDelete, "/semantic-relationships/"+name, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/semantic-models/"+projectName+"/"+modelName+"/relationships/"+name, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -3023,7 +3026,7 @@ func (c *APIStateClient) reconcileSemanticChildren(ctx context.Context, modelID 
 	if err := c.reconcileSemanticPreAggregations(ctx, model.ProjectName, model.ModelName, model.Spec.PreAggregations); err != nil {
 		return fmt.Errorf("reconcile semantic pre-aggregations: %w", err)
 	}
-	if err := c.reconcileSemanticRelationships(ctx, modelID, model.ProjectName, model.Spec.Relationships); err != nil {
+	if err := c.reconcileSemanticRelationships(ctx, modelID, model.ProjectName, model.ModelName, model.Spec.Relationships); err != nil {
 		return fmt.Errorf("reconcile semantic relationships: %w", err)
 	}
 	return nil

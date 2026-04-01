@@ -118,6 +118,7 @@ func (s *Service) CreateMetric(ctx context.Context, principal, projectName, sema
 		MetricType:         req.MetricType,
 		ExpressionMode:     req.ExpressionMode,
 		Expression:         req.Expression,
+		RelationshipNames:  req.RelationshipNames,
 		FilterSQL:          req.FilterSQL,
 		DefaultTimeGrain:   req.DefaultTimeGrain,
 		Format:             req.Format,
@@ -178,7 +179,6 @@ func (s *Service) CreateRelationship(ctx context.Context, principal string, req 
 		ToSemanticID:     req.ToSemanticID,
 		RelationshipType: req.RelationshipType,
 		JoinSQL:          req.JoinSQL,
-		IsDefault:        req.IsDefault,
 		Cost:             req.Cost,
 		MaxHops:          req.MaxHops,
 		CreatedBy:        principal,
@@ -196,13 +196,13 @@ func (s *Service) CreateRelationshipForModel(ctx context.Context, principal, pro
 	if err != nil {
 		return nil, err
 	}
-	if req.FromSemanticID != semanticModel.ID && req.ToSemanticID != semanticModel.ID {
-		return nil, domain.ErrValidation("relationship must reference the current semantic model")
+	if req.FromSemanticID != semanticModel.ID {
+		return nil, domain.ErrValidation("join path source must match the current semantic model")
 	}
 	return s.CreateRelationship(ctx, principal, req)
 }
 
-// ListRelationshipsForModel lists semantic relationships touching a semantic model.
+// ListRelationshipsForModel lists semantic relationships owned by a semantic model.
 func (s *Service) ListRelationshipsForModel(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticRelationship, error) {
 	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
 	if err != nil {
@@ -213,20 +213,12 @@ func (s *Service) ListRelationshipsForModel(ctx context.Context, projectName, se
 
 // UpdateRelationship updates an existing relationship by name.
 func (s *Service) UpdateRelationship(ctx context.Context, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
-	existing, err := s.relationships.GetByName(ctx, relationshipName)
-	if err != nil {
-		return nil, err
-	}
-	return s.relationships.Update(ctx, existing.ID, req)
+	return nil, domain.ErrValidation("global relationship updates are not supported")
 }
 
 // DeleteRelationship deletes an existing relationship by name.
 func (s *Service) DeleteRelationship(ctx context.Context, relationshipName string) error {
-	existing, err := s.relationships.GetByName(ctx, relationshipName)
-	if err != nil {
-		return err
-	}
-	return s.relationships.Delete(ctx, existing.ID)
+	return domain.ErrValidation("global relationship deletes are not supported")
 }
 
 // UpdateRelationshipForModel updates a relationship that belongs to a semantic model.
@@ -235,12 +227,9 @@ func (s *Service) UpdateRelationshipForModel(ctx context.Context, projectName, s
 	if err != nil {
 		return nil, err
 	}
-	existing, err := s.relationships.GetByName(ctx, relationshipName)
+	existing, err := s.relationships.GetByName(ctx, semanticModel.ID, relationshipName)
 	if err != nil {
 		return nil, err
-	}
-	if existing.FromSemanticID != semanticModel.ID && existing.ToSemanticID != semanticModel.ID {
-		return nil, domain.ErrNotFound("semantic relationship")
 	}
 	return s.relationships.Update(ctx, existing.ID, req)
 }
@@ -251,12 +240,9 @@ func (s *Service) DeleteRelationshipForModel(ctx context.Context, projectName, s
 	if err != nil {
 		return err
 	}
-	existing, err := s.relationships.GetByName(ctx, relationshipName)
+	existing, err := s.relationships.GetByName(ctx, semanticModel.ID, relationshipName)
 	if err != nil {
 		return err
-	}
-	if existing.FromSemanticID != semanticModel.ID && existing.ToSemanticID != semanticModel.ID {
-		return domain.ErrNotFound("semantic relationship")
 	}
 	return s.relationships.Delete(ctx, existing.ID)
 }

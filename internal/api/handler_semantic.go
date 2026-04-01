@@ -201,6 +201,7 @@ func (h *APIHandler) CreateSemanticMetric(ctx context.Context, req GenCreateSema
 		Label:              valOrEmpty(req.Body.Label),
 		MetricType:         string(req.Body.MetricType),
 		Expression:         req.Body.Expression,
+		RelationshipNames:  sliceOrEmpty(req.Body.RelationshipNames),
 		FilterSQL:          valOrEmpty(req.Body.FilterSql),
 		DefaultTimeGrain:   valOrEmpty(req.Body.DefaultTimeGrain),
 		Format:             valOrEmpty(req.Body.Format),
@@ -237,14 +238,17 @@ func (h *APIHandler) CreateSemanticMetric(ctx context.Context, req GenCreateSema
 // UpdateSemanticMetric updates a metric under a semantic model.
 func (h *APIHandler) UpdateSemanticMetric(ctx context.Context, req GenUpdateSemanticMetricRequest) (GenUpdateSemanticMetricResponse, error) {
 	domReq := domain.UpdateSemanticMetricRequest{
-		Description:      req.Body.Description,
-		Label:            req.Body.Label,
-		Expression:       req.Body.Expression,
-		FilterSQL:        req.Body.FilterSql,
-		DefaultTimeGrain: req.Body.DefaultTimeGrain,
-		Format:           req.Body.Format,
-		Owner:            req.Body.Owner,
+		Description: req.Body.Description,
+		Label:       req.Body.Label,
+		Expression:  req.Body.Expression,
+		FilterSQL:   req.Body.FilterSql,
+		Owner:       req.Body.Owner,
 	}
+	if req.Body.RelationshipNames != nil {
+		domReq.RelationshipNames = *req.Body.RelationshipNames
+	}
+	domReq.DefaultTimeGrain = req.Body.DefaultTimeGrain
+	domReq.Format = req.Body.Format
 	if req.Body.MetricType != nil {
 		s := string(*req.Body.MetricType)
 		domReq.MetricType = &s
@@ -443,7 +447,6 @@ func (h *APIHandler) CreateSemanticModelRelationship(ctx context.Context, req Ge
 		ToSemanticID:     req.Body.ToSemanticId,
 		RelationshipType: string(req.Body.RelationshipType),
 		JoinSQL:          req.Body.JoinSql,
-		IsDefault:        boolOrFalse(req.Body.IsDefault),
 		Cost:             intOrZero(req.Body.Cost),
 		MaxHops:          intOrZero(req.Body.MaxHops),
 	})
@@ -478,9 +481,6 @@ func (h *APIHandler) UpdateSemanticModelRelationship(ctx context.Context, req Ge
 	if req.Body != nil && req.Body.RelationshipType != nil {
 		s := string(*req.Body.RelationshipType)
 		domReq.RelationshipType = &s
-	}
-	if req.Body != nil && req.Body.IsDefault != nil {
-		domReq.IsDefault = req.Body.IsDefault
 	}
 	if req.Body != nil && req.Body.Cost != nil {
 		v := int(*req.Body.Cost)
@@ -703,6 +703,7 @@ func semanticMetricToAPI(m domain.SemanticMetric) SemanticMetric {
 		MetricType:         metricTypePtr(m.MetricType),
 		ExpressionMode:     expressionModePtr(m.ExpressionMode),
 		Expression:         optStr(m.Expression),
+		RelationshipNames:  &m.RelationshipNames,
 		FilterSql:          optStr(m.FilterSQL),
 		DefaultTimeGrain:   optStr(m.DefaultTimeGrain),
 		Format:             optStr(m.Format),
@@ -722,7 +723,6 @@ func semanticRelationshipToAPI(r domain.SemanticRelationship) SemanticRelationsh
 		ToSemanticId:     optStr(r.ToSemanticID),
 		RelationshipType: relationshipTypePtr(r.RelationshipType),
 		JoinSql:          optStr(r.JoinSQL),
-		IsDefault:        &r.IsDefault,
 		Cost:             ptrI32(intToI32Safe(r.Cost)),
 		MaxHops:          ptrI32(intToI32Safe(r.MaxHops)),
 		CreatedBy:        optStr(r.CreatedBy),
@@ -805,6 +805,9 @@ func semanticReqToService(req *GenSchemaMetricQueryRequest) semantic.MetricQuery
 		ProjectName:       req.ProjectName,
 		SemanticModelName: req.SemanticModelName,
 		Metrics:           req.Metrics,
+	}
+	if req.RelationshipNames != nil {
+		out.RelationshipNames = *req.RelationshipNames
 	}
 	if req.Dimensions != nil {
 		out.Dimensions = *req.Dimensions

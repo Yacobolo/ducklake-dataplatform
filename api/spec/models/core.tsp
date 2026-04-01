@@ -1616,6 +1616,7 @@ model CreateSemanticMetricRequest {
   metric_type: SemanticMetricMetricType;
   expression_mode?: SemanticMetricExpressionMode;
   expression: string;
+  relationship_names?: string[];
   filter_sql?: string;
   default_time_grain?: string;
   format?: string;
@@ -1628,6 +1629,7 @@ model UpdateSemanticMetricRequest {
   metric_type?: SemanticMetricMetricType;
   expression_mode?: SemanticMetricExpressionMode;
   expression?: string;
+  relationship_names?: string[];
   filter_sql?: string;
   default_time_grain?: string;
   format?: string;
@@ -1644,6 +1646,7 @@ model SemanticMetric {
   metric_type?: SemanticMetricMetricType;
   expression_mode?: SemanticMetricExpressionMode;
   expression?: string;
+  relationship_names?: string[];
   filter_sql?: string;
   default_time_grain?: string;
   format?: string;
@@ -1706,7 +1709,6 @@ model CreateSemanticRelationshipRequest {
   to_semantic_id: string;
   relationship_type: SemanticRelationshipRelationshipType;
   join_sql: string;
-  is_default?: boolean;
   cost?: int32;
   max_hops?: int32;
 }
@@ -1714,7 +1716,6 @@ model CreateSemanticRelationshipRequest {
 model UpdateSemanticRelationshipRequest {
   relationship_type?: SemanticRelationshipRelationshipType;
   join_sql?: string;
-  is_default?: boolean;
   cost?: int32;
   max_hops?: int32;
 }
@@ -1726,7 +1727,6 @@ model SemanticRelationship {
   to_semantic_id?: string;
   relationship_type?: SemanticRelationshipRelationshipType;
   join_sql?: string;
-  is_default?: boolean;
   cost?: int32;
   max_hops?: int32;
   created_by?: string;
@@ -1803,6 +1803,7 @@ model MetricQueryRequest {
   project_name: string;
   semantic_model_name: string;
   metrics: string[];
+  relationship_names?: string[];
   dimensions?: string[];
   filters?: string[];
   order_by?: string[];
@@ -1893,6 +1894,7 @@ model DashboardSemanticQuerySource {
   project_name: string;
   semantic_model_name: string;
   metrics: string[];
+  relationship_names?: string[];
   dimensions?: string[];
   filters?: string[];
   order_by?: string[];
