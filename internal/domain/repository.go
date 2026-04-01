@@ -227,6 +227,19 @@ type WebAuthnCredentialRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// ResourceAccessRepository manages principal-scoped recent resource access history.
+type ResourceAccessRepository interface {
+	TrackVisit(ctx context.Context, principalID string, resource ResourceRef) error
+	ListRecent(ctx context.Context, principalID string, limit int) ([]ResourceAccessEvent, error)
+}
+
+// SavedResourceRepository manages principal-scoped saved resources.
+type SavedResourceRepository interface {
+	Save(ctx context.Context, principalID string, resource ResourceRef) error
+	Unsave(ctx context.Context, principalID string, resourceType string, resourceKey string) error
+	ListSaved(ctx context.Context, principalID string, limit int) ([]SavedResource, error)
+}
+
 // AuditFilter holds filter parameters for querying audit logs.
 type AuditFilter struct {
 	PrincipalName *string

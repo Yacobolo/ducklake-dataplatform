@@ -851,6 +851,14 @@ type CreateRowFilterRequest struct {
 	TableId     *string `json:"table_id,omitempty"`
 }
 
+type CreateSavedResourceRequest struct {
+	DisplayName  *string `json:"display_name,omitempty"`
+	ResourceKey  string  `json:"resource_key"`
+	ResourcePath *string `json:"resource_path,omitempty"`
+	ResourceType string  `json:"resource_type"`
+	Section      *string `json:"section,omitempty"`
+}
+
 type CreateSchemaRequest struct {
 	Comment      *string `json:"comment,omitempty"`
 	LocationName *string `json:"location_name,omitempty"`
@@ -1930,6 +1938,11 @@ type PaginatedQueryHistoryEntries struct {
 	NextPageToken *string             `json:"next_page_token,omitempty"`
 }
 
+type PaginatedRecentResources struct {
+	Data          []RecentResource `json:"data"`
+	NextPageToken *string          `json:"next_page_token,omitempty"`
+}
+
 type PaginatedRowFilterBindings struct {
 	Data          []RowFilterBinding `json:"data"`
 	NextPageToken *string            `json:"next_page_token,omitempty"`
@@ -1938,6 +1951,11 @@ type PaginatedRowFilterBindings struct {
 type PaginatedRowFilters struct {
 	Data          []RowFilter `json:"data"`
 	NextPageToken *string     `json:"next_page_token,omitempty"`
+}
+
+type PaginatedSavedResources struct {
+	Data          []SavedResource `json:"data"`
+	NextPageToken *string         `json:"next_page_token,omitempty"`
 }
 
 type PaginatedSchemaDetails struct {
@@ -2327,6 +2345,16 @@ type QueryResult struct {
 	Rows          []Record        `json:"rows"`
 }
 
+type RecentResource struct {
+	AccessedAt   *string `json:"accessed_at,omitempty"`
+	DisplayName  string  `json:"display_name"`
+	Href         *string `json:"href,omitempty"`
+	ResourceKey  string  `json:"resource_key"`
+	ResourcePath *string `json:"resource_path,omitempty"`
+	ResourceType string  `json:"resource_type"`
+	Section      *string `json:"section,omitempty"`
+}
+
 type Record map[string]any
 
 type ReorderCellsRequest struct {
@@ -2375,6 +2403,17 @@ type RunAllResult struct {
 	NotebookId      *string                `json:"notebook_id,omitempty"`
 	Results         *[]CellExecutionResult `json:"results,omitempty"`
 	TotalDurationMs *int32                 `json:"total_duration_ms,omitempty"`
+}
+
+type SavedResource struct {
+	DisplayName    string  `json:"display_name"`
+	Href           *string `json:"href,omitempty"`
+	LastAccessedAt *string `json:"last_accessed_at,omitempty"`
+	ResourceKey    string  `json:"resource_key"`
+	ResourcePath   *string `json:"resource_path,omitempty"`
+	ResourceType   string  `json:"resource_type"`
+	SavedAt        *string `json:"saved_at,omitempty"`
+	Section        *string `json:"section,omitempty"`
 }
 
 type SchemaDetail struct {
@@ -3068,9 +3107,13 @@ type ListProductTeamsParams = GenListProductTeamsParams
 
 type ListQueryHistoryParams = GenListQueryHistoryParams
 
+type ListRecentResourcesParams = GenListRecentResourcesParams
+
 type ListRowFilterBindingsParams = GenListRowFilterBindingsParams
 
 type ListRowFiltersParams = GenListRowFiltersParams
+
+type ListSavedResourcesParams = GenListSavedResourcesParams
 
 type ListSchemasParams = GenListSchemasParams
 
@@ -3161,6 +3204,8 @@ type CreateProductDomainJSONRequestBody = GenCreateProductDomainJSONBody
 type CreateProductTeamJSONRequestBody = GenCreateProductTeamJSONBody
 
 type CreateRowFilterJSONRequestBody = GenCreateRowFilterJSONBody
+
+type CreateSavedResourceJSONRequestBody = GenCreateSavedResourceJSONBody
 
 type CreateSchemaJSONRequestBody = GenCreateSchemaJSONBody
 

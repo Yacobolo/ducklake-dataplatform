@@ -37,6 +37,8 @@ type APIHandler struct {
 	semantics           semanticService
 	dashboards          dashboardService
 	explore             exploreService
+	resourceAccess      resourceAccessService
+	savedResources      savedResourceService
 }
 
 // NewHandler creates a new APIHandler with all required service dependencies.
@@ -120,6 +122,16 @@ func (h *APIHandler) SetNotebookFolders(service notebookFolderService) {
 // SetExplore configures the optional authored-asset explore service.
 func (h *APIHandler) SetExplore(service exploreService) {
 	h.explore = service
+}
+
+// SetResourceAccess configures the recent-resource API service.
+func (h *APIHandler) SetResourceAccess(service resourceAccessService) {
+	h.resourceAccess = service
+}
+
+// SetSavedResources configures the saved-resource API service.
+func (h *APIHandler) SetSavedResources(service savedResourceService) {
+	h.savedResources = service
 }
 
 // Ensure Handler implements the interface.

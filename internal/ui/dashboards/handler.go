@@ -44,6 +44,12 @@ func (h *Handler) DashboardsList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "dashboards",
+		DisplayName:  "Dashboards",
+		Section:      "Discover",
+	})
 	core.RenderHTML(w, http.StatusOK, dashboardsListPage(core.PrincipalFromContext(r.Context()), rows, page, total))
 }
 
@@ -73,14 +79,15 @@ func (h *Handler) DashboardsCreate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 	dashboardID := chi.URLParam(r, "dashboardID")
+	principal := core.PrincipalFromContext(r.Context())
 	item, widgets, err := h.deps.Dashboard.GetDashboard(r.Context(), dashboardID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 
-	principal, _ := principalLabel(r)
-	resolved, err := h.deps.Dashboard.ResolveWidgets(r.Context(), principal, widgets)
+	principalName, _ := principalLabel(r)
+	resolved, err := h.deps.Dashboard.ResolveWidgets(r.Context(), principalName, widgets)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -106,8 +113,15 @@ func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "dashboard",
+		ResourceKey:  item.ID,
+		DisplayName:  item.Name,
+		ResourcePath: core.ResourceFolderPath(r.Context(), h.deps, principal, item.Owner, item.FolderID),
+		Section:      "Discover",
+	})
 	core.RenderHTML(w, http.StatusOK, dashboardsDetailPage(dashboardDetailPageData{
-		Principal:         core.PrincipalFromContext(r.Context()),
+		Principal:         principal,
 		Dashboard:         item,
 		Widgets:           resolved,
 		Freshness:         freshness,

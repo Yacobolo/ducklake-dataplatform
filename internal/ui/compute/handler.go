@@ -37,6 +37,12 @@ func (h *Handler) ComputeEndpointsList(w http.ResponseWriter, r *http.Request) {
 			URLText: item.URL,
 		})
 	}
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "compute/endpoints",
+		DisplayName:  "Compute Endpoints",
+		Section:      "Operate",
+	})
 	core.RenderHTML(w, http.StatusOK, computeEndpointsListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total))
 }
 
@@ -102,6 +108,12 @@ func (h *Handler) ComputeEndpointsDetail(w http.ResponseWriter, r *http.Request)
 			FallbackLocal: a.FallbackLocal,
 		})
 	}
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "compute-endpoint",
+		ResourceKey:  item.Name,
+		DisplayName:  item.Name,
+		Section:      "Operate",
+	})
 	core.RenderHTML(w, http.StatusOK, computeEndpointDetailPage(core.PrincipalFromContext(r.Context()), item, healthText, rows, h.deps.CSRFFieldProvider(r)))
 }
 

@@ -72,9 +72,12 @@ func macrosListPage(principal domain.ContextPrincipal, rows []macrosListRowData,
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
+				core.TablePrimaryCell(
+					core.IconChip("braces", "bg-[var(--display-orange-scale-0)] text-[var(--display-orange-scale-6)]"),
+					A(Href(row.URL), Class("font-mono text-[13px] font-semibold text-[var(--fgColor-accent)] no-underline visited:text-[var(--fgColor-accent)] hover:text-[var(--fgColor-accent)] hover:underline active:text-[var(--fgColor-accent)]"), Text(row.Name)),
+				),
 				Td(statusPill(row.Type, "accent")),
-				Td(Text(row.Visibility)),
+				Td(core.TableMetaText(row.Visibility)),
 				Td(statusPill(row.Status, "neutral")),
 			))
 		}
@@ -111,9 +114,11 @@ func macroDetailPage(d macroDetailPageData) Node {
 			))
 		}
 		revisions = Div(Class("overflow-x-auto"),
-			Table(Class("min-w-full text-left text-sm"),
-				THead(Tr(Th(Text("Version")), Th(Text("Status")), Th(Text("Created by")), Th(Text("Created")))),
-				TBody(Group(rows)),
+			core.TableContainer("",
+				core.DataTable("",
+					THead(Tr(Th(Text("Version")), Th(Text("Status")), Th(Text("Created by")), Th(Text("Created")))),
+					TBody(Group(rows)),
+				),
 			),
 		)
 	}
@@ -307,8 +312,8 @@ func macroImpactSection(title string, rowsData []macroImpactRowData, emptyMessag
 	}
 	return core.SectionSurface(
 		core.SectionHeader(title, ""),
-		Div(Class("overflow-x-auto"),
-			Table(Class("min-w-full text-left text-sm"),
+		core.TableContainer("",
+			core.DataTable("",
 				THead(Tr(Th(Text("Model")), Th(Text("Last seen")))),
 				TBody(Group(rows)),
 			),

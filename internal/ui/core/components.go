@@ -148,14 +148,75 @@ func SelectControl(extraClass string, nodes ...Node) Node {
 	return Select(append(base, nodes...)...)
 }
 
-func TableContainer(extraClass string, nodes ...Node) Node {
-	base := []Node{Class(tableWrapClass(extraClass))}
-	return Div(append(base, Div(Class("overflow-x-auto"), Group(nodes)))...)
+func ResourceKindLabel(kind string) string {
+	switch kind {
+	case "runtime-asset":
+		return "Runtime Asset"
+	case "semantic-model":
+		return "Semantic Model"
+	case "compute-endpoint":
+		return "Compute Endpoint"
+	default:
+		return TitleizeWords(kind)
+	}
 }
 
-func DataTable(extraClass string, nodes ...Node) Node {
-	base := []Node{Class(dataTableClass(extraClass))}
-	return Table(append(base, nodes...)...)
+func ResourceKindIcon(kind string) string {
+	switch kind {
+	case "notebook":
+		return "notebook-text"
+	case "dashboard":
+		return "chart-column"
+	case "product":
+		return "package-open"
+	case "runtime-asset":
+		return "git-fork"
+	case "model":
+		return "boxes"
+	case "semantic-model":
+		return "waypoints"
+	case "pipeline":
+		return "workflow"
+	case "compute-endpoint":
+		return "server"
+	default:
+		return "file-stack"
+	}
+}
+
+func ResourceKindIconWrapClass(kind string) string {
+	base := "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+	switch kind {
+	case "notebook":
+		return base + " bg-[var(--display-blue-scale-0)] text-[var(--display-blue-scale-6)]"
+	case "dashboard":
+		return base + " bg-[var(--display-plum-scale-0)] text-[var(--display-plum-scale-6)]"
+	case "product":
+		return base + " bg-[var(--display-orange-scale-0)] text-[var(--display-orange-scale-6)]"
+	case "runtime-asset":
+		return base + " bg-[var(--display-gray-scale-0)] text-[var(--display-gray-scale-7)]"
+	case "model":
+		return base + " bg-[var(--display-green-scale-0)] text-[var(--display-green-scale-6)]"
+	case "semantic-model":
+		return base + " bg-[var(--display-indigo-scale-0)] text-[var(--display-indigo-scale-6)]"
+	case "pipeline":
+		return base + " bg-[var(--display-teal-scale-0)] text-[var(--display-teal-scale-6)]"
+	case "compute-endpoint":
+		return base + " bg-[var(--display-red-scale-0)] text-[var(--display-red-scale-6)]"
+	default:
+		return base + " bg-[var(--bgColor-muted)] text-[var(--fgColor-muted)]"
+	}
+}
+
+func ResourceIcon(kind string) Node {
+	return Span(
+		Class(ResourceKindIconWrapClass(kind)),
+		Icon(
+			ResourceKindIcon(kind),
+			Class("h-5 w-5 shrink-0"),
+			Attr("style", "stroke-width:1.75"),
+		),
+	)
 }
 
 func Badge(text, tone string) Node {
@@ -166,14 +227,14 @@ func ActionMenu(label string, items ...Node) Node {
 	summaryClass := "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-3 text-sm font-medium text-[var(--fgColor-default)] shadow-xs hover:bg-[var(--bgColor-muted)]"
 	summaryContent := Node(Text(label))
 	if label == "More" || label == "Actions" {
-		summaryClass = "list-none [&::-webkit-details-marker]:hidden inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-2 text-[var(--fgColor-default)] shadow-xs hover:bg-[var(--bgColor-muted)]"
+		summaryClass = "ui-icon-action-trigger list-none [&::-webkit-details-marker]:hidden inline-flex h-8 w-8 items-center justify-center rounded-md p-1 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[var(--borderColor-accent-emphasis)]"
 		summaryContent = Group([]Node{
-			Icon("ellipsis", Class(IconGlyphClass())),
+			Icon("ellipsis-vertical", Class("h-[18px] w-[18px]")),
 			Span(Class("sr-only"), Text(label)),
 		})
 	}
 	return Details(
-		Class(DetailsClass()),
+		Class(ClassNames("dropdown", DetailsClass())),
 		Summary(Class(summaryClass), Title(label), Attr("aria-label", label), summaryContent),
 		Div(Class(DropdownMenuClass()), Group(items)),
 	)

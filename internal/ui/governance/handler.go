@@ -39,6 +39,12 @@ func (h *Handler) GovernanceSearch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "governance/search",
+		DisplayName:  "Governance Search",
+		Section:      "Operate",
+	})
 	core.RenderHTML(w, http.StatusOK, governanceSearchPage(core.PrincipalFromContext(r.Context()), queryText, objectType, catalogName, results))
 }
 

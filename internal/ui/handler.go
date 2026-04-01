@@ -12,6 +12,8 @@ import (
 	"duck-demo/internal/service/orchestration"
 	"duck-demo/internal/service/pipeline"
 	"duck-demo/internal/service/query"
+	"duck-demo/internal/service/resourceaccess"
+	"duck-demo/internal/service/savedresource"
 	uiauth "duck-demo/internal/ui/auth"
 	"duck-demo/internal/ui/catalogs"
 	"duck-demo/internal/ui/components"
@@ -73,6 +75,8 @@ func NewHandler(
 	modelSvc *model.Service,
 	authService *authsvc.Service,
 	webSessionService *authsvc.SessionService,
+	resourceAccessService *resourceaccess.Service,
+	savedResourceService *savedresource.Service,
 	principalResolver PrincipalResolver,
 	authCfg config.AuthConfig,
 	production bool,
@@ -93,6 +97,8 @@ func NewHandler(
 		Model:               modelSvc,
 		AuthService:         authService,
 		WebSessionService:   webSessionService,
+		ResourceAccess:      resourceAccessService,
+		SavedResource:       savedResourceService,
 		PrincipalResolver:   principalResolver,
 		Auth:                authCfg,
 		Production:          production,
@@ -100,7 +106,7 @@ func NewHandler(
 	handler := &Handler{
 		Dependencies: deps,
 		Auth:         uiauth.New(authService, webSessionService, principalResolver, authCfg, production),
-		Overview:     overview.New(),
+		Overview:     overview.New(deps),
 		Components:   components.New(),
 	}
 	notebookHandler := notebooks.New(handler.Dependencies)

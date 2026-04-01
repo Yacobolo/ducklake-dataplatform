@@ -503,7 +503,12 @@ func notebookTableResultNode(c notebookCellRow) Node {
 			),
 		),
 		P(Class("text-xs text-[var(--fgColor-muted)]"), Text(meta)),
-		Div(Class("overflow-x-auto"), Table(Class(dataTableClass()), THead(Tr(Group(headers))), TBody(Group(rows)))),
+		core.TableContainer("",
+			core.DataTable("[&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:text-[0.8125rem] [&_th]:tracking-[0.02em]",
+				THead(Tr(Group(headers))),
+				TBody(Group(rows)),
+			),
+		),
 	)
 }
 
@@ -635,10 +640,6 @@ func coreContainsExpr(value string) string {
 func dropdownMenuClass(extra ...string) string { return core.DropdownMenuClass(extra...) }
 
 func dropdownItemClass(extra ...string) string { return core.DropdownItemClass(extra...) }
-
-func dataTableClass(extra ...string) string {
-	return core.ClassNames("min-w-full border-collapse overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] [&_tbody_tr:hover]:bg-[var(--bgColor-muted)] [&_td]:border-b [&_td]:border-[var(--borderColor-default)] [&_td]:px-4 [&_td]:py-3 [&_td]:align-top [&_td]:text-[0.8125rem] [&_th]:sticky [&_th]:top-0 [&_th]:z-[1] [&_th]:border-b [&_th]:border-[var(--borderColor-default)] [&_th]:bg-[var(--bgColor-muted)] [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:text-[0.8125rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.02em] [&_th]:text-[var(--fgColor-muted)]", strings.Join(extra, " "))
-}
 
 func labelClass(tone string) string {
 	base := "inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"

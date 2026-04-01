@@ -24,6 +24,8 @@ tags:
     description: Table and column lineage inspection together with lineage maintenance operations.
   - name: Audit
     description: Audit entry inspection for authorization and query activity.
+  - name: Resources
+    description: Recent and saved resource APIs for personalized navigation and activity tracking.
   - name: Queries
     description: Synchronous and asynchronous SQL query execution and query history endpoints.
   - name: Products
@@ -14034,6 +14036,223 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/QueryRequest'
+  /resources/recent:
+    get:
+      operationId: listRecentResources
+      summary: List recent resources
+      description: Lists the authenticated principal's recent UUID-backed resources for personalized navigation.
+      parameters:
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRecentResources'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Resources
+  /resources/saved:
+    get:
+      operationId: listSavedResources
+      summary: List saved resources
+      description: Lists the authenticated principal's saved UUID-backed resources.
+      parameters:
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSavedResources'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Resources
+    post:
+      operationId: createSavedResource
+      summary: Save resource
+      description: Saves a UUID-backed resource for the authenticated principal.
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedResource'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Resources
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSavedResourceRequest'
+  /resources/saved/{resourceType}/{resourceKey}:
+    delete:
+      operationId: deleteSavedResource
+      summary: Delete saved resource
+      description: Removes a saved resource for the authenticated principal.
+      parameters:
+        - name: resourceType
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: resourceKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Resources
   /row-filters/{rowFilterId}:
     delete:
       operationId: deleteRowFilter
@@ -17687,6 +17906,22 @@ components:
           type: string
         description:
           type: string
+    CreateSavedResourceRequest:
+      type: object
+      required:
+        - resource_type
+        - resource_key
+      properties:
+        resource_type:
+          type: string
+        resource_key:
+          type: string
+        display_name:
+          type: string
+        resource_path:
+          type: string
+        section:
+          type: string
     CreateSchemaRequest:
       type: object
       required:
@@ -19897,6 +20132,17 @@ components:
             $ref: '#/components/schemas/QueryHistoryEntry'
         next_page_token:
           type: string
+    PaginatedRecentResources:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentResource'
+        next_page_token:
+          type: string
     PaginatedRowFilterBindings:
       type: object
       required:
@@ -19917,6 +20163,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RowFilter'
+        next_page_token:
+          type: string
+    PaginatedSavedResources:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SavedResource'
         next_page_token:
           type: string
     PaginatedSchemaDetails:
@@ -20756,6 +21013,28 @@ components:
           type: string
       description: Contains result-set columns, row data, and an optional continuation token when additional rows are available.
       title: Tabular SQL query result.
+    RecentResource:
+      type: object
+      required:
+        - resource_type
+        - resource_key
+        - display_name
+      properties:
+        resource_type:
+          type: string
+        resource_key:
+          type: string
+        display_name:
+          type: string
+        resource_path:
+          type: string
+        href:
+          type: string
+        section:
+          type: string
+        accessed_at:
+          type: string
+          format: date-time
     ReorderCellsRequest:
       type: object
       required:
@@ -20856,6 +21135,31 @@ components:
         total_duration_ms:
           type: integer
           format: int64
+    SavedResource:
+      type: object
+      required:
+        - resource_type
+        - resource_key
+        - display_name
+      properties:
+        resource_type:
+          type: string
+        resource_key:
+          type: string
+        display_name:
+          type: string
+        resource_path:
+          type: string
+        href:
+          type: string
+        section:
+          type: string
+        saved_at:
+          type: string
+          format: date-time
+        last_accessed_at:
+          type: string
+          format: date-time
     SchemaDetail:
       type: object
       required:

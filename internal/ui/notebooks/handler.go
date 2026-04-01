@@ -228,6 +228,13 @@ func (h *Handler) NotebooksDetail(w http.ResponseWriter, r *http.Request) {
 		explorerCatalogs = append(explorerCatalogs, catalogItem)
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "notebook",
+		ResourceKey:  id,
+		DisplayName:  nb.Name,
+		ResourcePath: core.ResourceFolderPath(r.Context(), h.deps, principal, nb.Owner, nb.FolderID),
+		Section:      "Build",
+	})
 	core.RenderHTML(w, http.StatusOK, notebookDetailPage(notebookDetailPageData{
 		Principal:       principal,
 		NotebookID:      id,

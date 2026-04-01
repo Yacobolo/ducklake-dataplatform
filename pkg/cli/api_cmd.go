@@ -494,6 +494,14 @@ func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
 		endpoint.CLICommand = "assets freshness reconcile"
 	case "listQueryHistory":
 		endpoint.CLICommand = "query history list"
+	case "listRecentResources":
+		endpoint.CLICommand = "resources recent list"
+	case "listSavedResources":
+		endpoint.CLICommand = "resources saved list"
+	case "createSavedResource":
+		endpoint.CLICommand = "resources saved create"
+	case "deleteSavedResource":
+		endpoint.CLICommand = "resources saved delete"
 	case "createTagAssignment":
 		endpoint.CLICommand = "governance tags assignments create"
 	case "deleteTagAssignment":

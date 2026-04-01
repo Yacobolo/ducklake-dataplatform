@@ -83,10 +83,13 @@ func storageCredentialsListPage(principal domain.ContextPrincipal, rows []storag
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
-				Td(Text(row.Type)),
-				Td(Text(row.Owner)),
-				Td(Text(row.Updated)),
+				core.TablePrimaryCell(
+					core.IconChip("hard-drive", "bg-[var(--display-green-scale-0)] text-[var(--display-green-scale-6)]"),
+					core.TablePrimaryLink(row.URL, row.Name),
+				),
+				Td(core.TableMetaText(row.Type)),
+				Td(core.TableMetaText(row.Owner)),
+				Td(core.TableMetaText(row.Updated)),
 			))
 		}
 		table = core.TableContainer("",
@@ -116,9 +119,12 @@ func storageLocationsListPage(principal domain.ContextPrincipal, rows []storageL
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
-				Td(Text(row.StorageURL)),
-				Td(Text(row.CredentialName)),
+				core.TablePrimaryCell(
+					core.IconChip("database", "bg-[var(--display-blue-scale-0)] text-[var(--display-blue-scale-6)]"),
+					core.TablePrimaryLink(row.URL, row.Name),
+				),
+				Td(core.TableMetaText(row.StorageURL)),
+				Td(core.TableMetaText(row.CredentialName)),
 				Td(func() Node {
 					if row.ReadOnly {
 						return statusPill("true", "attention")
@@ -157,10 +163,13 @@ func storageVolumesListPage(principal domain.ContextPrincipal, catalogName, sche
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
-				Td(Text(row.VolumeType)),
-				Td(Text(row.StorageLocation)),
-				Td(Text(row.Owner)),
+				core.TablePrimaryCell(
+					core.IconChip("inbox", "bg-[var(--display-indigo-scale-0)] text-[var(--display-indigo-scale-6)]"),
+					core.TablePrimaryLink(row.URL, row.Name),
+				),
+				Td(core.TableMetaText(row.VolumeType)),
+				Td(core.TableMetaText(row.StorageLocation)),
+				Td(core.TableMetaText(row.Owner)),
 			))
 		}
 		table = core.TableContainer("",

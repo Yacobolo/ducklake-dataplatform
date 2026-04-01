@@ -43,6 +43,12 @@ func (h *Handler) SemanticModelsList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "semantic/models",
+		DisplayName:  "Semantic Models",
+		Section:      "Build",
+	})
 	core.RenderHTML(w, http.StatusOK, semanticModelsListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total))
 }
 
@@ -114,6 +120,12 @@ func (h *Handler) SemanticModelsDetail(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "semantic-model",
+		ResourceKey:  item.ProjectName + "/" + item.Name,
+		DisplayName:  item.ProjectName + "." + item.Name,
+		Section:      "Build",
+	})
 	core.RenderHTML(w, http.StatusOK, semanticModelDetailPage(semanticModelDetailPageData{
 		Principal:         core.PrincipalFromContext(r.Context()),
 		ProjectName:       projectName,

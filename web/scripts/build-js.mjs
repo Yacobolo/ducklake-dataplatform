@@ -10,6 +10,7 @@ const rootDir = join(__dirname, "..", "..");
 const webDir = join(rootDir, "web");
 
 const entryFiles = [
+  join(webDir, "src", "home-hero.ts"),
   join(webDir, "src", "sql-editor.ts"),
   join(webDir, "src", "notebook.ts"),
   join(webDir, "src", "dashboard.ts"),

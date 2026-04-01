@@ -63,6 +63,12 @@ func (h *Handler) AssetsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "assets",
+		DisplayName:  "Runtime Assets",
+		Section:      "Discover",
+	})
 	core.RenderHTML(w, http.StatusOK, assetsListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total, canMaterialize, h.deps.Backfill != nil))
 }
 
@@ -168,6 +174,12 @@ func (h *Handler) AssetsDetail(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "runtime-asset",
+		ResourceKey:  asset.AssetKey,
+		DisplayName:  asset.AssetKey,
+		Section:      "Discover",
+	})
 	core.RenderHTML(w, http.StatusOK, assetDetailPage(assetDetailPageData{
 		Principal:           core.PrincipalFromContext(r.Context()),
 		ProductSlug:         productSlug,
