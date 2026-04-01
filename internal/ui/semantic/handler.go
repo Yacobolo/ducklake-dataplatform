@@ -175,10 +175,10 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 	for i := range relationships {
 		rel := relationships[i]
 		connectedModelID := rel.ToSemanticID
-		direction := "Current model -> related model"
+		direction := "Current relation -> related relation"
 		if rel.ToSemanticID == item.ID {
 			connectedModelID = rel.FromSemanticID
-			direction = "Related model -> current model"
+			direction = "Related relation -> current relation"
 		}
 		connectedLabel := connectedModelID
 		if connectedModel, ok := modelByID[connectedModelID]; ok {

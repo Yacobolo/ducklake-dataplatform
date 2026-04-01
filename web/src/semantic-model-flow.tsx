@@ -9,6 +9,7 @@ import {
   EdgeLabelRenderer,
   Handle,
   MarkerType,
+  MiniMap,
   Position,
   ReactFlowProvider,
   ReactFlow,
@@ -18,8 +19,10 @@ import {
   type NodeProps,
   useEdgesState,
   useNodesState,
+  useReactFlow,
   getBezierPath,
 } from "@xyflow/react";
+import dagre from "dagre";
 import reactFlowStyles from "@xyflow/react/dist/style.css";
 
 type SemanticFlowField = {
@@ -253,6 +256,13 @@ const semanticFlowStyles = `
   color: #374151;
 }
 
+.react-flow__minimap {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d8dde3;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
 .react-flow__attribution {
   display: none;
 }
@@ -309,6 +319,64 @@ function toReactFlowNodes(nodes: SemanticFlowNode[]): SemanticModelNodeType[] {
       })),
     },
   }));
+}
+
+const semanticNodeWidth = 272;
+const semanticNodeHeaderHeight = 49;
+const semanticFieldRowHeight = 34;
+const semanticNodePaddingHeight = 8;
+
+function semanticNodeHeight(node: SemanticModelNodeType): number {
+  const fieldCount = Math.max(node.data.fields.length, 1);
+  return semanticNodeHeaderHeight + fieldCount * semanticFieldRowHeight + semanticNodePaddingHeight;
+}
+
+function layoutSemanticFlow(
+  nodes: SemanticModelNodeType[],
+  edges: SemanticRelationshipEdgeType[],
+): SemanticModelNodeType[] {
+  if (nodes.length === 0) {
+    return nodes;
+  }
+
+  const graph = new dagre.graphlib.Graph();
+  graph.setDefaultEdgeLabel(() => ({}));
+  graph.setGraph({
+    rankdir: "LR",
+    align: "UL",
+    nodesep: 48,
+    ranksep: 120,
+    marginx: 32,
+    marginy: 32,
+  });
+
+  for (const node of nodes) {
+    graph.setNode(node.id, {
+      width: semanticNodeWidth,
+      height: semanticNodeHeight(node),
+    });
+  }
+
+  for (const edge of edges) {
+    graph.setEdge(edge.source, edge.target);
+  }
+
+  dagre.layout(graph);
+
+  return nodes.map((node) => {
+    const layout = graph.node(node.id);
+    if (!layout) {
+      return node;
+    }
+
+    return {
+      ...node,
+      position: {
+        x: layout.x - semanticNodeWidth / 2,
+        y: layout.y - semanticNodeHeight(node) / 2,
+      },
+    };
+  });
 }
 
 function toReactFlowEdges(edges: SemanticFlowEdge[]): SemanticRelationshipEdgeType[] {
@@ -446,17 +514,19 @@ const edgeTypes = {
 };
 
 function SemanticFlowCanvas({ nodes, edges }: { nodes: SemanticModelNodeType[]; edges: SemanticRelationshipEdgeType[] }) {
+  const reactFlow = useReactFlow();
   const [flowNodes, setFlowNodes, onNodesChange] = useNodesState(nodes);
   const [flowEdges, setFlowEdges, onEdgesChange] = useEdgesState(edges);
 
   // Keep drag state local, but refresh if the server payload changes.
   React.useEffect(() => {
-    setFlowNodes(nodes);
-  }, [nodes, setFlowNodes]);
-
-  React.useEffect(() => {
+    const laidOutNodes = layoutSemanticFlow(nodes, edges);
+    setFlowNodes(laidOutNodes);
     setFlowEdges(edges);
-  }, [edges, setFlowEdges]);
+    requestAnimationFrame(() => {
+      reactFlow.fitView({ padding: 0.18, duration: 280, minZoom: 0.55, maxZoom: 1.65 });
+    });
+  }, [nodes, edges, reactFlow, setFlowEdges, setFlowNodes]);
 
   if (flowNodes.length === 0) {
     return <div className="semantic-flow__empty">No semantic models are connected yet.</div>;
@@ -490,6 +560,7 @@ function SemanticFlowCanvas({ nodes, edges }: { nodes: SemanticModelNodeType[]; 
           }}
         >
           <Background color="#e7eaee" gap={20} size={1} variant={BackgroundVariant.Lines} />
+          <MiniMap pannable zoomable />
           <Controls showInteractive={false} />
         </ReactFlow>
       </div>
