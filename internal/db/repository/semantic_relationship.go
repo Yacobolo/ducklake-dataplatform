@@ -13,12 +13,13 @@ var _ domain.SemanticRelationshipRepository = (*SemanticRelationshipRepo)(nil)
 
 // SemanticRelationshipRepo implements SemanticRelationshipRepository using SQLite.
 type SemanticRelationshipRepo struct {
-	q *dbstore.Queries
+	db *sql.DB
+	q  *dbstore.Queries
 }
 
 // NewSemanticRelationshipRepo creates a new SemanticRelationshipRepo.
 func NewSemanticRelationshipRepo(db *sql.DB) *SemanticRelationshipRepo {
-	return &SemanticRelationshipRepo{q: dbstore.New(db)}
+	return &SemanticRelationshipRepo{db: db, q: dbstore.New(db)}
 }
 
 // Create inserts a new semantic relationship.
@@ -79,6 +80,48 @@ func (r *SemanticRelationshipRepo) List(ctx context.Context, page domain.PageReq
 		rels = append(rels, *semanticRelationshipFromDB(row))
 	}
 	return rels, total, nil
+}
+
+// ListByModel returns all semantic relationships touching a semantic model.
+func (r *SemanticRelationshipRepo) ListByModel(ctx context.Context, semanticModelID string) ([]domain.SemanticRelationship, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT id, name, from_semantic_id, to_semantic_id, relationship_type, join_sql, is_default, cost, max_hops, created_by, created_at, updated_at
+FROM semantic_relationships
+WHERE from_semantic_id = ? OR to_semantic_id = ?
+ORDER BY name
+`, semanticModelID, semanticModelID)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	rels := make([]domain.SemanticRelationship, 0)
+	for rows.Next() {
+		var row dbstore.SemanticRelationship
+		if err := rows.Scan(
+			&row.ID,
+			&row.Name,
+			&row.FromSemanticID,
+			&row.ToSemanticID,
+			&row.RelationshipType,
+			&row.JoinSql,
+			&row.IsDefault,
+			&row.Cost,
+			&row.MaxHops,
+			&row.CreatedBy,
+			&row.CreatedAt,
+			&row.UpdatedAt,
+		); err != nil {
+			return nil, mapDBError(err)
+		}
+		rels = append(rels, *semanticRelationshipFromDB(row))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, mapDBError(err)
+	}
+	return rels, nil
 }
 
 // Update applies partial updates to a semantic relationship using read-modify-write.

@@ -190,6 +190,27 @@ func (s *Service) ListRelationships(ctx context.Context, page domain.PageRequest
 	return s.relationships.List(ctx, page)
 }
 
+// CreateRelationshipForModel creates a relationship scoped to a semantic model.
+func (s *Service) CreateRelationshipForModel(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+	if err != nil {
+		return nil, err
+	}
+	if req.FromSemanticID != semanticModel.ID && req.ToSemanticID != semanticModel.ID {
+		return nil, domain.ErrValidation("relationship must reference the current semantic model")
+	}
+	return s.CreateRelationship(ctx, principal, req)
+}
+
+// ListRelationshipsForModel lists semantic relationships touching a semantic model.
+func (s *Service) ListRelationshipsForModel(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticRelationship, error) {
+	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+	if err != nil {
+		return nil, err
+	}
+	return s.relationships.ListByModel(ctx, semanticModel.ID)
+}
+
 // UpdateRelationship updates an existing relationship by name.
 func (s *Service) UpdateRelationship(ctx context.Context, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
 	existing, err := s.relationships.GetByName(ctx, relationshipName)
@@ -204,6 +225,38 @@ func (s *Service) DeleteRelationship(ctx context.Context, relationshipName strin
 	existing, err := s.relationships.GetByName(ctx, relationshipName)
 	if err != nil {
 		return err
+	}
+	return s.relationships.Delete(ctx, existing.ID)
+}
+
+// UpdateRelationshipForModel updates a relationship that belongs to a semantic model.
+func (s *Service) UpdateRelationshipForModel(ctx context.Context, projectName, semanticModelName, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+	if err != nil {
+		return nil, err
+	}
+	existing, err := s.relationships.GetByName(ctx, relationshipName)
+	if err != nil {
+		return nil, err
+	}
+	if existing.FromSemanticID != semanticModel.ID && existing.ToSemanticID != semanticModel.ID {
+		return nil, domain.ErrNotFound("semantic relationship")
+	}
+	return s.relationships.Update(ctx, existing.ID, req)
+}
+
+// DeleteRelationshipForModel deletes a relationship that belongs to a semantic model.
+func (s *Service) DeleteRelationshipForModel(ctx context.Context, projectName, semanticModelName, relationshipName string) error {
+	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+	if err != nil {
+		return err
+	}
+	existing, err := s.relationships.GetByName(ctx, relationshipName)
+	if err != nil {
+		return err
+	}
+	if existing.FromSemanticID != semanticModel.ID && existing.ToSemanticID != semanticModel.ID {
+		return domain.ErrNotFound("semantic relationship")
 	}
 	return s.relationships.Delete(ctx, existing.ID)
 }

@@ -16,6 +16,7 @@ const entryFiles = [
   join(webDir, "src", "dashboard.ts"),
   join(webDir, "src", "explore.ts"),
   join(webDir, "src", "datastar-inspector.ts"),
+  join(webDir, "src", "semantic-model-flow.tsx"),
 ];
 
 const outputDir = join(rootDir, "internal", "ui", "assets", "static", "js");
@@ -42,7 +43,9 @@ const result = await build({
   write: false,
   logLevel: "info",
   loader: {
+    ".css": "text",
     ".ts": "ts",
+    ".tsx": "tsx",
   },
 });
 

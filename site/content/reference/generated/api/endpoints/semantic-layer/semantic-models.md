@@ -128,18 +128,18 @@ Delete semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /semantic-relationships`
+## `GET /semantic-models/{projectName}/{semanticModelName}/relationships`
 
-List semantic relationships
+List semantic relationships for a semantic model
 
-- Operation ID: `listSemanticRelationships`
+- Operation ID: `listSemanticModelRelationships`
 
-### Query Parameters
+### Path Parameters
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| `projectName` | `string` | `true` | - |
+| `semanticModelName` | `string` | `true` | - |
 
 ### Responses
 
@@ -148,14 +148,23 @@ List semantic relationships
 | `200` | The request has succeeded. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /semantic-relationships`
+## `POST /semantic-models/{projectName}/{semanticModelName}/relationships`
 
-Create semantic relationship
+Create semantic relationship for a semantic model
 
-- Operation ID: `createSemanticRelationship`
+- Operation ID: `createSemanticModelRelationship`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `projectName` | `string` | `true` | - |
+| `semanticModelName` | `string` | `true` | - |
 
 ### Request Body
 
@@ -173,17 +182,19 @@ Create semantic relationship
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /semantic-relationships/{relationshipName}`
+## `PATCH /semantic-models/{projectName}/{semanticModelName}/relationships/{relationshipName}`
 
-Update semantic relationship
+Update semantic relationship for a semantic model
 
-- Operation ID: `updateSemanticRelationship`
+- Operation ID: `updateSemanticModelRelationship`
 
 ### Path Parameters
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
+| `projectName` | `string` | `true` | - |
 | `relationshipName` | `string` | `true` | - |
+| `semanticModelName` | `string` | `true` | - |
 
 ### Request Body
 
@@ -201,17 +212,19 @@ Update semantic relationship
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /semantic-relationships/{relationshipName}`
+## `DELETE /semantic-models/{projectName}/{semanticModelName}/relationships/{relationshipName}`
 
-Delete semantic relationship
+Delete semantic relationship for a semantic model
 
-- Operation ID: `deleteSemanticRelationship`
+- Operation ID: `deleteSemanticModelRelationship`
 
 ### Path Parameters
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
+| `projectName` | `string` | `true` | - |
 | `relationshipName` | `string` | `true` | - |
+| `semanticModelName` | `string` | `true` | - |
 
 ### Responses
 

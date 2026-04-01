@@ -86,29 +86,29 @@ op updateSemanticPreAggregation(projectName: string, semanticModelName: string, 
 @summary("Delete semantic pre aggregation")
 op deleteSemanticPreAggregation(projectName: string, semanticModelName: string, preAggregationName: string): NoContent | MutatingErrorResponses;
 
-@route("/semantic-relationships")
+@route("/semantic-models/{projectName}/{semanticModelName}/relationships")
 @get
 @tag("Semantic Layer")
-@summary("List semantic relationships")
-op listSemanticRelationships(@query max_results?: int32, @query page_token?: string): Ok<PaginatedSemanticRelationships> | StandardErrorResponses;
+@summary("List semantic relationships for a semantic model")
+op listSemanticModelRelationships(projectName: string, semanticModelName: string): Ok<SemanticRelationshipList> | ResourceErrorResponses;
 
-@route("/semantic-relationships")
+@route("/semantic-models/{projectName}/{semanticModelName}/relationships")
 @post
 @tag("Semantic Layer")
-@summary("Create semantic relationship")
-op createSemanticRelationship(@body body: CreateSemanticRelationshipRequest): Created<SemanticRelationship> | MutatingErrorResponses;
+@summary("Create semantic relationship for a semantic model")
+op createSemanticModelRelationship(projectName: string, semanticModelName: string, @body body: CreateSemanticRelationshipRequest): Created<SemanticRelationship> | MutatingErrorResponses;
 
-@route("/semantic-relationships/{relationshipName}")
+@route("/semantic-models/{projectName}/{semanticModelName}/relationships/{relationshipName}")
 @patch(#{ implicitOptionality: true })
 @tag("Semantic Layer")
-@summary("Update semantic relationship")
-op updateSemanticRelationship(relationshipName: string, @body body: UpdateSemanticRelationshipRequest): Ok<SemanticRelationship> | MutatingErrorResponses;
+@summary("Update semantic relationship for a semantic model")
+op updateSemanticModelRelationship(projectName: string, semanticModelName: string, relationshipName: string, @body body: UpdateSemanticRelationshipRequest): Ok<SemanticRelationship> | MutatingErrorResponses;
 
-@route("/semantic-relationships/{relationshipName}")
+@route("/semantic-models/{projectName}/{semanticModelName}/relationships/{relationshipName}")
 @delete
 @tag("Semantic Layer")
-@summary("Delete semantic relationship")
-op deleteSemanticRelationship(relationshipName: string): NoContent | MutatingErrorResponses;
+@summary("Delete semantic relationship for a semantic model")
+op deleteSemanticModelRelationship(projectName: string, semanticModelName: string, relationshipName: string): NoContent | MutatingErrorResponses;
 
 @route("/metric-queries:explain")
 @post

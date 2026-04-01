@@ -722,6 +722,7 @@ type SemanticRelationshipRepository interface {
 	GetByID(ctx context.Context, id string) (*SemanticRelationship, error)
 	GetByName(ctx context.Context, name string) (*SemanticRelationship, error)
 	List(ctx context.Context, page PageRequest) ([]SemanticRelationship, int64, error)
+	ListByModel(ctx context.Context, semanticModelID string) ([]SemanticRelationship, error)
 	Update(ctx context.Context, id string, req UpdateSemanticRelationshipRequest) (*SemanticRelationship, error)
 	Delete(ctx context.Context, id string) error
 }

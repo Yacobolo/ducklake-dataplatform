@@ -15221,31 +15221,28 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
-  /semantic-relationships:
+  /semantic-models/{projectName}/{semanticModelName}/relationships:
     get:
-      operationId: listSemanticRelationships
-      summary: List semantic relationships
+      operationId: listSemanticModelRelationships
+      summary: List semantic relationships for a semantic model
       parameters:
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-          explode: false
-        - name: page_token
-          in: query
-          required: false
+        - name: projectName
+          in: path
+          required: true
           schema:
             type: string
-          explode: false
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedSemanticRelationships'
+                $ref: '#/components/schemas/SemanticRelationshipList'
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -15254,6 +15251,18 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -15273,9 +15282,19 @@ paths:
       tags:
         - Semantic Layer
     post:
-      operationId: createSemanticRelationship
-      summary: Create semantic relationship
-      parameters: []
+      operationId: createSemanticModelRelationship
+      summary: Create semantic relationship for a semantic model
+      parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '201':
           description: The request has succeeded and a new resource has been created as a result.
@@ -15321,11 +15340,21 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticRelationshipRequest'
-  /semantic-relationships/{relationshipName}:
+  /semantic-models/{projectName}/{semanticModelName}/relationships/{relationshipName}:
     patch:
-      operationId: updateSemanticRelationship
-      summary: Update semantic relationship
+      operationId: updateSemanticModelRelationship
+      summary: Update semantic relationship for a semantic model
       parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
         - name: relationshipName
           in: path
           required: true
@@ -15377,9 +15406,19 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateSemanticRelationshipRequest'
     delete:
-      operationId: deleteSemanticRelationship
-      summary: Delete semantic relationship
+      operationId: deleteSemanticModelRelationship
+      summary: Delete semantic relationship for a semantic model
       parameters:
+        - name: projectName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semanticModelName
+          in: path
+          required: true
+          schema:
+            type: string
         - name: relationshipName
           in: path
           required: true
@@ -21367,6 +21406,15 @@ components:
         updated_at:
           type: string
           format: date-time
+    SemanticRelationshipList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SemanticRelationship'
     SemanticRelationshipRelationshipType:
       type: string
       enum:
