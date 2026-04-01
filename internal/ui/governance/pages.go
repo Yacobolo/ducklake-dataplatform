@@ -97,10 +97,12 @@ func governanceSearchPage(principal domain.ContextPrincipal, queryText, objectTy
 				Td(Text(valueOrDash(row.MatchField))),
 			))
 		}
-		resultsNode = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Type")), Th(Text("Schema")), Th(Text("Table")), Th(Text("Name")), Th(Text("Match Field")))),
-			TBody(Group(tableRows)),
-		))
+		resultsNode = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Text("Type")), Th(Text("Schema")), Th(Text("Table")), Th(Text("Name")), Th(Text("Match Field")))),
+				TBody(Group(tableRows)),
+			),
+		)
 	}
 
 	return core.AppPage("Governance: Search", "governance", principal,
@@ -133,13 +135,15 @@ func governanceTagsPage(principal domain.ContextPrincipal, rows []governanceTagR
 				Td(Text(row.Value)),
 				Td(Text(row.CreatedBy)),
 				Td(Text(strconv.Itoa(row.Assignments))),
-				Td(Class("text-right"), Form(Method("post"), Action("/ui/governance/tags/"+row.ID+"/delete"), csrfFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete")))),
+				core.TableActionCell(core.TableIconActionPost("/ui/governance/tags/"+row.ID+"/delete", "Delete tag", "x", "danger", csrfFieldProvider)),
 			))
 		}
-		table = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Key")), Th(Text("Value")), Th(Text("Created By")), Th(Text("Assignments")), Th(Class("text-right"), Text("Actions")))),
-			TBody(Group(tableRows)),
-		))
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Text("Key")), Th(Text("Value")), Th(Text("Created By")), Th(Text("Assignments")), core.TableActionHeader())),
+				TBody(Group(tableRows)),
+			),
+		)
 	}
 
 	return core.AppPage("Governance: Tags", "governance", principal,
@@ -277,7 +281,7 @@ func governanceManifestPage(d governanceManifestPageData) Node {
 			),
 			core.SectionSurface(
 				core.SectionHeader("Columns", ""),
-				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"), THead(Tr(Th(Text("Name")), Th(Text("Type")))), TBody(Group(columnRows)))),
+				core.TableContainer("", core.DataTable("", THead(Tr(Th(Text("Name")), Th(Text("Type")))), TBody(Group(columnRows)))),
 			),
 			core.SectionSurface(
 				core.SectionHeader("Files", ""),
@@ -289,7 +293,7 @@ func governanceManifestPage(d governanceManifestPageData) Node {
 			),
 			core.SectionSurface(
 				core.SectionHeader("Column masks", ""),
-				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"), THead(Tr(Th(Text("Column")), Th(Text("Mask")))), TBody(Group(maskRows)))),
+				core.TableContainer("", core.DataTable("", THead(Tr(Th(Text("Column")), Th(Text("Mask")))), TBody(Group(maskRows)))),
 			),
 		})
 	}
@@ -324,17 +328,12 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 				Td(Text(row.Source)),
 				Td(Text(row.Target)),
 				Td(Text(row.Type)),
-				Td(Class("text-right"),
-					Form(Method("post"), Action("/ui/governance/lineage/edges/"+row.ID+"/delete"),
-						d.CSRFFieldProvider(),
-						core.DangerButton("small", Type("submit"), Text("Delete edge")),
-					),
-				),
+				core.TableActionCell(core.TableIconActionPost("/ui/governance/lineage/edges/"+row.ID+"/delete", "Delete edge", "x", "danger", d.CSRFFieldProvider)),
 			))
 		}
-		upstreamTable = Div(Class("overflow-x-auto"),
-			Table(Class("min-w-full text-left text-sm"),
-				THead(Tr(Th(Text("Source")), Th(Text("Target")), Th(Text("Type")), Th(Class("text-right"), Text("Actions")))),
+		upstreamTable = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Text("Source")), Th(Text("Target")), Th(Text("Type")), core.TableActionHeader())),
 				TBody(Group(rows)),
 			),
 		)
@@ -349,17 +348,12 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 				Td(Text(row.Source)),
 				Td(Text(row.Target)),
 				Td(Text(row.Type)),
-				Td(Class("text-right"),
-					Form(Method("post"), Action("/ui/governance/lineage/edges/"+row.ID+"/delete"),
-						d.CSRFFieldProvider(),
-						core.DangerButton("small", Type("submit"), Text("Delete edge")),
-					),
-				),
+				core.TableActionCell(core.TableIconActionPost("/ui/governance/lineage/edges/"+row.ID+"/delete", "Delete edge", "x", "danger", d.CSRFFieldProvider)),
 			))
 		}
-		downstreamTable = Div(Class("overflow-x-auto"),
-			Table(Class("min-w-full text-left text-sm"),
-				THead(Tr(Th(Text("Source")), Th(Text("Target")), Th(Text("Type")), Th(Class("text-right"), Text("Actions")))),
+		downstreamTable = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Text("Source")), Th(Text("Target")), Th(Text("Type")), core.TableActionHeader())),
 				TBody(Group(rows)),
 			),
 		)
@@ -372,8 +366,8 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 			row := d.ColumnRows[i]
 			rows = append(rows, Tr(Td(Text(row.TargetColumn)), Td(Text(row.SourceColumn)), Td(Text(row.Transform)), Td(Text(row.Function))))
 		}
-		columnTable = Div(Class("overflow-x-auto"),
-			Table(Class("min-w-full text-left text-sm"),
+		columnTable = core.TableContainer("",
+			core.DataTable("",
 				THead(Tr(Th(Text("Target Column")), Th(Text("Source Column")), Th(Text("Transform")), Th(Text("Function")))),
 				TBody(Group(rows)),
 			),
@@ -387,8 +381,8 @@ func governanceLineagePage(d governanceLineagePageData) Node {
 			row := d.ImpactRows[i]
 			rows = append(rows, Tr(Td(Text(row.SourceColumn)), Td(Text(row.TargetColumn)), Td(Text(row.Transform)), Td(Text(row.Function))))
 		}
-		impactTable = Div(Class("overflow-x-auto"),
-			Table(Class("min-w-full text-left text-sm"),
+		impactTable = core.TableContainer("",
+			core.DataTable("",
 				THead(Tr(Th(Text("Source Column")), Th(Text("Target Column")), Th(Text("Transform")), Th(Text("Function")))),
 				TBody(Group(rows)),
 			),

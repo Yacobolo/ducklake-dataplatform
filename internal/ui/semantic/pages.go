@@ -93,10 +93,13 @@ func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticMo
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
-				Td(Text(row.BaseModel)),
-				Td(Text(row.Owner)),
-				Td(Text(row.UpdatedAt)),
+				core.TablePrimaryCell(
+					core.ResourceIcon("semantic-model"),
+					A(Href(row.URL), Class("font-mono text-[13px] font-semibold text-[var(--fgColor-accent)] no-underline visited:text-[var(--fgColor-accent)] hover:text-[var(--fgColor-accent)] hover:underline active:text-[var(--fgColor-accent)]"), Text(row.Name)),
+				),
+				Td(core.TableMetaText(row.BaseModel)),
+				Td(core.TableMetaText(row.Owner)),
+				Td(core.TableMetaText(row.UpdatedAt)),
 			))
 		}
 		table = core.TableContainer("",
@@ -146,16 +149,18 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				Td(Text(metric.Type)),
 				Td(Text(metric.Expression)),
 				Td(Text(metric.Status)),
-				Td(Class("text-right"), Div(Class("mt-0 flex flex-wrap items-center justify-end gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+				core.TableActionCell(Div(Class("mt-0 flex flex-wrap items-center justify-end gap-2 [&_form]:m-0 [&_form]:inline-flex"),
 					core.SecondaryLink(metric.EditURL, "small", Text("Edit")),
 					Form(Method("post"), Action(metric.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete"))),
 				)),
 			))
 		}
-		metricRows = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Expression")), Th(Text("Status")), Th(Class("text-right"), Text("Actions")))),
-			TBody(Group(rows)),
-		))
+		metricRows = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Expression")), Th(Text("Status")), core.TableActionHeader())),
+				TBody(Group(rows)),
+			),
+		)
 	}
 
 	preAggRows := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No pre-aggregations created yet.")))
@@ -167,16 +172,18 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 				Td(Text(item.Name)),
 				Td(Text(item.Grain)),
 				Td(Text(item.Target)),
-				Td(Class("text-right"), Div(Class("mt-0 flex flex-wrap items-center justify-end gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+				core.TableActionCell(Div(Class("mt-0 flex flex-wrap items-center justify-end gap-2 [&_form]:m-0 [&_form]:inline-flex"),
 					core.SecondaryLink(item.EditURL, "small", Text("Edit")),
 					Form(Method("post"), Action(item.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete"))),
 				)),
 			))
 		}
-		preAggRows = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Name")), Th(Text("Grain")), Th(Text("Target")), Th(Class("text-right"), Text("Actions")))),
-			TBody(Group(rows)),
-		))
+		preAggRows = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Text("Name")), Th(Text("Grain")), Th(Text("Target")), core.TableActionHeader())),
+				TBody(Group(rows)),
+			),
+		)
 	}
 
 	return core.AppPage("Semantic Model: "+d.ProjectName+"."+d.ModelName, "semantic", d.Principal,
@@ -284,16 +291,18 @@ func semanticRelationshipsPage(d semanticRelationshipsPageData) Node {
 				Td(Text(row.ToModel)),
 				Td(Text(row.Type)),
 				Td(Text(row.JoinSQL)),
-				Td(Class("text-right"), Div(Class("mt-0 flex flex-wrap items-center justify-end gap-2 [&_form]:m-0 [&_form]:inline-flex"),
+				core.TableActionCell(Div(Class("mt-0 flex flex-wrap items-center justify-end gap-2 [&_form]:m-0 [&_form]:inline-flex"),
 					core.SecondaryLink(row.EditURL, "small", Text("Edit")),
 					Form(Method("post"), Action(row.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete"))),
 				)),
 			))
 		}
-		table = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Name")), Th(Text("From")), Th(Text("To")), Th(Text("Type")), Th(Text("Join SQL")), Th(Class("text-right"), Text("Actions")))),
-			TBody(Group(rows)),
-		))
+		table = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Text("Name")), Th(Text("From")), Th(Text("To")), Th(Text("Type")), Th(Text("Join SQL")), core.TableActionHeader())),
+				TBody(Group(rows)),
+			),
+		)
 	}
 
 	return core.AppPage("Semantic Relationships", "semantic", d.Principal,
@@ -350,10 +359,12 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 				Pre(Class("overflow-x-auto rounded-lg border border-[var(--borderColor-muted)] bg-[var(--bgColor-muted)] p-3 text-sm"), Text(d.Plan.GeneratedSQL)),
 			),
 			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Join path")),
-				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-					THead(Tr(Th(Text("Relationship")), Th(Text("From")), Th(Text("To")), Th(Text("Join SQL")))),
-					TBody(Group(joinRows)),
-				)),
+				core.TableContainer("",
+					core.DataTable("",
+						THead(Tr(Th(Text("Relationship")), Th(Text("From")), Th(Text("To")), Th(Text("Join SQL")))),
+						TBody(Group(joinRows)),
+					),
+				),
 			),
 		})
 	}
@@ -373,10 +384,12 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 		resultNode = Group([]Node{
 			resultNode,
 			Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"), H2(Class("mt-0 text-lg font-semibold"), Text("Execution result")),
-				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-					THead(Tr(Group(headers))),
-					TBody(Group(rows)),
-				)),
+				core.TableContainer("",
+					core.DataTable("",
+						THead(Tr(Group(headers))),
+						TBody(Group(rows)),
+					),
+				),
 			),
 		})
 	}

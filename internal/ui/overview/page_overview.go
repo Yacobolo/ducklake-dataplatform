@@ -26,11 +26,6 @@ func overviewPage(data overviewPageData) Node {
 			overviewTables(data.Recent, data.Saved, data.CSRFField),
 		),
 		StyleEl(Text(`
-.saved-remove-button:hover,
-.saved-remove-button:focus-visible {
-  color: var(--fgColor-danger);
-}
-
 .recent-save-button:hover,
 .recent-save-button:focus-visible {
   color: var(--fgColor-accent);
@@ -217,7 +212,7 @@ func overviewRecentSaveForm(item domain.ResourceRef, isSaved bool, csrfField fun
 	}
 	buttonAttrs := []Node{
 		Type("submit"),
-		Class("recent-save-button inline-flex h-8 w-8 items-center justify-center rounded-md p-1 text-[var(--fgColor-muted)] transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[var(--borderColor-accent-emphasis)]"),
+		Class("recent-save-button ui-table-action inline-flex h-8 w-8 items-center justify-center rounded-md p-1 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[var(--borderColor-accent-emphasis)]"),
 		Title("Save resource"),
 		Attr("aria-label", "Save resource"),
 	}
@@ -253,7 +248,7 @@ func overviewSavedRemoveForm(item domain.ResourceRef, csrfField func() Node) Nod
 	fields = append(fields,
 		Button(
 			Type("submit"),
-			Class("saved-remove-button inline-flex h-8 w-8 items-center justify-center rounded-md p-1 text-[var(--fgColor-muted)] transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[var(--borderColor-danger-emphasis)]"),
+			Class("ui-table-action ui-table-action--danger inline-flex h-8 w-8 items-center justify-center rounded-md p-1 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[var(--borderColor-danger-emphasis)]"),
 			Title("Remove saved resource"),
 			Attr("aria-label", "Remove saved resource"),
 			core.Icon("x", Class("h-4 w-4"), Attr("style", "stroke-width:2.25")),

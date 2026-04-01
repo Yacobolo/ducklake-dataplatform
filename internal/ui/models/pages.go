@@ -144,10 +144,13 @@ func modelsListPage(principal domain.ContextPrincipal, rows []modelsListRowData,
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.DetailURL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.ModelName))),
-				Td(Text(row.Materialized)),
-				Td(Text(strconv.Itoa(row.Dependencies))),
-				Td(Text(row.UpdatedAtText)),
+				core.TablePrimaryCell(
+					core.ResourceIcon("model"),
+					A(Href(row.DetailURL), Class("font-mono text-[13px] font-semibold text-[var(--fgColor-accent)] no-underline visited:text-[var(--fgColor-accent)] hover:text-[var(--fgColor-accent)] hover:underline active:text-[var(--fgColor-accent)]"), Text(row.ModelName)),
+				),
+				Td(core.TableMetaText(row.Materialized)),
+				Td(core.TableMetaText(strconv.Itoa(row.Dependencies))),
+				Td(core.TableMetaText(row.UpdatedAtText)),
 			))
 		}
 		table = core.TableContainer("",
@@ -178,13 +181,15 @@ func modelsDetailPage(d modelsDetailPageData) Node {
 				Td(Text(t.Name)),
 				Td(Text(t.TestType)),
 				Td(Text(valueOrDash(t.Column))),
-				Td(Class("text-right"), Form(Method("post"), Action(t.DeleteURL), d.CSRFFieldProvider(), core.DangerButton("small", Type("submit"), Text("Delete")))),
+				core.TableActionCell(core.TableIconActionPost(t.DeleteURL, "Delete test", "x", "danger", d.CSRFFieldProvider)),
 			))
 		}
-		tests = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Column")), Th(Class("text-right"), Text("Actions")))),
-			TBody(Group(rows)),
-		))
+		tests = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Column")), core.TableActionHeader())),
+				TBody(Group(rows)),
+			),
+		)
 	}
 
 	freshness := Node(P(Class("text-xs text-[var(--fgColor-muted)]"), Text("No freshness policy configured.")))
@@ -350,10 +355,12 @@ func modelsDAGPage(d modelsDAGPageData) Node {
 		tierNodes = append(tierNodes,
 			core.SectionSurface(
 				core.SectionHeader(tier.Label, ""),
-				Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-					THead(Tr(Th(Text("Model")), Th(Text("Materialization")), Th(Text("Depends on")))),
-					TBody(Group(rows)),
-				)),
+				core.TableContainer("",
+					core.DataTable("",
+						THead(Tr(Th(Text("Model")), Th(Text("Materialization")), Th(Text("Depends on")))),
+						TBody(Group(rows)),
+					),
+				),
 			),
 		)
 	}
@@ -429,10 +436,12 @@ func modelRunDetailPage(d modelRunDetailPageData) Node {
 				core.DetailMain(
 					core.SectionSurface(
 						core.SectionHeader("Steps", "Inspect execution and test summaries by model step."),
-						Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-							THead(Tr(Th(Text("Model")), Th(Text("Status")), Th(Text("Tier")), Th(Text("Rows")), Th(Text("Started")), Th(Text("Finished")), Th(Text("Tests")), Th(Text("Error")))),
-							TBody(Group(stepRows)),
-						)),
+						core.TableContainer("",
+							core.DataTable("",
+								THead(Tr(Th(Text("Model")), Th(Text("Status")), Th(Text("Tier")), Th(Text("Rows")), Th(Text("Started")), Th(Text("Finished")), Th(Text("Tests")), Th(Text("Error")))),
+								TBody(Group(stepRows)),
+							),
+						),
 					),
 					core.SectionSurface(
 						core.SectionHeader("Compile manifest", "Manifest output reads as a result report instead of another generic card."),

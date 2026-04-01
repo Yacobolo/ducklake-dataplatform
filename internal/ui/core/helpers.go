@@ -112,10 +112,6 @@ func formControlClass(extra ...string) string {
 	)
 }
 
-func tableWrapClass(extra ...string) string {
-	return ClassNames("overflow-hidden rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] shadow-xs", strings.Join(extra, " "))
-}
-
 func buttonRowClass(extra ...string) string {
 	return ClassNames("mt-1 flex flex-wrap items-center gap-2 [&_form]:m-0 [&_form]:inline-flex", strings.Join(extra, " "))
 }
@@ -144,17 +140,6 @@ func sectionCopyClass() string {
 
 func subtleLinkClass() string {
 	return "text-[var(--fgColor-muted)] no-underline hover:text-[var(--fgColor-default)]"
-}
-
-func dataTableClass(extra ...string) string {
-	return ClassNames(
-		"w-full border-collapse bg-[var(--bgColor-default)] text-left text-sm",
-		"[&_thead]:border-b [&_thead]:border-[var(--borderColor-default)] [&_thead]:bg-[var(--bgColor-muted)]",
-		"[&_tbody_tr]:border-b [&_tbody_tr]:border-[var(--borderColor-muted)] [&_tbody_tr]:transition-colors [&_tbody_tr]:duration-150 [&_tbody_tr]:ease-out [&_tbody_tr:hover]:bg-[var(--bgColor-muted)] [&_tbody_tr:last-child]:border-b-0",
-		"[&_td]:px-6 [&_td]:py-4 [&_td]:align-middle",
-		"[&_th]:px-6 [&_th]:py-3 [&_th]:text-left [&_th]:text-xs [&_th]:font-bold [&_th]:uppercase [&_th]:tracking-[0.1em] [&_th]:text-[var(--fgColor-muted)]",
-		strings.Join(extra, " "),
-	)
 }
 
 func labelClass(tone string) string {

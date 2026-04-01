@@ -43,13 +43,13 @@ func securityGrantsPage(d securityGrantsPageData) Node {
 		tableRows = append(tableRows,
 			Tr(
 				data.Show(containsExpr(row.Filter)),
-				Td(Text(row.PrincipalID)),
-				Td(Text(row.PrincipalType)),
-				Td(Text(row.Privilege)),
-				Td(Text(row.SecurableType)),
-				Td(Text(row.SecurableID)),
-				Td(Text(row.GrantedAt)),
-				Td(Class("text-right"), core.ActionMenu("Actions", actionMenuPost("/ui/security/grants/"+row.ID+"/delete", "Delete grant", d.CSRFFieldProvider, true))),
+				Td(core.TableMetaText(row.PrincipalID)),
+				Td(core.TableMetaText(row.PrincipalType)),
+				Td(core.TableMetaText(row.Privilege)),
+				Td(core.TableMetaText(row.SecurableType)),
+				Td(core.TableMetaText(row.SecurableID)),
+				Td(core.TableMetaText(row.GrantedAt)),
+				core.TableActionCell(core.TableIconActionPost("/ui/security/grants/"+row.ID+"/delete", "Delete grant", "x", "danger", d.CSRFFieldProvider)),
 			),
 		)
 	}
@@ -57,7 +57,7 @@ func securityGrantsPage(d securityGrantsPageData) Node {
 	if len(tableRows) > 0 {
 		tableNode = core.TableContainer("",
 			core.DataTable("",
-				THead(Tr(Th(Text("Principal ID")), Th(Text("Type")), Th(Text("Privilege")), Th(Text("Securable type")), Th(Text("Securable ID")), Th(Text("Granted")), Th(Class("text-right"), Text("Actions")))),
+				THead(Tr(Th(Text("Principal ID")), Th(Text("Type")), Th(Text("Privilege")), Th(Text("Securable type")), Th(Text("Securable ID")), Th(Text("Granted")), core.TableActionHeader())),
 				TBody(Group(tableRows)),
 			),
 		)
@@ -132,12 +132,15 @@ func securityAPIKeysPage(d securityAPIKeysPageData) Node {
 		tableRows = append(tableRows,
 			Tr(
 				data.Show(containsExpr(row.Filter)),
-				Td(Text(row.Name)),
-				Td(Text(row.PrincipalID)),
-				Td(Text(row.KeyPrefix)),
-				Td(Text(row.ExpiresAt)),
-				Td(Text(row.CreatedAt)),
-				Td(Class("text-right"), core.ActionMenu("Actions", actionMenuPost("/ui/security/api-keys/"+row.ID+"/delete", "Delete API key", d.CSRFFieldProvider, true))),
+				core.TablePrimaryCell(
+					core.IconChip("key-round", "bg-[var(--display-orange-scale-0)] text-[var(--display-orange-scale-6)]"),
+					core.TableMetaText(row.Name),
+				),
+				Td(core.TableMetaText(row.PrincipalID)),
+				Td(core.TableMetaText(row.KeyPrefix)),
+				Td(core.TableMetaText(row.ExpiresAt)),
+				Td(core.TableMetaText(row.CreatedAt)),
+				core.TableActionCell(core.TableIconActionPost("/ui/security/api-keys/"+row.ID+"/delete", "Delete API key", "x", "danger", d.CSRFFieldProvider)),
 			),
 		)
 	}
@@ -145,7 +148,7 @@ func securityAPIKeysPage(d securityAPIKeysPageData) Node {
 	if len(tableRows) > 0 {
 		tableNode = core.TableContainer("",
 			core.DataTable("",
-				THead(Tr(Th(Text("Name")), Th(Text("Principal ID")), Th(Text("Prefix")), Th(Text("Expires")), Th(Text("Created")), Th(Class("text-right"), Text("Actions")))),
+				THead(Tr(Th(Text("Name")), Th(Text("Principal ID")), Th(Text("Prefix")), Th(Text("Expires")), Th(Text("Created")), core.TableActionHeader())),
 				TBody(Group(tableRows)),
 			),
 		)
@@ -260,12 +263,12 @@ func securityRowFiltersPage(d securityRowFilterPageData) Node {
 		}
 		rows = append(rows,
 			Tr(
-				Td(Text(row.TableID)),
+				Td(core.TableMetaText(row.TableID)),
 				Td(Pre(Text(row.FilterSQL))),
-				Td(Text(dashIfEmpty(row.Description))),
-				Td(Text(bindings)),
-				Td(Text(row.CreatedAt)),
-				Td(Class("text-right"), core.ActionMenu("Actions", actionMenuPost("/ui/security/row-filters/"+row.ID+"/delete", "Delete row filter", d.CSRFFieldProvider, true))),
+				Td(core.TableMetaText(dashIfEmpty(row.Description))),
+				Td(core.TableMetaText(bindings)),
+				Td(core.TableMetaText(row.CreatedAt)),
+				core.TableActionCell(core.TableIconActionPost("/ui/security/row-filters/"+row.ID+"/delete", "Delete row filter", "x", "danger", d.CSRFFieldProvider)),
 			),
 		)
 	}
@@ -274,7 +277,7 @@ func securityRowFiltersPage(d securityRowFilterPageData) Node {
 	if len(rows) > 0 {
 		tableNode = core.TableContainer("",
 			core.DataTable("",
-				THead(Tr(Th(Text("Table ID")), Th(Text("Filter SQL")), Th(Text("Description")), Th(Text("Bindings")), Th(Text("Created")), Th(Class("text-right"), Text("Actions")))),
+				THead(Tr(Th(Text("Table ID")), Th(Text("Filter SQL")), Th(Text("Description")), Th(Text("Bindings")), Th(Text("Created")), core.TableActionHeader())),
 				TBody(Group(rows)),
 			),
 		)
@@ -370,13 +373,13 @@ func securityColumnMasksPage(d securityColumnMaskPageData) Node {
 		}
 		rows = append(rows,
 			Tr(
-				Td(Text(row.TableID)),
-				Td(Text(row.ColumnName)),
+				Td(core.TableMetaText(row.TableID)),
+				Td(core.TableMetaText(row.ColumnName)),
 				Td(Pre(Text(row.MaskExpression))),
-				Td(Text(dashIfEmpty(row.Description))),
-				Td(Text(bindings)),
-				Td(Text(row.CreatedAt)),
-				Td(Class("text-right"), core.ActionMenu("Actions", actionMenuPost("/ui/security/column-masks/"+row.ID+"/delete", "Delete column mask", d.CSRFFieldProvider, true))),
+				Td(core.TableMetaText(dashIfEmpty(row.Description))),
+				Td(core.TableMetaText(bindings)),
+				Td(core.TableMetaText(row.CreatedAt)),
+				core.TableActionCell(core.TableIconActionPost("/ui/security/column-masks/"+row.ID+"/delete", "Delete column mask", "x", "danger", d.CSRFFieldProvider)),
 			),
 		)
 	}
@@ -385,7 +388,7 @@ func securityColumnMasksPage(d securityColumnMaskPageData) Node {
 	if len(rows) > 0 {
 		tableNode = core.TableContainer("",
 			core.DataTable("",
-				THead(Tr(Th(Text("Table ID")), Th(Text("Column")), Th(Text("Mask Expression")), Th(Text("Description")), Th(Text("Bindings")), Th(Text("Created")), Th(Class("text-right"), Text("Actions")))),
+				THead(Tr(Th(Text("Table ID")), Th(Text("Column")), Th(Text("Mask Expression")), Th(Text("Description")), Th(Text("Bindings")), Th(Text("Created")), core.TableActionHeader())),
 				TBody(Group(rows)),
 			),
 		)

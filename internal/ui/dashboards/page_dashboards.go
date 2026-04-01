@@ -77,10 +77,10 @@ func dashboardsListPage(principal domain.ContextPrincipal, rows []dashboardListR
 	tableRows := make([]Node, 0, len(rows))
 	for _, row := range rows {
 		tableRows = append(tableRows, Tr(
-			Td(core.TextLink(row.URL, Text(row.Name))),
+			core.TablePrimaryCell(core.ResourceIcon("dashboard"), core.TablePrimaryLink(row.URL, row.Name)),
 			Td(Text(row.Description)),
-			Td(Text(row.Owner)),
-			Td(Text(row.Updated)),
+			Td(core.TableMetaText(row.Owner)),
+			Td(core.TableMetaText(row.Updated)),
 		))
 	}
 	tableNode := Node(core.ListPageBody(

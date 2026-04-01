@@ -323,7 +323,7 @@ func (h *Handler) folderRows(ctx context.Context, folders []domain.Folder, folde
 			Name:         folderDisplayName(folder),
 			URL:          pageURL(domain.PageRequest{MaxResults: defaultPageSize}, nil, selectedOwners, searchQuery, folder.ID),
 			MetaURL:      "/ui/explore/folders/" + folder.ID + "/edit",
-			MetaLabel:    "Settings",
+			MetaLabel:    "Configure folder",
 			Kind:         "folder",
 			Owner:        folder.Owner,
 			Folder:       location,

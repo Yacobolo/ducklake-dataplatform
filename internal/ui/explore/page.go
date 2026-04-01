@@ -85,33 +85,23 @@ func content(rows []listRow, breadcrumbs []breadcrumbItem, selectedFolderID stri
 	for i := range rows {
 		row := rows[i]
 		tableRows = append(tableRows, Tr(
-			Class("border-b border-[var(--borderColor-default)] transition-colors last:border-b-0 hover:bg-[var(--bgColor-muted)]"),
-			Td(
-				Class("px-6 py-4 align-middle"),
-				Div(Class("flex items-center gap-3"),
-					Span(Class(kindIconWrapClass(row)),
-						core.Icon(
-							rowKindIcon(row),
-							Class("h-[18px] w-[18px] shrink-0"),
-							Attr("style", "stroke-width:1.5"),
-						),
-					),
-					Div(Class("min-w-0 flex-1"),
-						Div(Class("flex flex-wrap items-center gap-2"),
-							nameLink(row),
-							nameMetaBadge("Git", row.GitBacked && row.Kind != "folder"),
-						),
-					),
+			core.TablePrimaryCell(
+				core.IconChip(
+					rowKindIcon(row),
+					kindIconWrapClass(row),
+					Class("h-[18px] w-[18px] shrink-0"),
+					Attr("style", "stroke-width:1.5"),
+				),
+				Div(Class("flex flex-wrap items-center gap-2"),
+					nameLink(row),
+					nameMetaBadge("Git", row.GitBacked && row.Kind != "folder"),
 				),
 			),
-			Td(
-				Class("px-6 py-4 align-middle"),
-				Span(Class("text-sm font-medium text-[var(--fgColor-default)]"), Text(kindLabel(row.Kind))),
-			),
-			Td(Class("px-6 py-4 align-middle"), projectCell(row)),
-			Td(Class("px-6 py-4 align-middle"), ownerCell(row)),
-			Td(Class("px-6 py-4 align-middle"), updatedCell(row)),
-			Td(Class("px-6 py-4 align-middle text-right"), rowActions(row)),
+			Td(Span(Class("text-sm font-medium text-[var(--fgColor-default)]"), Text(kindLabel(row.Kind)))),
+			Td(projectCell(row)),
+			Td(ownerCell(row)),
+			Td(updatedCell(row)),
+			core.TableActionCell(rowActions(row)),
 		))
 	}
 
@@ -191,10 +181,10 @@ func table(headers []string, rows []Node) Node {
 	headerNodes := make([]Node, 0, len(headers))
 	for i := range headers {
 		if headers[i] == "Actions" {
-			headerNodes = append(headerNodes, Th(Scope("col"), Class("relative px-6 py-3"), Span(Class("sr-only"), Text(headers[i]))))
+			headerNodes = append(headerNodes, core.TableActionHeader())
 			continue
 		}
-		headerNodes = append(headerNodes, Th(Scope("col"), Class("px-6 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(headers[i])))
+		headerNodes = append(headerNodes, Th(Scope("col"), Text(headers[i])))
 	}
 	return core.TableContainer("",
 		core.DataTable("",
@@ -302,7 +292,7 @@ func nameMetaBadge(label string, show bool) Node {
 func projectCell(row listRow) Node {
 	project := strings.TrimSpace(row.Project)
 	if project == "" {
-		return Span(Class("text-xs text-[var(--fgColor-muted)]"), Text("-"))
+		return core.TableMetaText("-")
 	}
 	return Span(Class("font-mono text-xs text-[var(--fgColor-muted)]"), Text(project))
 }
@@ -315,7 +305,7 @@ func ownerCell(row listRow) Node {
 }
 
 func updatedCell(row listRow) Node {
-	return Span(Class("text-xs text-[var(--fgColor-muted)]"), Text(row.Updated))
+	return core.TableMetaText(row.Updated)
 }
 
 func nameLink(row listRow) Node {
@@ -328,11 +318,10 @@ func nameLink(row listRow) Node {
 }
 
 func rowActions(row listRow) Node {
-	items := []Node{core.ActionMenuLink(row.URL, "Open")}
 	if strings.TrimSpace(row.MetaURL) != "" && strings.TrimSpace(row.MetaLabel) != "" {
-		items = append(items, core.ActionMenuLink(row.MetaURL, row.MetaLabel))
+		return core.TableIconActionLink(row.MetaURL, row.MetaLabel, "settings", "accent")
 	}
-	return core.ActionMenu("Actions", items...)
+	return nil
 }
 
 func kindLabel(kind string) string {

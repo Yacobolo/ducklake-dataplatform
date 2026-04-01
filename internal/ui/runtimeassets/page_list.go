@@ -104,12 +104,13 @@ func assetsListTable(rows []assetsListRowData) Node {
 	for i := range rows {
 		row := rows[i]
 		tableRows = append(tableRows, Tr(
-			Td(
-				A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.AssetKey)),
-				P(Class("m-0 text-xs text-[var(--fgColor-muted)]"), Text(fallbackString(row.Description, "No description yet."))),
+			core.TablePrimaryCell(
+				core.ResourceIcon("runtime-asset"),
+				core.TablePrimaryLink(row.URL, row.AssetKey),
+				core.TableSubtleCopy(fallbackString(row.Description, "No description yet.")),
 			),
 			Td(statusPill(strings.ToUpper(row.Type), assetTypeTone(row.Type))),
-			Td(Text(fallbackString(row.Owner, "-"))),
+			Td(core.TableMetaText(fallbackString(row.Owner, "-"))),
 			Td(Div(Class("flex flex-wrap gap-2"),
 				statusPill(core.TitleizeWords(row.MaterializationMode), "accent"),
 				func() Node {
@@ -126,7 +127,7 @@ func assetsListTable(rows []assetsListRowData) Node {
 				}
 				return statusPill("false", "severe")
 			}()),
-			Td(Text(row.Updated)),
+			Td(core.TableMetaText(row.Updated)),
 		))
 	}
 
