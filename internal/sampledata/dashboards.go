@@ -86,6 +86,7 @@ func ensureSampleDashboardWidget(ctx context.Context, dashboardSvc *dashboard.Se
 			continue
 		}
 		if widget.Description == desired.Description &&
+			domain.NormalizeDashboardPageName(widget.PageName) == domain.NormalizeDashboardPageName(desired.PageName) &&
 			reflect.DeepEqual(widget.Source, desired.Source) &&
 			reflect.DeepEqual(widget.VisualSpec, desired.VisualSpec) &&
 			reflect.DeepEqual(widget.Layout, desired.Layout) {
@@ -93,11 +94,13 @@ func ensureSampleDashboardWidget(ctx context.Context, dashboardSvc *dashboard.Se
 		}
 
 		name := desired.Name
+		pageName := desired.PageName
 		description := desired.Description
 		source := desired.Source
 		visual := desired.VisualSpec
 		layout := desired.Layout
 		_, err := dashboardSvc.UpdateWidget(ctx, sampleDashboardOwner, true, widget.ID, domain.UpdateDashboardWidgetRequest{
+			PageName:    &pageName,
 			Name:        &name,
 			Description: &description,
 			Source:      &source,
@@ -108,6 +111,7 @@ func ensureSampleDashboardWidget(ctx context.Context, dashboardSvc *dashboard.Se
 	}
 
 	_, err = dashboardSvc.CreateWidget(ctx, sampleDashboardOwner, true, item.ID, domain.CreateDashboardWidgetRequest{
+		PageName:    desired.PageName,
 		Name:        desired.Name,
 		Description: desired.Description,
 		Source:      desired.Source,
@@ -118,6 +122,7 @@ func ensureSampleDashboardWidget(ctx context.Context, dashboardSvc *dashboard.Se
 }
 
 type sampleDashboardWidget struct {
+	PageName    string
 	Name        string
 	Description string
 	Source      domain.DashboardWidgetSource
@@ -134,6 +139,7 @@ func sampleDashboardWidgets(_ string) []sampleDashboardWidget {
 
 	return []sampleDashboardWidget{
 		{
+			PageName:    "Overview",
 			Name:        "Total Revenue",
 			Description: "Gross revenue summed across the full sample period.",
 			Source: domain.DashboardWidgetSource{
@@ -154,6 +160,7 @@ func sampleDashboardWidgets(_ string) []sampleDashboardWidget {
 			Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 3, H: 2},
 		},
 		{
+			PageName:    "Overview",
 			Name:        "Trips by Day",
 			Description: "Daily ride volume across the seeded January taxi sample.",
 			Source: domain.DashboardWidgetSource{
@@ -178,6 +185,7 @@ func sampleDashboardWidgets(_ string) []sampleDashboardWidget {
 			Layout: domain.DashboardWidgetLayout{X: 3, Y: 0, W: 9, H: 4},
 		},
 		{
+			PageName:    "Geography",
 			Name:        "Revenue by Borough",
 			Description: "Which pickup boroughs contribute the most revenue.",
 			Source: domain.DashboardWidgetSource{
@@ -202,6 +210,7 @@ func sampleDashboardWidgets(_ string) []sampleDashboardWidget {
 			Layout: domain.DashboardWidgetLayout{X: 0, Y: 4, W: 6, H: 4},
 		},
 		{
+			PageName:    "Geography",
 			Name:        "Top Pickup Zones",
 			Description: "Highest-revenue pickup zones for a quick ranking cut.",
 			Source: domain.DashboardWidgetSource{
@@ -227,6 +236,7 @@ func sampleDashboardWidgets(_ string) []sampleDashboardWidget {
 			Layout: domain.DashboardWidgetLayout{X: 6, Y: 4, W: 6, H: 4},
 		},
 		{
+			PageName:    "Geography",
 			Name:        "Zone Revenue Detail",
 			Description: "Tabular ranking of the top pickup zones with borough context, trip volume, and revenue.",
 			Source: domain.DashboardWidgetSource{

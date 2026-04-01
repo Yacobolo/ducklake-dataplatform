@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const DefaultDashboardPageName = "Overview"
+
 // Dashboard is a persisted dashboard resource.
 type Dashboard struct {
 	ID                  string
@@ -76,6 +78,7 @@ type DashboardWidget struct {
 	ID              string
 	DashboardID     string
 	FilterOriginKey string
+	PageName        string
 	Name            string
 	Description     string
 	Source          DashboardWidgetSource
@@ -105,6 +108,7 @@ type UpdateDashboardRequest struct {
 
 // CreateDashboardWidgetRequest creates a dashboard widget.
 type CreateDashboardWidgetRequest struct {
+	PageName    string
 	Name        string
 	Description string
 	Source      DashboardWidgetSource
@@ -114,6 +118,7 @@ type CreateDashboardWidgetRequest struct {
 
 // UpdateDashboardWidgetRequest applies partial widget updates.
 type UpdateDashboardWidgetRequest struct {
+	PageName    *string
 	Name        *string
 	Description *string
 	Source      *DashboardWidgetSource
@@ -156,6 +161,14 @@ func (r *CreateDashboardWidgetRequest) Validate() error {
 		}
 	}
 	return r.Layout.Validate()
+}
+
+func NormalizeDashboardPageName(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return DefaultDashboardPageName
+	}
+	return name
 }
 
 // Validate validates the widget layout.

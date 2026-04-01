@@ -6,6 +6,7 @@ import (
 
 	"duck-demo/internal/domain"
 	dashboardsvc "duck-demo/internal/service/dashboard"
+	"duck-demo/internal/ui/core"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,8 +42,8 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 			},
 		},
 		BaseURL:          "/ui/dashboards/dash-1",
-		ViewURL:          "/ui/dashboards/dash-1",
-		StudioURL:        "/ui/dashboards/dash-1?mode=edit",
+		ViewURL:          "/ui/dashboards/dash-1?page=overview",
+		StudioURL:        "/ui/dashboards/dash-1?page=overview&mode=edit",
 		EditURL:          "/ui/dashboards/dash-1/edit",
 		DeleteURL:        "/ui/dashboards/dash-1/delete",
 		CreateWidgetURL:  "/ui/dashboards/dash-1/widgets",
@@ -51,6 +52,12 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 		DataStreamURL:    "/ui/dashboards/dash-1/updates/stream-1/data",
 		UpdatesApplyURL:  "/ui/dashboards/dash-1/updates/stream-1",
 		StreamID:         "stream-1",
+		PageTabs: []core.SectionTab{
+			{Label: "Overview", Href: "/ui/dashboards/dash-1?page=overview", Active: true},
+			{Label: "Geography", Href: "/ui/dashboards/dash-1?page=geography", Active: false},
+		},
+		CurrentPageName: "Overview",
+		CurrentPageKey:  "overview",
 		ActiveFilters: []dashboardsvc.InteractiveFilter{
 			{Dimension: "borough", Values: []string{"Queens"}},
 		},
@@ -62,6 +69,7 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 			{
 				Widget: domain.DashboardWidget{
 					ID:          "widget-chart",
+					PageName:    "Overview",
 					Name:        "Revenue by Region",
 					Description: "Chart widget",
 					VisualSpec: &domain.VisualSpec{
@@ -84,8 +92,9 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 			},
 			{
 				Widget: domain.DashboardWidget{
-					ID:   "widget-metric",
-					Name: "Total Revenue",
+					ID:       "widget-metric",
+					PageName: "Overview",
+					Name:     "Total Revenue",
 					VisualSpec: &domain.VisualSpec{
 						Kind: domain.VisualOutputMetric,
 						Encodings: domain.VisualEncodings{
@@ -99,8 +108,9 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 			},
 			{
 				Widget: domain.DashboardWidget{
-					ID:   "widget-sql",
-					Name: "SQL Helper",
+					ID:       "widget-sql",
+					PageName: "Overview",
+					Name:     "SQL Helper",
 					Source: domain.DashboardWidgetSource{
 						Kind:     domain.DashboardWidgetSourceSQLQuery,
 						SQLQuery: &domain.DashboardSQLQuerySource{SQL: "select 1"},
@@ -115,8 +125,9 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 			},
 			{
 				Widget: domain.DashboardWidget{
-					ID:   "widget-table",
-					Name: "Zone Revenue Detail",
+					ID:       "widget-table",
+					PageName: "Overview",
+					Name:     "Zone Revenue Detail",
 					VisualSpec: &domain.VisualSpec{
 						Kind: domain.VisualOutputTable,
 					},
@@ -143,6 +154,7 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 	assert.Contains(t, html, "Total Revenue")
 	assert.Contains(t, html, "Studio")
 	assert.Contains(t, html, "Cross Filters")
+	assert.Contains(t, html, "Geography")
 	assert.Contains(t, html, "Queens")
 	assert.Contains(t, html, "data-dashboard-clear-filters")
 	assert.Contains(t, html, "data-dashboard-remove-filter")
@@ -167,8 +179,8 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 		},
 		EditMode:         true,
 		BaseURL:          "/ui/dashboards/dash-1",
-		ViewURL:          "/ui/dashboards/dash-1",
-		StudioURL:        "/ui/dashboards/dash-1?mode=edit",
+		ViewURL:          "/ui/dashboards/dash-1?page=overview",
+		StudioURL:        "/ui/dashboards/dash-1?page=overview&mode=edit",
 		EditURL:          "/ui/dashboards/dash-1/edit",
 		DeleteURL:        "/ui/dashboards/dash-1/delete",
 		CreateWidgetURL:  "/ui/dashboards/dash-1/widgets",
@@ -177,6 +189,12 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 		DataStreamURL:    "/ui/dashboards/dash-1/updates/stream-1/data",
 		UpdatesApplyURL:  "/ui/dashboards/dash-1/updates/stream-1",
 		StreamID:         "stream-1",
+		PageTabs: []core.SectionTab{
+			{Label: "Overview", Href: "/ui/dashboards/dash-1?page=overview&mode=edit", Active: true},
+			{Label: "Geography", Href: "/ui/dashboards/dash-1?page=geography&mode=edit", Active: false},
+		},
+		CurrentPageName: "Overview",
+		CurrentPageKey:  "overview",
 		ActiveFilters: []dashboardsvc.InteractiveFilter{
 			{Dimension: "borough", Values: []string{"Queens"}},
 		},
@@ -186,6 +204,7 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 			{
 				Widget: domain.DashboardWidget{
 					ID:          "widget-chart",
+					PageName:    "Overview",
 					Name:        "Revenue by Region",
 					Description: "Chart widget",
 					Layout:      domain.DashboardWidgetLayout{W: 6, H: 4},
@@ -206,6 +225,7 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 			{
 				Widget: domain.DashboardWidget{
 					ID:          "widget-table",
+					PageName:    "Overview",
 					Name:        "Zone Revenue Detail",
 					Description: "Table widget",
 					Layout:      domain.DashboardWidgetLayout{W: 12, H: 4},
@@ -230,6 +250,7 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 	assert.Contains(t, html, "Studio Rail")
 	assert.Contains(t, html, "Edit widget")
 	assert.Contains(t, html, "Delete widget")
+	assert.Contains(t, html, "Page")
 	assert.NotContains(t, html, "Cross Filters")
 	assert.Contains(t, html, "data-chart-payload")
 	assert.Contains(t, html, "data-table-payload")

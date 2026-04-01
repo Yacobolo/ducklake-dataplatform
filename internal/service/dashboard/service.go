@@ -186,6 +186,7 @@ func (s *Service) CreateWidget(ctx context.Context, principal string, isAdmin bo
 	item, err := s.widgets.Create(ctx, &domain.DashboardWidget{
 		DashboardID:     dashboardID,
 		FilterOriginKey: nextDashboardWidgetFilterOriginKey(req.Name, req.VisualSpec, existingWidgets),
+		PageName:        domain.NormalizeDashboardPageName(req.PageName),
 		Name:            req.Name,
 		Description:     req.Description,
 		Source:          req.Source,

@@ -162,6 +162,7 @@ func (r *DashboardWidgetRepo) Create(ctx context.Context, w *domain.DashboardWid
 		ID:              newID(),
 		DashboardID:     w.DashboardID,
 		FilterOriginKey: w.FilterOriginKey,
+		PageName:        domain.NormalizeDashboardPageName(w.PageName),
 		Name:            w.Name,
 		Description:     w.Description,
 		SourceJson:      sourceJSON,
@@ -217,6 +218,10 @@ func (r *DashboardWidgetRepo) Update(ctx context.Context, id string, req domain.
 	if req.Description != nil {
 		description = *req.Description
 	}
+	pageName := current.PageName
+	if req.PageName != nil {
+		pageName = domain.NormalizeDashboardPageName(*req.PageName)
+	}
 	source := current.Source
 	if req.Source != nil {
 		source = *req.Source
@@ -235,6 +240,7 @@ func (r *DashboardWidgetRepo) Update(ctx context.Context, id string, req domain.
 	}
 	row, err := r.q.UpdateDashboardWidget(ctx, dbstore.UpdateDashboardWidgetParams{
 		FilterOriginKey: current.FilterOriginKey,
+		PageName:        pageName,
 		Name:            name,
 		Description:     description,
 		SourceJson:      sourceJSON,

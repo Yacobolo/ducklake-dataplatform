@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode"
 
 	"duck-demo/internal/domain"
 	dashboardsvc "duck-demo/internal/service/dashboard"
@@ -17,6 +18,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/starfederation/datastar-go/datastar"
 )
+
+type dashboardPageRef struct {
+	Name string
+	Key  string
+}
 
 type Handler struct {
 	deps    *core.Dependencies
@@ -95,6 +101,9 @@ func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 		renderServiceError(w, err)
 		return
 	}
+	pages := dashboardPagesFromWidgets(widgets)
+	activePage := dashboardActivePage(r, pages)
+	pageWidgets := dashboardWidgetsForPage(widgets, activePage.Name)
 
 	principal, _ := principalLabel(r)
 	activeFilters := []dashboardsvc.InteractiveFilter(nil)
@@ -108,13 +117,13 @@ func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	var resolved []dashboardsvc.ResolvedWidget
 	if editMode {
-		resolved, err = h.deps.Dashboard.ResolveWidgets(r.Context(), principal, widgets)
+		resolved, err = h.deps.Dashboard.ResolveWidgets(r.Context(), principal, pageWidgets)
 		if err != nil {
 			renderServiceError(w, err)
 			return
 		}
 	} else {
-		resolved, err = h.deps.Dashboard.ResolveWidgetsForDashboard(r.Context(), principal, item, widgets, activeFilters)
+		resolved, err = h.deps.Dashboard.ResolveWidgetsForDashboard(r.Context(), principal, item, pageWidgets, activeFilters)
 		if err != nil {
 			renderServiceError(w, err)
 			return
@@ -145,20 +154,23 @@ func (h *Handler) DashboardsDetail(w http.ResponseWriter, r *http.Request) {
 		Principal:         core.PrincipalFromContext(r.Context()),
 		Dashboard:         item,
 		Widgets:           resolved,
+		PageTabs:          dashboardPageTabs("/ui/dashboards/"+dashboardID, pages, activePage, editMode),
+		CurrentPageName:   activePage.Name,
+		CurrentPageKey:    activePage.Key,
 		EditMode:          editMode,
 		Freshness:         freshness,
 		FreshnessExplain:  freshnessExplain,
 		BaseURL:           "/ui/dashboards/" + dashboardID,
-		ViewURL:           "/ui/dashboards/" + dashboardID,
-		StudioURL:         "/ui/dashboards/" + dashboardID + "?mode=edit",
+		ViewURL:           dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID, url.Values{"page": []string{activePage.Key}}),
+		StudioURL:         dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID, url.Values{"page": []string{activePage.Key}, "mode": []string{"edit"}}),
 		EditURL:           "/ui/dashboards/" + dashboardID + "/edit",
 		DeleteURL:         "/ui/dashboards/" + dashboardID + "/delete",
 		CreateWidgetURL:   "/ui/dashboards/" + dashboardID + "/widgets",
-		SurfaceURL:        "/ui/dashboards/" + dashboardID + "/surface",
-		UpdatesStreamURL:  "/ui/dashboards/" + dashboardID + "/updates/" + streamID,
+		SurfaceURL:        dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID+"/surface", url.Values{"page": []string{activePage.Key}}),
+		UpdatesStreamURL:  dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID+"/updates/"+streamID, url.Values{"page": []string{activePage.Key}}),
 		DataStreamURL:     dataStreamURL,
-		UpdatesApplyURL:   "/ui/dashboards/" + dashboardID + "/updates/" + streamID,
-		TablePageURL:      "/ui/dashboards/" + dashboardID + "/updates/" + streamID + "/table-page",
+		UpdatesApplyURL:   dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID+"/updates/"+streamID, url.Values{"page": []string{activePage.Key}}),
+		TablePageURL:      dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID+"/updates/"+streamID+"/table-page", url.Values{"page": []string{activePage.Key}}),
 		StreamID:          streamID,
 		ActiveFilters:     activeFilters,
 		FilterKey:         filterKey,
@@ -171,6 +183,9 @@ func activeDashboardFilterQuery(r *http.Request) url.Values {
 	values := url.Values{}
 	if r == nil {
 		return values
+	}
+	if pageKey := strings.TrimSpace(r.URL.Query().Get("page")); pageKey != "" {
+		values.Set("page", pageKey)
 	}
 	for _, filter := range r.URL.Query()["fo"] {
 		filter = strings.TrimSpace(filter)
@@ -193,6 +208,95 @@ func dashboardStreamURLWithFilters(base string, values url.Values) string {
 	return base + "?" + query
 }
 
+func dashboardPagesFromWidgets(widgets []domain.DashboardWidget) []dashboardPageRef {
+	pages := make([]dashboardPageRef, 0)
+	seen := make(map[string]struct{}, len(widgets))
+	for _, widget := range widgets {
+		name := domain.NormalizeDashboardPageName(widget.PageName)
+		key := dashboardPageKey(name)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		pages = append(pages, dashboardPageRef{Name: name, Key: key})
+	}
+	if len(pages) == 0 {
+		pages = append(pages, dashboardPageRef{Name: domain.DefaultDashboardPageName, Key: dashboardPageKey(domain.DefaultDashboardPageName)})
+	}
+	return pages
+}
+
+func dashboardPageKey(name string) string {
+	name = strings.TrimSpace(strings.ToLower(name))
+	if name == "" {
+		return "overview"
+	}
+	var builder strings.Builder
+	lastDash := false
+	for _, r := range name {
+		switch {
+		case unicode.IsLetter(r) || unicode.IsDigit(r):
+			builder.WriteRune(r)
+			lastDash = false
+		case !lastDash:
+			builder.WriteByte('-')
+			lastDash = true
+		}
+	}
+	key := strings.Trim(builder.String(), "-")
+	if key == "" {
+		return "overview"
+	}
+	return key
+}
+
+func dashboardActivePage(r *http.Request, pages []dashboardPageRef) dashboardPageRef {
+	if len(pages) == 0 {
+		return dashboardPageRef{Name: domain.DefaultDashboardPageName, Key: dashboardPageKey(domain.DefaultDashboardPageName)}
+	}
+	requested := ""
+	if r != nil {
+		requested = strings.TrimSpace(r.URL.Query().Get("page"))
+	}
+	for _, page := range pages {
+		if page.Key == requested {
+			return page
+		}
+	}
+	return pages[0]
+}
+
+func dashboardWidgetsForPage(widgets []domain.DashboardWidget, pageName string) []domain.DashboardWidget {
+	filtered := make([]domain.DashboardWidget, 0, len(widgets))
+	pageName = domain.NormalizeDashboardPageName(pageName)
+	for _, widget := range widgets {
+		if domain.NormalizeDashboardPageName(widget.PageName) == pageName {
+			filtered = append(filtered, widget)
+		}
+	}
+	return filtered
+}
+
+func dashboardPageTabs(basePath string, pages []dashboardPageRef, active dashboardPageRef, editMode bool) []core.SectionTab {
+	if len(pages) <= 1 {
+		return nil
+	}
+	tabs := make([]core.SectionTab, 0, len(pages))
+	for _, page := range pages {
+		values := url.Values{}
+		values.Set("page", page.Key)
+		if editMode {
+			values.Set("mode", "edit")
+		}
+		tabs = append(tabs, core.SectionTab{
+			Label:  page.Name,
+			Href:   dashboardStreamURLWithFilters(basePath, values),
+			Active: page.Key == active.Key,
+		})
+	}
+	return tabs
+}
+
 func (h *Handler) DashboardsSurface(w http.ResponseWriter, r *http.Request) {
 	dashboardID := chi.URLParam(r, "dashboardID")
 	item, widgets, err := h.deps.Dashboard.GetDashboard(r.Context(), dashboardID)
@@ -200,11 +304,14 @@ func (h *Handler) DashboardsSurface(w http.ResponseWriter, r *http.Request) {
 		renderServiceError(w, err)
 		return
 	}
+	pages := dashboardPagesFromWidgets(widgets)
+	activePage := dashboardActivePage(r, pages)
+	pageWidgets := dashboardWidgetsForPage(widgets, activePage.Name)
 
 	principal, _ := principalLabel(r)
 	rawOriginFilters := dashboardOriginFiltersFromRequest(r)
 	activeFilters := interactiveFiltersFromOriginRaw(rawOriginFilters, widgets)
-	resolved, err := h.deps.Dashboard.ResolveWidgetsForDashboard(r.Context(), principal, item, widgets, activeFilters)
+	resolved, err := h.deps.Dashboard.ResolveWidgetsForDashboard(r.Context(), principal, item, pageWidgets, activeFilters)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -214,13 +321,16 @@ func (h *Handler) DashboardsSurface(w http.ResponseWriter, r *http.Request) {
 		Principal:         core.PrincipalFromContext(r.Context()),
 		Dashboard:         item,
 		Widgets:           resolved,
+		PageTabs:          dashboardPageTabs("/ui/dashboards/"+dashboardID, pages, activePage, false),
+		CurrentPageName:   activePage.Name,
+		CurrentPageKey:    activePage.Key,
 		BaseURL:           "/ui/dashboards/" + dashboardID,
-		ViewURL:           "/ui/dashboards/" + dashboardID,
-		StudioURL:         "/ui/dashboards/" + dashboardID + "?mode=edit",
+		ViewURL:           dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID, url.Values{"page": []string{activePage.Key}}),
+		StudioURL:         dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID, url.Values{"page": []string{activePage.Key}, "mode": []string{"edit"}}),
 		EditURL:           "/ui/dashboards/" + dashboardID + "/edit",
 		DeleteURL:         "/ui/dashboards/" + dashboardID + "/delete",
 		CreateWidgetURL:   "/ui/dashboards/" + dashboardID + "/widgets",
-		SurfaceURL:        "/ui/dashboards/" + dashboardID + "/surface",
+		SurfaceURL:        dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID+"/surface", url.Values{"page": []string{activePage.Key}}),
 		ActiveFilters:     activeFilters,
 		FilterKey:         dashboardFilterKeyFromOriginRaw(rawOriginFilters),
 		CSRFToken:         h.deps.CSRFToken(r),
@@ -292,7 +402,7 @@ func (h *Handler) DashboardsDataStream(w http.ResponseWriter, r *http.Request) {
 		renderServiceError(w, err)
 		return
 	}
-	if err := h.writeDashboardWidgetPayloadEvent(r.Context(), principal, dashboardID, dashboardFilterKeyFromOriginRaw(rawOriginFilters), interactiveFiltersFromOriginRaw(rawOriginFilters, widgets), sse); err != nil {
+	if err := h.writeDashboardWidgetPayloadEvent(r.Context(), principal, dashboardID, dashboardFilterKeyFromOriginRaw(rawOriginFilters), interactiveFiltersFromOriginRaw(rawOriginFilters, widgets), r, sse); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -318,7 +428,7 @@ func (h *Handler) DashboardsDataStream(w http.ResponseWriter, r *http.Request) {
 				}
 				continue
 			}
-			if err := h.writeDashboardWidgetPayloadEvent(r.Context(), principal, dashboardID, update.FilterKey, update.Filters, sse); err != nil {
+			if err := h.writeDashboardWidgetPayloadEvent(r.Context(), principal, dashboardID, update.FilterKey, update.Filters, r, sse); err != nil {
 				return
 			}
 		}
@@ -439,6 +549,7 @@ func (h *Handler) DashboardWidgetsCreate(w http.ResponseWriter, r *http.Request)
 	}
 
 	req := domain.CreateDashboardWidgetRequest{
+		PageName:    formString(r.Form, "page_name"),
 		Name:        formString(r.Form, "name"),
 		Description: formString(r.Form, "description"),
 		Source:      source,
@@ -455,7 +566,10 @@ func (h *Handler) DashboardWidgetsCreate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	http.Redirect(w, r, "/ui/dashboards/"+dashboardID, http.StatusSeeOther)
+	http.Redirect(w, r, dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID, url.Values{
+		"mode": []string{"edit"},
+		"page": []string{dashboardPageKey(req.PageName)},
+	}), http.StatusSeeOther)
 }
 
 func (h *Handler) DashboardWidgetsEdit(w http.ResponseWriter, r *http.Request) {
@@ -504,8 +618,10 @@ func (h *Handler) DashboardWidgetsUpdate(w http.ResponseWriter, r *http.Request)
 	}
 	name := formString(r.Form, "name")
 	description := formString(r.Form, "description")
+	pageName := formString(r.Form, "page_name")
 
 	req := domain.UpdateDashboardWidgetRequest{
+		PageName:    &pageName,
 		Name:        &name,
 		Description: &description,
 		Source:      &source,
@@ -522,19 +638,34 @@ func (h *Handler) DashboardWidgetsUpdate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	http.Redirect(w, r, "/ui/dashboards/"+dashboardID, http.StatusSeeOther)
+	http.Redirect(w, r, dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID, url.Values{
+		"mode": []string{"edit"},
+		"page": []string{dashboardPageKey(pageName)},
+	}), http.StatusSeeOther)
 }
 
 func (h *Handler) DashboardWidgetsDelete(w http.ResponseWriter, r *http.Request) {
 	widgetID := chi.URLParam(r, "widgetID")
 	dashboardID := chi.URLParam(r, "dashboardID")
 	principal, isAdmin := principalLabel(r)
+	widgetPageKey := dashboardPageKey(domain.DefaultDashboardPageName)
+	if _, widgets, err := h.deps.Dashboard.GetDashboard(r.Context(), dashboardID); err == nil {
+		for _, widget := range widgets {
+			if widget.ID == widgetID {
+				widgetPageKey = dashboardPageKey(widget.PageName)
+				break
+			}
+		}
+	}
 	if err := h.deps.Dashboard.DeleteWidget(r.Context(), principal, isAdmin, widgetID); err != nil {
 		renderServiceError(w, err)
 		return
 	}
 
-	http.Redirect(w, r, "/ui/dashboards/"+dashboardID, http.StatusSeeOther)
+	http.Redirect(w, r, dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID, url.Values{
+		"mode": []string{"edit"},
+		"page": []string{widgetPageKey},
+	}), http.StatusSeeOther)
 }
 
 func renderServiceError(w http.ResponseWriter, err error) {
@@ -597,8 +728,11 @@ func (h *Handler) resolveDashboardViewData(ctx context.Context, principal, dashb
 	if err != nil {
 		return dashboardDetailPageData{}, err
 	}
+	pages := dashboardPagesFromWidgets(widgets)
+	activePage := dashboardActivePage(r, pages)
+	pageWidgets := dashboardWidgetsForPage(widgets, activePage.Name)
 
-	resolved, err := h.deps.Dashboard.ResolveWidgetsForDashboardPaged(ctx, principal, item, widgets, filters, dashboardInitialTablePageRequests(widgets))
+	resolved, err := h.deps.Dashboard.ResolveWidgetsForDashboardPaged(ctx, principal, item, pageWidgets, filters, dashboardInitialTablePageRequests(pageWidgets))
 	if err != nil {
 		return dashboardDetailPageData{}, err
 	}
@@ -607,17 +741,20 @@ func (h *Handler) resolveDashboardViewData(ctx context.Context, principal, dashb
 		Principal:         core.PrincipalFromContext(ctx),
 		Dashboard:         item,
 		Widgets:           resolved,
+		PageTabs:          dashboardPageTabs("/ui/dashboards/"+dashboardID, pages, activePage, false),
+		CurrentPageName:   activePage.Name,
+		CurrentPageKey:    activePage.Key,
 		BaseURL:           "/ui/dashboards/" + dashboardID,
-		ViewURL:           "/ui/dashboards/" + dashboardID,
-		StudioURL:         "/ui/dashboards/" + dashboardID + "?mode=edit",
+		ViewURL:           dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID, url.Values{"page": []string{activePage.Key}}),
+		StudioURL:         dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID, url.Values{"page": []string{activePage.Key}, "mode": []string{"edit"}}),
 		EditURL:           "/ui/dashboards/" + dashboardID + "/edit",
 		DeleteURL:         "/ui/dashboards/" + dashboardID + "/delete",
 		CreateWidgetURL:   "/ui/dashboards/" + dashboardID + "/widgets",
-		SurfaceURL:        "/ui/dashboards/" + dashboardID + "/surface",
-		UpdatesStreamURL:  "/ui/dashboards/" + dashboardID + "/updates/" + streamID,
-		DataStreamURL:     "/ui/dashboards/" + dashboardID + "/updates/" + streamID + "/data",
-		UpdatesApplyURL:   "/ui/dashboards/" + dashboardID + "/updates/" + streamID,
-		TablePageURL:      "/ui/dashboards/" + dashboardID + "/updates/" + streamID + "/table-page",
+		SurfaceURL:        dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID+"/surface", url.Values{"page": []string{activePage.Key}}),
+		UpdatesStreamURL:  dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID+"/updates/"+streamID, url.Values{"page": []string{activePage.Key}}),
+		DataStreamURL:     dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID+"/updates/"+streamID+"/data", activeDashboardFilterQuery(r)),
+		UpdatesApplyURL:   dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID+"/updates/"+streamID, url.Values{"page": []string{activePage.Key}}),
+		TablePageURL:      dashboardStreamURLWithFilters("/ui/dashboards/"+dashboardID+"/updates/"+streamID+"/table-page", url.Values{"page": []string{activePage.Key}}),
 		StreamID:          streamID,
 		ActiveFilters:     cloneInteractiveFilters(filters),
 		FilterKey:         filterKey,
@@ -638,13 +775,14 @@ func (h *Handler) writeDashboardSurfacePatch(ctx context.Context, principal, das
 	)
 }
 
-func (h *Handler) writeDashboardWidgetPayloadEvent(ctx context.Context, principal, dashboardID, filterKey string, filters []dashboardsvc.InteractiveFilter, sse *datastar.ServerSentEventGenerator) error {
+func (h *Handler) writeDashboardWidgetPayloadEvent(ctx context.Context, principal, dashboardID, filterKey string, filters []dashboardsvc.InteractiveFilter, r *http.Request, sse *datastar.ServerSentEventGenerator) error {
 	item, widgets, err := h.deps.Dashboard.GetDashboard(ctx, dashboardID)
 	if err != nil {
 		return err
 	}
+	pageWidgets := dashboardWidgetsForPage(widgets, dashboardActivePage(r, dashboardPagesFromWidgets(widgets)).Name)
 
-	resolved, err := h.deps.Dashboard.ResolveWidgetsForDashboardPaged(ctx, principal, item, widgets, filters, dashboardInitialTablePageRequests(widgets))
+	resolved, err := h.deps.Dashboard.ResolveWidgetsForDashboardPaged(ctx, principal, item, pageWidgets, filters, dashboardInitialTablePageRequests(pageWidgets))
 	if err != nil {
 		return err
 	}

@@ -40,6 +40,7 @@ func dashboardWidgetFromDB(row dbstore.DashboardWidget) (*domain.DashboardWidget
 		ID:              row.ID,
 		DashboardID:     row.DashboardID,
 		FilterOriginKey: row.FilterOriginKey,
+		PageName:        domain.NormalizeDashboardPageName(row.PageName),
 		Name:            row.Name,
 		Description:     row.Description,
 		Source:          source,

@@ -32,6 +32,9 @@ type dashboardDetailPageData struct {
 	Principal         domain.ContextPrincipal
 	Dashboard         *domain.Dashboard
 	Widgets           []dashboardsvc.ResolvedWidget
+	PageTabs          []core.SectionTab
+	CurrentPageName   string
+	CurrentPageKey    string
 	EditMode          bool
 	Freshness         *domain.AssetFreshnessStatus
 	FreshnessExplain  *domain.AssetFreshnessNode
@@ -57,6 +60,7 @@ type dashboardWidgetFormData struct {
 	Title             string
 	Action            string
 	SubmitLabel       string
+	PageName          string
 	Name              string
 	Description       string
 	SourceKind        string
@@ -214,12 +218,14 @@ func dashboardWidgetNodes(widgets []dashboardsvc.ResolvedWidget, baseURL string,
 }
 
 func dashboardViewSurface(d dashboardDetailPageData, widgetNodes []Node) Node {
-	body := []Node{
-		dashboardCanvas(widgetNodes, d.EditMode),
+	body := []Node{}
+	if len(d.PageTabs) > 1 {
+		body = append(body, dashboardPageTabBar(d.PageTabs))
 	}
 	if !d.EditMode && dashboardShowsInteractiveToolbar(d.Dashboard) {
-		body = append([]Node{dashboardInteractiveToolbar(d.ActiveFilters)}, body...)
+		body = append(body, dashboardInteractiveToolbar(d.ActiveFilters))
 	}
+	body = append(body, dashboardCanvas(widgetNodes, d.EditMode))
 
 	return Div(
 		ID("dashboard-view-surface"),
@@ -258,6 +264,16 @@ html[data-dashboard-loading='true'] [data-dashboard-loading-canvas='true'] {
 `))
 		}),
 		Group(body),
+	)
+}
+
+func dashboardPageTabBar(tabs []core.SectionTab) Node {
+	if len(tabs) <= 1 {
+		return nil
+	}
+	return Div(
+		Class("dashboard-page-tabs"),
+		core.SectionTabs(tabs),
 	)
 }
 
@@ -717,6 +733,7 @@ func dashboardStudioWidgetItem(widget dashboardsvc.ResolvedWidget, baseURL strin
 			Div(Class("min-w-0"),
 				P(Class("m-0 text-sm font-semibold text-[var(--fgColor-default)]"), Text(widget.Widget.Name)),
 				P(Class("m-0 text-xs leading-5 text-[var(--fgColor-muted)]"), Text(widget.Widget.Description)),
+				P(Class("m-0 text-[11px] uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text("Page: "+domain.NormalizeDashboardPageName(widget.Widget.PageName))),
 				P(Class("m-0 text-[11px] uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(fmt.Sprintf("%d row(s) rendered", widget.RowCount))),
 			),
 			core.ActionMenu("Actions",
@@ -795,6 +812,8 @@ func dashboardWidgetFormCard(data dashboardWidgetFormData, csrfFieldProvider fun
 			Method("post"),
 			Action(data.Action),
 			csrfFieldProvider(),
+			core.FieldLabel("Page"),
+			core.InputControl("", Name("page_name"), Value(data.PageName)),
 			core.FieldLabel("Name"),
 			core.InputControl("", Name("name"), Value(data.Name), Required()),
 			core.FieldLabel("Description"),
@@ -890,6 +909,7 @@ func defaultWidgetFormData(action string) dashboardWidgetFormData {
 		Title:            "Add widget",
 		Action:           action,
 		SubmitLabel:      "Create widget",
+		PageName:         domain.DefaultDashboardPageName,
 		SourceKind:       "sql_query",
 		VisualKind:       "table",
 		VisualLegendMode: "auto",
@@ -905,6 +925,7 @@ func widgetFormDataFromWidget(widget *domain.DashboardWidget, action, submitLabe
 	data := defaultWidgetFormData(action)
 	data.Title = title
 	data.SubmitLabel = submitLabel
+	data.PageName = domain.NormalizeDashboardPageName(widget.PageName)
 	data.Name = widget.Name
 	data.Description = widget.Description
 	data.SourceKind = string(widget.Source.Kind)
