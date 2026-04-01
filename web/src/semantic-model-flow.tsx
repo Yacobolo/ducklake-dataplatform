@@ -211,6 +211,7 @@ const semanticFlowStyles = `
 }
 
 .semantic-flow__edge-label {
+  position: absolute;
   display: inline-flex;
   align-items: center;
   justify-content: center;
