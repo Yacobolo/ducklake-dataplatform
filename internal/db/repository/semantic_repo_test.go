@@ -22,7 +22,6 @@ func TestSemanticRepos_EndToEndCRUD(t *testing.T) {
 	ctx := context.Background()
 
 	createdModel, err := modelRepo.Create(ctx, &domain.SemanticModel{
-		ProjectName:          "analytics",
 		Name:                 "sales",
 		Description:          "Semantic model for sales analytics",
 		Owner:                "data-team",

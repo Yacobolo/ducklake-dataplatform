@@ -128,7 +128,7 @@ func buildSemanticModelFlowData(current domain.SemanticModel, models []domain.Se
 			JoinSQL:         compactWhitespace(relationship.JoinSQL),
 			SourceField:     sourceField.Label,
 			TargetField:     targetField.Label,
-			EditURL:         "/ui/semantic/models/" + current.ProjectName + "/" + current.Name + "/edit",
+			EditURL:         "/ui/semantic/models/" + current.ID + "/edit",
 		})
 
 		if relationship.FromSemanticID == relationship.ToSemanticID {
@@ -283,7 +283,7 @@ func semanticRelationshipCardinality(value string) string {
 }
 
 func semanticModelLabel(model domain.SemanticModel) string {
-	return model.ProjectName + "." + model.Name
+	return model.Name
 }
 
 func newSemanticFieldRegistry() *semanticFieldRegistry {

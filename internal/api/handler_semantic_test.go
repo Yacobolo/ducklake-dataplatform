@@ -15,16 +15,16 @@ import (
 
 type mockSemanticService struct {
 	createSemanticModelFn        func(ctx context.Context, principal string, req domain.CreateSemanticModelRequest) (*domain.SemanticModel, error)
-	listSemanticModelsFn         func(ctx context.Context, projectName *string, page domain.PageRequest) ([]domain.SemanticModel, int64, error)
-	getSemanticModelFn           func(ctx context.Context, projectName, name string) (*domain.SemanticModel, error)
-	createMetricFn               func(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error)
-	listMetricsFn                func(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error)
-	updateMetricFn               func(ctx context.Context, projectName, semanticModelName, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error)
-	deleteMetricFn               func(ctx context.Context, projectName, semanticModelName, metricName string) error
-	createRelationshipForModelFn func(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
-	listRelationshipsForModelFn  func(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticRelationship, error)
-	updateRelationshipForModelFn func(ctx context.Context, projectName, semanticModelName, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
-	deleteRelationshipForModelFn func(ctx context.Context, projectName, semanticModelName, relationshipName string) error
+	listSemanticModelsFn         func(ctx context.Context, page domain.PageRequest) ([]domain.SemanticModel, int64, error)
+	getSemanticModelFn           func(ctx context.Context, semanticModelID string) (*domain.SemanticModel, error)
+	createMetricFn               func(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error)
+	listMetricsFn                func(ctx context.Context, semanticModelID string) ([]domain.SemanticMetric, error)
+	updateMetricFn               func(ctx context.Context, semanticModelID, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error)
+	deleteMetricFn               func(ctx context.Context, semanticModelID, metricName string) error
+	createRelationshipForModelFn func(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
+	listRelationshipsForModelFn  func(ctx context.Context, semanticModelID string) ([]domain.SemanticRelationship, error)
+	updateRelationshipForModelFn func(ctx context.Context, semanticModelID, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
+	deleteRelationshipForModelFn func(ctx context.Context, semanticModelID, relationshipName string) error
 	explainMetricQueryFn         func(ctx context.Context, req semantic.MetricQueryRequest) (*semantic.MetricQueryPlan, error)
 	runMetricQueryFn             func(ctx context.Context, principal string, req semantic.MetricQueryRequest) (*semantic.MetricQueryResult, error)
 }
@@ -36,96 +36,96 @@ func (m *mockSemanticService) CreateSemanticModel(ctx context.Context, principal
 	panic("CreateSemanticModel not implemented")
 }
 
-func (m *mockSemanticService) GetSemanticModel(ctx context.Context, projectName, name string) (*domain.SemanticModel, error) {
+func (m *mockSemanticService) GetSemanticModel(ctx context.Context, semanticModelID string) (*domain.SemanticModel, error) {
 	if m.getSemanticModelFn != nil {
-		return m.getSemanticModelFn(ctx, projectName, name)
+		return m.getSemanticModelFn(ctx, semanticModelID)
 	}
 	panic("GetSemanticModel not implemented")
 }
 
-func (m *mockSemanticService) ListSemanticModels(ctx context.Context, projectName *string, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
+func (m *mockSemanticService) ListSemanticModels(ctx context.Context, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
 	if m.listSemanticModelsFn != nil {
-		return m.listSemanticModelsFn(ctx, projectName, page)
+		return m.listSemanticModelsFn(ctx, page)
 	}
 	panic("ListSemanticModels not implemented")
 }
 
-func (m *mockSemanticService) UpdateSemanticModel(context.Context, string, string, domain.UpdateSemanticModelRequest) (*domain.SemanticModel, error) {
+func (m *mockSemanticService) UpdateSemanticModel(context.Context, string, domain.UpdateSemanticModelRequest) (*domain.SemanticModel, error) {
 	panic("UpdateSemanticModel not implemented")
 }
 
-func (m *mockSemanticService) DeleteSemanticModel(context.Context, string, string) error {
+func (m *mockSemanticService) DeleteSemanticModel(context.Context, string) error {
 	panic("DeleteSemanticModel not implemented")
 }
 
-func (m *mockSemanticService) CreateMetric(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+func (m *mockSemanticService) CreateMetric(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error) {
 	if m.createMetricFn != nil {
-		return m.createMetricFn(ctx, principal, projectName, semanticModelName, req)
+		return m.createMetricFn(ctx, principal, semanticModelID, req)
 	}
 	panic("CreateMetric not implemented")
 }
 
-func (m *mockSemanticService) ListMetrics(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error) {
+func (m *mockSemanticService) ListMetrics(ctx context.Context, semanticModelID string) ([]domain.SemanticMetric, error) {
 	if m.listMetricsFn != nil {
-		return m.listMetricsFn(ctx, projectName, semanticModelName)
+		return m.listMetricsFn(ctx, semanticModelID)
 	}
 	panic("ListMetrics not implemented")
 }
 
-func (m *mockSemanticService) UpdateMetric(ctx context.Context, projectName, semanticModelName, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+func (m *mockSemanticService) UpdateMetric(ctx context.Context, semanticModelID, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error) {
 	if m.updateMetricFn != nil {
-		return m.updateMetricFn(ctx, projectName, semanticModelName, metricName, req)
+		return m.updateMetricFn(ctx, semanticModelID, metricName, req)
 	}
 	panic("UpdateMetric not implemented")
 }
 
-func (m *mockSemanticService) DeleteMetric(ctx context.Context, projectName, semanticModelName, metricName string) error {
+func (m *mockSemanticService) DeleteMetric(ctx context.Context, semanticModelID, metricName string) error {
 	if m.deleteMetricFn != nil {
-		return m.deleteMetricFn(ctx, projectName, semanticModelName, metricName)
+		return m.deleteMetricFn(ctx, semanticModelID, metricName)
 	}
 	panic("DeleteMetric not implemented")
 }
 
-func (m *mockSemanticService) CreatePreAggregation(context.Context, string, string, string, domain.CreateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
+func (m *mockSemanticService) CreatePreAggregation(context.Context, string, string, domain.CreateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
 	panic("CreatePreAggregation not implemented")
 }
 
-func (m *mockSemanticService) ListPreAggregations(context.Context, string, string) ([]domain.SemanticPreAggregation, error) {
+func (m *mockSemanticService) ListPreAggregations(context.Context, string) ([]domain.SemanticPreAggregation, error) {
 	panic("ListPreAggregations not implemented")
 }
 
-func (m *mockSemanticService) UpdatePreAggregation(context.Context, string, string, string, domain.UpdateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
+func (m *mockSemanticService) UpdatePreAggregation(context.Context, string, string, domain.UpdateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
 	panic("UpdatePreAggregation not implemented")
 }
 
-func (m *mockSemanticService) DeletePreAggregation(context.Context, string, string, string) error {
+func (m *mockSemanticService) DeletePreAggregation(context.Context, string, string) error {
 	panic("DeletePreAggregation not implemented")
 }
 
-func (m *mockSemanticService) CreateRelationshipForModel(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+func (m *mockSemanticService) CreateRelationshipForModel(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
 	if m.createRelationshipForModelFn != nil {
-		return m.createRelationshipForModelFn(ctx, principal, projectName, semanticModelName, req)
+		return m.createRelationshipForModelFn(ctx, principal, semanticModelID, req)
 	}
 	panic("CreateRelationshipForModel not implemented")
 }
 
-func (m *mockSemanticService) ListRelationshipsForModel(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticRelationship, error) {
+func (m *mockSemanticService) ListRelationshipsForModel(ctx context.Context, semanticModelID string) ([]domain.SemanticRelationship, error) {
 	if m.listRelationshipsForModelFn != nil {
-		return m.listRelationshipsForModelFn(ctx, projectName, semanticModelName)
+		return m.listRelationshipsForModelFn(ctx, semanticModelID)
 	}
 	panic("ListRelationshipsForModel not implemented")
 }
 
-func (m *mockSemanticService) UpdateRelationshipForModel(ctx context.Context, projectName, semanticModelName, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+func (m *mockSemanticService) UpdateRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
 	if m.updateRelationshipForModelFn != nil {
-		return m.updateRelationshipForModelFn(ctx, projectName, semanticModelName, relationshipName, req)
+		return m.updateRelationshipForModelFn(ctx, semanticModelID, relationshipName, req)
 	}
 	panic("UpdateRelationshipForModel not implemented")
 }
 
-func (m *mockSemanticService) DeleteRelationshipForModel(ctx context.Context, projectName, semanticModelName, relationshipName string) error {
+func (m *mockSemanticService) DeleteRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string) error {
 	if m.deleteRelationshipForModelFn != nil {
-		return m.deleteRelationshipForModelFn(ctx, projectName, semanticModelName, relationshipName)
+		return m.deleteRelationshipForModelFn(ctx, semanticModelID, relationshipName)
 	}
 	panic("DeleteRelationshipForModel not implemented")
 }
@@ -157,7 +157,6 @@ func TestHandler_CreateSemanticModel_UsesPrincipalAndMapsRequest(t *testing.T) {
 		semantics: &mockSemanticService{
 			createSemanticModelFn: func(_ context.Context, principal string, req domain.CreateSemanticModelRequest) (*domain.SemanticModel, error) {
 				assert.Equal(t, "alice", principal)
-				assert.Equal(t, "analytics", req.ProjectName)
 				assert.Equal(t, "sales", req.Name)
 				assert.Equal(t, "analytics.fct_sales", req.BaseModelRef)
 				assert.Equal(t, desc, req.Description)
@@ -165,7 +164,6 @@ func TestHandler_CreateSemanticModel_UsesPrincipalAndMapsRequest(t *testing.T) {
 				assert.Equal(t, tags, req.Tags)
 				return &domain.SemanticModel{
 					ID:                   "sm-1",
-					ProjectName:          req.ProjectName,
 					Name:                 req.Name,
 					Description:          req.Description,
 					BaseModelRef:         req.BaseModelRef,
@@ -179,7 +177,6 @@ func TestHandler_CreateSemanticModel_UsesPrincipalAndMapsRequest(t *testing.T) {
 	}
 
 	resp, err := h.CreateSemanticModel(ctx, GenCreateSemanticModelRequest{Body: &GenCreateSemanticModelJSONBody{
-		ProjectName:          "analytics",
 		Name:                 "sales",
 		BaseModelRef:         "analytics.fct_sales",
 		Description:          &desc,
@@ -190,8 +187,6 @@ func TestHandler_CreateSemanticModel_UsesPrincipalAndMapsRequest(t *testing.T) {
 
 	created, ok := resp.(GenCreateSemanticModel201JSONResponse)
 	require.True(t, ok, "expected 201 response, got %T", resp)
-	require.NotNil(t, created.Body.ProjectName)
-	assert.Equal(t, "analytics", *created.Body.ProjectName)
 	require.NotNil(t, created.Body.Name)
 	assert.Equal(t, "sales", *created.Body.Name)
 	require.NotNil(t, created.Body.Tags)
@@ -210,7 +205,6 @@ func TestHandler_CreateSemanticModel_ValidationErrorMaps400(t *testing.T) {
 	}
 
 	resp, err := h.CreateSemanticModel(context.Background(), GenCreateSemanticModelRequest{Body: &GenCreateSemanticModelJSONBody{
-		ProjectName:  "analytics",
 		Name:         "sales",
 		BaseModelRef: "analytics.fct_sales",
 	}})
@@ -224,22 +218,19 @@ func TestHandler_CreateSemanticModel_ValidationErrorMaps400(t *testing.T) {
 func TestHandler_ListSemanticModels_PassesFiltersAndPagination(t *testing.T) {
 	t.Parallel()
 
-	projectName := "analytics"
 	maxResults := int32(2)
 
 	h := &APIHandler{
 		semantics: &mockSemanticService{
-			listSemanticModelsFn: func(_ context.Context, project *string, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
-				require.NotNil(t, project)
-				assert.Equal(t, projectName, *project)
+			listSemanticModelsFn: func(_ context.Context, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
 				assert.Equal(t, int(maxResults), page.Limit())
 				assert.Equal(t, 0, page.Offset())
-				return []domain.SemanticModel{{ProjectName: "analytics", Name: "sales", BaseModelRef: "analytics.fct_sales"}}, 3, nil
+				return []domain.SemanticModel{{ID: "sm-sales", Name: "sales", BaseModelRef: "analytics.fct_sales"}}, 3, nil
 			},
 		},
 	}
 
-	resp, err := h.ListSemanticModels(context.Background(), GenListSemanticModelsRequest{Params: GenListSemanticModelsParams{ProjectName: &projectName, MaxResults: &maxResults}})
+	resp, err := h.ListSemanticModels(context.Background(), GenListSemanticModelsRequest{Params: GenListSemanticModelsParams{MaxResults: &maxResults}})
 	require.NoError(t, err)
 
 	okResp, ok := resp.(GenListSemanticModels200JSONResponse)
@@ -255,9 +246,8 @@ func TestHandler_ListSemanticMetrics_MapsDashboardFields(t *testing.T) {
 
 	h := &APIHandler{
 		semantics: &mockSemanticService{
-			listMetricsFn: func(_ context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error) {
-				assert.Equal(t, "analytics", projectName)
-				assert.Equal(t, "sales", semanticModelName)
+			listMetricsFn: func(_ context.Context, semanticModelID string) ([]domain.SemanticMetric, error) {
+				assert.Equal(t, "sm-sales", semanticModelID)
 				return []domain.SemanticMetric{{
 					ID:                 "metric-1",
 					SemanticModelID:    "sm-1",
@@ -278,8 +268,7 @@ func TestHandler_ListSemanticMetrics_MapsDashboardFields(t *testing.T) {
 	}
 
 	resp, err := h.ListSemanticMetrics(context.Background(), GenListSemanticMetricsRequest{
-		ProjectName:       "analytics",
-		SemanticModelName: "sales",
+		SemanticModelId:   "sm-sales",
 	})
 	require.NoError(t, err)
 
@@ -317,10 +306,9 @@ func TestHandler_CreateSemanticMetric_MapsDashboardFields(t *testing.T) {
 
 	h := &APIHandler{
 		semantics: &mockSemanticService{
-			createMetricFn: func(_ context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+			createMetricFn: func(_ context.Context, principal, semanticModelID string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error) {
 				assert.Equal(t, "alice", principal)
-				assert.Equal(t, "analytics", projectName)
-				assert.Equal(t, "sales", semanticModelName)
+				assert.Equal(t, "sm-sales", semanticModelID)
 				assert.Equal(t, "net_revenue", req.Name)
 				assert.Equal(t, "Net Revenue", req.Label)
 				assert.Equal(t, domain.MetricTypeRatio, req.MetricType)
@@ -349,8 +337,7 @@ func TestHandler_CreateSemanticMetric_MapsDashboardFields(t *testing.T) {
 	}
 
 	resp, err := h.CreateSemanticMetric(ctx, GenCreateSemanticMetricRequest{
-		ProjectName:       "analytics",
-		SemanticModelName: "sales",
+		SemanticModelId:   "sm-sales",
 		Body: &GenCreateSemanticMetricJSONBody{
 			Name:               "net_revenue",
 			Description:        &description,
@@ -391,9 +378,8 @@ func TestHandler_UpdateSemanticMetric_MapsDashboardFields(t *testing.T) {
 
 	h := &APIHandler{
 		semantics: &mockSemanticService{
-			updateMetricFn: func(_ context.Context, projectName, semanticModelName, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error) {
-				assert.Equal(t, "analytics", projectName)
-				assert.Equal(t, "sales", semanticModelName)
+			updateMetricFn: func(_ context.Context, semanticModelID, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+				assert.Equal(t, "sm-sales", semanticModelID)
 				assert.Equal(t, "margin_rate", metricName)
 				require.NotNil(t, req.Description)
 				assert.Equal(t, description, *req.Description)
@@ -435,8 +421,7 @@ func TestHandler_UpdateSemanticMetric_MapsDashboardFields(t *testing.T) {
 
 	expression := "SUM(profit) / SUM(revenue)"
 	resp, err := h.UpdateSemanticMetric(context.Background(), GenUpdateSemanticMetricRequest{
-		ProjectName:       "analytics",
-		SemanticModelName: "sales",
+		SemanticModelId:   "sm-sales",
 		MetricName:        "margin_rate",
 		Body: &GenUpdateSemanticMetricJSONBody{
 			Description:        &description,
@@ -466,9 +451,8 @@ func TestHandler_DeleteSemanticMetric_MapsRequest(t *testing.T) {
 
 	h := &APIHandler{
 		semantics: &mockSemanticService{
-			deleteMetricFn: func(_ context.Context, projectName, semanticModelName, metricName string) error {
-				assert.Equal(t, "analytics", projectName)
-				assert.Equal(t, "sales", semanticModelName)
+			deleteMetricFn: func(_ context.Context, semanticModelID, metricName string) error {
+				assert.Equal(t, "sm-sales", semanticModelID)
 				assert.Equal(t, "margin_rate", metricName)
 				return nil
 			},
@@ -476,8 +460,7 @@ func TestHandler_DeleteSemanticMetric_MapsRequest(t *testing.T) {
 	}
 
 	resp, err := h.DeleteSemanticMetric(context.Background(), GenDeleteSemanticMetricRequest{
-		ProjectName:       "analytics",
-		SemanticModelName: "sales",
+		SemanticModelId:   "sm-sales",
 		MetricName:        "margin_rate",
 	})
 	require.NoError(t, err)
@@ -490,9 +473,8 @@ func TestHandler_ListSemanticModelRelationships_MapsNestedRequest(t *testing.T) 
 
 	h := &APIHandler{
 		semantics: &mockSemanticService{
-			listRelationshipsForModelFn: func(_ context.Context, projectName, semanticModelName string) ([]domain.SemanticRelationship, error) {
-				assert.Equal(t, "analytics", projectName)
-				assert.Equal(t, "sales", semanticModelName)
+			listRelationshipsForModelFn: func(_ context.Context, semanticModelID string) ([]domain.SemanticRelationship, error) {
+				assert.Equal(t, "sm-sales", semanticModelID)
 				return []domain.SemanticRelationship{{
 					ID:               "rel-1",
 					Name:             "sales_to_customers",
@@ -508,8 +490,7 @@ func TestHandler_ListSemanticModelRelationships_MapsNestedRequest(t *testing.T) 
 	}
 
 	resp, err := h.ListSemanticModelRelationships(context.Background(), GenListSemanticModelRelationshipsRequest{
-		ProjectName:       "analytics",
-		SemanticModelName: "sales",
+		SemanticModelId:   "sm-sales",
 	})
 	require.NoError(t, err)
 
@@ -531,10 +512,9 @@ func TestHandler_CreateSemanticModelRelationship_UsesPrincipalAndModelContext(t 
 
 	h := &APIHandler{
 		semantics: &mockSemanticService{
-			createRelationshipForModelFn: func(_ context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+			createRelationshipForModelFn: func(_ context.Context, principal, semanticModelID string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
 				assert.Equal(t, "alice", principal)
-				assert.Equal(t, "analytics", projectName)
-				assert.Equal(t, "sales", semanticModelName)
+				assert.Equal(t, "sm-sales", semanticModelID)
 				assert.Equal(t, "sales_to_customers", req.Name)
 				assert.Equal(t, "sm-sales", req.FromSemanticID)
 				assert.Equal(t, "sm-customers", req.ToSemanticID)
@@ -557,8 +537,7 @@ func TestHandler_CreateSemanticModelRelationship_UsesPrincipalAndModelContext(t 
 	}
 
 	resp, err := h.CreateSemanticModelRelationship(ctx, GenCreateSemanticModelRelationshipRequest{
-		ProjectName:       "analytics",
-		SemanticModelName: "sales",
+		SemanticModelId:   "sm-sales",
 		Body: &GenCreateSemanticModelRelationshipJSONBody{
 			Name:             "sales_to_customers",
 			FromSemanticId:   "sm-sales",
@@ -587,9 +566,8 @@ func TestHandler_UpdateSemanticModelRelationship_MapsNestedRequest(t *testing.T)
 
 	h := &APIHandler{
 		semantics: &mockSemanticService{
-			updateRelationshipForModelFn: func(_ context.Context, projectName, semanticModelName, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
-				assert.Equal(t, "analytics", projectName)
-				assert.Equal(t, "sales", semanticModelName)
+			updateRelationshipForModelFn: func(_ context.Context, semanticModelID, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+				assert.Equal(t, "sm-sales", semanticModelID)
 				assert.Equal(t, "sales_to_customers", relationshipName)
 				require.NotNil(t, req.RelationshipType)
 				assert.Equal(t, domain.RelationshipTypeOneToMany, *req.RelationshipType)
@@ -614,8 +592,7 @@ func TestHandler_UpdateSemanticModelRelationship_MapsNestedRequest(t *testing.T)
 	}
 
 	resp, err := h.UpdateSemanticModelRelationship(context.Background(), GenUpdateSemanticModelRelationshipRequest{
-		ProjectName:       "analytics",
-		SemanticModelName: "sales",
+		SemanticModelId:   "sm-sales",
 		RelationshipName:  "sales_to_customers",
 		Body: &GenUpdateSemanticModelRelationshipJSONBody{
 			RelationshipType: &relationshipType,
@@ -637,9 +614,8 @@ func TestHandler_DeleteSemanticModelRelationship_MapsNestedRequest(t *testing.T)
 
 	h := &APIHandler{
 		semantics: &mockSemanticService{
-			deleteRelationshipForModelFn: func(_ context.Context, projectName, semanticModelName, relationshipName string) error {
-				assert.Equal(t, "analytics", projectName)
-				assert.Equal(t, "sales", semanticModelName)
+			deleteRelationshipForModelFn: func(_ context.Context, semanticModelID, relationshipName string) error {
+				assert.Equal(t, "sm-sales", semanticModelID)
 				assert.Equal(t, "sales_to_customers", relationshipName)
 				return nil
 			},
@@ -647,8 +623,7 @@ func TestHandler_DeleteSemanticModelRelationship_MapsNestedRequest(t *testing.T)
 	}
 
 	resp, err := h.DeleteSemanticModelRelationship(context.Background(), GenDeleteSemanticModelRelationshipRequest{
-		ProjectName:       "analytics",
-		SemanticModelName: "sales",
+		SemanticModelId:   "sm-sales",
 		RelationshipName:  "sales_to_customers",
 	})
 	require.NoError(t, err)
@@ -669,8 +644,7 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 	h := &APIHandler{
 		semantics: &mockSemanticService{
 			explainMetricQueryFn: func(_ context.Context, req semantic.MetricQueryRequest) (*semantic.MetricQueryPlan, error) {
-				assert.Equal(t, "analytics", req.ProjectName)
-				assert.Equal(t, "sales", req.SemanticModelName)
+				assert.Equal(t, "sm-sales", req.SemanticModelID)
 				assert.Equal(t, []string{"total_revenue"}, req.Metrics)
 				assert.Equal(t, dimensions, req.Dimensions)
 				assert.Equal(t, filters, req.Filters)
@@ -696,8 +670,7 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 	}
 
 	resp, err := h.ExplainMetricQuery(context.Background(), GenExplainMetricQueryRequest{Body: &GenExplainMetricQueryJSONBody{
-		ProjectName:       "analytics",
-		SemanticModelName: "sales",
+		SemanticModelId:   "sm-sales",
 		Metrics:           []string{"total_revenue"},
 		Dimensions:        &dimensions,
 		Filters:           &filters,
@@ -732,7 +705,7 @@ func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
 		semantics: &mockSemanticService{
 			runMetricQueryFn: func(_ context.Context, principal string, req semantic.MetricQueryRequest) (*semantic.MetricQueryResult, error) {
 				assert.Equal(t, "analyst1", principal)
-				assert.Equal(t, "analytics", req.ProjectName)
+				assert.Equal(t, "sm-sales", req.SemanticModelID)
 				require.NotNil(t, req.Limit)
 				assert.Equal(t, 10, *req.Limit)
 				return &semantic.MetricQueryResult{
@@ -755,8 +728,7 @@ func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
 	}
 
 	resp, err := h.RunMetricQuery(ctx, GenRunMetricQueryRequest{Body: &GenRunMetricQueryJSONBody{
-		ProjectName:       "analytics",
-		SemanticModelName: "sales",
+		SemanticModelId:   "sm-sales",
 		Metrics:           []string{"total_revenue"},
 		Limit:             &limit,
 	}})
@@ -776,17 +748,15 @@ func TestHandler_CheckMetricFreshness_ResolvesMetricAndReturnsFreshness(t *testi
 
 	h := &APIHandler{
 		semantics: &mockSemanticService{
-			listSemanticModelsFn: func(_ context.Context, _ *string, _ domain.PageRequest) ([]domain.SemanticModel, int64, error) {
-				return []domain.SemanticModel{{ProjectName: "analytics", Name: "sales", BaseModelRef: "analytics.fct_sales"}}, 1, nil
+			listSemanticModelsFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SemanticModel, int64, error) {
+				return []domain.SemanticModel{{ID: "sm-sales", Name: "sales", BaseModelRef: "analytics.fct_sales"}}, 1, nil
 			},
-			listMetricsFn: func(_ context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error) {
-				assert.Equal(t, "analytics", projectName)
-				assert.Equal(t, "sales", semanticModelName)
+			listMetricsFn: func(_ context.Context, semanticModelID string) ([]domain.SemanticMetric, error) {
+				assert.Equal(t, "sm-sales", semanticModelID)
 				return []domain.SemanticMetric{{Name: "total_revenue"}}, nil
 			},
 			explainMetricQueryFn: func(_ context.Context, req semantic.MetricQueryRequest) (*semantic.MetricQueryPlan, error) {
-				assert.Equal(t, "analytics", req.ProjectName)
-				assert.Equal(t, "sales", req.SemanticModelName)
+				assert.Equal(t, "sm-sales", req.SemanticModelID)
 				assert.Equal(t, []string{"total_revenue"}, req.Metrics)
 				return &semantic.MetricQueryPlan{
 					FreshnessStatus:        "fresh",
@@ -804,8 +774,8 @@ func TestHandler_CheckMetricFreshness_ResolvesMetricAndReturnsFreshness(t *testi
 	require.True(t, ok, "expected 200 response, got %T", resp)
 	require.NotNil(t, okResp.Body.MetricName)
 	assert.Equal(t, "total_revenue", *okResp.Body.MetricName)
-	require.NotNil(t, okResp.Body.ProjectName)
-	assert.Equal(t, "analytics", *okResp.Body.ProjectName)
+	require.NotNil(t, okResp.Body.SemanticModelId)
+	assert.Equal(t, "sm-sales", *okResp.Body.SemanticModelId)
 	require.NotNil(t, okResp.Body.SemanticModelName)
 	assert.Equal(t, "sales", *okResp.Body.SemanticModelName)
 	require.NotNil(t, okResp.Body.FreshnessStatus)
@@ -820,11 +790,11 @@ func TestHandler_CheckMetricFreshness_AmbiguousMetricReturns400(t *testing.T) {
 
 	h := &APIHandler{
 		semantics: &mockSemanticService{
-			listSemanticModelsFn: func(_ context.Context, _ *string, _ domain.PageRequest) ([]domain.SemanticModel, int64, error) {
-				return []domain.SemanticModel{{ProjectName: "analytics", Name: "sales"}, {ProjectName: "analytics", Name: "marketing"}}, 2, nil
+			listSemanticModelsFn: func(_ context.Context, _ domain.PageRequest) ([]domain.SemanticModel, int64, error) {
+				return []domain.SemanticModel{{ID: "sm-sales", Name: "sales"}, {ID: "sm-marketing", Name: "marketing"}}, 2, nil
 			},
-			listMetricsFn: func(_ context.Context, _, semanticModelName string) ([]domain.SemanticMetric, error) {
-				if semanticModelName == "sales" || semanticModelName == "marketing" {
+			listMetricsFn: func(_ context.Context, semanticModelID string) ([]domain.SemanticMetric, error) {
+				if semanticModelID == "sm-sales" || semanticModelID == "sm-marketing" {
 					return []domain.SemanticMetric{{Name: "total_revenue"}}, nil
 				}
 				return nil, nil

@@ -9218,13 +9218,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: project_name
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-        - name: semantic_model_name
+        - name: semantic_model_id
           in: query
           required: false
           schema:
@@ -14376,12 +14370,6 @@ paths:
       operationId: listSemanticModels
       summary: List semantic models
       parameters:
-        - name: project_name
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
         - name: max_results
           in: query
           required: false
@@ -14477,17 +14465,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticModelRequest'
-  /semantic-models/{projectName}/{semanticModelName}:
+  /semantic-models/{semanticModelId}:
     get:
       operationId: getSemanticModel
       summary: Get semantic model
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14541,12 +14524,7 @@ paths:
       operationId: updateSemanticModel
       summary: Update semantic model
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14600,12 +14578,7 @@ paths:
       operationId: deleteSemanticModel
       summary: Delete semantic model
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14645,17 +14618,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
-  /semantic-models/{projectName}/{semanticModelName}/metrics:
+  /semantic-models/{semanticModelId}/metrics:
     get:
       operationId: listSemanticMetrics
       summary: List semantic metrics
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14709,12 +14677,7 @@ paths:
       operationId: createSemanticMetric
       summary: Create semantic metric
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14764,17 +14727,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticMetricRequest'
-  /semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}:
+  /semantic-models/{semanticModelId}/metrics/{metricName}:
     patch:
       operationId: updateSemanticMetric
       summary: Update semantic metric
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14833,12 +14791,7 @@ paths:
       operationId: deleteSemanticMetric
       summary: Delete semantic metric
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14883,17 +14836,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
-  /semantic-models/{projectName}/{semanticModelName}/pre-aggregations:
+  /semantic-models/{semanticModelId}/pre-aggregations:
     get:
       operationId: listSemanticPreAggregations
       summary: List semantic pre aggregations
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14947,12 +14895,7 @@ paths:
       operationId: createSemanticPreAggregation
       summary: Create semantic pre aggregation
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -15002,17 +14945,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticPreAggregationRequest'
-  /semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}:
+  /semantic-models/{semanticModelId}/pre-aggregations/{preAggregationName}:
     patch:
       operationId: updateSemanticPreAggregation
       summary: Update semantic pre aggregation
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -15071,12 +15009,7 @@ paths:
       operationId: deleteSemanticPreAggregation
       summary: Delete semantic pre aggregation
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -15121,17 +15054,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
-  /semantic-models/{projectName}/{semanticModelName}/relationships:
+  /semantic-models/{semanticModelId}/relationships:
     get:
       operationId: listSemanticModelRelationships
       summary: List semantic relationships for a semantic model
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -15185,12 +15113,7 @@ paths:
       operationId: createSemanticModelRelationship
       summary: Create semantic relationship for a semantic model
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -15240,17 +15163,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticRelationshipRequest'
-  /semantic-models/{projectName}/{semanticModelName}/relationships/{relationshipName}:
+  /semantic-models/{semanticModelId}/relationships/{relationshipName}:
     patch:
       operationId: updateSemanticModelRelationship
       summary: Update semantic relationship for a semantic model
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -15309,12 +15227,7 @@ paths:
       operationId: deleteSemanticModelRelationship
       summary: Delete semantic relationship for a semantic model
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -18016,12 +17929,9 @@ components:
     CreateSemanticModelRequest:
       type: object
       required:
-        - project_name
         - name
         - base_model_ref
       properties:
-        project_name:
-          type: string
         name:
           type: string
         description:
@@ -18229,13 +18139,10 @@ components:
     DashboardSemanticQuerySource:
       type: object
       required:
-        - project_name
-        - semantic_model_name
+        - semantic_model_id
         - metrics
       properties:
-        project_name:
-          type: string
-        semantic_model_name:
+        semantic_model_id:
           type: string
         metrics:
           type: array
@@ -18265,9 +18172,7 @@ components:
     DashboardSemanticQuerySourceUpdate:
       type: object
       properties:
-        project_name:
-          type: string
-        semantic_model_name:
+        semantic_model_id:
           type: string
         metrics:
           type: array
@@ -19169,7 +19074,7 @@ components:
       properties:
         metric_name:
           type: string
-        project_name:
+        semantic_model_id:
           type: string
         semantic_model_name:
           type: string
@@ -19236,13 +19141,10 @@ components:
     MetricQueryRequest:
       type: object
       required:
-        - project_name
-        - semantic_model_name
+        - semantic_model_id
         - metrics
       properties:
-        project_name:
-          type: string
-        semantic_model_name:
+        semantic_model_id:
           type: string
         metrics:
           type: array
@@ -20857,7 +20759,6 @@ components:
         - id
         - product_version_id
         - semantic_model_id
-        - project_name
         - model_name
       properties:
         id:
@@ -20865,8 +20766,6 @@ components:
         product_version_id:
           type: string
         semantic_model_id:
-          type: string
-        project_name:
           type: string
         model_name:
           type: string
@@ -21328,8 +21227,6 @@ components:
       type: object
       properties:
         id:
-          type: string
-        project_name:
           type: string
         name:
           type: string

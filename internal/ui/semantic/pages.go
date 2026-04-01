@@ -39,7 +39,7 @@ type semanticPreAggRowData struct {
 
 type semanticModelDetailPageData struct {
 	Principal            domain.ContextPrincipal
-	ProjectName          string
+	SemanticModelID      string
 	ModelName            string
 	BaseModelRef         string
 	DefaultTimeDim       string
@@ -74,7 +74,7 @@ type semanticEditableRelationshipRowData struct {
 
 type semanticModelEditPageData struct {
 	Principal             domain.ContextPrincipal
-	ProjectName           string
+	SemanticModelID       string
 	ModelName             string
 	Description           string
 	BaseModelRef          string
@@ -143,8 +143,6 @@ func semanticModelsListPage(principal domain.ContextPrincipal, rows []semanticMo
 
 func semanticModelsNewPage(principal domain.ContextPrincipal, csrfFieldProvider func() Node) Node {
 	return semanticFormPage(principal, "New Semantic Model", "/ui/semantic/models", csrfFieldProvider,
-		Label(Text("Project")),
-		core.InputControl("", Name("project_name"), Required()),
 		Label(Text("Name")),
 		core.InputControl("", Name("name"), Required()),
 		Label(Text("Description")),
@@ -166,13 +164,13 @@ func semanticModelDetailPage(d semanticModelDetailPageData) Node {
 		descriptionNode = P(Class("m-0 max-w-3xl text-sm leading-6 text-[var(--fgColor-muted)]"), Text(d.Description))
 	}
 
-	return core.AppPage("Semantic Model: "+d.ProjectName+"."+d.ModelName, "semantic", d.Principal,
+	return core.AppPage("Semantic Model: "+d.ModelName, "semantic", d.Principal,
 		core.DetailShell(
 			core.SectionSurface(
 				Div(Class("flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"),
 					Div(Class("grid gap-3"),
 						core.Kicker("Semantic model"),
-						H1(Class("m-0 text-3xl font-semibold tracking-tight"), Text(d.ProjectName+"."+d.ModelName)),
+						H1(Class("m-0 text-3xl font-semibold tracking-tight"), Text(d.ModelName)),
 						descriptionNode,
 						core.BadgeRow(
 				core.Badge("Base relation "+d.BaseModelRef, "accent"),
@@ -470,12 +468,12 @@ func semanticQueryResultPage(d semanticQueryResultPageData) Node {
 		})
 	}
 	return core.AppPage("Semantic Query", "semantic", d.Principal,
-		semanticQueryCard(d.Request.ProjectName, d.Request.SemanticModelName, "/ui/semantic/query/explain", "/ui/semantic/query/run", d.CSRFFieldProvider, &d.Request),
+		semanticQueryCard(d.Request.SemanticModelID, "/ui/semantic/query/explain", "/ui/semantic/query/run", d.CSRFFieldProvider, &d.Request),
 		resultNode,
 	)
 }
 
-func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string, csrfFieldProvider func() Node, req ...*semsvc.MetricQueryRequest) Node {
+func semanticQueryCard(semanticModelID, explainURL, runURL string, csrfFieldProvider func() Node, req ...*semsvc.MetricQueryRequest) Node {
 	var request *semsvc.MetricQueryRequest
 	if len(req) > 0 {
 		request = req[0]
@@ -499,15 +497,16 @@ func semanticQueryCard(projectName, semanticModelName, explainURL, runURL string
 		if request.TimeGrain != nil {
 			timeGrain = *request.TimeGrain
 		}
+		if request.SemanticModelID != "" {
+			semanticModelID = request.SemanticModelID
+		}
 	}
 	return Div(Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] p-4 shadow-xs"),
 		H3(Class("mt-0 text-lg font-semibold"), Text("Metric query")),
 		Form(Class("grid gap-3"), Method("post"), Action(explainURL),
 			csrfFieldProvider(),
-			Label(Text("Project")),
-			core.InputControl("", Name("project_name"), Value(projectName), Required()),
-			Label(Text("Semantic model")),
-			core.InputControl("", Name("semantic_model_name"), Value(semanticModelName), Required()),
+			Label(Text("Semantic model ID")),
+			core.InputControl("", Name("semantic_model_id"), Value(semanticModelID), Required()),
 			Label(Text("Metrics (comma separated)")),
 			core.InputControl("", Name("metrics"), Value(metrics), Required()),
 			Label(Text("Join paths (comma separated)")),
@@ -582,15 +581,15 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 		relationshipCards = append(relationshipCards, core.EmptyState("waypoints", "No join paths yet", "Create the first model-local join path below.", nil))
 	}
 
-	return core.AppPage("Edit Semantic Model: "+d.ProjectName+"."+d.ModelName, "semantic", d.Principal,
+	return core.AppPage("Edit Semantic Model: "+d.ModelName, "semantic", d.Principal,
 		core.DetailShell(
 			core.SectionSurface(
 				Div(Class("flex flex-wrap items-center justify-between gap-3"),
 					Div(Class("grid gap-2"),
 						core.Kicker("Edit semantic model"),
-						H1(Class("m-0 text-3xl font-semibold tracking-tight"), Text(d.ProjectName+"."+d.ModelName)),
+						H1(Class("m-0 text-3xl font-semibold tracking-tight"), Text(d.ModelName)),
 					),
-					core.SecondaryLink("/ui/semantic/models/"+d.ProjectName+"/"+d.ModelName, "", Text("Back to overview")),
+					core.SecondaryLink("/ui/semantic/models/"+d.SemanticModelID, "", Text("Back to overview")),
 				),
 			),
 			core.SectionSurface(
@@ -678,7 +677,7 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 						),
 						Div(Class("grid gap-4 border-t border-[var(--borderColor-default)] pt-6"),
 							H3(Class("m-0 text-lg font-semibold"), Text("Metric query")),
-							semanticQueryCard(d.ProjectName, d.ModelName, d.QueryExplainURL, d.QueryRunURL, d.CSRFFieldProvider),
+							semanticQueryCard(d.SemanticModelID, d.QueryExplainURL, d.QueryRunURL, d.CSRFFieldProvider),
 						),
 					),
 				),
@@ -687,8 +686,8 @@ func semanticModelEditPage(d semanticModelEditPageData) Node {
 	)
 }
 
-func semanticMetricEditPage(principal domain.ContextPrincipal, projectName, semanticModelName string, metric *domain.SemanticMetric, csrfFieldProvider func() Node) Node {
-	return semanticFormPage(principal, "Edit Semantic Metric", "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/metrics/"+metric.Name+"/update", csrfFieldProvider,
+func semanticMetricEditPage(principal domain.ContextPrincipal, semanticModelID string, metric *domain.SemanticMetric, csrfFieldProvider func() Node) Node {
+	return semanticFormPage(principal, "Edit Semantic Metric", "/ui/semantic/models/"+semanticModelID+"/metrics/"+metric.Name+"/update", csrfFieldProvider,
 		Label(Text("Label")),
 		core.InputControl("", Name("label"), Value(metric.Label)),
 		Label(Text("Description")),
@@ -712,8 +711,8 @@ func semanticMetricEditPage(principal domain.ContextPrincipal, projectName, sema
 	)
 }
 
-func semanticPreAggregationEditPage(principal domain.ContextPrincipal, projectName, semanticModelName string, item *domain.SemanticPreAggregation, csrfFieldProvider func() Node) Node {
-	return semanticFormPage(principal, "Edit Pre-Aggregation", "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/pre-aggregations/"+item.Name+"/update", csrfFieldProvider,
+func semanticPreAggregationEditPage(principal domain.ContextPrincipal, semanticModelID string, item *domain.SemanticPreAggregation, csrfFieldProvider func() Node) Node {
+	return semanticFormPage(principal, "Edit Pre-Aggregation", "/ui/semantic/models/"+semanticModelID+"/pre-aggregations/"+item.Name+"/update", csrfFieldProvider,
 		Label(Text("Metric set (comma separated)")),
 		core.InputControl("", Name("metric_set"), Value(csvValues(item.MetricSet))),
 		Label(Text("Dimension set (comma separated)")),

@@ -3,7 +3,7 @@
 # Schema: `CreateSemanticModelRequest`
 
 - Type: `object`
-- Required fields: `base_model_ref`, `name`, `project_name`
+- Required fields: `base_model_ref`, `name`
 
 ## Properties
 
@@ -13,6 +13,5 @@
 | `default_time_dimension` | `string` | `false` | - |
 | `description` | `string` | `false` | - |
 | `name` | `string` | `true` | - |
-| `project_name` | `string` | `true` | - |
 | `tags` | `array[string]` | `false` | - |
 

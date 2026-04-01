@@ -55,10 +55,10 @@ func (s *Service) normalizeExecutionError(ctx context.Context, req MetricQueryRe
 	}
 
 	if s.modelRepo != nil {
-		if model, modelErr := s.resolveTransformationModel(ctx, req.ProjectName, plan.BaseRelation); modelErr == nil && model != nil {
+		if model, modelErr := s.resolveTransformationModel(ctx, plan.BaseRelation); modelErr == nil && model != nil {
 			return domain.ErrValidation(
 				"semantic model %q references transformation model %q, but its relation is not materialized; run the model first or point base_model_ref at a queryable relation",
-				req.SemanticModelName, model.QualifiedName(),
+				plan.BaseModelName, model.QualifiedName(),
 			)
 		}
 	}
@@ -66,21 +66,18 @@ func (s *Service) normalizeExecutionError(ctx context.Context, req MetricQueryRe
 	return err
 }
 
-func (s *Service) resolveTransformationModel(ctx context.Context, defaultProjectName, relation string) (*domain.Model, error) {
+func (s *Service) resolveTransformationModel(ctx context.Context, relation string) (*domain.Model, error) {
 	relation = strings.TrimSpace(relation)
 	if relation == "" || s.modelRepo == nil {
 		return nil, fmt.Errorf("model repository not configured")
 	}
 
 	parts := strings.SplitN(relation, ".", 2)
-	projectName := defaultProjectName
-	modelName := relation
-	if len(parts) == 2 {
-		projectName = parts[0]
-		modelName = parts[1]
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("relation %q is not project-qualified", relation)
 	}
 
-	model, err := s.modelRepo.GetByName(ctx, projectName, modelName)
+	model, err := s.modelRepo.GetByName(ctx, parts[0], parts[1])
 	if err != nil {
 		return nil, err
 	}

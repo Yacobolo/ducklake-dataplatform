@@ -10,7 +10,7 @@ import (
 )
 
 func TestBuildSemanticModelFlowData_NoRelationships(t *testing.T) {
-	current := semanticTestModel("model-sales", "analytics", "sales")
+	current := semanticTestModel("model-sales", "sales")
 
 	flow, rows := buildSemanticModelFlowData(current, nil, nil)
 
@@ -25,10 +25,10 @@ func TestBuildSemanticModelFlowData_NoRelationships(t *testing.T) {
 }
 
 func TestBuildSemanticModelFlowData_DirectRelationshipsOnly(t *testing.T) {
-	current := semanticTestModel("model-sales", "analytics", "sales")
-	customers := semanticTestModel("model-customers", "analytics", "customers")
-	regions := semanticTestModel("model-regions", "analytics", "regions")
-	campaigns := semanticTestModel("model-campaigns", "analytics", "campaigns")
+	current := semanticTestModel("model-sales", "sales")
+	customers := semanticTestModel("model-customers", "customers")
+	regions := semanticTestModel("model-regions", "regions")
+	campaigns := semanticTestModel("model-campaigns", "campaigns")
 
 	flow, rows := buildSemanticModelFlowData(current,
 		[]domain.SemanticModel{customers, regions, campaigns},
@@ -68,7 +68,7 @@ func TestBuildSemanticModelFlowData_DirectRelationshipsOnly(t *testing.T) {
 
 	require.Len(t, rows, 1)
 	assert.Equal(t, "sales_to_customers", rows[0].Name)
-	assert.Equal(t, "analytics.customers", rows[0].RelatedRelation)
+	assert.Equal(t, "customers", rows[0].RelatedRelation)
 	assert.Equal(t, "N:1", rows[0].Cardinality)
 	assert.Equal(t, "customer_id = customer_id", rows[0].JoinLabel)
 	assert.Equal(t, "customer_id", rows[0].SourceField)
@@ -76,10 +76,10 @@ func TestBuildSemanticModelFlowData_DirectRelationshipsOnly(t *testing.T) {
 }
 
 func TestBuildSemanticModelFlowData_AssignsOutgoingRoles(t *testing.T) {
-	current := semanticTestModel("model-sales", "analytics", "sales")
-	customers := semanticTestModel("model-customers", "analytics", "customers")
-	regions := semanticTestModel("model-regions", "analytics", "regions")
-	products := semanticTestModel("model-products", "analytics", "products")
+	current := semanticTestModel("model-sales", "sales")
+	customers := semanticTestModel("model-customers", "customers")
+	regions := semanticTestModel("model-regions", "regions")
+	products := semanticTestModel("model-products", "products")
 
 	flow, _ := buildSemanticModelFlowData(current,
 		[]domain.SemanticModel{customers, regions, products},
@@ -128,11 +128,10 @@ func TestParseSemanticJoinOperands_RejectsComplexJoin(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func semanticTestModel(id, projectName, name string) domain.SemanticModel {
+func semanticTestModel(id, name string) domain.SemanticModel {
 	return domain.SemanticModel{
-		ID:          id,
-		ProjectName: projectName,
-		Name:        name,
+		ID:   id,
+		Name: name,
 	}
 }
 

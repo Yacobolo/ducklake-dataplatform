@@ -57,7 +57,6 @@ func (s *Service) CreateSemanticModel(ctx context.Context, principal string, req
 	}
 
 	return s.models.Create(ctx, &domain.SemanticModel{
-		ProjectName:          req.ProjectName,
 		Name:                 req.Name,
 		Description:          req.Description,
 		BaseModelRef:         req.BaseModelRef,
@@ -67,37 +66,29 @@ func (s *Service) CreateSemanticModel(ctx context.Context, principal string, req
 	})
 }
 
-// GetSemanticModel retrieves a semantic model by project and name.
-func (s *Service) GetSemanticModel(ctx context.Context, projectName, name string) (*domain.SemanticModel, error) {
-	return s.models.GetByName(ctx, projectName, name)
+// GetSemanticModel retrieves a semantic model by ID.
+func (s *Service) GetSemanticModel(ctx context.Context, semanticModelID string) (*domain.SemanticModel, error) {
+	return s.models.GetByID(ctx, semanticModelID)
 }
 
-// ListSemanticModels lists semantic models with optional project filter.
-func (s *Service) ListSemanticModels(ctx context.Context, projectName *string, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
-	return s.models.List(ctx, projectName, page)
+// ListSemanticModels lists semantic models.
+func (s *Service) ListSemanticModels(ctx context.Context, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
+	return s.models.List(ctx, page)
 }
 
 // UpdateSemanticModel updates an existing semantic model.
-func (s *Service) UpdateSemanticModel(ctx context.Context, projectName, name string, req domain.UpdateSemanticModelRequest) (*domain.SemanticModel, error) {
-	existing, err := s.models.GetByName(ctx, projectName, name)
-	if err != nil {
-		return nil, err
-	}
-	return s.models.Update(ctx, existing.ID, req)
+func (s *Service) UpdateSemanticModel(ctx context.Context, semanticModelID string, req domain.UpdateSemanticModelRequest) (*domain.SemanticModel, error) {
+	return s.models.Update(ctx, semanticModelID, req)
 }
 
 // DeleteSemanticModel deletes an existing semantic model.
-func (s *Service) DeleteSemanticModel(ctx context.Context, projectName, name string) error {
-	existing, err := s.models.GetByName(ctx, projectName, name)
-	if err != nil {
-		return err
-	}
-	return s.models.Delete(ctx, existing.ID)
+func (s *Service) DeleteSemanticModel(ctx context.Context, semanticModelID string) error {
+	return s.models.Delete(ctx, semanticModelID)
 }
 
 // CreateMetric creates a metric inside a semantic model.
-func (s *Service) CreateMetric(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error) {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) CreateMetric(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return nil, err
 	}
@@ -128,8 +119,8 @@ func (s *Service) CreateMetric(ctx context.Context, principal, projectName, sema
 }
 
 // ListMetrics lists metrics for a semantic model.
-func (s *Service) ListMetrics(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error) {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) ListMetrics(ctx context.Context, semanticModelID string) ([]domain.SemanticMetric, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +128,8 @@ func (s *Service) ListMetrics(ctx context.Context, projectName, semanticModelNam
 }
 
 // UpdateMetric updates an existing metric by name.
-func (s *Service) UpdateMetric(ctx context.Context, projectName, semanticModelName, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error) {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) UpdateMetric(ctx context.Context, semanticModelID, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return nil, err
 	}
@@ -155,8 +146,8 @@ func (s *Service) UpdateMetric(ctx context.Context, projectName, semanticModelNa
 }
 
 // DeleteMetric deletes an existing metric by name.
-func (s *Service) DeleteMetric(ctx context.Context, projectName, semanticModelName, metricName string) error {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) DeleteMetric(ctx context.Context, semanticModelID, metricName string) error {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return err
 	}
@@ -191,8 +182,8 @@ func (s *Service) ListRelationships(ctx context.Context, page domain.PageRequest
 }
 
 // CreateRelationshipForModel creates a relationship scoped to a semantic model.
-func (s *Service) CreateRelationshipForModel(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) CreateRelationshipForModel(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return nil, err
 	}
@@ -203,8 +194,8 @@ func (s *Service) CreateRelationshipForModel(ctx context.Context, principal, pro
 }
 
 // ListRelationshipsForModel lists semantic relationships owned by a semantic model.
-func (s *Service) ListRelationshipsForModel(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticRelationship, error) {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) ListRelationshipsForModel(ctx context.Context, semanticModelID string) ([]domain.SemanticRelationship, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return nil, err
 	}
@@ -222,8 +213,8 @@ func (s *Service) DeleteRelationship(ctx context.Context, relationshipName strin
 }
 
 // UpdateRelationshipForModel updates a relationship that belongs to a semantic model.
-func (s *Service) UpdateRelationshipForModel(ctx context.Context, projectName, semanticModelName, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) UpdateRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return nil, err
 	}
@@ -235,8 +226,8 @@ func (s *Service) UpdateRelationshipForModel(ctx context.Context, projectName, s
 }
 
 // DeleteRelationshipForModel deletes a relationship that belongs to a semantic model.
-func (s *Service) DeleteRelationshipForModel(ctx context.Context, projectName, semanticModelName, relationshipName string) error {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) DeleteRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string) error {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return err
 	}
@@ -248,8 +239,8 @@ func (s *Service) DeleteRelationshipForModel(ctx context.Context, projectName, s
 }
 
 // CreatePreAggregation creates a semantic pre-aggregation under a semantic model.
-func (s *Service) CreatePreAggregation(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) CreatePreAggregation(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return nil, err
 	}
@@ -272,8 +263,8 @@ func (s *Service) CreatePreAggregation(ctx context.Context, principal, projectNa
 }
 
 // ListPreAggregations lists pre-aggregations for a semantic model.
-func (s *Service) ListPreAggregations(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticPreAggregation, error) {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) ListPreAggregations(ctx context.Context, semanticModelID string) ([]domain.SemanticPreAggregation, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return nil, err
 	}
@@ -281,8 +272,8 @@ func (s *Service) ListPreAggregations(ctx context.Context, projectName, semantic
 }
 
 // UpdatePreAggregation updates an existing pre-aggregation by name under a semantic model.
-func (s *Service) UpdatePreAggregation(ctx context.Context, projectName, semanticModelName, preAggName string, req domain.UpdateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) UpdatePreAggregation(ctx context.Context, semanticModelID, preAggName string, req domain.UpdateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return nil, err
 	}
@@ -294,8 +285,8 @@ func (s *Service) UpdatePreAggregation(ctx context.Context, projectName, semanti
 }
 
 // DeletePreAggregation deletes an existing pre-aggregation by name under a semantic model.
-func (s *Service) DeletePreAggregation(ctx context.Context, projectName, semanticModelName, preAggName string) error {
-	semanticModel, err := s.models.GetByName(ctx, projectName, semanticModelName)
+func (s *Service) DeletePreAggregation(ctx context.Context, semanticModelID, preAggName string) error {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
 	if err != nil {
 		return err
 	}
@@ -322,8 +313,7 @@ func (s *Service) MaterializePreAggregation(ctx context.Context, principal, preA
 	}
 
 	req := MetricQueryRequest{
-		ProjectName:       model.ProjectName,
-		SemanticModelName: model.Name,
+		SemanticModelID:   model.ID,
 		Metrics:           append([]string(nil), preAgg.MetricSet...),
 		Dimensions:        append([]string(nil), preAgg.DimensionSet...),
 	}

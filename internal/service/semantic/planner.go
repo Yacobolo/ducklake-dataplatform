@@ -43,11 +43,8 @@ func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest
 }
 
 func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest, opts explainMetricQueryOptions) (*MetricQueryPlan, error) {
-	if strings.TrimSpace(req.ProjectName) == "" {
-		return nil, domain.ErrValidation("project_name is required")
-	}
-	if strings.TrimSpace(req.SemanticModelName) == "" {
-		return nil, domain.ErrValidation("semantic_model_name is required")
+	if strings.TrimSpace(req.SemanticModelID) == "" {
+		return nil, domain.ErrValidation("semantic_model_id is required")
 	}
 	if len(req.Metrics) == 0 {
 		return nil, domain.ErrValidation("at least one metric is required")
@@ -59,7 +56,7 @@ func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest
 		return nil, err
 	}
 
-	baseModel, err := s.models.GetByName(ctx, req.ProjectName, req.SemanticModelName)
+	baseModel, err := s.models.GetByID(ctx, req.SemanticModelID)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +74,7 @@ func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest
 	for _, name := range req.Metrics {
 		m, ok := metricByName[name]
 		if !ok {
-			return nil, domain.ErrValidation("metric %q not found in semantic model %q", name, req.SemanticModelName)
+			return nil, domain.ErrValidation("metric %q not found in semantic model %q", name, baseModel.Name)
 		}
 		if err := validateMetricExpression(m); err != nil {
 			return nil, err
@@ -102,7 +99,7 @@ func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest
 		resolvedMetricSQL[metric.Name] = filteredExpr
 	}
 
-	models, _, err := s.models.List(ctx, &req.ProjectName, domain.PageRequest{MaxResults: 10000})
+	models, _, err := s.models.List(ctx, domain.PageRequest{MaxResults: 10000})
 	if err != nil {
 		return nil, fmt.Errorf("list semantic models: %w", err)
 	}

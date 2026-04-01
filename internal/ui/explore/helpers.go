@@ -380,8 +380,8 @@ func itemURL(item domain.ExploreItem) string {
 	case domain.ExploreKindMacro:
 		return "/ui/macros/" + item.Name
 	case domain.ExploreKindSemanticModel:
-		if item.ProjectName != nil && strings.TrimSpace(*item.ProjectName) != "" {
-			return "/ui/semantic/models/" + *item.ProjectName + "/" + item.Name
+		if strings.TrimSpace(item.ID) != "" {
+			return "/ui/semantic/models/" + item.ID
 		}
 	}
 	return "#"

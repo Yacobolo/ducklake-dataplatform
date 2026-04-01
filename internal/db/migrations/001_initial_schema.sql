@@ -455,7 +455,6 @@ CREATE TABLE macro_revisions (
 );
 CREATE TABLE semantic_models (
     id TEXT PRIMARY KEY,
-    project_name TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     owner TEXT NOT NULL DEFAULT '',
@@ -465,7 +464,7 @@ CREATE TABLE semantic_models (
     created_by TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(project_name, name)
+    UNIQUE(name)
 );
 CREATE TABLE semantic_metrics (
     id TEXT PRIMARY KEY,
@@ -811,7 +810,7 @@ CREATE INDEX idx_model_test_results_step ON model_test_results(run_step_id);
 CREATE INDEX idx_macros_visibility ON macros(visibility);
 CREATE INDEX idx_macros_project ON macros(project_name);
 CREATE INDEX idx_macro_revisions_name_version ON macro_revisions(macro_name, version DESC);
-CREATE INDEX idx_semantic_models_project ON semantic_models(project_name);
+CREATE INDEX idx_semantic_models_name ON semantic_models(name);
 CREATE INDEX idx_semantic_metrics_model ON semantic_metrics(semantic_model_id);
 CREATE INDEX idx_semantic_relationships_from ON semantic_relationships(from_semantic_id);
 CREATE INDEX idx_semantic_relationships_to ON semantic_relationships(to_semantic_id);

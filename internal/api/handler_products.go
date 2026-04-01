@@ -1026,7 +1026,6 @@ func productSemanticEntrypointToAPI(item domain.ProductSemanticEntrypoint) Produ
 		Id:               item.ID,
 		ProductVersionId: item.ProductVersionID,
 		SemanticModelId:  item.SemanticModelID,
-		ProjectName:      item.ProjectName,
 		ModelName:        item.ModelName,
 		CreatedAt:        formatTimePtr(&item.CreatedAt),
 	}

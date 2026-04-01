@@ -867,9 +867,8 @@ type SemanticPreAggSpec struct {
 	RefreshPolicy  string   `yaml:"refresh_policy,omitempty"`
 }
 
-// SemanticModelResource is a semantic model with project context from directory tree.
+// SemanticModelResource is a semantic model resource.
 type SemanticModelResource struct {
-	ProjectName string
 	ModelName   string
 	Spec        SemanticModelSpec
 }

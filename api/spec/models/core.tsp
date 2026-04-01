@@ -1551,7 +1551,6 @@ model PaginatedSearchResults {
 }
 
 model CreateSemanticModelRequest {
-  project_name: string;
   name: string;
   description?: string;
   base_model_ref: string;
@@ -1569,7 +1568,6 @@ model UpdateSemanticModelRequest {
 
 model SemanticModel {
   id?: string;
-  project_name?: string;
   name?: string;
   description?: string;
   owner?: string;
@@ -1800,8 +1798,7 @@ model ModelRunStepList {
 }
 
 model MetricQueryRequest {
-  project_name: string;
-  semantic_model_name: string;
+  semantic_model_id: string;
   metrics: string[];
   relationship_names?: string[];
   dimensions?: string[];
@@ -1843,7 +1840,7 @@ model MetricQueryRunResponse {
 
 model MetricFreshnessStatus {
   metric_name?: string;
-  project_name?: string;
+  semantic_model_id?: string;
   semantic_model_name?: string;
   freshness_status?: string;
   freshness_basis?: string[];
@@ -1891,8 +1888,7 @@ model DashboardNotebookCellSource {
 }
 
 model DashboardSemanticQuerySource {
-  project_name: string;
-  semantic_model_name: string;
+  semantic_model_id: string;
   metrics: string[];
   relationship_names?: string[];
   dimensions?: string[];

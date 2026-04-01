@@ -33,7 +33,6 @@ const (
 // SemanticModel defines business-facing semantic metadata anchored to a base model.
 type SemanticModel struct {
 	ID                   string
-	ProjectName          string
 	Name                 string
 	Description          string
 	Owner                string
@@ -47,7 +46,6 @@ type SemanticModel struct {
 
 // CreateSemanticModelRequest holds parameters for creating a semantic model.
 type CreateSemanticModelRequest struct {
-	ProjectName          string
 	Name                 string
 	Description          string
 	BaseModelRef         string
@@ -57,9 +55,6 @@ type CreateSemanticModelRequest struct {
 
 // Validate checks that the request is well-formed.
 func (r *CreateSemanticModelRequest) Validate() error {
-	if r.ProjectName == "" {
-		return ErrValidation("project_name is required")
-	}
 	if r.Name == "" {
 		return ErrValidation("name is required")
 	}

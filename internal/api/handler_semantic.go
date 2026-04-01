@@ -12,25 +12,25 @@ import (
 // semanticService defines semantic layer operations used by the API handler.
 type semanticService interface {
 	CreateSemanticModel(ctx context.Context, principal string, req domain.CreateSemanticModelRequest) (*domain.SemanticModel, error)
-	GetSemanticModel(ctx context.Context, projectName, name string) (*domain.SemanticModel, error)
-	ListSemanticModels(ctx context.Context, projectName *string, page domain.PageRequest) ([]domain.SemanticModel, int64, error)
-	UpdateSemanticModel(ctx context.Context, projectName, name string, req domain.UpdateSemanticModelRequest) (*domain.SemanticModel, error)
-	DeleteSemanticModel(ctx context.Context, projectName, name string) error
+	GetSemanticModel(ctx context.Context, semanticModelID string) (*domain.SemanticModel, error)
+	ListSemanticModels(ctx context.Context, page domain.PageRequest) ([]domain.SemanticModel, int64, error)
+	UpdateSemanticModel(ctx context.Context, semanticModelID string, req domain.UpdateSemanticModelRequest) (*domain.SemanticModel, error)
+	DeleteSemanticModel(ctx context.Context, semanticModelID string) error
 
-	CreateMetric(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error)
-	ListMetrics(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticMetric, error)
-	UpdateMetric(ctx context.Context, projectName, semanticModelName, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error)
-	DeleteMetric(ctx context.Context, projectName, semanticModelName, metricName string) error
+	CreateMetric(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error)
+	ListMetrics(ctx context.Context, semanticModelID string) ([]domain.SemanticMetric, error)
+	UpdateMetric(ctx context.Context, semanticModelID, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error)
+	DeleteMetric(ctx context.Context, semanticModelID, metricName string) error
 
-	CreatePreAggregation(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error)
-	ListPreAggregations(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticPreAggregation, error)
-	UpdatePreAggregation(ctx context.Context, projectName, semanticModelName, preAggName string, req domain.UpdateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error)
-	DeletePreAggregation(ctx context.Context, projectName, semanticModelName, preAggName string) error
+	CreatePreAggregation(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error)
+	ListPreAggregations(ctx context.Context, semanticModelID string) ([]domain.SemanticPreAggregation, error)
+	UpdatePreAggregation(ctx context.Context, semanticModelID, preAggName string, req domain.UpdateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error)
+	DeletePreAggregation(ctx context.Context, semanticModelID, preAggName string) error
 
-	CreateRelationshipForModel(ctx context.Context, principal, projectName, semanticModelName string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
-	ListRelationshipsForModel(ctx context.Context, projectName, semanticModelName string) ([]domain.SemanticRelationship, error)
-	UpdateRelationshipForModel(ctx context.Context, projectName, semanticModelName, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
-	DeleteRelationshipForModel(ctx context.Context, projectName, semanticModelName, relationshipName string) error
+	CreateRelationshipForModel(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
+	ListRelationshipsForModel(ctx context.Context, semanticModelID string) ([]domain.SemanticRelationship, error)
+	UpdateRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
+	DeleteRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string) error
 
 	ExplainMetricQuery(ctx context.Context, req semantic.MetricQueryRequest) (*semantic.MetricQueryPlan, error)
 	RunMetricQuery(ctx context.Context, principal string, req semantic.MetricQueryRequest) (*semantic.MetricQueryResult, error)
@@ -44,7 +44,7 @@ func (h *APIHandler) ListSemanticModels(ctx context.Context, req GenListSemantic
 	}
 
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	models, total, err := h.semantics.ListSemanticModels(ctx, req.Params.ProjectName, page)
+	models, total, err := h.semantics.ListSemanticModels(ctx, page)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListSemanticModelsResponse]("listSemanticModels", err, domainErrorResponder[GenListSemanticModelsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListSemanticModelsResponse {
@@ -71,7 +71,6 @@ func (h *APIHandler) ListSemanticModels(ctx context.Context, req GenListSemantic
 func (h *APIHandler) CreateSemanticModel(ctx context.Context, req GenCreateSemanticModelRequest) (GenCreateSemanticModelResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.semantics.CreateSemanticModel(ctx, cp.Name, domain.CreateSemanticModelRequest{
-		ProjectName:          req.Body.ProjectName,
 		Name:                 req.Body.Name,
 		Description:          valOrEmpty(req.Body.Description),
 		BaseModelRef:         req.Body.BaseModelRef,
@@ -100,7 +99,7 @@ func (h *APIHandler) CreateSemanticModel(ctx context.Context, req GenCreateSeman
 
 // GetSemanticModel retrieves a semantic model.
 func (h *APIHandler) GetSemanticModel(ctx context.Context, req GenGetSemanticModelRequest) (GenGetSemanticModelResponse, error) {
-	result, err := h.semantics.GetSemanticModel(ctx, req.ProjectName, req.SemanticModelName)
+	result, err := h.semantics.GetSemanticModel(ctx, req.SemanticModelId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenGetSemanticModelResponse]("getSemanticModel", err, domainErrorResponder[GenGetSemanticModelResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenGetSemanticModelResponse {
@@ -126,7 +125,7 @@ func (h *APIHandler) UpdateSemanticModel(ctx context.Context, req GenUpdateSeman
 		domReq.Tags = *req.Body.Tags
 	}
 
-	result, err := h.semantics.UpdateSemanticModel(ctx, req.ProjectName, req.SemanticModelName, domReq)
+	result, err := h.semantics.UpdateSemanticModel(ctx, req.SemanticModelId, domReq)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenUpdateSemanticModelResponse]("updateSemanticModel", err, domainErrorResponder[GenUpdateSemanticModelResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateSemanticModelResponse {
@@ -149,7 +148,7 @@ func (h *APIHandler) UpdateSemanticModel(ctx context.Context, req GenUpdateSeman
 
 // DeleteSemanticModel deletes a semantic model.
 func (h *APIHandler) DeleteSemanticModel(ctx context.Context, req GenDeleteSemanticModelRequest) (GenDeleteSemanticModelResponse, error) {
-	if err := h.semantics.DeleteSemanticModel(ctx, req.ProjectName, req.SemanticModelName); err != nil {
+	if err := h.semantics.DeleteSemanticModel(ctx, req.SemanticModelId); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenDeleteSemanticModelResponse]("deleteSemanticModel", err, domainErrorResponder[GenDeleteSemanticModelResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteSemanticModelResponse {
 				return DeleteSemanticModel403JSONResponse{resp}
@@ -173,7 +172,7 @@ func (h *APIHandler) ListSemanticMetrics(ctx context.Context, req GenListSemanti
 		return GenListSemanticMetrics200JSONResponse{Body: semanticMetricListToGen(empty), Headers: GenListSemanticMetrics200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
-	items, err := h.semantics.ListMetrics(ctx, req.ProjectName, req.SemanticModelName)
+	items, err := h.semantics.ListMetrics(ctx, req.SemanticModelId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListSemanticMetricsResponse]("listSemanticMetrics", err, domainErrorResponder[GenListSemanticMetricsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListSemanticMetricsResponse {
@@ -211,7 +210,7 @@ func (h *APIHandler) CreateSemanticMetric(ctx context.Context, req GenCreateSema
 		domReq.ExpressionMode = string(*req.Body.ExpressionMode)
 	}
 
-	result, err := h.semantics.CreateMetric(ctx, cp.Name, req.ProjectName, req.SemanticModelName, domReq)
+	result, err := h.semantics.CreateMetric(ctx, cp.Name, req.SemanticModelId, domReq)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenCreateSemanticMetricResponse]("createSemanticMetric", err, domainErrorResponder[GenCreateSemanticMetricResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCreateSemanticMetricResponse {
@@ -262,7 +261,7 @@ func (h *APIHandler) UpdateSemanticMetric(ctx context.Context, req GenUpdateSema
 		domReq.CertificationState = &s
 	}
 
-	result, err := h.semantics.UpdateMetric(ctx, req.ProjectName, req.SemanticModelName, req.MetricName, domReq)
+	result, err := h.semantics.UpdateMetric(ctx, req.SemanticModelId, req.MetricName, domReq)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenUpdateSemanticMetricResponse]("updateSemanticMetric", err, domainErrorResponder[GenUpdateSemanticMetricResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateSemanticMetricResponse {
@@ -285,7 +284,7 @@ func (h *APIHandler) UpdateSemanticMetric(ctx context.Context, req GenUpdateSema
 
 // DeleteSemanticMetric deletes a metric under a semantic model.
 func (h *APIHandler) DeleteSemanticMetric(ctx context.Context, req GenDeleteSemanticMetricRequest) (GenDeleteSemanticMetricResponse, error) {
-	if err := h.semantics.DeleteMetric(ctx, req.ProjectName, req.SemanticModelName, req.MetricName); err != nil {
+	if err := h.semantics.DeleteMetric(ctx, req.SemanticModelId, req.MetricName); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenDeleteSemanticMetricResponse]("deleteSemanticMetric", err, domainErrorResponder[GenDeleteSemanticMetricResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteSemanticMetricResponse {
 				return DeleteSemanticMetric403JSONResponse{resp}
@@ -308,7 +307,7 @@ func (h *APIHandler) ListSemanticPreAggregations(ctx context.Context, req GenLis
 		return GenListSemanticPreAggregations200JSONResponse{Body: semanticPreAggregationListToGen(empty), Headers: GenListSemanticPreAggregations200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
-	items, err := h.semantics.ListPreAggregations(ctx, req.ProjectName, req.SemanticModelName)
+	items, err := h.semantics.ListPreAggregations(ctx, req.SemanticModelId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListSemanticPreAggregationsResponse]("listSemanticPreAggregations", err, domainErrorResponder[GenListSemanticPreAggregationsResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenListSemanticPreAggregationsResponse {
@@ -329,7 +328,7 @@ func (h *APIHandler) ListSemanticPreAggregations(ctx context.Context, req GenLis
 // CreateSemanticPreAggregation creates a pre-aggregation under a semantic model.
 func (h *APIHandler) CreateSemanticPreAggregation(ctx context.Context, req GenCreateSemanticPreAggregationRequest) (GenCreateSemanticPreAggregationResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
-	result, err := h.semantics.CreatePreAggregation(ctx, cp.Name, req.ProjectName, req.SemanticModelName, domain.CreateSemanticPreAggregationRequest{
+	result, err := h.semantics.CreatePreAggregation(ctx, cp.Name, req.SemanticModelId, domain.CreateSemanticPreAggregationRequest{
 		SemanticModelID: "",
 		Name:            req.Body.Name,
 		MetricSet:       sliceOrEmpty(req.Body.MetricSet),
@@ -369,7 +368,7 @@ func (h *APIHandler) UpdateSemanticPreAggregation(ctx context.Context, req GenUp
 	if req.Body.DimensionSet != nil {
 		domReq.DimensionSet = *req.Body.DimensionSet
 	}
-	result, err := h.semantics.UpdatePreAggregation(ctx, req.ProjectName, req.SemanticModelName, req.PreAggregationName, domReq)
+	result, err := h.semantics.UpdatePreAggregation(ctx, req.SemanticModelId, req.PreAggregationName, domReq)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenUpdateSemanticPreAggregationResponse]("updateSemanticPreAggregation", err, domainErrorResponder[GenUpdateSemanticPreAggregationResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateSemanticPreAggregationResponse {
@@ -391,7 +390,7 @@ func (h *APIHandler) UpdateSemanticPreAggregation(ctx context.Context, req GenUp
 
 // DeleteSemanticPreAggregation deletes a pre-aggregation under a semantic model.
 func (h *APIHandler) DeleteSemanticPreAggregation(ctx context.Context, req GenDeleteSemanticPreAggregationRequest) (GenDeleteSemanticPreAggregationResponse, error) {
-	if err := h.semantics.DeletePreAggregation(ctx, req.ProjectName, req.SemanticModelName, req.PreAggregationName); err != nil {
+	if err := h.semantics.DeletePreAggregation(ctx, req.SemanticModelId, req.PreAggregationName); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenDeleteSemanticPreAggregationResponse]("deleteSemanticPreAggregation", err, domainErrorResponder[GenDeleteSemanticPreAggregationResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteSemanticPreAggregationResponse {
 				return DeleteSemanticPreAggregation403JSONResponse{resp}
@@ -414,7 +413,7 @@ func (h *APIHandler) ListSemanticModelRelationships(ctx context.Context, req Gen
 		return GenListSemanticModelRelationships200JSONResponse{Body: semanticRelationshipListToGen(empty), Headers: GenListSemanticModelRelationships200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 	}
 
-	rels, err := h.semantics.ListRelationshipsForModel(ctx, req.ProjectName, req.SemanticModelName)
+	rels, err := h.semantics.ListRelationshipsForModel(ctx, req.SemanticModelId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListSemanticModelRelationshipsResponse]("listSemanticModelRelationships", err, domainErrorResponder[GenListSemanticModelRelationshipsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListSemanticModelRelationshipsResponse {
@@ -441,7 +440,7 @@ func (h *APIHandler) ListSemanticModelRelationships(ctx context.Context, req Gen
 // CreateSemanticModelRelationship creates a semantic relationship for a semantic model.
 func (h *APIHandler) CreateSemanticModelRelationship(ctx context.Context, req GenCreateSemanticModelRelationshipRequest) (GenCreateSemanticModelRelationshipResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
-	result, err := h.semantics.CreateRelationshipForModel(ctx, cp.Name, req.ProjectName, req.SemanticModelName, domain.CreateSemanticRelationshipRequest{
+	result, err := h.semantics.CreateRelationshipForModel(ctx, cp.Name, req.SemanticModelId, domain.CreateSemanticRelationshipRequest{
 		Name:             req.Body.Name,
 		FromSemanticID:   req.Body.FromSemanticId,
 		ToSemanticID:     req.Body.ToSemanticId,
@@ -491,7 +490,7 @@ func (h *APIHandler) UpdateSemanticModelRelationship(ctx context.Context, req Ge
 		domReq.MaxHops = &v
 	}
 
-	result, err := h.semantics.UpdateRelationshipForModel(ctx, req.ProjectName, req.SemanticModelName, req.RelationshipName, domReq)
+	result, err := h.semantics.UpdateRelationshipForModel(ctx, req.SemanticModelId, req.RelationshipName, domReq)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenUpdateSemanticModelRelationshipResponse]("updateSemanticModelRelationship", err, domainErrorResponder[GenUpdateSemanticModelRelationshipResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenUpdateSemanticModelRelationshipResponse {
@@ -513,7 +512,7 @@ func (h *APIHandler) UpdateSemanticModelRelationship(ctx context.Context, req Ge
 
 // DeleteSemanticModelRelationship deletes a semantic relationship for a semantic model.
 func (h *APIHandler) DeleteSemanticModelRelationship(ctx context.Context, req GenDeleteSemanticModelRelationshipRequest) (GenDeleteSemanticModelRelationshipResponse, error) {
-	if err := h.semantics.DeleteRelationshipForModel(ctx, req.ProjectName, req.SemanticModelName, req.RelationshipName); err != nil {
+	if err := h.semantics.DeleteRelationshipForModel(ctx, req.SemanticModelId, req.RelationshipName); err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenDeleteSemanticModelRelationshipResponse]("deleteSemanticModelRelationship", err, domainErrorResponder[GenDeleteSemanticModelRelationshipResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteSemanticModelRelationshipResponse {
 				return DeleteSemanticModelRelationship403JSONResponse{resp}
@@ -535,7 +534,7 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 		return GenCheckMetricFreshness404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: "semantic service is not configured"}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
-	models, _, err := h.semantics.ListSemanticModels(ctx, req.Params.ProjectName, domain.PageRequest{MaxResults: 10000})
+	models, _, err := h.semantics.ListSemanticModels(ctx, domain.PageRequest{MaxResults: 10000})
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenCheckMetricFreshnessResponse]("checkMetricFreshness", err, domainErrorResponder[GenCheckMetricFreshnessResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenCheckMetricFreshnessResponse {
@@ -554,16 +553,16 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 	}
 
 	type metricMatch struct {
-		projectName       string
+		semanticModelID   string
 		semanticModelName string
 	}
 
 	matches := make([]metricMatch, 0, 1)
 	for _, model := range models {
-		if req.Params.SemanticModelName != nil && model.Name != *req.Params.SemanticModelName {
+		if req.Params.SemanticModelId != nil && model.ID != *req.Params.SemanticModelId {
 			continue
 		}
-		metrics, listErr := h.semantics.ListMetrics(ctx, model.ProjectName, model.Name)
+		metrics, listErr := h.semantics.ListMetrics(ctx, model.ID)
 		if listErr != nil {
 			if resp, ok := respondDomainErrorForOperation[GenCheckMetricFreshnessResponse]("checkMetricFreshness", listErr, domainErrorResponder[GenCheckMetricFreshnessResponse]{
 				BadRequest: func(resp BadRequestJSONResponse) GenCheckMetricFreshnessResponse {
@@ -582,7 +581,7 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 		}
 		for _, metric := range metrics {
 			if metric.Name == req.MetricName {
-				matches = append(matches, metricMatch{projectName: model.ProjectName, semanticModelName: model.Name})
+				matches = append(matches, metricMatch{semanticModelID: model.ID, semanticModelName: model.Name})
 			}
 		}
 	}
@@ -592,14 +591,13 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 		return GenCheckMetricFreshness404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 	if len(matches) > 1 {
-		err = domain.ErrValidation("metric %q is ambiguous; provide project_name and semantic_model_name", req.MetricName)
+		err = domain.ErrValidation("metric %q is ambiguous; provide semantic_model_id", req.MetricName)
 		return CheckMetricFreshness400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 	}
 
 	match := matches[0]
 	plan, err := h.semantics.ExplainMetricQuery(ctx, semantic.MetricQueryRequest{
-		ProjectName:       match.projectName,
-		SemanticModelName: match.semanticModelName,
+		SemanticModelID:   match.semanticModelID,
 		Metrics:           []string{req.MetricName},
 	})
 	if err != nil {
@@ -620,7 +618,7 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 	checkedAt := time.Now().UTC().Format(time.RFC3339)
 	return GenCheckMetricFreshness200JSONResponse{Body: MetricFreshnessStatus{
 		MetricName:             &req.MetricName,
-		ProjectName:            &match.projectName,
+		SemanticModelId:        &match.semanticModelID,
 		SemanticModelName:      &match.semanticModelName,
 		FreshnessStatus:        optStr(plan.FreshnessStatus),
 		FreshnessBasis:         &basis,
@@ -680,7 +678,6 @@ func (h *APIHandler) RunMetricQuery(ctx context.Context, req GenRunMetricQueryRe
 func semanticModelToAPI(m domain.SemanticModel) SemanticModel {
 	return SemanticModel{
 		Id:                   optStr(m.ID),
-		ProjectName:          optStr(m.ProjectName),
 		Name:                 optStr(m.Name),
 		Description:          optStr(m.Description),
 		Owner:                optStr(m.Owner),
@@ -802,8 +799,7 @@ func semanticReqToService(req *GenSchemaMetricQueryRequest) semantic.MetricQuery
 		return semantic.MetricQueryRequest{}
 	}
 	out := semantic.MetricQueryRequest{
-		ProjectName:       req.ProjectName,
-		SemanticModelName: req.SemanticModelName,
+		SemanticModelID:   req.SemanticModelId,
 		Metrics:           req.Metrics,
 	}
 	if req.RelationshipNames != nil {

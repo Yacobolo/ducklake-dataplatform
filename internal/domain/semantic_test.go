@@ -8,7 +8,6 @@ import (
 
 func TestCreateSemanticModelRequest_Validate(t *testing.T) {
 	req := CreateSemanticModelRequest{
-		ProjectName:  "analytics",
 		Name:         "sales",
 		BaseModelRef: "analytics.fct_sales",
 	}

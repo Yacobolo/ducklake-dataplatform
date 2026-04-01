@@ -218,14 +218,13 @@ func TestService_ResolveWidget_SemanticQuery(t *testing.T) {
 		RowCount: 1,
 	}
 
-	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
-		ProjectName:  "analytics",
+	model, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
 		Name:         "sales",
 		BaseModelRef: "analytics.sales",
 	})
 	require.NoError(t, err)
-	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
-		SemanticModelID: "ignored",
+	_, err = semanticSvc.CreateMetric(ctx, "alice", model.ID, domain.CreateSemanticMetricRequest{
+		SemanticModelID: model.ID,
 		Name:            "revenue",
 		MetricType:      domain.MetricTypeSum,
 		ExpressionMode:  domain.MetricExpressionModeSQL,
@@ -239,10 +238,9 @@ func TestService_ResolveWidget_SemanticQuery(t *testing.T) {
 		Source: domain.DashboardWidgetSource{
 			Kind: domain.DashboardWidgetSourceSemanticQuery,
 			SemanticQuery: &domain.DashboardSemanticQuerySource{
-				ProjectName:       "analytics",
-				SemanticModelName: "sales",
-				Metrics:           []string{"revenue"},
-				Dimensions:        []string{"region"},
+				SemanticModelID: model.ID,
+				Metrics:         []string{"revenue"},
+				Dimensions:      []string{"region"},
 			},
 		},
 		VisualSpec: &domain.VisualSpec{

@@ -323,7 +323,7 @@ func Validate(state *DesiredState) []ValidationError {
 
 	semanticModelKeys := make(map[string]bool, len(state.SemanticModels))
 	for _, m := range state.SemanticModels {
-		semanticModelKeys[m.ProjectName+"."+m.ModelName] = true
+		semanticModelKeys[m.ModelName] = true
 	}
 
 	presetNames := make(map[string]bool, len(state.PrivilegePresets))
@@ -2126,11 +2126,8 @@ var validMacroStatus = map[string]bool{
 func validateSemanticModels(models []SemanticModelResource, errs *[]ValidationError) {
 	seenModels := make(map[string]bool, len(models))
 	for i, m := range models {
-		key := m.ProjectName + "." + m.ModelName
+		key := m.ModelName
 		path := fmt.Sprintf("semantic_model[%s]", key)
-		if m.ProjectName == "" {
-			addErr(errs, path, "project name is required")
-		}
 		if m.ModelName == "" {
 			addErr(errs, path, "model name is required")
 		}

@@ -699,8 +699,8 @@ type MacroRepository interface {
 type SemanticModelRepository interface {
 	Create(ctx context.Context, m *SemanticModel) (*SemanticModel, error)
 	GetByID(ctx context.Context, id string) (*SemanticModel, error)
-	GetByName(ctx context.Context, projectName, name string) (*SemanticModel, error)
-	List(ctx context.Context, projectName *string, page PageRequest) ([]SemanticModel, int64, error)
+	GetByName(ctx context.Context, name string) (*SemanticModel, error)
+	List(ctx context.Context, page PageRequest) ([]SemanticModel, int64, error)
 	Update(ctx context.Context, id string, req UpdateSemanticModelRequest) (*SemanticModel, error)
 	Delete(ctx context.Context, id string) error
 	ListAll(ctx context.Context) ([]SemanticModel, error)

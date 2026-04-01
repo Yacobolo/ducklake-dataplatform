@@ -3,7 +3,7 @@
 # Schema: `DashboardSemanticQuerySource`
 
 - Type: `object`
-- Required fields: `metrics`, `project_name`, `semantic_model_name`
+- Required fields: `metrics`, `semantic_model_id`
 
 ## Properties
 
@@ -14,8 +14,7 @@
 | `limit` | `integer` | `false` | - |
 | `metrics` | `array[string]` | `true` | - |
 | `order_by` | `array[string]` | `false` | - |
-| `project_name` | `string` | `true` | - |
 | `relationship_names` | `array[string]` | `false` | - |
-| `semantic_model_name` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 | `time_grain` | `string` | `false` | - |
 

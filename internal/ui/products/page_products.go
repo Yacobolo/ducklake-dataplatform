@@ -150,7 +150,8 @@ func productDetailPage(principal domain.ContextPrincipal, detail *domain.DataPro
 
 	semanticEntrypoints := make([]Node, 0, len(detail.SemanticEntrypoints))
 	for i := range detail.SemanticEntrypoints {
-		semanticEntrypoints = append(semanticEntrypoints, core.ItemListEntry(Text(detail.SemanticEntrypoints[i].ProjectName+"."+detail.SemanticEntrypoints[i].ModelName)))
+		entrypoint := detail.SemanticEntrypoints[i]
+		semanticEntrypoints = append(semanticEntrypoints, core.ItemListEntry(core.TextLink("/ui/semantic/models/"+url.PathEscape(entrypoint.SemanticModelID), Text(entrypoint.ModelName))))
 	}
 	if len(semanticEntrypoints) == 0 {
 		semanticEntrypoints = append(semanticEntrypoints, core.ItemListEntry(Text("No semantic entrypoints linked yet.")))
@@ -366,7 +367,8 @@ func productVersionPage(principal domain.ContextPrincipal, detail *domain.DataPr
 
 	semanticEntrypoints := make([]Node, 0, len(versionDetail.SemanticEntrypoints))
 	for i := range versionDetail.SemanticEntrypoints {
-		semanticEntrypoints = append(semanticEntrypoints, core.ItemListEntry(Text(versionDetail.SemanticEntrypoints[i].ProjectName+"."+versionDetail.SemanticEntrypoints[i].ModelName)))
+		entrypoint := versionDetail.SemanticEntrypoints[i]
+		semanticEntrypoints = append(semanticEntrypoints, core.ItemListEntry(core.TextLink("/ui/semantic/models/"+url.PathEscape(entrypoint.SemanticModelID), Text(entrypoint.ModelName))))
 	}
 	if len(semanticEntrypoints) == 0 {
 		semanticEntrypoints = append(semanticEntrypoints, core.ItemListEntry(Text("No semantic entrypoints linked to this version.")))
@@ -548,7 +550,7 @@ func joinSemanticModelRefs(entrypoints []domain.ProductSemanticEntrypoint) strin
 	}
 	refs := make([]string, 0, len(entrypoints))
 	for i := range entrypoints {
-		refs = append(refs, entrypoints[i].ProjectName+"."+entrypoints[i].ModelName)
+		refs = append(refs, entrypoints[i].ModelName)
 	}
 	return strings.Join(refs, ", ")
 }

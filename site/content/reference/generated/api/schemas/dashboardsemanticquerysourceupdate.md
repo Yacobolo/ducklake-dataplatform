@@ -13,8 +13,7 @@
 | `limit` | `integer` | `false` | - |
 | `metrics` | `array[string]` | `false` | - |
 | `order_by` | `array[string]` | `false` | - |
-| `project_name` | `string` | `false` | - |
 | `relationship_names` | `array[string]` | `false` | - |
-| `semantic_model_name` | `string` | `false` | - |
+| `semantic_model_id` | `string` | `false` | - |
 | `time_grain` | `string` | `false` | - |
 

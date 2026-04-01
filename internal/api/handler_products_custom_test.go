@@ -220,7 +220,7 @@ func TestProductRoutes_SemanticEntrypoints(t *testing.T) {
 	entrypointsRR := httptest.NewRecorder()
 	r.ServeHTTP(entrypointsRR, entrypointsReq)
 	require.Equal(t, http.StatusOK, entrypointsRR.Code)
-	assert.Contains(t, entrypointsRR.Body.String(), `"project_name":"sales"`)
+	assert.Contains(t, entrypointsRR.Body.String(), `"semantic_model_id":"`)
 	assert.Contains(t, entrypointsRR.Body.String(), `"model_name":"orders"`)
 }
 

@@ -913,33 +913,15 @@ func loadModels(root string, state *DesiredState, opts LoadOptions) error {
 	return nil
 }
 
-// loadSemanticModels walks the semantic_models/<project>/**/*.yaml directory tree recursively.
-// The first-level directory is the project name; semantic model name is from the filename.
-// Subdirectories within a project are organizational only.
+// loadSemanticModels walks the semantic_models/**/*.yaml directory tree recursively.
+// Subdirectories are organizational only; semantic model name is from the filename.
 func loadSemanticModels(root string, state *DesiredState, opts LoadOptions) error {
 	semanticDir := filepath.Join(root, "semantic_models")
 	if !dirExists(semanticDir) {
 		return nil
 	}
 
-	projectEntries, err := os.ReadDir(semanticDir)
-	if err != nil {
-		return fmt.Errorf("read semantic_models directory: %w", err)
-	}
-
-	for _, projEntry := range projectEntries {
-		if !projEntry.IsDir() {
-			continue
-		}
-		projectName := projEntry.Name()
-		projectPath := filepath.Join(semanticDir, projectName)
-
-		if err := loadSemanticModelsRecursive(projectPath, projectName, state, opts); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return loadSemanticModelsRecursive(semanticDir, state, opts)
 }
 
 // loadMacros walks the macros/ directory. Each .yaml file is a macro.
@@ -1034,8 +1016,8 @@ func loadModelsRecursive(dir, projectName string, state *DesiredState, opts Load
 	return nil
 }
 
-// loadSemanticModelsRecursive walks a project subtree and loads all semantic model YAML files.
-func loadSemanticModelsRecursive(dir, projectName string, state *DesiredState, opts LoadOptions) error {
+// loadSemanticModelsRecursive walks a semantic model subtree and loads all semantic model YAML files.
+func loadSemanticModelsRecursive(dir string, state *DesiredState, opts LoadOptions) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return fmt.Errorf("read semantic_models directory %s: %w", dir, err)
@@ -1043,7 +1025,7 @@ func loadSemanticModelsRecursive(dir, projectName string, state *DesiredState, o
 
 	for _, entry := range entries {
 		if entry.IsDir() {
-			if err := loadSemanticModelsRecursive(filepath.Join(dir, entry.Name()), projectName, state, opts); err != nil {
+			if err := loadSemanticModelsRecursive(filepath.Join(dir, entry.Name()), state, opts); err != nil {
 				return err
 			}
 			continue
@@ -1073,7 +1055,6 @@ func loadSemanticModelsRecursive(dir, projectName string, state *DesiredState, o
 		}
 
 		state.SemanticModels = append(state.SemanticModels, SemanticModelResource{
-			ProjectName: projectName,
 			ModelName:   modelName,
 			Spec:        modelDoc.Spec,
 		})

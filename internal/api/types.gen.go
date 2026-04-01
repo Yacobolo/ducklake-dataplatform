@@ -895,7 +895,6 @@ type CreateSemanticModelRequest struct {
 	DefaultTimeDimension *string   `json:"default_time_dimension,omitempty"`
 	Description          *string   `json:"description,omitempty"`
 	Name                 string    `json:"name"`
-	ProjectName          string    `json:"project_name"`
 	Tags                 *[]string `json:"tags,omitempty"`
 }
 
@@ -991,9 +990,8 @@ type DashboardSemanticQuerySource struct {
 	Limit             *int32    `json:"limit,omitempty"`
 	Metrics           []string  `json:"metrics"`
 	OrderBy           *[]string `json:"order_by,omitempty"`
-	ProjectName       string    `json:"project_name"`
 	RelationshipNames *[]string `json:"relationship_names,omitempty"`
-	SemanticModelName string    `json:"semantic_model_name"`
+	SemanticModelId   string    `json:"semantic_model_id"`
 	TimeGrain         *string   `json:"time_grain,omitempty"`
 }
 
@@ -1403,8 +1401,8 @@ type MetricFreshnessStatus struct {
 	FreshnessBasis         *[]string `json:"freshness_basis,omitempty"`
 	FreshnessStatus        *string   `json:"freshness_status,omitempty"`
 	MetricName             *string   `json:"metric_name,omitempty"`
-	ProjectName            *string   `json:"project_name,omitempty"`
 	SelectedPreAggregation *string   `json:"selected_pre_aggregation,omitempty"`
+	SemanticModelId        *string   `json:"semantic_model_id,omitempty"`
 	SemanticModelName      *string   `json:"semantic_model_name,omitempty"`
 }
 
@@ -1439,9 +1437,8 @@ type MetricQueryRequest struct {
 	Limit             *int32    `json:"limit,omitempty"`
 	Metrics           []string  `json:"metrics"`
 	OrderBy           *[]string `json:"order_by,omitempty"`
-	ProjectName       string    `json:"project_name"`
 	RelationshipNames *[]string `json:"relationship_names,omitempty"`
-	SemanticModelName string    `json:"semantic_model_name"`
+	SemanticModelId   string    `json:"semantic_model_id"`
 	TimeGrain         *string   `json:"time_grain,omitempty"`
 }
 
@@ -2248,7 +2245,6 @@ type ProductSemanticEntrypoint struct {
 	Id               string  `json:"id"`
 	ModelName        string  `json:"model_name"`
 	ProductVersionId string  `json:"product_version_id"`
-	ProjectName      string  `json:"project_name"`
 	SemanticModelId  string  `json:"semantic_model_id"`
 }
 
@@ -2495,7 +2491,6 @@ type SemanticModel struct {
 	Id                   *string   `json:"id,omitempty"`
 	Name                 *string   `json:"name,omitempty"`
 	Owner                *string   `json:"owner,omitempty"`
-	ProjectName          *string   `json:"project_name,omitempty"`
 	Tags                 *[]string `json:"tags,omitempty"`
 	UpdatedAt            *string   `json:"updated_at,omitempty"`
 }

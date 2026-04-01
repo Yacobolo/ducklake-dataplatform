@@ -21,11 +21,7 @@ func (h *Handler) SemanticHome(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) SemanticModelsList(w http.ResponseWriter, r *http.Request) {
 	pageReq := pageFromRequest(r, 30)
-	var projectName *string
-	if p := r.URL.Query().Get("project"); p != "" {
-		projectName = &p
-	}
-	items, total, err := h.deps.Semantic.ListSemanticModels(r.Context(), projectName, pageReq)
+	items, total, err := h.deps.Semantic.ListSemanticModels(r.Context(), pageReq)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -35,8 +31,8 @@ func (h *Handler) SemanticModelsList(w http.ResponseWriter, r *http.Request) {
 	for i := range items {
 		item := items[i]
 		rows = append(rows, semanticModelRowData{
-			Name:      item.ProjectName + "." + item.Name,
-			URL:       "/ui/semantic/models/" + item.ProjectName + "/" + item.Name,
+			Name:      item.Name,
+			URL:       "/ui/semantic/models/" + item.ID,
 			BaseModel: item.BaseModelRef,
 			Owner:     item.Owner,
 			UpdatedAt: formatTime(item.UpdatedAt),
@@ -61,7 +57,6 @@ func (h *Handler) SemanticModelsCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	item, err := h.deps.Semantic.CreateSemanticModel(r.Context(), principalName(r), domain.CreateSemanticModelRequest{
-		ProjectName:          formString(r.Form, "project_name"),
 		Name:                 formString(r.Form, "name"),
 		Description:          formString(r.Form, "description"),
 		BaseModelRef:         formString(r.Form, "base_model_ref"),
@@ -72,29 +67,28 @@ func (h *Handler) SemanticModelsCreate(w http.ResponseWriter, r *http.Request) {
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/semantic/models/"+item.ProjectName+"/"+item.Name, http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/semantic/models/"+item.ID, http.StatusSeeOther)
 }
 
 func (h *Handler) SemanticModelsDetail(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 
-	item, err := h.deps.Semantic.GetSemanticModel(r.Context(), projectName, semanticModelName)
+	item, err := h.deps.Semantic.GetSemanticModel(r.Context(), semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), projectName, semanticModelName)
+	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	models, _, err := h.deps.Semantic.ListSemanticModels(r.Context(), nil, domain.PageRequest{MaxResults: 1000})
+	models, _, err := h.deps.Semantic.ListSemanticModels(r.Context(), domain.PageRequest{MaxResults: 1000})
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	relationships, err := h.deps.Semantic.ListRelationshipsForModel(r.Context(), projectName, semanticModelName)
+	relationships, err := h.deps.Semantic.ListRelationshipsForModel(r.Context(), semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -109,8 +103,8 @@ func (h *Handler) SemanticModelsDetail(w http.ResponseWriter, r *http.Request) {
 			Expression:        metric.Expression,
 			RelationshipNames: metric.RelationshipNames,
 			Status:            metric.CertificationState,
-			EditURL:           "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/edit",
-			DeleteURL:         "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/delete",
+			EditURL:           "/ui/semantic/models/" + semanticModelID + "/metrics/" + metric.Name + "/edit",
+			DeleteURL:         "/ui/semantic/models/" + semanticModelID + "/metrics/" + metric.Name + "/delete",
 		})
 	}
 
@@ -119,13 +113,13 @@ func (h *Handler) SemanticModelsDetail(w http.ResponseWriter, r *http.Request) {
 
 	core.RenderHTML(w, http.StatusOK, semanticModelDetailPage(semanticModelDetailPageData{
 		Principal:            core.PrincipalFromContext(r.Context()),
-		ProjectName:          projectName,
-		ModelName:            semanticModelName,
+		SemanticModelID:      semanticModelID,
+		ModelName:            item.Name,
 		BaseModelRef:         item.BaseModelRef,
 		DefaultTimeDim:       valueOrDash(item.DefaultTimeDimension),
 		Description:          item.Description,
-		EditURL:              "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/edit",
-		DeleteURL:            "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/delete",
+		EditURL:              "/ui/semantic/models/" + semanticModelID + "/edit",
+		DeleteURL:            "/ui/semantic/models/" + semanticModelID + "/delete",
 		GraphNodesJSON:       graphNodesJSON,
 		GraphEdgesJSON:       graphEdgesJSON,
 		RelationshipCount:    len(flowData.Edges),
@@ -137,29 +131,28 @@ func (h *Handler) SemanticModelsDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
-	item, err := h.deps.Semantic.GetSemanticModel(r.Context(), projectName, semanticModelName)
+	semanticModelID := chi.URLParam(r, "semanticModelID")
+	item, err := h.deps.Semantic.GetSemanticModel(r.Context(), semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	models, _, err := h.deps.Semantic.ListSemanticModels(r.Context(), nil, domain.PageRequest{MaxResults: 1000})
+	models, _, err := h.deps.Semantic.ListSemanticModels(r.Context(), domain.PageRequest{MaxResults: 1000})
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	relationships, err := h.deps.Semantic.ListRelationshipsForModel(r.Context(), projectName, semanticModelName)
+	relationships, err := h.deps.Semantic.ListRelationshipsForModel(r.Context(), semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), projectName, semanticModelName)
+	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	preAggs, err := h.deps.Semantic.ListPreAggregations(r.Context(), projectName, semanticModelName)
+	preAggs, err := h.deps.Semantic.ListPreAggregations(r.Context(), semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
@@ -174,7 +167,7 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 		}
 		relatedModelOptions = append(relatedModelOptions, semanticOptionData{
 			Value: models[i].ID,
-			Label: models[i].ProjectName + "." + models[i].Name,
+			Label: models[i].Name,
 		})
 	}
 
@@ -183,7 +176,7 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 		rel := relationships[i]
 		connectedLabel := rel.ToSemanticID
 		if connectedModel, ok := modelByID[rel.ToSemanticID]; ok {
-			connectedLabel = connectedModel.ProjectName + "." + connectedModel.Name
+			connectedLabel = connectedModel.Name
 		}
 		relationshipRows = append(relationshipRows, semanticEditableRelationshipRowData{
 			Name:            rel.Name,
@@ -193,8 +186,8 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 			JoinSQL:         rel.JoinSQL,
 			Cost:            rel.Cost,
 			MaxHops:         rel.MaxHops,
-			UpdateURL:       "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/relationships/" + rel.Name + "/update",
-			DeleteURL:       "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/relationships/" + rel.Name + "/delete",
+			UpdateURL:       "/ui/semantic/models/" + semanticModelID + "/relationships/" + rel.Name + "/update",
+			DeleteURL:       "/ui/semantic/models/" + semanticModelID + "/relationships/" + rel.Name + "/delete",
 		})
 	}
 
@@ -207,8 +200,8 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 			Expression:        metric.Expression,
 			RelationshipNames: metric.RelationshipNames,
 			Status:            metric.CertificationState,
-			EditURL:           "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/edit",
-			DeleteURL:         "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics/" + metric.Name + "/delete",
+			EditURL:           "/ui/semantic/models/" + semanticModelID + "/metrics/" + metric.Name + "/edit",
+			DeleteURL:         "/ui/semantic/models/" + semanticModelID + "/metrics/" + metric.Name + "/delete",
 		})
 	}
 
@@ -219,30 +212,30 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 			Name:      preAgg.Name,
 			Grain:     preAgg.Grain,
 			Target:    preAgg.TargetRelation,
-			EditURL:   "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/pre-aggregations/" + preAgg.Name + "/edit",
-			DeleteURL: "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/pre-aggregations/" + preAgg.Name + "/delete",
+			EditURL:   "/ui/semantic/models/" + semanticModelID + "/pre-aggregations/" + preAgg.Name + "/edit",
+			DeleteURL: "/ui/semantic/models/" + semanticModelID + "/pre-aggregations/" + preAgg.Name + "/delete",
 		})
 	}
 
 	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
 		ResourceType: "semantic-model",
-		ResourceKey:  item.ProjectName + "/" + item.Name,
-		DisplayName:  item.ProjectName + "." + item.Name,
+		ResourceKey:  item.ID,
+		DisplayName:  item.Name,
 		Section:      "Build",
 	})
 	core.RenderHTML(w, http.StatusOK, semanticModelEditPage(semanticModelEditPageData{
 		Principal:             core.PrincipalFromContext(r.Context()),
-		ProjectName:           projectName,
-		ModelName:             semanticModelName,
+		SemanticModelID:       semanticModelID,
+		ModelName:             item.Name,
 		Description:           item.Description,
 		BaseModelRef:          item.BaseModelRef,
 		DefaultTimeDim:        item.DefaultTimeDimension,
 		TagsCSV:               csvValues(item.Tags),
-		UpdateURL:             "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/update",
-		DeleteURL:             "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/delete",
-		RelationshipCreateURL: "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/relationships",
-		MetricsCreateURL:      "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/metrics",
-		PreAggCreateURL:       "/ui/semantic/models/" + projectName + "/" + semanticModelName + "/pre-aggregations",
+		UpdateURL:             "/ui/semantic/models/" + semanticModelID + "/update",
+		DeleteURL:             "/ui/semantic/models/" + semanticModelID + "/delete",
+		RelationshipCreateURL: "/ui/semantic/models/" + semanticModelID + "/relationships",
+		MetricsCreateURL:      "/ui/semantic/models/" + semanticModelID + "/metrics",
+		PreAggCreateURL:       "/ui/semantic/models/" + semanticModelID + "/pre-aggregations",
 		QueryExplainURL:       "/ui/semantic/query/explain",
 		QueryRunURL:           "/ui/semantic/query/run",
 		RelatedModelOptions:   relatedModelOptions,
@@ -254,15 +247,14 @@ func (h *Handler) SemanticModelsEdit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SemanticModelsUpdate(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
 	description := formString(r.Form, "description")
 	baseModelRef := formString(r.Form, "base_model_ref")
 	defaultTimeDimension := formString(r.Form, "default_time_dimension")
-	_, err := h.deps.Semantic.UpdateSemanticModel(r.Context(), projectName, semanticModelName, domain.UpdateSemanticModelRequest{
+	_, err := h.deps.Semantic.UpdateSemanticModel(r.Context(), semanticModelID, domain.UpdateSemanticModelRequest{
 		Description:          &description,
 		BaseModelRef:         &baseModelRef,
 		DefaultTimeDimension: &defaultTimeDimension,
@@ -272,13 +264,12 @@ func (h *Handler) SemanticModelsUpdate(w http.ResponseWriter, r *http.Request) {
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/semantic/models/"+semanticModelID+"/edit", http.StatusSeeOther)
 }
 
 func (h *Handler) SemanticModelsDelete(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
-	if err := h.deps.Semantic.DeleteSemanticModel(r.Context(), projectName, semanticModelName); err != nil {
+	semanticModelID := chi.URLParam(r, "semanticModelID")
+	if err := h.deps.Semantic.DeleteSemanticModel(r.Context(), semanticModelID); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -286,17 +277,16 @@ func (h *Handler) SemanticModelsDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SemanticMetricsEdit(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	metricName := chi.URLParam(r, "metricName")
-	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), projectName, semanticModelName)
+	metrics, err := h.deps.Semantic.ListMetrics(r.Context(), semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 	for i := range metrics {
 		if metrics[i].Name == metricName {
-			core.RenderHTML(w, http.StatusOK, semanticMetricEditPage(core.PrincipalFromContext(r.Context()), projectName, semanticModelName, &metrics[i], h.deps.CSRFFieldProvider(r)))
+			core.RenderHTML(w, http.StatusOK, semanticMetricEditPage(core.PrincipalFromContext(r.Context()), semanticModelID, &metrics[i], h.deps.CSRFFieldProvider(r)))
 			return
 		}
 	}
@@ -304,8 +294,7 @@ func (h *Handler) SemanticMetricsEdit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SemanticMetricsUpdate(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	metricName := chi.URLParam(r, "metricName")
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
@@ -319,7 +308,7 @@ func (h *Handler) SemanticMetricsUpdate(w http.ResponseWriter, r *http.Request) 
 	defaultTimeGrain := formString(r.Form, "default_time_grain")
 	format := formString(r.Form, "format")
 	certificationState := formString(r.Form, "certification_state")
-	_, err := h.deps.Semantic.UpdateMetric(r.Context(), projectName, semanticModelName, metricName, domain.UpdateSemanticMetricRequest{
+	_, err := h.deps.Semantic.UpdateMetric(r.Context(), semanticModelID, metricName, domain.UpdateSemanticMetricRequest{
 		Label:              &label,
 		Description:        &description,
 		MetricType:         &metricType,
@@ -335,16 +324,15 @@ func (h *Handler) SemanticMetricsUpdate(w http.ResponseWriter, r *http.Request) 
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/semantic/models/"+semanticModelID+"/edit", http.StatusSeeOther)
 }
 
 func (h *Handler) SemanticMetricsCreate(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	_, err := h.deps.Semantic.CreateMetric(r.Context(), principalName(r), projectName, semanticModelName, domain.CreateSemanticMetricRequest{
+	_, err := h.deps.Semantic.CreateMetric(r.Context(), principalName(r), semanticModelID, domain.CreateSemanticMetricRequest{
 		Name:               formString(r.Form, "name"),
 		Label:              formString(r.Form, "label"),
 		Description:        formString(r.Form, "description"),
@@ -361,32 +349,30 @@ func (h *Handler) SemanticMetricsCreate(w http.ResponseWriter, r *http.Request) 
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/semantic/models/"+semanticModelID+"/edit", http.StatusSeeOther)
 }
 
 func (h *Handler) SemanticMetricsDelete(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	metricName := chi.URLParam(r, "metricName")
-	if err := h.deps.Semantic.DeleteMetric(r.Context(), projectName, semanticModelName, metricName); err != nil {
+	if err := h.deps.Semantic.DeleteMetric(r.Context(), semanticModelID, metricName); err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/semantic/models/"+semanticModelID+"/edit", http.StatusSeeOther)
 }
 
 func (h *Handler) SemanticPreAggregationsEdit(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	preAggName := chi.URLParam(r, "preAggName")
-	items, err := h.deps.Semantic.ListPreAggregations(r.Context(), projectName, semanticModelName)
+	items, err := h.deps.Semantic.ListPreAggregations(r.Context(), semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 	for i := range items {
 		if items[i].Name == preAggName {
-			core.RenderHTML(w, http.StatusOK, semanticPreAggregationEditPage(core.PrincipalFromContext(r.Context()), projectName, semanticModelName, &items[i], h.deps.CSRFFieldProvider(r)))
+			core.RenderHTML(w, http.StatusOK, semanticPreAggregationEditPage(core.PrincipalFromContext(r.Context()), semanticModelID, &items[i], h.deps.CSRFFieldProvider(r)))
 			return
 		}
 	}
@@ -394,8 +380,7 @@ func (h *Handler) SemanticPreAggregationsEdit(w http.ResponseWriter, r *http.Req
 }
 
 func (h *Handler) SemanticPreAggregationsUpdate(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	preAggName := chi.URLParam(r, "preAggName")
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
@@ -403,7 +388,7 @@ func (h *Handler) SemanticPreAggregationsUpdate(w http.ResponseWriter, r *http.R
 	grain := formString(r.Form, "grain")
 	targetRelation := formString(r.Form, "target_relation")
 	refreshPolicy := formString(r.Form, "refresh_policy")
-	_, err := h.deps.Semantic.UpdatePreAggregation(r.Context(), projectName, semanticModelName, preAggName, domain.UpdateSemanticPreAggregationRequest{
+	_, err := h.deps.Semantic.UpdatePreAggregation(r.Context(), semanticModelID, preAggName, domain.UpdateSemanticPreAggregationRequest{
 		MetricSet:      formCSV(r.Form, "metric_set"),
 		DimensionSet:   formCSV(r.Form, "dimension_set"),
 		Grain:          &grain,
@@ -414,16 +399,15 @@ func (h *Handler) SemanticPreAggregationsUpdate(w http.ResponseWriter, r *http.R
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/semantic/models/"+semanticModelID+"/edit", http.StatusSeeOther)
 }
 
 func (h *Handler) SemanticPreAggregationsCreate(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	_, err := h.deps.Semantic.CreatePreAggregation(r.Context(), principalName(r), projectName, semanticModelName, domain.CreateSemanticPreAggregationRequest{
+	_, err := h.deps.Semantic.CreatePreAggregation(r.Context(), principalName(r), semanticModelID, domain.CreateSemanticPreAggregationRequest{
 		Name:           formString(r.Form, "name"),
 		MetricSet:      formCSV(r.Form, "metric_set"),
 		DimensionSet:   formCSV(r.Form, "dimension_set"),
@@ -435,23 +419,21 @@ func (h *Handler) SemanticPreAggregationsCreate(w http.ResponseWriter, r *http.R
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/semantic/models/"+semanticModelID+"/edit", http.StatusSeeOther)
 }
 
 func (h *Handler) SemanticPreAggregationsDelete(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	preAggName := chi.URLParam(r, "preAggName")
-	if err := h.deps.Semantic.DeletePreAggregation(r.Context(), projectName, semanticModelName, preAggName); err != nil {
+	if err := h.deps.Semantic.DeletePreAggregation(r.Context(), semanticModelID, preAggName); err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/semantic/models/"+semanticModelID+"/edit", http.StatusSeeOther)
 }
 
 func (h *Handler) SemanticModelRelationshipsUpdate(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	relationshipName := chi.URLParam(r, "relationshipName")
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
@@ -468,7 +450,7 @@ func (h *Handler) SemanticModelRelationshipsUpdate(w http.ResponseWriter, r *htt
 		core.RenderHTML(w, http.StatusBadRequest, core.ErrorPage("Invalid Request", "max_hops must be an integer."))
 		return
 	}
-	_, err = h.deps.Semantic.UpdateRelationshipForModel(r.Context(), projectName, semanticModelName, relationshipName, domain.UpdateSemanticRelationshipRequest{
+	_, err = h.deps.Semantic.UpdateRelationshipForModel(r.Context(), semanticModelID, relationshipName, domain.UpdateSemanticRelationshipRequest{
 		RelationshipType: &relationshipType,
 		JoinSQL:          &joinSQL,
 		Cost:             intPtr(cost),
@@ -478,11 +460,10 @@ func (h *Handler) SemanticModelRelationshipsUpdate(w http.ResponseWriter, r *htt
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/semantic/models/"+semanticModelID+"/edit", http.StatusSeeOther)
 }
 func (h *Handler) SemanticModelRelationshipsCreate(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
@@ -497,13 +478,13 @@ func (h *Handler) SemanticModelRelationshipsCreate(w http.ResponseWriter, r *htt
 		return
 	}
 	relatedSemanticID := formString(r.Form, "related_semantic_id")
-	currentModel, err := h.deps.Semantic.GetSemanticModel(r.Context(), projectName, semanticModelName)
+	currentModel, err := h.deps.Semantic.GetSemanticModel(r.Context(), semanticModelID)
 	if err != nil {
 		renderServiceError(w, err)
 		return
 	}
 
-	_, err = h.deps.Semantic.CreateRelationshipForModel(r.Context(), principalName(r), projectName, semanticModelName, domain.CreateSemanticRelationshipRequest{
+	_, err = h.deps.Semantic.CreateRelationshipForModel(r.Context(), principalName(r), semanticModelID, domain.CreateSemanticRelationshipRequest{
 		Name:             formString(r.Form, "name"),
 		FromSemanticID:   currentModel.ID,
 		ToSemanticID:     relatedSemanticID,
@@ -516,17 +497,16 @@ func (h *Handler) SemanticModelRelationshipsCreate(w http.ResponseWriter, r *htt
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/semantic/models/"+semanticModelID+"/edit", http.StatusSeeOther)
 }
 func (h *Handler) SemanticModelRelationshipsDelete(w http.ResponseWriter, r *http.Request) {
-	projectName := chi.URLParam(r, "projectName")
-	semanticModelName := chi.URLParam(r, "semanticModelName")
+	semanticModelID := chi.URLParam(r, "semanticModelID")
 	relationshipName := chi.URLParam(r, "relationshipName")
-	if err := h.deps.Semantic.DeleteRelationshipForModel(r.Context(), projectName, semanticModelName, relationshipName); err != nil {
+	if err := h.deps.Semantic.DeleteRelationshipForModel(r.Context(), semanticModelID, relationshipName); err != nil {
 		renderServiceError(w, err)
 		return
 	}
-	http.Redirect(w, r, "/ui/semantic/models/"+projectName+"/"+semanticModelName+"/edit", http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/semantic/models/"+semanticModelID+"/edit", http.StatusSeeOther)
 }
 func (h *Handler) SemanticQueryExplain(w http.ResponseWriter, r *http.Request) {
 	h.semanticQueryRender(w, r, false)
@@ -540,8 +520,7 @@ func (h *Handler) semanticQueryRender(w http.ResponseWriter, r *http.Request, ex
 		return
 	}
 	req := semsvc.MetricQueryRequest{
-		ProjectName:       formString(r.Form, "project_name"),
-		SemanticModelName: formString(r.Form, "semantic_model_name"),
+		SemanticModelID:   formString(r.Form, "semantic_model_id"),
 		Metrics:           formCSV(r.Form, "metrics"),
 		RelationshipNames: formCSV(r.Form, "relationship_names"),
 		Dimensions:        formCSV(r.Form, "dimensions"),

@@ -49,8 +49,7 @@ type dashboardWidgetFormData struct {
 	SQL               string
 	NotebookID        string
 	CellID            string
-	ProjectName       string
-	semanticModelName string
+	SemanticModelID   string
 	Metrics           string
 	Dimensions        string
 	Filters           string
@@ -301,10 +300,8 @@ func dashboardWidgetFormCard(data dashboardWidgetFormData, csrfFieldProvider fun
 			core.InputControl("", Name("notebook_id"), Value(data.NotebookID)),
 			core.FieldLabel("Cell ID"),
 			core.InputControl("", Name("cell_id"), Value(data.CellID)),
-			core.FieldLabel("Project name"),
-			core.InputControl("", Name("project_name"), Value(data.ProjectName)),
-			core.FieldLabel("Semantic model"),
-			core.InputControl("", Name("semantic_model_name"), Value(data.semanticModelName)),
+			core.FieldLabel("Semantic model ID"),
+			core.InputControl("", Name("semantic_model_id"), Value(data.SemanticModelID)),
 			core.FieldLabel("Metrics (comma separated)"),
 			core.InputControl("", Name("metrics"), Value(data.Metrics)),
 			core.FieldLabel("Dimensions (comma separated)"),
@@ -400,8 +397,7 @@ func widgetFormDataFromWidget(widget *domain.DashboardWidget, action, submitLabe
 		}
 	case domain.DashboardWidgetSourceSemanticQuery:
 		if widget.Source.SemanticQuery != nil {
-			data.ProjectName = widget.Source.SemanticQuery.ProjectName
-			data.semanticModelName = widget.Source.SemanticQuery.SemanticModelName
+			data.SemanticModelID = widget.Source.SemanticQuery.SemanticModelID
 			data.Metrics = strings.Join(widget.Source.SemanticQuery.Metrics, ", ")
 			data.Dimensions = strings.Join(widget.Source.SemanticQuery.Dimensions, ", ")
 			data.Filters = strings.Join(widget.Source.SemanticQuery.Filters, ", ")
@@ -672,12 +668,11 @@ func dashboardWidgetSourceFromForm(values url.Values) (domain.DashboardWidgetSou
 		source := domain.DashboardWidgetSource{
 			Kind: kind,
 			SemanticQuery: &domain.DashboardSemanticQuerySource{
-				ProjectName:       formString(values, "project_name"),
-				SemanticModelName: formString(values, "semantic_model_name"),
-				Metrics:           formCSV(values, "metrics"),
-				Dimensions:        formCSV(values, "dimensions"),
-				Filters:           formCSV(values, "filters"),
-				OrderBy:           formCSV(values, "order_by"),
+				SemanticModelID: formString(values, "semantic_model_id"),
+				Metrics:         formCSV(values, "metrics"),
+				Dimensions:      formCSV(values, "dimensions"),
+				Filters:         formCSV(values, "filters"),
+				OrderBy:         formCSV(values, "order_by"),
 			},
 		}
 		if rawLimit := formString(values, "limit"); rawLimit != "" {

@@ -1021,18 +1021,13 @@ func (s *Service) resolveSemanticEntrypoints(ctx context.Context, productVersion
 			return nil, domain.ErrValidation("duplicate semantic model ref %q", ref)
 		}
 		seen[ref] = struct{}{}
-		projectName, modelName, err := parseSemanticModelRef(ref)
-		if err != nil {
-			return nil, err
-		}
-		model, err := s.semantic.GetByName(ctx, projectName, modelName)
+		model, err := s.semantic.GetByName(ctx, ref)
 		if err != nil {
 			return nil, fmt.Errorf("resolve semantic model %q: %w", ref, err)
 		}
 		entrypoints = append(entrypoints, domain.ProductSemanticEntrypoint{
 			ProductVersionID: productVersionID,
 			SemanticModelID:  model.ID,
-			ProjectName:      model.ProjectName,
 			ModelName:        model.Name,
 		})
 	}
