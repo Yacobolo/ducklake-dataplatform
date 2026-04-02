@@ -6,8 +6,6 @@ Semantic models, metrics, relationships, and metric query execution.
 
 ## Resources
 
-- [Semantic Models and Relationships](./semantic-models) (17 operations)
+- [Semantic Models and Relationships](./semantic-models) (19 operations)
 - [Metrics and Freshness](./metrics) (2 operations)
-- [Semantic Queries:explain](./semantic-queries:explain) (1 operations)
-- [Semantic Queries:run](./semantic-queries:run) (1 operations)
 
