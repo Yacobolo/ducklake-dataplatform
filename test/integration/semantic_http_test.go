@@ -97,8 +97,7 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	decodeJSON(t, listModelsResp, &listed)
 	require.Len(t, listed.Data, 2)
 
-	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-queries:explain", env.Keys.Admin, map[string]interface{}{
-		"semantic_model_id": salesModel.ID,
+	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+salesModel.ID+"/queries:explain", env.Keys.Admin, map[string]interface{}{
 		"metrics":           []string{"total_revenue"},
 	})
 	require.Equal(t, http.StatusOK, explainResp.StatusCode, responseBodyOnStatusMismatch(t, explainResp, http.StatusOK))
@@ -143,8 +142,7 @@ func TestSemanticAPI_RunMetricQuery(t *testing.T) {
 	})
 	require.Equal(t, http.StatusCreated, createMetricResp.StatusCode, responseBodyOnStatusMismatch(t, createMetricResp, http.StatusCreated))
 
-	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-queries:run", env.Keys.Admin, map[string]interface{}{
-		"semantic_model_id": semanticModel.ID,
+	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModel.ID+"/queries:run", env.Keys.Admin, map[string]interface{}{
 		"metrics":           []string{"total_amount"},
 	})
 	require.Equal(t, http.StatusOK, runResp.StatusCode, responseBodyOnStatusMismatch(t, runResp, http.StatusOK))
@@ -200,8 +198,7 @@ func TestSemanticAPI_RunMetricQuery_RLSMaskParityWithRawSQL(t *testing.T) {
 	})
 	require.Equal(t, http.StatusCreated, createMetricResp.StatusCode, responseBodyOnStatusMismatch(t, createMetricResp, http.StatusCreated))
 
-	semanticRunResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-queries:run", env.Keys.Analyst, map[string]interface{}{
-		"semantic_model_id": parityModel.ID,
+	semanticRunResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+parityModel.ID+"/queries:run", env.Keys.Analyst, map[string]interface{}{
 		"metrics":           []string{"passenger_count"},
 		"dimensions":        []string{"Name"},
 		"order_by":          []string{"Name"},

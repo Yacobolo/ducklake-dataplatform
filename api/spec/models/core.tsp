@@ -1798,7 +1798,6 @@ model ModelRunStepList {
 }
 
 model MetricQueryRequest {
-  semantic_model_id: string;
   metrics: string[];
   relationship_names?: string[];
   dimensions?: string[];

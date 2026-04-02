@@ -203,12 +203,12 @@ func (s *Service) ListRelationshipsForModel(ctx context.Context, semanticModelID
 }
 
 // UpdateRelationship updates an existing relationship by name.
-func (s *Service) UpdateRelationship(ctx context.Context, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
+func (s *Service) UpdateRelationship(_ context.Context, _ string, _ domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
 	return nil, domain.ErrValidation("global relationship updates are not supported")
 }
 
 // DeleteRelationship deletes an existing relationship by name.
-func (s *Service) DeleteRelationship(ctx context.Context, relationshipName string) error {
+func (s *Service) DeleteRelationship(_ context.Context, _ string) error {
 	return domain.ErrValidation("global relationship deletes are not supported")
 }
 

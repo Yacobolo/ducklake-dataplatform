@@ -629,7 +629,7 @@ func (h *APIHandler) CheckMetricFreshness(ctx context.Context, req GenCheckMetri
 
 // ExplainMetricQuery compiles a semantic metric query without executing it.
 func (h *APIHandler) ExplainMetricQuery(ctx context.Context, req GenExplainMetricQueryRequest) (GenExplainMetricQueryResponse, error) {
-	plan, err := h.semantics.ExplainMetricQuery(ctx, semanticReqToService(req.Body))
+	plan, err := h.semantics.ExplainMetricQuery(ctx, semanticReqToService(req.SemanticModelId, req.Body))
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenExplainMetricQueryResponse]("explainMetricQuery", err, domainErrorResponder[GenExplainMetricQueryResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenExplainMetricQueryResponse {
@@ -651,7 +651,7 @@ func (h *APIHandler) ExplainMetricQuery(ctx context.Context, req GenExplainMetri
 // RunMetricQuery compiles and executes a semantic metric query.
 func (h *APIHandler) RunMetricQuery(ctx context.Context, req GenRunMetricQueryRequest) (GenRunMetricQueryResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
-	result, err := h.semantics.RunMetricQuery(ctx, cp.Name, semanticReqToService(req.Body))
+	result, err := h.semantics.RunMetricQuery(ctx, cp.Name, semanticReqToService(req.SemanticModelId, req.Body))
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenRunMetricQueryResponse]("runMetricQuery", err, domainErrorResponder[GenRunMetricQueryResponse]{
 			BadRequest: func(resp BadRequestJSONResponse) GenRunMetricQueryResponse {
@@ -794,12 +794,12 @@ func metricQueryPlanToAPI(plan semantic.MetricQueryPlan) MetricQueryPlan {
 	}
 }
 
-func semanticReqToService(req *GenSchemaMetricQueryRequest) semantic.MetricQueryRequest {
+func semanticReqToService(semanticModelID string, req *GenSchemaMetricQueryRequest) semantic.MetricQueryRequest {
 	if req == nil {
-		return semantic.MetricQueryRequest{}
+		return semantic.MetricQueryRequest{SemanticModelID: semanticModelID}
 	}
 	out := semantic.MetricQueryRequest{
-		SemanticModelID:   req.SemanticModelId,
+		SemanticModelID:   semanticModelID,
 		Metrics:           req.Metrics,
 	}
 	if req.RelationshipNames != nil {
@@ -832,13 +832,6 @@ func valOrEmpty(v *string) string {
 func sliceOrEmpty(v *[]string) []string {
 	if v == nil {
 		return nil
-	}
-	return *v
-}
-
-func boolOrFalse(v *bool) bool {
-	if v == nil {
-		return false
 	}
 	return *v
 }

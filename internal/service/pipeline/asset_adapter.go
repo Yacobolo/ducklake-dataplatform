@@ -907,10 +907,6 @@ func dedupeDependencies(in []domain.AssetDependency) []domain.AssetDependency {
 	return out
 }
 
-func semanticModelNaturalKey(modelName string) string {
-	return modelName
-}
-
 func metricNaturalKey(semanticModelName, metricName string) string {
 	return semanticModelName + "." + metricName
 }

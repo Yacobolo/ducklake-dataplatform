@@ -1438,7 +1438,6 @@ type MetricQueryRequest struct {
 	Metrics           []string  `json:"metrics"`
 	OrderBy           *[]string `json:"order_by,omitempty"`
 	RelationshipNames *[]string `json:"relationship_names,omitempty"`
-	SemanticModelId   string    `json:"semantic_model_id"`
 	TimeGrain         *string   `json:"time_grain,omitempty"`
 }
 

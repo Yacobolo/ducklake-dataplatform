@@ -669,8 +669,7 @@ func TestHandler_ExplainMetricQuery_MapsRequestAndResponse(t *testing.T) {
 		},
 	}
 
-	resp, err := h.ExplainMetricQuery(context.Background(), GenExplainMetricQueryRequest{Body: &GenExplainMetricQueryJSONBody{
-		SemanticModelId:   "sm-sales",
+	resp, err := h.ExplainMetricQuery(context.Background(), GenExplainMetricQueryRequest{SemanticModelId: "sm-sales", Body: &GenExplainMetricQueryJSONBody{
 		Metrics:           []string{"total_revenue"},
 		Dimensions:        &dimensions,
 		Filters:           &filters,
@@ -727,8 +726,7 @@ func TestHandler_RunMetricQuery_UsesPrincipalAndMapsResult(t *testing.T) {
 		},
 	}
 
-	resp, err := h.RunMetricQuery(ctx, GenRunMetricQueryRequest{Body: &GenRunMetricQueryJSONBody{
-		SemanticModelId:   "sm-sales",
+	resp, err := h.RunMetricQuery(ctx, GenRunMetricQueryRequest{SemanticModelId: "sm-sales", Body: &GenRunMetricQueryJSONBody{
 		Metrics:           []string{"total_revenue"},
 		Limit:             &limit,
 	}})

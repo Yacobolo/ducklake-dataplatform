@@ -1281,7 +1281,7 @@ spec:
       certification_state: CERTIFIED
   relationships:
     - name: sales_to_customers
-      to_model: analytics.customers
+      to_model: customers
       relationship_type: MANY_TO_ONE
       join_sql: sales.customer_id = customers.customer_id
   pre_aggregations:
@@ -1306,8 +1306,8 @@ spec:
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpCreate))
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpUpdate))
 
-	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "analytics", "sales.yaml")))
-	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "analytics", "customers.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "sales.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "customers.yaml")))
 
 	desiredDeleted, err := declarative.LoadDirectory(dir)
 	require.NoError(t, err)
@@ -1359,7 +1359,9 @@ spec:
 	executeActions(t, stateClient, creates)
 
 	semanticModelsResp := doRequest(t, http.MethodGet, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, nil)
-	require.Equal(t, http.StatusOK, semanticModelsResp.StatusCode, string(readBody(t, semanticModelsResp)))
+	if semanticModelsResp.StatusCode != http.StatusOK {
+		require.Equal(t, http.StatusOK, semanticModelsResp.StatusCode, string(readBody(t, semanticModelsResp)))
+	}
 	var semanticModels struct {
 		Data []struct {
 			ID   string `json:"id"`
@@ -1370,8 +1372,7 @@ spec:
 	require.NotEmpty(t, semanticModels.Data)
 	semanticModelID := semanticModels.Data[0].ID
 
-	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-queries:explain", env.Keys.Admin, map[string]interface{}{
-		"semantic_model_id": semanticModelID,
+	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModelID+"/queries:explain", env.Keys.Admin, map[string]interface{}{
 		"metrics":           []string{"total_fare"},
 	})
 	if explainResp.StatusCode != http.StatusOK {
@@ -1386,8 +1387,7 @@ spec:
 	decodeJSON(t, explainResp, &explainBody)
 	assert.NotEmpty(t, explainBody.Plan.GeneratedSQL)
 
-	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-queries:run", env.Keys.Admin, map[string]interface{}{
-		"semantic_model_id": semanticModelID,
+	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModelID+"/queries:run", env.Keys.Admin, map[string]interface{}{
 		"metrics":           []string{"total_fare"},
 	})
 	if runResp.StatusCode != http.StatusOK {

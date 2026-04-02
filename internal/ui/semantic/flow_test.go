@@ -102,7 +102,7 @@ func TestBuildSemanticModelFlowData_AssignsOutgoingRoles(t *testing.T) {
 	)
 
 	assert.Equal(t, "outgoing", semanticNodeRole(flow.Nodes, customers.ID))
-	assert.Equal(t, "", semanticNodeRole(flow.Nodes, regions.ID))
+	assert.Empty(t, semanticNodeRole(flow.Nodes, regions.ID))
 	assert.Equal(t, "outgoing", semanticNodeRole(flow.Nodes, products.ID))
 }
 

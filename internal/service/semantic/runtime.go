@@ -37,7 +37,7 @@ func (s *Service) RunMetricQuery(ctx context.Context, principal string, req Metr
 	return &MetricQueryResult{Plan: *plan, Result: result}, nil
 }
 
-func (s *Service) normalizeExecutionError(ctx context.Context, req MetricQueryRequest, plan *MetricQueryPlan, err error) error {
+func (s *Service) normalizeExecutionError(ctx context.Context, _ MetricQueryRequest, plan *MetricQueryPlan, err error) error {
 	if plan == nil || err == nil {
 		return err
 	}

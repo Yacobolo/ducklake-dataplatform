@@ -181,7 +181,6 @@ func TestProductRoutes_SemanticEntrypoints(t *testing.T) {
 	productSvc.SetSemanticModelRepository(semanticRepo)
 
 	_, err := semanticRepo.Create(t.Context(), &domain.SemanticModel{
-		ProjectName:  "sales",
 		Name:         "orders",
 		Description:  "Orders semantic model",
 		BaseModelRef: "sales.orders",
@@ -209,7 +208,7 @@ func TestProductRoutes_SemanticEntrypoints(t *testing.T) {
 		"created_by":"alice",
 		"contract":{"data_grain":"one row per order","update_cadence":"hourly","breaking_change_policy":"new version required"},
 		"slo":{"freshness_slo":"60m"},
-		"semantic_model_refs":["sales.orders"]
+		"semantic_model_refs":["orders"]
 	}`))
 	createReq.Header.Set("Content-Type", "application/json")
 	createRR := httptest.NewRecorder()
