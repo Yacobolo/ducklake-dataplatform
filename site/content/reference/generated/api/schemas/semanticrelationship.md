@@ -13,7 +13,6 @@
 | `created_by` | `string` | `false` | - |
 | `from_semantic_id` | `string` | `false` | - |
 | `id` | `string` | `false` | - |
-| `is_default` | `boolean` | `false` | - |
 | `join_sql` | `string` | `false` | - |
 | `max_hops` | `integer` | `false` | - |
 | `name` | `string` | `false` | - |

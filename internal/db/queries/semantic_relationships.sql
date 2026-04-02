@@ -1,16 +1,16 @@
 -- name: CreateSemanticRelationship :one
 INSERT INTO semantic_relationships (
     id, name, from_semantic_id, to_semantic_id, relationship_type,
-    join_sql, is_default, cost, max_hops, created_by
+    join_sql, cost, max_hops, created_by
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetSemanticRelationshipByID :one
 SELECT * FROM semantic_relationships WHERE id = ?;
 
 -- name: GetSemanticRelationshipByName :one
-SELECT * FROM semantic_relationships WHERE name = ?;
+SELECT * FROM semantic_relationships WHERE from_semantic_id = ? AND name = ?;
 
 -- name: ListSemanticRelationships :many
 SELECT * FROM semantic_relationships
@@ -24,7 +24,6 @@ SELECT COUNT(*) FROM semantic_relationships;
 UPDATE semantic_relationships
 SET relationship_type = COALESCE(?, relationship_type),
     join_sql = COALESCE(?, join_sql),
-    is_default = COALESCE(?, is_default),
     cost = COALESCE(?, cost),
     max_hops = COALESCE(?, max_hops),
     updated_at = datetime('now')

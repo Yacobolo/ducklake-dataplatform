@@ -43,14 +43,17 @@ var auditRuleExceptions = map[string]string{
 	"internal/service/semantic/service.go:Service.CreateMetric":                     "semantic control-plane auditing not yet wired",
 	"internal/service/semantic/service.go:Service.CreatePreAggregation":             "semantic control-plane auditing not yet wired",
 	"internal/service/semantic/service.go:Service.CreateRelationship":               "semantic control-plane auditing not yet wired",
+	"internal/service/semantic/service.go:Service.CreateRelationshipForModel":       "semantic control-plane auditing not yet wired",
 	"internal/service/semantic/service.go:Service.CreateSemanticModel":              "semantic control-plane auditing not yet wired",
 	"internal/service/semantic/service.go:Service.DeleteMetric":                     "semantic control-plane auditing not yet wired",
 	"internal/service/semantic/service.go:Service.DeletePreAggregation":             "semantic control-plane auditing not yet wired",
 	"internal/service/semantic/service.go:Service.DeleteRelationship":               "semantic control-plane auditing not yet wired",
+	"internal/service/semantic/service.go:Service.DeleteRelationshipForModel":       "semantic control-plane auditing not yet wired",
 	"internal/service/semantic/service.go:Service.DeleteSemanticModel":              "semantic control-plane auditing not yet wired",
 	"internal/service/semantic/service.go:Service.UpdateMetric":                     "semantic control-plane auditing not yet wired",
 	"internal/service/semantic/service.go:Service.UpdatePreAggregation":             "semantic control-plane auditing not yet wired",
 	"internal/service/semantic/service.go:Service.UpdateRelationship":               "semantic control-plane auditing not yet wired",
+	"internal/service/semantic/service.go:Service.UpdateRelationshipForModel":       "semantic control-plane auditing not yet wired",
 	"internal/service/semantic/service.go:Service.UpdateSemanticModel":              "semantic control-plane auditing not yet wired",
 }
 

@@ -3,7 +3,7 @@
 # Schema: `ProductSemanticEntrypoint`
 
 - Type: `object`
-- Required fields: `id`, `model_name`, `product_version_id`, `project_name`, `semantic_model_id`
+- Required fields: `id`, `model_name`, `product_version_id`, `semantic_model_id`
 
 ## Properties
 
@@ -13,6 +13,5 @@
 | `id` | `string` | `true` | - |
 | `model_name` | `string` | `true` | - |
 | `product_version_id` | `string` | `true` | - |
-| `project_name` | `string` | `true` | - |
 | `semantic_model_id` | `string` | `true` | - |
 

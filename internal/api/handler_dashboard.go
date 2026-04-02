@@ -301,9 +301,9 @@ func dashboardWidgetSourceFromAPI(source *DashboardWidgetSource) domain.Dashboar
 	}
 	if source.SemanticQuery != nil {
 		out.SemanticQuery = &domain.DashboardSemanticQuerySource{
-			ProjectName:       source.SemanticQuery.ProjectName,
-			SemanticModelName: source.SemanticQuery.SemanticModelName,
+			SemanticModelID:   source.SemanticQuery.SemanticModelId,
 			Metrics:           source.SemanticQuery.Metrics,
+			RelationshipNames: sliceOrEmpty(source.SemanticQuery.RelationshipNames),
 			Dimensions:        sliceOrEmpty(source.SemanticQuery.Dimensions),
 			Filters:           sliceOrEmpty(source.SemanticQuery.Filters),
 			OrderBy:           sliceOrEmpty(source.SemanticQuery.OrderBy),
@@ -334,9 +334,9 @@ func dashboardWidgetSourceToAPI(source domain.DashboardWidgetSource) DashboardWi
 	}
 	if source.SemanticQuery != nil {
 		out.SemanticQuery = &DashboardSemanticQuerySource{
-			ProjectName:       source.SemanticQuery.ProjectName,
-			SemanticModelName: source.SemanticQuery.SemanticModelName,
+			SemanticModelId:   source.SemanticQuery.SemanticModelID,
 			Metrics:           source.SemanticQuery.Metrics,
+			RelationshipNames: slicePtr(source.SemanticQuery.RelationshipNames),
 			Dimensions:        slicePtr(source.SemanticQuery.Dimensions),
 			Filters:           slicePtr(source.SemanticQuery.Filters),
 			OrderBy:           slicePtr(source.SemanticQuery.OrderBy),

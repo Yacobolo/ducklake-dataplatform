@@ -12,7 +12,7 @@
 | `freshness_basis` | `array[string]` | `false` | - |
 | `freshness_status` | `string` | `false` | - |
 | `metric_name` | `string` | `false` | - |
-| `project_name` | `string` | `false` | - |
 | `selected_pre_aggregation` | `string` | `false` | - |
+| `semantic_model_id` | `string` | `false` | - |
 | `semantic_model_name` | `string` | `false` | - |
 

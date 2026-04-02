@@ -9208,106 +9208,6 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /metric-queries:explain:
-    post:
-      operationId: explainMetricQuery
-      summary: Explain metric query
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MetricQueryExplainResponse'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MetricQueryRequest'
-  /metric-queries:run:
-    post:
-      operationId: runMetricQuery
-      summary: Run metric query
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MetricQueryRunResponse'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Semantic Layer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MetricQueryRequest'
   /metrics/{metricName}/freshness:
     get:
       operationId: checkMetricFreshness
@@ -9318,13 +9218,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: project_name
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-        - name: semantic_model_name
+        - name: semantic_model_id
           in: query
           required: false
           schema:
@@ -14476,12 +14370,6 @@ paths:
       operationId: listSemanticModels
       summary: List semantic models
       parameters:
-        - name: project_name
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
         - name: max_results
           in: query
           required: false
@@ -14577,17 +14465,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticModelRequest'
-  /semantic-models/{projectName}/{semanticModelName}:
+  /semantic-models/{semanticModelId}:
     get:
       operationId: getSemanticModel
       summary: Get semantic model
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14641,12 +14524,7 @@ paths:
       operationId: updateSemanticModel
       summary: Update semantic model
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14700,12 +14578,7 @@ paths:
       operationId: deleteSemanticModel
       summary: Delete semantic model
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14745,17 +14618,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
-  /semantic-models/{projectName}/{semanticModelName}/metrics:
+  /semantic-models/{semanticModelId}/metrics:
     get:
       operationId: listSemanticMetrics
       summary: List semantic metrics
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14809,12 +14677,7 @@ paths:
       operationId: createSemanticMetric
       summary: Create semantic metric
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14864,17 +14727,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticMetricRequest'
-  /semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}:
+  /semantic-models/{semanticModelId}/metrics/{metricName}:
     patch:
       operationId: updateSemanticMetric
       summary: Update semantic metric
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14933,12 +14791,7 @@ paths:
       operationId: deleteSemanticMetric
       summary: Delete semantic metric
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -14983,17 +14836,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
-  /semantic-models/{projectName}/{semanticModelName}/pre-aggregations:
+  /semantic-models/{semanticModelId}/pre-aggregations:
     get:
       operationId: listSemanticPreAggregations
       summary: List semantic pre aggregations
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -15047,12 +14895,7 @@ paths:
       operationId: createSemanticPreAggregation
       summary: Create semantic pre aggregation
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -15102,17 +14945,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticPreAggregationRequest'
-  /semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}:
+  /semantic-models/{semanticModelId}/pre-aggregations/{preAggregationName}:
     patch:
       operationId: updateSemanticPreAggregation
       summary: Update semantic pre aggregation
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -15171,12 +15009,7 @@ paths:
       operationId: deleteSemanticPreAggregation
       summary: Delete semantic pre aggregation
       parameters:
-        - name: projectName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semanticModelName
+        - name: semanticModelId
           in: path
           required: true
           schema:
@@ -15221,31 +15054,23 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
-  /semantic-relationships:
-    get:
-      operationId: listSemanticRelationships
-      summary: List semantic relationships
+  /semantic-models/{semanticModelId}/queries:explain:
+    post:
+      operationId: explainMetricQuery
+      summary: Explain metric query
       parameters:
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-          explode: false
-        - name: page_token
-          in: query
-          required: false
+        - name: semanticModelId
+          in: path
+          required: true
           schema:
             type: string
-          explode: false
       responses:
         '200':
           description: The request has succeeded.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedSemanticRelationships'
+                $ref: '#/components/schemas/MetricQueryExplainResponse'
         '400':
           description: The server could not understand the request due to invalid syntax.
           content:
@@ -15254,6 +15079,128 @@ paths:
                 $ref: '#/components/schemas/Error'
         '401':
           description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricQueryRequest'
+  /semantic-models/{semanticModelId}/queries:run:
+    post:
+      operationId: runMetricQuery
+      summary: Run metric query
+      parameters:
+        - name: semanticModelId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricQueryRunResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Semantic Layer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricQueryRequest'
+  /semantic-models/{semanticModelId}/relationships:
+    get:
+      operationId: listSemanticModelRelationships
+      summary: List semantic relationships for a semantic model
+      parameters:
+        - name: semanticModelId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticRelationshipList'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
           content:
             application/json:
               schema:
@@ -15273,9 +15220,14 @@ paths:
       tags:
         - Semantic Layer
     post:
-      operationId: createSemanticRelationship
-      summary: Create semantic relationship
-      parameters: []
+      operationId: createSemanticModelRelationship
+      summary: Create semantic relationship for a semantic model
+      parameters:
+        - name: semanticModelId
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '201':
           description: The request has succeeded and a new resource has been created as a result.
@@ -15321,11 +15273,16 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticRelationshipRequest'
-  /semantic-relationships/{relationshipName}:
+  /semantic-models/{semanticModelId}/relationships/{relationshipName}:
     patch:
-      operationId: updateSemanticRelationship
-      summary: Update semantic relationship
+      operationId: updateSemanticModelRelationship
+      summary: Update semantic relationship for a semantic model
       parameters:
+        - name: semanticModelId
+          in: path
+          required: true
+          schema:
+            type: string
         - name: relationshipName
           in: path
           required: true
@@ -15377,9 +15334,14 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateSemanticRelationshipRequest'
     delete:
-      operationId: deleteSemanticRelationship
-      summary: Delete semantic relationship
+      operationId: deleteSemanticModelRelationship
+      summary: Delete semantic relationship for a semantic model
       parameters:
+        - name: semanticModelId
+          in: path
+          required: true
+          schema:
+            type: string
         - name: relationshipName
           in: path
           required: true
@@ -17956,6 +17918,10 @@ components:
           $ref: '#/components/schemas/SemanticMetricExpressionMode'
         expression:
           type: string
+        relationship_names:
+          type: array
+          items:
+            type: string
         filter_sql:
           type: string
         default_time_grain:
@@ -17973,12 +17939,9 @@ components:
     CreateSemanticModelRequest:
       type: object
       required:
-        - project_name
         - name
         - base_model_ref
       properties:
-        project_name:
-          type: string
         name:
           type: string
         description:
@@ -18032,8 +17995,6 @@ components:
           $ref: '#/components/schemas/SemanticRelationshipRelationshipType'
         join_sql:
           type: string
-        is_default:
-          type: boolean
         cost:
           type: integer
           format: int32
@@ -18188,15 +18149,16 @@ components:
     DashboardSemanticQuerySource:
       type: object
       required:
-        - project_name
-        - semantic_model_name
+        - semantic_model_id
         - metrics
       properties:
-        project_name:
-          type: string
-        semantic_model_name:
+        semantic_model_id:
           type: string
         metrics:
+          type: array
+          items:
+            type: string
+        relationship_names:
           type: array
           items:
             type: string
@@ -18220,11 +18182,13 @@ components:
     DashboardSemanticQuerySourceUpdate:
       type: object
       properties:
-        project_name:
-          type: string
-        semantic_model_name:
+        semantic_model_id:
           type: string
         metrics:
+          type: array
+          items:
+            type: string
+        relationship_names:
           type: array
           items:
             type: string
@@ -19120,7 +19084,7 @@ components:
       properties:
         metric_name:
           type: string
-        project_name:
+        semantic_model_id:
           type: string
         semantic_model_name:
           type: string
@@ -19187,15 +19151,13 @@ components:
     MetricQueryRequest:
       type: object
       required:
-        - project_name
-        - semantic_model_name
         - metrics
       properties:
-        project_name:
-          type: string
-        semantic_model_name:
-          type: string
         metrics:
+          type: array
+          items:
+            type: string
+        relationship_names:
           type: array
           items:
             type: string
@@ -20804,7 +20766,6 @@ components:
         - id
         - product_version_id
         - semantic_model_id
-        - project_name
         - model_name
       properties:
         id:
@@ -20812,8 +20773,6 @@ components:
         product_version_id:
           type: string
         semantic_model_id:
-          type: string
-        project_name:
           type: string
         model_name:
           type: string
@@ -21225,6 +21184,10 @@ components:
           $ref: '#/components/schemas/SemanticMetricExpressionMode'
         expression:
           type: string
+        relationship_names:
+          type: array
+          items:
+            type: string
         filter_sql:
           type: string
         default_time_grain:
@@ -21271,8 +21234,6 @@ components:
       type: object
       properties:
         id:
-          type: string
-        project_name:
           type: string
         name:
           type: string
@@ -21351,8 +21312,6 @@ components:
           $ref: '#/components/schemas/SemanticRelationshipRelationshipType'
         join_sql:
           type: string
-        is_default:
-          type: boolean
         cost:
           type: integer
           format: int32
@@ -21367,6 +21326,15 @@ components:
         updated_at:
           type: string
           format: date-time
+    SemanticRelationshipList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SemanticRelationship'
     SemanticRelationshipRelationshipType:
       type: string
       enum:
@@ -21891,6 +21859,10 @@ components:
           $ref: '#/components/schemas/SemanticMetricExpressionMode'
         expression:
           type: string
+        relationship_names:
+          type: array
+          items:
+            type: string
         filter_sql:
           type: string
         default_time_grain:
@@ -21940,8 +21912,6 @@ components:
           $ref: '#/components/schemas/SemanticRelationshipRelationshipType'
         join_sql:
           type: string
-        is_default:
-          type: boolean
         cost:
           type: integer
           format: int32

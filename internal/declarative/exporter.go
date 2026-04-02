@@ -545,7 +545,7 @@ func exportSemanticModels(dir string, state *DesiredState) error {
 			Metadata:   ObjectMeta{Name: m.ModelName},
 			Spec:       m.Spec,
 		}
-		path := filepath.Join(dir, "semantic_models", m.ProjectName, safeResourceFileName(m.ModelName))
+		path := filepath.Join(dir, "semantic_models", safeResourceFileName(m.ModelName))
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}

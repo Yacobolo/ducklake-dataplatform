@@ -18,4 +18,5 @@
 | `label` | `string` | `false` | - |
 | `metric_type` | `SemanticMetricMetricType` | `false` | - |
 | `owner` | `string` | `false` | - |
+| `relationship_names` | `array[string]` | `false` | - |
 

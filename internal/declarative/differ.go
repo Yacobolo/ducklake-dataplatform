@@ -1558,19 +1558,19 @@ func diffModels(plan *Plan, desired, actual []ModelResource) {
 
 // === Semantic Models ===
 
-func semanticModelKey(projectName, modelName string) string {
-	return projectName + "." + modelName
+func semanticModelKey(modelName string) string {
+	return modelName
 }
 
 func diffSemanticModels(plan *Plan, desired, actual []SemanticModelResource) {
 	actualMap := make(map[string]SemanticModelResource, len(actual))
 	for _, a := range actual {
-		actualMap[semanticModelKey(a.ProjectName, a.ModelName)] = a
+		actualMap[semanticModelKey(a.ModelName)] = a
 	}
 
 	seen := make(map[string]bool, len(desired))
 	for _, d := range desired {
-		k := semanticModelKey(d.ProjectName, d.ModelName)
+		k := semanticModelKey(d.ModelName)
 		seen[k] = true
 		a, exists := actualMap[k]
 		if !exists {
@@ -1592,7 +1592,7 @@ func diffSemanticModels(plan *Plan, desired, actual []SemanticModelResource) {
 	}
 
 	for _, a := range actual {
-		k := semanticModelKey(a.ProjectName, a.ModelName)
+		k := semanticModelKey(a.ModelName)
 		if !seen[k] {
 			addDelete(plan, KindSemanticModel, k, a)
 		}

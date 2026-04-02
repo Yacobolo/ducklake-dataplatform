@@ -12,7 +12,7 @@ op checkSourceFreshness(sourceSchema: string, sourceTable: string, @query timest
 @get
 @tag("Semantic Layer")
 @summary("List semantic models")
-op listSemanticModels(@query project_name?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedSemanticModels> | StandardErrorResponses;
+op listSemanticModels(@query max_results?: int32, @query page_token?: string): Ok<PaginatedSemanticModels> | StandardErrorResponses;
 
 @route("/semantic-models")
 @post
@@ -20,110 +20,110 @@ op listSemanticModels(@query project_name?: string, @query max_results?: int32, 
 @summary("Create semantic model")
 op createSemanticModel(@body body: CreateSemanticModelRequest): Created<SemanticModel> | MutatingErrorResponses;
 
-@route("/semantic-models/{projectName}/{semanticModelName}")
+@route("/semantic-models/{semanticModelId}")
 @get
 @tag("Semantic Layer")
 @summary("Get semantic model")
-op getSemanticModel(projectName: string, semanticModelName: string): Ok<SemanticModel> | ResourceErrorResponses;
+op getSemanticModel(semanticModelId: string): Ok<SemanticModel> | ResourceErrorResponses;
 
-@route("/semantic-models/{projectName}/{semanticModelName}")
+@route("/semantic-models/{semanticModelId}")
 @patch(#{ implicitOptionality: true })
 @tag("Semantic Layer")
 @summary("Update semantic model")
-op updateSemanticModel(projectName: string, semanticModelName: string, @body body: UpdateSemanticModelRequest): Ok<SemanticModel> | MutatingErrorResponses;
+op updateSemanticModel(semanticModelId: string, @body body: UpdateSemanticModelRequest): Ok<SemanticModel> | MutatingErrorResponses;
 
-@route("/semantic-models/{projectName}/{semanticModelName}")
+@route("/semantic-models/{semanticModelId}")
 @delete
 @tag("Semantic Layer")
 @summary("Delete semantic model")
-op deleteSemanticModel(projectName: string, semanticModelName: string): NoContent | MutatingErrorResponses;
+op deleteSemanticModel(semanticModelId: string): NoContent | MutatingErrorResponses;
 
-@route("/semantic-models/{projectName}/{semanticModelName}/metrics")
+@route("/semantic-models/{semanticModelId}/metrics")
 @get
 @tag("Semantic Layer")
 @summary("List semantic metrics")
-op listSemanticMetrics(projectName: string, semanticModelName: string): Ok<SemanticMetricList> | ResourceErrorResponses;
+op listSemanticMetrics(semanticModelId: string): Ok<SemanticMetricList> | ResourceErrorResponses;
 
-@route("/semantic-models/{projectName}/{semanticModelName}/metrics")
+@route("/semantic-models/{semanticModelId}/metrics")
 @post
 @tag("Semantic Layer")
 @summary("Create semantic metric")
-op createSemanticMetric(projectName: string, semanticModelName: string, @body body: CreateSemanticMetricRequest): Created<SemanticMetric> | MutatingErrorResponses;
+op createSemanticMetric(semanticModelId: string, @body body: CreateSemanticMetricRequest): Created<SemanticMetric> | MutatingErrorResponses;
 
-@route("/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}")
+@route("/semantic-models/{semanticModelId}/metrics/{metricName}")
 @patch(#{ implicitOptionality: true })
 @tag("Semantic Layer")
 @summary("Update semantic metric")
-op updateSemanticMetric(projectName: string, semanticModelName: string, metricName: string, @body body: UpdateSemanticMetricRequest): Ok<SemanticMetric> | MutatingErrorResponses;
+op updateSemanticMetric(semanticModelId: string, metricName: string, @body body: UpdateSemanticMetricRequest): Ok<SemanticMetric> | MutatingErrorResponses;
 
-@route("/semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}")
+@route("/semantic-models/{semanticModelId}/metrics/{metricName}")
 @delete
 @tag("Semantic Layer")
 @summary("Delete semantic metric")
-op deleteSemanticMetric(projectName: string, semanticModelName: string, metricName: string): NoContent | MutatingErrorResponses;
+op deleteSemanticMetric(semanticModelId: string, metricName: string): NoContent | MutatingErrorResponses;
 
-@route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations")
+@route("/semantic-models/{semanticModelId}/pre-aggregations")
 @get
 @tag("Semantic Layer")
 @summary("List semantic pre aggregations")
-op listSemanticPreAggregations(projectName: string, semanticModelName: string): Ok<SemanticPreAggregationList> | ResourceErrorResponses;
+op listSemanticPreAggregations(semanticModelId: string): Ok<SemanticPreAggregationList> | ResourceErrorResponses;
 
-@route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations")
+@route("/semantic-models/{semanticModelId}/pre-aggregations")
 @post
 @tag("Semantic Layer")
 @summary("Create semantic pre aggregation")
-op createSemanticPreAggregation(projectName: string, semanticModelName: string, @body body: CreateSemanticPreAggregationRequest): Created<SemanticPreAggregation> | MutatingErrorResponses;
+op createSemanticPreAggregation(semanticModelId: string, @body body: CreateSemanticPreAggregationRequest): Created<SemanticPreAggregation> | MutatingErrorResponses;
 
-@route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}")
+@route("/semantic-models/{semanticModelId}/pre-aggregations/{preAggregationName}")
 @patch(#{ implicitOptionality: true })
 @tag("Semantic Layer")
 @summary("Update semantic pre aggregation")
-op updateSemanticPreAggregation(projectName: string, semanticModelName: string, preAggregationName: string, @body body: UpdateSemanticPreAggregationRequest): Ok<SemanticPreAggregation> | MutatingErrorResponses;
+op updateSemanticPreAggregation(semanticModelId: string, preAggregationName: string, @body body: UpdateSemanticPreAggregationRequest): Ok<SemanticPreAggregation> | MutatingErrorResponses;
 
-@route("/semantic-models/{projectName}/{semanticModelName}/pre-aggregations/{preAggregationName}")
+@route("/semantic-models/{semanticModelId}/pre-aggregations/{preAggregationName}")
 @delete
 @tag("Semantic Layer")
 @summary("Delete semantic pre aggregation")
-op deleteSemanticPreAggregation(projectName: string, semanticModelName: string, preAggregationName: string): NoContent | MutatingErrorResponses;
+op deleteSemanticPreAggregation(semanticModelId: string, preAggregationName: string): NoContent | MutatingErrorResponses;
 
-@route("/semantic-relationships")
+@route("/semantic-models/{semanticModelId}/relationships")
 @get
 @tag("Semantic Layer")
-@summary("List semantic relationships")
-op listSemanticRelationships(@query max_results?: int32, @query page_token?: string): Ok<PaginatedSemanticRelationships> | StandardErrorResponses;
+@summary("List semantic relationships for a semantic model")
+op listSemanticModelRelationships(semanticModelId: string): Ok<SemanticRelationshipList> | ResourceErrorResponses;
 
-@route("/semantic-relationships")
+@route("/semantic-models/{semanticModelId}/relationships")
 @post
 @tag("Semantic Layer")
-@summary("Create semantic relationship")
-op createSemanticRelationship(@body body: CreateSemanticRelationshipRequest): Created<SemanticRelationship> | MutatingErrorResponses;
+@summary("Create semantic relationship for a semantic model")
+op createSemanticModelRelationship(semanticModelId: string, @body body: CreateSemanticRelationshipRequest): Created<SemanticRelationship> | MutatingErrorResponses;
 
-@route("/semantic-relationships/{relationshipName}")
+@route("/semantic-models/{semanticModelId}/relationships/{relationshipName}")
 @patch(#{ implicitOptionality: true })
 @tag("Semantic Layer")
-@summary("Update semantic relationship")
-op updateSemanticRelationship(relationshipName: string, @body body: UpdateSemanticRelationshipRequest): Ok<SemanticRelationship> | MutatingErrorResponses;
+@summary("Update semantic relationship for a semantic model")
+op updateSemanticModelRelationship(semanticModelId: string, relationshipName: string, @body body: UpdateSemanticRelationshipRequest): Ok<SemanticRelationship> | MutatingErrorResponses;
 
-@route("/semantic-relationships/{relationshipName}")
+@route("/semantic-models/{semanticModelId}/relationships/{relationshipName}")
 @delete
 @tag("Semantic Layer")
-@summary("Delete semantic relationship")
-op deleteSemanticRelationship(relationshipName: string): NoContent | MutatingErrorResponses;
+@summary("Delete semantic relationship for a semantic model")
+op deleteSemanticModelRelationship(semanticModelId: string, relationshipName: string): NoContent | MutatingErrorResponses;
 
-@route("/metric-queries:explain")
+@route("/semantic-models/{semanticModelId}/queries:explain")
 @post
 @tag("Semantic Layer")
 @summary("Explain metric query")
-op explainMetricQuery(@body body: MetricQueryRequest): Ok<MetricQueryExplainResponse> | MutatingErrorResponses;
+op explainMetricQuery(semanticModelId: string, @body body: MetricQueryRequest): Ok<MetricQueryExplainResponse> | MutatingErrorResponses;
 
-@route("/metric-queries:run")
+@route("/semantic-models/{semanticModelId}/queries:run")
 @post
 @tag("Semantic Layer")
 @summary("Run metric query")
-op runMetricQuery(@body body: MetricQueryRequest): Ok<MetricQueryRunResponse> | MutatingErrorResponses;
+op runMetricQuery(semanticModelId: string, @body body: MetricQueryRequest): Ok<MetricQueryRunResponse> | MutatingErrorResponses;
 
 @route("/metrics/{metricName}/freshness")
 @get
 @tag("Semantic Layer")
 @summary("Check metric freshness")
-op checkMetricFreshness(metricName: string, @query project_name?: string, @query semantic_model_name?: string): Ok<MetricFreshnessStatus> | ResourceErrorResponses;
+op checkMetricFreshness(metricName: string, @query semantic_model_id?: string): Ok<MetricFreshnessStatus> | ResourceErrorResponses;

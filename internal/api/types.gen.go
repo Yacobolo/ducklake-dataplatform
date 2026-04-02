@@ -877,6 +877,7 @@ type CreateSemanticMetricRequest struct {
 	Label              *string                                        `json:"label,omitempty"`
 	MetricType         SemanticMetricMetricType                       `json:"metric_type"`
 	Name               string                                         `json:"name"`
+	RelationshipNames  *[]string                                      `json:"relationship_names,omitempty"`
 }
 
 type CreateSemanticMetricRequestCertificationState string
@@ -894,7 +895,6 @@ type CreateSemanticModelRequest struct {
 	DefaultTimeDimension *string   `json:"default_time_dimension,omitempty"`
 	Description          *string   `json:"description,omitempty"`
 	Name                 string    `json:"name"`
-	ProjectName          string    `json:"project_name"`
 	Tags                 *[]string `json:"tags,omitempty"`
 }
 
@@ -910,7 +910,6 @@ type CreateSemanticPreAggregationRequest struct {
 type CreateSemanticRelationshipRequest struct {
 	Cost             *int32                               `json:"cost,omitempty"`
 	FromSemanticId   string                               `json:"from_semantic_id"`
-	IsDefault        *bool                                `json:"is_default,omitempty"`
 	JoinSql          string                               `json:"join_sql"`
 	MaxHops          *int32                               `json:"max_hops,omitempty"`
 	Name             string                               `json:"name"`
@@ -991,8 +990,8 @@ type DashboardSemanticQuerySource struct {
 	Limit             *int32    `json:"limit,omitempty"`
 	Metrics           []string  `json:"metrics"`
 	OrderBy           *[]string `json:"order_by,omitempty"`
-	ProjectName       string    `json:"project_name"`
-	SemanticModelName string    `json:"semantic_model_name"`
+	RelationshipNames *[]string `json:"relationship_names,omitempty"`
+	SemanticModelId   string    `json:"semantic_model_id"`
 	TimeGrain         *string   `json:"time_grain,omitempty"`
 }
 
@@ -1402,8 +1401,8 @@ type MetricFreshnessStatus struct {
 	FreshnessBasis         *[]string `json:"freshness_basis,omitempty"`
 	FreshnessStatus        *string   `json:"freshness_status,omitempty"`
 	MetricName             *string   `json:"metric_name,omitempty"`
-	ProjectName            *string   `json:"project_name,omitempty"`
 	SelectedPreAggregation *string   `json:"selected_pre_aggregation,omitempty"`
+	SemanticModelId        *string   `json:"semantic_model_id,omitempty"`
 	SemanticModelName      *string   `json:"semantic_model_name,omitempty"`
 }
 
@@ -1438,8 +1437,7 @@ type MetricQueryRequest struct {
 	Limit             *int32    `json:"limit,omitempty"`
 	Metrics           []string  `json:"metrics"`
 	OrderBy           *[]string `json:"order_by,omitempty"`
-	ProjectName       string    `json:"project_name"`
-	SemanticModelName string    `json:"semantic_model_name"`
+	RelationshipNames *[]string `json:"relationship_names,omitempty"`
 	TimeGrain         *string   `json:"time_grain,omitempty"`
 }
 
@@ -1973,11 +1971,6 @@ type PaginatedSemanticModels struct {
 	NextPageToken *string         `json:"next_page_token,omitempty"`
 }
 
-type PaginatedSemanticRelationships struct {
-	Data          []SemanticRelationship `json:"data"`
-	NextPageToken *string                `json:"next_page_token,omitempty"`
-}
-
 type PaginatedStorageCredentials struct {
 	Data          []StorageCredential `json:"data"`
 	NextPageToken *string             `json:"next_page_token,omitempty"`
@@ -2251,7 +2244,6 @@ type ProductSemanticEntrypoint struct {
 	Id               string  `json:"id"`
 	ModelName        string  `json:"model_name"`
 	ProductVersionId string  `json:"product_version_id"`
-	ProjectName      string  `json:"project_name"`
 	SemanticModelId  string  `json:"semantic_model_id"`
 }
 
@@ -2452,6 +2444,7 @@ type SemanticMetric struct {
 	MetricType         *SemanticMetricMetricType                      `json:"metric_type,omitempty"`
 	Name               *string                                        `json:"name,omitempty"`
 	Owner              *string                                        `json:"owner,omitempty"`
+	RelationshipNames  *[]string                                      `json:"relationship_names,omitempty"`
 	SemanticModelId    *string                                        `json:"semantic_model_id,omitempty"`
 	UpdatedAt          *string                                        `json:"updated_at,omitempty"`
 }
@@ -2497,7 +2490,6 @@ type SemanticModel struct {
 	Id                   *string   `json:"id,omitempty"`
 	Name                 *string   `json:"name,omitempty"`
 	Owner                *string   `json:"owner,omitempty"`
-	ProjectName          *string   `json:"project_name,omitempty"`
 	Tags                 *[]string `json:"tags,omitempty"`
 	UpdatedAt            *string   `json:"updated_at,omitempty"`
 }
@@ -2526,13 +2518,16 @@ type SemanticRelationship struct {
 	CreatedBy        *string                               `json:"created_by,omitempty"`
 	FromSemanticId   *string                               `json:"from_semantic_id,omitempty"`
 	Id               *string                               `json:"id,omitempty"`
-	IsDefault        *bool                                 `json:"is_default,omitempty"`
 	JoinSql          *string                               `json:"join_sql,omitempty"`
 	MaxHops          *int32                                `json:"max_hops,omitempty"`
 	Name             *string                               `json:"name,omitempty"`
 	RelationshipType *SemanticRelationshipRelationshipType `json:"relationship_type,omitempty"`
 	ToSemanticId     *string                               `json:"to_semantic_id,omitempty"`
 	UpdatedAt        *string                               `json:"updated_at,omitempty"`
+}
+
+type SemanticRelationshipList struct {
+	Data []SemanticRelationship `json:"data"`
 }
 
 type SemanticRelationshipRelationshipType string
@@ -2848,6 +2843,7 @@ type UpdateSemanticMetricRequest struct {
 	Label              *string                                        `json:"label,omitempty"`
 	MetricType         *SemanticMetricMetricType                      `json:"metric_type,omitempty"`
 	Owner              *string                                        `json:"owner,omitempty"`
+	RelationshipNames  *[]string                                      `json:"relationship_names,omitempty"`
 }
 
 type UpdateSemanticModelRequest struct {
@@ -2868,7 +2864,6 @@ type UpdateSemanticPreAggregationRequest struct {
 
 type UpdateSemanticRelationshipRequest struct {
 	Cost             *int32                                `json:"cost,omitempty"`
-	IsDefault        *bool                                 `json:"is_default,omitempty"`
 	JoinSql          *string                               `json:"join_sql,omitempty"`
 	MaxHops          *int32                                `json:"max_hops,omitempty"`
 	RelationshipType *SemanticRelationshipRelationshipType `json:"relationship_type,omitempty"`
@@ -3119,8 +3114,6 @@ type ListSchemasParams = GenListSchemasParams
 
 type ListSemanticModelsParams = GenListSemanticModelsParams
 
-type ListSemanticRelationshipsParams = GenListSemanticRelationshipsParams
-
 type ListStorageCredentialsParams = GenListStorageCredentialsParams
 
 type ListTableColumnsParams = GenListTableColumnsParams
@@ -3213,9 +3206,9 @@ type CreateSemanticMetricJSONRequestBody = GenCreateSemanticMetricJSONBody
 
 type CreateSemanticModelJSONRequestBody = GenCreateSemanticModelJSONBody
 
-type CreateSemanticPreAggregationJSONRequestBody = GenCreateSemanticPreAggregationJSONBody
+type CreateSemanticModelRelationshipJSONRequestBody = GenCreateSemanticModelRelationshipJSONBody
 
-type CreateSemanticRelationshipJSONRequestBody = GenCreateSemanticRelationshipJSONBody
+type CreateSemanticPreAggregationJSONRequestBody = GenCreateSemanticPreAggregationJSONBody
 
 type CreateStorageCredentialJSONRequestBody = GenCreateStorageCredentialJSONBody
 
@@ -3317,9 +3310,9 @@ type UpdateSemanticMetricJSONRequestBody = GenUpdateSemanticMetricJSONBody
 
 type UpdateSemanticModelJSONRequestBody = GenUpdateSemanticModelJSONBody
 
-type UpdateSemanticPreAggregationJSONRequestBody = GenUpdateSemanticPreAggregationJSONBody
+type UpdateSemanticModelRelationshipJSONRequestBody = GenUpdateSemanticModelRelationshipJSONBody
 
-type UpdateSemanticRelationshipJSONRequestBody = GenUpdateSemanticRelationshipJSONBody
+type UpdateSemanticPreAggregationJSONRequestBody = GenUpdateSemanticPreAggregationJSONBody
 
 type UpdateStorageCredentialJSONRequestBody = GenUpdateStorageCredentialJSONBody
 

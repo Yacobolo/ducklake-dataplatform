@@ -11,7 +11,6 @@
 | --- | --- | --- | --- |
 | `cost` | `integer` | `false` | - |
 | `from_semantic_id` | `string` | `true` | - |
-| `is_default` | `boolean` | `false` | - |
 | `join_sql` | `string` | `true` | - |
 | `max_hops` | `integer` | `false` | - |
 | `name` | `string` | `true` | - |

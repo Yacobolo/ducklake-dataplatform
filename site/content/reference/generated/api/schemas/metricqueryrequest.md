@@ -3,7 +3,7 @@
 # Schema: `MetricQueryRequest`
 
 - Type: `object`
-- Required fields: `metrics`, `project_name`, `semantic_model_name`
+- Required fields: `metrics`
 
 ## Properties
 
@@ -14,7 +14,6 @@
 | `limit` | `integer` | `false` | - |
 | `metrics` | `array[string]` | `true` | - |
 | `order_by` | `array[string]` | `false` | - |
-| `project_name` | `string` | `true` | - |
-| `semantic_model_name` | `string` | `true` | - |
+| `relationship_names` | `array[string]` | `false` | - |
 | `time_grain` | `string` | `false` | - |
 

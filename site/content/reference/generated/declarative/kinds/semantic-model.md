@@ -5,7 +5,7 @@
 Duck declarative SemanticModel
 
 - Schema file: `kinds/semantic-model.schema.json`
-- SHA256: `f61f60f72ad5437709eed4463447a37a596e5a5ee5d14b3e10fb65c97ccd7886`
+- SHA256: `99feec038fd5551a9fb282a661df2d10cbc87aa3322b14add3f78d9f20f8b8ae`
 
 ## Spec Fields
 

@@ -109,7 +109,7 @@ func TestBuildSemanticAssetGraph(t *testing.T) {
 		{ID: "model-1", ProjectName: "sales", Name: "fct_orders", CreatedBy: "alice"},
 	}
 	semanticModels := []domain.SemanticModel{
-		{ID: "sem-1", ProjectName: "sales", Name: "orders", BaseModelRef: "sales.fct_orders", CreatedBy: "alice"},
+		{ID: "sem-1", Name: "orders", BaseModelRef: "sales.fct_orders", CreatedBy: "alice"},
 	}
 	metricsByModel := map[string][]domain.SemanticMetric{
 		"sem-1": {{ID: "metric-1", Name: "revenue", CreatedBy: "alice"}},
@@ -121,11 +121,11 @@ func TestBuildSemanticAssetGraph(t *testing.T) {
 	adapted, err := BuildSemanticAssetGraph(semanticModels, metricsByModel, preAggsByModel, models)
 	require.NoError(t, err)
 	require.Len(t, adapted.Assets, 3)
-	assert.Equal(t, "semantic_model.sales.orders", adapted.Assets[0].AssetKey)
+	assert.Equal(t, "semantic_model.orders", adapted.Assets[0].AssetKey)
 	assert.Equal(t, domain.AssetTypeSemanticModel, adapted.Assets[0].AssetType)
-	assert.Equal(t, "metric.sales.orders.revenue", adapted.Assets[1].AssetKey)
+	assert.Equal(t, "metric.orders.revenue", adapted.Assets[1].AssetKey)
 	assert.Equal(t, domain.AssetTypeMetric, adapted.Assets[1].AssetType)
-	assert.Equal(t, "semantic_pre_aggregation.sales.orders.daily_revenue", adapted.Assets[2].AssetKey)
+	assert.Equal(t, "semantic_pre_aggregation.orders.daily_revenue", adapted.Assets[2].AssetKey)
 	assert.Equal(t, domain.AssetTypeSemanticPreAggregation, adapted.Assets[2].AssetType)
 
 	assert.ElementsMatch(t, []string{"sem-1->model-1", "metric-1->sem-1", "metric-1->preagg-1", "preagg-1->sem-1"}, dependencyPairs(adapted.Dependencies))
@@ -152,8 +152,7 @@ func TestBuildDashboardAssetGraph(t *testing.T) {
 				Source: domain.DashboardWidgetSource{
 					Kind: domain.DashboardWidgetSourceSemanticQuery,
 					SemanticQuery: &domain.DashboardSemanticQuerySource{
-						ProjectName:       "sales",
-						SemanticModelName: "orders",
+						SemanticModelID:   "sem-1",
 						Metrics:           []string{"revenue"},
 					},
 				},
@@ -175,7 +174,7 @@ func TestBuildDashboardAssetGraph(t *testing.T) {
 	linksByNotebookID := map[string]domain.NotebookModelLink{
 		"nb-1": {NotebookID: "nb-1", OutputCellID: "cell-1", ModelID: "model-1"},
 	}
-	semanticModels := []domain.SemanticModel{{ID: "sem-1", ProjectName: "sales", Name: "orders"}}
+	semanticModels := []domain.SemanticModel{{ID: "sem-1", Name: "orders"}}
 	metricsByModel := map[string][]domain.SemanticMetric{
 		"sem-1": {{ID: "metric-1", Name: "revenue"}},
 	}

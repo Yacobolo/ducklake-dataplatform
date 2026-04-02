@@ -19,8 +19,7 @@ func TestDashboardWidgetSource_Validate(t *testing.T) {
 		err := (DashboardWidgetSource{
 			Kind: DashboardWidgetSourceSemanticQuery,
 			SemanticQuery: &DashboardSemanticQuerySource{
-				ProjectName:       "analytics",
-				SemanticModelName: "sales",
+				SemanticModelID: "semantic-sales",
 			},
 		}).Validate()
 		require.Error(t, err)

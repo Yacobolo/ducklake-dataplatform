@@ -12,9 +12,8 @@ import (
 )
 
 type semanticModelResp struct {
-	ID          string `json:"id"`
-	ProjectName string `json:"project_name"`
-	Name        string `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type semanticMetricResp struct {
@@ -38,7 +37,6 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithSemantic: true})
 
 	createSalesResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, map[string]interface{}{
-		"project_name":   "analytics",
 		"name":           "sales",
 		"base_model_ref": "analytics.fct_sales",
 	})
@@ -48,7 +46,6 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	require.NotEmpty(t, salesModel.ID)
 
 	createCustomersResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, map[string]interface{}{
-		"project_name":   "analytics",
 		"name":           "customers",
 		"base_model_ref": "analytics.dim_customers",
 	})
@@ -57,7 +54,7 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	decodeJSON(t, createCustomersResp, &customersModel)
 	require.NotEmpty(t, customersModel.ID)
 
-	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/analytics/sales/metrics", env.Keys.Admin, map[string]interface{}{
+	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+salesModel.ID+"/metrics", env.Keys.Admin, map[string]interface{}{
 		"name":                "total_revenue",
 		"metric_type":         "SUM",
 		"expression_mode":     "SQL",
@@ -69,7 +66,7 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	decodeJSON(t, createMetricResp, &metric)
 	require.NotEmpty(t, metric.ID)
 
-	createPreAggResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/analytics/sales/pre-aggregations", env.Keys.Admin, map[string]interface{}{
+	createPreAggResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+salesModel.ID+"/pre-aggregations", env.Keys.Admin, map[string]interface{}{
 		"name":            "daily_sales",
 		"metric_set":      []string{"total_revenue"},
 		"dimension_set":   []string{"order_date"},
@@ -80,7 +77,7 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	decodeJSON(t, createPreAggResp, &preAgg)
 	require.NotEmpty(t, preAgg.ID)
 
-	createRelationshipResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-relationships", env.Keys.Admin, map[string]interface{}{
+	createRelationshipResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+salesModel.ID+"/relationships", env.Keys.Admin, map[string]interface{}{
 		"name":              "sales_to_customers",
 		"from_semantic_id":  salesModel.ID,
 		"to_semantic_id":    customersModel.ID,
@@ -92,7 +89,7 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	decodeJSON(t, createRelationshipResp, &relationship)
 	require.NotEmpty(t, relationship.ID)
 
-	listModelsResp := doRequest(t, http.MethodGet, env.Server.URL+"/v1/semantic-models?project_name=analytics", env.Keys.Admin, nil)
+	listModelsResp := doRequest(t, http.MethodGet, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, nil)
 	require.Equal(t, http.StatusOK, listModelsResp.StatusCode, responseBodyOnStatusMismatch(t, listModelsResp, http.StatusOK))
 	var listed struct {
 		Data []semanticModelResp `json:"data"`
@@ -100,10 +97,8 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	decodeJSON(t, listModelsResp, &listed)
 	require.Len(t, listed.Data, 2)
 
-	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/metric-queries:explain", env.Keys.Admin, map[string]interface{}{
-		"project_name":        "analytics",
-		"semantic_model_name": "sales",
-		"metrics":             []string{"total_revenue"},
+	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+salesModel.ID+"/queries:explain", env.Keys.Admin, map[string]interface{}{
+		"metrics":           []string{"total_revenue"},
 	})
 	require.Equal(t, http.StatusOK, explainResp.StatusCode, responseBodyOnStatusMismatch(t, explainResp, http.StatusOK))
 	var explainBody struct {
@@ -131,13 +126,14 @@ func TestSemanticAPI_RunMetricQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	createModelResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, map[string]interface{}{
-		"project_name":   "analytics",
 		"name":           "sales_runtime",
 		"base_model_ref": "main.titanic",
 	})
 	require.Equal(t, http.StatusCreated, createModelResp.StatusCode, responseBodyOnStatusMismatch(t, createModelResp, http.StatusCreated))
+	var semanticModel semanticModelResp
+	decodeJSON(t, createModelResp, &semanticModel)
 
-	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/analytics/sales_runtime/metrics", env.Keys.Admin, map[string]interface{}{
+	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModel.ID+"/metrics", env.Keys.Admin, map[string]interface{}{
 		"name":                "total_amount",
 		"metric_type":         "SUM",
 		"expression_mode":     "SQL",
@@ -146,10 +142,8 @@ func TestSemanticAPI_RunMetricQuery(t *testing.T) {
 	})
 	require.Equal(t, http.StatusCreated, createMetricResp.StatusCode, responseBodyOnStatusMismatch(t, createMetricResp, http.StatusCreated))
 
-	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/metric-queries:run", env.Keys.Admin, map[string]interface{}{
-		"project_name":        "analytics",
-		"semantic_model_name": "sales_runtime",
-		"metrics":             []string{"total_amount"},
+	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModel.ID+"/queries:run", env.Keys.Admin, map[string]interface{}{
+		"metrics":           []string{"total_amount"},
 	})
 	require.Equal(t, http.StatusOK, runResp.StatusCode, responseBodyOnStatusMismatch(t, runResp, http.StatusOK))
 
@@ -188,13 +182,14 @@ func TestSemanticAPI_RunMetricQuery_RLSMaskParityWithRawSQL(t *testing.T) {
 	require.NoError(t, err)
 
 	createModelResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, map[string]interface{}{
-		"project_name":   "analytics",
 		"name":           "titanic_security_parity",
 		"base_model_ref": "main.titanic",
 	})
 	require.Equal(t, http.StatusCreated, createModelResp.StatusCode, responseBodyOnStatusMismatch(t, createModelResp, http.StatusCreated))
+	var parityModel semanticModelResp
+	decodeJSON(t, createModelResp, &parityModel)
 
-	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/analytics/titanic_security_parity/metrics", env.Keys.Admin, map[string]interface{}{
+	createMetricResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+parityModel.ID+"/metrics", env.Keys.Admin, map[string]interface{}{
 		"name":                "passenger_count",
 		"metric_type":         "COUNT",
 		"expression_mode":     "SQL",
@@ -203,12 +198,10 @@ func TestSemanticAPI_RunMetricQuery_RLSMaskParityWithRawSQL(t *testing.T) {
 	})
 	require.Equal(t, http.StatusCreated, createMetricResp.StatusCode, responseBodyOnStatusMismatch(t, createMetricResp, http.StatusCreated))
 
-	semanticRunResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/metric-queries:run", env.Keys.Analyst, map[string]interface{}{
-		"project_name":        "analytics",
-		"semantic_model_name": "titanic_security_parity",
-		"metrics":             []string{"passenger_count"},
-		"dimensions":          []string{"Name"},
-		"order_by":            []string{"Name"},
+	semanticRunResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+parityModel.ID+"/queries:run", env.Keys.Analyst, map[string]interface{}{
+		"metrics":           []string{"passenger_count"},
+		"dimensions":        []string{"Name"},
+		"order_by":          []string{"Name"},
 	})
 	require.Equal(t, http.StatusOK, semanticRunResp.StatusCode, responseBodyOnStatusMismatch(t, semanticRunResp, http.StatusOK))
 
