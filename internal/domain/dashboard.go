@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// DefaultDashboardPageName is used when a widget or request does not specify a page.
 const DefaultDashboardPageName = "Overview"
 
 // Dashboard is a persisted dashboard resource.
@@ -163,6 +164,7 @@ func (r *CreateDashboardWidgetRequest) Validate() error {
 	return r.Layout.Validate()
 }
 
+// NormalizeDashboardPageName trims dashboard page names and applies the default when blank.
 func NormalizeDashboardPageName(name string) string {
 	name = strings.TrimSpace(name)
 	if name == "" {

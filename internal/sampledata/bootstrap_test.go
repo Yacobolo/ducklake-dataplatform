@@ -127,16 +127,23 @@ func TestBootstrap_SeedsQueryableReadOnlySampleData(t *testing.T) {
 	assert.Positive(t, total)
 
 	var seededDashboard *domain.Dashboard
+	var chartLabDashboard *domain.Dashboard
 	for i := range dashboards {
 		if dashboards[i].Name == sampleDashboardName {
 			seededDashboard = &dashboards[i]
-			break
+		}
+		if dashboards[i].Name == sampleChartLabDashboardName {
+			chartLabDashboard = &dashboards[i]
 		}
 	}
 	require.NotNil(t, seededDashboard)
+	require.NotNil(t, chartLabDashboard)
 	assert.Equal(t, sampleDashboardOwner, seededDashboard.Owner)
 	assert.Equal(t, sampleDashboardSemanticProj, seededDashboard.SemanticProjectName)
 	assert.Equal(t, sampleDashboardSemanticModel, seededDashboard.SemanticModelName)
+	assert.Equal(t, sampleDashboardOwner, chartLabDashboard.Owner)
+	assert.Equal(t, sampleDashboardSemanticProj, chartLabDashboard.SemanticProjectName)
+	assert.Equal(t, sampleDashboardSemanticModel, chartLabDashboard.SemanticModelName)
 
 	widgets, err := widgetRepo.ListByDashboard(ctx, seededDashboard.ID)
 	require.NoError(t, err)
@@ -146,6 +153,32 @@ func TestBootstrap_SeedsQueryableReadOnlySampleData(t *testing.T) {
 	assert.Equal(t, "Zone Revenue Detail", widgets[4].Name)
 	assert.Equal(t, domain.DashboardWidgetSourceSemanticQuery, widgets[0].Source.Kind)
 	assert.Equal(t, domain.DashboardWidgetSourceSemanticQuery, widgets[1].Source.Kind)
+
+	chartLabWidgets, err := widgetRepo.ListByDashboard(ctx, chartLabDashboard.ID)
+	require.NoError(t, err)
+	assert.Len(t, chartLabWidgets, 8)
+
+	chartTypes := make(map[domain.VisualChartType]bool)
+	hasTable := false
+	for _, widget := range chartLabWidgets {
+		require.NotNil(t, widget.VisualSpec)
+		switch widget.VisualSpec.Kind {
+		case domain.VisualOutputChart:
+			require.NotNil(t, widget.VisualSpec.ChartType)
+			chartTypes[*widget.VisualSpec.ChartType] = true
+		case domain.VisualOutputTable:
+			hasTable = true
+		}
+	}
+
+	assert.True(t, chartTypes[domain.VisualChartLine])
+	assert.True(t, chartTypes[domain.VisualChartArea])
+	assert.True(t, chartTypes[domain.VisualChartBar])
+	assert.True(t, chartTypes[domain.VisualChartStackedBar])
+	assert.True(t, chartTypes[domain.VisualChartPie])
+	assert.True(t, chartTypes[domain.VisualChartDoughnut])
+	assert.True(t, chartTypes[domain.VisualChartScatter])
+	assert.True(t, hasTable)
 
 	blockedRows, err := secureEngine.Query(ctx, principal.Name, `INSERT INTO sample_data.nyc_taxi.zones VALUES (999, 'Nowhere', 'Blocked', 'Boro')`)
 	if blockedRows != nil {

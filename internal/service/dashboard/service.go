@@ -67,24 +67,28 @@ type ResolvedWidget struct {
 	Sort         *ResolvedWidgetSort
 }
 
+// ResolvedWidgetPage describes a paged table slice emitted for a widget.
 type ResolvedWidgetPage struct {
 	Offset  int  `json:"offset"`
 	Append  bool `json:"append"`
 	HasMore bool `json:"has_more"`
 }
 
+// ResolvedWidgetSort captures the effective sort applied to a table widget.
 type ResolvedWidgetSort struct {
 	Column    string `json:"column"`
 	Direction string `json:"direction"`
 }
 
-type DashboardPageState struct {
+// PageState represents the resolved widgets and filters for one dashboard page.
+type PageState struct {
 	Dashboard     *domain.Dashboard
 	PageName      string
 	Widgets       []ResolvedWidget
 	ActiveFilters []InteractiveFilter
 }
 
+// TablePageRequest describes a table widget page or sort request.
 type TablePageRequest struct {
 	Offset        int
 	Limit         int
@@ -225,7 +229,7 @@ func nextDashboardWidgetFilterOriginKey(name string, visual *domain.VisualSpec, 
 		return base
 	}
 
-	for index := 2; ; index += 1 {
+	for index := 2; ; index++ {
 		candidate := fmt.Sprintf("%s-%d", base, index)
 		if _, exists := used[candidate]; !exists {
 			return candidate
@@ -343,7 +347,8 @@ func (s *Service) ResolveWidget(ctx context.Context, principal string, widget do
 	return s.resolveWidgetWithContext(ctx, principal, widget, nil)
 }
 
-func (s *Service) BuildDashboardPageState(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, pageName string, filters []InteractiveFilter, tablePages map[string]TablePageRequest) (*DashboardPageState, error) {
+// BuildDashboardPageState resolves the widgets and active filters for a single dashboard page.
+func (s *Service) BuildDashboardPageState(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, pageName string, filters []InteractiveFilter, tablePages map[string]TablePageRequest) (*PageState, error) {
 	if dashboard == nil {
 		return nil, domain.ErrValidation("dashboard is required")
 	}
@@ -355,7 +360,7 @@ func (s *Service) BuildDashboardPageState(ctx context.Context, principal string,
 		return nil, err
 	}
 
-	return &DashboardPageState{
+	return &PageState{
 		Dashboard:     dashboard,
 		PageName:      pageName,
 		Widgets:       resolved,
@@ -363,6 +368,7 @@ func (s *Service) BuildDashboardPageState(ctx context.Context, principal string,
 	}, nil
 }
 
+// ResolveWidgetsForDashboardPaged resolves dashboard widgets with optional per-table page requests.
 func (s *Service) ResolveWidgetsForDashboardPaged(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []InteractiveFilter, tablePages map[string]TablePageRequest) ([]ResolvedWidget, error) {
 	interactionCtx, err := s.buildDashboardInteractionContext(ctx, dashboard, widgets, filters)
 	if err != nil {
@@ -387,6 +393,7 @@ func (s *Service) ResolveWidgetsForDashboardPaged(ctx context.Context, principal
 	return out, nil
 }
 
+// ResolveWidgetForDashboardPage resolves one dashboard widget with the supplied page request in dashboard context.
 func (s *Service) ResolveWidgetForDashboardPage(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, widgetID string, filters []InteractiveFilter, page TablePageRequest) (*ResolvedWidget, error) {
 	interactionCtx, err := s.buildDashboardInteractionContext(ctx, dashboard, widgets, filters)
 	if err != nil {

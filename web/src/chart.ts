@@ -20,8 +20,6 @@ echarts.use([
   TooltipComponent,
 ]);
 
-type ChartPayload = DashboardWidgetPayload;
-
 type WidgetFilterSelection = {
   widgetKey: string;
   dimension: string;
@@ -126,16 +124,16 @@ class DuckChart extends LitElement {
     return html`<div class=${interactiveClass} aria-label=${payload.name || "Chart"}></div>`;
   }
 
-  setPayload(payload: ChartPayload | null): void {
+  setPayload(payload: DashboardWidgetPayload | null): void {
     this.payloadJSON = payload ? JSON.stringify(payload) : "";
   }
 
-  private parsePayload(): ChartPayload | null {
+  private parsePayload(): DashboardWidgetPayload | null {
     if (!this.payloadJSON) {
       return null;
     }
     try {
-      return JSON.parse(this.payloadJSON) as ChartPayload;
+      return JSON.parse(this.payloadJSON) as DashboardWidgetPayload;
     } catch {
       return null;
     }
@@ -261,26 +259,18 @@ type NativeChartTarget = {
   } | undefined;
 };
 
-function buildOption(payload: ChartPayload): echarts.EChartsCoreOption {
+function buildOption(payload: DashboardWidgetPayload): echarts.EChartsCoreOption {
   const visual = payload.visual!;
-  const columnIndex = new Map(payload.columns.map((column, index) => [column, index]));
-  const fieldValue = (row: unknown[], field?: string) => {
-    if (!field) {
-      return null;
-    }
-    const idx = columnIndex.get(field);
-    return idx === undefined ? null : row[idx];
-  };
 
   switch (visual.chart_type) {
     case "pie":
     case "doughnut": {
       const seriesData = payload.rows.map((row) => {
-        const label = String(fieldValue(row, visual.encodings?.label?.field) ?? "");
+        const label = String(fieldValueFromPayload(payload, row, visual.encodings?.label?.field, 0) ?? "");
         const dimmed = shouldDimPoint(payload, { label });
         return {
           name: label,
-          value: Number(fieldValue(row, visual.encodings?.value?.field) ?? 0),
+          value: Number(fieldValueFromPayload(payload, row, visual.encodings?.value?.field, 1) ?? 0),
           itemStyle: { opacity: dimmed ? 0.28 : 1 },
         };
       });
@@ -312,8 +302,8 @@ function buildOption(payload: ChartPayload): echarts.EChartsCoreOption {
         series: [{
           type: "scatter",
           data: payload.rows.map((row) => [
-            Number(fieldValue(row, visual.encodings?.x?.field) ?? 0),
-            Number(fieldValue(row, visual.encodings?.y?.field) ?? 0),
+            Number(fieldValueFromPayload(payload, row, visual.encodings?.x?.field, 0) ?? 0),
+            Number(fieldValueFromPayload(payload, row, visual.encodings?.y?.field, 1) ?? 0),
           ]),
         }],
       };
@@ -322,13 +312,13 @@ function buildOption(payload: ChartPayload): echarts.EChartsCoreOption {
       const xField = visual.encodings?.x?.field;
       const yField = visual.encodings?.y?.field;
       const seriesField = visual.encodings?.series?.field;
-      const xLabels = Array.from(new Set(payload.rows.map((row) => String(fieldValue(row, xField) ?? ""))));
+      const xLabels = Array.from(new Set(payload.rows.map((row) => String(fieldValueFromPayload(payload, row, xField, 0) ?? ""))));
       const grouped = new Map<string, Map<string, number>>();
 
       for (const row of payload.rows) {
-        const seriesKey = String(fieldValue(row, seriesField) ?? yField ?? "value");
-        const xKey = String(fieldValue(row, xField) ?? "");
-        const value = Number(fieldValue(row, yField) ?? 0);
+        const seriesKey = String(fieldValueFromPayload(payload, row, seriesField, 1) ?? yField ?? "value");
+        const xKey = String(fieldValueFromPayload(payload, row, xField, 0) ?? "");
+        const value = Number(fieldValueFromPayload(payload, row, yField, 1) ?? 0);
         if (!grouped.has(seriesKey)) {
           grouped.set(seriesKey, new Map());
         }
@@ -438,7 +428,7 @@ function shouldShowLegend(visual: VisualSpec, seriesCount: number): boolean {
   }
 }
 
-function extractSelectionsFromClick(widgetKey: string, payload: ChartPayload, params: { name?: unknown; seriesName?: unknown }): WidgetFilterSelection[] {
+function extractSelectionsFromClick(widgetKey: string, payload: DashboardWidgetPayload, params: { name?: unknown; seriesName?: unknown }): WidgetFilterSelection[] {
   const bindings = payload.interaction?.bindings ?? [];
   const selections: WidgetFilterSelection[] = [];
   if (!widgetKey.trim()) {
@@ -464,7 +454,7 @@ function extractSelectionsFromClick(widgetKey: string, payload: ChartPayload, pa
   return selections;
 }
 
-function extractSelectionsFromNativeClick(widgetKey: string, payload: ChartPayload, target?: NativeChartTarget): WidgetFilterSelection[] {
+function extractSelectionsFromNativeClick(widgetKey: string, payload: DashboardWidgetPayload, target?: NativeChartTarget): WidgetFilterSelection[] {
   if (!target) {
     return [];
   }
@@ -506,7 +496,7 @@ function extractSelectionsFromNativeClick(widgetKey: string, payload: ChartPaylo
   }
 }
 
-function fieldValueFromPayload(payload: ChartPayload, row: unknown[], field: string | undefined, fallbackIndex: number): unknown {
+function fieldValueFromPayload(payload: DashboardWidgetPayload, row: unknown[], field: string | undefined, fallbackIndex: number): unknown {
   if (!field) {
     return row[fallbackIndex] ?? null;
   }
@@ -517,26 +507,24 @@ function fieldValueFromPayload(payload: ChartPayload, row: unknown[], field: str
   return row[index] ?? null;
 }
 
-function shouldDimPoint(payload: ChartPayload, values: PointSelectionContext): boolean {
+function shouldDimPoint(payload: DashboardWidgetPayload, values: PointSelectionContext): boolean {
   const interaction = payload.interaction;
   if (!interaction?.participates) {
     return false;
   }
 
-  let hasRelevantSelection = false;
   for (const binding of interaction.bindings ?? []) {
     const activeValues = interaction.active_filters?.[binding.dimension] ?? [];
     if (activeValues.length === 0) {
       continue;
     }
-    hasRelevantSelection = true;
     const candidate = values[binding.encoding];
     if (!candidate || !activeValues.includes(candidate)) {
       return true;
     }
   }
 
-  return hasRelevantSelection ? false : false;
+  return false;
 }
 
 if (!customElements.get("duck-chart")) {

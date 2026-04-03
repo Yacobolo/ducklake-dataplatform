@@ -38,9 +38,13 @@ const (
 type VisualLegendPosition string
 
 const (
+	// VisualLegendPositionTop places the legend above the chart.
 	VisualLegendPositionTop    VisualLegendPosition = "top"
+	// VisualLegendPositionRight places the legend to the right of the chart.
 	VisualLegendPositionRight  VisualLegendPosition = "right"
+	// VisualLegendPositionBottom places the legend below the chart.
 	VisualLegendPositionBottom VisualLegendPosition = "bottom"
+	// VisualLegendPositionLeft places the legend to the left of the chart.
 	VisualLegendPositionLeft   VisualLegendPosition = "left"
 )
 
