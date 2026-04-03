@@ -52,7 +52,7 @@ Create column mask
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /column-masks/{columnMaskId}`
+## `DELETE /column-masks/{column_mask_id}`
 
 Delete column mask
 
@@ -62,7 +62,7 @@ Delete column mask
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `columnMaskId` | `string` | `true` | - |
+| `column_mask_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -75,7 +75,7 @@ Delete column mask
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /column-masks/{columnMaskId}/bindings`
+## `GET /column-masks/{column_mask_id}/bindings`
 
 List column mask bindings
 
@@ -85,7 +85,7 @@ List column mask bindings
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `columnMaskId` | `string` | `true` | - |
+| `column_mask_id` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -106,7 +106,7 @@ List column mask bindings
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /column-masks/{columnMaskId}/bindings`
+## `POST /column-masks/{column_mask_id}/bindings`
 
 Bind column mask
 
@@ -116,7 +116,7 @@ Bind column mask
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `columnMaskId` | `string` | `true` | - |
+| `column_mask_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -134,7 +134,7 @@ Bind column mask
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /column-masks/{columnMaskId}/bindings/{principalType}/{principalId}`
+## `DELETE /column-masks/{column_mask_id}/bindings/{principal_type}/{principal_id}`
 
 Unbind column mask
 
@@ -144,9 +144,9 @@ Unbind column mask
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `columnMaskId` | `string` | `true` | - |
-| `principalId` | `string` | `true` | - |
-| `principalType` | `PrincipalType` | `true` | - |
+| `column_mask_id` | `string` | `true` | - |
+| `principal_id` | `string` | `true` | - |
+| `principal_type` | `PrincipalType` | `true` | - |
 
 ### Responses
 
@@ -207,7 +207,7 @@ Create row filter
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /row-filters/{rowFilterId}`
+## `DELETE /row-filters/{row_filter_id}`
 
 Delete row filter
 
@@ -217,7 +217,7 @@ Delete row filter
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `rowFilterId` | `string` | `true` | - |
+| `row_filter_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -230,7 +230,7 @@ Delete row filter
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /row-filters/{rowFilterId}/bindings`
+## `GET /row-filters/{row_filter_id}/bindings`
 
 List row filter bindings
 
@@ -240,7 +240,7 @@ List row filter bindings
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `rowFilterId` | `string` | `true` | - |
+| `row_filter_id` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -261,7 +261,7 @@ List row filter bindings
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /row-filters/{rowFilterId}/bindings`
+## `POST /row-filters/{row_filter_id}/bindings`
 
 Bind row filter
 
@@ -271,7 +271,7 @@ Bind row filter
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `rowFilterId` | `string` | `true` | - |
+| `row_filter_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -289,7 +289,7 @@ Bind row filter
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /row-filters/{rowFilterId}/bindings/{principalType}/{principalId}`
+## `DELETE /row-filters/{row_filter_id}/bindings/{principal_type}/{principal_id}`
 
 Unbind row filter
 
@@ -299,9 +299,9 @@ Unbind row filter
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `principalId` | `string` | `true` | - |
-| `principalType` | `PrincipalType` | `true` | - |
-| `rowFilterId` | `string` | `true` | - |
+| `principal_id` | `string` | `true` | - |
+| `principal_type` | `PrincipalType` | `true` | - |
+| `row_filter_id` | `string` | `true` | - |
 
 ### Responses
 

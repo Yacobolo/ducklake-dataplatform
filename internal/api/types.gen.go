@@ -1127,20 +1127,6 @@ type Error struct {
 	Message string `json:"message"`
 }
 
-type ExploreItem struct {
-	FolderId     *string `json:"folder_id,omitempty"`
-	GitRepoId    *string `json:"git_repo_id,omitempty"`
-	Id           *string `json:"id,omitempty"`
-	Kind         *string `json:"kind,omitempty"`
-	Name         *string `json:"name,omitempty"`
-	Owner        *string `json:"owner,omitempty"`
-	ProjectBound *bool   `json:"project_bound,omitempty"`
-	ProjectName  *string `json:"project_name,omitempty"`
-	Scope        *string `json:"scope,omitempty"`
-	Shared       *bool   `json:"shared,omitempty"`
-	UpdatedAt    *string `json:"updated_at,omitempty"`
-}
-
 type ExternalLocation struct {
 	Comment        *string      `json:"comment,omitempty"`
 	CreatedAt      *string      `json:"created_at,omitempty"`
@@ -1168,6 +1154,20 @@ type Folder struct {
 	Path                 *string `json:"path,omitempty"`
 	SystemRole           *string `json:"system_role,omitempty"`
 	UpdatedAt            *string `json:"updated_at,omitempty"`
+}
+
+type FolderContentItem struct {
+	FolderId     *string `json:"folder_id,omitempty"`
+	GitRepoId    *string `json:"git_repo_id,omitempty"`
+	Id           *string `json:"id,omitempty"`
+	Kind         *string `json:"kind,omitempty"`
+	Name         *string `json:"name,omitempty"`
+	Owner        *string `json:"owner,omitempty"`
+	ProjectBound *bool   `json:"project_bound,omitempty"`
+	ProjectName  *string `json:"project_name,omitempty"`
+	Scope        *string `json:"scope,omitempty"`
+	Shared       *bool   `json:"shared,omitempty"`
+	UpdatedAt    *string `json:"updated_at,omitempty"`
 }
 
 type FolderShare struct {
@@ -1834,14 +1834,14 @@ type PaginatedDataProducts struct {
 	NextPageToken *string               `json:"next_page_token,omitempty"`
 }
 
-type PaginatedExploreItems struct {
-	Data          []ExploreItem `json:"data"`
-	NextPageToken *string       `json:"next_page_token,omitempty"`
-}
-
 type PaginatedExternalLocations struct {
 	Data          []ExternalLocation `json:"data"`
 	NextPageToken *string            `json:"next_page_token,omitempty"`
+}
+
+type PaginatedFolderContents struct {
+	Data          []FolderContentItem `json:"data"`
+	NextPageToken *string             `json:"next_page_token,omitempty"`
 }
 
 type PaginatedFolders struct {
@@ -3057,9 +3057,11 @@ type ListDataProductEventsParams = GenListDataProductEventsParams
 
 type ListDataProductsParams = GenListDataProductsParams
 
-type ListExploreItemsParams = GenListExploreItemsParams
-
 type ListExternalLocationsParams = GenListExternalLocationsParams
+
+type ListFolderContentsParams = GenListFolderContentsParams
+
+type ListFoldersParams = GenListFoldersParams
 
 type ListGitReposParams = GenListGitReposParams
 
@@ -3074,8 +3076,6 @@ type ListMacrosParams = GenListMacrosParams
 type ListModelRunsParams = GenListModelRunsParams
 
 type ListModelsParams = GenListModelsParams
-
-type ListNotebookFoldersParams = GenListNotebookFoldersParams
 
 type ListNotebookJobsParams = GenListNotebookJobsParams
 
@@ -3096,6 +3096,8 @@ type ListProductTeamsParams = GenListProductTeamsParams
 type ListQueryHistoryParams = GenListQueryHistoryParams
 
 type ListRecentResourcesParams = GenListRecentResourcesParams
+
+type ListRootFolderContentsParams = GenListRootFolderContentsParams
 
 type ListRowFilterBindingsParams = GenListRowFilterBindingsParams
 
@@ -3161,6 +3163,8 @@ type CreateDataProductVersionJSONRequestBody = GenCreateDataProductVersionJSONBo
 
 type CreateExternalLocationJSONRequestBody = GenCreateExternalLocationJSONBody
 
+type CreateFolderJSONRequestBody = GenCreateFolderJSONBody
+
 type CreateGitRepoJSONRequestBody = GenCreateGitRepoJSONBody
 
 type CreateGrantJSONRequestBody = GenCreateGrantJSONBody
@@ -3174,8 +3178,6 @@ type CreateMacroJSONRequestBody = GenCreateMacroJSONBody
 type CreateModelJSONRequestBody = GenCreateModelJSONBody
 
 type CreateModelTestJSONRequestBody = GenCreateModelTestJSONBody
-
-type CreateNotebookFolderJSONRequestBody = GenCreateNotebookFolderJSONBody
 
 type CreateNotebookJSONRequestBody = GenCreateNotebookJSONBody
 
@@ -3229,7 +3231,7 @@ type LoadTableExternalFilesJSONRequestBody = GenLoadTableExternalFilesJSONBody
 
 type LocalLoginJSONRequestBody = LocalLoginRequest
 
-type MoveNotebookFolderJSONRequestBody = GenMoveNotebookFolderJSONBody
+type MoveFolderJSONRequestBody = GenMoveFolderJSONBody
 
 type MoveNotebookJSONRequestBody = GenMoveNotebookJSONBody
 
@@ -3247,7 +3249,7 @@ type RunMetricQueryJSONRequestBody = GenRunMetricQueryJSONBody
 
 type SetDefaultCatalogJSONRequestBody = GenSetDefaultCatalogJSONBody
 
-type ShareNotebookFolderJSONRequestBody = GenShareNotebookFolderJSONBody
+type ShareFolderJSONRequestBody = GenShareFolderJSONBody
 
 type ShareNotebookJSONRequestBody = GenShareNotebookJSONBody
 
@@ -3279,13 +3281,13 @@ type UpdateDataProductJSONRequestBody = GenUpdateDataProductJSONBody
 
 type UpdateExternalLocationJSONRequestBody = GenUpdateExternalLocationJSONBody
 
+type UpdateFolderJSONRequestBody = GenUpdateFolderJSONBody
+
 type UpdateGroupJSONRequestBody = GenUpdateGroupJSONBody
 
 type UpdateMacroJSONRequestBody = GenUpdateMacroJSONBody
 
 type UpdateModelJSONRequestBody = GenUpdateModelJSONBody
-
-type UpdateNotebookFolderJSONRequestBody = GenUpdateNotebookFolderJSONBody
 
 type UpdateNotebookJSONRequestBody = GenUpdateNotebookJSONBody
 

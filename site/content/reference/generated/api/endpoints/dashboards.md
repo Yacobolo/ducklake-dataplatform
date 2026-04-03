@@ -50,7 +50,7 @@ Create dashboard
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /dashboards/{dashboardId}`
+## `GET /dashboards/{dashboard_id}`
 
 Get dashboard
 
@@ -60,7 +60,7 @@ Get dashboard
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -74,7 +74,7 @@ Get dashboard
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /dashboards/{dashboardId}`
+## `PATCH /dashboards/{dashboard_id}`
 
 Update dashboard
 
@@ -84,7 +84,7 @@ Update dashboard
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -102,7 +102,7 @@ Update dashboard
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /dashboards/{dashboardId}`
+## `DELETE /dashboards/{dashboard_id}`
 
 Delete dashboard
 
@@ -112,7 +112,7 @@ Delete dashboard
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -125,7 +125,7 @@ Delete dashboard
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /dashboards/{dashboardId}/resolved`
+## `GET /dashboards/{dashboard_id}/resolved`
 
 Get resolved dashboard
 
@@ -135,7 +135,7 @@ Get resolved dashboard
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -149,7 +149,7 @@ Get resolved dashboard
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /dashboards/{dashboardId}/widgets`
+## `POST /dashboards/{dashboard_id}/widgets`
 
 Create dashboard widget
 
@@ -159,7 +159,7 @@ Create dashboard widget
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -177,7 +177,7 @@ Create dashboard widget
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /dashboards/{dashboardId}/widgets/{widgetId}`
+## `PATCH /dashboards/{dashboard_id}/widgets/{widget_id}`
 
 Update dashboard widget
 
@@ -187,8 +187,8 @@ Update dashboard widget
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
-| `widgetId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
+| `widget_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -206,7 +206,7 @@ Update dashboard widget
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /dashboards/{dashboardId}/widgets/{widgetId}`
+## `DELETE /dashboards/{dashboard_id}/widgets/{widget_id}`
 
 Delete dashboard widget
 
@@ -216,8 +216,8 @@ Delete dashboard widget
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
-| `widgetId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
+| `widget_id` | `string` | `true` | - |
 
 ### Responses
 

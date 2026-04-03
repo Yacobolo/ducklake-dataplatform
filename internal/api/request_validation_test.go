@@ -46,7 +46,7 @@ func TestRequestValidationMiddleware_RejectsMalformedUUIDPath(t *testing.T) {
 	})).ServeHTTP(rec, req)
 
 	require.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Contains(t, rec.Body.String(), "principalId")
+	assert.Contains(t, rec.Body.String(), "principal_id")
 }
 
 func TestRequestValidationMiddleware_RejectsUnknownJSONFields(t *testing.T) {

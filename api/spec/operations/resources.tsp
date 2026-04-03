@@ -29,9 +29,9 @@ op listSavedResources(
 @doc("Saves a UUID-backed resource for the authenticated principal.")
 op createSavedResource(@body body: CreateSavedResourceRequest): Created<SavedResource> | MutatingErrorResponses;
 
-@route("/me/saved-resources/{resourceType}/{resourceKey}")
+@route("/me/saved-resources/{resource_type}/{resource_key}")
 @delete
 @tag("Resources")
 @summary("Delete saved resource")
 @doc("Removes a saved resource for the authenticated principal.")
-op deleteSavedResource(resourceType: string, resourceKey: string): NoContent | MutatingErrorResponses;
+op deleteSavedResource(resource_type: string, resource_key: string): NoContent | MutatingErrorResponses;

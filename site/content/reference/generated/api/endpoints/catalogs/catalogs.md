@@ -52,7 +52,7 @@ Register catalog
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /catalogs/{catalogName}`
+## `GET /catalogs/{catalog_name}`
 
 Get catalog
 
@@ -62,7 +62,7 @@ Get catalog
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalogName` | `string` | `true` | - |
+| `catalog_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -76,7 +76,7 @@ Get catalog
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /catalogs/{catalogName}`
+## `PATCH /catalogs/{catalog_name}`
 
 Update catalog registration
 
@@ -86,7 +86,7 @@ Update catalog registration
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalogName` | `string` | `true` | - |
+| `catalog_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -105,7 +105,7 @@ Update catalog registration
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /catalogs/{catalogName}`
+## `DELETE /catalogs/{catalog_name}`
 
 Delete catalog registration
 
@@ -115,7 +115,7 @@ Delete catalog registration
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalogName` | `string` | `true` | - |
+| `catalog_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -129,7 +129,7 @@ Delete catalog registration
 | `429` | Client error |
 | `500` | Server error |
 
-## `PUT /catalogs/{catalogName}/default`
+## `PUT /catalogs/{catalog_name}/default`
 
 Set default catalog
 
@@ -139,7 +139,7 @@ Set default catalog
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalogName` | `string` | `true` | - |
+| `catalog_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -157,7 +157,7 @@ Set default catalog
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /catalogs/{catalogName}/history`
+## `GET /catalogs/{catalog_name}/history`
 
 List catalog history
 
@@ -167,7 +167,7 @@ List catalog history
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalogName` | `string` | `true` | - |
+| `catalog_name` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -190,7 +190,7 @@ List catalog history
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /catalogs/{catalogName}/metastore/summary`
+## `GET /catalogs/{catalog_name}/metastore/summary`
 
 Get metastore summary
 
@@ -200,7 +200,7 @@ Get metastore summary
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalogName` | `string` | `true` | - |
+| `catalog_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -214,7 +214,781 @@ Get metastore summary
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /catalogs/{catalogName}/version-summary`
+## `GET /catalogs/{catalog_name}/schemas`
+
+List schemas
+
+- Operation ID: `listSchemas`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /catalogs/{catalog_name}/schemas`
+
+Create schema
+
+- Operation ID: `createSchema`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /catalogs/{catalog_name}/schemas/{schema_name}`
+
+Get schema
+
+- Operation ID: `getSchema`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /catalogs/{catalog_name}/schemas/{schema_name}`
+
+Update schema
+
+- Operation ID: `updateSchema`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /catalogs/{catalog_name}/schemas/{schema_name}`
+
+Delete schema
+
+- Operation ID: `deleteSchema`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `force` | `boolean` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /catalogs/{catalog_name}/schemas/{schema_name}/tables`
+
+List tables
+
+- Operation ID: `listTables`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /catalogs/{catalog_name}/schemas/{schema_name}/tables`
+
+Create table
+
+- Operation ID: `createTable`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}`
+
+Get table
+
+- Operation ID: `getTable`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}`
+
+Update table
+
+- Operation ID: `updateTable`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}`
+
+Delete table
+
+- Operation ID: `deleteTable`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns`
+
+List table columns
+
+- Operation ID: `listTableColumns`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns/{column_name}`
+
+Update column
+
+- Operation ID: `updateColumn`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `column_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-commits`
+
+Commit table ingestion
+
+- Operation ID: `commitTableIngestion`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-loads`
+
+Load table external files
+
+- Operation ID: `loadTableExternalFiles`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/manifest`
+
+Get table manifest
+
+- Operation ID: `createManifest`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/profiles`
+
+Profile table
+
+- Operation ID: `profileTable`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/upload-urls`
+
+Create upload URL
+
+- Operation ID: `createUploadUrl`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /catalogs/{catalog_name}/schemas/{schema_name}/views`
+
+List views
+
+- Operation ID: `listViews`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /catalogs/{catalog_name}/schemas/{schema_name}/views`
+
+Create view
+
+- Operation ID: `createView`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /catalogs/{catalog_name}/schemas/{schema_name}/views/{view_name}`
+
+Get view
+
+- Operation ID: `getView`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `view_name` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /catalogs/{catalog_name}/schemas/{schema_name}/views/{view_name}`
+
+Update view
+
+- Operation ID: `updateView`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `view_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /catalogs/{catalog_name}/schemas/{schema_name}/views/{view_name}`
+
+Delete view
+
+- Operation ID: `deleteView`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `view_name` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /catalogs/{catalog_name}/schemas/{schema_name}/volumes`
+
+List volumes
+
+- Operation ID: `listVolumes`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /catalogs/{catalog_name}/schemas/{schema_name}/volumes`
+
+Create volume
+
+- Operation ID: `createVolume`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /catalogs/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}`
+
+Get volume
+
+- Operation ID: `getVolume`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `volume_name` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /catalogs/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}`
+
+Update volume
+
+- Operation ID: `updateVolume`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `volume_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /catalogs/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}`
+
+Delete volume
+
+- Operation ID: `deleteVolume`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalog_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `volume_name` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /catalogs/{catalog_name}/version-summary`
 
 Get catalog version summary
 
@@ -224,7 +998,7 @@ Get catalog version summary
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `catalogName` | `string` | `true` | - |
+| `catalog_name` | `string` | `true` | - |
 
 ### Responses
 

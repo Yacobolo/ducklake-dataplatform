@@ -14,8 +14,8 @@ func TestBuildGeneratedCommandSpecsFromEndpoints_DetectsDuplicateCommands(t *tes
 	t.Helper()
 
 	_, err := buildGeneratedCommandSpecsFromEndpoints([]gen.APIGenEndpoint{
-		{OperationID: "listSchemas", CLICommand: "catalog schemas list", Path: "/catalogs/{catalogName}/schemas"},
-		{OperationID: "listTables", CLICommand: "catalog schemas list", Path: "/catalogs/{catalogName}/schemas/{schemaName}/tables"},
+		{OperationID: "listSchemas", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas"},
+		{OperationID: "listTables", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas/{schema_name}/tables"},
 	})
 
 	require.Error(t, err)

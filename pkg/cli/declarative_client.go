@@ -1150,16 +1150,16 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 		}
 	}
 
-	defaultsPage, err := c.client.Do(http.MethodGet, "/compute-defaults", nil, nil)
+	defaultsPage, err := c.client.Do(http.MethodGet, "/compute-routing-defaults", nil, nil)
 	if err != nil {
-		return fmt.Errorf("GET /compute-defaults: %w", err)
+		return fmt.Errorf("GET /compute-routing-defaults: %w", err)
 	}
 	body, err := apiruntime.ReadBody(defaultsPage)
 	if err != nil {
-		return fmt.Errorf("read GET /compute-defaults: %w", err)
+		return fmt.Errorf("read GET /compute-routing-defaults: %w", err)
 	}
 	if defaultsPage.StatusCode < 200 || defaultsPage.StatusCode >= 300 {
-		return fmt.Errorf("GET /compute-defaults: HTTP %d: %s", defaultsPage.StatusCode, string(body))
+		return fmt.Errorf("GET /compute-routing-defaults: HTTP %d: %s", defaultsPage.StatusCode, string(body))
 	}
 	var defaults struct {
 		InteractiveMode string `json:"interactive_mode"`
@@ -1167,7 +1167,7 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 		NotebookMode    string `json:"notebook_mode"`
 	}
 	if err := json.Unmarshal(body, &defaults); err != nil {
-		return fmt.Errorf("parse GET /compute-defaults: %w", err)
+		return fmt.Errorf("parse GET /compute-routing-defaults: %w", err)
 	}
 	state.ComputeDefaults = &declarative.ComputeRoutingDefaultsSpec{
 		InteractiveMode: defaults.InteractiveMode,
@@ -4706,13 +4706,13 @@ func (c *APIStateClient) executeComputeRoutingDefaults(_ context.Context, action
 		if spec.NotebookMode != "" {
 			body["notebook_mode"] = spec.NotebookMode
 		}
-		resp, err := c.client.Do(http.MethodPatch, "/compute-defaults", nil, body)
+		resp, err := c.client.Do(http.MethodPatch, "/compute-routing-defaults", nil, body)
 		if err != nil {
 			return err
 		}
 		return apiruntime.CheckError(resp)
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodPatch, "/compute-defaults", nil, map[string]interface{}{
+		resp, err := c.client.Do(http.MethodPatch, "/compute-routing-defaults", nil, map[string]interface{}{
 			"interactive_mode": "BYOC_LOCAL",
 			"scheduled_mode":   "SHARED_ENDPOINT",
 			"notebook_mode":    "SHARED_ENDPOINT",

@@ -1947,7 +1947,7 @@ model UpdateDashboardRequest {
   folder_id?: string;
 }
 
-model ExploreItem {
+model FolderContentItem {
   kind?: string;
   scope?: string;
   id?: string;
@@ -1961,8 +1961,8 @@ model ExploreItem {
   project_bound?: boolean;
 }
 
-model PaginatedExploreItems {
-  data: ExploreItem[];
+model PaginatedFolderContents {
+  data: FolderContentItem[];
   next_page_token?: string;
 }
 

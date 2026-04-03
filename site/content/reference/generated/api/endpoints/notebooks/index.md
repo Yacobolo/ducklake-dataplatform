@@ -2,20 +2,18 @@
 
 # Notebooks Endpoints
 
-Notebook authoring, sessions, cells, and job execution endpoints.
+Notebook authoring, shares, sessions, cells, and job execution endpoints.
 
 ## Resources
 
 - [Cell Executions](./cell-executions) (2 operations)
 - [Cells](./cells) (3 operations)
 - [Copies](./copies) (1 operations)
-- [Explore Items](./explore-items) (1 operations)
-- [Folders](./folders) (5 operations)
 - [Job Runs](./job-runs) (1 operations)
 - [Jobs](./jobs) (2 operations)
-- [Moves](./moves) (2 operations)
+- [Moves](./moves) (1 operations)
 - [Notebooks](./notebooks) (5 operations)
 - [Reorder](./reorder) (1 operations)
 - [Sessions](./sessions) (2 operations)
-- [Shares](./shares) (6 operations)
+- [Shares](./shares) (3 operations)
 

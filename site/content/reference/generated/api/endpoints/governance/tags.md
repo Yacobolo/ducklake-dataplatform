@@ -72,7 +72,7 @@ Create tag
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /tags/{tagId}`
+## `DELETE /tags/{tag_id}`
 
 Delete tag
 
@@ -82,7 +82,7 @@ Delete tag
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `tagId` | `string` | `true` | - |
+| `tag_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -95,7 +95,7 @@ Delete tag
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /tags/{tagId}/assignments`
+## `GET /tags/{tag_id}/assignments`
 
 List tag assignments
 
@@ -105,7 +105,7 @@ List tag assignments
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `tagId` | `string` | `true` | - |
+| `tag_id` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -126,7 +126,7 @@ List tag assignments
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /tags/{tagId}/assignments`
+## `POST /tags/{tag_id}/assignments`
 
 Create tag assignment
 
@@ -136,7 +136,7 @@ Create tag assignment
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `tagId` | `string` | `true` | - |
+| `tag_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -155,7 +155,7 @@ Create tag assignment
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /tags/{tagId}/assignments/{assignmentId}`
+## `DELETE /tags/{tag_id}/assignments/{assignment_id}`
 
 Delete tag assignment
 
@@ -165,8 +165,8 @@ Delete tag assignment
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `assignmentId` | `string` | `true` | - |
-| `tagId` | `string` | `true` | - |
+| `assignment_id` | `string` | `true` | - |
+| `tag_id` | `string` | `true` | - |
 
 ### Responses
 

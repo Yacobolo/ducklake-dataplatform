@@ -4,7 +4,7 @@
 
 Cell Executions operations within the Notebooks API group.
 
-## `POST /notebooks/{notebookId}/sessions/{sessionId}/cell-executions`
+## `POST /notebooks/{notebook_id}/sessions/{session_id}/cell-executions`
 
 Run all cells
 
@@ -14,8 +14,8 @@ Run all cells
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
-| `sessionId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
+| `session_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -29,7 +29,7 @@ Run all cells
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /notebooks/{notebookId}/sessions/{sessionId}/cell-executions/{cellId}`
+## `POST /notebooks/{notebook_id}/sessions/{session_id}/cell-executions/{cell_id}`
 
 Execute cell
 
@@ -39,9 +39,9 @@ Execute cell
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `cellId` | `string` | `true` | - |
-| `notebookId` | `string` | `true` | - |
-| `sessionId` | `string` | `true` | - |
+| `cell_id` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
+| `session_id` | `string` | `true` | - |
 
 ### Responses
 

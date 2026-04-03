@@ -11,6 +11,7 @@ import "./operations/audit.tsp";
 import "./operations/catalogs.tsp";
 import "./operations/compute.tsp";
 import "./operations/dashboards.tsp";
+import "./operations/folders.tsp";
 import "./operations/governance.tsp";
 import "./operations/health.tsp";
 import "./operations/identity.tsp";
@@ -38,6 +39,7 @@ using TypeSpec.OpenAPI;
 @tagMetadata("Health", #{ description: "Operational readiness and service health endpoints." })
 @tagMetadata("Auth", #{ description: "Authentication bootstrap, login, OIDC configuration, and web session administration." })
 @tagMetadata("Identity", #{ description: "Principals, groups, and API key management for authenticated access." })
+@tagMetadata("Folders", #{ description: "Folder lifecycle, sharing, and namespace browsing for authored assets." })
 @tagMetadata("Governance", #{ description: "Privileges, tags, classifications, row filters, and column masking controls." })
 @tagMetadata("Catalogs", #{ description: "Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs." })
 @tagMetadata("Assets", #{ description: "Data asset definitions, runs, checks, partitions, and materialization workflows." })
@@ -48,7 +50,7 @@ using TypeSpec.OpenAPI;
 @tagMetadata("Lineage", #{ description: "Table and column lineage inspection together with lineage maintenance operations." })
 @tagMetadata("Storage", #{ description: "Storage credentials and external location configuration for object storage access." })
 @tagMetadata("Compute", #{ description: "Compute endpoint lifecycle, assignments, and health checks." })
-@tagMetadata("Notebooks", #{ description: "Notebook authoring, sessions, cells, and job execution endpoints." })
+@tagMetadata("Notebooks", #{ description: "Notebook authoring, shares, sessions, cells, and job execution endpoints." })
 @tagMetadata("Dashboards", #{ description: "Dashboard and widget authoring plus resolved dashboard views." })
 @tagMetadata("Integrations", #{ description: "Git repository and external integration lifecycle operations." })
 @tagMetadata("Pipelines", #{ description: "Pipeline definitions, jobs, runs, and orchestration controls." })

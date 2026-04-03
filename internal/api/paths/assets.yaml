@@ -58,9 +58,9 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{assetKey}:
+  /assets/{asset_key}:
     parameters:
-      - name: assetKey
+      - name: asset_key
         in: path
         required: true
         schema:
@@ -150,9 +150,9 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{assetKey}/graph:
+  /assets/{asset_key}/graph:
     parameters:
-      - name: assetKey
+      - name: asset_key
         in: path
         required: true
         schema:
@@ -180,9 +180,9 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{assetKey}/partitions:
+  /assets/{asset_key}/partitions:
     parameters:
-      - name: assetKey
+      - name: asset_key
         in: path
         required: true
         schema:
@@ -213,9 +213,9 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{assetKey}/runs:
+  /assets/{asset_key}/runs:
     parameters:
-      - name: assetKey
+      - name: asset_key
         in: path
         required: true
         schema:
@@ -252,9 +252,9 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{assetKey}/materializations:
+  /assets/{asset_key}/materializations:
     parameters:
-      - name: assetKey
+      - name: asset_key
         in: path
         required: true
         schema:
@@ -298,9 +298,9 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{assetKey}/materializations:
+  /assets/{asset_key}/materializations:
     parameters:
-      - name: assetKey
+      - name: asset_key
         in: path
         required: true
         schema:
@@ -331,9 +331,9 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{assetKey}/checks:
+  /assets/{asset_key}/checks:
     parameters:
-      - name: assetKey
+      - name: asset_key
         in: path
         required: true
         schema:
@@ -361,9 +361,9 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{assetKey}/check-results:
+  /assets/{asset_key}/check-results:
     parameters:
-      - name: assetKey
+      - name: asset_key
         in: path
         required: true
         schema:
@@ -394,9 +394,9 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{assetKey}/backfills:
+  /assets/{asset_key}/backfills:
     parameters:
-      - name: assetKey
+      - name: asset_key
         in: path
         required: true
         schema:
@@ -469,16 +469,16 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{assetKey}/backfills/{backfillId}:
+  /assets/{asset_key}/backfills/{backfill_id}:
     parameters:
-      - name: assetKey
+      - name: asset_key
         in: path
         required: true
         schema:
           type: string
           maxLength: 255
           pattern: '^\S+$'
-      - name: backfillId
+      - name: backfill_id
         in: path
         required: true
         schema:

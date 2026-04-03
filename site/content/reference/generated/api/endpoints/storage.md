@@ -51,7 +51,7 @@ Creates a new external location and configures DuckDB with the associated creden
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /external-locations/{locationName}`
+## `GET /external-locations/{location_name}`
 
 Get external location
 
@@ -61,7 +61,7 @@ Get external location
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `locationName` | `string` | `true` | - |
+| `location_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -75,7 +75,7 @@ Get external location
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /external-locations/{locationName}`
+## `PATCH /external-locations/{location_name}`
 
 Update external location
 
@@ -85,7 +85,7 @@ Update external location
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `locationName` | `string` | `true` | - |
+| `location_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -104,7 +104,7 @@ Update external location
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /external-locations/{locationName}`
+## `DELETE /external-locations/{location_name}`
 
 Delete external location
 
@@ -114,7 +114,7 @@ Delete external location
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `locationName` | `string` | `true` | - |
+| `location_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -175,7 +175,7 @@ Creates a reusable storage credential that can be referenced by external locatio
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /storage-credentials/{credentialName}`
+## `GET /storage-credentials/{credential_name}`
 
 Get storage credential
 
@@ -185,7 +185,7 @@ Get storage credential
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `credentialName` | `string` | `true` | - |
+| `credential_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -199,7 +199,7 @@ Get storage credential
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /storage-credentials/{credentialName}`
+## `PATCH /storage-credentials/{credential_name}`
 
 Update storage credential
 
@@ -209,7 +209,7 @@ Update storage credential
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `credentialName` | `string` | `true` | - |
+| `credential_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -228,7 +228,7 @@ Update storage credential
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /storage-credentials/{credentialName}`
+## `DELETE /storage-credentials/{credential_name}`
 
 Delete storage credential
 
@@ -238,7 +238,7 @@ Delete storage credential
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `credentialName` | `string` | `true` | - |
+| `credential_name` | `string` | `true` | - |
 
 ### Responses
 

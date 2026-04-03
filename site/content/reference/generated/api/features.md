@@ -12,13 +12,14 @@ This page is generated from OpenAPI tags and operations.
 | [Catalogs](./endpoints/catalogs/) | Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs. | 37 operations |
 | [Compute](./endpoints/compute) | Compute endpoint lifecycle, assignments, and health checks. | 11 operations |
 | [Dashboards](./endpoints/dashboards) | Dashboard and widget authoring plus resolved dashboard views. | 9 operations |
+| [Folders](./endpoints/folders) | Folder lifecycle, sharing, and namespace browsing for authored assets. | 11 operations |
 | [Governance](./endpoints/governance/) | Privileges, tags, classifications, row filters, and column masking controls. | 22 operations |
 | [Health](./endpoints/health) | Operational readiness and service health endpoints. | 1 operations |
 | [Identity](./endpoints/identity) | Principals, groups, and API key management for authenticated access. | 17 operations |
 | [Integrations](./endpoints/integrations) | Git repository and external integration lifecycle operations. | 5 operations |
 | [Lineage](./endpoints/lineage) | Table and column lineage inspection together with lineage maintenance operations. | 7 operations |
 | [Models](./endpoints/models/) | Model, macro, and model run management for transformation workflows. | 26 operations |
-| [Notebooks](./endpoints/notebooks/) | Notebook authoring, sessions, cells, and job execution endpoints. | 31 operations |
+| [Notebooks](./endpoints/notebooks/) | Notebook authoring, shares, sessions, cells, and job execution endpoints. | 21 operations |
 | [Pipelines](./endpoints/pipelines) | Pipeline definitions, jobs, runs, and orchestration controls. | 13 operations |
 | [Products](./endpoints/products/) | Product-first control-plane APIs for domains, teams, product contracts, releases, discovery, and portfolio reporting. | 32 operations |
 | [Queries](./endpoints/queries) | Synchronous and asynchronous SQL query execution and query history endpoints. | 7 operations |

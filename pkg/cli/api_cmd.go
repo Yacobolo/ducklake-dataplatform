@@ -279,8 +279,8 @@ func newAPICurlCmd() *cobra.Command {
 		Use:   "curl <operation-id>",
 		Short: "Generate a curl command for an API endpoint",
 		Long:  "Generates a ready-to-use curl command using the current authentication configuration.",
-		Example: `  duck api curl createSchema --param catalogName=main --param name=analytics
-  duck api curl listSchemas --param catalogName=main`,
+		Example: `  duck api curl createSchema --param catalog_name=main --param name=analytics
+  duck api curl listSchemas --param catalog_name=main`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opID := args[0]

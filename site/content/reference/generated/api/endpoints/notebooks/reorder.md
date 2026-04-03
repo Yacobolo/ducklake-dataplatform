@@ -4,7 +4,7 @@
 
 Reorder operations within the Notebooks API group.
 
-## `POST /notebooks/{notebookId}/cells/reorder`
+## `POST /notebooks/{notebook_id}/cells/reorder`
 
 Reorder cells
 
@@ -14,7 +14,7 @@ Reorder cells
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Request Body
 

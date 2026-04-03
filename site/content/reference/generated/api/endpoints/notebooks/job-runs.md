@@ -4,7 +4,7 @@
 
 Job Runs operations within the Notebooks API group.
 
-## `POST /notebooks/{notebookId}/sessions/{sessionId}/job-runs`
+## `POST /notebooks/{notebook_id}/sessions/{session_id}/job-runs`
 
 Run all cells asynchronously
 
@@ -14,8 +14,8 @@ Run all cells asynchronously
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
-| `sessionId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
+| `session_id` | `string` | `true` | - |
 
 ### Responses
 

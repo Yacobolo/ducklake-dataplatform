@@ -15,11 +15,11 @@ func TestCanonicalOpenAPI_ComputeEndpointsUseConcreteSchemas(t *testing.T) {
 
 	assertOperationSchemas(t, doc, "GET", "/compute-endpoints", "", "#/components/schemas/PaginatedComputeEndpoints")
 	assertOperationSchemas(t, doc, "POST", "/compute-endpoints", "#/components/schemas/CreateComputeEndpointRequest", "#/components/schemas/ComputeEndpoint")
-	assertOperationSchemas(t, doc, "GET", "/compute-endpoints/{endpointName}", "", "#/components/schemas/ComputeEndpoint")
-	assertOperationSchemas(t, doc, "PATCH", "/compute-endpoints/{endpointName}", "#/components/schemas/UpdateComputeEndpointRequest", "#/components/schemas/ComputeEndpoint")
-	assertOperationSchemas(t, doc, "GET", "/compute-endpoints/{endpointName}/assignments", "", "#/components/schemas/PaginatedComputeAssignments")
-	assertOperationSchemas(t, doc, "POST", "/compute-endpoints/{endpointName}/assignments", "#/components/schemas/CreateComputeAssignmentRequest", "#/components/schemas/ComputeAssignment")
-	assertOperationSchemas(t, doc, "GET", "/compute-endpoints/{endpointName}/health", "", "#/components/schemas/ComputeEndpointHealth")
+	assertOperationSchemas(t, doc, "GET", "/compute-endpoints/{endpoint_name}", "", "#/components/schemas/ComputeEndpoint")
+	assertOperationSchemas(t, doc, "PATCH", "/compute-endpoints/{endpoint_name}", "#/components/schemas/UpdateComputeEndpointRequest", "#/components/schemas/ComputeEndpoint")
+	assertOperationSchemas(t, doc, "GET", "/compute-endpoints/{endpoint_name}/assignments", "", "#/components/schemas/PaginatedComputeAssignments")
+	assertOperationSchemas(t, doc, "POST", "/compute-endpoints/{endpoint_name}/assignments", "#/components/schemas/CreateComputeAssignmentRequest", "#/components/schemas/ComputeAssignment")
+	assertOperationSchemas(t, doc, "GET", "/compute-endpoints/{endpoint_name}/health", "", "#/components/schemas/ComputeEndpointHealth")
 }
 
 func assertOperationSchemas(t *testing.T, doc *openapi3.T, method string, path string, requestRef string, responseRef string) {

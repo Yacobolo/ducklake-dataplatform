@@ -14,68 +14,68 @@ op listPipelines(@query max_results?: int32, @query page_token?: string): Ok<Pag
 @summary("Create pipeline")
 op createPipeline(@body body: CreatePipelineRequest): Created<Pipeline> | MutatingErrorResponses;
 
-@route("/pipelines/{pipelineName}")
+@route("/pipelines/{pipeline_name}")
 @get
 @tag("Pipelines")
 @summary("Get pipeline")
-op getPipeline(pipelineName: string): Ok<Pipeline> | ResourceErrorResponses;
+op getPipeline(pipeline_name: string): Ok<Pipeline> | ResourceErrorResponses;
 
-@route("/pipelines/{pipelineName}")
+@route("/pipelines/{pipeline_name}")
 @patch(#{ implicitOptionality: true })
 @tag("Pipelines")
 @summary("Update pipeline")
-op updatePipeline(pipelineName: string, @body body: UpdatePipelineRequest): Ok<Pipeline> | MutatingErrorResponses;
+op updatePipeline(pipeline_name: string, @body body: UpdatePipelineRequest): Ok<Pipeline> | MutatingErrorResponses;
 
-@route("/pipelines/{pipelineName}")
+@route("/pipelines/{pipeline_name}")
 @delete
 @tag("Pipelines")
 @summary("Delete pipeline")
-op deletePipeline(pipelineName: string): NoContent | MutatingErrorResponses;
+op deletePipeline(pipeline_name: string): NoContent | MutatingErrorResponses;
 
-@route("/pipelines/{pipelineName}/jobs")
+@route("/pipelines/{pipeline_name}/jobs")
 @get
 @tag("Pipelines")
 @summary("List pipeline jobs")
-op listPipelineJobs(pipelineName: string): Ok<PipelineJobList> | ResourceErrorResponses;
+op listPipelineJobs(pipeline_name: string): Ok<PipelineJobList> | ResourceErrorResponses;
 
-@route("/pipelines/{pipelineName}/jobs")
+@route("/pipelines/{pipeline_name}/jobs")
 @post
 @tag("Pipelines")
 @summary("Create pipeline job")
-op createPipelineJob(pipelineName: string, @body body: CreatePipelineJobRequest): Created<PipelineJob> | MutatingErrorResponses;
+op createPipelineJob(pipeline_name: string, @body body: CreatePipelineJobRequest): Created<PipelineJob> | MutatingErrorResponses;
 
-@route("/pipelines/{pipelineName}/jobs/{jobId}")
+@route("/pipelines/{pipeline_name}/jobs/{job_id}")
 @delete
 @tag("Pipelines")
 @summary("Delete pipeline job")
-op deletePipelineJob(pipelineName: string, jobId: string): NoContent | MutatingErrorResponses;
+op deletePipelineJob(pipeline_name: string, job_id: string): NoContent | MutatingErrorResponses;
 
-@route("/pipelines/{pipelineName}/runs")
+@route("/pipelines/{pipeline_name}/runs")
 @post
 @tag("Pipelines")
 @summary("Trigger pipeline run")
-op triggerPipelineRun(pipelineName: string, @body body?: TriggerPipelineRunRequest): Ok<PipelineRun> | MutatingErrorResponses;
+op triggerPipelineRun(pipeline_name: string, @body body?: TriggerPipelineRunRequest): Ok<PipelineRun> | MutatingErrorResponses;
 
-@route("/pipelines/{pipelineName}/runs")
+@route("/pipelines/{pipeline_name}/runs")
 @get
 @tag("Pipelines")
 @summary("List pipeline runs")
-op listPipelineRuns(pipelineName: string, @query max_results?: int32, @query page_token?: string, @query status?: string): Ok<PaginatedPipelineRuns> | ResourceErrorResponses;
+op listPipelineRuns(pipeline_name: string, @query max_results?: int32, @query page_token?: string, @query status?: string): Ok<PaginatedPipelineRuns> | ResourceErrorResponses;
 
-@route("/pipelines/runs/{runId}")
+@route("/pipelines/runs/{run_id}")
 @get
 @tag("Pipelines")
 @summary("Get pipeline run")
-op getPipelineRun(runId: string): Ok<PipelineRun> | ResourceErrorResponses;
+op getPipelineRun(run_id: string): Ok<PipelineRun> | ResourceErrorResponses;
 
-@route("/pipelines/runs/{runId}/cancellations")
+@route("/pipelines/runs/{run_id}/cancellations")
 @post
 @tag("Pipelines")
 @summary("Cancel pipeline run")
-op cancelPipelineRun(runId: string): Ok<PipelineRun> | MutatingErrorResponses;
+op cancelPipelineRun(run_id: string): Ok<PipelineRun> | MutatingErrorResponses;
 
-@route("/pipelines/runs/{runId}/jobs")
+@route("/pipelines/runs/{run_id}/jobs")
 @get
 @tag("Pipelines")
 @summary("List pipeline job runs")
-op listPipelineJobRuns(runId: string): Ok<PipelineJobRunList> | ResourceErrorResponses;
+op listPipelineJobRuns(run_id: string): Ok<PipelineJobRunList> | ResourceErrorResponses;

@@ -49,7 +49,7 @@ Create pipeline
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /pipelines/runs/{runId}`
+## `GET /pipelines/runs/{run_id}`
 
 Get pipeline run
 
@@ -59,7 +59,7 @@ Get pipeline run
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `runId` | `string` | `true` | - |
+| `run_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -73,7 +73,7 @@ Get pipeline run
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /pipelines/runs/{runId}/cancellations`
+## `POST /pipelines/runs/{run_id}/cancellations`
 
 Cancel pipeline run
 
@@ -83,7 +83,7 @@ Cancel pipeline run
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `runId` | `string` | `true` | - |
+| `run_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -96,7 +96,7 @@ Cancel pipeline run
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /pipelines/runs/{runId}/jobs`
+## `GET /pipelines/runs/{run_id}/jobs`
 
 List pipeline job runs
 
@@ -106,7 +106,7 @@ List pipeline job runs
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `runId` | `string` | `true` | - |
+| `run_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -120,7 +120,7 @@ List pipeline job runs
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /pipelines/{pipelineName}`
+## `GET /pipelines/{pipeline_name}`
 
 Get pipeline
 
@@ -130,7 +130,7 @@ Get pipeline
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `pipelineName` | `string` | `true` | - |
+| `pipeline_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -144,7 +144,7 @@ Get pipeline
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /pipelines/{pipelineName}`
+## `PATCH /pipelines/{pipeline_name}`
 
 Update pipeline
 
@@ -154,7 +154,7 @@ Update pipeline
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `pipelineName` | `string` | `true` | - |
+| `pipeline_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -172,7 +172,7 @@ Update pipeline
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /pipelines/{pipelineName}`
+## `DELETE /pipelines/{pipeline_name}`
 
 Delete pipeline
 
@@ -182,7 +182,7 @@ Delete pipeline
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `pipelineName` | `string` | `true` | - |
+| `pipeline_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -195,7 +195,7 @@ Delete pipeline
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /pipelines/{pipelineName}/jobs`
+## `GET /pipelines/{pipeline_name}/jobs`
 
 List pipeline jobs
 
@@ -205,7 +205,7 @@ List pipeline jobs
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `pipelineName` | `string` | `true` | - |
+| `pipeline_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -219,7 +219,7 @@ List pipeline jobs
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /pipelines/{pipelineName}/jobs`
+## `POST /pipelines/{pipeline_name}/jobs`
 
 Create pipeline job
 
@@ -229,7 +229,7 @@ Create pipeline job
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `pipelineName` | `string` | `true` | - |
+| `pipeline_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -247,7 +247,7 @@ Create pipeline job
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /pipelines/{pipelineName}/jobs/{jobId}`
+## `DELETE /pipelines/{pipeline_name}/jobs/{job_id}`
 
 Delete pipeline job
 
@@ -257,8 +257,8 @@ Delete pipeline job
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `jobId` | `string` | `true` | - |
-| `pipelineName` | `string` | `true` | - |
+| `job_id` | `string` | `true` | - |
+| `pipeline_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -271,7 +271,7 @@ Delete pipeline job
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /pipelines/{pipelineName}/runs`
+## `GET /pipelines/{pipeline_name}/runs`
 
 List pipeline runs
 
@@ -281,7 +281,7 @@ List pipeline runs
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `pipelineName` | `string` | `true` | - |
+| `pipeline_name` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -303,7 +303,7 @@ List pipeline runs
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /pipelines/{pipelineName}/runs`
+## `POST /pipelines/{pipeline_name}/runs`
 
 Trigger pipeline run
 
@@ -313,7 +313,7 @@ Trigger pipeline run
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `pipelineName` | `string` | `true` | - |
+| `pipeline_name` | `string` | `true` | - |
 
 ### Request Body
 

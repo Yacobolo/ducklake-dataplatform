@@ -461,7 +461,7 @@ type NotebookRepository interface {
 	GetMaxPosition(ctx context.Context, notebookID string) (int, error)
 }
 
-// FolderRepository provides CRUD and inheritance helpers for notebook folders.
+// FolderRepository provides CRUD and inheritance helpers for folders.
 type FolderRepository interface {
 	Create(ctx context.Context, folder *Folder) (*Folder, error)
 	GetByID(ctx context.Context, id string) (*Folder, error)

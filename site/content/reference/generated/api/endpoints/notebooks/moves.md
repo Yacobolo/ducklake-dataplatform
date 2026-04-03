@@ -4,36 +4,7 @@
 
 Moves operations within the Notebooks API group.
 
-## `POST /notebooks/folders/{folderId}/moves`
-
-Move notebook folder
-
-- Operation ID: `moveNotebookFolder`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `folderId` | `string` | `true` | - |
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `POST /notebooks/{notebookId}/moves`
+## `POST /notebooks/{notebook_id}/moves`
 
 Move notebook
 
@@ -43,7 +14,7 @@ Move notebook
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Request Body
 

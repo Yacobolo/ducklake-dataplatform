@@ -6,9 +6,7 @@ Product-first control-plane APIs for domains, teams, product contracts, releases
 
 ## Resources
 
-- [Data Products](./data-products) (11 operations)
-- [Versions and Releases](./versions) (7 operations)
-- [Subscriptions](./subscriptions) (2 operations)
+- [Data Products](./data-products) (20 operations)
 - [Portfolio and Scorecards](./portfolio) (2 operations)
 - [Product Domains](./product-domains) (5 operations)
 - [Teams](./teams) (5 operations)

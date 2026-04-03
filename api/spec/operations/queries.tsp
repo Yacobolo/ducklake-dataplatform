@@ -16,30 +16,30 @@ op executeQuery(@body body: QueryRequest): Ok<QueryResult> | MutatingErrorRespon
 @doc("Submits a SQL query for asynchronous execution and returns a query job identifier for polling and result retrieval.")
 op submitQuery(@body body: SubmitQueryRequest): Accepted<SubmitQueryResponse> | MutatingErrorResponses;
 
-@route("/queries/{queryId}")
+@route("/queries/{query_id}")
 @get
 @tag("Queries")
 @summary("Get query")
-op getQuery(queryId: string): Ok<QueryJob> | ResourceErrorResponses;
+op getQuery(query_id: string): Ok<QueryJob> | ResourceErrorResponses;
 
-@route("/queries/{queryId}")
+@route("/queries/{query_id}")
 @delete
 @tag("Queries")
 @summary("Delete query")
-op deleteQuery(queryId: string): NoContent | MutatingErrorResponses;
+op deleteQuery(query_id: string): NoContent | MutatingErrorResponses;
 
-@route("/queries/{queryId}/results")
+@route("/queries/{query_id}/results")
 @get
 @tag("Queries")
 @summary("Get query results")
 @doc("Returns a page of rows for a previously submitted query using the stored query job identifier.")
-op getQueryResults(queryId: string, @query max_results?: int32, @query page_token?: string): Ok<QueryResult> | ResourceErrorResponses;
+op getQueryResults(query_id: string, @query max_results?: int32, @query page_token?: string): Ok<QueryResult> | ResourceErrorResponses;
 
-@route("/queries/{queryId}/cancellations")
+@route("/queries/{query_id}/cancellations")
 @post
 @tag("Queries")
 @summary("Cancel query")
-op cancelQuery(queryId: string): Accepted<CancelQueryResponse> | ResourceErrorResponses;
+op cancelQuery(query_id: string): Accepted<CancelQueryResponse> | ResourceErrorResponses;
 
 @route("/queries/history")
 @get

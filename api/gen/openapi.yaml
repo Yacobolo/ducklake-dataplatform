@@ -15,7 +15,7 @@ tags:
   - name: Dashboards
     description: Dashboard and widget authoring plus resolved dashboard views.
   - name: Notebooks
-    description: Notebook authoring, sessions, cells, and job execution endpoints.
+    description: Notebook authoring, shares, sessions, cells, and job execution endpoints.
   - name: Compute
     description: Compute endpoint lifecycle, assignments, and health checks.
   - name: Storage
@@ -36,6 +36,8 @@ tags:
     description: Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs.
   - name: Governance
     description: Privileges, tags, classifications, row filters, and column masking controls.
+  - name: Folders
+    description: Folder lifecycle, sharing, and namespace browsing for authored assets.
   - name: Identity
     description: Principals, groups, and API key management for authenticated access.
   - name: Auth
@@ -193,12 +195,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateAPIKeyRequest'
-  /api-keys/{apiKeyId}:
+  /api-keys/{api_key_id}:
     delete:
       operationId: deleteAPIKey
       summary: Delete API key
       parameters:
-        - name: apiKeyId
+        - name: api_key_id
           in: path
           required: true
           schema:
@@ -351,12 +353,12 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_ASSET_DEFINITIONS
             securable_id_source: catalog_sentinel
-  /assets/{assetKey}:
+  /assets/{asset_key}:
     get:
       operationId: getAsset
       summary: Get asset
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -410,7 +412,7 @@ paths:
       operationId: updateAsset
       summary: Update asset
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -476,7 +478,7 @@ paths:
       operationId: deleteAsset
       summary: Delete asset
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -528,12 +530,12 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_ASSET_DEFINITIONS
             securable_id_source: catalog_sentinel
-  /assets/{assetKey}/backfills:
+  /assets/{asset_key}/backfills:
     get:
       operationId: listAssetBackfills
       summary: List asset backfills
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -606,7 +608,7 @@ paths:
       operationId: createAssetBackfill
       summary: Create asset backfill
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -668,17 +670,17 @@ paths:
           - securable_type: catalog
             privilege: EXECUTE_ASSET_MATERIALIZATION
             securable_id_source: catalog_sentinel
-  /assets/{assetKey}/backfills/{backfillId}:
+  /assets/{asset_key}/backfills/{backfill_id}:
     get:
       operationId: getAssetBackfill
       summary: Get asset backfill
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
             type: string
-        - name: backfillId
+        - name: backfill_id
           in: path
           required: true
           schema:
@@ -728,12 +730,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /assets/{assetKey}/check-results:
+  /assets/{asset_key}/check-results:
     get:
       operationId: listAssetCheckResults
       summary: List asset check results
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -796,12 +798,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /assets/{assetKey}/checks:
+  /assets/{asset_key}/checks:
     get:
       operationId: listAssetChecks
       summary: List asset checks
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -851,12 +853,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /assets/{assetKey}/freshness:
+  /assets/{asset_key}/freshness:
     get:
       operationId: getAssetFreshness
       summary: Get asset freshness
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -906,12 +908,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /assets/{assetKey}/freshness-explanation:
+  /assets/{asset_key}/freshness-explanation:
     get:
       operationId: explainAssetFreshness
       summary: Explain asset freshness
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -961,12 +963,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /assets/{assetKey}/freshness-reconciliations:
+  /assets/{asset_key}/freshness-reconciliations:
     post:
       operationId: reconcileAssetFreshness
       summary: Reconcile asset freshness
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -1016,12 +1018,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /assets/{assetKey}/freshness/blockers:
+  /assets/{asset_key}/freshness/blockers:
     get:
       operationId: listAssetFreshnessBlockers
       summary: List asset freshness blockers
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -1071,12 +1073,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /assets/{assetKey}/freshness/requirements:
+  /assets/{asset_key}/freshness/requirements:
     get:
       operationId: listAssetFreshnessRequirements
       summary: List asset freshness requirements
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -1126,12 +1128,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /assets/{assetKey}/graph:
+  /assets/{asset_key}/graph:
     get:
       operationId: getAssetGraph
       summary: Get asset graph
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -1181,13 +1183,13 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /assets/{assetKey}/materializations:
+  /assets/{asset_key}/materializations:
     post:
       operationId: triggerAssetMaterialization
       summary: Trigger asset materialization
       description: Starts a materialization run for the specified asset and returns the queued execution metadata.
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -1253,7 +1255,7 @@ paths:
       operationId: listAssetMaterializations
       summary: List asset materializations
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -1316,12 +1318,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /assets/{assetKey}/partitions:
+  /assets/{asset_key}/partitions:
     get:
       operationId: listAssetPartitions
       summary: List asset partitions
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -1384,12 +1386,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
-  /assets/{assetKey}/runs:
+  /assets/{asset_key}/runs:
     get:
       operationId: listAssetRuns
       summary: List asset runs
       parameters:
-        - name: assetKey
+        - name: asset_key
           in: path
           required: true
           schema:
@@ -1896,7 +1898,7 @@ paths:
       x-authz:
         mode: admin_only
       x-apigen-manual: true
-  /catalog-search-results:
+  /catalog-searches:
     get:
       operationId: searchCatalog
       summary: Search catalog
@@ -2074,12 +2076,12 @@ paths:
         - Catalogs
       x-authz:
         mode: admin_only
-  /catalogs/{catalogName}:
+  /catalogs/{catalog_name}:
     get:
       operationId: getCatalog
       summary: Get catalog
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
@@ -2133,7 +2135,7 @@ paths:
       operationId: updateCatalogRegistration
       summary: Update catalog registration
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
@@ -2193,7 +2195,7 @@ paths:
       operationId: deleteCatalogRegistration
       summary: Delete catalog registration
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
@@ -2239,12 +2241,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
-  /catalogs/{catalogName}/default:
+  /catalogs/{catalog_name}/default:
     put:
       operationId: setDefaultCatalog
       summary: Set default catalog
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
@@ -2294,12 +2296,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetDefaultCatalogRequest'
-  /catalogs/{catalogName}/history:
+  /catalogs/{catalog_name}/history:
     get:
       operationId: listCatalogHistory
       summary: List catalog history
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
@@ -2374,12 +2376,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
-  /catalogs/{catalogName}/metastore/summary:
+  /catalogs/{catalog_name}/metastore/summary:
     get:
       operationId: getMetastoreSummary
       summary: Get metastore summary
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
@@ -2429,12 +2431,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
-  /catalogs/{catalogName}/schemas:
+  /catalogs/{catalog_name}/schemas:
     get:
       operationId: listSchemas
       summary: List schemas
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
@@ -2501,7 +2503,7 @@ paths:
       operationId: createSchema
       summary: Create schema
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
@@ -2557,17 +2559,17 @@ paths:
           - securable_type: catalog
             privilege: CREATE_SCHEMA
             securable_id_source: catalog_name_param
-  /catalogs/{catalogName}/schemas/{schemaName}:
+  /catalogs/{catalog_name}/schemas/{schema_name}:
     get:
       operationId: getSchema
       summary: Get schema
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
@@ -2621,12 +2623,12 @@ paths:
       operationId: updateSchema
       summary: Update schema
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
@@ -2686,12 +2688,12 @@ paths:
       operationId: deleteSchema
       summary: Delete schema
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
@@ -2743,17 +2745,17 @@ paths:
           - securable_type: schema
             privilege: CREATE_SCHEMA
             securable_id_source: runtime_resolved_object_id
-  /catalogs/{catalogName}/schemas/{schemaName}/tables:
+  /catalogs/{catalog_name}/schemas/{schema_name}/tables:
     get:
       operationId: listTables
       summary: List tables
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
@@ -2820,12 +2822,12 @@ paths:
       operationId: createTable
       summary: Create table
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
@@ -2881,22 +2883,22 @@ paths:
           - securable_type: schema
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}:
+  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}:
     get:
       operationId: getTable
       summary: Get table
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -2950,17 +2952,17 @@ paths:
       operationId: updateTable
       summary: Update table
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -3020,17 +3022,17 @@ paths:
       operationId: deleteTable
       summary: Delete table
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -3076,22 +3078,22 @@ paths:
           - securable_type: table
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns:
+  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns:
     get:
       operationId: listTableColumns
       summary: List table columns
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -3154,27 +3156,27 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
-  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/columns/{columnName}:
+  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns/{column_name}:
     patch:
       operationId: updateColumn
       summary: Update column
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
             type: string
-        - name: columnName
+        - name: column_name
           in: path
           required: true
           schema:
@@ -3230,22 +3232,22 @@ paths:
           - securable_type: table
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion-commits:
+  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-commits:
     post:
       operationId: commitTableIngestion
       summary: Commit table ingestion
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -3301,22 +3303,22 @@ paths:
           - securable_type: table
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
-  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion-loads:
+  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-loads:
     post:
       operationId: loadTableExternalFiles
       summary: Load table external files
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -3372,22 +3374,22 @@ paths:
           - securable_type: table
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
-  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/manifest:
+  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/manifest:
     get:
       operationId: createManifest
       summary: Get table manifest
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -3437,22 +3439,22 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
-  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profiles:
+  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/profiles:
     post:
       operationId: profileTable
       summary: Profile table
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -3496,22 +3498,22 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
-  /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/upload-urls:
+  /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/upload-urls:
     post:
       operationId: createUploadUrl
       summary: Create upload URL
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -3567,17 +3569,17 @@ paths:
           - securable_type: table
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
-  /catalogs/{catalogName}/schemas/{schemaName}/views:
+  /catalogs/{catalog_name}/schemas/{schema_name}/views:
     get:
       operationId: listViews
       summary: List views
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
@@ -3644,12 +3646,12 @@ paths:
       operationId: createView
       summary: Create view
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
@@ -3705,22 +3707,22 @@ paths:
           - securable_type: schema
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-  /catalogs/{catalogName}/schemas/{schemaName}/views/{viewName}:
+  /catalogs/{catalog_name}/schemas/{schema_name}/views/{view_name}:
     get:
       operationId: getView
       summary: Get view
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: viewName
+        - name: view_name
           in: path
           required: true
           schema:
@@ -3774,17 +3776,17 @@ paths:
       operationId: updateView
       summary: Update view
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: viewName
+        - name: view_name
           in: path
           required: true
           schema:
@@ -3844,17 +3846,17 @@ paths:
       operationId: deleteView
       summary: Delete view
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: viewName
+        - name: view_name
           in: path
           required: true
           schema:
@@ -3900,17 +3902,17 @@ paths:
           - securable_type: schema
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
-  /catalogs/{catalogName}/schemas/{schemaName}/volumes:
+  /catalogs/{catalog_name}/schemas/{schema_name}/volumes:
     get:
       operationId: listVolumes
       summary: List volumes
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
@@ -3977,12 +3979,12 @@ paths:
       operationId: createVolume
       summary: Create volume
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
@@ -4038,22 +4040,22 @@ paths:
           - securable_type: catalog
             privilege: CREATE_VOLUME
             securable_id_source: catalog_sentinel
-  /catalogs/{catalogName}/schemas/{schemaName}/volumes/{volumeName}:
+  /catalogs/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}:
     get:
       operationId: getVolume
       summary: Get volume
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: volumeName
+        - name: volume_name
           in: path
           required: true
           schema:
@@ -4107,17 +4109,17 @@ paths:
       operationId: updateVolume
       summary: Update volume
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: volumeName
+        - name: volume_name
           in: path
           required: true
           schema:
@@ -4177,17 +4179,17 @@ paths:
       operationId: deleteVolume
       summary: Delete volume
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: volumeName
+        - name: volume_name
           in: path
           required: true
           schema:
@@ -4233,12 +4235,12 @@ paths:
           - securable_type: volume
             privilege: CREATE_VOLUME
             securable_id_source: runtime_resolved_object_id
-  /catalogs/{catalogName}/version-summary:
+  /catalogs/{catalog_name}/version-summary:
     get:
       operationId: getCatalogVersionSummary
       summary: Get catalog version summary
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: path
           required: true
           schema:
@@ -4457,12 +4459,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateColumnMaskRequest'
-  /column-masks/{columnMaskId}:
+  /column-masks/{column_mask_id}:
     delete:
       operationId: deleteColumnMask
       summary: Delete column mask
       parameters:
-        - name: columnMaskId
+        - name: column_mask_id
           in: path
           required: true
           schema:
@@ -4502,12 +4504,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
-  /column-masks/{columnMaskId}/bindings:
+  /column-masks/{column_mask_id}/bindings:
     get:
       operationId: listColumnMaskBindings
       summary: List column mask bindings
       parameters:
-        - name: columnMaskId
+        - name: column_mask_id
           in: path
           required: true
           schema:
@@ -4574,7 +4576,7 @@ paths:
       operationId: bindColumnMask
       summary: Bind column mask
       parameters:
-        - name: columnMaskId
+        - name: column_mask_id
           in: path
           required: true
           schema:
@@ -4620,22 +4622,22 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ColumnMaskBindingRequest'
-  /column-masks/{columnMaskId}/bindings/{principalType}/{principalId}:
+  /column-masks/{column_mask_id}/bindings/{principal_type}/{principal_id}:
     delete:
       operationId: unbindColumnMask
       summary: Unbind column mask
       parameters:
-        - name: columnMaskId
+        - name: column_mask_id
           in: path
           required: true
           schema:
             type: string
-        - name: principalType
+        - name: principal_type
           in: path
           required: true
           schema:
             $ref: '#/components/schemas/PrincipalType'
-        - name: principalId
+        - name: principal_id
           in: path
           required: true
           schema:
@@ -4675,105 +4677,6 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
-  /compute-defaults:
-    get:
-      operationId: getComputeRoutingDefaults
-      summary: Get compute routing defaults
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ComputeRoutingDefaults'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Compute
-      x-authz:
-        mode: admin_only
-    patch:
-      operationId: updateComputeRoutingDefaults
-      summary: Update compute routing defaults
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ComputeRoutingDefaults'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: '#/components/schemas/Error'
-                  - $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Compute
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ComputeRoutingDefaults'
-      x-authz:
-        mode: admin_only
   /compute-endpoints:
     get:
       operationId: listComputeEndpoints
@@ -4897,12 +4800,12 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_COMPUTE
             securable_id_source: catalog_sentinel
-  /compute-endpoints/{endpointName}:
+  /compute-endpoints/{endpoint_name}:
     get:
       operationId: getComputeEndpoint
       summary: Get compute endpoint
       parameters:
-        - name: endpointName
+        - name: endpoint_name
           in: path
           required: true
           schema:
@@ -4956,7 +4859,7 @@ paths:
       operationId: updateComputeEndpoint
       summary: Update compute endpoint
       parameters:
-        - name: endpointName
+        - name: endpoint_name
           in: path
           required: true
           schema:
@@ -5022,7 +4925,7 @@ paths:
       operationId: deleteComputeEndpoint
       summary: Delete compute endpoint
       parameters:
-        - name: endpointName
+        - name: endpoint_name
           in: path
           required: true
           schema:
@@ -5074,12 +4977,12 @@ paths:
           - securable_type: compute_endpoint
             privilege: MANAGE_COMPUTE
             securable_id_source: runtime_resolved_object_id
-  /compute-endpoints/{endpointName}/assignments:
+  /compute-endpoints/{endpoint_name}/assignments:
     get:
       operationId: listComputeAssignments
       summary: List compute assignments
       parameters:
-        - name: endpointName
+        - name: endpoint_name
           in: path
           required: true
           schema:
@@ -5146,7 +5049,7 @@ paths:
       operationId: createComputeAssignment
       summary: Create compute assignment
       parameters:
-        - name: endpointName
+        - name: endpoint_name
           in: path
           required: true
           schema:
@@ -5210,17 +5113,17 @@ paths:
           - securable_type: compute_endpoint
             privilege: MANAGE_COMPUTE
             securable_id_source: runtime_resolved_object_id
-  /compute-endpoints/{endpointName}/assignments/{assignmentId}:
+  /compute-endpoints/{endpoint_name}/assignments/{assignment_id}:
     delete:
       operationId: deleteComputeAssignment
       summary: Delete compute assignment
       parameters:
-        - name: endpointName
+        - name: endpoint_name
           in: path
           required: true
           schema:
             type: string
-        - name: assignmentId
+        - name: assignment_id
           in: path
           required: true
           schema:
@@ -5272,12 +5175,12 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_COMPUTE
             securable_id_source: catalog_sentinel
-  /compute-endpoints/{endpointName}/health:
+  /compute-endpoints/{endpoint_name}/health:
     get:
       operationId: getComputeEndpointHealth
       summary: Get compute endpoint health
       parameters:
-        - name: endpointName
+        - name: endpoint_name
           in: path
           required: true
           schema:
@@ -5335,6 +5238,105 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Compute
+  /compute-routing-defaults:
+    get:
+      operationId: getComputeRoutingDefaults
+      summary: Get compute routing defaults
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeRoutingDefaults'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Compute
+      x-authz:
+        mode: admin_only
+    patch:
+      operationId: updateComputeRoutingDefaults
+      summary: Update compute routing defaults
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputeRoutingDefaults'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Error'
+                  - $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Compute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComputeRoutingDefaults'
+      x-authz:
+        mode: admin_only
   /dashboards:
     get:
       operationId: listDashboards
@@ -5441,12 +5443,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateDashboardRequest'
-  /dashboards/{dashboardId}:
+  /dashboards/{dashboard_id}:
     get:
       operationId: getDashboard
       summary: Get dashboard
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
@@ -5500,7 +5502,7 @@ paths:
       operationId: updateDashboard
       summary: Update dashboard
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
@@ -5554,7 +5556,7 @@ paths:
       operationId: deleteDashboard
       summary: Delete dashboard
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
@@ -5594,12 +5596,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Dashboards
-  /dashboards/{dashboardId}/resolved:
+  /dashboards/{dashboard_id}/resolved:
     get:
       operationId: getResolvedDashboard
       summary: Get resolved dashboard
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
@@ -5649,12 +5651,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Dashboards
-  /dashboards/{dashboardId}/widgets:
+  /dashboards/{dashboard_id}/widgets:
     post:
       operationId: createDashboardWidget
       summary: Create dashboard widget
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
@@ -5704,17 +5706,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateDashboardWidgetRequest'
-  /dashboards/{dashboardId}/widgets/{widgetId}:
+  /dashboards/{dashboard_id}/widgets/{widget_id}:
     patch:
       operationId: updateDashboardWidget
       summary: Update dashboard widget
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
             type: string
-        - name: widgetId
+        - name: widget_id
           in: path
           required: true
           schema:
@@ -5768,12 +5770,12 @@ paths:
       operationId: deleteDashboardWidget
       summary: Delete dashboard widget
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
             type: string
-        - name: widgetId
+        - name: widget_id
           in: path
           required: true
           schema:
@@ -6046,12 +6048,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /data-products/{productSlug}:
+  /data-products/{product_slug}:
     get:
       operationId: getDataProduct
       summary: Get data product
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6099,7 +6101,7 @@ paths:
       operationId: updateDataProduct
       summary: Update data product
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6161,7 +6163,7 @@ paths:
       operationId: deleteDataProduct
       summary: Delete data product
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6207,12 +6209,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /data-products/{productSlug}/dependencies:
+  /data-products/{product_slug}/dependencies:
     get:
       operationId: listDataProductDependencies
       summary: List data product dependencies
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6260,7 +6262,7 @@ paths:
       operationId: createDataProductDependency
       summary: Create data product dependency
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6324,12 +6326,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateProductDependencyRequest'
-  /data-products/{productSlug}/events:
+  /data-products/{product_slug}/events:
     get:
       operationId: listDataProductEvents
       summary: List data product events
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6386,12 +6388,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /data-products/{productSlug}/outputs:
+  /data-products/{product_slug}/outputs:
     get:
       operationId: listDataProductOutputs
       summary: List data product outputs
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6435,12 +6437,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /data-products/{productSlug}/semantic-entrypoints:
+  /data-products/{product_slug}/semantic-entrypoints:
     get:
       operationId: listDataProductSemanticEntrypoints
       summary: List data product semantic entrypoints
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6484,12 +6486,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /data-products/{productSlug}/status:
+  /data-products/{product_slug}/status:
     get:
       operationId: getDataProductStatus
       summary: Get data product status
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6533,12 +6535,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /data-products/{productSlug}/subscriptions:
+  /data-products/{product_slug}/subscriptions:
     get:
       operationId: listDataProductSubscriptions
       summary: List data product subscriptions
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6586,7 +6588,7 @@ paths:
       operationId: createDataProductSubscription
       summary: Create data product subscription
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6650,12 +6652,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateProductSubscriptionRequest'
-  /data-products/{productSlug}/versions:
+  /data-products/{product_slug}/versions:
     get:
       operationId: listDataProductVersions
       summary: List data product versions
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6703,7 +6705,7 @@ paths:
       operationId: createDataProductVersion
       summary: Create data product version
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6767,12 +6769,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateDataProductVersionRequest'
-  /data-products/{productSlug}/versions/{version}:
+  /data-products/{product_slug}/versions/{version}:
     get:
       operationId: getDataProductVersion
       summary: Get data product version
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6826,7 +6828,7 @@ paths:
       operationId: deleteDataProductVersion
       summary: Delete data product version
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6880,12 +6882,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /data-products/{productSlug}/versions/{version}/deprecations:
+  /data-products/{product_slug}/versions/{version}/deprecations:
     post:
       operationId: deprecateDataProductVersion
       summary: Deprecate data product version
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -6949,12 +6951,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DeprecateProductVersionRequest'
-  /data-products/{productSlug}/versions/{version}/publications:
+  /data-products/{product_slug}/versions/{version}/publications:
     post:
       operationId: publishDataProductVersion
       summary: Publish data product version
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -7012,12 +7014,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /data-products/{productSlug}/versions/{version}/retirements:
+  /data-products/{product_slug}/versions/{version}/retirements:
     post:
       operationId: retireDataProductVersion
       summary: Retire data product version
       parameters:
-        - name: productSlug
+        - name: product_slug
           in: path
           required: true
           schema:
@@ -7075,69 +7077,6 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /explore-items:
-    get:
-      operationId: listExploreItems
-      summary: List authored assets for the active folder context
-      parameters:
-        - name: folder_id
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-        - name: kind
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-          explode: false
-        - name: page_token
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedExploreItems'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Notebooks
   /external-locations:
     get:
       operationId: listExternalLocations
@@ -7245,12 +7184,12 @@ paths:
           - securable_type: catalog
             privilege: CREATE_EXTERNAL_LOCATION
             securable_id_source: catalog_sentinel
-  /external-locations/{locationName}:
+  /external-locations/{location_name}:
     get:
       operationId: getExternalLocation
       summary: Get external location
       parameters:
-        - name: locationName
+        - name: location_name
           in: path
           required: true
           schema:
@@ -7304,7 +7243,7 @@ paths:
       operationId: updateExternalLocation
       summary: Update external location
       parameters:
-        - name: locationName
+        - name: location_name
           in: path
           required: true
           schema:
@@ -7370,7 +7309,7 @@ paths:
       operationId: deleteExternalLocation
       summary: Delete external location
       parameters:
-        - name: locationName
+        - name: location_name
           in: path
           required: true
           schema:
@@ -7422,6 +7361,630 @@ paths:
           - securable_type: external_location
             privilege: CREATE_EXTERNAL_LOCATION
             securable_id_source: runtime_resolved_object_id
+  /folders:
+    get:
+      operationId: listFolders
+      summary: List folders
+      parameters:
+        - name: owner
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFolders'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+    post:
+      operationId: createFolder
+      summary: Create folder
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFolderRequest'
+  /folders/contents:
+    get:
+      operationId: listRootFolderContents
+      summary: List root folder contents
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFolderContents'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+  /folders/{folder_id}:
+    get:
+      operationId: getFolder
+      summary: Get folder
+      parameters:
+        - name: folder_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+    patch:
+      operationId: updateFolder
+      summary: Update folder
+      parameters:
+        - name: folder_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFolderRequest'
+    delete:
+      operationId: deleteFolder
+      summary: Delete folder
+      parameters:
+        - name: folder_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+  /folders/{folder_id}/contents:
+    get:
+      operationId: listFolderContents
+      summary: List folder contents
+      parameters:
+        - name: folder_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFolderContents'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+  /folders/{folder_id}/moves:
+    post:
+      operationId: moveFolder
+      summary: Move folder
+      parameters:
+        - name: folder_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveFolderRequest'
+  /folders/{folder_id}/shares:
+    get:
+      operationId: listFolderShares
+      summary: List folder shares
+      parameters:
+        - name: folder_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FolderShare'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+    post:
+      operationId: shareFolder
+      summary: Share folder
+      parameters:
+        - name: folder_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FolderShare'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareFolderRequest'
+  /folders/{folder_id}/shares/{principal_name}:
+    delete:
+      operationId: unshareFolder
+      summary: Remove folder share
+      parameters:
+        - name: folder_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: principal_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
   /git-repos:
     get:
       operationId: listGitRepos
@@ -7522,12 +8085,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateGitRepoRequest'
-  /git-repos/{gitRepoId}:
+  /git-repos/{git_repo_id}:
     get:
       operationId: getGitRepo
       summary: Get git repo
       parameters:
-        - name: gitRepoId
+        - name: git_repo_id
           in: path
           required: true
           schema:
@@ -7581,7 +8144,7 @@ paths:
       operationId: deleteGitRepo
       summary: Delete git repo
       parameters:
-        - name: gitRepoId
+        - name: git_repo_id
           in: path
           required: true
           schema:
@@ -7627,12 +8190,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Integrations
-  /git-repos/{gitRepoId}/sync-runs:
+  /git-repos/{git_repo_id}/sync-runs:
     post:
       operationId: syncGitRepo
       summary: Sync git repo
       parameters:
-        - name: gitRepoId
+        - name: git_repo_id
           in: path
           required: true
           schema:
@@ -7830,12 +8393,12 @@ paths:
               $ref: '#/components/schemas/CreateGrantRequest'
       x-authz:
         mode: admin_only
-  /grants/{grantId}:
+  /grants/{grant_id}:
     delete:
       operationId: deleteGrant
       summary: Delete grant
       parameters:
-        - name: grantId
+        - name: grant_id
           in: path
           required: true
           schema:
@@ -7985,12 +8548,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateGroupRequest'
-  /groups/{groupId}:
+  /groups/{group_id}:
     get:
       operationId: getGroup
       summary: Get group
       parameters:
-        - name: groupId
+        - name: group_id
           in: path
           required: true
           schema:
@@ -8044,7 +8607,7 @@ paths:
       operationId: updateGroup
       summary: Update group
       parameters:
-        - name: groupId
+        - name: group_id
           in: path
           required: true
           schema:
@@ -8106,7 +8669,7 @@ paths:
       operationId: deleteGroup
       summary: Delete group
       parameters:
-        - name: groupId
+        - name: group_id
           in: path
           required: true
           schema:
@@ -8146,12 +8709,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
-  /groups/{groupId}/members:
+  /groups/{group_id}/members:
     get:
       operationId: listGroupMembers
       summary: List group members
       parameters:
-        - name: groupId
+        - name: group_id
           in: path
           required: true
           schema:
@@ -8218,7 +8781,7 @@ paths:
       operationId: createGroupMember
       summary: Create group member
       parameters:
-        - name: groupId
+        - name: group_id
           in: path
           required: true
           schema:
@@ -8264,22 +8827,22 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateGroupMemberRequest'
-  /groups/{groupId}/members/{memberType}/{memberId}:
+  /groups/{group_id}/members/{member_type}/{member_id}:
     delete:
       operationId: deleteGroupMember
       summary: Delete group member
       parameters:
-        - name: groupId
+        - name: group_id
           in: path
           required: true
           schema:
             type: string
-        - name: memberType
+        - name: member_type
           in: path
           required: true
           schema:
             $ref: '#/components/schemas/PrincipalType'
-        - name: memberId
+        - name: member_id
           in: path
           required: true
           schema:
@@ -8359,7 +8922,203 @@ paths:
         - Health
       security:
         - {}
-  /lineage-purges:
+  /lineage/columns/{schema_name}/{table_name}:
+    get:
+      operationId: getColumnLineage
+      summary: Get column lineage
+      parameters:
+        - name: schema_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedColumnLineageEdges'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Lineage
+  /lineage/columns/{schema_name}/{table_name}/{column_name}/impacts:
+    get:
+      operationId: getColumnImpact
+      summary: Get column impact
+      parameters:
+        - name: schema_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: column_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedColumnLineageEdges'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Lineage
+  /lineage/edges/{edge_id}:
+    delete:
+      operationId: deleteLineageEdge
+      summary: Delete lineage edge
+      parameters:
+        - name: edge_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Lineage
+  /lineage/purges:
     post:
       operationId: purgeLineage
       summary: Purge lineage
@@ -8409,213 +9168,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PurgeLineageRequest'
-  /lineage/columns/{schemaName}/{tableName}:
-    get:
-      operationId: getColumnLineage
-      summary: Get column lineage
-      parameters:
-        - name: schemaName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: tableName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-          explode: false
-        - name: page_token
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedColumnLineageEdges'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Lineage
-  /lineage/columns/{schemaName}/{tableName}/{columnName}/impacts:
-    get:
-      operationId: getColumnImpact
-      summary: Get column impact
-      parameters:
-        - name: schemaName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: tableName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: columnName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-          explode: false
-        - name: page_token
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedColumnLineageEdges'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Lineage
-  /lineage/edges/{edgeId}:
-    delete:
-      operationId: deleteLineageEdge
-      summary: Delete lineage edge
-      parameters:
-        - name: edgeId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Lineage
-  /lineage/tables/{schemaName}/{tableName}:
+  /lineage/tables/{schema_name}/{table_name}:
     get:
       operationId: getTableLineage
       summary: Get table lineage
       parameters:
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -8678,17 +9241,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Lineage
-  /lineage/tables/{schemaName}/{tableName}/downstream:
+  /lineage/tables/{schema_name}/{table_name}/downstream:
     get:
       operationId: getDownstreamLineage
       summary: Get downstream lineage
       parameters:
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -8751,17 +9314,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Lineage
-  /lineage/tables/{schemaName}/{tableName}/upstream:
+  /lineage/tables/{schema_name}/{table_name}/upstream:
     get:
       operationId: getUpstreamLineage
       summary: Get upstream lineage
       parameters:
-        - name: schemaName
+        - name: schema_name
           in: path
           required: true
           schema:
             type: string
-        - name: tableName
+        - name: table_name
           in: path
           required: true
           schema:
@@ -8924,12 +9487,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateMacroRequest'
-  /macros/{macroName}:
+  /macros/{macro_name}:
     get:
       operationId: getMacro
       summary: Get macro
       parameters:
-        - name: macroName
+        - name: macro_name
           in: path
           required: true
           schema:
@@ -8983,7 +9546,7 @@ paths:
       operationId: updateMacro
       summary: Update macro
       parameters:
-        - name: macroName
+        - name: macro_name
           in: path
           required: true
           schema:
@@ -9037,7 +9600,7 @@ paths:
       operationId: deleteMacro
       summary: Delete macro
       parameters:
-        - name: macroName
+        - name: macro_name
           in: path
           required: true
           schema:
@@ -9077,12 +9640,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /macros/{macroName}/impacts:
+  /macros/{macro_name}/impacts:
     get:
       operationId: getMacroImpact
       summary: Get macro impact
       parameters:
-        - name: macroName
+        - name: macro_name
           in: path
           required: true
           schema:
@@ -9145,12 +9708,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /macros/{macroName}/revision-diffs:
+  /macros/{macro_name}/revision-diffs:
     get:
       operationId: diffMacroRevisions
       summary: Diff macro revisions
       parameters:
-        - name: macroName
+        - name: macro_name
           in: path
           required: true
           schema:
@@ -9214,12 +9777,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /macros/{macroName}/revisions:
+  /macros/{macro_name}/revisions:
     get:
       operationId: listMacroRevisions
       summary: List macro revisions
       parameters:
-        - name: macroName
+        - name: macro_name
           in: path
           required: true
           schema:
@@ -9435,18 +9998,18 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSavedResourceRequest'
-  /me/saved-resources/{resourceType}/{resourceKey}:
+  /me/saved-resources/{resource_type}/{resource_key}:
     delete:
       operationId: deleteSavedResource
       summary: Delete saved resource
       description: Removes a saved resource for the authenticated principal.
       parameters:
-        - name: resourceType
+        - name: resource_type
           in: path
           required: true
           schema:
             type: string
-        - name: resourceKey
+        - name: resource_key
           in: path
           required: true
           schema:
@@ -9486,67 +10049,6 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Resources
-  /metrics/{metricName}/freshness:
-    get:
-      operationId: checkMetricFreshness
-      summary: Check metric freshness
-      parameters:
-        - name: metricName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: semantic_model_id
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MetricFreshnessStatus'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Semantic Layer
   /model-runs:
     post:
       operationId: triggerModelRun
@@ -9653,12 +10155,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /model-runs/{runId}:
+  /model-runs/{run_id}:
     get:
       operationId: getModelRun
       summary: Get model run
       parameters:
-        - name: runId
+        - name: run_id
           in: path
           required: true
           schema:
@@ -9708,12 +10210,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /model-runs/{runId}/cancellations:
+  /model-runs/{run_id}/cancellations:
     post:
       operationId: cancelModelRun
       summary: Cancel model run
       parameters:
-        - name: runId
+        - name: run_id
           in: path
           required: true
           schema:
@@ -9757,12 +10259,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /model-runs/{runId}/steps:
+  /model-runs/{run_id}/steps:
     get:
       operationId: listModelRunSteps
       summary: List model run steps
       parameters:
-        - name: runId
+        - name: run_id
           in: path
           required: true
           schema:
@@ -9812,17 +10314,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /model-runs/{runId}/steps/{stepId}/test-results:
+  /model-runs/{run_id}/steps/{step_id}/test-results:
     get:
       operationId: listModelTestResults
       summary: List model test results
       parameters:
-        - name: runId
+        - name: run_id
           in: path
           required: true
           schema:
             type: string
-        - name: stepId
+        - name: step_id
           in: path
           required: true
           schema:
@@ -10022,17 +10524,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /models/{projectName}/{modelName}:
+  /models/{project_name}/{model_name}:
     get:
       operationId: getModel
       summary: Get model
       parameters:
-        - name: projectName
+        - name: project_name
           in: path
           required: true
           schema:
             type: string
-        - name: modelName
+        - name: model_name
           in: path
           required: true
           schema:
@@ -10086,12 +10588,12 @@ paths:
       operationId: updateModel
       summary: Update model
       parameters:
-        - name: projectName
+        - name: project_name
           in: path
           required: true
           schema:
             type: string
-        - name: modelName
+        - name: model_name
           in: path
           required: true
           schema:
@@ -10145,12 +10647,12 @@ paths:
       operationId: deleteModel
       summary: Delete model
       parameters:
-        - name: projectName
+        - name: project_name
           in: path
           required: true
           schema:
             type: string
-        - name: modelName
+        - name: model_name
           in: path
           required: true
           schema:
@@ -10190,17 +10692,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /models/{projectName}/{modelName}/freshness:
+  /models/{project_name}/{model_name}/freshness:
     get:
       operationId: checkModelFreshness
       summary: Check model freshness
       parameters:
-        - name: projectName
+        - name: project_name
           in: path
           required: true
           schema:
             type: string
-        - name: modelName
+        - name: model_name
           in: path
           required: true
           schema:
@@ -10250,17 +10752,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /models/{projectName}/{modelName}/tests:
+  /models/{project_name}/{model_name}/tests:
     post:
       operationId: createModelTest
       summary: Create model test
       parameters:
-        - name: projectName
+        - name: project_name
           in: path
           required: true
           schema:
             type: string
-        - name: modelName
+        - name: model_name
           in: path
           required: true
           schema:
@@ -10314,12 +10816,12 @@ paths:
       operationId: listModelTests
       summary: List model tests
       parameters:
-        - name: projectName
+        - name: project_name
           in: path
           required: true
           schema:
             type: string
-        - name: modelName
+        - name: model_name
           in: path
           required: true
           schema:
@@ -10369,22 +10871,22 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /models/{projectName}/{modelName}/tests/{testId}:
+  /models/{project_name}/{model_name}/tests/{test_id}:
     delete:
       operationId: deleteModelTest
       summary: Delete model test
       parameters:
-        - name: projectName
+        - name: project_name
           in: path
           required: true
           schema:
             type: string
-        - name: modelName
+        - name: model_name
           in: path
           required: true
           schema:
             type: string
-        - name: testId
+        - name: test_id
           in: path
           required: true
           schema:
@@ -10474,12 +10976,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PromoteNotebookRequest'
-  /notebook-model-promotions/{notebookId}:
+  /notebook-model-promotions/{notebook_id}:
     delete:
       operationId: unpublishNotebookModel
       summary: Unpublish notebook model
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -10631,517 +11133,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateNotebookRequest'
-  /notebooks/folders:
-    get:
-      operationId: listNotebookFolders
-      summary: List notebook folders
-      parameters:
-        - name: owner
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-          explode: false
-        - name: page_token
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedFolders'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Notebooks
-    post:
-      operationId: createNotebookFolder
-      summary: Create notebook folder
-      parameters: []
-      responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Folder'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Notebooks
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateFolderRequest'
-  /notebooks/folders/{folderId}:
-    get:
-      operationId: getNotebookFolder
-      summary: Get notebook folder
-      parameters:
-        - name: folderId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Folder'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Notebooks
-    patch:
-      operationId: updateNotebookFolder
-      summary: Update notebook folder
-      parameters:
-        - name: folderId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Folder'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Notebooks
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateFolderRequest'
-    delete:
-      operationId: deleteNotebookFolder
-      summary: Delete notebook folder
-      parameters:
-        - name: folderId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Notebooks
-  /notebooks/folders/{folderId}/moves:
-    post:
-      operationId: moveNotebookFolder
-      summary: Move notebook folder
-      parameters:
-        - name: folderId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Folder'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Notebooks
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MoveFolderRequest'
-  /notebooks/folders/{folderId}/shares:
-    get:
-      operationId: listNotebookFolderShares
-      summary: List notebook folder shares
-      parameters:
-        - name: folderId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FolderShare'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Notebooks
-    post:
-      operationId: shareNotebookFolder
-      summary: Share notebook folder
-      parameters:
-        - name: folderId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FolderShare'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Notebooks
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ShareFolderRequest'
-  /notebooks/folders/{folderId}/shares/{principalName}:
-    delete:
-      operationId: unshareNotebookFolder
-      summary: Remove notebook folder share
-      parameters:
-        - name: folderId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: principalName
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: 'There is no content to send for this request, but the headers may be useful. '
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: The server cannot find the requested resource.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Notebooks
-  /notebooks/{notebookId}:
+  /notebooks/{notebook_id}:
     get:
       operationId: getNotebook
       summary: Get notebook
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -11195,7 +11192,7 @@ paths:
       operationId: updateNotebook
       summary: Update notebook
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -11255,7 +11252,7 @@ paths:
       operationId: deleteNotebook
       summary: Delete notebook
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -11301,12 +11298,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
-  /notebooks/{notebookId}/cells:
+  /notebooks/{notebook_id}/cells:
     post:
       operationId: createCell
       summary: Create cell
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -11364,12 +11361,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateCellRequest'
-  /notebooks/{notebookId}/cells/reorder:
+  /notebooks/{notebook_id}/cells/reorder:
     post:
       operationId: reorderCells
       summary: Reorder cells
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -11427,17 +11424,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ReorderCellsRequest'
-  /notebooks/{notebookId}/cells/{cellId}:
+  /notebooks/{notebook_id}/cells/{cell_id}:
     patch:
       operationId: updateCell
       summary: Update cell
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
             type: string
-        - name: cellId
+        - name: cell_id
           in: path
           required: true
           schema:
@@ -11499,12 +11496,12 @@ paths:
       operationId: deleteCell
       summary: Delete cell
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
             type: string
-        - name: cellId
+        - name: cell_id
           in: path
           required: true
           schema:
@@ -11550,12 +11547,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
-  /notebooks/{notebookId}/copies:
+  /notebooks/{notebook_id}/copies:
     post:
       operationId: duplicateNotebook
       summary: Duplicate notebook
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -11611,12 +11608,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DuplicateNotebookRequest'
-  /notebooks/{notebookId}/jobs:
+  /notebooks/{notebook_id}/jobs:
     get:
       operationId: listNotebookJobs
       summary: List notebook jobs
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -11679,17 +11676,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
-  /notebooks/{notebookId}/jobs/{jobId}:
+  /notebooks/{notebook_id}/jobs/{job_id}:
     get:
       operationId: getNotebookJob
       summary: Get notebook job
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
             type: string
-        - name: jobId
+        - name: job_id
           in: path
           required: true
           schema:
@@ -11739,12 +11736,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
-  /notebooks/{notebookId}/moves:
+  /notebooks/{notebook_id}/moves:
     post:
       operationId: moveNotebook
       summary: Move notebook
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -11800,12 +11797,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MoveNotebookRequest'
-  /notebooks/{notebookId}/sessions:
+  /notebooks/{notebook_id}/sessions:
     post:
       operationId: createNotebookSession
       summary: Create notebook session
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -11855,17 +11852,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
-  /notebooks/{notebookId}/sessions/{sessionId}:
+  /notebooks/{notebook_id}/sessions/{session_id}:
     delete:
       operationId: closeNotebookSession
       summary: Close notebook session
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
             type: string
-        - name: sessionId
+        - name: session_id
           in: path
           required: true
           schema:
@@ -11911,17 +11908,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
-  /notebooks/{notebookId}/sessions/{sessionId}/cell-executions:
+  /notebooks/{notebook_id}/sessions/{session_id}/cell-executions:
     post:
       operationId: runAllCells
       summary: Run all cells
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
             type: string
-        - name: sessionId
+        - name: session_id
           in: path
           required: true
           schema:
@@ -11971,22 +11968,22 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
-  /notebooks/{notebookId}/sessions/{sessionId}/cell-executions/{cellId}:
+  /notebooks/{notebook_id}/sessions/{session_id}/cell-executions/{cell_id}:
     post:
       operationId: executeCell
       summary: Execute cell
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
             type: string
-        - name: sessionId
+        - name: session_id
           in: path
           required: true
           schema:
             type: string
-        - name: cellId
+        - name: cell_id
           in: path
           required: true
           schema:
@@ -12038,17 +12035,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
-  /notebooks/{notebookId}/sessions/{sessionId}/job-runs:
+  /notebooks/{notebook_id}/sessions/{session_id}/job-runs:
     post:
       operationId: runAllCellsAsync
       summary: Run all cells asynchronously
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
             type: string
-        - name: sessionId
+        - name: session_id
           in: path
           required: true
           schema:
@@ -12098,12 +12095,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
-  /notebooks/{notebookId}/shares:
+  /notebooks/{notebook_id}/shares:
     get:
       operationId: listNotebookShares
       summary: List notebook shares
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -12159,7 +12156,7 @@ paths:
       operationId: shareNotebook
       summary: Share notebook
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
@@ -12215,17 +12212,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ShareNotebookRequest'
-  /notebooks/{notebookId}/shares/{principalName}:
+  /notebooks/{notebook_id}/shares/{principal_name}:
     delete:
       operationId: unshareNotebook
       summary: Remove notebook share
       parameters:
-        - name: notebookId
+        - name: notebook_id
           in: path
           required: true
           schema:
             type: string
-        - name: principalName
+        - name: principal_name
           in: path
           required: true
           schema:
@@ -12371,12 +12368,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreatePipelineRequest'
-  /pipelines/runs/{runId}:
+  /pipelines/runs/{run_id}:
     get:
       operationId: getPipelineRun
       summary: Get pipeline run
       parameters:
-        - name: runId
+        - name: run_id
           in: path
           required: true
           schema:
@@ -12426,12 +12423,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
-  /pipelines/runs/{runId}/cancellations:
+  /pipelines/runs/{run_id}/cancellations:
     post:
       operationId: cancelPipelineRun
       summary: Cancel pipeline run
       parameters:
-        - name: runId
+        - name: run_id
           in: path
           required: true
           schema:
@@ -12475,12 +12472,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
-  /pipelines/runs/{runId}/jobs:
+  /pipelines/runs/{run_id}/jobs:
     get:
       operationId: listPipelineJobRuns
       summary: List pipeline job runs
       parameters:
-        - name: runId
+        - name: run_id
           in: path
           required: true
           schema:
@@ -12530,12 +12527,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
-  /pipelines/{pipelineName}:
+  /pipelines/{pipeline_name}:
     get:
       operationId: getPipeline
       summary: Get pipeline
       parameters:
-        - name: pipelineName
+        - name: pipeline_name
           in: path
           required: true
           schema:
@@ -12589,7 +12586,7 @@ paths:
       operationId: updatePipeline
       summary: Update pipeline
       parameters:
-        - name: pipelineName
+        - name: pipeline_name
           in: path
           required: true
           schema:
@@ -12643,7 +12640,7 @@ paths:
       operationId: deletePipeline
       summary: Delete pipeline
       parameters:
-        - name: pipelineName
+        - name: pipeline_name
           in: path
           required: true
           schema:
@@ -12683,12 +12680,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
-  /pipelines/{pipelineName}/jobs:
+  /pipelines/{pipeline_name}/jobs:
     get:
       operationId: listPipelineJobs
       summary: List pipeline jobs
       parameters:
-        - name: pipelineName
+        - name: pipeline_name
           in: path
           required: true
           schema:
@@ -12742,7 +12739,7 @@ paths:
       operationId: createPipelineJob
       summary: Create pipeline job
       parameters:
-        - name: pipelineName
+        - name: pipeline_name
           in: path
           required: true
           schema:
@@ -12792,17 +12789,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreatePipelineJobRequest'
-  /pipelines/{pipelineName}/jobs/{jobId}:
+  /pipelines/{pipeline_name}/jobs/{job_id}:
     delete:
       operationId: deletePipelineJob
       summary: Delete pipeline job
       parameters:
-        - name: pipelineName
+        - name: pipeline_name
           in: path
           required: true
           schema:
             type: string
-        - name: jobId
+        - name: job_id
           in: path
           required: true
           schema:
@@ -12842,12 +12839,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
-  /pipelines/{pipelineName}/runs:
+  /pipelines/{pipeline_name}/runs:
     post:
       operationId: triggerPipelineRun
       summary: Trigger pipeline run
       parameters:
-        - name: pipelineName
+        - name: pipeline_name
           in: path
           required: true
           schema:
@@ -12901,7 +12898,7 @@ paths:
       operationId: listPipelineRuns
       summary: List pipeline runs
       parameters:
-        - name: pipelineName
+        - name: pipeline_name
           in: path
           required: true
           schema:
@@ -13078,12 +13075,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreatePrincipalRequest'
-  /principals/{principalId}:
+  /principals/{principal_id}:
     get:
       operationId: getPrincipal
       summary: Get principal
       parameters:
-        - name: principalId
+        - name: principal_id
           in: path
           required: true
           schema:
@@ -13137,7 +13134,7 @@ paths:
       operationId: deletePrincipal
       summary: Delete principal
       parameters:
-        - name: principalId
+        - name: principal_id
           in: path
           required: true
           schema:
@@ -13177,12 +13174,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
-  /principals/{principalId}/admin:
+  /principals/{principal_id}/admin:
     put:
       operationId: updatePrincipalAdmin
       summary: Update principal admin
       parameters:
-        - name: principalId
+        - name: principal_id
           in: path
           required: true
           schema:
@@ -13391,12 +13388,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /product-domains/{domainName}:
+  /product-domains/{domain_name}:
     get:
       operationId: getProductDomain
       summary: Get product domain
       parameters:
-        - name: domainName
+        - name: domain_name
           in: path
           required: true
           schema:
@@ -13444,7 +13441,7 @@ paths:
       operationId: updateProductDomain
       summary: Update product domain
       parameters:
-        - name: domainName
+        - name: domain_name
           in: path
           required: true
           schema:
@@ -13506,7 +13503,7 @@ paths:
       operationId: deleteProductDomain
       summary: Delete product domain
       parameters:
-        - name: domainName
+        - name: domain_name
           in: path
           required: true
           schema:
@@ -13552,12 +13549,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
-  /product-domains/{domainName}/teams:
+  /product-domains/{domain_name}/teams:
     post:
       operationId: createProductTeam
       summary: Create product team
       parameters:
-        - name: domainName
+        - name: domain_name
           in: path
           required: true
           schema:
@@ -13615,17 +13612,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateProductTeamRequest'
-  /product-domains/{domainName}/teams/{teamName}:
+  /product-domains/{domain_name}/teams/{team_name}:
     get:
       operationId: getProductTeam
       summary: Get product team
       parameters:
-        - name: domainName
+        - name: domain_name
           in: path
           required: true
           schema:
             type: string
-        - name: teamName
+        - name: team_name
           in: path
           required: true
           schema:
@@ -13679,12 +13676,12 @@ paths:
       operationId: updateProductTeam
       summary: Update product team
       parameters:
-        - name: domainName
+        - name: domain_name
           in: path
           required: true
           schema:
             type: string
-        - name: teamName
+        - name: team_name
           in: path
           required: true
           schema:
@@ -13746,12 +13743,12 @@ paths:
       operationId: deleteProductTeam
       summary: Delete product team
       parameters:
-        - name: domainName
+        - name: domain_name
           in: path
           required: true
           schema:
             type: string
-        - name: teamName
+        - name: team_name
           in: path
           required: true
           schema:
@@ -13934,12 +13931,12 @@ paths:
         - Queries
       x-authz:
         mode: admin_only
-  /queries/{queryId}:
+  /queries/{query_id}:
     get:
       operationId: getQuery
       summary: Get query
       parameters:
-        - name: queryId
+        - name: query_id
           in: path
           required: true
           schema:
@@ -13993,7 +13990,7 @@ paths:
       operationId: deleteQuery
       summary: Delete query
       parameters:
-        - name: queryId
+        - name: query_id
           in: path
           required: true
           schema:
@@ -14033,12 +14030,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Queries
-  /queries/{queryId}/cancellations:
+  /queries/{query_id}/cancellations:
     post:
       operationId: cancelQuery
       summary: Cancel query
       parameters:
-        - name: queryId
+        - name: query_id
           in: path
           required: true
           schema:
@@ -14088,13 +14085,13 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Queries
-  /queries/{queryId}/results:
+  /queries/{query_id}/results:
     get:
       operationId: getQueryResults
       summary: Get query results
       description: Returns a page of rows for a previously submitted query using the stored query job identifier.
       parameters:
-        - name: queryId
+        - name: query_id
           in: path
           required: true
           schema:
@@ -14326,12 +14323,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateRowFilterRequest'
-  /row-filters/{rowFilterId}:
+  /row-filters/{row_filter_id}:
     delete:
       operationId: deleteRowFilter
       summary: Delete row filter
       parameters:
-        - name: rowFilterId
+        - name: row_filter_id
           in: path
           required: true
           schema:
@@ -14371,12 +14368,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
-  /row-filters/{rowFilterId}/bindings:
+  /row-filters/{row_filter_id}/bindings:
     get:
       operationId: listRowFilterBindings
       summary: List row filter bindings
       parameters:
-        - name: rowFilterId
+        - name: row_filter_id
           in: path
           required: true
           schema:
@@ -14443,7 +14440,7 @@ paths:
       operationId: bindRowFilter
       summary: Bind row filter
       parameters:
-        - name: rowFilterId
+        - name: row_filter_id
           in: path
           required: true
           schema:
@@ -14489,22 +14486,22 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RowFilterBindingRequest'
-  /row-filters/{rowFilterId}/bindings/{principalType}/{principalId}:
+  /row-filters/{row_filter_id}/bindings/{principal_type}/{principal_id}:
     delete:
       operationId: unbindRowFilter
       summary: Unbind row filter
       parameters:
-        - name: rowFilterId
+        - name: row_filter_id
           in: path
           required: true
           schema:
             type: string
-        - name: principalType
+        - name: principal_type
           in: path
           required: true
           schema:
             $ref: '#/components/schemas/PrincipalType'
-        - name: principalId
+        - name: principal_id
           in: path
           required: true
           schema:
@@ -14544,6 +14541,67 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+  /semantic-metrics/{metric_name}/freshness:
+    get:
+      operationId: checkMetricFreshness
+      summary: Check metric freshness
+      parameters:
+        - name: metric_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: semantic_model_id
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricFreshnessStatus'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Semantic Layer
   /semantic-models:
     get:
       operationId: listSemanticModels
@@ -14644,12 +14702,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticModelRequest'
-  /semantic-models/{semanticModelId}:
+  /semantic-models/{semantic_model_id}:
     get:
       operationId: getSemanticModel
       summary: Get semantic model
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
@@ -14703,7 +14761,7 @@ paths:
       operationId: updateSemanticModel
       summary: Update semantic model
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
@@ -14757,7 +14815,7 @@ paths:
       operationId: deleteSemanticModel
       summary: Delete semantic model
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
@@ -14797,12 +14855,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
-  /semantic-models/{semanticModelId}/metrics:
+  /semantic-models/{semantic_model_id}/metrics:
     get:
       operationId: listSemanticMetrics
       summary: List semantic metrics
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
@@ -14856,7 +14914,7 @@ paths:
       operationId: createSemanticMetric
       summary: Create semantic metric
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
@@ -14906,17 +14964,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticMetricRequest'
-  /semantic-models/{semanticModelId}/metrics/{metricName}:
+  /semantic-models/{semantic_model_id}/metrics/{metric_name}:
     patch:
       operationId: updateSemanticMetric
       summary: Update semantic metric
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
             type: string
-        - name: metricName
+        - name: metric_name
           in: path
           required: true
           schema:
@@ -14970,12 +15028,12 @@ paths:
       operationId: deleteSemanticMetric
       summary: Delete semantic metric
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
             type: string
-        - name: metricName
+        - name: metric_name
           in: path
           required: true
           schema:
@@ -15015,12 +15073,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
-  /semantic-models/{semanticModelId}/pre-aggregations:
+  /semantic-models/{semantic_model_id}/pre-aggregations:
     get:
       operationId: listSemanticPreAggregations
       summary: List semantic pre aggregations
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
@@ -15074,7 +15132,7 @@ paths:
       operationId: createSemanticPreAggregation
       summary: Create semantic pre aggregation
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
@@ -15124,17 +15182,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticPreAggregationRequest'
-  /semantic-models/{semanticModelId}/pre-aggregations/{preAggregationName}:
+  /semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}:
     patch:
       operationId: updateSemanticPreAggregation
       summary: Update semantic pre aggregation
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
             type: string
-        - name: preAggregationName
+        - name: pre_aggregation_name
           in: path
           required: true
           schema:
@@ -15188,12 +15246,12 @@ paths:
       operationId: deleteSemanticPreAggregation
       summary: Delete semantic pre aggregation
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
             type: string
-        - name: preAggregationName
+        - name: pre_aggregation_name
           in: path
           required: true
           schema:
@@ -15233,12 +15291,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
-  /semantic-models/{semanticModelId}/query-explanations:
+  /semantic-models/{semantic_model_id}/query-explanations:
     post:
       operationId: explainMetricQuery
       summary: Explain metric query
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
@@ -15288,12 +15346,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MetricQueryRequest'
-  /semantic-models/{semanticModelId}/query-runs:
+  /semantic-models/{semantic_model_id}/query-runs:
     post:
       operationId: runMetricQuery
       summary: Run metric query
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
@@ -15343,12 +15401,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MetricQueryRequest'
-  /semantic-models/{semanticModelId}/relationships:
+  /semantic-models/{semantic_model_id}/relationships:
     get:
       operationId: listSemanticModelRelationships
       summary: List semantic relationships for a semantic model
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
@@ -15402,7 +15460,7 @@ paths:
       operationId: createSemanticModelRelationship
       summary: Create semantic relationship for a semantic model
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
@@ -15452,17 +15510,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticRelationshipRequest'
-  /semantic-models/{semanticModelId}/relationships/{relationshipName}:
+  /semantic-models/{semantic_model_id}/relationships/{relationship_name}:
     patch:
       operationId: updateSemanticModelRelationship
       summary: Update semantic relationship for a semantic model
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
             type: string
-        - name: relationshipName
+        - name: relationship_name
           in: path
           required: true
           schema:
@@ -15516,12 +15574,12 @@ paths:
       operationId: deleteSemanticModelRelationship
       summary: Delete semantic relationship for a semantic model
       parameters:
-        - name: semanticModelId
+        - name: semantic_model_id
           in: path
           required: true
           schema:
             type: string
-        - name: relationshipName
+        - name: relationship_name
           in: path
           required: true
           schema:
@@ -15561,17 +15619,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
-  /sources/{sourceSchema}/{sourceTable}/freshness:
+  /semantic-sources/{source_schema}/{source_table}/freshness:
     get:
       operationId: checkSourceFreshness
       summary: Check source freshness
       parameters:
-        - name: sourceSchema
+        - name: source_schema
           in: path
           required: true
           schema:
             type: string
-        - name: sourceTable
+        - name: source_table
           in: path
           required: true
           schema:
@@ -15741,12 +15799,12 @@ paths:
           - securable_type: catalog
             privilege: CREATE_STORAGE_CREDENTIAL
             securable_id_source: catalog_sentinel
-  /storage-credentials/{credentialName}:
+  /storage-credentials/{credential_name}:
     get:
       operationId: getStorageCredential
       summary: Get storage credential
       parameters:
-        - name: credentialName
+        - name: credential_name
           in: path
           required: true
           schema:
@@ -15800,7 +15858,7 @@ paths:
       operationId: updateStorageCredential
       summary: Update storage credential
       parameters:
-        - name: credentialName
+        - name: credential_name
           in: path
           required: true
           schema:
@@ -15866,7 +15924,7 @@ paths:
       operationId: deleteStorageCredential
       summary: Delete storage credential
       parameters:
-        - name: credentialName
+        - name: credential_name
           in: path
           required: true
           schema:
@@ -16018,12 +16076,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateTagRequest'
-  /tags/{tagId}:
+  /tags/{tag_id}:
     delete:
       operationId: deleteTag
       summary: Delete tag
       parameters:
-        - name: tagId
+        - name: tag_id
           in: path
           required: true
           schema:
@@ -16063,12 +16121,12 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
-  /tags/{tagId}/assignments:
+  /tags/{tag_id}/assignments:
     get:
       operationId: listTagAssignments
       summary: List tag assignments
       parameters:
-        - name: tagId
+        - name: tag_id
           in: path
           required: true
           schema:
@@ -16135,7 +16193,7 @@ paths:
       operationId: createTagAssignment
       summary: Create tag assignment
       parameters:
-        - name: tagId
+        - name: tag_id
           in: path
           required: true
           schema:
@@ -16193,17 +16251,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateTagAssignmentRequest'
-  /tags/{tagId}/assignments/{assignmentId}:
+  /tags/{tag_id}/assignments/{assignment_id}:
     delete:
       operationId: deleteTagAssignment
       summary: Delete tag assignment
       parameters:
-        - name: tagId
+        - name: tag_id
           in: path
           required: true
           schema:
             type: string
-        - name: assignmentId
+        - name: assignment_id
           in: path
           required: true
           schema:
@@ -18508,32 +18566,6 @@ components:
             type: string
       description: Errors use a shared schema across the API so clients can handle failure responses consistently.
       title: Standard API error response.
-    ExploreItem:
-      type: object
-      properties:
-        kind:
-          type: string
-        scope:
-          type: string
-        id:
-          type: string
-        name:
-          type: string
-        owner:
-          type: string
-        folder_id:
-          type: string
-        project_name:
-          type: string
-        updated_at:
-          type: string
-          format: date-time
-        git_repo_id:
-          type: string
-        shared:
-          type: boolean
-        project_bound:
-          type: boolean
     ExternalLocation:
       type: object
       required:
@@ -18595,6 +18627,32 @@ components:
         updated_at:
           type: string
           format: date-time
+    FolderContentItem:
+      type: object
+      properties:
+        kind:
+          type: string
+        scope:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        owner:
+          type: string
+        folder_id:
+          type: string
+        project_name:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+        git_repo_id:
+          type: string
+        shared:
+          type: boolean
+        project_bound:
+          type: boolean
     FolderShare:
       type: object
       properties:
@@ -19822,17 +19880,6 @@ components:
             $ref: '#/components/schemas/DataProductListItem'
         next_page_token:
           type: string
-    PaginatedExploreItems:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/ExploreItem'
-        next_page_token:
-          type: string
     PaginatedExternalLocations:
       type: object
       required:
@@ -19842,6 +19889,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ExternalLocation'
+        next_page_token:
+          type: string
+    PaginatedFolderContents:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FolderContentItem'
         next_page_token:
           type: string
     PaginatedFolders:

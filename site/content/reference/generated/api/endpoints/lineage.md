@@ -4,7 +4,95 @@
 
 Table and column lineage inspection together with lineage maintenance operations.
 
-## `POST /lineage-purges`
+## `GET /lineage/columns/{schema_name}/{table_name}`
+
+Get column lineage
+
+- Operation ID: `getColumnLineage`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /lineage/columns/{schema_name}/{table_name}/{column_name}/impacts`
+
+Get column impact
+
+- Operation ID: `getColumnImpact`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `column_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /lineage/edges/{edge_id}`
+
+Delete lineage edge
+
+- Operation ID: `deleteLineageEdge`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `edge_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /lineage/purges`
 
 Purge lineage
 
@@ -26,95 +114,7 @@ Purge lineage
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /lineage/columns/{schemaName}/{tableName}`
-
-Get column lineage
-
-- Operation ID: `getColumnLineage`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `schemaName` | `string` | `true` | - |
-| `tableName` | `string` | `true` | - |
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /lineage/columns/{schemaName}/{tableName}/{columnName}/impacts`
-
-Get column impact
-
-- Operation ID: `getColumnImpact`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `columnName` | `string` | `true` | - |
-| `schemaName` | `string` | `true` | - |
-| `tableName` | `string` | `true` | - |
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `DELETE /lineage/edges/{edgeId}`
-
-Delete lineage edge
-
-- Operation ID: `deleteLineageEdge`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `edgeId` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `204` | There is no content to send for this request, but the headers may be useful. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /lineage/tables/{schemaName}/{tableName}`
+## `GET /lineage/tables/{schema_name}/{table_name}`
 
 Get table lineage
 
@@ -124,8 +124,8 @@ Get table lineage
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `schemaName` | `string` | `true` | - |
-| `tableName` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -146,7 +146,7 @@ Get table lineage
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /lineage/tables/{schemaName}/{tableName}/downstream`
+## `GET /lineage/tables/{schema_name}/{table_name}/downstream`
 
 Get downstream lineage
 
@@ -156,8 +156,8 @@ Get downstream lineage
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `schemaName` | `string` | `true` | - |
-| `tableName` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -178,7 +178,7 @@ Get downstream lineage
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /lineage/tables/{schemaName}/{tableName}/upstream`
+## `GET /lineage/tables/{schema_name}/{table_name}/upstream`
 
 Get upstream lineage
 
@@ -188,8 +188,8 @@ Get upstream lineage
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `schemaName` | `string` | `true` | - |
-| `tableName` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
 
 ### Query Parameters
 

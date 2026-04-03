@@ -80,7 +80,7 @@ Saves a UUID-backed resource for the authenticated principal.
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /me/saved-resources/{resourceType}/{resourceKey}`
+## `DELETE /me/saved-resources/{resource_type}/{resource_key}`
 
 Delete saved resource
 
@@ -92,8 +92,8 @@ Removes a saved resource for the authenticated principal.
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `resourceKey` | `string` | `true` | - |
-| `resourceType` | `string` | `true` | - |
+| `resource_key` | `string` | `true` | - |
+| `resource_type` | `string` | `true` | - |
 
 ### Responses
 

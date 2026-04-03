@@ -49,7 +49,7 @@ Create macro
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /macros/{macroName}`
+## `GET /macros/{macro_name}`
 
 Get macro
 
@@ -59,7 +59,7 @@ Get macro
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `macroName` | `string` | `true` | - |
+| `macro_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -73,7 +73,7 @@ Get macro
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /macros/{macroName}`
+## `PATCH /macros/{macro_name}`
 
 Update macro
 
@@ -83,7 +83,7 @@ Update macro
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `macroName` | `string` | `true` | - |
+| `macro_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -101,7 +101,7 @@ Update macro
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /macros/{macroName}`
+## `DELETE /macros/{macro_name}`
 
 Delete macro
 
@@ -111,7 +111,7 @@ Delete macro
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `macroName` | `string` | `true` | - |
+| `macro_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -124,7 +124,7 @@ Delete macro
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /macros/{macroName}/impacts`
+## `GET /macros/{macro_name}/impacts`
 
 Get macro impact
 
@@ -134,7 +134,7 @@ Get macro impact
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `macroName` | `string` | `true` | - |
+| `macro_name` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -155,7 +155,7 @@ Get macro impact
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /macros/{macroName}/revision-diffs`
+## `GET /macros/{macro_name}/revision-diffs`
 
 Diff macro revisions
 
@@ -165,7 +165,7 @@ Diff macro revisions
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `macroName` | `string` | `true` | - |
+| `macro_name` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -186,7 +186,7 @@ Diff macro revisions
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /macros/{macroName}/revisions`
+## `GET /macros/{macro_name}/revisions`
 
 List macro revisions
 
@@ -196,7 +196,7 @@ List macro revisions
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `macroName` | `string` | `true` | - |
+| `macro_name` | `string` | `true` | - |
 
 ### Responses
 

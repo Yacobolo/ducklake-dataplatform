@@ -4,7 +4,7 @@
 
 Sessions operations within the Notebooks API group.
 
-## `POST /notebooks/{notebookId}/sessions`
+## `POST /notebooks/{notebook_id}/sessions`
 
 Create notebook session
 
@@ -14,7 +14,7 @@ Create notebook session
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -28,7 +28,7 @@ Create notebook session
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /notebooks/{notebookId}/sessions/{sessionId}`
+## `DELETE /notebooks/{notebook_id}/sessions/{session_id}`
 
 Close notebook session
 
@@ -38,8 +38,8 @@ Close notebook session
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
-| `sessionId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
+| `session_id` | `string` | `true` | - |
 
 ### Responses
 

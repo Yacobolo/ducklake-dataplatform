@@ -58,7 +58,7 @@ Lists recorded query executions and supports filtering by principal, decision st
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /queries/{queryId}`
+## `GET /queries/{query_id}`
 
 Get query
 
@@ -68,7 +68,7 @@ Get query
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
+| `query_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -82,7 +82,7 @@ Get query
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /queries/{queryId}`
+## `DELETE /queries/{query_id}`
 
 Delete query
 
@@ -92,7 +92,7 @@ Delete query
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
+| `query_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -105,7 +105,7 @@ Delete query
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /queries/{queryId}/cancellations`
+## `POST /queries/{query_id}/cancellations`
 
 Cancel query
 
@@ -115,7 +115,7 @@ Cancel query
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
+| `query_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -129,7 +129,7 @@ Cancel query
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /queries/{queryId}/results`
+## `GET /queries/{query_id}/results`
 
 Get query results
 
@@ -141,7 +141,7 @@ Returns a page of rows for a previously submitted query using the stored query j
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
+| `query_id` | `string` | `true` | - |
 
 ### Query Parameters
 

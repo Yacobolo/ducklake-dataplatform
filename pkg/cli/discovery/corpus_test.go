@@ -17,7 +17,7 @@ func TestCorpus_Search_PrioritizesCommandThenOperation(t *testing.T) {
 			{ID: "build/register-source-data", Path: "build/register-source-data.md", Section: "build", Title: "Register Source Data", Description: "Register and manage source data safely."},
 		},
 		Operations: []gen.ReferenceOperation{
-			{OperationID: "createSchema", Path: "/catalogs/{catalogName}/schemas", Summary: "Create a schema", CLICommand: "catalog schemas create"},
+			{OperationID: "createSchema", Path: "/catalogs/{catalog_name}/schemas", Summary: "Create a schema", CLICommand: "catalog schemas create"},
 		},
 		Links: []gen.ReferenceLink{
 			{SourceKind: "operation", SourceID: "createSchema", TargetKind: "command", TargetID: "catalog schemas create", Reason: "x-cli-command", Confidence: 100},

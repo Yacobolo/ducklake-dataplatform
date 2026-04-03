@@ -14,23 +14,23 @@ op listModels(@query project_name?: string, @query max_results?: int32, @query p
 @summary("Create model")
 op createModel(@body body: CreateModelRequest): Created<Model> | MutatingErrorResponses;
 
-@route("/models/{projectName}/{modelName}")
+@route("/models/{project_name}/{model_name}")
 @get
 @tag("Models")
 @summary("Get model")
-op getModel(projectName: string, modelName: string): Ok<Model> | ResourceErrorResponses;
+op getModel(project_name: string, model_name: string): Ok<Model> | ResourceErrorResponses;
 
-@route("/models/{projectName}/{modelName}")
+@route("/models/{project_name}/{model_name}")
 @patch(#{ implicitOptionality: true })
 @tag("Models")
 @summary("Update model")
-op updateModel(projectName: string, modelName: string, @body body: UpdateModelRequest): Ok<Model> | MutatingErrorResponses;
+op updateModel(project_name: string, model_name: string, @body body: UpdateModelRequest): Ok<Model> | MutatingErrorResponses;
 
-@route("/models/{projectName}/{modelName}")
+@route("/models/{project_name}/{model_name}")
 @delete
 @tag("Models")
 @summary("Delete model")
-op deleteModel(projectName: string, modelName: string): NoContent | MutatingErrorResponses;
+op deleteModel(project_name: string, model_name: string): NoContent | MutatingErrorResponses;
 
 @route("/models/dag")
 @get
@@ -50,47 +50,47 @@ op triggerModelRun(@body body: TriggerModelRunRequest): Created<ModelRun> | Muta
 @summary("List model runs")
 op listModelRuns(@query status?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedModelRuns> | StandardErrorResponses;
 
-@route("/model-runs/{runId}")
+@route("/model-runs/{run_id}")
 @get
 @tag("Models")
 @summary("Get model run")
-op getModelRun(runId: string): Ok<ModelRun> | ResourceErrorResponses;
+op getModelRun(run_id: string): Ok<ModelRun> | ResourceErrorResponses;
 
-@route("/model-runs/{runId}/steps")
+@route("/model-runs/{run_id}/steps")
 @get
 @tag("Models")
 @summary("List model run steps")
-op listModelRunSteps(runId: string): Ok<ModelRunStepList> | ResourceErrorResponses;
+op listModelRunSteps(run_id: string): Ok<ModelRunStepList> | ResourceErrorResponses;
 
-@route("/models/{projectName}/{modelName}/tests")
+@route("/models/{project_name}/{model_name}/tests")
 @post
 @tag("Models")
 @summary("Create model test")
-op createModelTest(projectName: string, modelName: string, @body body: CreateModelTestRequest): Created<ModelTest> | MutatingErrorResponses;
+op createModelTest(project_name: string, model_name: string, @body body: CreateModelTestRequest): Created<ModelTest> | MutatingErrorResponses;
 
-@route("/models/{projectName}/{modelName}/tests")
+@route("/models/{project_name}/{model_name}/tests")
 @get
 @tag("Models")
 @summary("List model tests")
-op listModelTests(projectName: string, modelName: string): Ok<ModelTestList> | ResourceErrorResponses;
+op listModelTests(project_name: string, model_name: string): Ok<ModelTestList> | ResourceErrorResponses;
 
-@route("/models/{projectName}/{modelName}/tests/{testId}")
+@route("/models/{project_name}/{model_name}/tests/{test_id}")
 @delete
 @tag("Models")
 @summary("Delete model test")
-op deleteModelTest(projectName: string, modelName: string, testId: string): NoContent | MutatingErrorResponses;
+op deleteModelTest(project_name: string, model_name: string, test_id: string): NoContent | MutatingErrorResponses;
 
-@route("/model-runs/{runId}/steps/{stepId}/test-results")
+@route("/model-runs/{run_id}/steps/{step_id}/test-results")
 @get
 @tag("Models")
 @summary("List model test results")
-op listModelTestResults(runId: string, stepId: string): Ok<ModelTestResultList> | ResourceErrorResponses;
+op listModelTestResults(run_id: string, step_id: string): Ok<ModelTestResultList> | ResourceErrorResponses;
 
-@route("/models/{projectName}/{modelName}/freshness")
+@route("/models/{project_name}/{model_name}/freshness")
 @get
 @tag("Models")
 @summary("Check model freshness")
-op checkModelFreshness(projectName: string, modelName: string): Ok<FreshnessStatus> | ResourceErrorResponses;
+op checkModelFreshness(project_name: string, model_name: string): Ok<FreshnessStatus> | ResourceErrorResponses;
 
 @route("/notebook-model-promotions")
 @post
@@ -98,17 +98,17 @@ op checkModelFreshness(projectName: string, modelName: string): Ok<FreshnessStat
 @summary("Promote notebook to model")
 op promoteNotebookToModel(@body body: PromoteNotebookRequest): Created<Model> | MutatingErrorResponses;
 
-@route("/notebook-model-promotions/{notebookId}")
+@route("/notebook-model-promotions/{notebook_id}")
 @delete
 @tag("Models")
 @summary("Unpublish notebook model")
-op unpublishNotebookModel(notebookId: string): NoContent | ResourceErrorResponses;
+op unpublishNotebookModel(notebook_id: string): NoContent | ResourceErrorResponses;
 
-@route("/model-runs/{runId}/cancellations")
+@route("/model-runs/{run_id}/cancellations")
 @post
 @tag("Models")
 @summary("Cancel model run")
-op cancelModelRun(runId: string): Ok<ModelRun> | MutatingErrorResponses;
+op cancelModelRun(run_id: string): Ok<ModelRun> | MutatingErrorResponses;
 
 @route("/macros")
 @get
@@ -122,38 +122,38 @@ op listMacros(@query max_results?: int32, @query page_token?: string): Ok<Pagina
 @summary("Create macro")
 op createMacro(@body body: CreateMacroRequest): Created<Macro> | MutatingErrorResponses;
 
-@route("/macros/{macroName}")
+@route("/macros/{macro_name}")
 @get
 @tag("Models")
 @summary("Get macro")
-op getMacro(macroName: string): Ok<Macro> | ResourceErrorResponses;
+op getMacro(macro_name: string): Ok<Macro> | ResourceErrorResponses;
 
-@route("/macros/{macroName}")
+@route("/macros/{macro_name}")
 @patch(#{ implicitOptionality: true })
 @tag("Models")
 @summary("Update macro")
-op updateMacro(macroName: string, @body body: UpdateMacroRequest): Ok<Macro> | MutatingErrorResponses;
+op updateMacro(macro_name: string, @body body: UpdateMacroRequest): Ok<Macro> | MutatingErrorResponses;
 
-@route("/macros/{macroName}")
+@route("/macros/{macro_name}")
 @delete
 @tag("Models")
 @summary("Delete macro")
-op deleteMacro(macroName: string): NoContent | MutatingErrorResponses;
+op deleteMacro(macro_name: string): NoContent | MutatingErrorResponses;
 
-@route("/macros/{macroName}/revisions")
+@route("/macros/{macro_name}/revisions")
 @get
 @tag("Models")
 @summary("List macro revisions")
-op listMacroRevisions(macroName: string): Ok<MacroRevisionList> | ResourceErrorResponses;
+op listMacroRevisions(macro_name: string): Ok<MacroRevisionList> | ResourceErrorResponses;
 
-@route("/macros/{macroName}/impacts")
+@route("/macros/{macro_name}/impacts")
 @get
 @tag("Models")
 @summary("Get macro impact")
-op getMacroImpact(macroName: string, @query max_results?: int32, @query page_token?: string): Ok<MacroImpactList> | ResourceErrorResponses;
+op getMacroImpact(macro_name: string, @query max_results?: int32, @query page_token?: string): Ok<MacroImpactList> | ResourceErrorResponses;
 
-@route("/macros/{macroName}/revision-diffs")
+@route("/macros/{macro_name}/revision-diffs")
 @get
 @tag("Models")
 @summary("Diff macro revisions")
-op diffMacroRevisions(macroName: string, @query from_version: int32, @query to_version: int32): Ok<MacroRevisionDiff> | ResourceErrorResponses;
+op diffMacroRevisions(macro_name: string, @query from_version: int32, @query to_version: int32): Ok<MacroRevisionDiff> | ResourceErrorResponses;

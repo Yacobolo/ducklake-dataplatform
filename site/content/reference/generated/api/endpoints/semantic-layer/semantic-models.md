@@ -49,7 +49,7 @@ Create semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /semantic-models/{semanticModelId}`
+## `GET /semantic-models/{semantic_model_id}`
 
 Get semantic model
 
@@ -59,7 +59,7 @@ Get semantic model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `semanticModelId` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -73,7 +73,7 @@ Get semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /semantic-models/{semanticModelId}`
+## `PATCH /semantic-models/{semantic_model_id}`
 
 Update semantic model
 
@@ -83,7 +83,7 @@ Update semantic model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `semanticModelId` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -101,7 +101,7 @@ Update semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /semantic-models/{semanticModelId}`
+## `DELETE /semantic-models/{semantic_model_id}`
 
 Delete semantic model
 
@@ -111,7 +111,7 @@ Delete semantic model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `semanticModelId` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -124,7 +124,7 @@ Delete semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /semantic-models/{semanticModelId}/metrics`
+## `GET /semantic-models/{semantic_model_id}/metrics`
 
 List semantic metrics
 
@@ -134,7 +134,7 @@ List semantic metrics
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `semanticModelId` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -148,7 +148,7 @@ List semantic metrics
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /semantic-models/{semanticModelId}/metrics`
+## `POST /semantic-models/{semantic_model_id}/metrics`
 
 Create semantic metric
 
@@ -158,7 +158,7 @@ Create semantic metric
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `semanticModelId` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -176,7 +176,7 @@ Create semantic metric
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /semantic-models/{semanticModelId}/metrics/{metricName}`
+## `PATCH /semantic-models/{semantic_model_id}/metrics/{metric_name}`
 
 Update semantic metric
 
@@ -186,8 +186,8 @@ Update semantic metric
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `metricName` | `string` | `true` | - |
-| `semanticModelId` | `string` | `true` | - |
+| `metric_name` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -205,7 +205,7 @@ Update semantic metric
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /semantic-models/{semanticModelId}/metrics/{metricName}`
+## `DELETE /semantic-models/{semantic_model_id}/metrics/{metric_name}`
 
 Delete semantic metric
 
@@ -215,8 +215,8 @@ Delete semantic metric
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `metricName` | `string` | `true` | - |
-| `semanticModelId` | `string` | `true` | - |
+| `metric_name` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -229,7 +229,7 @@ Delete semantic metric
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /semantic-models/{semanticModelId}/pre-aggregations`
+## `GET /semantic-models/{semantic_model_id}/pre-aggregations`
 
 List semantic pre aggregations
 
@@ -239,7 +239,7 @@ List semantic pre aggregations
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `semanticModelId` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -253,7 +253,7 @@ List semantic pre aggregations
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /semantic-models/{semanticModelId}/pre-aggregations`
+## `POST /semantic-models/{semantic_model_id}/pre-aggregations`
 
 Create semantic pre aggregation
 
@@ -263,7 +263,7 @@ Create semantic pre aggregation
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `semanticModelId` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -281,7 +281,7 @@ Create semantic pre aggregation
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /semantic-models/{semanticModelId}/pre-aggregations/{preAggregationName}`
+## `PATCH /semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}`
 
 Update semantic pre aggregation
 
@@ -291,8 +291,8 @@ Update semantic pre aggregation
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `preAggregationName` | `string` | `true` | - |
-| `semanticModelId` | `string` | `true` | - |
+| `pre_aggregation_name` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -310,7 +310,7 @@ Update semantic pre aggregation
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /semantic-models/{semanticModelId}/pre-aggregations/{preAggregationName}`
+## `DELETE /semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}`
 
 Delete semantic pre aggregation
 
@@ -320,8 +320,8 @@ Delete semantic pre aggregation
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `preAggregationName` | `string` | `true` | - |
-| `semanticModelId` | `string` | `true` | - |
+| `pre_aggregation_name` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -334,7 +334,7 @@ Delete semantic pre aggregation
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /semantic-models/{semanticModelId}/query-explanations`
+## `POST /semantic-models/{semantic_model_id}/query-explanations`
 
 Explain metric query
 
@@ -344,7 +344,7 @@ Explain metric query
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `semanticModelId` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -362,7 +362,7 @@ Explain metric query
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /semantic-models/{semanticModelId}/query-runs`
+## `POST /semantic-models/{semantic_model_id}/query-runs`
 
 Run metric query
 
@@ -372,7 +372,7 @@ Run metric query
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `semanticModelId` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -390,7 +390,7 @@ Run metric query
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /semantic-models/{semanticModelId}/relationships`
+## `GET /semantic-models/{semantic_model_id}/relationships`
 
 List semantic relationships for a semantic model
 
@@ -400,7 +400,7 @@ List semantic relationships for a semantic model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `semanticModelId` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -414,7 +414,7 @@ List semantic relationships for a semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /semantic-models/{semanticModelId}/relationships`
+## `POST /semantic-models/{semantic_model_id}/relationships`
 
 Create semantic relationship for a semantic model
 
@@ -424,7 +424,7 @@ Create semantic relationship for a semantic model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `semanticModelId` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -442,7 +442,7 @@ Create semantic relationship for a semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /semantic-models/{semanticModelId}/relationships/{relationshipName}`
+## `PATCH /semantic-models/{semantic_model_id}/relationships/{relationship_name}`
 
 Update semantic relationship for a semantic model
 
@@ -452,8 +452,8 @@ Update semantic relationship for a semantic model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `relationshipName` | `string` | `true` | - |
-| `semanticModelId` | `string` | `true` | - |
+| `relationship_name` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -471,7 +471,7 @@ Update semantic relationship for a semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /semantic-models/{semanticModelId}/relationships/{relationshipName}`
+## `DELETE /semantic-models/{semantic_model_id}/relationships/{relationship_name}`
 
 Delete semantic relationship for a semantic model
 
@@ -481,8 +481,8 @@ Delete semantic relationship for a semantic model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `relationshipName` | `string` | `true` | - |
-| `semanticModelId` | `string` | `true` | - |
+| `relationship_name` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
 
 ### Responses
 

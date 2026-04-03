@@ -4,7 +4,7 @@
 
 Copies operations within the Notebooks API group.
 
-## `POST /notebooks/{notebookId}/copies`
+## `POST /notebooks/{notebook_id}/copies`
 
 Duplicate notebook
 
@@ -14,7 +14,7 @@ Duplicate notebook
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Request Body
 

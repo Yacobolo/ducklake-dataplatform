@@ -28,7 +28,7 @@ List product teams
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /product-domains/{domainName}/teams`
+## `POST /product-domains/{domain_name}/teams`
 
 Create product team
 
@@ -38,7 +38,7 @@ Create product team
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domainName` | `string` | `true` | - |
+| `domain_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -57,7 +57,7 @@ Create product team
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /product-domains/{domainName}/teams/{teamName}`
+## `GET /product-domains/{domain_name}/teams/{team_name}`
 
 Get product team
 
@@ -67,8 +67,8 @@ Get product team
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domainName` | `string` | `true` | - |
-| `teamName` | `string` | `true` | - |
+| `domain_name` | `string` | `true` | - |
+| `team_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -82,7 +82,7 @@ Get product team
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /product-domains/{domainName}/teams/{teamName}`
+## `PATCH /product-domains/{domain_name}/teams/{team_name}`
 
 Update product team
 
@@ -92,8 +92,8 @@ Update product team
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domainName` | `string` | `true` | - |
-| `teamName` | `string` | `true` | - |
+| `domain_name` | `string` | `true` | - |
+| `team_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -112,7 +112,7 @@ Update product team
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /product-domains/{domainName}/teams/{teamName}`
+## `DELETE /product-domains/{domain_name}/teams/{team_name}`
 
 Delete product team
 
@@ -122,8 +122,8 @@ Delete product team
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domainName` | `string` | `true` | - |
-| `teamName` | `string` | `true` | - |
+| `domain_name` | `string` | `true` | - |
+| `team_name` | `string` | `true` | - |
 
 ### Responses
 

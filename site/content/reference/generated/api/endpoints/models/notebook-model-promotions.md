@@ -26,7 +26,7 @@ Promote notebook to model
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /notebook-model-promotions/{notebookId}`
+## `DELETE /notebook-model-promotions/{notebook_id}`
 
 Unpublish notebook model
 
@@ -36,7 +36,7 @@ Unpublish notebook model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Responses
 
