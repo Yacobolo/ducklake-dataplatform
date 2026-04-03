@@ -432,6 +432,224 @@ func TestService_ResolveWidgetsForDashboardPaged_TablePagesSemanticResults(t *te
 	assert.True(t, containsSQLFragment(queryExec.sqls, "dashboard_widget_count"))
 }
 
+func TestService_BuildDashboardPageState_ScopesPageAndPreservesOriginFilters(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, semanticSvc, queryExec := setupDashboardService(t)
+	ctx := context.Background()
+	queryExec.result = &query.QueryResult{
+		Columns:  []string{"region", "sales_owner", "revenue"},
+		Rows:     [][]interface{}{{"APAC", "Taylor", 42}},
+		RowCount: 1,
+	}
+
+	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.sales",
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID:    "ignored",
+		Name:               "revenue",
+		MetricType:         domain.MetricTypeSum,
+		ExpressionMode:     domain.MetricExpressionModeSQL,
+		Expression:         "SUM(revenue)",
+		CertificationState: domain.CertificationCertified,
+	})
+	require.NoError(t, err)
+
+	pieChart := domain.VisualChartDoughnut
+	barChart := domain.VisualChartBar
+	state, err := svc.BuildDashboardPageState(ctx, "alice", &domain.Dashboard{
+		ID:                  "dash-1",
+		Name:                "Revenue Dashboard",
+		Owner:               "alice",
+		SemanticProjectName: "analytics",
+		SemanticModelName:   "sales",
+	}, []domain.DashboardWidget{
+		{
+			ID:       "widget-overview",
+			PageName: "Overview",
+			Name:     "Overview Revenue",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"revenue"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind: domain.VisualOutputMetric,
+				Encodings: domain.VisualEncodings{
+					Value: &domain.VisualFieldBinding{Field: "revenue"},
+				},
+			},
+		},
+		{
+			ID:       "widget-pie",
+			PageName: "Geography",
+			Name:     "Revenue by Region",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"revenue"},
+					Dimensions:        []string{"region"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind:      domain.VisualOutputChart,
+				ChartType: &pieChart,
+				Encodings: domain.VisualEncodings{
+					Label: &domain.VisualFieldBinding{Field: "region"},
+					Value: &domain.VisualFieldBinding{Field: "revenue"},
+				},
+			},
+		},
+		{
+			ID:       "widget-bar",
+			PageName: "Geography",
+			Name:     "Revenue by Owner",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"revenue"},
+					Dimensions:        []string{"sales_owner"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind:      domain.VisualOutputChart,
+				ChartType: &barChart,
+				Encodings: domain.VisualEncodings{
+					X: &domain.VisualFieldBinding{Field: "sales_owner"},
+					Y: &domain.VisualFieldBinding{Field: "revenue"},
+				},
+			},
+		},
+	}, "Geography", []InteractiveFilter{
+		{WidgetID: "widget-pie", Dimension: "region", Values: []string{"APAC"}},
+	}, nil)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Equal(t, "Geography", state.PageName)
+	require.Len(t, state.Widgets, 2)
+	assert.Equal(t, []string{"APAC"}, state.ActiveFilters[0].Values)
+	require.NotNil(t, state.Widgets[0].Interaction)
+	require.NotNil(t, state.Widgets[1].Interaction)
+	assert.Equal(t, []string{"APAC"}, state.Widgets[0].Interaction.OriginFilters["region"])
+	assert.Nil(t, state.Widgets[1].Interaction.OriginFilters)
+	require.Len(t, queryExec.sqls, 2)
+	assert.NotContains(t, queryExec.sqls[0], "region = 'APAC'")
+	assert.Contains(t, queryExec.sqls[1], "region = 'APAC'")
+}
+
+func TestService_BuildDashboardPageState_AppliesTablePageRequests(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, semanticSvc, queryExec := setupDashboardService(t)
+	ctx := context.Background()
+
+	rows := make([][]interface{}, 0, 101)
+	for index := 0; index < 101; index += 1 {
+		rows = append(rows, []interface{}{fmt.Sprintf("zone-%03d", index), float64(index)})
+	}
+	queryExec.result = &query.QueryResult{
+		Columns:  []string{"pickup_zone", "gross_revenue"},
+		Rows:     rows,
+		RowCount: len(rows),
+	}
+	queryExec.resultsByContain = map[string]*query.QueryResult{
+		"dashboard_widget_count": {
+			Columns:  []string{"row_count"},
+			Rows:     [][]interface{}{{101}},
+			RowCount: 1,
+		},
+	}
+
+	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.sales",
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "ignored",
+		Name:            "gross_revenue",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(amount)",
+	})
+	require.NoError(t, err)
+
+	state, err := svc.BuildDashboardPageState(ctx, "alice", &domain.Dashboard{
+		ID:                  "dash-1",
+		Name:                "Revenue Dashboard",
+		Owner:               "alice",
+		SemanticProjectName: "analytics",
+		SemanticModelName:   "sales",
+	}, []domain.DashboardWidget{
+		{
+			ID:       "widget-overview",
+			PageName: "Overview",
+			Name:     "Overview Revenue",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"gross_revenue"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind: domain.VisualOutputMetric,
+				Encodings: domain.VisualEncodings{
+					Value: &domain.VisualFieldBinding{Field: "gross_revenue"},
+				},
+			},
+		},
+		{
+			ID:       "widget-table",
+			PageName: "Geography",
+			Name:     "Zone Revenue Detail",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"gross_revenue"},
+					Dimensions:        []string{"pickup_zone"},
+					OrderBy:           []string{"gross_revenue DESC"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{Kind: domain.VisualOutputTable},
+		},
+	}, "Geography", nil, map[string]TablePageRequest{
+		"widget-table": {
+			Offset:        100,
+			Limit:         100,
+			Append:        true,
+			SortColumn:    "pickup_zone",
+			SortDirection: "desc",
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	require.Len(t, state.Widgets, 1)
+	require.NotNil(t, state.Widgets[0].Page)
+	assert.True(t, state.Widgets[0].Page.Append)
+	assert.Equal(t, 100, state.Widgets[0].Page.Offset)
+	assert.True(t, state.Widgets[0].Page.HasMore)
+	require.NotNil(t, state.Widgets[0].Sort)
+	assert.Equal(t, "pickup_zone", state.Widgets[0].Sort.Column)
+	assert.Equal(t, "desc", state.Widgets[0].Sort.Direction)
+	assert.Len(t, state.Widgets[0].Rows, 100)
+}
+
 func TestService_ResolveWidgetForDashboardPage_SortsSQLTablePageBeforeSlice(t *testing.T) {
 	t.Parallel()
 

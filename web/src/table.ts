@@ -296,6 +296,7 @@ class DuckTable extends LitElement {
   private scrollOffset = 0;
   private viewportHeight = 0;
   private resizeObserver: ResizeObserver | null = null;
+  private dispatchedPageRequests = new Set<string>();
 
   disconnectedCallback(): void {
     this.stopResize();
@@ -329,6 +330,7 @@ class DuckTable extends LitElement {
       this.sparseRows = emptyStore.rows;
       this.loadedChunkOffsets = emptyStore.loadedChunkOffsets;
       this.pendingChunkOffsets = emptyStore.pendingChunkOffsets;
+      this.dispatchedPageRequests.clear();
       this.requestUpdate();
       return;
     }
@@ -585,9 +587,10 @@ class DuckTable extends LitElement {
       return false;
     }
 
+    const originFilters = payload.interaction?.origin_filters ?? {};
     let hasRelevantFilter = false;
     for (const binding of bindings) {
-      const activeValues = payload.interaction?.active_filters?.[binding.dimension] ?? [];
+      const activeValues = originFilters[binding.dimension] ?? [];
       if (activeValues.length === 0) {
         continue;
       }
@@ -669,6 +672,7 @@ class DuckTable extends LitElement {
     this.sparseRows = new Array(Math.max(0, totalRows)).fill(null);
     this.loadedChunkOffsets = emptyStore.loadedChunkOffsets;
     this.pendingChunkOffsets = emptyStore.pendingChunkOffsets;
+    this.dispatchedPageRequests.clear();
   }
 
   private scrollToTop(): void {
@@ -681,17 +685,51 @@ class DuckTable extends LitElement {
   }
 
   private requestTopPage(append: boolean): void {
+    this.dispatchPageRequest({
+      widgetId: this.widgetId,
+      offset: 0,
+      limit: dashboardTablePageSize,
+      append,
+      sortColumn: this.sortColumn,
+      sortDirection: this.sortColumn ? this.sortDirection : null,
+    });
+  }
+
+  private pageRequestKey(detail: {
+    widgetId: string;
+    offset: number;
+    limit: number;
+    append: boolean;
+    sortColumn?: string | null;
+    sortDirection?: "asc" | "desc" | null;
+  }): string {
+    return [
+      detail.widgetId,
+      String(detail.offset),
+      String(detail.limit),
+      detail.append ? "append" : "replace",
+      detail.sortColumn ?? "",
+      detail.sortDirection ?? "",
+    ].join("|");
+  }
+
+  private dispatchPageRequest(detail: {
+    widgetId: string;
+    offset: number;
+    limit: number;
+    append: boolean;
+    sortColumn?: string | null;
+    sortDirection?: "asc" | "desc" | null;
+  }): void {
+    const key = this.pageRequestKey(detail);
+    if (this.dispatchedPageRequests.has(key)) {
+      return;
+    }
+    this.dispatchedPageRequests.add(key);
     this.dispatchEvent(new CustomEvent("dashboard-table-page-request", {
       bubbles: true,
       composed: true,
-      detail: {
-        widgetId: this.widgetId,
-        offset: 0,
-        limit: dashboardTablePageSize,
-        append,
-        sortColumn: this.sortColumn,
-        sortDirection: this.sortColumn ? this.sortDirection : null,
-      },
+      detail,
     }));
   }
 
@@ -807,18 +845,14 @@ class DuckTable extends LitElement {
     );
     for (const offset of offsets) {
       this.pendingChunkOffsets.add(offset);
-      this.dispatchEvent(new CustomEvent("dashboard-table-page-request", {
-        bubbles: true,
-        composed: true,
-        detail: {
-          widgetId: this.widgetId,
-          offset,
-          limit: dashboardTablePageSize,
-          append: true,
-          sortColumn: this.sortColumn,
-          sortDirection: this.sortColumn ? this.sortDirection : null,
-        },
-      }));
+      this.dispatchPageRequest({
+        widgetId: this.widgetId,
+        offset,
+        limit: dashboardTablePageSize,
+        append: true,
+        sortColumn: this.sortColumn,
+        sortDirection: this.sortColumn ? this.sortDirection : null,
+      });
     }
   }
 

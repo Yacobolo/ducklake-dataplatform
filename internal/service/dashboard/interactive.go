@@ -30,6 +30,7 @@ type ResolvedWidgetInteraction struct {
 	DisabledReason string                           `json:"disabled_reason,omitempty"`
 	Bindings       []ResolvedWidgetInteractionField `json:"bindings,omitempty"`
 	ActiveFilters  map[string][]string              `json:"active_filters,omitempty"`
+	OriginFilters  map[string][]string              `json:"origin_filters,omitempty"`
 }
 
 // ResolvedWidgetInteractionField maps a clickable widget field to a dashboard filter dimension key.
@@ -137,6 +138,7 @@ func buildResolvedWidgetInteraction(widget domain.DashboardWidget, interactionCt
 		CanInitiate:   canInitiate,
 		Bindings:      bindings,
 		ActiveFilters: interactionCtx.ActiveFilterMap,
+		OriginFilters: widgetOriginFilterMap(widget, interactionCtx.ActiveFilters),
 	}
 }
 
@@ -344,6 +346,22 @@ func interactiveFilterMap(filters []InteractiveFilter) map[string][]string {
 		}
 	}
 	return out
+}
+
+func widgetOriginFilterMap(widget domain.DashboardWidget, filters []InteractiveFilter) map[string][]string {
+	widgetID := strings.TrimSpace(widget.ID)
+	if widgetID == "" || len(filters) == 0 {
+		return nil
+	}
+
+	ownFilters := make([]InteractiveFilter, 0, len(filters))
+	for _, filter := range filters {
+		if strings.TrimSpace(filter.WidgetID) != widgetID {
+			continue
+		}
+		ownFilters = append(ownFilters, filter)
+	}
+	return interactiveFilterMap(ownFilters)
 }
 
 func buildDashboardFilterClauses(filters []InteractiveFilter, specs map[string]interactiveFilterSpec) []string {

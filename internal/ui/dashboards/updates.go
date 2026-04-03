@@ -24,6 +24,8 @@ func newDashboardUpdateHub() *dashboardUpdateHub {
 
 type dashboardUpdateMessage struct {
 	FilterKey string
+	Version   string
+	RawOriginFilters []string
 	Filters   []dashboardsvc.InteractiveFilter
 	TablePage *dashboardTablePageRequest
 }
@@ -36,6 +38,7 @@ type dashboardTablePageRequest struct {
 	SortColumn       string
 	SortDirection    string
 	FilterKey        string
+	Version          string
 	RawOriginFilters []string
 	Filters          []dashboardsvc.InteractiveFilter
 }
@@ -66,7 +69,7 @@ func (h *dashboardUpdateHub) subscribe(streamID string) (<-chan dashboardUpdateM
 	}
 }
 
-func (h *dashboardUpdateHub) publishFilters(streamID, filterKey string, filters []dashboardsvc.InteractiveFilter) {
+func (h *dashboardUpdateHub) publishFilters(streamID, filterKey, version string, rawOriginFilters []string, filters []dashboardsvc.InteractiveFilter) {
 	h.mu.Lock()
 	subscribers := h.streams[streamID]
 	channels := make([]chan dashboardUpdateMessage, 0, len(subscribers))
@@ -77,7 +80,12 @@ func (h *dashboardUpdateHub) publishFilters(streamID, filterKey string, filters 
 
 	for _, ch := range channels {
 		select {
-		case ch <- dashboardUpdateMessage{FilterKey: filterKey, Filters: cloneInteractiveFilters(filters)}:
+		case ch <- dashboardUpdateMessage{
+			FilterKey:        filterKey,
+			Version:          version,
+			RawOriginFilters: append([]string(nil), rawOriginFilters...),
+			Filters:          cloneInteractiveFilters(filters),
+		}:
 		default:
 		}
 	}
@@ -104,6 +112,7 @@ func (h *dashboardUpdateHub) publishTablePage(streamID string, req dashboardTabl
 				SortColumn:       req.SortColumn,
 				SortDirection:    req.SortDirection,
 				FilterKey:        req.FilterKey,
+				Version:          req.Version,
 				RawOriginFilters: append([]string(nil), req.RawOriginFilters...),
 				Filters:          cloneInteractiveFilters(req.Filters),
 			},
@@ -116,12 +125,14 @@ func (h *dashboardUpdateHub) publishTablePage(streamID string, req dashboardTabl
 type dashboardUpdateRequest struct {
 	CSRFToken     string     `json:"csrfToken"`
 	OriginFilters []string   `json:"originFilters"`
+	Version       string     `json:"version"`
 	URLParams     filterData `json:"urlParams"`
 }
 
 type dashboardTablePageUpdateRequest struct {
 	CSRFToken     string     `json:"csrfToken"`
 	OriginFilters []string   `json:"originFilters"`
+	Version       string     `json:"version"`
 	URLParams     filterData `json:"urlParams"`
 	WidgetID      string     `json:"widgetId"`
 	Offset        int        `json:"offset"`
@@ -135,17 +146,17 @@ type filterData struct {
 	OriginFilters []string `json:"fo"`
 }
 
-func decodeDashboardUpdateRequest(r *http.Request) ([]string, error) {
+func decodeDashboardUpdateRequest(r *http.Request) ([]string, string, error) {
 	var payload dashboardUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	rawOriginFilters := payload.OriginFilters
 	if len(rawOriginFilters) == 0 {
 		rawOriginFilters = payload.URLParams.OriginFilters
 	}
-	return sanitizeOriginFilterRaw(rawOriginFilters), nil
+	return sanitizeOriginFilterRaw(rawOriginFilters), strings.TrimSpace(payload.Version), nil
 }
 
 func decodeDashboardTablePageRequest(r *http.Request) (*dashboardTablePageRequest, error) {
@@ -177,6 +188,7 @@ func decodeDashboardTablePageRequest(r *http.Request) (*dashboardTablePageReques
 		Append:           payload.Append,
 		SortColumn:       strings.TrimSpace(payload.SortColumn),
 		SortDirection:    strings.ToLower(strings.TrimSpace(payload.SortDirection)),
+		Version:          strings.TrimSpace(payload.Version),
 		RawOriginFilters: sanitizeOriginFilterRaw(rawOriginFilters),
 	}, nil
 }

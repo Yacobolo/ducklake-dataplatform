@@ -71,6 +71,12 @@ class DuckChart extends LitElement {
   widgetOriginKey = "";
   private chart: echarts.ECharts | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private frameListener: ((event: PointerEvent) => void) | null = null;
+  private frameElement: HTMLElement | null = null;
+  private lastSelectionDispatchAt = 0;
+  private lastSelectionDispatchKey = "";
+  private nativeFallbackTimer: number | null = null;
+  private lastChartClickAt = 0;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -80,6 +86,8 @@ class DuckChart extends LitElement {
   }
 
   disconnectedCallback(): void {
+    this.clearNativeFallbackTimer();
+    this.detachFrameListener();
     this.resizeObserver?.disconnect();
     this.chart?.dispose();
     this.chart = null;
@@ -90,11 +98,18 @@ class DuckChart extends LitElement {
     const frame = this.renderRoot.querySelector<HTMLElement>(".frame");
     if (frame) {
       this.resizeObserver?.observe(frame);
+      this.attachFrameListener(frame);
     }
     this.renderChart();
   }
 
   updated(): void {
+    const frame = this.renderRoot.querySelector<HTMLElement>(".frame");
+    if (frame) {
+      this.attachFrameListener(frame);
+    } else {
+      this.detachFrameListener();
+    }
     this.renderChart();
   }
 
@@ -116,8 +131,11 @@ class DuckChart extends LitElement {
   }
 
   private parsePayload(): ChartPayload | null {
+    if (!this.payloadJSON) {
+      return null;
+    }
     try {
-      return JSON.parse(this.payloadJSON || "{}") as ChartPayload;
+      return JSON.parse(this.payloadJSON) as ChartPayload;
     } catch {
       return null;
     }
@@ -143,6 +161,8 @@ class DuckChart extends LitElement {
   }
 
   private handleChartClick(params: unknown): void {
+    this.lastChartClickAt = Date.now();
+    this.clearNativeFallbackTimer();
     const payload = this.parsePayload();
     if (!payload?.interaction?.can_initiate) {
       return;
@@ -153,13 +173,93 @@ class DuckChart extends LitElement {
       return;
     }
 
+    this.dispatchSelections(selections);
+  }
+
+  private handleNativeClick(event: PointerEvent): void {
+    const clientX = event.clientX;
+    const clientY = event.clientY;
+    this.clearNativeFallbackTimer();
+    this.nativeFallbackTimer = window.setTimeout(() => {
+      this.nativeFallbackTimer = null;
+      if (Date.now() - this.lastChartClickAt < 64) {
+        return;
+      }
+      if (Date.now() - this.lastSelectionDispatchAt < 32) {
+        return;
+      }
+      const payload = this.parsePayload();
+      const frame = this.frameElement;
+      if (!payload?.interaction?.can_initiate || !this.chart || !frame) {
+        return;
+      }
+
+      const rect = frame.getBoundingClientRect();
+      const localX = clientX - rect.left;
+      const localY = clientY - rect.top;
+      const hover = this.chart.getZr()?.handler?.findHover?.(localX, localY);
+      const fallbackParams = extractSelectionsFromNativeClick(this.widgetOriginKey, payload, hover?.target as NativeChartTarget | undefined);
+      if (fallbackParams.length === 0) {
+        return;
+      }
+
+      this.dispatchSelections(fallbackParams);
+    }, 24);
+  }
+
+  private dispatchSelections(selections: WidgetFilterSelection[]): void {
+    const dispatchKey = selections
+      .map((selection) => `${selection.widgetKey}|${selection.dimension}:${selection.value}`)
+      .sort((left, right) => left.localeCompare(right))
+      .join("||");
+    const now = Date.now();
+    if (dispatchKey && this.lastSelectionDispatchKey === dispatchKey && now - this.lastSelectionDispatchAt < 400) {
+      return;
+    }
+    this.lastSelectionDispatchKey = dispatchKey;
+    this.lastSelectionDispatchAt = Date.now();
     this.dispatchEvent(new CustomEvent<DashboardFilterEventDetail>("dashboard-filter-select", {
       bubbles: true,
       composed: true,
       detail: { selections },
     }));
   }
+
+  private attachFrameListener(frame: HTMLElement): void {
+    if (this.frameElement === frame) {
+      return;
+    }
+    this.detachFrameListener();
+    this.frameElement = frame;
+    this.frameListener = (event: PointerEvent) => {
+      this.handleNativeClick(event);
+    };
+    frame.addEventListener("pointerup", this.frameListener, true);
+  }
+
+  private detachFrameListener(): void {
+    if (this.frameElement && this.frameListener) {
+      this.frameElement.removeEventListener("pointerup", this.frameListener, true);
+    }
+    this.frameElement = null;
+    this.frameListener = null;
+  }
+
+  private clearNativeFallbackTimer(): void {
+    if (this.nativeFallbackTimer !== null) {
+      window.clearTimeout(this.nativeFallbackTimer);
+      this.nativeFallbackTimer = null;
+    }
+  }
 }
+
+type NativeChartTarget = {
+  __dataIndex?: number;
+  [key: `__ec_inner_${string}`]: {
+    dataIndex?: number;
+    seriesIndex?: number;
+  } | undefined;
+};
 
 function buildOption(payload: ChartPayload): echarts.EChartsCoreOption {
   const visual = payload.visual!;
@@ -362,6 +462,59 @@ function extractSelectionsFromClick(widgetKey: string, payload: ChartPayload, pa
   }
 
   return selections;
+}
+
+function extractSelectionsFromNativeClick(widgetKey: string, payload: ChartPayload, target?: NativeChartTarget): WidgetFilterSelection[] {
+  if (!target) {
+    return [];
+  }
+
+  const ecInner = Object.entries(target).find(([key]) => key.startsWith("__ec_inner_"))?.[1];
+  const dataIndex = typeof ecInner?.dataIndex === "number"
+    ? ecInner.dataIndex
+    : typeof target.__dataIndex === "number"
+      ? target.__dataIndex
+      : -1;
+  const seriesIndex = typeof ecInner?.seriesIndex === "number" ? ecInner.seriesIndex : 0;
+  if (dataIndex < 0) {
+    return [];
+  }
+
+  const visual = payload.visual;
+  if (!visual || visual.kind !== "chart") {
+    return [];
+  }
+
+  switch (visual.chart_type) {
+    case "pie":
+    case "doughnut": {
+      const labelField = visual.encodings?.label?.field;
+      const row = payload.rows[dataIndex];
+      const labelValue = row ? fieldValueFromPayload(payload, row, labelField, 0) : null;
+      return extractSelectionsFromClick(widgetKey, payload, { name: labelValue });
+    }
+    default: {
+      const xField = visual.encodings?.x?.field;
+      const seriesField = visual.encodings?.series?.field;
+      const xLabels = Array.from(new Set(payload.rows.map((row) => String(fieldValueFromPayload(payload, row, xField, 0) ?? ""))));
+      const seriesNames = Array.from(new Set(payload.rows.map((row) => String(fieldValueFromPayload(payload, row, seriesField, 1) ?? visual.encodings?.y?.field ?? "value"))));
+      return extractSelectionsFromClick(widgetKey, payload, {
+        name: xLabels[dataIndex] ?? null,
+        seriesName: seriesNames[seriesIndex] ?? null,
+      });
+    }
+  }
+}
+
+function fieldValueFromPayload(payload: ChartPayload, row: unknown[], field: string | undefined, fallbackIndex: number): unknown {
+  if (!field) {
+    return row[fallbackIndex] ?? null;
+  }
+  const index = payload.columns.indexOf(field);
+  if (index < 0) {
+    return row[fallbackIndex] ?? null;
+  }
+  return row[index] ?? null;
 }
 
 function shouldDimPoint(payload: ChartPayload, values: PointSelectionContext): boolean {

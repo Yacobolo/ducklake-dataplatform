@@ -78,6 +78,13 @@ type ResolvedWidgetSort struct {
 	Direction string `json:"direction"`
 }
 
+type DashboardPageState struct {
+	Dashboard     *domain.Dashboard
+	PageName      string
+	Widgets       []ResolvedWidget
+	ActiveFilters []InteractiveFilter
+}
+
 type TablePageRequest struct {
 	Offset        int
 	Limit         int
@@ -334,6 +341,26 @@ func (s *Service) ResolveWidgets(ctx context.Context, principal string, widgets 
 // ResolveWidget resolves a single widget to tabular data.
 func (s *Service) ResolveWidget(ctx context.Context, principal string, widget domain.DashboardWidget) (*ResolvedWidget, error) {
 	return s.resolveWidgetWithContext(ctx, principal, widget, nil)
+}
+
+func (s *Service) BuildDashboardPageState(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, pageName string, filters []InteractiveFilter, tablePages map[string]TablePageRequest) (*DashboardPageState, error) {
+	if dashboard == nil {
+		return nil, domain.ErrValidation("dashboard is required")
+	}
+
+	pageName = normalizeDashboardStatePageName(pageName)
+	pageWidgets := dashboardStateWidgetsForPage(widgets, pageName)
+	resolved, err := s.ResolveWidgetsForDashboardPaged(ctx, principal, dashboard, pageWidgets, filters, tablePages)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DashboardPageState{
+		Dashboard:     dashboard,
+		PageName:      pageName,
+		Widgets:       resolved,
+		ActiveFilters: cloneDashboardInteractiveFilters(filters),
+	}, nil
 }
 
 func (s *Service) ResolveWidgetsForDashboardPaged(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []InteractiveFilter, tablePages map[string]TablePageRequest) ([]ResolvedWidget, error) {
@@ -727,6 +754,41 @@ func countValue(value interface{}) (int, error) {
 	default:
 		return 0, fmt.Errorf("count widget rows: unsupported count type %T", value)
 	}
+}
+
+func normalizeDashboardStatePageName(pageName string) string {
+	pageName = domain.NormalizeDashboardPageName(pageName)
+	if pageName == "" {
+		return domain.DefaultDashboardPageName
+	}
+	return pageName
+}
+
+func dashboardStateWidgetsForPage(widgets []domain.DashboardWidget, pageName string) []domain.DashboardWidget {
+	pageName = normalizeDashboardStatePageName(pageName)
+	filtered := make([]domain.DashboardWidget, 0, len(widgets))
+	for _, widget := range widgets {
+		if domain.NormalizeDashboardPageName(widget.PageName) == pageName {
+			filtered = append(filtered, widget)
+		}
+	}
+	return filtered
+}
+
+func cloneDashboardInteractiveFilters(filters []InteractiveFilter) []InteractiveFilter {
+	if len(filters) == 0 {
+		return nil
+	}
+
+	out := make([]InteractiveFilter, 0, len(filters))
+	for _, filter := range filters {
+		out = append(out, InteractiveFilter{
+			WidgetID:  filter.WidgetID,
+			Dimension: filter.Dimension,
+			Values:    append([]string(nil), filter.Values...),
+		})
+	}
+	return out
 }
 
 type cachedCellResult struct {

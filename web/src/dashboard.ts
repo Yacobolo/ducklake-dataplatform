@@ -1,7 +1,8 @@
 import "./chart";
+import "./metric";
 import "./table";
 
-import type { DashboardWidgetPayload, DashboardWidgetPayloadEnvelope } from "./dashboard-widget-payload";
+import type { DashboardWidgetPayload, DashboardWidgetStreamEvent } from "./dashboard-widget-payload";
 
 type WidgetFilterSelection = {
   widgetKey: string;
@@ -32,23 +33,31 @@ type OriginFilter = {
   value: string;
 };
 
+type DashboardPayloadBus = Record<string, DashboardWidgetStreamEvent>;
+
 class DashboardSurfaceController {
-  private dataStream: EventSource | null = null;
-  private dataStreamURL = "";
-  private pendingFilterKey: string | null = null;
+  private activeVersion = "";
+  private pendingVersion: string | null = null;
   private pendingShell = false;
-  private pendingData = false;
+  private pendingShellRevision = 0;
+  private pendingWidgetIDs = new Set<string>();
+  private surfaceRevision = 0;
+  private lastFilterEventKey = "";
+  private lastFilterEventAt = 0;
   private readonly mutationObserver: MutationObserver;
 
   constructor() {
-    this.mutationObserver = new MutationObserver(() => {
+    this.mutationObserver = new MutationObserver((mutations) => {
+      if (mutations.some((mutation) => mutation.target instanceof Node && mutation.target.parentElement?.closest("#dashboard-view-root"))) {
+        this.surfaceRevision += 1;
+      }
       this.completePendingShellIfReady();
     });
 
     document.documentElement.setAttribute("data-dashboard-loading", "false");
     this.bindEvents();
     this.observeSurface();
-    this.connectDataStream();
+    this.primeInitialSurface();
   }
 
   private bindEvents(): void {
@@ -58,6 +67,13 @@ class DashboardSurfaceController {
     document.addEventListener("dashboard-table-page-request", (event) => {
       void this.handleTablePageRequest(event as CustomEvent<DashboardTablePageEventDetail>);
     });
+    window.addEventListener("dashboard-widget-payload", (event) => {
+      this.handleWidgetPayload(event as CustomEvent<DashboardWidgetStreamEvent>);
+    });
+
+    document.addEventListener("click", (event) => {
+      this.handlePageNavigation(event);
+    }, true);
 
     document.addEventListener("click", (event) => {
       void this.handleClick(event);
@@ -69,9 +85,9 @@ class DashboardSurfaceController {
   }
 
   private async handleTablePageRequest(event: CustomEvent<DashboardTablePageEventDetail>): Promise<void> {
-    const surface = this.getSurface();
-    const tablePageURL = surface?.dataset.dashboardTablePageUrl;
-    if (!surface || !tablePageURL) {
+    const root = this.getRoot();
+    const tablePageURL = root?.dataset.dashboardTablePageUrl;
+    if (!root || !tablePageURL) {
       return;
     }
 
@@ -82,8 +98,9 @@ class DashboardSurfaceController {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        csrfToken: this.readCSRFToken(surface),
+        csrfToken: this.readCSRFToken(root),
         originFilters: this.serializeOriginFilters(this.readOriginFiltersFromURL(window.location.href)),
+        version: this.activeVersion,
         widgetId: event.detail.widgetId,
         offset: event.detail.offset,
         limit: event.detail.limit,
@@ -96,17 +113,24 @@ class DashboardSurfaceController {
   }
 
   private async handleWidgetFilter(event: CustomEvent<DashboardFilterEventDetail>): Promise<void> {
-    const surface = this.getSurface();
-    if (!surface) {
+    const root = this.getRoot();
+    if (!root) {
       return;
     }
+    const eventKey = this.selectionEventKey(event.detail.selections);
+    const now = Date.now();
+    if (eventKey && this.lastFilterEventKey === eventKey && now - this.lastFilterEventAt < 400) {
+      return;
+    }
+    this.lastFilterEventKey = eventKey;
+    this.lastFilterEventAt = now;
 
     const nextFilters = this.readOriginFiltersFromURL(window.location.href);
     for (const selection of event.detail.selections) {
       this.toggleFilter(nextFilters, selection.widgetKey, selection.dimension, selection.value);
     }
 
-    await this.applyFilters(surface, nextFilters, true);
+    await this.applyFilters(root, nextFilters, true);
   }
 
   private async handleClick(event: Event): Promise<void> {
@@ -115,15 +139,15 @@ class DashboardSurfaceController {
       return;
     }
 
-    const surface = this.getSurface();
-    if (!surface) {
+    const root = this.getRoot();
+    if (!root) {
       return;
     }
 
     const nextFilters = this.readOriginFiltersFromURL(window.location.href);
     if (target.hasAttribute("data-dashboard-clear-filters")) {
       nextFilters.length = 0;
-      await this.applyFilters(surface, nextFilters, true);
+      await this.applyFilters(root, nextFilters, true);
       return;
     }
 
@@ -134,21 +158,56 @@ class DashboardSurfaceController {
     }
 
     this.removeFilter(nextFilters, dimension, value);
-    await this.applyFilters(surface, nextFilters, true);
+    await this.applyFilters(root, nextFilters, true);
+  }
+
+  private handlePageNavigation(event: Event): void {
+    const target = event.target instanceof HTMLElement ? event.target.closest<HTMLAnchorElement>("[data-dashboard-page-link]") : null;
+    if (!target) {
+      return;
+    }
+
+    const mouseEvent = event as MouseEvent;
+    if (mouseEvent.defaultPrevented || mouseEvent.button !== 0 || mouseEvent.metaKey || mouseEvent.ctrlKey || mouseEvent.shiftKey || mouseEvent.altKey) {
+      return;
+    }
+
+    const href = target.href;
+    if (!href) {
+      return;
+    }
+
+    event.preventDefault();
+    window.location.assign(href);
   }
 
   private async applyFiltersFromLocation(pushState: boolean): Promise<void> {
-    const surface = this.getSurface();
-    if (!surface) {
+    const root = this.getRoot();
+    if (!root) {
       return;
     }
 
     const filters = this.readOriginFiltersFromURL(window.location.href);
-    await this.applyFilters(surface, filters, pushState);
+    await this.applyFilters(root, filters, pushState);
   }
 
-  private getSurface(): HTMLElement | null {
-    return document.querySelector<HTMLElement>("#dashboard-view-surface[data-dashboard-surface='true']");
+  private primeInitialSurface(): void {
+    const root = this.getRoot();
+    if (!root) {
+      return;
+    }
+    this.activeVersion = this.rootVersion(root);
+    this.pendingVersion = this.activeVersion || null;
+    this.pendingShell = false;
+    this.prepareWidgetsForCurrentVersion(root);
+    this.drainStoredPayloads(root);
+    if (this.pendingWidgetIDs.size > 0) {
+      document.documentElement.setAttribute("data-dashboard-loading", "true");
+    }
+  }
+
+  private getRoot(): HTMLElement | null {
+    return document.querySelector<HTMLElement>("#dashboard-view-root[data-dashboard-surface='true']");
   }
 
   private readOriginFiltersFromURL(rawURL: string): OriginFilter[] {
@@ -190,13 +249,6 @@ class DashboardSurfaceController {
       .map((filter) => `${filter.widgetKey}|${filter.dimension}:${filter.value}`);
   }
 
-  private buildFilterKey(filters: OriginFilter[]): string {
-    return [...filters]
-      .map((filter) => this.originFilterKey(filter))
-      .sort((left, right) => left.localeCompare(right))
-      .join("|");
-  }
-
   private originFilterKey(filter: OriginFilter): string {
     return `${filter.widgetKey.trim()}|${filter.dimension.trim()}:${filter.value.trim()}`;
   }
@@ -232,11 +284,13 @@ class DashboardSurfaceController {
     }
   }
 
-  private buildViewURL(surface: HTMLElement, filters: OriginFilter[]): URL {
+  private buildViewURL(root: HTMLElement, filters: OriginFilter[]): URL {
     const nextURL = new URL(window.location.href);
-    const viewPath = surface.dataset.dashboardViewUrl;
+    const viewPath = root.dataset.dashboardViewUrl;
     if (viewPath) {
-      nextURL.pathname = viewPath;
+      const resolvedViewURL = new URL(viewPath, window.location.origin);
+      nextURL.pathname = resolvedViewURL.pathname;
+      nextURL.search = resolvedViewURL.search;
     }
     nextURL.searchParams.delete("fo");
     for (const filter of this.serializeOriginFilters(filters)) {
@@ -245,18 +299,20 @@ class DashboardSurfaceController {
     return nextURL;
   }
 
-  private async applyFilters(surface: HTMLElement, filters: OriginFilter[], pushState: boolean): Promise<void> {
-    const applyURL = surface.dataset.dashboardApplyUrl;
+  private async applyFilters(root: HTMLElement, filters: OriginFilter[], pushState: boolean): Promise<void> {
+    const applyURL = root.dataset.dashboardApplyUrl;
     if (!applyURL) {
       return;
     }
 
-    const viewURL = this.buildViewURL(surface, filters);
+    const viewURL = this.buildViewURL(root, filters);
     if (pushState) {
       window.history.pushState({}, "", viewURL);
     }
 
-    this.startLoading(this.buildFilterKey(filters));
+    const nextVersion = this.nextVersion();
+    this.activeVersion = nextVersion;
+    this.startLoading(root, nextVersion);
 
     const response = await fetch(applyURL, {
       method: "POST",
@@ -265,8 +321,9 @@ class DashboardSurfaceController {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        csrfToken: this.readCSRFToken(surface),
+        csrfToken: this.readCSRFToken(root),
         originFilters: this.serializeOriginFilters(filters),
+        version: nextVersion,
       }),
     });
     if (!response.ok) {
@@ -275,55 +332,34 @@ class DashboardSurfaceController {
     }
   }
 
-  private connectDataStream(): void {
-    const surface = this.getSurface();
-    const nextURL = surface?.dataset.dashboardDataStreamUrl ?? "";
-    if (!nextURL || this.dataStreamURL === nextURL) {
+  private handleWidgetPayload(event: CustomEvent<DashboardWidgetStreamEvent>): void {
+    const root = this.getRoot();
+    if (!root) {
       return;
     }
-
-    this.dataStream?.close();
-    this.dataStreamURL = nextURL;
-    this.dataStream = new EventSource(nextURL);
-    this.dataStream.addEventListener("dashboard-widget-payloads", (event) => {
-      this.handleWidgetPayloads(event as MessageEvent<string>);
-    });
+    const detail = event.detail;
+    if (!detail || !detail.widget_id || !detail.version) {
+      return;
+    }
+    if (detail.version !== this.activeVersion) {
+      return;
+    }
+    if (this.pendingShell && this.pendingVersion === detail.version) {
+      return;
+    }
+    if (!this.applyWidgetPayload(root, detail)) {
+      return;
+    }
+    delete this.widgetPayloadBus()[this.payloadBusKey(detail)];
   }
 
-  private handleWidgetPayloads(event: MessageEvent<string>): void {
-    const surface = this.getSurface();
-    if (!surface) {
-      return;
-    }
-
-    let payloads: DashboardWidgetPayloadEnvelope;
-    try {
-      payloads = JSON.parse(event.data) as DashboardWidgetPayloadEnvelope;
-    } catch {
-      return;
-    }
-
-    this.completePendingDataIfReady(payloads.filter_key ?? "");
-
-    const widgetPayloads = payloads.widgets ?? {};
-    const widgets = surface.querySelectorAll("duck-chart[data-widget-id], duck-table[data-widget-id]");
-    for (const widget of widgets) {
-      const element = widget as DuckWidgetElement;
-      const widgetID = element.dataset.widgetId ?? "";
-      if (!(widgetID in widgetPayloads)) {
-        continue;
-      }
-      element.setPayload(widgetPayloads[widgetID] ?? null);
-    }
-  }
-
-  private readCSRFToken(surface: HTMLElement): string {
-    const attrToken = surface.dataset.dashboardCsrfToken?.trim();
+  private readCSRFToken(root: HTMLElement): string {
+    const attrToken = root.dataset.dashboardCsrfToken?.trim();
     if (attrToken) {
       return attrToken;
     }
 
-    const input = surface.querySelector<HTMLInputElement>("input[name='csrf_token']") ?? document.querySelector<HTMLInputElement>("input[name='csrf_token']");
+    const input = root.querySelector<HTMLInputElement>("input[name='csrf_token']") ?? document.querySelector<HTMLInputElement>("input[name='csrf_token']");
     return input?.value?.trim() ?? "";
   }
 
@@ -332,16 +368,20 @@ class DashboardSurfaceController {
       subtree: true,
       childList: true,
       attributes: true,
-      attributeFilter: ["data-dashboard-filter-key"],
+      attributeFilter: ["data-dashboard-update-version", "data-dashboard-pending-widget-ids"],
     });
   }
 
-  private startLoading(filterKey: string): void {
-    this.pendingFilterKey = filterKey;
+  private startLoading(root: HTMLElement, version: string): void {
+    this.pendingVersion = version;
     this.pendingShell = true;
-    this.pendingData = true;
+    this.pendingShellRevision = this.surfaceRevision + 1;
+    this.pendingWidgetIDs = new Set(this.widgetIDs(root));
+    root.dataset.dashboardUpdateVersion = version;
+    root.dataset.dashboardPendingWidgetIds = Array.from(this.pendingWidgetIDs).join(",");
+    this.prepareWidgetsForCurrentVersion(root);
+    this.syncWidgetLoadingIndicators(root);
     document.documentElement.setAttribute("data-dashboard-loading", "true");
-    this.completePendingShellIfReady();
   }
 
   private completePendingShellIfReady(): void {
@@ -349,41 +389,151 @@ class DashboardSurfaceController {
       return;
     }
 
-    const currentKey = this.getSurface()?.dataset.dashboardFilterKey ?? "";
-    if (currentKey !== (this.pendingFilterKey ?? "")) {
+    const root = this.getRoot();
+    if (!root) {
+      return;
+    }
+    if (this.surfaceRevision < this.pendingShellRevision) {
       return;
     }
 
     this.pendingShell = false;
-    this.connectDataStream();
-    this.finishLoadingIfReady();
-  }
-
-  private completePendingDataIfReady(filterKey: string): void {
-    if (!this.pendingData) {
-      return;
-    }
-    if ((this.pendingFilterKey ?? "") !== filterKey) {
-      return;
-    }
-
-    this.pendingData = false;
+    this.prepareWidgetsForCurrentVersion(root);
+    this.syncWidgetLoadingIndicators(root);
+    this.drainStoredPayloads(root);
     this.finishLoadingIfReady();
   }
 
   private finishLoadingIfReady(): void {
-    if (this.pendingShell || this.pendingData) {
+    if (this.pendingShell || this.pendingWidgetIDs.size > 0) {
       return;
     }
     this.resetLoading();
   }
 
   private resetLoading(): void {
-    this.pendingFilterKey = null;
+    this.pendingVersion = null;
     this.pendingShell = false;
-    this.pendingData = false;
+    this.pendingShellRevision = 0;
+    this.pendingWidgetIDs.clear();
+    const root = this.getRoot();
+    if (root) {
+      root.dataset.dashboardPendingWidgetIds = "";
+      root.dataset.dashboardUpdateVersion = this.activeVersion;
+      this.syncWidgetLoadingIndicators(root);
+    }
     document.documentElement.setAttribute("data-dashboard-loading", "false");
+  }
+
+  private rootVersion(root: HTMLElement): string {
+    return root.dataset.dashboardUpdateVersion?.trim() ?? "";
+  }
+
+  private prepareWidgetsForCurrentVersion(root: HTMLElement | null): void {
+    if (!root) {
+      this.pendingWidgetIDs.clear();
+      return;
+    }
+    for (const widgetID of this.pendingWidgetIDs) {
+      const widget = root.querySelector<HTMLElement>(`duck-chart[data-widget-id="${widgetID}"], duck-table[data-widget-id="${widgetID}"], duck-metric[data-widget-id="${widgetID}"]`);
+      if (!widget) {
+        this.pendingWidgetIDs.delete(widgetID);
+        continue;
+      }
+      if (widget.tagName.toLowerCase() === "duck-table") {
+        (widget as DuckWidgetElement).setPayload(null);
+      }
+    }
+  }
+
+  private applyWidgetPayload(root: HTMLElement, detail: DashboardWidgetStreamEvent): boolean {
+    const widget = root.querySelector<HTMLElement>(`duck-chart[data-widget-id="${detail.widget_id}"], duck-table[data-widget-id="${detail.widget_id}"], duck-metric[data-widget-id="${detail.widget_id}"]`);
+    if (!widget) {
+      return false;
+    }
+    (widget as DuckWidgetElement).setPayload(detail.payload ?? null);
+    if (this.pendingVersion === detail.version) {
+      this.pendingWidgetIDs.delete(detail.widget_id);
+      this.syncWidgetLoadingIndicators(root);
+      this.finishLoadingIfReady();
+    }
+    return true;
+  }
+
+  private drainStoredPayloads(root: HTMLElement): void {
+    const version = this.activeVersion;
+    if (!version) {
+      return;
+    }
+    const bus = this.widgetPayloadBus();
+    for (const [key, detail] of Object.entries(bus)) {
+      if (!detail || detail.version !== version) {
+        continue;
+      }
+      if (!this.applyWidgetPayload(root, detail)) {
+        continue;
+      }
+      delete bus[key];
+    }
+  }
+
+  private widgetPayloadBus(): DashboardPayloadBus {
+    const scopedWindow = window as Window & {
+      __dashboardWidgetPayloadBus?: DashboardPayloadBus;
+    };
+    if (!scopedWindow.__dashboardWidgetPayloadBus) {
+      scopedWindow.__dashboardWidgetPayloadBus = {};
+    }
+    return scopedWindow.__dashboardWidgetPayloadBus;
+  }
+
+  private payloadBusKey(detail: DashboardWidgetStreamEvent): string {
+    return `${detail.version}:${detail.widget_id}`;
+  }
+
+  private widgetIDs(root: HTMLElement): string[] {
+    return [...root.querySelectorAll<HTMLElement>("duck-chart[data-widget-id], duck-table[data-widget-id], duck-metric[data-widget-id]")]
+      .map((element) => element.dataset.widgetId?.trim() ?? "")
+      .filter(Boolean);
+  }
+
+  private syncWidgetLoadingIndicators(root: HTMLElement): void {
+    const cards = root.querySelectorAll<HTMLElement>("[data-dashboard-widget-card='true'][data-widget-id]");
+    for (const card of cards) {
+      const widgetID = card.dataset.widgetId?.trim() ?? "";
+      if (!widgetID) {
+        card.removeAttribute("data-dashboard-widget-loading");
+        continue;
+      }
+      if (this.pendingWidgetIDs.has(widgetID)) {
+        card.setAttribute("data-dashboard-widget-loading", "true");
+      } else {
+        card.removeAttribute("data-dashboard-widget-loading");
+      }
+    }
+  }
+
+  private nextVersion(): string {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  private selectionEventKey(selections: WidgetFilterSelection[]): string {
+    return [...selections]
+      .map((selection) => `${selection.widgetKey.trim()}|${selection.dimension.trim()}:${selection.value.trim()}`)
+      .filter(Boolean)
+      .sort((left, right) => left.localeCompare(right))
+      .join("||");
   }
 }
 
-new DashboardSurfaceController();
+type DashboardWindowState = Window & {
+  __dashboardSurfaceController?: DashboardSurfaceController;
+};
+
+const dashboardWindow = window as DashboardWindowState;
+if (!dashboardWindow.__dashboardSurfaceController) {
+  dashboardWindow.__dashboardSurfaceController = new DashboardSurfaceController();
+}

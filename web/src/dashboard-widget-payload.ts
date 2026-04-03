@@ -27,6 +27,7 @@ export type InteractionSpec = {
   disabled_reason?: string;
   bindings?: InteractionBinding[];
   active_filters?: Record<string, string[]>;
+  origin_filters?: Record<string, string[]>;
 };
 
 export type DashboardWidgetPayload = {
@@ -47,7 +48,8 @@ export type DashboardWidgetPayload = {
   } | null;
 };
 
-export type DashboardWidgetPayloadEnvelope = {
-  filter_key?: string;
-  widgets?: Record<string, DashboardWidgetPayload>;
+export type DashboardWidgetStreamEvent = {
+  widget_id: string;
+  version: string;
+  payload: DashboardWidgetPayload;
 };

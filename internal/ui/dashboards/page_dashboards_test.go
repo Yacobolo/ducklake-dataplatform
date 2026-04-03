@@ -49,9 +49,10 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 		CreateWidgetURL:  "/ui/dashboards/dash-1/widgets",
 		SurfaceURL:       "/ui/dashboards/dash-1/surface",
 		UpdatesStreamURL: "/ui/dashboards/dash-1/updates/stream-1",
-		DataStreamURL:    "/ui/dashboards/dash-1/updates/stream-1/data",
 		UpdatesApplyURL:  "/ui/dashboards/dash-1/updates/stream-1",
 		StreamID:         "stream-1",
+		UpdateVersion:    "version-1",
+		PendingWidgetIDs: []string{"widget-chart", "widget-metric", "widget-table"},
 		PageTabs: []core.SectionTab{
 			{Label: "Overview", Href: "/ui/dashboards/dash-1?page=overview", Active: true},
 			{Label: "Geography", Href: "/ui/dashboards/dash-1?page=geography", Active: false},
@@ -159,8 +160,9 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 	assert.Contains(t, html, "data-dashboard-clear-filters")
 	assert.Contains(t, html, "data-dashboard-remove-filter")
 	assert.Contains(t, html, "data-dashboard-updates-url")
-	assert.Contains(t, html, "data-dashboard-data-stream-url")
 	assert.Contains(t, html, "data-dashboard-apply-url")
+	assert.Contains(t, html, "data-dashboard-update-version=\"version-1\"")
+	assert.Contains(t, html, "data-dashboard-pending-widget-ids=\"widget-chart,widget-metric,widget-table\"")
 	assert.Contains(t, html, "Not interactive in this dashboard.")
 	assert.NotContains(t, html, "Freshness")
 	assert.NotContains(t, html, "metric.sales.orders.revenue")
@@ -186,9 +188,9 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 		CreateWidgetURL:  "/ui/dashboards/dash-1/widgets",
 		SurfaceURL:       "/ui/dashboards/dash-1/surface",
 		UpdatesStreamURL: "/ui/dashboards/dash-1/updates/stream-1",
-		DataStreamURL:    "/ui/dashboards/dash-1/updates/stream-1/data",
 		UpdatesApplyURL:  "/ui/dashboards/dash-1/updates/stream-1",
 		StreamID:         "stream-1",
+		UpdateVersion:    "version-1",
 		PageTabs: []core.SectionTab{
 			{Label: "Overview", Href: "/ui/dashboards/dash-1?page=overview&mode=edit", Active: true},
 			{Label: "Geography", Href: "/ui/dashboards/dash-1?page=geography&mode=edit", Active: false},
