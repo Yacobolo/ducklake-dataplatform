@@ -16,6 +16,8 @@ type mockDashboardService struct {
 	createDashboardFn func(ctx context.Context, owner string, req domain.CreateDashboardRequest) (*domain.Dashboard, error)
 	listDashboardsFn  func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Dashboard, int64, error)
 	getDashboardFn    func(ctx context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error)
+	listWidgetsFn     func(ctx context.Context, dashboardID string) ([]domain.DashboardWidget, error)
+	getWidgetFn       func(ctx context.Context, dashboardID, widgetID string) (*domain.DashboardWidget, error)
 	resolveWidgetsFn  func(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error)
 	updateDashboardFn func(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateDashboardRequest) (*domain.Dashboard, error)
 	deleteDashboardFn func(ctx context.Context, principal string, isAdmin bool, id string) error
@@ -34,6 +36,20 @@ func (m *mockDashboardService) ListDashboards(ctx context.Context, owner *string
 
 func (m *mockDashboardService) GetDashboard(ctx context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error) {
 	return m.getDashboardFn(ctx, id)
+}
+
+func (m *mockDashboardService) ListWidgets(ctx context.Context, dashboardID string) ([]domain.DashboardWidget, error) {
+	if m.listWidgetsFn == nil {
+		panic("mockDashboardService.ListWidgets called but not configured")
+	}
+	return m.listWidgetsFn(ctx, dashboardID)
+}
+
+func (m *mockDashboardService) GetWidget(ctx context.Context, dashboardID, widgetID string) (*domain.DashboardWidget, error) {
+	if m.getWidgetFn == nil {
+		panic("mockDashboardService.GetWidget called but not configured")
+	}
+	return m.getWidgetFn(ctx, dashboardID, widgetID)
 }
 
 func (m *mockDashboardService) ResolveWidgets(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error) {
@@ -147,10 +163,10 @@ func TestHandler_CreateDashboardWidget_MapsSourceAndVisualSpec(t *testing.T) {
 			Source: DashboardWidgetSource{
 				Kind: DashboardWidgetSourceKindSemanticQuery,
 				SemanticQuery: &DashboardSemanticQuerySource{
-					SemanticModelId:   "sm-sales",
-					Metrics:           []string{"revenue"},
-					Dimensions:        &[]string{"region"},
-					TimeGrain:         &timeGrain,
+					SemanticModelId: "sm-sales",
+					Metrics:         []string{"revenue"},
+					Dimensions:      &[]string{"region"},
+					TimeGrain:       &timeGrain,
 				},
 			},
 			VisualSpec: &VisualSpec{
@@ -266,9 +282,9 @@ func TestHandler_GetResolvedDashboard_MapsResolvedWidgets(t *testing.T) {
 		Source: domain.DashboardWidgetSource{
 			Kind: domain.DashboardWidgetSourceSemanticQuery,
 			SemanticQuery: &domain.DashboardSemanticQuerySource{
-				SemanticModelID:   "sm-sales",
-				Metrics:           []string{"revenue"},
-				Dimensions:        []string{"region"},
+				SemanticModelID: "sm-sales",
+				Metrics:         []string{"revenue"},
+				Dimensions:      []string{"region"},
 			},
 		},
 		VisualSpec: &domain.VisualSpec{

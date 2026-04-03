@@ -130,7 +130,9 @@ type GrantRepository interface {
 // RowFilterRepository provides CRUD operations for row filters and bindings.
 type RowFilterRepository interface {
 	Create(ctx context.Context, f *RowFilter) (*RowFilter, error)
+	GetByID(ctx context.Context, id string) (*RowFilter, error)
 	GetForTable(ctx context.Context, tableID string, page PageRequest) ([]RowFilter, int64, error)
+	Update(ctx context.Context, id string, req UpdateRowFilterRequest) (*RowFilter, error)
 	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, b *RowFilterBinding) error
 	Unbind(ctx context.Context, b *RowFilterBinding) error
@@ -141,7 +143,9 @@ type RowFilterRepository interface {
 // ColumnMaskRepository provides CRUD operations for column masks and bindings.
 type ColumnMaskRepository interface {
 	Create(ctx context.Context, m *ColumnMask) (*ColumnMask, error)
+	GetByID(ctx context.Context, id string) (*ColumnMask, error)
 	GetForTable(ctx context.Context, tableID string, page PageRequest) ([]ColumnMask, int64, error)
+	Update(ctx context.Context, id string, req UpdateColumnMaskRequest) (*ColumnMask, error)
 	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, b *ColumnMaskBinding) error
 	Unbind(ctx context.Context, b *ColumnMaskBinding) error
@@ -346,6 +350,7 @@ type TagRepository interface {
 	CreateTag(ctx context.Context, tag *Tag) (*Tag, error)
 	GetTag(ctx context.Context, id string) (*Tag, error)
 	ListTags(ctx context.Context, page PageRequest) ([]Tag, int64, error)
+	UpdateTag(ctx context.Context, id string, req UpdateTagRequest) (*Tag, error)
 	DeleteTag(ctx context.Context, id string) error
 	AssignTag(ctx context.Context, assignment *TagAssignment) (*TagAssignment, error)
 	UnassignTag(ctx context.Context, id string) error
@@ -548,6 +553,7 @@ type PipelineRepository interface {
 	CreateJob(ctx context.Context, job *PipelineJob) (*PipelineJob, error)
 	GetJobByID(ctx context.Context, id string) (*PipelineJob, error)
 	ListJobsByPipeline(ctx context.Context, pipelineID string) ([]PipelineJob, error)
+	UpdateJob(ctx context.Context, id string, req UpdatePipelineJobRequest) (*PipelineJob, error)
 	DeleteJob(ctx context.Context, id string) error
 	DeleteJobsByPipeline(ctx context.Context, pipelineID string) error
 }

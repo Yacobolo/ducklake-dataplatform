@@ -423,6 +423,12 @@ model CreateRowFilterRequest {
   description?: string;
 }
 
+model UpdateRowFilterRequest {
+  name?: string;
+  filter_sql?: string;
+  description?: string;
+}
+
 model RowFilterBindingRequest {
   principal_id: string;
   principal_type: PrincipalType;
@@ -460,6 +466,13 @@ model CreateColumnMaskRequest {
   name: string;
   column_name: string;
   mask_expression: string;
+  description?: string;
+}
+
+model UpdateColumnMaskRequest {
+  name?: string;
+  column_name?: string;
+  mask_expression?: string;
   description?: string;
 }
 
@@ -1456,6 +1469,18 @@ model CreatePipelineJobRequest {
   model_selector?: string;
 }
 
+model UpdatePipelineJobRequest {
+  name?: string;
+  notebook_id?: string;
+  compute_endpoint_id?: string;
+  depends_on?: string[];
+  timeout_seconds?: int64;
+  retry_count?: int32;
+  job_order?: int32;
+  job_type?: PipelineJobJobType;
+  model_selector?: string;
+}
+
 model PipelineJob {
   id?: string;
   pipeline_id?: string;
@@ -1966,6 +1991,10 @@ model PaginatedFolderContents {
   next_page_token?: string;
 }
 
+model FolderPath {
+  data: Folder[];
+}
+
 model CreateDashboardWidgetRequest {
   name: string;
   description?: string;
@@ -2048,6 +2077,11 @@ model PaginatedTags {
 
 model CreateTagRequest {
   key: string;
+  value?: string;
+}
+
+model UpdateTagRequest {
+  key?: string;
   value?: string;
 }
 

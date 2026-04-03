@@ -45,6 +45,18 @@ op listPipelineJobs(pipeline_name: string): Ok<PipelineJobList> | ResourceErrorR
 op createPipelineJob(pipeline_name: string, @body body: CreatePipelineJobRequest): Created<PipelineJob> | MutatingErrorResponses;
 
 @route("/pipelines/{pipeline_name}/jobs/{job_id}")
+@get
+@tag("Pipelines")
+@summary("Get pipeline job")
+op getPipelineJob(pipeline_name: string, job_id: string): Ok<PipelineJob> | ResourceErrorResponses;
+
+@route("/pipelines/{pipeline_name}/jobs/{job_id}")
+@patch(#{ implicitOptionality: true })
+@tag("Pipelines")
+@summary("Update pipeline job")
+op updatePipelineJob(pipeline_name: string, job_id: string, @body body: UpdatePipelineJobRequest): Ok<PipelineJob> | MutatingErrorResponses;
+
+@route("/pipelines/{pipeline_name}/jobs/{job_id}")
 @delete
 @tag("Pipelines")
 @summary("Delete pipeline job")

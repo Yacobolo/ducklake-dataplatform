@@ -1170,6 +1170,10 @@ type FolderContentItem struct {
 	UpdatedAt    *string `json:"updated_at,omitempty"`
 }
 
+type FolderPath struct {
+	Data []Folder `json:"data"`
+}
+
 type FolderShare struct {
 	PrincipalName *string            `json:"principal_name,omitempty"`
 	Role          *NotebookShareRole `json:"role,omitempty"`
@@ -2707,6 +2711,13 @@ type UpdateCellRequest struct {
 	VisualSpec *VisualSpec             `json:"visual_spec,omitempty"`
 }
 
+type UpdateColumnMaskRequest struct {
+	ColumnName     *string `json:"column_name,omitempty"`
+	Description    *string `json:"description,omitempty"`
+	MaskExpression *string `json:"mask_expression,omitempty"`
+	Name           *string `json:"name,omitempty"`
+}
+
 type UpdateColumnRequest struct {
 	Comment  *string `json:"comment,omitempty"`
 	Nullable *bool   `json:"nullable,omitempty"`
@@ -2800,6 +2811,18 @@ type UpdateNotebookRequest struct {
 	ProjectOverrideId     *string `json:"project_override_id,omitempty"`
 }
 
+type UpdatePipelineJobRequest struct {
+	ComputeEndpointId *string             `json:"compute_endpoint_id,omitempty"`
+	DependsOn         *[]string           `json:"depends_on,omitempty"`
+	JobOrder          *int32              `json:"job_order,omitempty"`
+	JobType           *PipelineJobJobType `json:"job_type,omitempty"`
+	ModelSelector     *string             `json:"model_selector,omitempty"`
+	Name              *string             `json:"name,omitempty"`
+	NotebookId        *string             `json:"notebook_id,omitempty"`
+	RetryCount        *int32              `json:"retry_count,omitempty"`
+	TimeoutSeconds    *int32              `json:"timeout_seconds,omitempty"`
+}
+
 type UpdatePipelineRequest struct {
 	ConcurrencyLimit *int32  `json:"concurrency_limit,omitempty"`
 	Description      *string `json:"description,omitempty"`
@@ -2818,6 +2841,12 @@ type UpdateProductDomainRequest struct {
 
 type UpdateProductTeamRequest struct {
 	ContactChannel *string `json:"contact_channel,omitempty"`
+}
+
+type UpdateRowFilterRequest struct {
+	Description *string `json:"description,omitempty"`
+	FilterSql   *string `json:"filter_sql,omitempty"`
+	Name        *string `json:"name,omitempty"`
 }
 
 type UpdateSchemaRequest struct {
@@ -2875,6 +2904,11 @@ type UpdateTableRequest struct {
 	Comment    *string `json:"comment,omitempty"`
 	Owner      *string `json:"owner,omitempty"`
 	Properties *Record `json:"properties,omitempty"`
+}
+
+type UpdateTagRequest struct {
+	Key   *string `json:"key,omitempty"`
+	Value *string `json:"value,omitempty"`
 }
 
 type UpdateViewRequest struct {
@@ -3125,6 +3159,10 @@ type ListVolumesParams = GenListVolumesParams
 
 type SearchCatalogParams = GenSearchCatalogParams
 
+type SearchFolderContentsParams = GenSearchFolderContentsParams
+
+type SearchRootFolderContentsParams = GenSearchRootFolderContentsParams
+
 type BindColumnMaskJSONRequestBody = GenBindColumnMaskJSONBody
 
 type BindRowFilterJSONRequestBody = GenBindRowFilterJSONBody
@@ -3269,6 +3307,8 @@ type UpdateCellJSONRequestBody = GenUpdateCellJSONBody
 
 type UpdateColumnJSONRequestBody = GenUpdateColumnJSONBody
 
+type UpdateColumnMaskJSONRequestBody = GenUpdateColumnMaskJSONBody
+
 type UpdateComputeEndpointJSONRequestBody = GenUpdateComputeEndpointJSONBody
 
 type UpdateComputeRoutingDefaultsJSONRequestBody = GenUpdateComputeRoutingDefaultsJSONBody
@@ -3293,11 +3333,15 @@ type UpdateNotebookJSONRequestBody = GenUpdateNotebookJSONBody
 
 type UpdatePipelineJSONRequestBody = GenUpdatePipelineJSONBody
 
+type UpdatePipelineJobJSONRequestBody = GenUpdatePipelineJobJSONBody
+
 type UpdatePrincipalAdminJSONRequestBody = GenUpdatePrincipalAdminJSONBody
 
 type UpdateProductDomainJSONRequestBody = GenUpdateProductDomainJSONBody
 
 type UpdateProductTeamJSONRequestBody = GenUpdateProductTeamJSONBody
+
+type UpdateRowFilterJSONRequestBody = GenUpdateRowFilterJSONBody
 
 type UpdateSchemaJSONRequestBody = GenUpdateSchemaJSONBody
 
@@ -3312,6 +3356,8 @@ type UpdateSemanticPreAggregationJSONRequestBody = GenUpdateSemanticPreAggregati
 type UpdateStorageCredentialJSONRequestBody = GenUpdateStorageCredentialJSONBody
 
 type UpdateTableJSONRequestBody = GenUpdateTableJSONBody
+
+type UpdateTagJSONRequestBody = GenUpdateTagJSONBody
 
 type UpdateViewJSONRequestBody = GenUpdateViewJSONBody
 

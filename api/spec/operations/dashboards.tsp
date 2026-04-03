@@ -39,10 +39,22 @@ op updateDashboard(dashboard_id: string, @body body: UpdateDashboardRequest): Ok
 op deleteDashboard(dashboard_id: string): NoContent | MutatingErrorResponses;
 
 @route("/dashboards/{dashboard_id}/widgets")
+@get
+@tag("Dashboards")
+@summary("List dashboard widgets")
+op listDashboardWidgets(dashboard_id: string): Ok<DashboardWidget[]> | ResourceErrorResponses;
+
+@route("/dashboards/{dashboard_id}/widgets")
 @post
 @tag("Dashboards")
 @summary("Create dashboard widget")
 op createDashboardWidget(dashboard_id: string, @body body: CreateDashboardWidgetRequest): Created<DashboardWidget> | MutatingErrorResponses;
+
+@route("/dashboards/{dashboard_id}/widgets/{widget_id}")
+@get
+@tag("Dashboards")
+@summary("Get dashboard widget")
+op getDashboardWidget(dashboard_id: string, widget_id: string): Ok<DashboardWidget> | ResourceErrorResponses;
 
 @route("/dashboards/{dashboard_id}/widgets/{widget_id}")
 @patch(#{ implicitOptionality: true })

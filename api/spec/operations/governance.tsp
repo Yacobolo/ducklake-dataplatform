@@ -40,6 +40,18 @@ op listRowFilters(@query table_id?: string, @query max_results?: int32, @query p
 op createRowFilter(@body body: CreateRowFilterRequest): Created<RowFilter> | MutatingErrorResponses;
 
 @route("/row-filters/{row_filter_id}")
+@get
+@tag("Governance")
+@summary("Get row filter")
+op getRowFilter(row_filter_id: string): Ok<RowFilter> | ResourceErrorResponses;
+
+@route("/row-filters/{row_filter_id}")
+@patch(#{ implicitOptionality: true })
+@tag("Governance")
+@summary("Update row filter")
+op updateRowFilter(row_filter_id: string, @body body: UpdateRowFilterRequest): Ok<RowFilter> | MutatingErrorResponses;
+
+@route("/row-filters/{row_filter_id}")
 @delete
 @tag("Governance")
 @summary("Delete row filter")
@@ -80,6 +92,18 @@ op listColumnMasks(@query table_id?: string, @query max_results?: int32, @query 
 op createColumnMask(@body body: CreateColumnMaskRequest): Created<ColumnMask> | MutatingErrorResponses;
 
 @route("/column-masks/{column_mask_id}")
+@get
+@tag("Governance")
+@summary("Get column mask")
+op getColumnMask(column_mask_id: string): Ok<ColumnMask> | ResourceErrorResponses;
+
+@route("/column-masks/{column_mask_id}")
+@patch(#{ implicitOptionality: true })
+@tag("Governance")
+@summary("Update column mask")
+op updateColumnMask(column_mask_id: string, @body body: UpdateColumnMaskRequest): Ok<ColumnMask> | MutatingErrorResponses;
+
+@route("/column-masks/{column_mask_id}")
 @delete
 @tag("Governance")
 @summary("Delete column mask")
@@ -118,6 +142,18 @@ op listTags(@query max_results?: int32, @query page_token?: string): Ok<Paginate
 @tag("Governance")
 @summary("Create tag")
 op createTag(@body body: CreateTagRequest): Created<Tag> | MutatingErrorResponses;
+
+@route("/tags/{tag_id}")
+@get
+@tag("Governance")
+@summary("Get tag")
+op getTag(tag_id: string): Ok<Tag> | ResourceErrorResponses;
+
+@route("/tags/{tag_id}")
+@patch(#{ implicitOptionality: true })
+@tag("Governance")
+@summary("Update tag")
+op updateTag(tag_id: string, @body body: UpdateTagRequest): Ok<Tag> | MutatingErrorResponses;
 
 @route("/tags/{tag_id}")
 @delete

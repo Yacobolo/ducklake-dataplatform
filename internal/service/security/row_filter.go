@@ -50,12 +50,45 @@ func (s *RowFilterService) Create(ctx context.Context, req domain.CreateRowFilte
 	return result, nil
 }
 
+// GetByID returns a row filter by ID. Requires admin privileges.
+func (s *RowFilterService) GetByID(ctx context.Context, id string) (*domain.RowFilter, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, err
+	}
+	return s.repo.GetByID(ctx, id)
+}
+
 // GetForTable returns a paginated list of row filters for a table. Requires admin privileges.
 func (s *RowFilterService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
 	if err := requireAdmin(ctx); err != nil {
 		return nil, 0, err
 	}
 	return s.repo.GetForTable(ctx, tableID, page)
+}
+
+// Update applies partial changes to a row filter. Requires admin privileges.
+func (s *RowFilterService) Update(ctx context.Context, id string, req domain.UpdateRowFilterRequest) (*domain.RowFilter, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, err
+	}
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	if req.FilterSQL != nil {
+		if _, err := duckdbsql.ParseExpr(*req.FilterSQL); err != nil {
+			return nil, domain.ErrValidation("filter_sql is not valid SQL: %v", err)
+		}
+	}
+	result, err := s.repo.Update(ctx, id, req)
+	if err != nil {
+		return nil, err
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: callerName(ctx),
+		Action:        "UPDATE_ROW_FILTER",
+		Status:        "ALLOWED",
+	})
+	return result, nil
 }
 
 // Delete removes a row filter by ID. Requires admin privileges.

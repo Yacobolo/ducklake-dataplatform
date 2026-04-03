@@ -20,7 +20,9 @@ type mockPipelineService struct {
 	updatePipelineFn func(ctx context.Context, principal string, name string, req domain.UpdatePipelineRequest) (*domain.Pipeline, error)
 	deletePipelineFn func(ctx context.Context, principal string, name string) error
 	createJobFn      func(ctx context.Context, principal string, pipelineName string, req domain.CreatePipelineJobRequest) (*domain.PipelineJob, error)
+	getJobFn         func(ctx context.Context, pipelineName string, jobID string) (*domain.PipelineJob, error)
 	listJobsFn       func(ctx context.Context, pipelineName string) ([]domain.PipelineJob, error)
+	updateJobFn      func(ctx context.Context, principal string, pipelineName string, jobID string, req domain.UpdatePipelineJobRequest) (*domain.PipelineJob, error)
 	deleteJobFn      func(ctx context.Context, principal string, pipelineName string, jobID string) error
 	triggerRunFn     func(ctx context.Context, principal string, pipelineName string, params map[string]string, triggerType string) (*domain.PipelineRun, error)
 	listRunsFn       func(ctx context.Context, pipelineName string, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error)
@@ -71,11 +73,25 @@ func (m *mockPipelineService) CreateJob(ctx context.Context, principal string, p
 	return m.createJobFn(ctx, principal, pipelineName, req)
 }
 
+func (m *mockPipelineService) GetJob(ctx context.Context, pipelineName string, jobID string) (*domain.PipelineJob, error) {
+	if m.getJobFn == nil {
+		panic("mockPipelineService.GetJob called but not configured")
+	}
+	return m.getJobFn(ctx, pipelineName, jobID)
+}
+
 func (m *mockPipelineService) ListJobs(ctx context.Context, pipelineName string) ([]domain.PipelineJob, error) {
 	if m.listJobsFn == nil {
 		panic("mockPipelineService.ListJobs called but not configured")
 	}
 	return m.listJobsFn(ctx, pipelineName)
+}
+
+func (m *mockPipelineService) UpdateJob(ctx context.Context, principal string, pipelineName string, jobID string, req domain.UpdatePipelineJobRequest) (*domain.PipelineJob, error) {
+	if m.updateJobFn == nil {
+		panic("mockPipelineService.UpdateJob called but not configured")
+	}
+	return m.updateJobFn(ctx, principal, pipelineName, jobID, req)
 }
 
 func (m *mockPipelineService) DeleteJob(ctx context.Context, principal string, pipelineName string, jobID string) error {

@@ -13,6 +13,8 @@ type dashboardService interface {
 	CreateDashboard(ctx context.Context, owner string, req domain.CreateDashboardRequest) (*domain.Dashboard, error)
 	ListDashboards(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Dashboard, int64, error)
 	GetDashboard(ctx context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error)
+	ListWidgets(ctx context.Context, dashboardID string) ([]domain.DashboardWidget, error)
+	GetWidget(ctx context.Context, dashboardID, widgetID string) (*domain.DashboardWidget, error)
 	ResolveWidgets(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error)
 	UpdateDashboard(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateDashboardRequest) (*domain.Dashboard, error)
 	DeleteDashboard(ctx context.Context, principal string, isAdmin bool, id string) error
@@ -91,6 +93,40 @@ func (h *APIHandler) GetDashboard(ctx context.Context, req GenGetDashboardReques
 	return GenGetDashboard200JSONResponse{
 		Body:    body,
 		Headers: GenGetDashboard200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// ListDashboardWidgets implements the endpoint for listing dashboard widgets.
+func (h *APIHandler) ListDashboardWidgets(ctx context.Context, req GenListDashboardWidgetsRequest) (GenListDashboardWidgetsResponse, error) {
+	widgets, err := h.dashboards.ListWidgets(ctx, req.DashboardId)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return GenListDashboardWidgets404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return nil, err
+	}
+	data := make([]DashboardWidget, len(widgets))
+	for i, widget := range widgets {
+		data[i] = dashboardWidgetToAPI(widget)
+	}
+	return GenListDashboardWidgets200JSONResponse{
+		Body:    data,
+		Headers: GenListDashboardWidgets200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetDashboardWidget implements the endpoint for retrieving a dashboard widget.
+func (h *APIHandler) GetDashboardWidget(ctx context.Context, req GenGetDashboardWidgetRequest) (GenGetDashboardWidgetResponse, error) {
+	widget, err := h.dashboards.GetWidget(ctx, req.DashboardId, req.WidgetId)
+	if err != nil {
+		if errors.As(err, new(*domain.NotFoundError)) {
+			return GenGetDashboardWidget404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		return nil, err
+	}
+	return GenGetDashboardWidget200JSONResponse{
+		Body:    dashboardWidgetToAPI(*widget),
+		Headers: GenGetDashboardWidget200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

@@ -37,6 +37,20 @@ func (r *ColumnMaskRepo) Create(ctx context.Context, m *domain.ColumnMask) (*dom
 	return mapper.ColumnMaskFromDB(row), nil
 }
 
+// GetByID returns a column mask by ID.
+func (r *ColumnMaskRepo) GetByID(ctx context.Context, id string) (*domain.ColumnMask, error) {
+	row := r.db.QueryRowContext(ctx, `
+		SELECT id, table_id, column_name, mask_expression, description, created_at, name
+		FROM column_masks
+		WHERE id = ?
+	`, id)
+	item, err := scanColumnMask(row)
+	if err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+
 // GetForTable returns a paginated list of column masks for a table.
 func (r *ColumnMaskRepo) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
 	total, err := r.q.CountColumnMasksForTable(ctx, tableID)
@@ -54,6 +68,46 @@ func (r *ColumnMaskRepo) GetForTable(ctx context.Context, tableID string, page d
 	}
 
 	return mapper.ColumnMasksFromDB(rows), total, nil
+}
+
+// Update applies partial changes to a column mask.
+func (r *ColumnMaskRepo) Update(ctx context.Context, id string, req domain.UpdateColumnMaskRequest) (*domain.ColumnMask, error) {
+	current, err := r.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	name := current.Name
+	if req.Name != nil {
+		name = *req.Name
+	}
+	columnName := current.ColumnName
+	if req.ColumnName != nil {
+		columnName = *req.ColumnName
+	}
+	maskExpression := current.MaskExpression
+	if req.MaskExpression != nil {
+		maskExpression = *req.MaskExpression
+	}
+	description := current.Description
+	if req.Description != nil {
+		description = *req.Description
+	}
+	res, err := r.db.ExecContext(ctx, `
+		UPDATE column_masks
+		SET name = ?, column_name = ?, mask_expression = ?, description = ?
+		WHERE id = ?
+	`, sql.NullString{String: name, Valid: name != ""}, columnName, maskExpression, sql.NullString{String: description, Valid: description != ""}, id)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("rows affected: %w", err)
+	}
+	if rows == 0 {
+		return nil, domain.ErrNotFound("column mask %s not found", id)
+	}
+	return r.GetByID(ctx, id)
 }
 
 // Delete removes a column mask by ID.
@@ -120,4 +174,20 @@ func (r *ColumnMaskRepo) GetForTableAndPrincipal(ctx context.Context, tableID, p
 		}
 	}
 	return result, nil
+}
+
+func scanColumnMask(row interface{ Scan(dest ...any) error }) (*domain.ColumnMask, error) {
+	var item dbstore.ColumnMask
+	if err := row.Scan(
+		&item.ID,
+		&item.TableID,
+		&item.ColumnName,
+		&item.MaskExpression,
+		&item.Description,
+		&item.CreatedAt,
+		&item.Name,
+	); err != nil {
+		return nil, mapDBError(err)
+	}
+	return mapper.ColumnMaskFromDB(item), nil
 }

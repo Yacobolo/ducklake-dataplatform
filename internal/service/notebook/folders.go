@@ -118,6 +118,11 @@ func (s *FolderService) GetFolderForPrincipal(ctx context.Context, principal str
 	return s.requireFolderRole(ctx, principal, isAdmin, id, roleAllowsRead, "read")
 }
 
+// GetHomeFolder ensures and returns the caller's personal root folder.
+func (s *FolderService) GetHomeFolder(ctx context.Context, principal string) (*domain.Folder, error) {
+	return s.repo.EnsurePersonalRoot(ctx, principal)
+}
+
 // ListFoldersForPrincipal lists folders visible to the caller.
 func (s *FolderService) ListFoldersForPrincipal(ctx context.Context, principal string, isAdmin bool, owner *string) ([]domain.Folder, error) {
 	targetOwner := strings.TrimSpace(principal)

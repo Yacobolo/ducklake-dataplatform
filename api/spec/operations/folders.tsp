@@ -2,6 +2,12 @@ using TypeSpec.Http;
 
 namespace Duck;
 
+@route("/me/folders/home")
+@get
+@tag("Folders")
+@summary("Get caller home folder")
+op getHomeFolder(): Ok<Folder> | StandardErrorResponses;
+
 @route("/folders")
 @get
 @tag("Folders")
@@ -66,6 +72,18 @@ op listRootFolderContents(
   @query page_token?: string,
 ): Ok<PaginatedFolderContents> | StandardErrorResponses;
 
+@route("/folders/search-results")
+@get
+@tag("Folders")
+@summary("Search root folder namespace")
+op searchRootFolderContents(
+  @query q: string,
+  @query kind?: string,
+  @query owner?: string,
+  @query max_results?: int32,
+  @query page_token?: string,
+): Ok<PaginatedFolderContents> | StandardErrorResponses;
+
 @route("/folders/{folder_id}/contents")
 @get
 @tag("Folders")
@@ -76,3 +94,22 @@ op listFolderContents(
   @query max_results?: int32,
   @query page_token?: string,
 ): Ok<PaginatedFolderContents> | StandardErrorResponses;
+
+@route("/folders/{folder_id}/search-results")
+@get
+@tag("Folders")
+@summary("Search folder namespace")
+op searchFolderContents(
+  folder_id: string,
+  @query q: string,
+  @query kind?: string,
+  @query owner?: string,
+  @query max_results?: int32,
+  @query page_token?: string,
+): Ok<PaginatedFolderContents> | StandardErrorResponses;
+
+@route("/folders/{folder_id}/path")
+@get
+@tag("Folders")
+@summary("Get folder path")
+op getFolderPath(folder_id: string): Ok<FolderPath> | ResourceErrorResponses;

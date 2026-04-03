@@ -93,6 +93,7 @@ components:
 // ============================================================
 
 func TestCheckSchemaRef_InlineResponse(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -118,6 +119,7 @@ paths:
 }
 
 func TestCheckSchemaRef_RefResponse(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -143,6 +145,7 @@ paths:
 // ============================================================
 
 func TestCheckPaginationParams_Missing(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -166,6 +169,7 @@ paths:
 }
 
 func TestCheckPaginationParams_Present(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -194,6 +198,7 @@ paths:
 // ============================================================
 
 func TestCheckPaginatedSchema(t *testing.T) {
+	t.Parallel()
 	t.Run("missing_data", func(t *testing.T) {
 		spec := `openapi: "3.0.3"
 info:
@@ -229,6 +234,7 @@ paths: {}
 // ============================================================
 
 func TestCheckPostCreateStatus_Returns200(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -247,6 +253,7 @@ paths:
 }
 
 func TestCheckPostCreateStatus_Returns201(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -264,6 +271,7 @@ paths:
 }
 
 func TestCheckAuthzMetadataPresent_Missing(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables:
@@ -282,6 +290,7 @@ paths:
 }
 
 func TestCheckAuthzMetadataPresent_Present(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables:
@@ -305,6 +314,7 @@ paths:
 }
 
 func TestCheckAuthzMetadataShape_Invalid(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables:
@@ -329,6 +339,7 @@ paths:
 }
 
 func TestCheckAuthzMetadataShape_ValidAdminOnly(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /grants:
@@ -348,6 +359,7 @@ paths:
 }
 
 func TestCheckPostCreateStatus_ActionVerbExcluded(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /query:
@@ -365,6 +377,7 @@ paths:
 }
 
 func TestCheckPostCreateStatus_CancelQueryExcluded(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /queries/{queryId}/cancellations:
@@ -382,6 +395,7 @@ paths:
 }
 
 func TestCheckNoColonActionPaths_Flagged(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /queries:execute:
@@ -400,6 +414,7 @@ paths:
 }
 
 func TestCheckNoColonActionPaths_Pass(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /query-executions:
@@ -417,6 +432,7 @@ paths:
 }
 
 func TestCheckNoVerbSuffixPaths_Flagged(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /assets/{asset_key}/materialize:
@@ -435,6 +451,7 @@ paths:
 }
 
 func TestCheckNoVerbSuffixPaths_Pass(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /assets/{asset_key}/materializations:
@@ -452,6 +469,7 @@ paths:
 }
 
 func TestCheckSnakeCaseWireNames_FlagsQueryParamsAndProperties(t *testing.T) {
+	t.Parallel()
 	spec := `openapi: "3.0.3"
 info:
   title: Test
@@ -497,6 +515,7 @@ components:
 }
 
 func TestCheckSnakeCaseWireNames_IgnoresPathParamsAndSnakeCaseSchemas(t *testing.T) {
+	t.Parallel()
 	spec := `openapi: "3.0.3"
 info:
   title: Test
@@ -548,6 +567,7 @@ components:
 }
 
 func TestCheckMixedScopedCollections_Flagged(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /row-filters:
@@ -581,6 +601,7 @@ paths:
 }
 
 func TestCheckMixedScopedCollections_Pass(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /row-filters:
@@ -617,6 +638,7 @@ paths:
 // ============================================================
 
 func TestCheckMutatingOps403_Missing(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -635,6 +657,7 @@ paths:
 }
 
 func TestCheckMutatingOps403_Present(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -658,6 +681,7 @@ paths:
 }
 
 func TestCheckMutatingOps403_GetSkipped(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -675,6 +699,7 @@ paths:
 }
 
 func TestCheckMutatingOps403_SecurityOverrideEmpty(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /health:
@@ -697,6 +722,7 @@ paths:
 // ============================================================
 
 func TestCheckGetResource404_Missing(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -721,6 +747,7 @@ paths:
 }
 
 func TestCheckGetResource404_Present(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -750,6 +777,7 @@ paths:
 }
 
 func TestCheckGetResource404_CollectionPathSkipped(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -771,6 +799,7 @@ paths:
 // ============================================================
 
 func TestCheckErrorSchemaRef_NonErrorRef(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -799,6 +828,7 @@ paths:
 }
 
 func TestCheckErrorSchemaRef_ErrorRef(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -822,6 +852,7 @@ paths:
 }
 
 func TestCheckErrorSchemaRef_NoContent(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -851,6 +882,7 @@ paths:
 // ============================================================
 
 func TestCheckDeleteReturns204_Missing(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -875,6 +907,7 @@ paths:
 }
 
 func TestCheckDeleteReturns204_Present(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -902,6 +935,7 @@ paths:
 // ============================================================
 
 func TestCheckPaginationSchemaMatch_NoPaginated(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -927,6 +961,7 @@ paths:
 }
 
 func TestCheckPaginationSchemaMatch_WithPaginated(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -955,6 +990,7 @@ paths:
 // ============================================================
 
 func TestConfig_SeverityOverride(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -975,6 +1011,7 @@ paths:
 }
 
 func TestConfig_RuleOff(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -994,6 +1031,7 @@ paths:
 }
 
 func TestRegisteredRules_NotEmpty(t *testing.T) {
+	t.Parallel()
 	rules := RegisteredRules()
 	assert.Greater(t, len(rules), 10, "expected at least 10 registered rules")
 
@@ -1010,6 +1048,7 @@ func TestRegisteredRules_NotEmpty(t *testing.T) {
 // ============================================================
 
 func TestFilter_BySeverity(t *testing.T) {
+	t.Parallel()
 	vs := []Violation{
 		{Severity: SeverityError, RuleID: "E1"},
 		{Severity: SeverityWarning, RuleID: "W1"},
@@ -1032,6 +1071,7 @@ func TestFilter_BySeverity(t *testing.T) {
 }
 
 func TestHasErrors(t *testing.T) {
+	t.Parallel()
 	t.Run("with_errors", func(t *testing.T) {
 		assert.True(t, HasErrors([]Violation{{Severity: SeverityError}}))
 	})
@@ -1044,6 +1084,7 @@ func TestHasErrors(t *testing.T) {
 }
 
 func TestViolation_String(t *testing.T) {
+	t.Parallel()
 	v := Violation{
 		File:     "openapi.yaml",
 		Line:     42,
@@ -1055,6 +1096,7 @@ func TestViolation_String(t *testing.T) {
 }
 
 func TestLintActualSpec(t *testing.T) {
+	t.Parallel()
 	// Lint the generated project spec end-to-end to verify the linter runs
 	// without crashing and reports violations. The spec currently has many
 	// OWASP-level violations that need to be fixed incrementally.

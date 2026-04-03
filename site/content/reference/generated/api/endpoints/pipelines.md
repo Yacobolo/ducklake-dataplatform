@@ -247,6 +247,60 @@ Create pipeline job
 | `429` | Client error |
 | `500` | Server error |
 
+## `GET /pipelines/{pipeline_name}/jobs/{job_id}`
+
+Get pipeline job
+
+- Operation ID: `getPipelineJob`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `job_id` | `string` | `true` | - |
+| `pipeline_name` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /pipelines/{pipeline_name}/jobs/{job_id}`
+
+Update pipeline job
+
+- Operation ID: `updatePipelineJob`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `job_id` | `string` | `true` | - |
+| `pipeline_name` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `DELETE /pipelines/{pipeline_name}/jobs/{job_id}`
 
 Delete pipeline job

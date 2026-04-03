@@ -215,6 +215,82 @@ func (r *PipelineRepo) ListJobsByPipeline(ctx context.Context, pipelineID string
 	return jobs, nil
 }
 
+// UpdateJob applies partial changes to a pipeline job.
+func (r *PipelineRepo) UpdateJob(ctx context.Context, id string, req domain.UpdatePipelineJobRequest) (*domain.PipelineJob, error) {
+	current, err := r.GetJobByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	name := current.Name
+	if req.Name != nil {
+		name = *req.Name
+	}
+	computeEndpointID := current.ComputeEndpointID
+	if req.ComputeEndpointID != nil {
+		computeEndpointID = req.ComputeEndpointID
+	}
+	dependsOn := current.DependsOn
+	if req.DependsOn != nil {
+		dependsOn = *req.DependsOn
+	}
+	notebookID := current.NotebookID
+	if req.NotebookID != nil {
+		notebookID = *req.NotebookID
+	}
+	timeoutSeconds := current.TimeoutSeconds
+	if req.TimeoutSeconds != nil {
+		timeoutSeconds = req.TimeoutSeconds
+	}
+	retryCount := current.RetryCount
+	if req.RetryCount != nil {
+		retryCount = *req.RetryCount
+	}
+	jobOrder := current.JobOrder
+	if req.JobOrder != nil {
+		jobOrder = *req.JobOrder
+	}
+	jobType := current.JobType
+	if req.JobType != nil {
+		jobType = *req.JobType
+	}
+	modelSelector := current.ModelSelector
+	if req.ModelSelector != nil {
+		modelSelector = *req.ModelSelector
+	}
+	depsJSON, err := json.Marshal(dependsOn)
+	if err != nil {
+		return nil, fmt.Errorf("marshal depends_on: %w", err)
+	}
+	res, err := r.db.ExecContext(ctx, `
+		UPDATE pipeline_jobs
+		SET name = ?, compute_endpoint_id = ?, depends_on = ?, notebook_id = ?, timeout_seconds = ?, retry_count = ?, job_order = ?, job_type = ?, model_selector = ?
+		WHERE id = ?
+	`,
+		name,
+		nullStringPtr(computeEndpointID),
+		string(depsJSON),
+		notebookID,
+		nullInt64Ptr(timeoutSeconds),
+		int64(retryCount),
+		int64(jobOrder),
+		jobType,
+		modelSelector,
+		id,
+	)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	if rows == 0 {
+		return nil, domain.ErrNotFound("pipeline job %s not found", id)
+	}
+	return r.GetJobByID(ctx, id)
+}
+
 // DeleteJob removes a pipeline job by ID.
 func (r *PipelineRepo) DeleteJob(ctx context.Context, id string) error {
 	return mapDBError(r.q.DeletePipelineJob(ctx, id))

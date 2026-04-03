@@ -229,12 +229,21 @@ func (m *mockGrantService) Revoke(ctx context.Context, principal string, grantID
 }
 
 type mockColumnMaskService struct {
+	getByIDFn      func(ctx context.Context, id string) (*domain.ColumnMask, error)
 	getForTableFn  func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	listBindingsFn func(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error)
 	createFn       func(ctx context.Context, req domain.CreateColumnMaskRequest) (*domain.ColumnMask, error)
+	updateFn       func(ctx context.Context, id string, req domain.UpdateColumnMaskRequest) (*domain.ColumnMask, error)
 	deleteFn       func(ctx context.Context, id string) error
 	bindFn         func(ctx context.Context, req domain.BindColumnMaskRequest) error
 	unbindFn       func(ctx context.Context, req domain.BindColumnMaskRequest) error
+}
+
+func (m *mockColumnMaskService) GetByID(ctx context.Context, id string) (*domain.ColumnMask, error) {
+	if m.getByIDFn == nil {
+		panic("mockColumnMaskService.GetByID called but not configured")
+	}
+	return m.getByIDFn(ctx, id)
 }
 
 func (m *mockColumnMaskService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
@@ -249,6 +258,13 @@ func (m *mockColumnMaskService) Create(ctx context.Context, req domain.CreateCol
 		panic("mockColumnMaskService.Create called but not configured")
 	}
 	return m.createFn(ctx, req)
+}
+
+func (m *mockColumnMaskService) Update(ctx context.Context, id string, req domain.UpdateColumnMaskRequest) (*domain.ColumnMask, error) {
+	if m.updateFn == nil {
+		panic("mockColumnMaskService.Update called but not configured")
+	}
+	return m.updateFn(ctx, id, req)
 }
 
 func (m *mockColumnMaskService) ListBindings(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error) {
@@ -903,14 +919,14 @@ func TestHandler_ListColumnMasks(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				svc := &mockColumnMaskService{getForTableFn: tt.svcFn}
-				handler := &APIHandler{columnMasks: svc}
-				tableID := "t-1"
-				resp, err := handler.ListColumnMasks(secTestCtx(), GenListColumnMasksRequest{
-					Params: GenListColumnMasksParams{TableId: &tableID},
-				})
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			svc := &mockColumnMaskService{getForTableFn: tt.svcFn}
+			handler := &APIHandler{columnMasks: svc}
+			tableID := "t-1"
+			resp, err := handler.ListColumnMasks(secTestCtx(), GenListColumnMasksRequest{
+				Params: GenListColumnMasksParams{TableId: &tableID},
+			})
 			tt.assertFn(t, resp, err)
 		})
 	}

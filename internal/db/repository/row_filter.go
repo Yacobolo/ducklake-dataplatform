@@ -11,12 +11,13 @@ import (
 
 // RowFilterRepo implements domain.RowFilterRepository using SQLite.
 type RowFilterRepo struct {
-	q *dbstore.Queries
+	db *sql.DB
+	q  *dbstore.Queries
 }
 
 // NewRowFilterRepo creates a new RowFilterRepo.
 func NewRowFilterRepo(db *sql.DB) *RowFilterRepo {
-	return &RowFilterRepo{q: dbstore.New(db)}
+	return &RowFilterRepo{db: db, q: dbstore.New(db)}
 }
 
 // Create inserts a new row filter into the database.
@@ -32,6 +33,20 @@ func (r *RowFilterRepo) Create(ctx context.Context, f *domain.RowFilter) (*domai
 		return nil, mapDBError(err)
 	}
 	return mapper.RowFilterFromDB(row), nil
+}
+
+// GetByID returns a row filter by ID.
+func (r *RowFilterRepo) GetByID(ctx context.Context, id string) (*domain.RowFilter, error) {
+	row := r.db.QueryRowContext(ctx, `
+		SELECT id, table_id, filter_sql, description, created_at, name
+		FROM row_filters
+		WHERE id = ?
+	`, id)
+	item, err := scanRowFilter(row)
+	if err != nil {
+		return nil, err
+	}
+	return item, nil
 }
 
 // GetForTable returns a paginated list of row filters for a table.
@@ -51,6 +66,42 @@ func (r *RowFilterRepo) GetForTable(ctx context.Context, tableID string, page do
 	}
 
 	return mapper.RowFiltersFromDB(rows), total, nil
+}
+
+// Update applies partial changes to a row filter.
+func (r *RowFilterRepo) Update(ctx context.Context, id string, req domain.UpdateRowFilterRequest) (*domain.RowFilter, error) {
+	current, err := r.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	name := current.Name
+	if req.Name != nil {
+		name = *req.Name
+	}
+	filterSQL := current.FilterSQL
+	if req.FilterSQL != nil {
+		filterSQL = *req.FilterSQL
+	}
+	description := current.Description
+	if req.Description != nil {
+		description = *req.Description
+	}
+	res, err := r.db.ExecContext(ctx, `
+		UPDATE row_filters
+		SET name = ?, filter_sql = ?, description = ?
+		WHERE id = ?
+	`, sql.NullString{String: name, Valid: name != ""}, filterSQL, sql.NullString{String: description, Valid: description != ""}, id)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	if rows == 0 {
+		return nil, domain.ErrNotFound("row filter %s not found", id)
+	}
+	return r.GetByID(ctx, id)
 }
 
 // Delete removes a row filter by ID. Returns NotFoundError if the filter does not exist.
@@ -121,4 +172,19 @@ func (r *RowFilterRepo) GetForTableAndPrincipal(ctx context.Context, tableID, pr
 		return nil, mapDBError(err)
 	}
 	return mapper.RowFiltersFromDB(rows), nil
+}
+
+func scanRowFilter(row interface{ Scan(dest ...any) error }) (*domain.RowFilter, error) {
+	var item dbstore.RowFilter
+	if err := row.Scan(
+		&item.ID,
+		&item.TableID,
+		&item.FilterSql,
+		&item.Description,
+		&item.CreatedAt,
+		&item.Name,
+	); err != nil {
+		return nil, mapDBError(err)
+	}
+	return mapper.RowFilterFromDB(item), nil
 }

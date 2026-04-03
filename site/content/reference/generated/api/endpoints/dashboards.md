@@ -149,6 +149,30 @@ Get resolved dashboard
 | `429` | Client error |
 | `500` | Server error |
 
+## `GET /dashboards/{dashboard_id}/widgets`
+
+List dashboard widgets
+
+- Operation ID: `listDashboardWidgets`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `POST /dashboards/{dashboard_id}/widgets`
 
 Create dashboard widget
@@ -174,6 +198,31 @@ Create dashboard widget
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /dashboards/{dashboard_id}/widgets/{widget_id}`
+
+Get dashboard widget
+
+- Operation ID: `getDashboardWidget`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - |
+| `widget_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
 

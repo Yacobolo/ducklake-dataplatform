@@ -48,12 +48,45 @@ func (s *ColumnMaskService) Create(ctx context.Context, req domain.CreateColumnM
 	return result, nil
 }
 
+// GetByID returns a column mask by ID. Requires admin privileges.
+func (s *ColumnMaskService) GetByID(ctx context.Context, id string) (*domain.ColumnMask, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, err
+	}
+	return s.repo.GetByID(ctx, id)
+}
+
 // GetForTable returns a paginated list of column masks for a table. Requires admin privileges.
 func (s *ColumnMaskService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
 	if err := requireAdmin(ctx); err != nil {
 		return nil, 0, err
 	}
 	return s.repo.GetForTable(ctx, tableID, page)
+}
+
+// Update applies partial changes to a column mask. Requires admin privileges.
+func (s *ColumnMaskService) Update(ctx context.Context, id string, req domain.UpdateColumnMaskRequest) (*domain.ColumnMask, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, err
+	}
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	if req.MaskExpression != nil {
+		if _, err := duckdbsql.ParseExpr(*req.MaskExpression); err != nil {
+			return nil, domain.ErrValidation("mask_expression must be a valid SQL expression: %v", err)
+		}
+	}
+	result, err := s.repo.Update(ctx, id, req)
+	if err != nil {
+		return nil, err
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		PrincipalName: callerName(ctx),
+		Action:        "UPDATE_COLUMN_MASK",
+		Status:        "ALLOWED",
+	})
+	return result, nil
 }
 
 // Delete removes a column mask by ID. Requires admin privileges.

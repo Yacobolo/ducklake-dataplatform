@@ -35,6 +35,7 @@ type notebookService interface {
 
 type notebookFolderService interface {
 	CreateFolder(ctx context.Context, principal string, req domain.CreateFolderRequest) (*domain.Folder, error)
+	GetHomeFolder(ctx context.Context, principal string) (*domain.Folder, error)
 	GetFolderForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Folder, error)
 	ListFoldersForPrincipal(ctx context.Context, principal string, isAdmin bool, owner *string) ([]domain.Folder, error)
 	UpdateFolder(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateFolderRequest) (*domain.Folder, error)
@@ -79,6 +80,29 @@ type gitRepoService interface {
 }
 
 // === Notebooks ===
+
+// GetHomeFolder implements the endpoint for retrieving the caller home folder.
+func (h *APIHandler) GetHomeFolder(ctx context.Context, _ GenGetHomeFolderRequest) (GenGetHomeFolderResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.notebookFolders.GetHomeFolder(ctx, cp.Name)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetHomeFolderResponse]("getHomeFolder", err, domainErrorResponder[GenGetHomeFolderResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetHomeFolderResponse {
+				return GetHomeFolder403JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenGetHomeFolder200JSONResponse{
+		Body:    folderToAPI(*result),
+		Headers: GenGetHomeFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
 
 // ListFolders implements the endpoint for listing folders.
 func (h *APIHandler) ListFolders(ctx context.Context, req GenListFoldersRequest) (GenListFoldersResponse, error) {
@@ -1040,19 +1064,27 @@ func (h *APIHandler) listFolderContents(ctx context.Context, folderID string, ki
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	kinds := exploreKindsFromParam(kind)
-	items, err := h.explore.List(ctx, cp.Name, cp.IsAdmin, domain.ExploreFilter{
-		FolderID: folderID,
-		Kinds:    kinds,
-		Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
-	})
-	if err != nil {
-		return nil, 0, err
-	}
 	folders, err := h.notebookFolders.ListFoldersForPrincipal(ctx, cp.Name, cp.IsAdmin, nil)
 	if err != nil {
 		return nil, 0, err
 	}
-	content := buildFolderContentItems(folders, items, cp.Name, folderID, kinds)
+	if folderID != "" {
+		if _, err := h.notebookFolders.GetFolderForPrincipal(ctx, cp.Name, cp.IsAdmin, folderID); err != nil {
+			return nil, 0, err
+		}
+	}
+	items := []domain.ExploreItem{}
+	if folderID != "" || !folderKindOnly(kinds) {
+		items, err = h.explore.List(ctx, cp.Name, cp.IsAdmin, domain.ExploreFilter{
+			FolderID: folderID,
+			Kinds:    kinds,
+			Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
+		})
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+	content := buildFolderBrowseItems(folders, items, cp.Name, folderID, kinds)
 	total := int64(len(content))
 	start := page.Offset()
 	if start > len(content) {
@@ -1063,6 +1095,207 @@ func (h *APIHandler) listFolderContents(ctx context.Context, folderID string, ki
 		end = len(content)
 	}
 	return content[start:end], total, nil
+}
+
+// SearchRootFolderContents implements the endpoint for searching the full visible folder namespace.
+func (h *APIHandler) SearchRootFolderContents(ctx context.Context, req GenSearchRootFolderContentsRequest) (GenSearchRootFolderContentsResponse, error) {
+	body, err := h.buildFolderSearchBody(ctx, "", req.Params.Q, req.Params.Kind, req.Params.Owner, pageFromParams(req.Params.MaxResults, req.Params.PageToken))
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenSearchRootFolderContentsResponse]("searchRootFolderContents", err, domainErrorResponder[GenSearchRootFolderContentsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenSearchRootFolderContentsResponse {
+				return SearchRootFolderContents400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenSearchRootFolderContentsResponse {
+				return SearchRootFolderContents403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenSearchRootFolderContentsResponse {
+				return SearchRootFolderContents404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenSearchRootFolderContents200JSONResponse{
+		Body:    body,
+		Headers: GenSearchRootFolderContents200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// SearchFolderContents implements the endpoint for searching a folder namespace.
+func (h *APIHandler) SearchFolderContents(ctx context.Context, req GenSearchFolderContentsRequest) (GenSearchFolderContentsResponse, error) {
+	body, err := h.buildFolderSearchBody(ctx, req.FolderId, req.Params.Q, req.Params.Kind, req.Params.Owner, pageFromParams(req.Params.MaxResults, req.Params.PageToken))
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenSearchFolderContentsResponse]("searchFolderContents", err, domainErrorResponder[GenSearchFolderContentsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenSearchFolderContentsResponse {
+				return SearchFolderContents400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenSearchFolderContentsResponse {
+				return SearchFolderContents403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenSearchFolderContentsResponse {
+				return SearchFolderContents404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenSearchFolderContents200JSONResponse{
+		Body:    body,
+		Headers: GenSearchFolderContents200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetFolderPath implements the endpoint for retrieving an ordered folder breadcrumb path.
+func (h *APIHandler) GetFolderPath(ctx context.Context, req GenGetFolderPathRequest) (GenGetFolderPathResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	selected, err := h.notebookFolders.GetFolderForPrincipal(ctx, cp.Name, cp.IsAdmin, req.FolderId)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetFolderPathResponse]("getFolderPath", err, domainErrorResponder[GenGetFolderPathResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetFolderPathResponse {
+				return GetFolderPath403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetFolderPathResponse {
+				return GetFolderPath404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	folders, err := h.notebookFolders.ListFoldersForPrincipal(ctx, cp.Name, cp.IsAdmin, nil)
+	if err != nil {
+		return nil, err
+	}
+	path := folderPathForFolder(folders, *selected)
+	return GenGetFolderPath200JSONResponse{
+		Body:    FolderPath{Data: path},
+		Headers: GenGetFolderPath200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) buildFolderSearchBody(ctx context.Context, folderID string, query string, kind *string, owner *string, page domain.PageRequest) (PaginatedFolderContents, error) {
+	body := PaginatedFolderContents{}
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return body, domain.ErrValidation("q is required")
+	}
+	content, total, err := h.searchFolderContents(ctx, folderID, query, kind, owner, page)
+	if err != nil {
+		return body, err
+	}
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	body.Data = content
+	body.NextPageToken = optStr(nextToken)
+	return body, nil
+}
+
+func (h *APIHandler) searchFolderContents(ctx context.Context, folderID string, query string, kind *string, owner *string, page domain.PageRequest) ([]FolderContentItem, int64, error) {
+	if h.explore == nil {
+		return nil, 0, domain.ErrNotImplemented("explore service is not configured")
+	}
+	if h.notebookFolders == nil {
+		return nil, 0, domain.ErrNotImplemented("folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	kinds := exploreKindsFromParam(kind)
+	if folderID != "" {
+		if _, err := h.notebookFolders.GetFolderForPrincipal(ctx, cp.Name, cp.IsAdmin, folderID); err != nil {
+			return nil, 0, err
+		}
+	}
+	folders, err := h.notebookFolders.ListFoldersForPrincipal(ctx, cp.Name, cp.IsAdmin, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	var owners []string
+	if owner != nil && strings.TrimSpace(*owner) != "" {
+		owners = []string{strings.TrimSpace(*owner)}
+	}
+	scopeFolders := filterFoldersForScope(folders, folderID)
+	folderMatches := buildFolderSearchItems(scopeFolders, cp.Name, query, kinds, owners)
+
+	itemMatches, err := h.collectFolderSearchItems(ctx, cp.Name, cp.IsAdmin, scopeFolders, folderID, query, kinds, owners)
+	if err != nil {
+		return nil, 0, err
+	}
+	content := append(folderMatches, itemMatches...)
+	sort.Slice(content, func(i, j int) bool {
+		leftName := strings.ToLower(stringValue(content[i].Name))
+		rightName := strings.ToLower(stringValue(content[j].Name))
+		if leftName == rightName {
+			return strings.ToLower(stringValue(content[i].Kind)) < strings.ToLower(stringValue(content[j].Kind))
+		}
+		return leftName < rightName
+	})
+	total := int64(len(content))
+	start := page.Offset()
+	if start > len(content) {
+		start = len(content)
+	}
+	end := start + page.Limit()
+	if end > len(content) {
+		end = len(content)
+	}
+	return content[start:end], total, nil
+}
+
+func (h *APIHandler) collectFolderSearchItems(ctx context.Context, principal string, isAdmin bool, scopeFolders []domain.Folder, folderID string, query string, kinds []string, owners []string) ([]FolderContentItem, error) {
+	items := make([]FolderContentItem, 0, len(scopeFolders))
+	seen := map[string]struct{}{}
+	if folderID != "" {
+		found, err := h.explore.List(ctx, principal, isAdmin, domain.ExploreFilter{
+			FolderID: folderID,
+			Kinds:    filterKindsExcludingFolders(kinds),
+			Owners:   owners,
+			Query:    query,
+			Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range found {
+			key := item.Kind + "\x00" + item.ID + "\x00" + stringValue(item.FolderID)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			items = append(items, folderContentItemToAPI(item))
+		}
+		return items, nil
+	}
+
+	topLevel := make([]domain.Folder, 0, len(scopeFolders))
+	for _, folder := range scopeFolders {
+		if folder.ParentFolderID == nil || strings.TrimSpace(*folder.ParentFolderID) == "" {
+			topLevel = append(topLevel, folder)
+		}
+	}
+	for _, folder := range topLevel {
+		found, err := h.explore.List(ctx, principal, isAdmin, domain.ExploreFilter{
+			FolderID: folder.ID,
+			Kinds:    filterKindsExcludingFolders(kinds),
+			Owners:   owners,
+			Query:    query,
+			Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range found {
+			key := item.Kind + "\x00" + item.ID + "\x00" + stringValue(item.FolderID)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			items = append(items, folderContentItemToAPI(item))
+		}
+	}
+	return items, nil
 }
 
 // === Git Repos ===
@@ -1300,6 +1533,202 @@ func folderContentFolderToAPI(folder domain.Folder, principal string) FolderCont
 		Shared:       optBool(strings.TrimSpace(folder.Owner) != strings.TrimSpace(principal)),
 		ProjectBound: optBool(folder.DefaultProjectID != nil && strings.TrimSpace(*folder.DefaultProjectID) != ""),
 	}
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func folderKindOnly(kinds []string) bool {
+	return len(kinds) == 1 && strings.EqualFold(strings.TrimSpace(kinds[0]), domain.ExploreKindFolder)
+}
+
+func filterKindsExcludingFolders(kinds []string) []string {
+	if len(kinds) == 0 {
+		return nil
+	}
+	filtered := make([]string, 0, len(kinds))
+	for _, kind := range kinds {
+		trimmed := strings.TrimSpace(kind)
+		if trimmed == "" || strings.EqualFold(trimmed, domain.ExploreKindFolder) {
+			continue
+		}
+		filtered = append(filtered, trimmed)
+	}
+	return filtered
+}
+
+func filterFoldersForScope(folders []domain.Folder, folderID string) []domain.Folder {
+	if strings.TrimSpace(folderID) == "" {
+		return folders
+	}
+
+	selectedByID := make(map[string]domain.Folder, len(folders))
+	var selected domain.Folder
+	var found bool
+	for _, folder := range folders {
+		selectedByID[folder.ID] = folder
+		if folder.ID == folderID {
+			selected = folder
+			found = true
+		}
+	}
+	if !found {
+		return nil
+	}
+
+	prefix := strings.TrimSpace(selected.Path)
+	if prefix == "" {
+		return []domain.Folder{selected}
+	}
+	scope := make([]domain.Folder, 0, len(folders))
+	for _, folder := range folders {
+		path := strings.TrimSpace(folder.Path)
+		if path == prefix || strings.HasPrefix(path, prefix+"/") {
+			scope = append(scope, folder)
+		}
+	}
+	return scope
+}
+
+func buildFolderBrowseItems(folders []domain.Folder, items []domain.ExploreItem, principal string, folderID string, kinds []string) []FolderContentItem {
+	includeFolders := len(kinds) == 0
+	for _, kind := range kinds {
+		if strings.EqualFold(strings.TrimSpace(kind), domain.ExploreKindFolder) {
+			includeFolders = true
+			break
+		}
+	}
+
+	content := make([]FolderContentItem, 0, len(folders)+len(items))
+	if includeFolders {
+		childFolders := make([]domain.Folder, 0, len(folders))
+		for _, folder := range folders {
+			parentID := strings.TrimSpace(stringValue(folder.ParentFolderID))
+			if strings.TrimSpace(folderID) == "" {
+				if parentID != "" {
+					continue
+				}
+			} else if parentID != strings.TrimSpace(folderID) {
+				continue
+			}
+			childFolders = append(childFolders, folder)
+		}
+		sort.Slice(childFolders, func(i, j int) bool {
+			left := strings.ToLower(childFolders[i].Name)
+			right := strings.ToLower(childFolders[j].Name)
+			return left < right
+		})
+		for _, folder := range childFolders {
+			content = append(content, folderContentFolderToAPI(folder, principal))
+		}
+	}
+
+	itemContent := make([]FolderContentItem, 0, len(items))
+	for _, item := range items {
+		itemFolderID := strings.TrimSpace(stringValue(item.FolderID))
+		if strings.TrimSpace(folderID) == "" {
+			if itemFolderID != "" {
+				continue
+			}
+		} else if itemFolderID != "" && itemFolderID != strings.TrimSpace(folderID) {
+			continue
+		}
+		itemContent = append(itemContent, folderContentItemToAPI(item))
+	}
+	sort.Slice(itemContent, func(i, j int) bool {
+		leftName := strings.ToLower(stringValue(itemContent[i].Name))
+		rightName := strings.ToLower(stringValue(itemContent[j].Name))
+		if leftName == rightName {
+			return strings.ToLower(stringValue(itemContent[i].Kind)) < strings.ToLower(stringValue(itemContent[j].Kind))
+		}
+		return leftName < rightName
+	})
+	return append(content, itemContent...)
+}
+
+func buildFolderSearchItems(folders []domain.Folder, principal string, query string, kinds []string, owners []string) []FolderContentItem {
+	includeFolders := len(kinds) == 0
+	for _, kind := range kinds {
+		if strings.EqualFold(strings.TrimSpace(kind), domain.ExploreKindFolder) {
+			includeFolders = true
+			break
+		}
+	}
+	if !includeFolders {
+		return nil
+	}
+
+	normalizedOwners := make([]string, 0, len(owners))
+	for _, owner := range owners {
+		if trimmed := strings.TrimSpace(owner); trimmed != "" {
+			normalizedOwners = append(normalizedOwners, strings.ToLower(trimmed))
+		}
+	}
+
+	matches := make([]FolderContentItem, 0, len(folders))
+	for _, folder := range folders {
+		if len(normalizedOwners) > 0 {
+			ownerMatched := false
+			folderOwner := strings.ToLower(strings.TrimSpace(folder.Owner))
+			for _, owner := range normalizedOwners {
+				if owner == folderOwner {
+					ownerMatched = true
+					break
+				}
+			}
+			if !ownerMatched {
+				continue
+			}
+		}
+		if !folderSearchMatch(query, folder.Name, folder.Owner) {
+			continue
+		}
+		matches = append(matches, folderContentFolderToAPI(folder, principal))
+	}
+	return matches
+}
+
+func folderSearchMatch(query string, values ...string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(query))
+	if normalized == "" {
+		return true
+	}
+	for _, value := range values {
+		if strings.Contains(strings.ToLower(strings.TrimSpace(value)), normalized) {
+			return true
+		}
+	}
+	return false
+}
+
+func folderPathForFolder(folders []domain.Folder, selected domain.Folder) []Folder {
+	folderByID := make(map[string]domain.Folder, len(folders))
+	for _, folder := range folders {
+		folderByID[folder.ID] = folder
+	}
+
+	path := make([]Folder, 0, 8)
+	current := selected
+	for {
+		path = append(path, folderToAPI(current))
+		parentID := strings.TrimSpace(stringValue(current.ParentFolderID))
+		if parentID == "" {
+			break
+		}
+		parent, ok := folderByID[parentID]
+		if !ok {
+			break
+		}
+		current = parent
+	}
+	for left, right := 0, len(path)-1; left < right; left, right = left+1, right-1 {
+		path[left], path[right] = path[right], path[left]
+	}
+	return path
 }
 
 func buildFolderContentItems(folders []domain.Folder, items []domain.ExploreItem, principal string, folderID string, kinds []string) []FolderContentItem {

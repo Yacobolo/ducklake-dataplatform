@@ -74,6 +74,32 @@ List root folder contents
 | `429` | Client error |
 | `500` | Server error |
 
+## `GET /folders/search-results`
+
+Search root folder namespace
+
+- Operation ID: `searchRootFolderContents`
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `kind` | `string` | `false` | - |
+| `max_results` | `integer` | `false` | - |
+| `owner` | `string` | `false` | - |
+| `page_token` | `string` | `false` | - |
+| `q` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `GET /folders/{folder_id}`
 
 Get folder
@@ -210,6 +236,62 @@ Move folder
 | `429` | Client error |
 | `500` | Server error |
 
+## `GET /folders/{folder_id}/path`
+
+Get folder path
+
+- Operation ID: `getFolderPath`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `folder_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /folders/{folder_id}/search-results`
+
+Search folder namespace
+
+- Operation ID: `searchFolderContents`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `folder_id` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `kind` | `string` | `false` | - |
+| `max_results` | `integer` | `false` | - |
+| `owner` | `string` | `false` | - |
+| `page_token` | `string` | `false` | - |
+| `q` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `GET /folders/{folder_id}/shares`
 
 List folder shares
@@ -285,6 +367,22 @@ Remove folder share
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /me/folders/home`
+
+Get caller home folder
+
+- Operation ID: `getHomeFolder`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
 

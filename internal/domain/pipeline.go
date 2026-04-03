@@ -139,6 +139,19 @@ type CreatePipelineJobRequest struct {
 	ModelSelector     string
 }
 
+// UpdatePipelineJobRequest holds partial-update parameters for a pipeline job.
+type UpdatePipelineJobRequest struct {
+	Name              *string
+	ComputeEndpointID *string
+	DependsOn         *[]string
+	NotebookID        *string
+	TimeoutSeconds    *int64
+	RetryCount        *int
+	JobOrder          *int
+	JobType           *string
+	ModelSelector     *string
+}
+
 // Validate checks that the request is well-formed.
 func (r *CreatePipelineJobRequest) Validate() error {
 	if strings.TrimSpace(r.Name) == "" {
@@ -155,6 +168,33 @@ func (r *CreatePipelineJobRequest) Validate() error {
 	}
 	if r.RetryCount < 0 {
 		return ErrValidation("retry_count must be non-negative")
+	}
+	return nil
+}
+
+// Validate checks that the update request is well-formed.
+func (r *UpdatePipelineJobRequest) Validate() error {
+	if r.Name != nil && strings.TrimSpace(*r.Name) == "" {
+		return ErrValidation("name cannot be empty")
+	}
+	if r.RetryCount != nil && *r.RetryCount < 0 {
+		return ErrValidation("retry_count must be non-negative")
+	}
+	if r.JobType != nil {
+		switch *r.JobType {
+		case PipelineJobTypeNotebook:
+			if r.NotebookID != nil && *r.NotebookID == "" {
+				return ErrValidation("notebook_id is required for NOTEBOOK jobs")
+			}
+		case PipelineJobTypeModelRun:
+			if r.ModelSelector != nil && *r.ModelSelector == "" {
+				return ErrValidation("model_selector is required for MODEL_RUN jobs")
+			}
+		case "":
+			return ErrValidation("job_type cannot be empty")
+		default:
+			return ErrValidation("job_type must be NOTEBOOK or MODEL_RUN")
+		}
 	}
 	return nil
 }
