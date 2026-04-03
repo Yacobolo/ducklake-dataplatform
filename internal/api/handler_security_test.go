@@ -903,14 +903,14 @@ func TestHandler_ListColumnMasks(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			svc := &mockColumnMaskService{getForTableFn: tt.svcFn}
-			handler := &APIHandler{columnMasks: svc}
-			resp, err := handler.ListColumnMasks(secTestCtx(), GenListColumnMasksRequest{
-				TableId: "t-1",
-				Params:  GenListColumnMasksParams{},
-			})
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				svc := &mockColumnMaskService{getForTableFn: tt.svcFn}
+				handler := &APIHandler{columnMasks: svc}
+				tableID := "t-1"
+				resp, err := handler.ListColumnMasks(secTestCtx(), GenListColumnMasksRequest{
+					Params: GenListColumnMasksParams{TableId: &tableID},
+				})
 			tt.assertFn(t, resp, err)
 		})
 	}
@@ -985,13 +985,14 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 			t.Parallel()
 			svc := &mockColumnMaskService{createFn: tt.svcFn}
 			handler := &APIHandler{columnMasks: svc}
+			tableID := "t-1"
 			body := GenCreateColumnMaskJSONBody{
+				TableId:        &tableID,
 				ColumnName:     "ssn",
 				MaskExpression: "'***'",
 			}
 			resp, err := handler.CreateColumnMask(secTestCtx(), GenCreateColumnMaskRequest{
-				TableId: "t-1",
-				Body:    &body,
+				Body: &body,
 			})
 			tt.assertFn(t, resp, err)
 		})

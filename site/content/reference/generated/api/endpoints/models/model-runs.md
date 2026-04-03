@@ -74,7 +74,7 @@ Get model run
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /model-runs/{runId}/cancel`
+## `POST /model-runs/{runId}/cancellations`
 
 Cancel model run
 

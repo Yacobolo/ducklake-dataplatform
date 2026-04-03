@@ -4,6 +4,30 @@
 
 Teams operations within the Products API group.
 
+## `GET /product-domains/teams`
+
+List product teams
+
+- Operation ID: `listProductTeams`
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `domain_name` | `string` | `false` | - |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `POST /product-domains/{domainName}/teams`
 
 Create product team

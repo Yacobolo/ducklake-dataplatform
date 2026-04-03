@@ -2,55 +2,48 @@ using TypeSpec.Http;
 
 namespace Duck;
 
-@route("/catalogs:search")
+@route("/catalog-search-results")
 @get
 @tag("Catalogs")
 @summary("Search catalog")
 op searchCatalog(@query query: string, @query type?: string, @query catalog?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedSearchResults> | StandardErrorResponses;
 
-@route("/catalog-registrations")
+@route("/catalogs")
 @post
 @tag("Catalogs")
 @summary("Register catalog")
 op registerCatalog(@body body: CreateCatalogRequest): Created<CatalogRegistration> | MutatingErrorResponses;
 
-@route("/catalog-registrations")
+@route("/catalogs")
 @get
 @tag("Catalogs")
 @summary("List catalog registrations")
 @doc("Lists registered catalogs and returns a paginated catalog registration view for management clients.")
 op listCatalogs(@query max_results?: int32, @query page_token?: string): Ok<CatalogRegistrationList> | GuardedReadErrorResponses;
 
-@route("/catalog-registrations/{catalogName}")
+@route("/catalogs/{catalogName}")
 @get
 @tag("Catalogs")
-@summary("Get catalog registration")
-op getCatalogRegistration(catalogName: string): Ok<CatalogRegistration> | ResourceErrorResponses;
+@summary("Get catalog")
+op getCatalog(catalogName: string): Ok<CatalogRegistration> | ResourceErrorResponses;
 
-@route("/catalog-registrations/{catalogName}")
+@route("/catalogs/{catalogName}")
 @patch(#{ implicitOptionality: true })
 @tag("Catalogs")
 @summary("Update catalog registration")
 op updateCatalogRegistration(catalogName: string, @body body: UpdateCatalogRegistrationRequest): Ok<CatalogRegistration> | ResourceErrorResponses;
 
-@route("/catalog-registrations/{catalogName}")
+@route("/catalogs/{catalogName}")
 @delete
 @tag("Catalogs")
 @summary("Delete catalog registration")
 op deleteCatalogRegistration(catalogName: string): NoContent | ResourceErrorResponses;
 
-@route("/catalog-registrations/{catalogName}:set-default")
-@post
+@route("/catalogs/{catalogName}/default")
+@put
 @tag("Catalogs")
 @summary("Set default catalog")
 op setDefaultCatalog(catalogName: string, @body body: SetDefaultCatalogRequest): Ok<CatalogRegistration> | MutatingErrorResponses;
-
-@route("/catalogs/{catalogName}/info")
-@get
-@tag("Catalogs")
-@summary("Get catalog")
-@doc("Returns runtime catalog information, including metastore details and status for the named catalog.")
-op getCatalog(catalogName: string): Ok<CatalogInfo> | ResourceErrorResponses;
 
 @route("/catalogs/{catalogName}/metastore/summary")
 @get
@@ -160,7 +153,7 @@ op updateColumn(
   @body body: UpdateColumnRequest,
 ): Ok<ColumnDetail> | MutatingErrorResponses;
 
-@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile")
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profiles")
 @post
 @tag("Catalogs")
 @summary("Profile table")
@@ -172,19 +165,19 @@ op profileTable(catalogName: string, schemaName: string, tableName: string): Ok<
 @summary("Get table manifest")
 op createManifest(catalogName: string, schemaName: string, tableName: string): Ok<ManifestResponse> | ResourceErrorResponses;
 
-@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url")
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/upload-urls")
 @post
 @tag("Catalogs")
 @summary("Create upload URL")
 op createUploadUrl(catalogName: string, schemaName: string, tableName: string, @body body: UploadUrlRequest): Ok<UploadUrlResponse> | MutatingErrorResponses;
 
-@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit")
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion-commits")
 @post
 @tag("Catalogs")
 @summary("Commit table ingestion")
 op commitTableIngestion(catalogName: string, schemaName: string, tableName: string, @body body: CommitIngestionRequest): Ok<IngestionResult> | MutatingErrorResponses;
 
-@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load")
+@route("/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion-loads")
 @post
 @tag("Catalogs")
 @summary("Load table external files")

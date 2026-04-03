@@ -92,19 +92,19 @@ op listModelTestResults(runId: string, stepId: string): Ok<ModelTestResultList> 
 @summary("Check model freshness")
 op checkModelFreshness(projectName: string, modelName: string): Ok<FreshnessStatus> | ResourceErrorResponses;
 
-@route("/models/from-notebook")
+@route("/notebook-model-promotions")
 @post
 @tag("Models")
 @summary("Promote notebook to model")
 op promoteNotebookToModel(@body body: PromoteNotebookRequest): Created<Model> | MutatingErrorResponses;
 
-@route("/models/from-notebook/{notebookId}")
+@route("/notebook-model-promotions/{notebookId}")
 @delete
 @tag("Models")
 @summary("Unpublish notebook model")
 op unpublishNotebookModel(notebookId: string): NoContent | ResourceErrorResponses;
 
-@route("/model-runs/{runId}/cancel")
+@route("/model-runs/{runId}/cancellations")
 @post
 @tag("Models")
 @summary("Cancel model run")
@@ -146,13 +146,13 @@ op deleteMacro(macroName: string): NoContent | MutatingErrorResponses;
 @summary("List macro revisions")
 op listMacroRevisions(macroName: string): Ok<MacroRevisionList> | ResourceErrorResponses;
 
-@route("/macros/{macroName}/impact")
+@route("/macros/{macroName}/impacts")
 @get
 @tag("Models")
 @summary("Get macro impact")
 op getMacroImpact(macroName: string, @query max_results?: int32, @query page_token?: string): Ok<MacroImpactList> | ResourceErrorResponses;
 
-@route("/macros/{macroName}/diff")
+@route("/macros/{macroName}/revision-diffs")
 @get
 @tag("Models")
 @summary("Diff macro revisions")

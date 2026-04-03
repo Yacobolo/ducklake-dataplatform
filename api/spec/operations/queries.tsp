@@ -2,7 +2,7 @@ using TypeSpec.Http;
 
 namespace Duck;
 
-@route("/queries:execute")
+@route("/query-executions")
 @post
 @tag("Queries")
 @summary("Execute query")
@@ -35,7 +35,7 @@ op deleteQuery(queryId: string): NoContent | MutatingErrorResponses;
 @doc("Returns a page of rows for a previously submitted query using the stored query job identifier.")
 op getQueryResults(queryId: string, @query max_results?: int32, @query page_token?: string): Ok<QueryResult> | ResourceErrorResponses;
 
-@route("/queries/{queryId}:cancel")
+@route("/queries/{queryId}/cancellations")
 @post
 @tag("Queries")
 @summary("Cancel query")

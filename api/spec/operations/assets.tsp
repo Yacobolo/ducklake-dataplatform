@@ -45,7 +45,7 @@ op getAssetGraph(assetKey: string): Ok<AssetGraph> | ResourceErrorResponses;
 @summary("Get asset freshness")
 op getAssetFreshness(assetKey: string): Ok<AssetFreshnessStatus> | ResourceErrorResponses;
 
-@route("/assets/{assetKey}/freshness/explain")
+@route("/assets/{assetKey}/freshness-explanation")
 @get
 @tag("Assets")
 @summary("Explain asset freshness")
@@ -63,7 +63,7 @@ op listAssetFreshnessRequirements(assetKey: string): Ok<AssetFreshnessRequiremen
 @summary("List asset freshness blockers")
 op listAssetFreshnessBlockers(assetKey: string): Ok<AssetFreshnessBlockersResponse> | ResourceErrorResponses;
 
-@route("/assets/{assetKey}/freshness/reconcile")
+@route("/assets/{assetKey}/freshness-reconciliations")
 @post
 @tag("Assets")
 @summary("Reconcile asset freshness")
@@ -81,7 +81,7 @@ op listAssetPartitions(assetKey: string, @query max_results?: int32, @query page
 @summary("List asset runs")
 op listAssetRuns(assetKey: string, @query status?: AssetRunStatus, @query max_results?: int32, @query page_token?: string): Ok<PaginatedAssetRuns> | ResourceErrorResponses;
 
-@route("/assets/{assetKey}/materialize")
+@route("/assets/{assetKey}/materializations")
 @post
 @tag("Assets")
 @summary("Trigger asset materialization")

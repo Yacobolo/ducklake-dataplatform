@@ -121,7 +121,7 @@ func TestExecuteCatalog_CreateSendsName(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodPost, req.Method)
-	assert.Contains(t, req.Path, "/catalog-registrations")
+	assert.Contains(t, req.Path, "/catalogs")
 	assert.Equal(t, "demo", bodyStr(req, "name"))
 	assert.Equal(t, "sqlite", bodyStr(req, "metastore_type"))
 	assert.Equal(t, "/tmp/meta.sqlite", bodyStr(req, "dsn"))
@@ -154,7 +154,7 @@ func TestExecuteCatalog_Update(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodPatch, req.Method)
-	assert.Contains(t, req.Path, "/catalog-registrations/demo")
+	assert.Contains(t, req.Path, "/catalogs/demo")
 	assert.Equal(t, "/tmp/data2/", bodyStr(req, "data_path"))
 	assert.Empty(t, bodyStr(req, "metastore_type"))
 }
@@ -369,7 +369,8 @@ func TestExecuteRowFilter_Create(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodPost, req.Method)
-	assert.Contains(t, req.Path, "/tables/table-id-passengers/row-filters")
+	assert.Contains(t, req.Path, "/row-filters")
+	assert.Equal(t, "table-id-passengers", bodyStr(req, "table_id"))
 	assert.Equal(t, "first_class", bodyStr(req, "name"))
 	assert.Equal(t, `"Pclass" = 1`, bodyStr(req, "filter_sql"))
 	assert.Equal(t, "First class only", bodyStr(req, "description"))
@@ -471,7 +472,8 @@ func TestExecuteColumnMask_Create(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodPost, req.Method)
-	assert.Contains(t, req.Path, "/tables/table-id-passengers/column-masks")
+	assert.Contains(t, req.Path, "/column-masks")
+	assert.Equal(t, "table-id-passengers", bodyStr(req, "table_id"))
 	assert.Equal(t, "mask_name", bodyStr(req, "name"))
 	assert.Equal(t, "Name", bodyStr(req, "column_name"))
 	assert.Equal(t, "'***'", bodyStr(req, "mask_expression"))
@@ -1081,7 +1083,7 @@ func TestExecuteNotebook_UpdateUnpublishesBeforeRemovingPublishedOutput(t *testi
 				}
 			}
 			_ = json.NewEncoder(w).Encode(resp)
-		case r.Method == http.MethodDelete && r.URL.Path == "/v1/models/from-notebook/nb-id-1":
+		case r.Method == http.MethodDelete && r.URL.Path == "/v1/notebook-model-promotions/nb-id-1":
 			published = false
 			w.WriteHeader(http.StatusNoContent)
 		default:
@@ -1118,7 +1120,7 @@ func TestExecuteNotebook_UpdateUnpublishesBeforeRemovingPublishedOutput(t *testi
 	assert.Equal(t, http.MethodGet, captured[1].Method)
 	assert.Equal(t, "/v1/notebooks/nb-id-1", captured[1].Path)
 	assert.Equal(t, http.MethodDelete, captured[2].Method)
-	assert.Equal(t, "/v1/models/from-notebook/nb-id-1", captured[2].Path)
+	assert.Equal(t, "/v1/notebook-model-promotions/nb-id-1", captured[2].Path)
 	assert.Equal(t, http.MethodGet, captured[3].Method)
 	assert.Equal(t, "/v1/notebooks/nb-id-1", captured[3].Path)
 	assert.Equal(t, http.MethodPatch, captured[4].Method)
@@ -1462,7 +1464,7 @@ func TestExecuteSemanticModel_CreateReconcilesChildren(t *testing.T) {
 		ResourceKind: declarative.KindSemanticModel,
 		ResourceName: "sales",
 		Desired: declarative.SemanticModelResource{
-			ModelName:   "sales",
+			ModelName: "sales",
 			Spec: declarative.SemanticModelSpec{
 				Description:          "Sales semantic model",
 				BaseModelRef:         "analytics.fct_sales",
@@ -1558,7 +1560,7 @@ func TestExecuteSemanticModel_UpdateReconcilesAndDeletesChildren(t *testing.T) {
 		ResourceKind: declarative.KindSemanticModel,
 		ResourceName: "sales",
 		Desired: declarative.SemanticModelResource{
-			ModelName:   "sales",
+			ModelName: "sales",
 			Spec: declarative.SemanticModelSpec{
 				Description:          "Updated sales model",
 				BaseModelRef:         "analytics.fct_sales",
@@ -2025,7 +2027,7 @@ func TestReadState_CatalogsWithSchemasAndTables(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalog-registrations", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"catalogs": []map[string]interface{}{
@@ -2580,7 +2582,7 @@ func TestReadState_GrantsResolvedFromIDs(t *testing.T) {
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
-	mux.HandleFunc("/v1/catalog-registrations", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"catalogs": []map[string]interface{}{
@@ -2850,7 +2852,7 @@ func TestExecuteCatalog_Delete(t *testing.T) {
 
 	req := captured[0]
 	assert.Equal(t, http.MethodDelete, req.Method)
-	assert.Contains(t, req.Path, "/catalog-registrations/demo")
+	assert.Contains(t, req.Path, "/catalogs/demo")
 }
 
 func TestExecuteGroup_Delete(t *testing.T) {
@@ -2994,7 +2996,7 @@ func TestReadState_ViewsAndVolumes(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalog-registrations", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/catalogs", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
 			"catalogs": []map[string]interface{}{
@@ -3204,10 +3206,10 @@ func TestExecuteColumnMask_CreateAlreadyExistsHydratesIndex(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/tables/table-1/column-masks"):
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/column-masks"):
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(`{"code":500,"message":"resource already exists"}`))
-		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/tables/table-1/column-masks"):
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/column-masks"):
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"data":[{"id":"mask-existing-789","column_name":"name","mask_expression":"'***'","description":"Mask passenger name"}]}`))
 		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/column-masks/mask-existing-789/bindings"):
@@ -3641,7 +3643,7 @@ func TestReadState_ProductControlPlaneAndAssetBindings(t *testing.T) {
 	mux.HandleFunc("/v1/principals", emptyListHandler())
 	mux.HandleFunc("/v1/groups", emptyListHandler())
 	mux.HandleFunc("/v1/api-keys", emptyListHandler())
-	mux.HandleFunc("/v1/catalog-registrations", emptyListHandler())
+	mux.HandleFunc("/v1/catalogs", emptyListHandler())
 	mux.HandleFunc("/v1/storage-credentials", emptyListHandler())
 	mux.HandleFunc("/v1/external-locations", emptyListHandler())
 	mux.HandleFunc("/v1/grants", emptyListHandler())
@@ -3660,7 +3662,7 @@ func TestReadState_ProductControlPlaneAndAssetBindings(t *testing.T) {
 			},
 		})
 	})
-	mux.HandleFunc("/v1/product-teams", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/product-domains/teams", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"data": []map[string]any{

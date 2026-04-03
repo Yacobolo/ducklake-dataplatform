@@ -682,7 +682,7 @@ const responseShapeManifest: Record<string, IRResponseShape> = {
   "explainMetricQuery:201": { kind: "wrapped_json", body_type: "MetricQueryExplainResponse" },
   "executeCell:201": { kind: "wrapped_json", body_type: "CellExecutionResult" },
   "executeQuery:201": { kind: "wrapped_json", body_type: "QueryResult" },
-  "getCatalog:200": { kind: "wrapped_json", body_type: "CatalogInfo" },
+  "getCatalog:200": { kind: "wrapped_json", body_type: "CatalogRegistration" },
   "getCatalogRegistration:200": { kind: "wrapped_json", body_type: "CatalogRegistration" },
   "getColumnImpact:200": { kind: "wrapped_json", body_type: "PaginatedColumnLineageEdges" },
   "getColumnLineage:200": { kind: "wrapped_json", body_type: "PaginatedColumnLineageEdges" },

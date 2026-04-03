@@ -340,14 +340,6 @@ type CatalogHistoryResponse struct {
 	Data []CatalogHistoryEntry `json:"data"`
 }
 
-type CatalogInfo struct {
-	Comment       *string `json:"comment,omitempty"`
-	CreatedAt     *string `json:"created_at,omitempty"`
-	Name          string  `json:"name"`
-	SystemManaged *bool   `json:"system_managed,omitempty"`
-	UpdatedAt     *string `json:"updated_at,omitempty"`
-}
-
 type CatalogRegistration struct {
 	Comment       *string        `json:"comment,omitempty"`
 	CreatedAt     *string        `json:"created_at,omitempty"`
@@ -641,6 +633,7 @@ type CreateColumnMaskRequest struct {
 	Description    *string `json:"description,omitempty"`
 	MaskExpression string  `json:"mask_expression"`
 	Name           string  `json:"name"`
+	TableId        *string `json:"table_id,omitempty"`
 }
 
 type CreateColumnRequest struct {

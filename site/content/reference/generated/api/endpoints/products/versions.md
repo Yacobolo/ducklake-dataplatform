@@ -106,7 +106,7 @@ Delete data product version
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /data-products/{productSlug}/versions/{version}:deprecate`
+## `POST /data-products/{productSlug}/versions/{version}/deprecations`
 
 Deprecate data product version
 
@@ -136,7 +136,7 @@ Deprecate data product version
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /data-products/{productSlug}/versions/{version}:publish`
+## `POST /data-products/{productSlug}/versions/{version}/publications`
 
 Publish data product version
 
@@ -161,7 +161,7 @@ Publish data product version
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /data-products/{productSlug}/versions/{version}:retire`
+## `POST /data-products/{productSlug}/versions/{version}/retirements`
 
 Retire data product version
 

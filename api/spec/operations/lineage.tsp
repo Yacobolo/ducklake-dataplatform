@@ -32,13 +32,13 @@ op deleteLineageEdge(edgeId: string): NoContent | MutatingErrorResponses;
 @summary("Get column lineage")
 op getColumnLineage(schemaName: string, tableName: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedColumnLineageEdges> | ResourceErrorResponses;
 
-@route("/lineage/columns/{schemaName}/{tableName}/{columnName}/impact")
+@route("/lineage/columns/{schemaName}/{tableName}/{columnName}/impacts")
 @get
 @tag("Lineage")
 @summary("Get column impact")
 op getColumnImpact(schemaName: string, tableName: string, columnName: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedColumnLineageEdges> | ResourceErrorResponses;
 
-@route("/lineage/purge")
+@route("/lineage-purges")
 @post
 @tag("Lineage")
 @summary("Purge lineage")

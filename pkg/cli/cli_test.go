@@ -1183,8 +1183,8 @@ func TestCLI_CatalogSetDefault_SendsEmptyJSONObject(t *testing.T) {
 	require.NoError(t, err)
 
 	captured := rec.last()
-	assert.Equal(t, "POST", captured.Method)
-	assert.Equal(t, "/v1/catalog-registrations/lake:set-default", captured.Path)
+	assert.Equal(t, "PUT", captured.Method)
+	assert.Equal(t, "/v1/catalogs/lake/default", captured.Path)
 	assert.JSONEq(t, `{}`, captured.Body)
 }
 

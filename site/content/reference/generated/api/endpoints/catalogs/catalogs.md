@@ -4,6 +4,159 @@
 
 Catalogs operations within the Catalogs API group.
 
+## `GET /catalogs`
+
+List catalog registrations
+
+Lists registered catalogs and returns a paginated catalog registration view for management clients.
+
+- Operation ID: `listCatalogs`
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /catalogs`
+
+Register catalog
+
+- Operation ID: `registerCatalog`
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /catalogs/{catalogName}`
+
+Get catalog
+
+- Operation ID: `getCatalog`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalogName` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /catalogs/{catalogName}`
+
+Update catalog registration
+
+- Operation ID: `updateCatalogRegistration`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalogName` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /catalogs/{catalogName}`
+
+Delete catalog registration
+
+- Operation ID: `deleteCatalogRegistration`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalogName` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PUT /catalogs/{catalogName}/default`
+
+Set default catalog
+
+- Operation ID: `setDefaultCatalog`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalogName` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `GET /catalogs/{catalogName}/history`
 
 List catalog history
@@ -24,32 +177,6 @@ List catalog history
 | `limit` | `integer` | `false` | - |
 | `schema_name` | `string` | `false` | - |
 | `table_name` | `string` | `false` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /catalogs/{catalogName}/info`
-
-Get catalog
-
-Returns runtime catalog information, including metastore details and status for the named catalog.
-
-- Operation ID: `getCatalog`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalogName` | `string` | `true` | - |
 
 ### Responses
 
@@ -108,32 +235,6 @@ Get catalog version summary
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /catalogs:search`
-
-Search catalog
-
-- Operation ID: `searchCatalog`
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalog` | `string` | `false` | - |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-| `query` | `string` | `true` | - |
-| `type` | `string` | `false` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
 | `429` | Client error |
 | `500` | Server error |
 

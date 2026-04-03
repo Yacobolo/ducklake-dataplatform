@@ -456,6 +456,7 @@ model PaginatedColumnMasks {
 }
 
 model CreateColumnMaskRequest {
+  table_id?: string;
   name: string;
   column_name: string;
   mask_expression: string;

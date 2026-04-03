@@ -11,7 +11,7 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 - [Assets](./endpoints/assets/) (20 operations)
 - [Audit](./endpoints/audit) (1 operations)
 - [Auth](./endpoints/auth) (7 operations)
-- [Catalogs](./endpoints/catalogs/) (38 operations)
+- [Catalogs](./endpoints/catalogs/) (37 operations)
 - [Compute](./endpoints/compute) (11 operations)
 - [Dashboards](./endpoints/dashboards) (9 operations)
 - [Governance](./endpoints/governance/) (22 operations)

@@ -509,7 +509,7 @@ func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.De
 		if pageToken != "" {
 			query.Set("page_token", pageToken)
 		}
-		resp, err := c.client.Do(http.MethodGet, "/catalog-registrations", query, nil)
+		resp, err := c.client.Do(http.MethodGet, "/catalogs", query, nil)
 		if err != nil {
 			return err
 		}
@@ -720,7 +720,7 @@ func (c *APIStateClient) readTableGovernance(ctx context.Context, catalogName, s
 }
 
 func (c *APIStateClient) readTableRowFilters(ctx context.Context, catalogName, schemaName, tableName, tableID string, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/row-filters")
+	pages, err := c.fetchAllPages(ctx, "/row-filters?table_id="+url.QueryEscape(tableID))
 	if err != nil {
 		return err
 	}
@@ -796,7 +796,7 @@ func (c *APIStateClient) readRowFilterBindings(ctx context.Context, filterID str
 }
 
 func (c *APIStateClient) readTableColumnMasks(ctx context.Context, catalogName, schemaName, tableName, tableID string, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/column-masks")
+	pages, err := c.fetchAllPages(ctx, "/column-masks?table_id="+url.QueryEscape(tableID))
 	if err != nil {
 		return err
 	}
@@ -1531,7 +1531,7 @@ func (c *APIStateClient) readDomains(ctx context.Context, state *declarative.Des
 }
 
 func (c *APIStateClient) readTeams(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/product-teams")
+	pages, err := c.fetchAllPages(ctx, "/product-domains/teams")
 	if err != nil {
 		return err
 	}
@@ -1990,15 +1990,15 @@ type apiSemanticModel struct {
 }
 
 type apiSemanticMetric struct {
-	Name               string `json:"name"`
-	Description        string `json:"description"`
-	MetricType         string `json:"metric_type"`
-	ExpressionMode     string `json:"expression_mode"`
-	Expression         string `json:"expression"`
+	Name               string   `json:"name"`
+	Description        string   `json:"description"`
+	MetricType         string   `json:"metric_type"`
+	ExpressionMode     string   `json:"expression_mode"`
+	Expression         string   `json:"expression"`
 	RelationshipNames  []string `json:"relationship_names"`
-	DefaultTimeGrain   string `json:"default_time_grain"`
-	Format             string `json:"format"`
-	CertificationState string `json:"certification_state"`
+	DefaultTimeGrain   string   `json:"default_time_grain"`
+	Format             string   `json:"format"`
+	CertificationState string   `json:"certification_state"`
 }
 
 type apiSemanticRelationship struct {
@@ -2217,7 +2217,7 @@ func (c *APIStateClient) readSemanticModels(ctx context.Context, state *declarat
 	modelNameByID := make(map[string]string, len(items))
 	for _, m := range items {
 		state.SemanticModels = append(state.SemanticModels, declarative.SemanticModelResource{
-			ModelName:   m.Name,
+			ModelName: m.Name,
 			Spec: declarative.SemanticModelSpec{
 				Description:          m.Description,
 				BaseModelRef:         m.BaseModelRef,
@@ -2693,7 +2693,7 @@ func (c *APIStateClient) lookupColumnMaskIDBySpec(ctx context.Context, tablePath
 		return "", fmt.Errorf("resolve table for column mask lookup: %w", err)
 	}
 
-	pages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/column-masks")
+	pages, err := c.fetchAllPages(ctx, "/column-masks?table_id="+url.QueryEscape(tableID))
 	if err != nil {
 		return "", err
 	}
@@ -3546,7 +3546,7 @@ func (c *APIStateClient) applyProductVersionState(_ context.Context, slug, actua
 	case domain.ProductReleaseStatePublished:
 		switch actualState {
 		case "", domain.ProductReleaseStateDraft:
-			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d:publish", slug, version), nil, map[string]interface{}{})
+			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d/publications", slug, version), nil, map[string]interface{}{})
 			if err != nil {
 				return err
 			}
@@ -3559,7 +3559,7 @@ func (c *APIStateClient) applyProductVersionState(_ context.Context, slug, actua
 	case domain.ProductReleaseStateDeprecated:
 		switch actualState {
 		case "", domain.ProductReleaseStateDraft, domain.ProductReleaseStatePublished:
-			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d:deprecate", slug, version), nil, map[string]interface{}{})
+			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d/deprecations", slug, version), nil, map[string]interface{}{})
 			if err != nil {
 				return err
 			}
@@ -3573,7 +3573,7 @@ func (c *APIStateClient) applyProductVersionState(_ context.Context, slug, actua
 		if actualState == domain.ProductReleaseStateRetired {
 			return nil
 		}
-		resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d:retire", slug, version), nil, map[string]interface{}{})
+		resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d/retirements", slug, version), nil, map[string]interface{}{})
 		if err != nil {
 			return err
 		}
@@ -3931,7 +3931,7 @@ func (c *APIStateClient) reconcileNotebookPublish(_ context.Context, notebookID 
 	if spec.Publish.Model.Materialization != "" {
 		body["materialization"] = spec.Publish.Model.Materialization
 	}
-	resp, err := c.client.Do(http.MethodPost, "/models/from-notebook", nil, body)
+	resp, err := c.client.Do(http.MethodPost, "/notebook-model-promotions", nil, body)
 	if err != nil {
 		return err
 	}
@@ -3939,7 +3939,7 @@ func (c *APIStateClient) reconcileNotebookPublish(_ context.Context, notebookID 
 }
 
 func (c *APIStateClient) unpublishNotebookModel(notebookID string) error {
-	resp, err := c.client.Do(http.MethodDelete, "/models/from-notebook/"+notebookID, nil, nil)
+	resp, err := c.client.Do(http.MethodDelete, "/notebook-model-promotions/"+notebookID, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -5015,7 +5015,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 		if cat.Spec.Comment != "" {
 			body["comment"] = cat.Spec.Comment
 		}
-		resp, err := c.client.Do(http.MethodPost, "/catalog-registrations", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/catalogs", nil, body)
 		if err != nil {
 			return err
 		}
@@ -5038,7 +5038,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 			body["comment"] = cat.Spec.Comment
 		}
 		if len(body) > 0 {
-			resp, err := c.client.Do(http.MethodPatch, "/catalog-registrations/"+action.ResourceName, nil, body)
+			resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+action.ResourceName, nil, body)
 			if err != nil {
 				return err
 			}
@@ -5047,7 +5047,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 			}
 		}
 		if cat.Spec.IsDefault {
-			resp, err := c.client.Do(http.MethodPost, "/catalog-registrations/"+action.ResourceName+":set-default", nil, map[string]interface{}{})
+			resp, err := c.client.Do(http.MethodPut, "/catalogs/"+action.ResourceName+"/default", nil, map[string]interface{}{})
 			if err != nil {
 				return err
 			}
@@ -5056,7 +5056,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 		return nil
 
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodDelete, "/catalog-registrations/"+action.ResourceName, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/catalogs/"+action.ResourceName, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -5440,7 +5440,8 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 		if filter.Description != "" {
 			body["description"] = filter.Description
 		}
-		resp, err := c.client.Do(http.MethodPost, "/tables/"+tableID+"/row-filters", nil, body)
+		body["table_id"] = tableID
+		resp, err := c.client.Do(http.MethodPost, "/row-filters", nil, body)
 		if err != nil {
 			return err
 		}
@@ -5535,7 +5536,8 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 		if mask.Description != "" {
 			body["description"] = mask.Description
 		}
-		resp, err := c.client.Do(http.MethodPost, "/tables/"+tableID+"/column-masks", nil, body)
+		body["table_id"] = tableID
+		resp, err := c.client.Do(http.MethodPost, "/column-masks", nil, body)
 		if err != nil {
 			return err
 		}

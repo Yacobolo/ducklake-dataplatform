@@ -26,7 +26,7 @@ op getGitRepo(gitRepoId: string): Ok<GitRepo> | ResourceErrorResponses;
 @summary("Delete git repo")
 op deleteGitRepo(gitRepoId: string): NoContent | ResourceErrorResponses;
 
-@route("/git-repos/{gitRepoId}/sync")
+@route("/git-repos/{gitRepoId}/sync-runs")
 @post
 @tag("Integrations")
 @summary("Sync git repo")

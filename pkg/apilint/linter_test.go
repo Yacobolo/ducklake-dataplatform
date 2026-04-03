@@ -367,7 +367,7 @@ paths:
 func TestCheckPostCreateStatus_CancelQueryExcluded(t *testing.T) {
 	spec := specHeader + `
 paths:
-  /queries/{queryId}/cancel:
+  /queries/{queryId}/cancellations:
     post:
       operationId: cancelQuery
       tags: [Query]
@@ -378,6 +378,237 @@ paths:
           description: ok
 `
 	vs := findRule(mustLint(t, spec), "check-post-create-status")
+	assert.Empty(t, vs)
+}
+
+func TestCheckNoColonActionPaths_Flagged(t *testing.T) {
+	spec := specHeader + `
+paths:
+  /queries:execute:
+    post:
+      operationId: executeQuery
+      tags: [Query]
+      summary: Execute query
+      description: Execute a SQL query.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-no-colon-action-paths")
+	require.Len(t, vs, 1)
+	assert.Contains(t, vs[0].Message, "colon-action path")
+}
+
+func TestCheckNoColonActionPaths_Pass(t *testing.T) {
+	spec := specHeader + `
+paths:
+  /query-executions:
+    post:
+      operationId: executeQuery
+      tags: [Query]
+      summary: Execute query
+      description: Execute a SQL query.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-no-colon-action-paths")
+	assert.Empty(t, vs)
+}
+
+func TestCheckNoVerbSuffixPaths_Flagged(t *testing.T) {
+	spec := specHeader + `
+paths:
+  /assets/{asset_key}/materialize:
+    post:
+      operationId: materializeAsset
+      tags: [Assets]
+      summary: Materialize asset
+      description: Run a materialization.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-no-verb-suffix-paths")
+	require.Len(t, vs, 1)
+	assert.Contains(t, vs[0].Message, "verb-like path segment")
+}
+
+func TestCheckNoVerbSuffixPaths_Pass(t *testing.T) {
+	spec := specHeader + `
+paths:
+  /assets/{asset_key}/materializations:
+    post:
+      operationId: materializeAsset
+      tags: [Assets]
+      summary: Materialize asset
+      description: Run a materialization.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-no-verb-suffix-paths")
+	assert.Empty(t, vs)
+}
+
+func TestCheckSnakeCaseWireNames_FlagsQueryParamsAndProperties(t *testing.T) {
+	spec := `openapi: "3.0.3"
+info:
+  title: Test
+  version: "1.0"
+security:
+  - BearerAuth: []
+servers:
+  - url: https://api.example.com
+paths:
+  /items:
+    get:
+      operationId: listItems
+      tags: [Items]
+      summary: List items
+      description: List items.
+      parameters:
+        - name: maxResults
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ok
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+    Item:
+      type: object
+      properties:
+        displayName:
+          type: string
+`
+	vs := findRule(mustLint(t, spec), "check-snake-case-wire-names")
+	require.Len(t, vs, 2)
+}
+
+func TestCheckSnakeCaseWireNames_IgnoresPathParamsAndSnakeCaseSchemas(t *testing.T) {
+	spec := `openapi: "3.0.3"
+info:
+  title: Test
+  version: "1.0"
+security:
+  - BearerAuth: []
+servers:
+  - url: https://api.example.com
+paths:
+  /items/{itemId}:
+    parameters:
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getItem
+      tags: [Items]
+      summary: Get item
+      description: Get item.
+      parameters:
+        - name: page_token
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+    Item:
+      type: object
+      properties:
+        display_name:
+          type: string
+`
+	vs := findRule(mustLint(t, spec), "check-snake-case-wire-names")
+	assert.Empty(t, vs)
+}
+
+func TestCheckMixedScopedCollections_Flagged(t *testing.T) {
+	spec := specHeader + `
+paths:
+  /row-filters:
+    get:
+      operationId: listRowFilters
+      tags: [Security]
+      summary: List row filters
+      description: List row filters.
+      responses:
+        '200':
+          description: ok
+  /tables/{tableId}/row-filters:
+    parameters:
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listTableRowFilters
+      tags: [Security]
+      summary: List table row filters
+      description: List row filters for a table.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-mixed-scoped-collections")
+	require.Len(t, vs, 1)
+	assert.Contains(t, vs[0].Message, "/row-filters")
+}
+
+func TestCheckMixedScopedCollections_Pass(t *testing.T) {
+	spec := specHeader + `
+paths:
+  /row-filters:
+    get:
+      operationId: listRowFilters
+      tags: [Security]
+      summary: List row filters
+      description: List row filters.
+      responses:
+        '200':
+          description: ok
+  /queries/{queryId}/cancellations:
+    parameters:
+      - name: queryId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: cancelQuery
+      tags: [Query]
+      summary: Cancel query
+      description: Cancel a query.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-mixed-scoped-collections")
 	assert.Empty(t, vs)
 }
 

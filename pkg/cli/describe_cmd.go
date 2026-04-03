@@ -59,7 +59,7 @@ This is designed as the agent's "cat" for reading detailed metadata about any ob
 
 // describePlatform shows all registered catalogs.
 func describePlatform(client *apiruntime.Client, isJSON bool) error {
-	resp, err := client.Do("GET", "/catalog-registrations", nil, nil)
+	resp, err := client.Do("GET", "/catalogs", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func describePlatform(client *apiruntime.Client, isJSON bool) error {
 // describeCatalog shows catalog info and its schemas.
 func describeCatalog(client *apiruntime.Client, catalog string, isJSON bool) error {
 	// Fetch catalog registration info
-	regResp, err := client.Do("GET", "/catalog-registrations/"+url.PathEscape(catalog), nil, nil)
+	regResp, err := client.Do("GET", "/catalogs/"+url.PathEscape(catalog), nil, nil)
 	if err != nil {
 		return err
 	}
@@ -296,7 +296,8 @@ func describeTable(client *apiruntime.Client, catalog, schema, table string, isJ
 	var rowFiltersBody, columnMasksBody []byte
 	if tableID != "" {
 		q := url.Values{}
-		rfResp, err := client.Do("GET", "/tables/"+url.PathEscape(tableID)+"/row-filters", q, nil)
+		q.Set("table_id", tableID)
+		rfResp, err := client.Do("GET", "/row-filters", q, nil)
 		if err != nil {
 			return err
 		}
@@ -308,7 +309,7 @@ func describeTable(client *apiruntime.Client, catalog, schema, table string, isJ
 			return fmt.Errorf("read response: %w", err)
 		}
 
-		cmResp, err := client.Do("GET", "/tables/"+url.PathEscape(tableID)+"/column-masks", q, nil)
+		cmResp, err := client.Do("GET", "/column-masks", q, nil)
 		if err != nil {
 			return err
 		}

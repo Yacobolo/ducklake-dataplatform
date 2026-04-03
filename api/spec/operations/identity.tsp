@@ -98,7 +98,7 @@ op createAPIKey(@body body: CreateAPIKeyRequest): Created<CreateAPIKeyResponse> 
 @summary("Delete API key")
 op deleteAPIKey(apiKeyId: string): NoContent | MutatingErrorResponses;
 
-@route("/api-keys/cleanup")
+@route("/api-key-cleanup-runs")
 @post
 @tag("Identity")
 @summary("Clean up expired API keys")

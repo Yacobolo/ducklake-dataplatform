@@ -121,7 +121,7 @@ List asset materializations
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /assets/{assetKey}/materialize`
+## `POST /assets/{assetKey}/materializations`
 
 Trigger asset materialization
 

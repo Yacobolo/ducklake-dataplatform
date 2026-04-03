@@ -105,6 +105,30 @@ Delete query
 | `429` | Client error |
 | `500` | Server error |
 
+## `POST /queries/{queryId}/cancellations`
+
+Cancel query
+
+- Operation ID: `cancelQuery`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `queryId` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `202` | The request has been accepted for processing, but processing has not yet completed. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `GET /queries/{queryId}/results`
 
 Get query results
@@ -138,31 +162,7 @@ Returns a page of rows for a previously submitted query using the stored query j
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /queries/{queryId}:cancel`
-
-Cancel query
-
-- Operation ID: `cancelQuery`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `202` | The request has been accepted for processing, but processing has not yet completed. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `POST /queries:execute`
+## `POST /query-executions`
 
 Execute query
 

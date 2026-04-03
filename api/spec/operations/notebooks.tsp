@@ -32,7 +32,7 @@ op getNotebookFolder(folderId: string): Ok<Folder> | ResourceErrorResponses;
 @summary("Update notebook folder")
 op updateNotebookFolder(folderId: string, @body body: UpdateFolderRequest): Ok<Folder> | ResourceErrorResponses;
 
-@route("/notebooks/folders/{folderId}/move")
+@route("/notebooks/folders/{folderId}/moves")
 @post
 @tag("Notebooks")
 @summary("Move notebook folder")
@@ -80,13 +80,13 @@ op getNotebook(notebookId: string): Ok<NotebookDetail> | ResourceErrorResponses;
 @summary("Update notebook")
 op updateNotebook(notebookId: string, @body body: UpdateNotebookRequest): Ok<Notebook> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/move")
+@route("/notebooks/{notebookId}/moves")
 @post
 @tag("Notebooks")
 @summary("Move notebook")
 op moveNotebook(notebookId: string, @body body: MoveNotebookRequest): Ok<Notebook> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/duplicate")
+@route("/notebooks/{notebookId}/copies")
 @post
 @tag("Notebooks")
 @summary("Duplicate notebook")
@@ -152,19 +152,19 @@ op createNotebookSession(notebookId: string): Created<NotebookSession> | Resourc
 @summary("Close notebook session")
 op closeNotebookSession(notebookId: string, sessionId: string): NoContent | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}")
+@route("/notebooks/{notebookId}/sessions/{sessionId}/cell-executions/{cellId}")
 @post
 @tag("Notebooks")
 @summary("Execute cell")
 op executeCell(notebookId: string, sessionId: string, cellId: string): Ok<CellExecutionResult> | ValidationResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/sessions/{sessionId}/run-all")
+@route("/notebooks/{notebookId}/sessions/{sessionId}/cell-executions")
 @post
 @tag("Notebooks")
 @summary("Run all cells")
 op runAllCells(notebookId: string, sessionId: string): Ok<RunAllResult> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/sessions/{sessionId}/run-all-async")
+@route("/notebooks/{notebookId}/sessions/{sessionId}/job-runs")
 @post
 @tag("Notebooks")
 @summary("Run all cells asynchronously")
@@ -182,7 +182,7 @@ op listNotebookJobs(notebookId: string, @query max_results?: int32, @query page_
 @summary("Get notebook job")
 op getNotebookJob(notebookId: string, jobId: string): Ok<NotebookJob> | ResourceErrorResponses;
 
-@route("/explore")
+@route("/explore-items")
 @get
 @tag("Notebooks")
 @summary("List authored assets for the active folder context")

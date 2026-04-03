@@ -73,7 +73,7 @@ Get pipeline run
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /pipelines/runs/{runId}/cancel`
+## `POST /pipelines/runs/{runId}/cancellations`
 
 Cancel pipeline run
 

@@ -252,7 +252,7 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{assetKey}/materialize:
+  /assets/{assetKey}/materializations:
     parameters:
       - name: assetKey
         in: path

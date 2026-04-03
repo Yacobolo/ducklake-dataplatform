@@ -334,7 +334,7 @@ Delete semantic pre aggregation
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /semantic-models/{semanticModelId}/queries:explain`
+## `POST /semantic-models/{semanticModelId}/query-explanations`
 
 Explain metric query
 
@@ -362,7 +362,7 @@ Explain metric query
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /semantic-models/{semanticModelId}/queries:run`
+## `POST /semantic-models/{semanticModelId}/query-runs`
 
 Run metric query
 

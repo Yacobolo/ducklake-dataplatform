@@ -27,17 +27,17 @@ op createGrant(@body body: CreateGrantRequest): Created<PrivilegeGrant> | Valida
 @summary("Delete grant")
 op deleteGrant(grantId: string): NoContent | MutatingErrorResponses;
 
-@route("/tables/{tableId}/row-filters")
+@route("/row-filters")
 @get
 @tag("Governance")
 @summary("List row filters")
-op listRowFilters(tableId: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedRowFilters> | ResourceErrorResponses;
+op listRowFilters(@query table_id?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedRowFilters> | ResourceErrorResponses;
 
-@route("/tables/{tableId}/row-filters")
+@route("/row-filters")
 @post
 @tag("Governance")
 @summary("Create row filter")
-op createRowFilter(tableId: string, @body body: CreateRowFilterRequest): Created<RowFilter> | MutatingErrorResponses;
+op createRowFilter(@body body: CreateRowFilterRequest): Created<RowFilter> | MutatingErrorResponses;
 
 @route("/row-filters/{rowFilterId}")
 @delete
@@ -67,17 +67,17 @@ op bindRowFilter(rowFilterId: string, @body body: RowFilterBindingRequest): Crea
 @summary("Unbind row filter")
 op unbindRowFilter(rowFilterId: string, principalType: PrincipalType, principalId: string): NoContent | MutatingErrorResponses;
 
-@route("/tables/{tableId}/column-masks")
+@route("/column-masks")
 @get
 @tag("Governance")
 @summary("List column masks")
-op listColumnMasks(tableId: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedColumnMasks> | ResourceErrorResponses;
+op listColumnMasks(@query table_id?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedColumnMasks> | ResourceErrorResponses;
 
-@route("/tables/{tableId}/column-masks")
+@route("/column-masks")
 @post
 @tag("Governance")
 @summary("Create column mask")
-op createColumnMask(tableId: string, @body body: CreateColumnMaskRequest): Created<ColumnMask> | MutatingErrorResponses;
+op createColumnMask(@body body: CreateColumnMaskRequest): Created<ColumnMask> | MutatingErrorResponses;
 
 @route("/column-masks/{columnMaskId}")
 @delete

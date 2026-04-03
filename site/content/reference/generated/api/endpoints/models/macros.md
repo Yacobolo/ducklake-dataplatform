@@ -124,38 +124,7 @@ Delete macro
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /macros/{macroName}/diff`
-
-Diff macro revisions
-
-- Operation ID: `diffMacroRevisions`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `macroName` | `string` | `true` | - |
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `from_version` | `integer` | `true` | - |
-| `to_version` | `integer` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /macros/{macroName}/impact`
+## `GET /macros/{macroName}/impacts`
 
 Get macro impact
 
@@ -173,6 +142,37 @@ Get macro impact
 | --- | --- | --- | --- |
 | `max_results` | `integer` | `false` | - |
 | `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /macros/{macroName}/revision-diffs`
+
+Diff macro revisions
+
+- Operation ID: `diffMacroRevisions`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `macroName` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `from_version` | `integer` | `true` | - |
+| `to_version` | `integer` | `true` | - |
 
 ### Responses
 

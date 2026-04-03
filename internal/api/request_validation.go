@@ -134,7 +134,7 @@ var uuidRouteSpecs = []uuidRouteSpec{
 	{method: http.MethodGet, pattern: []string{"model-runs", "*"}, params: []uuidRouteParam{{name: "runId", segmentIndex: 1}}},
 	{method: http.MethodGet, pattern: []string{"model-runs", "*", "steps"}, params: []uuidRouteParam{{name: "runId", segmentIndex: 1}}},
 	{method: http.MethodGet, pattern: []string{"model-runs", "*", "steps", "*", "test-results"}, params: []uuidRouteParam{{name: "runId", segmentIndex: 1}, {name: "stepId", segmentIndex: 3}}},
-	{method: http.MethodPost, pattern: []string{"model-runs", "*", "cancel"}, params: []uuidRouteParam{{name: "runId", segmentIndex: 1}}},
+	{method: http.MethodPost, pattern: []string{"model-runs", "*", "cancellations"}, params: []uuidRouteParam{{name: "runId", segmentIndex: 1}}},
 }
 
 func (s uuidRouteSpec) matches(method string, pathParts []string) bool {
@@ -196,25 +196,11 @@ func normalizeAndValidateJSONBody(r *http.Request) error {
 }
 
 func isSetDefaultCatalogRoute(method, path string) bool {
-	return method == http.MethodPost && uuidRouteSpec{method: http.MethodPost, pattern: []string{"catalog-registrations", "*"}}.matches(method, normalizedCatalogSetDefaultPath(path))
-}
-
-func normalizedCatalogSetDefaultPath(path string) []string {
-	parts := normalizedPathParts(path)
-	if len(parts) != 2 {
-		return parts
-	}
-
-	catalogPart := parts[1]
-	if name, ok := strings.CutSuffix(catalogPart, ":set-default"); ok && name != "" {
-		return []string{parts[0], name}
-	}
-
-	return parts
+	return method == http.MethodPut && uuidRouteSpec{method: http.MethodPut, pattern: []string{"catalogs", "*", "default"}}.matches(method, normalizedPathParts(path))
 }
 
 func bodyValidationForRoute(method, path string) bodyValidationTarget {
-	if method != http.MethodPost {
+	if method != http.MethodPost && method != http.MethodPut {
 		return bodyValidationNone
 	}
 	switch path {

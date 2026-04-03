@@ -447,8 +447,11 @@ func (h *APIHandler) DeleteGrant(ctx context.Context, req GenDeleteGrantRequest)
 
 // ListRowFilters implements the endpoint for listing row filters for a table.
 func (h *APIHandler) ListRowFilters(ctx context.Context, req GenListRowFiltersRequest) (GenListRowFiltersResponse, error) {
+	if req.Params.TableId == nil || *req.Params.TableId == "" {
+		return ListRowFilters400JSONResponse{badRequestErrorResponse(domain.ErrValidation("table_id is required"))}, nil
+	}
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	fs, total, err := h.rowFilters.GetForTable(ctx, req.TableId, page)
+	fs, total, err := h.rowFilters.GetForTable(ctx, *req.Params.TableId, page)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListRowFiltersResponse]("listRowFilters", err, domainErrorResponder[GenListRowFiltersResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListRowFiltersResponse { return ListRowFilters403JSONResponse{resp} },
@@ -470,8 +473,12 @@ func (h *APIHandler) ListRowFilters(ctx context.Context, req GenListRowFiltersRe
 
 // CreateRowFilter implements the endpoint for creating a row filter on a table.
 func (h *APIHandler) CreateRowFilter(ctx context.Context, req GenCreateRowFilterRequest) (GenCreateRowFilterResponse, error) {
+	tableID := ""
+	if req.Body != nil && req.Body.TableId != nil {
+		tableID = *req.Body.TableId
+	}
 	domReq := domain.CreateRowFilterRequest{
-		TableID:   req.TableId,
+		TableID:   tableID,
 		Name:      req.Body.Name,
 		FilterSQL: req.Body.FilterSql,
 	}
@@ -594,8 +601,11 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req GenUnbindRowFilter
 
 // ListColumnMasks implements the endpoint for listing column masks for a table.
 func (h *APIHandler) ListColumnMasks(ctx context.Context, req GenListColumnMasksRequest) (GenListColumnMasksResponse, error) {
+	if req.Params.TableId == nil || *req.Params.TableId == "" {
+		return ListColumnMasks400JSONResponse{badRequestErrorResponse(domain.ErrValidation("table_id is required"))}, nil
+	}
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	ms, total, err := h.columnMasks.GetForTable(ctx, req.TableId, page)
+	ms, total, err := h.columnMasks.GetForTable(ctx, *req.Params.TableId, page)
 	if err != nil {
 		return nil, err
 	}
@@ -612,9 +622,13 @@ func (h *APIHandler) ListColumnMasks(ctx context.Context, req GenListColumnMasks
 
 // CreateColumnMask implements the endpoint for creating a column mask on a table.
 func (h *APIHandler) CreateColumnMask(ctx context.Context, req GenCreateColumnMaskRequest) (GenCreateColumnMaskResponse, error) {
+	tableID := ""
+	if req.Body != nil && req.Body.TableId != nil {
+		tableID = *req.Body.TableId
+	}
 	domReq := domain.CreateColumnMaskRequest{
 		Name:           req.Body.Name,
-		TableID:        req.TableId,
+		TableID:        tableID,
 		ColumnName:     req.Body.ColumnName,
 		MaskExpression: req.Body.MaskExpression,
 	}

@@ -452,7 +452,7 @@ func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
 		endpoint.CLICommand = "catalog registrations create"
 	case "deleteCatalogRegistration":
 		endpoint.CLICommand = "catalog registrations delete"
-	case "getCatalogRegistration":
+	case "getCatalog":
 		endpoint.CLICommand = "catalog registrations get"
 	case "updateCatalogRegistration":
 		endpoint.CLICommand = "catalog registrations update"
@@ -495,13 +495,13 @@ func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
 	case "listQueryHistory":
 		endpoint.CLICommand = "query history list"
 	case "listRecentResources":
-		endpoint.CLICommand = "resources recent list"
+		endpoint.CLICommand = "me recent-resources list"
 	case "listSavedResources":
-		endpoint.CLICommand = "resources saved list"
+		endpoint.CLICommand = "me saved-resources list"
 	case "createSavedResource":
-		endpoint.CLICommand = "resources saved create"
+		endpoint.CLICommand = "me saved-resources create"
 	case "deleteSavedResource":
-		endpoint.CLICommand = "resources saved delete"
+		endpoint.CLICommand = "me saved-resources delete"
 	case "createTagAssignment":
 		endpoint.CLICommand = "governance tags assignments create"
 	case "deleteTagAssignment":

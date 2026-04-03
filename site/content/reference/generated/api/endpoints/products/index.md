@@ -11,6 +11,5 @@ Product-first control-plane APIs for domains, teams, product contracts, releases
 - [Subscriptions](./subscriptions) (2 operations)
 - [Portfolio and Scorecards](./portfolio) (2 operations)
 - [Product Domains](./product-domains) (5 operations)
-- [Teams](./teams) (4 operations)
-- [Product Teams](./product-teams) (1 operations)
+- [Teams](./teams) (5 operations)
 

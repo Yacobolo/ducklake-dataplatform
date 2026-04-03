@@ -28,31 +28,7 @@ Get asset freshness
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /assets/{assetKey}/freshness/blockers`
-
-List asset freshness blockers
-
-- Operation ID: `listAssetFreshnessBlockers`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `assetKey` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /assets/{assetKey}/freshness/explain`
+## `GET /assets/{assetKey}/freshness-explanation`
 
 Explain asset freshness
 
@@ -76,7 +52,7 @@ Explain asset freshness
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /assets/{assetKey}/freshness/reconcile`
+## `POST /assets/{assetKey}/freshness-reconciliations`
 
 Reconcile asset freshness
 
@@ -93,6 +69,30 @@ Reconcile asset freshness
 | Code | Description |
 | --- | --- |
 | `202` | The request has been accepted for processing, but processing has not yet completed. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{assetKey}/freshness/blockers`
+
+List asset freshness blockers
+
+- Operation ID: `listAssetFreshnessBlockers`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `assetKey` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |

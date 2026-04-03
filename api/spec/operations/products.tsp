@@ -32,7 +32,7 @@ op updateProductDomain(domainName: string, @body body: UpdateProductDomainReques
 @summary("Delete product domain")
 op deleteProductDomain(domainName: string): NoContent | ResourceErrorResponses;
 
-@route("/product-teams")
+@route("/product-domains/teams")
 @get
 @tag("Products")
 @summary("List product teams")
@@ -137,19 +137,19 @@ op deleteDataProductVersion(productSlug: string, version: int32): NoContent | Re
 @summary("Create data product version")
 op createDataProductVersion(productSlug: string, @body body: CreateDataProductVersionRequest): Created<DataProductDetail> | ResourceErrorResponses | BadRequestResponse | ConflictResponse;
 
-@route("/data-products/{productSlug}/versions/{version}:publish")
+@route("/data-products/{productSlug}/versions/{version}/publications")
 @post
 @tag("Products")
 @summary("Publish data product version")
 op publishDataProductVersion(productSlug: string, version: int32): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/data-products/{productSlug}/versions/{version}:deprecate")
+@route("/data-products/{productSlug}/versions/{version}/deprecations")
 @post
 @tag("Products")
 @summary("Deprecate data product version")
 op deprecateDataProductVersion(productSlug: string, version: int32, @body body?: DeprecateProductVersionRequest): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/data-products/{productSlug}/versions/{version}:retire")
+@route("/data-products/{productSlug}/versions/{version}/retirements")
 @post
 @tag("Products")
 @summary("Retire data product version")

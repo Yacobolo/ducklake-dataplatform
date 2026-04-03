@@ -30,7 +30,7 @@ func init() {
 
 			body := map[string]interface{}{"sql": sql}
 			addComputeSelectionToBody(cmd, body)
-			resp, err := client.Do("POST", "/queries:execute", nil, body)
+			resp, err := client.Do("POST", "/query-executions", nil, body)
 			if err != nil {
 				return err
 			}
@@ -174,7 +174,7 @@ func init() {
 			if len(args) != 1 {
 				return fmt.Errorf("requires query id argument")
 			}
-			resp, err := client.Do("POST", "/queries/"+args[0]+":cancel", nil, nil)
+			resp, err := client.Do("POST", "/queries/"+args[0]+"/cancellations", nil, nil)
 			if err != nil {
 				return err
 			}

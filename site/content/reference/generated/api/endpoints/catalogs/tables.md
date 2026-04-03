@@ -210,7 +210,7 @@ Update column
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit`
+## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion-commits`
 
 Commit table ingestion
 
@@ -240,41 +240,11 @@ Commit table ingestion
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load`
+## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion-loads`
 
 Load table external files
 
 - Operation ID: `loadTableExternalFiles`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `catalogName` | `string` | `true` | - |
-| `schemaName` | `string` | `true` | - |
-| `tableName` | `string` | `true` | - |
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url`
-
-Create upload URL
-
-- Operation ID: `createUploadUrl`
 
 ### Path Parameters
 
@@ -326,7 +296,7 @@ Get table manifest
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profile`
+## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/profiles`
 
 Profile table
 
@@ -339,6 +309,36 @@ Profile table
 | `catalogName` | `string` | `true` | - |
 | `schemaName` | `string` | `true` | - |
 | `tableName` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/upload-urls`
+
+Create upload URL
+
+- Operation ID: `createUploadUrl`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `catalogName` | `string` | `true` | - |
+| `schemaName` | `string` | `true` | - |
+| `tableName` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
 
 ### Responses
 

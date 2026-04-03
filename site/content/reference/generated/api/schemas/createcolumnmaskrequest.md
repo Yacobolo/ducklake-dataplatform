@@ -13,4 +13,5 @@
 | `description` | `string` | `false` | - |
 | `mask_expression` | `string` | `true` | - |
 | `name` | `string` | `true` | - |
+| `table_id` | `string` | `false` | - |
 

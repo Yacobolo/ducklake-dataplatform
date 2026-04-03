@@ -4,6 +4,23 @@
 
 Principals, groups, and API key management for authenticated access.
 
+## `POST /api-key-cleanup-runs`
+
+Clean up expired API keys
+
+- Operation ID: `cleanupExpiredAPIKeys`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `GET /api-keys`
 
 List API keys
@@ -44,23 +61,6 @@ Create API key
 | Code | Description |
 | --- | --- |
 | `201` | The request has succeeded and a new resource has been created as a result. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `POST /api-keys/cleanup`
-
-Clean up expired API keys
-
-- Operation ID: `cleanupExpiredAPIKeys`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |

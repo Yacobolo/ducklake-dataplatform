@@ -13,7 +13,7 @@ import (
 func TestDescribe_Platform(t *testing.T) {
 	rec := &requestRecorder{}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalog-registrations", jsonHandler(rec, 200, `{"catalogs":[{"name":"main","status":"active","is_default":true}]}`))
+	mux.HandleFunc("/v1/catalogs", jsonHandler(rec, 200, `{"catalogs":[{"name":"main","status":"active","is_default":true}]}`))
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
@@ -31,7 +31,7 @@ func TestDescribe_Platform(t *testing.T) {
 
 func TestDescribe_Catalog(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalog-registrations/main", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/catalogs/main", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"name":"main","status":"active"}`))
@@ -105,12 +105,12 @@ func TestDescribe_Table(t *testing.T) {
 		_, _ = w.Write([]byte(`{"name":"orders","table_id":"t1","table_type":"MANAGED","columns":[{"name":"id","type":"BIGINT"}]}`))
 	})
 	// Row filters and column masks endpoints.
-	mux.HandleFunc("/v1/tables/t1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"data":[]}`))
 	})
-	mux.HandleFunc("/v1/tables/t1/column-masks", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/column-masks", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"data":[]}`))
@@ -146,7 +146,7 @@ func TestDescribe_InvalidPath(t *testing.T) {
 func TestDescribe_Catalog_NotFound(t *testing.T) {
 	rec := &requestRecorder{}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalog-registrations/nonexistent", jsonHandler(rec, 404, `{"code":404,"message":"catalog not found"}`))
+	mux.HandleFunc("/v1/catalogs/nonexistent", jsonHandler(rec, 404, `{"code":404,"message":"catalog not found"}`))
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
@@ -206,12 +206,12 @@ func TestDescribe_Table_WithRowFiltersAndColumnMasks(t *testing.T) {
 			"columns":[{"name":"id","type":"BIGINT"},{"name":"customer_id","type":"INTEGER"},{"name":"amount","type":"DECIMAL"}]
 		}`))
 	})
-	mux.HandleFunc("/v1/tables/t1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"data":[{"id":"rf1","filter_sql":"region = 'US'","description":"US-only filter"}]}`))
 	})
-	mux.HandleFunc("/v1/tables/t1/column-masks", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/column-masks", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"data":[{"column_name":"amount","mask_expression":"CASE WHEN role='admin' THEN amount ELSE NULL END","description":"Admin-only amounts"}]}`))
@@ -330,12 +330,12 @@ func TestDescribe_Table_WithStatisticsAndTags(t *testing.T) {
 			]
 		}`))
 	})
-	mux.HandleFunc("/v1/tables/t1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"data":[]}`))
 	})
-	mux.HandleFunc("/v1/tables/t1/column-masks", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/column-masks", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"data":[]}`))
@@ -393,12 +393,12 @@ func TestDescribe_Table_TextOutput_WithSecurityPolicies(t *testing.T) {
 			"tags":[{"key":"env","value":"dev"}]
 		}`))
 	})
-	mux.HandleFunc("/v1/tables/t1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"data":[{"id":"rf1","filter_sql":"active = true","description":"Active rows only"}]}`))
 	})
-	mux.HandleFunc("/v1/tables/t1/column-masks", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/column-masks", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"data":[{"column_name":"id","mask_expression":"NULL","description":"masked"}]}`))
@@ -432,7 +432,7 @@ func TestDescribe_Table_TextOutput_WithSecurityPolicies(t *testing.T) {
 func TestDescribe_Platform_TextOutput(t *testing.T) {
 	rec := &requestRecorder{}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/catalog-registrations", jsonHandler(rec, 200, `{"catalogs":[{"name":"main","status":"active","is_default":true},{"name":"staging","status":"active","is_default":false}]}`))
+	mux.HandleFunc("/v1/catalogs", jsonHandler(rec, 200, `{"catalogs":[{"name":"main","status":"active","is_default":true},{"name":"staging","status":"active","is_default":false}]}`))
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
@@ -488,12 +488,12 @@ func TestDescribe_Table_RowFiltersEndpointFails(t *testing.T) {
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"name":"orders","table_id":"t1","table_type":"MANAGED"}`))
 	})
-	mux.HandleFunc("/v1/tables/t1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/row-filters", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(404)
 		_, _ = w.Write([]byte(`{"code":404,"message":"not found"}`))
 	})
-	mux.HandleFunc("/v1/tables/t1/column-masks", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/column-masks", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"data":[]}`))

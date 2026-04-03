@@ -68,7 +68,7 @@ op listPipelineRuns(pipelineName: string, @query max_results?: int32, @query pag
 @summary("Get pipeline run")
 op getPipelineRun(runId: string): Ok<PipelineRun> | ResourceErrorResponses;
 
-@route("/pipelines/runs/{runId}/cancel")
+@route("/pipelines/runs/{runId}/cancellations")
 @post
 @tag("Pipelines")
 @summary("Cancel pipeline run")

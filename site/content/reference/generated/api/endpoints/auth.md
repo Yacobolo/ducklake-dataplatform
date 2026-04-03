@@ -111,7 +111,7 @@ Upsert OIDC provider
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /auth/sessions/revoke-all`
+## `POST /auth/session-revocations`
 
 Revoke all web sessions
 
@@ -134,7 +134,7 @@ Revoke all web sessions
 | `500` | Server error |
 | `503` | Service unavailable. |
 
-## `GET /auth/sessions/stats`
+## `GET /auth/session-stats`
 
 Get web session stats
 

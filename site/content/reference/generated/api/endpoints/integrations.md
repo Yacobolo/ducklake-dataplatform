@@ -97,7 +97,7 @@ Delete git repo
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /git-repos/{gitRepoId}/sync`
+## `POST /git-repos/{gitRepoId}/sync-runs`
 
 Sync git repo
 

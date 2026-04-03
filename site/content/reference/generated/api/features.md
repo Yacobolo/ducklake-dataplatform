@@ -9,7 +9,7 @@ This page is generated from OpenAPI tags and operations.
 | [Assets](./endpoints/assets/) | Data asset definitions, runs, checks, partitions, and materialization workflows. | 20 operations |
 | [Audit](./endpoints/audit) | Audit entry inspection for authorization and query activity. | 1 operations |
 | [Auth](./endpoints/auth) | Authentication bootstrap, login, OIDC configuration, and web session administration. | 7 operations |
-| [Catalogs](./endpoints/catalogs/) | Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs. | 38 operations |
+| [Catalogs](./endpoints/catalogs/) | Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs. | 37 operations |
 | [Compute](./endpoints/compute) | Compute endpoint lifecycle, assignments, and health checks. | 11 operations |
 | [Dashboards](./endpoints/dashboards) | Dashboard and widget authoring plus resolved dashboard views. | 9 operations |
 | [Governance](./endpoints/governance/) | Privileges, tags, classifications, row filters, and column masking controls. | 22 operations |

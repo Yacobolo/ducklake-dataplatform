@@ -35,13 +35,13 @@ op getOIDCProvider(): Ok<OIDCProviderResponse> | UnauthorizedResponse | Forbidde
 @summary("Upsert OIDC provider")
 op upsertOIDCProvider(@body body: OIDCProviderRequest): NoContent | BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | TooManyRequestsResponse | InternalServerErrorResponse;
 
-@route("/auth/sessions/revoke-all")
+@route("/auth/session-revocations")
 @post
 @tag("Auth")
 @summary("Revoke all web sessions")
 op revokeAllWebSessions(@body body: RevokeWebSessionsRequest): NoContent | BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | TooManyRequestsResponse | InternalServerErrorResponse | ServiceUnavailableResponse;
 
-@route("/auth/sessions/stats")
+@route("/auth/session-stats")
 @get
 @tag("Auth")
 @summary("Get web session stats")

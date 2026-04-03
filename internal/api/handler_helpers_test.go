@@ -384,15 +384,19 @@ func TestHelpers_viewDetailToAPI(t *testing.T) {
 	assert.Equal(t, helpersFixedTime.UTC().Format(time.RFC3339), *result.UpdatedAt)
 }
 
-func TestHelpers_catalogInfoToAPI(t *testing.T) {
+func TestHelpers_catalogRegistrationToAPI(t *testing.T) {
 	t.Parallel()
-	ci := domain.CatalogInfo{
-		Name: "default", Comment: "Default catalog",
-		CreatedAt: helpersFixedTime, UpdatedAt: helpersFixedTime,
+	reg := domain.CatalogRegistration{
+		ID:        "c-1",
+		Name:      "default",
+		Comment:   "Default catalog",
+		CreatedAt: helpersFixedTime,
+		UpdatedAt: helpersFixedTime,
 	}
-	result := catalogInfoToAPI(ci)
+	result := catalogRegistrationToAPI(reg)
 
 	assert.Equal(t, "default", result.Name)
+	assert.Equal(t, "c-1", result.Id)
 	require.NotNil(t, result.Comment)
 	assert.Equal(t, "Default catalog", *result.Comment)
 	require.NotNil(t, result.CreatedAt)

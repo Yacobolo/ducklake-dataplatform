@@ -4,6 +4,28 @@
 
 Table and column lineage inspection together with lineage maintenance operations.
 
+## `POST /lineage-purges`
+
+Purge lineage
+
+- Operation ID: `purgeLineage`
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `GET /lineage/columns/{schemaName}/{tableName}`
 
 Get column lineage
@@ -36,7 +58,7 @@ Get column lineage
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /lineage/columns/{schemaName}/{tableName}/{columnName}/impact`
+## `GET /lineage/columns/{schemaName}/{tableName}/{columnName}/impacts`
 
 Get column impact
 
@@ -86,28 +108,6 @@ Delete lineage edge
 | Code | Description |
 | --- | --- |
 | `204` | There is no content to send for this request, but the headers may be useful. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `POST /lineage/purge`
-
-Purge lineage
-
-- Operation ID: `purgeLineage`
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
