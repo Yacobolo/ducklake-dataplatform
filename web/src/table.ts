@@ -3,6 +3,27 @@ import { styleMap } from "lit/directives/style-map.js";
 
 import type { DashboardWidgetPayload } from "./dashboard-widget-payload";
 import {
+  columnLooksNumeric,
+  computeColumnWidths,
+  formatCellValue,
+  formatColumnLabel,
+  skeletonWidth,
+  type TableRow,
+  type VisibleTableRow,
+  valueIsNumeric,
+} from "./table-model";
+import {
+  nextSortState,
+  shouldReloadForActiveSort,
+  TablePageRequestDispatcher,
+  type SortDirection,
+} from "./table-paging";
+import {
+  extractSelectionsFromRow,
+  isTableRowSelected,
+  type DashboardFilterEventDetail,
+} from "./table-selection";
+import {
   applyPayloadToSparseTableStore,
   collectChunkOffsetsForWindow,
   computeVisibleTableWindow,
@@ -14,28 +35,6 @@ import {
   isDashboardTablePayload,
   resolveTableRowCount,
 } from "./table-virtualization";
-
-type SortDirection = "asc" | "desc";
-
-type TableRow = {
-  id: string;
-  values: Record<string, unknown>;
-};
-
-type VisibleTableRow = {
-  index: number;
-  row: TableRow | null;
-};
-
-type WidgetFilterSelection = {
-  widgetKey: string;
-  dimension: string;
-  value: string;
-};
-
-type DashboardFilterEventDetail = {
-  selections: WidgetFilterSelection[];
-};
 
 type ActiveResize = {
   column: string;
@@ -296,7 +295,7 @@ class DuckTable extends LitElement {
   private scrollOffset = 0;
   private viewportHeight = 0;
   private resizeObserver: ResizeObserver | null = null;
-  private dispatchedPageRequests = new Set<string>();
+  private readonly pageRequestDispatcher = new TablePageRequestDispatcher();
 
   disconnectedCallback(): void {
     this.stopResize();
@@ -330,7 +329,7 @@ class DuckTable extends LitElement {
       this.sparseRows = emptyStore.rows;
       this.loadedChunkOffsets = emptyStore.loadedChunkOffsets;
       this.pendingChunkOffsets = emptyStore.pendingChunkOffsets;
-      this.dispatchedPageRequests.clear();
+      this.pageRequestDispatcher.clear();
       this.requestUpdate();
       return;
     }
@@ -416,7 +415,7 @@ class DuckTable extends LitElement {
 
   private renderHeaderCell(column: string) {
     const sortable = true;
-    const numeric = this.columnLooksNumeric(column);
+    const numeric = columnLooksNumeric(column);
     const active = this.sortColumn === column;
     const direction = active ? this.sortDirection : null;
     const indicator = direction === "asc" ? "↑" : direction === "desc" ? "↓" : "↕";
@@ -428,15 +427,15 @@ class DuckTable extends LitElement {
           type="button"
           ?disabled=${!sortable}
           @click=${() => this.toggleSort(column)}
-          title=${`Sort by ${this.formatColumnLabel(column)}`}
+          title=${`Sort by ${formatColumnLabel(column)}`}
         >
-          <span class="header-label">${this.formatColumnLabel(column)}</span>
+          <span class="header-label">${formatColumnLabel(column)}</span>
           <span class="sort-indicator" data-active=${active ? "true" : "false"}>${indicator}</span>
         </button>
         <div
           class="resize-handle"
           data-active=${this.activeResize?.column === column ? "true" : "false"}
-          title=${`Resize ${this.formatColumnLabel(column)} column`}
+          title=${`Resize ${formatColumnLabel(column)} column`}
           @dblclick=${(event: MouseEvent) => this.resetColumnWidth(column, event)}
           @pointerdown=${(event: PointerEvent) => this.beginResize(column, event)}
         ></div>
@@ -459,10 +458,10 @@ class DuckTable extends LitElement {
             class=${[
               "cell",
               columnIndex === 0 ? "cell--primary" : "",
-              this.columnLooksNumeric(column) ? "cell--numeric" : "",
+              columnLooksNumeric(column) ? "cell--numeric" : "",
             ].filter(Boolean).join(" ")}
           >
-            <span class="skeleton-block" style=${styleMap({ width: this.skeletonWidth(columnIndex) })}></span>
+            <span class="skeleton-block" style=${styleMap({ width: skeletonWidth(columnIndex) })}></span>
           </div>
         `)}
       </div>
@@ -472,7 +471,7 @@ class DuckTable extends LitElement {
   private renderBodyRow(columns: string[], row: TableRow, index: number) {
     const payload = this.payloadState ?? this.parsePayload();
     const canInitiate = Boolean(payload?.interaction?.can_initiate);
-    const selected = payload ? this.isRowSelected(payload, row.values) : false;
+    const selected = payload ? isTableRowSelected(payload, row.values) : false;
     return html`
       <div
         class=${[
@@ -489,7 +488,7 @@ class DuckTable extends LitElement {
       >
         ${columns.map((column, columnIndex) => {
           const value = row.values[column];
-          const numeric = this.valueIsNumeric(value) || this.columnLooksNumeric(column);
+          const numeric = valueIsNumeric(value) || columnLooksNumeric(column);
           return html`
             <div
               class=${[
@@ -497,9 +496,9 @@ class DuckTable extends LitElement {
                 columnIndex === 0 ? "cell--primary" : "",
                 numeric ? "cell--numeric" : "",
               ].filter(Boolean).join(" ")}
-              title=${this.formatCellValue(column, value)}
+              title=${formatCellValue(column, value)}
             >
-              ${this.formatCellValue(column, value)}
+              ${formatCellValue(column, value)}
             </div>
           `;
         })}
@@ -513,7 +512,7 @@ class DuckTable extends LitElement {
       return;
     }
 
-    const selections = this.extractSelectionsFromRow(payload, row.values);
+    const selections = extractSelectionsFromRow(payload, this.widgetOriginKey, row.values);
     if (selections.length === 0) {
       return;
     }
@@ -553,84 +552,10 @@ class DuckTable extends LitElement {
     return countLoadedRows(this.sparseRows);
   }
 
-  private extractSelectionsFromRow(payload: DashboardWidgetPayload, values: Record<string, unknown>): WidgetFilterSelection[] {
-    if (!payload.interaction?.can_initiate || !this.widgetOriginKey.trim()) {
-      return [];
-    }
-
-    const selections: WidgetFilterSelection[] = [];
-    for (const binding of payload.interaction.bindings ?? []) {
-      const field = binding.field?.trim();
-      if (!field) {
-        continue;
-      }
-      const rawValue = values[field];
-      if (rawValue === null || rawValue === undefined) {
-        continue;
-      }
-      const value = String(rawValue).trim();
-      if (!value) {
-        continue;
-      }
-      selections.push({
-        widgetKey: this.widgetOriginKey,
-        dimension: binding.dimension,
-        value,
-      });
-    }
-    return selections;
-  }
-
-  private isRowSelected(payload: DashboardWidgetPayload, values: Record<string, unknown>): boolean {
-    const bindings = payload.interaction?.bindings ?? [];
-    if (bindings.length === 0) {
-      return false;
-    }
-
-    const originFilters = payload.interaction?.origin_filters ?? {};
-    let hasRelevantFilter = false;
-    for (const binding of bindings) {
-      const activeValues = originFilters[binding.dimension] ?? [];
-      if (activeValues.length === 0) {
-        continue;
-      }
-      const field = binding.field?.trim();
-      if (!field) {
-        continue;
-      }
-      hasRelevantFilter = true;
-      const rawValue = values[field];
-      const candidate = rawValue === null || rawValue === undefined ? "" : String(rawValue).trim();
-      if (!candidate || !activeValues.includes(candidate)) {
-        return false;
-      }
-    }
-
-    return hasRelevantFilter;
-  }
-
   private toggleSort(column: string): void {
-    if (this.sortColumn !== column) {
-      this.sortColumn = column;
-      this.sortDirection = "asc";
-      this.resetRowsForFreshPage(this.currentTotalRows());
-      this.scrollToTop();
-      this.requestTopPage(false);
-      this.requestUpdate();
-      return;
-    }
-
-    if (this.sortDirection === "asc") {
-      this.sortDirection = "desc";
-      this.resetRowsForFreshPage(this.currentTotalRows());
-      this.scrollToTop();
-      this.requestTopPage(false);
-      this.requestUpdate();
-      return;
-    }
-
-    this.sortColumn = null;
-    this.sortDirection = "asc";
+    const nextSort = nextSortState({ column: this.sortColumn, direction: this.sortDirection }, column);
+    this.sortColumn = nextSort.column;
+    this.sortDirection = nextSort.direction;
     this.resetRowsForFreshPage(this.currentTotalRows());
     this.scrollToTop();
     this.requestTopPage(false);
@@ -642,29 +567,8 @@ class DuckTable extends LitElement {
     return payload ? this.totalRowCount(payload) : this.sparseRows.length;
   }
 
-  private currentSortPayload(): { column: string; direction: "asc" | "desc" } | null {
-    if (!this.sortColumn) {
-      return null;
-    }
-    return {
-      column: this.sortColumn,
-      direction: this.sortDirection,
-    };
-  }
-
-  private payloadMatchesCurrentSort(payload: DashboardWidgetPayload | null): boolean {
-    const activeSort = this.currentSortPayload();
-    if (!activeSort) {
-      return !payload?.sort;
-    }
-    return payload?.sort?.column === activeSort.column && payload?.sort?.direction === activeSort.direction;
-  }
-
   private shouldReloadForActiveSort(payload: DashboardWidgetPayload | null): boolean {
-    if (!payload) {
-      return false;
-    }
-    return !this.payloadMatchesCurrentSort(payload);
+    return shouldReloadForActiveSort(payload, { column: this.sortColumn, direction: this.sortDirection });
   }
 
   private resetRowsForFreshPage(totalRows: number): void {
@@ -672,7 +576,7 @@ class DuckTable extends LitElement {
     this.sparseRows = new Array(Math.max(0, totalRows)).fill(null);
     this.loadedChunkOffsets = emptyStore.loadedChunkOffsets;
     this.pendingChunkOffsets = emptyStore.pendingChunkOffsets;
-    this.dispatchedPageRequests.clear();
+    this.pageRequestDispatcher.clear();
   }
 
   private scrollToTop(): void {
@@ -695,24 +599,6 @@ class DuckTable extends LitElement {
     });
   }
 
-  private pageRequestKey(detail: {
-    widgetId: string;
-    offset: number;
-    limit: number;
-    append: boolean;
-    sortColumn?: string | null;
-    sortDirection?: "asc" | "desc" | null;
-  }): string {
-    return [
-      detail.widgetId,
-      String(detail.offset),
-      String(detail.limit),
-      detail.append ? "append" : "replace",
-      detail.sortColumn ?? "",
-      detail.sortDirection ?? "",
-    ].join("|");
-  }
-
   private dispatchPageRequest(detail: {
     widgetId: string;
     offset: number;
@@ -721,91 +607,11 @@ class DuckTable extends LitElement {
     sortColumn?: string | null;
     sortDirection?: "asc" | "desc" | null;
   }): void {
-    const key = this.pageRequestKey(detail);
-    if (this.dispatchedPageRequests.has(key)) {
-      return;
-    }
-    this.dispatchedPageRequests.add(key);
-    this.dispatchEvent(new CustomEvent("dashboard-table-page-request", {
-      bubbles: true,
-      composed: true,
-      detail,
-    }));
-  }
-
-  private toNumber(value: unknown): number | null {
-    if (typeof value === "number" && Number.isFinite(value)) {
-      return value;
-    }
-    if (typeof value !== "string") {
-      return null;
-    }
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return null;
-    }
-    const numeric = Number(trimmed);
-    return Number.isFinite(numeric) ? numeric : null;
-  }
-
-  private valueIsNumeric(value: unknown): boolean {
-    return this.toNumber(value) !== null;
-  }
-
-  private columnLooksNumeric(column: string): boolean {
-    const lowered = column.toLowerCase();
-    return ["count", "total", "sum", "number", "amount", "revenue", "fare", "price", "share"].some((token) => lowered.includes(token));
-  }
-
-  private columnLooksCurrency(column: string): boolean {
-    const lowered = column.toLowerCase();
-    return ["revenue", "amount", "gross", "price", "fare", "sales", "cost"].some((token) => lowered.includes(token));
-  }
-
-  private formatColumnLabel(column: string): string {
-    return column.replaceAll("_", " ");
-  }
-
-  private formatCellValue(column: string, value: unknown): string {
-    const numeric = this.toNumber(value);
-    if (numeric === null) {
-      return value === null || value === undefined ? "-" : String(value);
-    }
-
-    if (this.columnLooksCurrency(column)) {
-      return new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 2,
-      }).format(numeric);
-    }
-
-    if (Math.abs(numeric - Math.round(numeric)) < 0.000001) {
-      return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(numeric);
-    }
-
-    return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numeric);
+    this.pageRequestDispatcher.dispatch(this, detail);
   }
 
   private columnWidths(columns: string[]): string[] {
-    return columns.map((column, index) => {
-      const resized = this.resizedColumnWidths[column];
-      if (resized) {
-        return `${resized}px`;
-      }
-      if (this.columnLooksNumeric(column)) {
-        return "11rem";
-      }
-      if (index === 0) {
-        return "16rem";
-      }
-      return "12rem";
-    });
-  }
-
-  private skeletonWidth(columnIndex: number): string {
-    const widths = ["72%", "56%", "48%", "44%"];
-    return widths[columnIndex] ?? "58%";
+    return computeColumnWidths(columns, this.resizedColumnWidths);
   }
 
   private readonly handleScroll = (event: Event): void => {
