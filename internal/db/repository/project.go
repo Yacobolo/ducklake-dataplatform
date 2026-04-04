@@ -30,10 +30,10 @@ func (r *ProjectRepo) Create(ctx context.Context, p *domain.Project) (*domain.Pr
 	id := newID()
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO projects (
-			id, name, kind, description, owner_team_id, owner_principal, product_id,
+			id, workspace_id, name, kind, description, owner_team_id, owner_principal, product_id,
 			default_branch, created_by, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		id, p.Name, p.Kind, p.Description, nullableStringValue(p.OwnerTeamID), nullableStringValue(p.OwnerPrincipal),
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, p.WorkspaceID, p.Name, p.Kind, p.Description, nullableStringValue(p.OwnerTeamID), nullableStringValue(p.OwnerPrincipal),
 		nullableStringValue(p.ProductID), p.DefaultBranch, p.CreatedBy, now.Format(time.RFC3339), now.Format(time.RFC3339),
 	)
 	if err != nil {
@@ -72,6 +72,34 @@ func (r *ProjectRepo) List(ctx context.Context, page domain.PageRequest) ([]doma
 		item, err := scanProject(rows)
 		if err != nil {
 			return nil, 0, err
+		}
+		items = append(items, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
+}
+
+// ListByWorkspace returns projects within a workspace ordered by name.
+func (r *ProjectRepo) ListByWorkspace(ctx context.Context, workspaceID string, page domain.PageRequest) ([]domain.Project, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM projects WHERE workspace_id = ?`, workspaceID).Scan(&total); err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	rows, err := r.db.QueryContext(ctx, projectSelectSQL+`
+		WHERE p.workspace_id = ?
+		ORDER BY p.name
+		LIMIT ? OFFSET ?`, workspaceID, page.Limit(), page.Offset())
+	if err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	defer func() { _ = rows.Close() }()
+	items := make([]domain.Project, 0)
+	for rows.Next() {
+		item, scanErr := scanProject(rows)
+		if scanErr != nil {
+			return nil, 0, scanErr
 		}
 		items = append(items, *item)
 	}
@@ -157,7 +185,7 @@ func (r *ProjectRepo) Delete(ctx context.Context, id string) error {
 
 const projectSelectSQL = `
 	SELECT
-		p.id, p.name, p.kind, p.description, p.owner_team_id, p.owner_principal, p.product_id,
+		p.id, p.workspace_id, p.name, p.kind, p.description, p.owner_team_id, p.owner_principal, p.product_id,
 		p.default_branch, p.created_by, p.created_at, p.updated_at
 	FROM projects p`
 
@@ -332,6 +360,7 @@ func scanProject(scanner projectRowScanner) (*domain.Project, error) {
 	var updatedAt time.Time
 	if err := scanner.Scan(
 		&item.ID,
+		&item.WorkspaceID,
 		&item.Name,
 		&item.Kind,
 		&item.Description,

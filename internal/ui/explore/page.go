@@ -398,7 +398,7 @@ func rowKindIcon(row listRow) string {
 }
 
 func folderNavIcon(folder domain.Folder, allFolders []domain.Folder) string {
-	if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot {
+	if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRoleWorkspaceRoot {
 		return "folder-lock"
 	}
 	if effectiveFolderGitBacked(folder, allFolders) {

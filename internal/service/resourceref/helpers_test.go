@@ -79,14 +79,14 @@ func TestHydrateRecent_SkipsLegacyNonResourceRows(t *testing.T) {
 				ResourceType: "notebook",
 				ResourceKey:  "019d43e3-9377-79f6-a368-01b6ae805b7b",
 				DisplayName:  "hi",
-				ResourcePath: "My notebooks/",
+				ResourcePath: "Home/",
 			},
 		},
 	})
 	require.NoError(t, err)
 	require.Len(t, items, 1)
 	assert.Equal(t, "notebook", items[0].ResourceType)
-	assert.Equal(t, "My notebooks/", items[0].ResourcePath)
+	assert.Equal(t, "Home/", items[0].ResourcePath)
 }
 
 func TestHydrateSaved_SkipsLegacyNonResourceRows(t *testing.T) {

@@ -10,6 +10,12 @@ enum PrincipalType {
   group,
 }
 
+enum WorkspaceKind {
+  personal,
+  shared,
+  library,
+}
+
 enum AuditDecisionStatus {
   ALLOWED,
   DENIED,
@@ -36,6 +42,25 @@ enum MacroVisibility {
   project,
   catalog_global,
   system,
+}
+
+enum ProjectKind {
+  personal,
+  shared,
+  library,
+}
+
+enum EnvironmentKind {
+  development,
+  staging,
+  production,
+}
+
+enum BuildState {
+  draft,
+  ready,
+  released,
+  superseded,
 }
 
 enum MacroStatus {
@@ -1162,6 +1187,7 @@ enum NotebookShareRole {
 model NotebookContext {
   notebook_id?: string;
   folder_id?: string;
+  workspace_id?: string;
   effective_project_id?: string;
   effective_environment_id?: string;
   effective_git_repo_id?: string;
@@ -1178,6 +1204,7 @@ model NotebookShare {
 
 model Folder {
   id?: string;
+  workspace_id?: string;
   name?: string;
   owner?: string;
   parent_folder_id?: string;
@@ -1246,6 +1273,154 @@ model ShareNotebookRequest {
 model ShareFolderRequest {
   principal_name: string;
   role?: NotebookShareRole;
+}
+
+model Workspace {
+  id?: string;
+  name: string;
+  kind: WorkspaceKind;
+  owner_team_id?: string;
+  owner_principal?: string;
+  default_project_id?: string;
+  default_environment_id?: string;
+  git_repo_id?: string;
+  git_root_path?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model WorkspaceMember {
+  workspace_id: string;
+  principal_name: string;
+  role: NotebookShareRole;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedWorkspaces {
+  data: Workspace[];
+  next_page_token?: string;
+}
+
+model CreateWorkspaceRequest {
+  name: string;
+  kind?: WorkspaceKind;
+  owner_team_id?: string;
+  owner_principal?: string;
+  default_project_id?: string;
+  default_environment_id?: string;
+  git_repo_id?: string;
+  git_root_path?: string;
+}
+
+model UpdateWorkspaceRequest {
+  name?: string;
+  default_project_id?: string;
+  default_environment_id?: string;
+  git_repo_id?: string;
+  git_root_path?: string;
+}
+
+model AddWorkspaceMemberRequest {
+  principal_name: string;
+  role?: NotebookShareRole;
+}
+
+model Project {
+  id?: string;
+  workspace_id: string;
+  name: string;
+  kind: ProjectKind;
+  description?: string;
+  owner_team_id?: string;
+  owner_principal?: string;
+  product_id?: string;
+  default_branch?: string;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedProjects {
+  data: Project[];
+  next_page_token?: string;
+}
+
+model CreateProjectRequest {
+  name: string;
+  kind?: ProjectKind;
+  description?: string;
+  product_id?: string;
+  default_branch?: string;
+}
+
+model Environment {
+  id?: string;
+  project_id?: string;
+  project_name?: string;
+  name: string;
+  kind: EnvironmentKind;
+  description?: string;
+  target_catalog: string;
+  target_schema: string;
+  compute_endpoint?: string;
+  defer_to_environment?: string;
+  variables?: MetadataMap;
+  source_overrides?: MetadataMap;
+  created_at?: utcDateTime;
+  updated_at?: utcDateTime;
+}
+
+model PaginatedEnvironments {
+  data: Environment[];
+  next_page_token?: string;
+}
+
+model CreateEnvironmentRequest {
+  name: string;
+  kind?: EnvironmentKind;
+  description?: string;
+  target_catalog: string;
+  target_schema: string;
+  compute_endpoint?: string;
+  defer_to_environment?: string;
+  variables?: MetadataMap;
+  source_overrides?: MetadataMap;
+}
+
+model Build {
+  id?: string;
+  project_id?: string;
+  project_name?: string;
+  product_id?: string;
+  environment_id?: string;
+  environment_name?: string;
+  state?: BuildState;
+  git_ref: string;
+  commit_sha?: string;
+  selector?: string;
+  target_catalog: string;
+  target_schema: string;
+  source_model_run_id?: string;
+  compile_manifest: string;
+  compile_diagnostics?: string;
+  created_at?: utcDateTime;
+}
+
+model PaginatedBuilds {
+  data: Build[];
+  next_page_token?: string;
+}
+
+model CreateBuildRequest {
+  environment_name: string;
+  git_ref: string;
+  commit_sha?: string;
+  selector?: string;
+  target_catalog: string;
+  target_schema: string;
+  source_model_run_id?: string;
+  compile_manifest: string;
+  compile_diagnostics?: string;
 }
 
 enum VisualOutputKind {

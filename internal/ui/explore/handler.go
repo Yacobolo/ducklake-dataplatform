@@ -464,7 +464,7 @@ func (h *Handler) folderRows(ctx context.Context, folders []domain.Folder, folde
 			Shared:       strings.TrimSpace(folder.Owner) != strings.TrimSpace(principal),
 			ProjectBound: projectID != "",
 			GitBacked:    effectiveFolderGitBacked(folder, folders),
-			PersonalRoot: folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot,
+			PersonalRoot: folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRoleWorkspaceRoot,
 		})
 	}
 	return rows, nil

@@ -17,6 +17,7 @@ type notebookContextInvalidator interface {
 // Service provides business logic for notebook and cell operations.
 type Service struct {
 	repo           domain.NotebookRepository
+	workspaces     domain.WorkspaceRepository
 	folders        domain.FolderRepository
 	folderShares   domain.FolderShareRepository
 	auth           domain.AuthorizationService
@@ -33,6 +34,11 @@ type Service struct {
 // New creates a new Service.
 func New(repo domain.NotebookRepository, audit domain.AuditRepository) *Service {
 	return &Service{repo: repo, audit: audit}
+}
+
+// SetWorkspaceRepository configures workspace lookups for notebook access and defaults.
+func (s *Service) SetWorkspaceRepository(workspaces domain.WorkspaceRepository) {
+	s.workspaces = workspaces
 }
 
 // SetFolderRepository configures folder defaults for notebook creation and context resolution.
@@ -74,7 +80,7 @@ func (s *Service) SetContextInvalidator(invalidator notebookContextInvalidator) 
 }
 
 func (s *Service) accessResolver(ctx context.Context, principal string, isAdmin bool) (*principalAccessResolver, error) {
-	return newPrincipalAccessResolver(ctx, s.folders, s.folderShares, s.auth, s.notebookShares, principal, isAdmin)
+	return newPrincipalAccessResolver(ctx, s.workspaces, s.folders, s.folderShares, s.auth, s.notebookShares, principal, isAdmin)
 }
 
 // CreateNotebook creates a new notebook owned by the given principal.
@@ -91,9 +97,9 @@ func (s *Service) CreateNotebook(ctx context.Context, principal string, req doma
 	if req.FolderID != nil && strings.TrimSpace(*req.FolderID) != "" {
 		nb.FolderID = strings.TrimSpace(*req.FolderID)
 	} else if s.folders != nil {
-		root, err := s.folders.EnsurePersonalRoot(ctx, principal)
+		root, err := s.folders.EnsurePersonalWorkspaceRoot(ctx, principal)
 		if err != nil {
-			return nil, fmt.Errorf("ensure personal notebook folder: %w", err)
+			return nil, fmt.Errorf("ensure personal workspace root: %w", err)
 		}
 		nb.FolderID = root.ID
 	}
@@ -783,6 +789,11 @@ func (s *Service) resolveContextForNotebook(ctx context.Context, nb *domain.Note
 		EffectiveEnvironmentID: nb.EnvironmentOverrideID,
 	}
 	if s.folders != nil && strings.TrimSpace(nb.FolderID) != "" {
+		folder, err := s.folders.GetByID(ctx, nb.FolderID)
+		if err != nil {
+			return nil, fmt.Errorf("get folder %q: %w", nb.FolderID, err)
+		}
+		resolved.WorkspaceID = folder.WorkspaceID
 		ancestors, err := s.folders.ListAncestors(ctx, nb.FolderID)
 		if err != nil {
 			return nil, fmt.Errorf("list folder ancestors: %w", err)
@@ -800,6 +811,22 @@ func (s *Service) resolveContextForNotebook(ctx context.Context, nb *domain.Note
 				resolved.EffectiveGitRepoID = folder.GitRepoID
 				resolved.EffectiveGitRootPath = folder.GitRootPath
 				resolved.GitSourceFolderID = &folder.ID
+			}
+		}
+		if s.workspaces != nil && strings.TrimSpace(resolved.WorkspaceID) != "" {
+			workspace, err := s.workspaces.GetByID(ctx, resolved.WorkspaceID)
+			if err != nil {
+				return nil, fmt.Errorf("get workspace %q: %w", resolved.WorkspaceID, err)
+			}
+			if resolved.EffectiveProjectID == nil && workspace.DefaultProjectID != nil {
+				resolved.EffectiveProjectID = workspace.DefaultProjectID
+			}
+			if resolved.EffectiveEnvironmentID == nil && workspace.DefaultEnvironmentID != nil {
+				resolved.EffectiveEnvironmentID = workspace.DefaultEnvironmentID
+			}
+			if resolved.EffectiveGitRepoID == nil && workspace.GitRepoID != nil {
+				resolved.EffectiveGitRepoID = workspace.GitRepoID
+				resolved.EffectiveGitRootPath = workspace.GitRootPath
 			}
 		}
 	}
@@ -892,7 +919,19 @@ func (s *Service) validateNotebookEffectiveContext(ctx context.Context, nb *doma
 }
 
 func (s *Service) validateResolvedContext(ctx context.Context, resolved *domain.NotebookContext) error {
-	if resolved == nil || resolved.EffectiveEnvironmentID == nil || strings.TrimSpace(*resolved.EffectiveEnvironmentID) == "" {
+	if resolved == nil {
+		return nil
+	}
+	if resolved.EffectiveProjectID != nil && strings.TrimSpace(*resolved.EffectiveProjectID) != "" && s.projects != nil && strings.TrimSpace(resolved.WorkspaceID) != "" {
+		project, err := s.projects.GetByID(ctx, strings.TrimSpace(*resolved.EffectiveProjectID))
+		if err != nil {
+			return fmt.Errorf("get project %q: %w", strings.TrimSpace(*resolved.EffectiveProjectID), err)
+		}
+		if strings.TrimSpace(project.WorkspaceID) != strings.TrimSpace(resolved.WorkspaceID) {
+			return domain.ErrValidation("effective project must belong to the notebook workspace")
+		}
+	}
+	if resolved.EffectiveEnvironmentID == nil || strings.TrimSpace(*resolved.EffectiveEnvironmentID) == "" {
 		return nil
 	}
 	if resolved.EffectiveProjectID == nil || strings.TrimSpace(*resolved.EffectiveProjectID) == "" {

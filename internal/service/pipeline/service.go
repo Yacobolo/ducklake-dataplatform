@@ -216,7 +216,7 @@ func (s *Service) CreatePipeline(ctx context.Context, principal string, req doma
 	if req.FolderID != nil && *req.FolderID != "" {
 		p.FolderID = *req.FolderID
 	} else if s.folders != nil {
-		root, err := s.folders.EnsurePersonalRoot(ctx, principal)
+		root, err := s.folders.EnsurePersonalWorkspaceRoot(ctx, principal)
 		if err != nil {
 			return nil, err
 		}

@@ -20,11 +20,13 @@ import "./operations/lineage.tsp";
 import "./operations/models.tsp";
 import "./operations/notebooks.tsp";
 import "./operations/pipelines.tsp";
+import "./operations/projects.tsp";
 import "./operations/products.tsp";
 import "./operations/queries.tsp";
 import "./operations/resources.tsp";
 import "./operations/semantic.tsp";
 import "./operations/storage.tsp";
+import "./operations/workspaces.tsp";
 import "./extensions/openapi.tsp";
 
 using TypeSpec.Http;
@@ -39,7 +41,9 @@ using TypeSpec.OpenAPI;
 @tagMetadata("Health", #{ description: "Operational readiness and service health endpoints." })
 @tagMetadata("Auth", #{ description: "Authentication bootstrap, login, OIDC configuration, and web session administration." })
 @tagMetadata("Identity", #{ description: "Principals, groups, and API key management for authenticated access." })
+@tagMetadata("Workspaces", #{ description: "Top-level authoring ownership boundaries, membership management, and workspace defaults." })
 @tagMetadata("Folders", #{ description: "Folder lifecycle, sharing, and namespace browsing for authored assets." })
+@tagMetadata("Projects", #{ description: "Project, environment, and build APIs for authoring execution contexts within a workspace." })
 @tagMetadata("Governance", #{ description: "Privileges, tags, classifications, row filters, and column masking controls." })
 @tagMetadata("Catalogs", #{ description: "Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs." })
 @tagMetadata("Assets", #{ description: "Data asset definitions, runs, checks, partitions, and materialization workflows." })
