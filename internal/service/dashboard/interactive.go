@@ -194,7 +194,9 @@ func widgetInteractionBindings(widget domain.DashboardWidget, boundModel *domain
 				bindings = addBinding(bindings, "label", widget.VisualSpec.Encodings.Label.Field)
 			}
 		case domain.VisualChartScatter:
-			return nil
+			if widget.VisualSpec.Encodings.Label != nil {
+				bindings = addBinding(bindings, "label", widget.VisualSpec.Encodings.Label.Field)
+			}
 		default:
 			if widget.VisualSpec.Encodings.X != nil {
 				bindings = addBinding(bindings, "x", widget.VisualSpec.Encodings.X.Field)
@@ -220,9 +222,6 @@ func widgetInteractionBindings(widget domain.DashboardWidget, boundModel *domain
 
 func widgetCanInitiateDashboardFilters(widget domain.DashboardWidget, bindings []ResolvedWidgetInteractionField) bool {
 	if widget.VisualSpec == nil || len(bindings) == 0 {
-		return false
-	}
-	if widget.VisualSpec.Kind == domain.VisualOutputChart && widget.VisualSpec.ChartType != nil && *widget.VisualSpec.ChartType == domain.VisualChartScatter {
 		return false
 	}
 	return widget.VisualSpec.Kind == domain.VisualOutputChart || widget.VisualSpec.Kind == domain.VisualOutputTable

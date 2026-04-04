@@ -1,6 +1,6 @@
 import { build } from "esbuild";
 import { createHash } from "node:crypto";
-import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -15,6 +15,12 @@ const entryFiles = [
   join(webDir, "src", "dashboard.ts"),
   join(webDir, "src", "explore.ts"),
   join(webDir, "src", "datastar-inspector.ts"),
+];
+const vendorFiles = [
+  join(webDir, "vendor", "datastar.js"),
+];
+const vendorPassthroughFiles = [
+  join(webDir, "vendor", "datastar.js.map"),
 ];
 
 const outputDir = join(rootDir, "internal", "ui", "assets", "static", "js");
@@ -70,6 +76,35 @@ for (const output of jsOutputs) {
     }
 
     writeFileSync(hashedPath, output.text);
+    manifest[sourceName] = hashedName;
+    console.log(`Built JS: ${hashedName}`);
+  } else {
+    console.log(`Built JS: ${sourceName}`);
+  }
+}
+
+for (const passthroughFile of vendorPassthroughFiles) {
+  copyFileSync(passthroughFile, join(outputDir, basename(passthroughFile)));
+}
+
+for (const vendorFile of vendorFiles) {
+  const sourceName = basename(vendorFile);
+  const baseName = sourceName.slice(0, -extname(sourceName).length);
+  copyFileSync(vendorFile, join(outputDir, sourceName));
+
+  if (mode === "prod") {
+    const sourceText = readFileSync(vendorFile, "utf8");
+    const hash = createHash("sha256").update(sourceText).digest("hex").slice(0, 10);
+    const hashedName = `${baseName}.${hash}.js`;
+    const hashedPath = join(outputDir, hashedName);
+
+    for (const name of readdirSync(outputDir)) {
+      if (name.startsWith(`${baseName}.`) && name.endsWith(".js") && name !== hashedName && name !== sourceName) {
+        rmSync(join(outputDir, name));
+      }
+    }
+
+    copyFileSync(vendorFile, hashedPath);
     manifest[sourceName] = hashedName;
     console.log(`Built JS: ${hashedName}`);
   } else {

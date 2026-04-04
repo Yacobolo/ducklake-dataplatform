@@ -159,7 +159,6 @@ class DuckChart extends LitElement {
   }
 
   private handleChartClick(params: unknown): void {
-    this.lastChartClickAt = Date.now();
     this.clearNativeFallbackTimer();
     const payload = this.parsePayload();
     if (!payload?.interaction?.can_initiate) {
@@ -171,6 +170,7 @@ class DuckChart extends LitElement {
       return;
     }
 
+    this.lastChartClickAt = Date.now();
     this.dispatchSelections(selections);
   }
 
@@ -301,10 +301,13 @@ function buildOption(payload: DashboardWidgetPayload): echarts.EChartsCoreOption
         yAxis: { type: "value" },
         series: [{
           type: "scatter",
-          data: payload.rows.map((row) => [
-            Number(fieldValueFromPayload(payload, row, visual.encodings?.x?.field, 0) ?? 0),
-            Number(fieldValueFromPayload(payload, row, visual.encodings?.y?.field, 1) ?? 0),
-          ]),
+          data: payload.rows.map((row) => ({
+            name: String(fieldValueFromPayload(payload, row, visual.encodings?.label?.field, 0) ?? ""),
+            value: [
+              Number(fieldValueFromPayload(payload, row, visual.encodings?.x?.field, 0) ?? 0),
+              Number(fieldValueFromPayload(payload, row, visual.encodings?.y?.field, 1) ?? 0),
+            ],
+          })),
         }],
       };
     }
@@ -478,6 +481,12 @@ function extractSelectionsFromNativeClick(widgetKey: string, payload: DashboardW
   switch (visual.chart_type) {
     case "pie":
     case "doughnut": {
+      const labelField = visual.encodings?.label?.field;
+      const row = payload.rows[dataIndex];
+      const labelValue = row ? fieldValueFromPayload(payload, row, labelField, 0) : null;
+      return extractSelectionsFromClick(widgetKey, payload, { name: labelValue });
+    }
+    case "scatter": {
       const labelField = visual.encodings?.label?.field;
       const row = payload.rows[dataIndex];
       const labelValue = row ? fieldValueFromPayload(payload, row, labelField, 0) : null;

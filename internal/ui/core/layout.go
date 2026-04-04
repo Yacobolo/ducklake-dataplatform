@@ -137,7 +137,7 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
 			Link(Rel("icon"), Href("data:,")),
 			Script(Raw(ThemeInitScript)),
 			Link(Rel("stylesheet"), Href(UIStylesheetHref())),
-			Script(Type("module"), Src("https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.7/bundles/datastar.js")),
+			Script(Type("module"), Src(UIScriptHref("datastar.js"))),
 			func() Node {
 				if !devInspector {
 					return nil

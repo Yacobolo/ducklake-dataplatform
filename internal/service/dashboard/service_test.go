@@ -346,6 +346,81 @@ func TestService_ResolveWidgetsForDashboard_AppliesDashboardFiltersAndTimeBucket
 	assert.Equal(t, []string{"APAC", "EMEA"}, resolved[0].Interaction.ActiveFilters["region"])
 }
 
+func TestService_ResolveWidgetsForDashboard_ScatterLabelBindingCanInitiate(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, semanticSvc, queryExec := setupDashboardService(t)
+	ctx := context.Background()
+	queryExec.result = &query.QueryResult{
+		Columns:  []string{"pickup_zone", "trip_count", "gross_revenue"},
+		Rows:     [][]interface{}{{"JFK Airport", 17550, 1338981.25}},
+		RowCount: 1,
+	}
+
+	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.sales",
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "ignored",
+		Name:            "trip_count",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(trip_count)",
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "ignored",
+		Name:            "gross_revenue",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(gross_revenue)",
+	})
+	require.NoError(t, err)
+
+	scatter := domain.VisualChartScatter
+	resolved, err := svc.ResolveWidgetsForDashboard(ctx, "alice", &domain.Dashboard{
+		ID:                  "dash-1",
+		Name:                "Revenue Dashboard",
+		Owner:               "alice",
+		SemanticProjectName: "analytics",
+		SemanticModelName:   "sales",
+	}, []domain.DashboardWidget{
+		{
+			ID:   "widget-1",
+			Name: "Zone Revenue vs Trips",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"trip_count", "gross_revenue"},
+					Dimensions:        []string{"pickup_zone"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind:      domain.VisualOutputChart,
+				ChartType: &scatter,
+				Encodings: domain.VisualEncodings{
+					Label: &domain.VisualFieldBinding{Field: "pickup_zone"},
+					X:     &domain.VisualFieldBinding{Field: "trip_count"},
+					Y:     &domain.VisualFieldBinding{Field: "gross_revenue"},
+				},
+			},
+		},
+	}, nil)
+	require.NoError(t, err)
+	require.Len(t, resolved, 1)
+	require.NotNil(t, resolved[0].Interaction)
+	assert.True(t, resolved[0].Interaction.Participates)
+	assert.True(t, resolved[0].Interaction.CanInitiate)
+	require.Len(t, resolved[0].Interaction.Bindings, 1)
+	assert.Equal(t, "label", resolved[0].Interaction.Bindings[0].Encoding)
+	assert.Equal(t, "pickup_zone", resolved[0].Interaction.Bindings[0].Dimension)
+}
+
 func TestService_ResolveWidgetsForDashboardPaged_TablePagesSemanticResults(t *testing.T) {
 	t.Parallel()
 

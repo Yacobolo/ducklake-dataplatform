@@ -447,7 +447,7 @@ func sampleChartLabDashboardWidgets(_ string) []sampleDashboardWidget {
 		{
 			PageName:    "Gallery",
 			Name:        "Zone Revenue vs Trips (Scatter)",
-			Description: "Scatter plot check for two-metric zone comparisons.",
+			Description: "Scatter plot check for two-metric zone comparisons with pickup-zone selection.",
 			Source: domain.DashboardWidgetSource{
 				Kind: domain.DashboardWidgetSourceSemanticQuery,
 				SemanticQuery: &domain.DashboardSemanticQuerySource{
@@ -464,6 +464,7 @@ func sampleChartLabDashboardWidgets(_ string) []sampleDashboardWidget {
 				ChartType: &scatterChart,
 				Title:     "Zone Revenue vs Trips (Scatter)",
 				Encodings: domain.VisualEncodings{
+					Label: &domain.VisualFieldBinding{Field: "pickup_zone"},
 					X: &domain.VisualFieldBinding{Field: "trip_count"},
 					Y: &domain.VisualFieldBinding{Field: "gross_revenue"},
 				},
