@@ -308,10 +308,21 @@ func createProductBuildForAPITest(
 ) string {
 	t.Helper()
 
+	workspaceRepo := repository.NewWorkspaceRepo(writeDB)
 	projectRepo := repository.NewProjectRepo(writeDB)
 	environmentRepo := repository.NewEnvironmentRepo(writeDB)
+	ownerPrincipal := createdBy
+	workspace, err := workspaceRepo.Create(t.Context(), &domain.Workspace{
+		Name:           product.Slug + "-workspace",
+		Kind:           domain.WorkspaceKindShared,
+		OwnerTeamID:    &product.OwnerTeamID,
+		OwnerPrincipal: &ownerPrincipal,
+		CreatedBy:      createdBy,
+	})
+	require.NoError(t, err)
 
 	project, err := projectRepo.Create(t.Context(), &domain.Project{
+		WorkspaceID:   workspace.ID,
 		Name:          product.Slug + "-authoring-" + strings.ToLower(time.Now().UTC().Format("150405.000000000")),
 		Kind:          domain.ProjectKindShared,
 		OwnerTeamID:   &product.OwnerTeamID,
