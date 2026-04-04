@@ -25,6 +25,7 @@ func NewDashboardRepo(db *sql.DB) *DashboardRepo {
 
 // Create inserts a dashboard record.
 func (r *DashboardRepo) Create(ctx context.Context, d *domain.Dashboard) (*domain.Dashboard, error) {
+	compute := d.Compute.Normalize()
 	row, err := r.q.CreateDashboard(ctx, dbstore.CreateDashboardParams{
 		ID:                  newID(),
 		Name:                d.Name,
@@ -33,6 +34,9 @@ func (r *DashboardRepo) Create(ctx context.Context, d *domain.Dashboard) (*domai
 		FolderID:            nullStringPtr(stringPtr(d.FolderID)),
 		SemanticProjectName: d.SemanticProjectName,
 		SemanticModelName:   d.SemanticModelName,
+		ComputeMode:         compute.Mode,
+		ComputeEndpointName: compute.EndpointName,
+		ComputeFallbackLocal: boolToInt(compute.FallbackLocal),
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -120,7 +124,14 @@ func (r *DashboardRepo) Update(ctx context.Context, id string, req domain.Update
 	if req.SemanticModelName != nil {
 		semanticModelName = *req.SemanticModelName
 	}
+	compute := current.Compute.Normalize()
+	if req.Compute != nil {
+		compute = req.Compute.Normalize()
+	}
 	if err := domain.ValidateDashboardSemanticBinding(semanticProjectName, semanticModelName); err != nil {
+		return nil, err
+	}
+	if err := compute.Validate(); err != nil {
 		return nil, err
 	}
 	row, err := r.q.UpdateDashboard(ctx, dbstore.UpdateDashboardParams{
@@ -129,6 +140,9 @@ func (r *DashboardRepo) Update(ctx context.Context, id string, req domain.Update
 		FolderID:            nullStringPtr(stringPtr(folderID)),
 		SemanticProjectName: semanticProjectName,
 		SemanticModelName:   semanticModelName,
+		ComputeMode:         compute.Mode,
+		ComputeEndpointName: compute.EndpointName,
+		ComputeFallbackLocal: boolToInt(compute.FallbackLocal),
 		ID:                  id,
 	})
 	if err != nil {

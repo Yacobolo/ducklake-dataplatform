@@ -102,6 +102,12 @@ func (s *Service) CreateDashboard(ctx context.Context, owner string, req domain.
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
+	compute := domain.DashboardComputePolicy{}
+	if req.Compute != nil {
+		compute = req.Compute.Normalize()
+	} else {
+		compute = compute.Normalize()
+	}
 	folderID := ""
 	if req.FolderID != nil && *req.FolderID != "" {
 		folderID = *req.FolderID
@@ -119,6 +125,7 @@ func (s *Service) CreateDashboard(ctx context.Context, owner string, req domain.
 		FolderID:            folderID,
 		SemanticProjectName: req.SemanticProjectName,
 		SemanticModelName:   req.SemanticModelName,
+		Compute:             compute,
 	})
 	if err != nil {
 		return nil, err
@@ -153,6 +160,13 @@ func (s *Service) UpdateDashboard(ctx context.Context, principal string, isAdmin
 	}
 	if current.Owner != principal && !isAdmin {
 		return nil, domain.ErrAccessDenied("only the dashboard owner or admin can update")
+	}
+	if req.Compute != nil {
+		compute := req.Compute.Normalize()
+		if err := compute.Validate(); err != nil {
+			return nil, err
+		}
+		req.Compute = &compute
 	}
 	item, err := s.dashboards.Update(ctx, id, req)
 	if err != nil {
@@ -352,6 +366,7 @@ func (s *Service) BuildDashboardPageState(ctx context.Context, principal string,
 	if dashboard == nil {
 		return nil, domain.ErrValidation("dashboard is required")
 	}
+	ctx = dashboardComputeContext(ctx, dashboard)
 
 	pageName = normalizeDashboardStatePageName(pageName)
 	pageWidgets := dashboardStateWidgetsForPage(widgets, pageName)
@@ -370,6 +385,7 @@ func (s *Service) BuildDashboardPageState(ctx context.Context, principal string,
 
 // ResolveWidgetsForDashboardPaged resolves dashboard widgets with optional per-table page requests.
 func (s *Service) ResolveWidgetsForDashboardPaged(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []InteractiveFilter, tablePages map[string]TablePageRequest) ([]ResolvedWidget, error) {
+	ctx = dashboardComputeContext(ctx, dashboard)
 	interactionCtx, err := s.buildDashboardInteractionContext(ctx, dashboard, widgets, filters)
 	if err != nil {
 		return nil, err
@@ -395,6 +411,7 @@ func (s *Service) ResolveWidgetsForDashboardPaged(ctx context.Context, principal
 
 // ResolveWidgetForDashboardPage resolves one dashboard widget with the supplied page request in dashboard context.
 func (s *Service) ResolveWidgetForDashboardPage(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, widgetID string, filters []InteractiveFilter, page TablePageRequest) (*ResolvedWidget, error) {
+	ctx = dashboardComputeContext(ctx, dashboard)
 	interactionCtx, err := s.buildDashboardInteractionContext(ctx, dashboard, widgets, filters)
 	if err != nil {
 		return nil, err
@@ -735,6 +752,23 @@ func (s *Service) countSemanticQueryRows(ctx context.Context, principal string, 
 		return 0, fmt.Errorf("count widget rows: empty result")
 	}
 	return countValue(result.Rows[0][0])
+}
+
+func dashboardComputeContext(ctx context.Context, dashboard *domain.Dashboard) context.Context {
+	if dashboard == nil {
+		return ctx
+	}
+	policy := dashboard.Compute.Normalize()
+	req := domain.ComputeExecutionRequest{
+		Mode:         policy.Mode,
+		EndpointName: policy.EndpointName,
+		WorkloadType: domain.ComputeWorkloadInteractive,
+		FallbackLocal: policy.FallbackLocal,
+	}
+	if policy.Mode == domain.ComputeModeSharedEndpoint && policy.EndpointName != "" {
+		req.AuthoritativeEndpoint = true
+	}
+	return domain.WithComputeExecutionRequest(ctx, req)
 }
 
 func countValue(value interface{}) (int, error) {

@@ -140,6 +140,7 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 - [CreateViewRequest](./schemas/createviewrequest)
 - [CreateVolumeRequest](./schemas/createvolumerequest)
 - [Dashboard](./schemas/dashboard)
+- [DashboardComputePolicy](./schemas/dashboardcomputepolicy)
 - [DashboardDetail](./schemas/dashboarddetail)
 - [DashboardNotebookCellSource](./schemas/dashboardnotebookcellsource)
 - [DashboardNotebookCellSourceUpdate](./schemas/dashboardnotebookcellsourceupdate)

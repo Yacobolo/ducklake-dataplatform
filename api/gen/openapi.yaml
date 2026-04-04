@@ -17322,6 +17322,8 @@ components:
           type: string
         semantic_model_name:
           type: string
+        compute:
+          $ref: '#/components/schemas/DashboardComputePolicy'
     CreateDashboardWidgetRequest:
       type: object
       required:
@@ -17914,12 +17916,23 @@ components:
           type: string
         semantic_model_name:
           type: string
+        compute:
+          $ref: '#/components/schemas/DashboardComputePolicy'
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+    DashboardComputePolicy:
+      type: object
+      properties:
+        mode:
+          type: string
+        endpoint_name:
+          type: string
+        fallback_local:
+          type: boolean
     DashboardDetail:
       type: object
       properties:
@@ -21420,6 +21433,8 @@ components:
           type: string
         semantic_model_name:
           type: string
+        compute:
+          $ref: '#/components/schemas/DashboardComputePolicy'
     UpdateDashboardWidgetRequest:
       type: object
       properties:

@@ -131,6 +131,11 @@ func dashboardsNewPage(principal domain.ContextPrincipal, folderID string, csrfF
 		core.InputControl("", Name("semantic_project_name")),
 		core.FieldLabel("Semantic model"),
 		core.InputControl("", Name("semantic_model_name")),
+		core.FieldLabel("Compute mode"),
+		dashboardComputeModeSelect(domain.DashboardComputePolicy{}.Normalize().Mode),
+		core.FieldLabel("Compute endpoint"),
+		core.InputControl("", Name("compute_endpoint_name")),
+		core.Checkbox("dashboard-compute-fallback-local", "compute_fallback_local", "true", "Fallback to local if shared endpoint is unavailable", false),
 	}
 	if strings.TrimSpace(folderID) != "" {
 		fields = append(fields,
@@ -142,6 +147,7 @@ func dashboardsNewPage(principal domain.ContextPrincipal, folderID string, csrfF
 }
 
 func dashboardsEditPage(principal domain.ContextPrincipal, dashboard *domain.Dashboard, csrfFieldProvider func() Node) Node {
+	compute := dashboard.Compute.Normalize()
 	return formPage(principal, "Edit Dashboard", "dashboards", "/ui/dashboards/"+dashboard.ID+"/update", csrfFieldProvider,
 		core.FieldLabel("Name"),
 		core.InputControl("", Name("name"), Value(dashboard.Name), Required()),
@@ -151,6 +157,11 @@ func dashboardsEditPage(principal domain.ContextPrincipal, dashboard *domain.Das
 		core.InputControl("", Name("semantic_project_name"), Value(dashboard.SemanticProjectName)),
 		core.FieldLabel("Semantic model"),
 		core.InputControl("", Name("semantic_model_name"), Value(dashboard.SemanticModelName)),
+		core.FieldLabel("Compute mode"),
+		dashboardComputeModeSelect(compute.Mode),
+		core.FieldLabel("Compute endpoint"),
+		core.InputControl("", Name("compute_endpoint_name"), Value(compute.EndpointName)),
+		core.Checkbox("dashboard-compute-fallback-local", "compute_fallback_local", "true", "Fallback to local if shared endpoint is unavailable", compute.FallbackLocal),
 	)
 }
 
@@ -192,6 +203,9 @@ func dashboardsDetailPage(d dashboardDetailPageData) Node {
 	body := []Node{}
 	if len(d.PageTabs) > 1 {
 		body = append(body, dashboardPageTabBar(d.PageTabs))
+	}
+	if !d.EditMode {
+		body = append(body, dashboardViewMetaBar(d.Dashboard.Compute))
 	}
 	if d.EditMode {
 		body = append(body,
@@ -448,6 +462,7 @@ func dashboardHero(d dashboardDetailPageData) Node {
 	stats := []Node{
 		dashboardHeroStat("Widgets", strconv.Itoa(len(d.Widgets))),
 		dashboardHeroStat("Owner", dashIfEmpty(d.Dashboard.Owner)),
+		dashboardHeroStat("Compute", dashboardComputePolicyLabel(d.Dashboard.Compute)),
 	}
 	if d.Freshness != nil {
 		stats = append(stats, dashboardHeroStat("Freshness", d.Freshness.FreshnessStatus))
@@ -475,6 +490,46 @@ func dashboardHeroStat(label, value string) Node {
 		P(Class("m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--fgColor-muted)]"), Text(label)),
 		P(Class("mt-2 mb-0 text-xl font-semibold text-[var(--fgColor-default)]"), Text(value)),
 	)
+}
+
+func dashboardViewMetaBar(policy domain.DashboardComputePolicy) Node {
+	return Div(
+		Class("rounded-xl border border-[var(--borderColor-default)] bg-[var(--bgColor-default)] px-4 py-3 shadow-sm"),
+		Div(Class("flex flex-wrap items-center justify-between gap-3"),
+			Div(Class("grid gap-1"),
+				P(Class("m-0 text-[10px] font-black uppercase tracking-[0.15em] text-[var(--fgColor-muted)]"), Text("Compute Policy")),
+				P(Class("m-0 text-sm text-[var(--fgColor-default)]"), Text(dashboardComputePolicyLabel(policy))),
+			),
+			Span(Class("text-xs text-[var(--fgColor-muted)]"), Text("Viewer routing is read-only")),
+		),
+	)
+}
+
+func dashboardComputeModeSelect(selected string) Node {
+	return core.SelectControl("", Name("compute_mode"),
+		Option(Value(domain.ComputeModeAuto), selectedValue(strings.ToUpper(strings.TrimSpace(selected)), domain.ComputeModeAuto), Text("AUTO")),
+		Option(Value(domain.ComputeModeByocLocal), selectedValue(strings.ToUpper(strings.TrimSpace(selected)), domain.ComputeModeByocLocal), Text("BYOC_LOCAL")),
+		Option(Value(domain.ComputeModeSharedEndpoint), selectedValue(strings.ToUpper(strings.TrimSpace(selected)), domain.ComputeModeSharedEndpoint), Text("SHARED_ENDPOINT")),
+	)
+}
+
+func dashboardComputePolicyLabel(policy domain.DashboardComputePolicy) string {
+	policy = policy.Normalize()
+	switch policy.Mode {
+	case domain.ComputeModeSharedEndpoint:
+		label := "Shared endpoint"
+		if policy.EndpointName != "" {
+			label += ": " + policy.EndpointName
+		}
+		if policy.FallbackLocal {
+			label += " (fallback local)"
+		}
+		return label
+	case domain.ComputeModeByocLocal:
+		return "Local"
+	default:
+		return "Auto"
+	}
 }
 
 func dashboardCanvas(widgetNodes []Node, editMode bool) Node {

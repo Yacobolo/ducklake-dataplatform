@@ -120,6 +120,16 @@ func (r *DefaultResolver) Resolve(ctx context.Context, principalName string) (do
 	}
 
 	if execReq.EndpointName != "" {
+		if execReq.AuthoritativeEndpoint {
+			selected, err := r.computeRepo.GetByName(ctx, execReq.EndpointName)
+			if err != nil {
+				return nil, fmt.Errorf("resolve authoritative compute endpoint %q: %w", execReq.EndpointName, err)
+			}
+			if !endpointEligibleForRequest(*selected, execReq) {
+				return nil, domain.ErrAccessDenied("compute endpoint %q is not eligible for the requested workload", execReq.EndpointName)
+			}
+			return r.resolveEndpoint(ctx, selected, execReq)
+		}
 		selected, err := r.resolveRequestedEndpoint(ctx, principal.ID, execReq.EndpointName)
 		if err != nil {
 			return nil, err
@@ -279,9 +289,13 @@ func (r *DefaultResolver) resolveEndpoint(ctx context.Context, ep *domain.Comput
 
 	// Health check
 	if err := remote.Ping(ctx); err != nil {
-		fallbackLocal, lookupErr := r.fallbackLocalEnabled(ctx, ep)
-		if lookupErr != nil {
-			return nil, fmt.Errorf("resolve assignment fallback policy for endpoint %q: %w", ep.Name, lookupErr)
+		fallbackLocal := req.FallbackLocal
+		if !req.AuthoritativeEndpoint {
+			lookupFallbackLocal, lookupErr := r.fallbackLocalEnabled(ctx, ep)
+			if lookupErr != nil {
+				return nil, fmt.Errorf("resolve assignment fallback policy for endpoint %q: %w", ep.Name, lookupErr)
+			}
+			fallbackLocal = lookupFallbackLocal
 		}
 
 		if r.logger != nil {

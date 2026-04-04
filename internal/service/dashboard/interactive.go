@@ -56,6 +56,7 @@ type dashboardInteractionContext struct {
 
 // ResolveWidgetsForDashboard resolves widgets in the context of a dashboard-level semantic binding and active filters.
 func (s *Service) ResolveWidgetsForDashboard(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []InteractiveFilter) ([]ResolvedWidget, error) {
+	ctx = dashboardComputeContext(ctx, dashboard)
 	interactionCtx, err := s.buildDashboardInteractionContext(ctx, dashboard, widgets, filters)
 	if err != nil {
 		return nil, err

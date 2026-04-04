@@ -235,28 +235,39 @@ func TestHandler_GetDashboard_MapsWidgets(t *testing.T) {
 		dashboards: &mockDashboardService{
 			getDashboardFn: func(_ context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error) {
 				assert.Equal(t, "dash-1", id)
-				return &domain.Dashboard{ID: id, Name: "Revenue", Owner: "alice", SemanticProjectName: "analytics", SemanticModelName: "sales"}, []domain.DashboardWidget{
-					{
-						ID:          "widget-1",
-						DashboardID: id,
-						Name:        "Revenue by Region",
-						Source: domain.DashboardWidgetSource{
-							Kind: domain.DashboardWidgetSourceSQLQuery,
-							SQLQuery: &domain.DashboardSQLQuerySource{
-								SQL: "select region, revenue from summary",
-							},
+				return &domain.Dashboard{
+						ID:                  id,
+						Name:                "Revenue",
+						Owner:               "alice",
+						SemanticProjectName: "analytics",
+						SemanticModelName:   "sales",
+						Compute: domain.DashboardComputePolicy{
+							Mode:          domain.ComputeModeSharedEndpoint,
+							EndpointName:  "analytics-xl",
+							FallbackLocal: true,
 						},
-						VisualSpec: &domain.VisualSpec{
-							Kind:      domain.VisualOutputChart,
-							ChartType: &chartType,
-							Encodings: domain.VisualEncodings{
-								X: &domain.VisualFieldBinding{Field: "region"},
-								Y: &domain.VisualFieldBinding{Field: "revenue"},
+					}, []domain.DashboardWidget{
+						{
+							ID:          "widget-1",
+							DashboardID: id,
+							Name:        "Revenue by Region",
+							Source: domain.DashboardWidgetSource{
+								Kind: domain.DashboardWidgetSourceSQLQuery,
+								SQLQuery: &domain.DashboardSQLQuerySource{
+									SQL: "select region, revenue from summary",
+								},
 							},
+							VisualSpec: &domain.VisualSpec{
+								Kind:      domain.VisualOutputChart,
+								ChartType: &chartType,
+								Encodings: domain.VisualEncodings{
+									X: &domain.VisualFieldBinding{Field: "region"},
+									Y: &domain.VisualFieldBinding{Field: "revenue"},
+								},
+							},
+							Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 4, H: 3},
 						},
-						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 4, H: 3},
-					},
-				}, nil
+					}, nil
 			},
 		},
 	}
@@ -269,6 +280,12 @@ func TestHandler_GetDashboard_MapsWidgets(t *testing.T) {
 	require.NotNil(t, okResp.Body.Dashboard)
 	require.NotNil(t, okResp.Body.Dashboard.SemanticProjectName)
 	assert.Equal(t, "analytics", *okResp.Body.Dashboard.SemanticProjectName)
+	require.NotNil(t, okResp.Body.Dashboard.Compute)
+	require.NotNil(t, okResp.Body.Dashboard.Compute.Mode)
+	assert.Equal(t, "SHARED_ENDPOINT", *okResp.Body.Dashboard.Compute.Mode)
+	assert.Equal(t, "analytics-xl", *okResp.Body.Dashboard.Compute.EndpointName)
+	require.NotNil(t, okResp.Body.Dashboard.Compute.FallbackLocal)
+	assert.True(t, *okResp.Body.Dashboard.Compute.FallbackLocal)
 	require.NotNil(t, okResp.Body.Widgets)
 	require.Len(t, *okResp.Body.Widgets, 1)
 	require.NotNil(t, (*okResp.Body.Widgets)[0].Source)
@@ -307,7 +324,16 @@ func TestHandler_GetResolvedDashboard_MapsResolvedWidgets(t *testing.T) {
 	h := &APIHandler{
 		dashboards: &mockDashboardService{
 			getDashboardFn: func(_ context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error) {
-				return &domain.Dashboard{ID: id, Name: "Revenue", Owner: "alice", SemanticProjectName: "analytics", SemanticModelName: "sales"}, []domain.DashboardWidget{widget}, nil
+				return &domain.Dashboard{
+					ID:                  id,
+					Name:                "Revenue",
+					Owner:               "alice",
+					SemanticProjectName: "analytics",
+					SemanticModelName:   "sales",
+					Compute: domain.DashboardComputePolicy{
+						Mode: domain.ComputeModeByocLocal,
+					},
+				}, []domain.DashboardWidget{widget}, nil
 			},
 			resolveWidgetsForDashboardFn: func(_ context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []dashboardsvc.InteractiveFilter) ([]dashboardsvc.ResolvedWidget, error) {
 				assert.Equal(t, "alice", principal)
@@ -340,6 +366,9 @@ func TestHandler_GetResolvedDashboard_MapsResolvedWidgets(t *testing.T) {
 	okResp, ok := resp.(GenGetResolvedDashboard200JSONResponse)
 	require.True(t, ok)
 	require.NotNil(t, okResp.Body.Dashboard)
+	require.NotNil(t, okResp.Body.Dashboard.Compute)
+	require.NotNil(t, okResp.Body.Dashboard.Compute.Mode)
+	assert.Equal(t, "BYOC_LOCAL", *okResp.Body.Dashboard.Compute.Mode)
 	require.NotNil(t, okResp.Body.Widgets)
 	require.Len(t, *okResp.Body.Widgets, 1)
 	require.NotNil(t, (*okResp.Body.Widgets)[0].Widget)
@@ -367,6 +396,10 @@ func TestHandler_UpdateDashboard_MapsRequestAndAccessDenied(t *testing.T) {
 				assert.Equal(t, "analytics", *req.SemanticProjectName)
 				require.NotNil(t, req.SemanticModelName)
 				assert.Equal(t, "sales", *req.SemanticModelName)
+				require.NotNil(t, req.Compute)
+				assert.Equal(t, domain.ComputeModeSharedEndpoint, req.Compute.Mode)
+				assert.Equal(t, "analytics-xl", req.Compute.EndpointName)
+				assert.True(t, req.Compute.FallbackLocal)
 				return nil, domain.ErrAccessDenied("forbidden")
 			},
 		},
@@ -374,17 +407,64 @@ func TestHandler_UpdateDashboard_MapsRequestAndAccessDenied(t *testing.T) {
 
 	semanticProjectName := "analytics"
 	semanticModelName := "sales"
+	computeMode := domain.ComputeModeSharedEndpoint
+	computeEndpointName := "analytics-xl"
+	fallbackLocal := true
 	resp, err := h.UpdateDashboard(ctx, GenUpdateDashboardRequest{
 		DashboardId: "dash-1",
 		Body: &GenUpdateDashboardJSONBody{
 			Name:                strPtr("Updated dashboard"),
 			SemanticProjectName: &semanticProjectName,
 			SemanticModelName:   &semanticModelName,
+			Compute: &DashboardComputePolicy{
+				Mode:          &computeMode,
+				EndpointName:  &computeEndpointName,
+				FallbackLocal: &fallbackLocal,
+			},
 		},
 	})
 	require.NoError(t, err)
 	_, ok := resp.(UpdateDashboard403JSONResponse)
 	require.True(t, ok)
+}
+
+func TestHandler_CreateDashboard_MapsComputePolicy(t *testing.T) {
+	t.Parallel()
+
+	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", Type: "user"})
+	h := &APIHandler{
+		dashboards: &mockDashboardService{
+			createDashboardFn: func(_ context.Context, principal string, req domain.CreateDashboardRequest) (*domain.Dashboard, error) {
+				assert.Equal(t, "alice", principal)
+				require.NotNil(t, req.Compute)
+				assert.Equal(t, domain.ComputeModeByocLocal, req.Compute.Mode)
+				assert.Empty(t, req.Compute.EndpointName)
+				assert.False(t, req.Compute.FallbackLocal)
+				return &domain.Dashboard{
+					ID:      "dash-1",
+					Name:    req.Name,
+					Owner:   principal,
+					Compute: req.Compute.Normalize(),
+				}, nil
+			},
+		},
+	}
+
+	computeMode := domain.ComputeModeByocLocal
+	resp, err := h.CreateDashboard(ctx, GenCreateDashboardRequest{
+		Body: &GenCreateDashboardJSONBody{
+			Name: "Revenue Dashboard",
+			Compute: &DashboardComputePolicy{
+				Mode: &computeMode,
+			},
+		},
+	})
+	require.NoError(t, err)
+	okResp, ok := resp.(GenCreateDashboard201JSONResponse)
+	require.True(t, ok)
+	require.NotNil(t, okResp.Body.Compute)
+	require.NotNil(t, okResp.Body.Compute.Mode)
+	assert.Equal(t, "BYOC_LOCAL", *okResp.Body.Compute.Mode)
 }
 
 func TestHandler_DeleteDashboard_MapsRequest(t *testing.T) {

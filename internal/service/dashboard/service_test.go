@@ -22,14 +22,24 @@ import (
 type dashboardQueryExecutorStub struct {
 	lastSQL          string
 	sqls             []string
+	lastComputeReq   domain.ComputeExecutionRequest
+	hasComputeReq    bool
+	computeReqs      []domain.ComputeExecutionRequest
 	result           *query.QueryResult
 	resultsByContain map[string]*query.QueryResult
 	err              error
 }
 
-func (s *dashboardQueryExecutorStub) Execute(_ context.Context, _ string, sqlQuery string) (*query.QueryResult, error) {
+func (s *dashboardQueryExecutorStub) Execute(ctx context.Context, _ string, sqlQuery string) (*query.QueryResult, error) {
 	s.lastSQL = sqlQuery
 	s.sqls = append(s.sqls, sqlQuery)
+	if req, ok := domain.ComputeExecutionRequestFromContext(ctx); ok {
+		s.lastComputeReq = req
+		s.hasComputeReq = true
+		s.computeReqs = append(s.computeReqs, req)
+	} else {
+		s.hasComputeReq = false
+	}
 	if s.err != nil {
 		return nil, s.err
 	}
@@ -113,6 +123,39 @@ func TestService_ResolveWidget_SQLQuery(t *testing.T) {
 	assert.Equal(t, 1, resolved.RowCount)
 	assert.Equal(t, []string{"region", "revenue"}, resolved.Columns)
 	assert.Equal(t, "select region, revenue from summary", resolved.GeneratedSQL)
+}
+
+func TestService_CreateAndUpdateDashboard_ComputePolicy(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, _, _ := setupDashboardService(t)
+	ctx := context.Background()
+
+	created, err := svc.CreateDashboard(ctx, "alice", domain.CreateDashboardRequest{
+		Name:        "Revenue Dashboard",
+		Description: "Executive metrics",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, domain.ComputeModeAuto, created.Compute.Normalize().Mode)
+	assert.Empty(t, created.Compute.Normalize().EndpointName)
+
+	updated, err := svc.UpdateDashboard(ctx, "alice", false, created.ID, domain.UpdateDashboardRequest{
+		Compute: &domain.DashboardComputePolicy{
+			Mode:          domain.ComputeModeSharedEndpoint,
+			EndpointName:  "analytics-xl",
+			FallbackLocal: true,
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, domain.ComputeModeSharedEndpoint, updated.Compute.Normalize().Mode)
+	assert.Equal(t, "analytics-xl", updated.Compute.Normalize().EndpointName)
+	assert.True(t, updated.Compute.Normalize().FallbackLocal)
+
+	loaded, _, err := svc.GetDashboard(ctx, created.ID)
+	require.NoError(t, err)
+	assert.Equal(t, domain.ComputeModeSharedEndpoint, loaded.Compute.Normalize().Mode)
+	assert.Equal(t, "analytics-xl", loaded.Compute.Normalize().EndpointName)
+	assert.True(t, loaded.Compute.Normalize().FallbackLocal)
 }
 
 func TestService_ResolveWidget_NotebookCell(t *testing.T) {
@@ -419,6 +462,180 @@ func TestService_ResolveWidgetsForDashboard_ScatterLabelBindingCanInitiate(t *te
 	require.Len(t, resolved[0].Interaction.Bindings, 1)
 	assert.Equal(t, "label", resolved[0].Interaction.Bindings[0].Encoding)
 	assert.Equal(t, "pickup_zone", resolved[0].Interaction.Bindings[0].Dimension)
+}
+
+func TestService_ResolveWidgetsForDashboard_UsesDashboardComputePolicyForSemanticQueries(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, semanticSvc, queryExec := setupDashboardService(t)
+	ctx := context.Background()
+	queryExec.result = &query.QueryResult{
+		Columns:  []string{"region", "revenue"},
+		Rows:     [][]interface{}{{"APAC", 42}},
+		RowCount: 1,
+	}
+
+	_, err := semanticSvc.CreateSemanticModel(ctx, "alice", domain.CreateSemanticModelRequest{
+		ProjectName:  "analytics",
+		Name:         "sales",
+		BaseModelRef: "analytics.sales",
+	})
+	require.NoError(t, err)
+	_, err = semanticSvc.CreateMetric(ctx, "alice", "analytics", "sales", domain.CreateSemanticMetricRequest{
+		SemanticModelID: "ignored",
+		Name:            "revenue",
+		MetricType:      domain.MetricTypeSum,
+		ExpressionMode:  domain.MetricExpressionModeSQL,
+		Expression:      "SUM(revenue)",
+	})
+	require.NoError(t, err)
+
+	chartType := domain.VisualChartBar
+	_, err = svc.ResolveWidgetsForDashboard(ctx, "alice", &domain.Dashboard{
+		ID:                  "dash-1",
+		Name:                "Revenue Dashboard",
+		Owner:               "alice",
+		SemanticProjectName: "analytics",
+		SemanticModelName:   "sales",
+		Compute: domain.DashboardComputePolicy{
+			Mode:          domain.ComputeModeSharedEndpoint,
+			EndpointName:  "analytics-xl",
+			FallbackLocal: true,
+		},
+	}, []domain.DashboardWidget{
+		{
+			ID:   "widget-1",
+			Name: "Revenue by Region",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSemanticQuery,
+				SemanticQuery: &domain.DashboardSemanticQuerySource{
+					ProjectName:       "analytics",
+					SemanticModelName: "sales",
+					Metrics:           []string{"revenue"},
+					Dimensions:        []string{"region"},
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind:      domain.VisualOutputChart,
+				ChartType: &chartType,
+				Encodings: domain.VisualEncodings{
+					X: &domain.VisualFieldBinding{Field: "region"},
+					Y: &domain.VisualFieldBinding{Field: "revenue"},
+				},
+			},
+		},
+	}, nil)
+	require.NoError(t, err)
+	require.True(t, queryExec.hasComputeReq)
+	assert.Equal(t, domain.ComputeModeSharedEndpoint, queryExec.lastComputeReq.Mode)
+	assert.Equal(t, "analytics-xl", queryExec.lastComputeReq.EndpointName)
+	assert.Equal(t, domain.ComputeWorkloadInteractive, queryExec.lastComputeReq.WorkloadType)
+	assert.True(t, queryExec.lastComputeReq.AuthoritativeEndpoint)
+	assert.True(t, queryExec.lastComputeReq.FallbackLocal)
+}
+
+func TestService_ResolveWidgetsForDashboard_UsesDashboardComputePolicyForSQLQueries(t *testing.T) {
+	t.Parallel()
+
+	svc, _, _, _, _, queryExec := setupDashboardService(t)
+	queryExec.result = &query.QueryResult{
+		Columns:  []string{"region", "revenue"},
+		Rows:     [][]interface{}{{"APAC", 42}},
+		RowCount: 1,
+	}
+
+	chartType := domain.VisualChartBar
+	_, err := svc.ResolveWidgetsForDashboard(context.Background(), "alice", &domain.Dashboard{
+		ID:    "dash-1",
+		Name:  "Revenue Dashboard",
+		Owner: "alice",
+		Compute: domain.DashboardComputePolicy{
+			Mode: domain.ComputeModeByocLocal,
+		},
+	}, []domain.DashboardWidget{
+		{
+			ID:   "widget-1",
+			Name: "Revenue by Region",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceSQLQuery,
+				SQLQuery: &domain.DashboardSQLQuerySource{
+					SQL: "select region, revenue from summary",
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind:      domain.VisualOutputChart,
+				ChartType: &chartType,
+				Encodings: domain.VisualEncodings{
+					X: &domain.VisualFieldBinding{Field: "region"},
+					Y: &domain.VisualFieldBinding{Field: "revenue"},
+				},
+			},
+		},
+	}, nil)
+	require.NoError(t, err)
+	require.True(t, queryExec.hasComputeReq)
+	assert.Equal(t, domain.ComputeModeByocLocal, queryExec.lastComputeReq.Mode)
+	assert.Empty(t, queryExec.lastComputeReq.EndpointName)
+	assert.Equal(t, domain.ComputeWorkloadInteractive, queryExec.lastComputeReq.WorkloadType)
+	assert.False(t, queryExec.lastComputeReq.AuthoritativeEndpoint)
+}
+
+func TestService_BuildDashboardPageState_NotebookWidgetsIgnoreDashboardComputePolicy(t *testing.T) {
+	t.Parallel()
+
+	svc, notebookRepo, _, _, _, queryExec := setupDashboardService(t)
+	ctx := context.Background()
+	notebook, err := notebookRepo.CreateNotebook(ctx, &domain.Notebook{Name: "Notebook", Owner: "alice"})
+	require.NoError(t, err)
+	cell, err := notebookRepo.CreateCell(ctx, &domain.Cell{
+		NotebookID: notebook.ID,
+		CellType:   domain.CellTypeSQL,
+		Role:       domain.CellRoleOutput,
+		Content:    "select region, revenue from summary",
+		Position:   0,
+	})
+	require.NoError(t, err)
+	resultJSON := `{"Columns":["region","revenue"],"Rows":[["APAC",42]],"RowCount":1}`
+	require.NoError(t, notebookRepo.UpdateCellResult(ctx, cell.ID, &resultJSON))
+	chartType := domain.VisualChartBar
+
+	state, err := svc.BuildDashboardPageState(ctx, "alice", &domain.Dashboard{
+		ID:    "dash-1",
+		Name:  "Revenue Dashboard",
+		Owner: "alice",
+		Compute: domain.DashboardComputePolicy{
+			Mode:          domain.ComputeModeSharedEndpoint,
+			EndpointName:  "analytics-xl",
+			FallbackLocal: true,
+		},
+	}, []domain.DashboardWidget{
+		{
+			ID:       "widget-notebook",
+			PageName: "Overview",
+			Name:     "Notebook Revenue",
+			Source: domain.DashboardWidgetSource{
+				Kind: domain.DashboardWidgetSourceNotebookCell,
+				NotebookCell: &domain.DashboardNotebookCellSource{
+					NotebookID: notebook.ID,
+					CellID:     cell.ID,
+				},
+			},
+			VisualSpec: &domain.VisualSpec{
+				Kind:      domain.VisualOutputChart,
+				ChartType: &chartType,
+				Encodings: domain.VisualEncodings{
+					X: &domain.VisualFieldBinding{Field: "region"},
+					Y: &domain.VisualFieldBinding{Field: "revenue"},
+				},
+			},
+		},
+	}, "Overview", nil, nil)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	require.Len(t, state.Widgets, 1)
+	assert.Equal(t, []string{"region", "revenue"}, state.Widgets[0].Columns)
+	assert.Empty(t, queryExec.sqls)
+	assert.False(t, queryExec.hasComputeReq)
 }
 
 func TestService_ResolveWidgetsForDashboardPaged_TablePagesSemanticResults(t *testing.T) {

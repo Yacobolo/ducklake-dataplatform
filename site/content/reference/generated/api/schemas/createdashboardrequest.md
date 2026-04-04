@@ -9,6 +9,7 @@
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
+| `compute` | `DashboardComputePolicy` | `false` | - |
 | `description` | `string` | `false` | - |
 | `folder_id` | `string` | `false` | - |
 | `name` | `string` | `true` | - |

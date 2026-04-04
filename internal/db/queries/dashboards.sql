@@ -1,6 +1,6 @@
 -- name: CreateDashboard :one
-INSERT INTO dashboards (id, name, description, owner, folder_id, semantic_project_name, semantic_model_name)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO dashboards (id, name, description, owner, folder_id, semantic_project_name, semantic_model_name, compute_mode, compute_endpoint_name, compute_fallback_local)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetDashboard :one
@@ -30,6 +30,9 @@ SET name = ?,
     folder_id = ?,
     semantic_project_name = ?,
     semantic_model_name = ?,
+    compute_mode = ?,
+    compute_endpoint_name = ?,
+    compute_fallback_local = ?,
     updated_at = datetime('now')
 WHERE id = ?
 RETURNING *;

@@ -8,6 +8,7 @@
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
+| `compute` | `DashboardComputePolicy` | `false` | - |
 | `created_at` | `string` | `false` | - |
 | `description` | `string` | `false` | - |
 | `folder_id` | `string` | `false` | - |

@@ -58,6 +58,7 @@ func (h *APIHandler) CreateDashboard(ctx context.Context, req GenCreateDashboard
 		FolderID:            req.Body.FolderId,
 		SemanticProjectName: valOrEmpty(req.Body.SemanticProjectName),
 		SemanticModelName:   valOrEmpty(req.Body.SemanticModelName),
+		Compute:             dashboardComputePolicyFromAPI(req.Body.Compute),
 	})
 	if err != nil {
 		switch {
@@ -147,6 +148,7 @@ func (h *APIHandler) UpdateDashboard(ctx context.Context, req GenUpdateDashboard
 		FolderID:            req.Body.FolderId,
 		SemanticProjectName: req.Body.SemanticProjectName,
 		SemanticModelName:   req.Body.SemanticModelName,
+		Compute:             dashboardComputePolicyFromAPI(req.Body.Compute),
 	})
 	if err != nil {
 		switch {
@@ -270,8 +272,30 @@ func dashboardToAPI(item domain.Dashboard) Dashboard {
 		FolderId:            optStr(item.FolderID),
 		SemanticProjectName: optStr(item.SemanticProjectName),
 		SemanticModelName:   optStr(item.SemanticModelName),
+		Compute:             ptrDashboardComputePolicy(dashboardComputePolicyToAPI(item.Compute)),
 		CreatedAt:           formatTimePtr(&item.CreatedAt),
 		UpdatedAt:           formatTimePtr(&item.UpdatedAt),
+	}
+}
+
+func dashboardComputePolicyFromAPI(policy *DashboardComputePolicy) *domain.DashboardComputePolicy {
+	if policy == nil {
+		return nil
+	}
+	return &domain.DashboardComputePolicy{
+		Mode:         valOrEmpty(policy.Mode),
+		EndpointName: valOrEmpty(policy.EndpointName),
+		FallbackLocal: policy.FallbackLocal != nil && *policy.FallbackLocal,
+	}
+}
+
+func dashboardComputePolicyToAPI(policy domain.DashboardComputePolicy) DashboardComputePolicy {
+	policy = policy.Normalize()
+	fallback := policy.FallbackLocal
+	return DashboardComputePolicy{
+		Mode:          optStr(policy.Mode),
+		EndpointName:  optStr(policy.EndpointName),
+		FallbackLocal: &fallback,
 	}
 }
 
@@ -410,6 +434,7 @@ func dashboardWidgetLayoutToAPI(layout domain.DashboardWidgetLayout) DashboardWi
 }
 
 func ptrDashboard(v Dashboard) *Dashboard { return &v }
+func ptrDashboardComputePolicy(v DashboardComputePolicy) *DashboardComputePolicy { return &v }
 
 func resolvedDashboardWidgetToAPI(item dashboardsvc.ResolvedWidget) ResolvedDashboardWidget {
 	rowCount := int64(item.RowCount)

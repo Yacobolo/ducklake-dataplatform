@@ -17,6 +17,11 @@ func dashboardFromDB(row dbstore.Dashboard) *domain.Dashboard {
 		FolderID:            row.FolderID.String,
 		SemanticProjectName: row.SemanticProjectName,
 		SemanticModelName:   row.SemanticModelName,
+		Compute: domain.DashboardComputePolicy{
+			Mode:         row.ComputeMode,
+			EndpointName: row.ComputeEndpointName,
+			FallbackLocal: row.ComputeFallbackLocal != 0,
+		}.Normalize(),
 		CreatedAt:           parseDBTime(row.CreatedAt, "dashboards.created_at"),
 		UpdatedAt:           parseDBTime(row.UpdatedAt, "dashboards.updated_at"),
 	}

@@ -56,13 +56,13 @@ func (s *dashboardStateQueryExecutorStub) Execute(_ context.Context, _ string, s
 }
 
 type dashboardStateFixture struct {
-	router            http.Handler
-	dashboardID       string
-	tableWidgetID     string
-	tableOriginKey    string
-	chartOriginKey    string
-	overviewWidgetID  string
-	queryExec         *dashboardStateQueryExecutorStub
+	router           http.Handler
+	dashboardID      string
+	tableWidgetID    string
+	tableOriginKey   string
+	chartOriginKey   string
+	overviewWidgetID string
+	queryExec        *dashboardStateQueryExecutorStub
 }
 
 func TestDashboardStateEndpoint_UnfilteredPageScopesWidgets(t *testing.T) {
@@ -74,6 +74,7 @@ func TestDashboardStateEndpoint_UnfilteredPageScopesWidgets(t *testing.T) {
 	assert.Equal(t, fixture.dashboardID, response.DashboardID)
 	assert.Equal(t, "overview", response.Page)
 	assert.Empty(t, response.FilterKey)
+	assert.Equal(t, domain.ComputeModeAuto, response.Compute.Mode)
 	require.Len(t, response.Widgets, 1)
 	assert.Equal(t, fixture.overviewWidgetID, response.Widgets[0].WidgetID)
 	assert.Equal(t, domain.VisualOutputMetric, response.Widgets[0].VisualKind)

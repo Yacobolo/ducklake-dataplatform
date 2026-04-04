@@ -17,8 +17,16 @@ type Dashboard struct {
 	FolderID            string
 	SemanticProjectName string
 	SemanticModelName   string
+	Compute             DashboardComputePolicy
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
+}
+
+// DashboardComputePolicy defines how dashboard reads are routed.
+type DashboardComputePolicy struct {
+	Mode         string `json:"mode,omitempty"`
+	EndpointName string `json:"endpoint_name,omitempty"`
+	FallbackLocal bool   `json:"fallback_local,omitempty"`
 }
 
 // DashboardWidgetSourceKind defines where a widget gets its data.
@@ -96,6 +104,7 @@ type CreateDashboardRequest struct {
 	FolderID            *string
 	SemanticProjectName string
 	SemanticModelName   string
+	Compute             *DashboardComputePolicy
 }
 
 // UpdateDashboardRequest applies partial dashboard updates.
@@ -105,6 +114,7 @@ type UpdateDashboardRequest struct {
 	FolderID            *string
 	SemanticProjectName *string
 	SemanticModelName   *string
+	Compute             *DashboardComputePolicy
 }
 
 // CreateDashboardWidgetRequest creates a dashboard widget.
@@ -134,6 +144,56 @@ func (r *CreateDashboardRequest) Validate() error {
 	}
 	if err := ValidateDashboardSemanticBinding(r.SemanticProjectName, r.SemanticModelName); err != nil {
 		return err
+	}
+	if r.Compute != nil {
+		if err := r.Compute.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Normalize returns a copy with defaulted and canonicalized compute policy fields.
+func (p DashboardComputePolicy) Normalize() DashboardComputePolicy {
+	req := ComputeExecutionRequest{
+		Mode:         p.Mode,
+		EndpointName: p.EndpointName,
+	}
+	req = req.Normalize()
+	if req.Mode == "" {
+		req.Mode = ComputeModeAuto
+	}
+	return DashboardComputePolicy{
+		Mode:         req.Mode,
+		EndpointName: req.EndpointName,
+		FallbackLocal: p.FallbackLocal,
+	}
+}
+
+// Validate validates the dashboard compute policy.
+func (p DashboardComputePolicy) Validate() error {
+	norm := p.Normalize()
+	switch norm.Mode {
+	case ComputeModeAuto:
+		if norm.EndpointName != "" {
+			return ErrValidation("endpoint_name cannot be set when dashboard compute mode is AUTO")
+		}
+		if norm.FallbackLocal {
+			return ErrValidation("fallback_local cannot be set when dashboard compute mode is AUTO")
+		}
+	case ComputeModeByocLocal:
+		if norm.EndpointName != "" {
+			return ErrValidation("endpoint_name cannot be set when dashboard compute mode is BYOC_LOCAL")
+		}
+		if norm.FallbackLocal {
+			return ErrValidation("fallback_local cannot be set when dashboard compute mode is BYOC_LOCAL")
+		}
+	case ComputeModeSharedEndpoint:
+		if norm.EndpointName == "" {
+			return ErrValidation("endpoint_name is required when dashboard compute mode is SHARED_ENDPOINT")
+		}
+	default:
+		return ErrValidation("dashboard compute mode must be AUTO, BYOC_LOCAL, or SHARED_ENDPOINT, got %q", p.Mode)
 	}
 	return nil
 }

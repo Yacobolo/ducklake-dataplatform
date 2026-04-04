@@ -15,25 +15,30 @@ type dashboardStateResponse struct {
 	DashboardID   string                             `json:"dashboard_id"`
 	Page          string                             `json:"page"`
 	FilterKey     string                             `json:"filter_key,omitempty"`
+	Compute       domain.DashboardComputePolicy      `json:"compute"`
 	ActiveFilters []dashboardsvc.InteractiveFilter   `json:"active_filters,omitempty"`
 	Widgets       []dashboardStateWidgetResponseItem `json:"widgets"`
 }
 
 type dashboardStateWidgetResponseItem struct {
-	WidgetID         string              `json:"widget_id"`
-	FilterOriginKey  string              `json:"filter_origin_key"`
-	Name             string              `json:"name"`
-	VisualKind       domain.VisualOutputKind `json:"visual_kind"`
-	Payload          widgetRenderPayload `json:"payload"`
+	WidgetID        string                  `json:"widget_id"`
+	FilterOriginKey string                  `json:"filter_origin_key"`
+	Name            string                  `json:"name"`
+	VisualKind      domain.VisualOutputKind `json:"visual_kind"`
+	Payload         widgetRenderPayload     `json:"payload"`
 }
 
-func dashboardStateResponseFromResolved(dashboardID string, pageKey string, filterKey string, filters []dashboardsvc.InteractiveFilter, widgets []dashboardsvc.ResolvedWidget) dashboardStateResponse {
+func dashboardStateResponseFromResolved(dashboard *domain.Dashboard, pageKey string, filterKey string, filters []dashboardsvc.InteractiveFilter, widgets []dashboardsvc.ResolvedWidget) dashboardStateResponse {
 	response := dashboardStateResponse{
-		DashboardID:   dashboardID,
+		Compute:       domain.DashboardComputePolicy{}.Normalize(),
 		Page:          pageKey,
 		FilterKey:     filterKey,
 		ActiveFilters: cloneInteractiveFilters(filters),
 		Widgets:       make([]dashboardStateWidgetResponseItem, 0, len(widgets)),
+	}
+	if dashboard != nil {
+		response.DashboardID = dashboard.ID
+		response.Compute = dashboard.Compute.Normalize()
 	}
 	for _, widget := range widgets {
 		if widget.Widget.VisualSpec == nil {

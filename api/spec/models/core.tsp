@@ -1816,8 +1816,15 @@ model Dashboard {
   folder_id?: string;
   semantic_project_name?: string;
   semantic_model_name?: string;
+  compute?: DashboardComputePolicy;
   created_at?: utcDateTime;
   updated_at?: utcDateTime;
+}
+
+model DashboardComputePolicy {
+  mode?: string;
+  endpoint_name?: string;
+  fallback_local?: boolean;
 }
 
 model PaginatedDashboards {
@@ -1903,6 +1910,7 @@ model CreateDashboardRequest {
   folder_id?: string;
   semantic_project_name?: string;
   semantic_model_name?: string;
+  compute?: DashboardComputePolicy;
 }
 
 model UpdateDashboardRequest {
@@ -1911,6 +1919,7 @@ model UpdateDashboardRequest {
   folder_id?: string;
   semantic_project_name?: string;
   semantic_model_name?: string;
+  compute?: DashboardComputePolicy;
 }
 
 model ExploreItem {

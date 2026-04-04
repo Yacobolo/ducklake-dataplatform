@@ -23,6 +23,11 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 			Description:         "Executive view",
 			SemanticProjectName: "analytics",
 			SemanticModelName:   "sales",
+			Compute: domain.DashboardComputePolicy{
+				Mode:          domain.ComputeModeSharedEndpoint,
+				EndpointName:  "analytics-xl",
+				FallbackLocal: true,
+			},
 		},
 		Freshness: &domain.AssetFreshnessStatus{
 			AssetKey:               "dashboard.dash-1",
@@ -164,6 +169,9 @@ func TestDashboardsDetailPage_ViewModeHidesAuthoringChrome(t *testing.T) {
 	assert.Contains(t, html, "data-dashboard-update-version=\"version-1\"")
 	assert.Contains(t, html, "data-dashboard-pending-widget-ids=\"widget-chart,widget-metric,widget-table\"")
 	assert.Contains(t, html, "Not interactive in this dashboard.")
+	assert.Contains(t, html, "Compute Policy")
+	assert.Contains(t, html, "Shared endpoint: analytics-xl (fallback local)")
+	assert.Contains(t, html, "Viewer routing is read-only")
 	assert.NotContains(t, html, "Freshness")
 	assert.NotContains(t, html, "metric.sales.orders.revenue")
 	assert.NotContains(t, html, "View Mode")
@@ -256,4 +264,42 @@ func TestDashboardsDetailPage_StudioModeShowsAuthoringChrome(t *testing.T) {
 	assert.NotContains(t, html, "Cross Filters")
 	assert.Contains(t, html, "data-chart-payload")
 	assert.Contains(t, html, "data-table-payload")
+}
+
+func TestDashboardsNewPage_ShowsComputePolicyControls(t *testing.T) {
+	page := dashboardsNewPage(domain.ContextPrincipal{Name: "alice", Type: "user"}, "", func() gomponents.Node { return nil })
+
+	var buf bytes.Buffer
+	require.NoError(t, page.Render(&buf))
+	html := buf.String()
+	assert.Contains(t, html, "Compute mode")
+	assert.Contains(t, html, "name=\"compute_mode\"")
+	assert.Contains(t, html, "name=\"compute_endpoint_name\"")
+	assert.Contains(t, html, "name=\"compute_fallback_local\"")
+	assert.Contains(t, html, "Fallback to local if shared endpoint is unavailable")
+	assert.Contains(t, html, ">AUTO<")
+	assert.Contains(t, html, ">BYOC_LOCAL<")
+	assert.Contains(t, html, ">SHARED_ENDPOINT<")
+}
+
+func TestDashboardsEditPage_ShowsCurrentComputePolicy(t *testing.T) {
+	page := dashboardsEditPage(domain.ContextPrincipal{Name: "alice", Type: "user"}, &domain.Dashboard{
+		ID:   "dash-1",
+		Name: "Revenue Dashboard",
+		Compute: domain.DashboardComputePolicy{
+			Mode:          domain.ComputeModeSharedEndpoint,
+			EndpointName:  "analytics-xl",
+			FallbackLocal: true,
+		},
+	}, func() gomponents.Node { return nil })
+
+	var buf bytes.Buffer
+	require.NoError(t, page.Render(&buf))
+	html := buf.String()
+	assert.Contains(t, html, "name=\"compute_mode\"")
+	assert.Contains(t, html, "option value=\"SHARED_ENDPOINT\" selected")
+	assert.Contains(t, html, "name=\"compute_endpoint_name\"")
+	assert.Contains(t, html, "value=\"analytics-xl\"")
+	assert.Contains(t, html, "name=\"compute_fallback_local\"")
+	assert.Contains(t, html, "checked")
 }

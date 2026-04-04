@@ -79,6 +79,7 @@ func (h *Handler) DashboardsCreate(w http.ResponseWriter, r *http.Request) {
 		FolderID:            formOptionalString(r.Form, "folder_id"),
 		SemanticProjectName: formString(r.Form, "semantic_project_name"),
 		SemanticModelName:   formString(r.Form, "semantic_model_name"),
+		Compute:             dashboardComputePolicyFromForm(r.Form),
 	})
 	if err != nil {
 		renderServiceError(w, err)
@@ -211,7 +212,7 @@ func (h *Handler) DashboardsState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := writeDashboardStateJSON(w, dashboardStateResponseFromResolved(dashboardID, activePage.Key, dashboardFilterKeyFromOriginRaw(rawOriginFilters), state.ActiveFilters, state.Widgets)); err != nil {
+	if err := writeDashboardStateJSON(w, dashboardStateResponseFromResolved(item, activePage.Key, dashboardFilterKeyFromOriginRaw(rawOriginFilters), state.ActiveFilters, state.Widgets)); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -233,6 +234,17 @@ func activeDashboardFilterQuery(r *http.Request) url.Values {
 		values.Add("fo", filter)
 	}
 	return values
+}
+
+func dashboardComputePolicyFromForm(values url.Values) *domain.DashboardComputePolicy {
+	if values == nil {
+		return nil
+	}
+	return &domain.DashboardComputePolicy{
+		Mode:          strings.TrimSpace(values.Get("compute_mode")),
+		EndpointName:  strings.TrimSpace(values.Get("compute_endpoint_name")),
+		FallbackLocal: strings.EqualFold(strings.TrimSpace(values.Get("compute_fallback_local")), "true"),
+	}
 }
 
 func dashboardUpdateVersionFromRequest(r *http.Request) string {
@@ -567,6 +579,7 @@ func (h *Handler) DashboardsUpdate(w http.ResponseWriter, r *http.Request) {
 		Description:         formOptionalString(r.Form, "description"),
 		SemanticProjectName: formOptionalString(r.Form, "semantic_project_name"),
 		SemanticModelName:   formOptionalString(r.Form, "semantic_model_name"),
+		Compute:             dashboardComputePolicyFromForm(r.Form),
 	})
 	if err != nil {
 		renderServiceError(w, err)
