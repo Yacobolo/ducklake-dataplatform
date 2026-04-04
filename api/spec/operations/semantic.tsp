@@ -44,6 +44,12 @@ op deleteSemanticModel(semantic_model_id: string): NoContent | MutatingErrorResp
 @summary("List semantic metrics")
 op listSemanticMetrics(semantic_model_id: string): Ok<SemanticMetricList> | ResourceErrorResponses;
 
+@route("/semantic-models/{semantic_model_id}/metrics/{metric_name}")
+@get
+@tag("Semantic Layer")
+@summary("Get semantic metric")
+op getSemanticMetric(semantic_model_id: string, metric_name: string): Ok<SemanticMetric> | ResourceErrorResponses;
+
 @route("/semantic-models/{semantic_model_id}/metrics")
 @post
 @tag("Semantic Layer")
@@ -68,6 +74,12 @@ op deleteSemanticMetric(semantic_model_id: string, metric_name: string): NoConte
 @summary("List semantic pre aggregations")
 op listSemanticPreAggregations(semantic_model_id: string): Ok<SemanticPreAggregationList> | ResourceErrorResponses;
 
+@route("/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}")
+@get
+@tag("Semantic Layer")
+@summary("Get semantic pre aggregation")
+op getSemanticPreAggregation(semantic_model_id: string, pre_aggregation_name: string): Ok<SemanticPreAggregation> | ResourceErrorResponses;
+
 @route("/semantic-models/{semantic_model_id}/pre-aggregations")
 @post
 @tag("Semantic Layer")
@@ -91,6 +103,12 @@ op deleteSemanticPreAggregation(semantic_model_id: string, pre_aggregation_name:
 @tag("Semantic Layer")
 @summary("List semantic relationships for a semantic model")
 op listSemanticModelRelationships(semantic_model_id: string): Ok<SemanticRelationshipList> | ResourceErrorResponses;
+
+@route("/semantic-models/{semantic_model_id}/relationships/{relationship_name}")
+@get
+@tag("Semantic Layer")
+@summary("Get semantic relationship for a semantic model")
+op getSemanticModelRelationship(semantic_model_id: string, relationship_name: string): Ok<SemanticRelationship> | ResourceErrorResponses;
 
 @route("/semantic-models/{semantic_model_id}/relationships")
 @post

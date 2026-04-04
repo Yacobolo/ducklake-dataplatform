@@ -31,11 +31,12 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 	steps := []step{
 		{"create", func(t *testing.T) {
 			body := map[string]interface{}{
+				"table_id":    "1",
 				"name":        "age-over-30",
 				"filter_sql":  `"Age" > 30`,
 				"description": "age filter",
 			}
-			resp := doRequest(t, "POST", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Admin, body)
+			resp := doRequest(t, "POST", env.Server.URL+"/v1/row-filters", env.Keys.Admin, body)
 			require.Equal(t, 201, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -47,7 +48,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			assert.Equal(t, "age filter", result["description"])
 		}},
 		{"list_for_table", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id=1", env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -80,7 +81,7 @@ func TestHTTP_RowFilterCRUD(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"list_after_delete", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id=1", env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -109,17 +110,18 @@ func TestHTTP_RowFilterMultiple(t *testing.T) {
 	// Create two filters
 	for i, sql := range []string{`"Survived" = 1`, `"Sex" = 'female'`} {
 		body := map[string]interface{}{
+			"table_id":    "1",
 			"name":        fmt.Sprintf("filter-%d", i),
 			"filter_sql":  sql,
 			"description": fmt.Sprintf("filter %d", i),
 		}
-		resp := doRequest(t, "POST", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Admin, body)
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/row-filters", env.Keys.Admin, body)
 		require.Equal(t, 201, resp.StatusCode, "creating filter %d", i)
 		_ = resp.Body.Close()
 	}
 
 	// List all filters for the table
-	resp := doRequest(t, "GET", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Admin, nil)
+	resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id=1", env.Keys.Admin, nil)
 	require.Equal(t, 200, resp.StatusCode)
 
 	var result map[string]interface{}

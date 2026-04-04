@@ -1223,7 +1223,8 @@ func (h *APIHandler) searchFolderContents(ctx context.Context, folderID string, 
 	if err != nil {
 		return nil, 0, err
 	}
-	content := append(folderMatches, itemMatches...)
+	content := folderMatches
+	content = append(content, itemMatches...)
 	sort.Slice(content, func(i, j int) bool {
 		leftName := strings.ToLower(stringValue(content[i].Name))
 		rightName := strings.ToLower(stringValue(content[j].Name))
@@ -1729,45 +1730,6 @@ func folderPathForFolder(folders []domain.Folder, selected domain.Folder) []Fold
 		path[left], path[right] = path[right], path[left]
 	}
 	return path
-}
-
-func buildFolderContentItems(folders []domain.Folder, items []domain.ExploreItem, principal string, folderID string, kinds []string) []FolderContentItem {
-	includeFolders := len(kinds) == 0
-	for _, kind := range kinds {
-		if kind == domain.ExploreKindFolder {
-			includeFolders = true
-			break
-		}
-	}
-
-	content := make([]FolderContentItem, 0, len(folders)+len(items))
-	if includeFolders {
-		childFolders := make([]domain.Folder, 0, len(folders))
-		for _, folder := range folders {
-			parentID := ""
-			if folder.ParentFolderID != nil {
-				parentID = strings.TrimSpace(*folder.ParentFolderID)
-			}
-			if folderID == "" {
-				if parentID != "" {
-					continue
-				}
-			} else if parentID != folderID {
-				continue
-			}
-			childFolders = append(childFolders, folder)
-		}
-		sort.Slice(childFolders, func(i, j int) bool {
-			return strings.ToLower(childFolders[i].Name) < strings.ToLower(childFolders[j].Name)
-		})
-		for _, folder := range childFolders {
-			content = append(content, folderContentFolderToAPI(folder, principal))
-		}
-	}
-	for _, item := range items {
-		content = append(content, folderContentItemToAPI(item))
-	}
-	return content
 }
 
 func optBool(value bool) *bool {

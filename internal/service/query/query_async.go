@@ -86,14 +86,14 @@ func (s *QueryService) GetAsyncJob(ctx context.Context, principalName, jobID str
 }
 
 // ListAsyncJobs returns async query jobs for the given principal.
-func (s *QueryService) ListAsyncJobs(ctx context.Context, principalName string, page domain.PageRequest) ([]domain.QueryJob, int64, error) {
+func (s *QueryService) ListAsyncJobs(ctx context.Context, principalName string, status *domain.QueryJobStatus, page domain.PageRequest) ([]domain.QueryJob, int64, error) {
 	if !s.asyncEnabled {
 		return nil, 0, domain.ErrNotImplemented("async query queue is disabled")
 	}
 	if s.jobRepo == nil {
 		return nil, 0, domain.ErrNotImplemented("async query jobs are not configured")
 	}
-	return s.jobRepo.ListByPrincipal(ctx, principalName, page)
+	return s.jobRepo.ListByPrincipal(ctx, principalName, status, page)
 }
 
 // CancelAsyncJob cancels a queued or running query job.

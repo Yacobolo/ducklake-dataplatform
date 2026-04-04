@@ -197,14 +197,13 @@ func TestHTTP_NotebookPromotion_CreateOrUpdateWithPublishLink(t *testing.T) {
 	require.NotEmpty(t, outputCellID)
 
 	promoteBody := map[string]interface{}{
-		"notebook_id":     notebookID,
 		"cell_index":      0,
 		"project_name":    "analytics",
 		"name":            "nb_promoted_model",
 		"materialization": "TABLE",
 	}
 
-	firstPromoteResp := doRequest(t, "POST", env.Server.URL+"/v1/models/from-notebook", env.Keys.Admin, promoteBody)
+	firstPromoteResp := doRequest(t, "POST", env.Server.URL+"/v1/notebooks/"+notebookID+"/model-promotions", env.Keys.Admin, promoteBody)
 	require.Equal(t, 201, firstPromoteResp.StatusCode)
 
 	var firstModel map[string]interface{}
@@ -222,7 +221,7 @@ func TestHTTP_NotebookPromotion_CreateOrUpdateWithPublishLink(t *testing.T) {
 	require.Equal(t, 200, updateOutputCellResp.StatusCode)
 	_ = updateOutputCellResp.Body.Close()
 
-	secondPromoteResp := doRequest(t, "POST", env.Server.URL+"/v1/models/from-notebook", env.Keys.Admin, promoteBody)
+	secondPromoteResp := doRequest(t, "POST", env.Server.URL+"/v1/notebooks/"+notebookID+"/model-promotions", env.Keys.Admin, promoteBody)
 	require.Equal(t, 201, secondPromoteResp.StatusCode)
 
 	var secondModel map[string]interface{}
@@ -712,7 +711,7 @@ func TestHTTP_MacroCRUD(t *testing.T) {
 		}},
 
 		{"diff_macro_revisions", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/macros/double_val/diff?from_version=1&to_version=3", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/macros/double_val/revision-diffs?from_version=1&to_version=3", env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -793,7 +792,7 @@ func TestHTTP_MacroImpact(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	impactResp := doRequest(t, "GET", env.Server.URL+"/v1/macros/double_val/impact", env.Keys.Admin, nil)
+	impactResp := doRequest(t, "GET", env.Server.URL+"/v1/macros/double_val/impacts", env.Keys.Admin, nil)
 	require.Equal(t, 200, impactResp.StatusCode)
 
 	var impact map[string]interface{}
@@ -869,7 +868,7 @@ func TestHTTP_MacroRevisionDiff_ImpactChanged(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	diffResp := doRequest(t, "GET", env.Server.URL+"/v1/macros/double_val/diff?from_version=1&to_version=2", env.Keys.Admin, nil)
+	diffResp := doRequest(t, "GET", env.Server.URL+"/v1/macros/double_val/revision-diffs?from_version=1&to_version=2", env.Keys.Admin, nil)
 	require.Equal(t, 200, diffResp.StatusCode)
 
 	var diff map[string]interface{}
@@ -1219,7 +1218,7 @@ func TestHTTP_SourceFreshness(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("check_source_freshness_default_params", func(t *testing.T) {
-		resp := doRequest(t, "GET", env.Server.URL+"/v1/sources/raw/orders/freshness", env.Keys.Admin, nil)
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/semantic-sources/raw/orders/freshness", env.Keys.Admin, nil)
 		require.Equal(t, 200, resp.StatusCode)
 
 		var result map[string]interface{}
@@ -1233,7 +1232,7 @@ func TestHTTP_SourceFreshness(t *testing.T) {
 	})
 
 	t.Run("check_source_freshness_with_query_params", func(t *testing.T) {
-		resp := doRequest(t, "GET", env.Server.URL+"/v1/sources/raw/orders/freshness?timestamp_column=updated_at&max_lag_seconds=1", env.Keys.Admin, nil)
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/semantic-sources/raw/orders/freshness?timestamp_column=updated_at&max_lag_seconds=1", env.Keys.Admin, nil)
 		require.Equal(t, 200, resp.StatusCode)
 
 		var result map[string]interface{}
@@ -1246,7 +1245,7 @@ func TestHTTP_SourceFreshness(t *testing.T) {
 		_, err := env.DuckDB.Exec(`CREATE TABLE raw.no_ts (id INTEGER)`)
 		require.NoError(t, err)
 
-		resp := doRequest(t, "GET", env.Server.URL+"/v1/sources/raw/no_ts/freshness", env.Keys.Admin, nil)
+		resp := doRequest(t, "GET", env.Server.URL+"/v1/semantic-sources/raw/no_ts/freshness", env.Keys.Admin, nil)
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, 400, resp.StatusCode)
 	})

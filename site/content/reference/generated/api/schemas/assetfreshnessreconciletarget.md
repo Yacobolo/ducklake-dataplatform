@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | `asset_id` | `string` | `false` | - |
 | `asset_key` | `string` | `false` | - |
-| `asset_type` | `string` | `false` | - |
+| `asset_type` | `AssetType` | `false` | - |
 | `event_id` | `string` | `false` | - |
 | `freshness_status` | `string` | `false` | - |
 

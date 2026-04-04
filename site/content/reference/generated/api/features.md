@@ -11,7 +11,7 @@ This page is generated from OpenAPI tags and operations.
 | [Auth](./endpoints/auth) | Authentication bootstrap, login, OIDC configuration, and web session administration. | 7 operations |
 | [Catalogs](./endpoints/catalogs/) | Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs. | 37 operations |
 | [Compute](./endpoints/compute) | Compute endpoint lifecycle, assignments, and health checks. | 11 operations |
-| [Dashboards](./endpoints/dashboards) | Dashboard and widget authoring plus resolved dashboard views. | 11 operations |
+| [Dashboards](./endpoints/dashboards) | Dashboard and widget authoring plus rendered dashboard views. | 11 operations |
 | [Folders](./endpoints/folders) | Folder lifecycle, sharing, and namespace browsing for authored assets. | 15 operations |
 | [Governance](./endpoints/governance/) | Privileges, tags, classifications, row filters, and column masking controls. | 28 operations |
 | [Health](./endpoints/health) | Operational readiness and service health endpoints. | 1 operations |
@@ -22,7 +22,7 @@ This page is generated from OpenAPI tags and operations.
 | [Notebooks](./endpoints/notebooks/) | Notebook authoring, shares, sessions, cells, and job execution endpoints. | 21 operations |
 | [Pipelines](./endpoints/pipelines) | Pipeline definitions, jobs, runs, and orchestration controls. | 15 operations |
 | [Products](./endpoints/products/) | Product-first control-plane APIs for domains, teams, product contracts, releases, discovery, and portfolio reporting. | 32 operations |
-| [Queries](./endpoints/queries) | Synchronous and asynchronous SQL query execution and query history endpoints. | 7 operations |
+| [Queries](./endpoints/queries) | Synchronous and asynchronous SQL query execution and query history endpoints. | 8 operations |
 | [Resources](./endpoints/resources) | Recent and saved resource APIs for personalized navigation and activity tracking. | 4 operations |
-| [Semantic Layer](./endpoints/semantic-layer/) | Semantic models, metrics, relationships, and metric query execution. | 21 operations |
+| [Semantic Layer](./endpoints/semantic-layer/) | Semantic models, metrics, relationships, and metric query execution. | 24 operations |
 | [Storage](./endpoints/storage) | Storage credentials and external location configuration for object storage access. | 10 operations |

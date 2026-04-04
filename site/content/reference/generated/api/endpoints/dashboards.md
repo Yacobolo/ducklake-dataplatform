@@ -2,7 +2,7 @@
 
 # Dashboards
 
-Dashboard and widget authoring plus resolved dashboard views.
+Dashboard and widget authoring plus rendered dashboard views.
 
 ## `GET /dashboards`
 
@@ -125,11 +125,11 @@ Delete dashboard
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /dashboards/{dashboard_id}/resolved`
+## `GET /dashboards/{dashboard_id}/rendered`
 
-Get resolved dashboard
+Get rendered dashboard
 
-- Operation ID: `getResolvedDashboard`
+- Operation ID: `getRenderedDashboard`
 
 ### Path Parameters
 

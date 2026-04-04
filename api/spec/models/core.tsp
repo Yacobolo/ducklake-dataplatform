@@ -203,6 +203,11 @@ model QueryJob {
   completed_at?: utcDateTime;
 }
 
+model PaginatedQueryJobs {
+  data: QueryJob[];
+  next_page_token?: string;
+}
+
 model SubmitQueryResponse {
   query_id: string;
   status: QueryJobStatus;
@@ -233,8 +238,8 @@ model CreatePrincipalRequest {
   is_admin?: boolean;
 }
 
-model UpdatePrincipalAdminRequest {
-  is_admin: boolean;
+model UpdatePrincipalRequest {
+  is_admin?: boolean;
 }
 
 model AuthPrincipalSummary {
@@ -1109,7 +1114,6 @@ model SourceFreshnessStatus {
 }
 
 model PromoteNotebookRequest {
-  notebook_id: string;
   cell_index: int32;
   project_name: string;
   name: string;

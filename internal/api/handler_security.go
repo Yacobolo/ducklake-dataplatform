@@ -12,7 +12,7 @@ type principalService interface {
 	Create(ctx context.Context, req domain.CreatePrincipalRequest) (*domain.Principal, error)
 	GetByID(ctx context.Context, id string) (*domain.Principal, error)
 	Delete(ctx context.Context, id string) error
-	SetAdmin(ctx context.Context, id string, isAdmin bool) error
+	Update(ctx context.Context, id string, req domain.UpdatePrincipalRequest) (*domain.Principal, error)
 }
 
 // groupService defines the group operations used by the API handler.
@@ -156,22 +156,34 @@ func (h *APIHandler) DeletePrincipal(ctx context.Context, req GenDeletePrincipal
 	return GenDeletePrincipal204Response{}, nil
 }
 
-// UpdatePrincipalAdmin implements the endpoint for updating a principal's admin status.
-func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req GenUpdatePrincipalAdminRequest) (GenUpdatePrincipalAdminResponse, error) {
-	if err := h.principals.SetAdmin(ctx, req.PrincipalId, req.Body.IsAdmin); err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenUpdatePrincipalAdminResponse]("updatePrincipalAdmin", err, domainErrorResponder[GenUpdatePrincipalAdminResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenUpdatePrincipalAdminResponse {
-				return UpdatePrincipalAdmin403JSONResponse{resp}
+// UpdatePrincipal implements the endpoint for updating a principal.
+func (h *APIHandler) UpdatePrincipal(ctx context.Context, req GenUpdatePrincipalRequest) (GenUpdatePrincipalResponse, error) {
+	if req.Body == nil {
+		return UpdatePrincipal400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
+	}
+	result, err := h.principals.Update(ctx, req.PrincipalId, domain.UpdatePrincipalRequest{
+		IsAdmin: req.Body.IsAdmin,
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenUpdatePrincipalResponse]("updatePrincipal", err, domainErrorResponder[GenUpdatePrincipalResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdatePrincipalResponse {
+				return UpdatePrincipal400JSONResponse{resp}
 			},
-			NotFound: func(resp NotFoundJSONResponse) GenUpdatePrincipalAdminResponse {
-				return UpdatePrincipalAdmin404JSONResponse{resp}
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdatePrincipalResponse {
+				return UpdatePrincipal403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdatePrincipalResponse {
+				return UpdatePrincipal404JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
 		}
 		return nil, err
 	}
-	return GenUpdatePrincipalAdmin204Response{}, nil
+	return GenUpdatePrincipal200JSONResponse{
+		Body:    principalToAPI(*result),
+		Headers: GenUpdatePrincipal200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // === Groups ===

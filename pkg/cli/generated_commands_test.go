@@ -49,13 +49,13 @@ func TestAllAPIEndpoints_AddsDashboardCLICommands(t *testing.T) {
 	commands := map[string]string{}
 	for _, ep := range endpoints {
 		switch ep.OperationID {
-		case "createDashboard", "getResolvedDashboard", "createDashboardWidget":
+		case "createDashboard", "getRenderedDashboard", "createDashboardWidget":
 			commands[ep.OperationID] = ep.CLICommand
 		}
 	}
 
 	assert.Equal(t, "dashboards create", commands["createDashboard"])
-	assert.Equal(t, "dashboards get-resolved", commands["getResolvedDashboard"])
+	assert.Equal(t, "dashboards get-rendered", commands["getRenderedDashboard"])
 	assert.Equal(t, "dashboards widgets create", commands["createDashboardWidget"])
 }
 

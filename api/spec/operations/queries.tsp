@@ -16,6 +16,17 @@ op executeQuery(@body body: QueryRequest): Ok<QueryResult> | MutatingErrorRespon
 @doc("Submits a SQL query for asynchronous execution and returns a query job identifier for polling and result retrieval.")
 op submitQuery(@body body: SubmitQueryRequest): Accepted<SubmitQueryResponse> | MutatingErrorResponses;
 
+@route("/queries")
+@get
+@tag("Queries")
+@summary("List queries")
+@doc("Lists asynchronous query jobs created by the authenticated principal and supports filtering by lifecycle status.")
+op listQueries(
+  @query status?: QueryJobStatus,
+  @query max_results?: int32,
+  @query page_token?: string,
+): Ok<PaginatedQueryJobs> | StandardErrorResponses;
+
 @route("/queries/{query_id}")
 @get
 @tag("Queries")
@@ -45,7 +56,7 @@ op cancelQuery(query_id: string): Accepted<CancelQueryResponse> | ResourceErrorR
 @get
 @tag("Queries")
 @summary("List query history")
-@doc("Lists recorded query executions and supports filtering by principal, decision status, and time window.")
+@doc("Lists recorded query execution history and supports filtering by principal, decision status, and time window.")
 op listQueryHistory(
   @query principal_name?: string,
   @query status?: AuditDecisionStatus,

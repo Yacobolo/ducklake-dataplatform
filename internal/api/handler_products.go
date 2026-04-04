@@ -15,7 +15,7 @@ type productService interface {
 	CreateDomain(ctx context.Context, req domain.CreateDomainRequest) (*domain.Domain, error)
 	UpdateDomain(ctx context.Context, name string, req domain.UpdateDomainRequest) (*domain.Domain, error)
 	DeleteDomain(ctx context.Context, name string) error
-	ListTeams(ctx context.Context, page domain.PageRequest, domainName *string) ([]domain.Team, int64, error)
+	ListTeams(ctx context.Context, page domain.PageRequest, domainName string) ([]domain.Team, int64, error)
 	GetTeam(ctx context.Context, domainName, teamName string) (*domain.Team, error)
 	CreateTeam(ctx context.Context, req domain.CreateTeamRequest) (*domain.Team, error)
 	UpdateTeam(ctx context.Context, domainName, teamName string, req domain.UpdateTeamRequest) (*domain.Team, error)
@@ -197,7 +197,7 @@ func (h *APIHandler) ListProductTeams(ctx context.Context, req GenListProductTea
 	}
 
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	items, total, err := h.products.ListTeams(ctx, page, req.Params.DomainName)
+	items, total, err := h.products.ListTeams(ctx, page, req.DomainName)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListProductTeamsResponse]("listProductTeams", err, domainErrorResponder[GenListProductTeamsResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListProductTeamsResponse {

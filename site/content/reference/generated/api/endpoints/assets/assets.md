@@ -215,7 +215,31 @@ Get asset backfill
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /assets/{asset_key}/check-results`
+## `GET /assets/{asset_key}/checks`
+
+List asset checks
+
+- Operation ID: `listAssetChecks`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/checks/results`
 
 List asset check results
 
@@ -246,59 +270,11 @@ List asset check results
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /assets/{asset_key}/checks`
-
-List asset checks
-
-- Operation ID: `listAssetChecks`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
 ## `GET /assets/{asset_key}/freshness`
 
 Get asset freshness
 
 - Operation ID: `getAssetFreshness`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `asset_key` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /assets/{asset_key}/freshness-explanation`
-
-Explain asset freshness
-
-- Operation ID: `explainAssetFreshness`
 
 ### Path Parameters
 
@@ -347,6 +323,30 @@ Reconcile asset freshness
 List asset freshness blockers
 
 - Operation ID: `listAssetFreshnessBlockers`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/freshness/explanation`
+
+Explain asset freshness
+
+- Operation ID: `explainAssetFreshness`
 
 ### Path Parameters
 

@@ -470,8 +470,8 @@ func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
 		endpoint.CLICommand = "dashboards create"
 	case "getDashboard":
 		endpoint.CLICommand = "dashboards get"
-	case "getResolvedDashboard":
-		endpoint.CLICommand = "dashboards get-resolved"
+	case "getRenderedDashboard":
+		endpoint.CLICommand = "dashboards get-rendered"
 	case "updateDashboard":
 		endpoint.CLICommand = "dashboards update"
 	case "deleteDashboard":

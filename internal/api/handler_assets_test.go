@@ -239,7 +239,7 @@ func TestHandler_GetAsset(t *testing.T) {
 	ok, cast := resp.(GetAsset200JSONResponse)
 	require.True(t, cast)
 	assert.Equal(t, "sales.daily", *ok.Body.AssetKey)
-	assert.Equal(t, domain.AssetTypeModel, *ok.Body.AssetType)
+	assert.Equal(t, domain.AssetTypeModel, string(*ok.Body.AssetType))
 	assert.Equal(t, "analytics", *ok.Body.Owner)
 	require.NotNil(t, ok.Body.FreshnessPolicy)
 	assert.EqualValues(t, 300, *ok.Body.FreshnessPolicy.MaxLagSeconds)

@@ -130,13 +130,13 @@ func (h *APIHandler) GetDashboardWidget(ctx context.Context, req GenGetDashboard
 	}, nil
 }
 
-// GetResolvedDashboard implements the endpoint for retrieving a dashboard and its resolved widgets.
-func (h *APIHandler) GetResolvedDashboard(ctx context.Context, req GenGetResolvedDashboardRequest) (GenGetResolvedDashboardResponse, error) {
+// GetRenderedDashboard implements the endpoint for retrieving a dashboard and its rendered widgets.
+func (h *APIHandler) GetRenderedDashboard(ctx context.Context, req GenGetRenderedDashboardRequest) (GenGetRenderedDashboardResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	item, widgets, err := h.dashboards.GetDashboard(ctx, req.DashboardId)
 	if err != nil {
 		if errors.As(err, new(*domain.NotFoundError)) {
-			return GenGetResolvedDashboard404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetRenderedDashboard404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		}
 		return nil, err
 	}
@@ -144,11 +144,11 @@ func (h *APIHandler) GetResolvedDashboard(ctx context.Context, req GenGetResolve
 	if err != nil {
 		switch {
 		case errors.As(err, new(*domain.AccessDeniedError)):
-			return GetResolvedDashboard403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GetRenderedDashboard403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.NotFoundError)):
-			return GenGetResolvedDashboard404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GenGetRenderedDashboard404JSONResponse{GenNotFoundJSONResponse{Body: Error{Code: 404, Message: err.Error()}, Headers: GenNotFoundResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		case errors.As(err, new(*domain.ValidationError)):
-			return GetResolvedDashboard400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+			return GetRenderedDashboard400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: err.Error()}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
 		default:
 			return nil, err
 		}
@@ -164,9 +164,9 @@ func (h *APIHandler) GetResolvedDashboard(ctx context.Context, req GenGetResolve
 		body.Widgets = &apiWidgets
 	}
 
-	return GenGetResolvedDashboard200JSONResponse{
+	return GenGetRenderedDashboard200JSONResponse{
 		Body:    body,
-		Headers: GenGetResolvedDashboard200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetRenderedDashboard200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

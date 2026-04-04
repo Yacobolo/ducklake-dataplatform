@@ -12,7 +12,7 @@ import (
 )
 
 type mockProductService struct {
-	listTeamsFn  func(ctx context.Context, page domain.PageRequest, domainName *string) ([]domain.Team, int64, error)
+	listTeamsFn  func(ctx context.Context, page domain.PageRequest, domainName string) ([]domain.Team, int64, error)
 	getDomainFn  func(ctx context.Context, name string) (*domain.Domain, error)
 	getTeamFn    func(ctx context.Context, domainName, teamName string) (*domain.Team, error)
 	createTeamFn func(ctx context.Context, req domain.CreateTeamRequest) (*domain.Team, error)
@@ -34,7 +34,7 @@ func (m *mockProductService) UpdateDomain(context.Context, string, domain.Update
 	panic("not implemented")
 }
 func (m *mockProductService) DeleteDomain(context.Context, string) error { panic("not implemented") }
-func (m *mockProductService) ListTeams(ctx context.Context, page domain.PageRequest, domainName *string) ([]domain.Team, int64, error) {
+func (m *mockProductService) ListTeams(ctx context.Context, page domain.PageRequest, domainName string) ([]domain.Team, int64, error) {
 	if m.listTeamsFn == nil {
 		panic("mockProductService.ListTeams called but not configured")
 	}
@@ -108,13 +108,13 @@ func TestHandler_ListProductTeams_UnexpectedErrorReturns500(t *testing.T) {
 
 	handler := &APIHandler{
 		products: &mockProductService{
-			listTeamsFn: func(_ context.Context, _ domain.PageRequest, _ *string) ([]domain.Team, int64, error) {
+			listTeamsFn: func(_ context.Context, _ domain.PageRequest, _ string) ([]domain.Team, int64, error) {
 				return nil, 0, assert.AnError
 			},
 		},
 	}
 
-	resp, err := handler.ListProductTeams(context.Background(), GenListProductTeamsRequest{})
+	resp, err := handler.ListProductTeams(context.Background(), GenListProductTeamsRequest{DomainName: "revenue"})
 	require.NoError(t, err)
 	internal, ok := resp.(ListProductTeams500JSONResponse)
 	require.True(t, ok, "expected 500 response, got %T", resp)

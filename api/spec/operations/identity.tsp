@@ -26,11 +26,11 @@ op getPrincipal(principal_id: string): Ok<Principal> | ResourceErrorResponses;
 @summary("Delete principal")
 op deletePrincipal(principal_id: string): NoContent | MutatingErrorResponses;
 
-@route("/principals/{principal_id}/admin")
-@put
+@route("/principals/{principal_id}")
+@patch(#{implicitOptionality: true})
 @tag("Identity")
-@summary("Update principal admin")
-op updatePrincipalAdmin(principal_id: string, @body body: UpdatePrincipalAdminRequest): NoContent | MutatingErrorResponses;
+@summary("Update principal")
+op updatePrincipal(principal_id: string, @body body: UpdatePrincipalRequest): Ok<Principal> | MutatingErrorResponses;
 
 @route("/groups")
 @get

@@ -2,7 +2,7 @@ using TypeSpec.Http;
 
 namespace Duck;
 
-@route("/catalog-searches")
+@route("/catalogs/search")
 @get
 @tag("Catalogs")
 @summary("Search catalog")

@@ -6,6 +6,5 @@ Catalog registrations, runtime catalogs, search, schema objects, manifests, and 
 
 ## Resources
 
-- [Catalogs](./catalogs) (36 operations)
-- [Catalog Searches](./catalog-searches) (1 operations)
+- [Catalogs](./catalogs) (37 operations)
 

@@ -254,7 +254,7 @@ func TestHTTP_ExternalLocationCreateDoesNotRegisterCatalog(t *testing.T) {
 	require.Equal(t, 201, resp.StatusCode)
 	_ = resp.Body.Close()
 
-	resp = doRequest(t, "GET", env.Server.URL+"/v1/catalog-registrations", env.Keys.Admin, nil)
+	resp = doRequest(t, "GET", env.Server.URL+"/v1/catalogs", env.Keys.Admin, nil)
 	require.Equal(t, 200, resp.StatusCode)
 
 	var result map[string]interface{}

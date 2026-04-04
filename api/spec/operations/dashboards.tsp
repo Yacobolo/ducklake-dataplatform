@@ -20,11 +20,11 @@ op createDashboard(@body body: CreateDashboardRequest): Created<Dashboard> | Mut
 @summary("Get dashboard")
 op getDashboard(dashboard_id: string): Ok<DashboardDetail> | ResourceErrorResponses;
 
-@route("/dashboards/{dashboard_id}/resolved")
+@route("/dashboards/{dashboard_id}/rendered")
 @get
 @tag("Dashboards")
-@summary("Get resolved dashboard")
-op getResolvedDashboard(dashboard_id: string): Ok<ResolvedDashboardDetail> | ResourceErrorResponses;
+@summary("Get rendered dashboard")
+op getRenderedDashboard(dashboard_id: string): Ok<ResolvedDashboardDetail> | ResourceErrorResponses;
 
 @route("/dashboards/{dashboard_id}")
 @patch(#{ implicitOptionality: true })

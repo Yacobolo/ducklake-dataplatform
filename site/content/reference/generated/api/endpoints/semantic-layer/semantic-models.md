@@ -176,6 +176,31 @@ Create semantic metric
 | `429` | Client error |
 | `500` | Server error |
 
+## `GET /semantic-models/{semantic_model_id}/metrics/{metric_name}`
+
+Get semantic metric
+
+- Operation ID: `getSemanticMetric`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `metric_name` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `PATCH /semantic-models/{semantic_model_id}/metrics/{metric_name}`
 
 Update semantic metric
@@ -278,6 +303,31 @@ Create semantic pre aggregation
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}`
+
+Get semantic pre aggregation
+
+- Operation ID: `getSemanticPreAggregation`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `pre_aggregation_name` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
 
@@ -439,6 +489,31 @@ Create semantic relationship for a semantic model
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /semantic-models/{semantic_model_id}/relationships/{relationship_name}`
+
+Get semantic relationship for a semantic model
+
+- Operation ID: `getSemanticModelRelationship`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `relationship_name` | `string` | `true` | - |
+| `semantic_model_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
 

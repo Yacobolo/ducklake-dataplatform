@@ -1221,7 +1221,7 @@ func TestEmit_GeneratesNativeConcreteResponsesForSelectorGapOps(t *testing.T) {
 			{Method: "post", Path: "/groups/{groupId}/members", OperationID: "createGroupMember", Responses: []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/GroupMember"}}}},
 			{Method: "delete", Path: "/groups/{groupId}/members/{principalId}", OperationID: "deleteGroupMember", Responses: []ir.Response{{StatusCode: 204, Description: "no content"}}},
 			{Method: "post", Path: "/manifests", OperationID: "createManifest", Responses: []ir.Response{{StatusCode: 201, Description: "created", Schema: &ir.SchemaRef{Ref: "#/schemas/Manifest"}}}},
-			{Method: "patch", Path: "/principals/{principalId}/admin", OperationID: "updatePrincipalAdmin", Responses: []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/Principal"}}}},
+			{Method: "patch", Path: "/principals/{principalId}", OperationID: "updatePrincipal", Responses: []ir.Response{{StatusCode: 200, Description: "ok", Schema: &ir.SchemaRef{Ref: "#/schemas/Principal"}}}},
 		},
 	}
 
@@ -1277,10 +1277,10 @@ func TestEmit_GeneratesNativeConcreteResponsesForSelectorGapOps(t *testing.T) {
 	require.Contains(t, content, "type GenCreateManifest200JSONResponse = CreateManifest200JSONResponse")
 	require.NotContains(t, content, "type GenCreateManifest201JSONResponse = CreateManifest201JSONResponse")
 
-	require.Contains(t, content, "type UpdatePrincipalAdmin200JSONResponse = GenUpdatePrincipalAdmin200JSONResponse")
-	require.Contains(t, content, "func (response GenUpdatePrincipalAdmin200JSONResponse) VisitUpdatePrincipalAdminResponse(w http.ResponseWriter) error {")
+	require.Contains(t, content, "type UpdatePrincipal200JSONResponse = GenUpdatePrincipal200JSONResponse")
+	require.Contains(t, content, "func (response GenUpdatePrincipal200JSONResponse) VisitUpdatePrincipalResponse(w http.ResponseWriter) error {")
 	require.Contains(t, content, "return json.NewEncoder(w).Encode(")
-	require.NotContains(t, content, "type GenUpdatePrincipalAdmin200JSONResponse = UpdatePrincipalAdmin200JSONResponse")
+	require.NotContains(t, content, "type GenUpdatePrincipal200JSONResponse = UpdatePrincipal200JSONResponse")
 }
 
 func TestEmit_WritesNativeHeadersWithoutLegacyVisitFallback(t *testing.T) {

@@ -432,8 +432,20 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	searchSvc := catalog.NewSearchService(repository.NewSearchRepo(metaDB, metaDB), nil)
 	tagSvc := governance.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), mockFactory, cat, auditRepo)
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
+	_, err = catalogRegRepo.Create(ctx, &domain.CatalogRegistration{
+		Name:          "lake",
+		MetastoreType: domain.MetastoreTypeSQLite,
+		DSN:           "file::memory:?cache=shared",
+		DataPath:      "/tmp/lake",
+		Status:        domain.CatalogStatusActive,
+		IsDefault:     true,
+		Comment:       "test catalog",
+	})
+	require.NoError(t, err)
+	catalogRegSvc := catalog.NewCatalogRegistrationService(catalog.RegistrationServiceDeps{Repo: catalogRegRepo})
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, catalogRegSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Lookup principal to get admin status for context injection
 	p2, err := principalRepo.GetByName(context.Background(), principalName)
@@ -497,11 +509,11 @@ func TestAPI_GetCatalog(t *testing.T) {
 	srv := setupCatalogTestServer(t, "admin_user", mock)
 	defer srv.Close()
 
-	resp := doRequest(t, "GET", srv.URL+"/catalogs/lake/info", "")
+	resp := doRequest(t, "GET", srv.URL+"/catalogs/lake", "")
 	if resp.StatusCode != 200 {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
 	}
-	result := decodeJSON[CatalogInfo](t, resp)
+	result := decodeJSON[CatalogRegistration](t, resp)
 	if result.Name != "lake" {
 		t.Errorf("expected name=lake, got %v", result.Name)
 	}
@@ -791,10 +803,11 @@ func TestAPI_Schema_Authorization(t *testing.T) {
 		{"create schema denied", "no_access_user", "POST", "/catalogs/lake/schemas", `{"name":"forbidden"}`, 403},
 		{"update schema denied", "no_access_user", "PATCH", "/catalogs/lake/schemas/main", `{"comment":"nope"}`, 403},
 		{"delete schema denied", "no_access_user", "DELETE", "/catalogs/lake/schemas/main", "", 403},
-		// read ops should succeed regardless of privileges
+		// metadata read ops for schemas remain open, but catalog registration
+		// details stay admin-scoped because they include management fields.
 		{"list schemas allowed", "no_access_user", "GET", "/catalogs/lake/schemas", "", 200},
 		{"get schema allowed", "no_access_user", "GET", "/catalogs/lake/schemas/main", "", 200},
-		{"get catalog allowed", "no_access_user", "GET", "/catalogs/lake/info", "", 200},
+		{"get catalog denied", "no_access_user", "GET", "/catalogs/lake", "", 403},
 		// admin_user has ALL_PRIVILEGES via admins group — all ops should succeed
 		{"admin create schema", "admin_user", "POST", "/catalogs/lake/schemas", `{"name":"new_schema"}`, 201},
 		{"admin update schema", "admin_user", "PATCH", "/catalogs/lake/schemas/main", `{"comment":"updated"}`, 200},
@@ -1299,8 +1312,8 @@ func TestAPI_AdminGuards(t *testing.T) {
 		},
 		{
 			name:   "update principal admin requires admin",
-			method: http.MethodPut,
-			path:   "/principals/999/admin",
+			method: http.MethodPatch,
+			path:   "/principals/999",
 			body:   `{"is_admin":true}`,
 			want:   http.StatusForbidden,
 		},

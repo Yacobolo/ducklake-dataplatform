@@ -45,7 +45,7 @@ op getAssetGraph(asset_key: string): Ok<AssetGraph> | ResourceErrorResponses;
 @summary("Get asset freshness")
 op getAssetFreshness(asset_key: string): Ok<AssetFreshnessStatus> | ResourceErrorResponses;
 
-@route("/assets/{asset_key}/freshness-explanation")
+@route("/assets/{asset_key}/freshness/explanation")
 @get
 @tag("Assets")
 @summary("Explain asset freshness")
@@ -100,7 +100,7 @@ op listAssetMaterializations(asset_key: string, @query max_results?: int32, @que
 @summary("List asset checks")
 op listAssetChecks(asset_key: string): Ok<AssetCheckList> | ResourceErrorResponses;
 
-@route("/assets/{asset_key}/check-results")
+@route("/assets/{asset_key}/checks/results")
 @get
 @tag("Assets")
 @summary("List asset check results")

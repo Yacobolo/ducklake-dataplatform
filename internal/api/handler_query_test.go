@@ -14,6 +14,7 @@ import (
 
 type mockQueryAsyncService struct {
 	submitFn func(ctx context.Context, principalName, sqlQuery, requestID string) (*domain.QueryJob, error)
+	listFn   func(ctx context.Context, principalName string, status *domain.QueryJobStatus, page domain.PageRequest) ([]domain.QueryJob, int64, error)
 	getFn    func(ctx context.Context, principalName, jobID string) (*domain.QueryJob, error)
 	cancelFn func(ctx context.Context, principalName, jobID string) error
 	deleteFn func(ctx context.Context, principalName, jobID string) error
@@ -28,6 +29,13 @@ func (m *mockQueryAsyncService) SubmitAsync(ctx context.Context, principalName, 
 		panic("submitFn not set")
 	}
 	return m.submitFn(ctx, principalName, sqlQuery, requestID)
+}
+
+func (m *mockQueryAsyncService) ListAsyncJobs(ctx context.Context, principalName string, status *domain.QueryJobStatus, page domain.PageRequest) ([]domain.QueryJob, int64, error) {
+	if m.listFn == nil {
+		return nil, 0, domain.ErrNotImplemented("not used")
+	}
+	return m.listFn(ctx, principalName, status, page)
 }
 
 func (m *mockQueryAsyncService) GetAsyncJob(ctx context.Context, principalName, jobID string) (*domain.QueryJob, error) {

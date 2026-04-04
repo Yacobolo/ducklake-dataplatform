@@ -32,11 +32,11 @@ op updateProductDomain(domain_name: string, @body body: UpdateProductDomainReque
 @summary("Delete product domain")
 op deleteProductDomain(domain_name: string): NoContent | ResourceErrorResponses;
 
-@route("/product-domains/teams")
+@route("/product-domains/{domain_name}/teams")
 @get
 @tag("Products")
 @summary("List product teams")
-op listProductTeams(@query domain_name?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedProductTeams> | StandardErrorResponses;
+op listProductTeams(domain_name: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedProductTeams> | StandardErrorResponses;
 
 @route("/product-domains/{domain_name}/teams")
 @post

@@ -74,7 +74,7 @@ List root folder contents
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /folders/search-results`
+## `GET /folders/search`
 
 Search root folder namespace
 
@@ -260,7 +260,7 @@ Get folder path
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /folders/{folder_id}/search-results`
+## `GET /folders/{folder_id}/search`
 
 Search folder namespace
 

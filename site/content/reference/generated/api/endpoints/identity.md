@@ -366,34 +366,11 @@ Get principal
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /principals/{principal_id}`
+## `PATCH /principals/{principal_id}`
 
-Delete principal
+Update principal
 
-- Operation ID: `deletePrincipal`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `principal_id` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `204` | There is no content to send for this request, but the headers may be useful. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `PUT /principals/{principal_id}/admin`
-
-Update principal admin
-
-- Operation ID: `updatePrincipalAdmin`
+- Operation ID: `updatePrincipal`
 
 ### Path Parameters
 
@@ -405,6 +382,29 @@ Update principal admin
 
 - Required: `true`
 - Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /principals/{principal_id}`
+
+Delete principal
+
+- Operation ID: `deletePrincipal`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `principal_id` | `string` | `true` | - |
 
 ### Responses
 

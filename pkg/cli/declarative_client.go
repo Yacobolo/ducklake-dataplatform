@@ -1531,31 +1531,29 @@ func (c *APIStateClient) readDomains(ctx context.Context, state *declarative.Des
 }
 
 func (c *APIStateClient) readTeams(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/product-domains/teams")
-	if err != nil {
-		return err
-	}
-	if len(pages) == 0 {
-		return nil
-	}
-
-	var items []apiProductTeam
-	if err := mergePages(pages, &items); err != nil {
-		return err
-	}
-
-	for _, item := range items {
-		domainRef := c.lookupDomainNameFromState(state, item.DomainID)
-		if domainRef == "" {
-			domainRef = item.DomainID
+	for _, domainItem := range state.Domains {
+		pages, err := c.fetchAllPages(ctx, "/product-domains/"+url.PathEscape(domainItem.Name)+"/teams")
+		if err != nil {
+			return err
 		}
-		state.Teams = append(state.Teams, declarative.TeamResource{
-			Name: item.Name,
-			Spec: declarative.TeamSpec{
-				DomainRef:      domainRef,
-				ContactChannel: item.ContactChannel,
-			},
-		})
+		if len(pages) == 0 {
+			continue
+		}
+
+		var items []apiProductTeam
+		if err := mergePages(pages, &items); err != nil {
+			return err
+		}
+
+		for _, item := range items {
+			state.Teams = append(state.Teams, declarative.TeamResource{
+				Name: item.Name,
+				Spec: declarative.TeamSpec{
+					DomainRef:      domainItem.Name,
+					ContactChannel: item.ContactChannel,
+				},
+			})
+		}
 	}
 	return nil
 }
@@ -1757,23 +1755,6 @@ func isImplicitProductVersion(spec declarative.DataProductSpec, version declarat
 		spec.AccessRequestPath == version.AccessRequestPath &&
 		reflect.DeepEqual(spec.Outputs, version.Outputs) &&
 		reflect.DeepEqual(spec.SemanticEntrypoints, version.SemanticEntrypoints)
-}
-
-func (c *APIStateClient) lookupDomainNameFromState(state *declarative.DesiredState, domainID string) string {
-	if domainID == "" {
-		return ""
-	}
-	if c.index != nil {
-		if name := c.index.productDomainNameByID[domainID]; name != "" {
-			return name
-		}
-	}
-	for _, item := range state.Domains {
-		if item.Name == domainID {
-			return item.Name
-		}
-	}
-	return ""
 }
 
 func (c *APIStateClient) readAssets(ctx context.Context, state *declarative.DesiredState) error {
@@ -3923,7 +3904,6 @@ func (c *APIStateClient) reconcileNotebookPublish(_ context.Context, notebookID 
 		return fmt.Errorf("published output cell %q not found in notebook %q", spec.Publish.Model.OutputCell, notebookID)
 	}
 	body := map[string]interface{}{
-		"notebook_id":  notebookID,
 		"cell_index":   outputIndex,
 		"project_name": spec.Publish.Model.Project,
 		"name":         spec.Publish.Model.Name,
@@ -3931,7 +3911,7 @@ func (c *APIStateClient) reconcileNotebookPublish(_ context.Context, notebookID 
 	if spec.Publish.Model.Materialization != "" {
 		body["materialization"] = spec.Publish.Model.Materialization
 	}
-	resp, err := c.client.Do(http.MethodPost, "/notebook-model-promotions", nil, body)
+	resp, err := c.client.Do(http.MethodPost, "/notebooks/"+notebookID+"/model-promotions", nil, body)
 	if err != nil {
 		return err
 	}
@@ -3939,7 +3919,7 @@ func (c *APIStateClient) reconcileNotebookPublish(_ context.Context, notebookID 
 }
 
 func (c *APIStateClient) unpublishNotebookModel(notebookID string) error {
-	resp, err := c.client.Do(http.MethodDelete, "/notebook-model-promotions/"+notebookID, nil, nil)
+	resp, err := c.client.Do(http.MethodDelete, "/notebooks/"+notebookID+"/model-promotions", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -4872,7 +4852,7 @@ func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.
 		body := map[string]interface{}{
 			"is_admin": spec.IsAdmin,
 		}
-		resp, err := c.client.Do(http.MethodPut, "/principals/"+id+"/admin", nil, body)
+		resp, err := c.client.Do(http.MethodPatch, "/principals/"+id, nil, body)
 		if err != nil {
 			return err
 		}

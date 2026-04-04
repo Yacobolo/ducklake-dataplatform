@@ -92,13 +92,13 @@ op listModelTestResults(run_id: string, step_id: string): Ok<ModelTestResultList
 @summary("Check model freshness")
 op checkModelFreshness(project_name: string, model_name: string): Ok<FreshnessStatus> | ResourceErrorResponses;
 
-@route("/notebook-model-promotions")
+@route("/notebooks/{notebook_id}/model-promotions")
 @post
 @tag("Models")
 @summary("Promote notebook to model")
-op promoteNotebookToModel(@body body: PromoteNotebookRequest): Created<Model> | MutatingErrorResponses;
+op promoteNotebookToModel(notebook_id: string, @body body: PromoteNotebookRequest): Created<Model> | MutatingErrorResponses;
 
-@route("/notebook-model-promotions/{notebook_id}")
+@route("/notebooks/{notebook_id}/model-promotions")
 @delete
 @tag("Models")
 @summary("Unpublish notebook model")

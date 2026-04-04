@@ -303,7 +303,7 @@ type QueryHistoryRepository interface {
 type QueryJobRepository interface {
 	Create(ctx context.Context, job *QueryJob) (*QueryJob, error)
 	GetByID(ctx context.Context, id string) (*QueryJob, error)
-	ListByPrincipal(ctx context.Context, principalName string, page PageRequest) ([]QueryJob, int64, error)
+	ListByPrincipal(ctx context.Context, principalName string, status *QueryJobStatus, page PageRequest) ([]QueryJob, int64, error)
 	GetByRequestID(ctx context.Context, principalName, requestID string) (*QueryJob, error)
 	SetResolvedCompute(ctx context.Context, id string, mode string, endpointName *string) error
 	MarkRunning(ctx context.Context, id string, attempt int) error

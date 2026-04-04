@@ -75,7 +75,8 @@ func ValidateUpdateAssetRequest(assetKey string, req UpdateAssetRequest) error {
 }
 
 func validateAssetMutation(assetKey, assetType, owner string, upstreamAssetKeys []string, checks []AssetCheckInput) error {
-	if strings.TrimSpace(assetType) == "" {
+	assetType = normalizeAssetType(assetType)
+	if assetType == "" {
 		return ErrValidation("asset_type is required")
 	}
 	if !isValidAssetType(assetType) {
@@ -119,6 +120,7 @@ func validateAssetMutation(assetKey, assetType, owner string, upstreamAssetKeys 
 }
 
 func validateAssetPolicies(assetType string, freshness *AssetFreshnessPolicy, materialization *AssetMaterializationPolicy, auto *AssetAutoMaterializePolicy) error {
+	assetType = normalizeAssetType(assetType)
 	if freshness != nil {
 		if freshness.MaxLagSeconds < 0 {
 			return ErrValidation("freshness_policy.max_lag_seconds must be >= 0")
@@ -144,7 +146,7 @@ func validateAssetPolicies(assetType string, freshness *AssetFreshnessPolicy, ma
 }
 
 func isValidAssetType(assetType string) bool {
-	switch strings.TrimSpace(assetType) {
+	switch normalizeAssetType(assetType) {
 	case AssetTypeTable,
 		AssetTypeView,
 		AssetTypeModel,
@@ -162,7 +164,7 @@ func isValidAssetType(assetType string) bool {
 }
 
 func assetSupportsExecutionPolicies(assetType string) bool {
-	switch strings.TrimSpace(assetType) {
+	switch normalizeAssetType(assetType) {
 	case AssetTypeTable,
 		AssetTypeView,
 		AssetTypeModel,
@@ -173,4 +175,8 @@ func assetSupportsExecutionPolicies(assetType string) bool {
 	default:
 		return false
 	}
+}
+
+func normalizeAssetType(assetType string) string {
+	return strings.ToUpper(strings.TrimSpace(assetType))
 }

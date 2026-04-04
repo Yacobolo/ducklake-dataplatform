@@ -72,7 +72,7 @@ op listRootFolderContents(
   @query page_token?: string,
 ): Ok<PaginatedFolderContents> | StandardErrorResponses;
 
-@route("/folders/search-results")
+@route("/folders/search")
 @get
 @tag("Folders")
 @summary("Search root folder namespace")
@@ -95,7 +95,7 @@ op listFolderContents(
   @query page_token?: string,
 ): Ok<PaginatedFolderContents> | StandardErrorResponses;
 
-@route("/folders/{folder_id}/search-results")
+@route("/folders/{folder_id}/search")
 @get
 @tag("Folders")
 @summary("Search folder namespace")

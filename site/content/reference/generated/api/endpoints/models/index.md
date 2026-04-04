@@ -9,5 +9,5 @@ Model, macro, and model run management for transformation workflows.
 - [Models](./models) (10 operations)
 - [Macros](./macros) (8 operations)
 - [Model Runs](./model-runs) (6 operations)
-- [Notebook Model Promotions](./notebook-model-promotions) (2 operations)
+- [Model Promotions](./model-promotions) (2 operations)
 

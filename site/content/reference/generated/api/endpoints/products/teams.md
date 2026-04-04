@@ -4,17 +4,22 @@
 
 Teams operations within the Products API group.
 
-## `GET /product-domains/teams`
+## `GET /product-domains/{domain_name}/teams`
 
 List product teams
 
 - Operation ID: `listProductTeams`
 
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `domain_name` | `string` | `true` | - |
+
 ### Query Parameters
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domain_name` | `string` | `false` | - |
 | `max_results` | `integer` | `false` | - |
 | `page_token` | `string` | `false` | - |
 

@@ -154,20 +154,22 @@ func (s *Service) DeleteDomain(ctx context.Context, name string) error {
 	return nil
 }
 
-// ListTeams lists normalized owner teams.
-func (s *Service) ListTeams(ctx context.Context, page domain.PageRequest, domainName *string) ([]domain.Team, int64, error) {
+// ListTeams lists normalized owner teams for a domain.
+func (s *Service) ListTeams(ctx context.Context, page domain.PageRequest, domainName string) ([]domain.Team, int64, error) {
 	if s == nil || s.teams == nil {
 		return []domain.Team{}, 0, nil
 	}
-	items, total, err := s.teams.List(ctx, page)
+	if strings.TrimSpace(domainName) == "" {
+		return nil, 0, domain.ErrValidation("domain_name is required")
+	}
+	if s.domains == nil {
+		return nil, 0, domain.ErrNotImplemented("domain lookup is not configured")
+	}
+	items, _, err := s.teams.List(ctx, page)
 	if err != nil {
 		return nil, 0, err
 	}
-	if domainName == nil || strings.TrimSpace(*domainName) == "" || s.domains == nil {
-		return items, total, nil
-	}
-
-	domainItem, err := s.domains.GetByName(ctx, strings.TrimSpace(*domainName))
+	domainItem, err := s.domains.GetByName(ctx, strings.TrimSpace(domainName))
 	if err != nil {
 		return nil, 0, err
 	}

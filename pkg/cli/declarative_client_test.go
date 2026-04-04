@@ -702,8 +702,8 @@ func TestExecutePrincipal_UpdateSendsAdminEndpoint(t *testing.T) {
 	require.Len(t, captured, 1)
 
 	req := captured[0]
-	assert.Equal(t, http.MethodPut, req.Method)
-	assert.Contains(t, req.Path, "/principals/principal-id-alice/admin")
+	assert.Equal(t, http.MethodPatch, req.Method)
+	assert.Contains(t, req.Path, "/principals/principal-id-alice")
 	assert.True(t, bodyBool(req, "is_admin"))
 }
 
@@ -1083,7 +1083,7 @@ func TestExecuteNotebook_UpdateUnpublishesBeforeRemovingPublishedOutput(t *testi
 				}
 			}
 			_ = json.NewEncoder(w).Encode(resp)
-		case r.Method == http.MethodDelete && r.URL.Path == "/v1/notebook-model-promotions/nb-id-1":
+		case r.Method == http.MethodDelete && r.URL.Path == "/v1/notebooks/nb-id-1/model-promotions":
 			published = false
 			w.WriteHeader(http.StatusNoContent)
 		default:
@@ -1120,7 +1120,7 @@ func TestExecuteNotebook_UpdateUnpublishesBeforeRemovingPublishedOutput(t *testi
 	assert.Equal(t, http.MethodGet, captured[1].Method)
 	assert.Equal(t, "/v1/notebooks/nb-id-1", captured[1].Path)
 	assert.Equal(t, http.MethodDelete, captured[2].Method)
-	assert.Equal(t, "/v1/notebook-model-promotions/nb-id-1", captured[2].Path)
+	assert.Equal(t, "/v1/notebooks/nb-id-1/model-promotions", captured[2].Path)
 	assert.Equal(t, http.MethodGet, captured[3].Method)
 	assert.Equal(t, "/v1/notebooks/nb-id-1", captured[3].Path)
 	assert.Equal(t, http.MethodPatch, captured[4].Method)
@@ -2779,8 +2779,8 @@ func TestExecutePrincipal_Update(t *testing.T) {
 	require.Len(t, captured, 1)
 
 	req := captured[0]
-	assert.Equal(t, http.MethodPut, req.Method)
-	assert.Contains(t, req.Path, "/principals/principal-id-alice/admin")
+	assert.Equal(t, http.MethodPatch, req.Method)
+	assert.Contains(t, req.Path, "/principals/principal-id-alice")
 	assert.True(t, bodyBool(req, "is_admin"))
 }
 
@@ -3662,7 +3662,7 @@ func TestReadState_ProductControlPlaneAndAssetBindings(t *testing.T) {
 			},
 		})
 	})
-	mux.HandleFunc("/v1/product-domains/teams", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/v1/product-domains/revenue/teams", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"data": []map[string]any{

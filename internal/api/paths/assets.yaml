@@ -361,7 +361,7 @@ paths:
         '500':
           $ref: '../schemas/responses.yaml#/responses/InternalError'
 
-  /assets/{asset_key}/check-results:
+  /assets/{asset_key}/checks/results:
     parameters:
       - name: asset_key
         in: path

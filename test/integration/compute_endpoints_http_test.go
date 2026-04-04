@@ -279,10 +279,10 @@ func TestHTTP_ComputeRemoteQueryE2E(t *testing.T) {
 	adminID := lookupPrincipalID(t, env, "admin_user")
 	assignToEndpoint(t, env, "e2e-remote", adminID, "user")
 
-	// 5. Execute a query via POST /v1/queries:execute — should route through remote agent
+	// 5. Execute a query via POST /v1/query-executions — should route through remote agent
 	t.Run("remote_select_42", func(t *testing.T) {
 		queryBody := map[string]interface{}{"sql": "SELECT 42 AS answer"}
-		resp := doRequest(t, "POST", env.Server.URL+"/v1/queries:execute", env.Keys.Admin, queryBody)
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/query-executions", env.Keys.Admin, queryBody)
 		require.Equal(t, 200, resp.StatusCode)
 
 		var result map[string]interface{}
@@ -305,7 +305,7 @@ func TestHTTP_ComputeRemoteQueryE2E(t *testing.T) {
 	// 6. Multi-row query through remote
 	t.Run("remote_range_query", func(t *testing.T) {
 		queryBody := map[string]interface{}{"sql": "SELECT i FROM range(5) t(i)"}
-		resp := doRequest(t, "POST", env.Server.URL+"/v1/queries:execute", env.Keys.Admin, queryBody)
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/query-executions", env.Keys.Admin, queryBody)
 		require.Equal(t, 200, resp.StatusCode)
 
 		var result map[string]interface{}
@@ -356,7 +356,7 @@ func TestHTTP_ComputeLocalEndpointE2E(t *testing.T) {
 
 	// Query — APIGen canonical responses now serialize row values as strings.
 	queryBody := map[string]interface{}{"sql": "SELECT 42 AS answer"}
-	resp = doRequest(t, "POST", env.Server.URL+"/v1/queries:execute", env.Keys.Admin, queryBody)
+	resp = doRequest(t, "POST", env.Server.URL+"/v1/query-executions", env.Keys.Admin, queryBody)
 	require.Equal(t, 200, resp.StatusCode)
 
 	var result map[string]interface{}
@@ -399,7 +399,7 @@ func TestHTTP_ComputeRemoteAgentDown(t *testing.T) {
 		"compute_mode":  "SHARED_ENDPOINT",
 		"endpoint_name": "dead-agent",
 	}
-	resp = doRequest(t, "POST", env.Server.URL+"/v1/queries:execute", env.Keys.Admin, queryBody)
+	resp = doRequest(t, "POST", env.Server.URL+"/v1/query-executions", env.Keys.Admin, queryBody)
 	// The engine error gets mapped to 403 by the query handler (see handler.go)
 	assert.NotEqual(t, 200, resp.StatusCode)
 	_ = resp.Body.Close()
@@ -432,7 +432,7 @@ func TestHTTP_ComputeUnassignReverts(t *testing.T) {
 	assignmentID := assignResult["id"].(string)
 
 	// Query via remote — should succeed
-	resp = doRequest(t, "POST", env.Server.URL+"/v1/queries:execute", env.Keys.Admin,
+	resp = doRequest(t, "POST", env.Server.URL+"/v1/query-executions", env.Keys.Admin,
 		map[string]interface{}{"sql": "SELECT 42 AS answer"})
 	require.Equal(t, 200, resp.StatusCode)
 	_ = resp.Body.Close()
@@ -445,7 +445,7 @@ func TestHTTP_ComputeUnassignReverts(t *testing.T) {
 	_ = resp.Body.Close()
 
 	// Query again — should fall back to local DuckDB and succeed
-	resp = doRequest(t, "POST", env.Server.URL+"/v1/queries:execute", env.Keys.Admin,
+	resp = doRequest(t, "POST", env.Server.URL+"/v1/query-executions", env.Keys.Admin,
 		map[string]interface{}{"sql": "SELECT 99 AS local_answer"})
 	require.Equal(t, 200, resp.StatusCode)
 

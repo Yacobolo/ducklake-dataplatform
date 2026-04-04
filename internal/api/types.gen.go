@@ -12,7 +12,7 @@ type APIKeyInfo struct {
 
 type Asset struct {
 	AssetKey              *string                     `json:"asset_key,omitempty"`
-	AssetType             *string                     `json:"asset_type,omitempty"`
+	AssetType             *AssetType                  `json:"asset_type,omitempty"`
 	AutoMaterializePolicy *AssetAutoMaterializePolicy `json:"auto_materialize_policy,omitempty"`
 	CreatedAt             *string                     `json:"created_at,omitempty"`
 	CreatedBy             *string                     `json:"created_by,omitempty"`
@@ -117,11 +117,11 @@ type AssetFreshnessReconcileResponse struct {
 }
 
 type AssetFreshnessReconcileTarget struct {
-	AssetId         *string `json:"asset_id,omitempty"`
-	AssetKey        *string `json:"asset_key,omitempty"`
-	AssetType       *string `json:"asset_type,omitempty"`
-	EventId         *string `json:"event_id,omitempty"`
-	FreshnessStatus *string `json:"freshness_status,omitempty"`
+	AssetId         *string    `json:"asset_id,omitempty"`
+	AssetKey        *string    `json:"asset_key,omitempty"`
+	AssetType       *AssetType `json:"asset_type,omitempty"`
+	EventId         *string    `json:"event_id,omitempty"`
+	FreshnessStatus *string    `json:"freshness_status,omitempty"`
 }
 
 type AssetFreshnessRequirement struct {
@@ -135,15 +135,15 @@ type AssetFreshnessRequirementsResponse struct {
 }
 
 type AssetFreshnessStatus struct {
-	AssetId                *string   `json:"asset_id,omitempty"`
-	AssetKey               *string   `json:"asset_key,omitempty"`
-	AssetType              *string   `json:"asset_type,omitempty"`
-	Basis                  *[]string `json:"basis,omitempty"`
-	EffectiveMaxLagSeconds *int32    `json:"effective_max_lag_seconds,omitempty"`
-	FreshnessStatus        *string   `json:"freshness_status,omitempty"`
-	LastMaterializedAt     *string   `json:"last_materialized_at,omitempty"`
-	Reason                 *string   `json:"reason,omitempty"`
-	StaleSince             *string   `json:"stale_since,omitempty"`
+	AssetId                *string    `json:"asset_id,omitempty"`
+	AssetKey               *string    `json:"asset_key,omitempty"`
+	AssetType              *AssetType `json:"asset_type,omitempty"`
+	Basis                  *[]string  `json:"basis,omitempty"`
+	EffectiveMaxLagSeconds *int32     `json:"effective_max_lag_seconds,omitempty"`
+	FreshnessStatus        *string    `json:"freshness_status,omitempty"`
+	LastMaterializedAt     *string    `json:"last_materialized_at,omitempty"`
+	Reason                 *string    `json:"reason,omitempty"`
+	StaleSince             *string    `json:"stale_since,omitempty"`
 }
 
 type AssetGraph struct {
@@ -235,6 +235,28 @@ const (
 	RECONCILER                      AssetTriggerType = "RECONCILER"
 	AssetTriggerTypePIPELINE        AssetTriggerType = "PIPELINE"
 	PIPELINE                        AssetTriggerType = "PIPELINE"
+)
+
+type AssetType string
+
+const (
+	AssetTypeTABLE                  AssetType = "TABLE"
+	AssetTypeVIEW                   AssetType = "VIEW"
+	AssetTypeMODEL                  AssetType = "MODEL"
+	MODEL                           AssetType = "MODEL"
+	AssetTypeNOTEBOOK               AssetType = "NOTEBOOK"
+	AssetTypeOUTPUT                 AssetType = "OUTPUT"
+	OUTPUT                          AssetType = "OUTPUT"
+	AssetTypeDASHBOARD              AssetType = "DASHBOARD"
+	DASHBOARD                       AssetType = "DASHBOARD"
+	AssetTypeSEMANTICMODEL          AssetType = "SEMANTIC_MODEL"
+	SEMANTICMODEL                   AssetType = "SEMANTIC_MODEL"
+	AssetTypeMETRIC                 AssetType = "METRIC"
+	METRIC                          AssetType = "METRIC"
+	AssetTypeSEMANTICPREAGGREGATION AssetType = "SEMANTIC_PRE_AGGREGATION"
+	SEMANTICPREAGGREGATION          AssetType = "SEMANTIC_PRE_AGGREGATION"
+	AssetTypeNOTEBOOKOUTPUT         AssetType = "NOTEBOOK_OUTPUT"
+	NOTEBOOKOUTPUT                  AssetType = "NOTEBOOK_OUTPUT"
 )
 
 type AuditDecisionStatus string
@@ -595,7 +617,7 @@ type CreateAssetBackfillResponse struct {
 
 type CreateAssetRequest struct {
 	AssetKey              string                      `json:"asset_key"`
-	AssetType             string                      `json:"asset_type"`
+	AssetType             AssetType                   `json:"asset_type"`
 	AutoMaterializePolicy *AssetAutoMaterializePolicy `json:"auto_materialize_policy,omitempty"`
 	Checks                *[]AssetCheckInput          `json:"checks,omitempty"`
 	Description           *string                     `json:"description,omitempty"`
@@ -1505,7 +1527,6 @@ type ModelMaterialization string
 
 const (
 	ModelMaterializationVIEW        ModelMaterialization = "VIEW"
-	VIEW                            ModelMaterialization = "VIEW"
 	ModelMaterializationTABLE       ModelMaterialization = "TABLE"
 	ModelMaterializationINCREMENTAL ModelMaterialization = "INCREMENTAL"
 	INCREMENTAL                     ModelMaterialization = "INCREMENTAL"
@@ -1933,6 +1954,11 @@ type PaginatedQueryHistoryEntries struct {
 	NextPageToken *string             `json:"next_page_token,omitempty"`
 }
 
+type PaginatedQueryJobs struct {
+	Data          []QueryJob `json:"data"`
+	NextPageToken *string    `json:"next_page_token,omitempty"`
+}
+
 type PaginatedRecentResources struct {
 	Data          []RecentResource `json:"data"`
 	NextPageToken *string          `json:"next_page_token,omitempty"`
@@ -2030,7 +2056,6 @@ type PipelineJobJobType string
 
 const (
 	PipelineJobJobTypeNOTEBOOK PipelineJobJobType = "NOTEBOOK"
-	NOTEBOOK                   PipelineJobJobType = "NOTEBOOK"
 	PipelineJobJobTypeMODELRUN PipelineJobJobType = "MODEL_RUN"
 	MODELRUN                   PipelineJobJobType = "MODEL_RUN"
 )
@@ -2274,7 +2299,6 @@ type PromoteNotebookRequest struct {
 	CellIndex       int32                 `json:"cell_index"`
 	Materialization *ModelMaterialization `json:"materialization,omitempty"`
 	Name            string                `json:"name"`
-	NotebookId      string                `json:"notebook_id"`
 	ProjectName     string                `json:"project_name"`
 }
 
@@ -2682,7 +2706,7 @@ const (
 )
 
 type UpdateAssetRequest struct {
-	AssetType             string                      `json:"asset_type"`
+	AssetType             AssetType                   `json:"asset_type"`
 	AutoMaterializePolicy *AssetAutoMaterializePolicy `json:"auto_materialize_policy,omitempty"`
 	Checks                *[]AssetCheckInput          `json:"checks,omitempty"`
 	Description           *string                     `json:"description,omitempty"`
@@ -2831,8 +2855,8 @@ type UpdatePipelineRequest struct {
 	ScheduleCron     *string `json:"schedule_cron,omitempty"`
 }
 
-type UpdatePrincipalAdminRequest struct {
-	IsAdmin bool `json:"is_admin"`
+type UpdatePrincipalRequest struct {
+	IsAdmin *bool `json:"is_admin,omitempty"`
 }
 
 type UpdateProductDomainRequest struct {
@@ -3127,6 +3151,8 @@ type ListProductScorecardsParams = GenListProductScorecardsParams
 
 type ListProductTeamsParams = GenListProductTeamsParams
 
+type ListQueriesParams = GenListQueriesParams
+
 type ListQueryHistoryParams = GenListQueryHistoryParams
 
 type ListRecentResourcesParams = GenListRecentResourcesParams
@@ -3335,7 +3361,7 @@ type UpdatePipelineJSONRequestBody = GenUpdatePipelineJSONBody
 
 type UpdatePipelineJobJSONRequestBody = GenUpdatePipelineJobJSONBody
 
-type UpdatePrincipalAdminJSONRequestBody = GenUpdatePrincipalAdminJSONBody
+type UpdatePrincipalJSONRequestBody = GenUpdatePrincipalJSONBody
 
 type UpdateProductDomainJSONRequestBody = GenUpdateProductDomainJSONBody
 

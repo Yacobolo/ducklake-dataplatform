@@ -270,7 +270,7 @@ func TestHandler_GetDashboard_MapsWidgets(t *testing.T) {
 	assert.Equal(t, DashboardWidgetSourceKindSqlQuery, (*okResp.Body.Widgets)[0].Source.Kind)
 }
 
-func TestHandler_GetResolvedDashboard_MapsResolvedWidgets(t *testing.T) {
+func TestHandler_GetRenderedDashboard_MapsResolvedWidgets(t *testing.T) {
 	t.Parallel()
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", Type: "user"})
@@ -317,10 +317,10 @@ func TestHandler_GetResolvedDashboard_MapsResolvedWidgets(t *testing.T) {
 		},
 	}
 
-	resp, err := h.GetResolvedDashboard(ctx, GenGetResolvedDashboardRequest{DashboardId: "dash-1"})
+	resp, err := h.GetRenderedDashboard(ctx, GenGetRenderedDashboardRequest{DashboardId: "dash-1"})
 	require.NoError(t, err)
 
-	okResp, ok := resp.(GenGetResolvedDashboard200JSONResponse)
+	okResp, ok := resp.(GenGetRenderedDashboard200JSONResponse)
 	require.True(t, ok)
 	require.NotNil(t, okResp.Body.Dashboard)
 	require.NotNil(t, okResp.Body.Widgets)

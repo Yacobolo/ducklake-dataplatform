@@ -18,7 +18,7 @@ type mockPrincipalService struct {
 	createFn   func(ctx context.Context, req domain.CreatePrincipalRequest) (*domain.Principal, error)
 	getByIDFn  func(ctx context.Context, id string) (*domain.Principal, error)
 	deleteFn   func(ctx context.Context, id string) error
-	setAdminFn func(ctx context.Context, id string, isAdmin bool) error
+	updateFn   func(ctx context.Context, id string, req domain.UpdatePrincipalRequest) (*domain.Principal, error)
 }
 
 func (m *mockPrincipalService) List(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error) {
@@ -49,11 +49,11 @@ func (m *mockPrincipalService) Delete(ctx context.Context, id string) error {
 	return m.deleteFn(ctx, id)
 }
 
-func (m *mockPrincipalService) SetAdmin(ctx context.Context, id string, isAdmin bool) error {
-	if m.setAdminFn == nil {
-		panic("mockPrincipalService.SetAdmin called but not configured")
+func (m *mockPrincipalService) Update(ctx context.Context, id string, req domain.UpdatePrincipalRequest) (*domain.Principal, error) {
+	if m.updateFn == nil {
+		panic("mockPrincipalService.Update called but not configured")
 	}
-	return m.setAdminFn(ctx, id, isAdmin)
+	return m.updateFn(ctx, id, req)
 }
 
 type mockGroupService struct {
