@@ -20,6 +20,18 @@ op createWorkspaceProject(workspace_id: string, @body body: CreateProjectRequest
 @summary("Get project")
 op getProject(project_id: string): Ok<Project> | ResourceErrorResponses;
 
+@route("/projects/{project_id}")
+@patch
+@tag("Projects")
+@summary("Update project")
+op updateProject(project_id: string, @body body: UpdateProjectRequest): Ok<Project> | ResourceErrorResponses | ConflictResponse;
+
+@route("/projects/{project_id}")
+@delete
+@tag("Projects")
+@summary("Delete project")
+op deleteProject(project_id: string): NoContent | ResourceErrorResponses | ConflictResponse;
+
 @route("/projects/{project_id}/environments")
 @get
 @tag("Projects")
@@ -31,6 +43,18 @@ op listProjectEnvironments(project_id: string, @query max_results?: int32, @quer
 @tag("Projects")
 @summary("Create project environment")
 op createProjectEnvironment(project_id: string, @body body: CreateEnvironmentRequest): Created<Environment> | ResourceErrorResponses | ConflictResponse;
+
+@route("/projects/{project_id}/environments/{environment_id}")
+@patch
+@tag("Projects")
+@summary("Update project environment")
+op updateProjectEnvironment(project_id: string, environment_id: string, @body body: UpdateEnvironmentRequest): Ok<Environment> | ResourceErrorResponses | ConflictResponse;
+
+@route("/projects/{project_id}/environments/{environment_id}")
+@delete
+@tag("Projects")
+@summary("Delete project environment")
+op deleteProjectEnvironment(project_id: string, environment_id: string): NoContent | ResourceErrorResponses | ConflictResponse;
 
 @route("/projects/{project_id}/builds")
 @get

@@ -105,11 +105,23 @@
         "description": {
           "type": "string"
         },
+        "environment_ref": {
+          "type": "string"
+        },
+        "folder_ref": {
+          "type": "string"
+        },
         "owner": {
+          "type": "string"
+        },
+        "project_ref": {
           "type": "string"
         },
         "publish": {
           "$ref": "#/$defs/NotebookPublishSpec"
+        },
+        "workspace_ref": {
+          "type": "string"
         }
       },
       "type": "object"

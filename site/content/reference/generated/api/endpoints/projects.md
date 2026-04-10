@@ -28,6 +28,61 @@ Get project
 | `429` | Client error |
 | `500` | Server error |
 
+## `PATCH /projects/{project_id}`
+
+Update project
+
+- Operation ID: `updateProject`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `project_id` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `409` | The request conflicts with the current state of the server. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /projects/{project_id}`
+
+Delete project
+
+- Operation ID: `deleteProject`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `project_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `409` | The request conflicts with the current state of the server. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `GET /projects/{project_id}/builds`
 
 List project builds
@@ -142,6 +197,63 @@ Create project environment
 | Code | Description |
 | --- | --- |
 | `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `409` | The request conflicts with the current state of the server. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /projects/{project_id}/environments/{environment_id}`
+
+Update project environment
+
+- Operation ID: `updateProjectEnvironment`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `environment_id` | `string` | `true` | - |
+| `project_id` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `409` | The request conflicts with the current state of the server. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /projects/{project_id}/environments/{environment_id}`
+
+Delete project environment
+
+- Operation ID: `deleteProjectEnvironment`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `environment_id` | `string` | `true` | - |
+| `project_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |

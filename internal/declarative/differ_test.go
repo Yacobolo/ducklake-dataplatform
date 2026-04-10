@@ -1515,3 +1515,79 @@ func TestDiff_DataProducts(t *testing.T) {
 	assert.True(t, fields["publication_intent"])
 	assert.True(t, fields["versions"])
 }
+
+func TestDiff_AuthoringCore(t *testing.T) {
+	t.Parallel()
+
+	desired := &DesiredState{
+		Workspaces: []WorkspaceResource{{
+			Name: "personal",
+			Spec: WorkspaceSpec{
+				Kind:                  "personal",
+				OwnerPrincipal:        "alice",
+				DefaultProjectRef:     "personal/core",
+				DefaultEnvironmentRef: "personal/core/dev",
+			},
+		}},
+		Folders: []FolderResource{{
+			Name: "analysis",
+			Spec: FolderSpec{
+				WorkspaceRef: "personal",
+				GitRootPath:  "analysis",
+			},
+		}},
+		Projects: []ProjectResource{{
+			Name: "core",
+			Spec: ProjectSpec{
+				WorkspaceRef:  "personal",
+				Kind:          "personal",
+				Description:   "new",
+				DefaultBranch: "main",
+			},
+		}},
+		Environments: []EnvironmentResource{{
+			Name: "dev",
+			Spec: EnvironmentSpec{
+				ProjectRef:    "personal/core",
+				Kind:          "development",
+				TargetCatalog: "main",
+				TargetSchema:  "analytics",
+			},
+		}},
+	}
+
+	actual := &DesiredState{
+		Workspaces: []WorkspaceResource{{
+			Name: "personal",
+			Spec: WorkspaceSpec{
+				Kind:           "personal",
+				OwnerPrincipal: "alice",
+			},
+		}},
+		Folders: []FolderResource{{
+			Name: "stale",
+			Spec: FolderSpec{WorkspaceRef: "personal"},
+		}},
+		Projects: []ProjectResource{{
+			Name: "core",
+			Spec: ProjectSpec{
+				WorkspaceRef:  "personal",
+				Kind:          "personal",
+				Description:   "old",
+				DefaultBranch: "main",
+			},
+		}},
+	}
+
+	plan := Diff(desired, actual)
+	require.NotEmpty(t, plan.Actions)
+
+	foundKinds := map[ResourceKind]bool{}
+	for _, action := range plan.Actions {
+		foundKinds[action.ResourceKind] = true
+	}
+	assert.True(t, foundKinds[KindWorkspace])
+	assert.True(t, foundKinds[KindFolder])
+	assert.True(t, foundKinds[KindProject])
+	assert.True(t, foundKinds[KindEnvironment])
+}

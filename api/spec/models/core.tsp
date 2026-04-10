@@ -1353,6 +1353,12 @@ model CreateProjectRequest {
   default_branch?: string;
 }
 
+model UpdateProjectRequest {
+  description?: string;
+  product_id?: string;
+  default_branch?: string;
+}
+
 model Environment {
   id?: string;
   project_id?: string;
@@ -1381,6 +1387,16 @@ model CreateEnvironmentRequest {
   description?: string;
   target_catalog: string;
   target_schema: string;
+  compute_endpoint?: string;
+  defer_to_environment?: string;
+  variables?: MetadataMap;
+  source_overrides?: MetadataMap;
+}
+
+model UpdateEnvironmentRequest {
+  description?: string;
+  target_catalog?: string;
+  target_schema?: string;
   compute_endpoint?: string;
   defer_to_environment?: string;
   variables?: MetadataMap;

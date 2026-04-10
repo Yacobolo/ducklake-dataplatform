@@ -182,6 +182,86 @@ spec:
 	assert.Equal(t, "daily-orders", state.Assets[0].Spec.ProductRef)
 }
 
+func TestLoader_AuthoringCore(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "workspaces"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "folders"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "projects"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "environments"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "notebooks"), 0o755))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "workspaces", "personal.yaml"), []byte(`apiVersion: duck/v1
+kind: Workspace
+metadata:
+  name: personal
+spec:
+  kind: personal
+  owner_principal: alice
+  default_project_ref: personal/core
+  default_environment_ref: personal/core/dev
+`), 0o644))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "folders", "analysis.yaml"), []byte(`apiVersion: duck/v1
+kind: Folder
+metadata:
+  name: analysis
+spec:
+  workspace_ref: personal
+  default_project_ref: personal/core
+  default_environment_ref: personal/core/dev
+`), 0o644))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "projects", "core.yaml"), []byte(`apiVersion: duck/v1
+kind: Project
+metadata:
+  name: core
+spec:
+  workspace_ref: personal
+  kind: personal
+  default_branch: main
+`), 0o644))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "environments", "dev.yaml"), []byte(`apiVersion: duck/v1
+kind: Environment
+metadata:
+  name: dev
+spec:
+  project_ref: personal/core
+  kind: development
+  target_catalog: main
+  target_schema: analytics
+`), 0o644))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "notebooks", "daily_orders.yaml"), []byte(`apiVersion: duck/v1
+kind: Notebook
+metadata:
+  name: daily_orders
+spec:
+  workspace_ref: personal
+  folder_ref: personal/analysis
+  project_ref: personal/core
+  environment_ref: personal/core/dev
+  cells:
+    - type: sql
+      name: output
+      role: output
+      content: SELECT 1
+`), 0o644))
+
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Len(t, state.Workspaces, 1)
+	require.Len(t, state.Folders, 1)
+	require.Len(t, state.Projects, 1)
+	require.Len(t, state.Environments, 1)
+	require.Len(t, state.Notebooks, 1)
+	assert.Equal(t, "personal/core", state.Workspaces[0].Spec.DefaultProjectRef)
+	assert.Equal(t, "personal/analysis", state.Notebooks[0].Spec.FolderRef)
+	assert.Equal(t, "personal/core/dev", state.Notebooks[0].Spec.EnvironmentRef)
+}
+
 func TestLoader_SecurityPresetsAndBindings(t *testing.T) {
 	t.Parallel()
 
