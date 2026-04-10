@@ -17,6 +17,7 @@ This section is generated from versioned JSON Schema artifacts.
 - [ComputeAssignmentList](./kinds/compute-assignment-list) (`kinds/compute-assignment-list.schema.json`)
 - [ComputeEndpointList](./kinds/compute-endpoint-list) (`kinds/compute-endpoint-list.schema.json`)
 - [ComputeRoutingDefaults](./kinds/compute-routing-defaults) (`kinds/compute-routing-defaults.schema.json`)
+- [Dashboard](./kinds/dashboard) (`kinds/dashboard.schema.json`)
 - [DataProduct](./kinds/data-product) (`kinds/data-product.schema.json`)
 - [Domain](./kinds/domain) (`kinds/domain.schema.json`)
 - [ExternalLocationList](./kinds/external-location-list) (`kinds/external-location-list.schema.json`)
@@ -49,6 +50,7 @@ This section is generated from versioned JSON Schema artifacts.
 | `kinds/compute-assignment-list.schema.json` | `6fbe93f03583e8d78c49daf83e080acbe453ad59a0f075aec68ca81c6ce0cbc7` |
 | `kinds/compute-endpoint-list.schema.json` | `ebb5e300a231aab693d0b0386a7afef18f7aea60daa05017aa3d2198f21e2c4d` |
 | `kinds/compute-routing-defaults.schema.json` | `e6a2500fca51b845e3fa36709cc94459ce6d87fa79ef7010fe9da9dc380df41a` |
+| `kinds/dashboard.schema.json` | `691f2ea8df0749c5b1c023ae98f52fa53070e63af5c3946d03bff43754e0115c` |
 | `kinds/data-product.schema.json` | `41ea4d256416634a6b11b22929e26952e2cf116867d0b45e3fb952f74309c7d3` |
 | `kinds/domain.schema.json` | `0774c2d9dc41e98a44bb1296f0665d768555dd340fafcd1427a7dcbb5db5257d` |
 | `kinds/external-location-list.schema.json` | `0ee50a446813a293604b06df459c07013a211df1e2bb11365062d306793b2514` |
@@ -56,7 +58,7 @@ This section is generated from versioned JSON Schema artifacts.
 | `kinds/group-list.schema.json` | `3c23b29013f530fefac36ed3beabb88fb8bc873bb1ad2e53d30d0376b91823d5` |
 | `kinds/macro.schema.json` | `fe3a76e6ed90c61b5be605c11462910fcc8f97e58609050cd92b6e22a5b2bed6` |
 | `kinds/model.schema.json` | `ec3ee7f0e447d9840dfaf3ffaf6e67c7167bb5f4dcee8b01aec94ff09439d9c4` |
-| `kinds/notebook.schema.json` | `3bd091027781250746efdd839b17eaef916fb0c2d85d2eaf17b8c7aeaf5d573a` |
+| `kinds/notebook.schema.json` | `583854f2163ea968363fc88c1cbf2206b9d9fc37bce7ccd17e860113b6ca702f` |
 | `kinds/principal-list.schema.json` | `950660b984996c155f9e12c25948f3c8443d5b76940c3c0289eb532c8de151d4` |
 | `kinds/privilege-preset-list.schema.json` | `090c732c29ec1e85731909b89d44041f9e8138184a209812da0048290d53bf87` |
 | `kinds/row-filter-list.schema.json` | `ac9b42eda99888d725ae668923c2ac73c0156587844108078a034292a22c5743` |

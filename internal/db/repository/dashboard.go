@@ -27,15 +27,15 @@ func NewDashboardRepo(db *sql.DB) *DashboardRepo {
 func (r *DashboardRepo) Create(ctx context.Context, d *domain.Dashboard) (*domain.Dashboard, error) {
 	compute := d.Compute.Normalize()
 	row, err := r.q.CreateDashboard(ctx, dbstore.CreateDashboardParams{
-		ID:                  newID(),
-		Name:                d.Name,
-		Description:         d.Description,
-		Owner:               d.Owner,
-		FolderID:            nullStringPtr(stringPtr(d.FolderID)),
-		SemanticProjectName: d.SemanticProjectName,
-		SemanticModelName:   d.SemanticModelName,
-		ComputeMode:         compute.Mode,
-		ComputeEndpointName: compute.EndpointName,
+		ID:                   newID(),
+		Name:                 d.Name,
+		Description:          d.Description,
+		Owner:                d.Owner,
+		FolderID:             nullStringPtr(stringPtr(d.FolderID)),
+		SemanticProjectName:  d.SemanticProjectName,
+		SemanticModelName:    d.SemanticModelName,
+		ComputeMode:          compute.Mode,
+		ComputeEndpointName:  compute.EndpointName,
 		ComputeFallbackLocal: boolToInt(compute.FallbackLocal),
 	})
 	if err != nil {
@@ -112,6 +112,10 @@ func (r *DashboardRepo) Update(ctx context.Context, id string, req domain.Update
 	if req.Description != nil {
 		description = *req.Description
 	}
+	owner := current.Owner
+	if req.Owner != nil {
+		owner = *req.Owner
+	}
 	folderID := current.FolderID
 	if req.FolderID != nil {
 		folderID = *req.FolderID
@@ -135,15 +139,16 @@ func (r *DashboardRepo) Update(ctx context.Context, id string, req domain.Update
 		return nil, err
 	}
 	row, err := r.q.UpdateDashboard(ctx, dbstore.UpdateDashboardParams{
-		Name:                name,
-		Description:         description,
-		FolderID:            nullStringPtr(stringPtr(folderID)),
-		SemanticProjectName: semanticProjectName,
-		SemanticModelName:   semanticModelName,
-		ComputeMode:         compute.Mode,
-		ComputeEndpointName: compute.EndpointName,
+		Name:                 name,
+		Description:          description,
+		Owner:                owner,
+		FolderID:             nullStringPtr(stringPtr(folderID)),
+		SemanticProjectName:  semanticProjectName,
+		SemanticModelName:    semanticModelName,
+		ComputeMode:          compute.Mode,
+		ComputeEndpointName:  compute.EndpointName,
 		ComputeFallbackLocal: boolToInt(compute.FallbackLocal),
-		ID:                  id,
+		ID:                   id,
 	})
 	if err != nil {
 		return nil, mapDBError(err)
@@ -236,6 +241,10 @@ func (r *DashboardWidgetRepo) Update(ctx context.Context, id string, req domain.
 	if req.PageName != nil {
 		pageName = domain.NormalizeDashboardPageName(*req.PageName)
 	}
+	filterOriginKey := current.FilterOriginKey
+	if req.FilterOriginKey != nil {
+		filterOriginKey = *req.FilterOriginKey
+	}
 	source := current.Source
 	if req.Source != nil {
 		source = *req.Source
@@ -253,7 +262,7 @@ func (r *DashboardWidgetRepo) Update(ctx context.Context, id string, req domain.
 		return nil, err
 	}
 	row, err := r.q.UpdateDashboardWidget(ctx, dbstore.UpdateDashboardWidgetParams{
-		FilterOriginKey: current.FilterOriginKey,
+		FilterOriginKey: filterOriginKey,
 		PageName:        pageName,
 		Name:            name,
 		Description:     description,

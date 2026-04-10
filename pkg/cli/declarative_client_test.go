@@ -245,6 +245,270 @@ func TestExecuteGroupMembership_Create(t *testing.T) {
 	assert.Equal(t, "user", bodyStr(req, "member_type"))
 }
 
+func TestReadState_ReadsDashboardsWithNameBasedSources(t *testing.T) {
+	t.Parallel()
+
+	writeJSON := func(w http.ResponseWriter, status int, body interface{}) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		require.NoError(t, json.NewEncoder(w).Encode(body))
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/notebooks":
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"data": []map[string]interface{}{{"id": "nb-1", "name": "sales-kpis", "owner": "alice"}},
+			})
+		case "/v1/notebooks/nb-1":
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"notebook": map[string]interface{}{"id": "nb-1", "name": "sales-kpis", "owner": "alice"},
+				"cells": []map[string]interface{}{
+					{"id": "cell-1", "name": "zone_output", "cell_type": "sql", "content": "select 1", "position": 0},
+				},
+			})
+		case "/v1/semantic-models":
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"data": []map[string]interface{}{{"id": "sm-1", "name": "revenue", "base_model_ref": "analytics.revenue"}},
+			})
+		case "/v1/semantic-models/sm-1/metrics", "/v1/semantic-models/sm-1/pre-aggregations", "/v1/semantic-models/sm-1/relationships":
+			writeJSON(w, http.StatusOK, map[string]interface{}{"data": []interface{}{}})
+		case "/v1/dashboards":
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"data": []map[string]interface{}{
+					{"id": "dash-1", "name": "revenue-overview", "owner": "alice", "semantic_project_name": "analytics", "semantic_model_name": "revenue"},
+				},
+			})
+		case "/v1/dashboards/dash-1":
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"dashboard": map[string]interface{}{
+					"id": "dash-1", "name": "revenue-overview", "owner": "alice",
+					"semantic_project_name": "analytics", "semantic_model_name": "revenue",
+					"compute": map[string]interface{}{"mode": "BYOC_LOCAL"},
+				},
+				"widgets": []map[string]interface{}{
+					{
+						"id": "widget-1", "dashboard_id": "dash-1", "key": "table-zones", "page_name": "Overview", "name": "Zone Detail",
+						"source": map[string]interface{}{
+							"kind":          "notebook_cell",
+							"notebook_cell": map[string]interface{}{"notebook_id": "nb-1", "cell_id": "cell-1"},
+						},
+						"layout": map[string]interface{}{"x": 0, "y": 0, "w": 6, "h": 4},
+					},
+					{
+						"id": "widget-2", "dashboard_id": "dash-1", "key": "chart-revenue", "page_name": "Overview", "name": "Revenue",
+						"source": map[string]interface{}{
+							"kind":           "semantic_query",
+							"semantic_query": map[string]interface{}{"semantic_model_id": "sm-1", "metrics": []string{"revenue"}},
+						},
+						"layout": map[string]interface{}{"x": 6, "y": 0, "w": 6, "h": 4},
+					},
+				},
+			})
+		default:
+			writeJSON(w, http.StatusOK, map[string]interface{}{"data": []interface{}{}})
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+	require.Len(t, state.Dashboards, 1)
+	require.Len(t, state.Dashboards[0].Spec.Widgets, 2)
+
+	assert.Equal(t, "alice", state.Dashboards[0].Spec.Owner)
+	assert.Equal(t, "table-zones", state.Dashboards[0].Spec.Widgets[0].Key)
+	require.NotNil(t, state.Dashboards[0].Spec.Widgets[0].Source.NotebookCell)
+	assert.Equal(t, "sales-kpis", state.Dashboards[0].Spec.Widgets[0].Source.NotebookCell.NotebookName)
+	assert.Equal(t, "zone_output", state.Dashboards[0].Spec.Widgets[0].Source.NotebookCell.CellName)
+	require.NotNil(t, state.Dashboards[0].Spec.Widgets[1].Source.SemanticQuery)
+	assert.Empty(t, state.Dashboards[0].Spec.Widgets[1].Source.SemanticQuery.SemanticModelName)
+	assert.Equal(t, "revenue", state.Dashboards[0].Spec.SemanticModelName)
+}
+
+func TestReadAssets_InferRuntimeProductRefAndNilEmptyChecks(t *testing.T) {
+	t.Parallel()
+
+	writeJSON := func(w http.ResponseWriter, status int, body interface{}) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		require.NoError(t, json.NewEncoder(w).Encode(body))
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/assets":
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"data": []map[string]interface{}{
+					{
+						"asset_key":     "dashboard.example",
+						"asset_type":    "dashboard",
+						"owner":         "dev-admin",
+						"description":   "runtime dashboard asset",
+						"tags":          []string{"dashboard"},
+						"io_profile":    "",
+						"is_active":     true,
+						"cron_schedule": "",
+					},
+				},
+			})
+		case "/v1/assets/dashboard.example/graph":
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"asset_key":           "dashboard.example",
+				"upstream_asset_keys": []string{},
+			})
+		case "/v1/assets/dashboard.example/checks":
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"data": []interface{}{},
+			})
+		default:
+			writeJSON(w, http.StatusOK, map[string]interface{}{"data": []interface{}{}})
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	state := &declarative.DesiredState{}
+
+	err := sc.readAssets(context.Background(), state)
+	require.NoError(t, err)
+	require.Len(t, state.Assets, 1)
+
+	assert.Equal(t, "runtime-dashboards", state.Assets[0].Spec.ProductRef)
+	assert.Nil(t, state.Assets[0].Spec.CheckDefinitions)
+}
+
+func TestExecuteDashboard_UpdateReconcilesWidgetsByKey(t *testing.T) {
+	t.Parallel()
+
+	var (
+		mu       sync.Mutex
+		captured []execCapture
+	)
+
+	writeJSON := func(w http.ResponseWriter, status int, body interface{}) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		require.NoError(t, json.NewEncoder(w).Encode(body))
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		if r.Method != http.MethodGet {
+			ec := execCapture{Method: r.Method, Path: r.URL.Path, Query: r.URL.Query()}
+			if r.Body != nil {
+				data, _ := io.ReadAll(r.Body)
+				if len(data) > 0 {
+					var body map[string]interface{}
+					_ = json.Unmarshal(data, &body)
+					ec.Body = body
+				}
+			}
+			captured = append(captured, ec)
+		}
+
+		switch r.URL.Path {
+		case "/v1/notebooks/nb-1":
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"notebook": map[string]interface{}{"id": "nb-1", "name": "sales-kpis", "owner": "alice"},
+				"cells": []map[string]interface{}{
+					{"id": "cell-1", "name": "zone_output", "cell_type": "sql", "content": "select 1", "position": 0},
+				},
+			})
+		case "/v1/dashboards/dash-1":
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"dashboard": map[string]interface{}{"id": "dash-1", "name": "revenue-overview", "owner": "alice"},
+				"widgets": []map[string]interface{}{
+					{
+						"id": "widget-1", "dashboard_id": "dash-1", "key": "table-zones", "page_name": "Overview", "name": "Old Zone Detail",
+						"source": map[string]interface{}{"kind": "sql_query", "sql_query": map[string]interface{}{"sql": "select 1"}},
+						"layout": map[string]interface{}{"x": 0, "y": 0, "w": 6, "h": 4},
+					},
+					{
+						"id": "widget-2", "dashboard_id": "dash-1", "key": "old-widget", "page_name": "Overview", "name": "Old Widget",
+						"source": map[string]interface{}{"kind": "sql_query", "sql_query": map[string]interface{}{"sql": "select 2"}},
+						"layout": map[string]interface{}{"x": 6, "y": 0, "w": 6, "h": 4},
+					},
+				},
+			})
+		default:
+			writeJSON(w, http.StatusOK, map[string]interface{}{"id": "generated-id"})
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	client := apiruntime.NewClient(srv.URL, "", "test-token")
+	sc := NewAPIStateClient(client)
+	sc.index = newResourceIndex()
+	sc.index.dashboardIDByName["revenue-overview"] = "dash-1"
+	sc.index.notebookIDByName["sales-kpis"] = "nb-1"
+
+	action := declarative.Action{
+		Operation:    declarative.OpUpdate,
+		ResourceKind: declarative.KindDashboard,
+		ResourceName: "revenue-overview",
+		Desired: declarative.DashboardResource{
+			Name: "revenue-overview",
+			Spec: declarative.DashboardSpec{
+				Owner: "alice",
+				Widgets: []declarative.DashboardWidgetSpec{
+					{
+						Key:      "table-zones",
+						PageName: "Overview",
+						Name:     "Zone Detail",
+						Source: declarative.DashboardWidgetSourceSpec{
+							Kind: domain.DashboardWidgetSourceSQLQuery,
+							SQLQuery: &domain.DashboardSQLQuerySource{
+								SQL: "select zone, revenue from summary",
+							},
+						},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					},
+					{
+						Key:      "table-zones-notebook",
+						PageName: "Overview",
+						Name:     "Notebook Detail",
+						Source: declarative.DashboardWidgetSourceSpec{
+							Kind: domain.DashboardWidgetSourceNotebookCell,
+							NotebookCell: &declarative.DashboardNotebookCellRefSpec{
+								NotebookName: "sales-kpis",
+								CellName:     "zone_output",
+							},
+						},
+						Layout: domain.DashboardWidgetLayout{X: 6, Y: 0, W: 6, H: 4},
+					},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, sc.Execute(context.Background(), action))
+
+	require.Len(t, captured, 4)
+	assert.Equal(t, http.MethodPatch, captured[0].Method)
+	assert.Equal(t, "/v1/dashboards/dash-1", captured[0].Path)
+	assert.Equal(t, http.MethodPatch, captured[1].Method)
+	assert.Equal(t, "/v1/dashboards/dash-1/widgets/widget-1", captured[1].Path)
+	assert.Equal(t, "table-zones", bodyStr(captured[1], "key"))
+	assert.Equal(t, http.MethodPost, captured[2].Method)
+	assert.Equal(t, "/v1/dashboards/dash-1/widgets", captured[2].Path)
+	assert.Equal(t, "table-zones-notebook", bodyStr(captured[2], "key"))
+	source, ok := captured[2].Body["source"].(map[string]interface{})
+	require.True(t, ok)
+	notebookCell, ok := source["notebook_cell"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "nb-1", notebookCell["notebook_id"])
+	assert.Equal(t, "cell-1", notebookCell["cell_id"])
+	assert.Equal(t, http.MethodDelete, captured[3].Method)
+	assert.Equal(t, "/v1/dashboards/dash-1/widgets/widget-2", captured[3].Path)
+}
+
 func TestExecuteGroupMembership_Delete(t *testing.T) {
 	var captured []execCapture
 	sc := withTestIndex(newTestExecuteClient(t, &captured))

@@ -90,6 +90,7 @@ func TestHandler_CreateDashboard_UsesPrincipalAndMapsRequest(t *testing.T) {
 		dashboards: &mockDashboardService{
 			createDashboardFn: func(_ context.Context, owner string, req domain.CreateDashboardRequest) (*domain.Dashboard, error) {
 				assert.Equal(t, "alice", owner)
+				assert.Equal(t, "analytics-owner", req.Owner)
 				assert.Equal(t, "Executive Overview", req.Name)
 				assert.Equal(t, "KPI dashboard", req.Description)
 				assert.Equal(t, "analytics", req.SemanticProjectName)
@@ -112,6 +113,7 @@ func TestHandler_CreateDashboard_UsesPrincipalAndMapsRequest(t *testing.T) {
 	semanticProjectName := "analytics"
 	semanticModelName := "sales"
 	resp, err := h.CreateDashboard(ctx, GenCreateDashboardRequest{Body: &GenCreateDashboardJSONBody{
+		Owner:               strPtr("analytics-owner"),
 		Name:                "Executive Overview",
 		Description:         &desc,
 		SemanticProjectName: &semanticProjectName,
@@ -143,6 +145,8 @@ func TestHandler_CreateDashboardWidget_MapsSourceAndVisualSpec(t *testing.T) {
 				assert.Equal(t, "alice", principal)
 				assert.False(t, isAdmin)
 				assert.Equal(t, "dash-1", dashboardID)
+				assert.Equal(t, "chart-revenue-region", req.FilterOriginKey)
+				assert.Equal(t, "Geography", req.PageName)
 				assert.Equal(t, domain.DashboardWidgetSourceSemanticQuery, req.Source.Kind)
 				require.NotNil(t, req.Source.SemanticQuery)
 				assert.Equal(t, "sm-sales", req.Source.SemanticQuery.SemanticModelID)
@@ -159,13 +163,15 @@ func TestHandler_CreateDashboardWidget_MapsSourceAndVisualSpec(t *testing.T) {
 				assert.Equal(t, "revenue", req.VisualSpec.Encodings.Y.Field)
 				assert.Equal(t, 6, req.Layout.W)
 				return &domain.DashboardWidget{
-					ID:          "widget-1",
-					DashboardID: dashboardID,
-					Name:        req.Name,
-					Description: req.Description,
-					Source:      req.Source,
-					VisualSpec:  req.VisualSpec,
-					Layout:      req.Layout,
+					ID:              "widget-1",
+					DashboardID:     dashboardID,
+					FilterOriginKey: req.FilterOriginKey,
+					PageName:        req.PageName,
+					Name:            req.Name,
+					Description:     req.Description,
+					Source:          req.Source,
+					VisualSpec:      req.VisualSpec,
+					Layout:          req.Layout,
 				}, nil
 			},
 		},
@@ -175,6 +181,8 @@ func TestHandler_CreateDashboardWidget_MapsSourceAndVisualSpec(t *testing.T) {
 	resp, err := h.CreateDashboardWidget(ctx, GenCreateDashboardWidgetRequest{
 		DashboardId: "dash-1",
 		Body: &GenCreateDashboardWidgetJSONBody{
+			Key:         strPtr("chart-revenue-region"),
+			PageName:    strPtr("Geography"),
 			Name:        "Revenue by Region",
 			Description: strPtr("Grouped revenue"),
 			Source: DashboardWidgetSource{
@@ -204,6 +212,8 @@ func TestHandler_CreateDashboardWidget_MapsSourceAndVisualSpec(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, created.Body.Id)
 	assert.Equal(t, "widget-1", *created.Body.Id)
+	assert.Equal(t, "chart-revenue-region", *created.Body.Key)
+	assert.Equal(t, "Geography", *created.Body.PageName)
 	require.NotNil(t, created.Body.Source)
 	require.NotNil(t, created.Body.VisualSpec)
 	assert.Equal(t, DashboardWidgetSourceKindSemanticQuery, created.Body.Source.Kind)
@@ -262,9 +272,11 @@ func TestHandler_GetDashboard_MapsWidgets(t *testing.T) {
 						},
 					}, []domain.DashboardWidget{
 						{
-							ID:          "widget-1",
-							DashboardID: id,
-							Name:        "Revenue by Region",
+							ID:              "widget-1",
+							DashboardID:     id,
+							FilterOriginKey: "chart-revenue-region",
+							PageName:        "Geography",
+							Name:            "Revenue by Region",
 							Source: domain.DashboardWidgetSource{
 								Kind: domain.DashboardWidgetSourceSQLQuery,
 								SQLQuery: &domain.DashboardSQLQuerySource{
@@ -302,6 +314,8 @@ func TestHandler_GetDashboard_MapsWidgets(t *testing.T) {
 	assert.True(t, *okResp.Body.Dashboard.Compute.FallbackLocal)
 	require.NotNil(t, okResp.Body.Widgets)
 	require.Len(t, *okResp.Body.Widgets, 1)
+	assert.Equal(t, "chart-revenue-region", *(*okResp.Body.Widgets)[0].Key)
+	assert.Equal(t, "Geography", *(*okResp.Body.Widgets)[0].PageName)
 	require.NotNil(t, (*okResp.Body.Widgets)[0].Source)
 	assert.Equal(t, DashboardWidgetSourceKindSqlQuery, (*okResp.Body.Widgets)[0].Source.Kind)
 }
@@ -315,9 +329,11 @@ func TestHandler_ListDashboardWidgets_MapsWidgets(t *testing.T) {
 			listWidgetsFn: func(_ context.Context, dashboardID string) ([]domain.DashboardWidget, error) {
 				assert.Equal(t, "dash-1", dashboardID)
 				return []domain.DashboardWidget{{
-					ID:          "widget-1",
-					DashboardID: dashboardID,
-					Name:        "Revenue by Region",
+					ID:              "widget-1",
+					DashboardID:     dashboardID,
+					FilterOriginKey: "chart-revenue-region",
+					PageName:        "Geography",
+					Name:            "Revenue by Region",
 					Source: domain.DashboardWidgetSource{
 						Kind: domain.DashboardWidgetSourceSQLQuery,
 						SQLQuery: &domain.DashboardSQLQuerySource{
@@ -342,6 +358,8 @@ func TestHandler_ListDashboardWidgets_MapsWidgets(t *testing.T) {
 	require.Len(t, okResp.Body, 1)
 	require.NotNil(t, okResp.Body[0].Id)
 	assert.Equal(t, "widget-1", *okResp.Body[0].Id)
+	assert.Equal(t, "chart-revenue-region", *okResp.Body[0].Key)
+	assert.Equal(t, "Geography", *okResp.Body[0].PageName)
 }
 
 func TestHandler_GetDashboardWidget_MapsWidget(t *testing.T) {
@@ -353,9 +371,11 @@ func TestHandler_GetDashboardWidget_MapsWidget(t *testing.T) {
 				assert.Equal(t, "dash-1", dashboardID)
 				assert.Equal(t, "widget-1", widgetID)
 				return &domain.DashboardWidget{
-					ID:          widgetID,
-					DashboardID: dashboardID,
-					Name:        "Revenue by Region",
+					ID:              widgetID,
+					DashboardID:     dashboardID,
+					FilterOriginKey: "chart-revenue-region",
+					PageName:        "Geography",
+					Name:            "Revenue by Region",
 					Source: domain.DashboardWidgetSource{
 						Kind: domain.DashboardWidgetSourceSQLQuery,
 						SQLQuery: &domain.DashboardSQLQuerySource{
@@ -377,6 +397,8 @@ func TestHandler_GetDashboardWidget_MapsWidget(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, okResp.Body.Id)
 	assert.Equal(t, "widget-1", *okResp.Body.Id)
+	assert.Equal(t, "chart-revenue-region", *okResp.Body.Key)
+	assert.Equal(t, "Geography", *okResp.Body.PageName)
 }
 func TestHandler_GetRenderedDashboard_MapsResolvedWidgets(t *testing.T) {
 	t.Parallel()
@@ -475,6 +497,8 @@ func TestHandler_UpdateDashboard_MapsRequestAndAccessDenied(t *testing.T) {
 				assert.Equal(t, "alice", principal)
 				assert.False(t, isAdmin)
 				assert.Equal(t, "dash-1", id)
+				require.NotNil(t, req.Owner)
+				assert.Equal(t, "analytics-owner", *req.Owner)
 				require.NotNil(t, req.Name)
 				assert.Equal(t, "Updated dashboard", *req.Name)
 				require.NotNil(t, req.SemanticProjectName)
@@ -498,6 +522,7 @@ func TestHandler_UpdateDashboard_MapsRequestAndAccessDenied(t *testing.T) {
 	resp, err := h.UpdateDashboard(ctx, GenUpdateDashboardRequest{
 		DashboardId: "dash-1",
 		Body: &GenUpdateDashboardJSONBody{
+			Owner:               strPtr("analytics-owner"),
 			Name:                strPtr("Updated dashboard"),
 			SemanticProjectName: &semanticProjectName,
 			SemanticModelName:   &semanticModelName,
@@ -584,6 +609,10 @@ func TestHandler_UpdateDashboardWidget_MapsOptionalFields(t *testing.T) {
 				assert.Equal(t, "alice", principal)
 				assert.False(t, isAdmin)
 				assert.Equal(t, "widget-1", widgetID)
+				require.NotNil(t, req.FilterOriginKey)
+				assert.Equal(t, "chart-revenue-region", *req.FilterOriginKey)
+				require.NotNil(t, req.PageName)
+				assert.Equal(t, "Geography", *req.PageName)
 				require.NotNil(t, req.Name)
 				assert.Equal(t, "Updated widget", *req.Name)
 				require.NotNil(t, req.Source)
@@ -594,12 +623,14 @@ func TestHandler_UpdateDashboardWidget_MapsOptionalFields(t *testing.T) {
 				require.NotNil(t, req.VisualSpec.ChartType)
 				assert.Equal(t, domain.VisualChartLine, *req.VisualSpec.ChartType)
 				return &domain.DashboardWidget{
-					ID:          widgetID,
-					DashboardID: "dash-1",
-					Name:        *req.Name,
-					Source:      *req.Source,
-					VisualSpec:  req.VisualSpec,
-					Layout:      *req.Layout,
+					ID:              widgetID,
+					DashboardID:     "dash-1",
+					FilterOriginKey: *req.FilterOriginKey,
+					PageName:        *req.PageName,
+					Name:            *req.Name,
+					Source:          *req.Source,
+					VisualSpec:      req.VisualSpec,
+					Layout:          *req.Layout,
 				}, nil
 			},
 		},
@@ -609,7 +640,9 @@ func TestHandler_UpdateDashboardWidget_MapsOptionalFields(t *testing.T) {
 		DashboardId: "dash-1",
 		WidgetId:    "widget-1",
 		Body: &GenUpdateDashboardWidgetJSONBody{
-			Name: strPtr("Updated widget"),
+			Key:      strPtr("chart-revenue-region"),
+			PageName: strPtr("Geography"),
+			Name:     strPtr("Updated widget"),
 			Source: &DashboardWidgetSource{
 				Kind: DashboardWidgetSourceKindSqlQuery,
 				SqlQuery: &DashboardSQLQuerySource{
@@ -633,6 +666,8 @@ func TestHandler_UpdateDashboardWidget_MapsOptionalFields(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, okResp.Body.Id)
 	assert.Equal(t, "widget-1", *okResp.Body.Id)
+	assert.Equal(t, "chart-revenue-region", *okResp.Body.Key)
+	assert.Equal(t, "Geography", *okResp.Body.PageName)
 }
 
 func TestHandler_DeleteDashboardWidget_MapsRequest(t *testing.T) {

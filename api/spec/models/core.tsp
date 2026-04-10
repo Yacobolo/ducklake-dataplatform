@@ -1947,6 +1947,8 @@ model DashboardWidgetSource {
 model DashboardWidget {
   id?: string;
   dashboard_id?: string;
+  key?: string;
+  page_name?: string;
   name?: string;
   description?: string;
   source?: DashboardWidgetSource;
@@ -1975,6 +1977,7 @@ model ResolvedDashboardDetail {
 }
 
 model CreateDashboardRequest {
+  owner?: string;
   name: string;
   description?: string;
   folder_id?: string;
@@ -1984,6 +1987,7 @@ model CreateDashboardRequest {
 }
 
 model UpdateDashboardRequest {
+  owner?: string;
   name?: string;
   description?: string;
   folder_id?: string;
@@ -2016,6 +2020,8 @@ model FolderPath {
 }
 
 model CreateDashboardWidgetRequest {
+  key?: string;
+  page_name?: string;
   name: string;
   description?: string;
   source: DashboardWidgetSource;
@@ -2024,6 +2030,8 @@ model CreateDashboardWidgetRequest {
 }
 
 model UpdateDashboardWidgetRequest {
+  key?: string;
+  page_name?: string;
   name?: string;
   description?: string;
   source?: DashboardWidgetSource;

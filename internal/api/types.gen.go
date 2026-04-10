@@ -686,14 +686,17 @@ type CreateDashboardRequest struct {
 	Description         *string                 `json:"description,omitempty"`
 	FolderId            *string                 `json:"folder_id,omitempty"`
 	Name                string                  `json:"name"`
+	Owner               *string                 `json:"owner,omitempty"`
 	SemanticModelName   *string                 `json:"semantic_model_name,omitempty"`
 	SemanticProjectName *string                 `json:"semantic_project_name,omitempty"`
 }
 
 type CreateDashboardWidgetRequest struct {
 	Description *string               `json:"description,omitempty"`
+	Key         *string               `json:"key,omitempty"`
 	Layout      DashboardWidgetLayout `json:"layout"`
 	Name        string                `json:"name"`
+	PageName    *string               `json:"page_name,omitempty"`
 	Source      DashboardWidgetSource `json:"source"`
 	VisualSpec  *VisualSpec           `json:"visual_spec,omitempty"`
 }
@@ -1027,8 +1030,10 @@ type DashboardWidget struct {
 	DashboardId *string                `json:"dashboard_id,omitempty"`
 	Description *string                `json:"description,omitempty"`
 	Id          *string                `json:"id,omitempty"`
+	Key         *string                `json:"key,omitempty"`
 	Layout      *DashboardWidgetLayout `json:"layout,omitempty"`
 	Name        *string                `json:"name,omitempty"`
+	PageName    *string                `json:"page_name,omitempty"`
 	Source      *DashboardWidgetSource `json:"source,omitempty"`
 	UpdatedAt   *string                `json:"updated_at,omitempty"`
 	VisualSpec  *VisualSpec            `json:"visual_spec,omitempty"`
@@ -2772,14 +2777,17 @@ type UpdateDashboardRequest struct {
 	Description         *string                 `json:"description,omitempty"`
 	FolderId            *string                 `json:"folder_id,omitempty"`
 	Name                *string                 `json:"name,omitempty"`
+	Owner               *string                 `json:"owner,omitempty"`
 	SemanticModelName   *string                 `json:"semantic_model_name,omitempty"`
 	SemanticProjectName *string                 `json:"semantic_project_name,omitempty"`
 }
 
 type UpdateDashboardWidgetRequest struct {
 	Description *string                `json:"description,omitempty"`
+	Key         *string                `json:"key,omitempty"`
 	Layout      *DashboardWidgetLayout `json:"layout,omitempty"`
 	Name        *string                `json:"name,omitempty"`
+	PageName    *string                `json:"page_name,omitempty"`
 	Source      *DashboardWidgetSource `json:"source,omitempty"`
 	VisualSpec  *VisualSpec            `json:"visual_spec,omitempty"`
 }

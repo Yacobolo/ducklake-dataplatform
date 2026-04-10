@@ -177,10 +177,10 @@
     "VisualSpec": {
       "additionalProperties": false,
       "properties": {
-        "chartType": {
+        "chart_type": {
           "type": "string"
         },
-        "colorPalette": {
+        "color_palette": {
           "type": "string"
         },
         "encodings": {
@@ -192,7 +192,7 @@
         "legend": {
           "type": "boolean"
         },
-        "legendPosition": {
+        "legend_position": {
           "type": "string"
         },
         "stacked": {
@@ -206,11 +206,7 @@
         }
       },
       "required": [
-        "colorPalette",
-        "encodings",
-        "kind",
-        "subtitle",
-        "title"
+        "kind"
       ],
       "type": "object"
     }

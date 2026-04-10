@@ -45,6 +45,7 @@ var declarativeSupportMatrix = []declarativeSupportMatrixEntry{
 	{Kind: declarative.KindNameTeam, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Team strict read/export coverage and data product lifecycle tests"},
 	{Kind: declarative.KindNameDataProduct, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Data product declarative client tests with version deletion convergence"},
 	{Kind: declarative.KindNameNotebook, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "TestDeclarative_NotebookPublishRemovalConverges and notebook declarative client tests"},
+	{Kind: declarative.KindNameDashboard, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Dashboard declarative loader/validator/diff tests, declarative client reconciliation tests, and dashboard runtime state integration coverage"},
 	{Kind: declarative.KindNameAsset, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Asset declarative diff and client tests"},
 	{Kind: declarative.KindNameModel, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Model declarative integration and client tests"},
 	{Kind: declarative.KindNameSemanticModel, LoadValidate: true, ReadExport: true, Diff: true, Apply: true, ReplanClean: true, Coverage: "Semantic model declarative integration and client tests"},

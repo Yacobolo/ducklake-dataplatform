@@ -27,6 +27,7 @@ ORDER BY updated_at DESC;
 UPDATE dashboards
 SET name = ?,
     description = ?,
+    owner = ?,
     folder_id = ?,
     semantic_project_name = ?,
     semantic_model_name = ?,

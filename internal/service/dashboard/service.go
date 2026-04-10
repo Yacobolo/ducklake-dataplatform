@@ -99,6 +99,9 @@ type TablePageRequest struct {
 
 // CreateDashboard creates a new dashboard owned by the caller.
 func (s *Service) CreateDashboard(ctx context.Context, owner string, req domain.CreateDashboardRequest) (*domain.Dashboard, error) {
+	if strings.TrimSpace(req.Owner) != "" {
+		owner = strings.TrimSpace(req.Owner)
+	}
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -184,6 +187,16 @@ func (s *Service) UpdateDashboard(ctx context.Context, principal string, isAdmin
 	if current.Owner != principal && !isAdmin {
 		return nil, domain.ErrAccessDenied("only the dashboard owner or admin can update")
 	}
+	if req.Owner != nil {
+		owner := strings.TrimSpace(*req.Owner)
+		if owner == "" {
+			return nil, domain.ErrValidation("dashboard owner is required")
+		}
+		if owner != current.Owner && !isAdmin {
+			return nil, domain.ErrAccessDenied("only an admin can change dashboard owner")
+		}
+		req.Owner = &owner
+	}
 	if req.Compute != nil {
 		compute := req.Compute.Normalize()
 		if err := compute.Validate(); err != nil {
@@ -231,9 +244,13 @@ func (s *Service) CreateWidget(ctx context.Context, principal string, isAdmin bo
 	if err != nil {
 		return nil, err
 	}
+	filterOriginKey := strings.TrimSpace(req.FilterOriginKey)
+	if filterOriginKey == "" {
+		filterOriginKey = nextDashboardWidgetFilterOriginKey(req.Name, req.VisualSpec, existingWidgets)
+	}
 	item, err := s.widgets.Create(ctx, &domain.DashboardWidget{
 		DashboardID:     dashboardID,
-		FilterOriginKey: nextDashboardWidgetFilterOriginKey(req.Name, req.VisualSpec, existingWidgets),
+		FilterOriginKey: filterOriginKey,
 		PageName:        domain.NormalizeDashboardPageName(req.PageName),
 		Name:            req.Name,
 		Description:     req.Description,
@@ -327,6 +344,13 @@ func (s *Service) UpdateWidget(ctx context.Context, principal string, isAdmin bo
 		if err := req.Source.Validate(); err != nil {
 			return nil, err
 		}
+	}
+	if req.FilterOriginKey != nil {
+		key := strings.TrimSpace(*req.FilterOriginKey)
+		if err := domain.ValidateDashboardWidgetFilterOriginKey(key); err != nil {
+			return nil, err
+		}
+		req.FilterOriginKey = &key
 	}
 	if req.VisualSpec != nil {
 		if err := req.VisualSpec.Validate(); err != nil {
@@ -785,9 +809,9 @@ func dashboardComputeContext(ctx context.Context, dashboard *domain.Dashboard) c
 	}
 	policy := dashboard.Compute.Normalize()
 	req := domain.ComputeExecutionRequest{
-		Mode:         policy.Mode,
-		EndpointName: policy.EndpointName,
-		WorkloadType: domain.ComputeWorkloadInteractive,
+		Mode:          policy.Mode,
+		EndpointName:  policy.EndpointName,
+		WorkloadType:  domain.ComputeWorkloadInteractive,
 		FallbackLocal: policy.FallbackLocal,
 	}
 	if policy.Mode == domain.ComputeModeSharedEndpoint && policy.EndpointName != "" {

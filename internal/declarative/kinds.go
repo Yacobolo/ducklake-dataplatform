@@ -35,6 +35,7 @@ const (
 	KindAsset                                      // layer 8
 	KindModel                                      // layer 9
 	KindSemanticModel                              // layer 10
+	KindDashboard                                  // layer 11
 )
 
 // String returns a human-readable kebab-case name for the resource kind.
@@ -98,6 +99,8 @@ func (k ResourceKind) String() string {
 		return "model"
 	case KindSemanticModel:
 		return "semantic-model"
+	case KindDashboard:
+		return "dashboard"
 	default:
 		return "unknown"
 	}
@@ -129,13 +132,15 @@ func (k ResourceKind) Layer() int {
 		return 9
 	case KindSemanticModel:
 		return 10
+	case KindDashboard:
+		return 11
 	default:
 		return 99
 	}
 }
 
 // MaxLayer is the highest dependency layer.
-const MaxLayer = 10
+const MaxLayer = 11
 
 // Operation represents a planned change type.
 type Operation int
@@ -192,6 +197,7 @@ const (
 	KindNameModel                  = "Model"
 	KindNameSemanticModel          = "SemanticModel"
 	KindNameMacro                  = "Macro"
+	KindNameDashboard              = "Dashboard"
 )
 
 // SupportedAPIVersion is the current API version for YAML documents.

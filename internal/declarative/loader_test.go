@@ -216,6 +216,58 @@ bindings:
 	assert.Equal(t, "reader", state.Bindings[0].Preset)
 }
 
+func TestLoader_Dashboards(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "dashboards"), 0o755))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "dashboards", "revenue-overview.yaml"), []byte(`apiVersion: duck/v1
+kind: Dashboard
+metadata:
+  name: revenue-overview
+spec:
+  owner: alice
+  description: Revenue overview
+  semantic_project_name: analytics
+  semantic_model_name: revenue
+  compute:
+    mode: SHARED_ENDPOINT
+    endpoint_name: analytics-xl
+    fallback_local: true
+  widgets:
+    - key: chart-revenue
+      page_name: Geography
+      name: Revenue by Borough
+      source:
+        kind: semantic_query
+        semantic_query:
+          metrics: [revenue]
+          dimensions: [borough]
+      visual_spec:
+        kind: chart
+        chart_type: bar
+      layout:
+        x: 0
+        y: 0
+        w: 6
+        h: 4
+`), 0o644))
+
+	state, err := LoadDirectory(dir)
+	require.NoError(t, err)
+	require.Len(t, state.Dashboards, 1)
+
+	dashboard := state.Dashboards[0]
+	assert.Equal(t, "revenue-overview", dashboard.Name)
+	assert.Equal(t, "alice", dashboard.Spec.Owner)
+	require.NotNil(t, dashboard.Spec.Compute)
+	assert.Equal(t, "SHARED_ENDPOINT", dashboard.Spec.Compute.Mode)
+	require.Len(t, dashboard.Spec.Widgets, 1)
+	assert.Equal(t, "chart-revenue", dashboard.Spec.Widgets[0].Key)
+	assert.Equal(t, "Geography", dashboard.Spec.Widgets[0].PageName)
+}
+
 func TestLoader_BadYAML(t *testing.T) {
 	dir := filepath.Join(testdataDir(t), "invalid", "bad-yaml")
 	_, err := LoadDirectory(dir)

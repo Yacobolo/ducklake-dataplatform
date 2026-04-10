@@ -18533,6 +18533,8 @@ components:
       required:
         - name
       properties:
+        owner:
+          type: string
         name:
           type: string
         description:
@@ -18552,6 +18554,10 @@ components:
         - source
         - layout
       properties:
+        key:
+          type: string
+        page_name:
+          type: string
         name:
           type: string
         description:
@@ -19284,6 +19290,10 @@ components:
         id:
           type: string
         dashboard_id:
+          type: string
+        key:
+          type: string
+        page_name:
           type: string
         name:
           type: string
@@ -22763,6 +22773,8 @@ components:
     UpdateDashboardRequest:
       type: object
       properties:
+        owner:
+          type: string
         name:
           type: string
         description:
@@ -22778,6 +22790,10 @@ components:
     UpdateDashboardWidgetRequest:
       type: object
       properties:
+        key:
+          type: string
+        page_name:
+          type: string
         name:
           type: string
         description:

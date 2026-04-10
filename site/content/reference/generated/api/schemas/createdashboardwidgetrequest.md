@@ -10,8 +10,10 @@
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `description` | `string` | `false` | - |
+| `key` | `string` | `false` | - |
 | `layout` | `DashboardWidgetLayout` | `true` | - |
 | `name` | `string` | `true` | - |
+| `page_name` | `string` | `false` | - |
 | `source` | `DashboardWidgetSource` | `true` | - |
 | `visual_spec` | `VisualSpec` | `false` | - |
 

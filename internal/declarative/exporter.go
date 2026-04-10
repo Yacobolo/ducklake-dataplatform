@@ -74,11 +74,31 @@ func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
 		return err
 	}
 
+	// Dashboards.
+	if err := exportDashboards(dir, state); err != nil {
+		return err
+	}
+
 	// Macros.
 	if err := exportMacros(dir, state); err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func exportDashboards(dir string, state *DesiredState) error {
+	for _, dashboard := range state.Dashboards {
+		doc := DashboardDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameDashboard,
+			Metadata:   ObjectMeta{Name: dashboard.Name},
+			Spec:       dashboard.Spec,
+		}
+		if err := writeYAMLFile(filepath.Join(dir, "dashboards", dashboard.Name+".yaml"), doc); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

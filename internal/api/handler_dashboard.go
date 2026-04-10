@@ -54,7 +54,18 @@ func (h *APIHandler) ListDashboards(ctx context.Context, req GenListDashboardsRe
 // CreateDashboard implements the endpoint for creating dashboards.
 func (h *APIHandler) CreateDashboard(ctx context.Context, req GenCreateDashboardRequest) (GenCreateDashboardResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
+	owner := cp.Name
+	if req.Body.Owner != nil {
+		owner = strings.TrimSpace(*req.Body.Owner)
+		if owner == "" {
+			return CreateDashboard400JSONResponse{BadRequestJSONResponse{Body: Error{Code: 400, Message: "dashboard owner is required"}, Headers: BadRequestResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+		if owner != cp.Name && !cp.IsAdmin {
+			return CreateDashboard403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: "only an admin can assign dashboard owner"}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+	}
 	item, err := h.dashboards.CreateDashboard(ctx, cp.Name, domain.CreateDashboardRequest{
+		Owner:               owner,
 		Name:                req.Body.Name,
 		Description:         valOrEmpty(req.Body.Description),
 		FolderID:            req.Body.FolderId,
@@ -179,6 +190,7 @@ func (h *APIHandler) GetRenderedDashboard(ctx context.Context, req GenGetRendere
 func (h *APIHandler) UpdateDashboard(ctx context.Context, req GenUpdateDashboardRequest) (GenUpdateDashboardResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	item, err := h.dashboards.UpdateDashboard(ctx, cp.Name, cp.IsAdmin, req.DashboardId, domain.UpdateDashboardRequest{
+		Owner:               req.Body.Owner,
 		Name:                req.Body.Name,
 		Description:         req.Body.Description,
 		FolderID:            req.Body.FolderId,
@@ -224,11 +236,13 @@ func (h *APIHandler) DeleteDashboard(ctx context.Context, req GenDeleteDashboard
 func (h *APIHandler) CreateDashboardWidget(ctx context.Context, req GenCreateDashboardWidgetRequest) (GenCreateDashboardWidgetResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	item, err := h.dashboards.CreateWidget(ctx, cp.Name, cp.IsAdmin, req.DashboardId, domain.CreateDashboardWidgetRequest{
-		Name:        req.Body.Name,
-		Description: valOrEmpty(req.Body.Description),
-		Source:      dashboardWidgetSourceFromAPI(&req.Body.Source),
-		VisualSpec:  visualSpecFromAPI(req.Body.VisualSpec),
-		Layout:      dashboardWidgetLayoutFromAPI(&req.Body.Layout),
+		FilterOriginKey: valOrEmpty(req.Body.Key),
+		PageName:        valOrEmpty(req.Body.PageName),
+		Name:            req.Body.Name,
+		Description:     valOrEmpty(req.Body.Description),
+		Source:          dashboardWidgetSourceFromAPI(&req.Body.Source),
+		VisualSpec:      visualSpecFromAPI(req.Body.VisualSpec),
+		Layout:          dashboardWidgetLayoutFromAPI(&req.Body.Layout),
 	})
 	if err != nil {
 		switch {
@@ -252,9 +266,11 @@ func (h *APIHandler) CreateDashboardWidget(ctx context.Context, req GenCreateDas
 func (h *APIHandler) UpdateDashboardWidget(ctx context.Context, req GenUpdateDashboardWidgetRequest) (GenUpdateDashboardWidgetResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
 	domReq := domain.UpdateDashboardWidgetRequest{
-		Name:        req.Body.Name,
-		Description: req.Body.Description,
-		VisualSpec:  visualSpecFromAPI(req.Body.VisualSpec),
+		FilterOriginKey: req.Body.Key,
+		PageName:        req.Body.PageName,
+		Name:            req.Body.Name,
+		Description:     req.Body.Description,
+		VisualSpec:      visualSpecFromAPI(req.Body.VisualSpec),
 	}
 	if req.Body.Source != nil {
 		source := dashboardWidgetSourceFromAPI(req.Body.Source)
@@ -319,8 +335,8 @@ func dashboardComputePolicyFromAPI(policy *DashboardComputePolicy) *domain.Dashb
 		return nil
 	}
 	return &domain.DashboardComputePolicy{
-		Mode:         valOrEmpty(policy.Mode),
-		EndpointName: valOrEmpty(policy.EndpointName),
+		Mode:          valOrEmpty(policy.Mode),
+		EndpointName:  valOrEmpty(policy.EndpointName),
 		FallbackLocal: policy.FallbackLocal != nil && *policy.FallbackLocal,
 	}
 }
@@ -369,6 +385,8 @@ func dashboardWidgetToAPI(item domain.DashboardWidget) DashboardWidget {
 	return DashboardWidget{
 		Id:          optStr(item.ID),
 		DashboardId: optStr(item.DashboardID),
+		Key:         optStr(item.FilterOriginKey),
+		PageName:    optStr(item.PageName),
 		Name:        optStr(item.Name),
 		Description: optStr(item.Description),
 		Source:      ptrDashboardWidgetSource(dashboardWidgetSourceToAPI(item.Source)),
@@ -469,7 +487,7 @@ func dashboardWidgetLayoutToAPI(layout domain.DashboardWidgetLayout) DashboardWi
 	}
 }
 
-func ptrDashboard(v Dashboard) *Dashboard { return &v }
+func ptrDashboard(v Dashboard) *Dashboard                                        { return &v }
 func ptrDashboardComputePolicy(v DashboardComputePolicy) *DashboardComputePolicy { return &v }
 
 func resolvedDashboardWidgetToAPI(item dashboardsvc.ResolvedWidget) ResolvedDashboardWidget {

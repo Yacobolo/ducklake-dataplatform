@@ -12,8 +12,10 @@
 | `dashboard_id` | `string` | `false` | - |
 | `description` | `string` | `false` | - |
 | `id` | `string` | `false` | - |
+| `key` | `string` | `false` | - |
 | `layout` | `DashboardWidgetLayout` | `false` | - |
 | `name` | `string` | `false` | - |
+| `page_name` | `string` | `false` | - |
 | `source` | `DashboardWidgetSource` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 | `visual_spec` | `VisualSpec` | `false` | - |

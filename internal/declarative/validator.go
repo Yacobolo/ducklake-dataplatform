@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"duck-demo/internal/domain"
 	"duck-demo/internal/duckdbsql"
 )
 
@@ -305,8 +306,17 @@ func Validate(state *DesiredState) []ValidationError {
 	}
 
 	notebookNames := make(map[string]bool, len(state.Notebooks))
+	notebookCellNames := make(map[string]map[string]bool, len(state.Notebooks))
 	for _, n := range state.Notebooks {
 		notebookNames[n.Name] = true
+		cellNames := make(map[string]bool, len(n.Spec.Cells))
+		for _, cell := range n.Spec.Cells {
+			cellName := strings.TrimSpace(cell.Name)
+			if cellName != "" {
+				cellNames[cellName] = true
+			}
+		}
+		notebookCellNames[n.Name] = cellNames
 	}
 
 	tagKeys := make(map[string]bool, len(state.Tags))
@@ -412,6 +422,9 @@ func Validate(state *DesiredState) []ValidationError {
 
 	// 25. Validate semantic models.
 	validateSemanticModels(state.SemanticModels, &errs)
+
+	// 26. Validate dashboards.
+	validateDashboards(state.Dashboards, notebookNames, notebookCellNames, semanticModelKeys, &errs)
 
 	return errs
 }
@@ -2199,6 +2212,128 @@ func validateSemanticModels(models []SemanticModelResource, errs *[]ValidationEr
 				seenPreAggs[p.Name] = true
 			}
 		}
+	}
+}
+
+func validateDashboards(
+	dashboards []DashboardResource,
+	notebookNames map[string]bool,
+	notebookCellNames map[string]map[string]bool,
+	semanticModelKeys map[string]bool,
+	errs *[]ValidationError,
+) {
+	seen := make(map[string]bool, len(dashboards))
+	for i, dashboard := range dashboards {
+		path := fmt.Sprintf("dashboard[%d]", i)
+		if dashboard.Name != "" {
+			path = fmt.Sprintf("dashboard[%s]", dashboard.Name)
+		}
+
+		if strings.TrimSpace(dashboard.Name) == "" {
+			addErr(errs, path, "name is required")
+			continue
+		}
+		if seen[dashboard.Name] {
+			addErr(errs, path, "duplicate dashboard name %q", dashboard.Name)
+		}
+		seen[dashboard.Name] = true
+
+		if strings.TrimSpace(dashboard.Spec.Owner) == "" {
+			addErr(errs, path, "owner is required")
+		}
+		if err := domain.ValidateDashboardSemanticBinding(dashboard.Spec.SemanticProjectName, dashboard.Spec.SemanticModelName); err != nil {
+			addErr(errs, path, "%s", err.Error())
+		}
+		if dashboard.Spec.Compute != nil {
+			if err := dashboard.Spec.Compute.Validate(); err != nil {
+				addErr(errs, path+".compute", "%s", err.Error())
+			}
+		}
+
+		widgetKeys := make(map[string]bool, len(dashboard.Spec.Widgets))
+		for j, widget := range dashboard.Spec.Widgets {
+			wpath := fmt.Sprintf("%s.widgets[%d]", path, j)
+			if widget.Key != "" {
+				wpath = fmt.Sprintf("%s.widgets[%s]", path, widget.Key)
+			}
+
+			if widgetKeys[widget.Key] {
+				addErr(errs, wpath+".key", "duplicate widget key %q", widget.Key)
+			} else if strings.TrimSpace(widget.Key) != "" {
+				widgetKeys[widget.Key] = true
+			}
+			if err := domain.ValidateDashboardWidgetFilterOriginKey(widget.Key); err != nil {
+				addErr(errs, wpath+".key", "%s", err.Error())
+			}
+			if strings.TrimSpace(widget.Name) == "" {
+				addErr(errs, wpath, "name is required")
+			}
+			if widget.VisualSpec != nil {
+				if err := widget.VisualSpec.Validate(); err != nil {
+					addErr(errs, wpath+".visual_spec", "%s", err.Error())
+				}
+			}
+			if err := widget.Layout.Validate(); err != nil {
+				addErr(errs, wpath+".layout", "%s", err.Error())
+			}
+			validateDashboardWidgetSource(wpath+".source", widget.Source, dashboard.Spec, notebookNames, notebookCellNames, semanticModelKeys, errs)
+		}
+	}
+}
+
+func validateDashboardWidgetSource(
+	path string,
+	source DashboardWidgetSourceSpec,
+	dashboard DashboardSpec,
+	notebookNames map[string]bool,
+	notebookCellNames map[string]map[string]bool,
+	semanticModelKeys map[string]bool,
+	errs *[]ValidationError,
+) {
+	switch source.Kind {
+	case domain.DashboardWidgetSourceSQLQuery:
+		if source.SQLQuery == nil || strings.TrimSpace(source.SQLQuery.SQL) == "" {
+			addErr(errs, path, "sql_query source requires sql")
+		}
+	case domain.DashboardWidgetSourceNotebookCell:
+		if source.NotebookCell == nil {
+			addErr(errs, path, "notebook_cell source is required")
+			return
+		}
+		notebookName := strings.TrimSpace(source.NotebookCell.NotebookName)
+		cellName := strings.TrimSpace(source.NotebookCell.CellName)
+		if notebookName == "" || cellName == "" {
+			addErr(errs, path, "notebook_cell source requires notebook_name and cell_name")
+			return
+		}
+		if !notebookNames[notebookName] {
+			addErr(errs, path+".notebook_cell", "notebook_cell references unknown notebook %q", notebookName)
+			return
+		}
+		if !notebookCellNames[notebookName][cellName] {
+			addErr(errs, path+".notebook_cell", "notebook_cell references unknown cell %q in notebook %q", cellName, notebookName)
+		}
+	case domain.DashboardWidgetSourceSemanticQuery:
+		if source.SemanticQuery == nil {
+			addErr(errs, path, "semantic_query source is required")
+			return
+		}
+		modelName := strings.TrimSpace(source.SemanticQuery.SemanticModelName)
+		if modelName == "" {
+			modelName = strings.TrimSpace(dashboard.SemanticModelName)
+		}
+		if modelName == "" {
+			addErr(errs, path+".semantic_query", "semantic_query source requires semantic_model_name or dashboard semantic binding")
+			return
+		}
+		if !semanticModelKeys[modelName] {
+			addErr(errs, path+".semantic_query", "semantic_query references unknown semantic model %q", modelName)
+		}
+		if len(source.SemanticQuery.Metrics) == 0 {
+			addErr(errs, path+".semantic_query", "semantic_query source requires at least one metric")
+		}
+	default:
+		addErr(errs, path, "widget source kind must be sql_query, notebook_cell, or semantic_query")
 	}
 }
 

@@ -9,8 +9,10 @@
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `description` | `string` | `false` | - |
+| `key` | `string` | `false` | - |
 | `layout` | `DashboardWidgetLayoutUpdate` | `false` | - |
 | `name` | `string` | `false` | - |
+| `page_name` | `string` | `false` | - |
 | `source` | `DashboardWidgetSourceUpdate` | `false` | - |
 | `visual_spec` | `VisualSpecUpdate` | `false` | - |
 

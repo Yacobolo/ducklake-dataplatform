@@ -3,6 +3,7 @@ package domain
 import (
 	"strings"
 	"time"
+	"unicode"
 )
 
 // DefaultDashboardPageName is used when a widget or request does not specify a page.
@@ -24,9 +25,9 @@ type Dashboard struct {
 
 // DashboardComputePolicy defines how dashboard reads are routed.
 type DashboardComputePolicy struct {
-	Mode         string `json:"mode,omitempty"`
-	EndpointName string `json:"endpoint_name,omitempty"`
-	FallbackLocal bool   `json:"fallback_local,omitempty"`
+	Mode          string `json:"mode,omitempty" yaml:"mode,omitempty"`
+	EndpointName  string `json:"endpoint_name,omitempty" yaml:"endpoint_name,omitempty"`
+	FallbackLocal bool   `json:"fallback_local,omitempty" yaml:"fallback_local,omitempty"`
 }
 
 // DashboardWidgetSourceKind defines where a widget gets its data.
@@ -43,17 +44,17 @@ const (
 
 // DashboardWidgetLayout defines fixed-grid widget positioning.
 type DashboardWidgetLayout struct {
-	X int `json:"x"`
-	Y int `json:"y"`
-	W int `json:"w"`
-	H int `json:"h"`
+	X int `json:"x" yaml:"x"`
+	Y int `json:"y" yaml:"y"`
+	W int `json:"w" yaml:"w"`
+	H int `json:"h" yaml:"h"`
 }
 
 // DashboardSQLQuerySource represents a direct SQL widget source.
 type DashboardSQLQuerySource struct {
-	SQL     string  `json:"sql"`
-	Catalog *string `json:"catalog,omitempty"`
-	Schema  *string `json:"schema,omitempty"`
+	SQL     string  `json:"sql" yaml:"sql"`
+	Catalog *string `json:"catalog,omitempty" yaml:"catalog,omitempty"`
+	Schema  *string `json:"schema,omitempty" yaml:"schema,omitempty"`
 }
 
 // DashboardNotebookCellSource references a notebook cell's cached output.
@@ -101,6 +102,7 @@ type DashboardWidget struct {
 
 // CreateDashboardRequest creates a dashboard.
 type CreateDashboardRequest struct {
+	Owner               string
 	Name                string
 	Description         string
 	FolderID            *string
@@ -111,6 +113,7 @@ type CreateDashboardRequest struct {
 
 // UpdateDashboardRequest applies partial dashboard updates.
 type UpdateDashboardRequest struct {
+	Owner               *string
 	Name                *string
 	Description         *string
 	FolderID            *string
@@ -121,28 +124,33 @@ type UpdateDashboardRequest struct {
 
 // CreateDashboardWidgetRequest creates a dashboard widget.
 type CreateDashboardWidgetRequest struct {
-	PageName    string
-	Name        string
-	Description string
-	Source      DashboardWidgetSource
-	VisualSpec  *VisualSpec
-	Layout      DashboardWidgetLayout
+	FilterOriginKey string
+	PageName        string
+	Name            string
+	Description     string
+	Source          DashboardWidgetSource
+	VisualSpec      *VisualSpec
+	Layout          DashboardWidgetLayout
 }
 
 // UpdateDashboardWidgetRequest applies partial widget updates.
 type UpdateDashboardWidgetRequest struct {
-	PageName    *string
-	Name        *string
-	Description *string
-	Source      *DashboardWidgetSource
-	VisualSpec  *VisualSpec
-	Layout      *DashboardWidgetLayout
+	FilterOriginKey *string
+	PageName        *string
+	Name            *string
+	Description     *string
+	Source          *DashboardWidgetSource
+	VisualSpec      *VisualSpec
+	Layout          *DashboardWidgetLayout
 }
 
 // Validate validates dashboard creation.
 func (r *CreateDashboardRequest) Validate() error {
 	if strings.TrimSpace(r.Name) == "" {
 		return ErrValidation("dashboard name is required")
+	}
+	if owner := strings.TrimSpace(r.Owner); owner != "" {
+		r.Owner = owner
 	}
 	if err := ValidateDashboardSemanticBinding(r.SemanticProjectName, r.SemanticModelName); err != nil {
 		return err
@@ -166,8 +174,8 @@ func (p DashboardComputePolicy) Normalize() DashboardComputePolicy {
 		req.Mode = ComputeModeAuto
 	}
 	return DashboardComputePolicy{
-		Mode:         req.Mode,
-		EndpointName: req.EndpointName,
+		Mode:          req.Mode,
+		EndpointName:  req.EndpointName,
 		FallbackLocal: p.FallbackLocal,
 	}
 }
@@ -215,6 +223,11 @@ func (r *CreateDashboardWidgetRequest) Validate() error {
 	if strings.TrimSpace(r.Name) == "" {
 		return ErrValidation("widget name is required")
 	}
+	if strings.TrimSpace(r.FilterOriginKey) != "" {
+		if err := ValidateDashboardWidgetFilterOriginKey(r.FilterOriginKey); err != nil {
+			return err
+		}
+	}
 	if err := r.Source.Validate(); err != nil {
 		return err
 	}
@@ -233,6 +246,22 @@ func NormalizeDashboardPageName(name string) string {
 		return DefaultDashboardPageName
 	}
 	return name
+}
+
+// ValidateDashboardWidgetFilterOriginKey validates the stable widget key used for interaction routing.
+func ValidateDashboardWidgetFilterOriginKey(key string) error {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return ErrValidation("widget key is required")
+	}
+	for _, r := range key {
+		switch {
+		case unicode.IsLower(r), unicode.IsDigit(r), r == '-':
+		default:
+			return ErrValidation("widget key must contain only lowercase letters, digits, and hyphens")
+		}
+	}
+	return nil
 }
 
 // Validate validates the widget layout.
