@@ -114,7 +114,7 @@ func NewHandler(
 	}
 }
 
-// SetNotebookFolders configures the optional notebook folder service for folder endpoints.
+// SetNotebookFolders configures the optional folder service for folder endpoints.
 func (h *APIHandler) SetNotebookFolders(service notebookFolderService) {
 	h.notebookFolders = service
 }

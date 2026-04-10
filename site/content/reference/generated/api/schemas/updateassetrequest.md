@@ -8,7 +8,7 @@
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `asset_type` | `string` | `false` | - |
+| `asset_type` | `AssetType` | `false` | - |
 | `auto_materialize_policy` | `AssetAutoMaterializePolicy` | `false` | - |
 | `checks` | `array[AssetCheckInput]` | `false` | - |
 | `description` | `string` | `false` | - |

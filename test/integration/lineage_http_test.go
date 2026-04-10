@@ -224,7 +224,7 @@ func TestHTTP_DeleteLineageEdge(t *testing.T) {
 	}
 }
 
-// TestHTTP_PurgeLineage tests POST /v1/lineage/purge.
+// TestHTTP_PurgeLineage tests POST /v1/lineage/purges.
 func TestHTTP_PurgeLineage(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{})
 
@@ -261,7 +261,7 @@ func TestHTTP_PurgeLineage(t *testing.T) {
 				"older_than_days": 30,
 			}
 			resp := doRequest(t, "POST",
-				env.Server.URL+"/v1/lineage/purge",
+				env.Server.URL+"/v1/lineage/purges",
 				env.Keys.Admin, body)
 			require.Equal(t, 200, resp.StatusCode)
 

@@ -2,6 +2,7 @@ package apilint
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/daveshanley/vacuum/model"
@@ -11,18 +12,22 @@ import (
 // customFunctions returns the map of custom vacuum rule functions.
 func customFunctions() map[string]model.RuleFunction {
 	return map[string]model.RuleFunction{
-		"checkSchemaRef":             &fnCheckSchemaRef{},
-		"checkPaginationParams":      &fnCheckPaginationParams{},
-		"checkPaginatedSchema":       &fnCheckPaginatedSchema{},
-		"checkPostCreateStatus":      &fnCheckPostCreateStatus{},
-		"checkMutatingOps403":        &fnCheckMutatingOps403{},
-		"checkGetResource404":        &fnCheckGetResource404{},
-		"checkErrorSchemaRef":        &fnCheckErrorSchemaRef{},
-		"checkDeleteReturns204":      &fnCheckDeleteReturns204{},
-		"checkPaginationSchemaMatch": &fnCheckPaginationSchemaMatch{},
-		"checkDiscriminatorRequired": &fnCheckDiscriminatorRequired{},
-		"checkAuthzMetadataPresent":  &fnCheckAuthzMetadataPresent{},
-		"checkAuthzMetadataShape":    &fnCheckAuthzMetadataShape{},
+		"checkSchemaRef":              &fnCheckSchemaRef{},
+		"checkPaginationParams":       &fnCheckPaginationParams{},
+		"checkPaginatedSchema":        &fnCheckPaginatedSchema{},
+		"checkPostCreateStatus":       &fnCheckPostCreateStatus{},
+		"checkMutatingOps403":         &fnCheckMutatingOps403{},
+		"checkGetResource404":         &fnCheckGetResource404{},
+		"checkErrorSchemaRef":         &fnCheckErrorSchemaRef{},
+		"checkDeleteReturns204":       &fnCheckDeleteReturns204{},
+		"checkPaginationSchemaMatch":  &fnCheckPaginationSchemaMatch{},
+		"checkDiscriminatorRequired":  &fnCheckDiscriminatorRequired{},
+		"checkAuthzMetadataPresent":   &fnCheckAuthzMetadataPresent{},
+		"checkAuthzMetadataShape":     &fnCheckAuthzMetadataShape{},
+		"checkNoColonActionPaths":     &fnCheckNoColonActionPaths{},
+		"checkNoVerbSuffixPaths":      &fnCheckNoVerbSuffixPaths{},
+		"checkSnakeCaseWireNames":     &fnCheckSnakeCaseWireNames{},
+		"checkMixedScopedCollections": &fnCheckMixedScopedCollections{},
 	}
 }
 
@@ -91,6 +96,34 @@ func rootNode(nodes []*yaml.Node) *yaml.Node {
 	return n
 }
 
+var snakeCaseNamePattern = regexp.MustCompile(`^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$`)
+
+func isPathParamSegment(segment string) bool {
+	return strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}")
+}
+
+func isSnakeCaseName(name string) bool {
+	return snakeCaseNamePattern.MatchString(name)
+}
+
+func pathSegments(path string) []string {
+	trimmed := strings.Trim(path, "/")
+	if trimmed == "" {
+		return nil
+	}
+	return strings.Split(trimmed, "/")
+}
+
+func lastLiteralSegment(path string) string {
+	segments := pathSegments(path)
+	for i := len(segments) - 1; i >= 0; i-- {
+		if !isPathParamSegment(segments[i]) {
+			return segments[i]
+		}
+	}
+	return ""
+}
+
 func makeResult(msg, path, ruleID string, node *yaml.Node, ctx model.RuleFunctionContext) model.RuleFunctionResult {
 	return model.RuleFunctionResult{
 		Message:   msg,
@@ -99,6 +132,72 @@ func makeResult(msg, path, ruleID string, node *yaml.Node, ctx model.RuleFunctio
 		StartNode: node,
 		EndNode:   node,
 		Rule:      ctx.Rule,
+	}
+}
+
+func addParameterCasingViolations(results *[]model.RuleFunctionResult, params *yaml.Node, path, method string, ctx model.RuleFunctionContext) {
+	if params == nil || params.Kind != yaml.SequenceNode {
+		return
+	}
+	for _, p := range params.Content {
+		if p.Kind != yaml.MappingNode {
+			continue
+		}
+		inNode := yGet(p, "in")
+		if inNode == nil {
+			continue
+		}
+		if inNode.Value != "query" && inNode.Value != "header" && inNode.Value != "cookie" {
+			continue
+		}
+		nameNode := yGet(p, "name")
+		if nameNode == nil || isSnakeCaseName(nameNode.Value) {
+			continue
+		}
+		*results = append(*results, makeResult(
+			fmt.Sprintf("%s parameter %q on %s %s should use snake_case", inNode.Value, nameNode.Value, strings.ToUpper(method), path),
+			fmt.Sprintf("$.paths.%s.%s.parameters", path, method),
+			"check-snake-case-wire-names", nameNode, ctx))
+	}
+}
+
+func walkSchemaProperties(schema *yaml.Node, schemaPath string, ctx model.RuleFunctionContext, results *[]model.RuleFunctionResult) {
+	if schema == nil || schema.Kind != yaml.MappingNode {
+		return
+	}
+	if yGet(schema, "$ref") != nil {
+		return
+	}
+
+	properties := yGet(schema, "properties")
+	if properties != nil && properties.Kind == yaml.MappingNode {
+		for i := 0; i < len(properties.Content)-1; i += 2 {
+			propNameNode := properties.Content[i]
+			propSchemaNode := properties.Content[i+1]
+			if !isSnakeCaseName(propNameNode.Value) {
+				*results = append(*results, makeResult(
+					fmt.Sprintf("schema property %q should use snake_case", propNameNode.Value),
+					schemaPath,
+					"check-snake-case-wire-names", propNameNode, ctx))
+			}
+			walkSchemaProperties(propSchemaNode, schemaPath, ctx, results)
+		}
+	}
+
+	if items := yGet(schema, "items"); items != nil {
+		walkSchemaProperties(items, schemaPath, ctx, results)
+	}
+	if additionalProperties := yGet(schema, "additionalProperties"); additionalProperties != nil {
+		walkSchemaProperties(additionalProperties, schemaPath, ctx, results)
+	}
+	for _, combinator := range []string{"allOf", "anyOf", "oneOf"} {
+		entries := yGet(schema, combinator)
+		if entries == nil || entries.Kind != yaml.SequenceNode {
+			continue
+		}
+		for _, entry := range entries.Content {
+			walkSchemaProperties(entry, schemaPath, ctx, results)
+		}
 	}
 }
 
@@ -411,6 +510,178 @@ func (f *fnCheckPostCreateStatus) RunRule(nodes []*yaml.Node, ctx model.RuleFunc
 				"check-post-create-status", responses, ctx))
 		}
 	})
+	return results
+}
+
+// ================================================================
+// OAL013 — normalized route shapes
+// ================================================================
+
+type fnCheckNoColonActionPaths struct{}
+
+func (f *fnCheckNoColonActionPaths) GetSchema() model.RuleFunctionSchema {
+	return model.RuleFunctionSchema{Name: "checkNoColonActionPaths"}
+}
+func (f *fnCheckNoColonActionPaths) GetCategory() string { return model.CategoryOperations }
+
+func (f *fnCheckNoColonActionPaths) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
+	root := rootNode(nodes)
+	if root == nil {
+		return nil
+	}
+
+	var results []model.RuleFunctionResult
+	forEachOp(root, func(path, method string, op *yaml.Node) {
+		if !strings.Contains(path, ":") {
+			return
+		}
+		results = append(results, makeResult(
+			fmt.Sprintf("operation %q uses a colon-action path; expose a resource or command collection instead", yOpID(op)),
+			fmt.Sprintf("$.paths.%s.%s", path, method),
+			"check-no-colon-action-paths", op, ctx))
+	})
+	return results
+}
+
+type fnCheckNoVerbSuffixPaths struct{}
+
+func (f *fnCheckNoVerbSuffixPaths) GetSchema() model.RuleFunctionSchema {
+	return model.RuleFunctionSchema{Name: "checkNoVerbSuffixPaths"}
+}
+func (f *fnCheckNoVerbSuffixPaths) GetCategory() string { return model.CategoryOperations }
+
+var disallowedRouteVerbSegments = map[string]bool{
+	"cancel":        true,
+	"deprecate":     true,
+	"duplicate":     true,
+	"execute":       true,
+	"explore":       true,
+	"impact":        true,
+	"info":          true,
+	"materialize":   true,
+	"move":          true,
+	"publish":       true,
+	"reconcile":     true,
+	"retire":        true,
+	"run-all":       true,
+	"run-all-async": true,
+	"sync":          true,
+}
+
+func (f *fnCheckNoVerbSuffixPaths) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
+	root := rootNode(nodes)
+	if root == nil {
+		return nil
+	}
+
+	var results []model.RuleFunctionResult
+	forEachOp(root, func(path, method string, op *yaml.Node) {
+		for _, segment := range pathSegments(path) {
+			if isPathParamSegment(segment) || !disallowedRouteVerbSegments[segment] {
+				continue
+			}
+			results = append(results, makeResult(
+				fmt.Sprintf("operation %q uses verb-like path segment %q; prefer a resource path or noun command collection", yOpID(op), segment),
+				fmt.Sprintf("$.paths.%s.%s", path, method),
+				"check-no-verb-suffix-paths", op, ctx))
+			return
+		}
+	})
+	return results
+}
+
+type fnCheckSnakeCaseWireNames struct{}
+
+func (f *fnCheckSnakeCaseWireNames) GetSchema() model.RuleFunctionSchema {
+	return model.RuleFunctionSchema{Name: "checkSnakeCaseWireNames"}
+}
+func (f *fnCheckSnakeCaseWireNames) GetCategory() string { return model.CategorySchemas }
+
+func (f *fnCheckSnakeCaseWireNames) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
+	root := rootNode(nodes)
+	if root == nil {
+		return nil
+	}
+
+	var results []model.RuleFunctionResult
+	pathsNode := yGet(root, "paths")
+	forEachOp(root, func(path, method string, op *yaml.Node) {
+		addParameterCasingViolations(&results, yGet(op, "parameters"), path, method, ctx)
+		if pathsNode == nil {
+			return
+		}
+		pathItem := yGet(pathsNode, path)
+		if pathItem != nil {
+			addParameterCasingViolations(&results, yGet(pathItem, "parameters"), path, method, ctx)
+		}
+	})
+
+	schemas := yGet(yGet(root, "components"), "schemas")
+	if schemas == nil || schemas.Kind != yaml.MappingNode {
+		return results
+	}
+	for i := 0; i < len(schemas.Content)-1; i += 2 {
+		schemaNameNode := schemas.Content[i]
+		schemaNode := schemas.Content[i+1]
+		walkSchemaProperties(schemaNode, fmt.Sprintf("$.components.schemas.%s", schemaNameNode.Value), ctx, &results)
+	}
+	return results
+}
+
+type fnCheckMixedScopedCollections struct{}
+
+func (f *fnCheckMixedScopedCollections) GetSchema() model.RuleFunctionSchema {
+	return model.RuleFunctionSchema{Name: "checkMixedScopedCollections"}
+}
+func (f *fnCheckMixedScopedCollections) GetCategory() string { return model.CategoryOperations }
+
+type scopedCollectionPath struct {
+	path string
+	node *yaml.Node
+}
+
+func (f *fnCheckMixedScopedCollections) RunRule(nodes []*yaml.Node, ctx model.RuleFunctionContext) []model.RuleFunctionResult {
+	root := rootNode(nodes)
+	if root == nil {
+		return nil
+	}
+
+	topLevel := map[string]scopedCollectionPath{}
+	nested := map[string][]scopedCollectionPath{}
+	forEachOp(root, func(path, _ string, op *yaml.Node) {
+		segments := pathSegments(path)
+		if len(segments) == 0 {
+			return
+		}
+		if isPathParamSegment(segments[len(segments)-1]) {
+			return
+		}
+		collection := lastLiteralSegment(path)
+		if collection == "" {
+			return
+		}
+		if len(segments) == 1 {
+			if _, exists := topLevel[collection]; !exists {
+				topLevel[collection] = scopedCollectionPath{path: path, node: op}
+			}
+			return
+		}
+		nested[collection] = append(nested[collection], scopedCollectionPath{path: path, node: op})
+	})
+
+	var results []model.RuleFunctionResult
+	for collection, nestedPaths := range nested {
+		top, ok := topLevel[collection]
+		if !ok {
+			continue
+		}
+		for _, nestedPath := range nestedPaths {
+			results = append(results, makeResult(
+				fmt.Sprintf("collection %q is exposed at both %s and %s; keep one canonical scope unless the child has no standalone identity", collection, top.path, nestedPath.path),
+				fmt.Sprintf("$.paths.%s", nestedPath.path),
+				"check-mixed-scoped-collections", nestedPath.node, ctx))
+		}
+	}
 	return results
 }
 

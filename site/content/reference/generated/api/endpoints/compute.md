@@ -4,45 +4,6 @@
 
 Compute endpoint lifecycle, assignments, and health checks.
 
-## `GET /compute-defaults`
-
-Get compute routing defaults
-
-- Operation ID: `getComputeRoutingDefaults`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `PATCH /compute-defaults`
-
-Update compute routing defaults
-
-- Operation ID: `updateComputeRoutingDefaults`
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
 ## `GET /compute-endpoints`
 
 List compute endpoints
@@ -92,7 +53,7 @@ Registers a compute endpoint that can execute remote workloads and accept assign
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /compute-endpoints/{endpointName}`
+## `GET /compute-endpoints/{endpoint_name}`
 
 Get compute endpoint
 
@@ -102,7 +63,7 @@ Get compute endpoint
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `endpointName` | `string` | `true` | - |
+| `endpoint_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -116,7 +77,7 @@ Get compute endpoint
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /compute-endpoints/{endpointName}`
+## `PATCH /compute-endpoints/{endpoint_name}`
 
 Update compute endpoint
 
@@ -126,7 +87,7 @@ Update compute endpoint
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `endpointName` | `string` | `true` | - |
+| `endpoint_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -145,7 +106,7 @@ Update compute endpoint
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /compute-endpoints/{endpointName}`
+## `DELETE /compute-endpoints/{endpoint_name}`
 
 Delete compute endpoint
 
@@ -155,7 +116,7 @@ Delete compute endpoint
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `endpointName` | `string` | `true` | - |
+| `endpoint_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -169,7 +130,7 @@ Delete compute endpoint
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /compute-endpoints/{endpointName}/assignments`
+## `GET /compute-endpoints/{endpoint_name}/assignments`
 
 List compute assignments
 
@@ -179,7 +140,7 @@ List compute assignments
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `endpointName` | `string` | `true` | - |
+| `endpoint_name` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -200,7 +161,7 @@ List compute assignments
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /compute-endpoints/{endpointName}/assignments`
+## `POST /compute-endpoints/{endpoint_name}/assignments`
 
 Create compute assignment
 
@@ -210,7 +171,7 @@ Create compute assignment
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `endpointName` | `string` | `true` | - |
+| `endpoint_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -229,7 +190,7 @@ Create compute assignment
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /compute-endpoints/{endpointName}/assignments/{assignmentId}`
+## `DELETE /compute-endpoints/{endpoint_name}/assignments/{assignment_id}`
 
 Delete compute assignment
 
@@ -239,8 +200,8 @@ Delete compute assignment
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `assignmentId` | `string` | `true` | - |
-| `endpointName` | `string` | `true` | - |
+| `assignment_id` | `string` | `true` | - |
+| `endpoint_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -254,7 +215,7 @@ Delete compute assignment
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /compute-endpoints/{endpointName}/health`
+## `GET /compute-endpoints/{endpoint_name}/health`
 
 Get compute endpoint health
 
@@ -264,7 +225,7 @@ Get compute endpoint health
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `endpointName` | `string` | `true` | - |
+| `endpoint_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -278,4 +239,43 @@ Get compute endpoint health
 | `429` | Client error |
 | `500` | Server error |
 | `502` | Server error |
+
+## `GET /compute-routing-defaults`
+
+Get compute routing defaults
+
+- Operation ID: `getComputeRoutingDefaults`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /compute-routing-defaults`
+
+Update compute routing defaults
+
+- Operation ID: `updateComputeRoutingDefaults`
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
 

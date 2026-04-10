@@ -58,7 +58,7 @@ func TestQueryOverride(t *testing.T) {
 			checkReq: func(t *testing.T, c captured) {
 				t.Helper()
 				assert.Equal(t, "POST", c.method)
-				assert.Equal(t, "/v1/queries:execute", c.path)
+				assert.Equal(t, "/v1/query-executions", c.path)
 				var body map[string]interface{}
 				require.NoError(t, json.Unmarshal(c.body, &body))
 				assert.Equal(t, "SELECT 1", body["sql"])
@@ -246,7 +246,7 @@ func TestQueryExecute_ExplicitSharedEndpointUsesAPI(t *testing.T) {
 	var capturedBody []byte
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, "/v1/queries:execute", r.URL.Path)
+		assert.Equal(t, "/v1/query-executions", r.URL.Path)
 		capturedBody, _ = io.ReadAll(r.Body)
 		_ = r.Body.Close()
 		w.Header().Set("Content-Type", "application/json")
@@ -310,7 +310,7 @@ func TestQueryExecute_RemoteHostPrefersAPI(t *testing.T) {
 	var capturedBody []byte
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, "/v1/queries:execute", r.URL.Path)
+		assert.Equal(t, "/v1/query-executions", r.URL.Path)
 		capturedBody, _ = io.ReadAll(r.Body)
 		_ = r.Body.Close()
 		w.Header().Set("Content-Type", "application/json")

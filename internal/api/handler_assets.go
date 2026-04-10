@@ -4,6 +4,7 @@ package api
 import (
 	"context"
 	"math"
+	"strings"
 
 	"duck-demo/internal/domain"
 )
@@ -614,7 +615,7 @@ func assetToAPI(a domain.DataAsset) Asset {
 	return Asset{
 		Id:                    &a.ID,
 		AssetKey:              &a.AssetKey,
-		AssetType:             &a.AssetType,
+		AssetType:             assetTypePtr(a.AssetType),
 		Owner:                 &a.Owner,
 		Description:           &a.Description,
 		Tags:                  &a.Tags,
@@ -635,7 +636,7 @@ func domainCreateAssetRequest(req *CreateAssetJSONRequestBody) domain.CreateAsse
 	}
 	return domain.CreateAssetRequest{
 		AssetKey:              req.AssetKey,
-		AssetType:             req.AssetType,
+		AssetType:             string(req.AssetType),
 		ProductSlug:           req.ProductSlug,
 		Owner:                 req.Owner,
 		Description:           derefString(req.Description),
@@ -655,7 +656,7 @@ func domainUpdateAssetRequest(req *UpdateAssetJSONRequestBody) domain.UpdateAsse
 		return domain.UpdateAssetRequest{}
 	}
 	return domain.UpdateAssetRequest{
-		AssetType:             req.AssetType,
+		AssetType:             string(req.AssetType),
 		ProductSlug:           req.ProductSlug,
 		Owner:                 req.Owner,
 		Description:           derefString(req.Description),
@@ -874,7 +875,7 @@ func assetFreshnessStatusToAPI(status domain.AssetFreshnessStatus) AssetFreshnes
 	return AssetFreshnessStatus{
 		AssetId:                optStr(status.AssetID),
 		AssetKey:               optStr(status.AssetKey),
-		AssetType:              optStr(status.AssetType),
+		AssetType:              assetTypePtr(status.AssetType),
 		FreshnessStatus:        optStr(status.FreshnessStatus),
 		EffectiveMaxLagSeconds: safeInt64ToInt32Ptr(&status.EffectiveMaxLagSeconds),
 		LastMaterializedAt:     formatTimePtr(status.LastMaterializedAt),
@@ -1033,7 +1034,7 @@ func assetFreshnessReconcileResultToAPI(result domain.AssetFreshnessReconcileRes
 		targets = append(targets, AssetFreshnessReconcileTarget{
 			AssetId:         optStr(target.AssetID),
 			AssetKey:        optStr(target.AssetKey),
-			AssetType:       optStr(target.AssetType),
+			AssetType:       assetTypePtr(target.AssetType),
 			FreshnessStatus: optStr(target.FreshnessStatus),
 			EventId:         optStr(target.EventID),
 		})
@@ -1043,6 +1044,15 @@ func assetFreshnessReconcileResultToAPI(result domain.AssetFreshnessReconcileRes
 		Asset:   &asset,
 		Targets: &targets,
 	}
+}
+
+func assetTypePtr(value string) *AssetType {
+	value = strings.ToUpper(strings.TrimSpace(value))
+	if value == "" {
+		return nil
+	}
+	apiValue := AssetType(value)
+	return &apiValue
 }
 
 func assetCheckResultToAPI(r domain.AssetCheckResult) AssetCheckResult {

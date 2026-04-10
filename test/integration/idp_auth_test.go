@@ -426,7 +426,7 @@ func TestAdminGuard_NonAdminBlocked(t *testing.T) {
 	}{
 		{"create_principal", "POST", "/v1/principals", map[string]interface{}{"name": "guard-test", "type": "user"}},
 		{"delete_principal", "DELETE", "/v1/principals/1", nil},
-		{"set_admin", "PUT", "/v1/principals/1/admin", map[string]interface{}{"is_admin": true}},
+		{"set_admin", "PATCH", "/v1/principals/1", map[string]interface{}{"is_admin": true}},
 		{"create_group", "POST", "/v1/groups", map[string]interface{}{"name": "guard-test-group"}},
 		{"delete_group", "DELETE", "/v1/groups/1", nil},
 		{"create_grant", "POST", "/v1/grants", map[string]interface{}{
@@ -467,10 +467,10 @@ func TestAdminGuard_AdminAllowed(t *testing.T) {
 	_ = resp2.Body.Close()
 
 	// Set admin (admin action).
-	url := fmt.Sprintf("%s/v1/principals/%s/admin", env.Server.URL, userID)
+	url := fmt.Sprintf("%s/v1/principals/%s", env.Server.URL, userID)
 	body3 := map[string]interface{}{"is_admin": true}
-	resp3 := doRequest(t, "PUT", url, env.Keys.Admin, body3)
-	require.Equal(t, 204, resp3.StatusCode)
+	resp3 := doRequest(t, "PATCH", url, env.Keys.Admin, body3)
+	require.Equal(t, 200, resp3.StatusCode)
 	_ = resp3.Body.Close()
 
 	// Delete principal (admin action).
@@ -648,12 +648,12 @@ func TestAPIKey_CleanupExpired(t *testing.T) {
 	})
 
 	// Non-admin should get 403.
-	resp := doRequest(t, "POST", env.Server.URL+"/v1/api-keys/cleanup", env.Keys.Analyst, nil)
+	resp := doRequest(t, "POST", env.Server.URL+"/v1/api-key-cleanup-runs", env.Keys.Analyst, nil)
 	assert.Equal(t, 403, resp.StatusCode, "non-admin should get 403 for cleanup")
 	_ = resp.Body.Close()
 
 	// Admin should succeed.
-	resp2 := doRequest(t, "POST", env.Server.URL+"/v1/api-keys/cleanup", env.Keys.Admin, nil)
+	resp2 := doRequest(t, "POST", env.Server.URL+"/v1/api-key-cleanup-runs", env.Keys.Admin, nil)
 	require.Equal(t, 200, resp2.StatusCode, "admin should be able to cleanup expired keys")
 
 	var result map[string]interface{}

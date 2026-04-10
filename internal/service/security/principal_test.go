@@ -94,30 +94,34 @@ func TestPrincipalService_Delete_AdminAllowed(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestPrincipalService_SetAdmin_AdminRequired(t *testing.T) {
+func TestPrincipalService_Update_AdminRequired(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
 	p, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "user1", Type: "user"})
 	require.NoError(t, err)
 
-	err = svc.SetAdmin(nonAdminCtx(), p.ID, true)
+	_, err = svc.Update(nonAdminCtx(), p.ID, domain.UpdatePrincipalRequest{IsAdmin: boolPtr(true)})
 	require.Error(t, err)
 	var accessDenied *domain.AccessDeniedError
 	assert.ErrorAs(t, err, &accessDenied)
 }
 
-func TestPrincipalService_SetAdmin_AdminAllowed(t *testing.T) {
+func TestPrincipalService_Update_AdminAllowed(t *testing.T) {
 	svc, _ := setupPrincipalService(t)
 
 	p, err := svc.Create(adminCtx(), domain.CreatePrincipalRequest{Name: "user1", Type: "user"})
 	require.NoError(t, err)
 
-	err = svc.SetAdmin(adminCtx(), p.ID, true)
+	_, err = svc.Update(adminCtx(), p.ID, domain.UpdatePrincipalRequest{IsAdmin: boolPtr(true)})
 	require.NoError(t, err)
 
 	found, err := svc.GetByID(ctx, p.ID)
 	require.NoError(t, err)
 	assert.True(t, found.IsAdmin)
+}
+
+func boolPtr(v bool) *bool {
+	return &v
 }
 
 func TestPrincipalService_GetByID_NoAdminRequired(t *testing.T) {

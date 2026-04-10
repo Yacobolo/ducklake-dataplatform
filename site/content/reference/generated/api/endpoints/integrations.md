@@ -49,7 +49,7 @@ Create git repo
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /git-repos/{gitRepoId}`
+## `GET /git-repos/{git_repo_id}`
 
 Get git repo
 
@@ -59,7 +59,7 @@ Get git repo
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `gitRepoId` | `string` | `true` | - |
+| `git_repo_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -73,7 +73,7 @@ Get git repo
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /git-repos/{gitRepoId}`
+## `DELETE /git-repos/{git_repo_id}`
 
 Delete git repo
 
@@ -83,7 +83,7 @@ Delete git repo
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `gitRepoId` | `string` | `true` | - |
+| `git_repo_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -97,7 +97,7 @@ Delete git repo
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /git-repos/{gitRepoId}/sync`
+## `POST /git-repos/{git_repo_id}/sync-runs`
 
 Sync git repo
 
@@ -107,7 +107,7 @@ Sync git repo
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `gitRepoId` | `string` | `true` | - |
+| `git_repo_id` | `string` | `true` | - |
 
 ### Responses
 

@@ -44,10 +44,10 @@ func (r *memQueryJobRepo) GetByID(_ context.Context, id string) (*domain.QueryJo
 	return &copyJob, nil
 }
 
-func (r *memQueryJobRepo) ListByPrincipal(_ context.Context, principalName string, page domain.PageRequest) ([]domain.QueryJob, int64, error) {
+func (r *memQueryJobRepo) ListByPrincipal(_ context.Context, principalName string, status *domain.QueryJobStatus, page domain.PageRequest) ([]domain.QueryJob, int64, error) {
 	items := make([]domain.QueryJob, 0)
 	for _, job := range r.jobs {
-		if job.PrincipalName == principalName {
+		if job.PrincipalName == principalName && (status == nil || job.Status == *status) {
 			items = append(items, *job)
 		}
 	}

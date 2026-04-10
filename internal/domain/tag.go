@@ -17,10 +17,24 @@ type CreateTagRequest struct {
 	Value *string
 }
 
+// UpdateTagRequest holds partial-update parameters for a tag.
+type UpdateTagRequest struct {
+	Key   *string
+	Value *string
+}
+
 // Validate checks that the request is well-formed.
 func (r *CreateTagRequest) Validate() error {
 	if r.Key == "" {
 		return ErrValidation("tag key is required")
+	}
+	return nil
+}
+
+// Validate checks that the update request is well-formed.
+func (r *UpdateTagRequest) Validate() error {
+	if r.Key != nil && *r.Key == "" {
+		return ErrValidation("tag key cannot be empty")
 	}
 	return nil
 }

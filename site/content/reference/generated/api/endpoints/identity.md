@@ -4,6 +4,23 @@
 
 Principals, groups, and API key management for authenticated access.
 
+## `POST /api-key-cleanup-runs`
+
+Clean up expired API keys
+
+- Operation ID: `cleanupExpiredAPIKeys`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `GET /api-keys`
 
 List API keys
@@ -50,24 +67,7 @@ Create API key
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /api-keys/cleanup`
-
-Clean up expired API keys
-
-- Operation ID: `cleanupExpiredAPIKeys`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `DELETE /api-keys/{apiKeyId}`
+## `DELETE /api-keys/{api_key_id}`
 
 Delete API key
 
@@ -77,7 +77,7 @@ Delete API key
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `apiKeyId` | `string` | `true` | - |
+| `api_key_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -136,7 +136,7 @@ Create group
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /groups/{groupId}`
+## `GET /groups/{group_id}`
 
 Get group
 
@@ -146,7 +146,7 @@ Get group
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `groupId` | `string` | `true` | - |
+| `group_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -160,7 +160,7 @@ Get group
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /groups/{groupId}`
+## `PATCH /groups/{group_id}`
 
 Update group
 
@@ -170,7 +170,7 @@ Update group
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `groupId` | `string` | `true` | - |
+| `group_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -189,7 +189,7 @@ Update group
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /groups/{groupId}`
+## `DELETE /groups/{group_id}`
 
 Delete group
 
@@ -199,7 +199,7 @@ Delete group
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `groupId` | `string` | `true` | - |
+| `group_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -212,7 +212,7 @@ Delete group
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /groups/{groupId}/members`
+## `GET /groups/{group_id}/members`
 
 List group members
 
@@ -222,7 +222,7 @@ List group members
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `groupId` | `string` | `true` | - |
+| `group_id` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -243,7 +243,7 @@ List group members
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /groups/{groupId}/members`
+## `POST /groups/{group_id}/members`
 
 Create group member
 
@@ -253,7 +253,7 @@ Create group member
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `groupId` | `string` | `true` | - |
+| `group_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -271,7 +271,7 @@ Create group member
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /groups/{groupId}/members/{memberType}/{memberId}`
+## `DELETE /groups/{group_id}/members/{member_type}/{member_id}`
 
 Delete group member
 
@@ -281,9 +281,9 @@ Delete group member
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `groupId` | `string` | `true` | - |
-| `memberId` | `string` | `true` | - |
-| `memberType` | `PrincipalType` | `true` | - |
+| `group_id` | `string` | `true` | - |
+| `member_id` | `string` | `true` | - |
+| `member_type` | `PrincipalType` | `true` | - |
 
 ### Responses
 
@@ -342,7 +342,7 @@ Create principal
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /principals/{principalId}`
+## `GET /principals/{principal_id}`
 
 Get principal
 
@@ -352,7 +352,7 @@ Get principal
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `principalId` | `string` | `true` | - |
+| `principal_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -366,7 +366,35 @@ Get principal
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /principals/{principalId}`
+## `PATCH /principals/{principal_id}`
+
+Update principal
+
+- Operation ID: `updatePrincipal`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `principal_id` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /principals/{principal_id}`
 
 Delete principal
 
@@ -376,35 +404,7 @@ Delete principal
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `principalId` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `204` | There is no content to send for this request, but the headers may be useful. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `PUT /principals/{principalId}/admin`
-
-Update principal admin
-
-- Operation ID: `updatePrincipalAdmin`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `principalId` | `string` | `true` | - |
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
+| `principal_id` | `string` | `true` | - |
 
 ### Responses
 

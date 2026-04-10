@@ -20,6 +20,13 @@ type CreateRowFilterRequest struct {
 	Description string
 }
 
+// UpdateRowFilterRequest holds partial-update parameters for a row filter.
+type UpdateRowFilterRequest struct {
+	Name        *string
+	FilterSQL   *string
+	Description *string
+}
+
 // Validate checks that the request is well-formed.
 func (r *CreateRowFilterRequest) Validate() error {
 	if r.TableID == "" {
@@ -30,6 +37,17 @@ func (r *CreateRowFilterRequest) Validate() error {
 	}
 	if r.FilterSQL == "" {
 		return ErrValidation("filter_sql is required")
+	}
+	return nil
+}
+
+// Validate checks that the update request is well-formed.
+func (r *UpdateRowFilterRequest) Validate() error {
+	if r.Name != nil && *r.Name == "" {
+		return ErrValidation("name cannot be empty")
+	}
+	if r.FilterSQL != nil && *r.FilterSQL == "" {
+		return ErrValidation("filter_sql cannot be empty")
 	}
 	return nil
 }

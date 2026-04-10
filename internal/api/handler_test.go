@@ -209,7 +209,7 @@ func TestAPI_ExecuteQuery_Admin(t *testing.T) {
 	defer srv.Close()
 
 	body := `{"sql": "SELECT count(*) FROM titanic"}`
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/queries:execute", bytes.NewBufferString(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query-executions", bytes.NewBufferString(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -235,7 +235,7 @@ func TestAPI_ExecuteQuery_NoAccess(t *testing.T) {
 	defer srv.Close()
 
 	body := `{"sql": "SELECT * FROM titanic LIMIT 5"}`
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/queries:execute", bytes.NewBufferString(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query-executions", bytes.NewBufferString(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -294,7 +294,7 @@ func TestAPI_AuditLogs(t *testing.T) {
 
 	// Execute a query first to generate audit entries
 	body := `{"sql": "SELECT 1"}`
-	postReq, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/queries:execute", bytes.NewBufferString(body))
+	postReq, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+"/query-executions", bytes.NewBufferString(body))
 	require.NoError(t, err)
 	postReq.Header.Set("Content-Type", "application/json")
 	postResp, err := http.DefaultClient.Do(postReq)
@@ -432,8 +432,20 @@ func setupCatalogTestServer(t *testing.T, principalName string, mockRepo *mockCa
 	searchSvc := catalog.NewSearchService(repository.NewSearchRepo(metaDB, metaDB), nil)
 	tagSvc := governance.NewTagService(repository.NewTagRepo(metaDB), auditRepo)
 	viewSvc := catalog.NewViewService(repository.NewViewRepo(metaDB), mockFactory, cat, auditRepo)
+	catalogRegRepo := repository.NewCatalogRegistrationRepo(metaDB)
+	_, err = catalogRegRepo.Create(ctx, &domain.CatalogRegistration{
+		Name:          "lake",
+		MetastoreType: domain.MetastoreTypeSQLite,
+		DSN:           "file::memory:?cache=shared",
+		DataPath:      "/tmp/lake",
+		Status:        domain.CatalogStatusActive,
+		IsDefault:     true,
+		Comment:       "test catalog",
+	})
+	require.NoError(t, err)
+	catalogRegSvc := catalog.NewCatalogRegistrationService(catalog.RegistrationServiceDeps{Repo: catalogRegRepo})
 
-	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, nil, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	handler := NewHandler(querySvc, principalSvc, groupSvc, grantSvc, rowFilterSvc, columnMaskSvc, auditSvc, nil, catalogSvc, catalogRegSvc, queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	// Lookup principal to get admin status for context injection
 	p2, err := principalRepo.GetByName(context.Background(), principalName)
@@ -497,11 +509,11 @@ func TestAPI_GetCatalog(t *testing.T) {
 	srv := setupCatalogTestServer(t, "admin_user", mock)
 	defer srv.Close()
 
-	resp := doRequest(t, "GET", srv.URL+"/catalogs/lake/info", "")
+	resp := doRequest(t, "GET", srv.URL+"/catalogs/lake", "")
 	if resp.StatusCode != 200 {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
 	}
-	result := decodeJSON[CatalogInfo](t, resp)
+	result := decodeJSON[CatalogRegistration](t, resp)
 	if result.Name != "lake" {
 		t.Errorf("expected name=lake, got %v", result.Name)
 	}
@@ -791,10 +803,11 @@ func TestAPI_Schema_Authorization(t *testing.T) {
 		{"create schema denied", "no_access_user", "POST", "/catalogs/lake/schemas", `{"name":"forbidden"}`, 403},
 		{"update schema denied", "no_access_user", "PATCH", "/catalogs/lake/schemas/main", `{"comment":"nope"}`, 403},
 		{"delete schema denied", "no_access_user", "DELETE", "/catalogs/lake/schemas/main", "", 403},
-		// read ops should succeed regardless of privileges
+		// metadata read ops for schemas remain open, but catalog registration
+		// details stay admin-scoped because they include management fields.
 		{"list schemas allowed", "no_access_user", "GET", "/catalogs/lake/schemas", "", 200},
 		{"get schema allowed", "no_access_user", "GET", "/catalogs/lake/schemas/main", "", 200},
-		{"get catalog allowed", "no_access_user", "GET", "/catalogs/lake/info", "", 200},
+		{"get catalog denied", "no_access_user", "GET", "/catalogs/lake", "", 403},
 		// admin_user has ALL_PRIVILEGES via admins group — all ops should succeed
 		{"admin create schema", "admin_user", "POST", "/catalogs/lake/schemas", `{"name":"new_schema"}`, 201},
 		{"admin update schema", "admin_user", "PATCH", "/catalogs/lake/schemas/main", `{"comment":"updated"}`, 200},
@@ -1299,8 +1312,8 @@ func TestAPI_AdminGuards(t *testing.T) {
 		},
 		{
 			name:   "update principal admin requires admin",
-			method: http.MethodPut,
-			path:   "/principals/999/admin",
+			method: http.MethodPatch,
+			path:   "/principals/999",
 			body:   `{"is_admin":true}`,
 			want:   http.StatusForbidden,
 		},
@@ -1327,7 +1340,7 @@ func TestAPI_AdminGuards(t *testing.T) {
 		{
 			name:   "cleanup expired keys requires admin",
 			method: http.MethodPost,
-			path:   "/api-keys/cleanup",
+			path:   "/api-key-cleanup-runs",
 			want:   http.StatusForbidden,
 		},
 	}
@@ -1365,7 +1378,7 @@ func TestAPI_AdminGuards_Allowed(t *testing.T) {
 	}
 
 	// Admin can cleanup expired keys.
-	resp3 := doRequest(t, http.MethodPost, srv.URL+"/api-keys/cleanup", "")
+	resp3 := doRequest(t, http.MethodPost, srv.URL+"/api-key-cleanup-runs", "")
 	defer resp3.Body.Close() //nolint:errcheck
 	if resp3.StatusCode != http.StatusOK {
 		t.Errorf("admin cleanup keys: got status %d, want 200", resp3.StatusCode)
@@ -1443,8 +1456,8 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 	tableID := "test-table-id"
 
 	t.Run("create row filter", func(t *testing.T) {
-		body := `{"name":"first_class","filter_sql":"\"Pclass\" = 1","description":"First class only"}`
-		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
+		body := fmt.Sprintf(`{"table_id":"%s","name":"first_class","filter_sql":"\"Pclass\" = 1","description":"First class only"}`, tableID)
+		resp := doRequest(t, http.MethodPost, srv.URL+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
 		assert.Equal(t, "first_class", rf.Name)
@@ -1452,21 +1465,21 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 	})
 
 	t.Run("create duplicate row filter returns conflict", func(t *testing.T) {
-		body := `{"name":"first_class","filter_sql":"\"Pclass\" = 1","description":"First class only"}`
-		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
+		body := fmt.Sprintf(`{"table_id":"%s","name":"first_class","filter_sql":"\"Pclass\" = 1","description":"First class only"}`, tableID)
+		resp := doRequest(t, http.MethodPost, srv.URL+"/row-filters", body)
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusConflict, resp.StatusCode)
 	})
 
 	t.Run("create row filter invalid SQL", func(t *testing.T) {
-		body := `{"name":"invalid_filter","filter_sql":"NOT VALID ((("}`
-		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
+		body := fmt.Sprintf(`{"table_id":"%s","name":"invalid_filter","filter_sql":"NOT VALID ((("}`, tableID)
+		resp := doRequest(t, http.MethodPost, srv.URL+"/row-filters", body)
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
 	t.Run("list row filters", func(t *testing.T) {
-		resp := doRequest(t, http.MethodGet, srv.URL+"/tables/"+tableID+"/row-filters", "")
+		resp := doRequest(t, http.MethodGet, srv.URL+"/row-filters?table_id="+tableID, "")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		list := decodeJSON[PaginatedRowFilters](t, resp)
 		assert.GreaterOrEqual(t, len(list.Data), 1)
@@ -1474,8 +1487,8 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 
 	t.Run("bind and unbind row filter", func(t *testing.T) {
 		// Create a filter.
-		body := `{"name":"adults_only","filter_sql":"\"Age\" > 18"}`
-		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
+		body := fmt.Sprintf(`{"table_id":"%s","name":"adults_only","filter_sql":"\"Age\" > 18"}`, tableID)
+		resp := doRequest(t, http.MethodPost, srv.URL+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
 		filterID := rf.Id
@@ -1495,8 +1508,8 @@ func TestAPI_RowFilterCRUD(t *testing.T) {
 
 	t.Run("delete row filter", func(t *testing.T) {
 		// Create a filter to delete.
-		body := `{"name":"high_fare","filter_sql":"\"Fare\" > 100"}`
-		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/"+tableID+"/row-filters", body)
+		body := fmt.Sprintf(`{"table_id":"%s","name":"high_fare","filter_sql":"\"Fare\" > 100"}`, tableID)
+		resp := doRequest(t, http.MethodPost, srv.URL+"/row-filters", body)
 		require.Equal(t, http.StatusCreated, resp.StatusCode)
 		rf := decodeJSON[RowFilter](t, resp)
 
@@ -1517,13 +1530,13 @@ func TestAPI_RowFilter_NonAdminDenied(t *testing.T) {
 	defer srv.Close()
 
 	t.Run("create denied", func(t *testing.T) {
-		resp := doRequest(t, http.MethodPost, srv.URL+"/tables/t1/row-filters", `{"name":"deny_me","filter_sql":"x = 1"}`)
+		resp := doRequest(t, http.MethodPost, srv.URL+"/row-filters", `{"table_id":"t1","name":"deny_me","filter_sql":"x = 1"}`)
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusForbidden, resp.StatusCode)
 	})
 
 	t.Run("list denied", func(t *testing.T) {
-		resp := doRequest(t, http.MethodGet, srv.URL+"/tables/t1/row-filters", "")
+		resp := doRequest(t, http.MethodGet, srv.URL+"/row-filters?table_id=t1", "")
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusForbidden, resp.StatusCode)
 	})

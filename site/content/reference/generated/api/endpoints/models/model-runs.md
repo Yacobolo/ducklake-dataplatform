@@ -50,7 +50,7 @@ Trigger model run
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /model-runs/{runId}`
+## `GET /model-runs/{run_id}`
 
 Get model run
 
@@ -60,7 +60,7 @@ Get model run
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `runId` | `string` | `true` | - |
+| `run_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -74,7 +74,7 @@ Get model run
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /model-runs/{runId}/cancel`
+## `POST /model-runs/{run_id}/cancellations`
 
 Cancel model run
 
@@ -84,7 +84,7 @@ Cancel model run
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `runId` | `string` | `true` | - |
+| `run_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -97,7 +97,7 @@ Cancel model run
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /model-runs/{runId}/steps`
+## `GET /model-runs/{run_id}/steps`
 
 List model run steps
 
@@ -107,7 +107,7 @@ List model run steps
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `runId` | `string` | `true` | - |
+| `run_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -121,7 +121,7 @@ List model run steps
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /model-runs/{runId}/steps/{stepId}/test-results`
+## `GET /model-runs/{run_id}/steps/{step_id}/test-results`
 
 List model test results
 
@@ -131,8 +131,8 @@ List model test results
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `runId` | `string` | `true` | - |
-| `stepId` | `string` | `true` | - |
+| `run_id` | `string` | `true` | - |
+| `step_id` | `string` | `true` | - |
 
 ### Responses
 

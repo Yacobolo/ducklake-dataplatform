@@ -4,7 +4,7 @@
 
 Jobs operations within the Notebooks API group.
 
-## `GET /notebooks/{notebookId}/jobs`
+## `GET /notebooks/{notebook_id}/jobs`
 
 List notebook jobs
 
@@ -14,7 +14,7 @@ List notebook jobs
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -35,7 +35,7 @@ List notebook jobs
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /notebooks/{notebookId}/jobs/{jobId}`
+## `GET /notebooks/{notebook_id}/jobs/{job_id}`
 
 Get notebook job
 
@@ -45,8 +45,8 @@ Get notebook job
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `jobId` | `string` | `true` | - |
-| `notebookId` | `string` | `true` | - |
+| `job_id` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Responses
 

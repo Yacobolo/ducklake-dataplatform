@@ -1372,8 +1372,8 @@ spec:
 	require.NotEmpty(t, semanticModels.Data)
 	semanticModelID := semanticModels.Data[0].ID
 
-	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModelID+"/queries:explain", env.Keys.Admin, map[string]interface{}{
-		"metrics":           []string{"total_fare"},
+	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModelID+"/query-explanations", env.Keys.Admin, map[string]interface{}{
+		"metrics": []string{"total_fare"},
 	})
 	if explainResp.StatusCode != http.StatusOK {
 		require.Equal(t, http.StatusOK, explainResp.StatusCode, string(readBody(t, explainResp)))
@@ -1387,8 +1387,8 @@ spec:
 	decodeJSON(t, explainResp, &explainBody)
 	assert.NotEmpty(t, explainBody.Plan.GeneratedSQL)
 
-	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModelID+"/queries:run", env.Keys.Admin, map[string]interface{}{
-		"metrics":           []string{"total_fare"},
+	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModelID+"/query-runs", env.Keys.Admin, map[string]interface{}{
+		"metrics": []string{"total_fare"},
 	})
 	if runResp.StatusCode != http.StatusOK {
 		require.Equal(t, http.StatusOK, runResp.StatusCode, string(readBody(t, runResp)))

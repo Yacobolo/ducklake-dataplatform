@@ -170,7 +170,7 @@ func (s *Service) GetWidget(ctx context.Context, dashboardID, widgetID string) (
 		return nil, err
 	}
 	if widget.DashboardID != dashboardID {
-		return nil, domain.ErrNotFound("dashboard widget not found")
+		return nil, domain.ErrNotFound("dashboard widget %q not found", widgetID)
 	}
 	return widget, nil
 }

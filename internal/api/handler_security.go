@@ -12,7 +12,7 @@ type principalService interface {
 	Create(ctx context.Context, req domain.CreatePrincipalRequest) (*domain.Principal, error)
 	GetByID(ctx context.Context, id string) (*domain.Principal, error)
 	Delete(ctx context.Context, id string) error
-	SetAdmin(ctx context.Context, id string, isAdmin bool) error
+	Update(ctx context.Context, id string, req domain.UpdatePrincipalRequest) (*domain.Principal, error)
 }
 
 // groupService defines the group operations used by the API handler.
@@ -38,8 +38,11 @@ type grantService interface {
 
 // rowFilterService defines the row filter operations used by the API handler.
 type rowFilterService interface {
+	GetByID(ctx context.Context, id string) (*domain.RowFilter, error)
+	List(ctx context.Context, page domain.PageRequest) ([]domain.RowFilter, int64, error)
 	GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error)
 	Create(ctx context.Context, req domain.CreateRowFilterRequest) (*domain.RowFilter, error)
+	Update(ctx context.Context, id string, req domain.UpdateRowFilterRequest) (*domain.RowFilter, error)
 	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, req domain.BindRowFilterRequest) error
 	Unbind(ctx context.Context, req domain.BindRowFilterRequest) error
@@ -48,8 +51,11 @@ type rowFilterService interface {
 
 // columnMaskService defines the column mask operations used by the API handler.
 type columnMaskService interface {
+	GetByID(ctx context.Context, id string) (*domain.ColumnMask, error)
+	List(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	Create(ctx context.Context, req domain.CreateColumnMaskRequest) (*domain.ColumnMask, error)
+	Update(ctx context.Context, id string, req domain.UpdateColumnMaskRequest) (*domain.ColumnMask, error)
 	Delete(ctx context.Context, id string) error
 	Bind(ctx context.Context, req domain.BindColumnMaskRequest) error
 	Unbind(ctx context.Context, req domain.BindColumnMaskRequest) error
@@ -152,22 +158,34 @@ func (h *APIHandler) DeletePrincipal(ctx context.Context, req GenDeletePrincipal
 	return GenDeletePrincipal204Response{}, nil
 }
 
-// UpdatePrincipalAdmin implements the endpoint for updating a principal's admin status.
-func (h *APIHandler) UpdatePrincipalAdmin(ctx context.Context, req GenUpdatePrincipalAdminRequest) (GenUpdatePrincipalAdminResponse, error) {
-	if err := h.principals.SetAdmin(ctx, req.PrincipalId, req.Body.IsAdmin); err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenUpdatePrincipalAdminResponse]("updatePrincipalAdmin", err, domainErrorResponder[GenUpdatePrincipalAdminResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenUpdatePrincipalAdminResponse {
-				return UpdatePrincipalAdmin403JSONResponse{resp}
+// UpdatePrincipal implements the endpoint for updating a principal.
+func (h *APIHandler) UpdatePrincipal(ctx context.Context, req GenUpdatePrincipalRequest) (GenUpdatePrincipalResponse, error) {
+	if req.Body == nil {
+		return UpdatePrincipal400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
+	}
+	result, err := h.principals.Update(ctx, req.PrincipalId, domain.UpdatePrincipalRequest{
+		IsAdmin: req.Body.IsAdmin,
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenUpdatePrincipalResponse]("updatePrincipal", err, domainErrorResponder[GenUpdatePrincipalResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdatePrincipalResponse {
+				return UpdatePrincipal400JSONResponse{resp}
 			},
-			NotFound: func(resp NotFoundJSONResponse) GenUpdatePrincipalAdminResponse {
-				return UpdatePrincipalAdmin404JSONResponse{resp}
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdatePrincipalResponse {
+				return UpdatePrincipal403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdatePrincipalResponse {
+				return UpdatePrincipal404JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
 		}
 		return nil, err
 	}
-	return GenUpdatePrincipalAdmin204Response{}, nil
+	return GenUpdatePrincipal200JSONResponse{
+		Body:    principalToAPI(*result),
+		Headers: GenUpdatePrincipal200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
 }
 
 // === Groups ===
@@ -448,7 +466,16 @@ func (h *APIHandler) DeleteGrant(ctx context.Context, req GenDeleteGrantRequest)
 // ListRowFilters implements the endpoint for listing row filters for a table.
 func (h *APIHandler) ListRowFilters(ctx context.Context, req GenListRowFiltersRequest) (GenListRowFiltersResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	fs, total, err := h.rowFilters.GetForTable(ctx, req.TableId, page)
+	var (
+		fs    []domain.RowFilter
+		total int64
+		err   error
+	)
+	if req.Params.TableId != nil && *req.Params.TableId != "" {
+		fs, total, err = h.rowFilters.GetForTable(ctx, *req.Params.TableId, page)
+	} else {
+		fs, total, err = h.rowFilters.List(ctx, page)
+	}
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListRowFiltersResponse]("listRowFilters", err, domainErrorResponder[GenListRowFiltersResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListRowFiltersResponse { return ListRowFilters403JSONResponse{resp} },
@@ -470,8 +497,12 @@ func (h *APIHandler) ListRowFilters(ctx context.Context, req GenListRowFiltersRe
 
 // CreateRowFilter implements the endpoint for creating a row filter on a table.
 func (h *APIHandler) CreateRowFilter(ctx context.Context, req GenCreateRowFilterRequest) (GenCreateRowFilterResponse, error) {
+	tableID := ""
+	if req.Body != nil && req.Body.TableId != nil {
+		tableID = *req.Body.TableId
+	}
 	domReq := domain.CreateRowFilterRequest{
-		TableID:   req.TableId,
+		TableID:   tableID,
 		Name:      req.Body.Name,
 		FilterSQL: req.Body.FilterSql,
 	}
@@ -498,6 +529,61 @@ func (h *APIHandler) CreateRowFilter(ctx context.Context, req GenCreateRowFilter
 	return GenCreateRowFilter201JSONResponse{
 		Body:    rowFilterToAPI(*result),
 		Headers: GenCreateRowFilter201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetRowFilter implements the endpoint for retrieving a row filter.
+func (h *APIHandler) GetRowFilter(ctx context.Context, req GenGetRowFilterRequest) (GenGetRowFilterResponse, error) {
+	result, err := h.rowFilters.GetByID(ctx, req.RowFilterId)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetRowFilterResponse]("getRowFilter", err, domainErrorResponder[GenGetRowFilterResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetRowFilterResponse {
+				return GetRowFilter403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetRowFilterResponse {
+				return GetRowFilter404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenGetRowFilter200JSONResponse{
+		Body:    rowFilterToAPI(*result),
+		Headers: GenGetRowFilter200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// UpdateRowFilter implements the endpoint for partially updating a row filter.
+func (h *APIHandler) UpdateRowFilter(ctx context.Context, req GenUpdateRowFilterRequest) (GenUpdateRowFilterResponse, error) {
+	domReq := domain.UpdateRowFilterRequest{
+		Name:        req.Body.Name,
+		FilterSQL:   req.Body.FilterSql,
+		Description: req.Body.Description,
+	}
+	result, err := h.rowFilters.Update(ctx, req.RowFilterId, domReq)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenUpdateRowFilterResponse]("updateRowFilter", err, domainErrorResponder[GenUpdateRowFilterResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateRowFilterResponse {
+				return UpdateRowFilter400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateRowFilterResponse {
+				return UpdateRowFilter403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateRowFilterResponse {
+				return UpdateRowFilter404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenUpdateRowFilterResponse {
+				return UpdateRowFilter409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenUpdateRowFilter200JSONResponse{
+		Body:    rowFilterToAPI(*result),
+		Headers: GenUpdateRowFilter200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
@@ -595,8 +681,24 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req GenUnbindRowFilter
 // ListColumnMasks implements the endpoint for listing column masks for a table.
 func (h *APIHandler) ListColumnMasks(ctx context.Context, req GenListColumnMasksRequest) (GenListColumnMasksResponse, error) {
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	ms, total, err := h.columnMasks.GetForTable(ctx, req.TableId, page)
+	var (
+		ms    []domain.ColumnMask
+		total int64
+		err   error
+	)
+	if req.Params.TableId != nil && *req.Params.TableId != "" {
+		ms, total, err = h.columnMasks.GetForTable(ctx, *req.Params.TableId, page)
+	} else {
+		ms, total, err = h.columnMasks.List(ctx, page)
+	}
 	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenListColumnMasksResponse]("listColumnMasks", err, domainErrorResponder[GenListColumnMasksResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListColumnMasksResponse {
+				return ListColumnMasks403JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
 		return nil, err
 	}
 	out := make([]ColumnMask, len(ms))
@@ -612,9 +714,13 @@ func (h *APIHandler) ListColumnMasks(ctx context.Context, req GenListColumnMasks
 
 // CreateColumnMask implements the endpoint for creating a column mask on a table.
 func (h *APIHandler) CreateColumnMask(ctx context.Context, req GenCreateColumnMaskRequest) (GenCreateColumnMaskResponse, error) {
+	tableID := ""
+	if req.Body != nil && req.Body.TableId != nil {
+		tableID = *req.Body.TableId
+	}
 	domReq := domain.CreateColumnMaskRequest{
 		Name:           req.Body.Name,
-		TableID:        req.TableId,
+		TableID:        tableID,
 		ColumnName:     req.Body.ColumnName,
 		MaskExpression: req.Body.MaskExpression,
 	}
@@ -641,6 +747,62 @@ func (h *APIHandler) CreateColumnMask(ctx context.Context, req GenCreateColumnMa
 	return GenCreateColumnMask201JSONResponse{
 		Body:    columnMaskToAPI(*result),
 		Headers: GenCreateColumnMask201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetColumnMask implements the endpoint for retrieving a column mask.
+func (h *APIHandler) GetColumnMask(ctx context.Context, req GenGetColumnMaskRequest) (GenGetColumnMaskResponse, error) {
+	result, err := h.columnMasks.GetByID(ctx, req.ColumnMaskId)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetColumnMaskResponse]("getColumnMask", err, domainErrorResponder[GenGetColumnMaskResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetColumnMaskResponse {
+				return GetColumnMask403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetColumnMaskResponse {
+				return GetColumnMask404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenGetColumnMask200JSONResponse{
+		Body:    columnMaskToAPI(*result),
+		Headers: GenGetColumnMask200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// UpdateColumnMask implements the endpoint for partially updating a column mask.
+func (h *APIHandler) UpdateColumnMask(ctx context.Context, req GenUpdateColumnMaskRequest) (GenUpdateColumnMaskResponse, error) {
+	domReq := domain.UpdateColumnMaskRequest{
+		Name:           req.Body.Name,
+		ColumnName:     req.Body.ColumnName,
+		MaskExpression: req.Body.MaskExpression,
+		Description:    req.Body.Description,
+	}
+	result, err := h.columnMasks.Update(ctx, req.ColumnMaskId, domReq)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenUpdateColumnMaskResponse]("updateColumnMask", err, domainErrorResponder[GenUpdateColumnMaskResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateColumnMaskResponse {
+				return UpdateColumnMask400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateColumnMaskResponse {
+				return UpdateColumnMask403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateColumnMaskResponse {
+				return UpdateColumnMask404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenUpdateColumnMaskResponse {
+				return UpdateColumnMask409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenUpdateColumnMask200JSONResponse{
+		Body:    columnMaskToAPI(*result),
+		Headers: GenUpdateColumnMask200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

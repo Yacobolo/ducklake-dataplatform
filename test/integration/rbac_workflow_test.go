@@ -205,11 +205,12 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 	steps := []step{
 		{"create_filter", func(t *testing.T) {
 			body := map[string]interface{}{
+				"table_id":    "1",
 				"name":        "survivors-only",
 				"filter_sql":  `"Survived" = 1`,
 				"description": "survivors only",
 			}
-			resp := doRequest(t, "POST", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Admin, body)
+			resp := doRequest(t, "POST", env.Server.URL+"/v1/row-filters", env.Keys.Admin, body)
 			require.Equal(t, 201, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -227,7 +228,7 @@ func TestWorkflow_RLS_Lifecycle(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"list_filters_shows_new", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/row-filters?table_id=1", env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -281,12 +282,13 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 	steps := []step{
 		{"create_mask", func(t *testing.T) {
 			body := map[string]interface{}{
+				"table_id":        "1",
 				"name":            "fare-mask",
 				"column_name":     "Fare",
 				"mask_expression": "0.0",
 				"description":     "fare mask",
 			}
-			resp := doRequest(t, "POST", env.Server.URL+"/v1/tables/1/column-masks", env.Keys.Admin, body)
+			resp := doRequest(t, "POST", env.Server.URL+"/v1/column-masks", env.Keys.Admin, body)
 			require.Equal(t, 201, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -316,7 +318,7 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			_ = resp.Body.Close()
 		}},
 		{"list_masks_shows_new", func(t *testing.T) {
-			resp := doRequest(t, "GET", env.Server.URL+"/v1/tables/1/column-masks", env.Keys.Admin, nil)
+			resp := doRequest(t, "GET", env.Server.URL+"/v1/column-masks?table_id=1", env.Keys.Admin, nil)
 			require.Equal(t, 200, resp.StatusCode)
 
 			var result map[string]interface{}
@@ -395,10 +397,11 @@ func TestWorkflow_ManagementEndpointsAuthzEnforced(t *testing.T) {
 
 	t.Run("analyst_cannot_create_row_filter", func(t *testing.T) {
 		body := map[string]interface{}{
+			"table_id":   "1",
 			"name":       "denied-filter",
 			"filter_sql": `"Pclass" = 99`,
 		}
-		resp := doRequest(t, "POST", env.Server.URL+"/v1/tables/1/row-filters", env.Keys.Analyst, body)
+		resp := doRequest(t, "POST", env.Server.URL+"/v1/row-filters", env.Keys.Analyst, body)
 		assert.Equal(t, 403, resp.StatusCode,
 			"non-admin analyst should be blocked from creating row filters")
 		_ = resp.Body.Close()

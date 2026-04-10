@@ -46,7 +46,7 @@ func TestRequestValidationMiddleware_RejectsMalformedUUIDPath(t *testing.T) {
 	})).ServeHTTP(rec, req)
 
 	require.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Contains(t, rec.Body.String(), "principalId")
+	assert.Contains(t, rec.Body.String(), "principal_id")
 }
 
 func TestRequestValidationMiddleware_RejectsUnknownJSONFields(t *testing.T) {
@@ -83,7 +83,7 @@ func TestRequestValidationMiddleware_RejectsUnknownJSONFields(t *testing.T) {
 func TestRequestValidationMiddleware_AllowsEmptySetDefaultBody(t *testing.T) {
 	t.Parallel()
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/catalog-registrations/demo:set-default", http.NoBody)
+	req := httptest.NewRequest(http.MethodPut, "/v1/catalogs/demo/default", http.NoBody)
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -387,6 +388,81 @@ func (s *Service) ListJobs(ctx context.Context, pipelineName string) ([]domain.P
 		return nil, err
 	}
 	return s.pipelines.ListJobsByPipeline(ctx, p.ID)
+}
+
+// GetJob returns a pipeline-scoped job by ID.
+func (s *Service) GetJob(ctx context.Context, pipelineName, jobID string) (*domain.PipelineJob, error) {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return nil, err
+	}
+	p, err := s.pipelines.GetPipelineByName(ctx, pipelineName)
+	if err != nil {
+		return nil, err
+	}
+	job, err := s.pipelines.GetJobByID(ctx, jobID)
+	if err != nil {
+		return nil, err
+	}
+	if job.PipelineID != p.ID {
+		return nil, domain.ErrNotFound("pipeline job %q not found", jobID)
+	}
+	return job, nil
+}
+
+// UpdateJob applies partial changes to a pipeline-scoped job.
+func (s *Service) UpdateJob(ctx context.Context, principal string, pipelineName, jobID string, req domain.UpdatePipelineJobRequest) (*domain.PipelineJob, error) {
+	if err := s.requirePipelinesRepo(); err != nil {
+		return nil, err
+	}
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	job, err := s.GetJob(ctx, pipelineName, jobID)
+	if err != nil {
+		return nil, err
+	}
+
+	jobType := job.JobType
+	if req.JobType != nil {
+		jobType = *req.JobType
+	}
+	notebookID := job.NotebookID
+	if req.NotebookID != nil {
+		notebookID = *req.NotebookID
+	}
+	modelSelector := job.ModelSelector
+	if req.ModelSelector != nil {
+		modelSelector = *req.ModelSelector
+	}
+
+	switch jobType {
+	case "", domain.PipelineJobTypeNotebook:
+		if strings.TrimSpace(notebookID) == "" {
+			return nil, domain.ErrValidation("notebook_id is required for NOTEBOOK jobs")
+		}
+		if _, err := s.notebooks.GetSQLBlocks(ctx, notebookID); err != nil {
+			return nil, fmt.Errorf("validate notebook: %w", err)
+		}
+	case domain.PipelineJobTypeModelRun:
+		if strings.TrimSpace(modelSelector) == "" {
+			return nil, domain.ErrValidation("model_selector is required for MODEL_RUN jobs")
+		}
+	default:
+		return nil, domain.ErrValidation("job_type must be NOTEBOOK or MODEL_RUN")
+	}
+
+	result, err := s.pipelines.UpdateJob(ctx, job.ID, req)
+	if err != nil {
+		return nil, err
+	}
+	_ = s.audit.Insert(ctx, &domain.AuditEntry{
+		ID:            domain.NewID(),
+		PrincipalName: principal,
+		Action:        "pipeline.job.update",
+		Status:        "ALLOWED",
+		CreatedAt:     time.Now(),
+	})
+	return result, nil
 }
 
 // DeleteJob removes a job from a pipeline by ID.

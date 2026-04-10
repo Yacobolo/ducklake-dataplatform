@@ -93,6 +93,7 @@ components:
 // ============================================================
 
 func TestCheckSchemaRef_InlineResponse(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -118,6 +119,7 @@ paths:
 }
 
 func TestCheckSchemaRef_RefResponse(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -143,6 +145,7 @@ paths:
 // ============================================================
 
 func TestCheckPaginationParams_Missing(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -166,6 +169,7 @@ paths:
 }
 
 func TestCheckPaginationParams_Present(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -194,6 +198,7 @@ paths:
 // ============================================================
 
 func TestCheckPaginatedSchema(t *testing.T) {
+	t.Parallel()
 	t.Run("missing_data", func(t *testing.T) {
 		spec := `openapi: "3.0.3"
 info:
@@ -229,6 +234,7 @@ paths: {}
 // ============================================================
 
 func TestCheckPostCreateStatus_Returns200(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -247,6 +253,7 @@ paths:
 }
 
 func TestCheckPostCreateStatus_Returns201(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -264,6 +271,7 @@ paths:
 }
 
 func TestCheckAuthzMetadataPresent_Missing(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables:
@@ -282,6 +290,7 @@ paths:
 }
 
 func TestCheckAuthzMetadataPresent_Present(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables:
@@ -305,6 +314,7 @@ paths:
 }
 
 func TestCheckAuthzMetadataShape_Invalid(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /catalogs/{catalogName}/schemas/{schemaName}/tables:
@@ -329,6 +339,7 @@ paths:
 }
 
 func TestCheckAuthzMetadataShape_ValidAdminOnly(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /grants:
@@ -348,6 +359,7 @@ paths:
 }
 
 func TestCheckPostCreateStatus_ActionVerbExcluded(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /query:
@@ -365,9 +377,10 @@ paths:
 }
 
 func TestCheckPostCreateStatus_CancelQueryExcluded(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
-  /queries/{queryId}/cancel:
+  /queries/{queryId}/cancellations:
     post:
       operationId: cancelQuery
       tags: [Query]
@@ -381,11 +394,251 @@ paths:
 	assert.Empty(t, vs)
 }
 
+func TestCheckNoColonActionPaths_Flagged(t *testing.T) {
+	t.Parallel()
+	spec := specHeader + `
+paths:
+  /queries:execute:
+    post:
+      operationId: executeQuery
+      tags: [Query]
+      summary: Execute query
+      description: Execute a SQL query.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-no-colon-action-paths")
+	require.Len(t, vs, 1)
+	assert.Contains(t, vs[0].Message, "colon-action path")
+}
+
+func TestCheckNoColonActionPaths_Pass(t *testing.T) {
+	t.Parallel()
+	spec := specHeader + `
+paths:
+  /query-executions:
+    post:
+      operationId: executeQuery
+      tags: [Query]
+      summary: Execute query
+      description: Execute a SQL query.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-no-colon-action-paths")
+	assert.Empty(t, vs)
+}
+
+func TestCheckNoVerbSuffixPaths_Flagged(t *testing.T) {
+	t.Parallel()
+	spec := specHeader + `
+paths:
+  /assets/{asset_key}/materialize:
+    post:
+      operationId: materializeAsset
+      tags: [Assets]
+      summary: Materialize asset
+      description: Run a materialization.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-no-verb-suffix-paths")
+	require.Len(t, vs, 1)
+	assert.Contains(t, vs[0].Message, "verb-like path segment")
+}
+
+func TestCheckNoVerbSuffixPaths_Pass(t *testing.T) {
+	t.Parallel()
+	spec := specHeader + `
+paths:
+  /assets/{asset_key}/materializations:
+    post:
+      operationId: materializeAsset
+      tags: [Assets]
+      summary: Materialize asset
+      description: Run a materialization.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-no-verb-suffix-paths")
+	assert.Empty(t, vs)
+}
+
+func TestCheckSnakeCaseWireNames_FlagsQueryParamsAndProperties(t *testing.T) {
+	t.Parallel()
+	spec := `openapi: "3.0.3"
+info:
+  title: Test
+  version: "1.0"
+security:
+  - BearerAuth: []
+servers:
+  - url: https://api.example.com
+paths:
+  /items:
+    get:
+      operationId: listItems
+      tags: [Items]
+      summary: List items
+      description: List items.
+      parameters:
+        - name: maxResults
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ok
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+    Item:
+      type: object
+      properties:
+        displayName:
+          type: string
+`
+	vs := findRule(mustLint(t, spec), "check-snake-case-wire-names")
+	require.Len(t, vs, 2)
+}
+
+func TestCheckSnakeCaseWireNames_IgnoresPathParamsAndSnakeCaseSchemas(t *testing.T) {
+	t.Parallel()
+	spec := `openapi: "3.0.3"
+info:
+  title: Test
+  version: "1.0"
+security:
+  - BearerAuth: []
+servers:
+  - url: https://api.example.com
+paths:
+  /items/{itemId}:
+    parameters:
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getItem
+      tags: [Items]
+      summary: Get item
+      description: Get item.
+      parameters:
+        - name: page_token
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+    Item:
+      type: object
+      properties:
+        display_name:
+          type: string
+`
+	vs := findRule(mustLint(t, spec), "check-snake-case-wire-names")
+	assert.Empty(t, vs)
+}
+
+func TestCheckMixedScopedCollections_Flagged(t *testing.T) {
+	t.Parallel()
+	spec := specHeader + `
+paths:
+  /row-filters:
+    get:
+      operationId: listRowFilters
+      tags: [Security]
+      summary: List row filters
+      description: List row filters.
+      responses:
+        '200':
+          description: ok
+  /tables/{tableId}/row-filters:
+    parameters:
+      - name: tableId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: listTableRowFilters
+      tags: [Security]
+      summary: List table row filters
+      description: List row filters for a table.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-mixed-scoped-collections")
+	require.Len(t, vs, 1)
+	assert.Contains(t, vs[0].Message, "/row-filters")
+}
+
+func TestCheckMixedScopedCollections_Pass(t *testing.T) {
+	t.Parallel()
+	spec := specHeader + `
+paths:
+  /row-filters:
+    get:
+      operationId: listRowFilters
+      tags: [Security]
+      summary: List row filters
+      description: List row filters.
+      responses:
+        '200':
+          description: ok
+  /queries/{queryId}/cancellations:
+    parameters:
+      - name: queryId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: cancelQuery
+      tags: [Query]
+      summary: Cancel query
+      description: Cancel a query.
+      responses:
+        '200':
+          description: ok
+`
+	vs := findRule(mustLint(t, spec), "check-mixed-scoped-collections")
+	assert.Empty(t, vs)
+}
+
 // ============================================================
 // Custom rule: check-mutating-ops-403 (OAL014)
 // ============================================================
 
 func TestCheckMutatingOps403_Missing(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -404,6 +657,7 @@ paths:
 }
 
 func TestCheckMutatingOps403_Present(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -427,6 +681,7 @@ paths:
 }
 
 func TestCheckMutatingOps403_GetSkipped(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -444,6 +699,7 @@ paths:
 }
 
 func TestCheckMutatingOps403_SecurityOverrideEmpty(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /health:
@@ -466,6 +722,7 @@ paths:
 // ============================================================
 
 func TestCheckGetResource404_Missing(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -490,6 +747,7 @@ paths:
 }
 
 func TestCheckGetResource404_Present(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -519,6 +777,7 @@ paths:
 }
 
 func TestCheckGetResource404_CollectionPathSkipped(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -540,6 +799,7 @@ paths:
 // ============================================================
 
 func TestCheckErrorSchemaRef_NonErrorRef(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -568,6 +828,7 @@ paths:
 }
 
 func TestCheckErrorSchemaRef_ErrorRef(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -591,6 +852,7 @@ paths:
 }
 
 func TestCheckErrorSchemaRef_NoContent(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -620,6 +882,7 @@ paths:
 // ============================================================
 
 func TestCheckDeleteReturns204_Missing(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -644,6 +907,7 @@ paths:
 }
 
 func TestCheckDeleteReturns204_Present(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items/{itemId}:
@@ -671,6 +935,7 @@ paths:
 // ============================================================
 
 func TestCheckPaginationSchemaMatch_NoPaginated(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -696,6 +961,7 @@ paths:
 }
 
 func TestCheckPaginationSchemaMatch_WithPaginated(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -724,6 +990,7 @@ paths:
 // ============================================================
 
 func TestConfig_SeverityOverride(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -744,6 +1011,7 @@ paths:
 }
 
 func TestConfig_RuleOff(t *testing.T) {
+	t.Parallel()
 	spec := specHeader + `
 paths:
   /items:
@@ -763,6 +1031,7 @@ paths:
 }
 
 func TestRegisteredRules_NotEmpty(t *testing.T) {
+	t.Parallel()
 	rules := RegisteredRules()
 	assert.Greater(t, len(rules), 10, "expected at least 10 registered rules")
 
@@ -779,6 +1048,7 @@ func TestRegisteredRules_NotEmpty(t *testing.T) {
 // ============================================================
 
 func TestFilter_BySeverity(t *testing.T) {
+	t.Parallel()
 	vs := []Violation{
 		{Severity: SeverityError, RuleID: "E1"},
 		{Severity: SeverityWarning, RuleID: "W1"},
@@ -801,6 +1071,7 @@ func TestFilter_BySeverity(t *testing.T) {
 }
 
 func TestHasErrors(t *testing.T) {
+	t.Parallel()
 	t.Run("with_errors", func(t *testing.T) {
 		assert.True(t, HasErrors([]Violation{{Severity: SeverityError}}))
 	})
@@ -813,6 +1084,7 @@ func TestHasErrors(t *testing.T) {
 }
 
 func TestViolation_String(t *testing.T) {
+	t.Parallel()
 	v := Violation{
 		File:     "openapi.yaml",
 		Line:     42,
@@ -824,6 +1096,7 @@ func TestViolation_String(t *testing.T) {
 }
 
 func TestLintActualSpec(t *testing.T) {
+	t.Parallel()
 	// Lint the generated project spec end-to-end to verify the linter runs
 	// without crashing and reports violations. The spec currently has many
 	// OWASP-level violations that need to be fixed incrementally.

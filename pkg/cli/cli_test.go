@@ -211,7 +211,7 @@ func TestCLI_PathParamSubstitution(t *testing.T) {
 
 	captured := rec.last()
 	assert.Equal(t, "/v1/catalogs/production/schemas", captured.Path)
-	assert.NotContains(t, captured.Path, "{catalogName}")
+	assert.NotContains(t, captured.Path, "{catalog_name}")
 }
 
 func TestCLI_PathParamSubstitution_MultiLevel(t *testing.T) {
@@ -227,8 +227,8 @@ func TestCLI_PathParamSubstitution_MultiLevel(t *testing.T) {
 
 	captured := rec.last()
 	assert.Equal(t, "/v1/catalogs/prod/schemas/myschema", captured.Path)
-	assert.NotContains(t, captured.Path, "{catalogName}")
-	assert.NotContains(t, captured.Path, "{schemaName}")
+	assert.NotContains(t, captured.Path, "{catalog_name}")
+	assert.NotContains(t, captured.Path, "{schema_name}")
 }
 
 func TestCLI_PathParamSubstitution_EscapesPathSegments(t *testing.T) {
@@ -252,7 +252,7 @@ func TestCLI_PathParamSubstitution_EscapesPathSegments(t *testing.T) {
 }
 
 func TestCLI_PathParamSubstitution_NoUnresolvedPlaceholders(t *testing.T) {
-	// When catalogName IS provided as a positional arg, verify no unresolved
+	// When catalog_name IS provided as a path flag, verify no unresolved
 	// placeholders remain. This test documents that substitution works
 	// correctly when the argument is provided.
 	rec := &requestRecorder{}
@@ -1183,8 +1183,8 @@ func TestCLI_CatalogSetDefault_SendsEmptyJSONObject(t *testing.T) {
 	require.NoError(t, err)
 
 	captured := rec.last()
-	assert.Equal(t, "POST", captured.Method)
-	assert.Equal(t, "/v1/catalog-registrations/lake:set-default", captured.Path)
+	assert.Equal(t, "PUT", captured.Method)
+	assert.Equal(t, "/v1/catalogs/lake/default", captured.Path)
 	assert.JSONEq(t, `{}`, captured.Body)
 }
 

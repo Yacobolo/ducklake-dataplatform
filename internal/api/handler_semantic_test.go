@@ -19,14 +19,17 @@ type mockSemanticService struct {
 	getSemanticModelFn           func(ctx context.Context, semanticModelID string) (*domain.SemanticModel, error)
 	createMetricFn               func(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error)
 	listMetricsFn                func(ctx context.Context, semanticModelID string) ([]domain.SemanticMetric, error)
+	getMetricFn                  func(ctx context.Context, semanticModelID, metricName string) (*domain.SemanticMetric, error)
 	updateMetricFn               func(ctx context.Context, semanticModelID, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error)
 	deleteMetricFn               func(ctx context.Context, semanticModelID, metricName string) error
 	createRelationshipForModelFn func(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
 	listRelationshipsForModelFn  func(ctx context.Context, semanticModelID string) ([]domain.SemanticRelationship, error)
+	getRelationshipForModelFn    func(ctx context.Context, semanticModelID, relationshipName string) (*domain.SemanticRelationship, error)
 	updateRelationshipForModelFn func(ctx context.Context, semanticModelID, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
 	deleteRelationshipForModelFn func(ctx context.Context, semanticModelID, relationshipName string) error
 	explainMetricQueryFn         func(ctx context.Context, req semantic.MetricQueryRequest) (*semantic.MetricQueryPlan, error)
 	runMetricQueryFn             func(ctx context.Context, principal string, req semantic.MetricQueryRequest) (*semantic.MetricQueryResult, error)
+	getPreAggregationFn          func(ctx context.Context, semanticModelID, preAggName string) (*domain.SemanticPreAggregation, error)
 }
 
 func (m *mockSemanticService) CreateSemanticModel(ctx context.Context, principal string, req domain.CreateSemanticModelRequest) (*domain.SemanticModel, error) {
@@ -74,6 +77,13 @@ func (m *mockSemanticService) ListMetrics(ctx context.Context, semanticModelID s
 	panic("ListMetrics not implemented")
 }
 
+func (m *mockSemanticService) GetMetric(ctx context.Context, semanticModelID, metricName string) (*domain.SemanticMetric, error) {
+	if m.getMetricFn != nil {
+		return m.getMetricFn(ctx, semanticModelID, metricName)
+	}
+	panic("GetMetric not implemented")
+}
+
 func (m *mockSemanticService) UpdateMetric(ctx context.Context, semanticModelID string, args ...any) (*domain.SemanticMetric, error) {
 	if m.updateMetricFn != nil {
 		metricName, _ := args[len(args)-2].(string)
@@ -99,6 +109,13 @@ func (m *mockSemanticService) ListPreAggregations(context.Context, string, ...st
 	panic("ListPreAggregations not implemented")
 }
 
+func (m *mockSemanticService) GetPreAggregation(ctx context.Context, semanticModelID, preAggName string) (*domain.SemanticPreAggregation, error) {
+	if m.getPreAggregationFn != nil {
+		return m.getPreAggregationFn(ctx, semanticModelID, preAggName)
+	}
+	panic("GetPreAggregation not implemented")
+}
+
 func (m *mockSemanticService) UpdatePreAggregation(context.Context, string, ...any) (*domain.SemanticPreAggregation, error) {
 	panic("UpdatePreAggregation not implemented")
 }
@@ -119,6 +136,13 @@ func (m *mockSemanticService) ListRelationshipsForModel(ctx context.Context, sem
 		return m.listRelationshipsForModelFn(ctx, semanticModelID)
 	}
 	panic("ListRelationshipsForModel not implemented")
+}
+
+func (m *mockSemanticService) GetRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string) (*domain.SemanticRelationship, error) {
+	if m.getRelationshipForModelFn != nil {
+		return m.getRelationshipForModelFn(ctx, semanticModelID, relationshipName)
+	}
+	panic("GetRelationshipForModel not implemented")
 }
 
 func (m *mockSemanticService) UpdateRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {

@@ -34,8 +34,10 @@ type lineageService interface {
 
 // tagService defines the tag operations used by the API handler.
 type tagService interface {
+	GetTag(ctx context.Context, id string) (*domain.Tag, error)
 	ListTags(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error)
 	CreateTag(ctx context.Context, principal string, req domain.CreateTagRequest) (*domain.Tag, error)
+	UpdateTag(ctx context.Context, principal string, id string, req domain.UpdateTagRequest) (*domain.Tag, error)
 	DeleteTag(ctx context.Context, principal string, id string) error
 	AssignTag(ctx context.Context, principal string, req domain.AssignTagRequest) (*domain.TagAssignment, error)
 	UnassignTag(ctx context.Context, principal string, id string) error
@@ -354,6 +356,64 @@ func (h *APIHandler) CreateTag(ctx context.Context, req GenCreateTagRequest) (Ge
 	return GenCreateTag201JSONResponse{
 		Body:    tagToAPI(*result),
 		Headers: GenCreateTag201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetTag implements the endpoint for retrieving a tag by ID.
+func (h *APIHandler) GetTag(ctx context.Context, req GenGetTagRequest) (GenGetTagResponse, error) {
+	tag, err := h.tags.GetTag(ctx, req.TagId)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetTagResponse]("getTag", err, domainErrorResponder[GenGetTagResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetTagResponse {
+				return GetTag403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetTagResponse {
+				return GetTag404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenGetTag200JSONResponse{
+		Body:    tagToAPI(*tag),
+		Headers: GenGetTag200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// UpdateTag implements the endpoint for partially updating a tag.
+func (h *APIHandler) UpdateTag(ctx context.Context, req GenUpdateTagRequest) (GenUpdateTagResponse, error) {
+	caller, ok := domain.PrincipalFromContext(ctx)
+	if !ok || !caller.IsAdmin {
+		return UpdateTag403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: 403, Message: "admin privileges required"}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
+	result, err := h.tags.UpdateTag(ctx, caller.Name, req.TagId, domain.UpdateTagRequest{
+		Key:   req.Body.Key,
+		Value: req.Body.Value,
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenUpdateTagResponse]("updateTag", err, domainErrorResponder[GenUpdateTagResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateTagResponse {
+				return UpdateTag400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateTagResponse {
+				return UpdateTag403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateTagResponse {
+				return UpdateTag404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenUpdateTagResponse {
+				return UpdateTag409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenUpdateTag200JSONResponse{
+		Body:    tagToAPI(*result),
+		Headers: GenUpdateTag200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

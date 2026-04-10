@@ -22,6 +22,14 @@ type CreateColumnMaskRequest struct {
 	Description    string
 }
 
+// UpdateColumnMaskRequest holds partial-update parameters for a column mask.
+type UpdateColumnMaskRequest struct {
+	Name           *string
+	ColumnName     *string
+	MaskExpression *string
+	Description    *string
+}
+
 // Validate checks that the request is well-formed.
 func (r *CreateColumnMaskRequest) Validate() error {
 	if r.TableID == "" {
@@ -35,6 +43,20 @@ func (r *CreateColumnMaskRequest) Validate() error {
 	}
 	if r.MaskExpression == "" {
 		return ErrValidation("mask_expression is required")
+	}
+	return nil
+}
+
+// Validate checks that the update request is well-formed.
+func (r *UpdateColumnMaskRequest) Validate() error {
+	if r.Name != nil && *r.Name == "" {
+		return ErrValidation("name cannot be empty")
+	}
+	if r.ColumnName != nil && *r.ColumnName == "" {
+		return ErrValidation("column_name cannot be empty")
+	}
+	if r.MaskExpression != nil && *r.MaskExpression == "" {
+		return ErrValidation("mask_expression cannot be empty")
 	}
 	return nil
 }

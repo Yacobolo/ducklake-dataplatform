@@ -115,7 +115,9 @@ func (h *Handler) SecurityPrincipalsSetAdmin(w http.ResponseWriter, r *http.Requ
 	if !parseFormOrRenderBadRequest(w, r) {
 		return
 	}
-	if err := h.deps.Principal.SetAdmin(r.Context(), principalID, formBool(r.Form, "is_admin")); err != nil {
+	if _, err := h.deps.Principal.Update(r.Context(), principalID, domain.UpdatePrincipalRequest{
+		IsAdmin: boolFormPtr(r.Form, "is_admin"),
+	}); err != nil {
 		renderServiceError(w, err)
 		return
 	}
@@ -634,6 +636,11 @@ func formString(values map[string][]string, key string) string {
 func formBool(values map[string][]string, key string) bool {
 	v := strings.ToLower(formString(values, key))
 	return v == "true" || v == "1" || v == "on" || v == "yes"
+}
+
+func boolFormPtr(values map[string][]string, key string) *bool {
+	v := formBool(values, key)
+	return &v
 }
 
 func first(values []string) string {

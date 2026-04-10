@@ -134,7 +134,7 @@ func TestAuthHTTPHandler_WebSessionAdminEndpoints(t *testing.T) {
 
 	revokeBody, err := json.Marshal(map[string]string{"principal_id": bootstrap.Principal.ID})
 	require.NoError(t, err)
-	revokeReq := httptest.NewRequest(http.MethodPost, "/v1/auth/sessions/revoke-all", bytes.NewReader(revokeBody))
+	revokeReq := httptest.NewRequest(http.MethodPost, "/v1/auth/sessions/revocations", bytes.NewReader(revokeBody))
 	revokeReq = revokeReq.WithContext(domain.WithPrincipal(revokeReq.Context(), domain.ContextPrincipal{Name: "admin", IsAdmin: true, Type: "user"}))
 	revokeRR := httptest.NewRecorder()
 	h.RevokeAllWebSessions(revokeRR, revokeReq)

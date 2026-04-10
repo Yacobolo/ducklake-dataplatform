@@ -14,53 +14,53 @@ op listProductDomains(@query max_results?: int32, @query page_token?: string): O
 @summary("Create product domain")
 op createProductDomain(@body body: CreateProductDomainRequest): Created<ProductDomain> | MutatingErrorResponses | ConflictResponse;
 
-@route("/product-domains/{domainName}")
+@route("/product-domains/{domain_name}")
 @get
 @tag("Products")
 @summary("Get product domain")
-op getProductDomain(domainName: string): Ok<ProductDomain> | LookupErrorResponses;
+op getProductDomain(domain_name: string): Ok<ProductDomain> | LookupErrorResponses;
 
-@route("/product-domains/{domainName}")
+@route("/product-domains/{domain_name}")
 @patch(#{ implicitOptionality: true })
 @tag("Products")
 @summary("Update product domain")
-op updateProductDomain(domainName: string, @body body: UpdateProductDomainRequest): Ok<ProductDomain> | ResourceErrorResponses | BadRequestResponse;
+op updateProductDomain(domain_name: string, @body body: UpdateProductDomainRequest): Ok<ProductDomain> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/product-domains/{domainName}")
+@route("/product-domains/{domain_name}")
 @delete
 @tag("Products")
 @summary("Delete product domain")
-op deleteProductDomain(domainName: string): NoContent | ResourceErrorResponses;
+op deleteProductDomain(domain_name: string): NoContent | ResourceErrorResponses;
 
-@route("/product-teams")
+@route("/product-domains/{domain_name}/teams")
 @get
 @tag("Products")
 @summary("List product teams")
-op listProductTeams(@query domain_name?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedProductTeams> | StandardErrorResponses;
+op listProductTeams(domain_name: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedProductTeams> | StandardErrorResponses;
 
-@route("/product-domains/{domainName}/teams")
+@route("/product-domains/{domain_name}/teams")
 @post
 @tag("Products")
 @summary("Create product team")
-op createProductTeam(domainName: string, @body body: CreateProductTeamRequest): Created<ProductTeam> | ValidationResourceErrorResponses;
+op createProductTeam(domain_name: string, @body body: CreateProductTeamRequest): Created<ProductTeam> | ValidationResourceErrorResponses;
 
-@route("/product-domains/{domainName}/teams/{teamName}")
+@route("/product-domains/{domain_name}/teams/{team_name}")
 @get
 @tag("Products")
 @summary("Get product team")
-op getProductTeam(domainName: string, teamName: string): Ok<ProductTeam> | ResourceErrorResponses;
+op getProductTeam(domain_name: string, team_name: string): Ok<ProductTeam> | ResourceErrorResponses;
 
-@route("/product-domains/{domainName}/teams/{teamName}")
+@route("/product-domains/{domain_name}/teams/{team_name}")
 @patch(#{ implicitOptionality: true })
 @tag("Products")
 @summary("Update product team")
-op updateProductTeam(domainName: string, teamName: string, @body body: UpdateProductTeamRequest): Ok<ProductTeam> | ResourceErrorResponses | BadRequestResponse;
+op updateProductTeam(domain_name: string, team_name: string, @body body: UpdateProductTeamRequest): Ok<ProductTeam> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/product-domains/{domainName}/teams/{teamName}")
+@route("/product-domains/{domain_name}/teams/{team_name}")
 @delete
 @tag("Products")
 @summary("Delete product team")
-op deleteProductTeam(domainName: string, teamName: string): NoContent | ResourceErrorResponses;
+op deleteProductTeam(domain_name: string, team_name: string): NoContent | ResourceErrorResponses;
 
 @route("/data-products")
 @get
@@ -95,110 +95,110 @@ op listProductScorecards(@query max_results?: int32, @query page_token?: string)
 @summary("Get product portfolio report")
 op getProductPortfolioReport(): Ok<ProductPortfolioReport> | StandardErrorResponses;
 
-@route("/data-products/{productSlug}")
+@route("/data-products/{product_slug}")
 @get
 @tag("Products")
 @summary("Get data product")
-op getDataProduct(productSlug: string): Ok<DataProductDetail> | LookupErrorResponses;
+op getDataProduct(product_slug: string): Ok<DataProductDetail> | LookupErrorResponses;
 
-@route("/data-products/{productSlug}")
+@route("/data-products/{product_slug}")
 @patch(#{ implicitOptionality: true })
 @tag("Products")
 @summary("Update data product")
-op updateDataProduct(productSlug: string, @body body: UpdateDataProductRequest): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
+op updateDataProduct(product_slug: string, @body body: UpdateDataProductRequest): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/data-products/{productSlug}")
+@route("/data-products/{product_slug}")
 @delete
 @tag("Products")
 @summary("Delete data product")
-op deleteDataProduct(productSlug: string): NoContent | ResourceErrorResponses;
+op deleteDataProduct(product_slug: string): NoContent | ResourceErrorResponses;
 
-@route("/data-products/{productSlug}/versions")
+@route("/data-products/{product_slug}/versions")
 @get
 @tag("Products")
 @summary("List data product versions")
-op listDataProductVersions(productSlug: string): Ok<DataProductVersionList> | LookupErrorResponses;
+op listDataProductVersions(product_slug: string): Ok<DataProductVersionList> | LookupErrorResponses;
 
-@route("/data-products/{productSlug}/versions/{version}")
+@route("/data-products/{product_slug}/versions/{version}")
 @get
 @tag("Products")
 @summary("Get data product version")
-op getDataProductVersion(productSlug: string, version: int32): Ok<DataProductVersionDetail> | LookupErrorResponses;
+op getDataProductVersion(product_slug: string, version: int32): Ok<DataProductVersionDetail> | LookupErrorResponses;
 
-@route("/data-products/{productSlug}/versions/{version}")
+@route("/data-products/{product_slug}/versions/{version}")
 @delete
 @tag("Products")
 @summary("Delete data product version")
-op deleteDataProductVersion(productSlug: string, version: int32): NoContent | ResourceErrorResponses | BadRequestResponse;
+op deleteDataProductVersion(product_slug: string, version: int32): NoContent | ResourceErrorResponses | BadRequestResponse;
 
-@route("/data-products/{productSlug}/versions")
+@route("/data-products/{product_slug}/versions")
 @post
 @tag("Products")
 @summary("Create data product version")
-op createDataProductVersion(productSlug: string, @body body: CreateDataProductVersionRequest): Created<DataProductDetail> | ResourceErrorResponses | BadRequestResponse | ConflictResponse;
+op createDataProductVersion(product_slug: string, @body body: CreateDataProductVersionRequest): Created<DataProductDetail> | ResourceErrorResponses | BadRequestResponse | ConflictResponse;
 
-@route("/data-products/{productSlug}/versions/{version}:publish")
+@route("/data-products/{product_slug}/versions/{version}/publications")
 @post
 @tag("Products")
 @summary("Publish data product version")
-op publishDataProductVersion(productSlug: string, version: int32): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
+op publishDataProductVersion(product_slug: string, version: int32): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/data-products/{productSlug}/versions/{version}:deprecate")
+@route("/data-products/{product_slug}/versions/{version}/deprecations")
 @post
 @tag("Products")
 @summary("Deprecate data product version")
-op deprecateDataProductVersion(productSlug: string, version: int32, @body body?: DeprecateProductVersionRequest): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
+op deprecateDataProductVersion(product_slug: string, version: int32, @body body?: DeprecateProductVersionRequest): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/data-products/{productSlug}/versions/{version}:retire")
+@route("/data-products/{product_slug}/versions/{version}/retirements")
 @post
 @tag("Products")
 @summary("Retire data product version")
-op retireDataProductVersion(productSlug: string, version: int32): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
+op retireDataProductVersion(product_slug: string, version: int32): Ok<DataProductDetail> | ResourceErrorResponses | BadRequestResponse;
 
-@route("/data-products/{productSlug}/status")
+@route("/data-products/{product_slug}/status")
 @get
 @tag("Products")
 @summary("Get data product status")
-op getDataProductStatus(productSlug: string): Ok<DataProductStatus> | LookupErrorResponses;
+op getDataProductStatus(product_slug: string): Ok<DataProductStatus> | LookupErrorResponses;
 
-@route("/data-products/{productSlug}/outputs")
+@route("/data-products/{product_slug}/outputs")
 @get
 @tag("Products")
 @summary("List data product outputs")
-op listDataProductOutputs(productSlug: string): Ok<ProductOutputList> | LookupErrorResponses;
+op listDataProductOutputs(product_slug: string): Ok<ProductOutputList> | LookupErrorResponses;
 
-@route("/data-products/{productSlug}/semantic-entrypoints")
+@route("/data-products/{product_slug}/semantic-entrypoints")
 @get
 @tag("Products")
 @summary("List data product semantic entrypoints")
-op listDataProductSemanticEntrypoints(productSlug: string): Ok<ProductSemanticEntrypointList> | LookupErrorResponses;
+op listDataProductSemanticEntrypoints(product_slug: string): Ok<ProductSemanticEntrypointList> | LookupErrorResponses;
 
-@route("/data-products/{productSlug}/dependencies")
+@route("/data-products/{product_slug}/dependencies")
 @get
 @tag("Products")
 @summary("List data product dependencies")
-op listDataProductDependencies(productSlug: string): Ok<ProductDependencyList> | LookupErrorResponses;
+op listDataProductDependencies(product_slug: string): Ok<ProductDependencyList> | LookupErrorResponses;
 
-@route("/data-products/{productSlug}/dependencies")
+@route("/data-products/{product_slug}/dependencies")
 @post
 @tag("Products")
 @summary("Create data product dependency")
-op createDataProductDependency(productSlug: string, @body body: CreateProductDependencyRequest): Created<ProductDependencyList> | ResourceErrorResponses | BadRequestResponse | ConflictResponse;
+op createDataProductDependency(product_slug: string, @body body: CreateProductDependencyRequest): Created<ProductDependencyList> | ResourceErrorResponses | BadRequestResponse | ConflictResponse;
 
-@route("/data-products/{productSlug}/subscriptions")
+@route("/data-products/{product_slug}/subscriptions")
 @get
 @tag("Products")
 @summary("List data product subscriptions")
-op listDataProductSubscriptions(productSlug: string): Ok<ProductSubscriptionList> | LookupErrorResponses;
+op listDataProductSubscriptions(product_slug: string): Ok<ProductSubscriptionList> | LookupErrorResponses;
 
-@route("/data-products/{productSlug}/subscriptions")
+@route("/data-products/{product_slug}/subscriptions")
 @post
 @tag("Products")
 @summary("Create data product subscription")
-op createDataProductSubscription(productSlug: string, @body body: CreateProductSubscriptionRequest): Created<ProductSubscription> | ResourceErrorResponses | BadRequestResponse | ConflictResponse;
+op createDataProductSubscription(product_slug: string, @body body: CreateProductSubscriptionRequest): Created<ProductSubscription> | ResourceErrorResponses | BadRequestResponse | ConflictResponse;
 
-@route("/data-products/{productSlug}/events")
+@route("/data-products/{product_slug}/events")
 @get
 @tag("Products")
 @summary("List data product events")
-op listDataProductEvents(productSlug: string, @query max_results?: int32, @query page_token?: string): Ok<ProductEventList> | LookupErrorResponses;
+op listDataProductEvents(product_slug: string, @query max_results?: int32, @query page_token?: string): Ok<ProductEventList> | LookupErrorResponses;

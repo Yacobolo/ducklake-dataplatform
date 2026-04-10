@@ -381,7 +381,7 @@ func selectPositionalPathParams(endpoint gen.APIGenEndpoint, pathParams []string
 	if strings.HasPrefix(endpoint.OperationID, "create") {
 		selected := make([]string, 0, len(pathParams))
 		for _, p := range pathParams {
-			if p == "catalogName" {
+			if p == "catalog_name" {
 				continue
 			}
 			selected = append(selected, p)
@@ -395,7 +395,7 @@ func selectPositionalPathParams(endpoint gen.APIGenEndpoint, pathParams []string
 
 	selected := make([]string, 0, len(pathParams))
 	for _, p := range pathParams {
-		if p == "catalogName" {
+		if p == "catalog_name" {
 			continue
 		}
 		selected = append(selected, p)
@@ -434,7 +434,7 @@ func selectPositionalBodyName(endpoint gen.APIGenEndpoint, pathParams []string, 
 	}
 
 	for _, p := range pathParams {
-		if p != "catalogName" {
+		if p != "catalog_name" {
 			return false
 		}
 	}

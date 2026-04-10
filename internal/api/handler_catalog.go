@@ -36,11 +36,14 @@ type catalogService interface {
 
 // === Catalog Management ===
 
-// GetCatalog implements the endpoint for retrieving catalog information.
+// GetCatalog implements the endpoint for retrieving a catalog registration by name.
 func (h *APIHandler) GetCatalog(ctx context.Context, request GenGetCatalogRequest) (GenGetCatalogResponse, error) {
-	info, err := h.catalog.GetCatalogInfo(ctx, string(request.CatalogName))
+	result, err := h.catalogRegistration.Get(ctx, string(request.CatalogName))
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenGetCatalogResponse]("getCatalog", err, domainErrorResponder[GenGetCatalogResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetCatalogResponse {
+				return GenGetCatalog403JSONResponse{GenForbiddenJSONResponse(resp)}
+			},
 			NotFound: func(resp NotFoundJSONResponse) GenGetCatalogResponse {
 				return GenGetCatalog404JSONResponse{GenNotFoundJSONResponse(resp)}
 			},
@@ -50,7 +53,7 @@ func (h *APIHandler) GetCatalog(ctx context.Context, request GenGetCatalogReques
 		return nil, err
 	}
 	return GenGetCatalog200JSONResponse{
-		Body:    catalogInfoToAPI(*info),
+		Body:    catalogRegistrationToAPI(*result),
 		Headers: GenGetCatalog200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }

@@ -34,9 +34,9 @@ func TestAPI_PipelineRoutesAreRegisteredAcrossLegacySurface(t *testing.T) {
 
 	tests := []string{
 		"/pipelines",
-		"/pipelines/{pipelineName}",
-		"/pipelines/{pipelineName}/jobs",
-		"/pipelines/{pipelineName}/jobs/{jobId}",
+		"/pipelines/{pipeline_name}",
+		"/pipelines/{pipeline_name}/jobs",
+		"/pipelines/{pipeline_name}/jobs/{job_id}",
 	}
 	found := map[string]bool{}
 	err := chi.Walk(r, func(_ string, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {

@@ -13,7 +13,7 @@ concurrency:
 
 env:
   GO_VERSION: "1.25.8"
-  VULNCHECK_GO_VERSION: "1.26.1"
+  VULNCHECK_GO_VERSION: "1.26.2"
   NODE_VERSION: "20"
   # Pinned tool versions for reproducible builds
   TASK_VERSION: "v3.45.4"
@@ -104,7 +104,7 @@ jobs:
     needs: generate
     if: github.event_name != 'push' || github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
@@ -113,6 +113,7 @@ jobs:
       - uses: golangci/golangci-lint-action@v7
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
+          args: --timeout=10m
       - name: Install Task
         run: go install github.com/go-task/task/v3/cmd/task@${{ env.TASK_VERSION }}
       - name: Lint OpenAPI spec

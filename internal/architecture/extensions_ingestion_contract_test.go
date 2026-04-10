@@ -12,9 +12,9 @@ func TestCanonicalOpenAPI_IngestionEndpointsUseConcreteSchemas(t *testing.T) {
 
 	doc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
 
-	assertOperationSchemas(t, doc, "POST", "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/upload-url", "#/components/schemas/UploadUrlRequest", "#/components/schemas/UploadUrlResponse")
-	assertOperationSchemas(t, doc, "POST", "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/commit", "#/components/schemas/CommitIngestionRequest", "#/components/schemas/IngestionResult")
-	assertOperationSchemas(t, doc, "POST", "/catalogs/{catalogName}/schemas/{schemaName}/tables/{tableName}/ingestion/load", "#/components/schemas/LoadExternalRequest", "#/components/schemas/IngestionResult")
+	assertOperationSchemas(t, doc, "POST", "/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/upload-urls", "#/components/schemas/UploadUrlRequest", "#/components/schemas/UploadUrlResponse")
+	assertOperationSchemas(t, doc, "POST", "/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-commits", "#/components/schemas/CommitIngestionRequest", "#/components/schemas/IngestionResult")
+	assertOperationSchemas(t, doc, "POST", "/catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-loads", "#/components/schemas/LoadExternalRequest", "#/components/schemas/IngestionResult")
 }
 
 func TestCanonicalOpenAPI_IngestionEndpointsExposeInsertAuthz(t *testing.T) {

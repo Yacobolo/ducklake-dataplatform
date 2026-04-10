@@ -13,7 +13,10 @@ import (
 
 type mockColumnMaskRepo struct {
 	CreateFn                  func(ctx context.Context, m *domain.ColumnMask) (*domain.ColumnMask, error)
+	GetByIDFn                 func(ctx context.Context, id string) (*domain.ColumnMask, error)
+	ListFn                    func(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	GetForTableFn             func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
+	UpdateFn                  func(ctx context.Context, id string, req domain.UpdateColumnMaskRequest) (*domain.ColumnMask, error)
 	DeleteFn                  func(ctx context.Context, id string) error
 	BindFn                    func(ctx context.Context, b *domain.ColumnMaskBinding) error
 	UnbindFn                  func(ctx context.Context, b *domain.ColumnMaskBinding) error
@@ -25,8 +28,29 @@ func (m *mockColumnMaskRepo) Create(ctx context.Context, mask *domain.ColumnMask
 	return m.CreateFn(ctx, mask)
 }
 
+func (m *mockColumnMaskRepo) GetByID(ctx context.Context, id string) (*domain.ColumnMask, error) {
+	if m.GetByIDFn == nil {
+		panic("unexpected call to mockColumnMaskRepo.GetByID")
+	}
+	return m.GetByIDFn(ctx, id)
+}
+
+func (m *mockColumnMaskRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
+	if m.ListFn == nil {
+		panic("unexpected call to mockColumnMaskRepo.List")
+	}
+	return m.ListFn(ctx, page)
+}
+
 func (m *mockColumnMaskRepo) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
 	return m.GetForTableFn(ctx, tableID, page)
+}
+
+func (m *mockColumnMaskRepo) Update(ctx context.Context, id string, req domain.UpdateColumnMaskRequest) (*domain.ColumnMask, error) {
+	if m.UpdateFn == nil {
+		panic("unexpected call to mockColumnMaskRepo.Update")
+	}
+	return m.UpdateFn(ctx, id, req)
 }
 
 func (m *mockColumnMaskRepo) Delete(ctx context.Context, id string) error {

@@ -63,12 +63,12 @@ func TestAPIGenRoutes_MountUnderV1_NoDoublePrefix(t *testing.T) {
 		wantStatus int
 		wantOpID   string
 	}{
-		{name: "execute query", method: http.MethodPost, path: "/v1/queries:execute", wantStatus: http.StatusNoContent, wantOpID: "executeQuery"},
+		{name: "execute query", method: http.MethodPost, path: "/v1/query-executions", wantStatus: http.StatusNoContent, wantOpID: "executeQuery"},
 		{name: "health", method: http.MethodGet, path: "/v1/healthz", wantStatus: http.StatusNoContent, wantOpID: "getHealth"},
-		{name: "path parameter", method: http.MethodGet, path: "/v1/catalog-registrations/test-catalog", wantStatus: http.StatusNoContent, wantOpID: "getCatalogRegistration"},
-		{name: "nested path parameter", method: http.MethodPost, path: "/v1/catalogs/c1/schemas/s1/tables/t1/ingestion/commit", wantStatus: http.StatusNoContent, wantOpID: "commitTableIngestion"},
-		{name: "method mismatch", method: http.MethodGet, path: "/v1/queries:execute", wantStatus: http.StatusMethodNotAllowed},
-		{name: "double prefix", method: http.MethodPost, path: "/v1/v1/queries:execute", wantStatus: http.StatusNotFound},
+		{name: "path parameter", method: http.MethodGet, path: "/v1/catalogs/test-catalog", wantStatus: http.StatusNoContent, wantOpID: "getCatalog"},
+		{name: "nested path parameter", method: http.MethodPost, path: "/v1/catalogs/c1/schemas/s1/tables/t1/ingestion-commits", wantStatus: http.StatusNoContent, wantOpID: "commitTableIngestion"},
+		{name: "method mismatch", method: http.MethodGet, path: "/v1/query-executions", wantStatus: http.StatusMethodNotAllowed},
+		{name: "double prefix", method: http.MethodPost, path: "/v1/v1/query-executions", wantStatus: http.StatusNotFound},
 	}
 
 	for _, tt := range tests {
@@ -99,7 +99,7 @@ func TestAPIGenStrictRoutes_DispatchesExecuteQueryOnV1Route(t *testing.T) {
 		api.RegisterAPIGenStrictRoutes(r, strict)
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/queries:execute", strings.NewReader(`{"sql":"select 1"}`))
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-executions", strings.NewReader(`{"sql":"select 1"}`))
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 

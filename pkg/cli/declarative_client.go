@@ -509,7 +509,7 @@ func (c *APIStateClient) readCatalogs(ctx context.Context, state *declarative.De
 		if pageToken != "" {
 			query.Set("page_token", pageToken)
 		}
-		resp, err := c.client.Do(http.MethodGet, "/catalog-registrations", query, nil)
+		resp, err := c.client.Do(http.MethodGet, "/catalogs", query, nil)
 		if err != nil {
 			return err
 		}
@@ -720,7 +720,7 @@ func (c *APIStateClient) readTableGovernance(ctx context.Context, catalogName, s
 }
 
 func (c *APIStateClient) readTableRowFilters(ctx context.Context, catalogName, schemaName, tableName, tableID string, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/row-filters")
+	pages, err := c.fetchAllPages(ctx, "/row-filters?table_id="+url.QueryEscape(tableID))
 	if err != nil {
 		return err
 	}
@@ -796,7 +796,7 @@ func (c *APIStateClient) readRowFilterBindings(ctx context.Context, filterID str
 }
 
 func (c *APIStateClient) readTableColumnMasks(ctx context.Context, catalogName, schemaName, tableName, tableID string, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/column-masks")
+	pages, err := c.fetchAllPages(ctx, "/column-masks?table_id="+url.QueryEscape(tableID))
 	if err != nil {
 		return err
 	}
@@ -1150,16 +1150,16 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 		}
 	}
 
-	defaultsPage, err := c.client.Do(http.MethodGet, "/compute-defaults", nil, nil)
+	defaultsPage, err := c.client.Do(http.MethodGet, "/compute-routing-defaults", nil, nil)
 	if err != nil {
-		return fmt.Errorf("GET /compute-defaults: %w", err)
+		return fmt.Errorf("GET /compute-routing-defaults: %w", err)
 	}
 	body, err := apiruntime.ReadBody(defaultsPage)
 	if err != nil {
-		return fmt.Errorf("read GET /compute-defaults: %w", err)
+		return fmt.Errorf("read GET /compute-routing-defaults: %w", err)
 	}
 	if defaultsPage.StatusCode < 200 || defaultsPage.StatusCode >= 300 {
-		return fmt.Errorf("GET /compute-defaults: HTTP %d: %s", defaultsPage.StatusCode, string(body))
+		return fmt.Errorf("GET /compute-routing-defaults: HTTP %d: %s", defaultsPage.StatusCode, string(body))
 	}
 	var defaults struct {
 		InteractiveMode string `json:"interactive_mode"`
@@ -1167,7 +1167,7 @@ func (c *APIStateClient) readComputeEndpoints(ctx context.Context, state *declar
 		NotebookMode    string `json:"notebook_mode"`
 	}
 	if err := json.Unmarshal(body, &defaults); err != nil {
-		return fmt.Errorf("parse GET /compute-defaults: %w", err)
+		return fmt.Errorf("parse GET /compute-routing-defaults: %w", err)
 	}
 	state.ComputeDefaults = &declarative.ComputeRoutingDefaultsSpec{
 		InteractiveMode: defaults.InteractiveMode,
@@ -1531,31 +1531,29 @@ func (c *APIStateClient) readDomains(ctx context.Context, state *declarative.Des
 }
 
 func (c *APIStateClient) readTeams(ctx context.Context, state *declarative.DesiredState) error {
-	pages, err := c.fetchAllPages(ctx, "/product-teams")
-	if err != nil {
-		return err
-	}
-	if len(pages) == 0 {
-		return nil
-	}
-
-	var items []apiProductTeam
-	if err := mergePages(pages, &items); err != nil {
-		return err
-	}
-
-	for _, item := range items {
-		domainRef := c.lookupDomainNameFromState(state, item.DomainID)
-		if domainRef == "" {
-			domainRef = item.DomainID
+	for _, domainItem := range state.Domains {
+		pages, err := c.fetchAllPages(ctx, "/product-domains/"+url.PathEscape(domainItem.Name)+"/teams")
+		if err != nil {
+			return err
 		}
-		state.Teams = append(state.Teams, declarative.TeamResource{
-			Name: item.Name,
-			Spec: declarative.TeamSpec{
-				DomainRef:      domainRef,
-				ContactChannel: item.ContactChannel,
-			},
-		})
+		if len(pages) == 0 {
+			continue
+		}
+
+		var items []apiProductTeam
+		if err := mergePages(pages, &items); err != nil {
+			return err
+		}
+
+		for _, item := range items {
+			state.Teams = append(state.Teams, declarative.TeamResource{
+				Name: item.Name,
+				Spec: declarative.TeamSpec{
+					DomainRef:      domainItem.Name,
+					ContactChannel: item.ContactChannel,
+				},
+			})
+		}
 	}
 	return nil
 }
@@ -1757,23 +1755,6 @@ func isImplicitProductVersion(spec declarative.DataProductSpec, version declarat
 		spec.AccessRequestPath == version.AccessRequestPath &&
 		reflect.DeepEqual(spec.Outputs, version.Outputs) &&
 		reflect.DeepEqual(spec.SemanticEntrypoints, version.SemanticEntrypoints)
-}
-
-func (c *APIStateClient) lookupDomainNameFromState(state *declarative.DesiredState, domainID string) string {
-	if domainID == "" {
-		return ""
-	}
-	if c.index != nil {
-		if name := c.index.productDomainNameByID[domainID]; name != "" {
-			return name
-		}
-	}
-	for _, item := range state.Domains {
-		if item.Name == domainID {
-			return item.Name
-		}
-	}
-	return ""
 }
 
 func (c *APIStateClient) readAssets(ctx context.Context, state *declarative.DesiredState) error {
@@ -1990,15 +1971,15 @@ type apiSemanticModel struct {
 }
 
 type apiSemanticMetric struct {
-	Name               string `json:"name"`
-	Description        string `json:"description"`
-	MetricType         string `json:"metric_type"`
-	ExpressionMode     string `json:"expression_mode"`
-	Expression         string `json:"expression"`
+	Name               string   `json:"name"`
+	Description        string   `json:"description"`
+	MetricType         string   `json:"metric_type"`
+	ExpressionMode     string   `json:"expression_mode"`
+	Expression         string   `json:"expression"`
 	RelationshipNames  []string `json:"relationship_names"`
-	DefaultTimeGrain   string `json:"default_time_grain"`
-	Format             string `json:"format"`
-	CertificationState string `json:"certification_state"`
+	DefaultTimeGrain   string   `json:"default_time_grain"`
+	Format             string   `json:"format"`
+	CertificationState string   `json:"certification_state"`
 }
 
 type apiSemanticRelationship struct {
@@ -2217,7 +2198,7 @@ func (c *APIStateClient) readSemanticModels(ctx context.Context, state *declarat
 	modelNameByID := make(map[string]string, len(items))
 	for _, m := range items {
 		state.SemanticModels = append(state.SemanticModels, declarative.SemanticModelResource{
-			ModelName:   m.Name,
+			ModelName: m.Name,
 			Spec: declarative.SemanticModelSpec{
 				Description:          m.Description,
 				BaseModelRef:         m.BaseModelRef,
@@ -2693,7 +2674,7 @@ func (c *APIStateClient) lookupColumnMaskIDBySpec(ctx context.Context, tablePath
 		return "", fmt.Errorf("resolve table for column mask lookup: %w", err)
 	}
 
-	pages, err := c.fetchAllPages(ctx, "/tables/"+tableID+"/column-masks")
+	pages, err := c.fetchAllPages(ctx, "/column-masks?table_id="+url.QueryEscape(tableID))
 	if err != nil {
 		return "", err
 	}
@@ -3546,7 +3527,7 @@ func (c *APIStateClient) applyProductVersionState(_ context.Context, slug, actua
 	case domain.ProductReleaseStatePublished:
 		switch actualState {
 		case "", domain.ProductReleaseStateDraft:
-			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d:publish", slug, version), nil, map[string]interface{}{})
+			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d/publications", slug, version), nil, map[string]interface{}{})
 			if err != nil {
 				return err
 			}
@@ -3559,7 +3540,7 @@ func (c *APIStateClient) applyProductVersionState(_ context.Context, slug, actua
 	case domain.ProductReleaseStateDeprecated:
 		switch actualState {
 		case "", domain.ProductReleaseStateDraft, domain.ProductReleaseStatePublished:
-			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d:deprecate", slug, version), nil, map[string]interface{}{})
+			resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d/deprecations", slug, version), nil, map[string]interface{}{})
 			if err != nil {
 				return err
 			}
@@ -3573,7 +3554,7 @@ func (c *APIStateClient) applyProductVersionState(_ context.Context, slug, actua
 		if actualState == domain.ProductReleaseStateRetired {
 			return nil
 		}
-		resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d:retire", slug, version), nil, map[string]interface{}{})
+		resp, err := c.client.Do(http.MethodPost, fmt.Sprintf("/data-products/%s/versions/%d/retirements", slug, version), nil, map[string]interface{}{})
 		if err != nil {
 			return err
 		}
@@ -3923,7 +3904,6 @@ func (c *APIStateClient) reconcileNotebookPublish(_ context.Context, notebookID 
 		return fmt.Errorf("published output cell %q not found in notebook %q", spec.Publish.Model.OutputCell, notebookID)
 	}
 	body := map[string]interface{}{
-		"notebook_id":  notebookID,
 		"cell_index":   outputIndex,
 		"project_name": spec.Publish.Model.Project,
 		"name":         spec.Publish.Model.Name,
@@ -3931,7 +3911,7 @@ func (c *APIStateClient) reconcileNotebookPublish(_ context.Context, notebookID 
 	if spec.Publish.Model.Materialization != "" {
 		body["materialization"] = spec.Publish.Model.Materialization
 	}
-	resp, err := c.client.Do(http.MethodPost, "/models/from-notebook", nil, body)
+	resp, err := c.client.Do(http.MethodPost, "/notebooks/"+notebookID+"/model-promotions", nil, body)
 	if err != nil {
 		return err
 	}
@@ -3939,7 +3919,7 @@ func (c *APIStateClient) reconcileNotebookPublish(_ context.Context, notebookID 
 }
 
 func (c *APIStateClient) unpublishNotebookModel(notebookID string) error {
-	resp, err := c.client.Do(http.MethodDelete, "/models/from-notebook/"+notebookID, nil, nil)
+	resp, err := c.client.Do(http.MethodDelete, "/notebooks/"+notebookID+"/model-promotions", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -4706,13 +4686,13 @@ func (c *APIStateClient) executeComputeRoutingDefaults(_ context.Context, action
 		if spec.NotebookMode != "" {
 			body["notebook_mode"] = spec.NotebookMode
 		}
-		resp, err := c.client.Do(http.MethodPatch, "/compute-defaults", nil, body)
+		resp, err := c.client.Do(http.MethodPatch, "/compute-routing-defaults", nil, body)
 		if err != nil {
 			return err
 		}
 		return apiruntime.CheckError(resp)
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodPatch, "/compute-defaults", nil, map[string]interface{}{
+		resp, err := c.client.Do(http.MethodPatch, "/compute-routing-defaults", nil, map[string]interface{}{
 			"interactive_mode": "BYOC_LOCAL",
 			"scheduled_mode":   "SHARED_ENDPOINT",
 			"notebook_mode":    "SHARED_ENDPOINT",
@@ -4872,7 +4852,7 @@ func (c *APIStateClient) executePrincipal(_ context.Context, action declarative.
 		body := map[string]interface{}{
 			"is_admin": spec.IsAdmin,
 		}
-		resp, err := c.client.Do(http.MethodPut, "/principals/"+id+"/admin", nil, body)
+		resp, err := c.client.Do(http.MethodPatch, "/principals/"+id, nil, body)
 		if err != nil {
 			return err
 		}
@@ -5015,7 +4995,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 		if cat.Spec.Comment != "" {
 			body["comment"] = cat.Spec.Comment
 		}
-		resp, err := c.client.Do(http.MethodPost, "/catalog-registrations", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/catalogs", nil, body)
 		if err != nil {
 			return err
 		}
@@ -5038,7 +5018,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 			body["comment"] = cat.Spec.Comment
 		}
 		if len(body) > 0 {
-			resp, err := c.client.Do(http.MethodPatch, "/catalog-registrations/"+action.ResourceName, nil, body)
+			resp, err := c.client.Do(http.MethodPatch, "/catalogs/"+action.ResourceName, nil, body)
 			if err != nil {
 				return err
 			}
@@ -5047,7 +5027,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 			}
 		}
 		if cat.Spec.IsDefault {
-			resp, err := c.client.Do(http.MethodPost, "/catalog-registrations/"+action.ResourceName+":set-default", nil, map[string]interface{}{})
+			resp, err := c.client.Do(http.MethodPut, "/catalogs/"+action.ResourceName+"/default", nil, map[string]interface{}{})
 			if err != nil {
 				return err
 			}
@@ -5056,7 +5036,7 @@ func (c *APIStateClient) executeCatalog(_ context.Context, action declarative.Ac
 		return nil
 
 	case declarative.OpDelete:
-		resp, err := c.client.Do(http.MethodDelete, "/catalog-registrations/"+action.ResourceName, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/catalogs/"+action.ResourceName, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -5440,7 +5420,8 @@ func (c *APIStateClient) executeRowFilter(ctx context.Context, action declarativ
 		if filter.Description != "" {
 			body["description"] = filter.Description
 		}
-		resp, err := c.client.Do(http.MethodPost, "/tables/"+tableID+"/row-filters", nil, body)
+		body["table_id"] = tableID
+		resp, err := c.client.Do(http.MethodPost, "/row-filters", nil, body)
 		if err != nil {
 			return err
 		}
@@ -5535,7 +5516,8 @@ func (c *APIStateClient) executeColumnMask(ctx context.Context, action declarati
 		if mask.Description != "" {
 			body["description"] = mask.Description
 		}
-		resp, err := c.client.Do(http.MethodPost, "/tables/"+tableID+"/column-masks", nil, body)
+		body["table_id"] = tableID
+		resp, err := c.client.Do(http.MethodPost, "/column-masks", nil, body)
 		if err != nil {
 			return err
 		}

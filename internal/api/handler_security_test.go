@@ -14,11 +14,11 @@ import (
 // === Mocks ===
 
 type mockPrincipalService struct {
-	listFn     func(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error)
-	createFn   func(ctx context.Context, req domain.CreatePrincipalRequest) (*domain.Principal, error)
-	getByIDFn  func(ctx context.Context, id string) (*domain.Principal, error)
-	deleteFn   func(ctx context.Context, id string) error
-	setAdminFn func(ctx context.Context, id string, isAdmin bool) error
+	listFn    func(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error)
+	createFn  func(ctx context.Context, req domain.CreatePrincipalRequest) (*domain.Principal, error)
+	getByIDFn func(ctx context.Context, id string) (*domain.Principal, error)
+	deleteFn  func(ctx context.Context, id string) error
+	updateFn  func(ctx context.Context, id string, req domain.UpdatePrincipalRequest) (*domain.Principal, error)
 }
 
 func (m *mockPrincipalService) List(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error) {
@@ -49,11 +49,11 @@ func (m *mockPrincipalService) Delete(ctx context.Context, id string) error {
 	return m.deleteFn(ctx, id)
 }
 
-func (m *mockPrincipalService) SetAdmin(ctx context.Context, id string, isAdmin bool) error {
-	if m.setAdminFn == nil {
-		panic("mockPrincipalService.SetAdmin called but not configured")
+func (m *mockPrincipalService) Update(ctx context.Context, id string, req domain.UpdatePrincipalRequest) (*domain.Principal, error) {
+	if m.updateFn == nil {
+		panic("mockPrincipalService.Update called but not configured")
 	}
-	return m.setAdminFn(ctx, id, isAdmin)
+	return m.updateFn(ctx, id, req)
 }
 
 type mockGroupService struct {
@@ -229,12 +229,29 @@ func (m *mockGrantService) Revoke(ctx context.Context, principal string, grantID
 }
 
 type mockColumnMaskService struct {
+	getByIDFn      func(ctx context.Context, id string) (*domain.ColumnMask, error)
+	listFn         func(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	getForTableFn  func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	listBindingsFn func(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error)
 	createFn       func(ctx context.Context, req domain.CreateColumnMaskRequest) (*domain.ColumnMask, error)
+	updateFn       func(ctx context.Context, id string, req domain.UpdateColumnMaskRequest) (*domain.ColumnMask, error)
 	deleteFn       func(ctx context.Context, id string) error
 	bindFn         func(ctx context.Context, req domain.BindColumnMaskRequest) error
 	unbindFn       func(ctx context.Context, req domain.BindColumnMaskRequest) error
+}
+
+func (m *mockColumnMaskService) GetByID(ctx context.Context, id string) (*domain.ColumnMask, error) {
+	if m.getByIDFn == nil {
+		panic("mockColumnMaskService.GetByID called but not configured")
+	}
+	return m.getByIDFn(ctx, id)
+}
+
+func (m *mockColumnMaskService) List(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
+	if m.listFn == nil {
+		panic("mockColumnMaskService.List called but not configured")
+	}
+	return m.listFn(ctx, page)
 }
 
 func (m *mockColumnMaskService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
@@ -249,6 +266,13 @@ func (m *mockColumnMaskService) Create(ctx context.Context, req domain.CreateCol
 		panic("mockColumnMaskService.Create called but not configured")
 	}
 	return m.createFn(ctx, req)
+}
+
+func (m *mockColumnMaskService) Update(ctx context.Context, id string, req domain.UpdateColumnMaskRequest) (*domain.ColumnMask, error) {
+	if m.updateFn == nil {
+		panic("mockColumnMaskService.Update called but not configured")
+	}
+	return m.updateFn(ctx, id, req)
 }
 
 func (m *mockColumnMaskService) ListBindings(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error) {
@@ -907,9 +931,9 @@ func TestHandler_ListColumnMasks(t *testing.T) {
 			t.Parallel()
 			svc := &mockColumnMaskService{getForTableFn: tt.svcFn}
 			handler := &APIHandler{columnMasks: svc}
+			tableID := "t-1"
 			resp, err := handler.ListColumnMasks(secTestCtx(), GenListColumnMasksRequest{
-				TableId: "t-1",
-				Params:  GenListColumnMasksParams{},
+				Params: GenListColumnMasksParams{TableId: &tableID},
 			})
 			tt.assertFn(t, resp, err)
 		})
@@ -985,13 +1009,14 @@ func TestHandler_CreateColumnMask(t *testing.T) {
 			t.Parallel()
 			svc := &mockColumnMaskService{createFn: tt.svcFn}
 			handler := &APIHandler{columnMasks: svc}
+			tableID := "t-1"
 			body := GenCreateColumnMaskJSONBody{
+				TableId:        &tableID,
 				ColumnName:     "ssn",
 				MaskExpression: "'***'",
 			}
 			resp, err := handler.CreateColumnMask(secTestCtx(), GenCreateColumnMaskRequest{
-				TableId: "t-1",
-				Body:    &body,
+				Body: &body,
 			})
 			tt.assertFn(t, resp, err)
 		})

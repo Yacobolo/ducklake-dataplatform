@@ -210,6 +210,15 @@ func (s *Service) ListMetrics(ctx context.Context, primary string, secondary ...
 	return s.metrics.ListByModel(ctx, semanticModel.ID)
 }
 
+// GetMetric gets a metric for a semantic model by name.
+func (s *Service) GetMetric(ctx context.Context, semanticModelID, metricName string) (*domain.SemanticMetric, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
+	if err != nil {
+		return nil, err
+	}
+	return s.metrics.GetByName(ctx, semanticModel.ID, metricName)
+}
+
 // UpdateMetric updates an existing metric by name.
 func (s *Service) UpdateMetric(ctx context.Context, primary string, args ...any) (*domain.SemanticMetric, error) {
 	var (
@@ -323,6 +332,15 @@ func (s *Service) ListRelationshipsForModel(ctx context.Context, semanticModelID
 	return s.relationships.ListByModel(ctx, semanticModel.ID)
 }
 
+// GetRelationshipForModel gets a semantic relationship owned by a semantic model by name.
+func (s *Service) GetRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string) (*domain.SemanticRelationship, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
+	if err != nil {
+		return nil, err
+	}
+	return s.relationships.GetByName(ctx, semanticModel.ID, relationshipName)
+}
+
 // UpdateRelationship updates an existing relationship by name.
 func (s *Service) UpdateRelationship(_ context.Context, _ string, _ domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error) {
 	return nil, domain.ErrValidation("global relationship updates are not supported")
@@ -415,6 +433,15 @@ func (s *Service) ListPreAggregations(ctx context.Context, primary string, secon
 		return nil, err
 	}
 	return s.preAggs.ListByModel(ctx, semanticModel.ID)
+}
+
+// GetPreAggregation gets a pre-aggregation for a semantic model by name.
+func (s *Service) GetPreAggregation(ctx context.Context, semanticModelID, preAggName string) (*domain.SemanticPreAggregation, error) {
+	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
+	if err != nil {
+		return nil, err
+	}
+	return s.preAggs.GetByName(ctx, semanticModel.ID, preAggName)
 }
 
 // UpdatePreAggregation updates an existing pre-aggregation by name under a semantic model.

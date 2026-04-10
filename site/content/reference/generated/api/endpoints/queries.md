@@ -4,6 +4,32 @@
 
 Synchronous and asynchronous SQL query execution and query history endpoints.
 
+## `GET /queries`
+
+List queries
+
+Lists asynchronous query jobs created by the authenticated principal and supports filtering by lifecycle status.
+
+- Operation ID: `listQueries`
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+| `status` | `QueryJobStatus` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `429` | Client error |
+| `500` | Server error |
+
 ## `POST /queries`
 
 Submit query
@@ -32,7 +58,7 @@ Submits a SQL query for asynchronous execution and returns a query job identifie
 
 List query history
 
-Lists recorded query executions and supports filtering by principal, decision status, and time window.
+Lists recorded query execution history and supports filtering by principal, decision status, and time window.
 
 - Operation ID: `listQueryHistory`
 
@@ -58,7 +84,7 @@ Lists recorded query executions and supports filtering by principal, decision st
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /queries/{queryId}`
+## `GET /queries/{query_id}`
 
 Get query
 
@@ -68,7 +94,7 @@ Get query
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
+| `query_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -82,7 +108,7 @@ Get query
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /queries/{queryId}`
+## `DELETE /queries/{query_id}`
 
 Delete query
 
@@ -92,7 +118,7 @@ Delete query
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
+| `query_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -105,7 +131,31 @@ Delete query
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /queries/{queryId}/results`
+## `POST /queries/{query_id}/cancellations`
+
+Cancel query
+
+- Operation ID: `cancelQuery`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `query_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `202` | The request has been accepted for processing, but processing has not yet completed. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /queries/{query_id}/results`
 
 Get query results
 
@@ -117,7 +167,7 @@ Returns a page of rows for a previously submitted query using the stored query j
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
+| `query_id` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -138,31 +188,7 @@ Returns a page of rows for a previously submitted query using the stored query j
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /queries/{queryId}:cancel`
-
-Cancel query
-
-- Operation ID: `cancelQuery`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `queryId` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `202` | The request has been accepted for processing, but processing has not yet completed. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `POST /queries:execute`
+## `POST /query-executions`
 
 Execute query
 

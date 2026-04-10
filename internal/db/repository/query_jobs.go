@@ -62,21 +62,34 @@ func (r *QueryJobRepo) GetByID(ctx context.Context, id string) (*domain.QueryJob
 }
 
 // ListByPrincipal returns query jobs for a principal ordered by recency.
-func (r *QueryJobRepo) ListByPrincipal(ctx context.Context, principalName string, page domain.PageRequest) (items []domain.QueryJob, total int64, err error) {
-	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM query_jobs WHERE principal_name = ?`, principalName).Scan(&total); err != nil {
-		return nil, 0, mapDBError(err)
-	}
-
-	rows, err := r.db.QueryContext(ctx, `
+func (r *QueryJobRepo) ListByPrincipal(ctx context.Context, principalName string, status *domain.QueryJobStatus, page domain.PageRequest) (items []domain.QueryJob, total int64, err error) {
+	countQuery := `SELECT COUNT(*) FROM query_jobs WHERE principal_name = ?`
+	countArgs := []interface{}{principalName}
+	listQuery := `
 		SELECT id, principal_name, request_id, sql_text, status, columns_json, rows_json, row_count,
 		       error_message, compute_mode, endpoint_name, resolved_mode, resolved_endpoint_name, workload_type,
 		       attempt_count, max_attempts, last_heartbeat_at, next_retry_at,
 		       created_at, started_at, completed_at, updated_at
 		FROM query_jobs
 		WHERE principal_name = ?
+	`
+	listArgs := []interface{}{principalName}
+	if status != nil {
+		countQuery += ` AND status = ?`
+		countArgs = append(countArgs, string(*status))
+		listQuery += ` AND status = ?`
+		listArgs = append(listArgs, string(*status))
+	}
+	if err := r.db.QueryRowContext(ctx, countQuery, countArgs...).Scan(&total); err != nil {
+		return nil, 0, mapDBError(err)
+	}
+
+	listQuery += `
 		ORDER BY created_at DESC
 		LIMIT ? OFFSET ?
-	`, principalName, page.Limit(), page.Offset())
+	`
+	listArgs = append(listArgs, page.Limit(), page.Offset())
+	rows, err := r.db.QueryContext(ctx, listQuery, listArgs...)
 	if err != nil {
 		return nil, 0, mapDBError(err)
 	}

@@ -37,7 +37,7 @@ type ExploreFilter struct {
 	Page     PageRequest
 }
 
-// ExploreItem is the normalized resource row rendered in Explore.
+// ExploreItem is the normalized authored-asset row used by the Explore service.
 type ExploreItem struct {
 	Kind         string
 	Scope        string

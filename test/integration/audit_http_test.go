@@ -57,10 +57,10 @@ func TestHTTP_AuditLogs_Operations(t *testing.T) {
 			}
 			require.NotEmpty(t, principalID)
 
-			url := fmt.Sprintf("%s/v1/principals/%s/admin", env.Server.URL, principalID)
+			url := fmt.Sprintf("%s/v1/principals/%s", env.Server.URL, principalID)
 			body := map[string]interface{}{"is_admin": true}
-			resp2 := doRequest(t, "PUT", url, env.Keys.Admin, body)
-			require.Equal(t, 204, resp2.StatusCode)
+			resp2 := doRequest(t, "PATCH", url, env.Keys.Admin, body)
+			require.Equal(t, 200, resp2.StatusCode)
 			_ = resp2.Body.Close()
 
 			logs := fetchAuditLogs(t, env.Server.URL, env.Keys.Admin)

@@ -56,7 +56,7 @@ Create data product
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /data-products/{productSlug}`
+## `GET /data-products/{product_slug}`
 
 Get data product
 
@@ -66,7 +66,7 @@ Get data product
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
+| `product_slug` | `string` | `true` | - |
 
 ### Responses
 
@@ -79,7 +79,7 @@ Get data product
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /data-products/{productSlug}`
+## `PATCH /data-products/{product_slug}`
 
 Update data product
 
@@ -89,7 +89,7 @@ Update data product
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
+| `product_slug` | `string` | `true` | - |
 
 ### Request Body
 
@@ -108,7 +108,7 @@ Update data product
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /data-products/{productSlug}`
+## `DELETE /data-products/{product_slug}`
 
 Delete data product
 
@@ -118,7 +118,7 @@ Delete data product
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
+| `product_slug` | `string` | `true` | - |
 
 ### Responses
 
@@ -132,7 +132,7 @@ Delete data product
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /data-products/{productSlug}/dependencies`
+## `GET /data-products/{product_slug}/dependencies`
 
 List data product dependencies
 
@@ -142,7 +142,7 @@ List data product dependencies
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
+| `product_slug` | `string` | `true` | - |
 
 ### Responses
 
@@ -155,7 +155,7 @@ List data product dependencies
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /data-products/{productSlug}/dependencies`
+## `POST /data-products/{product_slug}/dependencies`
 
 Create data product dependency
 
@@ -165,7 +165,7 @@ Create data product dependency
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
+| `product_slug` | `string` | `true` | - |
 
 ### Request Body
 
@@ -185,7 +185,7 @@ Create data product dependency
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /data-products/{productSlug}/events`
+## `GET /data-products/{product_slug}/events`
 
 List data product events
 
@@ -195,7 +195,7 @@ List data product events
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
+| `product_slug` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -215,7 +215,7 @@ List data product events
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /data-products/{productSlug}/outputs`
+## `GET /data-products/{product_slug}/outputs`
 
 List data product outputs
 
@@ -225,7 +225,7 @@ List data product outputs
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
+| `product_slug` | `string` | `true` | - |
 
 ### Responses
 
@@ -238,7 +238,7 @@ List data product outputs
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /data-products/{productSlug}/semantic-entrypoints`
+## `GET /data-products/{product_slug}/semantic-entrypoints`
 
 List data product semantic entrypoints
 
@@ -248,7 +248,7 @@ List data product semantic entrypoints
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
+| `product_slug` | `string` | `true` | - |
 
 ### Responses
 
@@ -261,7 +261,7 @@ List data product semantic entrypoints
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /data-products/{productSlug}/status`
+## `GET /data-products/{product_slug}/status`
 
 Get data product status
 
@@ -271,7 +271,7 @@ Get data product status
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `productSlug` | `string` | `true` | - |
+| `product_slug` | `string` | `true` | - |
 
 ### Responses
 
@@ -280,6 +280,241 @@ Get data product status
 | `200` | The request has succeeded. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /data-products/{product_slug}/subscriptions`
+
+List data product subscriptions
+
+- Operation ID: `listDataProductSubscriptions`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /data-products/{product_slug}/subscriptions`
+
+Create data product subscription
+
+- Operation ID: `createDataProductSubscription`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `409` | The request conflicts with the current state of the server. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /data-products/{product_slug}/versions`
+
+List data product versions
+
+- Operation ID: `listDataProductVersions`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /data-products/{product_slug}/versions`
+
+Create data product version
+
+- Operation ID: `createDataProductVersion`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `409` | The request conflicts with the current state of the server. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /data-products/{product_slug}/versions/{version}`
+
+Get data product version
+
+- Operation ID: `getDataProductVersion`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - |
+| `version` | `integer` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /data-products/{product_slug}/versions/{version}`
+
+Delete data product version
+
+- Operation ID: `deleteDataProductVersion`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - |
+| `version` | `integer` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /data-products/{product_slug}/versions/{version}/deprecations`
+
+Deprecate data product version
+
+- Operation ID: `deprecateDataProductVersion`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - |
+| `version` | `integer` | `true` | - |
+
+### Request Body
+
+- Required: `false`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /data-products/{product_slug}/versions/{version}/publications`
+
+Publish data product version
+
+- Operation ID: `publishDataProductVersion`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - |
+| `version` | `integer` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /data-products/{product_slug}/versions/{version}/retirements`
+
+Retire data product version
+
+- Operation ID: `retireDataProductVersion`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `product_slug` | `string` | `true` | - |
+| `version` | `integer` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |

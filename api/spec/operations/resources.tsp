@@ -2,7 +2,7 @@ using TypeSpec.Http;
 
 namespace Duck;
 
-@route("/resources/recent")
+@route("/me/recent-resources")
 @get
 @tag("Resources")
 @summary("List recent resources")
@@ -12,7 +12,7 @@ op listRecentResources(
   @query page_token?: string,
 ): Ok<PaginatedRecentResources> | GuardedReadErrorResponses;
 
-@route("/resources/saved")
+@route("/me/saved-resources")
 @get
 @tag("Resources")
 @summary("List saved resources")
@@ -22,16 +22,16 @@ op listSavedResources(
   @query page_token?: string,
 ): Ok<PaginatedSavedResources> | GuardedReadErrorResponses;
 
-@route("/resources/saved")
+@route("/me/saved-resources")
 @post
 @tag("Resources")
 @summary("Save resource")
 @doc("Saves a UUID-backed resource for the authenticated principal.")
 op createSavedResource(@body body: CreateSavedResourceRequest): Created<SavedResource> | MutatingErrorResponses;
 
-@route("/resources/saved/{resourceType}/{resourceKey}")
+@route("/me/saved-resources/{resource_type}/{resource_key}")
 @delete
 @tag("Resources")
 @summary("Delete saved resource")
 @doc("Removes a saved resource for the authenticated principal.")
-op deleteSavedResource(resourceType: string, resourceKey: string): NoContent | MutatingErrorResponses;
+op deleteSavedResource(resource_type: string, resource_key: string): NoContent | MutatingErrorResponses;

@@ -66,7 +66,7 @@ func TestQueryJobRepo_ListByPrincipal(t *testing.T) {
 	_, err = repo.Create(context.Background(), &domain.QueryJob{PrincipalName: "bob", RequestID: "req-3", SQLText: "SELECT 3", Status: domain.QueryJobStatusQueued})
 	require.NoError(t, err)
 
-	items, total, err := repo.ListByPrincipal(context.Background(), "alice", domain.PageRequest{MaxResults: 10})
+	items, total, err := repo.ListByPrincipal(context.Background(), "alice", nil, domain.PageRequest{MaxResults: 10})
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), total)
 	require.Len(t, items, 2)

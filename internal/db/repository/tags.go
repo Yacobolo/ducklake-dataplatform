@@ -63,6 +63,31 @@ func (r *TagRepo) ListTags(ctx context.Context, page domain.PageRequest) ([]doma
 	return tags, total, nil
 }
 
+// UpdateTag applies partial changes to a tag definition.
+func (r *TagRepo) UpdateTag(ctx context.Context, id string, req domain.UpdateTagRequest) (*domain.Tag, error) {
+	current, err := r.GetTag(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	key := current.Key
+	if req.Key != nil {
+		key = *req.Key
+	}
+	value := current.Value
+	if req.Value != nil {
+		value = req.Value
+	}
+	result, err := r.db.ExecContext(ctx, `UPDATE tags SET key = ?, value = ? WHERE id = ?`, key, mapper.NullStrFromPtr(value), id)
+	if err != nil {
+		return nil, mapDBError(err)
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return nil, domain.ErrNotFound("tag %q not found", id)
+	}
+	return r.GetTag(ctx, id)
+}
+
 // DeleteTag removes a tag by ID. Returns NotFoundError if the tag does not exist.
 func (r *TagRepo) DeleteTag(ctx context.Context, id string) error {
 	result, err := r.db.ExecContext(ctx, "DELETE FROM tags WHERE id = ?", id)

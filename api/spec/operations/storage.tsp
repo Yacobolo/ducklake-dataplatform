@@ -15,23 +15,23 @@ op listStorageCredentials(@query max_results?: int32, @query page_token?: string
 @doc("Creates a reusable storage credential that can be referenced by external locations and managed catalogs.")
 op createStorageCredential(@body body: CreateStorageCredentialRequest): Created<StorageCredential> | MutatingErrorResponses;
 
-@route("/storage-credentials/{credentialName}")
+@route("/storage-credentials/{credential_name}")
 @get
 @tag("Storage")
 @summary("Get storage credential")
-op getStorageCredential(credentialName: string): Ok<StorageCredential> | ResourceErrorResponses;
+op getStorageCredential(credential_name: string): Ok<StorageCredential> | ResourceErrorResponses;
 
-@route("/storage-credentials/{credentialName}")
+@route("/storage-credentials/{credential_name}")
 @patch(#{ implicitOptionality: true })
 @tag("Storage")
 @summary("Update storage credential")
-op updateStorageCredential(credentialName: string, @body body: UpdateStorageCredentialRequest): Ok<StorageCredential> | ResourceErrorResponses;
+op updateStorageCredential(credential_name: string, @body body: UpdateStorageCredentialRequest): Ok<StorageCredential> | ResourceErrorResponses;
 
-@route("/storage-credentials/{credentialName}")
+@route("/storage-credentials/{credential_name}")
 @delete
 @tag("Storage")
 @summary("Delete storage credential")
-op deleteStorageCredential(credentialName: string): NoContent | ResourceErrorResponses;
+op deleteStorageCredential(credential_name: string): NoContent | ResourceErrorResponses;
 
 @route("/external-locations")
 @get
@@ -46,20 +46,20 @@ op listExternalLocations(@query max_results?: int32, @query page_token?: string)
 @summary("Create external location")
 op createExternalLocation(@body body: CreateExternalLocationRequest): Created<ExternalLocation> | MutatingErrorResponses;
 
-@route("/external-locations/{locationName}")
+@route("/external-locations/{location_name}")
 @get
 @tag("Storage")
 @summary("Get external location")
-op getExternalLocation(locationName: string): Ok<ExternalLocation> | ResourceErrorResponses;
+op getExternalLocation(location_name: string): Ok<ExternalLocation> | ResourceErrorResponses;
 
-@route("/external-locations/{locationName}")
+@route("/external-locations/{location_name}")
 @patch(#{ implicitOptionality: true })
 @tag("Storage")
 @summary("Update external location")
-op updateExternalLocation(locationName: string, @body body: UpdateExternalLocationRequest): Ok<ExternalLocation> | ResourceErrorResponses;
+op updateExternalLocation(location_name: string, @body body: UpdateExternalLocationRequest): Ok<ExternalLocation> | ResourceErrorResponses;
 
-@route("/external-locations/{locationName}")
+@route("/external-locations/{location_name}")
 @delete
 @tag("Storage")
 @summary("Delete external location")
-op deleteExternalLocation(locationName: string): NoContent | ResourceErrorResponses;
+op deleteExternalLocation(location_name: string): NoContent | ResourceErrorResponses;

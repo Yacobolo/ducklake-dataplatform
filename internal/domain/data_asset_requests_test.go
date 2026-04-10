@@ -73,3 +73,15 @@ func TestValidateCreateAssetRequest_RejectsUnknownAssetType(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not supported")
 }
+
+func TestValidateCreateAssetRequest_AcceptsLowercaseAssetType(t *testing.T) {
+	t.Parallel()
+
+	err := ValidateCreateAssetRequest(CreateAssetRequest{
+		AssetKey:    "warehouse.orders",
+		AssetType:   "table",
+		ProductSlug: "warehouse",
+		Owner:       "analytics",
+	})
+	require.NoError(t, err)
+}

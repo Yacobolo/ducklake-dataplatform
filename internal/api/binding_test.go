@@ -15,7 +15,7 @@ func TestBindPathParameter(t *testing.T) {
 	t.Run("binds string aliases", func(t *testing.T) {
 		var catalogName string
 
-		err := bindPathParameter("catalogName", "analytics", true, &catalogName)
+		err := bindPathParameter("catalog_name", "analytics", true, &catalogName)
 
 		require.NoError(t, err)
 		assert.Equal(t, "analytics", catalogName)
@@ -33,10 +33,10 @@ func TestBindPathParameter(t *testing.T) {
 	t.Run("returns required missing error", func(t *testing.T) {
 		var catalogName string
 
-		err := bindPathParameter("catalogName", "", true, &catalogName)
+		err := bindPathParameter("catalog_name", "", true, &catalogName)
 
 		require.Error(t, err)
-		assert.EqualError(t, err, "missing required path parameter \"catalogName\"")
+		assert.EqualError(t, err, "missing required path parameter \"catalog_name\"")
 	})
 
 	t.Run("returns parse errors", func(t *testing.T) {

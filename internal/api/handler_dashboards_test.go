@@ -40,10 +40,16 @@ func (m *mockDashboardService) GetDashboard(ctx context.Context, id string) (*do
 }
 
 func (m *mockDashboardService) ListWidgets(ctx context.Context, dashboardID string) ([]domain.DashboardWidget, error) {
+	if m.listWidgetsFn == nil {
+		panic("mockDashboardService.ListWidgets called but not configured")
+	}
 	return m.listWidgetsFn(ctx, dashboardID)
 }
 
 func (m *mockDashboardService) GetWidget(ctx context.Context, dashboardID, widgetID string) (*domain.DashboardWidget, error) {
+	if m.getWidgetFn == nil {
+		panic("mockDashboardService.GetWidget called but not configured")
+	}
 	return m.getWidgetFn(ctx, dashboardID, widgetID)
 }
 
@@ -174,10 +180,10 @@ func TestHandler_CreateDashboardWidget_MapsSourceAndVisualSpec(t *testing.T) {
 			Source: DashboardWidgetSource{
 				Kind: DashboardWidgetSourceKindSemanticQuery,
 				SemanticQuery: &DashboardSemanticQuerySource{
-					SemanticModelId:   "sm-sales",
-					Metrics:           []string{"revenue"},
-					Dimensions:        &[]string{"region"},
-					TimeGrain:         &timeGrain,
+					SemanticModelId: "sm-sales",
+					Metrics:         []string{"revenue"},
+					Dimensions:      &[]string{"region"},
+					TimeGrain:       &timeGrain,
 				},
 			},
 			VisualSpec: &VisualSpec{
@@ -372,7 +378,6 @@ func TestHandler_GetDashboardWidget_MapsWidget(t *testing.T) {
 	require.NotNil(t, okResp.Body.Id)
 	assert.Equal(t, "widget-1", *okResp.Body.Id)
 }
-
 func TestHandler_GetRenderedDashboard_MapsResolvedWidgets(t *testing.T) {
 	t.Parallel()
 
@@ -385,9 +390,9 @@ func TestHandler_GetRenderedDashboard_MapsResolvedWidgets(t *testing.T) {
 		Source: domain.DashboardWidgetSource{
 			Kind: domain.DashboardWidgetSourceSemanticQuery,
 			SemanticQuery: &domain.DashboardSemanticQuerySource{
-				SemanticModelID:   "sm-sales",
-				Metrics:           []string{"revenue"},
-				Dimensions:        []string{"region"},
+				SemanticModelID: "sm-sales",
+				Metrics:         []string{"revenue"},
+				Dimensions:      []string{"region"},
 			},
 		},
 		VisualSpec: &domain.VisualSpec{

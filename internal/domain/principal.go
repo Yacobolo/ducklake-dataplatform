@@ -31,6 +31,11 @@ type CreatePrincipalRequest struct {
 	IsAdmin bool
 }
 
+// UpdatePrincipalRequest holds partial-update parameters for a principal.
+type UpdatePrincipalRequest struct {
+	IsAdmin *bool
+}
+
 // Validate checks that the request is well-formed.
 func (r *CreatePrincipalRequest) Validate() error {
 	if strings.TrimSpace(r.Name) == "" {
@@ -41,6 +46,17 @@ func (r *CreatePrincipalRequest) Validate() error {
 	}
 	if r.Type != "user" && r.Type != "service_principal" {
 		return ErrValidation("type must be 'user' or 'service_principal'")
+	}
+	return nil
+}
+
+// Validate checks that the update payload is well-formed.
+func (r *UpdatePrincipalRequest) Validate() error {
+	if r == nil {
+		return ErrValidation("update request is required")
+	}
+	if r.IsAdmin == nil {
+		return ErrValidation("at least one mutable field is required")
 	}
 	return nil
 }

@@ -909,7 +909,7 @@ func sourceFreshnessStatusToAPI(s domain.SourceFreshnessStatus) SourceFreshnessS
 
 // PromoteNotebookToModel implements the endpoint for promoting a notebook cell to a model.
 func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req GenPromoteNotebookToModelRequest) (GenPromoteNotebookToModelResponse, error) {
-	_, cells, err := h.notebooks.GetNotebook(ctx, req.Body.NotebookId)
+	_, cells, err := h.notebooks.GetNotebook(ctx, req.NotebookId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenPromoteNotebookToModelResponse]("promoteNotebookToModel", err, domainErrorResponder[GenPromoteNotebookToModelResponse]{
 			NotFound: func(resp NotFoundJSONResponse) GenPromoteNotebookToModelResponse {
@@ -933,7 +933,7 @@ func (h *APIHandler) PromoteNotebookToModel(ctx context.Context, req GenPromoteN
 	}
 
 	domReq := domain.PromoteNotebookRequest{
-		NotebookID:   req.Body.NotebookId,
+		NotebookID:   req.NotebookId,
 		OutputCellID: outputCellID,
 		ProjectName:  req.Body.ProjectName,
 		Name:         req.Body.Name,

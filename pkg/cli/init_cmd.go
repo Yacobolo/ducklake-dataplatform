@@ -476,7 +476,7 @@ func fetchExistingState(client *apiruntime.Client, desired initDesiredState) (in
 			Name string `json:"name"`
 		} `json:"catalogs"`
 	}
-	if err := doJSON(client, "GET", "/catalog-registrations", nil, nil, &catalogs); err != nil {
+	if err := doJSON(client, "GET", "/catalogs", nil, nil, &catalogs); err != nil {
 		return state, err
 	}
 	for _, c := range catalogs.Catalogs {
@@ -732,7 +732,7 @@ func applyDesiredState(client *apiruntime.Client, desired initDesiredState, exis
 					"dsn":            desired.MetastoreDSN,
 					"data_path":      desired.DataPath,
 				}
-				if err := doNoContentOrJSON(client, "POST", "/catalog-registrations", body); err != nil {
+				if err := doNoContentOrJSON(client, "POST", "/catalogs", body); err != nil {
 					return fmt.Errorf("create catalog %q: %w", desired.CatalogName, err)
 				}
 				return nil
@@ -960,7 +960,7 @@ func destroyDesiredState(client *apiruntime.Client, desired initDesiredState, ex
 				if !current.Catalogs[desired.CatalogName] {
 					return nil
 				}
-				if err := doDelete(client, "/catalog-registrations/"+desired.CatalogName, nil); err != nil {
+				if err := doDelete(client, "/catalogs/"+desired.CatalogName, nil); err != nil {
 					return fmt.Errorf("delete catalog %q: %w", desired.CatalogName, err)
 				}
 				return nil

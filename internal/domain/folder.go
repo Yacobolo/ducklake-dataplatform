@@ -33,7 +33,7 @@ func NormalizeShareRole(role string) string {
 	}
 }
 
-// Folder defines the primary authoring container for notebooks.
+// Folder defines the primary authoring container for namespace-organized work.
 type Folder struct {
 	ID                   string
 	Name                 string
@@ -83,7 +83,7 @@ type NotebookContext struct {
 	GitSourceFolderID      *string
 }
 
-// CreateFolderRequest defines inputs for creating a notebook folder.
+// CreateFolderRequest defines inputs for creating a folder.
 type CreateFolderRequest struct {
 	Name                 string
 	ParentFolderID       *string
