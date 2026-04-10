@@ -1,9 +1,10 @@
 {
   "home-hero.js": "home-hero.11d93dcb82.js",
   "sql-editor.js": "sql-editor.50e7888107.js",
-  "notebook.js": "notebook.65b8ad1ff8.js",
-  "dashboard.js": "dashboard.7c5ec66b9f.js",
+  "notebook.js": "notebook.76cf23ffb6.js",
+  "dashboard.js": "dashboard.9594c32092.js",
   "explore.js": "explore.e609ec0cab.js",
   "datastar-inspector.js": "datastar-inspector.50d55cb509.js",
+  "datastar.js": "datastar.c9c8b99715.js",
   "semantic-model-flow.js": "semantic-model-flow.e983caa38a.js"
 }

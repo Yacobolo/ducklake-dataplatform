@@ -533,6 +533,135 @@ func TestResolver_RoutingDisabledFallsBackLocal(t *testing.T) {
 	assert.Nil(t, executor)
 }
 
+func TestResolver_AuthoritativeEndpointBypassesAssignment(t *testing.T) {
+	endpointURL := startTestGRPCEndpoint(t, "tok")
+
+	localDB := openTestDuckDB(t)
+	localExec := NewLocalExecutor(localDB)
+	cache := NewRemoteCache(localDB)
+
+	principalRepo := &mockPrincipalRepo{
+		getByNameFn: func(_ context.Context, _ string) (*domain.Principal, error) {
+			return &domain.Principal{ID: "1", Name: "alice"}, nil
+		},
+	}
+
+	computeRepo := &mockComputeRepo{
+		getByNameFn: func(_ context.Context, name string) (*domain.ComputeEndpoint, error) {
+			if name != "analytics-xl" {
+				return nil, domain.ErrNotFound("no endpoint")
+			}
+			return &domain.ComputeEndpoint{
+				ID: "42", Name: "analytics-xl", Type: "REMOTE", Status: "ACTIVE",
+				URL: endpointURL, AuthToken: "tok",
+			}, nil
+		},
+		getAssignmentsForPrincipalFn: func(_ context.Context, _ string, _ string) ([]domain.ComputeEndpoint, error) {
+			return nil, nil
+		},
+	}
+
+	resolver := NewResolver(localExec, computeRepo, principalRepo, &mockGroupRepo{
+		getGroupsForMemberFn: func(_ context.Context, _ string, _ string) ([]domain.Group, error) {
+			return nil, nil
+		},
+	}, cache, nil)
+
+	ctx := domain.WithComputeExecutionRequest(context.Background(), domain.ComputeExecutionRequest{
+		Mode:                  domain.ComputeModeSharedEndpoint,
+		EndpointName:          "analytics-xl",
+		WorkloadType:          domain.ComputeWorkloadInteractive,
+		AuthoritativeEndpoint: true,
+	})
+	executor, err := resolver.Resolve(ctx, "alice")
+	require.NoError(t, err)
+	require.NotNil(t, executor)
+	_, isRemote := executor.(*RemoteExecutor)
+	assert.True(t, isRemote)
+}
+
+func TestResolver_AuthoritativeEndpointUnhealthyWithoutFallbackErrors(t *testing.T) {
+	localDB := openTestDuckDB(t)
+	localExec := NewLocalExecutor(localDB)
+	cache := NewRemoteCache(localDB)
+
+	principalRepo := &mockPrincipalRepo{
+		getByNameFn: func(_ context.Context, _ string) (*domain.Principal, error) {
+			return &domain.Principal{ID: "1", Name: "alice"}, nil
+		},
+	}
+
+	computeRepo := &mockComputeRepo{
+		getByNameFn: func(_ context.Context, name string) (*domain.ComputeEndpoint, error) {
+			if name != "analytics-xl" {
+				return nil, domain.ErrNotFound("no endpoint")
+			}
+			return &domain.ComputeEndpoint{
+				ID: "42", Name: "analytics-xl", Type: "REMOTE", Status: "ACTIVE",
+				URL: "grpc://127.0.0.1:1", AuthToken: "tok",
+			}, nil
+		},
+	}
+
+	resolver := NewResolver(localExec, computeRepo, principalRepo, &mockGroupRepo{
+		getGroupsForMemberFn: func(_ context.Context, _ string, _ string) ([]domain.Group, error) {
+			return nil, nil
+		},
+	}, cache, nil)
+
+	ctx := domain.WithComputeExecutionRequest(context.Background(), domain.ComputeExecutionRequest{
+		Mode:                  domain.ComputeModeSharedEndpoint,
+		EndpointName:          "analytics-xl",
+		WorkloadType:          domain.ComputeWorkloadInteractive,
+		AuthoritativeEndpoint: true,
+		FallbackLocal:         false,
+	})
+	_, err := resolver.Resolve(ctx, "alice")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unhealthy")
+}
+
+func TestResolver_AuthoritativeEndpointUnhealthyFallbackLocal(t *testing.T) {
+	localDB := openTestDuckDB(t)
+	localExec := NewLocalExecutor(localDB)
+	cache := NewRemoteCache(localDB)
+
+	principalRepo := &mockPrincipalRepo{
+		getByNameFn: func(_ context.Context, _ string) (*domain.Principal, error) {
+			return &domain.Principal{ID: "1", Name: "alice"}, nil
+		},
+	}
+
+	computeRepo := &mockComputeRepo{
+		getByNameFn: func(_ context.Context, name string) (*domain.ComputeEndpoint, error) {
+			if name != "analytics-xl" {
+				return nil, domain.ErrNotFound("no endpoint")
+			}
+			return &domain.ComputeEndpoint{
+				ID: "42", Name: "analytics-xl", Type: "REMOTE", Status: "ACTIVE",
+				URL: "grpc://127.0.0.1:1", AuthToken: "tok",
+			}, nil
+		},
+	}
+
+	resolver := NewResolver(localExec, computeRepo, principalRepo, &mockGroupRepo{
+		getGroupsForMemberFn: func(_ context.Context, _ string, _ string) ([]domain.Group, error) {
+			return nil, nil
+		},
+	}, cache, nil)
+
+	ctx := domain.WithComputeExecutionRequest(context.Background(), domain.ComputeExecutionRequest{
+		Mode:                  domain.ComputeModeSharedEndpoint,
+		EndpointName:          "analytics-xl",
+		WorkloadType:          domain.ComputeWorkloadInteractive,
+		AuthoritativeEndpoint: true,
+		FallbackLocal:         true,
+	})
+	executor, err := resolver.Resolve(ctx, "alice")
+	require.NoError(t, err)
+	assert.Nil(t, executor)
+}
+
 func TestResolver_CanaryUsersRestrictRouting(t *testing.T) {
 	localDB := openTestDuckDB(t)
 	localExec := NewLocalExecutor(localDB)

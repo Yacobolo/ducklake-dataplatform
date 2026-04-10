@@ -1,6 +1,6 @@
 -- name: CreateDashboard :one
-INSERT INTO dashboards (id, name, description, owner, folder_id)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO dashboards (id, name, description, owner, folder_id, semantic_project_name, semantic_model_name, compute_mode, compute_endpoint_name, compute_fallback_local)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetDashboard :one
@@ -25,7 +25,16 @@ ORDER BY updated_at DESC;
 
 -- name: UpdateDashboard :one
 UPDATE dashboards
-SET name = ?, description = ?, folder_id = ?, updated_at = datetime('now')
+SET name = ?,
+    description = ?,
+    owner = ?,
+    folder_id = ?,
+    semantic_project_name = ?,
+    semantic_model_name = ?,
+    compute_mode = ?,
+    compute_endpoint_name = ?,
+    compute_fallback_local = ?,
+    updated_at = datetime('now')
 WHERE id = ?
 RETURNING *;
 
@@ -34,10 +43,10 @@ DELETE FROM dashboards WHERE id = ?;
 
 -- name: CreateDashboardWidget :one
 INSERT INTO dashboard_widgets (
-    id, dashboard_id, name, description, source_json, visual_spec,
+    id, dashboard_id, filter_origin_key, page_name, name, description, source_json, visual_spec,
     layout_x, layout_y, layout_w, layout_h
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetDashboardWidget :one
@@ -48,7 +57,9 @@ SELECT * FROM dashboard_widgets WHERE dashboard_id = ? ORDER BY layout_y, layout
 
 -- name: UpdateDashboardWidget :one
 UPDATE dashboard_widgets
-SET name = ?,
+SET filter_origin_key = ?,
+    page_name = ?,
+    name = ?,
     description = ?,
     source_json = ?,
     visual_spec = ?,

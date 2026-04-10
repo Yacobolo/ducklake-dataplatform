@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"duck-demo/internal/domain"
 )
 
 func TestDiff_EmptyStates(t *testing.T) {
@@ -216,6 +218,79 @@ func TestDiff_UpdateGroup(t *testing.T) {
 		}
 	}
 	assert.True(t, hasUpdate, "should have an update action for the group")
+}
+
+func TestDiff_DashboardLifecycle(t *testing.T) {
+	t.Run("create", func(t *testing.T) {
+		desired := &DesiredState{
+			Dashboards: []DashboardResource{{
+				Name: "revenue-overview",
+				Spec: DashboardSpec{
+					Owner: "alice",
+					Widgets: []DashboardWidgetSpec{{
+						Key:    "chart-revenue",
+						Name:   "Revenue",
+						Source: DashboardWidgetSourceSpec{Kind: "sql_query", SQLQuery: &domain.DashboardSQLQuerySource{SQL: "select 1"}},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					}},
+				},
+			}},
+		}
+
+		plan := Diff(desired, &DesiredState{})
+		require.Len(t, plan.Actions, 1)
+		assert.Equal(t, OpCreate, plan.Actions[0].Operation)
+		assert.Equal(t, KindDashboard, plan.Actions[0].ResourceKind)
+		assert.Equal(t, "revenue-overview", plan.Actions[0].ResourceName)
+	})
+
+	t.Run("update", func(t *testing.T) {
+		actual := &DesiredState{
+			Dashboards: []DashboardResource{{
+				Name: "revenue-overview",
+				Spec: DashboardSpec{
+					Owner: "alice",
+					Widgets: []DashboardWidgetSpec{{
+						Key:    "chart-revenue",
+						Name:   "Old Revenue",
+						Source: DashboardWidgetSourceSpec{Kind: "sql_query", SQLQuery: &domain.DashboardSQLQuerySource{SQL: "select 1"}},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					}},
+				},
+			}},
+		}
+		desired := &DesiredState{
+			Dashboards: []DashboardResource{{
+				Name: "revenue-overview",
+				Spec: DashboardSpec{
+					Owner: "alice",
+					Widgets: []DashboardWidgetSpec{{
+						Key:    "chart-revenue",
+						Name:   "Revenue",
+						Source: DashboardWidgetSourceSpec{Kind: "sql_query", SQLQuery: &domain.DashboardSQLQuerySource{SQL: "select 1"}},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					}},
+				},
+			}},
+		}
+
+		plan := Diff(desired, actual)
+		require.Len(t, plan.Actions, 1)
+		assert.Equal(t, OpUpdate, plan.Actions[0].Operation)
+		assert.Equal(t, KindDashboard, plan.Actions[0].ResourceKind)
+		assert.NotEmpty(t, plan.Actions[0].Changes)
+	})
+
+	t.Run("delete", func(t *testing.T) {
+		actual := &DesiredState{
+			Dashboards: []DashboardResource{{Name: "revenue-overview", Spec: DashboardSpec{Owner: "alice"}}},
+		}
+		plan := Diff(&DesiredState{}, actual)
+		require.Len(t, plan.Actions, 1)
+		assert.Equal(t, OpDelete, plan.Actions[0].Operation)
+		assert.Equal(t, KindDashboard, plan.Actions[0].ResourceKind)
+		assert.Equal(t, "revenue-overview", plan.Actions[0].ResourceName)
+	})
 }
 
 func TestDiff_TableColumnDiff(t *testing.T) {

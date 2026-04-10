@@ -8,11 +8,14 @@
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
+| `compute` | `DashboardComputePolicy` | `false` | - |
 | `created_at` | `string` | `false` | - |
 | `description` | `string` | `false` | - |
 | `folder_id` | `string` | `false` | - |
 | `id` | `string` | `false` | - |
 | `name` | `string` | `false` | - |
 | `owner` | `string` | `false` | - |
+| `semantic_model_name` | `string` | `false` | - |
+| `semantic_project_name` | `string` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 

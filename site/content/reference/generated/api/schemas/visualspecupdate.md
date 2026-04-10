@@ -13,6 +13,7 @@
 | `encodings` | `VisualEncodingsUpdate` | `false` | - |
 | `kind` | `VisualOutputKind` | `false` | - |
 | `legend` | `boolean` | `false` | - |
+| `legend_position` | `string` | `false` | - |
 | `stacked` | `boolean` | `false` | - |
 | `subtitle` | `string` | `false` | - |
 | `title` | `string` | `false` | - |

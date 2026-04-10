@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"duck-demo/internal/domain"
 )
 
 // containsStr is a helper wrapping strings.Contains for readability.
@@ -229,6 +231,119 @@ func TestValidate_PrincipalErrors(t *testing.T) {
 			assert.Contains(t, errs[0].Error(), tt.contains)
 		})
 	}
+}
+
+func TestValidate_DashboardErrors(t *testing.T) {
+	state := &DesiredState{
+		Notebooks: []NotebookResource{{
+			Name: "sales-kpis",
+			Spec: NotebookSpec{
+				Owner: "alice",
+				Cells: []CellSpec{{Name: "zone_output", Type: "sql", Content: "select 1"}},
+			},
+		}},
+		SemanticModels: []SemanticModelResource{{
+			ModelName: "revenue",
+			Spec:      SemanticModelSpec{BaseModelRef: "analytics.revenue"},
+		}},
+		Dashboards: []DashboardResource{{
+			Name: "revenue-overview",
+			Spec: DashboardSpec{
+				Compute: &domain.DashboardComputePolicy{Mode: domain.ComputeModeSharedEndpoint},
+				Widgets: []DashboardWidgetSpec{
+					{
+						Key:  "bad key",
+						Name: "Revenue",
+						Source: DashboardWidgetSourceSpec{
+							Kind: domain.DashboardWidgetSourceNotebookCell,
+							NotebookCell: &DashboardNotebookCellRefSpec{
+								NotebookName: "sales-kpis",
+								CellName:     "missing_cell",
+							},
+						},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					},
+					{
+						Key:  "bad key",
+						Name: "Revenue Duplicate",
+						Source: DashboardWidgetSourceSpec{
+							Kind: domain.DashboardWidgetSourceSemanticQuery,
+							SemanticQuery: &DashboardSemanticQuerySpec{
+								Metrics: []string{"revenue"},
+							},
+						},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					},
+				},
+			},
+		}},
+	}
+
+	errs := Validate(state)
+	require.NotEmpty(t, errs)
+
+	messages := make([]string, 0, len(errs))
+	for _, err := range errs {
+		messages = append(messages, err.Error())
+	}
+
+	assert.Contains(t, strings.Join(messages, "\n"), "owner is required")
+	assert.Contains(t, strings.Join(messages, "\n"), "endpoint_name is required")
+	assert.Contains(t, strings.Join(messages, "\n"), "widget key must contain only lowercase letters, digits, and hyphens")
+	assert.Contains(t, strings.Join(messages, "\n"), "duplicate widget key")
+	assert.Contains(t, strings.Join(messages, "\n"), "unknown cell")
+}
+
+func TestValidate_DashboardValidNotebookAndSemanticBindings(t *testing.T) {
+	state := &DesiredState{
+		Notebooks: []NotebookResource{{
+			Name: "sales-kpis",
+			Spec: NotebookSpec{
+				Owner: "alice",
+				Cells: []CellSpec{{Name: "zone_output", Type: "sql", Content: "select 1"}},
+			},
+		}},
+		SemanticModels: []SemanticModelResource{{
+			ModelName: "revenue",
+			Spec:      SemanticModelSpec{BaseModelRef: "analytics.revenue"},
+		}},
+		Dashboards: []DashboardResource{{
+			Name: "revenue-overview",
+			Spec: DashboardSpec{
+				Owner:               "alice",
+				SemanticProjectName: "analytics",
+				SemanticModelName:   "revenue",
+				Compute:             &domain.DashboardComputePolicy{Mode: domain.ComputeModeByocLocal},
+				Widgets: []DashboardWidgetSpec{
+					{
+						Key:  "table-zones",
+						Name: "Zone Detail",
+						Source: DashboardWidgetSourceSpec{
+							Kind: domain.DashboardWidgetSourceNotebookCell,
+							NotebookCell: &DashboardNotebookCellRefSpec{
+								NotebookName: "sales-kpis",
+								CellName:     "zone_output",
+							},
+						},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					},
+					{
+						Key:  "chart-revenue",
+						Name: "Revenue",
+						Source: DashboardWidgetSourceSpec{
+							Kind: domain.DashboardWidgetSourceSemanticQuery,
+							SemanticQuery: &DashboardSemanticQuerySpec{
+								Metrics: []string{"revenue"},
+							},
+						},
+						Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 6, H: 4},
+					},
+				},
+			},
+		}},
+	}
+
+	assert.Empty(t, Validate(state))
 }
 
 func TestValidate_GroupErrors(t *testing.T) {

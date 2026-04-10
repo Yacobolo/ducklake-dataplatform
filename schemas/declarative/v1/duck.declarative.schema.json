@@ -95,6 +95,9 @@
     },
     {
       "$ref": "kinds/macro.schema.json"
+    },
+    {
+      "$ref": "kinds/dashboard.schema.json"
     }
   ],
   "title": "Duck declarative document"

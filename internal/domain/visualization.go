@@ -34,31 +34,46 @@ const (
 	VisualChartStackedBar VisualChartType = "stacked_bar"
 )
 
+// VisualLegendPosition defines where a chart legend should be placed.
+type VisualLegendPosition string
+
+const (
+	// VisualLegendPositionTop places the legend above the chart.
+	VisualLegendPositionTop VisualLegendPosition = "top"
+	// VisualLegendPositionRight places the legend to the right of the chart.
+	VisualLegendPositionRight VisualLegendPosition = "right"
+	// VisualLegendPositionBottom places the legend below the chart.
+	VisualLegendPositionBottom VisualLegendPosition = "bottom"
+	// VisualLegendPositionLeft places the legend to the left of the chart.
+	VisualLegendPositionLeft VisualLegendPosition = "left"
+)
+
 // VisualFieldBinding maps semantic meaning to a result column name.
 type VisualFieldBinding struct {
-	Field string `json:"field"`
+	Field string `json:"field" yaml:"field"`
 }
 
 // VisualEncodings maps result columns to visual channels.
 type VisualEncodings struct {
-	X         *VisualFieldBinding `json:"x,omitempty"`
-	Y         *VisualFieldBinding `json:"y,omitempty"`
-	Series    *VisualFieldBinding `json:"series,omitempty"`
-	Label     *VisualFieldBinding `json:"label,omitempty"`
-	Value     *VisualFieldBinding `json:"value,omitempty"`
-	Secondary *VisualFieldBinding `json:"secondary,omitempty"`
+	X         *VisualFieldBinding `json:"x,omitempty" yaml:"x,omitempty"`
+	Y         *VisualFieldBinding `json:"y,omitempty" yaml:"y,omitempty"`
+	Series    *VisualFieldBinding `json:"series,omitempty" yaml:"series,omitempty"`
+	Label     *VisualFieldBinding `json:"label,omitempty" yaml:"label,omitempty"`
+	Value     *VisualFieldBinding `json:"value,omitempty" yaml:"value,omitempty"`
+	Secondary *VisualFieldBinding `json:"secondary,omitempty" yaml:"secondary,omitempty"`
 }
 
 // VisualSpec is the product-owned visualization contract used by notebooks and dashboards.
 type VisualSpec struct {
-	Kind         VisualOutputKind `json:"kind"`
-	ChartType    *VisualChartType `json:"chart_type,omitempty"`
-	Encodings    VisualEncodings  `json:"encodings,omitempty"`
-	Title        string           `json:"title,omitempty"`
-	Subtitle     string           `json:"subtitle,omitempty"`
-	Legend       *bool            `json:"legend,omitempty"`
-	Stacked      *bool            `json:"stacked,omitempty"`
-	ColorPalette string           `json:"color_palette,omitempty"`
+	Kind           VisualOutputKind      `json:"kind" yaml:"kind"`
+	ChartType      *VisualChartType      `json:"chart_type,omitempty" yaml:"chart_type,omitempty"`
+	Encodings      VisualEncodings       `json:"encodings,omitempty" yaml:"encodings,omitempty"`
+	Title          string                `json:"title,omitempty" yaml:"title,omitempty"`
+	Subtitle       string                `json:"subtitle,omitempty" yaml:"subtitle,omitempty"`
+	Legend         *bool                 `json:"legend,omitempty" yaml:"legend,omitempty"`
+	LegendPosition *VisualLegendPosition `json:"legend_position,omitempty" yaml:"legend_position,omitempty"`
+	Stacked        *bool                 `json:"stacked,omitempty" yaml:"stacked,omitempty"`
+	ColorPalette   string                `json:"color_palette,omitempty" yaml:"color_palette,omitempty"`
 }
 
 // Validate checks that the visualization spec is structurally sound.
@@ -77,6 +92,13 @@ func (s *VisualSpec) Validate() error {
 	case VisualOutputChart:
 		if s.ChartType == nil {
 			return ErrValidation("chart visuals require chart_type")
+		}
+		if s.LegendPosition != nil {
+			switch *s.LegendPosition {
+			case VisualLegendPositionTop, VisualLegendPositionRight, VisualLegendPositionBottom, VisualLegendPositionLeft:
+			default:
+				return ErrValidation("unsupported legend_position %q", string(*s.LegendPosition))
+			}
 		}
 		switch *s.ChartType {
 		case VisualChartBar, VisualChartLine, VisualChartArea, VisualChartStackedBar:

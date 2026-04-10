@@ -101,6 +101,10 @@ func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, erro
 		return nil, err
 	}
 
+	// 11. dashboards/
+	if err := loadDashboards(dir, state, opts); err != nil {
+		return nil, err
+	}
 	// 12. macros/
 	if err := loadMacros(dir, state, opts); err != nil {
 		return nil, err
@@ -285,6 +289,47 @@ func loadDataProducts(root string, state *DesiredState, opts LoadOptions) error 
 		}
 
 		state.DataProducts = append(state.DataProducts, DataProductResource{Slug: slug, Spec: doc.Spec})
+	}
+
+	return nil
+}
+
+func loadDashboards(root string, state *DesiredState, opts LoadOptions) error {
+	dir := filepath.Join(root, "dashboards")
+	if !dirExists(dir) {
+		return nil
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read dashboards directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		name := strings.TrimSuffix(entry.Name(), ".yaml")
+		path := filepath.Join(dir, entry.Name())
+
+		var doc DashboardDoc
+		found, err := loadYAMLFile(path, &doc, opts)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameDashboard); err != nil {
+			return err
+		}
+		if doc.Metadata.Name != name {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
+		}
+
+		state.Dashboards = append(state.Dashboards, DashboardResource{Name: name, Spec: doc.Spec})
 	}
 
 	return nil

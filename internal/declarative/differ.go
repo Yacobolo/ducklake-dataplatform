@@ -44,6 +44,7 @@ func Diff(desired, actual *DesiredState) *Plan {
 	diffAssets(plan, desired.Assets, actual.Assets)
 	diffModels(plan, desired.Models, actual.Models)
 	diffSemanticModels(plan, desired.SemanticModels, actual.SemanticModels)
+	diffDashboards(plan, desired.Dashboards, actual.Dashboards)
 	diffMacros(plan, desired.Macros, actual.Macros)
 
 	plan.SortActions()
@@ -430,6 +431,40 @@ func diffDataProducts(plan *Plan, desired, actual []DataProductResource) {
 	for _, a := range actual {
 		if !seen[a.Slug] {
 			addDelete(plan, KindDataProduct, a.Slug, a)
+		}
+	}
+}
+
+func diffDashboards(plan *Plan, desired, actual []DashboardResource) {
+	actualMap := make(map[string]DashboardResource, len(actual))
+	for _, a := range actual {
+		actualMap[a.Name] = a
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, d := range desired {
+		seen[d.Name] = true
+		a, exists := actualMap[d.Name]
+		if !exists {
+			addCreate(plan, KindDashboard, d.Name, "dashboards/"+d.Name+".yaml", d)
+			continue
+		}
+
+		var changes []FieldDiff
+		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
+		diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
+		diffField(&changes, "semantic_project_name", a.Spec.SemanticProjectName, d.Spec.SemanticProjectName)
+		diffField(&changes, "semantic_model_name", a.Spec.SemanticModelName, d.Spec.SemanticModelName)
+		diffField(&changes, "compute", stableJSON(a.Spec.Compute), stableJSON(d.Spec.Compute))
+		diffField(&changes, "widgets", stableJSON(a.Spec.Widgets), stableJSON(d.Spec.Widgets))
+		if len(changes) > 0 {
+			addUpdate(plan, KindDashboard, d.Name, "dashboards/"+d.Name+".yaml", d, a, changes)
+		}
+	}
+
+	for _, a := range actual {
+		if !seen[a.Name] {
+			addDelete(plan, KindDashboard, a.Name, a)
 		}
 	}
 }

@@ -153,6 +153,7 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 - [CreateVolumeRequest](./schemas/createvolumerequest)
 - [CreateWorkspaceRequest](./schemas/createworkspacerequest)
 - [Dashboard](./schemas/dashboard)
+- [DashboardComputePolicy](./schemas/dashboardcomputepolicy)
 - [DashboardDetail](./schemas/dashboarddetail)
 - [DashboardNotebookCellSource](./schemas/dashboardnotebookcellsource)
 - [DashboardNotebookCellSourceUpdate](./schemas/dashboardnotebookcellsourceupdate)

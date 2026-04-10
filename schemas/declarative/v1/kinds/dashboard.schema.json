@@ -1,0 +1,334 @@
+{
+  "$defs": {
+    "DashboardComputePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "endpoint_name": {
+          "type": "string"
+        },
+        "fallback_local": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DashboardDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "apiVersion": {
+          "enum": [
+            "duck/v1"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "Dashboard"
+          ],
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/$defs/DashboardSpec"
+        }
+      },
+      "required": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
+    "DashboardNotebookCellRefSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "cell_name": {
+          "type": "string"
+        },
+        "notebook_name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "cell_name",
+        "notebook_name"
+      ],
+      "type": "object"
+    },
+    "DashboardSQLQuerySource": {
+      "additionalProperties": false,
+      "properties": {
+        "catalog": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "sql": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sql"
+      ],
+      "type": "object"
+    },
+    "DashboardSemanticQuerySpec": {
+      "additionalProperties": false,
+      "properties": {
+        "dimensions": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "filters": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "metrics": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "order_by": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "project_name": {
+          "type": "string"
+        },
+        "relationship_names": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "semantic_model_name": {
+          "type": "string"
+        },
+        "time_grain": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DashboardSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "compute": {
+          "$ref": "#/$defs/DashboardComputePolicy"
+        },
+        "description": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "semantic_model_name": {
+          "type": "string"
+        },
+        "semantic_project_name": {
+          "type": "string"
+        },
+        "widgets": {
+          "items": {
+            "$ref": "#/$defs/DashboardWidgetSpec"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "owner"
+      ],
+      "type": "object"
+    },
+    "DashboardWidgetLayout": {
+      "additionalProperties": false,
+      "properties": {
+        "h": {
+          "type": "integer"
+        },
+        "w": {
+          "type": "integer"
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "h",
+        "w",
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "DashboardWidgetSourceSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "notebook_cell": {
+          "$ref": "#/$defs/DashboardNotebookCellRefSpec"
+        },
+        "semantic_query": {
+          "$ref": "#/$defs/DashboardSemanticQuerySpec"
+        },
+        "sql_query": {
+          "$ref": "#/$defs/DashboardSQLQuerySource"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "type": "object"
+    },
+    "DashboardWidgetSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "layout": {
+          "$ref": "#/$defs/DashboardWidgetLayout"
+        },
+        "name": {
+          "type": "string"
+        },
+        "page_name": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/DashboardWidgetSourceSpec"
+        },
+        "visual_spec": {
+          "$ref": "#/$defs/VisualSpec"
+        }
+      },
+      "required": [
+        "key",
+        "layout",
+        "name",
+        "source"
+      ],
+      "type": "object"
+    },
+    "ObjectMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "deletion_protection": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "VisualEncodings": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        },
+        "secondary": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        },
+        "series": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        },
+        "value": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        },
+        "x": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        },
+        "y": {
+          "$ref": "#/$defs/VisualFieldBinding"
+        }
+      },
+      "type": "object"
+    },
+    "VisualFieldBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "field"
+      ],
+      "type": "object"
+    },
+    "VisualSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "chart_type": {
+          "type": "string"
+        },
+        "color_palette": {
+          "type": "string"
+        },
+        "encodings": {
+          "$ref": "#/$defs/VisualEncodings"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "legend": {
+          "type": "boolean"
+        },
+        "legend_position": {
+          "type": "string"
+        },
+        "stacked": {
+          "type": "boolean"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "schemas/declarative/v1/kinds/dashboard.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "#/$defs/DashboardDoc"
+    }
+  ],
+  "title": "Duck declarative Dashboard"
+}

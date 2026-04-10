@@ -45,5 +45,6 @@ func SchemaDocumentTypes() []SchemaDocumentType {
 		{Kind: KindNameModel, FileName: "model", Type: reflect.TypeOf(ModelDoc{})},
 		{Kind: KindNameSemanticModel, FileName: "semantic-model", Type: reflect.TypeOf(SemanticModelDoc{})},
 		{Kind: KindNameMacro, FileName: "macro", Type: reflect.TypeOf(MacroDoc{})},
+		{Kind: KindNameDashboard, FileName: "dashboard", Type: reflect.TypeOf(DashboardDoc{})},
 	}
 }

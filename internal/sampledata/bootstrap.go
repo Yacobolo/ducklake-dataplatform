@@ -17,6 +17,8 @@ import (
 	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
+	dashboardsvc "duck-demo/internal/service/dashboard"
+	semanticsvc "duck-demo/internal/service/semantic"
 )
 
 const (
@@ -128,8 +130,27 @@ func Bootstrap(ctx context.Context, controlDB, duckDB *sql.DB, logger *slog.Logg
 	if err := ensureZoneMetricsView(ctx, duckDB, viewRepo, schema.SchemaID); err != nil {
 		return err
 	}
+	if err := ensureDashboardMetricsView(ctx, duckDB, viewRepo, schema.SchemaID); err != nil {
+		return err
+	}
 	if err := ensureSampleGrants(ctx, grantRepo, schema.SchemaID); err != nil {
 		return err
+	}
+	semanticSvc := semanticsvc.NewService(
+		repository.NewSemanticModelRepo(controlDB),
+		repository.NewSemanticMetricRepo(controlDB),
+		repository.NewSemanticRelationshipRepo(controlDB),
+		repository.NewSemanticPreAggregationRepo(controlDB),
+		repository.NewModelRepo(controlDB),
+	)
+	if err := ensureSampleDashboardSemanticModel(ctx, semanticSvc); err != nil {
+		return fmt.Errorf("ensure sample dashboard semantic model: %w", err)
+	}
+	dashboardRepo := repository.NewDashboardRepo(controlDB)
+	widgetRepo := repository.NewDashboardWidgetRepo(controlDB)
+	dashboardService := dashboardsvc.NewService(dashboardRepo, widgetRepo, nil, sampleAuditRepo{}, nil, semanticSvc)
+	if err := ensureSampleDashboards(ctx, dashboardService); err != nil {
+		return fmt.Errorf("ensure sample dashboards: %w", err)
 	}
 
 	logger.Info("sample data ready", "catalog", domain.SampleDataCatalogName, "schema", nycTaxiSchemaName)
@@ -329,6 +350,27 @@ ORDER BY gross_revenue DESC, trip_count DESC, pickup_zone
 	})
 }
 
+func ensureDashboardMetricsView(ctx context.Context, duckDB *sql.DB, viewRepo *repository.ViewRepo, schemaID string) error {
+	const viewName = "dashboard_metrics"
+	viewDefinition := fmt.Sprintf(`
+SELECT
+	CAST(t.pickup_at AS DATE) AS pickup_date,
+	z.borough,
+	z.zone AS pickup_zone,
+	COUNT(*) AS trip_count,
+	ROUND(SUM(t.total_amount), 2) AS gross_revenue
+FROM "sample_data"."%s"."trips" t
+JOIN "sample_data"."%s"."zones" z
+	ON z.location_id = t.pickup_location_id
+GROUP BY 1, 2, 3
+ORDER BY 1, gross_revenue DESC, pickup_zone
+`, nycTaxiSchemaName, nycTaxiSchemaName)
+	return ensureView(ctx, duckDB, viewRepo, schemaID, viewName, viewDefinition, "Shared semantic-ready dashboard grain across date, borough, and pickup zone.", []string{
+		fmt.Sprintf("sample_data.%s.trips", nycTaxiSchemaName),
+		fmt.Sprintf("sample_data.%s.zones", nycTaxiSchemaName),
+	})
+}
+
 func ensureView(ctx context.Context, duckDB *sql.DB, viewRepo *repository.ViewRepo, schemaID string, viewName, viewDefinition, comment string, sourceTables []string) error {
 	createSQL := fmt.Sprintf(`CREATE OR REPLACE VIEW "sample_data"."%s"."%s" AS %s`, nycTaxiSchemaName, viewName, viewDefinition)
 	if _, err := duckDB.ExecContext(ctx, createSQL); err != nil {
@@ -441,5 +483,9 @@ func sqlStringLiteral(v string) string {
 }
 
 func strPtr(v string) *string {
+	return &v
+}
+
+func intPtr(v int) *int {
 	return &v
 }

@@ -52,31 +52,34 @@ func normalizeCompatibilityMode(mode CapabilityCompatibilityMode) CapabilityComp
 // resourceIndex maps human-readable names to API UUIDs. It is populated during
 // ReadState and consumed by Execute methods that must resolve names to IDs.
 type resourceIndex struct {
-	principalIDByName     map[string]string // "alice" → UUID
-	groupIDByName         map[string]string // "admins" → UUID
-	grantIDByIdentity     map[string]string // effective grant identity → UUID
-	workspaceIDByName     map[string]string // "personal" -> UUID
-	workspaceNameByID     map[string]string // UUID -> "personal"
-	folderIDByKey         map[string]string // "workspace/parent/child" -> UUID
-	folderKeyByID         map[string]string // UUID -> "workspace/parent/child"
-	projectIDByKey        map[string]string // "workspace/project" -> UUID
-	projectKeyByID        map[string]string // UUID -> "workspace/project"
-	environmentIDByKey    map[string]string // "workspace/project/environment" -> UUID
-	environmentKeyByID    map[string]string // UUID -> "workspace/project/environment"
-	catalogIDByName       map[string]string // "demo" → UUID
-	semanticModelIDByPath map[string]string // "project.model" → UUID
-	schemaIDByPath        map[string]string // "catalog.schema" → UUID
-	tableIDByPath         map[string]string // "catalog.schema.table" → UUID
-	volumeIDByPath        map[string]string // "catalog.schema.volume" → UUID
-	locationIDByName      map[string]string // "external_location_name" → UUID
-	credentialIDByName    map[string]string // "storage_credential_name" → UUID
-	computeIDByName       map[string]string // "local" → UUID
-	computeAssignIDByKey  map[string]string // "endpoint/principalType/principal" → UUID
-	tagIDByKey            map[string]string // "pii" or "pii:value" → UUID
-	rowFilterIDByPath     map[string]string // "cat.sch.tbl/filterName" → UUID
-	columnMaskIDByPath    map[string]string // "cat.sch.tbl/maskName" → UUID
-	notebookIDByName      map[string]string // "kpi_walkthrough" → UUID
-	productDomainNameByID map[string]string // product domain UUID -> domain name
+	principalIDByName     map[string]string                                   // "alice" → UUID
+	groupIDByName         map[string]string                                   // "admins" → UUID
+	grantIDByIdentity     map[string]string                                   // effective grant identity → UUID
+	workspaceIDByName     map[string]string                                   // "personal" -> UUID
+	workspaceNameByID     map[string]string                                   // UUID -> "personal"
+	folderIDByKey         map[string]string                                   // "workspace/parent/child" -> UUID
+	folderKeyByID         map[string]string                                   // UUID -> "workspace/parent/child"
+	projectIDByKey        map[string]string                                   // "workspace/project" -> UUID
+	projectKeyByID        map[string]string                                   // UUID -> "workspace/project"
+	environmentIDByKey    map[string]string                                   // "workspace/project/environment" -> UUID
+	environmentKeyByID    map[string]string                                   // UUID -> "workspace/project/environment"
+	catalogIDByName       map[string]string                                   // "demo" → UUID
+	semanticModelIDByPath map[string]string                                   // "project.model" → UUID
+	semanticModelPathByID map[string]string                                   // UUID -> "project.model"
+	schemaIDByPath        map[string]string                                   // "catalog.schema" → UUID
+	tableIDByPath         map[string]string                                   // "catalog.schema.table" → UUID
+	volumeIDByPath        map[string]string                                   // "catalog.schema.volume" → UUID
+	locationIDByName      map[string]string                                   // "external_location_name" → UUID
+	credentialIDByName    map[string]string                                   // "storage_credential_name" → UUID
+	computeIDByName       map[string]string                                   // "local" → UUID
+	computeAssignIDByKey  map[string]string                                   // "endpoint/principalType/principal" → UUID
+	tagIDByKey            map[string]string                                   // "pii" or "pii:value" → UUID
+	rowFilterIDByPath     map[string]string                                   // "cat.sch.tbl/filterName" → UUID
+	columnMaskIDByPath    map[string]string                                   // "cat.sch.tbl/maskName" → UUID
+	notebookIDByName      map[string]string                                   // "kpi_walkthrough" → UUID
+	notebookCellRefByID   map[string]declarative.DashboardNotebookCellRefSpec // "notebookID/cellID" -> names
+	dashboardIDByName     map[string]string                                   // "revenue-overview" -> UUID
+	productDomainNameByID map[string]string                                   // product domain UUID -> domain name
 }
 
 func newResourceIndex() *resourceIndex {
@@ -94,6 +97,7 @@ func newResourceIndex() *resourceIndex {
 		environmentKeyByID:    make(map[string]string),
 		catalogIDByName:       make(map[string]string),
 		semanticModelIDByPath: make(map[string]string),
+		semanticModelPathByID: make(map[string]string),
 		schemaIDByPath:        make(map[string]string),
 		tableIDByPath:         make(map[string]string),
 		volumeIDByPath:        make(map[string]string),
@@ -105,6 +109,8 @@ func newResourceIndex() *resourceIndex {
 		rowFilterIDByPath:     make(map[string]string),
 		columnMaskIDByPath:    make(map[string]string),
 		notebookIDByName:      make(map[string]string),
+		notebookCellRefByID:   make(map[string]declarative.DashboardNotebookCellRefSpec),
+		dashboardIDByName:     make(map[string]string),
 		productDomainNameByID: make(map[string]string),
 	}
 }
@@ -271,6 +277,9 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 	}
 	if err := c.readNotebooks(ctx, state); err != nil {
 		return nil, fmt.Errorf("read notebooks: %w", err)
+	}
+	if err := c.readDashboards(ctx, state); err != nil {
+		return nil, fmt.Errorf("read dashboards: %w", err)
 	}
 
 	return state, nil
@@ -1708,6 +1717,12 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 					spec.VisualSpec = cell.VisualSpec
 				}
 				cells = append(cells, spec)
+				if c.index != nil && nb.ID != "" && cell.ID != "" && name != "" {
+					c.index.notebookCellRefByID[nb.ID+"/"+cell.ID] = declarative.DashboardNotebookCellRefSpec{
+						NotebookName: nb.Name,
+						CellName:     name,
+					}
+				}
 			}
 			state.Notebooks = append(state.Notebooks, declarative.NotebookResource{
 				Name: nb.Name,
@@ -2107,9 +2122,14 @@ func (c *APIStateClient) readAssets(ctx context.Context, state *declarative.Desi
 	}
 
 	for _, asset := range items {
+		productRef := productRefByAssetKey[asset.AssetKey]
+		if productRef == "" {
+			productRef = inferManagedRuntimeProductRef(asset)
+		}
+
 		spec := declarative.AssetSpec{
 			AssetType:    normalizeAssetTypeForConfig(asset.AssetType),
-			ProductRef:   productRefByAssetKey[asset.AssetKey],
+			ProductRef:   productRef,
 			Owner:        asset.Owner,
 			Description:  asset.Description,
 			Tags:         append([]string(nil), asset.Tags...),
@@ -2167,6 +2187,9 @@ func (c *APIStateClient) readAssetChecks(ctx context.Context, assetKey string) (
 	if err := mergePages(pages, &checks); err != nil {
 		return nil, err
 	}
+	if len(checks) == 0 {
+		return nil, nil
+	}
 
 	out := make([]declarative.AssetCheckSpec, 0, len(checks))
 	for _, check := range checks {
@@ -2178,6 +2201,23 @@ func (c *APIStateClient) readAssetChecks(ctx context.Context, assetKey string) (
 		})
 	}
 	return out, nil
+}
+
+func inferManagedRuntimeProductRef(asset apiAsset) string {
+	switch normalizeAssetTypeForConfig(asset.AssetType) {
+	case "dashboard":
+		return "runtime-dashboards"
+	case "metric", "semantic_model":
+		return "runtime-semantic"
+	case "model":
+		return "runtime-models"
+	case "notebook":
+		return "runtime-notebooks"
+	case "notebook_output":
+		return "runtime-notebook-outputs"
+	default:
+		return ""
+	}
 }
 
 func (c *APIStateClient) reverseLookupWorkspaceName(ctx *apiNotebookContext) string {
@@ -2319,6 +2359,40 @@ type apiSemanticModel struct {
 	BaseModelRef         string   `json:"base_model_ref"`
 	DefaultTimeDimension string   `json:"default_time_dimension"`
 	Tags                 []string `json:"tags"`
+}
+
+type apiDashboard struct {
+	ID                  string                         `json:"id"`
+	Name                string                         `json:"name"`
+	Description         string                         `json:"description"`
+	Owner               string                         `json:"owner"`
+	SemanticProjectName string                         `json:"semantic_project_name"`
+	SemanticModelName   string                         `json:"semantic_model_name"`
+	Compute             *domain.DashboardComputePolicy `json:"compute"`
+}
+
+type apiDashboardWidget struct {
+	ID          string                        `json:"id"`
+	DashboardID string                        `json:"dashboard_id"`
+	Key         string                        `json:"key"`
+	PageName    string                        `json:"page_name"`
+	Name        string                        `json:"name"`
+	Description string                        `json:"description"`
+	Source      *apiDashboardWidgetSource     `json:"source"`
+	VisualSpec  *domain.VisualSpec            `json:"visual_spec"`
+	Layout      *domain.DashboardWidgetLayout `json:"layout"`
+}
+
+type apiDashboardWidgetSource struct {
+	Kind          string                               `json:"kind"`
+	SQLQuery      *domain.DashboardSQLQuerySource      `json:"sql_query"`
+	NotebookCell  *domain.DashboardNotebookCellSource  `json:"notebook_cell"`
+	SemanticQuery *domain.DashboardSemanticQuerySource `json:"semantic_query"`
+}
+
+type apiDashboardDetail struct {
+	Dashboard *apiDashboard        `json:"dashboard"`
+	Widgets   []apiDashboardWidget `json:"widgets"`
 }
 
 type apiSemanticMetric struct {
@@ -2564,6 +2638,7 @@ func (c *APIStateClient) readSemanticModels(ctx context.Context, state *declarat
 			modelNameByID[m.ID] = semanticModelPath(m.Name)
 			if c.index != nil {
 				c.index.semanticModelIDByPath[semanticModelPath(m.Name)] = m.ID
+				c.index.semanticModelPathByID[m.ID] = semanticModelPath(m.Name)
 			}
 		}
 	}
@@ -2635,6 +2710,151 @@ func (c *APIStateClient) readSemanticModels(ctx context.Context, state *declarat
 	}
 
 	return nil
+}
+
+func (c *APIStateClient) readDashboards(ctx context.Context, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/dashboards")
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return nil
+	}
+
+	var items []apiDashboard
+	if err := mergePages(pages, &items); err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		if item.ID == "" || item.Name == "" {
+			continue
+		}
+		if c.index != nil {
+			c.index.dashboardIDByName[item.Name] = item.ID
+		}
+
+		detail, err := c.readDashboardDetail(ctx, item.ID)
+		if err != nil {
+			return fmt.Errorf("read dashboard %q: %w", item.Name, err)
+		}
+		if detail.Dashboard == nil {
+			continue
+		}
+
+		spec := declarative.DashboardSpec{
+			Description:         detail.Dashboard.Description,
+			Owner:               detail.Dashboard.Owner,
+			SemanticProjectName: detail.Dashboard.SemanticProjectName,
+			SemanticModelName:   detail.Dashboard.SemanticModelName,
+			Compute:             detail.Dashboard.Compute,
+			Widgets:             make([]declarative.DashboardWidgetSpec, 0, len(detail.Widgets)),
+		}
+
+		for _, widget := range detail.Widgets {
+			source, err := c.dashboardWidgetSourceToDeclarative(detail.Dashboard, widget.Source)
+			if err != nil {
+				return fmt.Errorf("convert dashboard widget %q: %w", widget.Name, err)
+			}
+			layout := domain.DashboardWidgetLayout{}
+			if widget.Layout != nil {
+				layout = *widget.Layout
+			}
+			spec.Widgets = append(spec.Widgets, declarative.DashboardWidgetSpec{
+				Key:         widget.Key,
+				PageName:    widget.PageName,
+				Name:        widget.Name,
+				Description: widget.Description,
+				Source:      source,
+				VisualSpec:  widget.VisualSpec,
+				Layout:      layout,
+			})
+		}
+
+		state.Dashboards = append(state.Dashboards, declarative.DashboardResource{
+			Name: detail.Dashboard.Name,
+			Spec: spec,
+		})
+	}
+
+	return nil
+}
+
+func (c *APIStateClient) readDashboardDetail(_ context.Context, dashboardID string) (*apiDashboardDetail, error) {
+	resp, err := c.client.Do(http.MethodGet, "/dashboards/"+dashboardID, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	body, err := apiruntime.ReadBody(resp)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("GET /dashboards/%s: HTTP %d: %s", dashboardID, resp.StatusCode, string(body))
+	}
+	var detail apiDashboardDetail
+	if err := json.Unmarshal(body, &detail); err != nil {
+		return nil, err
+	}
+	return &detail, nil
+}
+
+func (c *APIStateClient) dashboardWidgetSourceToDeclarative(dashboard *apiDashboard, source *apiDashboardWidgetSource) (declarative.DashboardWidgetSourceSpec, error) {
+	if source == nil {
+		return declarative.DashboardWidgetSourceSpec{}, nil
+	}
+
+	out := declarative.DashboardWidgetSourceSpec{
+		Kind: domain.DashboardWidgetSourceKind(source.Kind),
+	}
+	if source.SQLQuery != nil {
+		copySource := *source.SQLQuery
+		out.SQLQuery = &copySource
+	}
+	if source.NotebookCell != nil {
+		ref, ok := c.lookupNotebookCellRef(source.NotebookCell.NotebookID, source.NotebookCell.CellID)
+		if !ok {
+			return declarative.DashboardWidgetSourceSpec{}, fmt.Errorf("unknown notebook cell ref %s/%s", source.NotebookCell.NotebookID, source.NotebookCell.CellID)
+		}
+		out.NotebookCell = &ref
+	}
+	if source.SemanticQuery != nil {
+		semantic := &declarative.DashboardSemanticQuerySpec{
+			ProjectName:       source.SemanticQuery.ProjectName,
+			SemanticModelName: source.SemanticQuery.SemanticModelName,
+			Metrics:           append([]string(nil), source.SemanticQuery.Metrics...),
+			RelationshipNames: append([]string(nil), source.SemanticQuery.RelationshipNames...),
+			Dimensions:        append([]string(nil), source.SemanticQuery.Dimensions...),
+			Filters:           append([]string(nil), source.SemanticQuery.Filters...),
+			OrderBy:           append([]string(nil), source.SemanticQuery.OrderBy...),
+			TimeGrain:         source.SemanticQuery.TimeGrain,
+		}
+		if semantic.SemanticModelName == "" && source.SemanticQuery.SemanticModelID != "" && c.index != nil {
+			semantic.SemanticModelName = c.index.semanticModelPathByID[source.SemanticQuery.SemanticModelID]
+		}
+		if source.SemanticQuery.Limit != nil {
+			limit := *source.SemanticQuery.Limit
+			semantic.Limit = &limit
+		}
+		if dashboard != nil {
+			if strings.TrimSpace(semantic.ProjectName) == strings.TrimSpace(dashboard.SemanticProjectName) {
+				semantic.ProjectName = ""
+			}
+			if strings.TrimSpace(semantic.SemanticModelName) == strings.TrimSpace(dashboard.SemanticModelName) {
+				semantic.SemanticModelName = ""
+			}
+		}
+		out.SemanticQuery = semantic
+	}
+	return out, nil
+}
+
+func (c *APIStateClient) lookupNotebookCellRef(notebookID, cellID string) (declarative.DashboardNotebookCellRefSpec, bool) {
+	if c.index == nil {
+		return declarative.DashboardNotebookCellRefSpec{}, false
+	}
+	ref, ok := c.index.notebookCellRefByID[notebookID+"/"+cellID]
+	return ref, ok
 }
 
 func (c *APIStateClient) listSemanticMetrics(ctx context.Context, semanticModelID string) ([]apiSemanticMetric, error) {
@@ -3048,6 +3268,266 @@ func (c *APIStateClient) lookupSchemaIDByPath(_ context.Context, catalogName, sc
 	return id, nil
 }
 
+func (c *APIStateClient) executeDashboard(ctx context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		resource, ok := action.Desired.(declarative.DashboardResource)
+		if !ok {
+			return fmt.Errorf("dashboard create desired type %T", action.Desired)
+		}
+		resp, err := c.client.Do(http.MethodPost, "/dashboards", nil, c.dashboardRequestBody(resource))
+		if err != nil {
+			return err
+		}
+		dashboardID, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if c.index != nil && dashboardID != "" {
+			c.index.dashboardIDByName[resource.Name] = dashboardID
+		}
+		return c.syncDashboardWidgets(ctx, dashboardID, resource)
+	case declarative.OpUpdate:
+		resource, ok := action.Desired.(declarative.DashboardResource)
+		if !ok {
+			return fmt.Errorf("dashboard update desired type %T", action.Desired)
+		}
+		dashboardID, err := c.resolveDashboardID(ctx, resource.Name)
+		if err != nil {
+			return err
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/dashboards/"+dashboardID, nil, c.dashboardRequestBody(resource))
+		if err != nil {
+			return err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
+		return c.syncDashboardWidgets(ctx, dashboardID, resource)
+	case declarative.OpDelete:
+		dashboardID, err := c.resolveDashboardID(ctx, action.ResourceName)
+		if err != nil {
+			return err
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/dashboards/"+dashboardID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
+		if c.index != nil {
+			delete(c.index.dashboardIDByName, action.ResourceName)
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported dashboard operation %s", action.Operation)
+	}
+}
+
+func (c *APIStateClient) dashboardRequestBody(resource declarative.DashboardResource) map[string]interface{} {
+	body := map[string]interface{}{
+		"name":        resource.Name,
+		"owner":       resource.Spec.Owner,
+		"description": resource.Spec.Description,
+	}
+	if resource.Spec.SemanticProjectName != "" {
+		body["semantic_project_name"] = resource.Spec.SemanticProjectName
+	}
+	if resource.Spec.SemanticModelName != "" {
+		body["semantic_model_name"] = resource.Spec.SemanticModelName
+	}
+	if resource.Spec.Compute != nil {
+		body["compute"] = resource.Spec.Compute
+	}
+	return body
+}
+
+func (c *APIStateClient) syncDashboardWidgets(ctx context.Context, dashboardID string, resource declarative.DashboardResource) error {
+	detail, err := c.readDashboardDetail(ctx, dashboardID)
+	if err != nil {
+		return err
+	}
+
+	actualByKey := make(map[string]apiDashboardWidget, len(detail.Widgets))
+	for _, widget := range detail.Widgets {
+		actualByKey[widget.Key] = widget
+	}
+
+	seen := make(map[string]struct{}, len(resource.Spec.Widgets))
+	for _, widget := range resource.Spec.Widgets {
+		body, err := c.dashboardWidgetRequestBody(ctx, resource.Spec, widget)
+		if err != nil {
+			return fmt.Errorf("widget %q: %w", widget.Key, err)
+		}
+
+		if existing, ok := actualByKey[widget.Key]; ok {
+			resp, err := c.client.Do(http.MethodPatch, "/dashboards/"+dashboardID+"/widgets/"+existing.ID, nil, body)
+			if err != nil {
+				return err
+			}
+			if err := apiruntime.CheckError(resp); err != nil {
+				return err
+			}
+		} else {
+			resp, err := c.client.Do(http.MethodPost, "/dashboards/"+dashboardID+"/widgets", nil, body)
+			if err != nil {
+				return err
+			}
+			if err := apiruntime.CheckError(resp); err != nil {
+				return err
+			}
+		}
+		seen[widget.Key] = struct{}{}
+	}
+
+	for _, widget := range detail.Widgets {
+		if _, ok := seen[widget.Key]; ok {
+			continue
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/dashboards/"+dashboardID+"/widgets/"+widget.ID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *APIStateClient) dashboardWidgetRequestBody(ctx context.Context, dashboard declarative.DashboardSpec, widget declarative.DashboardWidgetSpec) (map[string]interface{}, error) {
+	source, err := c.dashboardWidgetSourceBody(ctx, dashboard, widget.Source)
+	if err != nil {
+		return nil, err
+	}
+	body := map[string]interface{}{
+		"key":         widget.Key,
+		"page_name":   widget.PageName,
+		"name":        widget.Name,
+		"description": widget.Description,
+		"source":      source,
+		"layout":      widget.Layout,
+	}
+	if widget.VisualSpec != nil {
+		body["visual_spec"] = widget.VisualSpec
+	}
+	return body, nil
+}
+
+func (c *APIStateClient) dashboardWidgetSourceBody(ctx context.Context, dashboard declarative.DashboardSpec, source declarative.DashboardWidgetSourceSpec) (map[string]interface{}, error) {
+	body := map[string]interface{}{
+		"kind": string(source.Kind),
+	}
+	switch source.Kind {
+	case domain.DashboardWidgetSourceSQLQuery:
+		body["sql_query"] = source.SQLQuery
+	case domain.DashboardWidgetSourceNotebookCell:
+		if source.NotebookCell == nil {
+			return nil, fmt.Errorf("notebook_cell source is required")
+		}
+		notebookID, cellID, err := c.resolveNotebookCellIDs(ctx, source.NotebookCell.NotebookName, source.NotebookCell.CellName)
+		if err != nil {
+			return nil, err
+		}
+		body["notebook_cell"] = map[string]interface{}{
+			"notebook_id": notebookID,
+			"cell_id":     cellID,
+		}
+	case domain.DashboardWidgetSourceSemanticQuery:
+		if source.SemanticQuery == nil {
+			return nil, fmt.Errorf("semantic_query source is required")
+		}
+		modelName := strings.TrimSpace(source.SemanticQuery.SemanticModelName)
+		if modelName == "" {
+			modelName = strings.TrimSpace(dashboard.SemanticModelName)
+		}
+		if modelName == "" {
+			return nil, fmt.Errorf("semantic_query source requires semantic_model_name or dashboard semantic binding")
+		}
+		semanticModelID, err := c.resolveSemanticModelRefID(ctx, modelName)
+		if err != nil {
+			return nil, err
+		}
+		semanticBody := map[string]interface{}{
+			"semantic_model_id": semanticModelID,
+			"metrics":           source.SemanticQuery.Metrics,
+		}
+		if len(source.SemanticQuery.RelationshipNames) > 0 {
+			semanticBody["relationship_names"] = source.SemanticQuery.RelationshipNames
+		}
+		if len(source.SemanticQuery.Dimensions) > 0 {
+			semanticBody["dimensions"] = source.SemanticQuery.Dimensions
+		}
+		if len(source.SemanticQuery.Filters) > 0 {
+			semanticBody["filters"] = source.SemanticQuery.Filters
+		}
+		if len(source.SemanticQuery.OrderBy) > 0 {
+			semanticBody["order_by"] = source.SemanticQuery.OrderBy
+		}
+		if source.SemanticQuery.Limit != nil {
+			semanticBody["limit"] = *source.SemanticQuery.Limit
+		}
+		if source.SemanticQuery.TimeGrain != nil {
+			semanticBody["time_grain"] = *source.SemanticQuery.TimeGrain
+		}
+		body["semantic_query"] = semanticBody
+	default:
+		return nil, fmt.Errorf("unsupported dashboard widget source kind %q", source.Kind)
+	}
+	return body, nil
+}
+
+func (c *APIStateClient) resolveDashboardID(ctx context.Context, dashboardName string) (string, error) {
+	if c.index != nil {
+		if id, ok := c.index.dashboardIDByName[dashboardName]; ok {
+			return id, nil
+		}
+	}
+
+	pages, err := c.fetchAllPages(ctx, "/dashboards")
+	if err != nil {
+		return "", err
+	}
+	var items []apiDashboard
+	if err := mergePages(pages, &items); err != nil {
+		return "", err
+	}
+	for _, item := range items {
+		if item.Name == dashboardName && item.ID != "" {
+			if c.index != nil {
+				c.index.dashboardIDByName[dashboardName] = item.ID
+			}
+			return item.ID, nil
+		}
+	}
+	return "", fmt.Errorf("dashboard %q not found", dashboardName)
+}
+
+func (c *APIStateClient) resolveNotebookCellIDs(ctx context.Context, notebookName, cellName string) (string, string, error) {
+	notebookID, err := c.resolveNotebookID(ctx, notebookName)
+	if err != nil {
+		return "", "", err
+	}
+	detail, err := c.readNotebookDetail(ctx, notebookID)
+	if err != nil {
+		return "", "", err
+	}
+	for _, cell := range detail.Cells {
+		if strings.TrimSpace(cell.Name) == cellName {
+			if c.index != nil {
+				c.index.notebookCellRefByID[notebookID+"/"+cell.ID] = declarative.DashboardNotebookCellRefSpec{
+					NotebookName: notebookName,
+					CellName:     cellName,
+				}
+			}
+			return notebookID, cell.ID, nil
+		}
+	}
+	return "", "", fmt.Errorf("cell %q not found in notebook %q", cellName, notebookName)
+}
+
 func (c *APIStateClient) lookupTableIDByPath(_ context.Context, catalogName, schemaName, tableName string) (string, error) {
 	resp, err := c.client.Do(http.MethodGet, "/catalogs/"+catalogName+"/schemas/"+schemaName+"/tables/"+tableName, nil, nil)
 	if err != nil {
@@ -3169,6 +3649,8 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeModel(ctx, action)
 	case declarative.KindSemanticModel:
 		return c.executeSemanticModel(ctx, action)
+	case declarative.KindDashboard:
+		return c.executeDashboard(ctx, action)
 	default:
 		return fmt.Errorf("execute %s %s: resource kind not yet implemented", action.Operation, action.ResourceKind)
 	}

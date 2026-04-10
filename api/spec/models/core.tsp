@@ -1475,6 +1475,7 @@ model VisualSpec {
   title?: string;
   subtitle?: string;
   legend?: boolean;
+  legend_position?: "top" | "right" | "bottom" | "left";
   stacked?: boolean;
   color_palette?: string;
 }
@@ -2074,8 +2075,17 @@ model Dashboard {
   description?: string;
   owner?: string;
   folder_id?: string;
+  semantic_project_name?: string;
+  semantic_model_name?: string;
+  compute?: DashboardComputePolicy;
   created_at?: utcDateTime;
   updated_at?: utcDateTime;
+}
+
+model DashboardComputePolicy {
+  mode?: string;
+  endpoint_name?: string;
+  fallback_local?: boolean;
 }
 
 model PaginatedDashboards {
@@ -2128,6 +2138,8 @@ model DashboardWidgetSource {
 model DashboardWidget {
   id?: string;
   dashboard_id?: string;
+  key?: string;
+  page_name?: string;
   name?: string;
   description?: string;
   source?: DashboardWidgetSource;
@@ -2156,15 +2168,23 @@ model ResolvedDashboardDetail {
 }
 
 model CreateDashboardRequest {
+  owner?: string;
   name: string;
   description?: string;
   folder_id?: string;
+  semantic_project_name?: string;
+  semantic_model_name?: string;
+  compute?: DashboardComputePolicy;
 }
 
 model UpdateDashboardRequest {
+  owner?: string;
   name?: string;
   description?: string;
   folder_id?: string;
+  semantic_project_name?: string;
+  semantic_model_name?: string;
+  compute?: DashboardComputePolicy;
 }
 
 model FolderContentItem {
@@ -2191,6 +2211,8 @@ model FolderPath {
 }
 
 model CreateDashboardWidgetRequest {
+  key?: string;
+  page_name?: string;
   name: string;
   description?: string;
   source: DashboardWidgetSource;
@@ -2199,6 +2221,8 @@ model CreateDashboardWidgetRequest {
 }
 
 model UpdateDashboardWidgetRequest {
+  key?: string;
+  page_name?: string;
   name?: string;
   description?: string;
   source?: DashboardWidgetSource;

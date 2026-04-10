@@ -392,6 +392,64 @@ type ComputeRoutingDefaultsSpec struct {
 	NotebookMode    string `yaml:"notebook_mode,omitempty"`
 }
 
+// === Dashboards ===
+
+// DashboardDoc declares a dashboard with embedded widgets.
+type DashboardDoc struct {
+	APIVersion string        `yaml:"apiVersion"`
+	Kind       string        `yaml:"kind"`
+	Metadata   ObjectMeta    `yaml:"metadata"`
+	Spec       DashboardSpec `yaml:"spec"`
+}
+
+// DashboardSpec holds the authored state for a dashboard.
+type DashboardSpec struct {
+	Description         string                         `yaml:"description,omitempty"`
+	Owner               string                         `yaml:"owner"`
+	SemanticProjectName string                         `yaml:"semantic_project_name,omitempty"`
+	SemanticModelName   string                         `yaml:"semantic_model_name,omitempty"`
+	Compute             *domain.DashboardComputePolicy `yaml:"compute,omitempty"`
+	Widgets             []DashboardWidgetSpec          `yaml:"widgets,omitempty"`
+}
+
+// DashboardWidgetSpec declares one widget within a dashboard resource.
+type DashboardWidgetSpec struct {
+	Key         string                       `yaml:"key"`
+	PageName    string                       `yaml:"page_name,omitempty"`
+	Name        string                       `yaml:"name"`
+	Description string                       `yaml:"description,omitempty"`
+	Source      DashboardWidgetSourceSpec    `yaml:"source"`
+	VisualSpec  *domain.VisualSpec           `yaml:"visual_spec,omitempty"`
+	Layout      domain.DashboardWidgetLayout `yaml:"layout"`
+}
+
+// DashboardWidgetSourceSpec is the declarative, name-friendly widget source union.
+type DashboardWidgetSourceSpec struct {
+	Kind          domain.DashboardWidgetSourceKind `yaml:"kind"`
+	SQLQuery      *domain.DashboardSQLQuerySource  `yaml:"sql_query,omitempty"`
+	NotebookCell  *DashboardNotebookCellRefSpec    `yaml:"notebook_cell,omitempty"`
+	SemanticQuery *DashboardSemanticQuerySpec      `yaml:"semantic_query,omitempty"`
+}
+
+// DashboardNotebookCellRefSpec identifies a notebook cell by notebook and cell name.
+type DashboardNotebookCellRefSpec struct {
+	NotebookName string `yaml:"notebook_name"`
+	CellName     string `yaml:"cell_name"`
+}
+
+// DashboardSemanticQuerySpec captures declarative semantic-query intent using names.
+type DashboardSemanticQuerySpec struct {
+	ProjectName       string   `yaml:"project_name,omitempty"`
+	SemanticModelName string   `yaml:"semantic_model_name,omitempty"`
+	Metrics           []string `yaml:"metrics,omitempty"`
+	RelationshipNames []string `yaml:"relationship_names,omitempty"`
+	Dimensions        []string `yaml:"dimensions,omitempty"`
+	Filters           []string `yaml:"filters,omitempty"`
+	OrderBy           []string `yaml:"order_by,omitempty"`
+	Limit             *int     `yaml:"limit,omitempty"`
+	TimeGrain         *string  `yaml:"time_grain,omitempty"`
+}
+
 // === Authoring Core ===
 
 // WorkspaceDoc declares a top-level authoring workspace.
@@ -708,6 +766,7 @@ type DesiredState struct {
 	ComputeAssignments []ComputeAssignmentSpec
 	ComputeDefaults    *ComputeRoutingDefaultsSpec
 	APIKeys            []APIKeySpec
+	Dashboards         []DashboardResource
 	Notebooks          []NotebookResource
 	Assets             []AssetResource
 	Models             []ModelResource
@@ -817,6 +876,12 @@ type ColumnMaskResource struct {
 type NotebookResource struct {
 	Name string
 	Spec NotebookSpec
+}
+
+// DashboardResource is a dashboard with its resolved name.
+type DashboardResource struct {
+	Name string
+	Spec DashboardSpec
 }
 
 // AssetResource is an asset with its resolved key.

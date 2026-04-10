@@ -5718,6 +5718,14 @@ paths:
           required: true
           schema:
             type: string
+        - name: filters
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.
@@ -19783,12 +19791,20 @@ components:
       required:
         - name
       properties:
+        owner:
+          type: string
         name:
           type: string
         description:
           type: string
         folder_id:
           type: string
+        semantic_project_name:
+          type: string
+        semantic_model_name:
+          type: string
+        compute:
+          $ref: '#/components/schemas/DashboardComputePolicy'
     CreateDashboardWidgetRequest:
       type: object
       required:
@@ -19796,6 +19812,10 @@ components:
         - source
         - layout
       properties:
+        key:
+          type: string
+        page_name:
+          type: string
         name:
           type: string
         description:
@@ -20457,12 +20477,27 @@ components:
           type: string
         folder_id:
           type: string
+        semantic_project_name:
+          type: string
+        semantic_model_name:
+          type: string
+        compute:
+          $ref: '#/components/schemas/DashboardComputePolicy'
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+    DashboardComputePolicy:
+      type: object
+      properties:
+        mode:
+          type: string
+        endpoint_name:
+          type: string
+        fallback_local:
+          type: boolean
     DashboardDetail:
       type: object
       properties:
@@ -20578,6 +20613,10 @@ components:
         id:
           type: string
         dashboard_id:
+          type: string
+        key:
+          type: string
+        page_name:
           type: string
         name:
           type: string
@@ -24190,15 +24229,27 @@ components:
     UpdateDashboardRequest:
       type: object
       properties:
+        owner:
+          type: string
         name:
           type: string
         description:
           type: string
         folder_id:
           type: string
+        semantic_project_name:
+          type: string
+        semantic_model_name:
+          type: string
+        compute:
+          $ref: '#/components/schemas/DashboardComputePolicy'
     UpdateDashboardWidgetRequest:
       type: object
       properties:
+        key:
+          type: string
+        page_name:
+          type: string
         name:
           type: string
         description:
@@ -24712,6 +24763,13 @@ components:
           type: string
         legend:
           type: boolean
+        legend_position:
+          type: string
+          enum:
+            - top
+            - right
+            - bottom
+            - left
         stacked:
           type: boolean
         color_palette:
@@ -24731,6 +24789,13 @@ components:
           type: string
         legend:
           type: boolean
+        legend_position:
+          type: string
+          enum:
+            - top
+            - right
+            - bottom
+            - left
         stacked:
           type: boolean
         color_palette:
