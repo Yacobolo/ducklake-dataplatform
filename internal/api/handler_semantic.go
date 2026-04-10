@@ -19,16 +19,19 @@ type semanticService interface {
 
 	CreateMetric(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error)
 	ListMetrics(ctx context.Context, semanticModelID string) ([]domain.SemanticMetric, error)
+	GetMetric(ctx context.Context, semanticModelID, metricName string) (*domain.SemanticMetric, error)
 	UpdateMetric(ctx context.Context, semanticModelID, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error)
 	DeleteMetric(ctx context.Context, semanticModelID, metricName string) error
 
 	CreatePreAggregation(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error)
 	ListPreAggregations(ctx context.Context, semanticModelID string) ([]domain.SemanticPreAggregation, error)
+	GetPreAggregation(ctx context.Context, semanticModelID, preAggName string) (*domain.SemanticPreAggregation, error)
 	UpdatePreAggregation(ctx context.Context, semanticModelID, preAggName string, req domain.UpdateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error)
 	DeletePreAggregation(ctx context.Context, semanticModelID, preAggName string) error
 
 	CreateRelationshipForModel(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
 	ListRelationshipsForModel(ctx context.Context, semanticModelID string) ([]domain.SemanticRelationship, error)
+	GetRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string) (*domain.SemanticRelationship, error)
 	UpdateRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string, req domain.UpdateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
 	DeleteRelationshipForModel(ctx context.Context, semanticModelID, relationshipName string) error
 
@@ -190,6 +193,22 @@ func (h *APIHandler) ListSemanticMetrics(ctx context.Context, req GenListSemanti
 	return GenListSemanticMetrics200JSONResponse{Body: semanticMetricListToGen(data), Headers: GenListSemanticMetrics200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
+// GetSemanticMetric gets a metric under a semantic model.
+func (h *APIHandler) GetSemanticMetric(ctx context.Context, req GenGetSemanticMetricRequest) (GenGetSemanticMetricResponse, error) {
+	item, err := h.semantics.GetMetric(ctx, req.SemanticModelId, req.MetricName)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetSemanticMetricResponse]("getSemanticMetric", err, domainErrorResponder[GenGetSemanticMetricResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetSemanticMetricResponse {
+				return GenGetSemanticMetric404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenGetSemanticMetric200JSONResponse{Body: semanticMetricToAPI(*item), Headers: GenGetSemanticMetric200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+}
+
 // CreateSemanticMetric creates a metric under a semantic model.
 func (h *APIHandler) CreateSemanticMetric(ctx context.Context, req GenCreateSemanticMetricRequest) (GenCreateSemanticMetricResponse, error) {
 	cp, _ := domain.PrincipalFromContext(ctx)
@@ -323,6 +342,22 @@ func (h *APIHandler) ListSemanticPreAggregations(ctx context.Context, req GenLis
 		data[i] = semanticPreAggregationToAPI(item)
 	}
 	return GenListSemanticPreAggregations200JSONResponse{Body: semanticPreAggregationListToGen(data), Headers: GenListSemanticPreAggregations200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+}
+
+// GetSemanticPreAggregation gets a pre-aggregation under a semantic model.
+func (h *APIHandler) GetSemanticPreAggregation(ctx context.Context, req GenGetSemanticPreAggregationRequest) (GenGetSemanticPreAggregationResponse, error) {
+	item, err := h.semantics.GetPreAggregation(ctx, req.SemanticModelId, req.PreAggregationName)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetSemanticPreAggregationResponse]("getSemanticPreAggregation", err, domainErrorResponder[GenGetSemanticPreAggregationResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetSemanticPreAggregationResponse {
+				return GenGetSemanticPreAggregation404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenGetSemanticPreAggregation200JSONResponse{Body: semanticPreAggregationToAPI(*item), Headers: GenGetSemanticPreAggregation200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // CreateSemanticPreAggregation creates a pre-aggregation under a semantic model.
@@ -469,6 +504,22 @@ func (h *APIHandler) CreateSemanticModelRelationship(ctx context.Context, req Ge
 		return nil, err
 	}
 	return GenCreateSemanticModelRelationship201JSONResponse{Body: semanticRelationshipToAPI(*result), Headers: GenCreateSemanticModelRelationship201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
+}
+
+// GetSemanticModelRelationship gets a relationship for a semantic model.
+func (h *APIHandler) GetSemanticModelRelationship(ctx context.Context, req GenGetSemanticModelRelationshipRequest) (GenGetSemanticModelRelationshipResponse, error) {
+	item, err := h.semantics.GetRelationshipForModel(ctx, req.SemanticModelId, req.RelationshipName)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetSemanticModelRelationshipResponse]("getSemanticModelRelationship", err, domainErrorResponder[GenGetSemanticModelRelationshipResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetSemanticModelRelationshipResponse {
+				return GenGetSemanticModelRelationship404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenGetSemanticModelRelationship200JSONResponse{Body: semanticRelationshipToAPI(*item), Headers: GenGetSemanticModelRelationship200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}, nil
 }
 
 // UpdateSemanticModelRelationship updates a semantic relationship for a semantic model.

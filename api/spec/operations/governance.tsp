@@ -21,91 +21,115 @@ op listGrants(
 @summary("Create grant")
 op createGrant(@body body: CreateGrantRequest): Created<PrivilegeGrant> | ValidationResourceErrorResponses;
 
-@route("/grants/{grantId}")
+@route("/grants/{grant_id}")
 @delete
 @tag("Governance")
 @summary("Delete grant")
-op deleteGrant(grantId: string): NoContent | MutatingErrorResponses;
+op deleteGrant(grant_id: string): NoContent | MutatingErrorResponses;
 
-@route("/tables/{tableId}/row-filters")
+@route("/row-filters")
 @get
 @tag("Governance")
 @summary("List row filters")
-op listRowFilters(tableId: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedRowFilters> | ResourceErrorResponses;
+op listRowFilters(@query table_id?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedRowFilters> | ResourceErrorResponses;
 
-@route("/tables/{tableId}/row-filters")
+@route("/row-filters")
 @post
 @tag("Governance")
 @summary("Create row filter")
-op createRowFilter(tableId: string, @body body: CreateRowFilterRequest): Created<RowFilter> | MutatingErrorResponses;
+op createRowFilter(@body body: CreateRowFilterRequest): Created<RowFilter> | MutatingErrorResponses;
 
-@route("/row-filters/{rowFilterId}")
+@route("/row-filters/{row_filter_id}")
+@get
+@tag("Governance")
+@summary("Get row filter")
+op getRowFilter(row_filter_id: string): Ok<RowFilter> | ResourceErrorResponses;
+
+@route("/row-filters/{row_filter_id}")
+@patch(#{ implicitOptionality: true })
+@tag("Governance")
+@summary("Update row filter")
+op updateRowFilter(row_filter_id: string, @body body: UpdateRowFilterRequest): Ok<RowFilter> | MutatingErrorResponses;
+
+@route("/row-filters/{row_filter_id}")
 @delete
 @tag("Governance")
 @summary("Delete row filter")
-op deleteRowFilter(rowFilterId: string): NoContent | MutatingErrorResponses;
+op deleteRowFilter(row_filter_id: string): NoContent | MutatingErrorResponses;
 
-@route("/row-filters/{rowFilterId}/bindings")
+@route("/row-filters/{row_filter_id}/bindings")
 @get
 @tag("Governance")
 @summary("List row filter bindings")
 op listRowFilterBindings(
-  rowFilterId: string,
+  row_filter_id: string,
   @query max_results?: int32,
   @query page_token?: string,
 ): Ok<PaginatedRowFilterBindings> | ResourceErrorResponses;
 
-@route("/row-filters/{rowFilterId}/bindings")
+@route("/row-filters/{row_filter_id}/bindings")
 @post
 @tag("Governance")
 @summary("Bind row filter")
-op bindRowFilter(rowFilterId: string, @body body: RowFilterBindingRequest): CreatedEmpty | MutatingErrorResponses;
+op bindRowFilter(row_filter_id: string, @body body: RowFilterBindingRequest): CreatedEmpty | MutatingErrorResponses;
 
-@route("/row-filters/{rowFilterId}/bindings/{principalType}/{principalId}")
+@route("/row-filters/{row_filter_id}/bindings/{principal_type}/{principal_id}")
 @delete
 @tag("Governance")
 @summary("Unbind row filter")
-op unbindRowFilter(rowFilterId: string, principalType: PrincipalType, principalId: string): NoContent | MutatingErrorResponses;
+op unbindRowFilter(row_filter_id: string, principal_type: PrincipalType, principal_id: string): NoContent | MutatingErrorResponses;
 
-@route("/tables/{tableId}/column-masks")
+@route("/column-masks")
 @get
 @tag("Governance")
 @summary("List column masks")
-op listColumnMasks(tableId: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedColumnMasks> | ResourceErrorResponses;
+op listColumnMasks(@query table_id?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedColumnMasks> | ResourceErrorResponses;
 
-@route("/tables/{tableId}/column-masks")
+@route("/column-masks")
 @post
 @tag("Governance")
 @summary("Create column mask")
-op createColumnMask(tableId: string, @body body: CreateColumnMaskRequest): Created<ColumnMask> | MutatingErrorResponses;
+op createColumnMask(@body body: CreateColumnMaskRequest): Created<ColumnMask> | MutatingErrorResponses;
 
-@route("/column-masks/{columnMaskId}")
+@route("/column-masks/{column_mask_id}")
+@get
+@tag("Governance")
+@summary("Get column mask")
+op getColumnMask(column_mask_id: string): Ok<ColumnMask> | ResourceErrorResponses;
+
+@route("/column-masks/{column_mask_id}")
+@patch(#{ implicitOptionality: true })
+@tag("Governance")
+@summary("Update column mask")
+op updateColumnMask(column_mask_id: string, @body body: UpdateColumnMaskRequest): Ok<ColumnMask> | MutatingErrorResponses;
+
+@route("/column-masks/{column_mask_id}")
 @delete
 @tag("Governance")
 @summary("Delete column mask")
-op deleteColumnMask(columnMaskId: string): NoContent | MutatingErrorResponses;
+op deleteColumnMask(column_mask_id: string): NoContent | MutatingErrorResponses;
 
-@route("/column-masks/{columnMaskId}/bindings")
+@route("/column-masks/{column_mask_id}/bindings")
 @get
 @tag("Governance")
 @summary("List column mask bindings")
 op listColumnMaskBindings(
-  columnMaskId: string,
+  column_mask_id: string,
   @query max_results?: int32,
   @query page_token?: string,
 ): Ok<PaginatedColumnMaskBindings> | ResourceErrorResponses;
 
-@route("/column-masks/{columnMaskId}/bindings")
+@route("/column-masks/{column_mask_id}/bindings")
 @post
 @tag("Governance")
 @summary("Bind column mask")
-op bindColumnMask(columnMaskId: string, @body body: ColumnMaskBindingRequest): CreatedEmpty | MutatingErrorResponses;
+op bindColumnMask(column_mask_id: string, @body body: ColumnMaskBindingRequest): CreatedEmpty | MutatingErrorResponses;
 
-@route("/column-masks/{columnMaskId}/bindings/{principalType}/{principalId}")
+@route("/column-masks/{column_mask_id}/bindings/{principal_type}/{principal_id}")
 @delete
 @tag("Governance")
 @summary("Unbind column mask")
-op unbindColumnMask(columnMaskId: string, principalType: PrincipalType, principalId: string): NoContent | MutatingErrorResponses;
+op unbindColumnMask(column_mask_id: string, principal_type: PrincipalType, principal_id: string): NoContent | MutatingErrorResponses;
 
 @route("/tags")
 @get
@@ -119,33 +143,45 @@ op listTags(@query max_results?: int32, @query page_token?: string): Ok<Paginate
 @summary("Create tag")
 op createTag(@body body: CreateTagRequest): Created<Tag> | MutatingErrorResponses;
 
-@route("/tags/{tagId}")
+@route("/tags/{tag_id}")
+@get
+@tag("Governance")
+@summary("Get tag")
+op getTag(tag_id: string): Ok<Tag> | ResourceErrorResponses;
+
+@route("/tags/{tag_id}")
+@patch(#{ implicitOptionality: true })
+@tag("Governance")
+@summary("Update tag")
+op updateTag(tag_id: string, @body body: UpdateTagRequest): Ok<Tag> | MutatingErrorResponses;
+
+@route("/tags/{tag_id}")
 @delete
 @tag("Governance")
 @summary("Delete tag")
-op deleteTag(tagId: string): NoContent | MutatingErrorResponses;
+op deleteTag(tag_id: string): NoContent | MutatingErrorResponses;
 
-@route("/tags/{tagId}/assignments")
+@route("/tags/{tag_id}/assignments")
 @get
 @tag("Governance")
 @summary("List tag assignments")
 op listTagAssignments(
-  tagId: string,
+  tag_id: string,
   @query max_results?: int32,
   @query page_token?: string,
 ): Ok<PaginatedTagAssignments> | ResourceErrorResponses;
 
-@route("/tags/{tagId}/assignments")
+@route("/tags/{tag_id}/assignments")
 @post
 @tag("Governance")
 @summary("Create tag assignment")
-op createTagAssignment(tagId: string, @body body: CreateTagAssignmentRequest): Created<TagAssignment> | ValidationResourceErrorResponses;
+op createTagAssignment(tag_id: string, @body body: CreateTagAssignmentRequest): Created<TagAssignment> | ValidationResourceErrorResponses;
 
-@route("/tags/{tagId}/assignments/{assignmentId}")
+@route("/tags/{tag_id}/assignments/{assignment_id}")
 @delete
 @tag("Governance")
 @summary("Delete tag assignment")
-op deleteTagAssignment(tagId: string, assignmentId: string): NoContent | MutatingErrorResponses;
+op deleteTagAssignment(tag_id: string, assignment_id: string): NoContent | MutatingErrorResponses;
 
 @route("/classifications")
 @get

@@ -54,6 +54,33 @@ func (s *TagService) ListTags(ctx context.Context, page domain.PageRequest) ([]d
 	return s.repo.ListTags(ctx, page)
 }
 
+// UpdateTag applies partial changes to a tag definition.
+func (s *TagService) UpdateTag(ctx context.Context, principal string, id string, req domain.UpdateTagRequest) (*domain.Tag, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	current, err := s.repo.GetTag(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	merged := *current
+	if req.Key != nil {
+		merged.Key = *req.Key
+	}
+	if req.Value != nil {
+		merged.Value = req.Value
+	}
+	if err := validateClassificationTag(&merged); err != nil {
+		return nil, err
+	}
+	result, err := s.repo.UpdateTag(ctx, id, req)
+	if err != nil {
+		return nil, err
+	}
+	s.logAudit(ctx, principal, "UPDATE_TAG", fmt.Sprintf("Updated tag %s", id))
+	return result, nil
+}
+
 // DeleteTag deletes a tag by ID.
 func (s *TagService) DeleteTag(ctx context.Context, principal string, id string) error {
 

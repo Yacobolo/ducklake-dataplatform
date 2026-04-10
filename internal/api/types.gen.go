@@ -12,7 +12,7 @@ type APIKeyInfo struct {
 
 type Asset struct {
 	AssetKey              *string                     `json:"asset_key,omitempty"`
-	AssetType             *string                     `json:"asset_type,omitempty"`
+	AssetType             *AssetType                  `json:"asset_type,omitempty"`
 	AutoMaterializePolicy *AssetAutoMaterializePolicy `json:"auto_materialize_policy,omitempty"`
 	CreatedAt             *string                     `json:"created_at,omitempty"`
 	CreatedBy             *string                     `json:"created_by,omitempty"`
@@ -117,11 +117,11 @@ type AssetFreshnessReconcileResponse struct {
 }
 
 type AssetFreshnessReconcileTarget struct {
-	AssetId         *string `json:"asset_id,omitempty"`
-	AssetKey        *string `json:"asset_key,omitempty"`
-	AssetType       *string `json:"asset_type,omitempty"`
-	EventId         *string `json:"event_id,omitempty"`
-	FreshnessStatus *string `json:"freshness_status,omitempty"`
+	AssetId         *string    `json:"asset_id,omitempty"`
+	AssetKey        *string    `json:"asset_key,omitempty"`
+	AssetType       *AssetType `json:"asset_type,omitempty"`
+	EventId         *string    `json:"event_id,omitempty"`
+	FreshnessStatus *string    `json:"freshness_status,omitempty"`
 }
 
 type AssetFreshnessRequirement struct {
@@ -135,15 +135,15 @@ type AssetFreshnessRequirementsResponse struct {
 }
 
 type AssetFreshnessStatus struct {
-	AssetId                *string   `json:"asset_id,omitempty"`
-	AssetKey               *string   `json:"asset_key,omitempty"`
-	AssetType              *string   `json:"asset_type,omitempty"`
-	Basis                  *[]string `json:"basis,omitempty"`
-	EffectiveMaxLagSeconds *int32    `json:"effective_max_lag_seconds,omitempty"`
-	FreshnessStatus        *string   `json:"freshness_status,omitempty"`
-	LastMaterializedAt     *string   `json:"last_materialized_at,omitempty"`
-	Reason                 *string   `json:"reason,omitempty"`
-	StaleSince             *string   `json:"stale_since,omitempty"`
+	AssetId                *string    `json:"asset_id,omitempty"`
+	AssetKey               *string    `json:"asset_key,omitempty"`
+	AssetType              *AssetType `json:"asset_type,omitempty"`
+	Basis                  *[]string  `json:"basis,omitempty"`
+	EffectiveMaxLagSeconds *int32     `json:"effective_max_lag_seconds,omitempty"`
+	FreshnessStatus        *string    `json:"freshness_status,omitempty"`
+	LastMaterializedAt     *string    `json:"last_materialized_at,omitempty"`
+	Reason                 *string    `json:"reason,omitempty"`
+	StaleSince             *string    `json:"stale_since,omitempty"`
 }
 
 type AssetGraph struct {
@@ -235,6 +235,28 @@ const (
 	RECONCILER                      AssetTriggerType = "RECONCILER"
 	AssetTriggerTypePIPELINE        AssetTriggerType = "PIPELINE"
 	PIPELINE                        AssetTriggerType = "PIPELINE"
+)
+
+type AssetType string
+
+const (
+	AssetTypeTABLE                  AssetType = "TABLE"
+	AssetTypeVIEW                   AssetType = "VIEW"
+	AssetTypeMODEL                  AssetType = "MODEL"
+	MODEL                           AssetType = "MODEL"
+	AssetTypeNOTEBOOK               AssetType = "NOTEBOOK"
+	AssetTypeOUTPUT                 AssetType = "OUTPUT"
+	OUTPUT                          AssetType = "OUTPUT"
+	AssetTypeDASHBOARD              AssetType = "DASHBOARD"
+	DASHBOARD                       AssetType = "DASHBOARD"
+	AssetTypeSEMANTICMODEL          AssetType = "SEMANTIC_MODEL"
+	SEMANTICMODEL                   AssetType = "SEMANTIC_MODEL"
+	AssetTypeMETRIC                 AssetType = "METRIC"
+	METRIC                          AssetType = "METRIC"
+	AssetTypeSEMANTICPREAGGREGATION AssetType = "SEMANTIC_PRE_AGGREGATION"
+	SEMANTICPREAGGREGATION          AssetType = "SEMANTIC_PRE_AGGREGATION"
+	AssetTypeNOTEBOOKOUTPUT         AssetType = "NOTEBOOK_OUTPUT"
+	NOTEBOOKOUTPUT                  AssetType = "NOTEBOOK_OUTPUT"
 )
 
 type AuditDecisionStatus string
@@ -338,14 +360,6 @@ type CatalogHistoryEntry struct {
 
 type CatalogHistoryResponse struct {
 	Data []CatalogHistoryEntry `json:"data"`
-}
-
-type CatalogInfo struct {
-	Comment       *string `json:"comment,omitempty"`
-	CreatedAt     *string `json:"created_at,omitempty"`
-	Name          string  `json:"name"`
-	SystemManaged *bool   `json:"system_managed,omitempty"`
-	UpdatedAt     *string `json:"updated_at,omitempty"`
 }
 
 type CatalogRegistration struct {
@@ -603,7 +617,7 @@ type CreateAssetBackfillResponse struct {
 
 type CreateAssetRequest struct {
 	AssetKey              string                      `json:"asset_key"`
-	AssetType             string                      `json:"asset_type"`
+	AssetType             AssetType                   `json:"asset_type"`
 	AutoMaterializePolicy *AssetAutoMaterializePolicy `json:"auto_materialize_policy,omitempty"`
 	Checks                *[]AssetCheckInput          `json:"checks,omitempty"`
 	Description           *string                     `json:"description,omitempty"`
@@ -641,6 +655,7 @@ type CreateColumnMaskRequest struct {
 	Description    *string `json:"description,omitempty"`
 	MaskExpression string  `json:"mask_expression"`
 	Name           string  `json:"name"`
+	TableId        *string `json:"table_id,omitempty"`
 }
 
 type CreateColumnRequest struct {
@@ -1134,20 +1149,6 @@ type Error struct {
 	Message string `json:"message"`
 }
 
-type ExploreItem struct {
-	FolderId     *string `json:"folder_id,omitempty"`
-	GitRepoId    *string `json:"git_repo_id,omitempty"`
-	Id           *string `json:"id,omitempty"`
-	Kind         *string `json:"kind,omitempty"`
-	Name         *string `json:"name,omitempty"`
-	Owner        *string `json:"owner,omitempty"`
-	ProjectBound *bool   `json:"project_bound,omitempty"`
-	ProjectName  *string `json:"project_name,omitempty"`
-	Scope        *string `json:"scope,omitempty"`
-	Shared       *bool   `json:"shared,omitempty"`
-	UpdatedAt    *string `json:"updated_at,omitempty"`
-}
-
 type ExternalLocation struct {
 	Comment        *string      `json:"comment,omitempty"`
 	CreatedAt      *string      `json:"created_at,omitempty"`
@@ -1175,6 +1176,24 @@ type Folder struct {
 	Path                 *string `json:"path,omitempty"`
 	SystemRole           *string `json:"system_role,omitempty"`
 	UpdatedAt            *string `json:"updated_at,omitempty"`
+}
+
+type FolderContentItem struct {
+	FolderId     *string `json:"folder_id,omitempty"`
+	GitRepoId    *string `json:"git_repo_id,omitempty"`
+	Id           *string `json:"id,omitempty"`
+	Kind         *string `json:"kind,omitempty"`
+	Name         *string `json:"name,omitempty"`
+	Owner        *string `json:"owner,omitempty"`
+	ProjectBound *bool   `json:"project_bound,omitempty"`
+	ProjectName  *string `json:"project_name,omitempty"`
+	Scope        *string `json:"scope,omitempty"`
+	Shared       *bool   `json:"shared,omitempty"`
+	UpdatedAt    *string `json:"updated_at,omitempty"`
+}
+
+type FolderPath struct {
+	Data []Folder `json:"data"`
 }
 
 type FolderShare struct {
@@ -1508,7 +1527,6 @@ type ModelMaterialization string
 
 const (
 	ModelMaterializationVIEW        ModelMaterialization = "VIEW"
-	VIEW                            ModelMaterialization = "VIEW"
 	ModelMaterializationTABLE       ModelMaterialization = "TABLE"
 	ModelMaterializationINCREMENTAL ModelMaterialization = "INCREMENTAL"
 	INCREMENTAL                     ModelMaterialization = "INCREMENTAL"
@@ -1841,14 +1859,14 @@ type PaginatedDataProducts struct {
 	NextPageToken *string               `json:"next_page_token,omitempty"`
 }
 
-type PaginatedExploreItems struct {
-	Data          []ExploreItem `json:"data"`
-	NextPageToken *string       `json:"next_page_token,omitempty"`
-}
-
 type PaginatedExternalLocations struct {
 	Data          []ExternalLocation `json:"data"`
 	NextPageToken *string            `json:"next_page_token,omitempty"`
+}
+
+type PaginatedFolderContents struct {
+	Data          []FolderContentItem `json:"data"`
+	NextPageToken *string             `json:"next_page_token,omitempty"`
 }
 
 type PaginatedFolders struct {
@@ -1934,6 +1952,11 @@ type PaginatedProductTeams struct {
 type PaginatedQueryHistoryEntries struct {
 	Data          []QueryHistoryEntry `json:"data"`
 	NextPageToken *string             `json:"next_page_token,omitempty"`
+}
+
+type PaginatedQueryJobs struct {
+	Data          []QueryJob `json:"data"`
+	NextPageToken *string    `json:"next_page_token,omitempty"`
 }
 
 type PaginatedRecentResources struct {
@@ -2033,7 +2056,6 @@ type PipelineJobJobType string
 
 const (
 	PipelineJobJobTypeNOTEBOOK PipelineJobJobType = "NOTEBOOK"
-	NOTEBOOK                   PipelineJobJobType = "NOTEBOOK"
 	PipelineJobJobTypeMODELRUN PipelineJobJobType = "MODEL_RUN"
 	MODELRUN                   PipelineJobJobType = "MODEL_RUN"
 )
@@ -2277,7 +2299,6 @@ type PromoteNotebookRequest struct {
 	CellIndex       int32                 `json:"cell_index"`
 	Materialization *ModelMaterialization `json:"materialization,omitempty"`
 	Name            string                `json:"name"`
-	NotebookId      string                `json:"notebook_id"`
 	ProjectName     string                `json:"project_name"`
 }
 
@@ -2685,7 +2706,7 @@ const (
 )
 
 type UpdateAssetRequest struct {
-	AssetType             string                      `json:"asset_type"`
+	AssetType             AssetType                   `json:"asset_type"`
 	AutoMaterializePolicy *AssetAutoMaterializePolicy `json:"auto_materialize_policy,omitempty"`
 	Checks                *[]AssetCheckInput          `json:"checks,omitempty"`
 	Description           *string                     `json:"description,omitempty"`
@@ -2712,6 +2733,13 @@ type UpdateCellRequest struct {
 	Role       *CellRole               `json:"role,omitempty"`
 	Test       *NotebookCellTestConfig `json:"test,omitempty"`
 	VisualSpec *VisualSpec             `json:"visual_spec,omitempty"`
+}
+
+type UpdateColumnMaskRequest struct {
+	ColumnName     *string `json:"column_name,omitempty"`
+	Description    *string `json:"description,omitempty"`
+	MaskExpression *string `json:"mask_expression,omitempty"`
+	Name           *string `json:"name,omitempty"`
 }
 
 type UpdateColumnRequest struct {
@@ -2807,6 +2835,18 @@ type UpdateNotebookRequest struct {
 	ProjectOverrideId     *string `json:"project_override_id,omitempty"`
 }
 
+type UpdatePipelineJobRequest struct {
+	ComputeEndpointId *string             `json:"compute_endpoint_id,omitempty"`
+	DependsOn         *[]string           `json:"depends_on,omitempty"`
+	JobOrder          *int32              `json:"job_order,omitempty"`
+	JobType           *PipelineJobJobType `json:"job_type,omitempty"`
+	ModelSelector     *string             `json:"model_selector,omitempty"`
+	Name              *string             `json:"name,omitempty"`
+	NotebookId        *string             `json:"notebook_id,omitempty"`
+	RetryCount        *int32              `json:"retry_count,omitempty"`
+	TimeoutSeconds    *int32              `json:"timeout_seconds,omitempty"`
+}
+
 type UpdatePipelineRequest struct {
 	ConcurrencyLimit *int32  `json:"concurrency_limit,omitempty"`
 	Description      *string `json:"description,omitempty"`
@@ -2815,8 +2855,8 @@ type UpdatePipelineRequest struct {
 	ScheduleCron     *string `json:"schedule_cron,omitempty"`
 }
 
-type UpdatePrincipalAdminRequest struct {
-	IsAdmin bool `json:"is_admin"`
+type UpdatePrincipalRequest struct {
+	IsAdmin *bool `json:"is_admin,omitempty"`
 }
 
 type UpdateProductDomainRequest struct {
@@ -2825,6 +2865,12 @@ type UpdateProductDomainRequest struct {
 
 type UpdateProductTeamRequest struct {
 	ContactChannel *string `json:"contact_channel,omitempty"`
+}
+
+type UpdateRowFilterRequest struct {
+	Description *string `json:"description,omitempty"`
+	FilterSql   *string `json:"filter_sql,omitempty"`
+	Name        *string `json:"name,omitempty"`
 }
 
 type UpdateSchemaRequest struct {
@@ -2882,6 +2928,11 @@ type UpdateTableRequest struct {
 	Comment    *string `json:"comment,omitempty"`
 	Owner      *string `json:"owner,omitempty"`
 	Properties *Record `json:"properties,omitempty"`
+}
+
+type UpdateTagRequest struct {
+	Key   *string `json:"key,omitempty"`
+	Value *string `json:"value,omitempty"`
 }
 
 type UpdateViewRequest struct {
@@ -3064,9 +3115,11 @@ type ListDataProductEventsParams = GenListDataProductEventsParams
 
 type ListDataProductsParams = GenListDataProductsParams
 
-type ListExploreItemsParams = GenListExploreItemsParams
-
 type ListExternalLocationsParams = GenListExternalLocationsParams
+
+type ListFolderContentsParams = GenListFolderContentsParams
+
+type ListFoldersParams = GenListFoldersParams
 
 type ListGitReposParams = GenListGitReposParams
 
@@ -3081,8 +3134,6 @@ type ListMacrosParams = GenListMacrosParams
 type ListModelRunsParams = GenListModelRunsParams
 
 type ListModelsParams = GenListModelsParams
-
-type ListNotebookFoldersParams = GenListNotebookFoldersParams
 
 type ListNotebookJobsParams = GenListNotebookJobsParams
 
@@ -3100,9 +3151,13 @@ type ListProductScorecardsParams = GenListProductScorecardsParams
 
 type ListProductTeamsParams = GenListProductTeamsParams
 
+type ListQueriesParams = GenListQueriesParams
+
 type ListQueryHistoryParams = GenListQueryHistoryParams
 
 type ListRecentResourcesParams = GenListRecentResourcesParams
+
+type ListRootFolderContentsParams = GenListRootFolderContentsParams
 
 type ListRowFilterBindingsParams = GenListRowFilterBindingsParams
 
@@ -3129,6 +3184,10 @@ type ListViewsParams = GenListViewsParams
 type ListVolumesParams = GenListVolumesParams
 
 type SearchCatalogParams = GenSearchCatalogParams
+
+type SearchFolderContentsParams = GenSearchFolderContentsParams
+
+type SearchRootFolderContentsParams = GenSearchRootFolderContentsParams
 
 type BindColumnMaskJSONRequestBody = GenBindColumnMaskJSONBody
 
@@ -3168,6 +3227,8 @@ type CreateDataProductVersionJSONRequestBody = GenCreateDataProductVersionJSONBo
 
 type CreateExternalLocationJSONRequestBody = GenCreateExternalLocationJSONBody
 
+type CreateFolderJSONRequestBody = GenCreateFolderJSONBody
+
 type CreateGitRepoJSONRequestBody = GenCreateGitRepoJSONBody
 
 type CreateGrantJSONRequestBody = GenCreateGrantJSONBody
@@ -3181,8 +3242,6 @@ type CreateMacroJSONRequestBody = GenCreateMacroJSONBody
 type CreateModelJSONRequestBody = GenCreateModelJSONBody
 
 type CreateModelTestJSONRequestBody = GenCreateModelTestJSONBody
-
-type CreateNotebookFolderJSONRequestBody = GenCreateNotebookFolderJSONBody
 
 type CreateNotebookJSONRequestBody = GenCreateNotebookJSONBody
 
@@ -3236,7 +3295,7 @@ type LoadTableExternalFilesJSONRequestBody = GenLoadTableExternalFilesJSONBody
 
 type LocalLoginJSONRequestBody = LocalLoginRequest
 
-type MoveNotebookFolderJSONRequestBody = GenMoveNotebookFolderJSONBody
+type MoveFolderJSONRequestBody = GenMoveFolderJSONBody
 
 type MoveNotebookJSONRequestBody = GenMoveNotebookJSONBody
 
@@ -3254,7 +3313,7 @@ type RunMetricQueryJSONRequestBody = GenRunMetricQueryJSONBody
 
 type SetDefaultCatalogJSONRequestBody = GenSetDefaultCatalogJSONBody
 
-type ShareNotebookFolderJSONRequestBody = GenShareNotebookFolderJSONBody
+type ShareFolderJSONRequestBody = GenShareFolderJSONBody
 
 type ShareNotebookJSONRequestBody = GenShareNotebookJSONBody
 
@@ -3274,6 +3333,8 @@ type UpdateCellJSONRequestBody = GenUpdateCellJSONBody
 
 type UpdateColumnJSONRequestBody = GenUpdateColumnJSONBody
 
+type UpdateColumnMaskJSONRequestBody = GenUpdateColumnMaskJSONBody
+
 type UpdateComputeEndpointJSONRequestBody = GenUpdateComputeEndpointJSONBody
 
 type UpdateComputeRoutingDefaultsJSONRequestBody = GenUpdateComputeRoutingDefaultsJSONBody
@@ -3286,23 +3347,27 @@ type UpdateDataProductJSONRequestBody = GenUpdateDataProductJSONBody
 
 type UpdateExternalLocationJSONRequestBody = GenUpdateExternalLocationJSONBody
 
+type UpdateFolderJSONRequestBody = GenUpdateFolderJSONBody
+
 type UpdateGroupJSONRequestBody = GenUpdateGroupJSONBody
 
 type UpdateMacroJSONRequestBody = GenUpdateMacroJSONBody
 
 type UpdateModelJSONRequestBody = GenUpdateModelJSONBody
 
-type UpdateNotebookFolderJSONRequestBody = GenUpdateNotebookFolderJSONBody
-
 type UpdateNotebookJSONRequestBody = GenUpdateNotebookJSONBody
 
 type UpdatePipelineJSONRequestBody = GenUpdatePipelineJSONBody
 
-type UpdatePrincipalAdminJSONRequestBody = GenUpdatePrincipalAdminJSONBody
+type UpdatePipelineJobJSONRequestBody = GenUpdatePipelineJobJSONBody
+
+type UpdatePrincipalJSONRequestBody = GenUpdatePrincipalJSONBody
 
 type UpdateProductDomainJSONRequestBody = GenUpdateProductDomainJSONBody
 
 type UpdateProductTeamJSONRequestBody = GenUpdateProductTeamJSONBody
+
+type UpdateRowFilterJSONRequestBody = GenUpdateRowFilterJSONBody
 
 type UpdateSchemaJSONRequestBody = GenUpdateSchemaJSONBody
 
@@ -3317,6 +3382,8 @@ type UpdateSemanticPreAggregationJSONRequestBody = GenUpdateSemanticPreAggregati
 type UpdateStorageCredentialJSONRequestBody = GenUpdateStorageCredentialJSONBody
 
 type UpdateTableJSONRequestBody = GenUpdateTableJSONBody
+
+type UpdateTagJSONRequestBody = GenUpdateTagJSONBody
 
 type UpdateViewJSONRequestBody = GenUpdateViewJSONBody
 

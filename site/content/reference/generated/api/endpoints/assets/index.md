@@ -6,9 +6,5 @@ Data asset definitions, runs, checks, partitions, and materialization workflows.
 
 ## Resources
 
-- [Assets](./assets) (5 operations)
-- [Freshness](./freshness) (5 operations)
-- [Checks](./checks) (2 operations)
-- [Materialization and Runs](./runs) (6 operations)
-- [Lineage and Partitions](./graph) (2 operations)
+- [Assets](./assets) (20 operations)
 

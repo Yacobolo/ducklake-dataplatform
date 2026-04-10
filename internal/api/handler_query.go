@@ -16,6 +16,7 @@ type queryService interface {
 
 type queryAsyncService interface {
 	SubmitAsync(ctx context.Context, principalName, sqlQuery, requestID string) (*domain.QueryJob, error)
+	ListAsyncJobs(ctx context.Context, principalName string, status *domain.QueryJobStatus, page domain.PageRequest) ([]domain.QueryJob, int64, error)
 	GetAsyncJob(ctx context.Context, principalName, jobID string) (*domain.QueryJob, error)
 	CancelAsyncJob(ctx context.Context, principalName, jobID string) error
 	DeleteAsyncJob(ctx context.Context, principalName, jobID string) error
@@ -105,6 +106,48 @@ func (h *APIHandler) SubmitQuery(ctx context.Context, req GenSubmitQueryRequest)
 	return SubmitQuery202JSONResponse{
 		Body:    SubmitQueryResponse{QueryId: job.ID, Status: apiStatus},
 		Headers: SubmitQuery202ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// ListQueries implements async query listing endpoint.
+func (h *APIHandler) ListQueries(ctx context.Context, req GenListQueriesRequest) (GenListQueriesResponse, error) {
+	cp, _ := domain.PrincipalFromContext(ctx)
+	principal := cp.Name
+
+	asyncSvc, ok := h.query.(queryAsyncService)
+	if !ok {
+		return GenListQueries500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: 500, Message: "async query service is not configured"}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+	}
+
+	var status *domain.QueryJobStatus
+	if req.Params.Status != nil {
+		value := domain.QueryJobStatus(*req.Params.Status)
+		status = &value
+	}
+	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
+	items, total, err := asyncSvc.ListAsyncJobs(ctx, principal, status, page)
+	if err != nil {
+		code := errorCodeFromError(err)
+		switch int(code) {
+		case http.StatusForbidden:
+			return ListQueries403JSONResponse{ForbiddenJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: ForbiddenResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		default:
+			return GenListQueries500JSONResponse{GenInternalErrorJSONResponse{Body: Error{Code: code, Message: err.Error()}, Headers: GenInternalErrorResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset}}}, nil
+		}
+	}
+
+	data := make([]QueryJob, len(items))
+	for i := range items {
+		item := items[i]
+		data[i] = queryJobToAPI(&item)
+	}
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	return GenListQueries200JSONResponse{
+		Body: PaginatedQueryJobs{
+			Data:          data,
+			NextPageToken: optStr(nextToken),
+		},
+		Headers: GenListQueries200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

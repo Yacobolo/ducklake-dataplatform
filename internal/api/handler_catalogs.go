@@ -91,28 +91,6 @@ func (h *APIHandler) ListCatalogs(ctx context.Context, request GenListCatalogsRe
 	}, nil
 }
 
-// GetCatalogRegistration implements the endpoint for retrieving a catalog registration by name.
-func (h *APIHandler) GetCatalogRegistration(ctx context.Context, request GenGetCatalogRegistrationRequest) (GenGetCatalogRegistrationResponse, error) {
-	result, err := h.catalogRegistration.Get(ctx, string(request.CatalogName))
-	if err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenGetCatalogRegistrationResponse]("getCatalogRegistration", err, domainErrorResponder[GenGetCatalogRegistrationResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenGetCatalogRegistrationResponse {
-				return GenGetCatalogRegistration403JSONResponse{GenForbiddenJSONResponse(resp)}
-			},
-			NotFound: func(resp NotFoundJSONResponse) GenGetCatalogRegistrationResponse {
-				return GenGetCatalogRegistration404JSONResponse{GenNotFoundJSONResponse(resp)}
-			},
-		}); ok {
-			return resp, nil
-		}
-		return nil, err
-	}
-	return GenGetCatalogRegistration200JSONResponse{
-		Body:    catalogRegistrationToAPI(*result),
-		Headers: GenGetCatalogRegistration200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
-	}, nil
-}
-
 // UpdateCatalogRegistration implements the endpoint for updating a catalog registration.
 func (h *APIHandler) UpdateCatalogRegistration(ctx context.Context, request GenUpdateCatalogRegistrationRequest) (GenUpdateCatalogRegistrationResponse, error) {
 	domReq := domain.UpdateCatalogRegistrationRequest{

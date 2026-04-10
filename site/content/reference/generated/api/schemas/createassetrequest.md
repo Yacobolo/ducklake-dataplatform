@@ -10,7 +10,7 @@
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `asset_key` | `string` | `true` | - |
-| `asset_type` | `string` | `true` | - |
+| `asset_type` | `AssetType` | `true` | - |
 | `auto_materialize_policy` | `AssetAutoMaterializePolicy` | `false` | - |
 | `checks` | `array[AssetCheckInput]` | `false` | - |
 | `description` | `string` | `false` | - |

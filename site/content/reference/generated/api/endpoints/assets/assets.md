@@ -52,7 +52,7 @@ Creates a managed asset definition together with its ownership, checks, tags, an
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /assets/{assetKey}`
+## `GET /assets/{asset_key}`
 
 Get asset
 
@@ -62,7 +62,7 @@ Get asset
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `assetKey` | `string` | `true` | - |
+| `asset_key` | `string` | `true` | - |
 
 ### Responses
 
@@ -76,7 +76,7 @@ Get asset
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /assets/{assetKey}`
+## `PATCH /assets/{asset_key}`
 
 Update asset
 
@@ -86,7 +86,7 @@ Update asset
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `assetKey` | `string` | `true` | - |
+| `asset_key` | `string` | `true` | - |
 
 ### Request Body
 
@@ -105,7 +105,7 @@ Update asset
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /assets/{assetKey}`
+## `DELETE /assets/{asset_key}`
 
 Delete asset
 
@@ -115,13 +115,423 @@ Delete asset
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `assetKey` | `string` | `true` | - |
+| `asset_key` | `string` | `true` | - |
 
 ### Responses
 
 | Code | Description |
 | --- | --- |
 | `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/backfills`
+
+List asset backfills
+
+- Operation ID: `listAssetBackfills`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+| `status` | `AssetRunStatus` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /assets/{asset_key}/backfills`
+
+Create asset backfill
+
+- Operation ID: `createAssetBackfill`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/backfills/{backfill_id}`
+
+Get asset backfill
+
+- Operation ID: `getAssetBackfill`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+| `backfill_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/checks`
+
+List asset checks
+
+- Operation ID: `listAssetChecks`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/checks/results`
+
+List asset check results
+
+- Operation ID: `listAssetCheckResults`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/freshness`
+
+Get asset freshness
+
+- Operation ID: `getAssetFreshness`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /assets/{asset_key}/freshness-reconciliations`
+
+Reconcile asset freshness
+
+- Operation ID: `reconcileAssetFreshness`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `202` | The request has been accepted for processing, but processing has not yet completed. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/freshness/blockers`
+
+List asset freshness blockers
+
+- Operation ID: `listAssetFreshnessBlockers`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/freshness/explanation`
+
+Explain asset freshness
+
+- Operation ID: `explainAssetFreshness`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/freshness/requirements`
+
+List asset freshness requirements
+
+- Operation ID: `listAssetFreshnessRequirements`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/graph`
+
+Get asset graph
+
+- Operation ID: `getAssetGraph`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/materializations`
+
+List asset materializations
+
+- Operation ID: `listAssetMaterializations`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /assets/{asset_key}/materializations`
+
+Trigger asset materialization
+
+Starts a materialization run for the specified asset and returns the queued execution metadata.
+
+- Operation ID: `triggerAssetMaterialization`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `false`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `202` | The request has been accepted for processing, but processing has not yet completed. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/partitions`
+
+List asset partitions
+
+- Operation ID: `listAssetPartitions`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /assets/{asset_key}/runs`
+
+List asset runs
+
+- Operation ID: `listAssetRuns`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset_key` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+| `status` | `AssetRunStatus` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |

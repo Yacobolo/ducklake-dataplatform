@@ -4,7 +4,36 @@
 
 Teams operations within the Products API group.
 
-## `POST /product-domains/{domainName}/teams`
+## `GET /product-domains/{domain_name}/teams`
+
+List product teams
+
+- Operation ID: `listProductTeams`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `domain_name` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /product-domains/{domain_name}/teams`
 
 Create product team
 
@@ -14,7 +43,7 @@ Create product team
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domainName` | `string` | `true` | - |
+| `domain_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -33,7 +62,7 @@ Create product team
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /product-domains/{domainName}/teams/{teamName}`
+## `GET /product-domains/{domain_name}/teams/{team_name}`
 
 Get product team
 
@@ -43,8 +72,8 @@ Get product team
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domainName` | `string` | `true` | - |
-| `teamName` | `string` | `true` | - |
+| `domain_name` | `string` | `true` | - |
+| `team_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -58,7 +87,7 @@ Get product team
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /product-domains/{domainName}/teams/{teamName}`
+## `PATCH /product-domains/{domain_name}/teams/{team_name}`
 
 Update product team
 
@@ -68,8 +97,8 @@ Update product team
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domainName` | `string` | `true` | - |
-| `teamName` | `string` | `true` | - |
+| `domain_name` | `string` | `true` | - |
+| `team_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -88,7 +117,7 @@ Update product team
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /product-domains/{domainName}/teams/{teamName}`
+## `DELETE /product-domains/{domain_name}/teams/{team_name}`
 
 Delete product team
 
@@ -98,8 +127,8 @@ Delete product team
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domainName` | `string` | `true` | - |
-| `teamName` | `string` | `true` | - |
+| `domain_name` | `string` | `true` | - |
+| `team_name` | `string` | `true` | - |
 
 ### Responses
 

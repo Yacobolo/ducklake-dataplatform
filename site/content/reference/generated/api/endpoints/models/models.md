@@ -72,53 +72,7 @@ Get model DAG
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /models/from-notebook`
-
-Promote notebook to model
-
-- Operation ID: `promoteNotebookToModel`
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `201` | The request has succeeded and a new resource has been created as a result. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `DELETE /models/from-notebook/{notebookId}`
-
-Unpublish notebook model
-
-- Operation ID: `unpublishNotebookModel`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `204` | There is no content to send for this request, but the headers may be useful. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /models/{projectName}/{modelName}`
+## `GET /models/{project_name}/{model_name}`
 
 Get model
 
@@ -128,8 +82,8 @@ Get model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `modelName` | `string` | `true` | - |
-| `projectName` | `string` | `true` | - |
+| `model_name` | `string` | `true` | - |
+| `project_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -143,7 +97,7 @@ Get model
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /models/{projectName}/{modelName}`
+## `PATCH /models/{project_name}/{model_name}`
 
 Update model
 
@@ -153,8 +107,8 @@ Update model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `modelName` | `string` | `true` | - |
-| `projectName` | `string` | `true` | - |
+| `model_name` | `string` | `true` | - |
+| `project_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -172,7 +126,7 @@ Update model
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /models/{projectName}/{modelName}`
+## `DELETE /models/{project_name}/{model_name}`
 
 Delete model
 
@@ -182,8 +136,8 @@ Delete model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `modelName` | `string` | `true` | - |
-| `projectName` | `string` | `true` | - |
+| `model_name` | `string` | `true` | - |
+| `project_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -196,7 +150,7 @@ Delete model
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /models/{projectName}/{modelName}/freshness`
+## `GET /models/{project_name}/{model_name}/freshness`
 
 Check model freshness
 
@@ -206,8 +160,8 @@ Check model freshness
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `modelName` | `string` | `true` | - |
-| `projectName` | `string` | `true` | - |
+| `model_name` | `string` | `true` | - |
+| `project_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -221,7 +175,7 @@ Check model freshness
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /models/{projectName}/{modelName}/tests`
+## `GET /models/{project_name}/{model_name}/tests`
 
 List model tests
 
@@ -231,8 +185,8 @@ List model tests
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `modelName` | `string` | `true` | - |
-| `projectName` | `string` | `true` | - |
+| `model_name` | `string` | `true` | - |
+| `project_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -246,7 +200,7 @@ List model tests
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /models/{projectName}/{modelName}/tests`
+## `POST /models/{project_name}/{model_name}/tests`
 
 Create model test
 
@@ -256,8 +210,8 @@ Create model test
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `modelName` | `string` | `true` | - |
-| `projectName` | `string` | `true` | - |
+| `model_name` | `string` | `true` | - |
+| `project_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -275,7 +229,7 @@ Create model test
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /models/{projectName}/{modelName}/tests/{testId}`
+## `DELETE /models/{project_name}/{model_name}/tests/{test_id}`
 
 Delete model test
 
@@ -285,9 +239,9 @@ Delete model test
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `modelName` | `string` | `true` | - |
-| `projectName` | `string` | `true` | - |
-| `testId` | `string` | `true` | - |
+| `model_name` | `string` | `true` | - |
+| `project_name` | `string` | `true` | - |
+| `test_id` | `string` | `true` | - |
 
 ### Responses
 

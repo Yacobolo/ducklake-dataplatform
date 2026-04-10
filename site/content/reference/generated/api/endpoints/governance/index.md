@@ -6,7 +6,7 @@ Privileges, tags, classifications, row filters, and column masking controls.
 
 ## Resources
 
-- [Tags and Classification](./tags) (7 operations)
-- [Column and Row Policies](./policies) (12 operations)
+- [Tags and Classification](./tags) (9 operations)
+- [Column and Row Policies](./policies) (16 operations)
 - [Grants](./grants) (3 operations)
 

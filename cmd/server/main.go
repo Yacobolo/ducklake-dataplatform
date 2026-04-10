@@ -417,7 +417,7 @@ func run() error {
 		r.Post("/auth/bootstrap/tokens", authHandler.CreateBootstrapToken)
 		r.Get("/auth/provider/oidc", authHandler.GetOIDCProvider)
 		r.Put("/auth/provider/oidc", authHandler.UpsertOIDCProvider)
-		r.Post("/auth/sessions/revoke-all", authHandler.RevokeAllWebSessions)
+		r.Post("/auth/sessions/revocations", authHandler.RevokeAllWebSessions)
 		r.Get("/auth/sessions/stats", authHandler.GetWebSessionStats)
 		api.RegisterAPIGenStrictRoutes(r, handler)
 	})

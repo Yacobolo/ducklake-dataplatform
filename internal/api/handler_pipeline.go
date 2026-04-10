@@ -14,7 +14,9 @@ type pipelineService interface {
 	UpdatePipeline(ctx context.Context, principal string, name string, req domain.UpdatePipelineRequest) (*domain.Pipeline, error)
 	DeletePipeline(ctx context.Context, principal string, name string) error
 	CreateJob(ctx context.Context, principal string, pipelineName string, req domain.CreatePipelineJobRequest) (*domain.PipelineJob, error)
+	GetJob(ctx context.Context, pipelineName string, jobID string) (*domain.PipelineJob, error)
 	ListJobs(ctx context.Context, pipelineName string) ([]domain.PipelineJob, error)
+	UpdateJob(ctx context.Context, principal string, pipelineName string, jobID string, req domain.UpdatePipelineJobRequest) (*domain.PipelineJob, error)
 	DeleteJob(ctx context.Context, principal string, pipelineName string, jobID string) error
 	TriggerRun(ctx context.Context, principal string, pipelineName string, params map[string]string, triggerType string) (*domain.PipelineRun, error)
 	ListRuns(ctx context.Context, pipelineName string, filter domain.PipelineRunFilter) ([]domain.PipelineRun, int64, error)
@@ -233,6 +235,77 @@ func (h *APIHandler) CreatePipelineJob(ctx context.Context, req GenCreatePipelin
 	return GenCreatePipelineJob201JSONResponse{
 		Body:    pipelineJobToAPI(*result),
 		Headers: GenCreatePipelineJob201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetPipelineJob implements the endpoint for retrieving a pipeline job.
+func (h *APIHandler) GetPipelineJob(ctx context.Context, req GenGetPipelineJobRequest) (GenGetPipelineJobResponse, error) {
+	result, err := h.pipelines.GetJob(ctx, req.PipelineName, req.JobId)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetPipelineJobResponse]("getPipelineJob", err, domainErrorResponder[GenGetPipelineJobResponse]{
+			NotFound: func(resp NotFoundJSONResponse) GenGetPipelineJobResponse {
+				return GenGetPipelineJob404JSONResponse{GenNotFoundJSONResponse(resp)}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenGetPipelineJob200JSONResponse{
+		Body:    pipelineJobToAPI(*result),
+		Headers: GenGetPipelineJob200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// UpdatePipelineJob implements the endpoint for partially updating a pipeline job.
+func (h *APIHandler) UpdatePipelineJob(ctx context.Context, req GenUpdatePipelineJobRequest) (GenUpdatePipelineJobResponse, error) {
+	domReq := domain.UpdatePipelineJobRequest{
+		Name:              req.Body.Name,
+		ComputeEndpointID: req.Body.ComputeEndpointId,
+		DependsOn:         req.Body.DependsOn,
+		NotebookID:        req.Body.NotebookId,
+		ModelSelector:     req.Body.ModelSelector,
+	}
+	if req.Body.TimeoutSeconds != nil {
+		domReq.TimeoutSeconds = int32PtrToInt64Ptr(req.Body.TimeoutSeconds)
+	}
+	if req.Body.RetryCount != nil {
+		value := int(*req.Body.RetryCount)
+		domReq.RetryCount = &value
+	}
+	if req.Body.JobOrder != nil {
+		value := int(*req.Body.JobOrder)
+		domReq.JobOrder = &value
+	}
+	if req.Body.JobType != nil {
+		value := string(*req.Body.JobType)
+		domReq.JobType = &value
+	}
+
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.pipelines.UpdateJob(ctx, cp.Name, req.PipelineName, req.JobId, domReq)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenUpdatePipelineJobResponse]("updatePipelineJob", err, domainErrorResponder[GenUpdatePipelineJobResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdatePipelineJobResponse {
+				return UpdatePipelineJob400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdatePipelineJobResponse {
+				return UpdatePipelineJob403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdatePipelineJobResponse {
+				return UpdatePipelineJob404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenUpdatePipelineJobResponse {
+				return UpdatePipelineJob409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenUpdatePipelineJob200JSONResponse{
+		Body:    pipelineJobToAPI(*result),
+		Headers: GenUpdatePipelineJob200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 

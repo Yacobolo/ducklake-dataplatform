@@ -22,7 +22,7 @@ func (s *Service) CreateAsset(ctx context.Context, req domain.CreateAssetRequest
 
 	asset := &domain.DataAsset{
 		AssetKey:              strings.TrimSpace(req.AssetKey),
-		AssetType:             strings.TrimSpace(req.AssetType),
+		AssetType:             strings.ToUpper(strings.TrimSpace(req.AssetType)),
 		ProductID:             "",
 		Owner:                 strings.TrimSpace(req.Owner),
 		Description:           strings.TrimSpace(req.Description),
@@ -93,7 +93,7 @@ func (s *Service) UpdateAsset(ctx context.Context, assetKey string, req domain.U
 	updated, err := s.assets.Update(ctx, existing.ID, &domain.DataAsset{
 		ID:                    existing.ID,
 		AssetKey:              existing.AssetKey,
-		AssetType:             strings.TrimSpace(req.AssetType),
+		AssetType:             strings.ToUpper(strings.TrimSpace(req.AssetType)),
 		ProductID:             product.Product.ID,
 		Owner:                 strings.TrimSpace(req.Owner),
 		Description:           strings.TrimSpace(req.Description),

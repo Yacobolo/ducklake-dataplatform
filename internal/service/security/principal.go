@@ -81,23 +81,31 @@ func (s *PrincipalService) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// SetAdmin updates the admin status of a principal. Requires admin privileges.
-func (s *PrincipalService) SetAdmin(ctx context.Context, id string, isAdmin bool) error {
+// Update updates mutable principal fields. Requires admin privileges.
+func (s *PrincipalService) Update(ctx context.Context, id string, req domain.UpdatePrincipalRequest) (*domain.Principal, error) {
 	if err := requireAdmin(ctx); err != nil {
-		return err
+		return nil, err
 	}
-	if err := s.repo.SetAdmin(ctx, id, isAdmin); err != nil {
-		return err
+	if err := req.Validate(); err != nil {
+		return nil, err
 	}
-	p, _ := s.repo.GetByID(ctx, id)
-	action := "SET_ADMIN"
-	if !isAdmin {
-		action = "UNSET_ADMIN"
+	if req.IsAdmin != nil {
+		if err := s.repo.SetAdmin(ctx, id, *req.IsAdmin); err != nil {
+			return nil, err
+		}
 	}
-	if p != nil {
+	p, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if req.IsAdmin != nil {
+		action := "SET_ADMIN"
+		if !*req.IsAdmin {
+			action = "UNSET_ADMIN"
+		}
 		s.logAudit(ctx, callerName(ctx), fmt.Sprintf("%s(%s)", action, p.Name))
 	}
-	return nil
+	return p, nil
 }
 
 // ResolveOrProvision resolves an existing principal by external identity,

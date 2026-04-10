@@ -2,7 +2,7 @@
 
 # Dashboards
 
-Dashboard and widget authoring plus resolved dashboard views.
+Dashboard and widget authoring plus rendered dashboard views.
 
 ## `GET /dashboards`
 
@@ -50,7 +50,7 @@ Create dashboard
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /dashboards/{dashboardId}`
+## `GET /dashboards/{dashboard_id}`
 
 Get dashboard
 
@@ -60,7 +60,7 @@ Get dashboard
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -74,7 +74,7 @@ Get dashboard
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /dashboards/{dashboardId}`
+## `PATCH /dashboards/{dashboard_id}`
 
 Update dashboard
 
@@ -84,7 +84,7 @@ Update dashboard
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -102,7 +102,7 @@ Update dashboard
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /dashboards/{dashboardId}`
+## `DELETE /dashboards/{dashboard_id}`
 
 Delete dashboard
 
@@ -112,7 +112,7 @@ Delete dashboard
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -125,17 +125,17 @@ Delete dashboard
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /dashboards/{dashboardId}/resolved`
+## `GET /dashboards/{dashboard_id}/rendered`
 
-Get resolved dashboard
+Get rendered dashboard
 
-- Operation ID: `getResolvedDashboard`
+- Operation ID: `getRenderedDashboard`
 
 ### Path Parameters
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -149,7 +149,31 @@ Get resolved dashboard
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /dashboards/{dashboardId}/widgets`
+## `GET /dashboards/{dashboard_id}/widgets`
+
+List dashboard widgets
+
+- Operation ID: `listDashboardWidgets`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /dashboards/{dashboard_id}/widgets`
 
 Create dashboard widget
 
@@ -159,7 +183,7 @@ Create dashboard widget
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -177,7 +201,32 @@ Create dashboard widget
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /dashboards/{dashboardId}/widgets/{widgetId}`
+## `GET /dashboards/{dashboard_id}/widgets/{widget_id}`
+
+Get dashboard widget
+
+- Operation ID: `getDashboardWidget`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `dashboard_id` | `string` | `true` | - |
+| `widget_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /dashboards/{dashboard_id}/widgets/{widget_id}`
 
 Update dashboard widget
 
@@ -187,8 +236,8 @@ Update dashboard widget
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
-| `widgetId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
+| `widget_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -206,7 +255,7 @@ Update dashboard widget
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /dashboards/{dashboardId}/widgets/{widgetId}`
+## `DELETE /dashboards/{dashboard_id}/widgets/{widget_id}`
 
 Delete dashboard widget
 
@@ -216,8 +265,8 @@ Delete dashboard widget
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `dashboardId` | `string` | `true` | - |
-| `widgetId` | `string` | `true` | - |
+| `dashboard_id` | `string` | `true` | - |
+| `widget_id` | `string` | `true` | - |
 
 ### Responses
 

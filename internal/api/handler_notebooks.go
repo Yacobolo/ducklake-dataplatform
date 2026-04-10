@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
+	"sort"
 	"strings"
 
 	"duck-demo/internal/domain"
@@ -34,6 +35,7 @@ type notebookService interface {
 
 type notebookFolderService interface {
 	CreateFolder(ctx context.Context, principal string, req domain.CreateFolderRequest) (*domain.Folder, error)
+	GetHomeFolder(ctx context.Context, principal string) (*domain.Folder, error)
 	GetFolderForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Folder, error)
 	ListFoldersForPrincipal(ctx context.Context, principal string, isAdmin bool, owner *string) ([]domain.Folder, error)
 	UpdateFolder(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateFolderRequest) (*domain.Folder, error)
@@ -79,18 +81,41 @@ type gitRepoService interface {
 
 // === Notebooks ===
 
-// ListNotebookFolders implements the endpoint for listing notebook folders.
-func (h *APIHandler) ListNotebookFolders(ctx context.Context, req GenListNotebookFoldersRequest) (GenListNotebookFoldersResponse, error) {
+// GetHomeFolder implements the endpoint for retrieving the caller home folder.
+func (h *APIHandler) GetHomeFolder(ctx context.Context, _ GenGetHomeFolderRequest) (GenGetHomeFolderResponse, error) {
 	if h.notebookFolders == nil {
-		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+		return nil, domain.ErrNotImplemented("folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	result, err := h.notebookFolders.GetHomeFolder(ctx, cp.Name)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetHomeFolderResponse]("getHomeFolder", err, domainErrorResponder[GenGetHomeFolderResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetHomeFolderResponse {
+				return GetHomeFolder403JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenGetHomeFolder200JSONResponse{
+		Body:    folderToAPI(*result),
+		Headers: GenGetHomeFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// ListFolders implements the endpoint for listing folders.
+func (h *APIHandler) ListFolders(ctx context.Context, req GenListFoldersRequest) (GenListFoldersResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("folders are not configured")
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
 	items, err := h.notebookFolders.ListFoldersForPrincipal(ctx, cp.Name, cp.IsAdmin, req.Params.Owner)
 	if err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenListNotebookFoldersResponse]("listNotebookFolders", err, domainErrorResponder[GenListNotebookFoldersResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookFoldersResponse {
-				return ListNotebookFolders403JSONResponse{resp}
+		if resp, ok := respondDomainErrorForOperation[GenListFoldersResponse]("listFolders", err, domainErrorResponder[GenListFoldersResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListFoldersResponse {
+				return ListFolders403JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
@@ -111,16 +136,16 @@ func (h *APIHandler) ListNotebookFolders(ctx context.Context, req GenListNoteboo
 		data = append(data, folderToAPI(item))
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return GenListNotebookFolders200JSONResponse{
+	return GenListFolders200JSONResponse{
 		Body:    PaginatedFolders{Data: data, NextPageToken: optStr(nextToken)},
-		Headers: GenListNotebookFolders200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListFolders200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
-// CreateNotebookFolder implements the endpoint for creating a notebook folder.
-func (h *APIHandler) CreateNotebookFolder(ctx context.Context, req GenCreateNotebookFolderRequest) (GenCreateNotebookFolderResponse, error) {
+// CreateFolder implements the endpoint for creating a folder.
+func (h *APIHandler) CreateFolder(ctx context.Context, req GenCreateFolderRequest) (GenCreateFolderResponse, error) {
 	if h.notebookFolders == nil {
-		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+		return nil, domain.ErrNotImplemented("folders are not configured")
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.notebookFolders.CreateFolder(ctx, cp.Name, domain.CreateFolderRequest{
@@ -132,57 +157,57 @@ func (h *APIHandler) CreateNotebookFolder(ctx context.Context, req GenCreateNote
 		DefaultEnvironmentID: req.Body.DefaultEnvironmentId,
 	})
 	if err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenCreateNotebookFolderResponse]("createNotebookFolder", err, domainErrorResponder[GenCreateNotebookFolderResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenCreateNotebookFolderResponse {
-				return CreateNotebookFolder400JSONResponse{resp}
+		if resp, ok := respondDomainErrorForOperation[GenCreateFolderResponse]("createFolder", err, domainErrorResponder[GenCreateFolderResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenCreateFolderResponse {
+				return CreateFolder400JSONResponse{resp}
 			},
-			Conflict: func(resp ConflictJSONResponse) GenCreateNotebookFolderResponse {
-				return CreateNotebookFolder409JSONResponse{resp}
+			Conflict: func(resp ConflictJSONResponse) GenCreateFolderResponse {
+				return CreateFolder409JSONResponse{resp}
 			},
-			Forbidden: func(resp ForbiddenJSONResponse) GenCreateNotebookFolderResponse {
-				return CreateNotebookFolder403JSONResponse{resp}
+			Forbidden: func(resp ForbiddenJSONResponse) GenCreateFolderResponse {
+				return CreateFolder403JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
 		}
 		return nil, err
 	}
-	return GenCreateNotebookFolder201JSONResponse{
+	return GenCreateFolder201JSONResponse{
 		Body:    folderToAPI(*result),
-		Headers: GenCreateNotebookFolder201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenCreateFolder201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
-// GetNotebookFolder implements the endpoint for retrieving a notebook folder.
-func (h *APIHandler) GetNotebookFolder(ctx context.Context, req GenGetNotebookFolderRequest) (GenGetNotebookFolderResponse, error) {
+// GetFolder implements the endpoint for retrieving a folder.
+func (h *APIHandler) GetFolder(ctx context.Context, req GenGetFolderRequest) (GenGetFolderResponse, error) {
 	if h.notebookFolders == nil {
-		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+		return nil, domain.ErrNotImplemented("folders are not configured")
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.notebookFolders.GetFolderForPrincipal(ctx, cp.Name, cp.IsAdmin, req.FolderId)
 	if err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenGetNotebookFolderResponse]("getNotebookFolder", err, domainErrorResponder[GenGetNotebookFolderResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenGetNotebookFolderResponse {
-				return GetNotebookFolder403JSONResponse{resp}
+		if resp, ok := respondDomainErrorForOperation[GenGetFolderResponse]("getFolder", err, domainErrorResponder[GenGetFolderResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetFolderResponse {
+				return GetFolder403JSONResponse{resp}
 			},
-			NotFound: func(resp NotFoundJSONResponse) GenGetNotebookFolderResponse {
-				return GetNotebookFolder404JSONResponse{resp}
+			NotFound: func(resp NotFoundJSONResponse) GenGetFolderResponse {
+				return GetFolder404JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
 		}
 		return nil, err
 	}
-	return GenGetNotebookFolder200JSONResponse{
+	return GenGetFolder200JSONResponse{
 		Body:    folderToAPI(*result),
-		Headers: GenGetNotebookFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenGetFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
-// UpdateNotebookFolder implements the endpoint for updating a notebook folder.
-func (h *APIHandler) UpdateNotebookFolder(ctx context.Context, req GenUpdateNotebookFolderRequest) (GenUpdateNotebookFolderResponse, error) {
+// UpdateFolder implements the endpoint for updating a folder.
+func (h *APIHandler) UpdateFolder(ctx context.Context, req GenUpdateFolderRequest) (GenUpdateFolderResponse, error) {
 	if h.notebookFolders == nil {
-		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+		return nil, domain.ErrNotImplemented("folders are not configured")
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.notebookFolders.UpdateFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId, domain.UpdateFolderRequest{
@@ -193,34 +218,34 @@ func (h *APIHandler) UpdateNotebookFolder(ctx context.Context, req GenUpdateNote
 		DefaultEnvironmentID: req.Body.DefaultEnvironmentId,
 	})
 	if err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenUpdateNotebookFolderResponse]("updateNotebookFolder", err, domainErrorResponder[GenUpdateNotebookFolderResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenUpdateNotebookFolderResponse {
-				return UpdateNotebookFolder400JSONResponse{resp}
+		if resp, ok := respondDomainErrorForOperation[GenUpdateFolderResponse]("updateFolder", err, domainErrorResponder[GenUpdateFolderResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateFolderResponse {
+				return UpdateFolder400JSONResponse{resp}
 			},
-			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateNotebookFolderResponse {
-				return UpdateNotebookFolder403JSONResponse{resp}
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateFolderResponse {
+				return UpdateFolder403JSONResponse{resp}
 			},
-			NotFound: func(resp NotFoundJSONResponse) GenUpdateNotebookFolderResponse {
-				return UpdateNotebookFolder404JSONResponse{resp}
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateFolderResponse {
+				return UpdateFolder404JSONResponse{resp}
 			},
-			Conflict: func(resp ConflictJSONResponse) GenUpdateNotebookFolderResponse {
-				return UpdateNotebookFolder409JSONResponse{resp}
+			Conflict: func(resp ConflictJSONResponse) GenUpdateFolderResponse {
+				return UpdateFolder409JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
 		}
 		return nil, err
 	}
-	return GenUpdateNotebookFolder200JSONResponse{
+	return GenUpdateFolder200JSONResponse{
 		Body:    folderToAPI(*result),
-		Headers: GenUpdateNotebookFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenUpdateFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
-// MoveNotebookFolder implements the endpoint for re-parenting a notebook folder subtree.
-func (h *APIHandler) MoveNotebookFolder(ctx context.Context, req GenMoveNotebookFolderRequest) (GenMoveNotebookFolderResponse, error) {
+// MoveFolder implements the endpoint for re-parenting a folder subtree.
+func (h *APIHandler) MoveFolder(ctx context.Context, req GenMoveFolderRequest) (GenMoveFolderResponse, error) {
 	if h.notebookFolders == nil {
-		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+		return nil, domain.ErrNotImplemented("folders are not configured")
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.notebookFolders.MoveFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId, domain.MoveFolderRequest{
@@ -229,69 +254,69 @@ func (h *APIHandler) MoveNotebookFolder(ctx context.Context, req GenMoveNotebook
 		ConfirmContextChange: req.Body.ConfirmContextChange != nil && *req.Body.ConfirmContextChange,
 	})
 	if err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenMoveNotebookFolderResponse]("moveNotebookFolder", err, domainErrorResponder[GenMoveNotebookFolderResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenMoveNotebookFolderResponse {
-				return MoveNotebookFolder400JSONResponse{resp}
+		if resp, ok := respondDomainErrorForOperation[GenMoveFolderResponse]("moveFolder", err, domainErrorResponder[GenMoveFolderResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenMoveFolderResponse {
+				return MoveFolder400JSONResponse{resp}
 			},
-			Forbidden: func(resp ForbiddenJSONResponse) GenMoveNotebookFolderResponse {
-				return MoveNotebookFolder403JSONResponse{resp}
+			Forbidden: func(resp ForbiddenJSONResponse) GenMoveFolderResponse {
+				return MoveFolder403JSONResponse{resp}
 			},
-			NotFound: func(resp NotFoundJSONResponse) GenMoveNotebookFolderResponse {
-				return MoveNotebookFolder404JSONResponse{resp}
+			NotFound: func(resp NotFoundJSONResponse) GenMoveFolderResponse {
+				return MoveFolder404JSONResponse{resp}
 			},
-			Conflict: func(resp ConflictJSONResponse) GenMoveNotebookFolderResponse {
-				return MoveNotebookFolder409JSONResponse{resp}
+			Conflict: func(resp ConflictJSONResponse) GenMoveFolderResponse {
+				return MoveFolder409JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
 		}
 		return nil, err
 	}
-	return GenMoveNotebookFolder200JSONResponse{
+	return GenMoveFolder200JSONResponse{
 		Body:    folderToAPI(*result),
-		Headers: GenMoveNotebookFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenMoveFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
-// DeleteNotebookFolder implements the endpoint for deleting a notebook folder.
-func (h *APIHandler) DeleteNotebookFolder(ctx context.Context, req GenDeleteNotebookFolderRequest) (GenDeleteNotebookFolderResponse, error) {
+// DeleteFolder implements the endpoint for deleting a folder.
+func (h *APIHandler) DeleteFolder(ctx context.Context, req GenDeleteFolderRequest) (GenDeleteFolderResponse, error) {
 	if h.notebookFolders == nil {
-		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+		return nil, domain.ErrNotImplemented("folders are not configured")
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	if err := h.notebookFolders.DeleteFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId); err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenDeleteNotebookFolderResponse]("deleteNotebookFolder", err, domainErrorResponder[GenDeleteNotebookFolderResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteNotebookFolderResponse {
-				return DeleteNotebookFolder403JSONResponse{resp}
+		if resp, ok := respondDomainErrorForOperation[GenDeleteFolderResponse]("deleteFolder", err, domainErrorResponder[GenDeleteFolderResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteFolderResponse {
+				return DeleteFolder403JSONResponse{resp}
 			},
-			NotFound: func(resp NotFoundJSONResponse) GenDeleteNotebookFolderResponse {
-				return DeleteNotebookFolder404JSONResponse{resp}
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteFolderResponse {
+				return DeleteFolder404JSONResponse{resp}
 			},
-			Conflict: func(resp ConflictJSONResponse) GenDeleteNotebookFolderResponse {
-				return DeleteNotebookFolder409JSONResponse{resp}
+			Conflict: func(resp ConflictJSONResponse) GenDeleteFolderResponse {
+				return DeleteFolder409JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
 		}
 		return nil, err
 	}
-	return GenDeleteNotebookFolder204Response{}, nil
+	return GenDeleteFolder204Response{}, nil
 }
 
-// ListNotebookFolderShares implements the endpoint for listing explicit folder shares.
-func (h *APIHandler) ListNotebookFolderShares(ctx context.Context, req GenListNotebookFolderSharesRequest) (GenListNotebookFolderSharesResponse, error) {
+// ListFolderShares implements the endpoint for listing explicit folder shares.
+func (h *APIHandler) ListFolderShares(ctx context.Context, req GenListFolderSharesRequest) (GenListFolderSharesResponse, error) {
 	if h.notebookFolders == nil {
-		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+		return nil, domain.ErrNotImplemented("folders are not configured")
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	items, err := h.notebookFolders.ListFolderShares(ctx, cp.Name, cp.IsAdmin, req.FolderId)
 	if err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenListNotebookFolderSharesResponse]("listNotebookFolderShares", err, domainErrorResponder[GenListNotebookFolderSharesResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenListNotebookFolderSharesResponse {
-				return ListNotebookFolderShares403JSONResponse{resp}
+		if resp, ok := respondDomainErrorForOperation[GenListFolderSharesResponse]("listFolderShares", err, domainErrorResponder[GenListFolderSharesResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListFolderSharesResponse {
+				return ListFolderShares403JSONResponse{resp}
 			},
-			NotFound: func(resp NotFoundJSONResponse) GenListNotebookFolderSharesResponse {
-				return ListNotebookFolderShares404JSONResponse{resp}
+			NotFound: func(resp NotFoundJSONResponse) GenListFolderSharesResponse {
+				return ListFolderShares404JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
@@ -302,16 +327,16 @@ func (h *APIHandler) ListNotebookFolderShares(ctx context.Context, req GenListNo
 	for _, item := range items {
 		data = append(data, folderShareToAPI(item))
 	}
-	return GenListNotebookFolderShares200JSONResponse{
+	return GenListFolderShares200JSONResponse{
 		Body:    data,
-		Headers: GenListNotebookFolderShares200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenListFolderShares200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
-// ShareNotebookFolder implements the endpoint for granting folder access.
-func (h *APIHandler) ShareNotebookFolder(ctx context.Context, req GenShareNotebookFolderRequest) (GenShareNotebookFolderResponse, error) {
+// ShareFolder implements the endpoint for granting folder access.
+func (h *APIHandler) ShareFolder(ctx context.Context, req GenShareFolderRequest) (GenShareFolderResponse, error) {
 	if h.notebookFolders == nil {
-		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+		return nil, domain.ErrNotImplemented("folders are not configured")
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	share, err := h.notebookFolders.ShareFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId, domain.FolderShare{
@@ -319,53 +344,53 @@ func (h *APIHandler) ShareNotebookFolder(ctx context.Context, req GenShareNotebo
 		Role:          notebookShareRoleFromAPI(req.Body.Role),
 	})
 	if err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenShareNotebookFolderResponse]("shareNotebookFolder", err, domainErrorResponder[GenShareNotebookFolderResponse]{
-			BadRequest: func(resp BadRequestJSONResponse) GenShareNotebookFolderResponse {
-				return ShareNotebookFolder400JSONResponse{resp}
+		if resp, ok := respondDomainErrorForOperation[GenShareFolderResponse]("shareFolder", err, domainErrorResponder[GenShareFolderResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenShareFolderResponse {
+				return ShareFolder400JSONResponse{resp}
 			},
-			Forbidden: func(resp ForbiddenJSONResponse) GenShareNotebookFolderResponse {
-				return ShareNotebookFolder403JSONResponse{resp}
+			Forbidden: func(resp ForbiddenJSONResponse) GenShareFolderResponse {
+				return ShareFolder403JSONResponse{resp}
 			},
-			NotFound: func(resp NotFoundJSONResponse) GenShareNotebookFolderResponse {
-				return ShareNotebookFolder404JSONResponse{resp}
+			NotFound: func(resp NotFoundJSONResponse) GenShareFolderResponse {
+				return ShareFolder404JSONResponse{resp}
 			},
-			Conflict: func(resp ConflictJSONResponse) GenShareNotebookFolderResponse {
-				return ShareNotebookFolder409JSONResponse{resp}
+			Conflict: func(resp ConflictJSONResponse) GenShareFolderResponse {
+				return ShareFolder409JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
 		}
 		return nil, err
 	}
-	return GenShareNotebookFolder200JSONResponse{
+	return GenShareFolder200JSONResponse{
 		Body:    folderShareToAPI(*share),
-		Headers: GenShareNotebookFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+		Headers: GenShareFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
-// UnshareNotebookFolder implements the endpoint for removing a folder share.
-func (h *APIHandler) UnshareNotebookFolder(ctx context.Context, req GenUnshareNotebookFolderRequest) (GenUnshareNotebookFolderResponse, error) {
+// UnshareFolder implements the endpoint for removing a folder share.
+func (h *APIHandler) UnshareFolder(ctx context.Context, req GenUnshareFolderRequest) (GenUnshareFolderResponse, error) {
 	if h.notebookFolders == nil {
-		return nil, domain.ErrNotImplemented("notebook folders are not configured")
+		return nil, domain.ErrNotImplemented("folders are not configured")
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	if err := h.notebookFolders.UnshareFolder(ctx, cp.Name, cp.IsAdmin, req.FolderId, req.PrincipalName); err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenUnshareNotebookFolderResponse]("unshareNotebookFolder", err, domainErrorResponder[GenUnshareNotebookFolderResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenUnshareNotebookFolderResponse {
-				return UnshareNotebookFolder403JSONResponse{resp}
+		if resp, ok := respondDomainErrorForOperation[GenUnshareFolderResponse]("unshareFolder", err, domainErrorResponder[GenUnshareFolderResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenUnshareFolderResponse {
+				return UnshareFolder403JSONResponse{resp}
 			},
-			NotFound: func(resp NotFoundJSONResponse) GenUnshareNotebookFolderResponse {
-				return UnshareNotebookFolder404JSONResponse{resp}
+			NotFound: func(resp NotFoundJSONResponse) GenUnshareFolderResponse {
+				return UnshareFolder404JSONResponse{resp}
 			},
-			Conflict: func(resp ConflictJSONResponse) GenUnshareNotebookFolderResponse {
-				return UnshareNotebookFolder409JSONResponse{resp}
+			Conflict: func(resp ConflictJSONResponse) GenUnshareFolderResponse {
+				return UnshareFolder409JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
 		}
 		return nil, err
 	}
-	return GenUnshareNotebookFolder204Response{}, nil
+	return GenUnshareFolder204Response{}, nil
 }
 
 // ListNotebooks implements the endpoint for listing notebooks.
@@ -974,49 +999,304 @@ func (h *APIHandler) GetNotebookJob(ctx context.Context, req GenGetNotebookJobRe
 	}, nil
 }
 
-// ListExploreItems implements the endpoint for browsing authored assets in folder/project context.
-func (h *APIHandler) ListExploreItems(ctx context.Context, req GenListExploreItemsRequest) (GenListExploreItemsResponse, error) {
-	if h.explore == nil {
-		return nil, domain.ErrNotImplemented("explore service is not configured")
-	}
-	cp, _ := domain.PrincipalFromContext(ctx)
-	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	items, err := h.explore.List(ctx, cp.Name, cp.IsAdmin, domain.ExploreFilter{
-		FolderID: valOrEmpty(req.Params.FolderId),
-		Kinds:    exploreKindsFromParam(req.Params.Kind),
-		Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
-	})
+// ListRootFolderContents implements the endpoint for browsing the root folder namespace.
+func (h *APIHandler) ListRootFolderContents(ctx context.Context, req GenListRootFolderContentsRequest) (GenListRootFolderContentsResponse, error) {
+	body, err := h.buildFolderContentsBody(ctx, "", req.Params.Kind, pageFromParams(req.Params.MaxResults, req.Params.PageToken))
 	if err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenListExploreItemsResponse]("listExploreItems", err, domainErrorResponder[GenListExploreItemsResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenListExploreItemsResponse {
-				return ListExploreItems403JSONResponse{resp}
+		if resp, ok := respondDomainErrorForOperation[GenListRootFolderContentsResponse]("listRootFolderContents", err, domainErrorResponder[GenListRootFolderContentsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListRootFolderContentsResponse {
+				return ListRootFolderContents403JSONResponse{resp}
 			},
-			NotFound: func(resp NotFoundJSONResponse) GenListExploreItemsResponse {
-				return ListExploreItems404JSONResponse{resp}
+			NotFound: func(resp NotFoundJSONResponse) GenListRootFolderContentsResponse {
+				return ListRootFolderContents404JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
 		}
 		return nil, err
 	}
-	total := int64(len(items))
-	start := page.Offset()
-	if start > len(items) {
-		start = len(items)
+	return GenListRootFolderContents200JSONResponse{
+		Body:    body,
+		Headers: GenListRootFolderContents200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// ListFolderContents implements the endpoint for browsing a folder namespace.
+func (h *APIHandler) ListFolderContents(ctx context.Context, req GenListFolderContentsRequest) (GenListFolderContentsResponse, error) {
+	body, err := h.buildFolderContentsBody(ctx, req.FolderId, req.Params.Kind, pageFromParams(req.Params.MaxResults, req.Params.PageToken))
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenListFolderContentsResponse]("listFolderContents", err, domainErrorResponder[GenListFolderContentsResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListFolderContentsResponse {
+				return ListFolderContents403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListFolderContentsResponse {
+				return ListFolderContents404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
 	}
-	end := start + page.Limit()
-	if end > len(items) {
-		end = len(items)
-	}
-	data := make([]ExploreItem, 0, end-start)
-	for _, item := range items[start:end] {
-		data = append(data, exploreItemToAPI(item))
+	return GenListFolderContents200JSONResponse{
+		Body:    body,
+		Headers: GenListFolderContents200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) buildFolderContentsBody(ctx context.Context, folderID string, kind *string, page domain.PageRequest) (PaginatedFolderContents, error) {
+	body := PaginatedFolderContents{}
+	content, total, err := h.listFolderContents(ctx, folderID, kind, page)
+	if err != nil {
+		return body, err
 	}
 	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
-	return GenListExploreItems200JSONResponse{
-		Body:    PaginatedExploreItems{Data: data, NextPageToken: optStr(nextToken)},
-		Headers: GenListExploreItems200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	body.Data = content
+	body.NextPageToken = optStr(nextToken)
+	return body, nil
+}
+
+func (h *APIHandler) listFolderContents(ctx context.Context, folderID string, kind *string, page domain.PageRequest) ([]FolderContentItem, int64, error) {
+	if h.explore == nil {
+		return nil, 0, domain.ErrNotImplemented("explore service is not configured")
+	}
+	if h.notebookFolders == nil {
+		return nil, 0, domain.ErrNotImplemented("folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	kinds := exploreKindsFromParam(kind)
+	folders, err := h.notebookFolders.ListFoldersForPrincipal(ctx, cp.Name, cp.IsAdmin, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	if folderID != "" {
+		if _, err := h.notebookFolders.GetFolderForPrincipal(ctx, cp.Name, cp.IsAdmin, folderID); err != nil {
+			return nil, 0, err
+		}
+	}
+	items := []domain.ExploreItem{}
+	if folderID != "" || !folderKindOnly(kinds) {
+		items, err = h.explore.List(ctx, cp.Name, cp.IsAdmin, domain.ExploreFilter{
+			FolderID: folderID,
+			Kinds:    kinds,
+			Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
+		})
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+	content := buildFolderBrowseItems(folders, items, cp.Name, folderID, kinds)
+	total := int64(len(content))
+	start := page.Offset()
+	if start > len(content) {
+		start = len(content)
+	}
+	end := start + page.Limit()
+	if end > len(content) {
+		end = len(content)
+	}
+	return content[start:end], total, nil
+}
+
+// SearchRootFolderContents implements the endpoint for searching the full visible folder namespace.
+func (h *APIHandler) SearchRootFolderContents(ctx context.Context, req GenSearchRootFolderContentsRequest) (GenSearchRootFolderContentsResponse, error) {
+	body, err := h.buildFolderSearchBody(ctx, "", req.Params.Q, req.Params.Kind, req.Params.Owner, pageFromParams(req.Params.MaxResults, req.Params.PageToken))
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenSearchRootFolderContentsResponse]("searchRootFolderContents", err, domainErrorResponder[GenSearchRootFolderContentsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenSearchRootFolderContentsResponse {
+				return SearchRootFolderContents400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenSearchRootFolderContentsResponse {
+				return SearchRootFolderContents403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenSearchRootFolderContentsResponse {
+				return SearchRootFolderContents404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenSearchRootFolderContents200JSONResponse{
+		Body:    body,
+		Headers: GenSearchRootFolderContents200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
+}
+
+// SearchFolderContents implements the endpoint for searching a folder namespace.
+func (h *APIHandler) SearchFolderContents(ctx context.Context, req GenSearchFolderContentsRequest) (GenSearchFolderContentsResponse, error) {
+	body, err := h.buildFolderSearchBody(ctx, req.FolderId, req.Params.Q, req.Params.Kind, req.Params.Owner, pageFromParams(req.Params.MaxResults, req.Params.PageToken))
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenSearchFolderContentsResponse]("searchFolderContents", err, domainErrorResponder[GenSearchFolderContentsResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenSearchFolderContentsResponse {
+				return SearchFolderContents400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenSearchFolderContentsResponse {
+				return SearchFolderContents403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenSearchFolderContentsResponse {
+				return SearchFolderContents404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	return GenSearchFolderContents200JSONResponse{
+		Body:    body,
+		Headers: GenSearchFolderContents200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// GetFolderPath implements the endpoint for retrieving an ordered folder breadcrumb path.
+func (h *APIHandler) GetFolderPath(ctx context.Context, req GenGetFolderPathRequest) (GenGetFolderPathResponse, error) {
+	if h.notebookFolders == nil {
+		return nil, domain.ErrNotImplemented("folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	selected, err := h.notebookFolders.GetFolderForPrincipal(ctx, cp.Name, cp.IsAdmin, req.FolderId)
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenGetFolderPathResponse]("getFolderPath", err, domainErrorResponder[GenGetFolderPathResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenGetFolderPathResponse {
+				return GetFolderPath403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenGetFolderPathResponse {
+				return GetFolderPath404JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+	folders, err := h.notebookFolders.ListFoldersForPrincipal(ctx, cp.Name, cp.IsAdmin, nil)
+	if err != nil {
+		return nil, err
+	}
+	path := folderPathForFolder(folders, *selected)
+	return GenGetFolderPath200JSONResponse{
+		Body:    FolderPath{Data: path},
+		Headers: GenGetFolderPath200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+func (h *APIHandler) buildFolderSearchBody(ctx context.Context, folderID string, query string, kind *string, owner *string, page domain.PageRequest) (PaginatedFolderContents, error) {
+	body := PaginatedFolderContents{}
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return body, domain.ErrValidation("q is required")
+	}
+	content, total, err := h.searchFolderContents(ctx, folderID, query, kind, owner, page)
+	if err != nil {
+		return body, err
+	}
+	nextToken := domain.NextPageToken(page.Offset(), page.Limit(), total)
+	body.Data = content
+	body.NextPageToken = optStr(nextToken)
+	return body, nil
+}
+
+func (h *APIHandler) searchFolderContents(ctx context.Context, folderID string, query string, kind *string, owner *string, page domain.PageRequest) ([]FolderContentItem, int64, error) {
+	if h.explore == nil {
+		return nil, 0, domain.ErrNotImplemented("explore service is not configured")
+	}
+	if h.notebookFolders == nil {
+		return nil, 0, domain.ErrNotImplemented("folders are not configured")
+	}
+	cp, _ := domain.PrincipalFromContext(ctx)
+	kinds := exploreKindsFromParam(kind)
+	if folderID != "" {
+		if _, err := h.notebookFolders.GetFolderForPrincipal(ctx, cp.Name, cp.IsAdmin, folderID); err != nil {
+			return nil, 0, err
+		}
+	}
+	folders, err := h.notebookFolders.ListFoldersForPrincipal(ctx, cp.Name, cp.IsAdmin, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	var owners []string
+	if owner != nil && strings.TrimSpace(*owner) != "" {
+		owners = []string{strings.TrimSpace(*owner)}
+	}
+	scopeFolders := filterFoldersForScope(folders, folderID)
+	folderMatches := buildFolderSearchItems(scopeFolders, cp.Name, query, kinds, owners)
+
+	itemMatches, err := h.collectFolderSearchItems(ctx, cp.Name, cp.IsAdmin, scopeFolders, folderID, query, kinds, owners)
+	if err != nil {
+		return nil, 0, err
+	}
+	content := folderMatches
+	content = append(content, itemMatches...)
+	sort.Slice(content, func(i, j int) bool {
+		leftName := strings.ToLower(stringValue(content[i].Name))
+		rightName := strings.ToLower(stringValue(content[j].Name))
+		if leftName == rightName {
+			return strings.ToLower(stringValue(content[i].Kind)) < strings.ToLower(stringValue(content[j].Kind))
+		}
+		return leftName < rightName
+	})
+	total := int64(len(content))
+	start := page.Offset()
+	if start > len(content) {
+		start = len(content)
+	}
+	end := start + page.Limit()
+	if end > len(content) {
+		end = len(content)
+	}
+	return content[start:end], total, nil
+}
+
+func (h *APIHandler) collectFolderSearchItems(ctx context.Context, principal string, isAdmin bool, scopeFolders []domain.Folder, folderID string, query string, kinds []string, owners []string) ([]FolderContentItem, error) {
+	items := make([]FolderContentItem, 0, len(scopeFolders))
+	seen := map[string]struct{}{}
+	if folderID != "" {
+		found, err := h.explore.List(ctx, principal, isAdmin, domain.ExploreFilter{
+			FolderID: folderID,
+			Kinds:    filterKindsExcludingFolders(kinds),
+			Owners:   owners,
+			Query:    query,
+			Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range found {
+			key := item.Kind + "\x00" + item.ID + "\x00" + stringValue(item.FolderID)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			items = append(items, folderContentItemToAPI(item))
+		}
+		return items, nil
+	}
+
+	topLevel := make([]domain.Folder, 0, len(scopeFolders))
+	for _, folder := range scopeFolders {
+		if folder.ParentFolderID == nil || strings.TrimSpace(*folder.ParentFolderID) == "" {
+			topLevel = append(topLevel, folder)
+		}
+	}
+	for _, folder := range topLevel {
+		found, err := h.explore.List(ctx, principal, isAdmin, domain.ExploreFilter{
+			FolderID: folder.ID,
+			Kinds:    filterKindsExcludingFolders(kinds),
+			Owners:   owners,
+			Query:    query,
+			Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range found {
+			key := item.Kind + "\x00" + item.ID + "\x00" + stringValue(item.FolderID)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			items = append(items, folderContentItemToAPI(item))
+		}
+	}
+	return items, nil
 }
 
 // === Git Repos ===
@@ -1223,8 +1503,8 @@ func folderShareToAPI(share domain.FolderShare) FolderShare {
 	}
 }
 
-func exploreItemToAPI(item domain.ExploreItem) ExploreItem {
-	return ExploreItem{
+func folderContentItemToAPI(item domain.ExploreItem) FolderContentItem {
+	return FolderContentItem{
 		Kind:         optStr(item.Kind),
 		Scope:        optStr(item.Scope),
 		Id:           optStr(item.ID),
@@ -1237,6 +1517,219 @@ func exploreItemToAPI(item domain.ExploreItem) ExploreItem {
 		Shared:       optBool(item.Shared),
 		ProjectBound: optBool(item.ProjectBound),
 	}
+}
+
+func folderContentFolderToAPI(folder domain.Folder, principal string) FolderContentItem {
+	kind := domain.ExploreKindFolder
+	scope := domain.ExploreScopeFolder
+	return FolderContentItem{
+		Kind:         &kind,
+		Scope:        &scope,
+		Id:           optStr(folder.ID),
+		Name:         optStr(folder.Name),
+		Owner:        optStr(folder.Owner),
+		FolderId:     folder.ParentFolderID,
+		UpdatedAt:    formatTimePtr(&folder.UpdatedAt),
+		GitRepoId:    folder.GitRepoID,
+		Shared:       optBool(strings.TrimSpace(folder.Owner) != strings.TrimSpace(principal)),
+		ProjectBound: optBool(folder.DefaultProjectID != nil && strings.TrimSpace(*folder.DefaultProjectID) != ""),
+	}
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func folderKindOnly(kinds []string) bool {
+	return len(kinds) == 1 && strings.EqualFold(strings.TrimSpace(kinds[0]), domain.ExploreKindFolder)
+}
+
+func filterKindsExcludingFolders(kinds []string) []string {
+	if len(kinds) == 0 {
+		return nil
+	}
+	filtered := make([]string, 0, len(kinds))
+	for _, kind := range kinds {
+		trimmed := strings.TrimSpace(kind)
+		if trimmed == "" || strings.EqualFold(trimmed, domain.ExploreKindFolder) {
+			continue
+		}
+		filtered = append(filtered, trimmed)
+	}
+	return filtered
+}
+
+func filterFoldersForScope(folders []domain.Folder, folderID string) []domain.Folder {
+	if strings.TrimSpace(folderID) == "" {
+		return folders
+	}
+
+	selectedByID := make(map[string]domain.Folder, len(folders))
+	var selected domain.Folder
+	var found bool
+	for _, folder := range folders {
+		selectedByID[folder.ID] = folder
+		if folder.ID == folderID {
+			selected = folder
+			found = true
+		}
+	}
+	if !found {
+		return nil
+	}
+
+	prefix := strings.TrimSpace(selected.Path)
+	if prefix == "" {
+		return []domain.Folder{selected}
+	}
+	scope := make([]domain.Folder, 0, len(folders))
+	for _, folder := range folders {
+		path := strings.TrimSpace(folder.Path)
+		if path == prefix || strings.HasPrefix(path, prefix+"/") {
+			scope = append(scope, folder)
+		}
+	}
+	return scope
+}
+
+func buildFolderBrowseItems(folders []domain.Folder, items []domain.ExploreItem, principal string, folderID string, kinds []string) []FolderContentItem {
+	includeFolders := len(kinds) == 0
+	for _, kind := range kinds {
+		if strings.EqualFold(strings.TrimSpace(kind), domain.ExploreKindFolder) {
+			includeFolders = true
+			break
+		}
+	}
+
+	content := make([]FolderContentItem, 0, len(folders)+len(items))
+	if includeFolders {
+		childFolders := make([]domain.Folder, 0, len(folders))
+		for _, folder := range folders {
+			parentID := strings.TrimSpace(stringValue(folder.ParentFolderID))
+			if strings.TrimSpace(folderID) == "" {
+				if parentID != "" {
+					continue
+				}
+			} else if parentID != strings.TrimSpace(folderID) {
+				continue
+			}
+			childFolders = append(childFolders, folder)
+		}
+		sort.Slice(childFolders, func(i, j int) bool {
+			left := strings.ToLower(childFolders[i].Name)
+			right := strings.ToLower(childFolders[j].Name)
+			return left < right
+		})
+		for _, folder := range childFolders {
+			content = append(content, folderContentFolderToAPI(folder, principal))
+		}
+	}
+
+	itemContent := make([]FolderContentItem, 0, len(items))
+	for _, item := range items {
+		itemFolderID := strings.TrimSpace(stringValue(item.FolderID))
+		if strings.TrimSpace(folderID) == "" {
+			if itemFolderID != "" {
+				continue
+			}
+		} else if itemFolderID != "" && itemFolderID != strings.TrimSpace(folderID) {
+			continue
+		}
+		itemContent = append(itemContent, folderContentItemToAPI(item))
+	}
+	sort.Slice(itemContent, func(i, j int) bool {
+		leftName := strings.ToLower(stringValue(itemContent[i].Name))
+		rightName := strings.ToLower(stringValue(itemContent[j].Name))
+		if leftName == rightName {
+			return strings.ToLower(stringValue(itemContent[i].Kind)) < strings.ToLower(stringValue(itemContent[j].Kind))
+		}
+		return leftName < rightName
+	})
+	return append(content, itemContent...)
+}
+
+func buildFolderSearchItems(folders []domain.Folder, principal string, query string, kinds []string, owners []string) []FolderContentItem {
+	includeFolders := len(kinds) == 0
+	for _, kind := range kinds {
+		if strings.EqualFold(strings.TrimSpace(kind), domain.ExploreKindFolder) {
+			includeFolders = true
+			break
+		}
+	}
+	if !includeFolders {
+		return nil
+	}
+
+	normalizedOwners := make([]string, 0, len(owners))
+	for _, owner := range owners {
+		if trimmed := strings.TrimSpace(owner); trimmed != "" {
+			normalizedOwners = append(normalizedOwners, strings.ToLower(trimmed))
+		}
+	}
+
+	matches := make([]FolderContentItem, 0, len(folders))
+	for _, folder := range folders {
+		if len(normalizedOwners) > 0 {
+			ownerMatched := false
+			folderOwner := strings.ToLower(strings.TrimSpace(folder.Owner))
+			for _, owner := range normalizedOwners {
+				if owner == folderOwner {
+					ownerMatched = true
+					break
+				}
+			}
+			if !ownerMatched {
+				continue
+			}
+		}
+		if !folderSearchMatch(query, folder.Name, folder.Owner) {
+			continue
+		}
+		matches = append(matches, folderContentFolderToAPI(folder, principal))
+	}
+	return matches
+}
+
+func folderSearchMatch(query string, values ...string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(query))
+	if normalized == "" {
+		return true
+	}
+	for _, value := range values {
+		if strings.Contains(strings.ToLower(strings.TrimSpace(value)), normalized) {
+			return true
+		}
+	}
+	return false
+}
+
+func folderPathForFolder(folders []domain.Folder, selected domain.Folder) []Folder {
+	folderByID := make(map[string]domain.Folder, len(folders))
+	for _, folder := range folders {
+		folderByID[folder.ID] = folder
+	}
+
+	path := make([]Folder, 0, 8)
+	current := selected
+	for {
+		path = append(path, folderToAPI(current))
+		parentID := strings.TrimSpace(stringValue(current.ParentFolderID))
+		if parentID == "" {
+			break
+		}
+		parent, ok := folderByID[parentID]
+		if !ok {
+			break
+		}
+		current = parent
+	}
+	for left, right := 0, len(path)-1; left < right; left, right = left+1, right-1 {
+		path[left], path[right] = path[right], path[left]
+	}
+	return path
 }
 
 func optBool(value bool) *bool {

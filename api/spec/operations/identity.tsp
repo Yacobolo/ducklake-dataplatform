@@ -14,23 +14,23 @@ op listPrincipals(@query max_results?: int32, @query page_token?: string): Ok<Pa
 @summary("Create principal")
 op createPrincipal(@body body: CreatePrincipalRequest): Created<Principal> | MutatingErrorResponses;
 
-@route("/principals/{principalId}")
+@route("/principals/{principal_id}")
 @get
 @tag("Identity")
 @summary("Get principal")
-op getPrincipal(principalId: string): Ok<Principal> | ResourceErrorResponses;
+op getPrincipal(principal_id: string): Ok<Principal> | ResourceErrorResponses;
 
-@route("/principals/{principalId}")
+@route("/principals/{principal_id}")
 @delete
 @tag("Identity")
 @summary("Delete principal")
-op deletePrincipal(principalId: string): NoContent | MutatingErrorResponses;
+op deletePrincipal(principal_id: string): NoContent | MutatingErrorResponses;
 
-@route("/principals/{principalId}/admin")
-@put
+@route("/principals/{principal_id}")
+@patch(#{implicitOptionality: true})
 @tag("Identity")
-@summary("Update principal admin")
-op updatePrincipalAdmin(principalId: string, @body body: UpdatePrincipalAdminRequest): NoContent | MutatingErrorResponses;
+@summary("Update principal")
+op updatePrincipal(principal_id: string, @body body: UpdatePrincipalRequest): Ok<Principal> | MutatingErrorResponses;
 
 @route("/groups")
 @get
@@ -44,41 +44,41 @@ op listGroups(@query max_results?: int32, @query page_token?: string): Ok<Pagina
 @summary("Create group")
 op createGroup(@body body: CreateGroupRequest): Created<Group> | MutatingErrorResponses;
 
-@route("/groups/{groupId}")
+@route("/groups/{group_id}")
 @get
 @tag("Identity")
 @summary("Get group")
-op getGroup(groupId: string): Ok<Group> | ResourceErrorResponses;
+op getGroup(group_id: string): Ok<Group> | ResourceErrorResponses;
 
-@route("/groups/{groupId}")
+@route("/groups/{group_id}")
 @patch(#{implicitOptionality: true})
 @tag("Identity")
 @summary("Update group")
-op updateGroup(groupId: string, @body body: UpdateGroupRequest): Ok<Group> | ValidationResourceErrorResponses;
+op updateGroup(group_id: string, @body body: UpdateGroupRequest): Ok<Group> | ValidationResourceErrorResponses;
 
-@route("/groups/{groupId}")
+@route("/groups/{group_id}")
 @delete
 @tag("Identity")
 @summary("Delete group")
-op deleteGroup(groupId: string): NoContent | MutatingErrorResponses;
+op deleteGroup(group_id: string): NoContent | MutatingErrorResponses;
 
-@route("/groups/{groupId}/members")
+@route("/groups/{group_id}/members")
 @get
 @tag("Identity")
 @summary("List group members")
-op listGroupMembers(groupId: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedGroupMembers> | ResourceErrorResponses;
+op listGroupMembers(group_id: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedGroupMembers> | ResourceErrorResponses;
 
-@route("/groups/{groupId}/members")
+@route("/groups/{group_id}/members")
 @post
 @tag("Identity")
 @summary("Create group member")
-op createGroupMember(groupId: string, @body body: CreateGroupMemberRequest): CreatedEmpty | MutatingErrorResponses;
+op createGroupMember(group_id: string, @body body: CreateGroupMemberRequest): CreatedEmpty | MutatingErrorResponses;
 
-@route("/groups/{groupId}/members/{memberType}/{memberId}")
+@route("/groups/{group_id}/members/{member_type}/{member_id}")
 @delete
 @tag("Identity")
 @summary("Delete group member")
-op deleteGroupMember(groupId: string, memberType: PrincipalType, memberId: string): NoContent | MutatingErrorResponses;
+op deleteGroupMember(group_id: string, member_type: PrincipalType, member_id: string): NoContent | MutatingErrorResponses;
 
 @route("/api-keys")
 @get
@@ -92,13 +92,13 @@ op listAPIKeys(@query principal_id?: string, @query max_results?: int32, @query 
 @summary("Create API key")
 op createAPIKey(@body body: CreateAPIKeyRequest): Created<CreateAPIKeyResponse> | MutatingErrorResponses;
 
-@route("/api-keys/{apiKeyId}")
+@route("/api-keys/{api_key_id}")
 @delete
 @tag("Identity")
 @summary("Delete API key")
-op deleteAPIKey(apiKeyId: string): NoContent | MutatingErrorResponses;
+op deleteAPIKey(api_key_id: string): NoContent | MutatingErrorResponses;
 
-@route("/api-keys/cleanup")
+@route("/api-key-cleanup-runs")
 @post
 @tag("Identity")
 @summary("Clean up expired API keys")

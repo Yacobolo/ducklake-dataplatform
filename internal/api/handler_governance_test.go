@@ -106,12 +106,21 @@ func (m *mockLineageService) GetColumnLineageForSourceColumn(ctx context.Context
 }
 
 type mockTagService struct {
+	getTagFn              func(ctx context.Context, id string) (*domain.Tag, error)
 	listTagsFn            func(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error)
 	createTagFn           func(ctx context.Context, principal string, req domain.CreateTagRequest) (*domain.Tag, error)
+	updateTagFn           func(ctx context.Context, principal string, id string, req domain.UpdateTagRequest) (*domain.Tag, error)
 	deleteTagFn           func(ctx context.Context, principal string, id string) error
 	assignTagFn           func(ctx context.Context, principal string, req domain.AssignTagRequest) (*domain.TagAssignment, error)
 	unassignTagFn         func(ctx context.Context, principal string, id string) error
 	listAssignmentsForTag func(ctx context.Context, tagID string) ([]domain.TagAssignment, error)
+}
+
+func (m *mockTagService) GetTag(ctx context.Context, id string) (*domain.Tag, error) {
+	if m.getTagFn == nil {
+		panic("mockTagService.GetTag called but not configured")
+	}
+	return m.getTagFn(ctx, id)
 }
 
 func (m *mockTagService) ListTags(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error) {
@@ -126,6 +135,13 @@ func (m *mockTagService) CreateTag(ctx context.Context, principal string, req do
 		panic("mockTagService.CreateTag called but not configured")
 	}
 	return m.createTagFn(ctx, principal, req)
+}
+
+func (m *mockTagService) UpdateTag(ctx context.Context, principal string, id string, req domain.UpdateTagRequest) (*domain.Tag, error) {
+	if m.updateTagFn == nil {
+		panic("mockTagService.UpdateTag called but not configured")
+	}
+	return m.updateTagFn(ctx, principal, id, req)
 }
 
 func (m *mockTagService) DeleteTag(ctx context.Context, principal string, id string) error {

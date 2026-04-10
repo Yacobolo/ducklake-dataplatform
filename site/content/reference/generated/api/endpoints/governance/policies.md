@@ -4,7 +4,107 @@
 
 Column and Row Policies operations within the Governance API group.
 
-## `DELETE /column-masks/{columnMaskId}`
+## `GET /column-masks`
+
+List column masks
+
+- Operation ID: `listColumnMasks`
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+| `table_id` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /column-masks`
+
+Create column mask
+
+- Operation ID: `createColumnMask`
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /column-masks/{column_mask_id}`
+
+Get column mask
+
+- Operation ID: `getColumnMask`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `column_mask_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /column-masks/{column_mask_id}`
+
+Update column mask
+
+- Operation ID: `updateColumnMask`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `column_mask_id` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /column-masks/{column_mask_id}`
 
 Delete column mask
 
@@ -14,7 +114,7 @@ Delete column mask
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `columnMaskId` | `string` | `true` | - |
+| `column_mask_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -27,7 +127,7 @@ Delete column mask
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /column-masks/{columnMaskId}/bindings`
+## `GET /column-masks/{column_mask_id}/bindings`
 
 List column mask bindings
 
@@ -37,7 +137,7 @@ List column mask bindings
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `columnMaskId` | `string` | `true` | - |
+| `column_mask_id` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -58,7 +158,7 @@ List column mask bindings
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /column-masks/{columnMaskId}/bindings`
+## `POST /column-masks/{column_mask_id}/bindings`
 
 Bind column mask
 
@@ -68,7 +168,7 @@ Bind column mask
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `columnMaskId` | `string` | `true` | - |
+| `column_mask_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -86,7 +186,7 @@ Bind column mask
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /column-masks/{columnMaskId}/bindings/{principalType}/{principalId}`
+## `DELETE /column-masks/{column_mask_id}/bindings/{principal_type}/{principal_id}`
 
 Unbind column mask
 
@@ -96,9 +196,9 @@ Unbind column mask
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `columnMaskId` | `string` | `true` | - |
-| `principalId` | `string` | `true` | - |
-| `principalType` | `PrincipalType` | `true` | - |
+| `column_mask_id` | `string` | `true` | - |
+| `principal_id` | `string` | `true` | - |
+| `principal_type` | `PrincipalType` | `true` | - |
 
 ### Responses
 
@@ -111,7 +211,107 @@ Unbind column mask
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /row-filters/{rowFilterId}`
+## `GET /row-filters`
+
+List row filters
+
+- Operation ID: `listRowFilters`
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
+| `table_id` | `string` | `false` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /row-filters`
+
+Create row filter
+
+- Operation ID: `createRowFilter`
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /row-filters/{row_filter_id}`
+
+Get row filter
+
+- Operation ID: `getRowFilter`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `row_filter_id` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /row-filters/{row_filter_id}`
+
+Update row filter
+
+- Operation ID: `updateRowFilter`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `row_filter_id` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /row-filters/{row_filter_id}`
 
 Delete row filter
 
@@ -121,7 +321,7 @@ Delete row filter
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `rowFilterId` | `string` | `true` | - |
+| `row_filter_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -134,7 +334,7 @@ Delete row filter
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /row-filters/{rowFilterId}/bindings`
+## `GET /row-filters/{row_filter_id}/bindings`
 
 List row filter bindings
 
@@ -144,7 +344,7 @@ List row filter bindings
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `rowFilterId` | `string` | `true` | - |
+| `row_filter_id` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -165,7 +365,7 @@ List row filter bindings
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /row-filters/{rowFilterId}/bindings`
+## `POST /row-filters/{row_filter_id}/bindings`
 
 Bind row filter
 
@@ -175,7 +375,7 @@ Bind row filter
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `rowFilterId` | `string` | `true` | - |
+| `row_filter_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -193,7 +393,7 @@ Bind row filter
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /row-filters/{rowFilterId}/bindings/{principalType}/{principalId}`
+## `DELETE /row-filters/{row_filter_id}/bindings/{principal_type}/{principal_id}`
 
 Unbind row filter
 
@@ -203,133 +403,15 @@ Unbind row filter
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `principalId` | `string` | `true` | - |
-| `principalType` | `PrincipalType` | `true` | - |
-| `rowFilterId` | `string` | `true` | - |
+| `principal_id` | `string` | `true` | - |
+| `principal_type` | `PrincipalType` | `true` | - |
+| `row_filter_id` | `string` | `true` | - |
 
 ### Responses
 
 | Code | Description |
 | --- | --- |
 | `204` | There is no content to send for this request, but the headers may be useful. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /tables/{tableId}/column-masks`
-
-List column masks
-
-- Operation ID: `listColumnMasks`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `tableId` | `string` | `true` | - |
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `POST /tables/{tableId}/column-masks`
-
-Create column mask
-
-- Operation ID: `createColumnMask`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `tableId` | `string` | `true` | - |
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `201` | The request has succeeded and a new resource has been created as a result. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /tables/{tableId}/row-filters`
-
-List row filters
-
-- Operation ID: `listRowFilters`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `tableId` | `string` | `true` | - |
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `POST /tables/{tableId}/row-filters`
-
-Create row filter
-
-- Operation ID: `createRowFilter`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `tableId` | `string` | `true` | - |
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `201` | The request has succeeded and a new resource has been created as a result. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |

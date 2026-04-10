@@ -8,187 +8,122 @@ namespace Duck;
 @summary("List notebooks")
 op listNotebooks(@query owner?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedNotebooks> | StandardErrorResponses;
 
-@route("/notebooks/folders")
-@get
-@tag("Notebooks")
-@summary("List notebook folders")
-op listNotebookFolders(@query owner?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedFolders> | StandardErrorResponses;
-
-@route("/notebooks/folders")
-@post
-@tag("Notebooks")
-@summary("Create notebook folder")
-op createNotebookFolder(@body body: CreateFolderRequest): Created<Folder> | MutatingErrorResponses;
-
-@route("/notebooks/folders/{folderId}")
-@get
-@tag("Notebooks")
-@summary("Get notebook folder")
-op getNotebookFolder(folderId: string): Ok<Folder> | ResourceErrorResponses;
-
-@route("/notebooks/folders/{folderId}")
-@patch(#{ implicitOptionality: true })
-@tag("Notebooks")
-@summary("Update notebook folder")
-op updateNotebookFolder(folderId: string, @body body: UpdateFolderRequest): Ok<Folder> | ResourceErrorResponses;
-
-@route("/notebooks/folders/{folderId}/move")
-@post
-@tag("Notebooks")
-@summary("Move notebook folder")
-op moveNotebookFolder(folderId: string, @body body: MoveFolderRequest): Ok<Folder> | ResourceErrorResponses;
-
-@route("/notebooks/folders/{folderId}")
-@delete
-@tag("Notebooks")
-@summary("Delete notebook folder")
-op deleteNotebookFolder(folderId: string): NoContent | ResourceErrorResponses;
-
-@route("/notebooks/folders/{folderId}/shares")
-@get
-@tag("Notebooks")
-@summary("List notebook folder shares")
-op listNotebookFolderShares(folderId: string): Ok<FolderShare[]> | ResourceErrorResponses;
-
-@route("/notebooks/folders/{folderId}/shares")
-@post
-@tag("Notebooks")
-@summary("Share notebook folder")
-op shareNotebookFolder(folderId: string, @body body: ShareFolderRequest): Ok<FolderShare> | ResourceErrorResponses;
-
-@route("/notebooks/folders/{folderId}/shares/{principalName}")
-@delete
-@tag("Notebooks")
-@summary("Remove notebook folder share")
-op unshareNotebookFolder(folderId: string, principalName: string): NoContent | ResourceErrorResponses;
-
 @route("/notebooks")
 @post
 @tag("Notebooks")
 @summary("Create notebook")
 op createNotebook(@body body: CreateNotebookRequest): Created<Notebook> | MutatingErrorResponses;
 
-@route("/notebooks/{notebookId}")
+@route("/notebooks/{notebook_id}")
 @get
 @tag("Notebooks")
 @summary("Get notebook")
-op getNotebook(notebookId: string): Ok<NotebookDetail> | ResourceErrorResponses;
+op getNotebook(notebook_id: string): Ok<NotebookDetail> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}")
+@route("/notebooks/{notebook_id}")
 @patch(#{ implicitOptionality: true })
 @tag("Notebooks")
 @summary("Update notebook")
-op updateNotebook(notebookId: string, @body body: UpdateNotebookRequest): Ok<Notebook> | ResourceErrorResponses;
+op updateNotebook(notebook_id: string, @body body: UpdateNotebookRequest): Ok<Notebook> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/move")
+@route("/notebooks/{notebook_id}/moves")
 @post
 @tag("Notebooks")
 @summary("Move notebook")
-op moveNotebook(notebookId: string, @body body: MoveNotebookRequest): Ok<Notebook> | ResourceErrorResponses;
+op moveNotebook(notebook_id: string, @body body: MoveNotebookRequest): Ok<Notebook> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/duplicate")
+@route("/notebooks/{notebook_id}/copies")
 @post
 @tag("Notebooks")
 @summary("Duplicate notebook")
-op duplicateNotebook(notebookId: string, @body body: DuplicateNotebookRequest): Created<Notebook> | ResourceErrorResponses;
+op duplicateNotebook(notebook_id: string, @body body: DuplicateNotebookRequest): Created<Notebook> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/shares")
+@route("/notebooks/{notebook_id}/shares")
 @get
 @tag("Notebooks")
 @summary("List notebook shares")
-op listNotebookShares(notebookId: string): Ok<NotebookShare[]> | ResourceErrorResponses;
+op listNotebookShares(notebook_id: string): Ok<NotebookShare[]> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/shares")
+@route("/notebooks/{notebook_id}/shares")
 @post
 @tag("Notebooks")
 @summary("Share notebook")
-op shareNotebook(notebookId: string, @body body: ShareNotebookRequest): Ok<NotebookShare> | ResourceErrorResponses;
+op shareNotebook(notebook_id: string, @body body: ShareNotebookRequest): Ok<NotebookShare> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/shares/{principalName}")
+@route("/notebooks/{notebook_id}/shares/{principal_name}")
 @delete
 @tag("Notebooks")
 @summary("Remove notebook share")
-op unshareNotebook(notebookId: string, principalName: string): NoContent | ResourceErrorResponses;
+op unshareNotebook(notebook_id: string, principal_name: string): NoContent | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}")
+@route("/notebooks/{notebook_id}")
 @delete
 @tag("Notebooks")
 @summary("Delete notebook")
-op deleteNotebook(notebookId: string): NoContent | ResourceErrorResponses;
+op deleteNotebook(notebook_id: string): NoContent | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/cells")
+@route("/notebooks/{notebook_id}/cells")
 @post
 @tag("Notebooks")
 @summary("Create cell")
-op createCell(notebookId: string, @body body: CreateCellRequest): Created<Cell> | ValidationResourceErrorResponses;
+op createCell(notebook_id: string, @body body: CreateCellRequest): Created<Cell> | ValidationResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/cells/reorder")
+@route("/notebooks/{notebook_id}/cells/reorder")
 @post
 @tag("Notebooks")
 @summary("Reorder cells")
-op reorderCells(notebookId: string, @body body: ReorderCellsRequest): Ok<CellList> | ValidationResourceErrorResponses;
+op reorderCells(notebook_id: string, @body body: ReorderCellsRequest): Ok<CellList> | ValidationResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/cells/{cellId}")
+@route("/notebooks/{notebook_id}/cells/{cell_id}")
 @patch(#{ implicitOptionality: true })
 @tag("Notebooks")
 @summary("Update cell")
-op updateCell(notebookId: string, cellId: string, @body body: UpdateCellRequest): Ok<Cell> | ValidationResourceErrorResponses;
+op updateCell(notebook_id: string, cell_id: string, @body body: UpdateCellRequest): Ok<Cell> | ValidationResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/cells/{cellId}")
+@route("/notebooks/{notebook_id}/cells/{cell_id}")
 @delete
 @tag("Notebooks")
 @summary("Delete cell")
-op deleteCell(notebookId: string, cellId: string): NoContent | ResourceErrorResponses;
+op deleteCell(notebook_id: string, cell_id: string): NoContent | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/sessions")
+@route("/notebooks/{notebook_id}/sessions")
 @post
 @tag("Notebooks")
 @summary("Create notebook session")
-op createNotebookSession(notebookId: string): Created<NotebookSession> | ResourceErrorResponses;
+op createNotebookSession(notebook_id: string): Created<NotebookSession> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/sessions/{sessionId}")
+@route("/notebooks/{notebook_id}/sessions/{session_id}")
 @delete
 @tag("Notebooks")
 @summary("Close notebook session")
-op closeNotebookSession(notebookId: string, sessionId: string): NoContent | ResourceErrorResponses;
+op closeNotebookSession(notebook_id: string, session_id: string): NoContent | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/sessions/{sessionId}/execute/{cellId}")
+@route("/notebooks/{notebook_id}/sessions/{session_id}/cell-executions/{cell_id}")
 @post
 @tag("Notebooks")
 @summary("Execute cell")
-op executeCell(notebookId: string, sessionId: string, cellId: string): Ok<CellExecutionResult> | ValidationResourceErrorResponses;
+op executeCell(notebook_id: string, session_id: string, cell_id: string): Ok<CellExecutionResult> | ValidationResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/sessions/{sessionId}/run-all")
+@route("/notebooks/{notebook_id}/sessions/{session_id}/cell-executions")
 @post
 @tag("Notebooks")
 @summary("Run all cells")
-op runAllCells(notebookId: string, sessionId: string): Ok<RunAllResult> | ResourceErrorResponses;
+op runAllCells(notebook_id: string, session_id: string): Ok<RunAllResult> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/sessions/{sessionId}/run-all-async")
+@route("/notebooks/{notebook_id}/sessions/{session_id}/job-runs")
 @post
 @tag("Notebooks")
 @summary("Run all cells asynchronously")
-op runAllCellsAsync(notebookId: string, sessionId: string): Accepted<NotebookJob> | ResourceErrorResponses;
+op runAllCellsAsync(notebook_id: string, session_id: string): Accepted<NotebookJob> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/jobs")
+@route("/notebooks/{notebook_id}/jobs")
 @get
 @tag("Notebooks")
 @summary("List notebook jobs")
-op listNotebookJobs(notebookId: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedNotebookJobs> | ResourceErrorResponses;
+op listNotebookJobs(notebook_id: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedNotebookJobs> | ResourceErrorResponses;
 
-@route("/notebooks/{notebookId}/jobs/{jobId}")
+@route("/notebooks/{notebook_id}/jobs/{job_id}")
 @get
 @tag("Notebooks")
 @summary("Get notebook job")
-op getNotebookJob(notebookId: string, jobId: string): Ok<NotebookJob> | ResourceErrorResponses;
-
-@route("/explore")
-@get
-@tag("Notebooks")
-@summary("List authored assets for the active folder context")
-op listExploreItems(
-  @query folder_id?: string,
-  @query kind?: string,
-  @query max_results?: int32,
-  @query page_token?: string,
-): Ok<PaginatedExploreItems> | StandardErrorResponses;
+op getNotebookJob(notebook_id: string, job_id: string): Ok<NotebookJob> | ResourceErrorResponses;

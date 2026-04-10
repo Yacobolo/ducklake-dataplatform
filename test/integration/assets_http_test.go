@@ -22,7 +22,7 @@ func TestHTTP_AssetMaterialize_CreatesExecutableRun(t *testing.T) {
 
 	asset := createTestAsset(t, env.MetaDB, "analytics.materialize_target", domain.PartitionTypeUnpartitioned)
 
-	resp := doRequest(t, "POST", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/materialize", env.Keys.Admin, map[string]any{})
+	resp := doRequest(t, "POST", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/materializations", env.Keys.Admin, map[string]any{})
 	require.Equal(t, httpStatusAccepted, resp.StatusCode)
 	_ = readBody(t, resp)
 
@@ -38,7 +38,7 @@ func TestHTTP_AssetMaterialize_AllowsGrantedAnalyst(t *testing.T) {
 	asset := createTestAsset(t, env.MetaDB, "analytics.materialize_granted", domain.PartitionTypeUnpartitioned)
 	grantCatalogPrivilege(t, env.MetaDB, "analyst1", domain.PrivExecuteAssetMaterialization)
 
-	resp := doRequest(t, "POST", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/materialize", env.Keys.Analyst, map[string]any{})
+	resp := doRequest(t, "POST", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/materializations", env.Keys.Analyst, map[string]any{})
 	require.Equal(t, httpStatusAccepted, resp.StatusCode)
 	_ = readBody(t, resp)
 }
@@ -47,7 +47,7 @@ func TestHTTP_AssetMaterialize_DeniesWithoutPrivilege(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithAssets: true})
 	asset := createTestAsset(t, env.MetaDB, "analytics.materialize_forbidden", domain.PartitionTypeUnpartitioned)
 
-	resp := doRequest(t, "POST", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/materialize", env.Keys.Analyst, map[string]any{})
+	resp := doRequest(t, "POST", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/materializations", env.Keys.Analyst, map[string]any{})
 	require.Equal(t, httpStatusForbidden, resp.StatusCode)
 	_ = readBody(t, resp)
 }
@@ -205,7 +205,7 @@ func TestHTTP_AssetReadEndpoints_ReturnExpectedData(t *testing.T) {
 	require.True(t, ok)
 	require.Len(t, checks, 1)
 
-	checkResultsResp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/check-results", env.Keys.Admin, nil)
+	checkResultsResp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/checks/results", env.Keys.Admin, nil)
 	require.Equal(t, httpStatusOK, checkResultsResp.StatusCode)
 	var checkResultsResult map[string]any
 	decodeJSON(t, checkResultsResp, &checkResultsResult)
@@ -260,7 +260,7 @@ func TestHTTP_AssetReadEndpoints_PaginationAndEmpty(t *testing.T) {
 	require.True(t, ok)
 	require.Len(t, page2Rows, 1)
 
-	checkResultsPage1Resp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/check-results?max_results=1", env.Keys.Admin, nil)
+	checkResultsPage1Resp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/checks/results?max_results=1", env.Keys.Admin, nil)
 	require.Equal(t, httpStatusOK, checkResultsPage1Resp.StatusCode)
 	var checkResultsPage1 map[string]any
 	decodeJSON(t, checkResultsPage1Resp, &checkResultsPage1)
@@ -271,7 +271,7 @@ func TestHTTP_AssetReadEndpoints_PaginationAndEmpty(t *testing.T) {
 	require.True(t, ok)
 	require.NotEmpty(t, nextChecksToken)
 
-	checkResultsPage2Resp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/check-results?max_results=1&page_token="+nextChecksToken, env.Keys.Admin, nil)
+	checkResultsPage2Resp := doRequest(t, "GET", env.Server.URL+"/v1/assets/"+asset.AssetKey+"/checks/results?max_results=1&page_token="+nextChecksToken, env.Keys.Admin, nil)
 	require.Equal(t, httpStatusOK, checkResultsPage2Resp.StatusCode)
 	var checkResultsPage2 map[string]any
 	decodeJSON(t, checkResultsPage2Resp, &checkResultsPage2)
@@ -328,7 +328,7 @@ func TestHTTP_AssetReconciler_WaitsForUpstreamThenExecutes(t *testing.T) {
 	require.NoError(t, err)
 
 	partitionKey := "2026-04-01"
-	resp := doRequest(t, "POST", env.Server.URL+"/v1/assets/"+downstream.AssetKey+"/materialize", env.Keys.Admin, map[string]any{
+	resp := doRequest(t, "POST", env.Server.URL+"/v1/assets/"+downstream.AssetKey+"/materializations", env.Keys.Admin, map[string]any{
 		"partition_key": partitionKey,
 	})
 	require.Equal(t, httpStatusAccepted, resp.StatusCode)

@@ -169,6 +169,38 @@ rules:
     then:
       function: checkPostCreateStatus
 
+  check-no-colon-action-paths:
+    description: "Paths must not use colon-style action suffixes"
+    given: "$"
+    severity: error
+    resolved: false
+    then:
+      function: checkNoColonActionPaths
+
+  check-no-verb-suffix-paths:
+    description: "Paths must not expose imperative verb segments"
+    given: "$"
+    severity: error
+    resolved: false
+    then:
+      function: checkNoVerbSuffixPaths
+
+  check-snake-case-wire-names:
+    description: "Query/header/cookie params and schema property names should use snake_case"
+    given: "$"
+    severity: error
+    resolved: false
+    then:
+      function: checkSnakeCaseWireNames
+
+  check-mixed-scoped-collections:
+    description: "A collection should not be exposed both top-level and nested under a parent scope"
+    given: "$"
+    severity: error
+    resolved: false
+    then:
+      function: checkMixedScopedCollections
+
   # Mutating operations should include 403 when auth is enabled.
   check-mutating-ops-403:
     description: "Mutating operations should include 403 responses"

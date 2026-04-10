@@ -3,7 +3,7 @@
 # Schema: `PromoteNotebookRequest`
 
 - Type: `object`
-- Required fields: `cell_index`, `name`, `notebook_id`, `project_name`
+- Required fields: `cell_index`, `name`, `project_name`
 
 ## Properties
 
@@ -12,6 +12,5 @@
 | `cell_index` | `integer` | `true` | - |
 | `materialization` | `ModelMaterialization` | `false` | - |
 | `name` | `string` | `true` | - |
-| `notebook_id` | `string` | `true` | - |
 | `project_name` | `string` | `true` | - |
 

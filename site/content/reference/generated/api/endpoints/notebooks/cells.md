@@ -4,7 +4,7 @@
 
 Cells operations within the Notebooks API group.
 
-## `POST /notebooks/{notebookId}/cells`
+## `POST /notebooks/{notebook_id}/cells`
 
 Create cell
 
@@ -14,7 +14,7 @@ Create cell
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -33,7 +33,7 @@ Create cell
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /notebooks/{notebookId}/cells/{cellId}`
+## `PATCH /notebooks/{notebook_id}/cells/{cell_id}`
 
 Update cell
 
@@ -43,8 +43,8 @@ Update cell
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `cellId` | `string` | `true` | - |
-| `notebookId` | `string` | `true` | - |
+| `cell_id` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -63,7 +63,7 @@ Update cell
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /notebooks/{notebookId}/cells/{cellId}`
+## `DELETE /notebooks/{notebook_id}/cells/{cell_id}`
 
 Delete cell
 
@@ -73,8 +73,8 @@ Delete cell
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `cellId` | `string` | `true` | - |
-| `notebookId` | `string` | `true` | - |
+| `cell_id` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Responses
 

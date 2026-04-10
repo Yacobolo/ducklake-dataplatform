@@ -13,7 +13,10 @@ import (
 
 type mockRowFilterRepo struct {
 	CreateFn                  func(ctx context.Context, f *domain.RowFilter) (*domain.RowFilter, error)
+	GetByIDFn                 func(ctx context.Context, id string) (*domain.RowFilter, error)
+	ListFn                    func(ctx context.Context, page domain.PageRequest) ([]domain.RowFilter, int64, error)
 	GetForTableFn             func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error)
+	UpdateFn                  func(ctx context.Context, id string, req domain.UpdateRowFilterRequest) (*domain.RowFilter, error)
 	DeleteFn                  func(ctx context.Context, id string) error
 	BindFn                    func(ctx context.Context, b *domain.RowFilterBinding) error
 	UnbindFn                  func(ctx context.Context, b *domain.RowFilterBinding) error
@@ -25,8 +28,29 @@ func (m *mockRowFilterRepo) Create(ctx context.Context, f *domain.RowFilter) (*d
 	return m.CreateFn(ctx, f)
 }
 
+func (m *mockRowFilterRepo) GetByID(ctx context.Context, id string) (*domain.RowFilter, error) {
+	if m.GetByIDFn == nil {
+		panic("unexpected call to mockRowFilterRepo.GetByID")
+	}
+	return m.GetByIDFn(ctx, id)
+}
+
+func (m *mockRowFilterRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
+	if m.ListFn == nil {
+		panic("unexpected call to mockRowFilterRepo.List")
+	}
+	return m.ListFn(ctx, page)
+}
+
 func (m *mockRowFilterRepo) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
 	return m.GetForTableFn(ctx, tableID, page)
+}
+
+func (m *mockRowFilterRepo) Update(ctx context.Context, id string, req domain.UpdateRowFilterRequest) (*domain.RowFilter, error) {
+	if m.UpdateFn == nil {
+		panic("unexpected call to mockRowFilterRepo.Update")
+	}
+	return m.UpdateFn(ctx, id, req)
 }
 
 func (m *mockRowFilterRepo) Delete(ctx context.Context, id string) error {
@@ -88,7 +112,7 @@ func TestRowFilterService_Create_ValidationError(t *testing.T) {
 	svc := NewRowFilterService(&mockRowFilterRepo{}, &testutil.MockAuditRepo{})
 
 	_, err := svc.Create(adminCtx(), domain.CreateRowFilterRequest{
-		Name: "missing-filter-sql",
+		Name:    "missing-filter-sql",
 		TableID: "t-1",
 		// Missing FilterSQL.
 	})

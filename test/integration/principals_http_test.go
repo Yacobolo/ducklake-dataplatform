@@ -63,10 +63,10 @@ func TestHTTP_PrincipalCRUD(t *testing.T) {
 			assert.GreaterOrEqual(t, len(data), 6)
 		}},
 		{"set_admin_true", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/principals/%s/admin", env.Server.URL, createdID)
+			url := fmt.Sprintf("%s/v1/principals/%s", env.Server.URL, createdID)
 			body := map[string]interface{}{"is_admin": true}
-			resp := doRequest(t, "PUT", url, env.Keys.Admin, body)
-			require.Equal(t, 204, resp.StatusCode)
+			resp := doRequest(t, "PATCH", url, env.Keys.Admin, body)
+			require.Equal(t, 200, resp.StatusCode)
 			_ = resp.Body.Close()
 
 			// Verify by fetching the principal
@@ -79,10 +79,10 @@ func TestHTTP_PrincipalCRUD(t *testing.T) {
 			assert.Equal(t, true, result["is_admin"])
 		}},
 		{"set_admin_false", func(t *testing.T) {
-			url := fmt.Sprintf("%s/v1/principals/%s/admin", env.Server.URL, createdID)
+			url := fmt.Sprintf("%s/v1/principals/%s", env.Server.URL, createdID)
 			body := map[string]interface{}{"is_admin": false}
-			resp := doRequest(t, "PUT", url, env.Keys.Admin, body)
-			require.Equal(t, 204, resp.StatusCode)
+			resp := doRequest(t, "PATCH", url, env.Keys.Admin, body)
+			require.Equal(t, 200, resp.StatusCode)
 			_ = resp.Body.Close()
 		}},
 		{"delete", func(t *testing.T) {

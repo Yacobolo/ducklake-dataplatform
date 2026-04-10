@@ -14,7 +14,7 @@ import (
 func TestHTTP_CatalogInfo(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithDuckLake: true})
 
-	resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/info", env.Keys.Admin, nil)
+	resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake", env.Keys.Admin, nil)
 	require.Equal(t, 200, resp.StatusCode)
 
 	var result map[string]interface{}
@@ -405,14 +405,24 @@ func TestHTTP_CatalogAuthorization(t *testing.T) {
 	})
 
 	t.Run("read_operations_allowed_for_all_authenticated", func(t *testing.T) {
-		// Even the analyst should be able to read catalog data
-		endpoints := []string{
-			"/v1/catalogs/lake/info",
+		// Analysts can read catalog contents, but not admin-scoped catalog registration metadata.
+		deniedEndpoints := []string{
+			"/v1/catalogs/lake",
+		}
+		for _, ep := range deniedEndpoints {
+			t.Run(ep, func(t *testing.T) {
+				resp := doRequest(t, "GET", env.Server.URL+ep, env.Keys.Analyst, nil)
+				assert.Equal(t, 403, resp.StatusCode, "endpoint %s should remain admin-scoped", ep)
+				_ = resp.Body.Close()
+			})
+		}
+
+		readableEndpoints := []string{
 			"/v1/catalogs/lake/schemas",
 			"/v1/catalogs/lake/schemas/main",
 			"/v1/catalogs/lake/metastore/summary",
 		}
-		for _, ep := range endpoints {
+		for _, ep := range readableEndpoints {
 			t.Run(ep, func(t *testing.T) {
 				resp := doRequest(t, "GET", env.Server.URL+ep, env.Keys.Analyst, nil)
 				assert.Equal(t, 200, resp.StatusCode, "endpoint %s should be readable", ep)
@@ -614,11 +624,11 @@ func TestHTTP_UpdateColumn(t *testing.T) {
 	}
 }
 
-// TestHTTP_ProfileTable tests POST /v1/catalog/schemas/{s}/tables/{t}/profile.
+// TestHTTP_ProfileTable tests POST /v1/catalogs/{catalog}/schemas/{s}/tables/{t}/profiles.
 func TestHTTP_ProfileTable(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
 
-	profileURL := env.Server.URL + "/v1/catalogs/lake/schemas/main/tables/titanic/profile"
+	profileURL := env.Server.URL + "/v1/catalogs/lake/schemas/main/tables/titanic/profiles"
 	tableURL := env.Server.URL + "/v1/catalogs/lake/schemas/main/tables/titanic"
 
 	type step struct {
@@ -650,7 +660,7 @@ func TestHTTP_ProfileTable(t *testing.T) {
 
 		{"profile_nonexistent_404", func(t *testing.T) {
 			resp := doRequest(t, "POST",
-				env.Server.URL+"/v1/catalogs/lake/schemas/main/tables/nonexistent/profile",
+				env.Server.URL+"/v1/catalogs/lake/schemas/main/tables/nonexistent/profiles",
 				env.Keys.Admin, nil)
 			assert.Equal(t, 404, resp.StatusCode)
 			_ = resp.Body.Close()
@@ -900,7 +910,7 @@ func TestHTTP_CascadeDeleteVerifiesGovernanceRecords(t *testing.T) {
 // different user roles.
 func TestHTTP_TableProfileAuthorization(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{SeedDuckLakeMetadata: true})
-	profileURL := env.Server.URL + "/v1/catalogs/lake/schemas/main/tables/titanic/profile"
+	profileURL := env.Server.URL + "/v1/catalogs/lake/schemas/main/tables/titanic/profiles"
 
 	t.Run("no_access_denied", func(t *testing.T) {
 		resp := doRequest(t, "POST", profileURL, env.Keys.NoAccess, nil)

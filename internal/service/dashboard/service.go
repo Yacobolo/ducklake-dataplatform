@@ -106,6 +106,23 @@ func (s *Service) GetDashboard(ctx context.Context, id string) (*domain.Dashboar
 	return dashboard, widgets, nil
 }
 
+// ListWidgets returns all widgets belonging to a dashboard.
+func (s *Service) ListWidgets(ctx context.Context, dashboardID string) ([]domain.DashboardWidget, error) {
+	return s.widgets.ListByDashboard(ctx, dashboardID)
+}
+
+// GetWidget returns a widget by dashboard and widget ID.
+func (s *Service) GetWidget(ctx context.Context, dashboardID, widgetID string) (*domain.DashboardWidget, error) {
+	widget, err := s.widgets.GetByID(ctx, widgetID)
+	if err != nil {
+		return nil, err
+	}
+	if widget.DashboardID != dashboardID {
+		return nil, domain.ErrNotFound("dashboard widget %q not found", widgetID)
+	}
+	return widget, nil
+}
+
 // UpdateDashboard updates dashboard metadata.
 func (s *Service) UpdateDashboard(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateDashboardRequest) (*domain.Dashboard, error) {
 	current, err := s.dashboards.GetByID(ctx, id)

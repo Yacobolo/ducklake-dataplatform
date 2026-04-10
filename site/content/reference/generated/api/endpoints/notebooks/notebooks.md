@@ -50,7 +50,7 @@ Create notebook
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /notebooks/{notebookId}`
+## `GET /notebooks/{notebook_id}`
 
 Get notebook
 
@@ -60,7 +60,7 @@ Get notebook
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -74,7 +74,7 @@ Get notebook
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /notebooks/{notebookId}`
+## `PATCH /notebooks/{notebook_id}`
 
 Update notebook
 
@@ -84,7 +84,7 @@ Update notebook
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -103,7 +103,7 @@ Update notebook
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /notebooks/{notebookId}`
+## `DELETE /notebooks/{notebook_id}`
 
 Delete notebook
 
@@ -113,7 +113,7 @@ Delete notebook
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Responses
 

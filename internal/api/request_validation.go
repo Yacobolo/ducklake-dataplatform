@@ -114,27 +114,27 @@ type uuidRouteParam struct {
 }
 
 var uuidRouteSpecs = []uuidRouteSpec{
-	{method: http.MethodGet, pattern: []string{"principals", "*"}, params: []uuidRouteParam{{name: "principalId", segmentIndex: 1}}},
-	{method: http.MethodDelete, pattern: []string{"principals", "*"}, params: []uuidRouteParam{{name: "principalId", segmentIndex: 1}}},
-	{method: http.MethodPatch, pattern: []string{"principals", "*"}, params: []uuidRouteParam{{name: "principalId", segmentIndex: 1}}},
-	{method: http.MethodGet, pattern: []string{"groups", "*"}, params: []uuidRouteParam{{name: "groupId", segmentIndex: 1}}},
-	{method: http.MethodDelete, pattern: []string{"groups", "*"}, params: []uuidRouteParam{{name: "groupId", segmentIndex: 1}}},
-	{method: http.MethodGet, pattern: []string{"groups", "*", "members"}, params: []uuidRouteParam{{name: "groupId", segmentIndex: 1}}},
-	{method: http.MethodPost, pattern: []string{"groups", "*", "members"}, params: []uuidRouteParam{{name: "groupId", segmentIndex: 1}}},
-	{method: http.MethodDelete, pattern: []string{"groups", "*", "members", "*", "*"}, params: []uuidRouteParam{{name: "groupId", segmentIndex: 1}, {name: "memberId", segmentIndex: 4}}},
+	{method: http.MethodGet, pattern: []string{"principals", "*"}, params: []uuidRouteParam{{name: "principal_id", segmentIndex: 1}}},
+	{method: http.MethodDelete, pattern: []string{"principals", "*"}, params: []uuidRouteParam{{name: "principal_id", segmentIndex: 1}}},
+	{method: http.MethodPatch, pattern: []string{"principals", "*"}, params: []uuidRouteParam{{name: "principal_id", segmentIndex: 1}}},
+	{method: http.MethodGet, pattern: []string{"groups", "*"}, params: []uuidRouteParam{{name: "group_id", segmentIndex: 1}}},
+	{method: http.MethodDelete, pattern: []string{"groups", "*"}, params: []uuidRouteParam{{name: "group_id", segmentIndex: 1}}},
+	{method: http.MethodGet, pattern: []string{"groups", "*", "members"}, params: []uuidRouteParam{{name: "group_id", segmentIndex: 1}}},
+	{method: http.MethodPost, pattern: []string{"groups", "*", "members"}, params: []uuidRouteParam{{name: "group_id", segmentIndex: 1}}},
+	{method: http.MethodDelete, pattern: []string{"groups", "*", "members", "*", "*"}, params: []uuidRouteParam{{name: "group_id", segmentIndex: 1}, {name: "member_id", segmentIndex: 4}}},
 	{method: http.MethodDelete, pattern: []string{"grants", "*"}, params: []uuidRouteParam{{name: "grantId", segmentIndex: 1}}},
-	{method: http.MethodDelete, pattern: []string{"row-filters", "*"}, params: []uuidRouteParam{{name: "rowFilterId", segmentIndex: 1}}},
-	{method: http.MethodDelete, pattern: []string{"row-filters", "*", "bindings", "*", "*"}, params: []uuidRouteParam{{name: "rowFilterId", segmentIndex: 1}, {name: "principalId", segmentIndex: 4}}},
-	{method: http.MethodDelete, pattern: []string{"column-masks", "*"}, params: []uuidRouteParam{{name: "columnMaskId", segmentIndex: 1}}},
-	{method: http.MethodDelete, pattern: []string{"column-masks", "*", "bindings", "*", "*"}, params: []uuidRouteParam{{name: "columnMaskId", segmentIndex: 1}, {name: "principalId", segmentIndex: 4}}},
-	{method: http.MethodDelete, pattern: []string{"api-keys", "*"}, params: []uuidRouteParam{{name: "apiKeyId", segmentIndex: 1}}},
+	{method: http.MethodDelete, pattern: []string{"row-filters", "*"}, params: []uuidRouteParam{{name: "row_filter_id", segmentIndex: 1}}},
+	{method: http.MethodDelete, pattern: []string{"row-filters", "*", "bindings", "*", "*"}, params: []uuidRouteParam{{name: "row_filter_id", segmentIndex: 1}, {name: "principal_id", segmentIndex: 4}}},
+	{method: http.MethodDelete, pattern: []string{"column-masks", "*"}, params: []uuidRouteParam{{name: "column_mask_id", segmentIndex: 1}}},
+	{method: http.MethodDelete, pattern: []string{"column-masks", "*", "bindings", "*", "*"}, params: []uuidRouteParam{{name: "column_mask_id", segmentIndex: 1}, {name: "principal_id", segmentIndex: 4}}},
+	{method: http.MethodDelete, pattern: []string{"api-keys", "*"}, params: []uuidRouteParam{{name: "api_key_id", segmentIndex: 1}}},
 	{method: http.MethodDelete, pattern: []string{"tags", "*"}, params: []uuidRouteParam{{name: "tagId", segmentIndex: 1}}},
 	{method: http.MethodDelete, pattern: []string{"tags", "*", "assignments", "*"}, params: []uuidRouteParam{{name: "tagId", segmentIndex: 1}, {name: "assignmentId", segmentIndex: 3}}},
 	{method: http.MethodDelete, pattern: []string{"lineage", "edges", "*"}, params: []uuidRouteParam{{name: "edgeId", segmentIndex: 2}}},
-	{method: http.MethodGet, pattern: []string{"model-runs", "*"}, params: []uuidRouteParam{{name: "runId", segmentIndex: 1}}},
-	{method: http.MethodGet, pattern: []string{"model-runs", "*", "steps"}, params: []uuidRouteParam{{name: "runId", segmentIndex: 1}}},
-	{method: http.MethodGet, pattern: []string{"model-runs", "*", "steps", "*", "test-results"}, params: []uuidRouteParam{{name: "runId", segmentIndex: 1}, {name: "stepId", segmentIndex: 3}}},
-	{method: http.MethodPost, pattern: []string{"model-runs", "*", "cancel"}, params: []uuidRouteParam{{name: "runId", segmentIndex: 1}}},
+	{method: http.MethodGet, pattern: []string{"model-runs", "*"}, params: []uuidRouteParam{{name: "run_id", segmentIndex: 1}}},
+	{method: http.MethodGet, pattern: []string{"model-runs", "*", "steps"}, params: []uuidRouteParam{{name: "run_id", segmentIndex: 1}}},
+	{method: http.MethodGet, pattern: []string{"model-runs", "*", "steps", "*", "test-results"}, params: []uuidRouteParam{{name: "run_id", segmentIndex: 1}, {name: "step_id", segmentIndex: 3}}},
+	{method: http.MethodPost, pattern: []string{"model-runs", "*", "cancellations"}, params: []uuidRouteParam{{name: "run_id", segmentIndex: 1}}},
 }
 
 func (s uuidRouteSpec) matches(method string, pathParts []string) bool {
@@ -196,25 +196,11 @@ func normalizeAndValidateJSONBody(r *http.Request) error {
 }
 
 func isSetDefaultCatalogRoute(method, path string) bool {
-	return method == http.MethodPost && uuidRouteSpec{method: http.MethodPost, pattern: []string{"catalog-registrations", "*"}}.matches(method, normalizedCatalogSetDefaultPath(path))
-}
-
-func normalizedCatalogSetDefaultPath(path string) []string {
-	parts := normalizedPathParts(path)
-	if len(parts) != 2 {
-		return parts
-	}
-
-	catalogPart := parts[1]
-	if name, ok := strings.CutSuffix(catalogPart, ":set-default"); ok && name != "" {
-		return []string{parts[0], name}
-	}
-
-	return parts
+	return method == http.MethodPut && uuidRouteSpec{method: http.MethodPut, pattern: []string{"catalogs", "*", "default"}}.matches(method, normalizedPathParts(path))
 }
 
 func bodyValidationForRoute(method, path string) bodyValidationTarget {
-	if method != http.MethodPost {
+	if method != http.MethodPost && method != http.MethodPut {
 		return bodyValidationNone
 	}
 	switch path {

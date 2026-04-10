@@ -14,8 +14,8 @@ func TestBuildGeneratedCommandSpecsFromEndpoints_DetectsDuplicateCommands(t *tes
 	t.Helper()
 
 	_, err := buildGeneratedCommandSpecsFromEndpoints([]gen.APIGenEndpoint{
-		{OperationID: "listSchemas", CLICommand: "catalog schemas list", Path: "/catalogs/{catalogName}/schemas"},
-		{OperationID: "listTables", CLICommand: "catalog schemas list", Path: "/catalogs/{catalogName}/schemas/{schemaName}/tables"},
+		{OperationID: "listSchemas", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas"},
+		{OperationID: "listTables", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas/{schema_name}/tables"},
 	})
 
 	require.Error(t, err)
@@ -28,7 +28,7 @@ func TestBuildGeneratedCommandSpecsFromEndpoints_PromotesSingleSegmentRoots(t *t
 	t.Helper()
 
 	specs, err := buildGeneratedCommandSpecsFromEndpoints([]gen.APIGenEndpoint{
-		{OperationID: "executeQuery", CLICommand: "query", Path: "/queries:execute"},
+		{OperationID: "executeQuery", CLICommand: "query", Path: "/query-executions"},
 		{OperationID: "submitQuery", CLICommand: "query submit", Path: "/queries"},
 	})
 	require.NoError(t, err)
@@ -49,13 +49,13 @@ func TestAllAPIEndpoints_AddsDashboardCLICommands(t *testing.T) {
 	commands := map[string]string{}
 	for _, ep := range endpoints {
 		switch ep.OperationID {
-		case "createDashboard", "getResolvedDashboard", "createDashboardWidget":
+		case "createDashboard", "getRenderedDashboard", "createDashboardWidget":
 			commands[ep.OperationID] = ep.CLICommand
 		}
 	}
 
 	assert.Equal(t, "dashboards create", commands["createDashboard"])
-	assert.Equal(t, "dashboards get-resolved", commands["getResolvedDashboard"])
+	assert.Equal(t, "dashboards get-rendered", commands["getRenderedDashboard"])
 	assert.Equal(t, "dashboards widgets create", commands["createDashboardWidget"])
 }
 
@@ -90,8 +90,8 @@ func TestAllAPIEndpoints_AddsResourceCLICommands(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, "resources recent list", commands["listRecentResources"])
-	assert.Equal(t, "resources saved list", commands["listSavedResources"])
-	assert.Equal(t, "resources saved create", commands["createSavedResource"])
-	assert.Equal(t, "resources saved delete", commands["deleteSavedResource"])
+	assert.Equal(t, "me recent-resources list", commands["listRecentResources"])
+	assert.Equal(t, "me saved-resources list", commands["listSavedResources"])
+	assert.Equal(t, "me saved-resources create", commands["createSavedResource"])
+	assert.Equal(t, "me saved-resources delete", commands["deleteSavedResource"])
 }

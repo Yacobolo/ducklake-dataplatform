@@ -74,7 +74,7 @@ func TestCanonicalOpenAPI_HardeningEndpointsExposeExpectedDomainErrors(t *testin
 		"updateComputeEndpoint":     {"403", "404"},
 		"deleteComputeEndpoint":     {"403", "404"},
 		"deleteComputeAssignment":   {"403", "404"},
-		"getCatalogRegistration":    {"403", "404"},
+		"getCatalog":               {"403", "404"},
 		"updateCatalogRegistration": {"403", "404"},
 		"deleteCatalogRegistration": {"403", "404"},
 		"createManifest":            {"403"},

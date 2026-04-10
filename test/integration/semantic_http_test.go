@@ -97,8 +97,8 @@ func TestSemanticAPI_CRUDAndExplain(t *testing.T) {
 	decodeJSON(t, listModelsResp, &listed)
 	require.Len(t, listed.Data, 2)
 
-	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+salesModel.ID+"/queries:explain", env.Keys.Admin, map[string]interface{}{
-		"metrics":           []string{"total_revenue"},
+	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+salesModel.ID+"/query-explanations", env.Keys.Admin, map[string]interface{}{
+		"metrics": []string{"total_revenue"},
 	})
 	require.Equal(t, http.StatusOK, explainResp.StatusCode, responseBodyOnStatusMismatch(t, explainResp, http.StatusOK))
 	var explainBody struct {
@@ -142,8 +142,8 @@ func TestSemanticAPI_RunMetricQuery(t *testing.T) {
 	})
 	require.Equal(t, http.StatusCreated, createMetricResp.StatusCode, responseBodyOnStatusMismatch(t, createMetricResp, http.StatusCreated))
 
-	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModel.ID+"/queries:run", env.Keys.Admin, map[string]interface{}{
-		"metrics":           []string{"total_amount"},
+	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModel.ID+"/query-runs", env.Keys.Admin, map[string]interface{}{
+		"metrics": []string{"total_amount"},
 	})
 	require.Equal(t, http.StatusOK, runResp.StatusCode, responseBodyOnStatusMismatch(t, runResp, http.StatusOK))
 
@@ -198,35 +198,35 @@ func TestSemanticAPI_RunMetricQuery_RLSMaskParityWithRawSQL(t *testing.T) {
 	})
 	require.Equal(t, http.StatusCreated, createMetricResp.StatusCode, responseBodyOnStatusMismatch(t, createMetricResp, http.StatusCreated))
 
-	semanticRunResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+parityModel.ID+"/queries:run", env.Keys.Analyst, map[string]interface{}{
-		"metrics":           []string{"passenger_count"},
-		"dimensions":        []string{"Name"},
-		"order_by":          []string{"Name"},
+	semanticRunResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+parityModel.ID+"/query-runs", env.Keys.Analyst, map[string]interface{}{
+		"metrics":    []string{"passenger_count"},
+		"dimensions": []string{"Name"},
+		"order_by":   []string{"Name"},
 	})
 	require.Equal(t, http.StatusOK, semanticRunResp.StatusCode, responseBodyOnStatusMismatch(t, semanticRunResp, http.StatusOK))
 
-	rawResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/queries:execute", env.Keys.Analyst, map[string]interface{}{
+	rawResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/query-executions", env.Keys.Analyst, map[string]interface{}{
 		"sql": "SELECT Name, COUNT(*) AS passenger_count FROM main.titanic GROUP BY Name ORDER BY Name",
 	})
 	require.Equal(t, http.StatusOK, rawResp.StatusCode, responseBodyOnStatusMismatch(t, rawResp, http.StatusOK))
 
 	var semanticBody struct {
 		Result struct {
-			Columns  []struct {
+			Columns []struct {
 				Name string `json:"name"`
 			} `json:"columns"`
 			Rows     []map[string]interface{} `json:"rows"`
-			RowCount int64           `json:"row_count"`
+			RowCount int64                    `json:"row_count"`
 		} `json:"result"`
 	}
 	decodeJSON(t, semanticRunResp, &semanticBody)
 
 	var rawBody struct {
-		Columns  []struct {
+		Columns []struct {
 			Name string `json:"name"`
 		} `json:"columns"`
 		Rows     []map[string]interface{} `json:"rows"`
-		RowCount int64           `json:"row_count"`
+		RowCount int64                    `json:"row_count"`
 	}
 	decodeJSON(t, rawResp, &rawBody)
 

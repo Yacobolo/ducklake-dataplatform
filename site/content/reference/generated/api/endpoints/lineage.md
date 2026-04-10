@@ -4,7 +4,7 @@
 
 Table and column lineage inspection together with lineage maintenance operations.
 
-## `GET /lineage/columns/{schemaName}/{tableName}`
+## `GET /lineage/columns/{schema_name}/{table_name}`
 
 Get column lineage
 
@@ -14,8 +14,8 @@ Get column lineage
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `schemaName` | `string` | `true` | - |
-| `tableName` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -36,7 +36,7 @@ Get column lineage
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /lineage/columns/{schemaName}/{tableName}/{columnName}/impact`
+## `GET /lineage/columns/{schema_name}/{table_name}/{column_name}/impacts`
 
 Get column impact
 
@@ -46,9 +46,9 @@ Get column impact
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `columnName` | `string` | `true` | - |
-| `schemaName` | `string` | `true` | - |
-| `tableName` | `string` | `true` | - |
+| `column_name` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -69,7 +69,7 @@ Get column impact
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /lineage/edges/{edgeId}`
+## `DELETE /lineage/edges/{edge_id}`
 
 Delete lineage edge
 
@@ -79,7 +79,7 @@ Delete lineage edge
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `edgeId` | `string` | `true` | - |
+| `edge_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -92,7 +92,7 @@ Delete lineage edge
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /lineage/purge`
+## `POST /lineage/purges`
 
 Purge lineage
 
@@ -114,7 +114,7 @@ Purge lineage
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /lineage/tables/{schemaName}/{tableName}`
+## `GET /lineage/tables/{schema_name}/{table_name}`
 
 Get table lineage
 
@@ -124,8 +124,8 @@ Get table lineage
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `schemaName` | `string` | `true` | - |
-| `tableName` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -146,7 +146,7 @@ Get table lineage
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /lineage/tables/{schemaName}/{tableName}/downstream`
+## `GET /lineage/tables/{schema_name}/{table_name}/downstream`
 
 Get downstream lineage
 
@@ -156,8 +156,8 @@ Get downstream lineage
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `schemaName` | `string` | `true` | - |
-| `tableName` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
 
 ### Query Parameters
 
@@ -178,7 +178,7 @@ Get downstream lineage
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /lineage/tables/{schemaName}/{tableName}/upstream`
+## `GET /lineage/tables/{schema_name}/{table_name}/upstream`
 
 Get upstream lineage
 
@@ -188,8 +188,8 @@ Get upstream lineage
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `schemaName` | `string` | `true` | - |
-| `tableName` | `string` | `true` | - |
+| `schema_name` | `string` | `true` | - |
+| `table_name` | `string` | `true` | - |
 
 ### Query Parameters
 

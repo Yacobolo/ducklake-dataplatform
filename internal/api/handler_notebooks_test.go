@@ -822,7 +822,7 @@ func TestAPI_Sessions(t *testing.T) {
 	})
 
 	t.Run("execute cell", func(t *testing.T) {
-		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/"+nbID+"/sessions/"+sessionID+"/execute/"+cellID, "")
+		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/"+nbID+"/sessions/"+sessionID+"/cell-executions/"+cellID, "")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		result := nbDecodeJSON[CellExecutionResult](t, resp)
@@ -834,7 +834,7 @@ func TestAPI_Sessions(t *testing.T) {
 	})
 
 	t.Run("run all cells", func(t *testing.T) {
-		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/"+nbID+"/sessions/"+sessionID+"/run-all", "")
+		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/"+nbID+"/sessions/"+sessionID+"/cell-executions", "")
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		result := nbDecodeJSON[RunAllResult](t, resp)
@@ -845,7 +845,7 @@ func TestAPI_Sessions(t *testing.T) {
 	})
 
 	t.Run("run all cells async", func(t *testing.T) {
-		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/"+nbID+"/sessions/"+sessionID+"/run-all-async", "")
+		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/"+nbID+"/sessions/"+sessionID+"/job-runs", "")
 		require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 		job := nbDecodeJSON[NotebookJob](t, resp)
@@ -977,7 +977,7 @@ func TestAPI_GitRepoCRUD(t *testing.T) {
 	})
 
 	t.Run("sync git repo bad input returns 400", func(t *testing.T) {
-		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/git-repos/repo-bad/sync", "")
+		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/git-repos/repo-bad/sync-runs", "")
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
@@ -1100,7 +1100,7 @@ func TestAPI_NotebookSecurityBoundaries(t *testing.T) {
 	})
 
 	t.Run("wrong notebook parent returns 404", func(t *testing.T) {
-		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/nb-wrong/sessions/sess-1/execute/cell-1", "")
+		resp := nbDoRequest(t, http.MethodPost, srv.URL+"/notebooks/nb-wrong/sessions/sess-1/cell-executions/cell-1", "")
 		defer resp.Body.Close() //nolint:errcheck
 		require.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})

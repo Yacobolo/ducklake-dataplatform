@@ -30,6 +30,19 @@ enum AssetCheckSeverity {
   WARN,
 }
 
+enum AssetType {
+  TABLE,
+  VIEW,
+  MODEL,
+  NOTEBOOK,
+  OUTPUT,
+  DASHBOARD,
+  SEMANTIC_MODEL,
+  METRIC,
+  SEMANTIC_PRE_AGGREGATION,
+  NOTEBOOK_OUTPUT,
+}
+
 model AssetFreshnessPolicy {
   max_lag_seconds?: int64;
   cron_schedule?: string;
@@ -53,7 +66,7 @@ model AssetAutoMaterializePolicy {
 model Asset {
   id?: string;
   asset_key?: string;
-  asset_type?: string;
+  asset_type?: AssetType;
   owner?: string;
   description?: string;
   tags?: string[];
@@ -115,7 +128,7 @@ model AssetMaterialization {
 model AssetFreshnessStatus {
   asset_id?: string;
   asset_key?: string;
-  asset_type?: string;
+  asset_type?: AssetType;
   freshness_status?: string;
   effective_max_lag_seconds?: int64;
   last_materialized_at?: utcDateTime;
@@ -159,7 +172,7 @@ model AssetFreshnessBlockersResponse {
 model AssetFreshnessReconcileTarget {
   asset_id?: string;
   asset_key?: string;
-  asset_type?: string;
+  asset_type?: AssetType;
   freshness_status?: string;
   event_id?: string;
 }
@@ -201,7 +214,7 @@ model AssetCheckInput {
 
 model CreateAssetRequest {
   asset_key: string;
-  asset_type: string;
+  asset_type: AssetType;
   product_slug: string;
   owner: string;
   description?: string;
@@ -216,7 +229,7 @@ model CreateAssetRequest {
 }
 
 model UpdateAssetRequest {
-  asset_type: string;
+  asset_type: AssetType;
   product_slug: string;
   owner: string;
   description?: string;

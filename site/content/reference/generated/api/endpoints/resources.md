@@ -4,7 +4,7 @@
 
 Recent and saved resource APIs for personalized navigation and activity tracking.
 
-## `GET /resources/recent`
+## `GET /me/recent-resources`
 
 List recent resources
 
@@ -30,7 +30,7 @@ Lists the authenticated principal's recent UUID-backed resources for personalize
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /resources/saved`
+## `GET /me/saved-resources`
 
 List saved resources
 
@@ -56,7 +56,7 @@ Lists the authenticated principal's saved UUID-backed resources.
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /resources/saved`
+## `POST /me/saved-resources`
 
 Save resource
 
@@ -80,7 +80,7 @@ Saves a UUID-backed resource for the authenticated principal.
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /resources/saved/{resourceType}/{resourceKey}`
+## `DELETE /me/saved-resources/{resource_type}/{resource_key}`
 
 Delete saved resource
 
@@ -92,8 +92,8 @@ Removes a saved resource for the authenticated principal.
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `resourceKey` | `string` | `true` | - |
-| `resourceType` | `string` | `true` | - |
+| `resource_key` | `string` | `true` | - |
+| `resource_type` | `string` | `true` | - |
 
 ### Responses
 

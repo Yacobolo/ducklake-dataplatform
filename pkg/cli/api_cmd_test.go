@@ -146,7 +146,7 @@ func TestAPI_Curl(t *testing.T) {
 	t.Setenv("HOME", dir)
 
 	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{"--output", "json", "api", "curl", "listSchemas", "--param", "catalogName=main"})
+	rootCmd.SetArgs([]string{"--output", "json", "api", "curl", "listSchemas", "--param", "catalog_name=main"})
 
 	old := captureStdout(t)
 	err := rootCmd.Execute()
@@ -168,7 +168,7 @@ func TestAPI_Curl_WithTokenAuth(t *testing.T) {
 		"--output", "json",
 		"--token", "my-secret-token",
 		"api", "curl", "listSchemas",
-		"--param", "catalogName=main",
+		"--param", "catalog_name=main",
 	})
 
 	old := captureStdout(t)
@@ -191,7 +191,7 @@ func TestAPI_Curl_WithAPIKeyAuth(t *testing.T) {
 		"--output", "json",
 		"--api-key", "my-api-key",
 		"api", "curl", "listSchemas",
-		"--param", "catalogName=main",
+		"--param", "catalog_name=main",
 	})
 
 	old := captureStdout(t)
@@ -214,7 +214,7 @@ func TestAPI_Curl_EmbedsObjectBodyFieldsAsJSON(t *testing.T) {
 		"--output", "json",
 		"--token", "my-secret-token",
 		"api", "curl", "createDashboardWidget",
-		"--param", "dashboardId=dash-1",
+		"--param", "dashboard_id=dash-1",
 		"--param", "name=Top Vendors",
 		"--param", `layout={"x":0,"y":0,"w":6,"h":4}`,
 		"--param", `source={"kind":"sql_query","sql_query":{"sql":"select 1"}}`,
@@ -253,7 +253,7 @@ func TestAPI_Curl_ProfileTokenOverriddenByExplicitAPIKey(t *testing.T) {
 		"--output", "json",
 		"--api-key", "fresh-api-key",
 		"api", "curl", "listSchemas",
-		"--param", "catalogName=main",
+		"--param", "catalog_name=main",
 	})
 
 	old := captureStdout(t)
@@ -268,7 +268,7 @@ func TestAPI_Curl_ProfileTokenOverriddenByExplicitAPIKey(t *testing.T) {
 }
 
 func TestAPI_Curl_WithBodyParams(t *testing.T) {
-	// createSchema has path param catalogName and body fields (name, comment, etc.)
+	// createSchema has path param catalog_name and body fields (name, comment, etc.)
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 
@@ -276,7 +276,7 @@ func TestAPI_Curl_WithBodyParams(t *testing.T) {
 	rootCmd.SetArgs([]string{
 		"--output", "json",
 		"api", "curl", "createSchema",
-		"--param", "catalogName=main",
+		"--param", "catalog_name=main",
 		"--param", "name=analytics",
 		"--param", "comment=test schema",
 	})
@@ -378,7 +378,7 @@ func TestAPI_Describe_TableOutput(t *testing.T) {
 	assert.Contains(t, output, "POST")
 	assert.Contains(t, output, "createSchema")
 	assert.Contains(t, output, "PARAMETERS:")
-	assert.Contains(t, output, "catalogName")
+	assert.Contains(t, output, "catalog_name")
 	assert.Contains(t, output, "DESCRIPTION")
 	assert.Contains(t, output, "BODY FIELDS:")
 	assert.Contains(t, output, "name")

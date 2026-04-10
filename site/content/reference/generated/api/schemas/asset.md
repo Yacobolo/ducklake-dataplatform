@@ -9,7 +9,7 @@
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `asset_key` | `string` | `false` | - |
-| `asset_type` | `string` | `false` | - |
+| `asset_type` | `AssetType` | `false` | - |
 | `auto_materialize_policy` | `AssetAutoMaterializePolicy` | `false` | - |
 | `created_at` | `string` | `false` | - |
 | `created_by` | `string` | `false` | - |

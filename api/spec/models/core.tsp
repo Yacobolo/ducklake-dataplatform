@@ -203,6 +203,11 @@ model QueryJob {
   completed_at?: utcDateTime;
 }
 
+model PaginatedQueryJobs {
+  data: QueryJob[];
+  next_page_token?: string;
+}
+
 model SubmitQueryResponse {
   query_id: string;
   status: QueryJobStatus;
@@ -233,8 +238,8 @@ model CreatePrincipalRequest {
   is_admin?: boolean;
 }
 
-model UpdatePrincipalAdminRequest {
-  is_admin: boolean;
+model UpdatePrincipalRequest {
+  is_admin?: boolean;
 }
 
 model AuthPrincipalSummary {
@@ -423,6 +428,12 @@ model CreateRowFilterRequest {
   description?: string;
 }
 
+model UpdateRowFilterRequest {
+  name?: string;
+  filter_sql?: string;
+  description?: string;
+}
+
 model RowFilterBindingRequest {
   principal_id: string;
   principal_type: PrincipalType;
@@ -456,9 +467,17 @@ model PaginatedColumnMasks {
 }
 
 model CreateColumnMaskRequest {
+  table_id?: string;
   name: string;
   column_name: string;
   mask_expression: string;
+  description?: string;
+}
+
+model UpdateColumnMaskRequest {
+  name?: string;
+  column_name?: string;
+  mask_expression?: string;
   description?: string;
 }
 
@@ -1095,7 +1114,6 @@ model SourceFreshnessStatus {
 }
 
 model PromoteNotebookRequest {
-  notebook_id: string;
   cell_index: int32;
   project_name: string;
   name: string;
@@ -1445,6 +1463,18 @@ enum PipelineJobJobType {
 
 model CreatePipelineJobRequest {
   name: string;
+  notebook_id?: string;
+  compute_endpoint_id?: string;
+  depends_on?: string[];
+  timeout_seconds?: int64;
+  retry_count?: int32;
+  job_order?: int32;
+  job_type?: PipelineJobJobType;
+  model_selector?: string;
+}
+
+model UpdatePipelineJobRequest {
+  name?: string;
   notebook_id?: string;
   compute_endpoint_id?: string;
   depends_on?: string[];
@@ -1946,7 +1976,7 @@ model UpdateDashboardRequest {
   folder_id?: string;
 }
 
-model ExploreItem {
+model FolderContentItem {
   kind?: string;
   scope?: string;
   id?: string;
@@ -1960,9 +1990,13 @@ model ExploreItem {
   project_bound?: boolean;
 }
 
-model PaginatedExploreItems {
-  data: ExploreItem[];
+model PaginatedFolderContents {
+  data: FolderContentItem[];
   next_page_token?: string;
+}
+
+model FolderPath {
+  data: Folder[];
 }
 
 model CreateDashboardWidgetRequest {
@@ -2047,6 +2081,11 @@ model PaginatedTags {
 
 model CreateTagRequest {
   key: string;
+  value?: string;
+}
+
+model UpdateTagRequest {
+  key?: string;
   value?: string;
 }
 

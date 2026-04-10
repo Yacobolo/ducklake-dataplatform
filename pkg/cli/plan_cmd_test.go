@@ -33,7 +33,7 @@ func TestApplyCmd_AssetActionsExecute(t *testing.T) {
 		requestCount++
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/compute-defaults":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/compute-routing-defaults":
 			_, _ = w.Write([]byte(`{"interactive_mode":"LOCAL","scheduled_mode":"LOCAL","notebook_mode":"LOCAL"}`))
 			return
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/domains":

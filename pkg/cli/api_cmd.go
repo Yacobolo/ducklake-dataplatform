@@ -279,8 +279,8 @@ func newAPICurlCmd() *cobra.Command {
 		Use:   "curl <operation-id>",
 		Short: "Generate a curl command for an API endpoint",
 		Long:  "Generates a ready-to-use curl command using the current authentication configuration.",
-		Example: `  duck api curl createSchema --param catalogName=main --param name=analytics
-  duck api curl listSchemas --param catalogName=main`,
+		Example: `  duck api curl createSchema --param catalog_name=main --param name=analytics
+  duck api curl listSchemas --param catalog_name=main`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opID := args[0]
@@ -452,7 +452,7 @@ func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
 		endpoint.CLICommand = "catalog registrations create"
 	case "deleteCatalogRegistration":
 		endpoint.CLICommand = "catalog registrations delete"
-	case "getCatalogRegistration":
+	case "getCatalog":
 		endpoint.CLICommand = "catalog registrations get"
 	case "updateCatalogRegistration":
 		endpoint.CLICommand = "catalog registrations update"
@@ -470,8 +470,8 @@ func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
 		endpoint.CLICommand = "dashboards create"
 	case "getDashboard":
 		endpoint.CLICommand = "dashboards get"
-	case "getResolvedDashboard":
-		endpoint.CLICommand = "dashboards get-resolved"
+	case "getRenderedDashboard":
+		endpoint.CLICommand = "dashboards get-rendered"
 	case "updateDashboard":
 		endpoint.CLICommand = "dashboards update"
 	case "deleteDashboard":
@@ -495,13 +495,13 @@ func applyEndpointOverrides(endpoint gen.APIGenEndpoint) gen.APIGenEndpoint {
 	case "listQueryHistory":
 		endpoint.CLICommand = "query history list"
 	case "listRecentResources":
-		endpoint.CLICommand = "resources recent list"
+		endpoint.CLICommand = "me recent-resources list"
 	case "listSavedResources":
-		endpoint.CLICommand = "resources saved list"
+		endpoint.CLICommand = "me saved-resources list"
 	case "createSavedResource":
-		endpoint.CLICommand = "resources saved create"
+		endpoint.CLICommand = "me saved-resources create"
 	case "deleteSavedResource":
-		endpoint.CLICommand = "resources saved delete"
+		endpoint.CLICommand = "me saved-resources delete"
 	case "createTagAssignment":
 		endpoint.CLICommand = "governance tags assignments create"
 	case "deleteTagAssignment":

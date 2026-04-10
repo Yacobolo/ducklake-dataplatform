@@ -98,7 +98,7 @@ func runFind(cmd *cobra.Command, client *apiruntime.Client, query, objectType, c
 	}
 	q.Set("max_results", fmt.Sprintf("%d", maxResults))
 
-	resp, err := client.Do("GET", "/catalogs:search", q, nil)
+	resp, err := client.Do("GET", "/catalogs/search", q, nil)
 	if err != nil {
 		return err
 	}

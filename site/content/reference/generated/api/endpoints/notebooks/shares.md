@@ -4,85 +4,7 @@
 
 Shares operations within the Notebooks API group.
 
-## `GET /notebooks/folders/{folderId}/shares`
-
-List notebook folder shares
-
-- Operation ID: `listNotebookFolderShares`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `folderId` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `POST /notebooks/folders/{folderId}/shares`
-
-Share notebook folder
-
-- Operation ID: `shareNotebookFolder`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `folderId` | `string` | `true` | - |
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `DELETE /notebooks/folders/{folderId}/shares/{principalName}`
-
-Remove notebook folder share
-
-- Operation ID: `unshareNotebookFolder`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `folderId` | `string` | `true` | - |
-| `principalName` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `204` | There is no content to send for this request, but the headers may be useful. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /notebooks/{notebookId}/shares`
+## `GET /notebooks/{notebook_id}/shares`
 
 List notebook shares
 
@@ -92,7 +14,7 @@ List notebook shares
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Responses
 
@@ -106,7 +28,7 @@ List notebook shares
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /notebooks/{notebookId}/shares`
+## `POST /notebooks/{notebook_id}/shares`
 
 Share notebook
 
@@ -116,7 +38,7 @@ Share notebook
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
 
 ### Request Body
 
@@ -135,7 +57,7 @@ Share notebook
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /notebooks/{notebookId}/shares/{principalName}`
+## `DELETE /notebooks/{notebook_id}/shares/{principal_name}`
 
 Remove notebook share
 
@@ -145,8 +67,8 @@ Remove notebook share
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `notebookId` | `string` | `true` | - |
-| `principalName` | `string` | `true` | - |
+| `notebook_id` | `string` | `true` | - |
+| `principal_name` | `string` | `true` | - |
 
 ### Responses
 

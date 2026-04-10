@@ -50,7 +50,7 @@ Create product domain
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /product-domains/{domainName}`
+## `GET /product-domains/{domain_name}`
 
 Get product domain
 
@@ -60,7 +60,7 @@ Get product domain
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domainName` | `string` | `true` | - |
+| `domain_name` | `string` | `true` | - |
 
 ### Responses
 
@@ -73,7 +73,7 @@ Get product domain
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /product-domains/{domainName}`
+## `PATCH /product-domains/{domain_name}`
 
 Update product domain
 
@@ -83,7 +83,7 @@ Update product domain
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domainName` | `string` | `true` | - |
+| `domain_name` | `string` | `true` | - |
 
 ### Request Body
 
@@ -102,7 +102,7 @@ Update product domain
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /product-domains/{domainName}`
+## `DELETE /product-domains/{domain_name}`
 
 Delete product domain
 
@@ -112,7 +112,7 @@ Delete product domain
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `domainName` | `string` | `true` | - |
+| `domain_name` | `string` | `true` | - |
 
 ### Responses
 

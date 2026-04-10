@@ -14,44 +14,56 @@ op listDashboards(@query owner?: string, @query max_results?: int32, @query page
 @summary("Create dashboard")
 op createDashboard(@body body: CreateDashboardRequest): Created<Dashboard> | MutatingErrorResponses;
 
-@route("/dashboards/{dashboardId}")
+@route("/dashboards/{dashboard_id}")
 @get
 @tag("Dashboards")
 @summary("Get dashboard")
-op getDashboard(dashboardId: string): Ok<DashboardDetail> | ResourceErrorResponses;
+op getDashboard(dashboard_id: string): Ok<DashboardDetail> | ResourceErrorResponses;
 
-@route("/dashboards/{dashboardId}/resolved")
+@route("/dashboards/{dashboard_id}/rendered")
 @get
 @tag("Dashboards")
-@summary("Get resolved dashboard")
-op getResolvedDashboard(dashboardId: string): Ok<ResolvedDashboardDetail> | ResourceErrorResponses;
+@summary("Get rendered dashboard")
+op getRenderedDashboard(dashboard_id: string): Ok<ResolvedDashboardDetail> | ResourceErrorResponses;
 
-@route("/dashboards/{dashboardId}")
+@route("/dashboards/{dashboard_id}")
 @patch(#{ implicitOptionality: true })
 @tag("Dashboards")
 @summary("Update dashboard")
-op updateDashboard(dashboardId: string, @body body: UpdateDashboardRequest): Ok<Dashboard> | MutatingErrorResponses;
+op updateDashboard(dashboard_id: string, @body body: UpdateDashboardRequest): Ok<Dashboard> | MutatingErrorResponses;
 
-@route("/dashboards/{dashboardId}")
+@route("/dashboards/{dashboard_id}")
 @delete
 @tag("Dashboards")
 @summary("Delete dashboard")
-op deleteDashboard(dashboardId: string): NoContent | MutatingErrorResponses;
+op deleteDashboard(dashboard_id: string): NoContent | MutatingErrorResponses;
 
-@route("/dashboards/{dashboardId}/widgets")
+@route("/dashboards/{dashboard_id}/widgets")
+@get
+@tag("Dashboards")
+@summary("List dashboard widgets")
+op listDashboardWidgets(dashboard_id: string): Ok<DashboardWidget[]> | ResourceErrorResponses;
+
+@route("/dashboards/{dashboard_id}/widgets")
 @post
 @tag("Dashboards")
 @summary("Create dashboard widget")
-op createDashboardWidget(dashboardId: string, @body body: CreateDashboardWidgetRequest): Created<DashboardWidget> | MutatingErrorResponses;
+op createDashboardWidget(dashboard_id: string, @body body: CreateDashboardWidgetRequest): Created<DashboardWidget> | MutatingErrorResponses;
 
-@route("/dashboards/{dashboardId}/widgets/{widgetId}")
+@route("/dashboards/{dashboard_id}/widgets/{widget_id}")
+@get
+@tag("Dashboards")
+@summary("Get dashboard widget")
+op getDashboardWidget(dashboard_id: string, widget_id: string): Ok<DashboardWidget> | ResourceErrorResponses;
+
+@route("/dashboards/{dashboard_id}/widgets/{widget_id}")
 @patch(#{ implicitOptionality: true })
 @tag("Dashboards")
 @summary("Update dashboard widget")
-op updateDashboardWidget(dashboardId: string, widgetId: string, @body body: UpdateDashboardWidgetRequest): Ok<DashboardWidget> | MutatingErrorResponses;
+op updateDashboardWidget(dashboard_id: string, widget_id: string, @body body: UpdateDashboardWidgetRequest): Ok<DashboardWidget> | MutatingErrorResponses;
 
-@route("/dashboards/{dashboardId}/widgets/{widgetId}")
+@route("/dashboards/{dashboard_id}/widgets/{widget_id}")
 @delete
 @tag("Dashboards")
 @summary("Delete dashboard widget")
-op deleteDashboardWidget(dashboardId: string, widgetId: string): NoContent | MutatingErrorResponses;
+op deleteDashboardWidget(dashboard_id: string, widget_id: string): NoContent | MutatingErrorResponses;

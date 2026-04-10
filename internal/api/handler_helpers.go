@@ -144,17 +144,6 @@ func auditEntryToAPI(e domain.AuditEntry) AuditEntry {
 	}
 }
 
-func catalogInfoToAPI(c domain.CatalogInfo) CatalogInfo {
-	systemManaged := domain.IsSystemManagedCatalog(c.Name)
-	return CatalogInfo{
-		Name:          c.Name,
-		Comment:       &c.Comment,
-		CreatedAt:     formatTimePtr(&c.CreatedAt),
-		UpdatedAt:     formatTimePtr(&c.UpdatedAt),
-		SystemManaged: &systemManaged,
-	}
-}
-
 func schemaDetailToAPI(s domain.SchemaDetail) SchemaDetail {
 	tags := make([]Tag, len(s.Tags))
 	for i, t := range s.Tags {

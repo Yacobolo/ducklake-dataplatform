@@ -55,7 +55,7 @@ Create grant
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /grants/{grantId}`
+## `DELETE /grants/{grant_id}`
 
 Delete grant
 
@@ -65,7 +65,7 @@ Delete grant
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `grantId` | `string` | `true` | - |
+| `grant_id` | `string` | `true` | - |
 
 ### Responses
 

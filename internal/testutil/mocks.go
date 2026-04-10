@@ -124,6 +124,7 @@ type MockTagRepo struct {
 	CreateTagFn             func(ctx context.Context, tag *domain.Tag) (*domain.Tag, error)
 	GetTagFn                func(ctx context.Context, id string) (*domain.Tag, error)
 	ListTagsFn              func(ctx context.Context, page domain.PageRequest) ([]domain.Tag, int64, error)
+	UpdateTagFn             func(ctx context.Context, id string, req domain.UpdateTagRequest) (*domain.Tag, error)
 	DeleteTagFn             func(ctx context.Context, id string) error
 	AssignTagFn             func(ctx context.Context, assignment *domain.TagAssignment) (*domain.TagAssignment, error)
 	UnassignTagFn           func(ctx context.Context, id string) error
@@ -153,6 +154,14 @@ func (m *MockTagRepo) ListTags(ctx context.Context, page domain.PageRequest) ([]
 		return m.ListTagsFn(ctx, page)
 	}
 	panic("unexpected call to MockTagRepo.ListTags")
+}
+
+// UpdateTag implements the interface method for testing.
+func (m *MockTagRepo) UpdateTag(ctx context.Context, id string, req domain.UpdateTagRequest) (*domain.Tag, error) {
+	if m.UpdateTagFn != nil {
+		return m.UpdateTagFn(ctx, id, req)
+	}
+	panic("unexpected call to MockTagRepo.UpdateTag")
 }
 
 // DeleteTag implements the interface method for testing.
@@ -1411,6 +1420,7 @@ type MockPipelineRepo struct {
 	CreateJobFn              func(ctx context.Context, job *domain.PipelineJob) (*domain.PipelineJob, error)
 	GetJobByIDFn             func(ctx context.Context, id string) (*domain.PipelineJob, error)
 	ListJobsByPipelineFn     func(ctx context.Context, pipelineID string) ([]domain.PipelineJob, error)
+	UpdateJobFn              func(ctx context.Context, id string, req domain.UpdatePipelineJobRequest) (*domain.PipelineJob, error)
 	DeleteJobFn              func(ctx context.Context, id string) error
 	DeleteJobsByPipelineFn   func(ctx context.Context, pipelineID string) error
 }
@@ -1500,6 +1510,14 @@ func (m *MockPipelineRepo) ListJobsByPipeline(ctx context.Context, pipelineID st
 		return m.ListJobsByPipelineFn(ctx, pipelineID)
 	}
 	panic("unexpected call to MockPipelineRepo.ListJobsByPipeline")
+}
+
+// UpdateJob implements the interface method for testing.
+func (m *MockPipelineRepo) UpdateJob(ctx context.Context, id string, req domain.UpdatePipelineJobRequest) (*domain.PipelineJob, error) {
+	if m.UpdateJobFn != nil {
+		return m.UpdateJobFn(ctx, id, req)
+	}
+	panic("unexpected call to MockPipelineRepo.UpdateJob")
 }
 
 // DeleteJob implements the interface method for testing.
