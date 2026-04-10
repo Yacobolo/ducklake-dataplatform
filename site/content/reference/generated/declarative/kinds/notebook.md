@@ -5,7 +5,7 @@
 Duck declarative Notebook
 
 - Schema file: `kinds/notebook.schema.json`
-- SHA256: `583854f2163ea968363fc88c1cbf2206b9d9fc37bce7ccd17e860113b6ca702f`
+- SHA256: `b0dca2bb3df84a58ab4840c56dd30a28eb2857a5d790ad9e6e6583b985509be7`
 
 ## Spec Fields
 
@@ -13,5 +13,9 @@ Duck declarative Notebook
 | --- | --- | --- | --- |
 | `cells` | `array[CellSpec]` | `false` | - |
 | `description` | `string` | `false` | - |
+| `environment_ref` | `string` | `false` | - |
+| `folder_ref` | `string` | `false` | - |
 | `owner` | `string` | `false` | - |
+| `project_ref` | `string` | `false` | - |
 | `publish` | `NotebookPublishSpec` | `false` | - |
+| `workspace_ref` | `string` | `false` | - |

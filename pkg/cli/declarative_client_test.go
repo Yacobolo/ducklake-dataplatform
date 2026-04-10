@@ -64,6 +64,14 @@ func withTestIndex(sc *APIStateClient) *APIStateClient {
 	sc.index.principalIDByName["bob"] = "principal-id-bob"
 	sc.index.groupIDByName["admins"] = "group-id-admins"
 	sc.index.groupIDByName["analysts"] = "group-id-analysts"
+	sc.index.workspaceIDByName["personal"] = "workspace-id-personal"
+	sc.index.workspaceNameByID["workspace-id-personal"] = "personal"
+	sc.index.folderIDByKey["personal/analysis"] = "folder-id-analysis"
+	sc.index.folderKeyByID["folder-id-analysis"] = "personal/analysis"
+	sc.index.projectIDByKey["personal/core"] = "project-id-core"
+	sc.index.projectKeyByID["project-id-core"] = "personal/core"
+	sc.index.environmentIDByKey["personal/core/dev"] = "environment-id-dev"
+	sc.index.environmentKeyByID["environment-id-dev"] = "personal/core/dev"
 	sc.index.grantIDByIdentity[grantIdentity(declarative.GrantSpec{
 		Principal:     "admins",
 		PrincipalType: "group",
@@ -2676,6 +2684,38 @@ func TestReadState_Notebooks(t *testing.T) {
 	assert.Equal(t, "published_output", state.Notebooks[0].Spec.Publish.Model.OutputCell)
 }
 
+func TestReadState_AuthoringCore(t *testing.T) {
+	t.Parallel()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", emptyListHandler())
+	mux.HandleFunc("/v1/workspaces", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"data":[{"id":"workspace-id-personal","name":"personal","kind":"personal","owner_principal":"alice","default_project_id":"project-id-core","default_environment_id":"environment-id-dev"}]}`))
+	})
+	mux.HandleFunc("/v1/workspaces/workspace-id-personal/projects", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"data":[{"id":"project-id-core","workspace_id":"workspace-id-personal","name":"core","kind":"personal","description":"Core","default_branch":"main"}]}`))
+	})
+	mux.HandleFunc("/v1/projects/project-id-core/environments", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"data":[{"id":"environment-id-dev","project_id":"project-id-core","project_name":"core","name":"dev","kind":"development","target_catalog":"main","target_schema":"analytics"}]}`))
+	})
+	mux.HandleFunc("/v1/workspaces/workspace-id-personal/folders", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"data":[{"id":"folder-root","workspace_id":"workspace-id-personal","name":"root","system_role":"WORKSPACE_ROOT"},{"id":"folder-id-analysis","workspace_id":"workspace-id-personal","name":"analysis","parent_folder_id":"folder-root","default_project_id":"project-id-core","default_environment_id":"environment-id-dev"}]}`))
+	})
+
+	sc := setupReadStateClient(t, mux)
+	state, err := sc.ReadState(context.Background())
+	require.NoError(t, err)
+
+	require.Len(t, state.Workspaces, 1)
+	assert.Equal(t, "personal/core", state.Workspaces[0].Spec.DefaultProjectRef)
+	require.Len(t, state.Folders, 1)
+	assert.Equal(t, "personal/analysis", state.Folders[0].Spec.WorkspaceRef+"/"+state.Folders[0].Name)
+	require.Len(t, state.Projects, 1)
+	assert.Equal(t, "personal", state.Projects[0].Spec.WorkspaceRef)
+	require.Len(t, state.Environments, 1)
+	assert.Equal(t, "personal/core", state.Environments[0].Spec.ProjectRef)
+}
+
 func TestReadState_APIKeys(t *testing.T) {
 	t.Parallel()
 
@@ -2709,6 +2749,109 @@ func TestReadState_APIKeys(t *testing.T) {
 	assert.Equal(t, "alice", state.APIKeys[0].Principal)
 	require.NotNil(t, state.APIKeys[0].ExpiresAt)
 	assert.Equal(t, "2026-12-31T00:00:00Z", *state.APIKeys[0].ExpiresAt)
+}
+
+func TestExecuteAuthoringCore_CreateAndNotebookContext(t *testing.T) {
+	t.Parallel()
+
+	var captured []execCapture
+	sc := withTestIndex(newTestExecuteClient(t, &captured))
+
+	require.NoError(t, sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindWorkspace,
+		ResourceName: "personal",
+		Desired: declarative.WorkspaceResource{
+			Name: "personal",
+			Spec: declarative.WorkspaceSpec{
+				Kind:           "personal",
+				OwnerPrincipal: "alice",
+			},
+		},
+	}))
+
+	require.NoError(t, sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindFolder,
+		ResourceName: "personal/analysis",
+		Desired: declarative.FolderResource{
+			Name: "analysis",
+			Spec: declarative.FolderSpec{
+				WorkspaceRef: "personal",
+			},
+		},
+	}))
+
+	require.NoError(t, sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindProject,
+		ResourceName: "personal/core",
+		Desired: declarative.ProjectResource{
+			Name: "core",
+			Spec: declarative.ProjectSpec{
+				WorkspaceRef:  "personal",
+				Kind:          "personal",
+				DefaultBranch: "main",
+			},
+		},
+	}))
+
+	require.NoError(t, sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindEnvironment,
+		ResourceName: "personal/core/dev",
+		Desired: declarative.EnvironmentResource{
+			Name: "dev",
+			Spec: declarative.EnvironmentSpec{
+				ProjectRef:    "personal/core",
+				Kind:          "development",
+				TargetCatalog: "main",
+				TargetSchema:  "analytics",
+			},
+		},
+	}))
+
+	require.NoError(t, sc.Execute(context.Background(), declarative.Action{
+		Operation:    declarative.OpCreate,
+		ResourceKind: declarative.KindNotebook,
+		ResourceName: "orders",
+		Desired: declarative.NotebookResource{
+			Name: "orders",
+			Spec: declarative.NotebookSpec{
+				FolderRef:      "personal/analysis",
+				ProjectRef:     "personal/core",
+				EnvironmentRef: "personal/core/dev",
+				Cells: []declarative.CellSpec{{
+					Type:    "sql",
+					Name:    "output",
+					Role:    "output",
+					Content: "select 1",
+				}},
+			},
+		},
+	}))
+
+	require.NotEmpty(t, captured)
+	assert.Equal(t, "/v1/workspaces", captured[0].Path)
+	assert.Equal(t, "/v1/workspaces/generated-uuid-123/folders", captured[1].Path)
+	assert.Equal(t, "/v1/workspaces/generated-uuid-123/projects", captured[2].Path)
+	assert.Equal(t, "/v1/projects/generated-uuid-123/environments", captured[3].Path)
+
+	foundNotebookCreate := false
+	foundNotebookContextPatch := false
+	for _, req := range captured {
+		if req.Method == http.MethodPost && req.Path == "/v1/notebooks" {
+			assert.Equal(t, "generated-uuid-123", bodyStr(req, "folder_id"))
+			foundNotebookCreate = true
+		}
+		if req.Method == http.MethodPatch && req.Path == "/v1/notebooks/generated-uuid-123" {
+			assert.Equal(t, "generated-uuid-123", bodyStr(req, "project_override_id"))
+			assert.Equal(t, "generated-uuid-123", bodyStr(req, "environment_override_id"))
+			foundNotebookContextPatch = true
+		}
+	}
+	assert.True(t, foundNotebookCreate)
+	assert.True(t, foundNotebookContextPatch)
 }
 
 func TestExecuteAPIKey_Delete(t *testing.T) {

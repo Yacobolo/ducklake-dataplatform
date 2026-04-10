@@ -87,12 +87,28 @@ type DataProductRepository interface {
 	GetByAssetID(ctx context.Context, assetID string) (*DataProductListItem, error)
 }
 
+// WorkspaceRepository provides CRUD operations for top-level authoring workspaces and memberships.
+type WorkspaceRepository interface {
+	Create(ctx context.Context, workspace *Workspace) (*Workspace, error)
+	GetByID(ctx context.Context, id string) (*Workspace, error)
+	GetPersonalByPrincipal(ctx context.Context, principal string) (*Workspace, error)
+	List(ctx context.Context, page PageRequest) ([]Workspace, int64, error)
+	ListForPrincipal(ctx context.Context, principal string, page PageRequest) ([]Workspace, int64, error)
+	Update(ctx context.Context, id string, req UpdateWorkspaceRequest) (*Workspace, error)
+	Delete(ctx context.Context, id string) error
+	UpsertMember(ctx context.Context, member *WorkspaceMember) (*WorkspaceMember, error)
+	DeleteMember(ctx context.Context, workspaceID string, principalName string) error
+	ListMembers(ctx context.Context, workspaceID string) ([]WorkspaceMember, error)
+	GetMemberRole(ctx context.Context, workspaceID string, principalName string) (string, error)
+}
+
 // ProjectRepository provides CRUD operations for internal authoring projects.
 type ProjectRepository interface {
 	Create(ctx context.Context, p *Project) (*Project, error)
 	GetByID(ctx context.Context, id string) (*Project, error)
 	GetByName(ctx context.Context, name string) (*Project, error)
 	List(ctx context.Context, page PageRequest) ([]Project, int64, error)
+	ListByWorkspace(ctx context.Context, workspaceID string, page PageRequest) ([]Project, int64, error)
 	ListByProduct(ctx context.Context, productID string, page PageRequest) ([]Project, int64, error)
 	Update(ctx context.Context, id string, req UpdateProjectRequest) (*Project, error)
 	Delete(ctx context.Context, id string) error
@@ -474,10 +490,12 @@ type FolderRepository interface {
 	GetByID(ctx context.Context, id string) (*Folder, error)
 	ListAll(ctx context.Context) ([]Folder, error)
 	ListByOwner(ctx context.Context, owner string) ([]Folder, error)
+	ListByWorkspace(ctx context.Context, workspaceID string) ([]Folder, error)
 	Update(ctx context.Context, id string, req UpdateFolderRequest) (*Folder, error)
 	Move(ctx context.Context, id string, parentFolderID *string) (*Folder, error)
 	Delete(ctx context.Context, id string) error
-	EnsurePersonalRoot(ctx context.Context, owner string) (*Folder, error)
+	EnsureWorkspaceRoot(ctx context.Context, workspaceID string, owner string) (*Folder, error)
+	EnsurePersonalWorkspaceRoot(ctx context.Context, owner string) (*Folder, error)
 	EnsureGitSyncRoot(ctx context.Context, owner string, repo *GitRepo) (*Folder, error)
 	ListAncestors(ctx context.Context, folderID string) ([]Folder, error)
 }

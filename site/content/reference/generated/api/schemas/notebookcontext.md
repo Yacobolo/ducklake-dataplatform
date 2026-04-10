@@ -17,4 +17,5 @@
 | `git_source_folder_id` | `string` | `false` | - |
 | `notebook_id` | `string` | `false` | - |
 | `project_source_folder_id` | `string` | `false` | - |
+| `workspace_id` | `string` | `false` | - |
 

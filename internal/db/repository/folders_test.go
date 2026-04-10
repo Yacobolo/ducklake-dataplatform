@@ -17,18 +17,19 @@ func setupFolderRepo(t *testing.T) *FolderRepo {
 	return NewFolderRepo(writeDB)
 }
 
-func TestFolderRepo_EnsurePersonalRoot(t *testing.T) {
+func TestFolderRepo_EnsurePersonalWorkspaceRoot(t *testing.T) {
 	repo := setupFolderRepo(t)
 	ctx := context.Background()
 
-	root, err := repo.EnsurePersonalRoot(ctx, "alice")
+	root, err := repo.EnsurePersonalWorkspaceRoot(ctx, "alice")
 	require.NoError(t, err)
 	require.NotNil(t, root)
 	assert.Equal(t, "alice", root.Owner)
-	assert.Equal(t, "My notebooks", root.Name)
-	assert.Equal(t, domain.FolderSystemRolePersonalRoot, *root.SystemRole)
+	assert.Equal(t, "Home", root.Name)
+	assert.Equal(t, domain.FolderSystemRoleWorkspaceRoot, *root.SystemRole)
+	assert.NotEmpty(t, root.WorkspaceID)
 
-	same, err := repo.EnsurePersonalRoot(ctx, "alice")
+	same, err := repo.EnsurePersonalWorkspaceRoot(ctx, "alice")
 	require.NoError(t, err)
 	assert.Equal(t, root.ID, same.ID)
 }
@@ -37,11 +38,12 @@ func TestFolderRepo_ListAncestors(t *testing.T) {
 	repo := setupFolderRepo(t)
 	ctx := context.Background()
 
-	root, err := repo.EnsurePersonalRoot(ctx, "alice")
+	root, err := repo.EnsurePersonalWorkspaceRoot(ctx, "alice")
 	require.NoError(t, err)
 
 	parentID := root.ID
 	child, err := repo.Create(ctx, &domain.Folder{
+		WorkspaceID:    root.WorkspaceID,
 		Name:           "Finance",
 		Owner:          "alice",
 		ParentFolderID: &parentID,
@@ -50,6 +52,7 @@ func TestFolderRepo_ListAncestors(t *testing.T) {
 
 	childID := child.ID
 	grandchild, err := repo.Create(ctx, &domain.Folder{
+		WorkspaceID:    root.WorkspaceID,
 		Name:           "Q1",
 		Owner:          "alice",
 		ParentFolderID: &childID,
@@ -68,11 +71,12 @@ func TestFolderRepo_ListByOwnerAndUpdate(t *testing.T) {
 	repo := setupFolderRepo(t)
 	ctx := context.Background()
 
-	root, err := repo.EnsurePersonalRoot(ctx, "alice")
+	root, err := repo.EnsurePersonalWorkspaceRoot(ctx, "alice")
 	require.NoError(t, err)
 
 	parentID := root.ID
 	created, err := repo.Create(ctx, &domain.Folder{
+		WorkspaceID:    root.WorkspaceID,
 		Name:           "Finance",
 		Owner:          "alice",
 		ParentFolderID: &parentID,
@@ -94,11 +98,12 @@ func TestFolderRepo_Delete(t *testing.T) {
 	repo := setupFolderRepo(t)
 	ctx := context.Background()
 
-	root, err := repo.EnsurePersonalRoot(ctx, "alice")
+	root, err := repo.EnsurePersonalWorkspaceRoot(ctx, "alice")
 	require.NoError(t, err)
 
 	parentID := root.ID
 	created, err := repo.Create(ctx, &domain.Folder{
+		WorkspaceID:    root.WorkspaceID,
 		Name:           "To Delete",
 		Owner:          "alice",
 		ParentFolderID: &parentID,

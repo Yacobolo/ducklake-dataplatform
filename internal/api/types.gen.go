@@ -10,6 +10,11 @@ type APIKeyInfo struct {
 	PrincipalId string  `json:"principal_id"`
 }
 
+type AddWorkspaceMemberRequest struct {
+	PrincipalName string             `json:"principal_name"`
+	Role          *NotebookShareRole `json:"role,omitempty"`
+}
+
 type Asset struct {
 	AssetKey              *string                     `json:"asset_key,omitempty"`
 	AssetType             *AssetType                  `json:"asset_type,omitempty"`
@@ -339,6 +344,34 @@ type BootstrapTokenResponse struct {
 	TtlSeconds     int32  `json:"ttl_seconds"`
 }
 
+type Build struct {
+	CommitSha          *string     `json:"commit_sha,omitempty"`
+	CompileDiagnostics *string     `json:"compile_diagnostics,omitempty"`
+	CompileManifest    string      `json:"compile_manifest"`
+	CreatedAt          *string     `json:"created_at,omitempty"`
+	EnvironmentId      *string     `json:"environment_id,omitempty"`
+	EnvironmentName    *string     `json:"environment_name,omitempty"`
+	GitRef             string      `json:"git_ref"`
+	Id                 *string     `json:"id,omitempty"`
+	ProductId          *string     `json:"product_id,omitempty"`
+	ProjectId          *string     `json:"project_id,omitempty"`
+	ProjectName        *string     `json:"project_name,omitempty"`
+	Selector           *string     `json:"selector,omitempty"`
+	SourceModelRunId   *string     `json:"source_model_run_id,omitempty"`
+	State              *BuildState `json:"state,omitempty"`
+	TargetCatalog      string      `json:"target_catalog"`
+	TargetSchema       string      `json:"target_schema"`
+}
+
+type BuildState string
+
+const (
+	BuildStateDraft      BuildState = "draft"
+	BuildStateReady      BuildState = "ready"
+	BuildStateReleased   BuildState = "released"
+	BuildStateSuperseded BuildState = "superseded"
+)
+
 type CancelQueryResponse struct {
 	QueryId string         `json:"query_id"`
 	Status  QueryJobStatus `json:"status"`
@@ -631,6 +664,18 @@ type CreateAssetRequest struct {
 	UpstreamAssetKeys     *[]string                   `json:"upstream_asset_keys,omitempty"`
 }
 
+type CreateBuildRequest struct {
+	CommitSha          *string `json:"commit_sha,omitempty"`
+	CompileDiagnostics *string `json:"compile_diagnostics,omitempty"`
+	CompileManifest    string  `json:"compile_manifest"`
+	EnvironmentName    string  `json:"environment_name"`
+	GitRef             string  `json:"git_ref"`
+	Selector           *string `json:"selector,omitempty"`
+	SourceModelRunId   *string `json:"source_model_run_id,omitempty"`
+	TargetCatalog      string  `json:"target_catalog"`
+	TargetSchema       string  `json:"target_schema"`
+}
+
 type CreateCatalogRequest struct {
 	Comment       *string        `json:"comment,omitempty"`
 	DataPath      *string        `json:"data_path,omitempty"`
@@ -732,6 +777,18 @@ type CreateDataProductVersionRequest struct {
 	ProducingBuildId   *string          `json:"producing_build_id,omitempty"`
 	SemanticModelRefs  *[]string        `json:"semantic_model_refs,omitempty"`
 	Slo                *ProductSLO      `json:"slo,omitempty"`
+}
+
+type CreateEnvironmentRequest struct {
+	ComputeEndpoint    *string          `json:"compute_endpoint,omitempty"`
+	DeferToEnvironment *string          `json:"defer_to_environment,omitempty"`
+	Description        *string          `json:"description,omitempty"`
+	Kind               *EnvironmentKind `json:"kind,omitempty"`
+	Name               string           `json:"name"`
+	SourceOverrides    *Record          `json:"source_overrides,omitempty"`
+	TargetCatalog      string           `json:"target_catalog"`
+	TargetSchema       string           `json:"target_schema"`
+	Variables          *Record          `json:"variables,omitempty"`
 }
 
 type CreateExternalLocationRequest struct {
@@ -865,6 +922,14 @@ type CreateProductTeamRequest struct {
 	Name           string  `json:"name"`
 }
 
+type CreateProjectRequest struct {
+	DefaultBranch *string      `json:"default_branch,omitempty"`
+	Description   *string      `json:"description,omitempty"`
+	Kind          *ProjectKind `json:"kind,omitempty"`
+	Name          string       `json:"name"`
+	ProductId     *string      `json:"product_id,omitempty"`
+}
+
 type CreateRowFilterRequest struct {
 	Description *string `json:"description,omitempty"`
 	FilterSql   string  `json:"filter_sql"`
@@ -977,6 +1042,17 @@ type CreateVolumeRequest struct {
 	Name            string  `json:"name"`
 	StorageLocation *string `json:"storage_location,omitempty"`
 	VolumeType      *string `json:"volume_type,omitempty"`
+}
+
+type CreateWorkspaceRequest struct {
+	DefaultEnvironmentId *string        `json:"default_environment_id,omitempty"`
+	DefaultProjectId     *string        `json:"default_project_id,omitempty"`
+	GitRepoId            *string        `json:"git_repo_id,omitempty"`
+	GitRootPath          *string        `json:"git_root_path,omitempty"`
+	Kind                 *WorkspaceKind `json:"kind,omitempty"`
+	Name                 string         `json:"name"`
+	OwnerPrincipal       *string        `json:"owner_principal,omitempty"`
+	OwnerTeamId          *string        `json:"owner_team_id,omitempty"`
 }
 
 type Dashboard struct {
@@ -1161,6 +1237,31 @@ type DuplicateNotebookRequest struct {
 	Name     *string `json:"name,omitempty"`
 }
 
+type Environment struct {
+	ComputeEndpoint    *string         `json:"compute_endpoint,omitempty"`
+	CreatedAt          *string         `json:"created_at,omitempty"`
+	DeferToEnvironment *string         `json:"defer_to_environment,omitempty"`
+	Description        *string         `json:"description,omitempty"`
+	Id                 *string         `json:"id,omitempty"`
+	Kind               EnvironmentKind `json:"kind"`
+	Name               string          `json:"name"`
+	ProjectId          *string         `json:"project_id,omitempty"`
+	ProjectName        *string         `json:"project_name,omitempty"`
+	SourceOverrides    *Record         `json:"source_overrides,omitempty"`
+	TargetCatalog      string          `json:"target_catalog"`
+	TargetSchema       string          `json:"target_schema"`
+	UpdatedAt          *string         `json:"updated_at,omitempty"`
+	Variables          *Record         `json:"variables,omitempty"`
+}
+
+type EnvironmentKind string
+
+const (
+	EnvironmentKindDevelopment EnvironmentKind = "development"
+	EnvironmentKindStaging     EnvironmentKind = "staging"
+	EnvironmentKindProduction  EnvironmentKind = "production"
+)
+
 type Error struct {
 	Code    int32  `json:"code"`
 	Message string `json:"message"`
@@ -1193,6 +1294,7 @@ type Folder struct {
 	Path                 *string `json:"path,omitempty"`
 	SystemRole           *string `json:"system_role,omitempty"`
 	UpdatedAt            *string `json:"updated_at,omitempty"`
+	WorkspaceId          *string `json:"workspace_id,omitempty"`
 }
 
 type FolderContentItem struct {
@@ -1696,6 +1798,7 @@ type NotebookContext struct {
 	GitSourceFolderId      *string `json:"git_source_folder_id,omitempty"`
 	NotebookId             *string `json:"notebook_id,omitempty"`
 	ProjectSourceFolderId  *string `json:"project_source_folder_id,omitempty"`
+	WorkspaceId            *string `json:"workspace_id,omitempty"`
 }
 
 type NotebookDetail struct {
@@ -1836,6 +1939,11 @@ type PaginatedBackfillRequests struct {
 	NextPageToken *string           `json:"next_page_token,omitempty"`
 }
 
+type PaginatedBuilds struct {
+	Data          []Build `json:"data"`
+	NextPageToken *string `json:"next_page_token,omitempty"`
+}
+
 type PaginatedColumnDetails struct {
 	Data          []ColumnDetail `json:"data"`
 	NextPageToken *string        `json:"next_page_token,omitempty"`
@@ -1874,6 +1982,11 @@ type PaginatedDashboards struct {
 type PaginatedDataProducts struct {
 	Data          []DataProductListItem `json:"data"`
 	NextPageToken *string               `json:"next_page_token,omitempty"`
+}
+
+type PaginatedEnvironments struct {
+	Data          []Environment `json:"data"`
+	NextPageToken *string       `json:"next_page_token,omitempty"`
 }
 
 type PaginatedExternalLocations struct {
@@ -1966,6 +2079,11 @@ type PaginatedProductTeams struct {
 	NextPageToken *string       `json:"next_page_token,omitempty"`
 }
 
+type PaginatedProjects struct {
+	Data          []Project `json:"data"`
+	NextPageToken *string   `json:"next_page_token,omitempty"`
+}
+
 type PaginatedQueryHistoryEntries struct {
 	Data          []QueryHistoryEntry `json:"data"`
 	NextPageToken *string             `json:"next_page_token,omitempty"`
@@ -2039,6 +2157,11 @@ type PaginatedViewDetails struct {
 type PaginatedVolumes struct {
 	Data          []VolumeDetail `json:"data"`
 	NextPageToken *string        `json:"next_page_token,omitempty"`
+}
+
+type PaginatedWorkspaces struct {
+	Data          []Workspace `json:"data"`
+	NextPageToken *string     `json:"next_page_token,omitempty"`
 }
 
 type Pipeline struct {
@@ -2311,6 +2434,28 @@ type ProductTeam struct {
 	Name           string  `json:"name"`
 	UpdatedAt      *string `json:"updated_at,omitempty"`
 }
+
+type Project struct {
+	CreatedAt      *string     `json:"created_at,omitempty"`
+	DefaultBranch  *string     `json:"default_branch,omitempty"`
+	Description    *string     `json:"description,omitempty"`
+	Id             *string     `json:"id,omitempty"`
+	Kind           ProjectKind `json:"kind"`
+	Name           string      `json:"name"`
+	OwnerPrincipal *string     `json:"owner_principal,omitempty"`
+	OwnerTeamId    *string     `json:"owner_team_id,omitempty"`
+	ProductId      *string     `json:"product_id,omitempty"`
+	UpdatedAt      *string     `json:"updated_at,omitempty"`
+	WorkspaceId    string      `json:"workspace_id"`
+}
+
+type ProjectKind string
+
+const (
+	ProjectKindPersonal ProjectKind = "personal"
+	ProjectKindShared   ProjectKind = "shared"
+	ProjectKindLibrary  ProjectKind = "library"
+)
 
 type PromoteNotebookRequest struct {
 	CellIndex       int32                 `json:"cell_index"`
@@ -2809,6 +2954,16 @@ type UpdateDataProductRequest struct {
 	Visibility          *string          `json:"visibility,omitempty"`
 }
 
+type UpdateEnvironmentRequest struct {
+	ComputeEndpoint    *string `json:"compute_endpoint,omitempty"`
+	DeferToEnvironment *string `json:"defer_to_environment,omitempty"`
+	Description        *string `json:"description,omitempty"`
+	SourceOverrides    *Record `json:"source_overrides,omitempty"`
+	TargetCatalog      *string `json:"target_catalog,omitempty"`
+	TargetSchema       *string `json:"target_schema,omitempty"`
+	Variables          *Record `json:"variables,omitempty"`
+}
+
 type UpdateExternalLocationRequest struct {
 	Comment        *string `json:"comment,omitempty"`
 	CredentialName *string `json:"credential_name,omitempty"`
@@ -2890,6 +3045,12 @@ type UpdateProductTeamRequest struct {
 	ContactChannel *string `json:"contact_channel,omitempty"`
 }
 
+type UpdateProjectRequest struct {
+	DefaultBranch *string `json:"default_branch,omitempty"`
+	Description   *string `json:"description,omitempty"`
+	ProductId     *string `json:"product_id,omitempty"`
+}
+
 type UpdateRowFilterRequest struct {
 	Description *string `json:"description,omitempty"`
 	FilterSql   *string `json:"filter_sql,omitempty"`
@@ -2967,6 +3128,14 @@ type UpdateVolumeRequest struct {
 	Comment         *string `json:"comment,omitempty"`
 	NewName         *string `json:"new_name,omitempty"`
 	StorageLocation *string `json:"storage_location,omitempty"`
+}
+
+type UpdateWorkspaceRequest struct {
+	DefaultEnvironmentId *string `json:"default_environment_id,omitempty"`
+	DefaultProjectId     *string `json:"default_project_id,omitempty"`
+	GitRepoId            *string `json:"git_repo_id,omitempty"`
+	GitRootPath          *string `json:"git_root_path,omitempty"`
+	Name                 *string `json:"name,omitempty"`
 }
 
 type UploadUrlRequest struct {
@@ -3069,6 +3238,36 @@ type WebSessionStatsResponse struct {
 	ResolvedTotal      int32 `json:"resolved_total"`
 	RevokedAllTotal    int32 `json:"revoked_all_total"`
 	RevokedTotal       int32 `json:"revoked_total"`
+}
+
+type Workspace struct {
+	CreatedAt            *string       `json:"created_at,omitempty"`
+	DefaultEnvironmentId *string       `json:"default_environment_id,omitempty"`
+	DefaultProjectId     *string       `json:"default_project_id,omitempty"`
+	GitRepoId            *string       `json:"git_repo_id,omitempty"`
+	GitRootPath          *string       `json:"git_root_path,omitempty"`
+	Id                   *string       `json:"id,omitempty"`
+	Kind                 WorkspaceKind `json:"kind"`
+	Name                 string        `json:"name"`
+	OwnerPrincipal       *string       `json:"owner_principal,omitempty"`
+	OwnerTeamId          *string       `json:"owner_team_id,omitempty"`
+	UpdatedAt            *string       `json:"updated_at,omitempty"`
+}
+
+type WorkspaceKind string
+
+const (
+	WorkspaceKindPersonal WorkspaceKind = "personal"
+	WorkspaceKindShared   WorkspaceKind = "shared"
+	WorkspaceKindLibrary  WorkspaceKind = "library"
+)
+
+type WorkspaceMember struct {
+	CreatedAt     *string           `json:"created_at,omitempty"`
+	PrincipalName string            `json:"principal_name"`
+	Role          NotebookShareRole `json:"role"`
+	UpdatedAt     *string           `json:"updated_at,omitempty"`
+	WorkspaceId   string            `json:"workspace_id"`
 }
 
 type GenericRequest struct {
@@ -3177,6 +3376,10 @@ type ListProductScorecardsParams = GenListProductScorecardsParams
 
 type ListProductTeamsParams = GenListProductTeamsParams
 
+type ListProjectBuildsParams = GenListProjectBuildsParams
+
+type ListProjectEnvironmentsParams = GenListProjectEnvironmentsParams
+
 type ListQueriesParams = GenListQueriesParams
 
 type ListQueryHistoryParams = GenListQueryHistoryParams
@@ -3209,11 +3412,17 @@ type ListViewsParams = GenListViewsParams
 
 type ListVolumesParams = GenListVolumesParams
 
+type ListWorkspaceProjectsParams = GenListWorkspaceProjectsParams
+
+type ListWorkspacesParams = GenListWorkspacesParams
+
 type SearchCatalogParams = GenSearchCatalogParams
 
 type SearchFolderContentsParams = GenSearchFolderContentsParams
 
 type SearchRootFolderContentsParams = GenSearchRootFolderContentsParams
+
+type AddWorkspaceMemberJSONRequestBody = GenAddWorkspaceMemberJSONBody
 
 type BindColumnMaskJSONRequestBody = GenBindColumnMaskJSONBody
 
@@ -3281,6 +3490,10 @@ type CreateProductDomainJSONRequestBody = GenCreateProductDomainJSONBody
 
 type CreateProductTeamJSONRequestBody = GenCreateProductTeamJSONBody
 
+type CreateProjectBuildJSONRequestBody = GenCreateProjectBuildJSONBody
+
+type CreateProjectEnvironmentJSONRequestBody = GenCreateProjectEnvironmentJSONBody
+
 type CreateRowFilterJSONRequestBody = GenCreateRowFilterJSONBody
 
 type CreateSavedResourceJSONRequestBody = GenCreateSavedResourceJSONBody
@@ -3308,6 +3521,10 @@ type CreateUploadUrlJSONRequestBody = GenCreateUploadUrlJSONBody
 type CreateViewJSONRequestBody = GenCreateViewJSONBody
 
 type CreateVolumeJSONRequestBody = GenCreateVolumeJSONBody
+
+type CreateWorkspaceJSONRequestBody = GenCreateWorkspaceJSONBody
+
+type CreateWorkspaceProjectJSONRequestBody = GenCreateWorkspaceProjectJSONBody
 
 type DeprecateDataProductVersionJSONRequestBody = GenDeprecateDataProductVersionJSONBody
 
@@ -3393,6 +3610,10 @@ type UpdateProductDomainJSONRequestBody = GenUpdateProductDomainJSONBody
 
 type UpdateProductTeamJSONRequestBody = GenUpdateProductTeamJSONBody
 
+type UpdateProjectEnvironmentJSONRequestBody = GenUpdateProjectEnvironmentJSONBody
+
+type UpdateProjectJSONRequestBody = GenUpdateProjectJSONBody
+
 type UpdateRowFilterJSONRequestBody = GenUpdateRowFilterJSONBody
 
 type UpdateSchemaJSONRequestBody = GenUpdateSchemaJSONBody
@@ -3414,5 +3635,7 @@ type UpdateTagJSONRequestBody = GenUpdateTagJSONBody
 type UpdateViewJSONRequestBody = GenUpdateViewJSONBody
 
 type UpdateVolumeJSONRequestBody = GenUpdateVolumeJSONBody
+
+type UpdateWorkspaceJSONRequestBody = GenUpdateWorkspaceJSONBody
 
 type UpsertOIDCProviderJSONRequestBody = OIDCProviderRequest

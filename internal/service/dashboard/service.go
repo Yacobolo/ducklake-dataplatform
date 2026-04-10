@@ -115,7 +115,7 @@ func (s *Service) CreateDashboard(ctx context.Context, owner string, req domain.
 	if req.FolderID != nil && *req.FolderID != "" {
 		folderID = *req.FolderID
 	} else if s.folders != nil {
-		root, err := s.folders.EnsurePersonalRoot(ctx, owner)
+		root, err := s.folders.EnsurePersonalWorkspaceRoot(ctx, owner)
 		if err != nil {
 			return nil, err
 		}

@@ -18,6 +18,7 @@ func TestProjectRepo_CreateListByProductEnvironmentAndBuildLifecycle(t *testing.
 	domainRepo := NewDomainRepo(writeDB)
 	teamRepo := NewTeamRepo(writeDB)
 	productRepo := NewDataProductRepo(writeDB)
+	workspaceRepo := NewWorkspaceRepo(writeDB)
 	projectRepo := NewProjectRepo(writeDB)
 	environmentRepo := NewEnvironmentRepo(writeDB)
 
@@ -40,8 +41,16 @@ func TestProjectRepo_CreateListByProductEnvironmentAndBuildLifecycle(t *testing.
 		CreatedBy:         "alice",
 	})
 	require.NoError(t, err)
+	workspace, err := workspaceRepo.Create(ctx, &domain.Workspace{
+		Name:        "Revenue Workspace",
+		Kind:        domain.WorkspaceKindShared,
+		OwnerTeamID: &teamItem.ID,
+		CreatedBy:   "alice",
+	})
+	require.NoError(t, err)
 
 	project, err := projectRepo.Create(ctx, &domain.Project{
+		WorkspaceID:   workspace.ID,
 		Name:          "rev-orders",
 		Kind:          domain.ProjectKindShared,
 		Description:   "Revenue orders authoring",

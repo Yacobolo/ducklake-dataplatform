@@ -35,6 +35,7 @@ func setupNotebookService(t *testing.T) (*Service, *testutil.MockNotebookRepo, *
 	svc := New(repo, audit)
 	svc.SetFolderRepository(folders)
 	svc.SetShareRepositories(folderShares, notebookShares)
+	svc.SetWorkspaceRepository(newStubWorkspaceRepo(domain.FolderShareRoleManager))
 	folders.ListAncestorsFn = func(_ context.Context, folderID string) ([]domain.Folder, error) {
 		if folderID == "" {
 			return nil, nil
@@ -45,7 +46,7 @@ func setupNotebookService(t *testing.T) (*Service, *testutil.MockNotebookRepo, *
 				return []domain.Folder{*folder}, nil
 			}
 		}
-		return []domain.Folder{{ID: folderID, Owner: "alice"}}, nil
+		return []domain.Folder{{ID: folderID, WorkspaceID: testWorkspaceID, Owner: "alice"}}, nil
 	}
 	return svc, repo, folders, audit
 }
@@ -67,6 +68,7 @@ func setupNotebookServiceWithShares(t *testing.T) (
 	svc := New(repo, audit)
 	svc.SetFolderRepository(folders)
 	svc.SetShareRepositories(folderShares, notebookShares)
+	svc.SetWorkspaceRepository(newStubWorkspaceRepo(domain.FolderShareRoleManager))
 	folders.ListAncestorsFn = func(_ context.Context, folderID string) ([]domain.Folder, error) {
 		if folderID == "" {
 			return nil, nil
@@ -77,7 +79,7 @@ func setupNotebookServiceWithShares(t *testing.T) (
 				return []domain.Folder{*folder}, nil
 			}
 		}
-		return []domain.Folder{{ID: folderID, Owner: "alice"}}, nil
+		return []domain.Folder{{ID: folderID, WorkspaceID: testWorkspaceID, Owner: "alice"}}, nil
 	}
 	return svc, repo, folders, folderShares, notebookShares, audit
 }
@@ -89,13 +91,13 @@ func TestNotebookService_CreateNotebook(t *testing.T) {
 		svc, repo, folders, audit := setupNotebookService(t)
 		ctx := context.Background()
 
-		folders.EnsurePersonalRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
+		folders.EnsurePersonalWorkspaceRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
 			require.Equal(t, "alice", owner)
-			return &domain.Folder{ID: "folder-1", Owner: owner}, nil
+			return &domain.Folder{ID: "folder-1", WorkspaceID: testWorkspaceID, Owner: owner}, nil
 		}
 		folders.GetByIDFn = func(_ context.Context, id string) (*domain.Folder, error) {
 			require.Equal(t, "folder-1", id)
-			return &domain.Folder{ID: id, Owner: "alice"}, nil
+			return &domain.Folder{ID: id, WorkspaceID: testWorkspaceID, Owner: "alice"}, nil
 		}
 		repo.CreateNotebookFn = func(_ context.Context, nb *domain.Notebook) (*domain.Notebook, error) {
 			assert.Equal(t, "Test NB", nb.Name)
@@ -125,12 +127,12 @@ func TestNotebookService_CreateNotebook(t *testing.T) {
 		ctx := context.Background()
 		source := "sql"
 
-		folders.EnsurePersonalRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
-			return &domain.Folder{ID: "folder-2", Owner: owner}, nil
+		folders.EnsurePersonalWorkspaceRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
+			return &domain.Folder{ID: "folder-2", WorkspaceID: testWorkspaceID, Owner: owner}, nil
 		}
 		folders.GetByIDFn = func(_ context.Context, id string) (*domain.Folder, error) {
 			require.Equal(t, "folder-2", id)
-			return &domain.Folder{ID: id, Owner: "alice"}, nil
+			return &domain.Folder{ID: id, WorkspaceID: testWorkspaceID, Owner: "alice"}, nil
 		}
 		repo.CreateNotebookFn = func(_ context.Context, nb *domain.Notebook) (*domain.Notebook, error) {
 			return &domain.Notebook{ID: "nb-2", FolderID: nb.FolderID, Name: nb.Name, Owner: nb.Owner}, nil
@@ -366,20 +368,27 @@ func TestNotebookService_MoveNotebook(t *testing.T) {
 			return nb, nil
 		}
 		folders.GetByIDFn = func(_ context.Context, id string) (*domain.Folder, error) {
-			require.Equal(t, "folder-target", id)
-			return &domain.Folder{ID: "folder-target", Name: "Quarterly", Owner: "alice"}, nil
+			switch id {
+			case "folder-source":
+				return &domain.Folder{ID: "folder-source", WorkspaceID: testWorkspaceID, Name: "Home", Owner: "alice"}, nil
+			case "folder-target":
+				return &domain.Folder{ID: "folder-target", WorkspaceID: testWorkspaceID, Name: "Quarterly", Owner: "alice"}, nil
+			default:
+				t.Fatalf("unexpected folder lookup %q", id)
+				return nil, nil
+			}
 		}
 		folders.ListAncestorsFn = func(_ context.Context, folderID string) ([]domain.Folder, error) {
 			switch folderID {
 			case "folder-source":
 				return []domain.Folder{
-					{ID: "folder-source", Name: "My notebooks"},
-					{ID: "source-parent", DefaultProjectID: ptrStr("project-dev")},
+					{ID: "folder-source", WorkspaceID: testWorkspaceID, Name: "Home"},
+					{ID: "source-parent", WorkspaceID: testWorkspaceID, DefaultProjectID: ptrStr("project-dev")},
 				}, nil
 			case "folder-target":
 				return []domain.Folder{
-					{ID: "folder-target", Name: "Quarterly"},
-					{ID: "repo-root", Name: "Analytics", GitRepoID: ptrStr("repo-1"), GitRootPath: ptrStr("analytics"), DefaultProjectID: ptrStr("project-prod")},
+					{ID: "folder-target", WorkspaceID: testWorkspaceID, Name: "Quarterly"},
+					{ID: "repo-root", WorkspaceID: testWorkspaceID, Name: "Analytics", GitRepoID: ptrStr("repo-1"), GitRootPath: ptrStr("analytics"), DefaultProjectID: ptrStr("project-prod")},
 				}, nil
 			default:
 				t.Fatalf("unexpected folder lookup %q", folderID)
@@ -405,14 +414,14 @@ func TestNotebookService_MoveNotebook(t *testing.T) {
 			return &domain.Notebook{ID: "nb-1", FolderID: "folder-source", Name: "Notebook", Owner: "alice"}, nil
 		}
 		folders.GetByIDFn = func(_ context.Context, _ string) (*domain.Folder, error) {
-			return &domain.Folder{ID: "folder-target", Owner: "alice"}, nil
+			return &domain.Folder{ID: "folder-target", WorkspaceID: testWorkspaceID, Owner: "alice"}, nil
 		}
 		folders.ListAncestorsFn = func(_ context.Context, folderID string) ([]domain.Folder, error) {
 			switch folderID {
 			case "folder-source":
-				return []domain.Folder{{ID: "repo-a", GitRepoID: ptrStr("repo-a")}}, nil
+				return []domain.Folder{{ID: "repo-a", WorkspaceID: testWorkspaceID, GitRepoID: ptrStr("repo-a")}}, nil
 			case "folder-target":
-				return []domain.Folder{{ID: "repo-b", GitRepoID: ptrStr("repo-b")}}, nil
+				return []domain.Folder{{ID: "repo-b", WorkspaceID: testWorkspaceID, GitRepoID: ptrStr("repo-b")}}, nil
 			default:
 				return nil, domain.ErrNotFound("folder not found")
 			}
@@ -432,14 +441,14 @@ func TestNotebookService_MoveNotebook(t *testing.T) {
 			return &domain.Notebook{ID: "nb-1", FolderID: "folder-source", Name: "Notebook", Owner: "alice"}, nil
 		}
 		folders.GetByIDFn = func(_ context.Context, _ string) (*domain.Folder, error) {
-			return &domain.Folder{ID: "folder-target", Owner: "alice"}, nil
+			return &domain.Folder{ID: "folder-target", WorkspaceID: testWorkspaceID, Owner: "alice"}, nil
 		}
 		folders.ListAncestorsFn = func(_ context.Context, folderID string) ([]domain.Folder, error) {
 			switch folderID {
 			case "folder-source":
-				return []domain.Folder{{ID: "repo-a", GitRepoID: ptrStr("repo-a")}}, nil
+				return []domain.Folder{{ID: "repo-a", WorkspaceID: testWorkspaceID, GitRepoID: ptrStr("repo-a")}}, nil
 			case "folder-target":
-				return []domain.Folder{{ID: "folder-target"}}, nil
+				return []domain.Folder{{ID: "folder-target", WorkspaceID: testWorkspaceID}}, nil
 			default:
 				return nil, domain.ErrNotFound("folder not found")
 			}
@@ -502,13 +511,13 @@ func TestNotebookService_DuplicateNotebook(t *testing.T) {
 		}
 		folders.GetByIDFn = func(_ context.Context, id string) (*domain.Folder, error) {
 			require.Equal(t, "folder-target", id)
-			return &domain.Folder{ID: "folder-target", Name: "Quarterly", Owner: "alice"}, nil
+			return &domain.Folder{ID: "folder-target", WorkspaceID: testWorkspaceID, Name: "Quarterly", Owner: "alice"}, nil
 		}
 		folders.ListAncestorsFn = func(_ context.Context, folderID string) ([]domain.Folder, error) {
 			require.Equal(t, "folder-target", folderID)
 			return []domain.Folder{
-				{ID: "folder-target", Name: "Quarterly"},
-				{ID: "repo-root", Name: "Analytics", GitRepoID: ptrStr("repo-1"), GitRootPath: ptrStr("analytics")},
+				{ID: "folder-target", WorkspaceID: testWorkspaceID, Name: "Quarterly"},
+				{ID: "repo-root", WorkspaceID: testWorkspaceID, Name: "Analytics", GitRepoID: ptrStr("repo-1"), GitRootPath: ptrStr("analytics")},
 			}, nil
 		}
 

@@ -143,7 +143,7 @@ func notebookJobDetailPage(d notebookJobDetailPageData) Node {
 }
 
 func notebooksNewPage(principal domain.ContextPrincipal, folderOptions []folderSelectOption, csrfFieldProvider func() Node) Node {
-	folderNodes := append([]Node{Name("folder_id"), Option(Value(""), Text("My notebooks"))}, folderSelectNodes(folderOptions)...)
+	folderNodes := append([]Node{Name("folder_id"), Option(Value(""), Text("Workspace root"))}, folderSelectNodes(folderOptions)...)
 	return notebookFormPage(principal, "New Notebook", "/ui/notebooks", csrfFieldProvider,
 		Label(Text("Name")),
 		core.InputControl("", Name("name"), Required()),

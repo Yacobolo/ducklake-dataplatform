@@ -27,6 +27,8 @@ type APIHandler struct {
 	pipelines           pipelineService
 	notebooks           notebookService
 	notebookFolders     notebookFolderService
+	workspaces          workspaceService
+	projectsCtl         projectControlService
 	sessions            sessionService
 	gitRepos            gitRepoService
 	assets              assetService
@@ -117,6 +119,16 @@ func NewHandler(
 // SetNotebookFolders configures the optional folder service for folder endpoints.
 func (h *APIHandler) SetNotebookFolders(service notebookFolderService) {
 	h.notebookFolders = service
+}
+
+// SetWorkspaceService configures the authoring workspace API service.
+func (h *APIHandler) SetWorkspaceService(service workspaceService) {
+	h.workspaces = service
+}
+
+// SetProjectControlService configures the authoring project/environment/build API service.
+func (h *APIHandler) SetProjectControlService(service projectControlService) {
+	h.projectsCtl = service
 }
 
 // SetExplore configures the optional authored-asset explore service.

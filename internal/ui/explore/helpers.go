@@ -337,7 +337,7 @@ func folderDisplayPathMap(folders []domain.Folder) map[string]string {
 			return label
 		}
 		parentPath := build(parentID)
-		if parent.SystemRole != nil && *parent.SystemRole == domain.FolderSystemRolePersonalRoot {
+		if parent.SystemRole != nil && *parent.SystemRole == domain.FolderSystemRoleWorkspaceRoot {
 			paths[id] = label
 			return label
 		}
@@ -355,7 +355,7 @@ func folderDisplayPathMap(folders []domain.Folder) map[string]string {
 }
 
 func folderDisplayName(folder domain.Folder) string {
-	if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot {
+	if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRoleWorkspaceRoot {
 		return "Personal workspace"
 	}
 	label := strings.TrimSpace(folder.Name)

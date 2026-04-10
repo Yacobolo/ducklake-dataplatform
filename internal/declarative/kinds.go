@@ -11,13 +11,17 @@ const (
 	KindTag                                        // layer 0
 	KindMacro                                      // layer 0
 	KindDomain                                     // layer 0
+	KindWorkspace                                  // layer 0
 	KindGroup                                      // layer 1
 	KindExternalLocation                           // layer 1
 	KindComputeEndpoint                            // layer 1
 	KindComputeRoutingDefaults                     // layer 1
 	KindTeam                                       // layer 1
+	KindFolder                                     // layer 1
+	KindProject                                    // layer 1
 	KindGroupMembership                            // layer 2
 	KindCatalogRegistration                        // layer 2
+	KindEnvironment                                // layer 2
 	KindSchema                                     // layer 3
 	KindComputeAssignment                          // layer 3
 	KindTable                                      // layer 4
@@ -51,6 +55,8 @@ func (k ResourceKind) String() string {
 		return "macro"
 	case KindDomain:
 		return "domain"
+	case KindWorkspace:
+		return "workspace"
 	case KindGroup:
 		return "group"
 	case KindExternalLocation:
@@ -61,10 +67,16 @@ func (k ResourceKind) String() string {
 		return "compute-routing-defaults"
 	case KindTeam:
 		return "team"
+	case KindFolder:
+		return "folder"
+	case KindProject:
+		return "project"
 	case KindGroupMembership:
 		return "group-membership"
 	case KindCatalogRegistration:
 		return "catalog-registration"
+	case KindEnvironment:
+		return "environment"
 	case KindSchema:
 		return "schema"
 	case KindComputeAssignment:
@@ -110,11 +122,11 @@ func (k ResourceKind) String() string {
 // Layer 0 has no dependencies; higher layers depend on lower ones.
 func (k ResourceKind) Layer() int {
 	switch k {
-	case KindStorageCredential, KindPrincipal, KindTag, KindMacro, KindDomain:
+	case KindStorageCredential, KindPrincipal, KindTag, KindMacro, KindDomain, KindWorkspace:
 		return 0
-	case KindGroup, KindExternalLocation, KindComputeEndpoint, KindComputeRoutingDefaults, KindTeam:
+	case KindGroup, KindExternalLocation, KindComputeEndpoint, KindComputeRoutingDefaults, KindTeam, KindFolder, KindProject:
 		return 1
-	case KindGroupMembership, KindCatalogRegistration:
+	case KindGroupMembership, KindCatalogRegistration, KindEnvironment:
 		return 2
 	case KindSchema, KindComputeAssignment:
 		return 3
@@ -190,6 +202,10 @@ const (
 	KindNameComputeAssignmentList  = "ComputeAssignmentList"
 	KindNameComputeRoutingDefaults = "ComputeRoutingDefaults"
 	KindNameDomain                 = "Domain"
+	KindNameWorkspace              = "Workspace"
+	KindNameFolder                 = "Folder"
+	KindNameProject                = "Project"
+	KindNameEnvironment            = "Environment"
 	KindNameTeam                   = "Team"
 	KindNameDataProduct            = "DataProduct"
 	KindNameNotebook               = "Notebook"

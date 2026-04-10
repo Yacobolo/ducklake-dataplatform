@@ -2,23 +2,17 @@ using TypeSpec.Http;
 
 namespace Duck;
 
-@route("/me/folders/home")
+@route("/workspaces/{workspace_id}/folders")
 @get
 @tag("Folders")
-@summary("Get caller home folder")
-op getHomeFolder(): Ok<Folder> | StandardErrorResponses;
+@summary("List folders in a workspace")
+op listFolders(workspace_id: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedFolders> | GuardedReadErrorResponses;
 
-@route("/folders")
-@get
-@tag("Folders")
-@summary("List folders")
-op listFolders(@query owner?: string, @query max_results?: int32, @query page_token?: string): Ok<PaginatedFolders> | StandardErrorResponses;
-
-@route("/folders")
+@route("/workspaces/{workspace_id}/folders")
 @post
 @tag("Folders")
-@summary("Create folder")
-op createFolder(@body body: CreateFolderRequest): Created<Folder> | MutatingErrorResponses;
+@summary("Create folder in a workspace")
+op createFolder(workspace_id: string, @body body: CreateFolderRequest): Created<Folder> | ResourceErrorResponses | ConflictResponse;
 
 @route("/folders/{folder_id}")
 @get

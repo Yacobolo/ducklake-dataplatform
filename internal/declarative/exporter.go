@@ -54,6 +54,11 @@ func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
 		return err
 	}
 
+	// Authoring core resources.
+	if err := exportAuthoringCore(dir, state); err != nil {
+		return err
+	}
+
 	// Notebooks.
 	if err := exportNotebooks(dir, state); err != nil {
 		return err
@@ -110,6 +115,22 @@ func exportProductControlPlane(dir string, state *DesiredState) error {
 		return err
 	}
 	if err := exportDataProducts(dir, state); err != nil {
+		return err
+	}
+	return nil
+}
+
+func exportAuthoringCore(dir string, state *DesiredState) error {
+	if err := exportWorkspaces(dir, state); err != nil {
+		return err
+	}
+	if err := exportFolders(dir, state); err != nil {
+		return err
+	}
+	if err := exportProjects(dir, state); err != nil {
+		return err
+	}
+	if err := exportEnvironments(dir, state); err != nil {
 		return err
 	}
 	return nil
@@ -464,6 +485,70 @@ func exportNotebooks(dir string, state *DesiredState) error {
 			Spec:       nb.Spec,
 		}
 		path := filepath.Join(dir, "notebooks", safeResourceFileName(nb.Name))
+		if err := writeYAMLFile(path, doc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportWorkspaces(dir string, state *DesiredState) error {
+	for _, item := range state.Workspaces {
+		doc := WorkspaceDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameWorkspace,
+			Metadata:   ObjectMeta{Name: item.Name},
+			Spec:       item.Spec,
+		}
+		path := filepath.Join(dir, "workspaces", safeResourceFileName(item.Name))
+		if err := writeYAMLFile(path, doc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportFolders(dir string, state *DesiredState) error {
+	for _, item := range state.Folders {
+		doc := FolderDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameFolder,
+			Metadata:   ObjectMeta{Name: item.Name},
+			Spec:       item.Spec,
+		}
+		path := filepath.Join(dir, "folders", safeResourceFileName(item.Name))
+		if err := writeYAMLFile(path, doc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportProjects(dir string, state *DesiredState) error {
+	for _, item := range state.Projects {
+		doc := ProjectDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameProject,
+			Metadata:   ObjectMeta{Name: item.Name},
+			Spec:       item.Spec,
+		}
+		path := filepath.Join(dir, "projects", safeResourceFileName(item.Name))
+		if err := writeYAMLFile(path, doc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportEnvironments(dir string, state *DesiredState) error {
+	for _, item := range state.Environments {
+		doc := EnvironmentDoc{
+			APIVersion: SupportedAPIVersion,
+			Kind:       KindNameEnvironment,
+			Metadata:   ObjectMeta{Name: item.Name},
+			Spec:       item.Spec,
+		}
+		path := filepath.Join(dir, "environments", safeResourceFileName(item.Name))
 		if err := writeYAMLFile(path, doc); err != nil {
 			return err
 		}

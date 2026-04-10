@@ -233,6 +233,8 @@ func run() error {
 	)
 	handler.SetProductService(svc.Product)
 	handler.SetNotebookFolders(svc.NotebookFolders)
+	handler.SetWorkspaceService(svc.Workspace)
+	handler.SetProjectControlService(svc.Project)
 	handler.SetExplore(svc.Explore)
 	handler.SetResourceAccess(svc.ResourceAccess)
 	handler.SetSavedResources(svc.SavedResource)

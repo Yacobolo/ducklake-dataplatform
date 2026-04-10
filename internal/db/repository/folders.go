@@ -28,6 +28,9 @@ func (r *FolderRepo) Create(ctx context.Context, folder *domain.Folder) (*domain
 	if folder == nil {
 		return nil, domain.ErrValidation("folder is required")
 	}
+	if strings.TrimSpace(folder.WorkspaceID) == "" {
+		return nil, domain.ErrValidation("folder workspace_id is required")
+	}
 	if strings.TrimSpace(folder.Name) == "" {
 		return nil, domain.ErrValidation("folder name is required")
 	}
@@ -47,6 +50,9 @@ func (r *FolderRepo) Create(ctx context.Context, folder *domain.Folder) (*domain
 		if err != nil {
 			return nil, err
 		}
+		if parent.WorkspaceID != folder.WorkspaceID {
+			return nil, domain.ErrValidation("parent folder must belong to the same workspace")
+		}
 		parentPath = parent.Path
 		depth = parent.Depth + 1
 	}
@@ -61,11 +67,12 @@ func (r *FolderRepo) Create(ctx context.Context, folder *domain.Folder) (*domain
 
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO folders (
-			id, name, owner, parent_folder_id, path, depth, system_role,
+			id, workspace_id, name, owner, parent_folder_id, path, depth, system_role,
 			git_repo_id, git_root_path, default_project_id, default_environment_id
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		id,
+		strings.TrimSpace(folder.WorkspaceID),
 		strings.TrimSpace(folder.Name),
 		strings.TrimSpace(folder.Owner),
 		nullStringPtr(folder.ParentFolderID),
@@ -86,7 +93,7 @@ func (r *FolderRepo) Create(ctx context.Context, folder *domain.Folder) (*domain
 func (r *FolderRepo) GetByID(ctx context.Context, id string) (*domain.Folder, error) {
 	row := r.db.QueryRowContext(ctx, `
 		SELECT
-			id, name, owner, parent_folder_id, path, depth, system_role,
+			id, workspace_id, name, owner, parent_folder_id, path, depth, system_role,
 			git_repo_id, git_root_path, default_project_id, default_environment_id,
 			created_at, updated_at
 		FROM folders
@@ -98,11 +105,11 @@ func (r *FolderRepo) GetByID(ctx context.Context, id string) (*domain.Folder, er
 func (r *FolderRepo) ListAll(ctx context.Context) ([]domain.Folder, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT
-			id, name, owner, parent_folder_id, path, depth, system_role,
+			id, workspace_id, name, owner, parent_folder_id, path, depth, system_role,
 			git_repo_id, git_root_path, default_project_id, default_environment_id,
 			created_at, updated_at
 		FROM folders
-		ORDER BY owner COLLATE NOCASE ASC, depth ASC, name COLLATE NOCASE ASC
+		ORDER BY workspace_id ASC, depth ASC, name COLLATE NOCASE ASC
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("list all folders: %w", err)
@@ -126,7 +133,7 @@ func (r *FolderRepo) ListAll(ctx context.Context) ([]domain.Folder, error) {
 func (r *FolderRepo) ListByOwner(ctx context.Context, owner string) ([]domain.Folder, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT
-			id, name, owner, parent_folder_id, path, depth, system_role,
+			id, workspace_id, name, owner, parent_folder_id, path, depth, system_role,
 			git_repo_id, git_root_path, default_project_id, default_environment_id,
 			created_at, updated_at
 		FROM folders
@@ -148,6 +155,35 @@ func (r *FolderRepo) ListByOwner(ctx context.Context, owner string) ([]domain.Fo
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate folders by owner: %w", err)
+	}
+	return out, nil
+}
+
+func (r *FolderRepo) ListByWorkspace(ctx context.Context, workspaceID string) ([]domain.Folder, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT
+			id, workspace_id, name, owner, parent_folder_id, path, depth, system_role,
+			git_repo_id, git_root_path, default_project_id, default_environment_id,
+			created_at, updated_at
+		FROM folders
+		WHERE workspace_id = ?
+		ORDER BY depth ASC, name COLLATE NOCASE ASC
+	`, strings.TrimSpace(workspaceID))
+	if err != nil {
+		return nil, fmt.Errorf("list folders by workspace: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	out := []domain.Folder{}
+	for rows.Next() {
+		item, scanErr := scanFolderRows(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		out = append(out, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate folders by workspace: %w", err)
 	}
 	return out, nil
 }
@@ -236,6 +272,9 @@ func (r *FolderRepo) Move(ctx context.Context, id string, parentFolderID *string
 		if err != nil {
 			return nil, err
 		}
+		if parent.WorkspaceID != current.WorkspaceID {
+			return nil, domain.ErrValidation("destination parent folder must belong to the same workspace")
+		}
 		if parent.ID == current.ID {
 			return nil, domain.ErrValidation("folder cannot be its own parent")
 		}
@@ -302,20 +341,32 @@ func (r *FolderRepo) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *FolderRepo) EnsurePersonalRoot(ctx context.Context, owner string) (*domain.Folder, error) {
+func (r *FolderRepo) EnsurePersonalWorkspaceRoot(ctx context.Context, owner string) (*domain.Folder, error) {
 	owner = strings.TrimSpace(owner)
 	if owner == "" {
 		return nil, domain.ErrValidation("owner is required")
 	}
+	workspace, err := ensurePersonalWorkspace(ctx, r.db, owner)
+	if err != nil {
+		return nil, err
+	}
+	return r.EnsureWorkspaceRoot(ctx, workspace.ID, owner)
+}
+
+func (r *FolderRepo) EnsureWorkspaceRoot(ctx context.Context, workspaceID string, owner string) (*domain.Folder, error) {
+	workspaceID = strings.TrimSpace(workspaceID)
+	if workspaceID == "" {
+		return nil, domain.ErrValidation("workspace_id is required")
+	}
 	row := r.db.QueryRowContext(ctx, `
 		SELECT
-			id, name, owner, parent_folder_id, path, depth, system_role,
+			id, workspace_id, name, owner, parent_folder_id, path, depth, system_role,
 			git_repo_id, git_root_path, default_project_id, default_environment_id,
 			created_at, updated_at
 		FROM folders
-		WHERE owner = ? AND system_role = ?
+		WHERE workspace_id = ? AND parent_folder_id IS NULL AND system_role = ?
 		LIMIT 1
-	`, owner, domain.FolderSystemRolePersonalRoot)
+	`, workspaceID, domain.FolderSystemRoleWorkspaceRoot)
 	folder, err := scanFolder(row)
 	if err == nil {
 		return folder, nil
@@ -324,11 +375,12 @@ func (r *FolderRepo) EnsurePersonalRoot(ctx context.Context, owner string) (*dom
 	if !errors.As(err, &notFound) {
 		return nil, err
 	}
-	role := domain.FolderSystemRolePersonalRoot
+	role := domain.FolderSystemRoleWorkspaceRoot
 	return r.Create(ctx, &domain.Folder{
-		Name:       "My notebooks",
-		Owner:      owner,
-		SystemRole: &role,
+		WorkspaceID: workspaceID,
+		Name:        "Home",
+		Owner:       owner,
+		SystemRole:  &role,
 	})
 }
 
@@ -336,20 +388,20 @@ func (r *FolderRepo) EnsureGitSyncRoot(ctx context.Context, owner string, repo *
 	if repo == nil {
 		return nil, domain.ErrValidation("git repo is required")
 	}
-	personalRoot, err := r.EnsurePersonalRoot(ctx, owner)
+	workspaceRoot, err := r.EnsurePersonalWorkspaceRoot(ctx, owner)
 	if err != nil {
 		return nil, err
 	}
 
 	row := r.db.QueryRowContext(ctx, `
 		SELECT
-			id, name, owner, parent_folder_id, path, depth, system_role,
+			id, workspace_id, name, owner, parent_folder_id, path, depth, system_role,
 			git_repo_id, git_root_path, default_project_id, default_environment_id,
 			created_at, updated_at
 		FROM folders
-		WHERE owner = ? AND parent_folder_id = ? AND git_repo_id = ?
+		WHERE workspace_id = ? AND parent_folder_id = ? AND git_repo_id = ?
 		LIMIT 1
-	`, owner, personalRoot.ID, repo.ID)
+	`, workspaceRoot.WorkspaceID, workspaceRoot.ID, repo.ID)
 	folder, err := scanFolder(row)
 	if err == nil {
 		return folder, nil
@@ -359,9 +411,10 @@ func (r *FolderRepo) EnsureGitSyncRoot(ctx context.Context, owner string, repo *
 		return nil, err
 	}
 
-	parentID := personalRoot.ID
+	parentID := workspaceRoot.ID
 	name := gitSyncFolderName(repo)
 	return r.Create(ctx, &domain.Folder{
+		WorkspaceID:    workspaceRoot.WorkspaceID,
 		Name:           name,
 		Owner:          owner,
 		ParentFolderID: &parentID,
@@ -377,7 +430,7 @@ func (r *FolderRepo) ListAncestors(ctx context.Context, folderID string) ([]doma
 	}
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT
-			id, name, owner, parent_folder_id, path, depth, system_role,
+			id, workspace_id, name, owner, parent_folder_id, path, depth, system_role,
 			git_repo_id, git_root_path, default_project_id, default_environment_id,
 			created_at, updated_at
 		FROM folders
@@ -406,6 +459,7 @@ func (r *FolderRepo) ListAncestors(ctx context.Context, folderID string) ([]doma
 func scanFolder(row interface{ Scan(dest ...any) error }) (*domain.Folder, error) {
 	var (
 		id                   string
+		workspaceID          string
 		name                 string
 		owner                string
 		parentFolderID       sql.NullString
@@ -421,6 +475,7 @@ func scanFolder(row interface{ Scan(dest ...any) error }) (*domain.Folder, error
 	)
 	if err := row.Scan(
 		&id,
+		&workspaceID,
 		&name,
 		&owner,
 		&parentFolderID,
@@ -438,6 +493,7 @@ func scanFolder(row interface{ Scan(dest ...any) error }) (*domain.Folder, error
 	}
 	return &domain.Folder{
 		ID:                   id,
+		WorkspaceID:          workspaceID,
 		Name:                 name,
 		Owner:                owner,
 		ParentFolderID:       ptrFromNullString(parentFolderID),

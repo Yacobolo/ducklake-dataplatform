@@ -324,6 +324,14 @@ func recordToStringMap(record *Record) map[string]string {
 	return out
 }
 
+func recordPtrToStringMap(record *Record) *map[string]string {
+	if record == nil {
+		return nil
+	}
+	out := recordToStringMap(record)
+	return &out
+}
+
 func tabularColumns(columns []string, rows [][]interface{}) []TabularColumn {
 	names := normalizedColumnNames(columns, rows)
 	out := make([]TabularColumn, len(names))

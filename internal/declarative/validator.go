@@ -219,6 +219,24 @@ var validTagSecurableTypes = map[string]bool{
 	"column": true,
 }
 
+var validWorkspaceKinds = map[string]bool{
+	"personal": true,
+	"shared":   true,
+	"library":  true,
+}
+
+var validProjectKinds = map[string]bool{
+	"personal": true,
+	"shared":   true,
+	"library":  true,
+}
+
+var validEnvironmentKinds = map[string]bool{
+	"development": true,
+	"staging":     true,
+	"production":  true,
+}
+
 // Validate checks the DesiredState for structural correctness and referential integrity.
 // It returns a list of all validation errors (does not stop at first error).
 func Validate(state *DesiredState) []ValidationError {
@@ -248,6 +266,35 @@ func Validate(state *DesiredState) []ValidationError {
 	productNames := make(map[string]bool, len(state.DataProducts))
 	for _, product := range state.DataProducts {
 		productNames[product.Slug] = true
+	}
+
+	workspaceNames := make(map[string]bool, len(state.Workspaces))
+	for _, workspace := range state.Workspaces {
+		workspaceNames[workspace.Name] = true
+	}
+
+	projectKeys := make(map[string]bool, len(state.Projects))
+	for _, project := range state.Projects {
+		key := projectRefKey(project.Spec.WorkspaceRef, project.Name)
+		if key != "" {
+			projectKeys[key] = true
+		}
+	}
+
+	environmentKeys := make(map[string]bool, len(state.Environments))
+	for _, environment := range state.Environments {
+		key := environmentRefKeyFromProjectRef(environment.Spec.ProjectRef, environment.Name)
+		if key != "" {
+			environmentKeys[key] = true
+		}
+	}
+
+	folderKeys := make(map[string]bool, len(state.Folders))
+	for _, folder := range state.Folders {
+		key := folderRefKey(folder.Spec.WorkspaceRef, folder.Spec.ParentFolderRef, folder.Name)
+		if key != "" {
+			folderKeys[key] = true
+		}
 	}
 
 	catalogNames := make(map[string]bool, len(state.Catalogs))
@@ -403,7 +450,11 @@ func Validate(state *DesiredState) []ValidationError {
 	validateAPIKeys(state.APIKeys, principalNames, &errs)
 
 	// 20. Validate notebooks.
-	validateNotebooks(state.Notebooks, &errs)
+	validateWorkspaces(state.Workspaces, projectKeys, environmentKeys, &errs)
+	validateFolders(state.Folders, workspaceNames, folderKeys, projectKeys, environmentKeys, &errs)
+	validateProjects(state.Projects, workspaceNames, &errs)
+	validateEnvironments(state.Environments, projectKeys, &errs)
+	validateNotebooks(state.Notebooks, workspaceNames, folderKeys, projectKeys, environmentKeys, &errs)
 
 	// 21. Validate product control-plane resources.
 	validateDomains(state.Domains, &errs)
@@ -429,6 +480,104 @@ func Validate(state *DesiredState) []ValidationError {
 	return errs
 }
 
+func projectRefKey(workspaceRef, projectName string) string {
+	workspaceRef = strings.TrimSpace(workspaceRef)
+	projectName = strings.TrimSpace(projectName)
+	if workspaceRef == "" || projectName == "" {
+		return ""
+	}
+	return workspaceRef + "/" + projectName
+}
+
+func environmentRefKeyFromProjectRef(projectRef, environmentName string) string {
+	projectRef = strings.TrimSpace(projectRef)
+	environmentName = strings.TrimSpace(environmentName)
+	if projectRef == "" || environmentName == "" {
+		return ""
+	}
+	return projectRef + "/" + environmentName
+}
+
+func folderRefKey(workspaceRef, parentFolderRef, folderName string) string {
+	workspaceRef = strings.TrimSpace(workspaceRef)
+	parentFolderRef = strings.TrimSpace(parentFolderRef)
+	folderName = strings.TrimSpace(folderName)
+	if workspaceRef == "" || folderName == "" {
+		return ""
+	}
+	if parentFolderRef != "" {
+		return parentFolderRef + "/" + folderName
+	}
+	return workspaceRef + "/" + folderName
+}
+
+func parseProjectRef(ref string) (string, string, bool) {
+	parts := strings.Split(strings.TrimSpace(ref), "/")
+	if len(parts) != 2 {
+		return "", "", false
+	}
+	if strings.TrimSpace(parts[0]) == "" || strings.TrimSpace(parts[1]) == "" {
+		return "", "", false
+	}
+	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), true
+}
+
+func parseEnvironmentRef(ref string) (string, string, string, bool) {
+	parts := strings.Split(strings.TrimSpace(ref), "/")
+	if len(parts) != 3 {
+		return "", "", "", false
+	}
+	for _, part := range parts {
+		if strings.TrimSpace(part) == "" {
+			return "", "", "", false
+		}
+	}
+	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), strings.TrimSpace(parts[2]), true
+}
+
+func parseFolderRef(ref string) (string, []string, bool) {
+	parts := strings.Split(strings.TrimSpace(ref), "/")
+	if len(parts) < 2 {
+		return "", nil, false
+	}
+	segments := make([]string, 0, len(parts)-1)
+	for i, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			return "", nil, false
+		}
+		if i == 0 {
+			continue
+		}
+		segments = append(segments, part)
+	}
+	return strings.TrimSpace(parts[0]), segments, true
+}
+
+func workspaceNameFromFolderRef(ref string) string {
+	workspace, _, ok := parseFolderRef(ref)
+	if !ok {
+		return ""
+	}
+	return workspace
+}
+
+func workspaceNameFromProjectRef(ref string) string {
+	workspace, _, ok := parseProjectRef(ref)
+	if !ok {
+		return ""
+	}
+	return workspace
+}
+
+func workspaceNameFromEnvironmentRef(ref string) string {
+	workspace, _, _, ok := parseEnvironmentRef(ref)
+	if !ok {
+		return ""
+	}
+	return workspace
+}
+
 func validateNotebookPublishTargets(notebooks []NotebookResource, models []ModelResource, errs *[]ValidationError) {
 	modelKeys := make(map[string]bool, len(models))
 	for _, m := range models {
@@ -447,6 +596,191 @@ func validateNotebookPublishTargets(notebooks []NotebookResource, models []Model
 		key := pm.Project + "." + pm.Name
 		if modelKeys[key] {
 			addErr(errs, path, "publish.model target %q conflicts with standalone model resource; use notebook publish only", key)
+		}
+	}
+}
+
+func validateWorkspaces(workspaces []WorkspaceResource, projectKeys, environmentKeys map[string]bool, errs *[]ValidationError) {
+	seen := make(map[string]bool, len(workspaces))
+	for i, item := range workspaces {
+		path := fmt.Sprintf("workspace[%d]", i)
+		if item.Name != "" {
+			path = fmt.Sprintf("workspace[%s]", item.Name)
+		}
+		if strings.TrimSpace(item.Name) == "" {
+			addErr(errs, path, "name is required")
+			continue
+		}
+		if seen[item.Name] {
+			addErr(errs, path, "duplicate workspace name %q", item.Name)
+		}
+		seen[item.Name] = true
+
+		kind := strings.ToLower(strings.TrimSpace(item.Spec.Kind))
+		if !validWorkspaceKinds[kind] {
+			addErr(errs, path, "kind must be one of [personal, shared, library], got %q", item.Spec.Kind)
+		}
+		switch kind {
+		case "personal":
+			if strings.TrimSpace(item.Spec.OwnerPrincipal) == "" {
+				addErr(errs, path, "owner_principal is required for personal workspaces")
+			}
+			if strings.TrimSpace(item.Spec.OwnerTeamID) != "" {
+				addErr(errs, path, "owner_team_id must be empty for personal workspaces")
+			}
+		case "shared", "library":
+			if strings.TrimSpace(item.Spec.OwnerTeamID) == "" {
+				addErr(errs, path, "owner_team_id is required for %s workspaces", kind)
+			}
+			if strings.TrimSpace(item.Spec.OwnerPrincipal) != "" {
+				addErr(errs, path, "owner_principal must be empty for %s workspaces", kind)
+			}
+		}
+
+		if strings.TrimSpace(item.Spec.DefaultProjectRef) != "" && !projectKeys[item.Spec.DefaultProjectRef] {
+			addErr(errs, path, "default_project_ref references unknown project %q", item.Spec.DefaultProjectRef)
+		}
+		if strings.TrimSpace(item.Spec.DefaultEnvironmentRef) != "" {
+			if !environmentKeys[item.Spec.DefaultEnvironmentRef] {
+				addErr(errs, path, "default_environment_ref references unknown environment %q", item.Spec.DefaultEnvironmentRef)
+			}
+			if strings.TrimSpace(item.Spec.DefaultProjectRef) == "" {
+				addErr(errs, path, "default_environment_ref requires default_project_ref")
+			} else if !strings.HasPrefix(item.Spec.DefaultEnvironmentRef, item.Spec.DefaultProjectRef+"/") {
+				addErr(errs, path, "default_environment_ref must belong to default_project_ref")
+			}
+		}
+	}
+}
+
+func validateFolders(
+	folders []FolderResource,
+	workspaceNames, folderKeys, projectKeys, environmentKeys map[string]bool,
+	errs *[]ValidationError,
+) {
+	seen := make(map[string]bool, len(folders))
+	for i, item := range folders {
+		path := fmt.Sprintf("folder[%d]", i)
+		if item.Name != "" {
+			path = fmt.Sprintf("folder[%s]", item.Name)
+		}
+
+		if strings.TrimSpace(item.Name) == "" {
+			addErr(errs, path, "name is required")
+			continue
+		}
+		if strings.TrimSpace(item.Spec.WorkspaceRef) == "" {
+			addErr(errs, path, "workspace_ref is required")
+		} else if !workspaceNames[item.Spec.WorkspaceRef] {
+			addErr(errs, path, "workspace_ref references unknown workspace %q", item.Spec.WorkspaceRef)
+		}
+
+		if strings.TrimSpace(item.Spec.ParentFolderRef) != "" {
+			parentWorkspace, _, ok := parseFolderRef(item.Spec.ParentFolderRef)
+			if !ok {
+				addErr(errs, path, "parent_folder_ref must be in the form <workspace>/<folder-path>")
+			} else {
+				if parentWorkspace != strings.TrimSpace(item.Spec.WorkspaceRef) {
+					addErr(errs, path, "parent_folder_ref must be in the same workspace as workspace_ref")
+				}
+				if !folderKeys[item.Spec.ParentFolderRef] {
+					addErr(errs, path, "parent_folder_ref references unknown folder %q", item.Spec.ParentFolderRef)
+				}
+			}
+		}
+
+		key := folderRefKey(item.Spec.WorkspaceRef, item.Spec.ParentFolderRef, item.Name)
+		if key != "" {
+			if seen[key] {
+				addErr(errs, path, "duplicate folder key %q", key)
+			}
+			seen[key] = true
+		}
+
+		if strings.TrimSpace(item.Spec.DefaultProjectRef) != "" {
+			if !projectKeys[item.Spec.DefaultProjectRef] {
+				addErr(errs, path, "default_project_ref references unknown project %q", item.Spec.DefaultProjectRef)
+			} else if workspaceNameFromProjectRef(item.Spec.DefaultProjectRef) != strings.TrimSpace(item.Spec.WorkspaceRef) {
+				addErr(errs, path, "default_project_ref must belong to the same workspace")
+			}
+		}
+		if strings.TrimSpace(item.Spec.DefaultEnvironmentRef) != "" {
+			if !environmentKeys[item.Spec.DefaultEnvironmentRef] {
+				addErr(errs, path, "default_environment_ref references unknown environment %q", item.Spec.DefaultEnvironmentRef)
+			} else if workspaceNameFromEnvironmentRef(item.Spec.DefaultEnvironmentRef) != strings.TrimSpace(item.Spec.WorkspaceRef) {
+				addErr(errs, path, "default_environment_ref must belong to the same workspace")
+			}
+			if strings.TrimSpace(item.Spec.DefaultProjectRef) == "" {
+				addErr(errs, path, "default_environment_ref requires default_project_ref")
+			} else if !strings.HasPrefix(item.Spec.DefaultEnvironmentRef, item.Spec.DefaultProjectRef+"/") {
+				addErr(errs, path, "default_environment_ref must belong to default_project_ref")
+			}
+		}
+	}
+}
+
+func validateProjects(projects []ProjectResource, workspaceNames map[string]bool, errs *[]ValidationError) {
+	seen := make(map[string]bool, len(projects))
+	for i, item := range projects {
+		path := fmt.Sprintf("project[%d]", i)
+		if item.Name != "" {
+			path = fmt.Sprintf("project[%s]", item.Name)
+		}
+
+		if strings.TrimSpace(item.Name) == "" {
+			addErr(errs, path, "name is required")
+			continue
+		}
+		if strings.TrimSpace(item.Spec.WorkspaceRef) == "" {
+			addErr(errs, path, "workspace_ref is required")
+		} else if !workspaceNames[item.Spec.WorkspaceRef] {
+			addErr(errs, path, "workspace_ref references unknown workspace %q", item.Spec.WorkspaceRef)
+		}
+		if !validProjectKinds[strings.ToLower(strings.TrimSpace(item.Spec.Kind))] {
+			addErr(errs, path, "kind must be one of [personal, shared, library], got %q", item.Spec.Kind)
+		}
+		key := projectRefKey(item.Spec.WorkspaceRef, item.Name)
+		if key != "" {
+			if seen[key] {
+				addErr(errs, path, "duplicate project key %q", key)
+			}
+			seen[key] = true
+		}
+	}
+}
+
+func validateEnvironments(environments []EnvironmentResource, projectKeys map[string]bool, errs *[]ValidationError) {
+	seen := make(map[string]bool, len(environments))
+	for i, item := range environments {
+		path := fmt.Sprintf("environment[%d]", i)
+		if item.Name != "" {
+			path = fmt.Sprintf("environment[%s]", item.Name)
+		}
+
+		if strings.TrimSpace(item.Name) == "" {
+			addErr(errs, path, "name is required")
+			continue
+		}
+		if strings.TrimSpace(item.Spec.ProjectRef) == "" {
+			addErr(errs, path, "project_ref is required")
+		} else if !projectKeys[item.Spec.ProjectRef] {
+			addErr(errs, path, "project_ref references unknown project %q", item.Spec.ProjectRef)
+		}
+		if !validEnvironmentKinds[strings.ToLower(strings.TrimSpace(item.Spec.Kind))] {
+			addErr(errs, path, "kind must be one of [development, staging, production], got %q", item.Spec.Kind)
+		}
+		if strings.TrimSpace(item.Spec.TargetCatalog) == "" {
+			addErr(errs, path, "target_catalog is required")
+		}
+		if strings.TrimSpace(item.Spec.TargetSchema) == "" {
+			addErr(errs, path, "target_schema is required")
+		}
+		key := environmentRefKeyFromProjectRef(item.Spec.ProjectRef, item.Name)
+		if key != "" {
+			if seen[key] {
+				addErr(errs, path, "duplicate environment key %q", key)
+			}
+			seen[key] = true
 		}
 	}
 }
@@ -1638,7 +1972,11 @@ func validateAPIKeys(keys []APIKeySpec, principalNames map[string]bool, errs *[]
 
 // === Notebooks ===
 
-func validateNotebooks(notebooks []NotebookResource, errs *[]ValidationError) {
+func validateNotebooks(
+	notebooks []NotebookResource,
+	workspaceNames, folderKeys, projectKeys, environmentKeys map[string]bool,
+	errs *[]ValidationError,
+) {
 	seen := make(map[string]bool, len(notebooks))
 	for i, n := range notebooks {
 		path := fmt.Sprintf("notebook[%d]", i)
@@ -1650,6 +1988,51 @@ func validateNotebooks(notebooks []NotebookResource, errs *[]ValidationError) {
 		}
 		if strings.TrimSpace(n.Name) == "" {
 			addErr(errs, path, "name must not be blank")
+		}
+		if strings.TrimSpace(n.Spec.WorkspaceRef) != "" && !workspaceNames[n.Spec.WorkspaceRef] {
+			addErr(errs, path, "workspace_ref references unknown workspace %q", n.Spec.WorkspaceRef)
+		}
+		if strings.TrimSpace(n.Spec.FolderRef) != "" {
+			if !folderKeys[n.Spec.FolderRef] {
+				addErr(errs, path, "folder_ref references unknown folder %q", n.Spec.FolderRef)
+			}
+		}
+		if strings.TrimSpace(n.Spec.ProjectRef) != "" {
+			if !projectKeys[n.Spec.ProjectRef] {
+				addErr(errs, path, "project_ref references unknown project %q", n.Spec.ProjectRef)
+			}
+		}
+		if strings.TrimSpace(n.Spec.EnvironmentRef) != "" {
+			if !environmentKeys[n.Spec.EnvironmentRef] {
+				addErr(errs, path, "environment_ref references unknown environment %q", n.Spec.EnvironmentRef)
+			}
+		}
+
+		effectiveWorkspace := strings.TrimSpace(n.Spec.WorkspaceRef)
+		if effectiveWorkspace == "" && strings.TrimSpace(n.Spec.FolderRef) != "" {
+			effectiveWorkspace = workspaceNameFromFolderRef(n.Spec.FolderRef)
+		}
+		if effectiveWorkspace == "" && strings.TrimSpace(n.Spec.ProjectRef) != "" {
+			effectiveWorkspace = workspaceNameFromProjectRef(n.Spec.ProjectRef)
+		}
+		if effectiveWorkspace == "" && strings.TrimSpace(n.Spec.EnvironmentRef) != "" {
+			effectiveWorkspace = workspaceNameFromEnvironmentRef(n.Spec.EnvironmentRef)
+		}
+		if effectiveWorkspace != "" {
+			if strings.TrimSpace(n.Spec.FolderRef) != "" && workspaceNameFromFolderRef(n.Spec.FolderRef) != effectiveWorkspace {
+				addErr(errs, path, "folder_ref must belong to the same workspace as the notebook")
+			}
+			if strings.TrimSpace(n.Spec.ProjectRef) != "" && workspaceNameFromProjectRef(n.Spec.ProjectRef) != effectiveWorkspace {
+				addErr(errs, path, "project_ref must belong to the same workspace as the notebook")
+			}
+			if strings.TrimSpace(n.Spec.EnvironmentRef) != "" && workspaceNameFromEnvironmentRef(n.Spec.EnvironmentRef) != effectiveWorkspace {
+				addErr(errs, path, "environment_ref must belong to the same workspace as the notebook")
+			}
+		}
+		if strings.TrimSpace(n.Spec.ProjectRef) != "" && strings.TrimSpace(n.Spec.EnvironmentRef) != "" {
+			if !strings.HasPrefix(n.Spec.EnvironmentRef, n.Spec.ProjectRef+"/") {
+				addErr(errs, path, "environment_ref must belong to project_ref")
+			}
 		}
 
 		for j, c := range n.Spec.Cells {

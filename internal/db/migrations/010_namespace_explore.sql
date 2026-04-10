@@ -6,8 +6,11 @@ UPDATE dashboards
 SET folder_id = (
     SELECT f.id
     FROM folders f
+    JOIN workspaces w ON w.id = f.workspace_id
     WHERE f.owner = dashboards.owner
-      AND f.system_role = 'PERSONAL_ROOT'
+      AND f.system_role = 'WORKSPACE_ROOT'
+      AND w.kind = 'personal'
+      AND w.owner_principal = dashboards.owner
     LIMIT 1
 )
 WHERE folder_id IS NULL;
@@ -16,8 +19,11 @@ UPDATE pipelines
 SET folder_id = (
     SELECT f.id
     FROM folders f
+    JOIN workspaces w ON w.id = f.workspace_id
     WHERE f.owner = pipelines.created_by
-      AND f.system_role = 'PERSONAL_ROOT'
+      AND f.system_role = 'WORKSPACE_ROOT'
+      AND w.kind = 'personal'
+      AND w.owner_principal = pipelines.created_by
     LIMIT 1
 )
 WHERE folder_id IS NULL;
