@@ -1,0 +1,15 @@
+apiVersion: duck/v1
+kind: DataProduct
+metadata:
+  name: runtime-semantic
+spec:
+  name: Runtime Semantic Assets
+  description: System-managed product grouping synced semantic runtime assets.
+  domain_ref: Platform Runtime
+  owner_team_ref: Control Plane
+  steward_principal: system
+  contact_channel: "#platform-runtime"
+  visibility: internal
+  consumer_audience: platform-operators
+  publication_intent: DRAFT
+  contract: {}

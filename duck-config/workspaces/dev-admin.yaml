@@ -1,0 +1,9 @@
+apiVersion: duck/v1
+kind: Workspace
+metadata:
+  name: dev-admin
+spec:
+  kind: personal
+  owner_principal: __DUCK_DEV_BOOTSTRAP_PRINCIPAL__
+  default_project_ref: dev-admin/taxi-analytics
+  default_environment_ref: dev-admin/taxi-analytics/dev

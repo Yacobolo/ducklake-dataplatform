@@ -1,0 +1,7 @@
+apiVersion: duck/v1
+kind: ComputeEndpointList
+endpoints:
+  - name: local-dev
+    url: local://seeded-dev
+    type: LOCAL
+    size: MEDIUM

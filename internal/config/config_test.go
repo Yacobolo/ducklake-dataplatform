@@ -54,11 +54,20 @@ func TestLoadFromEnv_Defaults(t *testing.T) {
 	assert.True(t, cfg.FeatureFlightSQL)
 	assert.True(t, cfg.FeaturePGWire)
 	assert.False(t, cfg.FeatureReconcilerShadow)
+	assert.True(t, cfg.SampleDataBootstrap)
 	assert.Equal(t, 30*time.Minute, cfg.Auth.WebSessionIdleTTL)
 	assert.Equal(t, 24*time.Hour, cfg.Auth.WebSessionAbsoluteTTL)
 	assert.Equal(t, "ui_session", cfg.Auth.WebSessionCookieName)
 	assert.Equal(t, 5*time.Minute, cfg.Auth.WebSessionReaperInterval)
 	assert.False(t, cfg.Auth.UIDevBypass)
+}
+
+func TestLoadFromEnv_SampleDataBootstrapOverride(t *testing.T) {
+	t.Setenv("SAMPLE_DATA_BOOTSTRAP_ENABLED", "false")
+
+	cfg, err := LoadFromEnv()
+	require.NoError(t, err)
+	assert.False(t, cfg.SampleDataBootstrap)
 }
 
 func TestLoadFromEnv_WebSessionConfig(t *testing.T) {

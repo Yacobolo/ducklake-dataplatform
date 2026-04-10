@@ -47,6 +47,7 @@ import (
 	authsvc "duck-demo/internal/service/auth"
 	"duck-demo/internal/service/catalog"
 	svccompute "duck-demo/internal/service/compute"
+	dashboardsvc "duck-demo/internal/service/dashboard"
 	exploresvc "duck-demo/internal/service/explore"
 	"duck-demo/internal/service/governance"
 	"duck-demo/internal/service/macro"
@@ -55,10 +56,12 @@ import (
 	"duck-demo/internal/service/orchestration"
 	svcpipeline "duck-demo/internal/service/pipeline"
 	productsvc "duck-demo/internal/service/product"
+	projectsvc "duck-demo/internal/service/project"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/security"
 	svcsemantic "duck-demo/internal/service/semantic"
 	"duck-demo/internal/service/storage"
+	workspacesvc "duck-demo/internal/service/workspace"
 	"duck-demo/internal/ui"
 )
 
@@ -1337,7 +1340,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		catalogRepoFactory = repository.NewCatalogRepoFactory(catalogRegRepo, metaDB, duckDB, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 		catalogRegSvc = catalog.NewCatalogRegistrationService(catalog.RegistrationServiceDeps{
 			Repo:               catalogRegRepo,
-			Attacher:           noOpCatalogAttacher{},
+			Attacher:           engine.NewDuckDBSecretManager(duckDB),
 			ControlPlaneDBPath: env.MetaPath,
 			Logger:             slog.New(slog.NewTextHandler(io.Discard, nil)),
 		})
@@ -1351,6 +1354,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// Optionally wire storage credential and external location services
 	var storageCredSvc *storage.StorageCredentialService
 	var extLocationSvc *storage.ExternalLocationService
+	var volumeSvc *storage.VolumeService
 
 	{
 		testEncKey := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
@@ -1377,6 +1381,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 			extLocationRepo, storageCredRepo, authSvc, auditRepo,
 			secretMgr, slog.New(slog.NewTextHandler(io.Discard, nil)),
 		)
+		volumeSvc = storage.NewVolumeService(repository.NewVolumeRepo(metaDB), authSvc, auditRepo)
 		catalogSvc = catalog.NewCatalogService(catalogRepoFactory, authSvc, auditRepo, tagRepo, tableStatsRepo, extLocationRepo)
 	}
 
@@ -1459,16 +1464,27 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	)
 	pipelineSvc.SetFolderRepository(folderRepo)
 	dashboardRepo := repository.NewDashboardRepo(metaDB)
+	dashboardWidgetRepo := repository.NewDashboardWidgetRepo(metaDB)
 
 	var (
 		assetSvc          *assetsvc.Service
 		backfillSvc       *orchestration.BackfillService
 		reconciler        *orchestration.Reconciler
 		projectRepo       domain.ProjectRepository
+		environmentRepo   domain.EnvironmentRepository
+		buildRepo         domain.BuildRepository
 		modelRepo         domain.ModelRepository
 		macroRepo         domain.MacroRepository
 		semanticModelRepo domain.SemanticModelRepository
 	)
+	projectRepo = repository.NewProjectRepo(metaDB)
+	environmentRepo = repository.NewEnvironmentRepo(metaDB)
+	buildRepo = repository.NewBuildRepo(metaDB)
+	workspaceSvc := workspacesvc.NewService(workspaceRepo, folderRepo, projectRepo, environmentRepo, teamRepo, auditRepo)
+	projectCtlSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, buildRepo, teamRepo, productRepo, auditRepo)
+	notebookSvc.SetProjectRepositories(projectRepo, environmentRepo)
+	notebookFolderSvc.SetProjectRepositories(projectRepo, environmentRepo)
+
 	if opts.WithAssets {
 		assetRepo := repository.NewDataAssetRepo(metaDB)
 		assetDepRepo := repository.NewAssetDependencyRepo(metaDB)
@@ -1602,6 +1618,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		semanticSvc.SetQueryExecutor(querySvc)
 		productSvc.SetSemanticModelRepository(semanticModelRepo)
 	}
+	dashboardSvc := dashboardsvc.NewService(dashboardRepo, dashboardWidgetRepo, notebookRepo, auditRepo, querySvc, semanticSvc)
+	dashboardSvc.SetFolderRepository(folderRepo)
 
 	exploreSvc := exploresvc.NewService(workspaceRepo, folderRepo, notebookRepo, dashboardRepo, pipelineRepo, projectRepo, modelRepo, macroRepo, semanticModelRepo)
 	exploreSvc.SetAccessRepositories(folderShareRepo, notebookShareRepo)
@@ -1612,8 +1630,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		rowFilterSvc, columnMaskSvc, auditSvc,
 		manifestSvc, catalogSvc, catalogRegSvc,
 		queryHistorySvc, lineageSvc, searchSvc, tagSvc, viewSvc,
-		nil,                                 // ingestionSvc
-		storageCredSvc, extLocationSvc, nil, // volumeSvc
+		nil, // ingestionSvc
+		storageCredSvc, extLocationSvc, volumeSvc,
 		computeEndpointSvc,
 		apiKeySvc,
 		nil, // pipelineSvc
@@ -1623,7 +1641,12 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		modelSvc, // modelSvc
 		macroSvc, // macroSvc
 		semanticSvc,
+		dashboardSvc,
 	)
+	handler.SetNotebookFolders(notebookFolderSvc)
+	handler.SetWorkspaceService(workspaceSvc)
+	handler.SetProjectControlService(projectCtlSvc)
+	handler.SetExplore(exploreSvc)
 	handler.SetProductService(productSvc)
 	r := chi.NewRouter()
 

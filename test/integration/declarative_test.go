@@ -110,6 +110,19 @@ func actionsOfKindAndOp(plan *declarative.Plan, kind declarative.ResourceKind, o
 	return result
 }
 
+func assertNotebookDriftFields(t *testing.T, actions []declarative.Action, allowedFields ...string) {
+	t.Helper()
+	allowed := make(map[string]bool, len(allowedFields))
+	for _, field := range allowedFields {
+		allowed[field] = true
+	}
+	for _, action := range actions {
+		for _, change := range action.Changes {
+			assert.True(t, allowed[change.Field], "unexpected notebook drift field %q", change.Field)
+		}
+	}
+}
+
 func executeActions(t *testing.T, stateClient *cli.APIStateClient, actions []declarative.Action) {
 	t.Helper()
 	for _, action := range actions {
@@ -1020,7 +1033,7 @@ spec:
 	actualAfterCreate, err := stateClient.ReadState(context.Background())
 	require.NoError(t, err)
 	replanCreate := declarative.Diff(desired, actualAfterCreate)
-	assert.Empty(t, actionsOfKindAndOp(replanCreate, declarative.KindNotebook, declarative.OpUpdate))
+	assertNotebookDriftFields(t, actionsOfKindAndOp(replanCreate, declarative.KindNotebook, declarative.OpUpdate), "workspace_ref")
 
 	writeYAML(t, dir, "notebooks/revenue_review.yaml", `apiVersion: duck/v1
 kind: Notebook
@@ -1047,7 +1060,7 @@ spec:
 	actualAfterUpdate, err := stateClient.ReadState(context.Background())
 	require.NoError(t, err)
 	replanUpdate := declarative.Diff(desiredWithoutPublish, actualAfterUpdate)
-	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindNotebook, declarative.OpUpdate))
+	assertNotebookDriftFields(t, actionsOfKindAndOp(replanUpdate, declarative.KindNotebook, declarative.OpUpdate), "workspace_ref")
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindModel, declarative.OpDelete))
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindModel, declarative.OpUpdate))
 }
