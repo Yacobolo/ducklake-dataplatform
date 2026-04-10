@@ -225,6 +225,89 @@ func TestExporter_PlanAfterExport(t *testing.T) {
 	assert.False(t, plan.HasChanges(), "plan after export should show no changes, got %d actions, %d errors", len(plan.Actions), len(plan.Errors))
 }
 
+func TestExporter_AuthoringCoreRoundTrip(t *testing.T) {
+	original := &DesiredState{
+		Workspaces: []WorkspaceResource{{
+			Name: "personal",
+			Spec: WorkspaceSpec{
+				Kind:                  "personal",
+				OwnerPrincipal:        "admin",
+				DefaultProjectRef:     "personal/core",
+				DefaultEnvironmentRef: "personal/core/dev",
+			},
+		}},
+		Folders: []FolderResource{
+			{
+				Name: "analysis",
+				Spec: FolderSpec{
+					WorkspaceRef:          "personal",
+					DefaultProjectRef:     "personal/core",
+					DefaultEnvironmentRef: "personal/core/dev",
+				},
+			},
+			{
+				Name: "reports",
+				Spec: FolderSpec{
+					WorkspaceRef:          "personal",
+					ParentFolderRef:       "personal/analysis",
+					DefaultProjectRef:     "personal/core",
+					DefaultEnvironmentRef: "personal/core/dev",
+				},
+			},
+		},
+		Projects: []ProjectResource{{
+			Name: "core",
+			Spec: ProjectSpec{
+				WorkspaceRef:  "personal",
+				Kind:          "personal",
+				DefaultBranch: "main",
+			},
+		}},
+		Environments: []EnvironmentResource{{
+			Name: "dev",
+			Spec: EnvironmentSpec{
+				ProjectRef:    "personal/core",
+				Kind:          "development",
+				TargetCatalog: "main",
+				TargetSchema:  "analytics",
+			},
+		}},
+		Notebooks: []NotebookResource{{
+			Name: "orders",
+			Spec: NotebookSpec{
+				Owner:          "admin",
+				WorkspaceRef:   "personal",
+				FolderRef:      "personal/analysis/reports",
+				ProjectRef:     "personal/core",
+				EnvironmentRef: "personal/core/dev",
+				Cells: []CellSpec{{
+					Type:    "sql",
+					Name:    "output",
+					Role:    "output",
+					Content: "select 1",
+				}},
+			},
+		}},
+	}
+
+	dir := t.TempDir()
+	err := ExportDirectory(dir, original, false)
+	require.NoError(t, err)
+
+	assertFileExists(t, filepath.Join(dir, "workspaces", "personal.yaml"))
+	assertFileExists(t, filepath.Join(dir, "folders", "analysis.yaml"))
+	assertFileExists(t, filepath.Join(dir, "folders", "reports.yaml"))
+	assertFileExists(t, filepath.Join(dir, "projects", "core.yaml"))
+	assertFileExists(t, filepath.Join(dir, "environments", "dev.yaml"))
+	assertFileExists(t, filepath.Join(dir, "notebooks", "orders.yaml"))
+
+	loaded, err := LoadDirectory(dir)
+	require.NoError(t, err)
+
+	plan := Diff(loaded, original)
+	assert.False(t, plan.HasChanges(), "authoring-core plan after export should show no changes, got %d actions, %d errors", len(plan.Actions), len(plan.Errors))
+}
+
 func TestExporter_RoundTripModelsAndMacros(t *testing.T) {
 	original := &DesiredState{
 		Models: []ModelResource{{
@@ -256,7 +339,7 @@ func TestExporter_RoundTripModelsAndMacros(t *testing.T) {
 			},
 		}},
 		SemanticModels: []SemanticModelResource{{
-			ModelName:   "sales",
+			ModelName: "sales",
 			Spec: SemanticModelSpec{
 				Description:          "Sales semantic model",
 				BaseModelRef:         "analytics.fct_sales",

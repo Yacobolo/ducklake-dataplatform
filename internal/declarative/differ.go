@@ -61,7 +61,16 @@ func diffWorkspaces(plan *Plan, desired, actual []WorkspaceResource) {
 		seen[item.Name] = true
 		current, exists := actualMap[item.Name]
 		if !exists {
-			addCreate(plan, KindWorkspace, item.Name, "", item)
+			createItem := item
+			createItem.Spec.DefaultProjectRef = ""
+			createItem.Spec.DefaultEnvironmentRef = ""
+			addCreate(plan, KindWorkspace, item.Name, "", createItem)
+			if workspaceNeedsDeferredDefaults(item.Spec) {
+				var changes []FieldDiff
+				diffField(&changes, "default_project_ref", "", item.Spec.DefaultProjectRef)
+				diffField(&changes, "default_environment_ref", "", item.Spec.DefaultEnvironmentRef)
+				addUpdate(plan, KindWorkspace, item.Name, "", item, createItem, changes)
+			}
 			continue
 		}
 
@@ -97,7 +106,16 @@ func diffFolders(plan *Plan, desired, actual []FolderResource) {
 		seen[key] = true
 		current, exists := actualMap[key]
 		if !exists {
-			addCreate(plan, KindFolder, key, "", item)
+			createItem := item
+			createItem.Spec.DefaultProjectRef = ""
+			createItem.Spec.DefaultEnvironmentRef = ""
+			addCreate(plan, KindFolder, key, "", createItem)
+			if folderNeedsDeferredDefaults(item.Spec) {
+				var changes []FieldDiff
+				diffField(&changes, "default_project_ref", "", item.Spec.DefaultProjectRef)
+				diffField(&changes, "default_environment_ref", "", item.Spec.DefaultEnvironmentRef)
+				addUpdate(plan, KindFolder, key, "", item, createItem, changes)
+			}
 			continue
 		}
 
@@ -227,6 +245,14 @@ func addError(plan *Plan, kind ResourceKind, name, msg string) {
 		ResourceName: name,
 		Message:      msg,
 	})
+}
+
+func workspaceNeedsDeferredDefaults(spec WorkspaceSpec) bool {
+	return strings.TrimSpace(spec.DefaultProjectRef) != "" || strings.TrimSpace(spec.DefaultEnvironmentRef) != ""
+}
+
+func folderNeedsDeferredDefaults(spec FolderSpec) bool {
+	return strings.TrimSpace(spec.DefaultProjectRef) != "" || strings.TrimSpace(spec.DefaultEnvironmentRef) != ""
 }
 
 func diffField(changes *[]FieldDiff, field, oldVal, newVal string) {
@@ -1351,7 +1377,9 @@ func diffNotebooks(plan *Plan, desired, actual []NotebookResource) {
 		}
 		var changes []FieldDiff
 		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
-		diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
+		if strings.TrimSpace(d.Spec.Owner) != "" || strings.TrimSpace(a.Spec.Owner) == "" {
+			diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
+		}
 		diffField(&changes, "workspace_ref", a.Spec.WorkspaceRef, d.Spec.WorkspaceRef)
 		diffField(&changes, "folder_ref", a.Spec.FolderRef, d.Spec.FolderRef)
 		diffField(&changes, "project_ref", a.Spec.ProjectRef, d.Spec.ProjectRef)

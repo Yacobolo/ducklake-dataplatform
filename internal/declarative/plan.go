@@ -79,8 +79,8 @@ func (p *Plan) SortActions() {
 			return !iIsDelete
 		}
 
-		li := ai.ResourceKind.Layer()
-		lj := aj.ResourceKind.Layer()
+		li := actionSortLayer(ai)
+		lj := actionSortLayer(aj)
 
 		if iIsDelete {
 			// Deletes: descending layer order (high layers first).
@@ -97,4 +97,28 @@ func (p *Plan) SortActions() {
 		// Within same layer and operation group, sort alphabetically.
 		return ai.ResourceName < aj.ResourceName
 	})
+}
+
+func actionSortLayer(action Action) int {
+	if action.Operation == OpUpdate && actionHasDeferredAuthoringDefaults(action) {
+		// Workspace/folder default refs can depend on projects and environments that
+		// are created later in the same apply, so bind them after environment creation.
+		return KindEnvironment.Layer() + 1
+	}
+	return action.ResourceKind.Layer()
+}
+
+func actionHasDeferredAuthoringDefaults(action Action) bool {
+	switch action.ResourceKind {
+	case KindWorkspace, KindFolder:
+	default:
+		return false
+	}
+
+	for _, change := range action.Changes {
+		if change.Field == "default_project_ref" || change.Field == "default_environment_ref" {
+			return true
+		}
+	}
+	return false
 }
