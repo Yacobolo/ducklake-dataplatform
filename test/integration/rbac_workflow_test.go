@@ -284,7 +284,6 @@ func TestWorkflow_ColumnMask_Lifecycle(t *testing.T) {
 			body := map[string]interface{}{
 				"table_id":        "1",
 				"name":            "fare-mask",
-				"table_id":        "1",
 				"column_name":     "Fare",
 				"mask_expression": "0.0",
 				"description":     "fare mask",
