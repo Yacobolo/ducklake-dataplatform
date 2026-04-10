@@ -43,6 +43,13 @@ func (s *Service) ExplainMetricQuery(ctx context.Context, req MetricQueryRequest
 }
 
 func (s *Service) explainMetricQuery(ctx context.Context, req MetricQueryRequest, opts explainMetricQueryOptions) (*MetricQueryPlan, error) {
+	if strings.TrimSpace(req.SemanticModelID) == "" && strings.TrimSpace(req.SemanticModelName) != "" {
+		model, err := s.models.GetByName(ctx, req.SemanticModelName)
+		if err != nil {
+			return nil, err
+		}
+		req.SemanticModelID = model.ID
+	}
 	if strings.TrimSpace(req.SemanticModelID) == "" {
 		return nil, domain.ErrValidation("semantic_model_id is required")
 	}

@@ -16,6 +16,8 @@ type mockDashboardService struct {
 	createDashboardFn            func(ctx context.Context, owner string, req domain.CreateDashboardRequest) (*domain.Dashboard, error)
 	listDashboardsFn             func(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Dashboard, int64, error)
 	getDashboardFn               func(ctx context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error)
+	listWidgetsFn                func(ctx context.Context, dashboardID string) ([]domain.DashboardWidget, error)
+	getWidgetFn                  func(ctx context.Context, dashboardID, widgetID string) (*domain.DashboardWidget, error)
 	resolveWidgetsFn             func(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error)
 	resolveWidgetsForDashboardFn func(ctx context.Context, principal string, dashboard *domain.Dashboard, widgets []domain.DashboardWidget, filters []dashboardsvc.InteractiveFilter) ([]dashboardsvc.ResolvedWidget, error)
 	updateDashboardFn            func(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateDashboardRequest) (*domain.Dashboard, error)
@@ -35,6 +37,14 @@ func (m *mockDashboardService) ListDashboards(ctx context.Context, owner *string
 
 func (m *mockDashboardService) GetDashboard(ctx context.Context, id string) (*domain.Dashboard, []domain.DashboardWidget, error) {
 	return m.getDashboardFn(ctx, id)
+}
+
+func (m *mockDashboardService) ListWidgets(ctx context.Context, dashboardID string) ([]domain.DashboardWidget, error) {
+	return m.listWidgetsFn(ctx, dashboardID)
+}
+
+func (m *mockDashboardService) GetWidget(ctx context.Context, dashboardID, widgetID string) (*domain.DashboardWidget, error) {
+	return m.getWidgetFn(ctx, dashboardID, widgetID)
 }
 
 func (m *mockDashboardService) ResolveWidgets(ctx context.Context, principal string, widgets []domain.DashboardWidget) ([]dashboardsvc.ResolvedWidget, error) {
@@ -290,7 +300,80 @@ func TestHandler_GetDashboard_MapsWidgets(t *testing.T) {
 	assert.Equal(t, DashboardWidgetSourceKindSqlQuery, (*okResp.Body.Widgets)[0].Source.Kind)
 }
 
-func TestHandler_GetResolvedDashboard_MapsResolvedWidgets(t *testing.T) {
+func TestHandler_ListDashboardWidgets_MapsWidgets(t *testing.T) {
+	t.Parallel()
+
+	chartType := domain.VisualChartBar
+	h := &APIHandler{
+		dashboards: &mockDashboardService{
+			listWidgetsFn: func(_ context.Context, dashboardID string) ([]domain.DashboardWidget, error) {
+				assert.Equal(t, "dash-1", dashboardID)
+				return []domain.DashboardWidget{{
+					ID:          "widget-1",
+					DashboardID: dashboardID,
+					Name:        "Revenue by Region",
+					Source: domain.DashboardWidgetSource{
+						Kind: domain.DashboardWidgetSourceSQLQuery,
+						SQLQuery: &domain.DashboardSQLQuerySource{
+							SQL: "select region, revenue from summary",
+						},
+					},
+					VisualSpec: &domain.VisualSpec{
+						Kind:      domain.VisualOutputChart,
+						ChartType: &chartType,
+					},
+					Layout: domain.DashboardWidgetLayout{X: 0, Y: 0, W: 4, H: 3},
+				}}, nil
+			},
+		},
+	}
+
+	resp, err := h.ListDashboardWidgets(context.Background(), GenListDashboardWidgetsRequest{DashboardId: "dash-1"})
+	require.NoError(t, err)
+
+	okResp, ok := resp.(GenListDashboardWidgets200JSONResponse)
+	require.True(t, ok)
+	require.Len(t, okResp.Body, 1)
+	require.NotNil(t, okResp.Body[0].Id)
+	assert.Equal(t, "widget-1", *okResp.Body[0].Id)
+}
+
+func TestHandler_GetDashboardWidget_MapsWidget(t *testing.T) {
+	t.Parallel()
+
+	h := &APIHandler{
+		dashboards: &mockDashboardService{
+			getWidgetFn: func(_ context.Context, dashboardID, widgetID string) (*domain.DashboardWidget, error) {
+				assert.Equal(t, "dash-1", dashboardID)
+				assert.Equal(t, "widget-1", widgetID)
+				return &domain.DashboardWidget{
+					ID:          widgetID,
+					DashboardID: dashboardID,
+					Name:        "Revenue by Region",
+					Source: domain.DashboardWidgetSource{
+						Kind: domain.DashboardWidgetSourceSQLQuery,
+						SQLQuery: &domain.DashboardSQLQuerySource{
+							SQL: "select region, revenue from summary",
+						},
+					},
+				}, nil
+			},
+		},
+	}
+
+	resp, err := h.GetDashboardWidget(context.Background(), GenGetDashboardWidgetRequest{
+		DashboardId: "dash-1",
+		WidgetId:    "widget-1",
+	})
+	require.NoError(t, err)
+
+	okResp, ok := resp.(GenGetDashboardWidget200JSONResponse)
+	require.True(t, ok)
+	require.NotNil(t, okResp.Body.Id)
+	assert.Equal(t, "widget-1", *okResp.Body.Id)
+}
+
+func TestHandler_GetRenderedDashboard_MapsResolvedWidgets(t *testing.T) {
 	t.Parallel()
 
 	ctx := domain.WithPrincipal(context.Background(), domain.ContextPrincipal{Name: "alice", Type: "user"})
@@ -352,15 +435,15 @@ func TestHandler_GetResolvedDashboard_MapsResolvedWidgets(t *testing.T) {
 		},
 	}
 
-	resp, err := h.GetResolvedDashboard(ctx, GenGetResolvedDashboardRequest{
+	resp, err := h.GetRenderedDashboard(ctx, GenGetRenderedDashboardRequest{
 		DashboardId: "dash-1",
-		Params: GenGetResolvedDashboardParams{
-			F: &[]string{"region:APAC", "region:EMEA", "borough:Queens"},
+		Params: GenGetRenderedDashboardParams{
+			Filters: &[]string{"region:APAC", "region:EMEA", "borough:Queens"},
 		},
 	})
 	require.NoError(t, err)
 
-	okResp, ok := resp.(GenGetResolvedDashboard200JSONResponse)
+	okResp, ok := resp.(GenGetRenderedDashboard200JSONResponse)
 	require.True(t, ok)
 	require.NotNil(t, okResp.Body.Dashboard)
 	require.NotNil(t, okResp.Body.Dashboard.Compute)

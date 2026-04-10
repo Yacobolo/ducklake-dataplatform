@@ -49,7 +49,7 @@ using TypeSpec.OpenAPI;
 @tagMetadata("Storage", #{ description: "Storage credentials and external location configuration for object storage access." })
 @tagMetadata("Compute", #{ description: "Compute endpoint lifecycle, assignments, and health checks." })
 @tagMetadata("Notebooks", #{ description: "Notebook authoring, sessions, cells, and job execution endpoints." })
-@tagMetadata("Dashboards", #{ description: "Dashboard and widget authoring plus resolved dashboard views." })
+@tagMetadata("Dashboards", #{ description: "Dashboard and widget authoring plus rendered dashboard views." })
 @tagMetadata("Integrations", #{ description: "Git repository and external integration lifecycle operations." })
 @tagMetadata("Pipelines", #{ description: "Pipeline definitions, jobs, runs, and orchestration controls." })
 @tagMetadata("Models", #{ description: "Model, macro, and model run management for transformation workflows." })

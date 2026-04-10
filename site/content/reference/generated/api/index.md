@@ -13,7 +13,7 @@ This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by d
 - [Auth](./endpoints/auth) (7 operations)
 - [Catalogs](./endpoints/catalogs/) (38 operations)
 - [Compute](./endpoints/compute) (11 operations)
-- [Dashboards](./endpoints/dashboards) (9 operations)
+- [Dashboards](./endpoints/dashboards) (11 operations)
 - [Governance](./endpoints/governance/) (22 operations)
 - [Health](./endpoints/health) (1 operations)
 - [Identity](./endpoints/identity) (17 operations)

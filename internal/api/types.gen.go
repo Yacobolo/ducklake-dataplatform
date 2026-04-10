@@ -3040,7 +3040,7 @@ type GetModelDAGParams = GenGetModelDAGParams
 
 type GetQueryResultsParams = GenGetQueryResultsParams
 
-type GetResolvedDashboardParams = GenGetResolvedDashboardParams
+type GetRenderedDashboardParams = GenGetRenderedDashboardParams
 
 type GetTableLineageParams = GenGetTableLineageParams
 

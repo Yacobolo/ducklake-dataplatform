@@ -12,20 +12,20 @@ import (
 // semanticService defines semantic layer operations used by the API handler.
 type semanticService interface {
 	CreateSemanticModel(ctx context.Context, principal string, req domain.CreateSemanticModelRequest) (*domain.SemanticModel, error)
-	GetSemanticModel(ctx context.Context, semanticModelID string) (*domain.SemanticModel, error)
-	ListSemanticModels(ctx context.Context, page domain.PageRequest) ([]domain.SemanticModel, int64, error)
-	UpdateSemanticModel(ctx context.Context, semanticModelID string, req domain.UpdateSemanticModelRequest) (*domain.SemanticModel, error)
+	GetSemanticModel(ctx context.Context, identifiers ...string) (*domain.SemanticModel, error)
+	ListSemanticModels(ctx context.Context, args ...any) ([]domain.SemanticModel, int64, error)
+	UpdateSemanticModel(ctx context.Context, primary string, args ...any) (*domain.SemanticModel, error)
 	DeleteSemanticModel(ctx context.Context, semanticModelID string) error
 
-	CreateMetric(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error)
-	ListMetrics(ctx context.Context, semanticModelID string) ([]domain.SemanticMetric, error)
-	UpdateMetric(ctx context.Context, semanticModelID, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error)
-	DeleteMetric(ctx context.Context, semanticModelID, metricName string) error
+	CreateMetric(ctx context.Context, principal, primary string, args ...any) (*domain.SemanticMetric, error)
+	ListMetrics(ctx context.Context, primary string, secondary ...string) ([]domain.SemanticMetric, error)
+	UpdateMetric(ctx context.Context, primary string, args ...any) (*domain.SemanticMetric, error)
+	DeleteMetric(ctx context.Context, primary string, args ...string) error
 
-	CreatePreAggregation(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error)
-	ListPreAggregations(ctx context.Context, semanticModelID string) ([]domain.SemanticPreAggregation, error)
-	UpdatePreAggregation(ctx context.Context, semanticModelID, preAggName string, req domain.UpdateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error)
-	DeletePreAggregation(ctx context.Context, semanticModelID, preAggName string) error
+	CreatePreAggregation(ctx context.Context, principal, primary string, args ...any) (*domain.SemanticPreAggregation, error)
+	ListPreAggregations(ctx context.Context, primary string, secondary ...string) ([]domain.SemanticPreAggregation, error)
+	UpdatePreAggregation(ctx context.Context, primary string, args ...any) (*domain.SemanticPreAggregation, error)
+	DeletePreAggregation(ctx context.Context, primary string, args ...string) error
 
 	CreateRelationshipForModel(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticRelationshipRequest) (*domain.SemanticRelationship, error)
 	ListRelationshipsForModel(ctx context.Context, semanticModelID string) ([]domain.SemanticRelationship, error)

@@ -64,7 +64,9 @@ type DashboardNotebookCellSource struct {
 
 // DashboardSemanticQuerySource represents dashboard semantic intent.
 type DashboardSemanticQuerySource struct {
-	SemanticModelID   string   `json:"semantic_model_id"`
+	ProjectName       string   `json:"project_name,omitempty"`
+	SemanticModelName string   `json:"semantic_model_name,omitempty"`
+	SemanticModelID   string   `json:"semantic_model_id,omitempty"`
 	Metrics           []string `json:"metrics,omitempty"`
 	RelationshipNames []string `json:"relationship_names,omitempty"`
 	Dimensions        []string `json:"dimensions,omitempty"`
@@ -259,8 +261,8 @@ func (s DashboardWidgetSource) Validate() error {
 		if s.SemanticQuery == nil {
 			return ErrValidation("semantic_query source requires semantic query details")
 		}
-		if strings.TrimSpace(s.SemanticQuery.SemanticModelID) == "" {
-			return ErrValidation("semantic_query source requires semantic_model_id")
+		if strings.TrimSpace(s.SemanticQuery.SemanticModelID) == "" && strings.TrimSpace(s.SemanticQuery.SemanticModelName) == "" {
+			return ErrValidation("semantic_query source requires semantic_model_id or semantic_model_name")
 		}
 		if len(s.SemanticQuery.Metrics) == 0 {
 			return ErrValidation("semantic_query source requires at least one metric")

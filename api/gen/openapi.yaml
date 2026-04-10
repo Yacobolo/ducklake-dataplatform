@@ -13,7 +13,7 @@ tags:
   - name: Integrations
     description: Git repository and external integration lifecycle operations.
   - name: Dashboards
-    description: Dashboard and widget authoring plus resolved dashboard views.
+    description: Dashboard and widget authoring plus rendered dashboard views.
   - name: Notebooks
     description: Notebook authoring, sessions, cells, and job execution endpoints.
   - name: Compute
@@ -5380,12 +5380,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateDashboardRequest'
-  /dashboards/{dashboardId}:
+  /dashboards/{dashboard_id}:
     get:
       operationId: getDashboard
       summary: Get dashboard
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
@@ -5439,7 +5439,7 @@ paths:
       operationId: updateDashboard
       summary: Update dashboard
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
@@ -5493,7 +5493,7 @@ paths:
       operationId: deleteDashboard
       summary: Delete dashboard
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
@@ -5533,17 +5533,17 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Dashboards
-  /dashboards/{dashboardId}/resolved:
+  /dashboards/{dashboard_id}/rendered:
     get:
-      operationId: getResolvedDashboard
-      summary: Get resolved dashboard
+      operationId: getRenderedDashboard
+      summary: Get rendered dashboard
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
             type: string
-        - name: f
+        - name: filters
           in: query
           required: false
           schema:
@@ -5596,12 +5596,68 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Dashboards
-  /dashboards/{dashboardId}/widgets:
+  /dashboards/{dashboard_id}/widgets:
+    get:
+      operationId: listDashboardWidgets
+      summary: List dashboard widgets
+      parameters:
+        - name: dashboard_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DashboardWidget'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
     post:
       operationId: createDashboardWidget
       summary: Create dashboard widget
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
@@ -5651,17 +5707,76 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateDashboardWidgetRequest'
-  /dashboards/{dashboardId}/widgets/{widgetId}:
-    patch:
-      operationId: updateDashboardWidget
-      summary: Update dashboard widget
+  /dashboards/{dashboard_id}/widgets/{widget_id}:
+    get:
+      operationId: getDashboardWidget
+      summary: Get dashboard widget
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
             type: string
-        - name: widgetId
+        - name: widget_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardWidget'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Dashboards
+    patch:
+      operationId: updateDashboardWidget
+      summary: Update dashboard widget
+      parameters:
+        - name: dashboard_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: widget_id
           in: path
           required: true
           schema:
@@ -5715,12 +5830,12 @@ paths:
       operationId: deleteDashboardWidget
       summary: Delete dashboard widget
       parameters:
-        - name: dashboardId
+        - name: dashboard_id
           in: path
           required: true
           schema:
             type: string
-        - name: widgetId
+        - name: widget_id
           in: path
           required: true
           schema:

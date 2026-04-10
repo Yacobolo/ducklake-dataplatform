@@ -152,6 +152,29 @@ func (s *Service) GetDashboard(ctx context.Context, id string) (*domain.Dashboar
 	return dashboard, widgets, nil
 }
 
+// ListWidgets loads widgets for a dashboard after confirming the dashboard exists.
+func (s *Service) ListWidgets(ctx context.Context, dashboardID string) ([]domain.DashboardWidget, error) {
+	if _, err := s.dashboards.GetByID(ctx, dashboardID); err != nil {
+		return nil, err
+	}
+	return s.widgets.ListByDashboard(ctx, dashboardID)
+}
+
+// GetWidget loads a widget scoped to a dashboard.
+func (s *Service) GetWidget(ctx context.Context, dashboardID, widgetID string) (*domain.DashboardWidget, error) {
+	if _, err := s.dashboards.GetByID(ctx, dashboardID); err != nil {
+		return nil, err
+	}
+	widget, err := s.widgets.GetByID(ctx, widgetID)
+	if err != nil {
+		return nil, err
+	}
+	if widget.DashboardID != dashboardID {
+		return nil, domain.ErrNotFound("dashboard widget not found")
+	}
+	return widget, nil
+}
+
 // UpdateDashboard updates dashboard metadata.
 func (s *Service) UpdateDashboard(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateDashboardRequest) (*domain.Dashboard, error) {
 	current, err := s.dashboards.GetByID(ctx, id)
@@ -512,6 +535,8 @@ func (s *Service) resolveWidgetWithContextAndPage(ctx context.Context, principal
 			return nil, domain.ErrValidation("dashboard semantic query execution is not configured")
 		}
 		req := semantic.MetricQueryRequest{
+			ProjectName:       widget.Source.SemanticQuery.ProjectName,
+			SemanticModelName: widget.Source.SemanticQuery.SemanticModelName,
 			SemanticModelID:   widget.Source.SemanticQuery.SemanticModelID,
 			Metrics:           widget.Source.SemanticQuery.Metrics,
 			RelationshipNames: widget.Source.SemanticQuery.RelationshipNames,

@@ -11,7 +11,7 @@ This page is generated from OpenAPI tags and operations.
 | [Auth](./endpoints/auth) | Authentication bootstrap, login, OIDC configuration, and web session administration. | 7 operations |
 | [Catalogs](./endpoints/catalogs/) | Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs. | 38 operations |
 | [Compute](./endpoints/compute) | Compute endpoint lifecycle, assignments, and health checks. | 11 operations |
-| [Dashboards](./endpoints/dashboards) | Dashboard and widget authoring plus resolved dashboard views. | 9 operations |
+| [Dashboards](./endpoints/dashboards) | Dashboard and widget authoring plus rendered dashboard views. | 11 operations |
 | [Governance](./endpoints/governance/) | Privileges, tags, classifications, row filters, and column masking controls. | 22 operations |
 | [Health](./endpoints/health) | Operational readiness and service health endpoints. | 1 operations |
 | [Identity](./endpoints/identity) | Principals, groups, and API key management for authenticated access. | 17 operations |

@@ -150,13 +150,19 @@ func widgetParticipatesInDashboardInteraction(widget domain.DashboardWidget, int
 	if widget.Source.Kind != domain.DashboardWidgetSourceSemanticQuery || widget.Source.SemanticQuery == nil {
 		return false
 	}
-	return widget.Source.SemanticQuery.ProjectName == interactionCtx.BoundModel.ProjectName &&
-		widget.Source.SemanticQuery.SemanticModelName == interactionCtx.BoundModel.Name
+	if strings.TrimSpace(widget.Source.SemanticQuery.SemanticModelID) != "" {
+		return strings.TrimSpace(widget.Source.SemanticQuery.SemanticModelID) == strings.TrimSpace(interactionCtx.BoundModel.ID)
+	}
+	return strings.TrimSpace(widget.Source.SemanticQuery.SemanticModelName) == strings.TrimSpace(interactionCtx.BoundModel.Name)
 }
 
 func widgetMatchesDashboardBinding(widget domain.DashboardWidget, dashboard *domain.Dashboard) bool {
 	if dashboard == nil || widget.Source.Kind != domain.DashboardWidgetSourceSemanticQuery || widget.Source.SemanticQuery == nil {
 		return false
+	}
+	if strings.TrimSpace(widget.Source.SemanticQuery.SemanticModelID) != "" {
+		return strings.TrimSpace(widget.Source.SemanticQuery.SemanticModelName) == strings.TrimSpace(dashboard.SemanticModelName) ||
+			strings.TrimSpace(widget.Source.SemanticQuery.ProjectName) == strings.TrimSpace(dashboard.SemanticProjectName)
 	}
 	return strings.TrimSpace(widget.Source.SemanticQuery.ProjectName) == strings.TrimSpace(dashboard.SemanticProjectName) &&
 		strings.TrimSpace(widget.Source.SemanticQuery.SemanticModelName) == strings.TrimSpace(dashboard.SemanticModelName)

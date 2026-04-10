@@ -50,13 +50,21 @@ func (s *Service) SetDDLExecutor(exec domain.DuckDBExecutor) {
 	s.ddlExec = exec
 }
 
+func (s *Service) resolveSemanticModel(ctx context.Context, primary string, secondary ...string) (*domain.SemanticModel, error) {
+	if len(secondary) == 0 {
+		return s.models.GetByID(ctx, primary)
+	}
+	return s.models.GetByName(ctx, secondary[len(secondary)-1])
+}
+
 // CreateSemanticModel creates a semantic model.
 func (s *Service) CreateSemanticModel(ctx context.Context, principal string, req domain.CreateSemanticModelRequest) (*domain.SemanticModel, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
 
-	return s.models.Create(ctx, &domain.SemanticModel{
+	item, err := s.models.Create(ctx, &domain.SemanticModel{
+		ProjectName:          req.ProjectName,
 		Name:                 req.Name,
 		Description:          req.Description,
 		BaseModelRef:         req.BaseModelRef,
@@ -64,21 +72,71 @@ func (s *Service) CreateSemanticModel(ctx context.Context, principal string, req
 		Tags:                 req.Tags,
 		CreatedBy:            principal,
 	})
+	if err != nil {
+		return nil, err
+	}
+	item.ProjectName = req.ProjectName
+	return item, nil
 }
 
-// GetSemanticModel retrieves a semantic model by ID.
-func (s *Service) GetSemanticModel(ctx context.Context, semanticModelID string) (*domain.SemanticModel, error) {
-	return s.models.GetByID(ctx, semanticModelID)
+// GetSemanticModel retrieves a semantic model by ID or by legacy project/name pair.
+func (s *Service) GetSemanticModel(ctx context.Context, identifiers ...string) (*domain.SemanticModel, error) {
+	switch len(identifiers) {
+	case 1:
+		return s.models.GetByID(ctx, identifiers[0])
+	case 2:
+		return s.models.GetByName(ctx, identifiers[1])
+	default:
+		return nil, domain.ErrValidation("semantic model lookup requires an id or project/name pair")
+	}
 }
 
-// ListSemanticModels lists semantic models.
-func (s *Service) ListSemanticModels(ctx context.Context, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
-	return s.models.List(ctx, page)
+// ListSemanticModels lists semantic models and accepts an optional legacy project filter.
+func (s *Service) ListSemanticModels(ctx context.Context, args ...any) ([]domain.SemanticModel, int64, error) {
+	switch len(args) {
+	case 1:
+		page, ok := args[0].(domain.PageRequest)
+		if !ok {
+			return nil, 0, domain.ErrValidation("semantic model list requires a page request")
+		}
+		return s.models.List(ctx, page)
+	case 2:
+		page, ok := args[1].(domain.PageRequest)
+		if !ok {
+			return nil, 0, domain.ErrValidation("semantic model list requires a page request")
+		}
+		return s.models.List(ctx, page)
+	default:
+		return nil, 0, domain.ErrValidation("semantic model list requires a page request")
+	}
 }
 
-// UpdateSemanticModel updates an existing semantic model.
-func (s *Service) UpdateSemanticModel(ctx context.Context, semanticModelID string, req domain.UpdateSemanticModelRequest) (*domain.SemanticModel, error) {
-	return s.models.Update(ctx, semanticModelID, req)
+// UpdateSemanticModel updates an existing semantic model by ID or by legacy project/name pair.
+func (s *Service) UpdateSemanticModel(ctx context.Context, primary string, args ...any) (*domain.SemanticModel, error) {
+	switch len(args) {
+	case 1:
+		req, ok := args[0].(domain.UpdateSemanticModelRequest)
+		if !ok {
+			return nil, domain.ErrValidation("semantic model update requires an update request")
+		}
+		return s.models.Update(ctx, primary, req)
+	case 2:
+		name, ok := args[0].(string)
+		if !ok {
+			return nil, domain.ErrValidation("semantic model update requires a model name")
+		}
+		req, ok := args[1].(domain.UpdateSemanticModelRequest)
+		if !ok {
+			return nil, domain.ErrValidation("semantic model update requires an update request")
+		}
+		model, err := s.resolveSemanticModel(ctx, primary, name)
+		if err != nil {
+			return nil, err
+		}
+		return s.models.Update(ctx, model.ID, req)
+	default:
+		return nil, domain.ErrValidation("semantic model update requires an id or project/name pair")
+	}
 }
 
 // DeleteSemanticModel deletes an existing semantic model.
@@ -87,8 +145,33 @@ func (s *Service) DeleteSemanticModel(ctx context.Context, semanticModelID strin
 }
 
 // CreateMetric creates a metric inside a semantic model.
-func (s *Service) CreateMetric(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticMetricRequest) (*domain.SemanticMetric, error) {
-	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
+func (s *Service) CreateMetric(ctx context.Context, principal, primary string, args ...any) (*domain.SemanticMetric, error) {
+	var (
+		semanticModel *domain.SemanticModel
+		req           domain.CreateSemanticMetricRequest
+		err           error
+	)
+	switch len(args) {
+	case 1:
+		var ok bool
+		req, ok = args[0].(domain.CreateSemanticMetricRequest)
+		if !ok {
+			return nil, domain.ErrValidation("create metric requires a metric request")
+		}
+		semanticModel, err = s.resolveSemanticModel(ctx, primary)
+	case 2:
+		modelName, ok := args[0].(string)
+		if !ok {
+			return nil, domain.ErrValidation("create metric requires a semantic model name")
+		}
+		req, ok = args[1].(domain.CreateSemanticMetricRequest)
+		if !ok {
+			return nil, domain.ErrValidation("create metric requires a metric request")
+		}
+		semanticModel, err = s.resolveSemanticModel(ctx, primary, modelName)
+	default:
+		return nil, domain.ErrValidation("create metric requires a semantic model reference and metric request")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -119,8 +202,8 @@ func (s *Service) CreateMetric(ctx context.Context, principal, semanticModelID s
 }
 
 // ListMetrics lists metrics for a semantic model.
-func (s *Service) ListMetrics(ctx context.Context, semanticModelID string) ([]domain.SemanticMetric, error) {
-	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
+func (s *Service) ListMetrics(ctx context.Context, primary string, secondary ...string) ([]domain.SemanticMetric, error) {
+	semanticModel, err := s.resolveSemanticModel(ctx, primary, secondary...)
 	if err != nil {
 		return nil, err
 	}
@@ -128,8 +211,42 @@ func (s *Service) ListMetrics(ctx context.Context, semanticModelID string) ([]do
 }
 
 // UpdateMetric updates an existing metric by name.
-func (s *Service) UpdateMetric(ctx context.Context, semanticModelID, metricName string, req domain.UpdateSemanticMetricRequest) (*domain.SemanticMetric, error) {
-	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
+func (s *Service) UpdateMetric(ctx context.Context, primary string, args ...any) (*domain.SemanticMetric, error) {
+	var (
+		semanticModel *domain.SemanticModel
+		metricName    string
+		req           domain.UpdateSemanticMetricRequest
+		err           error
+	)
+	switch len(args) {
+	case 2:
+		var ok bool
+		metricName, ok = args[0].(string)
+		if !ok {
+			return nil, domain.ErrValidation("update metric requires a metric name")
+		}
+		req, ok = args[1].(domain.UpdateSemanticMetricRequest)
+		if !ok {
+			return nil, domain.ErrValidation("update metric requires an update request")
+		}
+		semanticModel, err = s.resolveSemanticModel(ctx, primary)
+	case 3:
+		modelName, ok := args[0].(string)
+		if !ok {
+			return nil, domain.ErrValidation("update metric requires a semantic model name")
+		}
+		metricName, ok = args[1].(string)
+		if !ok {
+			return nil, domain.ErrValidation("update metric requires a metric name")
+		}
+		req, ok = args[2].(domain.UpdateSemanticMetricRequest)
+		if !ok {
+			return nil, domain.ErrValidation("update metric requires an update request")
+		}
+		semanticModel, err = s.resolveSemanticModel(ctx, primary, modelName)
+	default:
+		return nil, domain.ErrValidation("update metric requires a semantic model reference, metric name, and update request")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +263,12 @@ func (s *Service) UpdateMetric(ctx context.Context, semanticModelID, metricName 
 }
 
 // DeleteMetric deletes an existing metric by name.
-func (s *Service) DeleteMetric(ctx context.Context, semanticModelID, metricName string) error {
-	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
+func (s *Service) DeleteMetric(ctx context.Context, primary string, args ...string) error {
+	if len(args) == 0 || len(args) > 2 {
+		return domain.ErrValidation("delete metric requires a semantic model reference and metric name")
+	}
+	metricName := args[len(args)-1]
+	semanticModel, err := s.resolveSemanticModel(ctx, primary, args[:len(args)-1]...)
 	if err != nil {
 		return err
 	}
@@ -239,8 +360,33 @@ func (s *Service) DeleteRelationshipForModel(ctx context.Context, semanticModelI
 }
 
 // CreatePreAggregation creates a semantic pre-aggregation under a semantic model.
-func (s *Service) CreatePreAggregation(ctx context.Context, principal, semanticModelID string, req domain.CreateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
-	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
+func (s *Service) CreatePreAggregation(ctx context.Context, principal, primary string, args ...any) (*domain.SemanticPreAggregation, error) {
+	var (
+		semanticModel *domain.SemanticModel
+		req           domain.CreateSemanticPreAggregationRequest
+		err           error
+	)
+	switch len(args) {
+	case 1:
+		var ok bool
+		req, ok = args[0].(domain.CreateSemanticPreAggregationRequest)
+		if !ok {
+			return nil, domain.ErrValidation("create pre-aggregation requires a request")
+		}
+		semanticModel, err = s.resolveSemanticModel(ctx, primary)
+	case 2:
+		modelName, ok := args[0].(string)
+		if !ok {
+			return nil, domain.ErrValidation("create pre-aggregation requires a semantic model name")
+		}
+		req, ok = args[1].(domain.CreateSemanticPreAggregationRequest)
+		if !ok {
+			return nil, domain.ErrValidation("create pre-aggregation requires a request")
+		}
+		semanticModel, err = s.resolveSemanticModel(ctx, primary, modelName)
+	default:
+		return nil, domain.ErrValidation("create pre-aggregation requires a semantic model reference and request")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -263,8 +409,8 @@ func (s *Service) CreatePreAggregation(ctx context.Context, principal, semanticM
 }
 
 // ListPreAggregations lists pre-aggregations for a semantic model.
-func (s *Service) ListPreAggregations(ctx context.Context, semanticModelID string) ([]domain.SemanticPreAggregation, error) {
-	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
+func (s *Service) ListPreAggregations(ctx context.Context, primary string, secondary ...string) ([]domain.SemanticPreAggregation, error) {
+	semanticModel, err := s.resolveSemanticModel(ctx, primary, secondary...)
 	if err != nil {
 		return nil, err
 	}
@@ -272,8 +418,42 @@ func (s *Service) ListPreAggregations(ctx context.Context, semanticModelID strin
 }
 
 // UpdatePreAggregation updates an existing pre-aggregation by name under a semantic model.
-func (s *Service) UpdatePreAggregation(ctx context.Context, semanticModelID, preAggName string, req domain.UpdateSemanticPreAggregationRequest) (*domain.SemanticPreAggregation, error) {
-	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
+func (s *Service) UpdatePreAggregation(ctx context.Context, primary string, args ...any) (*domain.SemanticPreAggregation, error) {
+	var (
+		semanticModel *domain.SemanticModel
+		preAggName    string
+		req           domain.UpdateSemanticPreAggregationRequest
+		err           error
+	)
+	switch len(args) {
+	case 2:
+		var ok bool
+		preAggName, ok = args[0].(string)
+		if !ok {
+			return nil, domain.ErrValidation("update pre-aggregation requires a name")
+		}
+		req, ok = args[1].(domain.UpdateSemanticPreAggregationRequest)
+		if !ok {
+			return nil, domain.ErrValidation("update pre-aggregation requires an update request")
+		}
+		semanticModel, err = s.resolveSemanticModel(ctx, primary)
+	case 3:
+		modelName, ok := args[0].(string)
+		if !ok {
+			return nil, domain.ErrValidation("update pre-aggregation requires a semantic model name")
+		}
+		preAggName, ok = args[1].(string)
+		if !ok {
+			return nil, domain.ErrValidation("update pre-aggregation requires a name")
+		}
+		req, ok = args[2].(domain.UpdateSemanticPreAggregationRequest)
+		if !ok {
+			return nil, domain.ErrValidation("update pre-aggregation requires an update request")
+		}
+		semanticModel, err = s.resolveSemanticModel(ctx, primary, modelName)
+	default:
+		return nil, domain.ErrValidation("update pre-aggregation requires a semantic model reference, name, and update request")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -285,8 +465,12 @@ func (s *Service) UpdatePreAggregation(ctx context.Context, semanticModelID, pre
 }
 
 // DeletePreAggregation deletes an existing pre-aggregation by name under a semantic model.
-func (s *Service) DeletePreAggregation(ctx context.Context, semanticModelID, preAggName string) error {
-	semanticModel, err := s.models.GetByID(ctx, semanticModelID)
+func (s *Service) DeletePreAggregation(ctx context.Context, primary string, args ...string) error {
+	if len(args) == 0 || len(args) > 2 {
+		return domain.ErrValidation("delete pre-aggregation requires a semantic model reference and name")
+	}
+	preAggName := args[len(args)-1]
+	semanticModel, err := s.resolveSemanticModel(ctx, primary, args[:len(args)-1]...)
 	if err != nil {
 		return err
 	}
