@@ -56,6 +56,14 @@ func (s *ColumnMaskService) GetByID(ctx context.Context, id string) (*domain.Col
 	return s.repo.GetByID(ctx, id)
 }
 
+// List returns a paginated list of all column masks. Requires admin privileges.
+func (s *ColumnMaskService) List(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, 0, err
+	}
+	return s.repo.List(ctx, page)
+}
+
 // GetForTable returns a paginated list of column masks for a table. Requires admin privileges.
 func (s *ColumnMaskService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
 	if err := requireAdmin(ctx); err != nil {

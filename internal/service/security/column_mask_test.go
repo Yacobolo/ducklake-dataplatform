@@ -14,6 +14,7 @@ import (
 type mockColumnMaskRepo struct {
 	CreateFn                  func(ctx context.Context, m *domain.ColumnMask) (*domain.ColumnMask, error)
 	GetByIDFn                 func(ctx context.Context, id string) (*domain.ColumnMask, error)
+	ListFn                    func(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	GetForTableFn             func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	UpdateFn                  func(ctx context.Context, id string, req domain.UpdateColumnMaskRequest) (*domain.ColumnMask, error)
 	DeleteFn                  func(ctx context.Context, id string) error
@@ -32,6 +33,13 @@ func (m *mockColumnMaskRepo) GetByID(ctx context.Context, id string) (*domain.Co
 		panic("unexpected call to mockColumnMaskRepo.GetByID")
 	}
 	return m.GetByIDFn(ctx, id)
+}
+
+func (m *mockColumnMaskRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
+	if m.ListFn == nil {
+		panic("unexpected call to mockColumnMaskRepo.List")
+	}
+	return m.ListFn(ctx, page)
 }
 
 func (m *mockColumnMaskRepo) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {

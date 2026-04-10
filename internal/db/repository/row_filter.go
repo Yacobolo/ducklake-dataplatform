@@ -49,6 +49,38 @@ func (r *RowFilterRepo) GetByID(ctx context.Context, id string) (*domain.RowFilt
 	return item, nil
 }
 
+// List returns a paginated list of all row filters.
+func (r *RowFilterRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM row_filters`).Scan(&total); err != nil {
+		return nil, 0, mapDBError(err)
+	}
+
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, table_id, filter_sql, description, created_at, name
+		FROM row_filters
+		ORDER BY created_at DESC, id ASC
+		LIMIT ? OFFSET ?
+	`, page.Limit(), page.Offset())
+	if err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	defer rows.Close() //nolint:errcheck
+
+	items := make([]domain.RowFilter, 0)
+	for rows.Next() {
+		item, err := scanRowFilter(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		items = append(items, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	return items, total, nil
+}
+
 // GetForTable returns a paginated list of row filters for a table.
 func (r *RowFilterRepo) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
 	total, err := r.q.CountRowFiltersForTable(ctx, tableID)

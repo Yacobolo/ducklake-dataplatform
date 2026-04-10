@@ -39,6 +39,7 @@ type grantService interface {
 // rowFilterService defines the row filter operations used by the API handler.
 type rowFilterService interface {
 	GetByID(ctx context.Context, id string) (*domain.RowFilter, error)
+	List(ctx context.Context, page domain.PageRequest) ([]domain.RowFilter, int64, error)
 	GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error)
 	Create(ctx context.Context, req domain.CreateRowFilterRequest) (*domain.RowFilter, error)
 	Update(ctx context.Context, id string, req domain.UpdateRowFilterRequest) (*domain.RowFilter, error)
@@ -51,6 +52,7 @@ type rowFilterService interface {
 // columnMaskService defines the column mask operations used by the API handler.
 type columnMaskService interface {
 	GetByID(ctx context.Context, id string) (*domain.ColumnMask, error)
+	List(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	Create(ctx context.Context, req domain.CreateColumnMaskRequest) (*domain.ColumnMask, error)
 	Update(ctx context.Context, id string, req domain.UpdateColumnMaskRequest) (*domain.ColumnMask, error)
@@ -463,11 +465,17 @@ func (h *APIHandler) DeleteGrant(ctx context.Context, req GenDeleteGrantRequest)
 
 // ListRowFilters implements the endpoint for listing row filters for a table.
 func (h *APIHandler) ListRowFilters(ctx context.Context, req GenListRowFiltersRequest) (GenListRowFiltersResponse, error) {
-	if req.Params.TableId == nil || *req.Params.TableId == "" {
-		return ListRowFilters400JSONResponse{badRequestErrorResponse(domain.ErrValidation("table_id is required"))}, nil
-	}
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	fs, total, err := h.rowFilters.GetForTable(ctx, *req.Params.TableId, page)
+	var (
+		fs    []domain.RowFilter
+		total int64
+		err   error
+	)
+	if req.Params.TableId != nil && *req.Params.TableId != "" {
+		fs, total, err = h.rowFilters.GetForTable(ctx, *req.Params.TableId, page)
+	} else {
+		fs, total, err = h.rowFilters.List(ctx, page)
+	}
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListRowFiltersResponse]("listRowFilters", err, domainErrorResponder[GenListRowFiltersResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListRowFiltersResponse { return ListRowFilters403JSONResponse{resp} },
@@ -672,12 +680,25 @@ func (h *APIHandler) UnbindRowFilter(ctx context.Context, req GenUnbindRowFilter
 
 // ListColumnMasks implements the endpoint for listing column masks for a table.
 func (h *APIHandler) ListColumnMasks(ctx context.Context, req GenListColumnMasksRequest) (GenListColumnMasksResponse, error) {
-	if req.Params.TableId == nil || *req.Params.TableId == "" {
-		return ListColumnMasks400JSONResponse{badRequestErrorResponse(domain.ErrValidation("table_id is required"))}, nil
-	}
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	ms, total, err := h.columnMasks.GetForTable(ctx, *req.Params.TableId, page)
+	var (
+		ms    []domain.ColumnMask
+		total int64
+		err   error
+	)
+	if req.Params.TableId != nil && *req.Params.TableId != "" {
+		ms, total, err = h.columnMasks.GetForTable(ctx, *req.Params.TableId, page)
+	} else {
+		ms, total, err = h.columnMasks.List(ctx, page)
+	}
 	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenListColumnMasksResponse]("listColumnMasks", err, domainErrorResponder[GenListColumnMasksResponse]{
+			Forbidden: func(resp ForbiddenJSONResponse) GenListColumnMasksResponse {
+				return ListColumnMasks403JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
 		return nil, err
 	}
 	out := make([]ColumnMask, len(ms))

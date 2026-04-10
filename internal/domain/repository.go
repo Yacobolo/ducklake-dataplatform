@@ -131,6 +131,7 @@ type GrantRepository interface {
 type RowFilterRepository interface {
 	Create(ctx context.Context, f *RowFilter) (*RowFilter, error)
 	GetByID(ctx context.Context, id string) (*RowFilter, error)
+	List(ctx context.Context, page PageRequest) ([]RowFilter, int64, error)
 	GetForTable(ctx context.Context, tableID string, page PageRequest) ([]RowFilter, int64, error)
 	Update(ctx context.Context, id string, req UpdateRowFilterRequest) (*RowFilter, error)
 	Delete(ctx context.Context, id string) error
@@ -144,6 +145,7 @@ type RowFilterRepository interface {
 type ColumnMaskRepository interface {
 	Create(ctx context.Context, m *ColumnMask) (*ColumnMask, error)
 	GetByID(ctx context.Context, id string) (*ColumnMask, error)
+	List(ctx context.Context, page PageRequest) ([]ColumnMask, int64, error)
 	GetForTable(ctx context.Context, tableID string, page PageRequest) ([]ColumnMask, int64, error)
 	Update(ctx context.Context, id string, req UpdateColumnMaskRequest) (*ColumnMask, error)
 	Delete(ctx context.Context, id string) error

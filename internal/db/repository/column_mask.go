@@ -51,6 +51,38 @@ func (r *ColumnMaskRepo) GetByID(ctx context.Context, id string) (*domain.Column
 	return item, nil
 }
 
+// List returns a paginated list of all column masks.
+func (r *ColumnMaskRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM column_masks`).Scan(&total); err != nil {
+		return nil, 0, mapDBError(err)
+	}
+
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, table_id, column_name, mask_expression, description, created_at, name
+		FROM column_masks
+		ORDER BY created_at DESC, id ASC
+		LIMIT ? OFFSET ?
+	`, page.Limit(), page.Offset())
+	if err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	defer rows.Close() //nolint:errcheck
+
+	items := make([]domain.ColumnMask, 0)
+	for rows.Next() {
+		item, err := scanColumnMask(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		items = append(items, *item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, mapDBError(err)
+	}
+	return items, total, nil
+}
+
 // GetForTable returns a paginated list of column masks for a table.
 func (r *ColumnMaskRepo) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
 	total, err := r.q.CountColumnMasksForTable(ctx, tableID)

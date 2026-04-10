@@ -58,6 +58,14 @@ func (s *RowFilterService) GetByID(ctx context.Context, id string) (*domain.RowF
 	return s.repo.GetByID(ctx, id)
 }
 
+// List returns a paginated list of all row filters. Requires admin privileges.
+func (s *RowFilterService) List(ctx context.Context, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
+	if err := requireAdmin(ctx); err != nil {
+		return nil, 0, err
+	}
+	return s.repo.List(ctx, page)
+}
+
 // GetForTable returns a paginated list of row filters for a table. Requires admin privileges.
 func (s *RowFilterService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
 	if err := requireAdmin(ctx); err != nil {

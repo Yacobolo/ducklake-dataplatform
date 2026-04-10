@@ -14,11 +14,11 @@ import (
 // === Mocks ===
 
 type mockPrincipalService struct {
-	listFn     func(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error)
-	createFn   func(ctx context.Context, req domain.CreatePrincipalRequest) (*domain.Principal, error)
-	getByIDFn  func(ctx context.Context, id string) (*domain.Principal, error)
-	deleteFn   func(ctx context.Context, id string) error
-	updateFn   func(ctx context.Context, id string, req domain.UpdatePrincipalRequest) (*domain.Principal, error)
+	listFn    func(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error)
+	createFn  func(ctx context.Context, req domain.CreatePrincipalRequest) (*domain.Principal, error)
+	getByIDFn func(ctx context.Context, id string) (*domain.Principal, error)
+	deleteFn  func(ctx context.Context, id string) error
+	updateFn  func(ctx context.Context, id string, req domain.UpdatePrincipalRequest) (*domain.Principal, error)
 }
 
 func (m *mockPrincipalService) List(ctx context.Context, page domain.PageRequest) ([]domain.Principal, int64, error) {
@@ -230,6 +230,7 @@ func (m *mockGrantService) Revoke(ctx context.Context, principal string, grantID
 
 type mockColumnMaskService struct {
 	getByIDFn      func(ctx context.Context, id string) (*domain.ColumnMask, error)
+	listFn         func(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	getForTableFn  func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error)
 	listBindingsFn func(ctx context.Context, maskID string) ([]domain.ColumnMaskBinding, error)
 	createFn       func(ctx context.Context, req domain.CreateColumnMaskRequest) (*domain.ColumnMask, error)
@@ -244,6 +245,13 @@ func (m *mockColumnMaskService) GetByID(ctx context.Context, id string) (*domain
 		panic("mockColumnMaskService.GetByID called but not configured")
 	}
 	return m.getByIDFn(ctx, id)
+}
+
+func (m *mockColumnMaskService) List(ctx context.Context, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {
+	if m.listFn == nil {
+		panic("mockColumnMaskService.List called but not configured")
+	}
+	return m.listFn(ctx, page)
 }
 
 func (m *mockColumnMaskService) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.ColumnMask, int64, error) {

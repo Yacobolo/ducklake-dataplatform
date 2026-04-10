@@ -14,6 +14,7 @@ import (
 type mockRowFilterRepo struct {
 	CreateFn                  func(ctx context.Context, f *domain.RowFilter) (*domain.RowFilter, error)
 	GetByIDFn                 func(ctx context.Context, id string) (*domain.RowFilter, error)
+	ListFn                    func(ctx context.Context, page domain.PageRequest) ([]domain.RowFilter, int64, error)
 	GetForTableFn             func(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error)
 	UpdateFn                  func(ctx context.Context, id string, req domain.UpdateRowFilterRequest) (*domain.RowFilter, error)
 	DeleteFn                  func(ctx context.Context, id string) error
@@ -32,6 +33,13 @@ func (m *mockRowFilterRepo) GetByID(ctx context.Context, id string) (*domain.Row
 		panic("unexpected call to mockRowFilterRepo.GetByID")
 	}
 	return m.GetByIDFn(ctx, id)
+}
+
+func (m *mockRowFilterRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
+	if m.ListFn == nil {
+		panic("unexpected call to mockRowFilterRepo.List")
+	}
+	return m.ListFn(ctx, page)
 }
 
 func (m *mockRowFilterRepo) GetForTable(ctx context.Context, tableID string, page domain.PageRequest) ([]domain.RowFilter, int64, error) {
