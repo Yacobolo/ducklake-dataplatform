@@ -15,6 +15,10 @@ func Diff(desired, actual *DesiredState) *Plan {
 	plan := &Plan{}
 
 	// Diff each resource type. Order doesn't matter here — SortActions handles ordering later.
+	diffWorkspaces(plan, desired.Workspaces, actual.Workspaces)
+	diffFolders(plan, desired.Folders, actual.Folders)
+	diffProjects(plan, desired.Projects, actual.Projects)
+	diffEnvironments(plan, desired.Environments, actual.Environments)
 	diffDomains(plan, desired.Domains, actual.Domains)
 	diffTeams(plan, desired.Teams, actual.Teams)
 	diffPrincipals(plan, desired.Principals, actual.Principals)
@@ -44,6 +48,162 @@ func Diff(desired, actual *DesiredState) *Plan {
 
 	plan.SortActions()
 	return plan
+}
+
+func diffWorkspaces(plan *Plan, desired, actual []WorkspaceResource) {
+	actualMap := make(map[string]WorkspaceResource, len(actual))
+	for _, item := range actual {
+		actualMap[item.Name] = item
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, item := range desired {
+		seen[item.Name] = true
+		current, exists := actualMap[item.Name]
+		if !exists {
+			createItem := item
+			createItem.Spec.DefaultProjectRef = ""
+			createItem.Spec.DefaultEnvironmentRef = ""
+			addCreate(plan, KindWorkspace, item.Name, "", createItem)
+			if workspaceNeedsDeferredDefaults(item.Spec) {
+				var changes []FieldDiff
+				diffField(&changes, "default_project_ref", "", item.Spec.DefaultProjectRef)
+				diffField(&changes, "default_environment_ref", "", item.Spec.DefaultEnvironmentRef)
+				addUpdate(plan, KindWorkspace, item.Name, "", item, createItem, changes)
+			}
+			continue
+		}
+
+		var changes []FieldDiff
+		diffField(&changes, "kind", current.Spec.Kind, item.Spec.Kind)
+		diffField(&changes, "owner_principal", current.Spec.OwnerPrincipal, item.Spec.OwnerPrincipal)
+		diffField(&changes, "owner_team_id", current.Spec.OwnerTeamID, item.Spec.OwnerTeamID)
+		diffField(&changes, "default_project_ref", current.Spec.DefaultProjectRef, item.Spec.DefaultProjectRef)
+		diffField(&changes, "default_environment_ref", current.Spec.DefaultEnvironmentRef, item.Spec.DefaultEnvironmentRef)
+		diffField(&changes, "git_repo_id", current.Spec.GitRepoID, item.Spec.GitRepoID)
+		diffField(&changes, "git_root_path", current.Spec.GitRootPath, item.Spec.GitRootPath)
+		if len(changes) > 0 {
+			addUpdate(plan, KindWorkspace, item.Name, "", item, current, changes)
+		}
+	}
+
+	for _, item := range actual {
+		if !seen[item.Name] {
+			addDelete(plan, KindWorkspace, item.Name, item)
+		}
+	}
+}
+
+func diffFolders(plan *Plan, desired, actual []FolderResource) {
+	actualMap := make(map[string]FolderResource, len(actual))
+	for _, item := range actual {
+		actualMap[folderRefKey(item.Spec.WorkspaceRef, item.Spec.ParentFolderRef, item.Name)] = item
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, item := range desired {
+		key := folderRefKey(item.Spec.WorkspaceRef, item.Spec.ParentFolderRef, item.Name)
+		seen[key] = true
+		current, exists := actualMap[key]
+		if !exists {
+			createItem := item
+			createItem.Spec.DefaultProjectRef = ""
+			createItem.Spec.DefaultEnvironmentRef = ""
+			addCreate(plan, KindFolder, key, "", createItem)
+			if folderNeedsDeferredDefaults(item.Spec) {
+				var changes []FieldDiff
+				diffField(&changes, "default_project_ref", "", item.Spec.DefaultProjectRef)
+				diffField(&changes, "default_environment_ref", "", item.Spec.DefaultEnvironmentRef)
+				addUpdate(plan, KindFolder, key, "", item, createItem, changes)
+			}
+			continue
+		}
+
+		var changes []FieldDiff
+		diffField(&changes, "default_project_ref", current.Spec.DefaultProjectRef, item.Spec.DefaultProjectRef)
+		diffField(&changes, "default_environment_ref", current.Spec.DefaultEnvironmentRef, item.Spec.DefaultEnvironmentRef)
+		diffField(&changes, "git_repo_id", current.Spec.GitRepoID, item.Spec.GitRepoID)
+		diffField(&changes, "git_root_path", current.Spec.GitRootPath, item.Spec.GitRootPath)
+		if len(changes) > 0 {
+			addUpdate(plan, KindFolder, key, "", item, current, changes)
+		}
+	}
+
+	for key, item := range actualMap {
+		if !seen[key] {
+			addDelete(plan, KindFolder, key, item)
+		}
+	}
+}
+
+func diffProjects(plan *Plan, desired, actual []ProjectResource) {
+	actualMap := make(map[string]ProjectResource, len(actual))
+	for _, item := range actual {
+		actualMap[projectRefKey(item.Spec.WorkspaceRef, item.Name)] = item
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, item := range desired {
+		key := projectRefKey(item.Spec.WorkspaceRef, item.Name)
+		seen[key] = true
+		current, exists := actualMap[key]
+		if !exists {
+			addCreate(plan, KindProject, key, "", item)
+			continue
+		}
+
+		var changes []FieldDiff
+		diffField(&changes, "kind", current.Spec.Kind, item.Spec.Kind)
+		diffField(&changes, "description", current.Spec.Description, item.Spec.Description)
+		diffField(&changes, "product_id", current.Spec.ProductID, item.Spec.ProductID)
+		diffField(&changes, "default_branch", current.Spec.DefaultBranch, item.Spec.DefaultBranch)
+		if len(changes) > 0 {
+			addUpdate(plan, KindProject, key, "", item, current, changes)
+		}
+	}
+
+	for key, item := range actualMap {
+		if !seen[key] {
+			addDelete(plan, KindProject, key, item)
+		}
+	}
+}
+
+func diffEnvironments(plan *Plan, desired, actual []EnvironmentResource) {
+	actualMap := make(map[string]EnvironmentResource, len(actual))
+	for _, item := range actual {
+		actualMap[environmentRefKeyFromProjectRef(item.Spec.ProjectRef, item.Name)] = item
+	}
+
+	seen := make(map[string]bool, len(desired))
+	for _, item := range desired {
+		key := environmentRefKeyFromProjectRef(item.Spec.ProjectRef, item.Name)
+		seen[key] = true
+		current, exists := actualMap[key]
+		if !exists {
+			addCreate(plan, KindEnvironment, key, "", item)
+			continue
+		}
+
+		var changes []FieldDiff
+		diffField(&changes, "kind", current.Spec.Kind, item.Spec.Kind)
+		diffField(&changes, "description", current.Spec.Description, item.Spec.Description)
+		diffField(&changes, "target_catalog", current.Spec.TargetCatalog, item.Spec.TargetCatalog)
+		diffField(&changes, "target_schema", current.Spec.TargetSchema, item.Spec.TargetSchema)
+		diffField(&changes, "compute_endpoint", current.Spec.ComputeEndpoint, item.Spec.ComputeEndpoint)
+		diffField(&changes, "defer_to_environment", current.Spec.DeferToEnvironment, item.Spec.DeferToEnvironment)
+		diffMapField(&changes, "variables", current.Spec.Variables, item.Spec.Variables)
+		diffMapField(&changes, "source_overrides", current.Spec.SourceOverrides, item.Spec.SourceOverrides)
+		if len(changes) > 0 {
+			addUpdate(plan, KindEnvironment, key, "", item, current, changes)
+		}
+	}
+
+	for key, item := range actualMap {
+		if !seen[key] {
+			addDelete(plan, KindEnvironment, key, item)
+		}
+	}
 }
 
 // === Helpers ===
@@ -85,6 +245,14 @@ func addError(plan *Plan, kind ResourceKind, name, msg string) {
 		ResourceName: name,
 		Message:      msg,
 	})
+}
+
+func workspaceNeedsDeferredDefaults(spec WorkspaceSpec) bool {
+	return strings.TrimSpace(spec.DefaultProjectRef) != "" || strings.TrimSpace(spec.DefaultEnvironmentRef) != ""
+}
+
+func folderNeedsDeferredDefaults(spec FolderSpec) bool {
+	return strings.TrimSpace(spec.DefaultProjectRef) != "" || strings.TrimSpace(spec.DefaultEnvironmentRef) != ""
 }
 
 func diffField(changes *[]FieldDiff, field, oldVal, newVal string) {
@@ -1209,7 +1377,13 @@ func diffNotebooks(plan *Plan, desired, actual []NotebookResource) {
 		}
 		var changes []FieldDiff
 		diffField(&changes, "description", a.Spec.Description, d.Spec.Description)
-		diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
+		if strings.TrimSpace(d.Spec.Owner) != "" || strings.TrimSpace(a.Spec.Owner) == "" {
+			diffField(&changes, "owner", a.Spec.Owner, d.Spec.Owner)
+		}
+		diffField(&changes, "workspace_ref", a.Spec.WorkspaceRef, d.Spec.WorkspaceRef)
+		diffField(&changes, "folder_ref", a.Spec.FolderRef, d.Spec.FolderRef)
+		diffField(&changes, "project_ref", a.Spec.ProjectRef, d.Spec.ProjectRef)
+		diffField(&changes, "environment_ref", a.Spec.EnvironmentRef, d.Spec.EnvironmentRef)
 		diffField(&changes, "publish", mustJSON(a.Spec.Publish), mustJSON(d.Spec.Publish))
 		diffCells(&changes, a.Spec.Cells, d.Spec.Cells)
 		if len(changes) > 0 {

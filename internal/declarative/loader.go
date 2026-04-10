@@ -76,32 +76,53 @@ func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, erro
 		return nil, err
 	}
 
-	// 7. notebooks/
+	// 7. authoring core resources.
+	if err := loadAuthoringCore(dir, state, opts); err != nil {
+		return nil, err
+	}
+
+	// 8. notebooks/
 	if err := loadNotebooks(dir, state, opts); err != nil {
 		return nil, err
 	}
 
-	// 8. assets/
+	// 9. assets/
 	if err := loadAssets(dir, state, opts); err != nil {
 		return nil, err
 	}
 
-	// 9. models/
+	// 10. models/
 	if err := loadModels(dir, state, opts); err != nil {
 		return nil, err
 	}
 
-	// 10. semantic_models/
+	// 11. semantic_models/
 	if err := loadSemanticModels(dir, state, opts); err != nil {
 		return nil, err
 	}
 
-	// 11. macros/
+	// 12. macros/
 	if err := loadMacros(dir, state, opts); err != nil {
 		return nil, err
 	}
 
 	return state, nil
+}
+
+func loadAuthoringCore(root string, state *DesiredState, opts LoadOptions) error {
+	if err := loadWorkspaces(root, state, opts); err != nil {
+		return err
+	}
+	if err := loadFolders(root, state, opts); err != nil {
+		return err
+	}
+	if err := loadProjects(root, state, opts); err != nil {
+		return err
+	}
+	if err := loadEnvironments(root, state, opts); err != nil {
+		return err
+	}
+	return nil
 }
 
 func failIfLegacyPipelinesPresent(root string) error {
@@ -493,6 +514,170 @@ func loadCompute(root string, state *DesiredState, opts LoadOptions) error {
 			return err
 		}
 		state.ComputeDefaults = &defaultsDoc.Defaults
+	}
+
+	return nil
+}
+
+func loadWorkspaces(root string, state *DesiredState, opts LoadOptions) error {
+	dir := filepath.Join(root, "workspaces")
+	if !dirExists(dir) {
+		return nil
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read workspaces directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		name := strings.TrimSuffix(entry.Name(), ".yaml")
+		path := filepath.Join(dir, entry.Name())
+
+		var doc WorkspaceDoc
+		found, err := loadYAMLFile(path, &doc, opts)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameWorkspace); err != nil {
+			return err
+		}
+		if doc.Metadata.Name != name {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
+		}
+
+		state.Workspaces = append(state.Workspaces, WorkspaceResource{Name: name, Spec: doc.Spec})
+	}
+
+	return nil
+}
+
+func loadFolders(root string, state *DesiredState, opts LoadOptions) error {
+	dir := filepath.Join(root, "folders")
+	if !dirExists(dir) {
+		return nil
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read folders directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		name := strings.TrimSuffix(entry.Name(), ".yaml")
+		path := filepath.Join(dir, entry.Name())
+
+		var doc FolderDoc
+		found, err := loadYAMLFile(path, &doc, opts)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameFolder); err != nil {
+			return err
+		}
+		if doc.Metadata.Name != name {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
+		}
+
+		state.Folders = append(state.Folders, FolderResource{Name: name, Spec: doc.Spec})
+	}
+
+	return nil
+}
+
+func loadProjects(root string, state *DesiredState, opts LoadOptions) error {
+	dir := filepath.Join(root, "projects")
+	if !dirExists(dir) {
+		return nil
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read projects directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		name := strings.TrimSuffix(entry.Name(), ".yaml")
+		path := filepath.Join(dir, entry.Name())
+
+		var doc ProjectDoc
+		found, err := loadYAMLFile(path, &doc, opts)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameProject); err != nil {
+			return err
+		}
+		if doc.Metadata.Name != name {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
+		}
+
+		state.Projects = append(state.Projects, ProjectResource{Name: name, Spec: doc.Spec})
+	}
+
+	return nil
+}
+
+func loadEnvironments(root string, state *DesiredState, opts LoadOptions) error {
+	dir := filepath.Join(root, "environments")
+	if !dirExists(dir) {
+		return nil
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read environments directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		name := strings.TrimSuffix(entry.Name(), ".yaml")
+		path := filepath.Join(dir, entry.Name())
+
+		var doc EnvironmentDoc
+		found, err := loadYAMLFile(path, &doc, opts)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameEnvironment); err != nil {
+			return err
+		}
+		if doc.Metadata.Name != name {
+			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
+		}
+
+		state.Environments = append(state.Environments, EnvironmentResource{Name: name, Spec: doc.Spec})
 	}
 
 	return nil
@@ -1055,8 +1240,8 @@ func loadSemanticModelsRecursive(dir string, state *DesiredState, opts LoadOptio
 		}
 
 		state.SemanticModels = append(state.SemanticModels, SemanticModelResource{
-			ModelName:   modelName,
-			Spec:        modelDoc.Spec,
+			ModelName: modelName,
+			Spec:      modelDoc.Spec,
 		})
 	}
 

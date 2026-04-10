@@ -392,6 +392,83 @@ type ComputeRoutingDefaultsSpec struct {
 	NotebookMode    string `yaml:"notebook_mode,omitempty"`
 }
 
+// === Authoring Core ===
+
+// WorkspaceDoc declares a top-level authoring workspace.
+type WorkspaceDoc struct {
+	APIVersion string        `yaml:"apiVersion"`
+	Kind       string        `yaml:"kind"`
+	Metadata   ObjectMeta    `yaml:"metadata"`
+	Spec       WorkspaceSpec `yaml:"spec"`
+}
+
+// WorkspaceSpec holds the declarative workspace configuration.
+type WorkspaceSpec struct {
+	Kind                  string `yaml:"kind"`
+	OwnerPrincipal        string `yaml:"owner_principal,omitempty"`
+	OwnerTeamID           string `yaml:"owner_team_id,omitempty"`
+	DefaultProjectRef     string `yaml:"default_project_ref,omitempty"`
+	DefaultEnvironmentRef string `yaml:"default_environment_ref,omitempty"`
+	GitRepoID             string `yaml:"git_repo_id,omitempty"`
+	GitRootPath           string `yaml:"git_root_path,omitempty"`
+}
+
+// FolderDoc declares a folder within a workspace namespace tree.
+type FolderDoc struct {
+	APIVersion string     `yaml:"apiVersion"`
+	Kind       string     `yaml:"kind"`
+	Metadata   ObjectMeta `yaml:"metadata"`
+	Spec       FolderSpec `yaml:"spec"`
+}
+
+// FolderSpec holds the declarative folder configuration.
+type FolderSpec struct {
+	WorkspaceRef          string `yaml:"workspace_ref"`
+	ParentFolderRef       string `yaml:"parent_folder_ref,omitempty"`
+	DefaultProjectRef     string `yaml:"default_project_ref,omitempty"`
+	DefaultEnvironmentRef string `yaml:"default_environment_ref,omitempty"`
+	GitRepoID             string `yaml:"git_repo_id,omitempty"`
+	GitRootPath           string `yaml:"git_root_path,omitempty"`
+}
+
+// ProjectDoc declares an execution/build project inside a workspace.
+type ProjectDoc struct {
+	APIVersion string      `yaml:"apiVersion"`
+	Kind       string      `yaml:"kind"`
+	Metadata   ObjectMeta  `yaml:"metadata"`
+	Spec       ProjectSpec `yaml:"spec"`
+}
+
+// ProjectSpec holds the declarative project configuration.
+type ProjectSpec struct {
+	WorkspaceRef  string `yaml:"workspace_ref"`
+	Kind          string `yaml:"kind"`
+	Description   string `yaml:"description,omitempty"`
+	ProductID     string `yaml:"product_id,omitempty"`
+	DefaultBranch string `yaml:"default_branch,omitempty"`
+}
+
+// EnvironmentDoc declares an execution environment under a project.
+type EnvironmentDoc struct {
+	APIVersion string          `yaml:"apiVersion"`
+	Kind       string          `yaml:"kind"`
+	Metadata   ObjectMeta      `yaml:"metadata"`
+	Spec       EnvironmentSpec `yaml:"spec"`
+}
+
+// EnvironmentSpec holds the declarative environment configuration.
+type EnvironmentSpec struct {
+	ProjectRef         string            `yaml:"project_ref"`
+	Kind               string            `yaml:"kind"`
+	Description        string            `yaml:"description,omitempty"`
+	TargetCatalog      string            `yaml:"target_catalog"`
+	TargetSchema       string            `yaml:"target_schema"`
+	ComputeEndpoint    string            `yaml:"compute_endpoint,omitempty"`
+	DeferToEnvironment string            `yaml:"defer_to_environment,omitempty"`
+	Variables          map[string]string `yaml:"variables,omitempty"`
+	SourceOverrides    map[string]string `yaml:"source_overrides,omitempty"`
+}
+
 // === Workflows ===
 
 // NotebookDoc declares a notebook with SQL or markdown cells.
@@ -404,10 +481,14 @@ type NotebookDoc struct {
 
 // NotebookSpec holds the configuration for a notebook.
 type NotebookSpec struct {
-	Description string               `yaml:"description,omitempty"`
-	Owner       string               `yaml:"owner,omitempty"`
-	Cells       []CellSpec           `yaml:"cells,omitempty"`
-	Publish     *NotebookPublishSpec `yaml:"publish,omitempty"`
+	Description    string               `yaml:"description,omitempty"`
+	Owner          string               `yaml:"owner,omitempty"`
+	WorkspaceRef   string               `yaml:"workspace_ref,omitempty"`
+	FolderRef      string               `yaml:"folder_ref,omitempty"`
+	ProjectRef     string               `yaml:"project_ref,omitempty"`
+	EnvironmentRef string               `yaml:"environment_ref,omitempty"`
+	Cells          []CellSpec           `yaml:"cells,omitempty"`
+	Publish        *NotebookPublishSpec `yaml:"publish,omitempty"`
 }
 
 // CellSpec describes a single cell in a notebook.
@@ -600,6 +681,10 @@ type AssetCheckSpec struct {
 
 // DesiredState is the fully-parsed representation of all YAML files.
 type DesiredState struct {
+	Workspaces         []WorkspaceResource
+	Folders            []FolderResource
+	Projects           []ProjectResource
+	Environments       []EnvironmentResource
 	Domains            []DomainResource
 	Teams              []TeamResource
 	DataProducts       []DataProductResource
@@ -628,6 +713,30 @@ type DesiredState struct {
 	Models             []ModelResource
 	SemanticModels     []SemanticModelResource
 	Macros             []MacroResource
+}
+
+// WorkspaceResource is a workspace with its resolved name.
+type WorkspaceResource struct {
+	Name string
+	Spec WorkspaceSpec
+}
+
+// FolderResource is a folder with its resolved name.
+type FolderResource struct {
+	Name string
+	Spec FolderSpec
+}
+
+// ProjectResource is a project with its resolved name.
+type ProjectResource struct {
+	Name string
+	Spec ProjectSpec
+}
+
+// EnvironmentResource is an environment with its resolved name.
+type EnvironmentResource struct {
+	Name string
+	Spec EnvironmentSpec
 }
 
 // DomainResource is a data domain with resolved name.
@@ -836,15 +945,15 @@ type SemanticModelSpec struct {
 
 // SemanticMetricSpec defines a metric declaration in declarative config.
 type SemanticMetricSpec struct {
-	Name               string `yaml:"name"`
-	Description        string `yaml:"description,omitempty"`
-	MetricType         string `yaml:"metric_type"`
-	ExpressionMode     string `yaml:"expression_mode,omitempty"`
-	Expression         string `yaml:"expression"`
+	Name               string   `yaml:"name"`
+	Description        string   `yaml:"description,omitempty"`
+	MetricType         string   `yaml:"metric_type"`
+	ExpressionMode     string   `yaml:"expression_mode,omitempty"`
+	Expression         string   `yaml:"expression"`
 	RelationshipNames  []string `yaml:"relationship_names,omitempty"`
-	DefaultTimeGrain   string `yaml:"default_time_grain,omitempty"`
-	Format             string `yaml:"format,omitempty"`
-	CertificationState string `yaml:"certification_state,omitempty"`
+	DefaultTimeGrain   string   `yaml:"default_time_grain,omitempty"`
+	Format             string   `yaml:"format,omitempty"`
+	CertificationState string   `yaml:"certification_state,omitempty"`
 }
 
 // SemanticRelationshipSpec defines an edge to another semantic model.
@@ -869,8 +978,8 @@ type SemanticPreAggSpec struct {
 
 // SemanticModelResource is a semantic model resource.
 type SemanticModelResource struct {
-	ModelName   string
-	Spec        SemanticModelSpec
+	ModelName string
+	Spec      SemanticModelSpec
 }
 
 // ActualState mirrors DesiredState but populated from the server.

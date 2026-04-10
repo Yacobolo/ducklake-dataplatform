@@ -19,7 +19,9 @@ This section is generated from versioned JSON Schema artifacts.
 - [ComputeRoutingDefaults](./kinds/compute-routing-defaults) (`kinds/compute-routing-defaults.schema.json`)
 - [DataProduct](./kinds/data-product) (`kinds/data-product.schema.json`)
 - [Domain](./kinds/domain) (`kinds/domain.schema.json`)
+- [Environment](./kinds/environment) (`kinds/environment.schema.json`)
 - [ExternalLocationList](./kinds/external-location-list) (`kinds/external-location-list.schema.json`)
+- [Folder](./kinds/folder) (`kinds/folder.schema.json`)
 - [GrantList](./kinds/grant-list) (`kinds/grant-list.schema.json`)
 - [GroupList](./kinds/group-list) (`kinds/group-list.schema.json`)
 - [Macro](./kinds/macro) (`kinds/macro.schema.json`)
@@ -27,6 +29,7 @@ This section is generated from versioned JSON Schema artifacts.
 - [Notebook](./kinds/notebook) (`kinds/notebook.schema.json`)
 - [PrincipalList](./kinds/principal-list) (`kinds/principal-list.schema.json`)
 - [PrivilegePresetList](./kinds/privilege-preset-list) (`kinds/privilege-preset-list.schema.json`)
+- [Project](./kinds/project) (`kinds/project.schema.json`)
 - [RowFilterList](./kinds/row-filter-list) (`kinds/row-filter-list.schema.json`)
 - [Schema](./kinds/schema) (`kinds/schema.schema.json`)
 - [SemanticModel](./kinds/semantic-model) (`kinds/semantic-model.schema.json`)
@@ -36,6 +39,7 @@ This section is generated from versioned JSON Schema artifacts.
 - [Team](./kinds/team) (`kinds/team.schema.json`)
 - [View](./kinds/view) (`kinds/view.schema.json`)
 - [Volume](./kinds/volume) (`kinds/volume.schema.json`)
+- [Workspace](./kinds/workspace) (`kinds/workspace.schema.json`)
 
 ## Checksums
 
@@ -51,14 +55,17 @@ This section is generated from versioned JSON Schema artifacts.
 | `kinds/compute-routing-defaults.schema.json` | `e6a2500fca51b845e3fa36709cc94459ce6d87fa79ef7010fe9da9dc380df41a` |
 | `kinds/data-product.schema.json` | `41ea4d256416634a6b11b22929e26952e2cf116867d0b45e3fb952f74309c7d3` |
 | `kinds/domain.schema.json` | `0774c2d9dc41e98a44bb1296f0665d768555dd340fafcd1427a7dcbb5db5257d` |
+| `kinds/environment.schema.json` | `5c82a99e6e43c4a8400de290342d38fb05bc81dbb3e91d77b86e922cca15c129` |
 | `kinds/external-location-list.schema.json` | `0ee50a446813a293604b06df459c07013a211df1e2bb11365062d306793b2514` |
+| `kinds/folder.schema.json` | `f99e6ef9c71ee0a387113a2b4b517989ae10dcf830ef6f1508d0617ecdea7d2d` |
 | `kinds/grant-list.schema.json` | `01894b437ecda3477ace579d8c9fce446218daf8c49976513baef5fa7de0ed76` |
 | `kinds/group-list.schema.json` | `3c23b29013f530fefac36ed3beabb88fb8bc873bb1ad2e53d30d0376b91823d5` |
 | `kinds/macro.schema.json` | `fe3a76e6ed90c61b5be605c11462910fcc8f97e58609050cd92b6e22a5b2bed6` |
 | `kinds/model.schema.json` | `ec3ee7f0e447d9840dfaf3ffaf6e67c7167bb5f4dcee8b01aec94ff09439d9c4` |
-| `kinds/notebook.schema.json` | `235a58e120cd6519585f694ca24b90ab73312e6e7e0a7bf1b79e6d824df56597` |
+| `kinds/notebook.schema.json` | `af0f91d19210fcc570ceed44771130a912e590504fb315d8b4888b3dc0640919` |
 | `kinds/principal-list.schema.json` | `950660b984996c155f9e12c25948f3c8443d5b76940c3c0289eb532c8de151d4` |
 | `kinds/privilege-preset-list.schema.json` | `090c732c29ec1e85731909b89d44041f9e8138184a209812da0048290d53bf87` |
+| `kinds/project.schema.json` | `28ab7b25d0062570121bf94b462e6f7c6e7c3b5489df12406ad48abf0c94c363` |
 | `kinds/row-filter-list.schema.json` | `ac9b42eda99888d725ae668923c2ac73c0156587844108078a034292a22c5743` |
 | `kinds/schema.schema.json` | `e8d6fdeb80c6b552101c4031014213099e56b67842095b1dcd7021c3af9ede06` |
 | `kinds/semantic-model.schema.json` | `99feec038fd5551a9fb282a661df2d10cbc87aa3322b14add3f78d9f20f8b8ae` |
@@ -68,3 +75,4 @@ This section is generated from versioned JSON Schema artifacts.
 | `kinds/team.schema.json` | `dd4995f6fe0e2b018359129d7a8d7abc364b3022b012585488618f781970ce21` |
 | `kinds/view.schema.json` | `590efe3350dc234557c642624e03ef130d54e75bdfbe16696b4ad243a15a2c0e` |
 | `kinds/volume.schema.json` | `7e49d78c0a7af8442e6866996c6971fb251a50d60b22af5dcdd3ca0f9b27063c` |
+| `kinds/workspace.schema.json` | `93ae5d31edc351c8767bf9a7bc9172a9307b14b2d6074f48d2fe70b15195eb00` |

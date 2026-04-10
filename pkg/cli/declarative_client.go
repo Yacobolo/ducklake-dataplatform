@@ -55,6 +55,14 @@ type resourceIndex struct {
 	principalIDByName     map[string]string // "alice" → UUID
 	groupIDByName         map[string]string // "admins" → UUID
 	grantIDByIdentity     map[string]string // effective grant identity → UUID
+	workspaceIDByName     map[string]string // "personal" -> UUID
+	workspaceNameByID     map[string]string // UUID -> "personal"
+	folderIDByKey         map[string]string // "workspace/parent/child" -> UUID
+	folderKeyByID         map[string]string // UUID -> "workspace/parent/child"
+	projectIDByKey        map[string]string // "workspace/project" -> UUID
+	projectKeyByID        map[string]string // UUID -> "workspace/project"
+	environmentIDByKey    map[string]string // "workspace/project/environment" -> UUID
+	environmentKeyByID    map[string]string // UUID -> "workspace/project/environment"
 	catalogIDByName       map[string]string // "demo" → UUID
 	semanticModelIDByPath map[string]string // "project.model" → UUID
 	schemaIDByPath        map[string]string // "catalog.schema" → UUID
@@ -76,6 +84,14 @@ func newResourceIndex() *resourceIndex {
 		principalIDByName:     make(map[string]string),
 		groupIDByName:         make(map[string]string),
 		grantIDByIdentity:     make(map[string]string),
+		workspaceIDByName:     make(map[string]string),
+		workspaceNameByID:     make(map[string]string),
+		folderIDByKey:         make(map[string]string),
+		folderKeyByID:         make(map[string]string),
+		projectIDByKey:        make(map[string]string),
+		projectKeyByID:        make(map[string]string),
+		environmentIDByKey:    make(map[string]string),
+		environmentKeyByID:    make(map[string]string),
 		catalogIDByName:       make(map[string]string),
 		semanticModelIDByPath: make(map[string]string),
 		schemaIDByPath:        make(map[string]string),
@@ -229,8 +245,8 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 	if err := c.readTagAssignments(ctx, state); err != nil {
 		return nil, fmt.Errorf("read tag assignments: %w", err)
 	}
-	if err := c.readNotebooks(ctx, state); err != nil {
-		return nil, fmt.Errorf("read notebooks: %w", err)
+	if err := c.readWorkspaces(ctx, state); err != nil {
+		return nil, fmt.Errorf("read workspaces: %w", err)
 	}
 	if err := c.readDomains(ctx, state); err != nil {
 		return nil, fmt.Errorf("read domains: %w", err)
@@ -252,6 +268,9 @@ func (c *APIStateClient) ReadState(ctx context.Context) (*declarative.DesiredSta
 	}
 	if err := c.readSemanticModels(ctx, state); err != nil {
 		return nil, fmt.Errorf("read semantic models: %w", err)
+	}
+	if err := c.readNotebooks(ctx, state); err != nil {
+		return nil, fmt.Errorf("read notebooks: %w", err)
 	}
 
 	return state, nil
@@ -1276,13 +1295,305 @@ func derefString(value *string) string {
 	return *value
 }
 
+func workspaceProjectKey(workspaceName, projectName string) string {
+	workspaceName = strings.TrimSpace(workspaceName)
+	projectName = strings.TrimSpace(projectName)
+	if workspaceName == "" || projectName == "" {
+		return ""
+	}
+	return workspaceName + "/" + projectName
+}
+
+func workspaceEnvironmentKey(workspaceName, projectName, environmentName string) string {
+	projectKey := workspaceProjectKey(workspaceName, projectName)
+	environmentName = strings.TrimSpace(environmentName)
+	if projectKey == "" || environmentName == "" {
+		return ""
+	}
+	return projectKey + "/" + environmentName
+}
+
+func workspaceFolderKey(workspaceName, parentKey, folderName string) string {
+	workspaceName = strings.TrimSpace(workspaceName)
+	parentKey = strings.TrimSpace(parentKey)
+	folderName = strings.TrimSpace(folderName)
+	if workspaceName == "" || folderName == "" {
+		return ""
+	}
+	if parentKey != "" {
+		return parentKey + "/" + folderName
+	}
+	return workspaceName + "/" + folderName
+}
+
+func lastSegment(value string) string {
+	idx := strings.LastIndex(value, "/")
+	if idx < 0 {
+		return value
+	}
+	return value[idx+1:]
+}
+
+// --- Authoring core resources ---
+
+type apiWorkspace struct {
+	ID                   string `json:"id"`
+	Name                 string `json:"name"`
+	Kind                 string `json:"kind"`
+	OwnerPrincipal       string `json:"owner_principal"`
+	OwnerTeamID          string `json:"owner_team_id"`
+	DefaultProjectID     string `json:"default_project_id"`
+	DefaultEnvironmentID string `json:"default_environment_id"`
+	GitRepoID            string `json:"git_repo_id"`
+	GitRootPath          string `json:"git_root_path"`
+}
+
+type apiFolder struct {
+	ID                   string `json:"id"`
+	WorkspaceID          string `json:"workspace_id"`
+	Name                 string `json:"name"`
+	ParentFolderID       string `json:"parent_folder_id"`
+	SystemRole           string `json:"system_role"`
+	DefaultProjectID     string `json:"default_project_id"`
+	DefaultEnvironmentID string `json:"default_environment_id"`
+	GitRepoID            string `json:"git_repo_id"`
+	GitRootPath          string `json:"git_root_path"`
+}
+
+type apiProject struct {
+	ID            string `json:"id"`
+	WorkspaceID   string `json:"workspace_id"`
+	Name          string `json:"name"`
+	Kind          string `json:"kind"`
+	Description   string `json:"description"`
+	ProductID     string `json:"product_id"`
+	DefaultBranch string `json:"default_branch"`
+}
+
+type apiEnvironment struct {
+	ID                 string            `json:"id"`
+	ProjectID          string            `json:"project_id"`
+	ProjectName        string            `json:"project_name"`
+	Name               string            `json:"name"`
+	Kind               string            `json:"kind"`
+	Description        string            `json:"description"`
+	TargetCatalog      string            `json:"target_catalog"`
+	TargetSchema       string            `json:"target_schema"`
+	ComputeEndpoint    string            `json:"compute_endpoint"`
+	DeferToEnvironment string            `json:"defer_to_environment"`
+	Variables          map[string]string `json:"variables"`
+	SourceOverrides    map[string]string `json:"source_overrides"`
+}
+
+func (c *APIStateClient) readWorkspaces(ctx context.Context, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/workspaces")
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return nil
+	}
+
+	var items []apiWorkspace
+	if err := mergePages(pages, &items); err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		if item.ID != "" && c.index != nil {
+			c.index.workspaceIDByName[item.Name] = item.ID
+			c.index.workspaceNameByID[item.ID] = item.Name
+		}
+
+		if item.ID != "" {
+			if err := c.readWorkspaceProjects(ctx, item.ID, item.Name, state); err != nil {
+				return fmt.Errorf("workspace %q projects: %w", item.Name, err)
+			}
+			if err := c.readWorkspaceFolders(ctx, item.ID, item.Name, state); err != nil {
+				return fmt.Errorf("workspace %q folders: %w", item.Name, err)
+			}
+		}
+
+		spec := declarative.WorkspaceSpec{
+			Kind:                  item.Kind,
+			OwnerPrincipal:        item.OwnerPrincipal,
+			OwnerTeamID:           item.OwnerTeamID,
+			DefaultProjectRef:     c.reverseLookupProjectKey(item.DefaultProjectID),
+			DefaultEnvironmentRef: c.reverseLookupEnvironmentKey(item.DefaultEnvironmentID),
+			GitRepoID:             item.GitRepoID,
+			GitRootPath:           item.GitRootPath,
+		}
+		state.Workspaces = append(state.Workspaces, declarative.WorkspaceResource{
+			Name: item.Name,
+			Spec: spec,
+		})
+	}
+
+	return nil
+}
+
+func (c *APIStateClient) readWorkspaceProjects(ctx context.Context, workspaceID, workspaceName string, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/workspaces/"+workspaceID+"/projects")
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return nil
+	}
+
+	var items []apiProject
+	if err := mergePages(pages, &items); err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		projectKey := workspaceProjectKey(workspaceName, item.Name)
+		if item.ID != "" && c.index != nil {
+			c.index.projectIDByKey[projectKey] = item.ID
+			c.index.projectKeyByID[item.ID] = projectKey
+		}
+		state.Projects = append(state.Projects, declarative.ProjectResource{
+			Name: item.Name,
+			Spec: declarative.ProjectSpec{
+				WorkspaceRef:  workspaceName,
+				Kind:          item.Kind,
+				Description:   item.Description,
+				ProductID:     item.ProductID,
+				DefaultBranch: item.DefaultBranch,
+			},
+		})
+		if item.ID != "" {
+			if err := c.readProjectEnvironments(ctx, item.ID, workspaceName, item.Name, state); err != nil {
+				return fmt.Errorf("project %q environments: %w", item.Name, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (c *APIStateClient) readProjectEnvironments(ctx context.Context, projectID, workspaceName, projectName string, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/projects/"+projectID+"/environments")
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return nil
+	}
+
+	var items []apiEnvironment
+	if err := mergePages(pages, &items); err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		envKey := workspaceEnvironmentKey(workspaceName, projectName, item.Name)
+		if item.ID != "" && c.index != nil {
+			c.index.environmentIDByKey[envKey] = item.ID
+			c.index.environmentKeyByID[item.ID] = envKey
+		}
+		state.Environments = append(state.Environments, declarative.EnvironmentResource{
+			Name: item.Name,
+			Spec: declarative.EnvironmentSpec{
+				ProjectRef:         workspaceProjectKey(workspaceName, projectName),
+				Kind:               item.Kind,
+				Description:        item.Description,
+				TargetCatalog:      item.TargetCatalog,
+				TargetSchema:       item.TargetSchema,
+				ComputeEndpoint:    item.ComputeEndpoint,
+				DeferToEnvironment: item.DeferToEnvironment,
+				Variables:          cloneStringMap(item.Variables),
+				SourceOverrides:    cloneStringMap(item.SourceOverrides),
+			},
+		})
+	}
+
+	return nil
+}
+
+func (c *APIStateClient) readWorkspaceFolders(ctx context.Context, workspaceID, workspaceName string, state *declarative.DesiredState) error {
+	pages, err := c.fetchAllPages(ctx, "/workspaces/"+workspaceID+"/folders")
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return nil
+	}
+
+	var items []apiFolder
+	if err := mergePages(pages, &items); err != nil {
+		return err
+	}
+
+	byID := make(map[string]apiFolder, len(items))
+	for _, item := range items {
+		if item.ID != "" {
+			byID[item.ID] = item
+		}
+	}
+
+	keyByID := make(map[string]string, len(items))
+	var resolve func(id string) string
+	resolve = func(id string) string {
+		if key, ok := keyByID[id]; ok {
+			return key
+		}
+		item, ok := byID[id]
+		if !ok {
+			return ""
+		}
+		if strings.EqualFold(item.SystemRole, "WORKSPACE_ROOT") {
+			keyByID[id] = ""
+			return ""
+		}
+		parentKey := ""
+		if strings.TrimSpace(item.ParentFolderID) != "" {
+			parentKey = resolve(item.ParentFolderID)
+		}
+		key := workspaceFolderKey(workspaceName, parentKey, item.Name)
+		keyByID[id] = key
+		return key
+	}
+
+	for _, item := range items {
+		if strings.EqualFold(item.SystemRole, "WORKSPACE_ROOT") {
+			continue
+		}
+		key := resolve(item.ID)
+		parentKey := ""
+		if strings.TrimSpace(item.ParentFolderID) != "" {
+			parentKey = resolve(item.ParentFolderID)
+		}
+		if item.ID != "" && c.index != nil {
+			c.index.folderIDByKey[key] = item.ID
+			c.index.folderKeyByID[item.ID] = key
+		}
+		state.Folders = append(state.Folders, declarative.FolderResource{
+			Name: item.Name,
+			Spec: declarative.FolderSpec{
+				WorkspaceRef:          workspaceName,
+				ParentFolderRef:       parentKey,
+				DefaultProjectRef:     c.reverseLookupProjectKey(item.DefaultProjectID),
+				DefaultEnvironmentRef: c.reverseLookupEnvironmentKey(item.DefaultEnvironmentID),
+				GitRepoID:             item.GitRepoID,
+				GitRootPath:           item.GitRootPath,
+			},
+		})
+	}
+
+	return nil
+}
+
 // --- Workflow resources (simplified) ---
 
 type apiNotebook struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Owner       string `json:"owner"`
+	ID                    string `json:"id"`
+	Name                  string `json:"name"`
+	Description           string `json:"description"`
+	Owner                 string `json:"owner"`
+	FolderID              string `json:"folder_id"`
+	ProjectOverrideID     string `json:"project_override_id"`
+	EnvironmentOverrideID string `json:"environment_override_id"`
 }
 
 type apiNotebookCell struct {
@@ -1311,7 +1622,12 @@ type apiNotebookPublishModel struct {
 type apiNotebookDetail struct {
 	Notebook     apiNotebook              `json:"notebook"`
 	Cells        []apiNotebookCell        `json:"cells"`
+	Context      *apiNotebookContext      `json:"context"`
 	PublishModel *apiNotebookPublishModel `json:"publish_model"`
+}
+
+type apiNotebookContext struct {
+	WorkspaceID string `json:"workspace_id"`
 }
 
 type apiAsset struct {
@@ -1396,10 +1712,14 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 			state.Notebooks = append(state.Notebooks, declarative.NotebookResource{
 				Name: nb.Name,
 				Spec: declarative.NotebookSpec{
-					Description: nb.Description,
-					Owner:       nb.Owner,
-					Cells:       cells,
-					Publish:     publish,
+					Description:    nb.Description,
+					Owner:          nb.Owner,
+					WorkspaceRef:   c.reverseLookupWorkspaceName(detail.Context),
+					FolderRef:      c.reverseLookupFolderKey(nb.FolderID),
+					ProjectRef:     c.reverseLookupProjectKey(nb.ProjectOverrideID),
+					EnvironmentRef: c.reverseLookupEnvironmentKey(nb.EnvironmentOverrideID),
+					Cells:          cells,
+					Publish:        publish,
 				},
 			})
 			continue
@@ -1408,9 +1728,12 @@ func (c *APIStateClient) readNotebooks(ctx context.Context, state *declarative.D
 		state.Notebooks = append(state.Notebooks, declarative.NotebookResource{
 			Name: nb.Name,
 			Spec: declarative.NotebookSpec{
-				Description: nb.Description,
-				Owner:       nb.Owner,
-				Cells:       cells,
+				Description:    nb.Description,
+				Owner:          nb.Owner,
+				FolderRef:      c.reverseLookupFolderKey(nb.FolderID),
+				ProjectRef:     c.reverseLookupProjectKey(nb.ProjectOverrideID),
+				EnvironmentRef: c.reverseLookupEnvironmentKey(nb.EnvironmentOverrideID),
+				Cells:          cells,
 			},
 		})
 	}
@@ -1855,6 +2178,34 @@ func (c *APIStateClient) readAssetChecks(ctx context.Context, assetKey string) (
 		})
 	}
 	return out, nil
+}
+
+func (c *APIStateClient) reverseLookupWorkspaceName(ctx *apiNotebookContext) string {
+	if ctx == nil || ctx.WorkspaceID == "" || c.index == nil {
+		return ""
+	}
+	return c.index.workspaceNameByID[ctx.WorkspaceID]
+}
+
+func (c *APIStateClient) reverseLookupFolderKey(folderID string) string {
+	if folderID == "" || c.index == nil {
+		return ""
+	}
+	return c.index.folderKeyByID[folderID]
+}
+
+func (c *APIStateClient) reverseLookupProjectKey(projectID string) string {
+	if projectID == "" || c.index == nil {
+		return ""
+	}
+	return c.index.projectKeyByID[projectID]
+}
+
+func (c *APIStateClient) reverseLookupEnvironmentKey(environmentID string) string {
+	if environmentID == "" || c.index == nil {
+		return ""
+	}
+	return c.index.environmentKeyByID[environmentID]
 }
 
 func (c *APIStateClient) readNotebookDetail(_ context.Context, notebookID string) (*apiNotebookDetail, error) {
@@ -2436,6 +2787,50 @@ func (c *APIStateClient) resolvePrincipalID(name, principalType string) (string,
 	return id, nil
 }
 
+func (c *APIStateClient) resolveWorkspaceID(name string) (string, error) {
+	if c.index == nil {
+		return "", fmt.Errorf("resource index not populated; call ReadState first")
+	}
+	id, ok := c.index.workspaceIDByName[name]
+	if !ok {
+		return "", fmt.Errorf("workspace %q not found in index", name)
+	}
+	return id, nil
+}
+
+func (c *APIStateClient) resolveFolderID(key string) (string, error) {
+	if c.index == nil {
+		return "", fmt.Errorf("resource index not populated; call ReadState first")
+	}
+	id, ok := c.index.folderIDByKey[key]
+	if !ok {
+		return "", fmt.Errorf("folder %q not found in index", key)
+	}
+	return id, nil
+}
+
+func (c *APIStateClient) resolveProjectID(key string) (string, error) {
+	if c.index == nil {
+		return "", fmt.Errorf("resource index not populated; call ReadState first")
+	}
+	id, ok := c.index.projectIDByKey[key]
+	if !ok {
+		return "", fmt.Errorf("project %q not found in index", key)
+	}
+	return id, nil
+}
+
+func (c *APIStateClient) resolveEnvironmentID(key string) (string, error) {
+	if c.index == nil {
+		return "", fmt.Errorf("resource index not populated; call ReadState first")
+	}
+	id, ok := c.index.environmentIDByKey[key]
+	if !ok {
+		return "", fmt.Errorf("environment %q not found in index", key)
+	}
+	return id, nil
+}
+
 func grantIdentity(grant declarative.GrantSpec) string {
 	return strings.Join([]string{
 		grant.Principal,
@@ -2710,6 +3105,8 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 	switch action.ResourceKind {
 	case declarative.KindStorageCredential:
 		return c.executeStorageCredential(ctx, action)
+	case declarative.KindWorkspace:
+		return c.executeWorkspace(ctx, action)
 	case declarative.KindPrincipal:
 		return c.executePrincipal(ctx, action)
 	case declarative.KindGroup:
@@ -2720,6 +3117,12 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 		return c.executeComputeEndpoint(ctx, action)
 	case declarative.KindComputeRoutingDefaults:
 		return c.executeComputeRoutingDefaults(ctx, action)
+	case declarative.KindFolder:
+		return c.executeFolder(ctx, action)
+	case declarative.KindProject:
+		return c.executeProject(ctx, action)
+	case declarative.KindEnvironment:
+		return c.executeEnvironment(ctx, action)
 	case declarative.KindComputeAssignment:
 		return c.executeComputeAssignment(ctx, action)
 	case declarative.KindGroupMembership:
@@ -3076,6 +3479,419 @@ func (c *APIStateClient) executeSemanticModel(ctx context.Context, action declar
 	}
 }
 
+func (c *APIStateClient) executeWorkspace(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		item := action.Desired.(declarative.WorkspaceResource)
+		body := map[string]interface{}{
+			"name": item.Name,
+			"kind": item.Spec.Kind,
+		}
+		if item.Spec.OwnerPrincipal != "" {
+			body["owner_principal"] = item.Spec.OwnerPrincipal
+		}
+		if item.Spec.OwnerTeamID != "" {
+			body["owner_team_id"] = item.Spec.OwnerTeamID
+		}
+		if item.Spec.GitRepoID != "" {
+			body["git_repo_id"] = item.Spec.GitRepoID
+		}
+		if item.Spec.GitRootPath != "" {
+			body["git_root_path"] = item.Spec.GitRootPath
+		}
+		if item.Spec.DefaultProjectRef != "" {
+			projectID, err := c.resolveProjectID(item.Spec.DefaultProjectRef)
+			if err != nil {
+				return err
+			}
+			body["default_project_id"] = projectID
+		}
+		if item.Spec.DefaultEnvironmentRef != "" {
+			environmentID, err := c.resolveEnvironmentID(item.Spec.DefaultEnvironmentRef)
+			if err != nil {
+				return err
+			}
+			body["default_environment_id"] = environmentID
+		}
+		resp, err := c.client.Do(http.MethodPost, "/workspaces", nil, body)
+		if err != nil {
+			return err
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		if id != "" && c.index != nil {
+			c.index.workspaceIDByName[item.Name] = id
+			c.index.workspaceNameByID[id] = item.Name
+		}
+		return nil
+	case declarative.OpUpdate:
+		item := action.Desired.(declarative.WorkspaceResource)
+		workspaceID, err := c.resolveWorkspaceID(item.Name)
+		if err != nil {
+			return err
+		}
+		body := map[string]interface{}{}
+		body["name"] = item.Name
+		if item.Spec.GitRepoID != "" {
+			body["git_repo_id"] = item.Spec.GitRepoID
+		}
+		if item.Spec.GitRootPath != "" {
+			body["git_root_path"] = item.Spec.GitRootPath
+		}
+		if item.Spec.DefaultProjectRef != "" {
+			projectID, err := c.resolveProjectID(item.Spec.DefaultProjectRef)
+			if err != nil {
+				return err
+			}
+			body["default_project_id"] = projectID
+		}
+		if item.Spec.DefaultEnvironmentRef != "" {
+			environmentID, err := c.resolveEnvironmentID(item.Spec.DefaultEnvironmentRef)
+			if err != nil {
+				return err
+			}
+			body["default_environment_id"] = environmentID
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/workspaces/"+workspaceID, nil, body)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	case declarative.OpDelete:
+		name := action.ResourceName
+		if actual, ok := action.Actual.(declarative.WorkspaceResource); ok && actual.Name != "" {
+			name = actual.Name
+		}
+		workspaceID, err := c.resolveWorkspaceID(name)
+		if err != nil {
+			return err
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/workspaces/"+workspaceID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
+		if c.index != nil {
+			delete(c.index.workspaceIDByName, name)
+			delete(c.index.workspaceNameByID, workspaceID)
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported operation %s for workspace", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeFolder(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		item := action.Desired.(declarative.FolderResource)
+		workspaceID, err := c.resolveWorkspaceID(item.Spec.WorkspaceRef)
+		if err != nil {
+			return err
+		}
+		body := map[string]interface{}{
+			"name": item.Name,
+		}
+		if item.Spec.ParentFolderRef != "" {
+			parentID, err := c.resolveFolderID(item.Spec.ParentFolderRef)
+			if err != nil {
+				return err
+			}
+			body["parent_folder_id"] = parentID
+		}
+		if item.Spec.DefaultProjectRef != "" {
+			projectID, err := c.resolveProjectID(item.Spec.DefaultProjectRef)
+			if err != nil {
+				return err
+			}
+			body["default_project_id"] = projectID
+		}
+		if item.Spec.DefaultEnvironmentRef != "" {
+			environmentID, err := c.resolveEnvironmentID(item.Spec.DefaultEnvironmentRef)
+			if err != nil {
+				return err
+			}
+			body["default_environment_id"] = environmentID
+		}
+		if item.Spec.GitRepoID != "" {
+			body["git_repo_id"] = item.Spec.GitRepoID
+		}
+		if item.Spec.GitRootPath != "" {
+			body["git_root_path"] = item.Spec.GitRootPath
+		}
+		resp, err := c.client.Do(http.MethodPost, "/workspaces/"+workspaceID+"/folders", nil, body)
+		if err != nil {
+			return err
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		key := workspaceFolderKey(item.Spec.WorkspaceRef, item.Spec.ParentFolderRef, item.Name)
+		if id != "" && c.index != nil {
+			c.index.folderIDByKey[key] = id
+			c.index.folderKeyByID[id] = key
+		}
+		return nil
+	case declarative.OpUpdate:
+		item := action.Desired.(declarative.FolderResource)
+		key := workspaceFolderKey(item.Spec.WorkspaceRef, item.Spec.ParentFolderRef, item.Name)
+		folderID, err := c.resolveFolderID(key)
+		if err != nil {
+			return err
+		}
+		body := map[string]interface{}{}
+		if item.Spec.DefaultProjectRef != "" {
+			projectID, err := c.resolveProjectID(item.Spec.DefaultProjectRef)
+			if err != nil {
+				return err
+			}
+			body["default_project_id"] = projectID
+		}
+		if item.Spec.DefaultEnvironmentRef != "" {
+			environmentID, err := c.resolveEnvironmentID(item.Spec.DefaultEnvironmentRef)
+			if err != nil {
+				return err
+			}
+			body["default_environment_id"] = environmentID
+		}
+		if item.Spec.GitRepoID != "" {
+			body["git_repo_id"] = item.Spec.GitRepoID
+		}
+		if item.Spec.GitRootPath != "" {
+			body["git_root_path"] = item.Spec.GitRootPath
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/folders/"+folderID, nil, body)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	case declarative.OpDelete:
+		key := action.ResourceName
+		if actual, ok := action.Actual.(declarative.FolderResource); ok {
+			key = workspaceFolderKey(actual.Spec.WorkspaceRef, actual.Spec.ParentFolderRef, actual.Name)
+		}
+		folderID, err := c.resolveFolderID(key)
+		if err != nil {
+			return err
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/folders/"+folderID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
+		if c.index != nil {
+			delete(c.index.folderIDByKey, key)
+			delete(c.index.folderKeyByID, folderID)
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported operation %s for folder", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeProject(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		item := action.Desired.(declarative.ProjectResource)
+		workspaceID, err := c.resolveWorkspaceID(item.Spec.WorkspaceRef)
+		if err != nil {
+			return err
+		}
+		body := map[string]interface{}{
+			"name": item.Name,
+			"kind": item.Spec.Kind,
+		}
+		if item.Spec.Description != "" {
+			body["description"] = item.Spec.Description
+		}
+		if item.Spec.ProductID != "" {
+			body["product_id"] = item.Spec.ProductID
+		}
+		if item.Spec.DefaultBranch != "" {
+			body["default_branch"] = item.Spec.DefaultBranch
+		}
+		resp, err := c.client.Do(http.MethodPost, "/workspaces/"+workspaceID+"/projects", nil, body)
+		if err != nil {
+			return err
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		key := workspaceProjectKey(item.Spec.WorkspaceRef, item.Name)
+		if id != "" && c.index != nil {
+			c.index.projectIDByKey[key] = id
+			c.index.projectKeyByID[id] = key
+		}
+		return nil
+	case declarative.OpUpdate:
+		item := action.Desired.(declarative.ProjectResource)
+		projectID, err := c.resolveProjectID(workspaceProjectKey(item.Spec.WorkspaceRef, item.Name))
+		if err != nil {
+			return err
+		}
+		body := map[string]interface{}{}
+		if item.Spec.Description != "" {
+			body["description"] = item.Spec.Description
+		}
+		if item.Spec.ProductID != "" {
+			body["product_id"] = item.Spec.ProductID
+		}
+		if item.Spec.DefaultBranch != "" {
+			body["default_branch"] = item.Spec.DefaultBranch
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/projects/"+projectID, nil, body)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	case declarative.OpDelete:
+		key := action.ResourceName
+		if actual, ok := action.Actual.(declarative.ProjectResource); ok {
+			key = workspaceProjectKey(actual.Spec.WorkspaceRef, actual.Name)
+		}
+		projectID, err := c.resolveProjectID(key)
+		if err != nil {
+			return err
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/projects/"+projectID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
+		if c.index != nil {
+			delete(c.index.projectIDByKey, key)
+			delete(c.index.projectKeyByID, projectID)
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported operation %s for project", action.Operation)
+	}
+}
+
+func (c *APIStateClient) executeEnvironment(_ context.Context, action declarative.Action) error {
+	switch action.Operation {
+	case declarative.OpCreate:
+		item := action.Desired.(declarative.EnvironmentResource)
+		projectID, err := c.resolveProjectID(item.Spec.ProjectRef)
+		if err != nil {
+			return err
+		}
+		body := map[string]interface{}{
+			"name":           item.Name,
+			"kind":           item.Spec.Kind,
+			"target_catalog": item.Spec.TargetCatalog,
+			"target_schema":  item.Spec.TargetSchema,
+		}
+		if item.Spec.Description != "" {
+			body["description"] = item.Spec.Description
+		}
+		if item.Spec.ComputeEndpoint != "" {
+			body["compute_endpoint"] = item.Spec.ComputeEndpoint
+		}
+		if item.Spec.DeferToEnvironment != "" {
+			body["defer_to_environment"] = item.Spec.DeferToEnvironment
+		}
+		if len(item.Spec.Variables) > 0 {
+			body["variables"] = item.Spec.Variables
+		}
+		if len(item.Spec.SourceOverrides) > 0 {
+			body["source_overrides"] = item.Spec.SourceOverrides
+		}
+		resp, err := c.client.Do(http.MethodPost, "/projects/"+projectID+"/environments", nil, body)
+		if err != nil {
+			return err
+		}
+		id, err := c.checkCreateResponse(resp)
+		if err != nil {
+			return err
+		}
+		parts := strings.Split(item.Spec.ProjectRef, "/")
+		key := ""
+		if len(parts) == 2 {
+			key = workspaceEnvironmentKey(parts[0], parts[1], item.Name)
+		}
+		if id != "" && key != "" && c.index != nil {
+			c.index.environmentIDByKey[key] = id
+			c.index.environmentKeyByID[id] = key
+		}
+		return nil
+	case declarative.OpUpdate:
+		item := action.Desired.(declarative.EnvironmentResource)
+		environmentKey := item.Spec.ProjectRef + "/" + item.Name
+		projectID, err := c.resolveProjectID(item.Spec.ProjectRef)
+		if err != nil {
+			return err
+		}
+		environmentID, err := c.resolveEnvironmentID(environmentKey)
+		if err != nil {
+			return err
+		}
+		body := map[string]interface{}{
+			"kind":           item.Spec.Kind,
+			"target_catalog": item.Spec.TargetCatalog,
+			"target_schema":  item.Spec.TargetSchema,
+		}
+		if item.Spec.Description != "" {
+			body["description"] = item.Spec.Description
+		}
+		if item.Spec.ComputeEndpoint != "" {
+			body["compute_endpoint"] = item.Spec.ComputeEndpoint
+		}
+		if item.Spec.DeferToEnvironment != "" {
+			body["defer_to_environment"] = item.Spec.DeferToEnvironment
+		}
+		if len(item.Spec.Variables) > 0 {
+			body["variables"] = item.Spec.Variables
+		}
+		if len(item.Spec.SourceOverrides) > 0 {
+			body["source_overrides"] = item.Spec.SourceOverrides
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/projects/"+projectID+"/environments/"+environmentID, nil, body)
+		if err != nil {
+			return err
+		}
+		return apiruntime.CheckError(resp)
+	case declarative.OpDelete:
+		key := action.ResourceName
+		if actual, ok := action.Actual.(declarative.EnvironmentResource); ok {
+			key = actual.Spec.ProjectRef + "/" + actual.Name
+		}
+		projectRef := strings.TrimSuffix(key, "/"+lastSegment(key))
+		projectID, err := c.resolveProjectID(projectRef)
+		if err != nil {
+			return err
+		}
+		environmentID, err := c.resolveEnvironmentID(key)
+		if err != nil {
+			return err
+		}
+		resp, err := c.client.Do(http.MethodDelete, "/projects/"+projectID+"/environments/"+environmentID, nil, nil)
+		if err != nil {
+			return err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
+		if c.index != nil {
+			delete(c.index.environmentIDByKey, key)
+			delete(c.index.environmentKeyByID, environmentID)
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported operation %s for environment", action.Operation)
+	}
+}
+
 func (c *APIStateClient) executeAPIKey(ctx context.Context, action declarative.Action) error {
 	switch action.Operation {
 	case declarative.OpCreate:
@@ -3140,6 +3956,13 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if nb.Spec.Description != "" {
 			body["description"] = nb.Spec.Description
 		}
+		if nb.Spec.FolderRef != "" {
+			folderID, err := c.resolveFolderID(nb.Spec.FolderRef)
+			if err != nil {
+				return fmt.Errorf("resolve folder for notebook create: %w", err)
+			}
+			body["folder_id"] = folderID
+		}
 		resp, err := c.client.Do(http.MethodPost, "/notebooks", nil, body)
 		if err != nil {
 			return err
@@ -3173,10 +3996,14 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
 			return err
 		}
+		if err := c.applyNotebookContext(ctx, notebookID, nb.Spec, declarative.NotebookSpec{}); err != nil {
+			return err
+		}
 		return c.reconcileNotebookPublish(ctx, notebookID, nb.Spec)
 
 	case declarative.OpUpdate:
 		nb := action.Desired.(declarative.NotebookResource)
+		actual, _ := action.Actual.(declarative.NotebookResource)
 		notebookID, err := c.resolveNotebookID(ctx, nb.Name)
 		if err != nil {
 			return fmt.Errorf("resolve notebook for update: %w", err)
@@ -3184,6 +4011,20 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 		body := map[string]interface{}{
 			"name":        nb.Name,
 			"description": nb.Spec.Description,
+		}
+		if nb.Spec.ProjectRef != "" {
+			projectID, err := c.resolveProjectID(nb.Spec.ProjectRef)
+			if err != nil {
+				return fmt.Errorf("resolve notebook project override: %w", err)
+			}
+			body["project_override_id"] = projectID
+		}
+		if nb.Spec.EnvironmentRef != "" {
+			environmentID, err := c.resolveEnvironmentID(nb.Spec.EnvironmentRef)
+			if err != nil {
+				return fmt.Errorf("resolve notebook environment override: %w", err)
+			}
+			body["environment_override_id"] = environmentID
 		}
 		resp, err := c.client.Do(http.MethodPatch, "/notebooks/"+notebookID, nil, body)
 		if err != nil {
@@ -3203,6 +4044,9 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 			}
 		}
 		if err := c.syncNotebookCells(ctx, notebookID, nb.Spec.Cells); err != nil {
+			return err
+		}
+		if err := c.applyNotebookContext(ctx, notebookID, nb.Spec, actual.Spec); err != nil {
 			return err
 		}
 		return c.reconcileNotebookPublish(ctx, notebookID, nb.Spec)
@@ -3234,6 +4078,52 @@ func (c *APIStateClient) executeNotebook(ctx context.Context, action declarative
 	default:
 		return fmt.Errorf("unsupported operation %s for notebook", action.Operation)
 	}
+}
+
+func (c *APIStateClient) applyNotebookContext(_ context.Context, notebookID string, desired, actual declarative.NotebookSpec) error {
+	if desired.FolderRef != "" && desired.FolderRef != actual.FolderRef {
+		folderID, err := c.resolveFolderID(desired.FolderRef)
+		if err != nil {
+			return fmt.Errorf("resolve folder for notebook move: %w", err)
+		}
+		resp, err := c.client.Do(http.MethodPost, "/notebooks/"+notebookID+"/moves", nil, map[string]interface{}{
+			"folder_id": folderID,
+		})
+		if err != nil {
+			return err
+		}
+		if err := apiruntime.CheckError(resp); err != nil {
+			return err
+		}
+	}
+
+	if desired.ProjectRef != actual.ProjectRef || desired.EnvironmentRef != actual.EnvironmentRef {
+		body := map[string]interface{}{}
+		if desired.ProjectRef != "" {
+			projectID, err := c.resolveProjectID(desired.ProjectRef)
+			if err != nil {
+				return fmt.Errorf("resolve notebook project override: %w", err)
+			}
+			body["project_override_id"] = projectID
+		}
+		if desired.EnvironmentRef != "" {
+			environmentID, err := c.resolveEnvironmentID(desired.EnvironmentRef)
+			if err != nil {
+				return fmt.Errorf("resolve notebook environment override: %w", err)
+			}
+			body["environment_override_id"] = environmentID
+		}
+		if len(body) > 0 {
+			resp, err := c.client.Do(http.MethodPatch, "/notebooks/"+notebookID, nil, body)
+			if err != nil {
+				return err
+			}
+			if err := apiruntime.CheckError(resp); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (c *APIStateClient) executeDomain(_ context.Context, action declarative.Action) error {

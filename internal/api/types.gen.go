@@ -2931,6 +2931,16 @@ type UpdateDataProductRequest struct {
 	Visibility          *string          `json:"visibility,omitempty"`
 }
 
+type UpdateEnvironmentRequest struct {
+	ComputeEndpoint    *string `json:"compute_endpoint,omitempty"`
+	DeferToEnvironment *string `json:"defer_to_environment,omitempty"`
+	Description        *string `json:"description,omitempty"`
+	SourceOverrides    *Record `json:"source_overrides,omitempty"`
+	TargetCatalog      *string `json:"target_catalog,omitempty"`
+	TargetSchema       *string `json:"target_schema,omitempty"`
+	Variables          *Record `json:"variables,omitempty"`
+}
+
 type UpdateExternalLocationRequest struct {
 	Comment        *string `json:"comment,omitempty"`
 	CredentialName *string `json:"credential_name,omitempty"`
@@ -3010,6 +3020,12 @@ type UpdateProductDomainRequest struct {
 
 type UpdateProductTeamRequest struct {
 	ContactChannel *string `json:"contact_channel,omitempty"`
+}
+
+type UpdateProjectRequest struct {
+	DefaultBranch *string `json:"default_branch,omitempty"`
+	Description   *string `json:"description,omitempty"`
+	ProductId     *string `json:"product_id,omitempty"`
 }
 
 type UpdateRowFilterRequest struct {
@@ -3567,6 +3583,10 @@ type UpdatePrincipalJSONRequestBody = GenUpdatePrincipalJSONBody
 type UpdateProductDomainJSONRequestBody = GenUpdateProductDomainJSONBody
 
 type UpdateProductTeamJSONRequestBody = GenUpdateProductTeamJSONBody
+
+type UpdateProjectEnvironmentJSONRequestBody = GenUpdateProjectEnvironmentJSONBody
+
+type UpdateProjectJSONRequestBody = GenUpdateProjectJSONBody
 
 type UpdateRowFilterJSONRequestBody = GenUpdateRowFilterJSONBody
 

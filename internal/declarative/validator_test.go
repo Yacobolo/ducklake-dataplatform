@@ -1026,8 +1026,8 @@ func TestValidate_ProductControlPlaneRefs(t *testing.T) {
 			Spec: AssetSpec{AssetType: "table", ProductRef: "daily-orders"},
 		}},
 		SemanticModels: []SemanticModelResource{{
-			ModelName:   "orders",
-			Spec:        SemanticModelSpec{BaseModelRef: "sales.orders"},
+			ModelName: "orders",
+			Spec:      SemanticModelSpec{BaseModelRef: "sales.orders"},
 		}},
 	}
 
@@ -1075,6 +1075,130 @@ func TestValidate_ProductControlPlaneRefs(t *testing.T) {
 		"release_state must be DRAFT, PUBLISHED, DEPRECATED, or RETIRED",
 		"compatibility_level must be BACKWARD_COMPATIBLE or BREAKING",
 		"product_ref references unknown data product",
+	}
+	for _, needle := range expected {
+		found := false
+		for _, err := range errs {
+			if containsStr(err.Error(), needle) {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "expected validation error containing %q, got %v", needle, errs)
+	}
+}
+
+func TestValidate_AuthoringCoreRefs(t *testing.T) {
+	t.Parallel()
+
+	valid := &DesiredState{
+		Workspaces: []WorkspaceResource{{
+			Name: "personal",
+			Spec: WorkspaceSpec{
+				Kind:                  "personal",
+				OwnerPrincipal:        "alice",
+				DefaultProjectRef:     "personal/core",
+				DefaultEnvironmentRef: "personal/core/dev",
+			},
+		}},
+		Folders: []FolderResource{{
+			Name: "analysis",
+			Spec: FolderSpec{
+				WorkspaceRef:          "personal",
+				DefaultProjectRef:     "personal/core",
+				DefaultEnvironmentRef: "personal/core/dev",
+			},
+		}},
+		Projects: []ProjectResource{{
+			Name: "core",
+			Spec: ProjectSpec{
+				WorkspaceRef:  "personal",
+				Kind:          "personal",
+				DefaultBranch: "main",
+			},
+		}},
+		Environments: []EnvironmentResource{{
+			Name: "dev",
+			Spec: EnvironmentSpec{
+				ProjectRef:    "personal/core",
+				Kind:          "development",
+				TargetCatalog: "main",
+				TargetSchema:  "analytics",
+			},
+		}},
+		Notebooks: []NotebookResource{{
+			Name: "orders",
+			Spec: NotebookSpec{
+				WorkspaceRef:   "personal",
+				FolderRef:      "personal/analysis",
+				ProjectRef:     "personal/core",
+				EnvironmentRef: "personal/core/dev",
+				Cells: []CellSpec{{
+					Type:    "sql",
+					Name:    "output",
+					Role:    "output",
+					Content: "select 1",
+				}},
+			},
+		}},
+	}
+
+	assert.Empty(t, Validate(valid))
+
+	invalid := &DesiredState{
+		Workspaces: []WorkspaceResource{{
+			Name: "shared",
+			Spec: WorkspaceSpec{Kind: "shared"},
+		}},
+		Folders: []FolderResource{{
+			Name: "analysis",
+			Spec: FolderSpec{
+				WorkspaceRef:      "shared",
+				ParentFolderRef:   "personal/root",
+				DefaultProjectRef: "personal/core",
+			},
+		}},
+		Projects: []ProjectResource{{
+			Name: "core",
+			Spec: ProjectSpec{
+				WorkspaceRef: "missing",
+				Kind:         "shared",
+			},
+		}},
+		Environments: []EnvironmentResource{{
+			Name: "prod",
+			Spec: EnvironmentSpec{
+				ProjectRef: "shared/core",
+				Kind:       "production",
+			},
+		}},
+		Notebooks: []NotebookResource{{
+			Name: "broken",
+			Spec: NotebookSpec{
+				WorkspaceRef:   "shared",
+				FolderRef:      "personal/root",
+				ProjectRef:     "personal/core",
+				EnvironmentRef: "personal/core/dev",
+				Cells: []CellSpec{{
+					Type:    "sql",
+					Name:    "output",
+					Role:    "output",
+					Content: "select 1",
+				}},
+			},
+		}},
+	}
+
+	errs := Validate(invalid)
+	require.NotEmpty(t, errs)
+
+	expected := []string{
+		"owner_team_id is required for shared workspaces",
+		"parent_folder_ref must be in the same workspace",
+		"default_project_ref references unknown project",
+		"workspace_ref references unknown workspace",
+		"target_catalog is required",
+		"folder_ref references unknown folder",
 	}
 	for _, needle := range expected {
 		found := false

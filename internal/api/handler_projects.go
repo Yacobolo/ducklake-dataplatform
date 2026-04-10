@@ -10,8 +10,12 @@ type projectControlService interface {
 	CreateProject(ctx context.Context, principal string, req domain.CreateProjectRequest) (*domain.Project, error)
 	ListProjectsForPrincipal(ctx context.Context, principal string, isAdmin bool, workspaceID string, page domain.PageRequest) ([]domain.Project, int64, error)
 	GetProjectForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Project, error)
+	UpdateProjectForPrincipal(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateProjectRequest) (*domain.Project, error)
+	DeleteProjectForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) error
 	CreateEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, req domain.CreateEnvironmentRequest) (*domain.Environment, error)
 	ListEnvironmentsForProject(ctx context.Context, principal string, isAdmin bool, projectID string, page domain.PageRequest) ([]domain.Environment, int64, error)
+	UpdateEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, environmentID string, req domain.UpdateEnvironmentRequest) (*domain.Environment, error)
+	DeleteEnvironmentForProject(ctx context.Context, principal string, isAdmin bool, projectID string, environmentID string) error
 	CreateBuildForProject(ctx context.Context, principal string, isAdmin bool, projectID string, req domain.CreateBuildRequest) (*domain.Build, error)
 	ListBuildsForProject(ctx context.Context, principal string, isAdmin bool, projectID string, page domain.PageRequest) ([]domain.Build, int64, error)
 }
@@ -126,6 +130,79 @@ func (h *APIHandler) GetProject(ctx context.Context, req GenGetProjectRequest) (
 	}, nil
 }
 
+// UpdateProject implements the endpoint for updating one project.
+func (h *APIHandler) UpdateProject(ctx context.Context, req GenUpdateProjectRequest) (GenUpdateProjectResponse, error) {
+	if isNilService(h.projectsCtl) {
+		return nil, domain.ErrNotImplemented("projects are not configured")
+	}
+	if req.Body == nil {
+		return UpdateProject400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
+	}
+
+	cp, _ := domain.PrincipalFromContext(ctx)
+	item, err := h.projectsCtl.UpdateProjectForPrincipal(ctx, cp.Name, cp.IsAdmin, req.ProjectId, domain.UpdateProjectRequest{
+		Description:   req.Body.Description,
+		DefaultBranch: req.Body.DefaultBranch,
+		ProductID:     req.Body.ProductId,
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenUpdateProjectResponse]("updateProject", err, domainErrorResponder[GenUpdateProjectResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateProjectResponse {
+				return UpdateProject400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateProjectResponse {
+				return UpdateProject403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateProjectResponse {
+				return UpdateProject404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenUpdateProjectResponse {
+				return UpdateProject409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	return UpdateProject200JSONResponse{
+		Body:    projectToAPI(*item),
+		Headers: UpdateProject200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// DeleteProject implements the endpoint for deleting one project.
+func (h *APIHandler) DeleteProject(ctx context.Context, req GenDeleteProjectRequest) (GenDeleteProjectResponse, error) {
+	if isNilService(h.projectsCtl) {
+		return nil, domain.ErrNotImplemented("projects are not configured")
+	}
+
+	cp, _ := domain.PrincipalFromContext(ctx)
+	if err := h.projectsCtl.DeleteProjectForPrincipal(ctx, cp.Name, cp.IsAdmin, req.ProjectId); err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenDeleteProjectResponse]("deleteProject", err, domainErrorResponder[GenDeleteProjectResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenDeleteProjectResponse {
+				return DeleteProject400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteProjectResponse {
+				return DeleteProject403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteProjectResponse {
+				return DeleteProject404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenDeleteProjectResponse {
+				return DeleteProject409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	return DeleteProject204Response{
+		Headers: DeleteProject204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
 // ListProjectEnvironments implements the endpoint for listing environments owned by a project.
 func (h *APIHandler) ListProjectEnvironments(ctx context.Context, req GenListProjectEnvironmentsRequest) (GenListProjectEnvironmentsResponse, error) {
 	if isNilService(h.projectsCtl) {
@@ -206,6 +283,83 @@ func (h *APIHandler) CreateProjectEnvironment(ctx context.Context, req GenCreate
 	return CreateProjectEnvironment201JSONResponse{
 		Body:    environmentToAPI(*item),
 		Headers: CreateProjectEnvironment201ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// UpdateProjectEnvironment implements the endpoint for updating an environment under a project.
+func (h *APIHandler) UpdateProjectEnvironment(ctx context.Context, req GenUpdateProjectEnvironmentRequest) (GenUpdateProjectEnvironmentResponse, error) {
+	if isNilService(h.projectsCtl) {
+		return nil, domain.ErrNotImplemented("projects are not configured")
+	}
+	if req.Body == nil {
+		return UpdateProjectEnvironment400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
+	}
+
+	cp, _ := domain.PrincipalFromContext(ctx)
+	item, err := h.projectsCtl.UpdateEnvironmentForProject(ctx, cp.Name, cp.IsAdmin, req.ProjectId, req.EnvironmentId, domain.UpdateEnvironmentRequest{
+		Description:        req.Body.Description,
+		TargetCatalog:      req.Body.TargetCatalog,
+		TargetSchema:       req.Body.TargetSchema,
+		ComputeEndpoint:    req.Body.ComputeEndpoint,
+		DeferToEnvironment: req.Body.DeferToEnvironment,
+		Variables:          recordPtrToStringMap(req.Body.Variables),
+		SourceOverrides:    recordPtrToStringMap(req.Body.SourceOverrides),
+	})
+	if err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenUpdateProjectEnvironmentResponse]("updateProjectEnvironment", err, domainErrorResponder[GenUpdateProjectEnvironmentResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenUpdateProjectEnvironmentResponse {
+				return UpdateProjectEnvironment400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenUpdateProjectEnvironmentResponse {
+				return UpdateProjectEnvironment403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenUpdateProjectEnvironmentResponse {
+				return UpdateProjectEnvironment404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenUpdateProjectEnvironmentResponse {
+				return UpdateProjectEnvironment409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	return UpdateProjectEnvironment200JSONResponse{
+		Body:    environmentToAPI(*item),
+		Headers: UpdateProjectEnvironment200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
+	}, nil
+}
+
+// DeleteProjectEnvironment implements the endpoint for deleting an environment under a project.
+func (h *APIHandler) DeleteProjectEnvironment(ctx context.Context, req GenDeleteProjectEnvironmentRequest) (GenDeleteProjectEnvironmentResponse, error) {
+	if isNilService(h.projectsCtl) {
+		return nil, domain.ErrNotImplemented("projects are not configured")
+	}
+
+	cp, _ := domain.PrincipalFromContext(ctx)
+	if err := h.projectsCtl.DeleteEnvironmentForProject(ctx, cp.Name, cp.IsAdmin, req.ProjectId, req.EnvironmentId); err != nil {
+		if resp, ok := respondDomainErrorForOperation[GenDeleteProjectEnvironmentResponse]("deleteProjectEnvironment", err, domainErrorResponder[GenDeleteProjectEnvironmentResponse]{
+			BadRequest: func(resp BadRequestJSONResponse) GenDeleteProjectEnvironmentResponse {
+				return DeleteProjectEnvironment400JSONResponse{resp}
+			},
+			Forbidden: func(resp ForbiddenJSONResponse) GenDeleteProjectEnvironmentResponse {
+				return DeleteProjectEnvironment403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenDeleteProjectEnvironmentResponse {
+				return DeleteProjectEnvironment404JSONResponse{resp}
+			},
+			Conflict: func(resp ConflictJSONResponse) GenDeleteProjectEnvironmentResponse {
+				return DeleteProjectEnvironment409JSONResponse{resp}
+			},
+		}); ok {
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	return DeleteProjectEnvironment204Response{
+		Headers: DeleteProjectEnvironment204ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
 	}, nil
 }
 
