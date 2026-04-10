@@ -91,7 +91,7 @@ tasks:
     sources:
       - api/gen/json-ir.json
       - cmd/apigen/**/*.go
-      - internal/apigen/**/*.go
+      - apigen/**/*.go
     generates:
       - api/gen/openapi.yaml
       - api/gen/json-ir.json

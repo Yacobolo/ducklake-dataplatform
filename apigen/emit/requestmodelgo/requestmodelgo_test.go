@@ -3,7 +3,7 @@ package requestmodelgo
 import (
 	"testing"
 
-	"duck-demo/internal/apigen/ir"
+	"duck-demo/apigen/ir"
 
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +13,7 @@ func TestEmit_AliasesRequestRoots(t *testing.T) {
 
 	doc := ir.Document{Endpoints: []ir.Endpoint{{OperationID: "createWidget", RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "CreateWidgetRequest"}}}}}
 
-	b, err := Emit(doc, "")
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -25,7 +25,7 @@ func TestEmit_AliasesNonStructRequestRoots(t *testing.T) {
 
 	doc := ir.Document{Endpoints: []ir.Endpoint{{OperationID: "setDefaultCatalog", RequestBody: &ir.RequestBody{Schema: ir.SchemaRef{Ref: "SetDefaultCatalogRequest"}}}}}
 
-	b, err := Emit(doc, "")
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	require.Contains(t, string(b), "type GenSchemaSetDefaultCatalogRequest = SetDefaultCatalogRequest")
 }
@@ -43,7 +43,7 @@ func TestEmitWithResponseRoots_AliasesSafeDirectResponseSchemas(t *testing.T) {
 		},
 	}
 
-	b, err := EmitWithResponseRoots(doc, "")
+	b, err := EmitWithResponseRoots(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -68,7 +68,7 @@ func TestEmitWithResponseRoots_EmitsAPIGenOwnedGenericResponse(t *testing.T) {
 		},
 	}
 
-	b, err := EmitWithResponseRoots(doc, "")
+	b, err := EmitWithResponseRoots(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -99,7 +99,7 @@ func TestEmitWithResponseRoots_PreservesSchemaRootWhenResponseShapeMetadataExist
 		},
 	}
 
-	b, err := EmitWithResponseRoots(doc, "")
+	b, err := EmitWithResponseRoots(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -133,7 +133,7 @@ func TestEmit_ApigenOwnedSchemaNames(t *testing.T) {
 		},
 	}
 
-	b, err := EmitWithResponseRoots(doc, "")
+	b, err := EmitWithResponseRoots(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -198,7 +198,7 @@ func TestEmitStandaloneCompatibilityTypes_EmitsConcreteCanonicalTypes(t *testing
 		},
 	}
 
-	b, err := EmitStandaloneCompatibilityTypes(doc, "")
+	b, err := EmitStandaloneCompatibilityTypes(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -236,7 +236,7 @@ func TestEmitStandaloneCompatibilityTypes_EmitsLegacyBareEnumConstantsWhenUnique
 		},
 	}
 
-	b, err := EmitStandaloneCompatibilityTypes(doc, "")
+	b, err := EmitStandaloneCompatibilityTypes(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -261,7 +261,7 @@ func TestEmitStandaloneCompatibilityTypes_EmitsTypePrefixedEnumConstantsForMixed
 		},
 	}
 
-	b, err := EmitStandaloneCompatibilityTypes(doc, "")
+	b, err := EmitStandaloneCompatibilityTypes(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -284,7 +284,7 @@ func TestEmitStandaloneCompatibilityTypes_EmitsManualRequestBodyAliasesWhenSchem
 		},
 	}
 
-	b, err := EmitStandaloneCompatibilityTypes(doc, "")
+	b, err := EmitStandaloneCompatibilityTypes(doc, Options{})
 	require.NoError(t, err)
 	require.Contains(t, string(b), "type LocalLoginJSONRequestBody = LocalLoginRequest")
 }
@@ -292,7 +292,7 @@ func TestEmitStandaloneCompatibilityTypes_EmitsManualRequestBodyAliasesWhenSchem
 func TestEmitStandaloneCompatibilityTypes_EmitsLegacyGenericPlaceholders(t *testing.T) {
 	t.Helper()
 
-	b, err := EmitStandaloneCompatibilityTypes(ir.Document{}, "")
+	b, err := EmitStandaloneCompatibilityTypes(ir.Document{}, Options{})
 	require.NoError(t, err)
 	content := string(b)
 

@@ -6,42 +6,27 @@ import (
 	"sort"
 	"strings"
 
-	"duck-demo/internal/apigen/ir"
+	"duck-demo/apigen/ir"
 )
 
+// Options configures CLI metadata emission.
+type Options struct {
+	PackageName string
+}
+
 // Emit renders Go code for generated CLI endpoint metadata.
-func Emit(doc ir.Document) ([]byte, error) {
+func Emit(doc ir.Document, opts Options) ([]byte, error) {
 	var b strings.Builder
-	b.WriteString("package gen\n\n")
+	b.WriteString("package ")
+	b.WriteString(packageName(opts))
+	b.WriteString("\n\n")
+	b.WriteString("import apigencobra \"duck-demo/apigen/runtime/cobra\"\n\n")
 	b.WriteString("// APIGenEndpoint is generated from JSON IR.\n")
-	b.WriteString("type APIGenEndpoint struct {\n")
-	b.WriteString("\tOperationID string `json:\"operation_id\"`\n")
-	b.WriteString("\tMethod string `json:\"method\"`\n")
-	b.WriteString("\tPath string `json:\"path\"`\n")
-	b.WriteString("\tSummary string `json:\"summary\"`\n")
-	b.WriteString("\tDescription string `json:\"description,omitempty\"`\n")
-	b.WriteString("\tTags []string `json:\"tags,omitempty\"`\n")
-	b.WriteString("\tParameters []APIGenParam `json:\"parameters,omitempty\"`\n")
-	b.WriteString("\tBodyFields []APIGenField `json:\"body_fields,omitempty\"`\n")
-	b.WriteString("\tCLICommand string `json:\"cli_command,omitempty\"`\n")
-	b.WriteString("}\n\n")
+	b.WriteString("type APIGenEndpoint = apigencobra.Endpoint\n\n")
 	b.WriteString("// APIGenParam is generated parameter metadata from JSON IR.\n")
-	b.WriteString("type APIGenParam struct {\n")
-	b.WriteString("\tName string `json:\"name\"`\n")
-	b.WriteString("\tIn string `json:\"in\"`\n")
-	b.WriteString("\tType string `json:\"type\"`\n")
-	b.WriteString("\tDescription string `json:\"description,omitempty\"`\n")
-	b.WriteString("\tRequired bool `json:\"required,omitempty\"`\n")
-	b.WriteString("\tEnum []string `json:\"enum,omitempty\"`\n")
-	b.WriteString("}\n\n")
+	b.WriteString("type APIGenParam = apigencobra.Param\n\n")
 	b.WriteString("// APIGenField is generated request body field metadata from JSON IR.\n")
-	b.WriteString("type APIGenField struct {\n")
-	b.WriteString("\tName string `json:\"name\"`\n")
-	b.WriteString("\tType string `json:\"type\"`\n")
-	b.WriteString("\tDescription string `json:\"description,omitempty\"`\n")
-	b.WriteString("\tRequired bool `json:\"required,omitempty\"`\n")
-	b.WriteString("\tEnum []string `json:\"enum,omitempty\"`\n")
-	b.WriteString("}\n\n")
+	b.WriteString("type APIGenField = apigencobra.Field\n\n")
 	b.WriteString("// APIGeneratedEndpoints contains operation metadata for tooling and discovery.\n")
 	b.WriteString("var APIGeneratedEndpoints = []APIGenEndpoint{\n")
 	for _, endpoint := range doc.Endpoints {
@@ -63,6 +48,13 @@ func Emit(doc ir.Document) ([]byte, error) {
 	}
 	b.WriteString("}\n")
 	return []byte(b.String()), nil
+}
+
+func packageName(opts Options) string {
+	if strings.TrimSpace(opts.PackageName) == "" {
+		return "gen"
+	}
+	return opts.PackageName
 }
 
 func collectParameters(doc ir.Document, endpoint ir.Endpoint) []apiParam {
@@ -205,7 +197,7 @@ func renderParams(params []apiParam) string {
 		return "nil"
 	}
 	var b strings.Builder
-	b.WriteString("[]APIGenParam{")
+	b.WriteString("[]apigencobra.Param{")
 	for i, param := range params {
 		if i > 0 {
 			b.WriteString(", ")
@@ -221,7 +213,7 @@ func renderFields(fields []apiField) string {
 		return "nil"
 	}
 	var b strings.Builder
-	b.WriteString("[]APIGenField{")
+	b.WriteString("[]apigencobra.Field{")
 	for i, field := range fields {
 		if i > 0 {
 			b.WriteString(", ")

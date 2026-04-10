@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	cobraruntime "duck-demo/apigen/runtime/cobra"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -13,10 +15,11 @@ import (
 func TestBuildGeneratedCommandSpecsFromEndpoints_DetectsDuplicateCommands(t *testing.T) {
 	t.Helper()
 
-	_, err := buildGeneratedCommandSpecsFromEndpoints([]gen.APIGenEndpoint{
+	root := &cobra.Command{Use: "duck"}
+	err := cobraruntime.AddGeneratedCommands(root, nil, generatedRuntimeEndpoints([]gen.APIGenEndpoint{
 		{OperationID: "listSchemas", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas"},
 		{OperationID: "listTables", CLICommand: "catalog schemas list", Path: "/catalogs/{catalog_name}/schemas/{schema_name}/tables"},
-	})
+	}))
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "duplicate generated CLI command")
@@ -27,16 +30,21 @@ func TestBuildGeneratedCommandSpecsFromEndpoints_DetectsDuplicateCommands(t *tes
 func TestBuildGeneratedCommandSpecsFromEndpoints_PromotesSingleSegmentRoots(t *testing.T) {
 	t.Helper()
 
-	specs, err := buildGeneratedCommandSpecsFromEndpoints([]gen.APIGenEndpoint{
+	root := &cobra.Command{Use: "duck"}
+	err := cobraruntime.AddGeneratedCommands(root, nil, generatedRuntimeEndpoints([]gen.APIGenEndpoint{
 		{OperationID: "executeQuery", CLICommand: "query", Path: "/query-executions"},
 		{OperationID: "submitQuery", CLICommand: "query submit", Path: "/queries"},
-	})
+	}))
 	require.NoError(t, err)
-	require.Len(t, specs, 2)
 
-	paths := []string{
-		strings.Join(specs[0].CommandPath, " "),
-		strings.Join(specs[1].CommandPath, " "),
+	var paths []string
+	for _, cmd := range root.Commands() {
+		if cmd.Name() != "query" {
+			continue
+		}
+		for _, sub := range cmd.Commands() {
+			paths = append(paths, strings.Join([]string{cmd.Name(), sub.Name()}, " "))
+		}
 	}
 	assert.Contains(t, paths, "query execute")
 	assert.Contains(t, paths, "query submit")

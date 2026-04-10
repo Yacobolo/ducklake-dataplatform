@@ -10,11 +10,11 @@ import (
 	"os"
 	"path/filepath"
 
-	cligoemit "duck-demo/internal/apigen/emit/cligo"
-	openapiemit "duck-demo/internal/apigen/emit/openapi"
-	requestmodelgoemit "duck-demo/internal/apigen/emit/requestmodelgo"
-	servergoemit "duck-demo/internal/apigen/emit/servergo"
-	"duck-demo/internal/apigen/ir"
+	cligoemit "duck-demo/apigen/emit/cligo"
+	openapiemit "duck-demo/apigen/emit/openapi"
+	requestmodelgoemit "duck-demo/apigen/emit/requestmodelgo"
+	servergoemit "duck-demo/apigen/emit/servergo"
+	"duck-demo/apigen/ir"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -29,9 +29,13 @@ func main() {
 	openapiOut := fs.String("openapi-out", "api/gen/openapi.apigen.yaml", "output OpenAPI YAML path for optional debug/compat emission")
 	canonicalOpenAPIPath := fs.String("canonical-openapi", "api/gen/openapi.yaml", "canonical OpenAPI YAML path to embed into generated server code")
 	serverOut := fs.String("server-out", "internal/api/server.apigen.gen.go", "output server Go path")
+	serverPackage := fs.String("server-package", "api", "generated server Go package name")
 	requestModelsOut := fs.String("request-models-out", "internal/api/gen_request_models.gen.go", "output APIGen request models Go path")
+	requestModelsPackage := fs.String("request-models-package", "api", "generated request models Go package name")
 	compatTypesOut := fs.String("compat-types-out", "", "optional output path for standalone APIGen-owned compatibility schema types")
+	compatTypesPackage := fs.String("compat-types-package", "api", "generated compatibility schema types Go package name")
 	cliOut := fs.String("cli-out", "pkg/cli/gen/apigen_registry.gen.go", "output CLI Go path")
+	cliPackage := fs.String("cli-package", "gen", "generated CLI Go package name")
 	if err := fs.Parse(os.Args[2:]); err != nil {
 		fatalf("parse flags: %v", err)
 	}
@@ -47,18 +51,18 @@ func main() {
 			fatalf("generate openapi: %v", err)
 		}
 	case "server":
-		if err := generateServer(doc, *serverOut, *requestModelsOut, *compatTypesOut, *canonicalOpenAPIPath); err != nil {
+		if err := generateServer(doc, *serverOut, *serverPackage, *requestModelsOut, *requestModelsPackage, *compatTypesOut, *compatTypesPackage, *canonicalOpenAPIPath); err != nil {
 			fatalf("generate server: %v", err)
 		}
 	case "cli":
-		if err := generateCLI(doc, *cliOut); err != nil {
+		if err := generateCLI(doc, *cliOut, *cliPackage); err != nil {
 			fatalf("generate cli: %v", err)
 		}
 	case "all":
-		if err := generateServer(doc, *serverOut, *requestModelsOut, *compatTypesOut, *canonicalOpenAPIPath); err != nil {
+		if err := generateServer(doc, *serverOut, *serverPackage, *requestModelsOut, *requestModelsPackage, *compatTypesOut, *compatTypesPackage, *canonicalOpenAPIPath); err != nil {
 			fatalf("generate server: %v", err)
 		}
-		if err := generateCLI(doc, *cliOut); err != nil {
+		if err := generateCLI(doc, *cliOut, *cliPackage); err != nil {
 			fatalf("generate cli: %v", err)
 		}
 	default:
@@ -67,7 +71,7 @@ func main() {
 }
 
 func generateOpenAPI(doc ir.Document, outPath string) error {
-	b, err := openapiemit.EmitYAML(doc)
+	b, err := openapiemit.EmitYAML(doc, openapiemit.Options{})
 	if err != nil {
 		return fmt.Errorf("emit openapi: %w", err)
 	}
@@ -80,7 +84,7 @@ func generateOpenAPI(doc ir.Document, outPath string) error {
 	return nil
 }
 
-func generateServer(doc ir.Document, outPath string, requestModelsOutPath string, compatTypesOutPath string, canonicalOpenAPIPath string) error {
+func generateServer(doc ir.Document, outPath string, serverPackage string, requestModelsOutPath string, requestModelsPackage string, compatTypesOutPath string, compatTypesPackage string, canonicalOpenAPIPath string) error {
 	if err := servergoemit.ValidateOperationIDs(doc); err != nil {
 		return fmt.Errorf("validate operation ids: %w", err)
 	}
@@ -88,7 +92,10 @@ func generateServer(doc ir.Document, outPath string, requestModelsOutPath string
 	if err != nil {
 		return fmt.Errorf("load canonical openapi: %w", err)
 	}
-	b, err := servergoemit.EmitWithLegacyResponsesAndSpec(doc, "", embeddedSpecJSON)
+	b, err := servergoemit.EmitWithLegacyResponsesAndSpec(doc, servergoemit.Options{
+		PackageName:             serverPackage,
+		EmbeddedOpenAPISpecJSON: embeddedSpecJSON,
+	})
 	if err != nil {
 		return fmt.Errorf("emit server go: %w", err)
 	}
@@ -99,7 +106,9 @@ func generateServer(doc ir.Document, outPath string, requestModelsOutPath string
 	if err := writeFile(outPath, formatted); err != nil {
 		return err
 	}
-	requestModels, err := requestmodelgoemit.EmitWithResponseRoots(doc, "")
+	requestModels, err := requestmodelgoemit.EmitWithResponseRoots(doc, requestmodelgoemit.Options{
+		PackageName: requestModelsPackage,
+	})
 	if err != nil {
 		return fmt.Errorf("emit request models go: %w", err)
 	}
@@ -111,7 +120,9 @@ func generateServer(doc ir.Document, outPath string, requestModelsOutPath string
 		return err
 	}
 	if compatTypesOutPath != "" {
-		compatTypes, err := requestmodelgoemit.EmitStandaloneCompatibilityTypes(doc, "")
+		compatTypes, err := requestmodelgoemit.EmitStandaloneCompatibilityTypes(doc, requestmodelgoemit.Options{
+			PackageName: compatTypesPackage,
+		})
 		if err != nil {
 			return fmt.Errorf("emit compatibility types go: %w", err)
 		}
@@ -126,8 +137,8 @@ func generateServer(doc ir.Document, outPath string, requestModelsOutPath string
 	return nil
 }
 
-func generateCLI(doc ir.Document, outPath string) error {
-	b, err := cligoemit.Emit(doc)
+func generateCLI(doc ir.Document, outPath string, packageName string) error {
+	b, err := cligoemit.Emit(doc, cligoemit.Options{PackageName: packageName})
 	if err != nil {
 		return fmt.Errorf("emit cli go: %w", err)
 	}

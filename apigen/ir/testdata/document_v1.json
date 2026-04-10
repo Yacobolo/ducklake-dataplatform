@@ -1,0 +1,214 @@
+{
+  "schema_version": "v1",
+  "info": {
+    "title": "APIGen Example API",
+    "version": "0.1.0",
+    "description": "Representative v1 fixture for APIGen compatibility tests."
+  },
+  "servers": [
+    {
+      "url": "https://example.local/v1",
+      "description": "Example server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Operations",
+      "description": "Operational endpoints."
+    },
+    {
+      "name": "Widgets",
+      "description": "Widget management endpoints."
+    }
+  ],
+  "schemas": {
+    "Error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "schema": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "message": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "HealthResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "status"
+      ]
+    },
+    "Widget": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "schema": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "PaginatedWidgets": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "schema": {
+            "type": "array",
+            "items": {
+              "ref": "Widget"
+            }
+          }
+        },
+        "next_page_token": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "data"
+      ]
+    },
+    "CreateWidgetRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  "endpoints": [
+    {
+      "method": "get",
+      "path": "/healthz",
+      "operation_id": "getHealth",
+      "summary": "Get health",
+      "tags": [
+        "Operations"
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "ok",
+          "schema": {
+            "ref": "HealthResponse"
+          }
+        }
+      ],
+      "extensions": {
+        "x-authz": {
+          "mode": "public"
+        }
+      }
+    },
+    {
+      "method": "get",
+      "path": "/widgets",
+      "operation_id": "listWidgets",
+      "summary": "List widgets",
+      "tags": [
+        "Widgets"
+      ],
+      "parameters": [
+        {
+          "name": "page_token",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": [
+        {
+          "status_code": 200,
+          "description": "ok",
+          "schema": {
+            "ref": "PaginatedWidgets"
+          }
+        }
+      ],
+      "extensions": {
+        "x-authz": {
+          "mode": "admin_only"
+        },
+        "x-cli-command": "widgets list"
+      }
+    },
+    {
+      "method": "post",
+      "path": "/widgets",
+      "operation_id": "createWidget",
+      "summary": "Create widget",
+      "tags": [
+        "Widgets"
+      ],
+      "request_body": {
+        "required": true,
+        "schema": {
+          "ref": "CreateWidgetRequest"
+        }
+      },
+      "responses": [
+        {
+          "status_code": 201,
+          "description": "created",
+          "schema": {
+            "ref": "Widget"
+          },
+          "extensions": {
+            "x-apigen-response-shape": {
+              "kind": "wrapped_json",
+              "body_type": "Widget"
+            }
+          }
+        },
+        {
+          "status_code": 400,
+          "description": "bad request",
+          "schema": {
+            "ref": "Error"
+          }
+        }
+      ],
+      "extensions": {
+        "x-authz": {
+          "mode": "admin_only"
+        },
+        "x-cli-command": "widgets create"
+      }
+    }
+  ]
+}

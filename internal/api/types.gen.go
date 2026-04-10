@@ -1246,8 +1246,9 @@ const (
 )
 
 type Error struct {
-	Code    int32  `json:"code"`
-	Message string `json:"message"`
+	Code    int32   `json:"code"`
+	Details *Record `json:"details,omitempty"`
+	Message string  `json:"message"`
 }
 
 type ExternalLocation struct {

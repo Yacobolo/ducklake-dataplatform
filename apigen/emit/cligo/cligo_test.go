@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/apigen/ir"
+	"duck-demo/apigen/ir"
 )
 
 func TestEmit(t *testing.T) {
@@ -42,13 +42,13 @@ func TestEmit(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	require.Contains(t, string(b), "APIGeneratedEndpoints")
 	require.Contains(t, string(b), "executeQuery")
 	require.Contains(t, string(b), "Summary: \"Execute a query\"")
 	require.Contains(t, string(b), "Description: \"Runs SQL against the default catalog\"")
-	require.Contains(t, string(b), "Parameters: []APIGenParam{{Name: \"catalogName\", In: \"path\", Type: \"string\", Description: \"Catalog to query\"")
-	require.Contains(t, string(b), "BodyFields: []APIGenField{{Name: \"sql\", Type: \"string\", Description: \"SQL text to execute\"")
+	require.Contains(t, string(b), "Parameters: []apigencobra.Param{{Name: \"catalogName\", In: \"path\", Type: \"string\", Description: \"Catalog to query\"")
+	require.Contains(t, string(b), "BodyFields: []apigencobra.Field{{Name: \"sql\", Type: \"string\", Description: \"SQL text to execute\"")
 	require.Contains(t, string(b), "CLICommand: \"query execute\"")
 }

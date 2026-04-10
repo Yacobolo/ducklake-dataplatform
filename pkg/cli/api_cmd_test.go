@@ -83,7 +83,7 @@ func TestAPI_ListByTag(t *testing.T) {
 	t.Setenv("HOME", dir)
 
 	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{"--output", "json", "api", "list", "--tag", "Security"})
+	rootCmd.SetArgs([]string{"--output", "json", "api", "list", "--tag", "Identity"})
 
 	old := captureStdout(t)
 	err := rootCmd.Execute()
@@ -92,16 +92,16 @@ func TestAPI_ListByTag(t *testing.T) {
 
 	var endpoints []gen.APIGenEndpoint
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
-	assert.NotEmpty(t, endpoints, "should find Security-tagged endpoints")
+	assert.NotEmpty(t, endpoints, "should find Identity-tagged endpoints")
 	for _, ep := range endpoints {
 		found := false
 		for _, tag := range ep.Tags {
-			if strings.EqualFold(tag, "Security") {
+			if strings.EqualFold(tag, "Identity") {
 				found = true
 				break
 			}
 		}
-		assert.True(t, found, "endpoint %s should have Security tag", ep.OperationID)
+		assert.True(t, found, "endpoint %s should have Identity tag", ep.OperationID)
 	}
 }
 
@@ -110,7 +110,7 @@ func TestAPI_ListByTag_CaseInsensitive(t *testing.T) {
 	t.Setenv("HOME", dir)
 
 	rootCmd := newRootCmd()
-	rootCmd.SetArgs([]string{"--output", "json", "api", "list", "--tag", "security"})
+	rootCmd.SetArgs([]string{"--output", "json", "api", "list", "--tag", "identity"})
 
 	old := captureStdout(t)
 	err := rootCmd.Execute()
@@ -119,7 +119,7 @@ func TestAPI_ListByTag_CaseInsensitive(t *testing.T) {
 
 	var endpoints []gen.APIGenEndpoint
 	require.NoError(t, json.Unmarshal([]byte(output), &endpoints))
-	assert.NotEmpty(t, endpoints, "case-insensitive tag filter should match Security")
+	assert.NotEmpty(t, endpoints, "case-insensitive tag filter should match Identity")
 }
 
 func TestAPI_Search_NoMatches(t *testing.T) {

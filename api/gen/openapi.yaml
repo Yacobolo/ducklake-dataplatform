@@ -93,6 +93,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
+      x-cli-command: security api-keys cleanup
   /api-keys:
     get:
       operationId: listAPIKeys
@@ -150,6 +151,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
+      x-cli-command: security api-keys list
     post:
       operationId: createAPIKey
       summary: Create API key
@@ -199,6 +201,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateAPIKeyRequest'
+      x-cli-command: security api-keys create
   /api-keys/{api_key_id}:
     delete:
       operationId: deleteAPIKey
@@ -244,6 +247,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
+      x-cli-command: security api-keys delete
   /assets:
     get:
       operationId: listAssets
@@ -295,6 +299,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+      x-cli-command: assets list
     post:
       operationId: createAsset
       summary: Create asset
@@ -357,6 +362,7 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_ASSET_DEFINITIONS
             securable_id_source: catalog_sentinel
+      x-cli-command: assets create
   /assets/{asset_key}:
     get:
       operationId: getAsset
@@ -412,6 +418,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+      x-cli-command: assets get
     patch:
       operationId: updateAsset
       summary: Update asset
@@ -478,6 +485,7 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_ASSET_DEFINITIONS
             securable_id_source: catalog_sentinel
+      x-cli-command: assets update
     delete:
       operationId: deleteAsset
       summary: Delete asset
@@ -534,6 +542,7 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_ASSET_DEFINITIONS
             securable_id_source: catalog_sentinel
+      x-cli-command: assets delete
   /assets/{asset_key}/backfills:
     get:
       operationId: listAssetBackfills
@@ -608,6 +617,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+      x-cli-command: assets backfills list
     post:
       operationId: createAssetBackfill
       summary: Create asset backfill
@@ -674,6 +684,7 @@ paths:
           - securable_type: catalog
             privilege: EXECUTE_ASSET_MATERIALIZATION
             securable_id_source: catalog_sentinel
+      x-cli-command: assets backfills create
   /assets/{asset_key}/backfills/{backfill_id}:
     get:
       operationId: getAssetBackfill
@@ -734,6 +745,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+      x-cli-command: assets backfills get
   /assets/{asset_key}/checks:
     get:
       operationId: listAssetChecks
@@ -789,6 +801,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+      x-cli-command: assets checks list
   /assets/{asset_key}/checks/results:
     get:
       operationId: listAssetCheckResults
@@ -857,6 +870,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+      x-cli-command: assets check-results list
   /assets/{asset_key}/freshness:
     get:
       operationId: getAssetFreshness
@@ -1187,6 +1201,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+      x-cli-command: assets graph get
   /assets/{asset_key}/materializations:
     post:
       operationId: triggerAssetMaterialization
@@ -1255,6 +1270,7 @@ paths:
           - securable_type: catalog
             privilege: EXECUTE_ASSET_MATERIALIZATION
             securable_id_source: catalog_sentinel
+      x-cli-command: assets materialize
     get:
       operationId: listAssetMaterializations
       summary: List asset materializations
@@ -1322,6 +1338,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+      x-cli-command: assets materializations list
   /assets/{asset_key}/partitions:
     get:
       operationId: listAssetPartitions
@@ -1390,6 +1407,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+      x-cli-command: assets partitions list
   /assets/{asset_key}/runs:
     get:
       operationId: listAssetRuns
@@ -1464,6 +1482,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Assets
+      x-cli-command: assets runs list
   /audit-entries:
     get:
       operationId: listAuditLogs
@@ -1541,6 +1560,7 @@ paths:
         - Audit
       x-authz:
         mode: admin_only
+      x-cli-command: observability audit-logs list
   /auth/bootstrap/complete:
     post:
       operationId: bootstrapComplete
@@ -1952,6 +1972,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateCatalogRequest'
+      x-cli-command: catalog register
     get:
       operationId: listCatalogs
       summary: List catalog registrations
@@ -2011,6 +2032,7 @@ paths:
         - Catalogs
       x-authz:
         mode: admin_only
+      x-cli-command: catalog list-registrations
   /catalogs/search:
     get:
       operationId: searchCatalog
@@ -2080,6 +2102,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: governance search
   /catalogs/{catalog_name}:
     get:
       operationId: getCatalog
@@ -2135,6 +2158,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog info
     patch:
       operationId: updateCatalogRegistration
       summary: Update catalog registration
@@ -2195,6 +2219,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateCatalogRegistrationRequest'
+      x-cli-command: catalog update-registration
     delete:
       operationId: deleteCatalogRegistration
       summary: Delete catalog registration
@@ -2245,6 +2270,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog delete-registration
   /catalogs/{catalog_name}/default:
     put:
       operationId: setDefaultCatalog
@@ -2300,6 +2326,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetDefaultCatalogRequest'
+      x-cli-command: catalog set-default
   /catalogs/{catalog_name}/history:
     get:
       operationId: listCatalogHistory
@@ -2435,6 +2462,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: observability metastore summary
   /catalogs/{catalog_name}/schemas:
     get:
       operationId: listSchemas
@@ -2503,6 +2531,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog schemas list
     post:
       operationId: createSchema
       summary: Create schema
@@ -2563,6 +2592,7 @@ paths:
           - securable_type: catalog
             privilege: CREATE_SCHEMA
             securable_id_source: catalog_name_param
+      x-cli-command: catalog schemas create
   /catalogs/{catalog_name}/schemas/{schema_name}:
     get:
       operationId: getSchema
@@ -2623,6 +2653,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog schemas get
     patch:
       operationId: updateSchema
       summary: Update schema
@@ -2688,6 +2719,7 @@ paths:
           - securable_type: schema
             privilege: CREATE_SCHEMA
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: catalog schemas update
     delete:
       operationId: deleteSchema
       summary: Delete schema
@@ -2749,6 +2781,7 @@ paths:
           - securable_type: schema
             privilege: CREATE_SCHEMA
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: catalog schemas delete
   /catalogs/{catalog_name}/schemas/{schema_name}/tables:
     get:
       operationId: listTables
@@ -2822,6 +2855,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog tables list
     post:
       operationId: createTable
       summary: Create table
@@ -2887,6 +2921,7 @@ paths:
           - securable_type: schema
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: catalog tables create
   /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}:
     get:
       operationId: getTable
@@ -2952,6 +2987,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog tables get
     patch:
       operationId: updateTable
       summary: Update table
@@ -3022,6 +3058,7 @@ paths:
           - securable_type: table
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: catalog tables update
     delete:
       operationId: deleteTable
       summary: Delete table
@@ -3082,6 +3119,7 @@ paths:
           - securable_type: table
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: catalog tables delete
   /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns:
     get:
       operationId: listTableColumns
@@ -3160,6 +3198,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog columns list
   /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/columns/{column_name}:
     patch:
       operationId: updateColumn
@@ -3236,6 +3275,7 @@ paths:
           - securable_type: table
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: catalog columns update
   /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-commits:
     post:
       operationId: commitTableIngestion
@@ -3307,6 +3347,7 @@ paths:
           - securable_type: table
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: ingestion commit
   /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/ingestion-loads:
     post:
       operationId: loadTableExternalFiles
@@ -3378,6 +3419,7 @@ paths:
           - securable_type: table
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: ingestion load
   /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/manifest:
     get:
       operationId: createManifest
@@ -3443,6 +3485,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: manifest create
   /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/profiles:
     post:
       operationId: profileTable
@@ -3502,6 +3545,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog tables profile
   /catalogs/{catalog_name}/schemas/{schema_name}/tables/{table_name}/upload-urls:
     post:
       operationId: createUploadUrl
@@ -3573,6 +3617,7 @@ paths:
           - securable_type: table
             privilege: INSERT
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: ingestion upload-url
   /catalogs/{catalog_name}/schemas/{schema_name}/views:
     get:
       operationId: listViews
@@ -3646,6 +3691,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog views list
     post:
       operationId: createView
       summary: Create view
@@ -3711,6 +3757,7 @@ paths:
           - securable_type: schema
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: catalog views create
   /catalogs/{catalog_name}/schemas/{schema_name}/views/{view_name}:
     get:
       operationId: getView
@@ -3776,6 +3823,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog views get
     patch:
       operationId: updateView
       summary: Update view
@@ -3846,6 +3894,7 @@ paths:
           - securable_type: schema
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: catalog views update
     delete:
       operationId: deleteView
       summary: Delete view
@@ -3906,6 +3955,7 @@ paths:
           - securable_type: schema
             privilege: CREATE_TABLE
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: catalog views delete
   /catalogs/{catalog_name}/schemas/{schema_name}/volumes:
     get:
       operationId: listVolumes
@@ -3979,6 +4029,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog volumes list
     post:
       operationId: createVolume
       summary: Create volume
@@ -4044,6 +4095,7 @@ paths:
           - securable_type: catalog
             privilege: CREATE_VOLUME
             securable_id_source: catalog_sentinel
+      x-cli-command: catalog volumes create
   /catalogs/{catalog_name}/schemas/{schema_name}/volumes/{volume_name}:
     get:
       operationId: getVolume
@@ -4109,6 +4161,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Catalogs
+      x-cli-command: catalog volumes get
     patch:
       operationId: updateVolume
       summary: Update volume
@@ -4179,6 +4232,7 @@ paths:
           - securable_type: volume
             privilege: CREATE_VOLUME
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: catalog volumes update
     delete:
       operationId: deleteVolume
       summary: Delete volume
@@ -4239,6 +4293,7 @@ paths:
           - securable_type: volume
             privilege: CREATE_VOLUME
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: catalog volumes delete
   /catalogs/{catalog_name}/version-summary:
     get:
       operationId: getCatalogVersionSummary
@@ -4345,6 +4400,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+      x-cli-command: governance classifications list
   /column-masks:
     get:
       operationId: listColumnMasks
@@ -4414,6 +4470,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+      x-cli-command: security column-masks list
     post:
       operationId: createColumnMask
       summary: Create column mask
@@ -4463,6 +4520,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateColumnMaskRequest'
+      x-cli-command: security column-masks create
   /column-masks/{column_mask_id}:
     get:
       operationId: getColumnMask
@@ -4616,6 +4674,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+      x-cli-command: security column-masks delete
   /column-masks/{column_mask_id}/bindings:
     get:
       operationId: listColumnMaskBindings
@@ -4734,6 +4793,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ColumnMaskBindingRequest'
+      x-cli-command: security column-masks bind
   /column-masks/{column_mask_id}/bindings/{principal_type}/{principal_id}:
     delete:
       operationId: unbindColumnMask
@@ -4789,6 +4849,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+      x-cli-command: security column-masks unbind
   /compute-endpoints:
     get:
       operationId: listComputeEndpoints
@@ -4848,6 +4909,7 @@ paths:
         - Compute
       x-authz:
         mode: admin_only
+      x-cli-command: compute endpoints list
     post:
       operationId: createComputeEndpoint
       summary: Create compute endpoint
@@ -4912,6 +4974,7 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_COMPUTE
             securable_id_source: catalog_sentinel
+      x-cli-command: compute endpoints create
   /compute-endpoints/{endpoint_name}:
     get:
       operationId: getComputeEndpoint
@@ -4967,6 +5030,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Compute
+      x-cli-command: compute endpoints get
     patch:
       operationId: updateComputeEndpoint
       summary: Update compute endpoint
@@ -5033,6 +5097,7 @@ paths:
           - securable_type: compute_endpoint
             privilege: MANAGE_COMPUTE
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: compute endpoints update
     delete:
       operationId: deleteComputeEndpoint
       summary: Delete compute endpoint
@@ -5089,6 +5154,7 @@ paths:
           - securable_type: compute_endpoint
             privilege: MANAGE_COMPUTE
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: compute endpoints delete
   /compute-endpoints/{endpoint_name}/assignments:
     get:
       operationId: listComputeAssignments
@@ -5157,6 +5223,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Compute
+      x-cli-command: compute assignments list
     post:
       operationId: createComputeAssignment
       summary: Create compute assignment
@@ -5225,6 +5292,7 @@ paths:
           - securable_type: compute_endpoint
             privilege: MANAGE_COMPUTE
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: compute assignments create
   /compute-endpoints/{endpoint_name}/assignments/{assignment_id}:
     delete:
       operationId: deleteComputeAssignment
@@ -5287,6 +5355,7 @@ paths:
           - securable_type: catalog
             privilege: MANAGE_COMPUTE
             securable_id_source: catalog_sentinel
+      x-cli-command: compute assignments delete
   /compute-endpoints/{endpoint_name}/health:
     get:
       operationId: getComputeEndpointHealth
@@ -5350,6 +5419,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Compute
+      x-cli-command: compute endpoints health
   /compute-routing-defaults:
     get:
       operationId: getComputeRoutingDefaults
@@ -7355,6 +7425,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Storage
+      x-cli-command: storage locations list
     post:
       operationId: createExternalLocation
       summary: Create external location
@@ -7411,6 +7482,7 @@ paths:
           - securable_type: catalog
             privilege: CREATE_EXTERNAL_LOCATION
             securable_id_source: catalog_sentinel
+      x-cli-command: storage locations create
   /external-locations/{location_name}:
     get:
       operationId: getExternalLocation
@@ -7466,6 +7538,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Storage
+      x-cli-command: storage locations get
     patch:
       operationId: updateExternalLocation
       summary: Update external location
@@ -7532,6 +7605,7 @@ paths:
           - securable_type: external_location
             privilege: CREATE_EXTERNAL_LOCATION
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: storage locations update
     delete:
       operationId: deleteExternalLocation
       summary: Delete external location
@@ -7588,6 +7662,7 @@ paths:
           - securable_type: external_location
             privilege: CREATE_EXTERNAL_LOCATION
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: storage locations delete
   /folders/contents:
     get:
       operationId: listRootFolderContents
@@ -8355,6 +8430,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Integrations
+      x-cli-command: notebooks git-repos list
     post:
       operationId: createGitRepo
       summary: Create git repo
@@ -8404,6 +8480,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateGitRepoRequest'
+      x-cli-command: notebooks git-repos create
   /git-repos/{git_repo_id}:
     get:
       operationId: getGitRepo
@@ -8459,6 +8536,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Integrations
+      x-cli-command: notebooks git-repos get
     delete:
       operationId: deleteGitRepo
       summary: Delete git repo
@@ -8509,6 +8587,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Integrations
+      x-cli-command: notebooks git-repos delete
   /git-repos/{git_repo_id}/sync-runs:
     post:
       operationId: syncGitRepo
@@ -8570,6 +8649,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Integrations
+      x-cli-command: notebooks git-repos sync
   /grants:
     get:
       operationId: listGrants
@@ -8653,6 +8733,7 @@ paths:
         - Governance
       x-authz:
         mode: admin_only
+      x-cli-command: security grants list
     post:
       operationId: createGrant
       summary: Create grant
@@ -8712,6 +8793,7 @@ paths:
               $ref: '#/components/schemas/CreateGrantRequest'
       x-authz:
         mode: admin_only
+      x-cli-command: security grants create
   /grants/{grant_id}:
     delete:
       operationId: deleteGrant
@@ -8759,6 +8841,7 @@ paths:
         - Governance
       x-authz:
         mode: admin_only
+      x-cli-command: security grants revoke
   /groups:
     get:
       operationId: listGroups
@@ -8818,6 +8901,7 @@ paths:
         - Identity
       x-authz:
         mode: admin_only
+      x-cli-command: security groups list
     post:
       operationId: createGroup
       summary: Create group
@@ -8867,6 +8951,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateGroupRequest'
+      x-cli-command: security groups create
   /groups/{group_id}:
     get:
       operationId: getGroup
@@ -8922,6 +9007,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
+      x-cli-command: security groups get
     patch:
       operationId: updateGroup
       summary: Update group
@@ -9028,6 +9114,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
+      x-cli-command: security groups delete
   /groups/{group_id}/members:
     get:
       operationId: listGroupMembers
@@ -9096,6 +9183,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
+      x-cli-command: security members list
     post:
       operationId: createGroupMember
       summary: Create group member
@@ -9146,6 +9234,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateGroupMemberRequest'
+      x-cli-command: security members add
   /groups/{group_id}/members/{member_type}/{member_id}:
     delete:
       operationId: deleteGroupMember
@@ -9201,6 +9290,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
+      x-cli-command: security members remove
   /healthz:
     get:
       operationId: getHealth
@@ -9241,6 +9331,8 @@ paths:
         - Health
       security:
         - {}
+      x-authz:
+        mode: public
   /lineage/columns/{schema_name}/{table_name}:
     get:
       operationId: getColumnLineage
@@ -9314,6 +9406,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Lineage
+      x-cli-command: lineage columns get
   /lineage/columns/{schema_name}/{table_name}/{column_name}/impacts:
     get:
       operationId: getColumnImpact
@@ -9392,6 +9485,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Lineage
+      x-cli-command: lineage impact get
   /lineage/edges/{edge_id}:
     delete:
       operationId: deleteLineageEdge
@@ -9437,6 +9531,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Lineage
+      x-cli-command: lineage edges delete
   /lineage/purges:
     post:
       operationId: purgeLineage
@@ -9487,6 +9582,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PurgeLineageRequest'
+      x-cli-command: lineage purge
   /lineage/tables/{schema_name}/{table_name}:
     get:
       operationId: getTableLineage
@@ -9560,6 +9656,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Lineage
+      x-cli-command: lineage tables get
   /lineage/tables/{schema_name}/{table_name}/downstream:
     get:
       operationId: getDownstreamLineage
@@ -9633,6 +9730,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Lineage
+      x-cli-command: lineage tables downstream
   /lineage/tables/{schema_name}/{table_name}/upstream:
     get:
       operationId: getUpstreamLineage
@@ -9706,6 +9804,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Lineage
+      x-cli-command: lineage tables upstream
   /macros:
     get:
       operationId: listMacros
@@ -9757,6 +9856,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models macros list
     post:
       operationId: createMacro
       summary: Create macro
@@ -9806,6 +9906,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateMacroRequest'
+      x-cli-command: models macros create
   /macros/{macro_name}:
     get:
       operationId: getMacro
@@ -9861,6 +9962,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models macros get
     patch:
       operationId: updateMacro
       summary: Update macro
@@ -9915,6 +10017,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateMacroRequest'
+      x-cli-command: models macros update
     delete:
       operationId: deleteMacro
       summary: Delete macro
@@ -9959,6 +10062,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models macros delete
   /macros/{macro_name}/impacts:
     get:
       operationId: getMacroImpact
@@ -10027,6 +10131,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models impact get
   /macros/{macro_name}/revision-diffs:
     get:
       operationId: diffMacroRevisions
@@ -10096,6 +10201,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models diff diff-macro-revisions
   /macros/{macro_name}/revisions:
     get:
       operationId: listMacroRevisions
@@ -10151,6 +10257,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models revisions list
   /me/recent-resources:
     get:
       operationId: listRecentResources
@@ -10418,6 +10525,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TriggerModelRunRequest'
+      x-cli-command: models model-runs trigger-model-run
     get:
       operationId: listModelRuns
       summary: List model runs
@@ -10474,6 +10582,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models model-runs list
   /model-runs/{run_id}:
     get:
       operationId: getModelRun
@@ -10529,6 +10638,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models model-runs get
   /model-runs/{run_id}/cancellations:
     post:
       operationId: cancelModelRun
@@ -10578,6 +10688,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models cancel cancel-model-run
   /model-runs/{run_id}/steps:
     get:
       operationId: listModelRunSteps
@@ -10633,6 +10744,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models steps list
   /model-runs/{run_id}/steps/{step_id}/test-results:
     get:
       operationId: listModelTestResults
@@ -10693,6 +10805,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models test-results list
   /models:
     get:
       operationId: listModels
@@ -10750,6 +10863,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models models list
     post:
       operationId: createModel
       summary: Create model
@@ -10799,6 +10913,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateModelRequest'
+      x-cli-command: models models create
   /models/dag:
     get:
       operationId: getModelDAG
@@ -10843,6 +10958,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models dag get
   /models/{project_name}/{model_name}:
     get:
       operationId: getModel
@@ -10903,6 +11019,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models models get
     patch:
       operationId: updateModel
       summary: Update model
@@ -10962,6 +11079,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateModelRequest'
+      x-cli-command: models models update
     delete:
       operationId: deleteModel
       summary: Delete model
@@ -11011,6 +11129,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models models delete
   /models/{project_name}/{model_name}/freshness:
     get:
       operationId: checkModelFreshness
@@ -11071,6 +11190,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models freshness check-model-freshness
   /models/{project_name}/{model_name}/tests:
     post:
       operationId: createModelTest
@@ -11131,6 +11251,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateModelTestRequest'
+      x-cli-command: models tests create
     get:
       operationId: listModelTests
       summary: List model tests
@@ -11190,6 +11311,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models tests list
   /models/{project_name}/{model_name}/tests/{test_id}:
     delete:
       operationId: deleteModelTest
@@ -11245,6 +11367,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
+      x-cli-command: models tests delete
   /notebooks:
     get:
       operationId: listNotebooks
@@ -11302,6 +11425,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+      x-cli-command: notebooks notebooks list
     post:
       operationId: createNotebook
       summary: Create notebook
@@ -11351,6 +11475,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateNotebookRequest'
+      x-cli-command: notebooks notebooks create
   /notebooks/{notebook_id}:
     get:
       operationId: getNotebook
@@ -11406,6 +11531,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+      x-cli-command: notebooks notebooks get
     patch:
       operationId: updateNotebook
       summary: Update notebook
@@ -11466,6 +11592,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateNotebookRequest'
+      x-cli-command: notebooks notebooks update
     delete:
       operationId: deleteNotebook
       summary: Delete notebook
@@ -11516,6 +11643,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+      x-cli-command: notebooks notebooks delete
   /notebooks/{notebook_id}/cells:
     post:
       operationId: createCell
@@ -11579,6 +11707,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateCellRequest'
+      x-cli-command: notebooks cells create
   /notebooks/{notebook_id}/cells/reorder:
     post:
       operationId: reorderCells
@@ -11642,6 +11771,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ReorderCellsRequest'
+      x-cli-command: notebooks cells reorder
   /notebooks/{notebook_id}/cells/{cell_id}:
     patch:
       operationId: updateCell
@@ -11710,6 +11840,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateCellRequest'
+      x-cli-command: notebooks cells update
     delete:
       operationId: deleteCell
       summary: Delete cell
@@ -11765,6 +11896,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+      x-cli-command: notebooks cells delete
   /notebooks/{notebook_id}/copies:
     post:
       operationId: duplicateNotebook
@@ -11894,6 +12026,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+      x-cli-command: notebooks jobs list
   /notebooks/{notebook_id}/jobs/{job_id}:
     get:
       operationId: getNotebookJob
@@ -11954,6 +12087,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+      x-cli-command: notebooks jobs get
   /notebooks/{notebook_id}/model-promotions:
     post:
       operationId: promoteNotebookToModel
@@ -12009,6 +12143,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PromoteNotebookRequest'
+      x-cli-command: models from-notebook promote-notebook-to-model
     delete:
       operationId: unpublishNotebookModel
       summary: Unpublish notebook model
@@ -12175,6 +12310,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+      x-cli-command: notebooks sessions create
   /notebooks/{notebook_id}/sessions/{session_id}:
     delete:
       operationId: closeNotebookSession
@@ -12231,6 +12367,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+      x-cli-command: notebooks sessions close
   /notebooks/{notebook_id}/sessions/{session_id}/cell-executions:
     post:
       operationId: runAllCells
@@ -12291,6 +12428,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+      x-cli-command: notebooks sessions run-all
   /notebooks/{notebook_id}/sessions/{session_id}/cell-executions/{cell_id}:
     post:
       operationId: executeCell
@@ -12358,6 +12496,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+      x-cli-command: notebooks cells execute
   /notebooks/{notebook_id}/sessions/{session_id}/job-runs:
     post:
       operationId: runAllCellsAsync
@@ -12418,6 +12557,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Notebooks
+      x-cli-command: notebooks sessions run-all-async
   /notebooks/{notebook_id}/shares:
     get:
       operationId: listNotebookShares
@@ -12642,6 +12782,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
+      x-cli-command: pipelines pipelines list
     post:
       operationId: createPipeline
       summary: Create pipeline
@@ -12691,6 +12832,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreatePipelineRequest'
+      x-cli-command: pipelines pipelines create
   /pipelines/runs/{run_id}:
     get:
       operationId: getPipelineRun
@@ -12746,6 +12888,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
+      x-cli-command: pipelines runs get
   /pipelines/runs/{run_id}/cancellations:
     post:
       operationId: cancelPipelineRun
@@ -12795,6 +12938,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
+      x-cli-command: pipelines runs cancel
   /pipelines/runs/{run_id}/jobs:
     get:
       operationId: listPipelineJobRuns
@@ -12850,6 +12994,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
+      x-cli-command: pipelines runs list-job-runs
   /pipelines/{pipeline_name}:
     get:
       operationId: getPipeline
@@ -12905,6 +13050,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
+      x-cli-command: pipelines pipelines get
     patch:
       operationId: updatePipeline
       summary: Update pipeline
@@ -12959,6 +13105,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdatePipelineRequest'
+      x-cli-command: pipelines pipelines update
     delete:
       operationId: deletePipeline
       summary: Delete pipeline
@@ -13003,6 +13150,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
+      x-cli-command: pipelines pipelines delete
   /pipelines/{pipeline_name}/jobs:
     get:
       operationId: listPipelineJobs
@@ -13058,6 +13206,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
+      x-cli-command: pipelines jobs list
     post:
       operationId: createPipelineJob
       summary: Create pipeline job
@@ -13112,6 +13261,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreatePipelineJobRequest'
+      x-cli-command: pipelines jobs create
   /pipelines/{pipeline_name}/jobs/{job_id}:
     get:
       operationId: getPipelineJob
@@ -13280,6 +13430,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
+      x-cli-command: pipelines jobs delete
   /pipelines/{pipeline_name}/runs:
     post:
       operationId: triggerPipelineRun
@@ -13335,6 +13486,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TriggerPipelineRunRequest'
+      x-cli-command: pipelines runs trigger
     get:
       operationId: listPipelineRuns
       summary: List pipeline runs
@@ -13408,6 +13560,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Pipelines
+      x-cli-command: pipelines runs list
   /principals:
     get:
       operationId: listPrincipals
@@ -13467,6 +13620,7 @@ paths:
         - Identity
       x-authz:
         mode: admin_only
+      x-cli-command: security principals list
     post:
       operationId: createPrincipal
       summary: Create principal
@@ -13516,6 +13670,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreatePrincipalRequest'
+      x-cli-command: security principals create
   /principals/{principal_id}:
     get:
       operationId: getPrincipal
@@ -13571,6 +13726,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
+      x-cli-command: security principals get
     delete:
       operationId: deletePrincipal
       summary: Delete principal
@@ -13615,6 +13771,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Identity
+      x-cli-command: security principals delete
     patch:
       operationId: updatePrincipal
       summary: Update principal
@@ -13669,6 +13826,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdatePrincipalRequest'
+      x-cli-command: security principals set-admin
   /product-domains:
     get:
       operationId: listProductDomains
@@ -14610,6 +14768,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SubmitQueryRequest'
+      x-cli-command: query submit
     get:
       operationId: listQueries
       summary: List queries
@@ -14753,6 +14912,7 @@ paths:
         - Queries
       x-authz:
         mode: admin_only
+      x-cli-command: observability query-history list
   /queries/{query_id}:
     get:
       operationId: getQuery
@@ -14808,6 +14968,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Queries
+      x-cli-command: query status
     delete:
       operationId: deleteQuery
       summary: Delete query
@@ -14852,6 +15013,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Queries
+      x-cli-command: query delete
   /queries/{query_id}/cancellations:
     post:
       operationId: cancelQuery
@@ -14907,6 +15069,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Queries
+      x-cli-command: query cancel
   /queries/{query_id}/results:
     get:
       operationId: getQueryResults
@@ -14976,6 +15139,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Queries
+      x-cli-command: query results
   /query-executions:
     post:
       operationId: executeQuery
@@ -15027,6 +15191,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/QueryRequest'
+      x-cli-command: query
   /row-filters:
     get:
       operationId: listRowFilters
@@ -15096,6 +15261,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+      x-cli-command: security row-filters list
     post:
       operationId: createRowFilter
       summary: Create row filter
@@ -15145,6 +15311,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateRowFilterRequest'
+      x-cli-command: security row-filters create
   /row-filters/{row_filter_id}:
     get:
       operationId: getRowFilter
@@ -15298,6 +15465,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+      x-cli-command: security row-filters delete
   /row-filters/{row_filter_id}/bindings:
     get:
       operationId: listRowFilterBindings
@@ -15416,6 +15584,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RowFilterBindingRequest'
+      x-cli-command: security row-filters bind
   /row-filters/{row_filter_id}/bindings/{principal_type}/{principal_id}:
     delete:
       operationId: unbindRowFilter
@@ -15471,6 +15640,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+      x-cli-command: security row-filters unbind
   /semantic-metrics/{metric_name}/freshness:
     get:
       operationId: checkMetricFreshness
@@ -15532,6 +15702,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
+      x-cli-command: semantic freshness check-metric-freshness
   /semantic-models:
     get:
       operationId: listSemanticModels
@@ -15583,6 +15754,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
+      x-cli-command: semantic semantic-models list
     post:
       operationId: createSemanticModel
       summary: Create semantic model
@@ -15632,6 +15804,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticModelRequest'
+      x-cli-command: semantic semantic-models create
   /semantic-models/{semantic_model_id}:
     get:
       operationId: getSemanticModel
@@ -15687,6 +15860,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
+      x-cli-command: semantic semantic-models get
     patch:
       operationId: updateSemanticModel
       summary: Update semantic model
@@ -15741,6 +15915,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateSemanticModelRequest'
+      x-cli-command: semantic semantic-models update
     delete:
       operationId: deleteSemanticModel
       summary: Delete semantic model
@@ -15785,6 +15960,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
+      x-cli-command: semantic semantic-models delete
   /semantic-models/{semantic_model_id}/metrics:
     get:
       operationId: listSemanticMetrics
@@ -15840,6 +16016,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
+      x-cli-command: semantic metrics list
     post:
       operationId: createSemanticMetric
       summary: Create semantic metric
@@ -15894,6 +16071,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticMetricRequest'
+      x-cli-command: semantic metrics create
   /semantic-models/{semantic_model_id}/metrics/{metric_name}:
     get:
       operationId: getSemanticMetric
@@ -16013,6 +16191,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateSemanticMetricRequest'
+      x-cli-command: semantic metrics update
     delete:
       operationId: deleteSemanticMetric
       summary: Delete semantic metric
@@ -16062,6 +16241,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
+      x-cli-command: semantic metrics delete
   /semantic-models/{semantic_model_id}/pre-aggregations:
     get:
       operationId: listSemanticPreAggregations
@@ -16117,6 +16297,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
+      x-cli-command: semantic pre-aggregations list
     post:
       operationId: createSemanticPreAggregation
       summary: Create semantic pre aggregation
@@ -16171,6 +16352,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticPreAggregationRequest'
+      x-cli-command: semantic pre-aggregations create
   /semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}:
     get:
       operationId: getSemanticPreAggregation
@@ -16290,6 +16472,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateSemanticPreAggregationRequest'
+      x-cli-command: semantic pre-aggregations update
     delete:
       operationId: deleteSemanticPreAggregation
       summary: Delete semantic pre aggregation
@@ -16339,6 +16522,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
+      x-cli-command: semantic pre-aggregations delete
   /semantic-models/{semantic_model_id}/query-explanations:
     post:
       operationId: explainMetricQuery
@@ -16394,6 +16578,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MetricQueryRequest'
+      x-cli-command: semantic explain
   /semantic-models/{semantic_model_id}/query-runs:
     post:
       operationId: runMetricQuery
@@ -16449,6 +16634,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MetricQueryRequest'
+      x-cli-command: semantic run
   /semantic-models/{semantic_model_id}/relationships:
     get:
       operationId: listSemanticModelRelationships
@@ -16504,6 +16690,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
+      x-cli-command: semantic semantic-relationships list
     post:
       operationId: createSemanticModelRelationship
       summary: Create semantic relationship for a semantic model
@@ -16558,6 +16745,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateSemanticRelationshipRequest'
+      x-cli-command: semantic semantic-relationships create
   /semantic-models/{semantic_model_id}/relationships/{relationship_name}:
     get:
       operationId: getSemanticModelRelationship
@@ -16677,6 +16865,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateSemanticRelationshipRequest'
+      x-cli-command: semantic semantic-relationships update
     delete:
       operationId: deleteSemanticModelRelationship
       summary: Delete semantic relationship for a semantic model
@@ -16726,6 +16915,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
+      x-cli-command: semantic semantic-relationships delete
   /semantic-sources/{source_schema}/{source_table}/freshness:
     get:
       operationId: checkSourceFreshness
@@ -16799,6 +16989,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Semantic Layer
+      x-cli-command: models freshness check-source-freshness
   /storage-credentials:
     get:
       operationId: listStorageCredentials
@@ -16850,6 +17041,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Storage
+      x-cli-command: storage credentials list
     post:
       operationId: createStorageCredential
       summary: Create storage credential
@@ -16906,6 +17098,7 @@ paths:
           - securable_type: catalog
             privilege: CREATE_STORAGE_CREDENTIAL
             securable_id_source: catalog_sentinel
+      x-cli-command: storage credentials create
   /storage-credentials/{credential_name}:
     get:
       operationId: getStorageCredential
@@ -16961,6 +17154,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Storage
+      x-cli-command: storage credentials get
     patch:
       operationId: updateStorageCredential
       summary: Update storage credential
@@ -17027,6 +17221,7 @@ paths:
           - securable_type: storage_credential
             privilege: CREATE_STORAGE_CREDENTIAL
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: storage credentials update
     delete:
       operationId: deleteStorageCredential
       summary: Delete storage credential
@@ -17083,6 +17278,7 @@ paths:
           - securable_type: storage_credential
             privilege: CREATE_STORAGE_CREDENTIAL
             securable_id_source: runtime_resolved_object_id
+      x-cli-command: storage credentials delete
   /tags:
     get:
       operationId: listTags
@@ -17134,6 +17330,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+      x-cli-command: governance tags list
     post:
       operationId: createTag
       summary: Create tag
@@ -17183,6 +17380,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateTagRequest'
+      x-cli-command: governance tags create
   /tags/{tag_id}:
     get:
       operationId: getTag
@@ -17336,6 +17534,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+      x-cli-command: governance tags delete
   /tags/{tag_id}/assignments:
     get:
       operationId: listTagAssignments
@@ -17466,6 +17665,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateTagAssignmentRequest'
+      x-cli-command: governance tag-assignments create
   /tags/{tag_id}/assignments/{assignment_id}:
     delete:
       operationId: deleteTagAssignment
@@ -17516,6 +17716,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+      x-cli-command: governance tag-assignments delete
   /workspaces:
     get:
       operationId: listWorkspaces

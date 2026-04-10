@@ -6,7 +6,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/apigen/ir"
+	"duck-demo/apigen/ir"
 )
 
 func TestEmitYAML(t *testing.T) {
@@ -45,7 +45,7 @@ func TestEmitYAML(t *testing.T) {
 		},
 	}
 
-	b, err := EmitYAML(docIR)
+	b, err := EmitYAML(docIR, Options{})
 	require.NoError(t, err)
 
 	loader := openapi3.NewLoader()

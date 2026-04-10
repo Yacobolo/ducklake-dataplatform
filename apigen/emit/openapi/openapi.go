@@ -8,11 +8,14 @@ import (
 
 	"go.yaml.in/yaml/v4"
 
-	"duck-demo/internal/apigen/ir"
+	"duck-demo/apigen/ir"
 )
 
+// Options configures OpenAPI emission.
+type Options struct{}
+
 // EmitYAML renders an OpenAPI 3.2 document from IR.
-func EmitYAML(docIR ir.Document) ([]byte, error) {
+func EmitYAML(docIR ir.Document, _ Options) ([]byte, error) {
 	doc := make(map[string]any)
 	doc["openapi"] = "3.2.0"
 	doc["info"] = map[string]any{

@@ -88,7 +88,7 @@ func newAPIListCmd() *cobra.Command {
 		Short: "List all API endpoints",
 		Long:  "Lists all API endpoints with their HTTP method, path, and description.",
 		Example: `  duck api list
-  duck api list --tag Security
+  duck api list --tag Identity
   duck api list --output json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			endpoints := allAPIEndpoints()
@@ -121,7 +121,7 @@ func newAPIListCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&tag, "tag", "", "Filter by API tag (e.g., Security, Catalogs)")
+	cmd.Flags().StringVar(&tag, "tag", "", "Filter by API tag (e.g., Identity, Catalogs)")
 
 	return cmd
 }

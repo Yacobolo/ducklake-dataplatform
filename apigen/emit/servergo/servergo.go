@@ -7,31 +7,37 @@ import (
 	"sort"
 	"strings"
 
-	openapiemit "duck-demo/internal/apigen/emit/openapi"
-	"duck-demo/internal/apigen/ir"
+	openapiemit "duck-demo/apigen/emit/openapi"
+	"duck-demo/apigen/ir"
 	"go.yaml.in/yaml/v4"
 )
 
+// Options configures Go server emission.
+type Options struct {
+	PackageName             string
+	EmbeddedOpenAPISpecJSON string
+}
+
 // Emit renders Go server scaffolding from IR.
-func Emit(doc ir.Document) ([]byte, error) {
-	return emit(doc, "")
+func Emit(doc ir.Document, opts Options) ([]byte, error) {
+	return emit(doc, opts)
 }
 
 // EmitWithLegacyResponses renders Go server scaffolding using APIGen-owned
 // response metadata while preserving legacy concrete response aliases.
-func EmitWithLegacyResponses(doc ir.Document, _ string) ([]byte, error) {
-	return EmitWithLegacyResponsesAndSpec(doc, "", "")
+func EmitWithLegacyResponses(doc ir.Document, opts Options) ([]byte, error) {
+	return EmitWithLegacyResponsesAndSpec(doc, opts)
 }
 
 // EmitWithLegacyResponsesAndSpec renders Go server scaffolding using APIGen-owned
 // response metadata while embedding the provided OpenAPI JSON when non-empty.
 // embedding the provided OpenAPI JSON when non-empty.
-func EmitWithLegacyResponsesAndSpec(doc ir.Document, _ string, embeddedSpecJSON string) ([]byte, error) {
-	return emit(doc, embeddedSpecJSON)
+func EmitWithLegacyResponsesAndSpec(doc ir.Document, opts Options) ([]byte, error) {
+	return emit(doc, opts)
 }
 
-func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
-	specJSON := embeddedSpecJSON
+func emit(doc ir.Document, opts Options) ([]byte, error) {
+	specJSON := opts.EmbeddedOpenAPISpecJSON
 	if specJSON == "" {
 		var err error
 		specJSON, err = emitSpecJSON(doc)
@@ -41,6 +47,7 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 	}
 
 	var b strings.Builder
+	packageName := packageName(opts)
 	usesTime := docUsesTimeTypes(doc)
 	hasStrictOperations := false
 	hasRequestBodies := false
@@ -52,7 +59,9 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 			hasRequestBodies = true
 		}
 	}
-	b.WriteString("package api\n\n")
+	b.WriteString("package ")
+	b.WriteString(packageName)
+	b.WriteString("\n\n")
 	b.WriteString("import (\n")
 	if hasStrictOperations {
 		b.WriteString("\t\"context\"\n")
@@ -68,7 +77,7 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 	if usesTime {
 		b.WriteString("\t\"time\"\n\n")
 	}
-	b.WriteString("\t\"github.com/go-chi/chi/v5\"\n")
+	b.WriteString("\tapigenchi \"duck-demo/apigen/runtime/chi\"\n")
 	b.WriteString(")\n\n")
 	b.WriteString("const embeddedOpenAPISpecJSON = `")
 	b.WriteString(specJSON)
@@ -148,18 +157,18 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 	b.WriteString("type GenServerInterface interface {\n")
 	b.WriteString("\tHandleAPIGen(operationID string, w http.ResponseWriter, r *http.Request)\n")
 	b.WriteString("}\n\n")
-	b.WriteString("// RegisterAPIGenRoutes mounts generated routes on Chi router.\n")
-	b.WriteString("func RegisterAPIGenRoutes(router chi.Router, server GenServerInterface) {\n")
+	b.WriteString("// RegisterAPIGenRoutes mounts generated routes on the supported Chi runtime boundary.\n")
+	b.WriteString("func RegisterAPIGenRoutes(router apigenchi.Router, server GenServerInterface) {\n")
+	b.WriteString("\tapigenchi.RegisterRoutes(router, []apigenchi.Route{\n")
 	for _, endpoint := range doc.Endpoints {
 		method := strings.ToUpper(endpoint.Method)
-		b.WriteString("\trouter.MethodFunc(\"" + method + "\", \"" + endpoint.Path + "\", func(w http.ResponseWriter, r *http.Request) {\n")
-		b.WriteString("\t\tserver.HandleAPIGen(\"" + endpoint.OperationID + "\", w, r)\n")
-		b.WriteString("\t})\n")
+		fmt.Fprintf(&b, "\t\t{Method: %q, Path: %q, OperationID: %q},\n", method, endpoint.Path, endpoint.OperationID)
 	}
+	b.WriteString("\t}, server.HandleAPIGen)\n")
 	b.WriteString("}\n")
 	b.WriteString("\n")
 	b.WriteString("// RegisterAPIGenStrictRoutes mounts generated routes backed by strict handlers.\n")
-	b.WriteString("func RegisterAPIGenStrictRoutes(router chi.Router, handler GenStrictServerInterface) {\n")
+	b.WriteString("func RegisterAPIGenStrictRoutes(router apigenchi.Router, handler GenStrictServerInterface) {\n")
 	b.WriteString("\tRegisterAPIGenRoutes(router, genStrictAdapter{handler: handler})\n")
 	b.WriteString("}\n")
 	b.WriteString("\n")
@@ -210,7 +219,7 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 				required = "true"
 			}
 			b.WriteString("\t\tvar " + varName + " " + typeName + "\n")
-			b.WriteString("\t\terr = bindPathParameter(\"" + p.Name + "\", chi.URLParam(r, \"" + p.Name + "\"), " + required + ", &" + varName + ")\n")
+			b.WriteString("\t\terr = apigenchi.BindPathParameter(\"" + p.Name + "\", apigenchi.URLParam(r, \"" + p.Name + "\"), " + required + ", &" + varName + ")\n")
 			b.WriteString("\t\tif err != nil {\n")
 			b.WriteString("\t\t\twriteAPIGenError(w, http.StatusBadRequest, err.Error())\n")
 			b.WriteString("\t\t\treturn true\n")
@@ -225,7 +234,7 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 				if p.Required {
 					required = "true"
 				}
-				b.WriteString("\t\terr = bindQueryParameter(r.URL.Query(), \"" + p.Name + "\", " + required + ", &params." + fieldName + ")\n")
+				b.WriteString("\t\terr = apigenchi.BindQueryParameter(r.URL.Query(), \"" + p.Name + "\", " + required + ", &params." + fieldName + ")\n")
 				b.WriteString("\t\tif err != nil {\n")
 				b.WriteString("\t\t\twriteAPIGenError(w, http.StatusBadRequest, err.Error())\n")
 				b.WriteString("\t\t\treturn true\n")
@@ -261,7 +270,7 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 		b.WriteString("func writeAPIGenError(w http.ResponseWriter, statusCode int, message string) {\n")
 		b.WriteString("\tw.Header().Set(\"Content-Type\", \"application/json\")\n")
 		b.WriteString("\tw.WriteHeader(statusCode)\n")
-		b.WriteString("\t_ = json.NewEncoder(w).Encode(Error{Code: safeIntToInt32(statusCode), Message: apigenErrorMessage(statusCode, message)})\n")
+		b.WriteString("\t_ = json.NewEncoder(w).Encode(Error{Code: apigenchi.SafeIntToInt32(statusCode), Message: apigenErrorMessage(statusCode, message)})\n")
 		b.WriteString("}\n\n")
 	}
 	if hasRequestBodies {
@@ -540,7 +549,7 @@ func emit(doc ir.Document, embeddedSpecJSON string) ([]byte, error) {
 }
 
 func emitSpecJSON(docIR ir.Document) (string, error) {
-	yamlBytes, err := openapiemit.EmitYAML(docIR)
+	yamlBytes, err := openapiemit.EmitYAML(docIR, openapiemit.Options{})
 	if err != nil {
 		return "", fmt.Errorf("emit embedded openapi yaml: %w", err)
 	}
@@ -844,45 +853,45 @@ func genericRequestBodySchemaCandidates(operationID string) []string {
 }
 
 var genericRequestBodySchemaOverrides = map[string]string{
-	"bindColumnMask":               "ColumnMaskBindingRequest",
-	"bindRowFilter":                "RowFilterBindingRequest",
-	"commitTableIngestion":         "CommitIngestionRequest",
-	"createCell":                   "CreateCellRequest",
-	"createComputeAssignment":      "CreateComputeAssignmentRequest",
-	"createComputeEndpoint":        "CreateComputeEndpointRequest",
-	"createGitRepo":                "CreateGitRepoRequest",
-	"createMacro":                  "CreateMacroRequest",
-	"createManifest":               "ManifestRequest",
-	"createModelTest":              "CreateModelTestRequest",
-	"createNotebook":               "CreateNotebookRequest",
-	"createPipeline":               "CreatePipelineRequest",
-	"createPipelineJob":            "CreatePipelineJobRequest",
-	"createSemanticMetric":         "CreateSemanticMetricRequest",
-	"createSemanticModel":          "CreateSemanticModelRequest",
-	"createSemanticPreAggregation": "CreateSemanticPreAggregationRequest",
-	"createSemanticRelationship":   "CreateSemanticRelationshipRequest",
-	"createTag":                    "CreateTagRequest",
-	"createTagAssignment":          "CreateTagAssignmentRequest",
-	"createUploadUrl":              "UploadUrlRequest",
-	"executeQuery":                 "QueryRequest",
-	"explainMetricQuery":           "MetricQueryRequest",
-	"loadTableExternalFiles":       "LoadExternalRequest",
-	"promoteNotebookToModel":       "PromoteNotebookRequest",
-	"purgeLineage":                 "PurgeLineageRequest",
-	"reorderCells":                 "ReorderCellsRequest",
-	"runMetricQuery":               "MetricQueryRequest",
-	"triggerModelRun":              "TriggerModelRunRequest",
-	"triggerPipelineRun":           "TriggerPipelineRunRequest",
-	"updateCell":                   "UpdateCellRequest",
-	"updateComputeEndpoint":        "UpdateComputeEndpointRequest",
-	"updateMacro":                  "UpdateMacroRequest",
-	"updateModel":                  "UpdateModelRequest",
-	"updateNotebook":               "UpdateNotebookRequest",
-	"updatePipeline":               "UpdatePipelineRequest",
-	"updateSemanticMetric":         "UpdateSemanticMetricRequest",
-	"updateSemanticModel":          "UpdateSemanticModelRequest",
-	"updateSemanticPreAggregation": "UpdateSemanticPreAggregationRequest",
-	"updateSemanticRelationship":   "UpdateSemanticRelationshipRequest",
+	"bindColumnMask":                  "ColumnMaskBindingRequest",
+	"bindRowFilter":                   "RowFilterBindingRequest",
+	"commitTableIngestion":            "CommitIngestionRequest",
+	"createCell":                      "CreateCellRequest",
+	"createComputeAssignment":         "CreateComputeAssignmentRequest",
+	"createComputeEndpoint":           "CreateComputeEndpointRequest",
+	"createGitRepo":                   "CreateGitRepoRequest",
+	"createMacro":                     "CreateMacroRequest",
+	"createManifest":                  "ManifestRequest",
+	"createModelTest":                 "CreateModelTestRequest",
+	"createNotebook":                  "CreateNotebookRequest",
+	"createPipeline":                  "CreatePipelineRequest",
+	"createPipelineJob":               "CreatePipelineJobRequest",
+	"createSemanticMetric":            "CreateSemanticMetricRequest",
+	"createSemanticModel":             "CreateSemanticModelRequest",
+	"createSemanticPreAggregation":    "CreateSemanticPreAggregationRequest",
+	"createSemanticModelRelationship": "CreateSemanticRelationshipRequest",
+	"createTag":                       "CreateTagRequest",
+	"createTagAssignment":             "CreateTagAssignmentRequest",
+	"createUploadUrl":                 "UploadUrlRequest",
+	"executeQuery":                    "QueryRequest",
+	"explainMetricQuery":              "MetricQueryRequest",
+	"loadTableExternalFiles":          "LoadExternalRequest",
+	"promoteNotebookToModel":          "PromoteNotebookRequest",
+	"purgeLineage":                    "PurgeLineageRequest",
+	"reorderCells":                    "ReorderCellsRequest",
+	"runMetricQuery":                  "MetricQueryRequest",
+	"triggerModelRun":                 "TriggerModelRunRequest",
+	"triggerPipelineRun":              "TriggerPipelineRunRequest",
+	"updateCell":                      "UpdateCellRequest",
+	"updateComputeEndpoint":           "UpdateComputeEndpointRequest",
+	"updateMacro":                     "UpdateMacroRequest",
+	"updateModel":                     "UpdateModelRequest",
+	"updateNotebook":                  "UpdateNotebookRequest",
+	"updatePipeline":                  "UpdatePipelineRequest",
+	"updateSemanticMetric":            "UpdateSemanticMetricRequest",
+	"updateSemanticModel":             "UpdateSemanticModelRequest",
+	"updateSemanticPreAggregation":    "UpdateSemanticPreAggregationRequest",
+	"updateSemanticModelRelationship": "UpdateSemanticRelationshipRequest",
 }
 
 func responseTypeName(operationID string, response ir.Response) string {
@@ -1410,4 +1419,11 @@ func SortedOperationIDs(doc ir.Document) []string {
 	}
 	sort.Strings(ids)
 	return ids
+}
+
+func packageName(opts Options) string {
+	if strings.TrimSpace(opts.PackageName) == "" {
+		return "api"
+	}
+	return opts.PackageName
 }

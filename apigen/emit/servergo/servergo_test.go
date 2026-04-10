@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"duck-demo/internal/apigen/ir"
+	"duck-demo/apigen/ir"
 )
 
 func TestEmit(t *testing.T) {
@@ -19,7 +19,7 @@ func TestEmit(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 	require.Contains(t, content, "type GenServerInterface interface")
@@ -28,9 +28,10 @@ func TestEmit(t *testing.T) {
 	require.Contains(t, content, "type GenOperationDispatcher interface")
 	require.Contains(t, content, "DispatchAPIGenOperation")
 	require.NotContains(t, content, "*ServerInterfaceWrapper")
-	require.Contains(t, content, "router.MethodFunc(\"GET\", \"/healthz\"")
-	require.Contains(t, content, "func RegisterAPIGenRoutes(router chi.Router, server GenServerInterface)")
-	require.Contains(t, content, "func RegisterAPIGenStrictRoutes(router chi.Router, handler GenStrictServerInterface)")
+	require.Contains(t, content, "apigenchi.RegisterRoutes(router, []apigenchi.Route{")
+	require.Contains(t, content, "{Method: \"GET\", Path: \"/healthz\", OperationID: \"getHealth\"}")
+	require.Contains(t, content, "func RegisterAPIGenRoutes(router apigenchi.Router, server GenServerInterface)")
+	require.Contains(t, content, "func RegisterAPIGenStrictRoutes(router apigenchi.Router, handler GenStrictServerInterface)")
 	require.Contains(t, content, "func DispatchAPIGenOperation(operationID string, dispatcher GenOperationDispatcher")
 	require.NotContains(t, content, "\"github.com/oapi-codegen/runtime\"")
 	require.Contains(t, content, "type genStrictAdapter struct")
@@ -56,11 +57,11 @@ func TestEmit_UsesIRPathAsIs(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
-	require.Contains(t, content, "router.MethodFunc(\"POST\", \"/query\"")
-	require.NotContains(t, content, "router.MethodFunc(\"POST\", \"/v1/query\"")
+	require.Contains(t, content, "{Method: \"POST\", Path: \"/query\", OperationID: \"executeQuery\"}")
+	require.NotContains(t, content, "{Method: \"POST\", Path: \"/v1/query\", OperationID: \"executeQuery\"}")
 }
 
 func TestValidateOperationIDs(t *testing.T) {
@@ -92,16 +93,14 @@ func TestEmit_DispatchParityAndHealthHandling(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
-	require.Contains(t, content, "router.MethodFunc(\"GET\", \"/healthz\"")
-	require.Contains(t, content, "server.HandleAPIGen(\"getHealth\", w, r)")
-	require.Contains(t, content, "router.MethodFunc(\"POST\", \"/query\"")
-	require.Contains(t, content, "server.HandleAPIGen(\"executeQuery\", w, r)")
-	require.Contains(t, content, "router.MethodFunc(\"GET\", \"/groups\"")
-	require.Contains(t, content, "server.HandleAPIGen(\"listGroups\", w, r)")
+	require.Contains(t, content, "{Method: \"GET\", Path: \"/healthz\", OperationID: \"getHealth\"}")
+	require.Contains(t, content, "{Method: \"POST\", Path: \"/query\", OperationID: \"executeQuery\"}")
+	require.Contains(t, content, "{Method: \"GET\", Path: \"/groups\", OperationID: \"listGroups\"}")
+	require.Contains(t, content, "}, server.HandleAPIGen)")
 
 	require.Contains(t, content, "ExecuteQuery(w http.ResponseWriter, r *http.Request)")
 	require.Contains(t, content, "ListGroups(w http.ResponseWriter, r *http.Request)")
@@ -145,7 +144,7 @@ func TestEmit_OperationContractsIncludeManualAndBodyMetadata(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 	require.Contains(t, content, `"localLogin": {OperationID: "localLogin", Method: "POST", Path: "/auth/local-login"`)
@@ -176,13 +175,13 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
 	require.Contains(t, content, "ListGroupMembers(w http.ResponseWriter, r *http.Request, groupId string, params GenListGroupMembersParams)")
-	require.Contains(t, content, "bindPathParameter(\"groupId\", chi.URLParam(r, \"groupId\"), true, &groupId)")
-	require.Contains(t, content, "bindQueryParameter(r.URL.Query(), \"max_results\", false, &params.MaxResults)")
+	require.Contains(t, content, "apigenchi.BindPathParameter(\"groupId\", apigenchi.URLParam(r, \"groupId\"), true, &groupId)")
+	require.Contains(t, content, "apigenchi.BindQueryParameter(r.URL.Query(), \"max_results\", false, &params.MaxResults)")
 	require.Contains(t, content, "writeAPIGenError(w, http.StatusBadRequest, err.Error())")
 	require.Contains(t, content, "dispatcher.ListGroupMembers(w, r, groupId, params)")
 	require.Contains(t, content, "type GenListGroupMembersParams struct {")
@@ -191,7 +190,7 @@ func TestEmit_GeneratesPathAndQueryBinding(t *testing.T) {
 	require.Contains(t, content, "if statusCode >= http.StatusInternalServerError {")
 	require.Contains(t, content, "if statusText := strings.ToLower(http.StatusText(statusCode)); statusText != \"\" {")
 	require.Contains(t, content, "func writeAPIGenError(w http.ResponseWriter, statusCode int, message string) {")
-	require.Contains(t, content, "_ = json.NewEncoder(w).Encode(Error{Code: safeIntToInt32(statusCode), Message: apigenErrorMessage(statusCode, message)})")
+	require.Contains(t, content, "_ = json.NewEncoder(w).Encode(Error{Code: apigenchi.SafeIntToInt32(statusCode), Message: apigenErrorMessage(statusCode, message)})")
 	require.Contains(t, content, "var request GenListGroupMembersRequest")
 	require.Contains(t, content, "\"fmt\"")
 	require.Contains(t, content, "\"reflect\"")
@@ -233,7 +232,7 @@ func TestEmit_GeneratesStrictJSONBodyDecoding(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -285,7 +284,7 @@ func TestEmit_GeneratesNativeBodyAliasesWhenIRHasConcreteSchemaRefs(t *testing.T
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -314,7 +313,7 @@ func TestEmit_FallsBackToLegacyBodyAliasWhenGenericRequestHasNoConcreteSchema(t 
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -340,7 +339,7 @@ func TestEmit_ImportsTimeForDateTimeParameters(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -749,7 +748,7 @@ func TestEmit_GeneratesNativeConcreteResponsesFromIR(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -936,7 +935,7 @@ func TestEmit_GeneratesNativeConcreteResponsesForModelsAndSemantic(t *testing.T)
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -970,7 +969,7 @@ func TestEmitWithLegacyResponses_OwnsDirectSchemaResponses(t *testing.T) {
 		},
 	}
 
-	b, err := EmitWithLegacyResponses(doc, "")
+	b, err := EmitWithLegacyResponses(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -994,7 +993,7 @@ func TestEmitWithLegacyResponses_OwnsWrappedResponseStructs(t *testing.T) {
 		},
 	}
 
-	b, err := EmitWithLegacyResponses(doc, "")
+	b, err := EmitWithLegacyResponses(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -1062,7 +1061,7 @@ func TestEmit_GeneratesNativeConcreteResponsesForNotebookDomainOps(t *testing.T)
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -1101,7 +1100,7 @@ func TestEmit_UsesLegacyConcreteResponseTypesForKnownStatusDrift(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -1170,7 +1169,7 @@ func TestEmit_GeneratesNativeConcreteResponsesForRemainingDomains(t *testing.T) 
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -1225,7 +1224,7 @@ func TestEmit_GeneratesNativeConcreteResponsesForSelectorGapOps(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -1310,7 +1309,7 @@ func TestEmit_WritesNativeHeadersWithoutLegacyVisitFallback(t *testing.T) {
 		},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 
@@ -1346,7 +1345,7 @@ func TestEmit_UsesIRResponseHeadersForVisitMethods(t *testing.T) {
 		}},
 	}
 
-	b, err := Emit(doc)
+	b, err := Emit(doc, Options{})
 	require.NoError(t, err)
 	content := string(b)
 

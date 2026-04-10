@@ -1,0 +1,5 @@
+api/gen/
+api/spec/node_modules/
+cmd/cli/gen/*.gen.go
+internal/api/*.gen.go
+internal/api/types.gen.go

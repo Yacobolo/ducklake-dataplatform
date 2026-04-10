@@ -1,0 +1,14 @@
+{
+  "name": "apigen-consumer-typespec",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile": "tsp compile ./main.tsp --config ./tspconfig.yaml"
+  },
+  "dependencies": {
+    "@duck/typespec-ir-emitter": "file:../../../../tools/typespec-ir-emitter",
+    "@typespec/compiler": "^1.7.0",
+    "@typespec/http": "^1.7.0",
+    "@typespec/openapi3": "^1.7.0"
+  }
+}
