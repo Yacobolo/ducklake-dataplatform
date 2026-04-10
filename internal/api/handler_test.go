@@ -509,13 +509,13 @@ func TestAPI_GetCatalog(t *testing.T) {
 	srv := setupCatalogTestServer(t, "admin_user", mock)
 	defer srv.Close()
 
-	resp := doRequest(t, "GET", srv.URL+"/catalogs/lake", "")
+	resp := doRequest(t, "GET", srv.URL+"/catalogs/lake/version-summary", "")
 	if resp.StatusCode != 200 {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
 	}
-	result := decodeJSON[CatalogRegistration](t, resp)
-	if result.Name != "lake" {
-		t.Errorf("expected name=lake, got %v", result.Name)
+	result := decodeJSON[CatalogVersionSummary](t, resp)
+	if result.CatalogName == nil || *result.CatalogName != "lake" {
+		t.Errorf("expected catalog_name=lake, got %v", result.CatalogName)
 	}
 }
 
@@ -808,6 +808,7 @@ func TestAPI_Schema_Authorization(t *testing.T) {
 		{"list schemas allowed", "no_access_user", "GET", "/catalogs/lake/schemas", "", 200},
 		{"get schema allowed", "no_access_user", "GET", "/catalogs/lake/schemas/main", "", 200},
 		{"get catalog denied", "no_access_user", "GET", "/catalogs/lake", "", 403},
+		{"get catalog allowed", "no_access_user", "GET", "/catalogs/lake/version-summary", "", 200},
 		// admin_user has ALL_PRIVILEGES via admins group — all ops should succeed
 		{"admin create schema", "admin_user", "POST", "/catalogs/lake/schemas", `{"name":"new_schema"}`, 201},
 		{"admin update schema", "admin_user", "PATCH", "/catalogs/lake/schemas/main", `{"comment":"updated"}`, 200},

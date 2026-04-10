@@ -313,7 +313,7 @@ func createProductBuildForAPITest(
 	environmentRepo := repository.NewEnvironmentRepo(writeDB)
 	ownerPrincipal := createdBy
 	workspace, err := workspaceRepo.Create(t.Context(), &domain.Workspace{
-		Name:           product.Slug + "-workspace",
+		Name:           product.Slug + "-workspace-" + strings.ToLower(time.Now().UTC().Format("150405.000000000")),
 		Kind:           domain.WorkspaceKindShared,
 		OwnerTeamID:    &product.OwnerTeamID,
 		OwnerPrincipal: &ownerPrincipal,
