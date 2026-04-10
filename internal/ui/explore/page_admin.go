@@ -87,7 +87,7 @@ func folderEditPage(principal domain.ContextPrincipal, folder *domain.Folder, pa
 	}
 
 	deleteNode := Node(nil)
-	if folder.SystemRole == nil || *folder.SystemRole != domain.FolderSystemRolePersonalRoot {
+	if folder.SystemRole == nil || *folder.SystemRole != domain.FolderSystemRoleWorkspaceRoot {
 		deleteNode = Div(Class("mt-2"),
 			Form(Method("post"), Action("/ui/explore/folders/"+folder.ID+"/delete"), Class("m-0"), csrfFieldProvider(), core.DangerButton("", Type("submit"), Text("Delete folder"))),
 		)

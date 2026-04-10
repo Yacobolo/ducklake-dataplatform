@@ -4,52 +4,6 @@
 
 Folder lifecycle, sharing, and namespace browsing for authored assets.
 
-## `GET /folders`
-
-List folders
-
-- Operation ID: `listFolders`
-
-### Query Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `owner` | `string` | `false` | - |
-| `page_token` | `string` | `false` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `POST /folders`
-
-Create folder
-
-- Operation ID: `createFolder`
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `201` | The request has succeeded and a new resource has been created as a result. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
 ## `GET /folders/contents`
 
 List root folder contents
@@ -370,11 +324,24 @@ Remove folder share
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /me/folders/home`
+## `GET /workspaces/{workspace_id}/folders`
 
-Get caller home folder
+List folders in a workspace
 
-- Operation ID: `getHomeFolder`
+- Operation ID: `listFolders`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `workspace_id` | `string` | `true` | - |
+
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `max_results` | `integer` | `false` | - |
+| `page_token` | `string` | `false` | - |
 
 ### Responses
 
@@ -383,6 +350,37 @@ Get caller home folder
 | `200` | The request has succeeded. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /workspaces/{workspace_id}/folders`
+
+Create folder in a workspace
+
+- Operation ID: `createFolder`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `workspace_id` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `409` | The request conflicts with the current state of the server. |
 | `429` | Client error |
 | `500` | Server error |
 

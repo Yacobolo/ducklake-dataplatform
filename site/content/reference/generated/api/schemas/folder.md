@@ -21,4 +21,5 @@
 | `path` | `string` | `false` | - |
 | `system_role` | `string` | `false` | - |
 | `updated_at` | `string` | `false` | - |
+| `workspace_id` | `string` | `false` | - |
 

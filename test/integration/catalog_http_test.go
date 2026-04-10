@@ -10,17 +10,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestHTTP_CatalogInfo tests GET /v1/catalog.
+// TestHTTP_CatalogInfo tests GET /v1/catalogs/{catalog}/version-summary.
 func TestHTTP_CatalogInfo(t *testing.T) {
 	env := setupHTTPServer(t, httpTestOpts{WithDuckLake: true})
 
-	resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake", env.Keys.Admin, nil)
+	resp := doRequest(t, "GET", env.Server.URL+"/v1/catalogs/lake/version-summary", env.Keys.Admin, nil)
 	require.Equal(t, 200, resp.StatusCode)
 
 	var result map[string]interface{}
 	decodeJSON(t, resp, &result)
-	require.NotNil(t, result["name"])
-	assert.Equal(t, "lake", result["name"])
+	require.NotNil(t, result["catalog_name"])
+	assert.Equal(t, "lake", result["catalog_name"])
 }
 
 // TestHTTP_SchemaCRUD tests the full schema lifecycle through HTTP.
@@ -418,6 +418,7 @@ func TestHTTP_CatalogAuthorization(t *testing.T) {
 		}
 
 		readableEndpoints := []string{
+			"/v1/catalogs/lake/version-summary",
 			"/v1/catalogs/lake/schemas",
 			"/v1/catalogs/lake/schemas/main",
 			"/v1/catalogs/lake/metastore/summary",

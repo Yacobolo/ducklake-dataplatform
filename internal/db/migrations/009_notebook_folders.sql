@@ -1,6 +1,7 @@
 -- +goose Up
 CREATE TABLE folders (
     id TEXT PRIMARY KEY,
+    workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     owner TEXT NOT NULL,
     parent_folder_id TEXT REFERENCES folders(id) ON DELETE CASCADE,
@@ -15,7 +16,8 @@ CREATE TABLE folders (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_folders_path ON folders(path);
+CREATE UNIQUE INDEX idx_folders_workspace_path ON folders(workspace_id, path);
+CREATE INDEX idx_folders_workspace ON folders(workspace_id);
 CREATE INDEX idx_folders_parent ON folders(parent_folder_id);
 CREATE INDEX idx_folders_owner ON folders(owner);
 CREATE INDEX idx_folders_git_repo ON folders(git_repo_id);
@@ -51,44 +53,6 @@ ALTER TABLE notebooks ADD COLUMN folder_id TEXT REFERENCES folders(id) ON DELETE
 ALTER TABLE notebooks ADD COLUMN project_override_id TEXT REFERENCES projects(id) ON DELETE SET NULL;
 ALTER TABLE notebooks ADD COLUMN environment_override_id TEXT REFERENCES environments(id) ON DELETE SET NULL;
 
-WITH distinct_owners AS (
-    SELECT DISTINCT owner
-    FROM notebooks
-    WHERE owner <> ''
-),
-personal_roots AS (
-    SELECT
-        lower(hex(randomblob(16))) AS id,
-        owner
-    FROM distinct_owners
-)
-INSERT INTO folders (
-    id,
-    name,
-    owner,
-    path,
-    depth,
-    system_role
-)
-SELECT
-    id,
-    'My notebooks',
-    owner,
-    '/' || id,
-    0,
-    'PERSONAL_ROOT'
-FROM personal_roots;
-
-UPDATE notebooks
-SET folder_id = (
-    SELECT f.id
-    FROM folders f
-    WHERE f.owner = notebooks.owner
-      AND f.system_role = 'PERSONAL_ROOT'
-    LIMIT 1
-)
-WHERE folder_id IS NULL;
-
 CREATE INDEX idx_notebooks_folder ON notebooks(folder_id);
 CREATE INDEX idx_notebooks_project_override ON notebooks(project_override_id);
 CREATE INDEX idx_notebooks_environment_override ON notebooks(environment_override_id);
@@ -105,7 +69,8 @@ DROP INDEX IF EXISTS idx_folders_project;
 DROP INDEX IF EXISTS idx_folders_git_repo;
 DROP INDEX IF EXISTS idx_folders_owner;
 DROP INDEX IF EXISTS idx_folders_parent;
-DROP INDEX IF EXISTS idx_folders_path;
+DROP INDEX IF EXISTS idx_folders_workspace;
+DROP INDEX IF EXISTS idx_folders_workspace_path;
 DROP TABLE IF EXISTS notebook_shares;
 DROP TABLE IF EXISTS folder_shares;
 DROP TABLE IF EXISTS folders;

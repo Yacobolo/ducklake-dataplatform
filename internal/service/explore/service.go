@@ -14,6 +14,7 @@ import (
 // Service composes folder-backed and project-backed authored assets into
 // a single browse surface for the active folder context.
 type Service struct {
+	workspaces     domain.WorkspaceRepository
 	folders        domain.FolderRepository
 	folderShares   domain.FolderShareRepository
 	auth           domain.AuthorizationService
@@ -29,6 +30,7 @@ type Service struct {
 
 // NewService creates a new Service.
 func NewService(
+	workspaces domain.WorkspaceRepository,
 	folders domain.FolderRepository,
 	notebooks domain.NotebookRepository,
 	dashboards domain.DashboardRepository,
@@ -39,6 +41,7 @@ func NewService(
 	semantics domain.SemanticModelRepository,
 ) *Service {
 	return &Service{
+		workspaces: workspaces,
 		folders:    folders,
 		notebooks:  notebooks,
 		dashboards: dashboards,
@@ -290,7 +293,7 @@ func (s *Service) List(ctx context.Context, principal string, isAdmin bool, filt
 }
 
 func (s *Service) accessibleFolders(ctx context.Context, principal string, isAdmin bool, allFolders []domain.Folder) ([]domain.Folder, *principalAccessResolver, error) {
-	resolver, err := newPrincipalAccessResolver(ctx, s.folders, s.folderShares, s.auth, s.notebookShares, principal, isAdmin)
+	resolver, err := newPrincipalAccessResolver(ctx, s.workspaces, s.folders, s.folderShares, s.auth, s.notebookShares, principal, isAdmin)
 	if err != nil {
 		return nil, nil, fmt.Errorf("build access resolver: %w", err)
 	}

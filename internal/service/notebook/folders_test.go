@@ -14,43 +14,46 @@ import (
 func setupFolderService(t *testing.T) (*FolderService, *testutil.MockFolderRepo, *testutil.MockAuditRepo) {
 	t.Helper()
 	repo := &testutil.MockFolderRepo{}
-	repo.EnsurePersonalRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
-		role := domain.FolderSystemRolePersonalRoot
-		return &domain.Folder{ID: "personal-root-" + owner, Owner: owner, SystemRole: &role}, nil
+	repo.EnsurePersonalWorkspaceRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
+		role := domain.FolderSystemRoleWorkspaceRoot
+		return &domain.Folder{ID: "workspace-root-" + owner, WorkspaceID: testWorkspaceID, Owner: owner, SystemRole: &role}, nil
 	}
 	folderShares := &testutil.MockFolderShareRepo{}
 	audit := &testutil.MockAuditRepo{}
 	svc := NewFolderService(repo, audit)
 	svc.SetShareRepository(folderShares)
+	svc.SetWorkspaceRepository(newStubWorkspaceRepo(domain.FolderShareRoleManager))
 	return svc, repo, audit
 }
 
 func setupFolderServiceWithShares(t *testing.T) (*FolderService, *testutil.MockFolderRepo, *testutil.MockFolderShareRepo, *testutil.MockAuditRepo) {
 	t.Helper()
 	repo := &testutil.MockFolderRepo{}
-	repo.EnsurePersonalRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
-		role := domain.FolderSystemRolePersonalRoot
-		return &domain.Folder{ID: "personal-root-" + owner, Owner: owner, SystemRole: &role}, nil
+	repo.EnsurePersonalWorkspaceRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
+		role := domain.FolderSystemRoleWorkspaceRoot
+		return &domain.Folder{ID: "workspace-root-" + owner, WorkspaceID: testWorkspaceID, Owner: owner, SystemRole: &role}, nil
 	}
 	folderShares := &testutil.MockFolderShareRepo{}
 	audit := &testutil.MockAuditRepo{}
 	svc := NewFolderService(repo, audit)
 	svc.SetShareRepository(folderShares)
+	svc.SetWorkspaceRepository(newStubWorkspaceRepo(domain.FolderShareRoleManager))
 	return svc, repo, folderShares, audit
 }
 
 func setupFolderServiceWithInvalidation(t *testing.T) (*FolderService, *testutil.MockFolderRepo, *testutil.MockNotebookRepo, *testutil.MockOrchestrationEventRepo, *testutil.MockAuditRepo) {
 	t.Helper()
 	repo := &testutil.MockFolderRepo{}
-	repo.EnsurePersonalRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
-		role := domain.FolderSystemRolePersonalRoot
-		return &domain.Folder{ID: "personal-root-" + owner, Owner: owner, SystemRole: &role}, nil
+	repo.EnsurePersonalWorkspaceRootFn = func(_ context.Context, owner string) (*domain.Folder, error) {
+		role := domain.FolderSystemRoleWorkspaceRoot
+		return &domain.Folder{ID: "workspace-root-" + owner, WorkspaceID: testWorkspaceID, Owner: owner, SystemRole: &role}, nil
 	}
 	notebooks := &testutil.MockNotebookRepo{}
 	events := &testutil.MockOrchestrationEventRepo{}
 	audit := &testutil.MockAuditRepo{}
 	svc := NewFolderService(repo, audit)
 	svc.SetContextInvalidation(notebooks, events)
+	svc.SetWorkspaceRepository(newStubWorkspaceRepo(domain.FolderShareRoleManager))
 	return svc, repo, notebooks, events, audit
 }
 
@@ -61,7 +64,7 @@ func TestFolderService_CreateFolder(t *testing.T) {
 	parentID := "folder-parent"
 	repo.GetByIDFn = func(_ context.Context, id string) (*domain.Folder, error) {
 		require.Equal(t, parentID, id)
-		return &domain.Folder{ID: id, Owner: "alice"}, nil
+		return &domain.Folder{ID: id, WorkspaceID: testWorkspaceID, Owner: "alice"}, nil
 	}
 	repo.CreateFn = func(_ context.Context, folder *domain.Folder) (*domain.Folder, error) {
 		require.Equal(t, "Finance", folder.Name)
@@ -71,6 +74,7 @@ func TestFolderService_CreateFolder(t *testing.T) {
 	}
 
 	folder, err := svc.CreateFolder(ctx, "alice", domain.CreateFolderRequest{
+		WorkspaceID:    testWorkspaceID,
 		Name:           "Finance",
 		ParentFolderID: &parentID,
 	})
@@ -84,12 +88,12 @@ func TestFolderService_UpdateFolder(t *testing.T) {
 	ctx := context.Background()
 
 	repo.GetByIDFn = func(_ context.Context, id string) (*domain.Folder, error) {
-		return &domain.Folder{ID: id, Name: "Finance", Owner: "alice"}, nil
+		return &domain.Folder{ID: id, WorkspaceID: testWorkspaceID, Name: "Finance", Owner: "alice"}, nil
 	}
 	repo.UpdateFn = func(_ context.Context, id string, req domain.UpdateFolderRequest) (*domain.Folder, error) {
 		require.Equal(t, "folder-1", id)
 		require.Equal(t, "Finance Core", *req.Name)
-		return &domain.Folder{ID: id, Name: *req.Name, Owner: "alice"}, nil
+		return &domain.Folder{ID: id, WorkspaceID: testWorkspaceID, Name: *req.Name, Owner: "alice"}, nil
 	}
 
 	updated, err := svc.UpdateFolder(ctx, "alice", false, "folder-1", domain.UpdateFolderRequest{Name: ptrStr("Finance Core")})
@@ -101,10 +105,10 @@ func TestFolderService_UpdateFolder(t *testing.T) {
 func TestFolderService_DeleteFolderPersonalRootDenied(t *testing.T) {
 	svc, repo, _ := setupFolderService(t)
 	ctx := context.Background()
-	role := domain.FolderSystemRolePersonalRoot
+	role := domain.FolderSystemRoleWorkspaceRoot
 
 	repo.GetByIDFn = func(_ context.Context, id string) (*domain.Folder, error) {
-		return &domain.Folder{ID: id, Owner: "alice", SystemRole: &role}, nil
+		return &domain.Folder{ID: id, WorkspaceID: testWorkspaceID, Owner: "alice", SystemRole: &role}, nil
 	}
 
 	err := svc.DeleteFolder(ctx, "alice", false, "folder-root")
@@ -118,7 +122,7 @@ func TestFolderService_ListFoldersForPrincipal(t *testing.T) {
 	ctx := context.Background()
 
 	repo.ListAllFn = func(_ context.Context) ([]domain.Folder, error) {
-		return []domain.Folder{{ID: "folder-1", Owner: "alice"}}, nil
+		return []domain.Folder{{ID: "folder-1", WorkspaceID: testWorkspaceID, Owner: "alice"}}, nil
 	}
 
 	items, err := svc.ListFoldersForPrincipal(ctx, "alice", false, nil)
@@ -133,12 +137,12 @@ func TestFolderService_ListFoldersForPrincipal_IncludesShared(t *testing.T) {
 
 	repo.ListAllFn = func(_ context.Context) ([]domain.Folder, error) {
 		return []domain.Folder{
-			{ID: "folder-1", Owner: "bob"},
-			{ID: "folder-2", Owner: "charlie"},
+			{ID: "folder-1", WorkspaceID: testWorkspaceID, Owner: "bob"},
+			{ID: "folder-2", WorkspaceID: testWorkspaceID, Owner: "charlie"},
 		}, nil
 	}
 	repo.ListAncestorsFn = func(_ context.Context, folderID string) ([]domain.Folder, error) {
-		return []domain.Folder{{ID: folderID}}, nil
+		return []domain.Folder{{ID: folderID, WorkspaceID: testWorkspaceID}}, nil
 	}
 	folderShares.ListByPrincipalFn = func(_ context.Context, principalName string) ([]domain.FolderShare, error) {
 		require.Equal(t, "alice", principalName)
@@ -156,7 +160,7 @@ func TestFolderService_ShareFolder(t *testing.T) {
 	ctx := context.Background()
 
 	repo.GetByIDFn = func(_ context.Context, id string) (*domain.Folder, error) {
-		return &domain.Folder{ID: id, Owner: "alice"}, nil
+		return &domain.Folder{ID: id, WorkspaceID: testWorkspaceID, Owner: "alice"}, nil
 	}
 	folderShares.UpsertFn = func(_ context.Context, share *domain.FolderShare) (*domain.FolderShare, error) {
 		require.Equal(t, "folder-1", share.FolderID)
@@ -179,16 +183,16 @@ func TestFolderService_UpdateFolder_EnqueuesSubtreeInvalidations(t *testing.T) {
 	ctx := context.Background()
 
 	repo.GetByIDFn = func(_ context.Context, id string) (*domain.Folder, error) {
-		return &domain.Folder{ID: id, Owner: "alice", Path: "/root/folder-1", DefaultProjectID: ptrStr("project-a")}, nil
+		return &domain.Folder{ID: id, WorkspaceID: testWorkspaceID, Owner: "alice", Path: "/root/folder-1", DefaultProjectID: ptrStr("project-a")}, nil
 	}
 	repo.UpdateFn = func(_ context.Context, id string, req domain.UpdateFolderRequest) (*domain.Folder, error) {
-		return &domain.Folder{ID: id, Owner: "alice", Path: "/root/folder-1", DefaultProjectID: ptrStr("project-b")}, nil
+		return &domain.Folder{ID: id, WorkspaceID: testWorkspaceID, Owner: "alice", Path: "/root/folder-1", DefaultProjectID: ptrStr("project-b")}, nil
 	}
 	repo.ListAllFn = func(_ context.Context) ([]domain.Folder, error) {
 		return []domain.Folder{
-			{ID: "folder-1", Path: "/root/folder-1"},
-			{ID: "child-1", Path: "/root/folder-1/child-1"},
-			{ID: "elsewhere", Path: "/root/elsewhere"},
+			{ID: "folder-1", WorkspaceID: testWorkspaceID, Path: "/root/folder-1"},
+			{ID: "child-1", WorkspaceID: testWorkspaceID, Path: "/root/folder-1/child-1"},
+			{ID: "elsewhere", WorkspaceID: testWorkspaceID, Path: "/root/elsewhere"},
 		}, nil
 	}
 	notebooks.ListNotebooksFn = func(_ context.Context, owner *string, _ domain.PageRequest) ([]domain.Notebook, int64, error) {

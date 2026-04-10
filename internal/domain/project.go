@@ -34,9 +34,10 @@ const (
 	BuildStateSuperseded = "superseded"
 )
 
-// Project is an internal authoring workspace that can produce product-backed builds.
+// Project is an internal execution/build unit within a workspace.
 type Project struct {
 	ID             string
+	WorkspaceID    string
 	Name           string
 	Kind           string
 	Description    string
@@ -51,6 +52,7 @@ type Project struct {
 
 // CreateProjectRequest defines the input for creating an internal authoring project.
 type CreateProjectRequest struct {
+	WorkspaceID    string
 	Name           string
 	Kind           string
 	Description    string
@@ -151,6 +153,9 @@ func (r *CreateProjectRequest) Validate() error {
 
 // ValidateCreateProjectRequest validates a project creation request.
 func ValidateCreateProjectRequest(req CreateProjectRequest) error {
+	if strings.TrimSpace(req.WorkspaceID) == "" {
+		return ErrValidation("workspace_id is required")
+	}
 	if strings.TrimSpace(req.Name) == "" {
 		return ErrValidation("project name is required")
 	}
@@ -166,38 +171,12 @@ func ValidateCreateProjectRequest(req CreateProjectRequest) error {
 		return ErrValidation("default branch is required")
 	}
 
-	ownerTeam := trimmedPtr(req.OwnerTeamID)
-	ownerPrincipal := trimmedPtr(req.OwnerPrincipal)
 	productID := trimmedPtr(req.ProductID)
-
-	switch normalizeProjectKind(req.Kind) {
-	case ProjectKindPersonal:
-		if ownerPrincipal == nil {
-			return ErrValidation("personal projects require owner_principal")
-		}
-		if ownerTeam != nil {
-			return ErrValidation("personal projects cannot set owner_team_id")
-		}
-		if productID != nil {
-			return ErrValidation("personal projects cannot attach to a product")
-		}
-	case ProjectKindShared:
-		if ownerTeam == nil {
-			return ErrValidation("shared projects require owner_team_id")
-		}
-		if ownerPrincipal != nil {
-			return ErrValidation("shared projects cannot set owner_principal")
-		}
-	case ProjectKindLibrary:
-		if ownerTeam == nil {
-			return ErrValidation("library projects require owner_team_id")
-		}
-		if ownerPrincipal != nil {
-			return ErrValidation("library projects cannot set owner_principal")
-		}
-		if productID != nil {
-			return ErrValidation("library projects cannot attach to a product")
-		}
+	if normalizeProjectKind(req.Kind) == ProjectKindPersonal && productID != nil {
+		return ErrValidation("personal projects cannot attach to a product")
+	}
+	if normalizeProjectKind(req.Kind) == ProjectKindLibrary && productID != nil {
+		return ErrValidation("library projects cannot attach to a product")
 	}
 	return nil
 }

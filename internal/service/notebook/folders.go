@@ -11,6 +11,7 @@ import (
 // FolderService manages notebook folders.
 type FolderService struct {
 	repo         domain.FolderRepository
+	workspaces   domain.WorkspaceRepository
 	folderShares domain.FolderShareRepository
 	auth         domain.AuthorizationService
 	grants       domain.GrantRepository
@@ -29,6 +30,11 @@ func NewFolderService(repo domain.FolderRepository, audit domain.AuditRepository
 // SetAuthorization configures folder privilege checks.
 func (s *FolderService) SetAuthorization(auth domain.AuthorizationService) {
 	s.auth = auth
+}
+
+// SetWorkspaceRepository configures workspace lookups for membership and defaults.
+func (s *FolderService) SetWorkspaceRepository(workspaces domain.WorkspaceRepository) {
+	s.workspaces = workspaces
 }
 
 // SetGrantRepository configures grant-backed folder sharing.
@@ -54,7 +60,7 @@ func (s *FolderService) SetContextInvalidation(notebooks domain.NotebookReposito
 }
 
 func (s *FolderService) accessResolver(ctx context.Context, principal string, isAdmin bool) (*principalAccessResolver, error) {
-	return newPrincipalAccessResolver(ctx, s.repo, s.folderShares, s.auth, nil, principal, isAdmin)
+	return newPrincipalAccessResolver(ctx, s.workspaces, s.repo, s.folderShares, s.auth, nil, principal, isAdmin)
 }
 
 func (s *FolderService) requireFolderRole(ctx context.Context, principal string, isAdmin bool, id string, allowed func(string) bool, action string) (*domain.Folder, error) {
@@ -81,22 +87,35 @@ func (s *FolderService) CreateFolder(ctx context.Context, principal string, req 
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
-	if err := s.validateFolderBindings(ctx, req.DefaultProjectID, req.DefaultEnvironmentID); err != nil {
+	if err := s.validateFolderBindings(ctx, req.WorkspaceID, req.DefaultProjectID, req.DefaultEnvironmentID); err != nil {
 		return nil, err
 	}
+	parentFolderID := req.ParentFolderID
 	if req.ParentFolderID != nil && strings.TrimSpace(*req.ParentFolderID) != "" {
 		parent, err := s.requireFolderRole(ctx, principal, false, strings.TrimSpace(*req.ParentFolderID), roleAllowsManage, "manage")
 		if err != nil {
 			return nil, fmt.Errorf("get parent folder: %w", err)
 		}
-		_ = parent
+		if parent.WorkspaceID != strings.TrimSpace(req.WorkspaceID) {
+			return nil, domain.ErrValidation("parent folder must belong to the requested workspace")
+		}
+	} else {
+		if err := s.requireWorkspaceRole(ctx, principal, false, strings.TrimSpace(req.WorkspaceID), roleAllowsWrite, "write"); err != nil {
+			return nil, err
+		}
+		root, err := s.repo.EnsureWorkspaceRoot(ctx, strings.TrimSpace(req.WorkspaceID), principal)
+		if err != nil {
+			return nil, fmt.Errorf("ensure workspace root folder: %w", err)
+		}
+		parentFolderID = &root.ID
 	}
 
 	folder, err := s.repo.Create(ctx, &domain.Folder{
 		ID:                   domain.NewID(),
+		WorkspaceID:          strings.TrimSpace(req.WorkspaceID),
 		Name:                 strings.TrimSpace(req.Name),
 		Owner:                principal,
-		ParentFolderID:       req.ParentFolderID,
+		ParentFolderID:       parentFolderID,
 		GitRepoID:            req.GitRepoID,
 		GitRootPath:          req.GitRootPath,
 		DefaultProjectID:     req.DefaultProjectID,
@@ -118,23 +137,8 @@ func (s *FolderService) GetFolderForPrincipal(ctx context.Context, principal str
 	return s.requireFolderRole(ctx, principal, isAdmin, id, roleAllowsRead, "read")
 }
 
-// GetHomeFolder ensures and returns the caller's personal root folder.
-func (s *FolderService) GetHomeFolder(ctx context.Context, principal string) (*domain.Folder, error) {
-	return s.repo.EnsurePersonalRoot(ctx, principal)
-}
-
 // ListFoldersForPrincipal lists folders visible to the caller.
 func (s *FolderService) ListFoldersForPrincipal(ctx context.Context, principal string, isAdmin bool, owner *string) ([]domain.Folder, error) {
-	targetOwner := strings.TrimSpace(principal)
-	if owner != nil && strings.TrimSpace(*owner) != "" {
-		targetOwner = strings.TrimSpace(*owner)
-	}
-	if targetOwner != "" {
-		if _, err := s.repo.EnsurePersonalRoot(ctx, targetOwner); err != nil {
-			return nil, fmt.Errorf("ensure personal root: %w", err)
-		}
-	}
-
 	if isAdmin {
 		if owner != nil && strings.TrimSpace(*owner) != "" {
 			return s.repo.ListByOwner(ctx, strings.TrimSpace(*owner))
@@ -166,14 +170,44 @@ func (s *FolderService) ListFoldersForPrincipal(ctx context.Context, principal s
 	return filtered, nil
 }
 
+// ListFoldersForPrincipalInWorkspace lists folders visible to the caller within one workspace.
+func (s *FolderService) ListFoldersForPrincipalInWorkspace(ctx context.Context, principal string, isAdmin bool, workspaceID string) ([]domain.Folder, error) {
+	workspaceID = strings.TrimSpace(workspaceID)
+	if workspaceID == "" {
+		return nil, domain.ErrValidation("workspace_id is required")
+	}
+	if err := s.requireWorkspaceRole(ctx, principal, isAdmin, workspaceID, roleAllowsRead, "read"); err != nil {
+		return nil, err
+	}
+	items, err := s.repo.ListByWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	resolver, err := s.accessResolver(ctx, principal, isAdmin)
+	if err != nil {
+		return nil, fmt.Errorf("resolve folder access: %w", err)
+	}
+	filtered := make([]domain.Folder, 0, len(items))
+	for _, item := range items {
+		role, roleErr := resolver.folderRole(ctx, &item)
+		if roleErr != nil {
+			return nil, fmt.Errorf("resolve folder access: %w", roleErr)
+		}
+		if roleAllowsRead(role) {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered, nil
+}
+
 // UpdateFolder updates folder metadata.
 func (s *FolderService) UpdateFolder(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateFolderRequest) (*domain.Folder, error) {
 	folder, err := s.requireFolderRole(ctx, principal, isAdmin, id, roleAllowsManage, "manage")
 	if err != nil {
 		return nil, err
 	}
-	if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot {
-		return nil, domain.ErrValidation("personal root folders cannot be modified")
+	if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRoleWorkspaceRoot {
+		return nil, domain.ErrValidation("workspace root folders cannot be modified")
 	}
 	nextProjectID := folder.DefaultProjectID
 	if req.DefaultProjectID != nil {
@@ -183,7 +217,7 @@ func (s *FolderService) UpdateFolder(ctx context.Context, principal string, isAd
 	if req.DefaultEnvironmentID != nil {
 		nextEnvironmentID = req.DefaultEnvironmentID
 	}
-	if err := s.validateFolderBindings(ctx, nextProjectID, nextEnvironmentID); err != nil {
+	if err := s.validateFolderBindings(ctx, folder.WorkspaceID, nextProjectID, nextEnvironmentID); err != nil {
 		return nil, err
 	}
 	updated, err := s.repo.Update(ctx, id, req)
@@ -209,8 +243,8 @@ func (s *FolderService) MoveFolder(ctx context.Context, principal string, isAdmi
 	if err != nil {
 		return nil, err
 	}
-	if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot {
-		return nil, domain.ErrValidation("personal root folders cannot be moved")
+	if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRoleWorkspaceRoot {
+		return nil, domain.ErrValidation("workspace root folders cannot be moved")
 	}
 
 	var parent *domain.Folder
@@ -218,6 +252,9 @@ func (s *FolderService) MoveFolder(ctx context.Context, principal string, isAdmi
 		parent, err = s.requireFolderRole(ctx, principal, isAdmin, strings.TrimSpace(*req.ParentFolderID), roleAllowsManage, "manage")
 		if err != nil {
 			return nil, fmt.Errorf("get destination parent folder: %w", err)
+		}
+		if parent.WorkspaceID != folder.WorkspaceID {
+			return nil, domain.ErrConflict("moving folders across workspaces is not supported")
 		}
 	}
 
@@ -269,8 +306,8 @@ func (s *FolderService) DeleteFolder(ctx context.Context, principal string, isAd
 	if err != nil {
 		return err
 	}
-	if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRolePersonalRoot {
-		return domain.ErrValidation("personal root folders cannot be deleted")
+	if folder.SystemRole != nil && *folder.SystemRole == domain.FolderSystemRoleWorkspaceRoot {
+		return domain.ErrValidation("workspace root folders cannot be deleted")
 	}
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("delete folder: %w", err)
@@ -435,10 +472,34 @@ func (s *FolderService) resolveFolderContext(ctx context.Context, folder *domain
 	if folder.GitRepoID != nil {
 		resolved.gitRepoID = folder.GitRepoID
 	}
+	if s.workspaces != nil {
+		workspace, err := s.workspaces.GetByID(ctx, folder.WorkspaceID)
+		if err != nil {
+			return nil, err
+		}
+		if resolved.projectID == nil && workspace.DefaultProjectID != nil {
+			resolved.projectID = workspace.DefaultProjectID
+		}
+		if resolved.environmentID == nil && workspace.DefaultEnvironmentID != nil {
+			resolved.environmentID = workspace.DefaultEnvironmentID
+		}
+		if resolved.gitRepoID == nil && workspace.GitRepoID != nil {
+			resolved.gitRepoID = workspace.GitRepoID
+		}
+	}
 	return resolved, nil
 }
 
-func (s *FolderService) validateFolderBindings(ctx context.Context, projectID, environmentID *string) error {
+func (s *FolderService) validateFolderBindings(ctx context.Context, workspaceID string, projectID, environmentID *string) error {
+	if projectID != nil && strings.TrimSpace(*projectID) != "" && s.projects != nil {
+		project, err := s.projects.GetByID(ctx, strings.TrimSpace(*projectID))
+		if err != nil {
+			return fmt.Errorf("get project %q: %w", strings.TrimSpace(*projectID), err)
+		}
+		if strings.TrimSpace(project.WorkspaceID) != strings.TrimSpace(workspaceID) {
+			return domain.ErrValidation("default_project_id must belong to the folder workspace")
+		}
+	}
 	if environmentID == nil || strings.TrimSpace(*environmentID) == "" {
 		return nil
 	}
@@ -454,6 +515,23 @@ func (s *FolderService) validateFolderBindings(ctx context.Context, projectID, e
 	}
 	if strings.TrimSpace(environment.ProjectID) != strings.TrimSpace(*projectID) {
 		return domain.ErrValidation("default_environment_id must belong to default_project_id")
+	}
+	return nil
+}
+
+func (s *FolderService) requireWorkspaceRole(ctx context.Context, principal string, isAdmin bool, workspaceID string, allowed func(string) bool, action string) error {
+	if isAdmin {
+		return nil
+	}
+	if s.workspaces == nil {
+		return domain.ErrValidation("workspace repository is not configured")
+	}
+	role, err := s.workspaces.GetMemberRole(ctx, strings.TrimSpace(workspaceID), strings.TrimSpace(principal))
+	if err != nil {
+		return err
+	}
+	if !allowed(role) {
+		return domain.ErrAccessDenied("principal %q cannot %s workspace %q", principal, action, workspaceID)
 	}
 	return nil
 }

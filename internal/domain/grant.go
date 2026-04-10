@@ -38,6 +38,7 @@ const (
 	SecurableCatalog           = "catalog"
 	SecurableSchema            = "schema"
 	SecurableTable             = "table"
+	SecurableWorkspace         = "workspace"
 	SecurableFolder            = "folder"
 	SecurableExternalLocation  = "external_location"
 	SecurableStorageCredential = "storage_credential"

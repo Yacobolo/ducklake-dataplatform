@@ -29,12 +29,14 @@ import (
 	"duck-demo/internal/service/orchestration"
 	"duck-demo/internal/service/pipeline"
 	productsvc "duck-demo/internal/service/product"
+	projectsvc "duck-demo/internal/service/project"
 	"duck-demo/internal/service/query"
 	"duck-demo/internal/service/resourceaccess"
 	"duck-demo/internal/service/savedresource"
 	"duck-demo/internal/service/security"
 	"duck-demo/internal/service/semantic"
 	"duck-demo/internal/service/storage"
+	workspacesvc "duck-demo/internal/service/workspace"
 )
 
 // Deps holds the external dependencies that main() must provide.
@@ -75,6 +77,8 @@ type Services struct {
 	WebSessionAuth      *authsvc.SessionService
 	Notebook            *notebook.Service
 	NotebookFolders     *notebook.FolderService
+	Workspace           *workspacesvc.Service
+	Project             *projectsvc.Service
 	Explore             *exploresvc.Service
 	SessionManager      *notebook.SessionManager
 	GitService          *notebook.GitService
@@ -136,6 +140,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	computeRoutingRepo := repository.NewComputeRoutingRepo(deps.WriteDB)
 	catalogRegRepo := repository.NewCatalogRegistrationRepo(deps.WriteDB)
 	dataProductRepo := repository.NewDataProductRepo(deps.WriteDB)
+	workspaceRepo := repository.NewWorkspaceRepo(deps.WriteDB)
 	queryJobRepo := repository.NewQueryJobRepo(deps.WriteDB)
 	authIdentityRepo := repository.NewAuthIdentityRepo(deps.WriteDB)
 	localCredentialRepo := repository.NewLocalCredentialRepo(deps.WriteDB)
@@ -347,15 +352,18 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	notebookShareRepo := repository.NewNotebookShareRepo(deps.WriteDB)
 	notebookJobRepo := repository.NewNotebookJobRepo(deps.WriteDB)
 	notebookSvc := notebook.New(notebookRepo, auditRepo)
+	notebookSvc.SetWorkspaceRepository(workspaceRepo)
 	notebookSvc.SetFolderRepository(folderRepo)
 	notebookSvc.SetAuthorization(authSvc)
 	notebookSvc.SetGrantRepository(grantRepo)
 	notebookSvc.SetShareRepositories(folderShareRepo, notebookShareRepo)
 	folderSvc := notebook.NewFolderService(folderRepo, auditRepo)
+	folderSvc.SetWorkspaceRepository(workspaceRepo)
 	folderSvc.SetAuthorization(authSvc)
 	folderSvc.SetGrantRepository(grantRepo)
 	folderSvc.SetShareRepository(folderShareRepo)
 	sessionMgr := notebook.NewSessionManager(deps.DuckDB, eng, notebookRepo, notebookJobRepo, auditRepo)
+	sessionMgr.SetWorkspaceRepository(workspaceRepo)
 	sessionMgr.SetAuthorization(authSvc)
 	sessionMgr.SetAccessRepositories(folderRepo, folderShareRepo, notebookShareRepo)
 	gitRepoRepo := repository.NewGitRepoRepo(deps.WriteDB)
@@ -372,6 +380,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	buildRepo := repository.NewBuildRepo(deps.WriteDB)
 	projectRepo := repository.NewProjectRepo(deps.WriteDB)
 	environmentRepo := repository.NewEnvironmentRepo(deps.WriteDB)
+	workspaceSvc := workspacesvc.NewService(workspaceRepo, folderRepo, projectRepo, environmentRepo, teamRepo, auditRepo)
+	projectSvc := projectsvc.NewService(workspaceRepo, projectRepo, environmentRepo, buildRepo, teamRepo, dataProductRepo, auditRepo)
 	orchEventRepo := repository.NewOrchestrationEventRepo(deps.WriteDB)
 	backfillRepo := repository.NewBackfillRepo(deps.WriteDB)
 	notebookProvider := pipeline.NewDBNotebookProvider(notebookRepo)
@@ -470,7 +480,7 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	dashboardWidgetRepo := repository.NewDashboardWidgetRepo(deps.WriteDB)
 	dashboardSvc := dashboard.NewService(dashboardRepo, dashboardWidgetRepo, notebookRepo, auditRepo, querySvc, semanticSvc)
 	dashboardSvc.SetFolderRepository(folderRepo)
-	exploreSvc := exploresvc.NewService(folderRepo, notebookRepo, dashboardRepo, pipelineRepo, projectRepo, modelRepo, macroRepo, semanticModelRepo)
+	exploreSvc := exploresvc.NewService(workspaceRepo, folderRepo, notebookRepo, dashboardRepo, pipelineRepo, projectRepo, modelRepo, macroRepo, semanticModelRepo)
 	exploreSvc.SetAccessRepositories(folderShareRepo, notebookShareRepo)
 	exploreSvc.SetAuthorization(authSvc)
 	if err := pipeline.SyncSemanticResourcesToAssets(ctx, semanticModelRepo, semanticMetricRepo, semanticPreAggRepo, modelRepo, assetRepo, assetDepRepo, semanticProduct.Product.ID); err != nil {
@@ -540,9 +550,11 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			APIKey:              apiKeySvc,
 			Auth:                authService,
 			WebSessionAuth:      webSessionAuth,
-			Notebook:            notebookSvc,
-			NotebookFolders:     folderSvc,
-			Explore:             exploreSvc,
+		Notebook:            notebookSvc,
+		NotebookFolders:     folderSvc,
+		Workspace:           workspaceSvc,
+		Project:             projectSvc,
+		Explore:             exploreSvc,
 			SessionManager:      sessionMgr,
 			GitService:          gitSvc,
 			Pipeline:            pipelineSvc,

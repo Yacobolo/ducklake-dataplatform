@@ -35,9 +35,9 @@ type notebookService interface {
 
 type notebookFolderService interface {
 	CreateFolder(ctx context.Context, principal string, req domain.CreateFolderRequest) (*domain.Folder, error)
-	GetHomeFolder(ctx context.Context, principal string) (*domain.Folder, error)
 	GetFolderForPrincipal(ctx context.Context, principal string, isAdmin bool, id string) (*domain.Folder, error)
 	ListFoldersForPrincipal(ctx context.Context, principal string, isAdmin bool, owner *string) ([]domain.Folder, error)
+	ListFoldersForPrincipalInWorkspace(ctx context.Context, principal string, isAdmin bool, workspaceID string) ([]domain.Folder, error)
 	UpdateFolder(ctx context.Context, principal string, isAdmin bool, id string, req domain.UpdateFolderRequest) (*domain.Folder, error)
 	MoveFolder(ctx context.Context, principal string, isAdmin bool, id string, req domain.MoveFolderRequest) (*domain.Folder, error)
 	DeleteFolder(ctx context.Context, principal string, isAdmin bool, id string) error
@@ -81,29 +81,6 @@ type gitRepoService interface {
 
 // === Notebooks ===
 
-// GetHomeFolder implements the endpoint for retrieving the caller home folder.
-func (h *APIHandler) GetHomeFolder(ctx context.Context, _ GenGetHomeFolderRequest) (GenGetHomeFolderResponse, error) {
-	if h.notebookFolders == nil {
-		return nil, domain.ErrNotImplemented("folders are not configured")
-	}
-	cp, _ := domain.PrincipalFromContext(ctx)
-	result, err := h.notebookFolders.GetHomeFolder(ctx, cp.Name)
-	if err != nil {
-		if resp, ok := respondDomainErrorForOperation[GenGetHomeFolderResponse]("getHomeFolder", err, domainErrorResponder[GenGetHomeFolderResponse]{
-			Forbidden: func(resp ForbiddenJSONResponse) GenGetHomeFolderResponse {
-				return GetHomeFolder403JSONResponse{resp}
-			},
-		}); ok {
-			return resp, nil
-		}
-		return nil, err
-	}
-	return GenGetHomeFolder200JSONResponse{
-		Body:    folderToAPI(*result),
-		Headers: GenGetHomeFolder200ResponseHeaders{XRateLimitLimit: defaultRateLimitLimit, XRateLimitRemaining: defaultRateLimitRemaining, XRateLimitReset: defaultRateLimitReset},
-	}, nil
-}
-
 // ListFolders implements the endpoint for listing folders.
 func (h *APIHandler) ListFolders(ctx context.Context, req GenListFoldersRequest) (GenListFoldersResponse, error) {
 	if h.notebookFolders == nil {
@@ -111,11 +88,14 @@ func (h *APIHandler) ListFolders(ctx context.Context, req GenListFoldersRequest)
 	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	page := pageFromParams(req.Params.MaxResults, req.Params.PageToken)
-	items, err := h.notebookFolders.ListFoldersForPrincipal(ctx, cp.Name, cp.IsAdmin, req.Params.Owner)
+	items, err := h.notebookFolders.ListFoldersForPrincipalInWorkspace(ctx, cp.Name, cp.IsAdmin, req.WorkspaceId)
 	if err != nil {
 		if resp, ok := respondDomainErrorForOperation[GenListFoldersResponse]("listFolders", err, domainErrorResponder[GenListFoldersResponse]{
 			Forbidden: func(resp ForbiddenJSONResponse) GenListFoldersResponse {
 				return ListFolders403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenListFoldersResponse {
+				return ListFolders404JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
@@ -147,8 +127,12 @@ func (h *APIHandler) CreateFolder(ctx context.Context, req GenCreateFolderReques
 	if h.notebookFolders == nil {
 		return nil, domain.ErrNotImplemented("folders are not configured")
 	}
+	if req.Body == nil {
+		return CreateFolder400JSONResponse{badRequestErrorResponse(domain.ErrValidation("request body is required"))}, nil
+	}
 	cp, _ := domain.PrincipalFromContext(ctx)
 	result, err := h.notebookFolders.CreateFolder(ctx, cp.Name, domain.CreateFolderRequest{
+		WorkspaceID:          req.WorkspaceId,
 		Name:                 req.Body.Name,
 		ParentFolderID:       req.Body.ParentFolderId,
 		GitRepoID:            req.Body.GitRepoId,
@@ -166,6 +150,9 @@ func (h *APIHandler) CreateFolder(ctx context.Context, req GenCreateFolderReques
 			},
 			Forbidden: func(resp ForbiddenJSONResponse) GenCreateFolderResponse {
 				return CreateFolder403JSONResponse{resp}
+			},
+			NotFound: func(resp NotFoundJSONResponse) GenCreateFolderResponse {
+				return CreateFolder404JSONResponse{resp}
 			},
 		}); ok {
 			return resp, nil
@@ -1457,6 +1444,7 @@ func folderToAPI(folder domain.Folder) Folder {
 	}
 	return Folder{
 		Id:                   &folder.ID,
+		WorkspaceId:          optStr(folder.WorkspaceID),
 		Name:                 &folder.Name,
 		Owner:                &folder.Owner,
 		ParentFolderId:       folder.ParentFolderID,
@@ -1479,6 +1467,7 @@ func notebookContextToAPI(ctx *domain.NotebookContext) *NotebookContext {
 	return &NotebookContext{
 		NotebookId:             optStr(ctx.NotebookID),
 		FolderId:               optStr(ctx.FolderID),
+		WorkspaceId:            optStr(ctx.WorkspaceID),
 		EffectiveProjectId:     ctx.EffectiveProjectID,
 		EffectiveEnvironmentId: ctx.EffectiveEnvironmentID,
 		EffectiveGitRepoId:     ctx.EffectiveGitRepoID,

@@ -74,7 +74,7 @@ func TestHandler_ListRecentResources(t *testing.T) {
 						ResourceType: "notebook",
 						ResourceKey:  "019d43e3-9377-79f6-a368-01b6ae805b7b",
 						DisplayName:  "Quick Start Guide",
-						ResourcePath: "My notebooks",
+						ResourcePath: "Home",
 						Href:         "/ui/notebooks/019d43e3-9377-79f6-a368-01b6ae805b7b",
 						Section:      "Build",
 					},
@@ -96,7 +96,7 @@ func TestHandler_ListRecentResources(t *testing.T) {
 	assert.Equal(t, "019d43e3-9377-79f6-a368-01b6ae805b7b", okResp.Body.Data[0].ResourceKey)
 	assert.Equal(t, "Quick Start Guide", okResp.Body.Data[0].DisplayName)
 	require.NotNil(t, okResp.Body.Data[0].ResourcePath)
-	assert.Equal(t, "My notebooks", *okResp.Body.Data[0].ResourcePath)
+	assert.Equal(t, "Home", *okResp.Body.Data[0].ResourcePath)
 	require.NotNil(t, okResp.Body.Data[0].Href)
 	assert.Equal(t, "/ui/notebooks/019d43e3-9377-79f6-a368-01b6ae805b7b", *okResp.Body.Data[0].Href)
 	require.NotNil(t, okResp.Body.Data[0].AccessedAt)

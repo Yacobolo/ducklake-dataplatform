@@ -1424,18 +1424,22 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 	// Wire notebook, git repo, and pipeline services so declarative export can
 	// read these resources without endpoint panics.
 	notebookRepo := repository.NewNotebookRepo(metaDB)
+	workspaceRepo := repository.NewWorkspaceRepo(metaDB)
 	folderRepo := repository.NewFolderRepo(metaDB)
 	folderShareRepo := repository.NewFolderShareRepo(metaDB)
 	notebookShareRepo := repository.NewNotebookShareRepo(metaDB)
 	notebookJobRepo := repository.NewNotebookJobRepo(metaDB)
 	notebookSvc := svcnotebook.New(notebookRepo, auditRepo)
+	notebookSvc.SetWorkspaceRepository(workspaceRepo)
 	notebookSvc.SetFolderRepository(folderRepo)
 	notebookSvc.SetAuthorization(authSvc)
 	notebookSvc.SetShareRepositories(folderShareRepo, notebookShareRepo)
 	notebookFolderSvc := svcnotebook.NewFolderService(folderRepo, auditRepo)
+	notebookFolderSvc.SetWorkspaceRepository(workspaceRepo)
 	notebookFolderSvc.SetAuthorization(authSvc)
 	notebookFolderSvc.SetShareRepository(folderShareRepo)
 	sessionManager := svcnotebook.NewSessionManager(duckDB, nil, notebookRepo, notebookJobRepo, auditRepo)
+	sessionManager.SetWorkspaceRepository(workspaceRepo)
 	sessionManager.SetAuthorization(authSvc)
 	sessionManager.SetAccessRepositories(folderRepo, folderShareRepo, notebookShareRepo)
 	notebookProvider := svcpipeline.NewDBNotebookProvider(notebookRepo)
@@ -1532,7 +1536,16 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		environmentRepo := repository.NewEnvironmentRepo(metaDB)
 		buildRepo := repository.NewBuildRepo(metaDB)
 		macroSvc = macro.NewService(macroRepo, auditRepo)
+		ownerPrincipal := "admin"
+		workspaceItem, err := workspaceRepo.Create(context.Background(), &domain.Workspace{
+			Name:           "Shared Workspace",
+			Kind:           domain.WorkspaceKindShared,
+			OwnerPrincipal: &ownerPrincipal,
+			CreatedBy:      "admin",
+		})
+		require.NoError(t, err)
 		projectItem, err := projectRepo.Create(context.Background(), &domain.Project{
+			WorkspaceID:   workspaceItem.ID,
 			Name:          "analytics",
 			Kind:          domain.ProjectKindShared,
 			Description:   "integration test authoring project",
@@ -1590,7 +1603,7 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		productSvc.SetSemanticModelRepository(semanticModelRepo)
 	}
 
-	exploreSvc := exploresvc.NewService(folderRepo, notebookRepo, dashboardRepo, pipelineRepo, projectRepo, modelRepo, macroRepo, semanticModelRepo)
+	exploreSvc := exploresvc.NewService(workspaceRepo, folderRepo, notebookRepo, dashboardRepo, pipelineRepo, projectRepo, modelRepo, macroRepo, semanticModelRepo)
 	exploreSvc.SetAccessRepositories(folderShareRepo, notebookShareRepo)
 	exploreSvc.SetAuthorization(authSvc)
 

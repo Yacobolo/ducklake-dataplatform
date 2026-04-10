@@ -36,8 +36,12 @@ tags:
     description: Catalog registrations, runtime catalogs, search, schema objects, manifests, and ingestion management APIs.
   - name: Governance
     description: Privileges, tags, classifications, row filters, and column masking controls.
+  - name: Projects
+    description: Project, environment, and build APIs for authoring execution contexts within a workspace.
   - name: Folders
     description: Folder lifecycle, sharing, and namespace browsing for authored assets.
+  - name: Workspaces
+    description: Top-level authoring ownership boundaries, membership management, and workspace defaults.
   - name: Identity
     description: Principals, groups, and API key management for authenticated access.
   - name: Auth
@@ -7584,112 +7588,6 @@ paths:
           - securable_type: external_location
             privilege: CREATE_EXTERNAL_LOCATION
             securable_id_source: runtime_resolved_object_id
-  /folders:
-    get:
-      operationId: listFolders
-      summary: List folders
-      parameters:
-        - name: owner
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-        - name: max_results
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-          explode: false
-        - name: page_token
-          in: query
-          required: false
-          schema:
-            type: string
-          explode: false
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedFolders'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Folders
-    post:
-      operationId: createFolder
-      summary: Create folder
-      parameters: []
-      responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Folder'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Access is forbidden.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Folders
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateFolderRequest'
   /folders/contents:
     get:
       operationId: listRootFolderContents
@@ -10253,44 +10151,6 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Models
-  /me/folders/home:
-    get:
-      operationId: getHomeFolder
-      summary: Get caller home folder
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Folder'
-        '400':
-          description: The server could not understand the request due to invalid syntax.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Access is unauthorized.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '429':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      tags:
-        - Folders
   /me/recent-resources:
     get:
       operationId: listRecentResources
@@ -14376,6 +14236,329 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Products
+  /projects/{project_id}:
+    get:
+      operationId: getProject
+      summary: Get project
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Projects
+  /projects/{project_id}/builds:
+    get:
+      operationId: listProjectBuilds
+      summary: List project builds
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBuilds'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Projects
+    post:
+      operationId: createProjectBuild
+      summary: Create project build
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Build'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBuildRequest'
+  /projects/{project_id}/environments:
+    get:
+      operationId: listProjectEnvironments
+      summary: List project environments
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEnvironments'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Projects
+    post:
+      operationId: createProjectEnvironment
+      summary: Create project environment
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEnvironmentRequest'
   /queries:
     post:
       operationId: submitQuery
@@ -17333,6 +17516,742 @@ paths:
                 $ref: '#/components/schemas/Error'
       tags:
         - Governance
+  /workspaces:
+    get:
+      operationId: listWorkspaces
+      summary: List workspaces
+      parameters:
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWorkspaces'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Workspaces
+    post:
+      operationId: createWorkspace
+      summary: Create workspace
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Workspaces
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkspaceRequest'
+  /workspaces/{workspace_id}:
+    get:
+      operationId: getWorkspace
+      summary: Get workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Workspaces
+    patch:
+      operationId: updateWorkspace
+      summary: Update workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Workspaces
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkspaceRequest'
+    delete:
+      operationId: deleteWorkspace
+      summary: Delete workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Workspaces
+  /workspaces/{workspace_id}/folders:
+    get:
+      operationId: listFolders
+      summary: List folders in a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFolders'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+    post:
+      operationId: createFolder
+      summary: Create folder in a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Folders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFolderRequest'
+  /workspaces/{workspace_id}/members:
+    get:
+      operationId: listWorkspaceMembers
+      summary: List workspace members
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceMember'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Workspaces
+    post:
+      operationId: addWorkspaceMember
+      summary: Add or update workspace member
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMember'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Workspaces
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddWorkspaceMemberRequest'
+  /workspaces/{workspace_id}/members/{principal_name}:
+    delete:
+      operationId: removeWorkspaceMember
+      summary: Remove workspace member
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: principal_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Workspaces
+  /workspaces/{workspace_id}/projects:
+    get:
+      operationId: listWorkspaceProjects
+      summary: List projects in a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: page_token
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProjects'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Projects
+    post:
+      operationId: createWorkspaceProject
+      summary: Create project in a workspace
+      parameters:
+        - name: workspace_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Access is unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequest'
 security:
   - BearerAuth: []
   - ApiKeyAuth: []
@@ -17361,6 +18280,15 @@ components:
           format: date-time
       description: Represents a stored API key without returning the full secret value.
       title: API key metadata.
+    AddWorkspaceMemberRequest:
+      type: object
+      required:
+        - principal_name
+      properties:
+        principal_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/NotebookShareRole'
     Asset:
       type: object
       properties:
@@ -17903,6 +18831,54 @@ components:
         ttl_seconds:
           type: integer
           format: int64
+    Build:
+      type: object
+      required:
+        - git_ref
+        - target_catalog
+        - target_schema
+        - compile_manifest
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+        project_name:
+          type: string
+        product_id:
+          type: string
+        environment_id:
+          type: string
+        environment_name:
+          type: string
+        state:
+          $ref: '#/components/schemas/BuildState'
+        git_ref:
+          type: string
+        commit_sha:
+          type: string
+        selector:
+          type: string
+        target_catalog:
+          type: string
+        target_schema:
+          type: string
+        source_model_run_id:
+          type: string
+        compile_manifest:
+          type: string
+        compile_diagnostics:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    BuildState:
+      type: string
+      enum:
+        - draft
+        - ready
+        - released
+        - superseded
     CancelQueryResponse:
       type: object
       required:
@@ -18417,6 +19393,33 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AssetCheckInput'
+    CreateBuildRequest:
+      type: object
+      required:
+        - environment_name
+        - git_ref
+        - target_catalog
+        - target_schema
+        - compile_manifest
+      properties:
+        environment_name:
+          type: string
+        git_ref:
+          type: string
+        commit_sha:
+          type: string
+        selector:
+          type: string
+        target_catalog:
+          type: string
+        target_schema:
+          type: string
+        source_model_run_id:
+          type: string
+        compile_manifest:
+          type: string
+        compile_diagnostics:
+          type: string
     CreateCatalogRequest:
       type: object
       required:
@@ -18623,6 +19626,35 @@ components:
             type: string
         created_by:
           type: string
+    CreateEnvironmentRequest:
+      type: object
+      required:
+        - name
+        - target_catalog
+        - target_schema
+      properties:
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/EnvironmentKind'
+        description:
+          type: string
+        target_catalog:
+          type: string
+        target_schema:
+          type: string
+        compute_endpoint:
+          type: string
+        defer_to_environment:
+          type: string
+        variables:
+          type: object
+          additionalProperties:
+            type: string
+        source_overrides:
+          type: object
+          additionalProperties:
+            type: string
     CreateExternalLocationRequest:
       type: object
       required:
@@ -18894,6 +19926,21 @@ components:
           type: string
         contact_channel:
           type: string
+    CreateProjectRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/ProjectKind'
+        description:
+          type: string
+        product_id:
+          type: string
+        default_branch:
+          type: string
     CreateRowFilterRequest:
       type: object
       required:
@@ -19120,6 +20167,27 @@ components:
         storage_location:
           type: string
         comment:
+          type: string
+    CreateWorkspaceRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/WorkspaceKind'
+        owner_team_id:
+          type: string
+        owner_principal:
+          type: string
+        default_project_id:
+          type: string
+        default_environment_id:
+          type: string
+        git_repo_id:
+          type: string
+        git_root_path:
           type: string
     Dashboard:
       type: object
@@ -19594,6 +20662,54 @@ components:
           type: string
         git_path:
           type: string
+    Environment:
+      type: object
+      required:
+        - name
+        - kind
+        - target_catalog
+        - target_schema
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+        project_name:
+          type: string
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/EnvironmentKind'
+        description:
+          type: string
+        target_catalog:
+          type: string
+        target_schema:
+          type: string
+        compute_endpoint:
+          type: string
+        defer_to_environment:
+          type: string
+        variables:
+          type: object
+          additionalProperties:
+            type: string
+        source_overrides:
+          type: object
+          additionalProperties:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    EnvironmentKind:
+      type: string
+      enum:
+        - development
+        - staging
+        - production
     Error:
       type: object
       required:
@@ -19644,6 +20760,8 @@ components:
       type: object
       properties:
         id:
+          type: string
+        workspace_id:
           type: string
         name:
           type: string
@@ -20593,6 +21711,8 @@ components:
           type: string
         folder_id:
           type: string
+        workspace_id:
+          type: string
         effective_project_id:
           type: string
         effective_environment_id:
@@ -20846,6 +21966,17 @@ components:
             $ref: '#/components/schemas/BackfillRequest'
         next_page_token:
           type: string
+    PaginatedBuilds:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Build'
+        next_page_token:
+          type: string
     PaginatedColumnDetails:
       type: object
       required:
@@ -20932,6 +22063,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DataProductListItem'
+        next_page_token:
+          type: string
+    PaginatedEnvironments:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Environment'
         next_page_token:
           type: string
     PaginatedExternalLocations:
@@ -21132,6 +22274,17 @@ components:
             $ref: '#/components/schemas/ProductTeam'
         next_page_token:
           type: string
+    PaginatedProjects:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+        next_page_token:
+          type: string
     PaginatedQueryHistoryEntries:
       type: object
       required:
@@ -21306,6 +22459,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VolumeDetail'
+        next_page_token:
+          type: string
+    PaginatedWorkspaces:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Workspace'
         next_page_token:
           type: string
     Pipeline:
@@ -21901,6 +23065,43 @@ components:
         updated_at:
           type: string
           format: date-time
+    Project:
+      type: object
+      required:
+        - workspace_id
+        - name
+        - kind
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/ProjectKind'
+        description:
+          type: string
+        owner_team_id:
+          type: string
+        owner_principal:
+          type: string
+        product_id:
+          type: string
+        default_branch:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ProjectKind:
+      type: string
+      enum:
+        - personal
+        - shared
+        - library
     PromoteNotebookRequest:
       type: object
       required:
@@ -23068,6 +24269,19 @@ components:
           type: string
         storage_location:
           type: string
+    UpdateWorkspaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        default_project_id:
+          type: string
+        default_environment_id:
+          type: string
+        git_repo_id:
+          type: string
+        git_root_path:
+          type: string
     UploadUrlRequest:
       type: object
       properties:
@@ -23306,6 +24520,61 @@ components:
         absolute_ttl_seconds:
           type: integer
           format: int64
+    Workspace:
+      type: object
+      required:
+        - name
+        - kind
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          $ref: '#/components/schemas/WorkspaceKind'
+        owner_team_id:
+          type: string
+        owner_principal:
+          type: string
+        default_project_id:
+          type: string
+        default_environment_id:
+          type: string
+        git_repo_id:
+          type: string
+        git_root_path:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    WorkspaceKind:
+      type: string
+      enum:
+        - personal
+        - shared
+        - library
+    WorkspaceMember:
+      type: object
+      required:
+        - workspace_id
+        - principal_name
+        - role
+      properties:
+        workspace_id:
+          type: string
+        principal_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/NotebookShareRole'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
   securitySchemes:
     BearerAuth:
       type: http

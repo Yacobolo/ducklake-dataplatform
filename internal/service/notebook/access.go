@@ -8,6 +8,7 @@ import (
 )
 
 type accessResolver struct {
+	workspaces     domain.WorkspaceRepository
 	folders        domain.FolderRepository
 	folderShares   domain.FolderShareRepository
 	auth           domain.AuthorizationService
@@ -18,6 +19,7 @@ type principalAccessResolver struct {
 	accessResolver
 	principal             string
 	isAdmin               bool
+	workspaceRolesByID    map[string]string
 	folderRolesByFolder   map[string]string
 	notebookRolesByID     map[string]string
 	folderAncestorsByID   map[string][]domain.Folder
@@ -25,6 +27,7 @@ type principalAccessResolver struct {
 
 func newPrincipalAccessResolver(
 	ctx context.Context,
+	workspaces domain.WorkspaceRepository,
 	folders domain.FolderRepository,
 	folderShares domain.FolderShareRepository,
 	auth domain.AuthorizationService,
@@ -34,6 +37,7 @@ func newPrincipalAccessResolver(
 ) (*principalAccessResolver, error) {
 	resolver := &principalAccessResolver{
 		accessResolver: accessResolver{
+			workspaces:     workspaces,
 			folders:        folders,
 			folderShares:   folderShares,
 			auth:           auth,
@@ -41,6 +45,7 @@ func newPrincipalAccessResolver(
 		},
 		principal:           strings.TrimSpace(principal),
 		isAdmin:             isAdmin,
+		workspaceRolesByID:  map[string]string{},
 		folderRolesByFolder: map[string]string{},
 		notebookRolesByID:   map[string]string{},
 		folderAncestorsByID: map[string][]domain.Folder{},
@@ -73,7 +78,17 @@ func (r *principalAccessResolver) folderRole(ctx context.Context, folder *domain
 	if folder == nil {
 		return "", nil
 	}
-	if r.isAdmin || strings.TrimSpace(folder.Owner) == r.principal {
+	if r.isAdmin {
+		return domain.FolderShareRoleManager, nil
+	}
+	workspaceRole, err := r.workspaceRole(ctx, folder.WorkspaceID)
+	if err != nil {
+		return "", err
+	}
+	if workspaceRole == "" {
+		return "", nil
+	}
+	if strings.TrimSpace(folder.Owner) == r.principal {
 		return domain.FolderShareRoleManager, nil
 	}
 	if cached, ok := r.folderRolesByFolder[folder.ID]; ok {
@@ -159,6 +174,28 @@ func (r *principalAccessResolver) folderAncestors(ctx context.Context, folderID 
 	}
 	r.folderAncestorsByID[folderID] = ancestors
 	return ancestors, nil
+}
+
+func (r *principalAccessResolver) workspaceRole(ctx context.Context, workspaceID string) (string, error) {
+	workspaceID = strings.TrimSpace(workspaceID)
+	if workspaceID == "" {
+		return "", nil
+	}
+	if r.isAdmin {
+		return domain.FolderShareRoleManager, nil
+	}
+	if cached, ok := r.workspaceRolesByID[workspaceID]; ok {
+		return cached, nil
+	}
+	if r.workspaces == nil {
+		return "", nil
+	}
+	role, err := r.workspaces.GetMemberRole(ctx, workspaceID, r.principal)
+	if err != nil {
+		return "", err
+	}
+	r.workspaceRolesByID[workspaceID] = role
+	return role, nil
 }
 
 func shareRoleLevel(role string) int {

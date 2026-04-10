@@ -23,10 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/stretchr/testify/require"
+	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
 	internalapi "duck-demo/internal/api"
@@ -48,10 +48,10 @@ type liveSuite struct {
 	runID      string
 	httpClient *http.Client
 
-	serverCmd *exec.Cmd
-	logFile   *os.File
-	logPath   string
-	metaPath  string
+	serverCmd    *exec.Cmd
+	logFile      *os.File
+	logPath      string
+	metaPath     string
 	findingsPath string
 
 	mu       sync.Mutex
@@ -984,11 +984,32 @@ func (s *liveSuite) inferBodyPayload(op liveOperation) (map[string]any, []string
 	if !ok {
 		return nil, nil, false
 	}
+	body, ok = s.enrichBodyPayload(op, body)
+	if !ok {
+		return nil, nil, false
+	}
 	required := requiredPropertyNames(content.Schema)
 	if len(required) == 0 {
 		return nil, nil, false
 	}
 	return body, required, true
+}
+
+func (s *liveSuite) enrichBodyPayload(op liveOperation, body map[string]any) (map[string]any, bool) {
+	if len(body) == 0 {
+		return body, true
+	}
+	switch op.ref.OperationID {
+	case "createWorkspace":
+		ownerPrincipal := strings.TrimSpace(s.fixtures["adminPrincipalName"])
+		if ownerPrincipal == "" {
+			return nil, false
+		}
+		body["kind"] = "personal"
+		body["owner_principal"] = ownerPrincipal
+		delete(body, "owner_team_id")
+	}
+	return body, true
 }
 
 func requiredPropertyNames(schemaRef *openapi3.SchemaRef) []string {

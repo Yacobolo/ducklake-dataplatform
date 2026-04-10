@@ -67,7 +67,7 @@ func buildFolderDisplayPath(byID map[string]domain.Folder, folderID string, memo
 		memo[folderID] = label
 		return label, true
 	}
-	if parent.SystemRole != nil && *parent.SystemRole == domain.FolderSystemRolePersonalRoot {
+	if parent.SystemRole != nil && *parent.SystemRole == domain.FolderSystemRoleWorkspaceRoot {
 		memo[folderID] = label
 		return label, true
 	}

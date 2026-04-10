@@ -262,16 +262,18 @@ var _ domain.LineageRepository = (*MockLineageRepo)(nil)
 // === Folder Repository Mock ===
 
 type MockFolderRepo struct {
-	CreateFn             func(ctx context.Context, folder *domain.Folder) (*domain.Folder, error)
-	GetByIDFn            func(ctx context.Context, id string) (*domain.Folder, error)
-	ListAllFn            func(ctx context.Context) ([]domain.Folder, error)
-	ListByOwnerFn        func(ctx context.Context, owner string) ([]domain.Folder, error)
-	UpdateFn             func(ctx context.Context, id string, req domain.UpdateFolderRequest) (*domain.Folder, error)
-	MoveFn               func(ctx context.Context, id string, parentFolderID *string) (*domain.Folder, error)
-	DeleteFn             func(ctx context.Context, id string) error
-	EnsurePersonalRootFn func(ctx context.Context, owner string) (*domain.Folder, error)
-	EnsureGitSyncRootFn  func(ctx context.Context, owner string, repo *domain.GitRepo) (*domain.Folder, error)
-	ListAncestorsFn      func(ctx context.Context, folderID string) ([]domain.Folder, error)
+	CreateFn                      func(ctx context.Context, folder *domain.Folder) (*domain.Folder, error)
+	GetByIDFn                     func(ctx context.Context, id string) (*domain.Folder, error)
+	ListAllFn                     func(ctx context.Context) ([]domain.Folder, error)
+	ListByOwnerFn                 func(ctx context.Context, owner string) ([]domain.Folder, error)
+	ListByWorkspaceFn             func(ctx context.Context, workspaceID string) ([]domain.Folder, error)
+	UpdateFn                      func(ctx context.Context, id string, req domain.UpdateFolderRequest) (*domain.Folder, error)
+	MoveFn                        func(ctx context.Context, id string, parentFolderID *string) (*domain.Folder, error)
+	DeleteFn                      func(ctx context.Context, id string) error
+	EnsurePersonalWorkspaceRootFn func(ctx context.Context, owner string) (*domain.Folder, error)
+	EnsureWorkspaceRootFn         func(ctx context.Context, workspaceID string, owner string) (*domain.Folder, error)
+	EnsureGitSyncRootFn           func(ctx context.Context, owner string, repo *domain.GitRepo) (*domain.Folder, error)
+	ListAncestorsFn               func(ctx context.Context, folderID string) ([]domain.Folder, error)
 }
 
 func (m *MockFolderRepo) Create(ctx context.Context, folder *domain.Folder) (*domain.Folder, error) {
@@ -302,6 +304,13 @@ func (m *MockFolderRepo) ListByOwner(ctx context.Context, owner string) ([]domai
 	panic("unexpected call to MockFolderRepo.ListByOwner")
 }
 
+func (m *MockFolderRepo) ListByWorkspace(ctx context.Context, workspaceID string) ([]domain.Folder, error) {
+	if m.ListByWorkspaceFn != nil {
+		return m.ListByWorkspaceFn(ctx, workspaceID)
+	}
+	panic("unexpected call to MockFolderRepo.ListByWorkspace")
+}
+
 func (m *MockFolderRepo) Update(ctx context.Context, id string, req domain.UpdateFolderRequest) (*domain.Folder, error) {
 	if m.UpdateFn != nil {
 		return m.UpdateFn(ctx, id, req)
@@ -323,11 +332,18 @@ func (m *MockFolderRepo) Delete(ctx context.Context, id string) error {
 	panic("unexpected call to MockFolderRepo.Delete")
 }
 
-func (m *MockFolderRepo) EnsurePersonalRoot(ctx context.Context, owner string) (*domain.Folder, error) {
-	if m.EnsurePersonalRootFn != nil {
-		return m.EnsurePersonalRootFn(ctx, owner)
+func (m *MockFolderRepo) EnsurePersonalWorkspaceRoot(ctx context.Context, owner string) (*domain.Folder, error) {
+	if m.EnsurePersonalWorkspaceRootFn != nil {
+		return m.EnsurePersonalWorkspaceRootFn(ctx, owner)
 	}
-	panic("unexpected call to MockFolderRepo.EnsurePersonalRoot")
+	panic("unexpected call to MockFolderRepo.EnsurePersonalWorkspaceRoot")
+}
+
+func (m *MockFolderRepo) EnsureWorkspaceRoot(ctx context.Context, workspaceID string, owner string) (*domain.Folder, error) {
+	if m.EnsureWorkspaceRootFn != nil {
+		return m.EnsureWorkspaceRootFn(ctx, workspaceID, owner)
+	}
+	panic("unexpected call to MockFolderRepo.EnsureWorkspaceRoot")
 }
 
 func (m *MockFolderRepo) EnsureGitSyncRoot(ctx context.Context, owner string, repo *domain.GitRepo) (*domain.Folder, error) {

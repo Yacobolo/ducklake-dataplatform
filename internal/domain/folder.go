@@ -6,8 +6,10 @@ import (
 )
 
 const (
-	// FolderSystemRolePersonalRoot marks a user's private top-level workspace folder.
-	FolderSystemRolePersonalRoot = "PERSONAL_ROOT"
+	// FolderSystemRoleWorkspaceRoot marks the hidden root folder of a workspace.
+	FolderSystemRoleWorkspaceRoot = "WORKSPACE_ROOT"
+	// FolderSystemRolePersonalRoot is retained for older tests and callers.
+	FolderSystemRolePersonalRoot = FolderSystemRoleWorkspaceRoot
 )
 
 const (
@@ -36,6 +38,7 @@ func NormalizeShareRole(role string) string {
 // Folder defines the primary authoring container for namespace-organized work.
 type Folder struct {
 	ID                   string
+	WorkspaceID          string
 	Name                 string
 	Owner                string
 	ParentFolderID       *string
@@ -73,6 +76,7 @@ type NotebookShare struct {
 // NotebookContext captures the effective inherited notebook context.
 type NotebookContext struct {
 	NotebookID             string
+	WorkspaceID            string
 	FolderID               string
 	EffectiveProjectID     *string
 	EffectiveEnvironmentID *string
@@ -85,6 +89,7 @@ type NotebookContext struct {
 
 // CreateFolderRequest defines inputs for creating a folder.
 type CreateFolderRequest struct {
+	WorkspaceID          string
 	Name                 string
 	ParentFolderID       *string
 	GitRepoID            *string
@@ -95,6 +100,9 @@ type CreateFolderRequest struct {
 
 // Validate validates the create folder request.
 func (r *CreateFolderRequest) Validate() error {
+	if strings.TrimSpace(r.WorkspaceID) == "" {
+		return ErrValidation("workspace_id is required")
+	}
 	if strings.TrimSpace(r.Name) == "" {
 		return ErrValidation("folder name is required")
 	}
