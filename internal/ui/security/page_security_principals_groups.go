@@ -58,7 +58,16 @@ func securityPrincipalsListPage(principal domain.ContextPrincipal, rows []securi
 		if row.IsAdmin {
 			admin = statusLabel("admin", "accent")
 		}
-		tableRows = append(tableRows, Tr(data.Show(containsExpr(row.Filter)), Td(core.TextLink(row.DetailURL, Text(row.Name))), Td(Text(row.Type)), Td(admin), Td(Text(row.CreatedAt))))
+		tableRows = append(tableRows, Tr(
+			data.Show(containsExpr(row.Filter)),
+			core.TablePrimaryCell(
+				core.IconChip("user", "bg-[var(--display-blue-scale-0)] text-[var(--display-blue-scale-6)]"),
+				core.TablePrimaryLink(row.DetailURL, row.Name),
+			),
+			Td(core.TableMetaText(row.Type)),
+			Td(admin),
+			Td(core.TableMetaText(row.CreatedAt)),
+		))
 	}
 	tableNode := Node(emptyStateCard("No principals found.", "New principal", "/ui/security/principals/new"))
 	if len(tableRows) > 0 {
@@ -86,13 +95,13 @@ func securityPrincipalDetailPage(d securityPrincipalDetailPageData) Node {
 	grantRows := make([]Node, 0, len(d.Grants))
 	for i := range d.Grants {
 		grant := d.Grants[i]
-		grantRows = append(grantRows, Tr(Td(Text(grant.Privilege)), Td(Text(grant.SecurableType)), Td(Text(grant.SecurableID)), Td(Text(formatTime(grant.GrantedAt))), Td(Class("text-right"), core.ActionMenu("Actions", actionMenuPost("/ui/security/grants/"+grant.ID+"/delete", "Delete grant", d.CSRFFieldProvider, true)))))
+		grantRows = append(grantRows, Tr(Td(Text(grant.Privilege)), Td(Text(grant.SecurableType)), Td(Text(grant.SecurableID)), Td(Text(formatTime(grant.GrantedAt))), core.TableActionCell(core.TableIconActionPost("/ui/security/grants/"+grant.ID+"/delete", "Delete grant", "x", "danger", d.CSRFFieldProvider))))
 	}
 
 	keyRows := make([]Node, 0, len(d.APIKeys))
 	for i := range d.APIKeys {
 		key := d.APIKeys[i]
-		keyRows = append(keyRows, Tr(Td(Text(key.Name)), Td(Text(key.KeyPrefix)), Td(Text(formatTimePtr(key.ExpiresAt))), Td(Text(formatTime(key.CreatedAt))), Td(Class("text-right"), core.ActionMenu("Actions", actionMenuPost("/ui/security/api-keys/"+key.ID+"/delete", "Delete API key", d.CSRFFieldProvider, true)))))
+		keyRows = append(keyRows, Tr(Td(Text(key.Name)), Td(Text(key.KeyPrefix)), Td(Text(formatTimePtr(key.ExpiresAt))), Td(Text(formatTime(key.CreatedAt))), core.TableActionCell(core.TableIconActionPost("/ui/security/api-keys/"+key.ID+"/delete", "Delete API key", "x", "danger", d.CSRFFieldProvider))))
 	}
 
 	roleLabel := statusLabel("user", "muted")
@@ -183,7 +192,15 @@ func securityGroupsListPage(principal domain.ContextPrincipal, rows []securityGr
 	tableRows := make([]Node, 0, len(rows))
 	for i := range rows {
 		row := rows[i]
-		tableRows = append(tableRows, Tr(data.Show(containsExpr(row.Filter)), Td(core.TextLink(row.DetailURL, Text(row.Name))), Td(Text(row.Members)), Td(Text(row.CreatedAt))))
+		tableRows = append(tableRows, Tr(
+			data.Show(containsExpr(row.Filter)),
+			core.TablePrimaryCell(
+				core.IconChip("users", "bg-[var(--display-indigo-scale-0)] text-[var(--display-indigo-scale-6)]"),
+				core.TablePrimaryLink(row.DetailURL, row.Name),
+			),
+			Td(core.TableMetaText(row.Members)),
+			Td(core.TableMetaText(row.CreatedAt)),
+		))
 	}
 	tableNode := Node(emptyStateCard("No groups found.", "New group", "/ui/security/groups/new"))
 	if len(tableRows) > 0 {
@@ -217,13 +234,13 @@ func securityGroupDetailPage(d securityGroupDetailPageData) Node {
 	memberRows := make([]Node, 0, len(d.Members))
 	for i := range d.Members {
 		member := d.Members[i]
-		memberRows = append(memberRows, Tr(Td(Text(member.MemberID)), Td(Text(member.MemberType)), Td(Class("text-right"), Form(Method("post"), Action("/ui/security/groups/"+member.GroupID+"/members/delete"), member.CSRFField(), Input(Type("hidden"), Name("member_id"), Value(member.MemberID)), Input(Type("hidden"), Name("member_type"), Value(member.MemberType)), core.DangerButton("", Type("submit"), Text("Remove"))))))
+		memberRows = append(memberRows, Tr(Td(Text(member.MemberID)), Td(Text(member.MemberType)), core.TableActionCell(core.TableIconActionPost("/ui/security/groups/"+member.GroupID+"/members/delete", "Remove member", "x", "danger", member.CSRFField, Input(Type("hidden"), Name("member_id"), Value(member.MemberID)), Input(Type("hidden"), Name("member_type"), Value(member.MemberType))))))
 	}
 
 	grantRows := make([]Node, 0, len(d.Grants))
 	for i := range d.Grants {
 		grant := d.Grants[i]
-		grantRows = append(grantRows, Tr(Td(Text(grant.Privilege)), Td(Text(grant.SecurableType)), Td(Text(grant.SecurableID)), Td(Class("text-right"), core.ActionMenu("Actions", actionMenuPost("/ui/security/grants/"+grant.ID+"/delete", "Delete grant", d.CSRFFieldProvider, true)))))
+		grantRows = append(grantRows, Tr(Td(Text(grant.Privilege)), Td(Text(grant.SecurableType)), Td(Text(grant.SecurableID)), core.TableActionCell(core.TableIconActionPost("/ui/security/grants/"+grant.ID+"/delete", "Delete grant", "x", "danger", d.CSRFFieldProvider))))
 	}
 
 	return core.AppPage(
@@ -353,10 +370,6 @@ func labelClass(tone string) string {
 }
 
 func statusLabel(text, tone string) Node { return Span(Class(labelClass(tone)), Text(text)) }
-
-func actionMenuPost(action, label string, csrfField func() Node, danger bool) Node {
-	return core.ActionMenuPost(action, label, csrfField, danger)
-}
 
 func emptyStateCard(message, ctaLabel, ctaHref string) Node {
 	cta := Node(nil)

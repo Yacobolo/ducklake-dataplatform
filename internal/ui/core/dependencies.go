@@ -21,6 +21,8 @@ import (
 	"duck-demo/internal/service/pipeline"
 	productsvc "duck-demo/internal/service/product"
 	"duck-demo/internal/service/query"
+	"duck-demo/internal/service/resourceaccess"
+	"duck-demo/internal/service/savedresource"
 	"duck-demo/internal/service/security"
 	"duck-demo/internal/service/semantic"
 	"duck-demo/internal/service/storage"
@@ -69,6 +71,8 @@ type Dependencies struct {
 	Lineage             *governance.LineageService
 	AuthService         *authsvc.Service
 	WebSessionService   *authsvc.SessionService
+	ResourceAccess      *resourceaccess.Service
+	SavedResource       *savedresource.Service
 	PrincipalResolver   PrincipalResolver
 	Auth                config.AuthConfig
 	Production          bool

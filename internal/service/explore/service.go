@@ -254,25 +254,21 @@ func (s *Service) List(ctx context.Context, principal string, isAdmin bool, filt
 						return nil, fmt.Errorf("list semantic models: %w", err)
 					}
 					for _, semanticModel := range semanticModels {
-						if semanticModel.ProjectName != *projectName {
-							continue
-						}
 						if !ownerAllowed(selectedOwners, semanticModel.CreatedBy) {
 							continue
 						}
-						if !exploreSearchMatch(query, semanticModel.Name, semanticModel.CreatedBy, *projectName) {
+						if !exploreSearchMatch(query, semanticModel.Name, semanticModel.CreatedBy, "") {
 							continue
 						}
 						items = append(items, domain.ExploreItem{
 							Kind:         domain.ExploreKindSemanticModel,
-							Scope:        domain.ExploreScopeProject,
+							Scope:        domain.ExploreScopeFolder,
 							ID:           semanticModel.ID,
 							Name:         semanticModel.Name,
 							Owner:        semanticModel.CreatedBy,
-							ProjectName:  projectName,
 							UpdatedAt:    semanticModel.UpdatedAt,
 							Shared:       strings.TrimSpace(semanticModel.CreatedBy) != strings.TrimSpace(principal),
-							ProjectBound: true,
+							ProjectBound: false,
 						})
 					}
 				}

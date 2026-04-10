@@ -30,6 +30,8 @@ import (
 	"duck-demo/internal/service/pipeline"
 	productsvc "duck-demo/internal/service/product"
 	"duck-demo/internal/service/query"
+	"duck-demo/internal/service/resourceaccess"
+	"duck-demo/internal/service/savedresource"
 	"duck-demo/internal/service/security"
 	"duck-demo/internal/service/semantic"
 	"duck-demo/internal/service/storage"
@@ -84,6 +86,8 @@ type Services struct {
 	Macro               *macro.Service
 	Semantic            *semantic.Service
 	Dashboard           *dashboard.Service
+	ResourceAccess      *resourceaccess.Service
+	SavedResource       *savedresource.Service
 }
 
 // App holds the fully-wired application: engine, services, and the
@@ -136,6 +140,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	authIdentityRepo := repository.NewAuthIdentityRepo(deps.WriteDB)
 	localCredentialRepo := repository.NewLocalCredentialRepo(deps.WriteDB)
 	webSessionRepo := repository.NewWebSessionRepo(deps.WriteDB)
+	resourceAccessRepo := repository.NewResourceAccessRepo(deps.WriteDB)
+	savedResourceRepo := repository.NewSavedResourceRepo(deps.WriteDB)
 	authRecoveryRepo := repository.NewAuthRecoveryRepo(deps.WriteDB)
 	authLoginAttemptRepo := repository.NewAuthLoginAttemptRepo(deps.WriteDB)
 	setupStateRepo := repository.NewSetupStateRepo(deps.WriteDB)
@@ -277,6 +283,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 	principalSvc.SetAuthIdentityRepository(authIdentityRepo)
 	authService := authsvc.NewService(principalRepo, localCredentialRepo, authLoginAttemptRepo, setupStateRepo, authProviderRepo, auditRepo, cfg.Auth.JWTSecret)
 	webSessionAuth := authsvc.NewSessionService(principalRepo, webSessionRepo, auditRepo, cfg.Auth.WebSessionIdleTTL, cfg.Auth.WebSessionAbsoluteTTL)
+	resourceAccessSvc := resourceaccess.NewService(resourceAccessRepo)
+	savedResourceSvc := savedresource.NewService(savedResourceRepo)
 	groupSvc := security.NewGroupService(groupRepo, principalRepo, auditRepo)
 	grantSvc := security.NewGrantService(grantRepo, auditRepo, authSvc)
 	rowFilterSvc := security.NewRowFilterService(rowFilterRepo, auditRepo)
@@ -545,6 +553,8 @@ func New(ctx context.Context, deps Deps) (*App, error) {
 			Macro:               macroSvc,
 			Semantic:            semanticSvc,
 			Dashboard:           dashboardSvc,
+			ResourceAccess:      resourceAccessSvc,
+			SavedResource:       savedResourceSvc,
 		},
 		Engine:        eng,
 		APIKeyRepo:    apiKeyRepo,

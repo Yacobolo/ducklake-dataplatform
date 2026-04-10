@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 
 	"duck-demo/internal/db/dbstore"
 	"duck-demo/internal/domain"
@@ -23,6 +24,10 @@ func NewSemanticMetricRepo(db *sql.DB) *SemanticMetricRepo {
 
 // Create inserts a new semantic metric.
 func (r *SemanticMetricRepo) Create(ctx context.Context, m *domain.SemanticMetric) (*domain.SemanticMetric, error) {
+	relationshipNames, err := json.Marshal(m.RelationshipNames)
+	if err != nil {
+		return nil, err
+	}
 	row, err := r.q.CreateSemanticMetric(ctx, dbstore.CreateSemanticMetricParams{
 		ID:                 newID(),
 		SemanticModelID:    m.SemanticModelID,
@@ -32,6 +37,7 @@ func (r *SemanticMetricRepo) Create(ctx context.Context, m *domain.SemanticMetri
 		ExpressionMode:     m.ExpressionMode,
 		Expression:         m.Expression,
 		Label:              m.Label,
+		RelationshipNames:  string(relationshipNames),
 		FilterSql:          m.FilterSQL,
 		DefaultTimeGrain:   m.DefaultTimeGrain,
 		Format:             m.Format,
@@ -107,6 +113,10 @@ func (r *SemanticMetricRepo) Update(ctx context.Context, id string, req domain.U
 	if req.Expression != nil {
 		expression = *req.Expression
 	}
+	relationshipNames := current.RelationshipNames
+	if req.RelationshipNames != nil {
+		relationshipNames = req.RelationshipNames
+	}
 	filterSQL := current.FilterSQL
 	if req.FilterSQL != nil {
 		filterSQL = *req.FilterSQL
@@ -127,6 +137,10 @@ func (r *SemanticMetricRepo) Update(ctx context.Context, id string, req domain.U
 	if req.CertificationState != nil {
 		certificationState = *req.CertificationState
 	}
+	relationshipNamesJSON, err := json.Marshal(relationshipNames)
+	if err != nil {
+		return nil, err
+	}
 
 	err = r.q.UpdateSemanticMetric(ctx, dbstore.UpdateSemanticMetricParams{
 		Description:        description,
@@ -134,6 +148,7 @@ func (r *SemanticMetricRepo) Update(ctx context.Context, id string, req domain.U
 		MetricType:         metricType,
 		ExpressionMode:     expressionMode,
 		Expression:         expression,
+		RelationshipNames:  string(relationshipNamesJSON),
 		FilterSql:          filterSQL,
 		DefaultTimeGrain:   defaultGrain,
 		Format:             format,

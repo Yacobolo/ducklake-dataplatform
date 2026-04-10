@@ -4,9 +4,9 @@ import "duck-demo/internal/service/query"
 
 // MetricQueryRequest is the runtime request contract for semantic query planning and execution.
 type MetricQueryRequest struct {
-	ProjectName       string
-	SemanticModelName string
+	SemanticModelID   string
 	Metrics           []string
+	RelationshipNames []string
 	Dimensions        []string
 	Filters           []string
 	OrderBy           []string

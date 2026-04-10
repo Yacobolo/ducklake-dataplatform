@@ -37,6 +37,12 @@ func (h *Handler) ProductsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "products",
+		DisplayName:  "Products",
+		Section:      "Discover",
+	})
 	core.RenderHTML(w, http.StatusOK, productsListPage(core.PrincipalFromContext(r.Context()), items, pageReq, total, query))
 }
 
@@ -109,6 +115,12 @@ func (h *Handler) ProductsDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "product",
+		ResourceKey:  product.Product.Slug,
+		DisplayName:  product.Product.Name,
+		Section:      "Discover",
+	})
 	core.RenderHTML(w, http.StatusOK, productDetailPage(core.PrincipalFromContext(r.Context()), product))
 }
 

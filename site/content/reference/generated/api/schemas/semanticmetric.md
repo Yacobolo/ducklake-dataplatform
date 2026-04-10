@@ -22,6 +22,7 @@
 | `metric_type` | `SemanticMetricMetricType` | `false` | - |
 | `name` | `string` | `false` | - |
 | `owner` | `string` | `false` | - |
+| `relationship_names` | `array[string]` | `false` | - |
 | `semantic_model_id` | `string` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 

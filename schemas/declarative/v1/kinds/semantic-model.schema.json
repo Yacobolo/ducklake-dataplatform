@@ -41,6 +41,12 @@
         },
         "name": {
           "type": "string"
+        },
+        "relationship_names": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -161,9 +167,6 @@
       "properties": {
         "cost": {
           "type": "integer"
-        },
-        "is_default": {
-          "type": "boolean"
         },
         "join_sql": {
           "type": "string"

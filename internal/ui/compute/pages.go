@@ -34,10 +34,10 @@ func computeEndpointsListPage(principal domain.ContextPrincipal, rows []computeE
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
-				Td(Text(row.Type)),
-				Td(Text(row.Status)),
-				Td(Text(row.URLText)),
+				core.TablePrimaryCell(core.ResourceIcon("compute-endpoint"), core.TablePrimaryLink(row.URL, row.Name)),
+				Td(core.TableMetaText(row.Type)),
+				Td(core.TableMetaText(row.Status)),
+				Td(core.TableMetaText(row.URLText)),
 			))
 		}
 		table = core.TableContainer("",
@@ -70,13 +70,15 @@ func computeEndpointDetailPage(principal domain.ContextPrincipal, item *domain.C
 				Td(Text(a.PrincipalType)),
 				Td(Text(strconv.FormatBool(a.IsDefault))),
 				Td(Text(strconv.FormatBool(a.FallbackLocal))),
-				Td(Class("text-right"), Form(Method("post"), Action("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/assignments/"+url.PathEscape(a.ID)+"/delete"), csrfFieldProvider(), core.DangerButton("small", Type("submit"), Text("Remove")))),
+				core.TableActionCell(core.TableIconActionPost("/ui/compute/endpoints/"+url.PathEscape(item.Name)+"/assignments/"+url.PathEscape(a.ID)+"/delete", "Remove assignment", "x", "danger", csrfFieldProvider)),
 			))
 		}
-		assignTable = Div(Class("overflow-x-auto"), Table(Class("min-w-full text-left text-sm"),
-			THead(Tr(Th(Text("Principal ID")), Th(Text("Type")), Th(Text("Default")), Th(Text("Fallback Local")), Th(Class("text-right"), Text("Actions")))),
-			TBody(Group(rows)),
-		))
+		assignTable = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Text("Principal ID")), Th(Text("Type")), Th(Text("Default")), Th(Text("Fallback Local")), core.TableActionHeader())),
+				TBody(Group(rows)),
+			),
+		)
 	}
 
 	return core.AppPage("Compute Endpoint: "+item.Name, "compute", principal,

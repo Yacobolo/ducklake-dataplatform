@@ -137,6 +137,23 @@ func AppPage(title, active string, principal domain.ContextPrincipal, body ...No
 			Link(Rel("icon"), Href("data:,")),
 			Script(Raw(ThemeInitScript)),
 			Link(Rel("stylesheet"), Href(UIStylesheetHref())),
+			StyleEl(Text(`
+.ui-icon-action-trigger {
+  color: var(--fgColor-muted);
+  cursor: pointer;
+}
+
+.ui-icon-action-trigger:hover,
+.ui-icon-action-trigger:focus-visible {
+  color: var(--fgColor-accent);
+}
+
+.ui-icon-action-trigger:disabled {
+  color: var(--fgColor-muted);
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+`+dataTableGlobalStyles())),
 			Script(Type("module"), Src(UIScriptHref("datastar.js"))),
 			func() Node {
 				if !devInspector {

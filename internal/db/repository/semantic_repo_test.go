@@ -22,7 +22,6 @@ func TestSemanticRepos_EndToEndCRUD(t *testing.T) {
 	ctx := context.Background()
 
 	createdModel, err := modelRepo.Create(ctx, &domain.SemanticModel{
-		ProjectName:          "analytics",
 		Name:                 "sales",
 		Description:          "Semantic model for sales analytics",
 		Owner:                "data-team",
@@ -76,7 +75,6 @@ func TestSemanticRepos_EndToEndCRUD(t *testing.T) {
 		ToSemanticID:     createdModel.ID,
 		RelationshipType: domain.RelationshipTypeManyToOne,
 		JoinSQL:          "sales.customer_id = customers.customer_id",
-		IsDefault:        true,
 		Cost:             1,
 		MaxHops:          2,
 		CreatedBy:        "admin",

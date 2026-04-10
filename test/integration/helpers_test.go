@@ -1680,6 +1680,8 @@ func setupHTTPServer(t *testing.T, opts httpTestOpts) *httpTestEnv {
 		modelSvc,
 		authService,
 		webSessionAuth,
+		nil,
+		nil,
 		principalSvc,
 		authCfg,
 		false,

@@ -129,8 +129,7 @@ func TestHandler_CreateDashboardWidget_MapsSourceAndVisualSpec(t *testing.T) {
 				assert.Equal(t, "dash-1", dashboardID)
 				assert.Equal(t, domain.DashboardWidgetSourceSemanticQuery, req.Source.Kind)
 				require.NotNil(t, req.Source.SemanticQuery)
-				assert.Equal(t, "analytics", req.Source.SemanticQuery.ProjectName)
-				assert.Equal(t, "sales", req.Source.SemanticQuery.SemanticModelName)
+				assert.Equal(t, "sm-sales", req.Source.SemanticQuery.SemanticModelID)
 				assert.Equal(t, []string{"revenue"}, req.Source.SemanticQuery.Metrics)
 				require.NotNil(t, req.Source.SemanticQuery.TimeGrain)
 				assert.Equal(t, "day", *req.Source.SemanticQuery.TimeGrain)
@@ -165,8 +164,7 @@ func TestHandler_CreateDashboardWidget_MapsSourceAndVisualSpec(t *testing.T) {
 			Source: DashboardWidgetSource{
 				Kind: DashboardWidgetSourceKindSemanticQuery,
 				SemanticQuery: &DashboardSemanticQuerySource{
-					ProjectName:       "analytics",
-					SemanticModelName: "sales",
+					SemanticModelId:   "sm-sales",
 					Metrics:           []string{"revenue"},
 					Dimensions:        &[]string{"region"},
 					TimeGrain:         &timeGrain,
@@ -304,8 +302,7 @@ func TestHandler_GetResolvedDashboard_MapsResolvedWidgets(t *testing.T) {
 		Source: domain.DashboardWidgetSource{
 			Kind: domain.DashboardWidgetSourceSemanticQuery,
 			SemanticQuery: &domain.DashboardSemanticQuerySource{
-				ProjectName:       "analytics",
-				SemanticModelName: "sales",
+				SemanticModelID:   "sm-sales",
 				Metrics:           []string{"revenue"},
 				Dimensions:        []string{"region"},
 			},

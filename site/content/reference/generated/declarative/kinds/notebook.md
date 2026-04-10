@@ -5,7 +5,7 @@
 Duck declarative Notebook
 
 - Schema file: `kinds/notebook.schema.json`
-- SHA256: `235a58e120cd6519585f694ca24b90ab73312e6e7e0a7bf1b79e6d824df56597`
+- SHA256: `3bd091027781250746efdd839b17eaef916fb0c2d85d2eaf17b8c7aeaf5d573a`
 
 ## Spec Fields
 

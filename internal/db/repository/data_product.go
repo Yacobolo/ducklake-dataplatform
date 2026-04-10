@@ -867,11 +867,11 @@ func (r *DataProductRepo) AddSemanticEntrypoint(ctx context.Context, entrypoint 
 // ListSemanticEntrypoints returns semantic entrypoints for a version.
 func (r *DataProductRepo) ListSemanticEntrypoints(ctx context.Context, productVersionID string) ([]domain.ProductSemanticEntrypoint, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT pse.id, pse.product_version_id, pse.semantic_model_id, sm.project_name, sm.name, pse.created_at
+		SELECT pse.id, pse.product_version_id, pse.semantic_model_id, sm.name, pse.created_at
 		FROM product_semantic_entrypoints pse
 		INNER JOIN semantic_models sm ON sm.id = pse.semantic_model_id
 		WHERE pse.product_version_id = ?
-		ORDER BY sm.project_name ASC, sm.name ASC
+		ORDER BY sm.name ASC
 	`, productVersionID)
 	if err != nil {
 		return nil, mapDBError(err)
@@ -1144,11 +1144,11 @@ func (r *DataProductRepo) ListOrphanAssets(ctx context.Context) ([]domain.Orphan
 // ListOrphanSemanticModels returns semantic models not linked to any product entrypoint.
 func (r *DataProductRepo) ListOrphanSemanticModels(ctx context.Context) ([]domain.OrphanResource, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT 'semantic_model', sm.id, sm.project_name || '.' || sm.name
+		SELECT 'semantic_model', sm.id, sm.name
 		FROM semantic_models sm
 		LEFT JOIN product_semantic_entrypoints pse ON pse.semantic_model_id = sm.id
 		WHERE pse.id IS NULL
-		ORDER BY sm.project_name ASC, sm.name ASC
+		ORDER BY sm.name ASC
 	`)
 	if err != nil {
 		return nil, mapDBError(err)
@@ -1388,7 +1388,7 @@ func scanProductEvent(scanner interface{ Scan(dest ...any) error }) (*domain.Pro
 
 func scanProductSemanticEntrypoint(scanner interface{ Scan(dest ...any) error }) (*domain.ProductSemanticEntrypoint, error) {
 	var item domain.ProductSemanticEntrypoint
-	if err := scanner.Scan(&item.ID, &item.ProductVersionID, &item.SemanticModelID, &item.ProjectName, &item.ModelName, &item.CreatedAt); err != nil {
+	if err := scanner.Scan(&item.ID, &item.ProductVersionID, &item.SemanticModelID, &item.ModelName, &item.CreatedAt); err != nil {
 		return nil, err
 	}
 	return &item, nil

@@ -32,7 +32,6 @@ func (r *SemanticModelRepo) Create(ctx context.Context, m *domain.SemanticModel)
 
 	row, err := r.q.CreateSemanticModel(ctx, dbstore.CreateSemanticModelParams{
 		ID:                   newID(),
-		ProjectName:          m.ProjectName,
 		Name:                 m.Name,
 		Description:          m.Description,
 		Owner:                m.Owner,
@@ -56,36 +55,23 @@ func (r *SemanticModelRepo) GetByID(ctx context.Context, id string) (*domain.Sem
 	return semanticModelFromDB(row), nil
 }
 
-// GetByName returns a semantic model by project and name.
-func (r *SemanticModelRepo) GetByName(ctx context.Context, projectName, name string) (*domain.SemanticModel, error) {
-	row, err := r.q.GetSemanticModelByName(ctx, dbstore.GetSemanticModelByNameParams{
-		ProjectName: projectName,
-		Name:        name,
-	})
+// GetByName returns a semantic model by name.
+func (r *SemanticModelRepo) GetByName(ctx context.Context, name string) (*domain.SemanticModel, error) {
+	row, err := r.q.GetSemanticModelByName(ctx, name)
 	if err != nil {
 		return nil, mapDBError(err)
 	}
 	return semanticModelFromDB(row), nil
 }
 
-// List returns a paginated list of semantic models, optionally filtered by project.
-func (r *SemanticModelRepo) List(ctx context.Context, projectName *string, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
-	projectFilter := ""
-	if projectName != nil {
-		projectFilter = *projectName
-	}
-
-	total, err := r.q.CountSemanticModels(ctx, dbstore.CountSemanticModelsParams{
-		Column1:     projectFilter,
-		ProjectName: projectFilter,
-	})
+// List returns a paginated list of semantic models.
+func (r *SemanticModelRepo) List(ctx context.Context, page domain.PageRequest) ([]domain.SemanticModel, int64, error) {
+	total, err := r.q.CountSemanticModels(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	rows, err := r.q.ListSemanticModels(ctx, dbstore.ListSemanticModelsParams{
-		Column1:     projectFilter,
-		ProjectName: projectFilter,
 		Limit:       int64(page.Limit()),
 		Offset:      int64(page.Offset()),
 	})
@@ -151,7 +137,7 @@ func (r *SemanticModelRepo) Delete(ctx context.Context, id string) error {
 	return mapDBError(r.q.DeleteSemanticModel(ctx, id))
 }
 
-// ListAll returns all semantic models ordered by project and name.
+// ListAll returns all semantic models ordered by name.
 func (r *SemanticModelRepo) ListAll(ctx context.Context) ([]domain.SemanticModel, error) {
 	rows, err := r.q.ListAllSemanticModels(ctx)
 	if err != nil {

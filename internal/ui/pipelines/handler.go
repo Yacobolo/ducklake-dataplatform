@@ -37,6 +37,12 @@ func (h *Handler) PipelinesList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "pipelines",
+		DisplayName:  "Pipelines",
+		Section:      "Build",
+	})
 	core.RenderHTML(w, http.StatusOK, pipelinesListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total))
 }
 
@@ -61,6 +67,12 @@ func (h *Handler) PipelinesDetail(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "pipeline",
+		ResourceKey:  pipe.Name,
+		DisplayName:  pipe.Name,
+		Section:      "Build",
+	})
 	core.RenderHTML(w, http.StatusOK, pipelineDetailPage(pipelineDetailPageData{
 		Principal:     core.PrincipalFromContext(r.Context()),
 		Name:          pipe.Name,

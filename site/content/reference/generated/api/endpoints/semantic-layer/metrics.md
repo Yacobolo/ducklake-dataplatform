@@ -20,8 +20,7 @@ Check metric freshness
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `project_name` | `string` | `false` | - |
-| `semantic_model_name` | `string` | `false` | - |
+| `semantic_model_id` | `string` | `false` | - |
 
 ### Responses
 
@@ -32,115 +31,6 @@ Check metric freshness
 | `401` | Access is unauthorized. |
 | `403` | Access is forbidden. |
 | `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `GET /semantic-models/{projectName}/{semanticModelName}/metrics`
-
-List semantic metrics
-
-- Operation ID: `listSemanticMetrics`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `projectName` | `string` | `true` | - |
-| `semanticModelName` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `404` | The server cannot find the requested resource. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `POST /semantic-models/{projectName}/{semanticModelName}/metrics`
-
-Create semantic metric
-
-- Operation ID: `createSemanticMetric`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `projectName` | `string` | `true` | - |
-| `semanticModelName` | `string` | `true` | - |
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `201` | The request has succeeded and a new resource has been created as a result. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `PATCH /semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}`
-
-Update semantic metric
-
-- Operation ID: `updateSemanticMetric`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `metricName` | `string` | `true` | - |
-| `projectName` | `string` | `true` | - |
-| `semanticModelName` | `string` | `true` | - |
-
-### Request Body
-
-- Required: `true`
-- Content types: `application/json`
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `200` | The request has succeeded. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
-| `429` | Client error |
-| `500` | Server error |
-
-## `DELETE /semantic-models/{projectName}/{semanticModelName}/metrics/{metricName}`
-
-Delete semantic metric
-
-- Operation ID: `deleteSemanticMetric`
-
-### Path Parameters
-
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `metricName` | `string` | `true` | - |
-| `projectName` | `string` | `true` | - |
-| `semanticModelName` | `string` | `true` | - |
-
-### Responses
-
-| Code | Description |
-| --- | --- |
-| `204` | There is no content to send for this request, but the headers may be useful. |
-| `400` | The server could not understand the request due to invalid syntax. |
-| `401` | Access is unauthorized. |
-| `403` | Access is forbidden. |
 | `429` | Client error |
 | `500` | Server error |
 

@@ -3,6 +3,7 @@
     "allowImportingTsExtensions": true,
     "experimentalDecorators": true,
     "isolatedModules": true,
+    "jsx": "react-jsx",
     "lib": ["ES2020", "DOM", "DOM.Iterable", "ES2022.Object"],
     "module": "ESNext",
     "moduleResolution": "bundler",

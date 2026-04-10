@@ -192,6 +192,9 @@
         "legend": {
           "type": "boolean"
         },
+        "legendPosition": {
+          "type": "string"
+        },
         "stacked": {
           "type": "boolean"
         },

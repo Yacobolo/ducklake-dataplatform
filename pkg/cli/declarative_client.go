@@ -1481,8 +1481,7 @@ type apiProductOutput struct {
 }
 
 type apiProductSemanticEntrypoint struct {
-	ProjectName string `json:"project_name"`
-	ModelName   string `json:"model_name"`
+	ModelName string `json:"model_name"`
 }
 
 type apiDataProductListItem struct {
@@ -1709,10 +1708,10 @@ func productOutputKeys(outputs []apiProductOutput) []string {
 func semanticEntrypointRefs(entrypoints []apiProductSemanticEntrypoint) []string {
 	refs := make([]string, 0, len(entrypoints))
 	for _, entrypoint := range entrypoints {
-		if entrypoint.ProjectName == "" || entrypoint.ModelName == "" {
+		if entrypoint.ModelName == "" {
 			continue
 		}
-		refs = append(refs, semanticModelPath(entrypoint.ProjectName, entrypoint.ModelName))
+		refs = append(refs, semanticModelPath(entrypoint.ModelName))
 	}
 	sort.Strings(refs)
 	return refs
@@ -1983,7 +1982,6 @@ type apiModel struct {
 
 type apiSemanticModel struct {
 	ID                   string   `json:"id"`
-	ProjectName          string   `json:"project_name"`
 	Name                 string   `json:"name"`
 	Description          string   `json:"description"`
 	BaseModelRef         string   `json:"base_model_ref"`
@@ -1997,6 +1995,7 @@ type apiSemanticMetric struct {
 	MetricType         string `json:"metric_type"`
 	ExpressionMode     string `json:"expression_mode"`
 	Expression         string `json:"expression"`
+	RelationshipNames  []string `json:"relationship_names"`
 	DefaultTimeGrain   string `json:"default_time_grain"`
 	Format             string `json:"format"`
 	CertificationState string `json:"certification_state"`
@@ -2008,7 +2007,6 @@ type apiSemanticRelationship struct {
 	ToSemanticID     string `json:"to_semantic_id"`
 	RelationshipType string `json:"relationship_type"`
 	JoinSQL          string `json:"join_sql"`
-	IsDefault        bool   `json:"is_default"`
 	Cost             int    `json:"cost"`
 	MaxHops          int    `json:"max_hops"`
 }
@@ -2219,7 +2217,6 @@ func (c *APIStateClient) readSemanticModels(ctx context.Context, state *declarat
 	modelNameByID := make(map[string]string, len(items))
 	for _, m := range items {
 		state.SemanticModels = append(state.SemanticModels, declarative.SemanticModelResource{
-			ProjectName: m.ProjectName,
 			ModelName:   m.Name,
 			Spec: declarative.SemanticModelSpec{
 				Description:          m.Description,
@@ -2232,18 +2229,19 @@ func (c *APIStateClient) readSemanticModels(ctx context.Context, state *declarat
 		idx := len(state.SemanticModels) - 1
 		if m.ID != "" {
 			modelIndexByID[m.ID] = idx
-			modelNameByID[m.ID] = semanticModelPath(m.ProjectName, m.Name)
+			modelNameByID[m.ID] = semanticModelPath(m.Name)
 			if c.index != nil {
-				c.index.semanticModelIDByPath[semanticModelPath(m.ProjectName, m.Name)] = m.ID
+				c.index.semanticModelIDByPath[semanticModelPath(m.Name)] = m.ID
 			}
 		}
 	}
 
 	for i := range state.SemanticModels {
 		model := &state.SemanticModels[i]
-		metrics, err := c.listSemanticMetrics(ctx, model.ProjectName, model.ModelName)
+		modelID := c.index.semanticModelIDByPath[semanticModelPath(model.ModelName)]
+		metrics, err := c.listSemanticMetrics(ctx, modelID)
 		if err != nil {
-			return fmt.Errorf("list semantic metrics for %s.%s: %w", model.ProjectName, model.ModelName, err)
+			return fmt.Errorf("list semantic metrics for %s: %w", model.ModelName, err)
 		}
 		for _, metric := range metrics {
 			model.Spec.Metrics = append(model.Spec.Metrics, declarative.SemanticMetricSpec{
@@ -2252,15 +2250,16 @@ func (c *APIStateClient) readSemanticModels(ctx context.Context, state *declarat
 				MetricType:         metric.MetricType,
 				ExpressionMode:     metric.ExpressionMode,
 				Expression:         metric.Expression,
+				RelationshipNames:  append([]string(nil), metric.RelationshipNames...),
 				DefaultTimeGrain:   metric.DefaultTimeGrain,
 				Format:             metric.Format,
 				CertificationState: metric.CertificationState,
 			})
 		}
 
-		preAggs, err := c.listSemanticPreAggregations(ctx, model.ProjectName, model.ModelName)
+		preAggs, err := c.listSemanticPreAggregations(ctx, modelID)
 		if err != nil {
-			return fmt.Errorf("list semantic pre-aggregations for %s.%s: %w", model.ProjectName, model.ModelName, err)
+			return fmt.Errorf("list semantic pre-aggregations for %s: %w", model.ModelName, err)
 		}
 		for _, preAgg := range preAggs {
 			model.Spec.PreAggregations = append(model.Spec.PreAggregations, declarative.SemanticPreAggSpec{
@@ -2274,36 +2273,40 @@ func (c *APIStateClient) readSemanticModels(ctx context.Context, state *declarat
 		}
 	}
 
-	relationships, err := c.listSemanticRelationships(ctx)
-	if err != nil {
-		return fmt.Errorf("list semantic relationships: %w", err)
-	}
-	for _, rel := range relationships {
-		fromIdx, ok := modelIndexByID[rel.FromSemanticID]
+	for _, model := range items {
+		if model.ID == "" {
+			continue
+		}
+		relationships, err := c.listSemanticRelationships(ctx, model.ID)
+		if err != nil {
+			return fmt.Errorf("list semantic relationships for %s: %w", model.Name, err)
+		}
+		fromIdx, ok := modelIndexByID[model.ID]
 		if !ok {
-			return fmt.Errorf("semantic relationship %q references unknown from_semantic_id %q", rel.Name, rel.FromSemanticID)
+			return fmt.Errorf("semantic model %q missing from index", model.ID)
 		}
-		toModel := modelNameByID[rel.ToSemanticID]
-		if toModel == "" {
-			toModel = rel.ToSemanticID
-		}
+		for _, rel := range relationships {
+			toModel := modelNameByID[rel.ToSemanticID]
+			if toModel == "" {
+				toModel = rel.ToSemanticID
+			}
 
-		state.SemanticModels[fromIdx].Spec.Relationships = append(state.SemanticModels[fromIdx].Spec.Relationships, declarative.SemanticRelationshipSpec{
-			Name:             rel.Name,
-			ToModel:          toModel,
-			RelationshipType: rel.RelationshipType,
-			JoinSQL:          rel.JoinSQL,
-			IsDefault:        rel.IsDefault,
-			Cost:             rel.Cost,
-			MaxHops:          rel.MaxHops,
-		})
+			state.SemanticModels[fromIdx].Spec.Relationships = append(state.SemanticModels[fromIdx].Spec.Relationships, declarative.SemanticRelationshipSpec{
+				Name:             rel.Name,
+				ToModel:          toModel,
+				RelationshipType: rel.RelationshipType,
+				JoinSQL:          rel.JoinSQL,
+				Cost:             rel.Cost,
+				MaxHops:          rel.MaxHops,
+			})
+		}
 	}
 
 	return nil
 }
 
-func (c *APIStateClient) listSemanticMetrics(ctx context.Context, projectName, modelName string) ([]apiSemanticMetric, error) {
-	pages, err := c.fetchAllPages(ctx, "/semantic-models/"+projectName+"/"+modelName+"/metrics")
+func (c *APIStateClient) listSemanticMetrics(ctx context.Context, semanticModelID string) ([]apiSemanticMetric, error) {
+	pages, err := c.fetchAllPages(ctx, "/semantic-models/"+semanticModelID+"/metrics")
 	if err != nil {
 		return nil, err
 	}
@@ -2318,8 +2321,8 @@ func (c *APIStateClient) listSemanticMetrics(ctx context.Context, projectName, m
 	return metrics, nil
 }
 
-func (c *APIStateClient) listSemanticPreAggregations(ctx context.Context, projectName, modelName string) ([]apiSemanticPreAggregation, error) {
-	pages, err := c.fetchAllPages(ctx, "/semantic-models/"+projectName+"/"+modelName+"/pre-aggregations")
+func (c *APIStateClient) listSemanticPreAggregations(ctx context.Context, semanticModelID string) ([]apiSemanticPreAggregation, error) {
+	pages, err := c.fetchAllPages(ctx, "/semantic-models/"+semanticModelID+"/pre-aggregations")
 	if err != nil {
 		return nil, err
 	}
@@ -2334,8 +2337,8 @@ func (c *APIStateClient) listSemanticPreAggregations(ctx context.Context, projec
 	return preAggs, nil
 }
 
-func (c *APIStateClient) listSemanticRelationships(ctx context.Context) ([]apiSemanticRelationship, error) {
-	pages, err := c.fetchAllPages(ctx, "/semantic-relationships")
+func (c *APIStateClient) listSemanticRelationships(ctx context.Context, semanticModelID string) ([]apiSemanticRelationship, error) {
+	pages, err := c.fetchAllPages(ctx, "/semantic-models/"+semanticModelID+"/relationships")
 	if err != nil {
 		return nil, err
 	}
@@ -2787,31 +2790,23 @@ func (c *APIStateClient) Execute(ctx context.Context, action declarative.Action)
 	}
 }
 
-func semanticModelPath(projectName, modelName string) string {
-	return projectName + "." + modelName
+func semanticModelPath(modelName string) string {
+	return modelName
 }
 
 func modelPath(projectName, modelName string) string {
 	return projectName + "." + modelName
 }
 
-func (c *APIStateClient) resolveSemanticModelRefID(_ context.Context, defaultProject, modelRef string) (string, error) {
-	projectName := defaultProject
-	modelName := modelRef
-	if strings.Contains(modelRef, ".") {
-		parts := strings.SplitN(modelRef, ".", 2)
-		projectName = parts[0]
-		modelName = parts[1]
-	}
-
-	path := semanticModelPath(projectName, modelName)
+func (c *APIStateClient) resolveSemanticModelRefID(_ context.Context, modelRef string) (string, error) {
+	path := semanticModelPath(modelRef)
 	if c.index != nil {
 		if id, ok := c.index.semanticModelIDByPath[path]; ok {
 			return id, nil
 		}
 	}
 
-	resp, err := c.client.Do(http.MethodGet, "/semantic-models/"+projectName+"/"+modelName, nil, nil)
+	resp, err := c.client.Do(http.MethodGet, "/semantic-models/"+path, nil, nil)
 	if err != nil {
 		return "", err
 	}
@@ -2828,8 +2823,8 @@ func (c *APIStateClient) resolveSemanticModelRefID(_ context.Context, defaultPro
 	return id, nil
 }
 
-func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectName, modelName string, desired []declarative.SemanticMetricSpec) error {
-	actual, err := c.listSemanticMetrics(ctx, projectName, modelName)
+func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, semanticModelID string, desired []declarative.SemanticMetricSpec) error {
+	actual, err := c.listSemanticMetrics(ctx, semanticModelID)
 	if err != nil {
 		return err
 	}
@@ -2847,13 +2842,14 @@ func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectNa
 			"metric_type":         metric.MetricType,
 			"expression_mode":     metric.ExpressionMode,
 			"expression":          metric.Expression,
+			"relationship_names":  metric.RelationshipNames,
 			"default_time_grain":  metric.DefaultTimeGrain,
 			"format":              metric.Format,
 			"certification_state": metric.CertificationState,
 		}
 
 		if _, exists := actualByName[metric.Name]; exists {
-			resp, err := c.client.Do(http.MethodPatch, "/semantic-models/"+projectName+"/"+modelName+"/metrics/"+metric.Name, nil, body)
+			resp, err := c.client.Do(http.MethodPatch, "/semantic-models/"+semanticModelID+"/metrics/"+metric.Name, nil, body)
 			if err != nil {
 				return err
 			}
@@ -2864,7 +2860,7 @@ func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectNa
 		}
 
 		body["name"] = metric.Name
-		resp, err := c.client.Do(http.MethodPost, "/semantic-models/"+projectName+"/"+modelName+"/metrics", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/semantic-models/"+semanticModelID+"/metrics", nil, body)
 		if err != nil {
 			return err
 		}
@@ -2877,7 +2873,7 @@ func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectNa
 		if _, ok := seen[name]; ok {
 			continue
 		}
-		resp, err := c.client.Do(http.MethodDelete, "/semantic-models/"+projectName+"/"+modelName+"/metrics/"+name, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/semantic-models/"+semanticModelID+"/metrics/"+name, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -2889,8 +2885,8 @@ func (c *APIStateClient) reconcileSemanticMetrics(ctx context.Context, projectNa
 	return nil
 }
 
-func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, projectName, modelName string, desired []declarative.SemanticPreAggSpec) error {
-	actual, err := c.listSemanticPreAggregations(ctx, projectName, modelName)
+func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, semanticModelID string, desired []declarative.SemanticPreAggSpec) error {
+	actual, err := c.listSemanticPreAggregations(ctx, semanticModelID)
 	if err != nil {
 		return err
 	}
@@ -2912,7 +2908,7 @@ func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, p
 		}
 
 		if _, exists := actualByName[preAgg.Name]; exists {
-			resp, err := c.client.Do(http.MethodPatch, "/semantic-models/"+projectName+"/"+modelName+"/pre-aggregations/"+preAgg.Name, nil, body)
+			resp, err := c.client.Do(http.MethodPatch, "/semantic-models/"+semanticModelID+"/pre-aggregations/"+preAgg.Name, nil, body)
 			if err != nil {
 				return err
 			}
@@ -2923,7 +2919,7 @@ func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, p
 		}
 
 		body["name"] = preAgg.Name
-		resp, err := c.client.Do(http.MethodPost, "/semantic-models/"+projectName+"/"+modelName+"/pre-aggregations", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/semantic-models/"+semanticModelID+"/pre-aggregations", nil, body)
 		if err != nil {
 			return err
 		}
@@ -2936,7 +2932,7 @@ func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, p
 		if _, ok := seen[name]; ok {
 			continue
 		}
-		resp, err := c.client.Do(http.MethodDelete, "/semantic-models/"+projectName+"/"+modelName+"/pre-aggregations/"+name, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/semantic-models/"+semanticModelID+"/pre-aggregations/"+name, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -2948,23 +2944,21 @@ func (c *APIStateClient) reconcileSemanticPreAggregations(ctx context.Context, p
 	return nil
 }
 
-func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, modelID, projectName string, desired []declarative.SemanticRelationshipSpec) error {
-	actual, err := c.listSemanticRelationships(ctx)
+func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, modelID string, desired []declarative.SemanticRelationshipSpec) error {
+	actual, err := c.listSemanticRelationships(ctx, modelID)
 	if err != nil {
 		return err
 	}
 
 	actualByName := make(map[string]apiSemanticRelationship)
 	for _, rel := range actual {
-		if rel.FromSemanticID == modelID {
-			actualByName[rel.Name] = rel
-		}
+		actualByName[rel.Name] = rel
 	}
 
 	seen := make(map[string]struct{}, len(desired))
 	for _, rel := range desired {
 		seen[rel.Name] = struct{}{}
-		toModelID, err := c.resolveSemanticModelRefID(ctx, projectName, rel.ToModel)
+		toModelID, err := c.resolveSemanticModelRefID(ctx, rel.ToModel)
 		if err != nil {
 			return fmt.Errorf("resolve to_model %q for relationship %q: %w", rel.ToModel, rel.Name, err)
 		}
@@ -2972,13 +2966,12 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 		body := map[string]interface{}{
 			"relationship_type": rel.RelationshipType,
 			"join_sql":          rel.JoinSQL,
-			"is_default":        rel.IsDefault,
 			"cost":              rel.Cost,
 			"max_hops":          rel.MaxHops,
 		}
 
 		if _, exists := actualByName[rel.Name]; exists {
-			resp, err := c.client.Do(http.MethodPatch, "/semantic-relationships/"+rel.Name, nil, body)
+			resp, err := c.client.Do(http.MethodPatch, "/semantic-models/"+modelID+"/relationships/"+rel.Name, nil, body)
 			if err != nil {
 				return err
 			}
@@ -2991,7 +2984,7 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 		body["name"] = rel.Name
 		body["from_semantic_id"] = modelID
 		body["to_semantic_id"] = toModelID
-		resp, err := c.client.Do(http.MethodPost, "/semantic-relationships", nil, body)
+		resp, err := c.client.Do(http.MethodPost, "/semantic-models/"+modelID+"/relationships", nil, body)
 		if err != nil {
 			return err
 		}
@@ -3004,7 +2997,7 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 		if _, ok := seen[name]; ok {
 			continue
 		}
-		resp, err := c.client.Do(http.MethodDelete, "/semantic-relationships/"+name, nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/semantic-models/"+modelID+"/relationships/"+name, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -3017,13 +3010,13 @@ func (c *APIStateClient) reconcileSemanticRelationships(ctx context.Context, mod
 }
 
 func (c *APIStateClient) reconcileSemanticChildren(ctx context.Context, modelID string, model declarative.SemanticModelResource) error {
-	if err := c.reconcileSemanticMetrics(ctx, model.ProjectName, model.ModelName, model.Spec.Metrics); err != nil {
+	if err := c.reconcileSemanticMetrics(ctx, modelID, model.Spec.Metrics); err != nil {
 		return fmt.Errorf("reconcile semantic metrics: %w", err)
 	}
-	if err := c.reconcileSemanticPreAggregations(ctx, model.ProjectName, model.ModelName, model.Spec.PreAggregations); err != nil {
+	if err := c.reconcileSemanticPreAggregations(ctx, modelID, model.Spec.PreAggregations); err != nil {
 		return fmt.Errorf("reconcile semantic pre-aggregations: %w", err)
 	}
-	if err := c.reconcileSemanticRelationships(ctx, modelID, model.ProjectName, model.Spec.Relationships); err != nil {
+	if err := c.reconcileSemanticRelationships(ctx, modelID, model.Spec.Relationships); err != nil {
 		return fmt.Errorf("reconcile semantic relationships: %w", err)
 	}
 	return nil
@@ -3034,7 +3027,6 @@ func (c *APIStateClient) executeSemanticModel(ctx context.Context, action declar
 	case declarative.OpCreate:
 		model := action.Desired.(declarative.SemanticModelResource)
 		body := map[string]interface{}{
-			"project_name":   model.ProjectName,
 			"name":           model.ModelName,
 			"description":    model.Spec.Description,
 			"base_model_ref": model.Spec.BaseModelRef,
@@ -3053,13 +3045,13 @@ func (c *APIStateClient) executeSemanticModel(ctx context.Context, action declar
 			return err
 		}
 		if id == "" {
-			id, err = c.resolveSemanticModelRefID(ctx, model.ProjectName, model.ModelName)
+			id, err = c.resolveSemanticModelRefID(ctx, model.ModelName)
 			if err != nil {
 				return err
 			}
 		}
 		if c.index != nil {
-			c.index.semanticModelIDByPath[semanticModelPath(model.ProjectName, model.ModelName)] = id
+			c.index.semanticModelIDByPath[semanticModelPath(model.ModelName)] = id
 		}
 		return c.reconcileSemanticChildren(ctx, id, model)
 
@@ -3073,7 +3065,11 @@ func (c *APIStateClient) executeSemanticModel(ctx context.Context, action declar
 		if model.Spec.DefaultTimeDimension != "" {
 			body["default_time_dimension"] = model.Spec.DefaultTimeDimension
 		}
-		resp, err := c.client.Do(http.MethodPatch, "/semantic-models/"+model.ProjectName+"/"+model.ModelName, nil, body)
+		id, err := c.resolveSemanticModelRefID(ctx, model.ModelName)
+		if err != nil {
+			return err
+		}
+		resp, err := c.client.Do(http.MethodPatch, "/semantic-models/"+id, nil, body)
 		if err != nil {
 			return err
 		}
@@ -3081,18 +3077,14 @@ func (c *APIStateClient) executeSemanticModel(ctx context.Context, action declar
 			return err
 		}
 
-		id, err := c.resolveSemanticModelRefID(ctx, model.ProjectName, model.ModelName)
-		if err != nil {
-			return err
-		}
 		return c.reconcileSemanticChildren(ctx, id, model)
 
 	case declarative.OpDelete:
-		parts := strings.SplitN(action.ResourceName, ".", 2)
-		if len(parts) != 2 {
-			return fmt.Errorf("invalid semantic model resource name: %s", action.ResourceName)
+		id, err := c.resolveSemanticModelRefID(ctx, action.ResourceName)
+		if err != nil {
+			return err
 		}
-		resp, err := c.client.Do(http.MethodDelete, "/semantic-models/"+parts[0]+"/"+parts[1], nil, nil)
+		resp, err := c.client.Do(http.MethodDelete, "/semantic-models/"+id, nil, nil)
 		if err != nil {
 			return err
 		}

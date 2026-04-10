@@ -1021,18 +1021,13 @@ func (s *Service) resolveSemanticEntrypoints(ctx context.Context, productVersion
 			return nil, domain.ErrValidation("duplicate semantic model ref %q", ref)
 		}
 		seen[ref] = struct{}{}
-		projectName, modelName, err := parseSemanticModelRef(ref)
-		if err != nil {
-			return nil, err
-		}
-		model, err := s.semantic.GetByName(ctx, projectName, modelName)
+		model, err := s.semantic.GetByName(ctx, ref)
 		if err != nil {
 			return nil, fmt.Errorf("resolve semantic model %q: %w", ref, err)
 		}
 		entrypoints = append(entrypoints, domain.ProductSemanticEntrypoint{
 			ProductVersionID: productVersionID,
 			SemanticModelID:  model.ID,
-			ProjectName:      model.ProjectName,
 			ModelName:        model.Name,
 		})
 	}
@@ -1696,14 +1691,6 @@ func defaultString(value, fallback string) string {
 		return fallback
 	}
 	return value
-}
-
-func parseSemanticModelRef(ref string) (string, string, error) {
-	parts := strings.Split(strings.TrimSpace(ref), ".")
-	if len(parts) != 2 || strings.TrimSpace(parts[0]) == "" || strings.TrimSpace(parts[1]) == "" {
-		return "", "", domain.ErrValidation("semantic model ref %q must be project.model", ref)
-	}
-	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), nil
 }
 
 func (s *Service) logAudit(ctx context.Context, principal, action string) {

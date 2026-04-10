@@ -534,6 +534,45 @@ model PaginatedQueryHistoryEntries {
   next_page_token?: string;
 }
 
+model RecentResource {
+  resource_type: string;
+  resource_key: string;
+  display_name: string;
+  resource_path?: string;
+  href?: string;
+  section?: string;
+  accessed_at?: utcDateTime;
+}
+
+model SavedResource {
+  resource_type: string;
+  resource_key: string;
+  display_name: string;
+  resource_path?: string;
+  href?: string;
+  section?: string;
+  saved_at?: utcDateTime;
+  last_accessed_at?: utcDateTime;
+}
+
+model PaginatedRecentResources {
+  data: RecentResource[];
+  next_page_token?: string;
+}
+
+model PaginatedSavedResources {
+  data: SavedResource[];
+  next_page_token?: string;
+}
+
+model CreateSavedResourceRequest {
+  resource_type: string;
+  resource_key: string;
+  display_name?: string;
+  resource_path?: string;
+  section?: string;
+}
+
 model MetastoreSummary {
   catalog_name: string;
   metastore_type?: string;
@@ -1513,7 +1552,6 @@ model PaginatedSearchResults {
 }
 
 model CreateSemanticModelRequest {
-  project_name: string;
   name: string;
   description?: string;
   base_model_ref: string;
@@ -1531,7 +1569,6 @@ model UpdateSemanticModelRequest {
 
 model SemanticModel {
   id?: string;
-  project_name?: string;
   name?: string;
   description?: string;
   owner?: string;
@@ -1578,6 +1615,7 @@ model CreateSemanticMetricRequest {
   metric_type: SemanticMetricMetricType;
   expression_mode?: SemanticMetricExpressionMode;
   expression: string;
+  relationship_names?: string[];
   filter_sql?: string;
   default_time_grain?: string;
   format?: string;
@@ -1590,6 +1628,7 @@ model UpdateSemanticMetricRequest {
   metric_type?: SemanticMetricMetricType;
   expression_mode?: SemanticMetricExpressionMode;
   expression?: string;
+  relationship_names?: string[];
   filter_sql?: string;
   default_time_grain?: string;
   format?: string;
@@ -1606,6 +1645,7 @@ model SemanticMetric {
   metric_type?: SemanticMetricMetricType;
   expression_mode?: SemanticMetricExpressionMode;
   expression?: string;
+  relationship_names?: string[];
   filter_sql?: string;
   default_time_grain?: string;
   format?: string;
@@ -1668,7 +1708,6 @@ model CreateSemanticRelationshipRequest {
   to_semantic_id: string;
   relationship_type: SemanticRelationshipRelationshipType;
   join_sql: string;
-  is_default?: boolean;
   cost?: int32;
   max_hops?: int32;
 }
@@ -1676,7 +1715,6 @@ model CreateSemanticRelationshipRequest {
 model UpdateSemanticRelationshipRequest {
   relationship_type?: SemanticRelationshipRelationshipType;
   join_sql?: string;
-  is_default?: boolean;
   cost?: int32;
   max_hops?: int32;
 }
@@ -1688,7 +1726,6 @@ model SemanticRelationship {
   to_semantic_id?: string;
   relationship_type?: SemanticRelationshipRelationshipType;
   join_sql?: string;
-  is_default?: boolean;
   cost?: int32;
   max_hops?: int32;
   created_by?: string;
@@ -1699,6 +1736,10 @@ model SemanticRelationship {
 model PaginatedSemanticRelationships {
   data: SemanticRelationship[];
   next_page_token?: string;
+}
+
+model SemanticRelationshipList {
+  data: SemanticRelationship[];
 }
 
 model TriggerModelRunRequest {
@@ -1758,9 +1799,8 @@ model ModelRunStepList {
 }
 
 model MetricQueryRequest {
-  project_name: string;
-  semantic_model_name: string;
   metrics: string[];
+  relationship_names?: string[];
   dimensions?: string[];
   filters?: string[];
   order_by?: string[];
@@ -1800,7 +1840,7 @@ model MetricQueryRunResponse {
 
 model MetricFreshnessStatus {
   metric_name?: string;
-  project_name?: string;
+  semantic_model_id?: string;
   semantic_model_name?: string;
   freshness_status?: string;
   freshness_basis?: string[];
@@ -1857,9 +1897,9 @@ model DashboardNotebookCellSource {
 }
 
 model DashboardSemanticQuerySource {
-  project_name: string;
-  semantic_model_name: string;
+  semantic_model_id: string;
   metrics: string[];
+  relationship_names?: string[];
   dimensions?: string[];
   filters?: string[];
   order_by?: string[];

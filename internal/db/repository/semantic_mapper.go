@@ -28,7 +28,6 @@ func semanticModelFromDB(row dbstore.SemanticModel) *domain.SemanticModel {
 	}
 	return &domain.SemanticModel{
 		ID:                   row.ID,
-		ProjectName:          row.ProjectName,
 		Name:                 row.Name,
 		Description:          row.Description,
 		Owner:                row.Owner,
@@ -42,6 +41,12 @@ func semanticModelFromDB(row dbstore.SemanticModel) *domain.SemanticModel {
 }
 
 func semanticMetricFromDB(row dbstore.SemanticMetric) *domain.SemanticMetric {
+	var relationshipNames []string
+	if row.RelationshipNames != "" {
+		if err := json.Unmarshal([]byte(row.RelationshipNames), &relationshipNames); err != nil {
+			slog.Default().Warn("failed to unmarshal semantic metric relationship_names", "value", row.RelationshipNames, "error", err)
+		}
+	}
 	return &domain.SemanticMetric{
 		ID:                 row.ID,
 		SemanticModelID:    row.SemanticModelID,
@@ -51,6 +56,7 @@ func semanticMetricFromDB(row dbstore.SemanticMetric) *domain.SemanticMetric {
 		MetricType:         row.MetricType,
 		ExpressionMode:     row.ExpressionMode,
 		Expression:         row.Expression,
+		RelationshipNames:  relationshipNames,
 		FilterSQL:          row.FilterSql,
 		DefaultTimeGrain:   row.DefaultTimeGrain,
 		Format:             row.Format,
@@ -70,7 +76,6 @@ func semanticRelationshipFromDB(row dbstore.SemanticRelationship) *domain.Semant
 		ToSemanticID:     row.ToSemanticID,
 		RelationshipType: row.RelationshipType,
 		JoinSQL:          row.JoinSql,
-		IsDefault:        row.IsDefault == 1,
 		Cost:             int(row.Cost),
 		MaxHops:          int(row.MaxHops),
 		CreatedBy:        row.CreatedBy,

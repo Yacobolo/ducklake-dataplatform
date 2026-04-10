@@ -47,10 +47,10 @@ func pipelinesListPage(principal domain.ContextPrincipal, rows []pipelinesListRo
 		for i := range rows {
 			row := rows[i]
 			tableRows = append(tableRows, Tr(
-				Td(A(Href(row.URL), Class("font-medium text-[var(--fgColor-accent)]"), Text(row.Name))),
+				core.TablePrimaryCell(core.ResourceIcon("pipeline"), core.TablePrimaryLink(row.URL, row.Name)),
 				Td(statusPill(boolLabel(row.Paused), pausedTone(row.Paused))),
-				Td(Text(row.Schedule)),
-				Td(Text(row.Updated)),
+				Td(core.TableMetaText(row.Schedule)),
+				Td(core.TableMetaText(row.Updated)),
 			))
 		}
 		table = core.TableContainer("",
@@ -86,18 +86,12 @@ func pipelineDetailPage(d pipelineDetailPageData) Node {
 				Td(statusPill(job.JobType, "accent")),
 				Td(Text(emptyDash(job.Selector))),
 				Td(Text(emptyDash(job.Notebook))),
-				Td(Class("text-right"),
-					Form(Method("post"), Action(job.DeleteURL), d.CSRFFieldFunc(),
-						core.DangerButton("small", Type("submit"), Text("Delete")),
-					),
-				),
+				core.TableActionCell(core.TableIconActionPost(job.DeleteURL, "Delete job", "x", "danger", d.CSRFFieldFunc)),
 			))
 		}
-		jobTable = Div(
-			Class("overflow-x-auto"),
-			Table(
-				Class("min-w-full text-left text-sm"),
-				THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Selector")), Th(Text("Notebook")), Th(Class("text-right"), Text("Actions")))),
+		jobTable = core.TableContainer("",
+			core.DataTable("",
+				THead(Tr(Th(Text("Name")), Th(Text("Type")), Th(Text("Selector")), Th(Text("Notebook")), core.TableActionHeader())),
 				TBody(Group(rows)),
 			),
 		)

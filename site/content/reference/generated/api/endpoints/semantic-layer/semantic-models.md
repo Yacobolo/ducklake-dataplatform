@@ -16,7 +16,6 @@ List semantic models
 | --- | --- | --- | --- |
 | `max_results` | `integer` | `false` | - |
 | `page_token` | `string` | `false` | - |
-| `project_name` | `string` | `false` | - |
 
 ### Responses
 
@@ -50,7 +49,7 @@ Create semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /semantic-models/{projectName}/{semanticModelName}`
+## `GET /semantic-models/{semanticModelId}`
 
 Get semantic model
 
@@ -60,8 +59,7 @@ Get semantic model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `projectName` | `string` | `true` | - |
-| `semanticModelName` | `string` | `true` | - |
+| `semanticModelId` | `string` | `true` | - |
 
 ### Responses
 
@@ -75,7 +73,7 @@ Get semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /semantic-models/{projectName}/{semanticModelName}`
+## `PATCH /semantic-models/{semanticModelId}`
 
 Update semantic model
 
@@ -85,8 +83,7 @@ Update semantic model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `projectName` | `string` | `true` | - |
-| `semanticModelName` | `string` | `true` | - |
+| `semanticModelId` | `string` | `true` | - |
 
 ### Request Body
 
@@ -104,7 +101,7 @@ Update semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /semantic-models/{projectName}/{semanticModelName}`
+## `DELETE /semantic-models/{semanticModelId}`
 
 Delete semantic model
 
@@ -114,8 +111,7 @@ Delete semantic model
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `projectName` | `string` | `true` | - |
-| `semanticModelName` | `string` | `true` | - |
+| `semanticModelId` | `string` | `true` | - |
 
 ### Responses
 
@@ -128,18 +124,17 @@ Delete semantic model
 | `429` | Client error |
 | `500` | Server error |
 
-## `GET /semantic-relationships`
+## `GET /semantic-models/{semanticModelId}/metrics`
 
-List semantic relationships
+List semantic metrics
 
-- Operation ID: `listSemanticRelationships`
+- Operation ID: `listSemanticMetrics`
 
-### Query Parameters
+### Path Parameters
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `max_results` | `integer` | `false` | - |
-| `page_token` | `string` | `false` | - |
+| `semanticModelId` | `string` | `true` | - |
 
 ### Responses
 
@@ -148,14 +143,22 @@ List semantic relationships
 | `200` | The request has succeeded. |
 | `400` | The server could not understand the request due to invalid syntax. |
 | `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
 | `429` | Client error |
 | `500` | Server error |
 
-## `POST /semantic-relationships`
+## `POST /semantic-models/{semanticModelId}/metrics`
 
-Create semantic relationship
+Create semantic metric
 
-- Operation ID: `createSemanticRelationship`
+- Operation ID: `createSemanticMetric`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `semanticModelId` | `string` | `true` | - |
 
 ### Request Body
 
@@ -173,17 +176,18 @@ Create semantic relationship
 | `429` | Client error |
 | `500` | Server error |
 
-## `PATCH /semantic-relationships/{relationshipName}`
+## `PATCH /semantic-models/{semanticModelId}/metrics/{metricName}`
 
-Update semantic relationship
+Update semantic metric
 
-- Operation ID: `updateSemanticRelationship`
+- Operation ID: `updateSemanticMetric`
 
 ### Path Parameters
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `relationshipName` | `string` | `true` | - |
+| `metricName` | `string` | `true` | - |
+| `semanticModelId` | `string` | `true` | - |
 
 ### Request Body
 
@@ -201,17 +205,284 @@ Update semantic relationship
 | `429` | Client error |
 | `500` | Server error |
 
-## `DELETE /semantic-relationships/{relationshipName}`
+## `DELETE /semantic-models/{semanticModelId}/metrics/{metricName}`
 
-Delete semantic relationship
+Delete semantic metric
 
-- Operation ID: `deleteSemanticRelationship`
+- Operation ID: `deleteSemanticMetric`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `metricName` | `string` | `true` | - |
+| `semanticModelId` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /semantic-models/{semanticModelId}/pre-aggregations`
+
+List semantic pre aggregations
+
+- Operation ID: `listSemanticPreAggregations`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `semanticModelId` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /semantic-models/{semanticModelId}/pre-aggregations`
+
+Create semantic pre aggregation
+
+- Operation ID: `createSemanticPreAggregation`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `semanticModelId` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /semantic-models/{semanticModelId}/pre-aggregations/{preAggregationName}`
+
+Update semantic pre aggregation
+
+- Operation ID: `updateSemanticPreAggregation`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `preAggregationName` | `string` | `true` | - |
+| `semanticModelId` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /semantic-models/{semanticModelId}/pre-aggregations/{preAggregationName}`
+
+Delete semantic pre aggregation
+
+- Operation ID: `deleteSemanticPreAggregation`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `preAggregationName` | `string` | `true` | - |
+| `semanticModelId` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `204` | There is no content to send for this request, but the headers may be useful. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /semantic-models/{semanticModelId}/queries:explain`
+
+Explain metric query
+
+- Operation ID: `explainMetricQuery`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `semanticModelId` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /semantic-models/{semanticModelId}/queries:run`
+
+Run metric query
+
+- Operation ID: `runMetricQuery`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `semanticModelId` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `GET /semantic-models/{semanticModelId}/relationships`
+
+List semantic relationships for a semantic model
+
+- Operation ID: `listSemanticModelRelationships`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `semanticModelId` | `string` | `true` | - |
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `404` | The server cannot find the requested resource. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `POST /semantic-models/{semanticModelId}/relationships`
+
+Create semantic relationship for a semantic model
+
+- Operation ID: `createSemanticModelRelationship`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `semanticModelId` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `201` | The request has succeeded and a new resource has been created as a result. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `PATCH /semantic-models/{semanticModelId}/relationships/{relationshipName}`
+
+Update semantic relationship for a semantic model
+
+- Operation ID: `updateSemanticModelRelationship`
 
 ### Path Parameters
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `relationshipName` | `string` | `true` | - |
+| `semanticModelId` | `string` | `true` | - |
+
+### Request Body
+
+- Required: `true`
+- Content types: `application/json`
+
+### Responses
+
+| Code | Description |
+| --- | --- |
+| `200` | The request has succeeded. |
+| `400` | The server could not understand the request due to invalid syntax. |
+| `401` | Access is unauthorized. |
+| `403` | Access is forbidden. |
+| `429` | Client error |
+| `500` | Server error |
+
+## `DELETE /semantic-models/{semanticModelId}/relationships/{relationshipName}`
+
+Delete semantic relationship for a semantic model
+
+- Operation ID: `deleteSemanticModelRelationship`
+
+### Path Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `relationshipName` | `string` | `true` | - |
+| `semanticModelId` | `string` | `true` | - |
 
 ### Responses
 

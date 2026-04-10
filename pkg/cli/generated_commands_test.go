@@ -77,3 +77,21 @@ func TestAllAPIEndpoints_AddsAssetFreshnessCLICommands(t *testing.T) {
 	assert.Equal(t, "assets freshness blockers", commands["listAssetFreshnessBlockers"])
 	assert.Equal(t, "assets freshness reconcile", commands["reconcileAssetFreshness"])
 }
+
+func TestAllAPIEndpoints_AddsResourceCLICommands(t *testing.T) {
+	t.Helper()
+
+	endpoints := allAPIEndpoints()
+	commands := map[string]string{}
+	for _, ep := range endpoints {
+		switch ep.OperationID {
+		case "listRecentResources", "listSavedResources", "createSavedResource", "deleteSavedResource":
+			commands[ep.OperationID] = ep.CLICommand
+		}
+	}
+
+	assert.Equal(t, "resources recent list", commands["listRecentResources"])
+	assert.Equal(t, "resources saved list", commands["listSavedResources"])
+	assert.Equal(t, "resources saved create", commands["createSavedResource"])
+	assert.Equal(t, "resources saved delete", commands["deleteSavedResource"])
+}

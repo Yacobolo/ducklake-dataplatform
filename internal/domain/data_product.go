@@ -294,7 +294,6 @@ type ProductSemanticEntrypoint struct {
 	ID               string    `json:"id"`
 	ProductVersionID string    `json:"product_version_id"`
 	SemanticModelID  string    `json:"semantic_model_id"`
-	ProjectName      string    `json:"project_name"`
 	ModelName        string    `json:"model_name"`
 	CreatedAt        time.Time `json:"created_at"`
 }

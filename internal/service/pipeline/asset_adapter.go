@@ -271,11 +271,11 @@ func BuildSemanticAssetGraph(
 
 		assets = append(assets, domain.DataAsset{
 			ID:          semanticModel.ID,
-			AssetKey:    fmt.Sprintf("semantic_model.%s.%s", semanticModel.ProjectName, semanticModel.Name),
+			AssetKey:    fmt.Sprintf("semantic_model.%s", semanticModel.Name),
 			AssetType:   domain.AssetTypeSemanticModel,
 			Owner:       owner,
 			Description: semanticModel.Description,
-			Tags:        []string{"semantic_model", semanticModel.ProjectName},
+			Tags:        []string{"semantic_model", semanticModel.Name},
 			CreatedBy:   semanticModel.CreatedBy,
 			IsActive:    true,
 		})
@@ -303,15 +303,15 @@ func BuildSemanticAssetGraph(
 			}
 			assets = append(assets, domain.DataAsset{
 				ID:          metric.ID,
-				AssetKey:    fmt.Sprintf("metric.%s.%s.%s", semanticModel.ProjectName, semanticModel.Name, metric.Name),
+				AssetKey:    fmt.Sprintf("metric.%s.%s", semanticModel.Name, metric.Name),
 				AssetType:   domain.AssetTypeMetric,
 				Owner:       metricOwner,
 				Description: label,
-				Tags:        []string{"metric", semanticModel.ProjectName, semanticModel.Name},
+				Tags:        []string{"metric", semanticModel.Name},
 				CreatedBy:   metric.CreatedBy,
 				IsActive:    true,
 			})
-			metricIDsByNaturalKey[metricNaturalKey(semanticModel.ProjectName, semanticModel.Name, metric.Name)] = metric.ID
+			metricIDsByNaturalKey[metricNaturalKey(semanticModel.Name, metric.Name)] = metric.ID
 			deps = append(deps, domain.AssetDependency{
 				ID:              domain.NewID(),
 				AssetID:         metric.ID,
@@ -341,11 +341,11 @@ func BuildSemanticAssetGraph(
 			}
 			assets = append(assets, domain.DataAsset{
 				ID:          preAgg.ID,
-				AssetKey:    fmt.Sprintf("semantic_pre_aggregation.%s.%s.%s", semanticModel.ProjectName, semanticModel.Name, preAgg.Name),
+				AssetKey:    fmt.Sprintf("semantic_pre_aggregation.%s.%s", semanticModel.Name, preAgg.Name),
 				AssetType:   domain.AssetTypeSemanticPreAggregation,
 				Owner:       owner,
 				Description: description,
-				Tags:        []string{"semantic_pre_aggregation", semanticModel.ProjectName, semanticModel.Name},
+				Tags:        []string{"semantic_pre_aggregation", semanticModel.Name},
 				CreatedBy:   preAgg.CreatedBy,
 				IsActive:    true,
 			})
@@ -382,9 +382,9 @@ func BuildDashboardAssetGraph(
 		notebookIDs[notebook.ID] = struct{}{}
 	}
 
-	semanticModelIDsByNaturalKey := make(map[string]string, len(semanticModels))
+	semanticModelsByID := make(map[string]domain.SemanticModel, len(semanticModels))
 	for _, semanticModel := range semanticModels {
-		semanticModelIDsByNaturalKey[semanticModelNaturalKey(semanticModel.ProjectName, semanticModel.Name)] = semanticModel.ID
+		semanticModelsByID[semanticModel.ID] = semanticModel
 	}
 	modelIDsByQualifiedName := make(map[string]string, len(models))
 	for _, model := range models {
@@ -394,7 +394,7 @@ func BuildDashboardAssetGraph(
 	metricIDsByNaturalKey := make(map[string]string)
 	for _, semanticModel := range semanticModels {
 		for _, metric := range metricsByModel[semanticModel.ID] {
-			metricIDsByNaturalKey[metricNaturalKey(semanticModel.ProjectName, semanticModel.Name, metric.Name)] = metric.ID
+			metricIDsByNaturalKey[metricNaturalKey(semanticModel.Name, metric.Name)] = metric.ID
 		}
 	}
 
@@ -455,8 +455,7 @@ func BuildDashboardAssetGraph(
 					continue
 				}
 				query := widget.Source.SemanticQuery
-				if semanticModelID, ok := semanticModelIDsByNaturalKey[semanticModelNaturalKey(query.ProjectName, query.SemanticModelName)]; ok {
-					if preAggID := matchingPreAggregationAssetID(preAggsByModel[semanticModelID], query); preAggID != "" {
+				if preAggID := matchingPreAggregationAssetID(preAggsByModel[query.SemanticModelID], query); preAggID != "" {
 						deps = append(deps, domain.AssetDependency{
 							ID:              domain.NewID(),
 							AssetID:         dashboard.ID,
@@ -464,28 +463,29 @@ func BuildDashboardAssetGraph(
 							DependencyType:  domain.DependencyTypeHard,
 						})
 						continue
-					}
 				}
 				depAdded := false
 				for _, metricName := range query.Metrics {
-					if upstreamID, ok := metricIDsByNaturalKey[metricNaturalKey(query.ProjectName, query.SemanticModelName, metricName)]; ok {
-						deps = append(deps, domain.AssetDependency{
-							ID:              domain.NewID(),
-							AssetID:         dashboard.ID,
-							UpstreamAssetID: upstreamID,
-							DependencyType:  domain.DependencyTypeHard,
-						})
-						depAdded = true
+					if model, hasModel := semanticModelsByID[query.SemanticModelID]; hasModel {
+						if upstreamID, ok := metricIDsByNaturalKey[metricNaturalKey(model.Name, metricName)]; ok {
+							deps = append(deps, domain.AssetDependency{
+								ID:              domain.NewID(),
+								AssetID:         dashboard.ID,
+								UpstreamAssetID: upstreamID,
+								DependencyType:  domain.DependencyTypeHard,
+							})
+							depAdded = true
+						}
 					}
 				}
 				if depAdded {
 					continue
 				}
-				if upstreamID, ok := semanticModelIDsByNaturalKey[semanticModelNaturalKey(query.ProjectName, query.SemanticModelName)]; ok {
+				if _, ok := semanticModelsByID[query.SemanticModelID]; ok {
 					deps = append(deps, domain.AssetDependency{
 						ID:              domain.NewID(),
 						AssetID:         dashboard.ID,
-						UpstreamAssetID: upstreamID,
+						UpstreamAssetID: query.SemanticModelID,
 						DependencyType:  domain.DependencyTypeHard,
 					})
 				}
@@ -907,12 +907,8 @@ func dedupeDependencies(in []domain.AssetDependency) []domain.AssetDependency {
 	return out
 }
 
-func semanticModelNaturalKey(projectName, modelName string) string {
-	return projectName + "." + modelName
-}
-
-func metricNaturalKey(projectName, semanticModelName, metricName string) string {
-	return projectName + "." + semanticModelName + "." + metricName
+func metricNaturalKey(semanticModelName, metricName string) string {
+	return semanticModelName + "." + metricName
 }
 
 func notebookOutputAssetKey(notebookID, outputCellID string) string {

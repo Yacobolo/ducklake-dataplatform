@@ -40,6 +40,12 @@ func (h *Handler) ModelsList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "models",
+		DisplayName:  "Models",
+		Section:      "Build",
+	})
 	core.RenderHTML(w, http.StatusOK, modelsListPage(core.PrincipalFromContext(r.Context()), rows, pageReq, total))
 }
 
@@ -229,6 +235,12 @@ func (h *Handler) ModelsDetail(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "model",
+		ResourceKey:  m.ProjectName + "/" + m.Name,
+		DisplayName:  m.ProjectName + "." + m.Name,
+		Section:      "Build",
+	})
 	core.RenderHTML(w, http.StatusOK, modelsDetailPage(modelsDetailPageData{
 		Principal:          core.PrincipalFromContext(r.Context()),
 		ProjectName:        projectName,

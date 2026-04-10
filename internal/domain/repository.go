@@ -227,6 +227,19 @@ type WebAuthnCredentialRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// ResourceAccessRepository manages principal-scoped recent resource access history.
+type ResourceAccessRepository interface {
+	TrackVisit(ctx context.Context, principalID string, resource ResourceRef) error
+	ListRecent(ctx context.Context, principalID string, limit int) ([]ResourceAccessEvent, error)
+}
+
+// SavedResourceRepository manages principal-scoped saved resources.
+type SavedResourceRepository interface {
+	Save(ctx context.Context, principalID string, resource ResourceRef) error
+	Unsave(ctx context.Context, principalID string, resourceType string, resourceKey string) error
+	ListSaved(ctx context.Context, principalID string, limit int) ([]SavedResource, error)
+}
+
 // AuditFilter holds filter parameters for querying audit logs.
 type AuditFilter struct {
 	PrincipalName *string
@@ -686,8 +699,8 @@ type MacroRepository interface {
 type SemanticModelRepository interface {
 	Create(ctx context.Context, m *SemanticModel) (*SemanticModel, error)
 	GetByID(ctx context.Context, id string) (*SemanticModel, error)
-	GetByName(ctx context.Context, projectName, name string) (*SemanticModel, error)
-	List(ctx context.Context, projectName *string, page PageRequest) ([]SemanticModel, int64, error)
+	GetByName(ctx context.Context, name string) (*SemanticModel, error)
+	List(ctx context.Context, page PageRequest) ([]SemanticModel, int64, error)
 	Update(ctx context.Context, id string, req UpdateSemanticModelRequest) (*SemanticModel, error)
 	Delete(ctx context.Context, id string) error
 	ListAll(ctx context.Context) ([]SemanticModel, error)
@@ -707,8 +720,9 @@ type SemanticMetricRepository interface {
 type SemanticRelationshipRepository interface {
 	Create(ctx context.Context, r *SemanticRelationship) (*SemanticRelationship, error)
 	GetByID(ctx context.Context, id string) (*SemanticRelationship, error)
-	GetByName(ctx context.Context, name string) (*SemanticRelationship, error)
+	GetByName(ctx context.Context, fromSemanticID, name string) (*SemanticRelationship, error)
 	List(ctx context.Context, page PageRequest) ([]SemanticRelationship, int64, error)
+	ListByModel(ctx context.Context, semanticModelID string) ([]SemanticRelationship, error)
 	Update(ctx context.Context, id string, req UpdateSemanticRelationshipRequest) (*SemanticRelationship, error)
 	Delete(ctx context.Context, id string) error
 }

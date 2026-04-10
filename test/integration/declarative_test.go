@@ -1219,14 +1219,14 @@ func TestDeclarative_SemanticModelLifecycle(t *testing.T) {
 	stateClient := makeStateClient(t, env.Server.URL, env.Keys.Admin)
 
 	dir := t.TempDir()
-	writeYAML(t, dir, "semantic_models/analytics/customers.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "semantic_models/customers.yaml", `apiVersion: duck/v1
 kind: SemanticModel
 metadata:
   name: customers
 spec:
   base_model_ref: analytics.dim_customers
 `)
-	writeYAML(t, dir, "semantic_models/analytics/sales.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "semantic_models/sales.yaml", `apiVersion: duck/v1
 kind: SemanticModel
 metadata:
   name: sales
@@ -1265,7 +1265,7 @@ spec:
 	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindSemanticModel, declarative.OpCreate))
 	assert.Empty(t, actionsOfKindAndOp(replan, declarative.KindSemanticModel, declarative.OpUpdate))
 
-	writeYAML(t, dir, "semantic_models/analytics/sales.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "semantic_models/sales.yaml", `apiVersion: duck/v1
 kind: SemanticModel
 metadata:
   name: sales
@@ -1281,7 +1281,7 @@ spec:
       certification_state: CERTIFIED
   relationships:
     - name: sales_to_customers
-      to_model: analytics.customers
+      to_model: customers
       relationship_type: MANY_TO_ONE
       join_sql: sales.customer_id = customers.customer_id
   pre_aggregations:
@@ -1306,8 +1306,8 @@ spec:
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpCreate))
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpUpdate))
 
-	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "analytics", "sales.yaml")))
-	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "analytics", "customers.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "sales.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "customers.yaml")))
 
 	desiredDeleted, err := declarative.LoadDirectory(dir)
 	require.NoError(t, err)
@@ -1335,7 +1335,7 @@ func TestDeclarative_SemanticApplyThenExplainAndRun(t *testing.T) {
 	require.NoError(t, err)
 
 	dir := t.TempDir()
-	writeYAML(t, dir, "semantic_models/analytics/sales_runtime.yaml", `apiVersion: duck/v1
+	writeYAML(t, dir, "semantic_models/sales_runtime.yaml", `apiVersion: duck/v1
 kind: SemanticModel
 metadata:
   name: sales_runtime
@@ -1358,10 +1358,22 @@ spec:
 	require.Len(t, creates, 1)
 	executeActions(t, stateClient, creates)
 
-	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/metric-queries:explain", env.Keys.Admin, map[string]interface{}{
-		"project_name":        "analytics",
-		"semantic_model_name": "sales_runtime",
-		"metrics":             []string{"total_fare"},
+	semanticModelsResp := doRequest(t, http.MethodGet, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, nil)
+	if semanticModelsResp.StatusCode != http.StatusOK {
+		require.Equal(t, http.StatusOK, semanticModelsResp.StatusCode, string(readBody(t, semanticModelsResp)))
+	}
+	var semanticModels struct {
+		Data []struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		} `json:"data"`
+	}
+	decodeJSON(t, semanticModelsResp, &semanticModels)
+	require.NotEmpty(t, semanticModels.Data)
+	semanticModelID := semanticModels.Data[0].ID
+
+	explainResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModelID+"/queries:explain", env.Keys.Admin, map[string]interface{}{
+		"metrics":           []string{"total_fare"},
 	})
 	if explainResp.StatusCode != http.StatusOK {
 		require.Equal(t, http.StatusOK, explainResp.StatusCode, string(readBody(t, explainResp)))
@@ -1375,10 +1387,8 @@ spec:
 	decodeJSON(t, explainResp, &explainBody)
 	assert.NotEmpty(t, explainBody.Plan.GeneratedSQL)
 
-	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/metric-queries:run", env.Keys.Admin, map[string]interface{}{
-		"project_name":        "analytics",
-		"semantic_model_name": "sales_runtime",
-		"metrics":             []string{"total_fare"},
+	runResp := doRequest(t, http.MethodPost, env.Server.URL+"/v1/semantic-models/"+semanticModelID+"/queries:run", env.Keys.Admin, map[string]interface{}{
+		"metrics":           []string{"total_fare"},
 	})
 	if runResp.StatusCode != http.StatusOK {
 		require.Equal(t, http.StatusOK, runResp.StatusCode, string(readBody(t, runResp)))

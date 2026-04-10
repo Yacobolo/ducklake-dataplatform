@@ -33,6 +33,7 @@ type viewData struct {
 	Principal        domain.ContextPrincipal
 	Rows             []listRow
 	Breadcrumbs      []breadcrumbItem
+	AsideItems       []core.ExploreNavigatorItem
 	SelectedFolderID string
 	SelectedKinds    []string
 	SelectedOwners   []string
@@ -50,10 +51,17 @@ func (h *Handler) ExploreList(w http.ResponseWriter, r *http.Request) {
 		renderServiceError(w, err)
 		return
 	}
+	_ = core.TrackResourceVisit(r, h.deps, domain.ResourceRef{
+		ResourceType: "workspace",
+		ResourceKey:  "explore",
+		DisplayName:  "Explore",
+		Section:      "Discover",
+	})
 	core.RenderHTML(w, http.StatusOK, listPage(
 		view.Principal,
 		view.Rows,
 		view.Breadcrumbs,
+		view.AsideItems,
 		view.SelectedFolderID,
 		view.SelectedKinds,
 		view.SelectedOwners,
@@ -75,6 +83,7 @@ func (h *Handler) ExploreFragment(w http.ResponseWriter, r *http.Request) {
 	if err := writeDatastarElementPatch(w, r, mainContent(
 		view.Rows,
 		view.Breadcrumbs,
+		view.AsideItems,
 		view.SelectedFolderID,
 		view.SelectedKinds,
 		view.SelectedOwners,
@@ -124,6 +133,7 @@ func (h *Handler) ExploreUpdatesStream(w http.ResponseWriter, r *http.Request) {
 				mainContent(
 					view.Rows,
 					view.Breadcrumbs,
+					view.AsideItems,
 					view.SelectedFolderID,
 					view.SelectedKinds,
 					view.SelectedOwners,
@@ -225,10 +235,16 @@ func (h *Handler) buildViewDataForFilter(ctx context.Context, principal domain.C
 		})
 	}
 
+	asideItems, err := h.buildAsideItems(ctx, principal, folderItems, allItems, selectedFolderID, pageReq, selectedKinds, selectedOwners, searchQuery)
+	if err != nil {
+		return viewData{}, err
+	}
+
 	return viewData{
 		Principal:        principal,
 		Rows:             rows,
 		Breadcrumbs:      breadcrumbItems(folderItems, selectedFolderID, pageReq, selectedKinds, selectedOwners, searchQuery),
+		AsideItems:       asideItems,
 		SelectedFolderID: selectedFolderID,
 		SelectedKinds:    selectedKinds,
 		SelectedOwners:   selectedOwners,
@@ -238,6 +254,128 @@ func (h *Handler) buildViewDataForFilter(ctx context.Context, principal domain.C
 		Page:             pageReq,
 		Total:            int64(len(allItems)),
 	}, nil
+}
+
+func (h *Handler) buildAsideItems(ctx context.Context, principal domain.ContextPrincipal, folders []domain.Folder, currentItems []domain.ExploreItem, selectedFolderID string, page domain.PageRequest, selectedKinds []string, selectedOwners []string, searchQuery string) ([]core.ExploreNavigatorItem, error) {
+	folderScopedItems, err := h.listDirectFolderAssets(ctx, principal, folders)
+	if err != nil {
+		return nil, err
+	}
+	mergedItems := make([]domain.ExploreItem, 0, len(folderScopedItems)+len(currentItems))
+	mergedItems = append(mergedItems, folderScopedItems...)
+	mergedItems = append(mergedItems, currentItems...)
+	return buildExploreAsideItems(folders, mergedItems, selectedFolderID, page, selectedKinds, selectedOwners, searchQuery), nil
+}
+
+func (h *Handler) listDirectFolderAssets(ctx context.Context, principal domain.ContextPrincipal, folders []domain.Folder) ([]domain.ExploreItem, error) {
+	seen := map[string]struct{}{}
+	items := make([]domain.ExploreItem, 0, len(folders)*2)
+
+	for i := range folders {
+		folder := folders[i]
+		folderItems, err := h.deps.Explore.List(ctx, principal.Name, principal.IsAdmin, domain.ExploreFilter{
+			FolderID: folder.ID,
+			Page:     domain.PageRequest{MaxResults: domain.MaxMaxResults},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("list direct folder assets for %s: %w", folder.ID, err)
+		}
+
+		for j := range folderItems {
+			item := folderItems[j]
+			folderID := stringValue(item.FolderID)
+			if folderID == "" || folderID != folder.ID {
+				continue
+			}
+
+			key := item.Kind + "\x00" + item.ID + "\x00" + folderID
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			items = append(items, item)
+		}
+	}
+
+	return items, nil
+}
+
+func buildExploreAsideItems(folders []domain.Folder, items []domain.ExploreItem, selectedFolderID string, page domain.PageRequest, selectedKinds []string, selectedOwners []string, searchQuery string) []core.ExploreNavigatorItem {
+	childrenByParent := make(map[string][]domain.Folder)
+	for i := range folders {
+		parentID := stringValue(folders[i].ParentFolderID)
+		childrenByParent[parentID] = append(childrenByParent[parentID], folders[i])
+	}
+	for parentID := range childrenByParent {
+		sort.Slice(childrenByParent[parentID], func(i, j int) bool {
+			return strings.ToLower(folderDisplayName(childrenByParent[parentID][i])) < strings.ToLower(folderDisplayName(childrenByParent[parentID][j]))
+		})
+	}
+
+	resourcesByFolder := make(map[string][]domain.ExploreItem)
+	seenResources := make(map[string]map[string]struct{})
+	for i := range items {
+		item := items[i]
+		folderID := stringValue(item.FolderID)
+		if folderID == "" {
+			folderID = strings.TrimSpace(selectedFolderID)
+		}
+		if folderID == "" {
+			continue
+		}
+		if _, ok := seenResources[folderID]; !ok {
+			seenResources[folderID] = map[string]struct{}{}
+		}
+		key := item.Kind + "\x00" + item.ID + "\x00" + folderID
+		if _, ok := seenResources[folderID][key]; ok {
+			continue
+		}
+		seenResources[folderID][key] = struct{}{}
+		resourcesByFolder[folderID] = append(resourcesByFolder[folderID], item)
+	}
+	for folderID := range resourcesByFolder {
+		sort.Slice(resourcesByFolder[folderID], func(i, j int) bool {
+			left := strings.ToLower(resourcesByFolder[folderID][i].Name)
+			right := strings.ToLower(resourcesByFolder[folderID][j].Name)
+			if left == right {
+				return strings.ToLower(resourcesByFolder[folderID][i].Kind) < strings.ToLower(resourcesByFolder[folderID][j].Kind)
+			}
+			return left < right
+		})
+	}
+
+	var build func(parentID string) ([]core.ExploreNavigatorItem, bool)
+	build = func(parentID string) ([]core.ExploreNavigatorItem, bool) {
+		folderNodes := make([]core.ExploreNavigatorItem, 0, len(childrenByParent[parentID]))
+		branchHasSelection := false
+		for i := range childrenByParent[parentID] {
+			folder := childrenByParent[parentID][i]
+			children, childHasSelection := build(folder.ID)
+			for j := range resourcesByFolder[folder.ID] {
+				item := resourcesByFolder[folder.ID][j]
+				children = append(children, core.ExploreNavigatorItem{
+					Name: item.Name,
+					URL:  itemURL(item),
+					Icon: kindIcon(item.Kind, item.GitRepoID != nil && strings.TrimSpace(*item.GitRepoID) != ""),
+				})
+			}
+			isActive := folder.ID == strings.TrimSpace(selectedFolderID)
+			isOpen := isActive || childHasSelection
+			folderNodes = append(folderNodes, core.ExploreNavigatorItem{
+				Name:     folderDisplayName(folder),
+				URL:      pageURL(domain.PageRequest{MaxResults: page.Limit()}, selectedKinds, selectedOwners, searchQuery, folder.ID),
+				Icon:     folderNavIcon(folder, folders),
+				Active:   isActive,
+				Open:     isOpen,
+				Children: children,
+			})
+			branchHasSelection = branchHasSelection || isOpen
+		}
+		return folderNodes, branchHasSelection
+	}
+
+	nodes, _ := build("")
+	return nodes
 }
 
 func (h *Handler) folderPathMap(ctx context.Context, principal string, isAdmin bool) (map[string]string, []domain.Folder, error) {
@@ -317,7 +455,7 @@ func (h *Handler) folderRows(ctx context.Context, folders []domain.Folder, folde
 			Name:         folderDisplayName(folder),
 			URL:          pageURL(domain.PageRequest{MaxResults: defaultPageSize}, nil, selectedOwners, searchQuery, folder.ID),
 			MetaURL:      "/ui/explore/folders/" + folder.ID + "/edit",
-			MetaLabel:    "Settings",
+			MetaLabel:    "Configure folder",
 			Kind:         "folder",
 			Owner:        folder.Owner,
 			Folder:       location,

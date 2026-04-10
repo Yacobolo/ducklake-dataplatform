@@ -179,7 +179,6 @@ model ProductSemanticEntrypoint {
   id: string;
   product_version_id: string;
   semantic_model_id: string;
-  project_name: string;
   model_name: string;
   created_at?: utcDateTime;
 }

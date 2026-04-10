@@ -16,7 +16,6 @@
 | `id` | `string` | `false` | - |
 | `name` | `string` | `false` | - |
 | `owner` | `string` | `false` | - |
-| `project_name` | `string` | `false` | - |
 | `tags` | `array[string]` | `false` | - |
 | `updated_at` | `string` | `false` | - |
 

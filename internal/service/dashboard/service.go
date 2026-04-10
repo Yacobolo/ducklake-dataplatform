@@ -512,9 +512,9 @@ func (s *Service) resolveWidgetWithContextAndPage(ctx context.Context, principal
 			return nil, domain.ErrValidation("dashboard semantic query execution is not configured")
 		}
 		req := semantic.MetricQueryRequest{
-			ProjectName:       widget.Source.SemanticQuery.ProjectName,
-			SemanticModelName: widget.Source.SemanticQuery.SemanticModelName,
+			SemanticModelID:   widget.Source.SemanticQuery.SemanticModelID,
 			Metrics:           widget.Source.SemanticQuery.Metrics,
+			RelationshipNames: widget.Source.SemanticQuery.RelationshipNames,
 			Dimensions:        widget.Source.SemanticQuery.Dimensions,
 			Filters:           append([]string(nil), widget.Source.SemanticQuery.Filters...),
 			OrderBy:           widget.Source.SemanticQuery.OrderBy,

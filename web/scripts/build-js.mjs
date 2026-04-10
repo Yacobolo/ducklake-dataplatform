@@ -10,11 +10,13 @@ const rootDir = join(__dirname, "..", "..");
 const webDir = join(rootDir, "web");
 
 const entryFiles = [
+  join(webDir, "src", "home-hero.ts"),
   join(webDir, "src", "sql-editor.ts"),
   join(webDir, "src", "notebook.ts"),
   join(webDir, "src", "dashboard.ts"),
   join(webDir, "src", "explore.ts"),
   join(webDir, "src", "datastar-inspector.ts"),
+  join(webDir, "src", "semantic-model-flow.tsx"),
 ];
 const vendorFiles = [
   join(webDir, "vendor", "datastar.js"),
@@ -47,7 +49,9 @@ const result = await build({
   write: false,
   logLevel: "info",
   loader: {
+    ".css": "text",
     ".ts": "ts",
+    ".tsx": "tsx",
   },
 });
 

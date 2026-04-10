@@ -234,6 +234,8 @@ func run() error {
 	handler.SetProductService(svc.Product)
 	handler.SetNotebookFolders(svc.NotebookFolders)
 	handler.SetExplore(svc.Explore)
+	handler.SetResourceAccess(svc.ResourceAccess)
+	handler.SetSavedResources(svc.SavedResource)
 
 	authHandler := api.NewAuthHTTPHandler(svc.Auth, svc.WebSessionAuth)
 
@@ -436,6 +438,8 @@ func run() error {
 		svc.Model,
 		svc.Auth,
 		svc.WebSessionAuth,
+		svc.ResourceAccess,
+		svc.SavedResource,
 		svc.Principal,
 		cfg.Auth,
 		cfg.IsProduction(),
