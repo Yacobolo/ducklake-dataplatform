@@ -48,14 +48,14 @@ func TestRenderDirectory_ReplacesPlaceholders(t *testing.T) {
 	inputDir := t.TempDir()
 	outputDir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(inputDir, "nested"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(inputDir, "nested", "config.yaml"), []byte("path: __PLACEHOLDER__\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(inputDir, "nested", "config.cue"), []byte("path: \"__PLACEHOLDER__\"\n"), 0o644))
 
 	err := RenderDirectory(inputDir, outputDir, map[string]string{"__PLACEHOLDER__": "/tmp/data.parquet"})
 	require.NoError(t, err)
 
-	rendered, err := os.ReadFile(filepath.Join(outputDir, "nested", "config.yaml"))
+	rendered, err := os.ReadFile(filepath.Join(outputDir, "nested", "config.cue"))
 	require.NoError(t, err)
-	assert.Equal(t, "path: /tmp/data.parquet\n", string(rendered))
+	assert.Equal(t, "path: \"/tmp/data.parquet\"\n", string(rendered))
 }
 
 func TestPrepare_RendersRepoDuckConfig(t *testing.T) {

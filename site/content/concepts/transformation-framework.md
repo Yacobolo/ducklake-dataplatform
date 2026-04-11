@@ -53,4 +53,4 @@ Imagine a raw trip events table. A builder first creates staging models to norma
 ## Related Reference
 
 - [Models API](/reference/generated/api/endpoints/models)
-- [Declarative Model Kind](/reference/generated/declarative/kinds/model)
+- [Declarative Reference](/reference/generated/declarative/)

@@ -37,7 +37,7 @@ Use this guide when your team wants repeatable review, promotion, and drift mana
 - row filters and column masks
 - models, macros, notebooks, assets, semantic models, and data products
 - compute routing and storage-related config where supported
-- Git-backed notebook projects where `notebooks/*.yaml` is the reviewed source of truth
+- Git-backed notebook projects where CUE fragments under the config module are the reviewed source of truth
 
 ## Verification
 

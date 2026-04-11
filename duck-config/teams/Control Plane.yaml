@@ -1,7 +1,0 @@
-apiVersion: duck/v1
-kind: Team
-metadata:
-  name: Control Plane
-spec:
-  domain_ref: Platform Runtime
-  contact_channel: "#platform-runtime"

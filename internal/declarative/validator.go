@@ -11,7 +11,7 @@ import (
 
 // ValidationError represents a single validation problem.
 type ValidationError struct {
-	Path    string // e.g. "security/principals.yaml" or "principal[analyst1]"
+	Path    string // e.g. "security/principals.cue" or "principal[analyst1]"
 	Message string
 }
 

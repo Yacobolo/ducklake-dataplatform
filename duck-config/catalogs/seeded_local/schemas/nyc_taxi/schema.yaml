@@ -1,7 +1,0 @@
-apiVersion: duck/v1
-kind: Schema
-metadata:
-  name: nyc_taxi
-spec:
-  comment: Public NYC TLC taxi data cached locally for development
-  owner: __DUCK_DEV_BOOTSTRAP_PRINCIPAL__

@@ -48,7 +48,7 @@ type GroupSpec struct {
 type MemberRef struct {
 	Name     string `yaml:"name"`
 	Type     string `yaml:"type"`       // "user" or "group"
-	MemberID string `yaml:"-" json:"-"` // populated from API during ReadState, not from YAML
+	MemberID string `yaml:"-" json:"-"` // populated from API during ReadState, not from declarative config
 }
 
 // GrantListDoc declares a set of privilege grants.
@@ -737,7 +737,7 @@ type AssetCheckSpec struct {
 
 // === State Containers ===
 
-// DesiredState is the fully-parsed representation of all YAML files.
+// DesiredState is the normalized representation of the compiled CUE platform graph.
 type DesiredState struct {
 	Workspaces         []WorkspaceResource
 	Folders            []FolderResource
@@ -943,7 +943,7 @@ type ModelSpec struct {
 	Freshness       *FreshnessSpecYAML `yaml:"freshness,omitempty"`
 }
 
-// FreshnessSpecYAML defines freshness policy in YAML.
+// FreshnessSpecYAML defines declarative freshness policy.
 type FreshnessSpecYAML struct {
 	MaxLagSeconds int64  `yaml:"max_lag_seconds,omitempty"`
 	CronSchedule  string `yaml:"cron_schedule,omitempty"`

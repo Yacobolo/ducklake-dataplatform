@@ -35,5 +35,4 @@ Use this guide when you are establishing the foundation for downstream models, a
 ## Related Reference
 
 - [Catalogs API](/reference/generated/api/endpoints/catalogs)
-- [Declarative Table Kind](/reference/generated/declarative/kinds/table)
-- [Declarative View Kind](/reference/generated/declarative/kinds/view)
+- [Declarative Reference](/reference/generated/declarative/)

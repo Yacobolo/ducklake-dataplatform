@@ -6,11 +6,25 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	cueformat "cuelang.org/go/cue/format"
+	cueyaml "cuelang.org/go/encoding/yaml"
 	"gopkg.in/yaml.v3"
 )
 
-// ExportDirectory writes the given state as YAML files in the hierarchical
+const cueModuleFile = `module: "duck.local/duck-config"
+language: {
+	version: "v0.14.0"
+}
+`
+
+type mutableFolder struct {
+	spec     cueFolder
+	children map[string]*mutableFolder
+}
+
+// ExportDirectory writes the given state as CUE files in the hierarchical
 // directory structure under dir. If overwrite is false and dir is non-empty,
 // it returns an error.
 func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
@@ -20,123 +34,47 @@ func ExportDirectory(dir string, state *DesiredState, overwrite bool) error {
 		}
 	}
 
-	if err := os.MkdirAll(dir, 0o750); err != nil {
-		return fmt.Errorf("create export directory %s: %w", dir, err)
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("reset export directory %s: %w", dir, err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "cue.mod"), 0o750); err != nil {
+		return fmt.Errorf("create export module dir %s: %w", dir, err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "cue.mod", "module.cue"), []byte(cueModuleFile), 0o600); err != nil {
+		return fmt.Errorf("write CUE module file: %w", err)
 	}
 
-	// Security resources.
 	if err := exportSecurity(dir, state); err != nil {
 		return err
 	}
-
-	// Governance resources.
 	if err := exportGovernance(dir, state); err != nil {
 		return err
 	}
-
-	// Storage resources.
 	if err := exportStorage(dir, state); err != nil {
 		return err
 	}
-
-	// Compute resources.
 	if err := exportCompute(dir, state); err != nil {
 		return err
 	}
-
-	// Catalog hierarchy (catalogs, schemas, tables, views, volumes, row filters, column masks).
 	if err := exportCatalogs(dir, state); err != nil {
 		return err
 	}
-
-	// Product control-plane resources.
 	if err := exportProductControlPlane(dir, state); err != nil {
 		return err
 	}
-
-	// Authoring core resources.
-	if err := exportAuthoringCore(dir, state); err != nil {
-		return err
-	}
-
-	// Notebooks.
-	if err := exportNotebooks(dir, state); err != nil {
-		return err
-	}
-
-	// Assets.
-	if err := exportAssets(dir, state); err != nil {
-		return err
-	}
-
-	// Models.
-	if err := exportModels(dir, state); err != nil {
-		return err
-	}
-
-	// Semantic models.
-	if err := exportSemanticModels(dir, state); err != nil {
-		return err
-	}
-
-	// Dashboards.
-	if err := exportDashboards(dir, state); err != nil {
-		return err
-	}
-
-	// Macros.
-	if err := exportMacros(dir, state); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func exportDashboards(dir string, state *DesiredState) error {
-	for _, dashboard := range state.Dashboards {
-		doc := DashboardDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameDashboard,
-			Metadata:   ObjectMeta{Name: dashboard.Name},
-			Spec:       dashboard.Spec,
-		}
-		if err := writeYAMLFile(filepath.Join(dir, "dashboards", dashboard.Name+".yaml"), doc); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func exportProductControlPlane(dir string, state *DesiredState) error {
-	if err := exportDomains(dir, state); err != nil {
-		return err
-	}
-	if err := exportTeams(dir, state); err != nil {
-		return err
-	}
-	if err := exportDataProducts(dir, state); err != nil {
-		return err
-	}
-	return nil
-}
-
-func exportAuthoringCore(dir string, state *DesiredState) error {
 	if err := exportWorkspaces(dir, state); err != nil {
-		return err
-	}
-	if err := exportFolders(dir, state); err != nil {
 		return err
 	}
 	if err := exportProjects(dir, state); err != nil {
 		return err
 	}
-	if err := exportEnvironments(dir, state); err != nil {
+	if err := exportAssets(dir, state); err != nil {
 		return err
 	}
+
 	return nil
 }
 
-// ensureEmptyOrMissing returns an error if dir exists and contains entries.
 func ensureEmptyOrMissing(dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -151,341 +89,293 @@ func ensureEmptyOrMissing(dir string) error {
 	return nil
 }
 
-// writeYAMLFile marshals v to YAML and writes it to path with a header comment.
-// Parent directories are created as needed.
-func writeYAMLFile(path string, v interface{}) error {
+func writeCueFile(path string, fragment any) error {
+	wrapper := map[string]any{"platform": fragment}
+	payload, err := yaml.Marshal(wrapper)
+	if err != nil {
+		return fmt.Errorf("marshal fragment for %s: %w", path, err)
+	}
+	file, err := cueyaml.Extract(path, payload)
+	if err != nil {
+		return fmt.Errorf("extract CUE for %s: %w", path, err)
+	}
+	body, err := cueformat.Node(file, cueformat.Simplify())
+	if err != nil {
+		return fmt.Errorf("format CUE for %s: %w", path, err)
+	}
+	content := append([]byte("package "+cuePackageName+"\n\n"), body...)
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return fmt.Errorf("create directory for %s: %w", path, err)
 	}
-	data, err := yaml.Marshal(v)
-	if err != nil {
-		return fmt.Errorf("marshal %s: %w", path, err)
-	}
-	header := []byte("# Generated by duck export. Edit as needed.\n")
-	content := header
-	content = append(content, data...)
 	if err := os.WriteFile(path, content, 0o600); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
 	return nil
 }
 
-// === Security ===
-
 func exportSecurity(dir string, state *DesiredState) error {
 	if len(state.Principals) > 0 {
-		doc := PrincipalListDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNamePrincipalList,
-			Principals: state.Principals,
+		principals := map[string]any{}
+		for _, item := range state.Principals {
+			principals[item.Name] = map[string]any{
+				"type":     item.Type,
+				"is_admin": item.IsAdmin,
+			}
 		}
-		if err := writeYAMLFile(filepath.Join(dir, "security", "principals.yaml"), doc); err != nil {
+		if err := writeCueFile(filepath.Join(dir, "security", "principals.cue"), map[string]any{
+			"security": map[string]any{"principals": principals},
+		}); err != nil {
 			return err
 		}
 	}
-
 	if len(state.Groups) > 0 {
-		doc := GroupListDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameGroupList,
-			Groups:     state.Groups,
+		groups := map[string]any{}
+		for _, item := range state.Groups {
+			groups[item.Name] = map[string]any{
+				"description": item.Description,
+				"members":     item.Members,
+			}
 		}
-		if err := writeYAMLFile(filepath.Join(dir, "security", "groups.yaml"), doc); err != nil {
+		if err := writeCueFile(filepath.Join(dir, "security", "groups.cue"), map[string]any{
+			"security": map[string]any{"groups": groups},
+		}); err != nil {
 			return err
 		}
 	}
-
 	if len(state.Grants) > 0 {
-		doc := GrantListDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameGrantList,
-			Grants:     state.Grants,
-		}
-		if err := writeYAMLFile(filepath.Join(dir, "security", "grants.yaml"), doc); err != nil {
+		if err := writeCueFile(filepath.Join(dir, "security", "grants.cue"), map[string]any{
+			"security": cueSecuritySection{Grants: state.Grants},
+		}); err != nil {
 			return err
 		}
 	}
-
 	if len(state.PrivilegePresets) > 0 {
-		doc := PrivilegePresetListDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNamePrivilegePresetList,
-			Presets:    state.PrivilegePresets,
+		presets := map[string]any{}
+		for _, item := range state.PrivilegePresets {
+			presets[item.Name] = map[string]any{
+				"description": item.Description,
+				"privileges":  item.Privileges,
+			}
 		}
-		if err := writeYAMLFile(filepath.Join(dir, "security", "privilege-presets.yaml"), doc); err != nil {
+		if err := writeCueFile(filepath.Join(dir, "security", "privilege_presets.cue"), map[string]any{
+			"security": map[string]any{"privilege_presets": presets},
+		}); err != nil {
 			return err
 		}
 	}
-
 	if len(state.Bindings) > 0 {
-		doc := BindingListDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameBindingList,
-			Bindings:   state.Bindings,
-		}
-		if err := writeYAMLFile(filepath.Join(dir, "security", "bindings.yaml"), doc); err != nil {
+		if err := writeCueFile(filepath.Join(dir, "security", "bindings.cue"), map[string]any{
+			"security": cueSecuritySection{Bindings: state.Bindings},
+		}); err != nil {
 			return err
 		}
 	}
-
 	if len(state.APIKeys) > 0 {
-		doc := APIKeyListDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameAPIKeyList,
-			APIKeys:    state.APIKeys,
+		apiKeys := map[string]any{}
+		for _, item := range state.APIKeys {
+			itemMap := map[string]any{
+				"principal": item.Principal,
+			}
+			if item.ExpiresAt != nil {
+				itemMap["expires_at"] = *item.ExpiresAt
+			}
+			apiKeys[item.Name] = itemMap
 		}
-		if err := writeYAMLFile(filepath.Join(dir, "security", "api-keys.yaml"), doc); err != nil {
+		if err := writeCueFile(filepath.Join(dir, "security", "api_keys.cue"), map[string]any{
+			"security": map[string]any{"api_keys": apiKeys},
+		}); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
-
-// === Governance ===
 
 func exportGovernance(dir string, state *DesiredState) error {
 	if len(state.Tags) == 0 && len(state.TagAssignments) == 0 {
 		return nil
 	}
-
-	doc := TagConfigDoc{
-		APIVersion:  SupportedAPIVersion,
-		Kind:        KindNameTagConfig,
-		Tags:        state.Tags,
-		Assignments: state.TagAssignments,
+	tags := map[string][]string{}
+	for _, item := range state.Tags {
+		if item.Value == nil {
+			if _, ok := tags[item.Key]; !ok {
+				tags[item.Key] = []string{}
+			}
+			continue
+		}
+		tags[item.Key] = append(tags[item.Key], *item.Value)
 	}
-	return writeYAMLFile(filepath.Join(dir, "governance", "tags.yaml"), doc)
+	return writeCueFile(filepath.Join(dir, "governance", "tags.cue"), map[string]any{
+		"governance": cueGovernanceSection{
+			Tags:        tags,
+			Assignments: state.TagAssignments,
+		},
+	})
 }
-
-// === Storage ===
 
 func exportStorage(dir string, state *DesiredState) error {
 	if len(state.StorageCredentials) > 0 {
-		creds := sanitizeCredentials(state.StorageCredentials)
-		doc := StorageCredentialListDoc{
-			APIVersion:  SupportedAPIVersion,
-			Kind:        KindNameStorageCredentialList,
-			Credentials: creds,
+		credentials := map[string]StorageCredentialSpec{}
+		for _, item := range state.StorageCredentials {
+			specCopy := item
+			specCopy.Name = ""
+			credentials[item.Name] = specCopy
 		}
-		if err := writeYAMLFile(filepath.Join(dir, "storage", "credentials.yaml"), doc); err != nil {
+		if err := writeCueFile(filepath.Join(dir, "storage", "credentials.cue"), map[string]any{
+			"storage": cueStorageSection{Credentials: credentials},
+		}); err != nil {
 			return err
 		}
 	}
-
 	if len(state.ExternalLocations) > 0 {
-		doc := ExternalLocationListDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameExternalLocationList,
-			Locations:  state.ExternalLocations,
+		locations := map[string]ExternalLocationSpec{}
+		for _, item := range state.ExternalLocations {
+			specCopy := item
+			specCopy.Name = ""
+			locations[item.Name] = specCopy
 		}
-		if err := writeYAMLFile(filepath.Join(dir, "storage", "locations.yaml"), doc); err != nil {
+		if err := writeCueFile(filepath.Join(dir, "storage", "external_locations.cue"), map[string]any{
+			"storage": cueStorageSection{ExternalLocations: locations},
+		}); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
-
-// sanitizeCredentials replaces empty secret _from_env fields with "REPLACE_ME"
-// placeholders so the exported YAML hints that configuration is needed.
-func sanitizeCredentials(creds []StorageCredentialSpec) []StorageCredentialSpec {
-	out := make([]StorageCredentialSpec, len(creds))
-	copy(out, creds)
-	for i := range out {
-		if out[i].S3 != nil {
-			s3 := *out[i].S3
-			if s3.KeyIDFromEnv == "" {
-				s3.KeyIDFromEnv = "REPLACE_ME"
-			}
-			if s3.SecretFromEnv == "" {
-				s3.SecretFromEnv = "REPLACE_ME"
-			}
-			out[i].S3 = &s3
-		}
-		if out[i].Azure != nil {
-			az := *out[i].Azure
-			if az.AccountNameFromEnv == "" {
-				az.AccountNameFromEnv = "REPLACE_ME"
-			}
-			if az.AccountKeyFromEnv == "" {
-				az.AccountKeyFromEnv = "REPLACE_ME"
-			}
-			out[i].Azure = &az
-		}
-		// GCS uses key_file_path, no secret env var to sanitize.
-	}
-	return out
-}
-
-// === Compute ===
 
 func exportCompute(dir string, state *DesiredState) error {
 	if len(state.ComputeEndpoints) > 0 {
-		doc := ComputeEndpointListDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameComputeEndpointList,
-			Endpoints:  state.ComputeEndpoints,
+		endpoints := map[string]ComputeEndpointSpec{}
+		for _, item := range state.ComputeEndpoints {
+			specCopy := item
+			specCopy.Name = ""
+			endpoints[item.Name] = specCopy
 		}
-		if err := writeYAMLFile(filepath.Join(dir, "compute", "endpoints.yaml"), doc); err != nil {
+		if err := writeCueFile(filepath.Join(dir, "compute", "endpoints.cue"), map[string]any{
+			"compute": cueComputeSection{Endpoints: endpoints},
+		}); err != nil {
 			return err
 		}
 	}
-
 	if len(state.ComputeAssignments) > 0 {
-		doc := ComputeAssignmentListDoc{
-			APIVersion:  SupportedAPIVersion,
-			Kind:        KindNameComputeAssignmentList,
-			Assignments: state.ComputeAssignments,
-		}
-		if err := writeYAMLFile(filepath.Join(dir, "compute", "assignments.yaml"), doc); err != nil {
+		if err := writeCueFile(filepath.Join(dir, "compute", "assignments.cue"), map[string]any{
+			"compute": cueComputeSection{Assignments: state.ComputeAssignments},
+		}); err != nil {
 			return err
 		}
 	}
-
 	if state.ComputeDefaults != nil {
-		doc := ComputeRoutingDefaultsDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameComputeRoutingDefaults,
-			Defaults:   *state.ComputeDefaults,
-		}
-		if err := writeYAMLFile(filepath.Join(dir, "compute", "defaults.yaml"), doc); err != nil {
+		if err := writeCueFile(filepath.Join(dir, "compute", "defaults.cue"), map[string]any{
+			"compute": cueComputeSection{Defaults: state.ComputeDefaults},
+		}); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
-
-// === Catalogs ===
 
 func exportCatalogs(dir string, state *DesiredState) error {
-	// Catalogs.
-	for _, cat := range state.Catalogs {
-		doc := CatalogDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameCatalog,
-			Metadata: ObjectMeta{
-				Name:               cat.CatalogName,
-				DeletionProtection: cat.DeletionProtection,
-			},
-			Spec: cat.Spec,
+	catalogs := map[string]*cueCatalog{}
+	schemas := map[string]*cueSchema{}
+	tables := map[string]*cueTable{}
+
+	for _, item := range state.Catalogs {
+		specCopy := item.Spec
+		catalogs[item.CatalogName] = &cueCatalog{
+			DeletionProtection: item.DeletionProtection,
+			CatalogSpec:        specCopy,
+			Schemas:            map[string]cueSchema{},
 		}
-		path := filepath.Join(dir, "catalogs", cat.CatalogName, "catalog.yaml")
-		if err := writeYAMLFile(path, doc); err != nil {
+	}
+	for _, item := range state.Schemas {
+		specCopy := item.Spec
+		key := item.CatalogName + "." + item.SchemaName
+		schema := &cueSchema{
+			DeletionProtection: item.DeletionProtection,
+			SchemaSpec:         specCopy,
+			Tables:             map[string]cueTable{},
+			Views:              map[string]ViewSpec{},
+			Volumes:            map[string]VolumeSpec{},
+		}
+		schemas[key] = schema
+		if catalogs[item.CatalogName] != nil {
+			catalogs[item.CatalogName].Schemas[item.SchemaName] = *schema
+		}
+	}
+	for _, item := range state.Tables {
+		specCopy := item.Spec
+		key := item.CatalogName + "." + item.SchemaName + "." + item.TableName
+		table := &cueTable{
+			DeletionProtection: item.DeletionProtection,
+			TableSpec:          specCopy,
+		}
+		tables[key] = table
+		schemaKey := item.CatalogName + "." + item.SchemaName
+		if schemas[schemaKey] != nil {
+			schemas[schemaKey].Tables[item.TableName] = *table
+		}
+	}
+	for _, item := range state.RowFilters {
+		key := item.CatalogName + "." + item.SchemaName + "." + item.TableName
+		if table := tables[key]; table != nil {
+			table.RowFilters = append(table.RowFilters, item.Filters...)
+		}
+	}
+	for _, item := range state.ColumnMasks {
+		key := item.CatalogName + "." + item.SchemaName + "." + item.TableName
+		if table := tables[key]; table != nil {
+			table.ColumnMasks = append(table.ColumnMasks, item.Masks...)
+		}
+	}
+	for _, item := range state.Views {
+		schemaKey := item.CatalogName + "." + item.SchemaName
+		if schema := schemas[schemaKey]; schema != nil {
+			schema.Views[item.ViewName] = item.Spec
+		}
+	}
+	for _, item := range state.Volumes {
+		schemaKey := item.CatalogName + "." + item.SchemaName
+		if schema := schemas[schemaKey]; schema != nil {
+			schema.Volumes[item.VolumeName] = item.Spec
+		}
+	}
+	for _, catalogName := range sortedKeys(catalogs) {
+		catalog := catalogs[catalogName]
+		for schemaName, schema := range catalog.Schemas {
+			schemaPtr := schemas[catalogName+"."+schemaName]
+			if schemaPtr != nil {
+				catalog.Schemas[schemaName] = *schemaPtr
+			} else {
+				catalog.Schemas[schemaName] = schema
+			}
+		}
+		if err := writeCueFile(filepath.Join(dir, "catalogs", catalogName, "catalog.cue"), map[string]any{
+			"catalogs": map[string]cueCatalog{catalogName: *catalog},
+		}); err != nil {
 			return err
 		}
 	}
-
-	// Schemas.
-	for _, sch := range state.Schemas {
-		doc := SchemaDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameSchema,
-			Metadata: ObjectMeta{
-				Name:               sch.SchemaName,
-				DeletionProtection: sch.DeletionProtection,
-			},
-			Spec: sch.Spec,
-		}
-		path := filepath.Join(dir, "catalogs", sch.CatalogName, "schemas", sch.SchemaName, "schema.yaml")
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
-	}
-
-	// Tables.
-	for _, tbl := range state.Tables {
-		doc := TableDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameTable,
-			Metadata: ObjectMeta{
-				Name:               tbl.TableName,
-				DeletionProtection: tbl.DeletionProtection,
-			},
-			Spec: tbl.Spec,
-		}
-		path := filepath.Join(dir, "catalogs", tbl.CatalogName, "schemas", tbl.SchemaName, "tables", tbl.TableName, "table.yaml")
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
-	}
-
-	// Row filters.
-	for _, rf := range state.RowFilters {
-		if len(rf.Filters) == 0 {
-			continue
-		}
-		doc := RowFilterListDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameRowFilterList,
-			Filters:    rf.Filters,
-		}
-		path := filepath.Join(dir, "catalogs", rf.CatalogName, "schemas", rf.SchemaName, "tables", rf.TableName, "row-filters.yaml")
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
-	}
-
-	// Column masks.
-	for _, cm := range state.ColumnMasks {
-		if len(cm.Masks) == 0 {
-			continue
-		}
-		doc := ColumnMaskListDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameColumnMaskList,
-			Masks:      cm.Masks,
-		}
-		path := filepath.Join(dir, "catalogs", cm.CatalogName, "schemas", cm.SchemaName, "tables", cm.TableName, "column-masks.yaml")
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
-	}
-
-	// Views.
-	for _, v := range state.Views {
-		doc := ViewDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameView,
-			Metadata:   ObjectMeta{Name: v.ViewName},
-			Spec:       v.Spec,
-		}
-		path := filepath.Join(dir, "catalogs", v.CatalogName, "schemas", v.SchemaName, "views", safeResourceFileName(v.ViewName))
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
-	}
-
-	// Volumes.
-	for _, vol := range state.Volumes {
-		doc := VolumeDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameVolume,
-			Metadata:   ObjectMeta{Name: vol.VolumeName},
-			Spec:       vol.Spec,
-		}
-		path := filepath.Join(dir, "catalogs", vol.CatalogName, "schemas", vol.SchemaName, "volumes", safeResourceFileName(vol.VolumeName))
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-// === Notebooks ===
-
-func exportNotebooks(dir string, state *DesiredState) error {
-	for _, nb := range state.Notebooks {
-		doc := NotebookDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameNotebook,
-			Metadata:   ObjectMeta{Name: nb.Name},
-			Spec:       nb.Spec,
+func exportProductControlPlane(dir string, state *DesiredState) error {
+	for _, item := range state.Domains {
+		if err := writeCueFile(filepath.Join(dir, "domains", slugPath(item.Name)+".cue"), map[string]any{
+			"domains": map[string]DomainSpec{item.Name: item.Spec},
+		}); err != nil {
+			return err
 		}
-		path := filepath.Join(dir, "notebooks", safeResourceFileName(nb.Name))
-		if err := writeYAMLFile(path, doc); err != nil {
+	}
+	for _, item := range state.Teams {
+		if err := writeCueFile(filepath.Join(dir, "teams", slugPath(item.Name)+".cue"), map[string]any{
+			"teams": map[string]TeamSpec{item.Name: item.Spec},
+		}); err != nil {
+			return err
+		}
+	}
+	for _, item := range state.DataProducts {
+		if err := writeCueFile(filepath.Join(dir, "data-products", slugPath(item.Slug)+".cue"), map[string]any{
+			"data_products": map[string]DataProductSpec{item.Slug: item.Spec},
+		}); err != nil {
 			return err
 		}
 	}
@@ -493,195 +383,234 @@ func exportNotebooks(dir string, state *DesiredState) error {
 }
 
 func exportWorkspaces(dir string, state *DesiredState) error {
+	workspaceMap := map[string]*cueWorkspace{}
 	for _, item := range state.Workspaces {
-		doc := WorkspaceDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameWorkspace,
-			Metadata:   ObjectMeta{Name: item.Name},
-			Spec:       item.Spec,
+		specCopy := item.Spec
+		workspaceMap[item.Name] = &cueWorkspace{
+			WorkspaceSpec: specCopy,
+			Folders:       map[string]cueFolder{},
+			Dashboards:    map[string]DashboardSpec{},
 		}
-		path := filepath.Join(dir, "workspaces", safeResourceFileName(item.Name))
-		if err := writeYAMLFile(path, doc); err != nil {
+	}
+
+	folderNodes := map[string]*mutableFolder{}
+	for _, item := range state.Folders {
+		folderNodes[folderRefKey(item.Spec.WorkspaceRef, item.Spec.ParentFolderRef, item.Name)] = &mutableFolder{
+			spec: cueFolder{
+				DefaultProjectRef:     item.Spec.DefaultProjectRef,
+				DefaultEnvironmentRef: item.Spec.DefaultEnvironmentRef,
+				GitRepoID:             item.Spec.GitRepoID,
+				GitRootPath:           item.Spec.GitRootPath,
+				Notebooks:             map[string]NotebookSpec{},
+				Folders:               map[string]cueFolder{},
+			},
+			children: map[string]*mutableFolder{},
+		}
+	}
+	for _, item := range state.Notebooks {
+		if item.Spec.FolderRef == "" {
+			continue
+		}
+		node := folderNodes[item.Spec.FolderRef]
+		if node == nil {
+			continue
+		}
+		specCopy := item.Spec
+		specCopy.WorkspaceRef = ""
+		specCopy.FolderRef = ""
+		node.spec.Notebooks[item.Name] = specCopy
+	}
+	for _, item := range state.Folders {
+		key := folderRefKey(item.Spec.WorkspaceRef, item.Spec.ParentFolderRef, item.Name)
+		node := folderNodes[key]
+		if node == nil {
+			continue
+		}
+		if item.Spec.ParentFolderRef == "" {
+			if workspaceMap[item.Spec.WorkspaceRef] != nil {
+				workspaceMap[item.Spec.WorkspaceRef].Folders[item.Name] = freezeFolder(node)
+			}
+			continue
+		}
+		parent := folderNodes[item.Spec.ParentFolderRef]
+		if parent != nil {
+			parent.children[item.Name] = node
+		}
+	}
+	for _, workspaceName := range sortedKeys(workspaceMap) {
+		workspace := workspaceMap[workspaceName]
+		for name, folder := range workspace.Folders {
+			_ = folder
+			if rootNode := folderNodes[workspaceName+"/"+name]; rootNode != nil {
+				workspace.Folders[name] = freezeFolder(rootNode)
+			}
+		}
+	}
+
+	dashboardWorkspace, err := inferDashboardWorkspaces(state)
+	if err != nil {
+		return err
+	}
+	for _, item := range state.Dashboards {
+		workspaceName := dashboardWorkspace[item.Name]
+		if workspaceMap[workspaceName] == nil {
+			continue
+		}
+		workspaceMap[workspaceName].Dashboards[item.Name] = item.Spec
+	}
+
+	for _, workspaceName := range sortedKeys(workspaceMap) {
+		if err := writeCueFile(filepath.Join(dir, "workspaces", slugPath(workspaceName), "workspace.cue"), map[string]any{
+			"workspaces": map[string]cueWorkspace{workspaceName: *workspaceMap[workspaceName]},
+		}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func exportFolders(dir string, state *DesiredState) error {
-	for _, item := range state.Folders {
-		doc := FolderDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameFolder,
-			Metadata:   ObjectMeta{Name: item.Name},
-			Spec:       item.Spec,
+func freezeFolder(node *mutableFolder) cueFolder {
+	frozen := node.spec
+	if frozen.Notebooks == nil {
+		frozen.Notebooks = map[string]NotebookSpec{}
+	}
+	frozen.Folders = map[string]cueFolder{}
+	for _, name := range sortedKeys(node.children) {
+		frozen.Folders[name] = freezeFolder(node.children[name])
+	}
+	return frozen
+}
+
+func inferDashboardWorkspaces(state *DesiredState) (map[string]string, error) {
+	workspaceByProject := map[string]string{}
+	for _, item := range state.Projects {
+		workspaceByProject[item.Name] = item.Spec.WorkspaceRef
+	}
+	workspaceByNotebook := map[string]string{}
+	for _, item := range state.Notebooks {
+		workspace := item.Spec.WorkspaceRef
+		if workspace == "" && item.Spec.FolderRef != "" {
+			workspace = workspaceNameFromFolderRef(item.Spec.FolderRef)
 		}
-		path := filepath.Join(dir, "folders", safeResourceFileName(item.Name))
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
+		workspaceByNotebook[item.Name] = workspace
+	}
+	workspaces := map[string]struct{}{}
+	for _, item := range state.Workspaces {
+		workspaces[item.Name] = struct{}{}
+	}
+	result := map[string]string{}
+	for _, item := range state.Dashboards {
+		candidates := map[string]struct{}{}
+		if workspace := strings.TrimSpace(workspaceByProject[item.Spec.SemanticProjectName]); workspace != "" {
+			candidates[workspace] = struct{}{}
+		}
+		for _, widget := range item.Spec.Widgets {
+			if widget.Source.NotebookCell != nil {
+				if workspace := strings.TrimSpace(workspaceByNotebook[widget.Source.NotebookCell.NotebookName]); workspace != "" {
+					candidates[workspace] = struct{}{}
+				}
+			}
+			if widget.Source.SemanticQuery != nil {
+				if workspace := strings.TrimSpace(workspaceByProject[widget.Source.SemanticQuery.ProjectName]); workspace != "" {
+					candidates[workspace] = struct{}{}
+				}
+			}
+		}
+		switch len(candidates) {
+		case 0:
+			if len(workspaces) == 1 {
+				for name := range workspaces {
+					result[item.Name] = name
+				}
+				continue
+			}
+			return nil, fmt.Errorf("cannot infer workspace for dashboard %q", item.Name)
+		case 1:
+			for name := range candidates {
+				result[item.Name] = name
+			}
+		default:
+			return nil, fmt.Errorf("dashboard %q maps to multiple workspaces during export", item.Name)
 		}
 	}
-	return nil
+	return result, nil
 }
 
 func exportProjects(dir string, state *DesiredState) error {
+	projectMap := map[string]*cueProject{}
 	for _, item := range state.Projects {
-		doc := ProjectDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameProject,
-			Metadata:   ObjectMeta{Name: item.Name},
-			Spec:       item.Spec,
-		}
-		path := filepath.Join(dir, "projects", safeResourceFileName(item.Name))
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
+		specCopy := item.Spec
+		projectMap[item.Name] = &cueProject{
+			ProjectSpec:    specCopy,
+			Environments:   map[string]EnvironmentSpec{},
+			Macros:         map[string]MacroSpec{},
+			Models:         map[string]ModelSpec{},
+			SemanticModels: map[string]SemanticModelSpec{},
 		}
 	}
-	return nil
-}
-
-func exportEnvironments(dir string, state *DesiredState) error {
 	for _, item := range state.Environments {
-		doc := EnvironmentDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameEnvironment,
-			Metadata:   ObjectMeta{Name: item.Name},
-			Spec:       item.Spec,
+		_, projectName, ok := parseProjectRef(item.Spec.ProjectRef)
+		if !ok || projectMap[projectName] == nil {
+			continue
 		}
-		path := filepath.Join(dir, "environments", safeResourceFileName(item.Name))
-		if err := writeYAMLFile(path, doc); err != nil {
+		specCopy := item.Spec
+		specCopy.ProjectRef = ""
+		projectMap[projectName].Environments[item.Name] = specCopy
+	}
+	for _, item := range state.Macros {
+		if projectMap[item.Spec.ProjectName] == nil {
+			continue
+		}
+		specCopy := item.Spec
+		specCopy.ProjectName = ""
+		projectMap[item.Spec.ProjectName].Macros[item.Name] = specCopy
+	}
+	for _, item := range state.Models {
+		if projectMap[item.ProjectName] == nil {
+			continue
+		}
+		projectMap[item.ProjectName].Models[item.ModelName] = item.Spec
+	}
+	modelProject := map[string]string{}
+	for _, item := range state.Models {
+		if _, ok := modelProject[item.ModelName]; !ok {
+			modelProject[item.ModelName] = item.ProjectName
+		}
+	}
+	for _, item := range state.SemanticModels {
+		projectName := modelProject[item.Spec.BaseModelRef]
+		if projectMap[projectName] == nil {
+			continue
+		}
+		projectMap[projectName].SemanticModels[item.ModelName] = item.Spec
+	}
+	for _, projectName := range sortedKeys(projectMap) {
+		if err := writeCueFile(filepath.Join(dir, "projects", slugPath(projectName), "project.cue"), map[string]any{
+			"projects": map[string]cueProject{projectName: *projectMap[projectName]},
+		}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
-
-func exportDomains(dir string, state *DesiredState) error {
-	for _, item := range state.Domains {
-		doc := DomainDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameDomain,
-			Metadata:   ObjectMeta{Name: item.Name},
-			Spec:       item.Spec,
-		}
-		path := filepath.Join(dir, "domains", safeResourceFileName(item.Name))
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func exportTeams(dir string, state *DesiredState) error {
-	for _, item := range state.Teams {
-		doc := TeamDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameTeam,
-			Metadata:   ObjectMeta{Name: item.Name},
-			Spec:       item.Spec,
-		}
-		path := filepath.Join(dir, "teams", safeResourceFileName(item.Name))
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func exportDataProducts(dir string, state *DesiredState) error {
-	for _, item := range state.DataProducts {
-		doc := DataProductDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameDataProduct,
-			Metadata:   ObjectMeta{Name: item.Slug},
-			Spec:       item.Spec,
-		}
-		path := filepath.Join(dir, "data-products", safeResourceFileName(item.Slug))
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// === Assets ===
 
 func exportAssets(dir string, state *DesiredState) error {
-	for _, asset := range state.Assets {
-		doc := AssetDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameAsset,
-			Metadata:   ObjectMeta{Name: asset.Name},
-			Spec:       asset.Spec,
-		}
-		path := filepath.Join(dir, "assets", safeResourceFileName(asset.Name))
-		if err := writeYAMLFile(path, doc); err != nil {
+	for _, item := range state.Assets {
+		if err := writeCueFile(filepath.Join(dir, "assets", slugPath(item.Name)+".cue"), map[string]any{
+			"assets": map[string]AssetSpec{item.Name: item.Spec},
+		}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// === Models ===
-
-func exportModels(dir string, state *DesiredState) error {
-	for _, m := range state.Models {
-		doc := ModelDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameModel,
-			Metadata:   ObjectMeta{Name: m.ModelName},
-			Spec:       m.Spec,
-		}
-		path := filepath.Join(dir, "models", m.ProjectName, safeResourceFileName(m.ModelName))
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
+func slugPath(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		sum := sha256.Sum256([]byte(value))
+		return hex.EncodeToString(sum[:6])
 	}
-	return nil
-}
-
-// === Semantic Models ===
-
-func exportSemanticModels(dir string, state *DesiredState) error {
-	for _, m := range state.SemanticModels {
-		doc := SemanticModelDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameSemanticModel,
-			Metadata:   ObjectMeta{Name: m.ModelName},
-			Spec:       m.Spec,
-		}
-		path := filepath.Join(dir, "semantic_models", safeResourceFileName(m.ModelName))
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// === Macros ===
-
-func exportMacros(dir string, state *DesiredState) error {
-	for _, m := range state.Macros {
-		doc := MacroDoc{
-			APIVersion: SupportedAPIVersion,
-			Kind:       KindNameMacro,
-			Metadata:   ObjectMeta{Name: m.Name},
-			Spec:       m.Spec,
-		}
-		path := filepath.Join(dir, "macros", safeResourceFileName(m.Name))
-		if err := writeYAMLFile(path, doc); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func safeResourceFileName(name string) string {
-	const maxBaseLen = 180
-	if len(name) <= maxBaseLen {
-		return name + ".yaml"
-	}
-	sum := sha256.Sum256([]byte(name))
-	hash := hex.EncodeToString(sum[:4])
-	return name[:maxBaseLen] + "-" + hash + ".yaml"
+	value = strings.ReplaceAll(value, "/", "-")
+	return value
 }

@@ -1,4 +1,4 @@
-// Package main generates markdown reference docs from OpenAPI and declarative schemas.
+// Package main generates markdown reference docs from OpenAPI and declarative CUE guidance.
 package main
 
 import (
@@ -13,8 +13,6 @@ import (
 
 func main() {
 	openapiPath := flag.String("openapi", "api/gen/openapi.yaml", "path to OpenAPI spec")
-	declIndexPath := flag.String("declarative-index", "schemas/declarative/v1/index.json", "path to declarative schema manifest")
-	declDir := flag.String("declarative-dir", "schemas/declarative/v1", "path to declarative schema directory")
 	outDir := flag.String("outdir", "site/content/reference/generated", "output directory for derived reference docs")
 	docsDir := flag.String("docs-dir", "site/content", "path to source docs directory")
 	cliIndexOut := flag.String("cli-index-out", "pkg/cli/gen/discovery_index.gen.go", "path to generated CLI discovery metadata")
@@ -28,7 +26,7 @@ func main() {
 	}
 
 	declOut := fmt.Sprintf("%s/declarative", *outDir)
-	if err := declarative.Generate(*declIndexPath, *declDir, declOut); err != nil {
+	if err := declarative.Generate(declOut); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error: generate declarative docs: %v\n", err)
 		os.Exit(1)
 	}

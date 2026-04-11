@@ -112,6 +112,13 @@ func filterExampleApplyActions(actions []declarative.Action) []declarative.Actio
 	filtered := make([]declarative.Action, 0, len(actions))
 	for _, action := range actions {
 		switch action.ResourceKind {
+		case declarative.KindWorkspace,
+			declarative.KindFolder,
+			declarative.KindProject,
+			declarative.KindEnvironment:
+			if action.Operation == declarative.OpCreate {
+				filtered = append(filtered, action)
+			}
 		case declarative.KindNotebook,
 			declarative.KindModel,
 			declarative.KindMacro:

@@ -66,16 +66,50 @@ func TestDeclarative_SupportMatrixCoversSchemaKinds(t *testing.T) {
 		matrixByKind[entry.Kind] = entry
 	}
 
-	for _, docType := range declarative.SchemaDocumentTypes() {
-		entry, ok := matrixByKind[docType.Kind]
-		require.Truef(t, ok, "missing declarative support matrix entry for schema kind %s", docType.Kind)
-		assert.Truef(t, entry.LoadValidate, "expected load/validate coverage for %s", docType.Kind)
-		assert.Truef(t, entry.ReadExport, "expected read/export coverage for %s", docType.Kind)
-		assert.Truef(t, entry.Diff, "expected diff coverage for %s", docType.Kind)
-		assert.Truef(t, entry.Apply, "expected apply coverage for %s", docType.Kind)
-		assert.Truef(t, entry.ReplanClean, "expected re-plan coverage for %s", docType.Kind)
-		assert.NotEmptyf(t, entry.Coverage, "expected coverage note for %s", docType.Kind)
+	supportedKinds := []string{
+		declarative.KindNamePrincipalList,
+		declarative.KindNameGroupList,
+		declarative.KindNameGrantList,
+		declarative.KindNamePrivilegePresetList,
+		declarative.KindNameBindingList,
+		declarative.KindNameAPIKeyList,
+		declarative.KindNameCatalog,
+		declarative.KindNameSchema,
+		declarative.KindNameTable,
+		declarative.KindNameView,
+		declarative.KindNameVolume,
+		declarative.KindNameRowFilterList,
+		declarative.KindNameColumnMaskList,
+		declarative.KindNameTagConfig,
+		declarative.KindNameStorageCredentialList,
+		declarative.KindNameExternalLocationList,
+		declarative.KindNameComputeEndpointList,
+		declarative.KindNameComputeAssignmentList,
+		declarative.KindNameComputeRoutingDefaults,
+		declarative.KindNameDomain,
+		declarative.KindNameWorkspace,
+		declarative.KindNameFolder,
+		declarative.KindNameProject,
+		declarative.KindNameEnvironment,
+		declarative.KindNameTeam,
+		declarative.KindNameDataProduct,
+		declarative.KindNameNotebook,
+		declarative.KindNameDashboard,
+		declarative.KindNameAsset,
+		declarative.KindNameModel,
+		declarative.KindNameSemanticModel,
+		declarative.KindNameMacro,
+	}
+	for _, kind := range supportedKinds {
+		entry, ok := matrixByKind[kind]
+		require.Truef(t, ok, "missing declarative support matrix entry for kind %s", kind)
+		assert.Truef(t, entry.LoadValidate, "expected load/validate coverage for %s", kind)
+		assert.Truef(t, entry.ReadExport, "expected read/export coverage for %s", kind)
+		assert.Truef(t, entry.Diff, "expected diff coverage for %s", kind)
+		assert.Truef(t, entry.Apply, "expected apply coverage for %s", kind)
+		assert.Truef(t, entry.ReplanClean, "expected re-plan coverage for %s", kind)
+		assert.NotEmptyf(t, entry.Coverage, "expected coverage note for %s", kind)
 	}
 
-	assert.Len(t, declarativeSupportMatrix, len(declarative.SchemaDocumentTypes()))
+	assert.Len(t, declarativeSupportMatrix, len(supportedKinds))
 }

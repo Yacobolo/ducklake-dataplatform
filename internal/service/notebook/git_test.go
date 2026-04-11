@@ -268,23 +268,28 @@ func TestGitService_SyncGitRepo(t *testing.T) {
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 
 		repoDir := initGitRepoWithFiles(t, map[string]string{
-			"notebooks/sales.yaml": `
-apiVersion: duck/v1
-kind: Notebook
-metadata:
-  name: sales
-spec:
-  description: Sales notebook
-  cells:
-    - type: sql
-      name: output
-      role: output
-      content: SELECT 1 AS value
-      visual_spec:
-        kind: metric
-        encodings:
-          value:
-            field: value
+			"notebooks/sales.cue": `
+package duckconfig
+
+platform: workspaces: synced: {
+	kind: "personal"
+	owner_principal: "alice"
+	folders: imported: {
+		notebooks: sales: {
+			description: "Sales notebook"
+			cells: [{
+				type: "sql"
+				name: "output"
+				role: "output"
+				content: "SELECT 1 AS value"
+				visual_spec: {
+					kind: "metric"
+					encodings: value: field: "value"
+				}
+			}]
+		}
+	}
+}
 `,
 		})
 		createdRepo := &domain.GitRepo{
@@ -320,7 +325,7 @@ spec:
 		require.NotNil(t, items[0].GitRepoID)
 		require.NotNil(t, items[0].GitPath)
 		assert.Equal(t, createdRepo.ID, *items[0].GitRepoID)
-		assert.Equal(t, "notebooks/sales.yaml", *items[0].GitPath)
+		assert.Equal(t, "notebooks/sales.cue", *items[0].GitPath)
 
 		cells, err := notebookRepo.ListCells(ctx, items[0].ID)
 		require.NoError(t, err)
@@ -340,29 +345,35 @@ spec:
 		svc.SetPublishDependencies(promoter, nil)
 
 		repoDir := initGitRepoWithFiles(t, map[string]string{
-			"notebooks/sales.yaml": `
-apiVersion: duck/v1
-kind: Notebook
-metadata:
-  name: sales
-spec:
-  cells:
-    - type: sql
-      name: assertions
-      role: test
-      test:
-        severity: warn
-      content: SELECT 1
-    - type: sql
-      name: published_output
-      role: output
-      content: SELECT 1 AS value
-  publish:
-    model:
-      project: analytics
-      name: sales_model
-      materialization: VIEW
-      output_cell: published_output
+			"notebooks/sales.cue": `
+package duckconfig
+
+platform: workspaces: synced: {
+	kind: "personal"
+	owner_principal: "alice"
+	folders: imported: {
+		notebooks: sales: {
+			cells: [{
+				type: "sql"
+				name: "assertions"
+				role: "test"
+				test: severity: "warn"
+				content: "SELECT 1"
+			}, {
+				type: "sql"
+				name: "published_output"
+				role: "output"
+				content: "SELECT 1 AS value"
+			}]
+			publish: model: {
+				project: "analytics"
+				name: "sales_model"
+				materialization: "VIEW"
+				output_cell: "published_output"
+			}
+		}
+	}
+}
 `,
 		})
 
@@ -406,18 +417,24 @@ spec:
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 
 		repoDir := initGitRepoWithFiles(t, map[string]string{
-			"notebooks/sales.yaml": `
-apiVersion: duck/v1
-kind: Notebook
-metadata:
-  name: sales
-spec:
-  description: Sales notebook
-  cells:
-    - type: sql
-      name: output
-      role: output
-      content: SELECT 1 AS value
+			"notebooks/sales.cue": `
+package duckconfig
+
+platform: workspaces: synced: {
+	kind: "personal"
+	owner_principal: "alice"
+	folders: imported: {
+		notebooks: sales: {
+			description: "Sales notebook"
+			cells: [{
+				type: "sql"
+				name: "output"
+				role: "output"
+				content: "SELECT 1 AS value"
+			}]
+		}
+	}
+}
 `,
 		})
 
@@ -435,20 +452,26 @@ spec:
 		require.NoError(t, err)
 		assert.Equal(t, 1, first.NotebooksCreated)
 
-		writeGitFile(t, repoDir, "notebooks/sales.yaml", `
-apiVersion: duck/v1
-kind: Notebook
-metadata:
-  name: sales
-spec:
-  description: Updated sales notebook
-  cells:
-    - type: sql
-      name: output
-      role: output
-      content: SELECT 2 AS value
+		writeGitFile(t, repoDir, "notebooks/sales.cue", `
+package duckconfig
+
+platform: workspaces: synced: {
+	kind: "personal"
+	owner_principal: "alice"
+	folders: imported: {
+		notebooks: sales: {
+			description: "Updated sales notebook"
+			cells: [{
+				type: "sql"
+				name: "output"
+				role: "output"
+				content: "SELECT 2 AS value"
+			}]
+		}
+	}
+}
 `)
-		commitGitChanges(t, repoDir, "update notebook", []string{"notebooks/sales.yaml"}, nil)
+		commitGitChanges(t, repoDir, "update notebook", []string{"notebooks/sales.cue"}, nil)
 
 		second, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
 		require.NoError(t, err)
@@ -476,17 +499,23 @@ spec:
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 
 		repoDir := initGitRepoWithFiles(t, map[string]string{
-			"notebooks/sales.yaml": `
-apiVersion: duck/v1
-kind: Notebook
-metadata:
-  name: sales
-spec:
-  cells:
-    - type: sql
-      name: output
-      role: output
-      content: SELECT 1
+			"notebooks/sales.cue": `
+package duckconfig
+
+platform: workspaces: synced: {
+	kind: "personal"
+	owner_principal: "alice"
+	folders: imported: {
+		notebooks: sales: {
+			cells: [{
+				type: "sql"
+				name: "output"
+				role: "output"
+				content: "SELECT 1"
+			}]
+		}
+	}
+}
 `,
 		})
 
@@ -509,8 +538,8 @@ spec:
 		require.NoError(t, err)
 		assert.Equal(t, 1, first.NotebooksCreated)
 
-		require.NoError(t, os.Remove(filepath.Join(repoDir, "notebooks", "sales.yaml")))
-		commitGitChanges(t, repoDir, "remove notebook", nil, []string{"notebooks/sales.yaml"})
+		require.NoError(t, os.Remove(filepath.Join(repoDir, "notebooks", "sales.cue")))
+		commitGitChanges(t, repoDir, "remove notebook", nil, []string{"notebooks/sales.cue"})
 
 		second, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
 		require.NoError(t, err)
@@ -533,23 +562,29 @@ spec:
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 
 		repoDir := initGitRepoWithFiles(t, map[string]string{
-			"notebooks/sales.yaml": `
-apiVersion: duck/v1
-kind: Notebook
-metadata:
-  name: sales
-spec:
-  publish:
-    model:
-      project: analytics
-      name: broken
-      materialization: VIEW
-      output_cell: missing_output
-  cells:
-    - type: sql
-      name: actual_output
-      role: output
-      content: SELECT 1
+			"notebooks/sales.cue": `
+package duckconfig
+
+platform: workspaces: synced: {
+	kind: "personal"
+	owner_principal: "alice"
+	folders: imported: {
+		notebooks: sales: {
+			publish: model: {
+				project: "analytics"
+				name: "broken"
+				materialization: "VIEW"
+				output_cell: "missing_output"
+			}
+			cells: [{
+				type: "sql"
+				name: "actual_output"
+				role: "output"
+				content: "SELECT 1"
+			}]
+		}
+	}
+}
 `,
 		})
 
@@ -578,17 +613,23 @@ spec:
 		svc := NewGitService(gitRepoRepo, notebookRepo, auditRepo)
 
 		repoDir := initGitRepoWithFiles(t, map[string]string{
-			"notebooks/sales.yaml": `
-apiVersion: duck/v1
-kind: Notebook
-metadata:
-  name: sales
-spec:
-  cells:
-    - type: sql
-      name: output
-      role: output
-      content: SELECT 1
+			"notebooks/sales.cue": `
+package duckconfig
+
+platform: workspaces: synced: {
+	kind: "personal"
+	owner_principal: "alice"
+	folders: imported: {
+		notebooks: sales: {
+			cells: [{
+				type: "sql"
+				name: "output"
+				role: "output"
+				content: "SELECT 1"
+			}]
+		}
+	}
+}
 `,
 		})
 
@@ -604,7 +645,7 @@ spec:
 			Name:      "sales-a",
 			Owner:     "alice",
 			GitRepoID: stringPtr(createdRepo.ID),
-			GitPath:   stringPtr("notebooks/sales.yaml"),
+			GitPath:   stringPtr("notebooks/sales.cue"),
 		})
 		require.NoError(t, err)
 		_, err = notebookRepo.CreateNotebook(ctx, &domain.Notebook{
@@ -612,7 +653,7 @@ spec:
 			Name:      "sales-b",
 			Owner:     "alice",
 			GitRepoID: stringPtr(createdRepo.ID),
-			GitPath:   stringPtr("notebooks/sales.yaml"),
+			GitPath:   stringPtr("notebooks/sales.cue"),
 		})
 		require.NoError(t, err)
 
@@ -635,23 +676,29 @@ spec:
 		svc.SetPublishDependencies(promoter, linkRepo)
 
 		repoDir := initGitRepoWithFiles(t, map[string]string{
-			"notebooks/sales.yaml": `
-apiVersion: duck/v1
-kind: Notebook
-metadata:
-  name: sales
-spec:
-  cells:
-    - type: sql
-      name: published_output
-      role: output
-      content: SELECT 1
-  publish:
-    model:
-      project: analytics
-      name: sales_model
-      materialization: VIEW
-      output_cell: published_output
+			"notebooks/sales.cue": `
+package duckconfig
+
+platform: workspaces: synced: {
+	kind: "personal"
+	owner_principal: "alice"
+	folders: imported: {
+		notebooks: sales: {
+			cells: [{
+				type: "sql"
+				name: "published_output"
+				role: "output"
+				content: "SELECT 1"
+			}]
+			publish: model: {
+				project: "analytics"
+				name: "sales_model"
+				materialization: "VIEW"
+				output_cell: "published_output"
+			}
+		}
+	}
+}
 `,
 		})
 
@@ -674,19 +721,25 @@ spec:
 		require.Len(t, items, 1)
 		require.NotNil(t, linkRepo.links[items[0].ID])
 
-		writeGitFile(t, repoDir, "notebooks/sales.yaml", `
-apiVersion: duck/v1
-kind: Notebook
-metadata:
-  name: sales
-spec:
-  cells:
-    - type: sql
-      name: published_output
-      role: output
-      content: SELECT 1
+		writeGitFile(t, repoDir, "notebooks/sales.cue", `
+package duckconfig
+
+platform: workspaces: synced: {
+	kind: "personal"
+	owner_principal: "alice"
+	folders: imported: {
+		notebooks: sales: {
+			cells: [{
+				type: "sql"
+				name: "published_output"
+				role: "output"
+				content: "SELECT 1"
+			}]
+		}
+	}
+}
 `)
-		commitGitChanges(t, repoDir, "remove publish config", []string{"notebooks/sales.yaml"}, nil)
+		commitGitChanges(t, repoDir, "remove publish config", []string{"notebooks/sales.cue"}, nil)
 
 		second, err := svc.SyncGitRepo(ctx, "alice", false, createdRepo.ID)
 		require.NoError(t, err)
@@ -719,13 +772,19 @@ func (p *capturingNotebookPromoter) PromoteNotebook(ctx context.Context, _ strin
 func initGitRepoWithFiles(t *testing.T, files map[string]string) string {
 	t.Helper()
 	repoDir := t.TempDir()
+	writeGitFile(t, repoDir, "cue.mod/module.cue", `module: "duck.local/git-sync"
+language: {
+	version: "v0.14.0"
+}
+`)
 	for path, contents := range files {
 		writeGitFile(t, repoDir, path, contents)
 	}
 	runGit(t, repoDir, "init", "--initial-branch=master")
 	runGit(t, repoDir, "config", "user.name", "codex")
 	runGit(t, repoDir, "config", "user.email", "codex@example.com")
-	commitGitChanges(t, repoDir, "initial commit", sortedKeys(files), nil)
+	addPaths := append([]string{"cue.mod/module.cue"}, sortedKeys(files)...)
+	commitGitChanges(t, repoDir, "initial commit", addPaths, nil)
 	return repoDir
 }
 

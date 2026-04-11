@@ -1,8 +1,0 @@
-apiVersion: duck/v1
-kind: Folder
-metadata:
-  name: analytics
-spec:
-  workspace_ref: dev-admin
-  default_project_ref: dev-admin/taxi-analytics
-  default_environment_ref: dev-admin/taxi-analytics/dev

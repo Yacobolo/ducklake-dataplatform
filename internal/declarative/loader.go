@@ -2,1293 +2,477 @@ package declarative
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
+	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/load"
 	"gopkg.in/yaml.v3"
 )
 
-var errLegacyPipelines = errors.New("legacy pipelines/ configs are no longer supported; migrate pipeline definitions to assets/ and remove pipelines/")
+const cuePackageName = "duckconfig"
 
-// LoadOptions configures YAML loading behavior.
+const cuePlatformSchemaSource = `
+#WorkspaceKind: "personal" | "shared" | "library"
+#ProjectKind: "personal" | "shared" | "library"
+#EnvironmentKind: "development" | "staging" | "production"
+
+#Platform: close({
+	security?: {
+		principals?: [string]: {
+			type: string
+			is_admin?: bool
+		}
+		groups?: [string]: {
+			description?: string
+			members?: [...{
+				name: string
+				type: "user" | "group"
+			}]
+		}
+		grants?: [..._]
+		privilege_presets?: [string]: {
+			description?: string
+			privileges?: [...string]
+		}
+		bindings?: [..._]
+		api_keys?: [string]: _
+	}
+	governance?: {
+		tags?: [string]: [...string]
+		assignments?: [..._]
+	}
+	storage?: {
+		credentials?: [string]: _
+		external_locations?: [string]: _
+	}
+	compute?: {
+		endpoints?: [string]: _
+		assignments?: [..._]
+		defaults?: _
+	}
+	catalogs?: [string]: _
+	domains?: [string]: _
+	teams?: [string]: _
+	data_products?: [string]: _
+	workspaces?: [string]: {
+		kind: #WorkspaceKind
+		owner_principal?: string
+		owner_team_id?: string
+		default_project_ref?: string
+		default_environment_ref?: string
+		git_repo_id?: string
+		git_root_path?: string
+		folders?: [string]: _
+		dashboards?: [string]: _
+	}
+	projects?: [string]: {
+		workspace_ref: string
+		kind: #ProjectKind
+		description?: string
+		product_id?: string
+		default_branch?: string
+		environments?: [string]: {
+			kind: #EnvironmentKind
+			project_ref?: string
+			target_catalog: string
+			target_schema: string
+		}
+		macros?: [string]: _
+		models?: [string]: _
+		semantic_models?: [string]: _
+	}
+	assets?: [string]: _
+})
+`
+
+var errLegacyPipelines = fmt.Errorf("legacy pipelines/ configs are no longer supported; migrate pipeline definitions to assets/ and remove pipelines/")
+
+// LoadOptions configures CUE loading behavior.
 type LoadOptions struct {
 	AllowUnknownFields bool
 }
 
-// LoadDirectory reads all YAML files from the given directory and returns
-// the desired state. It infers resource context (catalog, schema, table)
-// from the directory structure.
+// LoadDirectory compiles all CUE fragments under the given root into desired state.
 func LoadDirectory(dir string) (*DesiredState, error) {
 	return LoadDirectoryWithOptions(dir, LoadOptions{})
 }
 
-// LoadDirectoryWithOptions reads all YAML files from the given directory using
-// caller-provided loading options.
-func LoadDirectoryWithOptions(dir string, opts LoadOptions) (*DesiredState, error) {
-	state := &DesiredState{}
+// LoadDirectoryWithOptions compiles all CUE fragments under the given root into desired state.
+func LoadDirectoryWithOptions(dir string, _ LoadOptions) (*DesiredState, error) {
+	if err := ensureCUEConfigRoot(dir); err != nil {
+		return nil, err
+	}
 
-	// Check root dir exists.
-	info, err := os.Stat(dir)
+	ctx := cuecontext.New()
+	schema := ctx.CompileString(cuePlatformSchemaSource)
+	if err := schema.Err(); err != nil {
+		return nil, fmt.Errorf("compile built-in declarative schema: %w", err)
+	}
+	platformValue := schema.LookupPath(cue.ParsePath("#Platform"))
+	if err := platformValue.Err(); err != nil {
+		return nil, fmt.Errorf("resolve built-in declarative schema: %w", err)
+	}
+
+	packageDirs, err := discoverCuePackageDirs(dir)
 	if err != nil {
-		return nil, fmt.Errorf("config directory: %w", err)
-	}
-	if !info.IsDir() {
-		return nil, fmt.Errorf("config directory: %s is not a directory", dir)
-	}
-
-	if err := failIfLegacyPipelinesPresent(dir); err != nil {
 		return nil, err
 	}
+	for _, packageDir := range packageDirs {
+		insts := load.Instances([]string{"."}, &load.Config{
+			Dir:                 packageDir,
+			ModuleRoot:          dir,
+			Package:             "*",
+			AcceptLegacyModules: true,
+		})
+		for _, inst := range insts {
+			if inst.Err != nil {
+				return nil, fmt.Errorf("load CUE package %q: %w", inst.ImportPath, inst.Err)
+			}
+			value := ctx.BuildInstance(inst)
+			if err := value.Err(); err != nil {
+				return nil, fmt.Errorf("build CUE package %q: %w", inst.ImportPath, err)
+			}
 
-	// Load each section. Missing directories are OK (partial configs).
-
-	// 1. security/
-	if err := loadSecurity(dir, state, opts); err != nil {
-		return nil, err
+			fragment := value.LookupPath(cue.ParsePath("platform"))
+			if !fragment.Exists() {
+				continue
+			}
+			platformValue = platformValue.Unify(fragment)
+		}
 	}
 
-	// 2. governance/
-	if err := loadGovernance(dir, state, opts); err != nil {
-		return nil, err
+	if err := platformValue.Validate(cue.Concrete(true)); err != nil {
+		return nil, fmt.Errorf("validate CUE platform value: %w", err)
 	}
 
-	// 3. storage/
-	if err := loadStorage(dir, state, opts); err != nil {
-		return nil, err
+	payload, err := platformValue.MarshalJSON()
+	if err != nil {
+		return nil, fmt.Errorf("marshal CUE platform value: %w", err)
 	}
 
-	// 4. compute/
-	if err := loadCompute(dir, state, opts); err != nil {
-		return nil, err
+	var compiled cuePlatform
+	decoder := yaml.NewDecoder(bytes.NewReader(payload))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&compiled); err != nil {
+		return nil, fmt.Errorf("decode compiled CUE platform: %w", err)
 	}
 
-	// 5. catalogs/ (hierarchical walk)
-	if err := loadCatalogs(dir, state, opts); err != nil {
-		return nil, err
-	}
-
-	// 6. product control plane resources.
-	if err := loadProductControlPlane(dir, state, opts); err != nil {
-		return nil, err
-	}
-
-	// 7. authoring core resources.
-	if err := loadAuthoringCore(dir, state, opts); err != nil {
-		return nil, err
-	}
-
-	// 8. notebooks/
-	if err := loadNotebooks(dir, state, opts); err != nil {
-		return nil, err
-	}
-
-	// 9. assets/
-	if err := loadAssets(dir, state, opts); err != nil {
-		return nil, err
-	}
-
-	// 10. models/
-	if err := loadModels(dir, state, opts); err != nil {
-		return nil, err
-	}
-
-	// 11. semantic_models/
-	if err := loadSemanticModels(dir, state, opts); err != nil {
-		return nil, err
-	}
-
-	// 11. dashboards/
-	if err := loadDashboards(dir, state, opts); err != nil {
-		return nil, err
-	}
-	// 12. macros/
-	if err := loadMacros(dir, state, opts); err != nil {
+	state, err := normalizeCuePlatform(compiled)
+	if err != nil {
 		return nil, err
 	}
 
 	return state, nil
 }
 
-func loadAuthoringCore(root string, state *DesiredState, opts LoadOptions) error {
-	if err := loadWorkspaces(root, state, opts); err != nil {
+func ensureCUEConfigRoot(dir string) error {
+	info, err := os.Stat(dir)
+	if err != nil {
+		return fmt.Errorf("config directory: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("config directory: %s is not a directory", dir)
+	}
+	moduleFile := filepath.Join(dir, "cue.mod", "module.cue")
+	if _, err := os.Stat(moduleFile); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("config directory %q is not a valid CUE module root: missing %s", dir, moduleFile)
+		}
+		return fmt.Errorf("stat CUE module file: %w", err)
+	}
+	if err := failIfLegacyPipelinesPresent(dir); err != nil {
 		return err
 	}
-	if err := loadFolders(root, state, opts); err != nil {
-		return err
-	}
-	if err := loadProjects(root, state, opts); err != nil {
-		return err
-	}
-	if err := loadEnvironments(root, state, opts); err != nil {
-		return err
-	}
-	return nil
-}
-
-func failIfLegacyPipelinesPresent(root string) error {
-	pipelinesDir := filepath.Join(root, "pipelines")
-	if !dirExists(pipelinesDir) {
-		return nil
-	}
-
-	err := filepath.WalkDir(pipelinesDir, func(_ string, d fs.DirEntry, walkErr error) error {
+	return filepath.Walk(dir, func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if d.IsDir() {
+		if info.IsDir() {
+			base := info.Name()
+			if base == ".git" || base == "node_modules" {
+				return filepath.SkipDir
+			}
 			return nil
 		}
-		name := strings.ToLower(d.Name())
+		name := strings.ToLower(info.Name())
 		if strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml") {
-			return errLegacyPipelines
+			return fmt.Errorf("YAML declarative config is no longer supported: %s", path)
+		}
+		return nil
+	})
+}
+
+func discoverCuePackageDirs(root string) ([]string, error) {
+	dirs := []string{}
+	err := filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if !info.IsDir() {
+			return nil
+		}
+		if path != root && strings.HasPrefix(path, filepath.Join(root, "cue.mod")) {
+			return filepath.SkipDir
+		}
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			if strings.HasSuffix(strings.ToLower(entry.Name()), ".cue") {
+				dirs = append(dirs, path)
+				break
+			}
 		}
 		return nil
 	})
 	if err != nil {
-		if errors.Is(err, errLegacyPipelines) {
-			return err
-		}
-		return fmt.Errorf("scan pipelines directory %s: %w", pipelinesDir, err)
+		return nil, fmt.Errorf("discover CUE packages: %w", err)
 	}
-
-	return nil
+	sort.Strings(dirs)
+	return dirs, nil
 }
 
-func loadProductControlPlane(root string, state *DesiredState, opts LoadOptions) error {
-	if err := loadDomains(root, state, opts); err != nil {
-		return err
-	}
-	if err := loadTeams(root, state, opts); err != nil {
-		return err
-	}
-	if err := loadDataProducts(root, state, opts); err != nil {
-		return err
-	}
-	return nil
-}
-
-func loadDomains(root string, state *DesiredState, opts LoadOptions) error {
-	dir := filepath.Join(root, "domains")
-	if !dirExists(dir) {
+func failIfLegacyPipelinesPresent(root string) error {
+	pipelinesDir := filepath.Join(root, "pipelines")
+	if _, err := os.Stat(pipelinesDir); os.IsNotExist(err) {
 		return nil
 	}
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("read domains directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		name := strings.TrimSuffix(entry.Name(), ".yaml")
-		path := filepath.Join(dir, entry.Name())
-
-		var doc DomainDoc
-		found, err := loadYAMLFile(path, &doc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameDomain); err != nil {
-			return err
-		}
-		if doc.Metadata.Name != name {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
-		}
-
-		state.Domains = append(state.Domains, DomainResource{Name: name, Spec: doc.Spec})
-	}
-
-	return nil
+	return errLegacyPipelines
 }
 
-func loadTeams(root string, state *DesiredState, opts LoadOptions) error {
-	dir := filepath.Join(root, "teams")
-	if !dirExists(dir) {
-		return nil
-	}
+func normalizeCuePlatform(compiled cuePlatform) (*DesiredState, error) {
+	state := &DesiredState{}
 
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("read teams directory: %w", err)
-	}
+	appendNamedMap(compiled.Security.Principals, func(name string, item PrincipalSpec) {
+		if strings.TrimSpace(item.Name) == "" {
+			item.Name = name
+		}
+		state.Principals = append(state.Principals, item)
+	})
+	appendNamedMap(compiled.Security.Groups, func(name string, item GroupSpec) {
+		if strings.TrimSpace(item.Name) == "" {
+			item.Name = name
+		}
+		state.Groups = append(state.Groups, item)
+	})
+	state.Grants = append(state.Grants, compiled.Security.Grants...)
+	appendNamedMap(compiled.Security.PrivilegePresets, func(name string, item PrivilegePresetSpec) {
+		if strings.TrimSpace(item.Name) == "" {
+			item.Name = name
+		}
+		state.PrivilegePresets = append(state.PrivilegePresets, item)
+	})
+	state.Bindings = append(state.Bindings, compiled.Security.Bindings...)
+	appendNamedMap(compiled.Security.APIKeys, func(name string, item APIKeySpec) {
+		if strings.TrimSpace(item.Name) == "" {
+			item.Name = name
+		}
+		state.APIKeys = append(state.APIKeys, item)
+	})
 
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+	tagKeys := sortedKeys(compiled.Governance.Tags)
+	for _, key := range tagKeys {
+		values := compiled.Governance.Tags[key]
+		if len(values) == 0 {
+			state.Tags = append(state.Tags, TagSpec{Key: key})
 			continue
 		}
-
-		name := strings.TrimSuffix(entry.Name(), ".yaml")
-		path := filepath.Join(dir, entry.Name())
-
-		var doc TeamDoc
-		found, err := loadYAMLFile(path, &doc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameTeam); err != nil {
-			return err
-		}
-		if doc.Metadata.Name != name {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
-		}
-
-		state.Teams = append(state.Teams, TeamResource{Name: name, Spec: doc.Spec})
-	}
-
-	return nil
-}
-
-func loadDataProducts(root string, state *DesiredState, opts LoadOptions) error {
-	dir := filepath.Join(root, "data-products")
-	if !dirExists(dir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("read data-products directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		slug := strings.TrimSuffix(entry.Name(), ".yaml")
-		path := filepath.Join(dir, entry.Name())
-
-		var doc DataProductDoc
-		found, err := loadYAMLFile(path, &doc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameDataProduct); err != nil {
-			return err
-		}
-		if doc.Metadata.Name != slug {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, slug)
-		}
-
-		state.DataProducts = append(state.DataProducts, DataProductResource{Slug: slug, Spec: doc.Spec})
-	}
-
-	return nil
-}
-
-func loadDashboards(root string, state *DesiredState, opts LoadOptions) error {
-	dir := filepath.Join(root, "dashboards")
-	if !dirExists(dir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("read dashboards directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		name := strings.TrimSuffix(entry.Name(), ".yaml")
-		path := filepath.Join(dir, entry.Name())
-
-		var doc DashboardDoc
-		found, err := loadYAMLFile(path, &doc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameDashboard); err != nil {
-			return err
-		}
-		if doc.Metadata.Name != name {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
-		}
-
-		state.Dashboards = append(state.Dashboards, DashboardResource{Name: name, Spec: doc.Spec})
-	}
-
-	return nil
-}
-
-// loadYAMLFile reads and unmarshals a YAML file into the given target.
-// Returns (false, nil) if file doesn't exist (optional files).
-// Returns (false, err) on read/parse errors.
-// Returns (true, nil) on success.
-func loadYAMLFile(path string, target interface{}, opts LoadOptions) (bool, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // intentional: reading user-specified config files
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		return false, fmt.Errorf("read %s: %w", path, err)
-	}
-	if opts.AllowUnknownFields {
-		if err := yaml.Unmarshal(data, target); err != nil {
-			return false, fmt.Errorf("parse %s: %w", path, err)
-		}
-		return true, nil
-	}
-
-	decoder := yaml.NewDecoder(bytes.NewReader(data))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(target); err != nil {
-		return false, fmt.Errorf("parse %s: %w", path, err)
-	}
-	return true, nil
-}
-
-// validateDocument checks the apiVersion and kind fields.
-func validateDocument(path string, apiVersion, kind, expectedKind string) error {
-	if apiVersion != SupportedAPIVersion {
-		return fmt.Errorf("%s: unsupported apiVersion %q (expected %q)", path, apiVersion, SupportedAPIVersion)
-	}
-	if kind != expectedKind {
-		return fmt.Errorf("%s: unexpected kind %q (expected %q)", path, kind, expectedKind)
-	}
-	return nil
-}
-
-// dirExists returns true if path exists and is a directory.
-func dirExists(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
-}
-
-// loadSecurity reads security/principals.yaml, security/groups.yaml,
-// security/grants.yaml, and security/api-keys.yaml. All files are optional.
-func loadSecurity(root string, state *DesiredState, opts LoadOptions) error {
-	secDir := filepath.Join(root, "security")
-	if !dirExists(secDir) {
-		return nil
-	}
-
-	// principals.yaml
-	principalsPath := filepath.Join(secDir, "principals.yaml")
-	var principalDoc PrincipalListDoc
-	if found, err := loadYAMLFile(principalsPath, &principalDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(principalsPath, principalDoc.APIVersion, principalDoc.Kind, KindNamePrincipalList); err != nil {
-			return err
-		}
-		state.Principals = principalDoc.Principals
-	}
-
-	// groups.yaml
-	groupsPath := filepath.Join(secDir, "groups.yaml")
-	var groupDoc GroupListDoc
-	if found, err := loadYAMLFile(groupsPath, &groupDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(groupsPath, groupDoc.APIVersion, groupDoc.Kind, KindNameGroupList); err != nil {
-			return err
-		}
-		state.Groups = groupDoc.Groups
-	}
-
-	// grants.yaml
-	grantsPath := filepath.Join(secDir, "grants.yaml")
-	var grantDoc GrantListDoc
-	if found, err := loadYAMLFile(grantsPath, &grantDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(grantsPath, grantDoc.APIVersion, grantDoc.Kind, KindNameGrantList); err != nil {
-			return err
-		}
-		state.Grants = grantDoc.Grants
-	}
-
-	// privilege-presets.yaml
-	presetsPath := filepath.Join(secDir, "privilege-presets.yaml")
-	var presetDoc PrivilegePresetListDoc
-	if found, err := loadYAMLFile(presetsPath, &presetDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(presetsPath, presetDoc.APIVersion, presetDoc.Kind, KindNamePrivilegePresetList); err != nil {
-			return err
-		}
-		state.PrivilegePresets = presetDoc.Presets
-	}
-
-	// bindings.yaml
-	bindingsPath := filepath.Join(secDir, "bindings.yaml")
-	var bindingDoc BindingListDoc
-	if found, err := loadYAMLFile(bindingsPath, &bindingDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(bindingsPath, bindingDoc.APIVersion, bindingDoc.Kind, KindNameBindingList); err != nil {
-			return err
-		}
-		state.Bindings = bindingDoc.Bindings
-	}
-
-	// api-keys.yaml (optional)
-	apiKeysPath := filepath.Join(secDir, "api-keys.yaml")
-	var apiKeyDoc APIKeyListDoc
-	if found, err := loadYAMLFile(apiKeysPath, &apiKeyDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(apiKeysPath, apiKeyDoc.APIVersion, apiKeyDoc.Kind, KindNameAPIKeyList); err != nil {
-			return err
-		}
-		state.APIKeys = apiKeyDoc.APIKeys
-	}
-
-	return nil
-}
-
-// loadGovernance reads governance/tags.yaml.
-func loadGovernance(root string, state *DesiredState, opts LoadOptions) error {
-	govDir := filepath.Join(root, "governance")
-	if !dirExists(govDir) {
-		return nil
-	}
-
-	tagsPath := filepath.Join(govDir, "tags.yaml")
-	var tagDoc TagConfigDoc
-	if found, err := loadYAMLFile(tagsPath, &tagDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(tagsPath, tagDoc.APIVersion, tagDoc.Kind, KindNameTagConfig); err != nil {
-			return err
-		}
-		state.Tags = tagDoc.Tags
-		state.TagAssignments = tagDoc.Assignments
-	}
-
-	return nil
-}
-
-// loadStorage reads storage/credentials.yaml and storage/locations.yaml.
-func loadStorage(root string, state *DesiredState, opts LoadOptions) error {
-	storDir := filepath.Join(root, "storage")
-	if !dirExists(storDir) {
-		return nil
-	}
-
-	// credentials.yaml
-	credsPath := filepath.Join(storDir, "credentials.yaml")
-	var credDoc StorageCredentialListDoc
-	if found, err := loadYAMLFile(credsPath, &credDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(credsPath, credDoc.APIVersion, credDoc.Kind, KindNameStorageCredentialList); err != nil {
-			return err
-		}
-		state.StorageCredentials = credDoc.Credentials
-	}
-
-	// locations.yaml
-	locsPath := filepath.Join(storDir, "locations.yaml")
-	var locDoc ExternalLocationListDoc
-	if found, err := loadYAMLFile(locsPath, &locDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(locsPath, locDoc.APIVersion, locDoc.Kind, KindNameExternalLocationList); err != nil {
-			return err
-		}
-		state.ExternalLocations = locDoc.Locations
-	}
-
-	return nil
-}
-
-// loadCompute reads compute/endpoints.yaml, compute/assignments.yaml, and compute/defaults.yaml.
-func loadCompute(root string, state *DesiredState, opts LoadOptions) error {
-	compDir := filepath.Join(root, "compute")
-	if !dirExists(compDir) {
-		return nil
-	}
-
-	// endpoints.yaml
-	endpointsPath := filepath.Join(compDir, "endpoints.yaml")
-	var epDoc ComputeEndpointListDoc
-	if found, err := loadYAMLFile(endpointsPath, &epDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(endpointsPath, epDoc.APIVersion, epDoc.Kind, KindNameComputeEndpointList); err != nil {
-			return err
-		}
-		state.ComputeEndpoints = epDoc.Endpoints
-	}
-
-	// assignments.yaml
-	assignPath := filepath.Join(compDir, "assignments.yaml")
-	var assignDoc ComputeAssignmentListDoc
-	if found, err := loadYAMLFile(assignPath, &assignDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(assignPath, assignDoc.APIVersion, assignDoc.Kind, KindNameComputeAssignmentList); err != nil {
-			return err
-		}
-		state.ComputeAssignments = assignDoc.Assignments
-	}
-
-	// defaults.yaml
-	defaultsPath := filepath.Join(compDir, "defaults.yaml")
-	var defaultsDoc ComputeRoutingDefaultsDoc
-	if found, err := loadYAMLFile(defaultsPath, &defaultsDoc, opts); err != nil {
-		return err
-	} else if found {
-		if err := validateDocument(defaultsPath, defaultsDoc.APIVersion, defaultsDoc.Kind, KindNameComputeRoutingDefaults); err != nil {
-			return err
-		}
-		state.ComputeDefaults = &defaultsDoc.Defaults
-	}
-
-	return nil
-}
-
-func loadWorkspaces(root string, state *DesiredState, opts LoadOptions) error {
-	dir := filepath.Join(root, "workspaces")
-	if !dirExists(dir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("read workspaces directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		name := strings.TrimSuffix(entry.Name(), ".yaml")
-		path := filepath.Join(dir, entry.Name())
-
-		var doc WorkspaceDoc
-		found, err := loadYAMLFile(path, &doc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameWorkspace); err != nil {
-			return err
-		}
-		if doc.Metadata.Name != name {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
-		}
-
-		state.Workspaces = append(state.Workspaces, WorkspaceResource{Name: name, Spec: doc.Spec})
-	}
-
-	return nil
-}
-
-func loadFolders(root string, state *DesiredState, opts LoadOptions) error {
-	dir := filepath.Join(root, "folders")
-	if !dirExists(dir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("read folders directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		name := strings.TrimSuffix(entry.Name(), ".yaml")
-		path := filepath.Join(dir, entry.Name())
-
-		var doc FolderDoc
-		found, err := loadYAMLFile(path, &doc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameFolder); err != nil {
-			return err
-		}
-		if doc.Metadata.Name != name {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
-		}
-
-		state.Folders = append(state.Folders, FolderResource{Name: name, Spec: doc.Spec})
-	}
-
-	return nil
-}
-
-func loadProjects(root string, state *DesiredState, opts LoadOptions) error {
-	dir := filepath.Join(root, "projects")
-	if !dirExists(dir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("read projects directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		name := strings.TrimSuffix(entry.Name(), ".yaml")
-		path := filepath.Join(dir, entry.Name())
-
-		var doc ProjectDoc
-		found, err := loadYAMLFile(path, &doc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameProject); err != nil {
-			return err
-		}
-		if doc.Metadata.Name != name {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
-		}
-
-		state.Projects = append(state.Projects, ProjectResource{Name: name, Spec: doc.Spec})
-	}
-
-	return nil
-}
-
-func loadEnvironments(root string, state *DesiredState, opts LoadOptions) error {
-	dir := filepath.Join(root, "environments")
-	if !dirExists(dir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("read environments directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		name := strings.TrimSuffix(entry.Name(), ".yaml")
-		path := filepath.Join(dir, entry.Name())
-
-		var doc EnvironmentDoc
-		found, err := loadYAMLFile(path, &doc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(path, doc.APIVersion, doc.Kind, KindNameEnvironment); err != nil {
-			return err
-		}
-		if doc.Metadata.Name != name {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", path, doc.Metadata.Name, name)
-		}
-
-		state.Environments = append(state.Environments, EnvironmentResource{Name: name, Spec: doc.Spec})
-	}
-
-	return nil
-}
-
-// loadCatalogs walks the catalogs/ directory tree, loading catalogs, schemas,
-// tables, views, volumes, row filters, and column masks.
-func loadCatalogs(root string, state *DesiredState, opts LoadOptions) error {
-	catDir := filepath.Join(root, "catalogs")
-	if !dirExists(catDir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(catDir)
-	if err != nil {
-		return fmt.Errorf("read catalogs directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		catalogName := entry.Name()
-		catalogPath := filepath.Join(catDir, catalogName)
-
-		if err := loadOneCatalog(catalogPath, catalogName, state, opts); err != nil {
-			return err
+		for _, value := range values {
+			v := value
+			state.Tags = append(state.Tags, TagSpec{Key: key, Value: &v})
 		}
 	}
+	state.TagAssignments = append(state.TagAssignments, compiled.Governance.Assignments...)
 
-	return nil
-}
+	appendNamedMap(compiled.Storage.Credentials, func(name string, item StorageCredentialSpec) {
+		if strings.TrimSpace(item.Name) == "" {
+			item.Name = name
+		}
+		state.StorageCredentials = append(state.StorageCredentials, item)
+	})
+	appendNamedMap(compiled.Storage.ExternalLocations, func(name string, item ExternalLocationSpec) {
+		if strings.TrimSpace(item.Name) == "" {
+			item.Name = name
+		}
+		state.ExternalLocations = append(state.ExternalLocations, item)
+	})
 
-// loadOneCatalog loads a single catalog directory: catalog.yaml and schemas/.
-func loadOneCatalog(catalogPath, catalogName string, state *DesiredState, opts LoadOptions) error {
-	// catalog.yaml
-	catFile := filepath.Join(catalogPath, "catalog.yaml")
-	var catDoc CatalogDoc
-	found, err := loadYAMLFile(catFile, &catDoc, opts)
-	if err != nil {
-		return err
-	}
-	if found {
-		if err := validateDocument(catFile, catDoc.APIVersion, catDoc.Kind, KindNameCatalog); err != nil {
-			return err
+	appendNamedMap(compiled.Compute.Endpoints, func(name string, item ComputeEndpointSpec) {
+		if strings.TrimSpace(item.Name) == "" {
+			item.Name = name
 		}
-		if catDoc.Metadata.Name != catalogName {
-			return fmt.Errorf("%s: metadata.name %q does not match directory name %q", catFile, catDoc.Metadata.Name, catalogName)
-		}
+		state.ComputeEndpoints = append(state.ComputeEndpoints, item)
+	})
+	state.ComputeAssignments = append(state.ComputeAssignments, compiled.Compute.Assignments...)
+	state.ComputeDefaults = compiled.Compute.Defaults
+
+	appendNamedMap(compiled.Domains, func(name string, item DomainSpec) {
+		state.Domains = append(state.Domains, DomainResource{Name: name, Spec: item})
+	})
+	appendNamedMap(compiled.Teams, func(name string, item TeamSpec) {
+		state.Teams = append(state.Teams, TeamResource{Name: name, Spec: item})
+	})
+	appendNamedMap(compiled.DataProducts, func(name string, item DataProductSpec) {
+		state.DataProducts = append(state.DataProducts, DataProductResource{Slug: name, Spec: item})
+	})
+
+	for _, catalogName := range sortedKeys(compiled.Catalogs) {
+		catalog := compiled.Catalogs[catalogName]
 		state.Catalogs = append(state.Catalogs, CatalogResource{
 			CatalogName:        catalogName,
-			DeletionProtection: catDoc.Metadata.DeletionProtection,
-			Spec:               catDoc.Spec,
+			DeletionProtection: catalog.DeletionProtection,
+			Spec:               catalog.CatalogSpec,
 		})
-	}
-
-	// schemas/
-	schemasDir := filepath.Join(catalogPath, "schemas")
-	if !dirExists(schemasDir) {
-		return nil
-	}
-
-	schemaEntries, err := os.ReadDir(schemasDir)
-	if err != nil {
-		return fmt.Errorf("read schemas directory %s: %w", schemasDir, err)
-	}
-
-	for _, se := range schemaEntries {
-		if !se.IsDir() {
-			continue
-		}
-		schemaName := se.Name()
-		schemaPath := filepath.Join(schemasDir, schemaName)
-
-		if err := loadOneSchema(schemaPath, catalogName, schemaName, state, opts); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// loadOneSchema loads a single schema directory: schema.yaml, tables/, views/, volumes/.
-func loadOneSchema(schemaPath, catalogName, schemaName string, state *DesiredState, opts LoadOptions) error {
-	// schema.yaml
-	schemaFile := filepath.Join(schemaPath, "schema.yaml")
-	var schemaDoc SchemaDoc
-	found, err := loadYAMLFile(schemaFile, &schemaDoc, opts)
-	if err != nil {
-		return err
-	}
-	if found {
-		if err := validateDocument(schemaFile, schemaDoc.APIVersion, schemaDoc.Kind, KindNameSchema); err != nil {
-			return err
-		}
-		if schemaDoc.Metadata.Name != schemaName {
-			return fmt.Errorf("%s: metadata.name %q does not match directory name %q", schemaFile, schemaDoc.Metadata.Name, schemaName)
-		}
-		state.Schemas = append(state.Schemas, SchemaResource{
-			CatalogName:        catalogName,
-			SchemaName:         schemaName,
-			DeletionProtection: schemaDoc.Metadata.DeletionProtection,
-			Spec:               schemaDoc.Spec,
-		})
-	}
-
-	// tables/
-	if err := loadTables(schemaPath, catalogName, schemaName, state, opts); err != nil {
-		return err
-	}
-
-	// views/
-	if err := loadViews(schemaPath, catalogName, schemaName, state, opts); err != nil {
-		return err
-	}
-
-	// volumes/
-	if err := loadVolumes(schemaPath, catalogName, schemaName, state, opts); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// loadTables walks tables/ within a schema directory.
-func loadTables(schemaPath, catalogName, schemaName string, state *DesiredState, opts LoadOptions) error {
-	tablesDir := filepath.Join(schemaPath, "tables")
-	if !dirExists(tablesDir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(tablesDir)
-	if err != nil {
-		return fmt.Errorf("read tables directory %s: %w", tablesDir, err)
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		tableName := entry.Name()
-		tablePath := filepath.Join(tablesDir, tableName)
-
-		if err := loadOneTable(tablePath, catalogName, schemaName, tableName, state, opts); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// loadOneTable loads a single table directory: table.yaml, row-filters.yaml, column-masks.yaml.
-func loadOneTable(tablePath, catalogName, schemaName, tableName string, state *DesiredState, opts LoadOptions) error {
-	// table.yaml
-	tableFile := filepath.Join(tablePath, "table.yaml")
-	var tableDoc TableDoc
-	found, err := loadYAMLFile(tableFile, &tableDoc, opts)
-	if err != nil {
-		return err
-	}
-	if found {
-		if err := validateDocument(tableFile, tableDoc.APIVersion, tableDoc.Kind, KindNameTable); err != nil {
-			return err
-		}
-		if tableDoc.Metadata.Name != tableName {
-			return fmt.Errorf("%s: metadata.name %q does not match directory name %q", tableFile, tableDoc.Metadata.Name, tableName)
-		}
-		state.Tables = append(state.Tables, TableResource{
-			CatalogName:        catalogName,
-			SchemaName:         schemaName,
-			TableName:          tableName,
-			DeletionProtection: tableDoc.Metadata.DeletionProtection,
-			Spec:               tableDoc.Spec,
-		})
-	}
-
-	// row-filters.yaml (optional)
-	rfFile := filepath.Join(tablePath, "row-filters.yaml")
-	var rfDoc RowFilterListDoc
-	if rfFound, rfErr := loadYAMLFile(rfFile, &rfDoc, opts); rfErr != nil {
-		return rfErr
-	} else if rfFound {
-		if err := validateDocument(rfFile, rfDoc.APIVersion, rfDoc.Kind, KindNameRowFilterList); err != nil {
-			return err
-		}
-		state.RowFilters = append(state.RowFilters, RowFilterResource{
-			CatalogName: catalogName,
-			SchemaName:  schemaName,
-			TableName:   tableName,
-			Filters:     rfDoc.Filters,
-		})
-	}
-
-	// column-masks.yaml (optional)
-	cmFile := filepath.Join(tablePath, "column-masks.yaml")
-	var cmDoc ColumnMaskListDoc
-	if cmFound, cmErr := loadYAMLFile(cmFile, &cmDoc, opts); cmErr != nil {
-		return cmErr
-	} else if cmFound {
-		if err := validateDocument(cmFile, cmDoc.APIVersion, cmDoc.Kind, KindNameColumnMaskList); err != nil {
-			return err
-		}
-		state.ColumnMasks = append(state.ColumnMasks, ColumnMaskResource{
-			CatalogName: catalogName,
-			SchemaName:  schemaName,
-			TableName:   tableName,
-			Masks:       cmDoc.Masks,
-		})
-	}
-
-	return nil
-}
-
-// loadViews walks views/ within a schema directory. Each .yaml file is a view.
-func loadViews(schemaPath, catalogName, schemaName string, state *DesiredState, opts LoadOptions) error {
-	viewsDir := filepath.Join(schemaPath, "views")
-	if !dirExists(viewsDir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(viewsDir)
-	if err != nil {
-		return fmt.Errorf("read views directory %s: %w", viewsDir, err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		viewName := strings.TrimSuffix(entry.Name(), ".yaml")
-		viewFile := filepath.Join(viewsDir, entry.Name())
-
-		var viewDoc ViewDoc
-		found, err := loadYAMLFile(viewFile, &viewDoc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(viewFile, viewDoc.APIVersion, viewDoc.Kind, KindNameView); err != nil {
-			return err
-		}
-		if viewDoc.Metadata.Name != viewName {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", viewFile, viewDoc.Metadata.Name, viewName)
-		}
-		state.Views = append(state.Views, ViewResource{
-			CatalogName: catalogName,
-			SchemaName:  schemaName,
-			ViewName:    viewName,
-			Spec:        viewDoc.Spec,
-		})
-	}
-
-	return nil
-}
-
-// loadVolumes walks volumes/ within a schema directory. Each .yaml file is a volume.
-func loadVolumes(schemaPath, catalogName, schemaName string, state *DesiredState, opts LoadOptions) error {
-	volumesDir := filepath.Join(schemaPath, "volumes")
-	if !dirExists(volumesDir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(volumesDir)
-	if err != nil {
-		return fmt.Errorf("read volumes directory %s: %w", volumesDir, err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		volumeName := strings.TrimSuffix(entry.Name(), ".yaml")
-		volumeFile := filepath.Join(volumesDir, entry.Name())
-
-		var volDoc VolumeDoc
-		found, err := loadYAMLFile(volumeFile, &volDoc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(volumeFile, volDoc.APIVersion, volDoc.Kind, KindNameVolume); err != nil {
-			return err
-		}
-		if volDoc.Metadata.Name != volumeName {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", volumeFile, volDoc.Metadata.Name, volumeName)
-		}
-		state.Volumes = append(state.Volumes, VolumeResource{
-			CatalogName: catalogName,
-			SchemaName:  schemaName,
-			VolumeName:  volumeName,
-			Spec:        volDoc.Spec,
-		})
-	}
-
-	return nil
-}
-
-// loadNotebooks walks the notebooks/ directory. Each .yaml file is a notebook.
-func loadNotebooks(root string, state *DesiredState, opts LoadOptions) error {
-	nbDir := filepath.Join(root, "notebooks")
-	if !dirExists(nbDir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(nbDir)
-	if err != nil {
-		return fmt.Errorf("read notebooks directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		nbName := strings.TrimSuffix(entry.Name(), ".yaml")
-		nbFile := filepath.Join(nbDir, entry.Name())
-
-		var nbDoc NotebookDoc
-		found, err := loadYAMLFile(nbFile, &nbDoc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(nbFile, nbDoc.APIVersion, nbDoc.Kind, KindNameNotebook); err != nil {
-			return err
-		}
-		if nbDoc.Metadata.Name != nbName {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", nbFile, nbDoc.Metadata.Name, nbName)
-		}
-		state.Notebooks = append(state.Notebooks, NotebookResource{
-			Name: nbName,
-			Spec: nbDoc.Spec,
-		})
-	}
-
-	return nil
-}
-
-// loadAssets walks the assets/ directory. Each .yaml file is an asset.
-func loadAssets(root string, state *DesiredState, opts LoadOptions) error {
-	assetDir := filepath.Join(root, "assets")
-	if !dirExists(assetDir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(assetDir)
-	if err != nil {
-		return fmt.Errorf("read assets directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		assetName := strings.TrimSuffix(entry.Name(), ".yaml")
-		assetFile := filepath.Join(assetDir, entry.Name())
-
-		var assetDoc AssetDoc
-		found, err := loadYAMLFile(assetFile, &assetDoc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(assetFile, assetDoc.APIVersion, assetDoc.Kind, KindNameAsset); err != nil {
-			return err
-		}
-		if assetDoc.Metadata.Name != assetName {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", assetFile, assetDoc.Metadata.Name, assetName)
-		}
-		state.Assets = append(state.Assets, AssetResource{Name: assetName, Spec: assetDoc.Spec})
-	}
-
-	return nil
-}
-
-// loadModels walks the models/<project>/**/*.yaml directory tree recursively.
-// The first-level directory is the project name; model name is from the filename.
-// Subdirectories within a project are organizational only.
-func loadModels(root string, state *DesiredState, opts LoadOptions) error {
-	modelsDir := filepath.Join(root, "models")
-	if !dirExists(modelsDir) {
-		return nil
-	}
-
-	// Each top-level entry under models/ is a project directory.
-	projectEntries, err := os.ReadDir(modelsDir)
-	if err != nil {
-		return fmt.Errorf("read models directory: %w", err)
-	}
-
-	for _, projEntry := range projectEntries {
-		if !projEntry.IsDir() {
-			continue
-		}
-		projectName := projEntry.Name()
-		projectPath := filepath.Join(modelsDir, projectName)
-
-		if err := loadModelsRecursive(projectPath, projectName, state, opts); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// loadSemanticModels walks the semantic_models/**/*.yaml directory tree recursively.
-// Subdirectories are organizational only; semantic model name is from the filename.
-func loadSemanticModels(root string, state *DesiredState, opts LoadOptions) error {
-	semanticDir := filepath.Join(root, "semantic_models")
-	if !dirExists(semanticDir) {
-		return nil
-	}
-
-	return loadSemanticModelsRecursive(semanticDir, state, opts)
-}
-
-// loadMacros walks the macros/ directory. Each .yaml file is a macro.
-func loadMacros(root string, state *DesiredState, opts LoadOptions) error {
-	macroDir := filepath.Join(root, "macros")
-	if !dirExists(macroDir) {
-		return nil
-	}
-
-	entries, err := os.ReadDir(macroDir)
-	if err != nil {
-		return fmt.Errorf("read macros directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		macroName := strings.TrimSuffix(entry.Name(), ".yaml")
-		macroFile := filepath.Join(macroDir, entry.Name())
-
-		var macroDoc MacroDoc
-		found, err := loadYAMLFile(macroFile, &macroDoc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(macroFile, macroDoc.APIVersion, macroDoc.Kind, KindNameMacro); err != nil {
-			return err
-		}
-		if macroDoc.Metadata.Name != macroName {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", macroFile, macroDoc.Metadata.Name, macroName)
-		}
-		state.Macros = append(state.Macros, MacroResource{
-			Name: macroName,
-			Spec: macroDoc.Spec,
-		})
-	}
-
-	return nil
-}
-
-// loadModelsRecursive walks a directory tree under a project, loading all .yaml files as models.
-func loadModelsRecursive(dir, projectName string, state *DesiredState, opts LoadOptions) error {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("read models directory %s: %w", dir, err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			// Recurse into subdirectories (organizational only).
-			if err := loadModelsRecursive(filepath.Join(dir, entry.Name()), projectName, state, opts); err != nil {
-				return err
+		for _, schemaName := range sortedKeys(catalog.Schemas) {
+			schema := catalog.Schemas[schemaName]
+			state.Schemas = append(state.Schemas, SchemaResource{
+				CatalogName:        catalogName,
+				SchemaName:         schemaName,
+				DeletionProtection: schema.DeletionProtection,
+				Spec:               schema.SchemaSpec,
+			})
+			for _, tableName := range sortedKeys(schema.Tables) {
+				table := schema.Tables[tableName]
+				state.Tables = append(state.Tables, TableResource{
+					CatalogName:        catalogName,
+					SchemaName:         schemaName,
+					TableName:          tableName,
+					DeletionProtection: table.DeletionProtection,
+					Spec:               table.TableSpec,
+				})
+				if len(table.RowFilters) > 0 {
+					state.RowFilters = append(state.RowFilters, RowFilterResource{
+						CatalogName: catalogName,
+						SchemaName:  schemaName,
+						TableName:   tableName,
+						Filters:     table.RowFilters,
+					})
+				}
+				if len(table.ColumnMasks) > 0 {
+					state.ColumnMasks = append(state.ColumnMasks, ColumnMaskResource{
+						CatalogName: catalogName,
+						SchemaName:  schemaName,
+						TableName:   tableName,
+						Masks:       table.ColumnMasks,
+					})
+				}
 			}
-			continue
+			appendNamedMap(schema.Views, func(viewName string, item ViewSpec) {
+				state.Views = append(state.Views, ViewResource{
+					CatalogName: catalogName,
+					SchemaName:  schemaName,
+					ViewName:    viewName,
+					Spec:        item,
+				})
+			})
+			appendNamedMap(schema.Volumes, func(volumeName string, item VolumeSpec) {
+				state.Volumes = append(state.Volumes, VolumeResource{
+					CatalogName: catalogName,
+					SchemaName:  schemaName,
+					VolumeName:  volumeName,
+					Spec:        item,
+				})
+			})
 		}
+	}
 
-		if !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
+	for _, workspaceName := range sortedKeys(compiled.Workspaces) {
+		workspace := compiled.Workspaces[workspaceName]
+		state.Workspaces = append(state.Workspaces, WorkspaceResource{
+			Name: workspaceName,
+			Spec: workspace.WorkspaceSpec,
+		})
+		appendNamedMap(workspace.Dashboards, func(name string, item DashboardSpec) {
+			state.Dashboards = append(state.Dashboards, DashboardResource{Name: name, Spec: item})
+		})
+		if err := normalizeWorkspaceFolders(state, workspaceName, "", workspace.Folders); err != nil {
+			return nil, err
 		}
+	}
 
-		modelName := strings.TrimSuffix(entry.Name(), ".yaml")
-		modelFile := filepath.Join(dir, entry.Name())
-
-		var modelDoc ModelDoc
-		found, err := loadYAMLFile(modelFile, &modelDoc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(modelFile, modelDoc.APIVersion, modelDoc.Kind, KindNameModel); err != nil {
-			return err
-		}
-		if modelDoc.Metadata.Name != modelName {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", modelFile, modelDoc.Metadata.Name, modelName)
-		}
-		state.Models = append(state.Models, ModelResource{
-			ProjectName: projectName,
-			ModelName:   modelName,
-			Spec:        modelDoc.Spec,
+	for _, projectName := range sortedKeys(compiled.Projects) {
+		project := compiled.Projects[projectName]
+		state.Projects = append(state.Projects, ProjectResource{
+			Name: projectName,
+			Spec: project.ProjectSpec,
+		})
+		projectRef := projectRefKey(project.WorkspaceRef, projectName)
+		appendNamedMap(project.Environments, func(name string, item EnvironmentSpec) {
+			if strings.TrimSpace(item.ProjectRef) == "" {
+				item.ProjectRef = projectRef
+			}
+			state.Environments = append(state.Environments, EnvironmentResource{Name: name, Spec: item})
+		})
+		appendNamedMap(project.Macros, func(name string, item MacroSpec) {
+			if strings.TrimSpace(item.ProjectName) == "" {
+				item.ProjectName = projectName
+			}
+			state.Macros = append(state.Macros, MacroResource{Name: name, Spec: item})
+		})
+		appendNamedMap(project.Models, func(name string, item ModelSpec) {
+			state.Models = append(state.Models, ModelResource{ProjectName: projectName, ModelName: name, Spec: item})
+		})
+		appendNamedMap(project.SemanticModels, func(name string, item SemanticModelSpec) {
+			state.SemanticModels = append(state.SemanticModels, SemanticModelResource{ModelName: name, Spec: item})
 		})
 	}
 
+	appendNamedMap(compiled.Assets, func(name string, item AssetSpec) {
+		state.Assets = append(state.Assets, AssetResource{Name: name, Spec: item})
+	})
+
+	return state, nil
+}
+
+func normalizeWorkspaceFolders(state *DesiredState, workspaceName, parentFolderRef string, folders map[string]cueFolder) error {
+	for _, folderName := range sortedKeys(folders) {
+		folder := folders[folderName]
+		folderSpec := FolderSpec{
+			WorkspaceRef:          workspaceName,
+			ParentFolderRef:       parentFolderRef,
+			DefaultProjectRef:     folder.DefaultProjectRef,
+			DefaultEnvironmentRef: folder.DefaultEnvironmentRef,
+			GitRepoID:             folder.GitRepoID,
+			GitRootPath:           folder.GitRootPath,
+		}
+		state.Folders = append(state.Folders, FolderResource{Name: folderName, Spec: folderSpec})
+		folderRef := folderRefKey(workspaceName, parentFolderRef, folderName)
+		appendNamedMap(folder.Notebooks, func(name string, item NotebookSpec) {
+			if strings.TrimSpace(item.WorkspaceRef) == "" {
+				item.WorkspaceRef = workspaceName
+			}
+			if strings.TrimSpace(item.FolderRef) == "" {
+				item.FolderRef = folderRef
+			}
+			state.Notebooks = append(state.Notebooks, NotebookResource{Name: name, Spec: item})
+		})
+		if err := normalizeWorkspaceFolders(state, workspaceName, folderRef, folder.Folders); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-// loadSemanticModelsRecursive walks a semantic model subtree and loads all semantic model YAML files.
-func loadSemanticModelsRecursive(dir string, state *DesiredState, opts LoadOptions) error {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("read semantic_models directory %s: %w", dir, err)
+func appendNamedMap[T any](items map[string]T, appendFn func(string, T)) {
+	for _, name := range sortedKeys(items) {
+		appendFn(name, items[name])
 	}
+}
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			if err := loadSemanticModelsRecursive(filepath.Join(dir, entry.Name()), state, opts); err != nil {
-				return err
-			}
-			continue
-		}
-
-		if !strings.HasSuffix(entry.Name(), ".yaml") {
-			continue
-		}
-
-		modelName := strings.TrimSuffix(entry.Name(), ".yaml")
-		modelFile := filepath.Join(dir, entry.Name())
-
-		var modelDoc SemanticModelDoc
-		found, err := loadYAMLFile(modelFile, &modelDoc, opts)
-		if err != nil {
-			return err
-		}
-		if !found {
-			continue
-		}
-
-		if err := validateDocument(modelFile, modelDoc.APIVersion, modelDoc.Kind, KindNameSemanticModel); err != nil {
-			return err
-		}
-		if modelDoc.Metadata.Name != modelName {
-			return fmt.Errorf("%s: metadata.name %q does not match file name %q", modelFile, modelDoc.Metadata.Name, modelName)
-		}
-
-		state.SemanticModels = append(state.SemanticModels, SemanticModelResource{
-			ModelName: modelName,
-			Spec:      modelDoc.Spec,
-		})
+func sortedKeys[T any](items map[string]T) []string {
+	keys := make([]string, 0, len(items))
+	for key := range items {
+		keys = append(keys, key)
 	}
-
-	return nil
+	sort.Strings(keys)
+	return keys
 }

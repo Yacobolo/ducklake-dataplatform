@@ -79,4 +79,4 @@ The underlying tables and models still exist, but the product is what makes them
 ## Related Reference
 
 - [Products API](/reference/generated/api/endpoints/products)
-- [Declarative DataProduct Kind](/reference/generated/declarative/kinds/data-product)
+- [Declarative Reference](/reference/generated/declarative/)

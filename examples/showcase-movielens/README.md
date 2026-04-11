@@ -64,19 +64,19 @@ API_KEY="showcase-local-admin-key" examples/showcase-movielens/scripts/run_demo_
 ### Models + Macro
 
 - Medallion models are under `config/models/movielens/bronze|silver|gold`.
-- The `rating_bucket` macro is declared in `config/macros/rating_bucket.yaml` and used by `silver_ratings_enriched`.
+- The `rating_bucket` macro is declared in `config/projects/movielens/project.cue` and used by `silver_ratings_enriched`.
 - Model SQL in this showcase uses fully qualified names (`catalog.schema.object`) for clarity.
 
 ### Notebook + Pipeline
 
-- Notebook: `config/notebooks/01_kpi_walkthrough.yaml`
-- Scheduled pipeline: `config/pipelines/movielens_daily.yaml`
+- Notebook: `config/workspaces/showcase/workspace.cue`
+- Scheduled pipeline: runtime API only; pipelines are not part of the CUE declarative config
 
 ### Governance + RBAC
 
-- Grants: `config/security/grants.yaml`
+- Grants: `config/security/grants.cue`
 - Row filter + column mask on `raw_users`: `config/catalogs/lake/schemas/main/tables/raw_users/`
-- Table tags: `config/governance/tags.yaml`
+- Table tags: `config/governance/tags.cue`
 
 ## Troubleshooting
 
