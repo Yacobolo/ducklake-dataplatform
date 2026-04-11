@@ -3503,27 +3503,18 @@ schemas_core: {
   },
   "LineageNode": {
     "type": "object",
+    "property_order": [
+      "table_name",
+      "upstream",
+      "downstream"
+    ],
     "properties": {
-      "downstream": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "LineageEdge"
-          }
-        }
+      "table_name": #stringProperty,
+      "upstream": #arrayRefProperty & {
+        #ref: "LineageEdge"
       },
-      "table_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "upstream": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "LineageEdge"
-          }
-        }
+      "downstream": #arrayRefProperty & {
+        #ref: "LineageEdge"
       }
     }
   },
@@ -5388,26 +5379,8 @@ schemas_core: {
       "data"
     ]
   },
-  "PaginatedColumnLineageEdges": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ColumnLineageEdge"
-          }
-        }
-      },
-      "next_page_token": {
-        "schema": {
-          "type": "string"
-        }
-      }
-    },
-    "required": [
-      "data"
-    ]
+  "PaginatedColumnLineageEdges": #paginatedItemsSchema & {
+    #item_ref: "ColumnLineageEdge"
   },
   "PaginatedColumnMaskBindings": {
     "type": "object",
@@ -5682,26 +5655,8 @@ schemas_core: {
       "data"
     ]
   },
-  "PaginatedLineageEdges": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "LineageEdge"
-          }
-        }
-      },
-      "next_page_token": {
-        "schema": {
-          "type": "string"
-        }
-      }
-    },
-    "required": [
-      "data"
-    ]
+  "PaginatedLineageEdges": #paginatedItemsSchema & {
+    #item_ref: "LineageEdge"
   },
   "PaginatedMacros": {
     "type": "object",
@@ -6740,13 +6695,11 @@ schemas_core: {
   },
   "PurgeLineageRequest": {
     "type": "object",
+    "property_order": [
+      "older_than_days"
+    ],
     "properties": {
-      "older_than_days": {
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      }
+      "older_than_days": #int32Property
     },
     "required": [
       "older_than_days"
@@ -6754,13 +6707,11 @@ schemas_core: {
   },
   "PurgeLineageResponse": {
     "type": "object",
+    "property_order": [
+      "deleted_count"
+    ],
     "properties": {
-      "deleted_count": {
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        }
-      }
+      "deleted_count": #int64Property
     }
   },
   "QueryHistoryEntry": {
@@ -9388,4 +9339,3 @@ schemas_core: {
     ]
   }
 }
-

@@ -6531,37 +6531,6 @@ openapi_schema_overrides: {
       }
     }
   },
-  "LineageNode": {
-    "required": [],
-    "property_order": [
-      "table_name",
-      "upstream",
-      "downstream"
-    ],
-    "properties": {
-      "table_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "upstream": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "LineageEdge"
-          }
-        }
-      },
-      "downstream": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "LineageEdge"
-          }
-        }
-      }
-    }
-  },
   "LoadExternalRequest": {
     "required": [
       "paths"
@@ -8935,30 +8904,6 @@ openapi_schema_overrides: {
       }
     }
   },
-  "PaginatedColumnLineageEdges": {
-    "required": [
-      "data"
-    ],
-    "property_order": [
-      "data",
-      "next_page_token"
-    ],
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ColumnLineageEdge"
-          }
-        }
-      },
-      "next_page_token": {
-        "schema": {
-          "type": "string"
-        }
-      }
-    }
-  },
   "PaginatedColumnMaskBindings": {
     "required": [
       "data"
@@ -9285,30 +9230,6 @@ openapi_schema_overrides: {
           "type": "array",
           "items": {
             "ref": "Group"
-          }
-        }
-      },
-      "next_page_token": {
-        "schema": {
-          "type": "string"
-        }
-      }
-    }
-  },
-  "PaginatedLineageEdges": {
-    "required": [
-      "data"
-    ],
-    "property_order": [
-      "data",
-      "next_page_token"
-    ],
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "LineageEdge"
           }
         }
       },
@@ -11412,36 +11333,6 @@ openapi_schema_overrides: {
       "materialization": {
         "schema": {
           "ref": "ModelMaterialization"
-        }
-      }
-    }
-  },
-  "PurgeLineageRequest": {
-    "required": [
-      "older_than_days"
-    ],
-    "property_order": [
-      "older_than_days"
-    ],
-    "properties": {
-      "older_than_days": {
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      }
-    }
-  },
-  "PurgeLineageResponse": {
-    "required": [],
-    "property_order": [
-      "deleted_count"
-    ],
-    "properties": {
-      "deleted_count": {
-        "schema": {
-          "type": "integer",
-          "format": "int64"
         }
       }
     }
