@@ -127,6 +127,8 @@ import "list"
 	},
 ]
 
+// Shared error/response building blocks used by both the generic DSL and the
+// smaller legacy helper path that still powers lineage-style authored specs.
 #errorResponse: {
 	#status_code: int
 	#description: string
@@ -323,6 +325,9 @@ import "list"
 	mode: "admin_only"
 }
 
+// Generic operation lowering is the main authored DSL path used by the compact
+// domain files. Keep new domains on this path unless they benefit from the
+// smaller lineage-style helper surface below.
 #genericOperationSpec: {
 	kind: "response" | "no_content" | "created_empty"
 
@@ -568,6 +573,9 @@ import "list"
 	}
 }
 
+// Legacy compact helpers retained for lineage-style authored specs. These are
+// intentionally smaller than the generic operation DSL, but they lower through
+// the same shared response/auth conventions.
 #endpointFromOperation: {
 	tag:  string
 	spec: #getResource | #postWrapped | #deleteNoContent

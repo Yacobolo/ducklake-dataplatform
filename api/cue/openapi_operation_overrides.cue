@@ -1,48 +1,6 @@
 package api
 
 openapi_operation_overrides: {
-  "listAuditLogs": {
-    "parameter_order": [
-      "principal_name",
-      "action",
-      "status",
-      "max_results",
-      "page_token"
-    ],
-    "parameters": {
-      "principal_name": {
-        "schema": {
-          "type": "string"
-        },
-        "explode": false
-      },
-      "action": {
-        "schema": {
-          "type": "string"
-        },
-        "explode": false
-      },
-      "status": {
-        "schema": {
-          "ref": "AuditDecisionStatus"
-        },
-        "explode": false
-      },
-      "max_results": {
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "explode": false
-      },
-      "page_token": {
-        "schema": {
-          "type": "string"
-        },
-        "explode": false
-      }
-    }
-  },
   "bootstrapComplete": {
     "security": [
       {}
