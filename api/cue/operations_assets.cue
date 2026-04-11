@@ -2,1822 +2,319 @@ package api
 
 // Authored asset operations.
 
-endpoints_assets: [
-  {
-    "method": "get",
-    "path": "/assets",
-    "operation_id": "listAssets",
-    "summary": "List assets",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedAssets"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "assets list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/assets",
-    "operation_id": "createAsset",
-    "summary": "Create asset",
-    "description": "Creates a managed asset definition together with its ownership, checks, tags, and upstream lineage metadata.",
-    "tags": [
-      "Assets"
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateAssetRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "Asset"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 409,
-        "description": "The request conflicts with the current state of the server.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "checks": [
-          {
-            "privilege": "MANAGE_ASSET_DEFINITIONS",
-            "securable_id_source": "catalog_sentinel",
-            "securable_type": "catalog"
-          }
-        ],
-        "mode": "privilege"
-      },
-      "x-cli-command": "assets create"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}",
-    "operation_id": "getAsset",
-    "summary": "Get asset",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "Asset"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "assets get"
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/assets/{asset_key}",
-    "operation_id": "updateAsset",
-    "summary": "Update asset",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdateAssetRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "Asset"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "checks": [
-          {
-            "privilege": "MANAGE_ASSET_DEFINITIONS",
-            "securable_id_source": "catalog_sentinel",
-            "securable_type": "catalog"
-          }
-        ],
-        "mode": "privilege"
-      },
-      "x-cli-command": "assets update"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/assets/{asset_key}",
-    "operation_id": "deleteAsset",
-    "summary": "Delete asset",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "checks": [
-          {
-            "privilege": "MANAGE_ASSET_DEFINITIONS",
-            "securable_id_source": "catalog_sentinel",
-            "securable_type": "catalog"
-          }
-        ],
-        "mode": "privilege"
-      },
-      "x-cli-command": "assets delete"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/graph",
-    "operation_id": "getAssetGraph",
-    "summary": "Get asset graph",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "AssetGraph"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "assets graph get"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/freshness",
-    "operation_id": "getAssetFreshness",
-    "summary": "Get asset freshness",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "AssetFreshnessStatus"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/freshness/explanation",
-    "operation_id": "explainAssetFreshness",
-    "summary": "Explain asset freshness",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "AssetFreshnessExplanation"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/freshness/requirements",
-    "operation_id": "listAssetFreshnessRequirements",
-    "summary": "List asset freshness requirements",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "AssetFreshnessRequirementsResponse"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/freshness/blockers",
-    "operation_id": "listAssetFreshnessBlockers",
-    "summary": "List asset freshness blockers",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "AssetFreshnessBlockersResponse"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "post",
-    "path": "/assets/{asset_key}/freshness-reconciliations",
-    "operation_id": "reconcileAssetFreshness",
-    "summary": "Reconcile asset freshness",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 202,
-        "description": "The request has been accepted for processing, but processing has not yet completed.",
-        "schema": {
-          "ref": "AssetFreshnessReconcileResponse"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/partitions",
-    "operation_id": "listAssetPartitions",
-    "summary": "List asset partitions",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedAssetPartitions"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "assets partitions list"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/runs",
-    "operation_id": "listAssetRuns",
-    "summary": "List asset runs",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "status",
-        "in": "query",
-        "schema": {
-          "ref": "AssetRunStatus"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedAssetRuns"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "assets runs list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/assets/{asset_key}/materializations",
-    "operation_id": "triggerAssetMaterialization",
-    "summary": "Trigger asset materialization",
-    "description": "Starts a materialization run for the specified asset and returns the queued execution metadata.",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "description": "Request payload",
-      "schema": {
-        "ref": "TriggerAssetMaterializationRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 202,
-        "description": "The request has been accepted for processing, but processing has not yet completed.",
-        "schema": {
-          "ref": "AssetTriggerResponse"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "checks": [
-          {
-            "privilege": "EXECUTE_ASSET_MATERIALIZATION",
-            "securable_id_source": "catalog_sentinel",
-            "securable_type": "catalog"
-          }
-        ],
-        "mode": "privilege"
-      },
-      "x-cli-command": "assets materialize"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/materializations",
-    "operation_id": "listAssetMaterializations",
-    "summary": "List asset materializations",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedAssetMaterializations"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "assets materializations list"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/checks",
-    "operation_id": "listAssetChecks",
-    "summary": "List asset checks",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "AssetCheckList"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "assets checks list"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/checks/results",
-    "operation_id": "listAssetCheckResults",
-    "summary": "List asset check results",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedAssetCheckResults"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "assets check-results list"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/backfills",
-    "operation_id": "listAssetBackfills",
-    "summary": "List asset backfills",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "status",
-        "in": "query",
-        "schema": {
-          "ref": "AssetRunStatus"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedBackfillRequests"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "assets backfills list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/assets/{asset_key}/backfills",
-    "operation_id": "createAssetBackfill",
-    "summary": "Create asset backfill",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateAssetBackfillRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "CreateAssetBackfillResponse"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "checks": [
-          {
-            "privilege": "EXECUTE_ASSET_MATERIALIZATION",
-            "securable_id_source": "catalog_sentinel",
-            "securable_type": "catalog"
-          }
-        ],
-        "mode": "privilege"
-      },
-      "x-cli-command": "assets backfills create"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/assets/{asset_key}/backfills/{backfill_id}",
-    "operation_id": "getAssetBackfill",
-    "summary": "Get asset backfill",
-    "tags": [
-      "Assets"
-    ],
-    "parameters": [
-      {
-        "name": "asset_key",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "backfill_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "AssetBackfillDetails"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "assets backfills get"
-    }
-  }
+#assetsTag: "Assets"
+
+#plainAssetOperation: #genericOperationSpec & {
+	wrapped: false
+}
+
+#assetKeyPathParameter: #pathStringParameter & {
+	#name: "asset_key"
+}
+
+#backfillIDPathParameter: #pathStringParameter & {
+	#name: "backfill_id"
+}
+
+#assetRunStatusQueryParameter: {
+	name:    "status"
+	in:      "query"
+	explode: false
+	schema: {
+		ref: "AssetRunStatus"
+	}
+}
+
+#assetPathParameters: [
+	#assetKeyPathParameter,
 ]
 
+#assetPaginationParameters: [
+	#assetKeyPathParameter,
+	#paginationParameters[0],
+	#paginationParameters[1],
+]
+
+#assetStatusPaginationParameters: [
+	#assetKeyPathParameter,
+	#assetRunStatusQueryParameter,
+	#paginationParameters[0],
+	#paginationParameters[1],
+]
+
+#assetBackfillPathParameters: [
+	#assetKeyPathParameter,
+	#backfillIDPathParameter,
+]
+
+#manageAssetDefinitionsAuthz: {
+	mode: "privilege"
+	checks: [
+		{
+			securable_type:     "catalog"
+			privilege:          "MANAGE_ASSET_DEFINITIONS"
+			securable_id_source: "catalog_sentinel"
+		},
+	]
+}
+
+#executeAssetMaterializationAuthz: {
+	mode: "privilege"
+	checks: [
+		{
+			securable_type:     "catalog"
+			privilege:          "EXECUTE_ASSET_MATERIALIZATION"
+			securable_id_source: "catalog_sentinel"
+		},
+	]
+}
+
+#assetOps: [
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listAssets"
+		path:         "/assets"
+		summary:      "List assets"
+		cli:          "assets list"
+		returns:      "PaginatedAssets"
+		error_family: "standard"
+		params:       #paginationParameters
+	},
+	#plainAssetOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createAsset"
+		path:           "/assets"
+		summary:        "Create asset"
+		description:    "Creates a managed asset definition together with its ownership, checks, tags, and upstream lineage metadata."
+		cli:            "assets create"
+		returns:        "Asset"
+		success_status: 201
+		error_family:   "mutating_conflict"
+		body_ref:       "CreateAssetRequest"
+		body_description: "Request payload"
+		authz_default:   false
+		authz:           #manageAssetDefinitionsAuthz
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getAsset"
+		path:         "/assets/{asset_key}"
+		summary:      "Get asset"
+		cli:          "assets get"
+		returns:      "Asset"
+		error_family: "resource"
+		params:       #assetPathParameters
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updateAsset"
+		path:         "/assets/{asset_key}"
+		summary:      "Update asset"
+		cli:          "assets update"
+		returns:      "Asset"
+		error_family: "resource"
+		params:       #assetPathParameters
+		body_ref:     "UpdateAssetRequest"
+		body_description: "Request payload"
+		authz_default:   false
+		authz:           #manageAssetDefinitionsAuthz
+	},
+	#plainAssetOperation & {
+		kind:          "no_content"
+		method:        "delete"
+		op:            "deleteAsset"
+		path:          "/assets/{asset_key}"
+		summary:       "Delete asset"
+		cli:           "assets delete"
+		error_family:  "resource"
+		params:        #assetPathParameters
+		authz_default: false
+		authz:         #manageAssetDefinitionsAuthz
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getAssetGraph"
+		path:         "/assets/{asset_key}/graph"
+		summary:      "Get asset graph"
+		cli:          "assets graph get"
+		returns:      "AssetGraph"
+		error_family: "resource"
+		params:       #assetPathParameters
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getAssetFreshness"
+		path:         "/assets/{asset_key}/freshness"
+		summary:      "Get asset freshness"
+		returns:      "AssetFreshnessStatus"
+		error_family: "resource"
+		params:       #assetPathParameters
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "explainAssetFreshness"
+		path:         "/assets/{asset_key}/freshness/explanation"
+		summary:      "Explain asset freshness"
+		returns:      "AssetFreshnessExplanation"
+		error_family: "resource"
+		params:       #assetPathParameters
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listAssetFreshnessRequirements"
+		path:         "/assets/{asset_key}/freshness/requirements"
+		summary:      "List asset freshness requirements"
+		returns:      "AssetFreshnessRequirementsResponse"
+		error_family: "resource"
+		params:       #assetPathParameters
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listAssetFreshnessBlockers"
+		path:         "/assets/{asset_key}/freshness/blockers"
+		summary:      "List asset freshness blockers"
+		returns:      "AssetFreshnessBlockersResponse"
+		error_family: "resource"
+		params:       #assetPathParameters
+	},
+	#plainAssetOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "reconcileAssetFreshness"
+		path:           "/assets/{asset_key}/freshness-reconciliations"
+		summary:        "Reconcile asset freshness"
+		returns:        "AssetFreshnessReconcileResponse"
+		success_status: 202
+		error_family:   "resource"
+		params:         #assetPathParameters
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listAssetPartitions"
+		path:         "/assets/{asset_key}/partitions"
+		summary:      "List asset partitions"
+		cli:          "assets partitions list"
+		returns:      "PaginatedAssetPartitions"
+		error_family: "resource"
+		params:       #assetPaginationParameters
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listAssetRuns"
+		path:         "/assets/{asset_key}/runs"
+		summary:      "List asset runs"
+		cli:          "assets runs list"
+		returns:      "PaginatedAssetRuns"
+		error_family: "resource"
+		params:       #assetStatusPaginationParameters
+	},
+	#plainAssetOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "triggerAssetMaterialization"
+		path:           "/assets/{asset_key}/materializations"
+		summary:        "Trigger asset materialization"
+		description:    "Starts a materialization run for the specified asset and returns the queued execution metadata."
+		cli:            "assets materialize"
+		returns:        "AssetTriggerResponse"
+		success_status: 202
+		error_family:   "resource"
+		params:         #assetPathParameters
+		body_ref:       "TriggerAssetMaterializationRequest"
+		body_required:  false
+		body_description: "Request payload"
+		authz_default:   false
+		authz:           #executeAssetMaterializationAuthz
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listAssetMaterializations"
+		path:         "/assets/{asset_key}/materializations"
+		summary:      "List asset materializations"
+		cli:          "assets materializations list"
+		returns:      "PaginatedAssetMaterializations"
+		error_family: "resource"
+		params:       #assetPaginationParameters
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listAssetChecks"
+		path:         "/assets/{asset_key}/checks"
+		summary:      "List asset checks"
+		cli:          "assets checks list"
+		returns:      "AssetCheckList"
+		error_family: "resource"
+		params:       #assetPathParameters
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listAssetCheckResults"
+		path:         "/assets/{asset_key}/checks/results"
+		summary:      "List asset check results"
+		cli:          "assets check-results list"
+		returns:      "PaginatedAssetCheckResults"
+		error_family: "resource"
+		params:       #assetPaginationParameters
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listAssetBackfills"
+		path:         "/assets/{asset_key}/backfills"
+		summary:      "List asset backfills"
+		cli:          "assets backfills list"
+		returns:      "PaginatedBackfillRequests"
+		error_family: "resource"
+		params:       #assetStatusPaginationParameters
+	},
+	#plainAssetOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createAssetBackfill"
+		path:           "/assets/{asset_key}/backfills"
+		summary:        "Create asset backfill"
+		cli:            "assets backfills create"
+		returns:        "CreateAssetBackfillResponse"
+		success_status: 201
+		error_family:   "resource"
+		params:         #assetPathParameters
+		body_ref:       "CreateAssetBackfillRequest"
+		body_description: "Request payload"
+		authz_default:   false
+		authz:           #executeAssetMaterializationAuthz
+	},
+	#plainAssetOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getAssetBackfill"
+		path:         "/assets/{asset_key}/backfills/{backfill_id}"
+		summary:      "Get asset backfill"
+		cli:          "assets backfills get"
+		returns:      "AssetBackfillDetails"
+		error_family: "resource"
+		params:       #assetBackfillPathParameters
+	},
+]
+
+endpoints_assets: [
+	for op in #assetOps {
+		(#endpointFromGenericOperation & {
+			tag:  #assetsTag
+			spec: op
+		}).endpoint
+	},
+]
