@@ -1,9 +1,9 @@
 package querydefs
 
 queries: [
-	{
-		name: "CreateCell"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateCell"
+		_table: "cells"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "NotebookID", type: "string"},
@@ -16,26 +16,7 @@ queries: [
 			{name: "Content", type: "string"},
 			{name: "Position", type: "int64"},
 		]
-		result: {
-			row: "Cell"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "NotebookID", type: "string"},
-				{name: "CellType", type: "string"},
-				{name: "Content", type: "string"},
-				{name: "Position", type: "int64"},
-				{name: "LastResult", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "Name", type: "sql.NullString"},
-				{name: "Role", type: "string"},
-				{name: "Disabled", type: "int64"},
-				{name: "TestConfig", type: "string"},
-				{name: "VisualSpec", type: "string"},
-			]
-		}
 		insert: {
-			into: "cells"
 			columns: [
 				"id",
 				"notebook_id",
@@ -60,81 +41,15 @@ queries: [
 				{param: "Content"},
 				{param: "Position"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "notebook_id"},
-				{expr: "cell_type"},
-				{expr: "content"},
-				{expr: "position"},
-				{expr: "last_result"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "name"},
-				{expr: "role"},
-				{expr: "disabled"},
-				{expr: "test_config"},
-				{expr: "visual_spec"},
-			]
 		}
 	},
-	{
-		name: "DeleteCell"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "cells"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#DeleteByID & {
+		name:   "DeleteCell"
+		_table: "cells"
 	},
-	{
-		name: "GetCell"
-		kind: "one"
-		params: [
-			{name: "id", type: "string"},
-		]
-		result: {
-			row: "Cell"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "NotebookID", type: "string"},
-				{name: "CellType", type: "string"},
-				{name: "Content", type: "string"},
-				{name: "Position", type: "int64"},
-				{name: "LastResult", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "Name", type: "sql.NullString"},
-				{name: "Role", type: "string"},
-				{name: "Disabled", type: "int64"},
-				{name: "TestConfig", type: "string"},
-				{name: "VisualSpec", type: "string"},
-			]
-		}
-		select: {
-			from: "cells"
-			columns: [
-				{expr: "id"},
-				{expr: "notebook_id"},
-				{expr: "cell_type"},
-				{expr: "content"},
-				{expr: "position"},
-				{expr: "last_result"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "name"},
-				{expr: "role"},
-				{expr: "disabled"},
-				{expr: "test_config"},
-				{expr: "visual_spec"},
-			]
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#GetByID & {
+		name:   "GetCell"
+		_table: "cells"
 	},
 	{
 		name: "GetMaxCellPosition"
@@ -159,41 +74,9 @@ queries: [
 		params: [
 			{name: "notebookID", type: "string"},
 		]
-		result: {
-			row: "Cell"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "NotebookID", type: "string"},
-				{name: "CellType", type: "string"},
-				{name: "Content", type: "string"},
-				{name: "Position", type: "int64"},
-				{name: "LastResult", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "Name", type: "sql.NullString"},
-				{name: "Role", type: "string"},
-				{name: "Disabled", type: "int64"},
-				{name: "TestConfig", type: "string"},
-				{name: "VisualSpec", type: "string"},
-			]
-		}
+		result: {table: "cells"}
 		select: {
 			from: "cells"
-			columns: [
-				{expr: "id"},
-				{expr: "notebook_id"},
-				{expr: "cell_type"},
-				{expr: "content"},
-				{expr: "position"},
-				{expr: "last_result"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "name"},
-				{expr: "role"},
-				{expr: "disabled"},
-				{expr: "test_config"},
-				{expr: "visual_spec"},
-			]
 			where: [
 				{column: "notebook_id", op: "=", param: "notebookID"},
 			]
@@ -202,9 +85,10 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "UpdateCell"
-		kind: "one"
+	#UpdateByIDTouch & {
+		name:   "UpdateCell"
+		_table: "cells"
+		_kind:  "one"
 		params: [
 			{name: "Name", type: "sql.NullString"},
 			{name: "Role", type: "string"},
@@ -215,90 +99,36 @@ queries: [
 			{name: "Position", type: "int64"},
 			{name: "ID", type: "string"},
 		]
-		result: {
-			row: "Cell"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "NotebookID", type: "string"},
-				{name: "CellType", type: "string"},
-				{name: "Content", type: "string"},
-				{name: "Position", type: "int64"},
-				{name: "LastResult", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "Name", type: "sql.NullString"},
-				{name: "Role", type: "string"},
-				{name: "Disabled", type: "int64"},
-				{name: "TestConfig", type: "string"},
-				{name: "VisualSpec", type: "string"},
-			]
-		}
-		update: {
-			table: "cells"
-			set: [
-				{column: "name", value: {param: "Name"}},
-				{column: "role", value: {param: "Role"}},
-				{column: "disabled", value: {param: "Disabled"}},
-				{column: "test_config", value: {param: "TestConfig"}},
-				{column: "visual_spec", value: {param: "VisualSpec"}},
-				{column: "content", value: {param: "Content"}},
-				{column: "position", value: {param: "Position"}},
-				{column: "updated_at", value: {sql: "datetime('now')"}},
-			]
-			where: [
-				{column: "id", op: "=", param: "ID"},
-			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "notebook_id"},
-				{expr: "cell_type"},
-				{expr: "content"},
-				{expr: "position"},
-				{expr: "last_result"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "name"},
-				{expr: "role"},
-				{expr: "disabled"},
-				{expr: "test_config"},
-				{expr: "visual_spec"},
-			]
-		}
+		_set: [
+			{column: "name", value: {param: "Name"}},
+			{column: "role", value: {param: "Role"}},
+			{column: "disabled", value: {param: "Disabled"}},
+			{column: "test_config", value: {param: "TestConfig"}},
+			{column: "visual_spec", value: {param: "VisualSpec"}},
+			{column: "content", value: {param: "Content"}},
+			{column: "position", value: {param: "Position"}},
+		]
 	},
-	{
-		name: "UpdateCellPosition"
-		kind: "exec"
+	#UpdateByIDTouch & {
+		name:   "UpdateCellPosition"
+		_table: "cells"
 		params: [
 			{name: "Position", type: "int64"},
 			{name: "ID", type: "string"},
 		]
-		update: {
-			table: "cells"
-			set: [
-				{column: "position", value: {param: "Position"}},
-				{column: "updated_at", value: {sql: "datetime('now')"}},
-			]
-			where: [
-				{column: "id", op: "=", param: "ID"},
-			]
-		}
+		_set: [
+			{column: "position", value: {param: "Position"}},
+		]
 	},
-	{
-		name: "UpdateCellResult"
-		kind: "exec"
+	#UpdateByIDTouch & {
+		name:   "UpdateCellResult"
+		_table: "cells"
 		params: [
 			{name: "LastResult", type: "sql.NullString"},
 			{name: "ID", type: "string"},
 		]
-		update: {
-			table: "cells"
-			set: [
-				{column: "last_result", value: {param: "LastResult"}},
-				{column: "updated_at", value: {sql: "datetime('now')"}},
-			]
-			where: [
-				{column: "id", op: "=", param: "ID"},
-			]
-		}
+		_set: [
+			{column: "last_result", value: {param: "LastResult"}},
+		]
 	},
 ]

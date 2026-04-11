@@ -1,27 +1,20 @@
 package querydefs
 
 queries: [
-	{
-		name: "CountExternalTables"
-		kind: "one"
-		params: [
+	#CountFiltered & {
+		name:   "CountExternalTables"
+		_table: "external_tables"
+		_params: [
 			{name: "schemaName", type: "string"},
 		]
-		result: {scalar: "int64"}
-		select: {
-			from: "external_tables"
-			columns: [
-				{expr: "COUNT(*)"},
-			]
-			where: [
-				{column: "schema_name", op: "=", param: "schemaName"},
-				{column: "deleted_at", op: "IS", valueSQL: "NULL"},
-			]
-		}
+		_where: [
+			{column: "schema_name", op: "=", param: "schemaName"},
+			{column: "deleted_at", op: "IS", valueSQL: "NULL"},
+		]
 	},
-	{
-		name: "CreateExternalTable"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateExternalTable"
+		_table: "external_tables"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "SchemaName", type: "string"},
@@ -33,25 +26,7 @@ queries: [
 			{name: "Owner", type: "string"},
 			{name: "CatalogName", type: "string"},
 		]
-		result: {
-			row: "ExternalTable"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SchemaName", type: "string"},
-				{name: "TableName", type: "string"},
-				{name: "FileFormat", type: "string"},
-				{name: "SourcePath", type: "string"},
-				{name: "LocationName", type: "string"},
-				{name: "Comment", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "DeletedAt", type: "sql.NullString"},
-				{name: "CatalogName", type: "string"},
-			]
-		}
 		insert: {
-			into: "external_tables"
 			columns: [
 				"id",
 				"schema_name",
@@ -74,20 +49,6 @@ queries: [
 				{param: "Owner"},
 				{param: "CatalogName"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "schema_name"},
-				{expr: "table_name"},
-				{expr: "file_format"},
-				{expr: "source_path"},
-				{expr: "location_name"},
-				{expr: "comment"},
-				{expr: "owner"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "deleted_at"},
-				{expr: "catalog_name"},
-			]
 		}
 	},
 	{
@@ -96,39 +57,9 @@ queries: [
 		params: [
 			{name: "id", type: "string"},
 		]
-		result: {
-			row: "ExternalTable"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SchemaName", type: "string"},
-				{name: "TableName", type: "string"},
-				{name: "FileFormat", type: "string"},
-				{name: "SourcePath", type: "string"},
-				{name: "LocationName", type: "string"},
-				{name: "Comment", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "DeletedAt", type: "sql.NullString"},
-				{name: "CatalogName", type: "string"},
-			]
-		}
+		result: {table: "external_tables"}
 		select: {
 			from: "external_tables"
-			columns: [
-				{expr: "id"},
-				{expr: "schema_name"},
-				{expr: "table_name"},
-				{expr: "file_format"},
-				{expr: "source_path"},
-				{expr: "location_name"},
-				{expr: "comment"},
-				{expr: "owner"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "deleted_at"},
-				{expr: "catalog_name"},
-			]
 			where: [
 				{column: "id", op: "=", param: "id"},
 				{column: "deleted_at", op: "IS", valueSQL: "NULL"},
@@ -142,39 +73,9 @@ queries: [
 			{name: "SchemaName", type: "string"},
 			{name: "TableName", type: "string"},
 		]
-		result: {
-			row: "ExternalTable"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SchemaName", type: "string"},
-				{name: "TableName", type: "string"},
-				{name: "FileFormat", type: "string"},
-				{name: "SourcePath", type: "string"},
-				{name: "LocationName", type: "string"},
-				{name: "Comment", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "DeletedAt", type: "sql.NullString"},
-				{name: "CatalogName", type: "string"},
-			]
-		}
+		result: {table: "external_tables"}
 		select: {
 			from: "external_tables"
-			columns: [
-				{expr: "id"},
-				{expr: "schema_name"},
-				{expr: "table_name"},
-				{expr: "file_format"},
-				{expr: "source_path"},
-				{expr: "location_name"},
-				{expr: "comment"},
-				{expr: "owner"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "deleted_at"},
-				{expr: "catalog_name"},
-			]
 			where: [
 				{column: "schema_name", op: "=", param: "SchemaName"},
 				{column: "table_name", op: "=", param: "TableName"},
@@ -188,137 +89,38 @@ queries: [
 		params: [
 			{name: "tableName", type: "string"},
 		]
-		result: {
-			row: "ExternalTable"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SchemaName", type: "string"},
-				{name: "TableName", type: "string"},
-				{name: "FileFormat", type: "string"},
-				{name: "SourcePath", type: "string"},
-				{name: "LocationName", type: "string"},
-				{name: "Comment", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "DeletedAt", type: "sql.NullString"},
-				{name: "CatalogName", type: "string"},
-			]
-		}
+		result: {table: "external_tables"}
 		select: {
 			from: "external_tables"
-			columns: [
-				{expr: "id"},
-				{expr: "schema_name"},
-				{expr: "table_name"},
-				{expr: "file_format"},
-				{expr: "source_path"},
-				{expr: "location_name"},
-				{expr: "comment"},
-				{expr: "owner"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "deleted_at"},
-				{expr: "catalog_name"},
-			]
 			where: [
 				{column: "table_name", op: "=", param: "tableName"},
 				{column: "deleted_at", op: "IS", valueSQL: "NULL"},
 			]
 		}
 	},
-	{
-		name: "ListAllExternalTables"
-		kind: "many"
-		result: {
-			row: "ExternalTable"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SchemaName", type: "string"},
-				{name: "TableName", type: "string"},
-				{name: "FileFormat", type: "string"},
-				{name: "SourcePath", type: "string"},
-				{name: "LocationName", type: "string"},
-				{name: "Comment", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "DeletedAt", type: "sql.NullString"},
-				{name: "CatalogName", type: "string"},
-			]
-		}
+	#ListAllOrdered & {
+		name:   "ListAllExternalTables"
+		_table: "external_tables"
+		_order: []
 		select: {
-			from: "external_tables"
-			columns: [
-				{expr: "id"},
-				{expr: "schema_name"},
-				{expr: "table_name"},
-				{expr: "file_format"},
-				{expr: "source_path"},
-				{expr: "location_name"},
-				{expr: "comment"},
-				{expr: "owner"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "deleted_at"},
-				{expr: "catalog_name"},
-			]
 			where: [
 				{column: "deleted_at", op: "IS", valueSQL: "NULL"},
 			]
 		}
 	},
-	{
-		name: "ListExternalTables"
-		kind: "many"
-		params: [
+	#ListFilteredPaginatedOrdered & {
+		name:   "ListExternalTables"
+		_table: "external_tables"
+		_params: [
 			{name: "SchemaName", type: "string"},
-			{name: "Limit", type: "int64"},
-			{name: "Offset", type: "int64"},
 		]
-		result: {
-			row: "ExternalTable"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SchemaName", type: "string"},
-				{name: "TableName", type: "string"},
-				{name: "FileFormat", type: "string"},
-				{name: "SourcePath", type: "string"},
-				{name: "LocationName", type: "string"},
-				{name: "Comment", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "DeletedAt", type: "sql.NullString"},
-				{name: "CatalogName", type: "string"},
-			]
-		}
-		select: {
-			from: "external_tables"
-			columns: [
-				{expr: "id"},
-				{expr: "schema_name"},
-				{expr: "table_name"},
-				{expr: "file_format"},
-				{expr: "source_path"},
-				{expr: "location_name"},
-				{expr: "comment"},
-				{expr: "owner"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "deleted_at"},
-				{expr: "catalog_name"},
-			]
-			where: [
-				{column: "schema_name", op: "=", param: "SchemaName"},
-				{column: "deleted_at", op: "IS", valueSQL: "NULL"},
-			]
-			orderBy: [
-				{expr: "table_name"},
-			]
-			limitParam: "Limit"
-			offsetParam: "Offset"
-		}
+		_where: [
+			{column: "schema_name", op: "=", param: "SchemaName"},
+			{column: "deleted_at", op: "IS", valueSQL: "NULL"},
+		]
+		_order: [
+			{expr: "table_name"},
+		]
 	},
 	{
 		name: "SoftDeleteExternalTable"

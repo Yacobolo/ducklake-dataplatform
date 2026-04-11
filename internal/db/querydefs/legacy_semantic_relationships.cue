@@ -1,20 +1,13 @@
 package querydefs
 
 queries: [
-	{
-		name: "CountSemanticRelationships"
-		kind: "one"
-		result: {scalar: "int64"}
-		select: {
-			from: "semantic_relationships"
-			columns: [
-				{expr: "COUNT(*)"},
-			]
-		}
+	#CountAll & {
+		name:   "CountSemanticRelationships"
+		_table: "semantic_relationships"
 	},
-	{
-		name: "CreateSemanticRelationship"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateSemanticRelationship"
+		_table: "semantic_relationships"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "Name", type: "string"},
@@ -26,24 +19,7 @@ queries: [
 			{name: "MaxHops", type: "int64"},
 			{name: "CreatedBy", type: "string"},
 		]
-		result: {
-			row: "SemanticRelationship"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "FromSemanticID", type: "string"},
-				{name: "ToSemanticID", type: "string"},
-				{name: "RelationshipType", type: "string"},
-				{name: "JoinSql", type: "string"},
-				{name: "Cost", type: "int64"},
-				{name: "MaxHops", type: "int64"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-			]
-		}
 		insert: {
-			into: "semantic_relationships"
 			columns: [
 				"id",
 				"name",
@@ -66,168 +42,34 @@ queries: [
 				{param: "MaxHops"},
 				{param: "CreatedBy"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "from_semantic_id"},
-				{expr: "to_semantic_id"},
-				{expr: "relationship_type"},
-				{expr: "join_sql"},
-				{expr: "cost"},
-				{expr: "max_hops"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-			]
 		}
 	},
-	{
-		name: "DeleteSemanticRelationship"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
+	#DeleteByID & {
+		name:   "DeleteSemanticRelationship"
+		_table: "semantic_relationships"
+	},
+	#GetByID & {
+		name:   "GetSemanticRelationshipByID"
+		_table: "semantic_relationships"
+	},
+	#GetByTwoStringFields & {
+		name:    "GetSemanticRelationshipByName"
+		_table:  "semantic_relationships"
+		_field1: "from_semantic_id"
+		_param1: "FromSemanticID"
+		_field2: "name"
+		_param2: "Name"
+	},
+	#ListPaginatedOrdered & {
+		name:   "ListSemanticRelationships"
+		_table: "semantic_relationships"
+		_order: [
+			{expr: "name"},
 		]
-		delete: {
-			from: "semantic_relationships"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
 	},
-	{
-		name: "GetSemanticRelationshipByID"
-		kind: "one"
-		params: [
-			{name: "id", type: "string"},
-		]
-		result: {
-			row: "SemanticRelationship"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "FromSemanticID", type: "string"},
-				{name: "ToSemanticID", type: "string"},
-				{name: "RelationshipType", type: "string"},
-				{name: "JoinSql", type: "string"},
-				{name: "Cost", type: "int64"},
-				{name: "MaxHops", type: "int64"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "semantic_relationships"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "from_semantic_id"},
-				{expr: "to_semantic_id"},
-				{expr: "relationship_type"},
-				{expr: "join_sql"},
-				{expr: "cost"},
-				{expr: "max_hops"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-			]
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
-	},
-	{
-		name: "GetSemanticRelationshipByName"
-		kind: "one"
-		params: [
-			{name: "FromSemanticID", type: "string"},
-			{name: "Name", type: "string"},
-		]
-		result: {
-			row: "SemanticRelationship"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "FromSemanticID", type: "string"},
-				{name: "ToSemanticID", type: "string"},
-				{name: "RelationshipType", type: "string"},
-				{name: "JoinSql", type: "string"},
-				{name: "Cost", type: "int64"},
-				{name: "MaxHops", type: "int64"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "semantic_relationships"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "from_semantic_id"},
-				{expr: "to_semantic_id"},
-				{expr: "relationship_type"},
-				{expr: "join_sql"},
-				{expr: "cost"},
-				{expr: "max_hops"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-			]
-			where: [
-				{column: "from_semantic_id", op: "=", param: "FromSemanticID"},
-				{column: "name", op: "=", param: "Name"},
-			]
-		}
-	},
-	{
-		name: "ListSemanticRelationships"
-		kind: "many"
-		params: [
-			{name: "Limit", type: "int64"},
-			{name: "Offset", type: "int64"},
-		]
-		result: {
-			row: "SemanticRelationship"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "FromSemanticID", type: "string"},
-				{name: "ToSemanticID", type: "string"},
-				{name: "RelationshipType", type: "string"},
-				{name: "JoinSql", type: "string"},
-				{name: "Cost", type: "int64"},
-				{name: "MaxHops", type: "int64"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "semantic_relationships"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "from_semantic_id"},
-				{expr: "to_semantic_id"},
-				{expr: "relationship_type"},
-				{expr: "join_sql"},
-				{expr: "cost"},
-				{expr: "max_hops"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-			]
-			orderBy: [
-				{expr: "name"},
-			]
-			limitParam: "Limit"
-			offsetParam: "Offset"
-		}
-	},
-	{
-		name: "UpdateSemanticRelationship"
-		kind: "exec"
+	#UpdateByIDTouch & {
+		name:   "UpdateSemanticRelationship"
+		_table: "semantic_relationships"
 		params: [
 			{name: "RelationshipType", type: "string"},
 			{name: "JoinSql", type: "string"},
@@ -235,18 +77,11 @@ queries: [
 			{name: "MaxHops", type: "int64"},
 			{name: "ID", type: "string"},
 		]
-		update: {
-			table: "semantic_relationships"
-			set: [
-				{column: "relationship_type", value: {param: "RelationshipType"}, coalesceWith: true},
-				{column: "join_sql", value: {param: "JoinSql"}, coalesceWith: true},
-				{column: "cost", value: {param: "Cost"}, coalesceWith: true},
-				{column: "max_hops", value: {param: "MaxHops"}, coalesceWith: true},
-				{column: "updated_at", value: {sql: "datetime('now')"}},
-			]
-			where: [
-				{column: "id", op: "=", param: "ID"},
-			]
-		}
+		_set: [
+			{column: "relationship_type", value: {param: "RelationshipType"}, coalesceWith: true},
+			{column: "join_sql", value: {param: "JoinSql"}, coalesceWith: true},
+			{column: "cost", value: {param: "Cost"}, coalesceWith: true},
+			{column: "max_hops", value: {param: "MaxHops"}, coalesceWith: true},
+		]
 	},
 ]

@@ -1,26 +1,19 @@
 package querydefs
 
 queries: [
-	{
-		name: "CountVolumes"
-		kind: "one"
-		params: [
+	#CountFiltered & {
+		name:   "CountVolumes"
+		_table: "volumes"
+		_params: [
 			{name: "schemaName", type: "string"},
 		]
-		result: {scalar: "int64"}
-		select: {
-			from: "volumes"
-			columns: [
-				{expr: "COUNT(*)"},
-			]
-			where: [
-				{column: "schema_name", op: "=", param: "schemaName"},
-			]
-		}
+		_where: [
+			{column: "schema_name", op: "=", param: "schemaName"},
+		]
 	},
-	{
-		name: "CreateVolume"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateVolume"
+		_table: "volumes"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "Name", type: "string"},
@@ -31,23 +24,7 @@ queries: [
 			{name: "Comment", type: "string"},
 			{name: "Owner", type: "string"},
 		]
-		result: {
-			row: "Volume"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "SchemaName", type: "string"},
-				{name: "CatalogName", type: "string"},
-				{name: "VolumeType", type: "string"},
-				{name: "StorageLocation", type: "string"},
-				{name: "Comment", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-			]
-		}
 		insert: {
-			into: "volumes"
 			columns: [
 				"id",
 				"name",
@@ -68,32 +45,11 @@ queries: [
 				{param: "Comment"},
 				{param: "Owner"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "schema_name"},
-				{expr: "catalog_name"},
-				{expr: "volume_type"},
-				{expr: "storage_location"},
-				{expr: "comment"},
-				{expr: "owner"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-			]
 		}
 	},
-	{
-		name: "DeleteVolume"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "volumes"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#DeleteByID & {
+		name:   "DeleteVolume"
+		_table: "volumes"
 	},
 	{
 		name: "DeleteVolumesBySchema"
@@ -108,98 +64,30 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "GetVolumeByName"
-		kind: "one"
-		params: [
-			{name: "SchemaName", type: "string"},
-			{name: "Name", type: "string"},
-		]
-		result: {
-			row: "Volume"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "SchemaName", type: "string"},
-				{name: "CatalogName", type: "string"},
-				{name: "VolumeType", type: "string"},
-				{name: "StorageLocation", type: "string"},
-				{name: "Comment", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "volumes"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "schema_name"},
-				{expr: "catalog_name"},
-				{expr: "volume_type"},
-				{expr: "storage_location"},
-				{expr: "comment"},
-				{expr: "owner"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-			]
-			where: [
-				{column: "schema_name", op: "=", param: "SchemaName"},
-				{column: "name", op: "=", param: "Name"},
-			]
-		}
+	#GetByTwoStringFields & {
+		name:    "GetVolumeByName"
+		_table:  "volumes"
+		_field1: "schema_name"
+		_param1: "SchemaName"
+		_field2: "name"
+		_param2: "Name"
 	},
-	{
-		name: "ListVolumes"
-		kind: "many"
-		params: [
+	#ListFilteredPaginatedOrdered & {
+		name:   "ListVolumes"
+		_table: "volumes"
+		_params: [
 			{name: "SchemaName", type: "string"},
-			{name: "Limit", type: "int64"},
-			{name: "Offset", type: "int64"},
 		]
-		result: {
-			row: "Volume"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "SchemaName", type: "string"},
-				{name: "CatalogName", type: "string"},
-				{name: "VolumeType", type: "string"},
-				{name: "StorageLocation", type: "string"},
-				{name: "Comment", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "volumes"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "schema_name"},
-				{expr: "catalog_name"},
-				{expr: "volume_type"},
-				{expr: "storage_location"},
-				{expr: "comment"},
-				{expr: "owner"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-			]
-			where: [
-				{column: "schema_name", op: "=", param: "SchemaName"},
-			]
-			orderBy: [
-				{expr: "name"},
-			]
-			limitParam: "Limit"
-			offsetParam: "Offset"
-		}
+		_where: [
+			{column: "schema_name", op: "=", param: "SchemaName"},
+		]
+		_order: [
+			{expr: "name"},
+		]
 	},
-	{
-		name: "UpdateVolume"
-		kind: "exec"
+	#UpdateByIDTouch & {
+		name:   "UpdateVolume"
+		_table: "volumes"
 		params: [
 			{name: "Name", type: "string"},
 			{name: "StorageLocation", type: "string"},
@@ -207,18 +95,11 @@ queries: [
 			{name: "Owner", type: "string"},
 			{name: "ID", type: "string"},
 		]
-		update: {
-			table: "volumes"
-			set: [
-				{column: "name", value: {param: "Name"}, coalesceWith: true},
-				{column: "storage_location", value: {param: "StorageLocation"}, coalesceWith: true},
-				{column: "comment", value: {param: "Comment"}, coalesceWith: true},
-				{column: "owner", value: {param: "Owner"}, coalesceWith: true},
-				{column: "updated_at", value: {sql: "datetime('now')"}},
-			]
-			where: [
-				{column: "id", op: "=", param: "ID"},
-			]
-		}
+		_set: [
+			{column: "name", value: {param: "Name"}, coalesceWith: true},
+			{column: "storage_location", value: {param: "StorageLocation"}, coalesceWith: true},
+			{column: "comment", value: {param: "Comment"}, coalesceWith: true},
+			{column: "owner", value: {param: "Owner"}, coalesceWith: true},
+		]
 	},
 ]

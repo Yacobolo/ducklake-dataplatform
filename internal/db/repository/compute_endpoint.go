@@ -326,7 +326,7 @@ func (r *ComputeEndpointRepo) endpointFromDB(row dbstore.ComputeEndpoint) (*doma
 		RecommendedForLargeQueries: row.RecommendedForLargeQueries != 0,
 		IsDraining:                 row.IsDraining != 0,
 		LastHealthStatus:           strPtrFromNull(row.LastHealthStatus),
-		LastHealthCheckedAt:        timePtrFromNull(row.LastHealthCheckedAt),
+		LastHealthCheckedAt:        endpointTimePtrFromNullString(row.LastHealthCheckedAt),
 		ActiveQueries:              int64PtrFromNull(row.ActiveQueries),
 		QueuedJobs:                 int64PtrFromNull(row.QueuedJobs),
 		RunningJobs:                int64PtrFromNull(row.RunningJobs),
@@ -336,8 +336,8 @@ func (r *ComputeEndpointRepo) endpointFromDB(row dbstore.ComputeEndpoint) (*doma
 		QueryResultTTLSeconds:      int64PtrFromNull(row.QueryResultTtlSeconds),
 		AuthToken:                  authToken,
 		Owner:                      row.Owner,
-		CreatedAt:                  row.CreatedAt,
-		UpdatedAt:                  row.UpdatedAt,
+		CreatedAt:                  parseEndpointTime(row.CreatedAt),
+		UpdatedAt:                  parseEndpointTime(row.UpdatedAt),
 	}, nil
 }
 
@@ -390,11 +390,31 @@ func strPtrFromNull(v sql.NullString) *string {
 	return &v.String
 }
 
-func timePtrFromNull(v sql.NullTime) *time.Time {
+func endpointTimePtrFromNullString(v sql.NullString) *time.Time {
 	if !v.Valid {
 		return nil
 	}
-	return &v.Time
+	t := parseEndpointTime(v.String)
+	return &t
+}
+
+func parseEndpointTime(value string) time.Time {
+	if value == "" {
+		return time.Time{}
+	}
+	for _, layout := range []string{
+		time.DateTime,
+		"2006-01-02 15:04:05Z07:00",
+		time.RFC3339,
+		time.RFC3339Nano,
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04:05.999999999",
+	} {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			return parsed
+		}
+	}
+	return time.Time{}
 }
 
 func defaultString(value, fallback string) string {

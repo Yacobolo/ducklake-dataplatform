@@ -1,27 +1,20 @@
 package querydefs
 
 queries: [
-	{
-		name: "CountViews"
-		kind: "one"
-		params: [
+	#CountFiltered & {
+		name:   "CountViews"
+		_table: "views"
+		_params: [
 			{name: "schemaID", type: "string"},
 		]
-		result: {scalar: "int64"}
-		select: {
-			from: "views"
-			columns: [
-				{expr: "COUNT(*)", alias: "cnt"},
-			]
-			where: [
-				{column: "schema_id", op: "=", param: "schemaID"},
-				{column: "deleted_at", op: "IS", valueSQL: "NULL"},
-			]
-		}
+		_where: [
+			{column: "schema_id", op: "=", param: "schemaID"},
+			{column: "deleted_at", op: "IS", valueSQL: "NULL"},
+		]
 	},
-	{
-		name: "CreateView"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateView"
+		_table: "views"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "SchemaID", type: "string"},
@@ -32,24 +25,7 @@ queries: [
 			{name: "Owner", type: "string"},
 			{name: "SourceTables", type: "sql.NullString"},
 		]
-		result: {
-			row: "View"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SchemaID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "ViewDefinition", type: "string"},
-				{name: "Comment", type: "sql.NullString"},
-				{name: "Properties", type: "sql.NullString"},
-				{name: "Owner", type: "string"},
-				{name: "SourceTables", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "DeletedAt", type: "sql.NullString"},
-			]
-		}
 		insert: {
-			into: "views"
 			columns: [
 				"id",
 				"schema_id",
@@ -69,19 +45,6 @@ queries: [
 				{param: "Properties"},
 				{param: "Owner"},
 				{param: "SourceTables"},
-			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "schema_id"},
-				{expr: "name"},
-				{expr: "view_definition"},
-				{expr: "comment"},
-				{expr: "properties"},
-				{expr: "owner"},
-				{expr: "source_tables"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "deleted_at"},
 			]
 		}
 	},
@@ -126,37 +89,9 @@ queries: [
 			{name: "SchemaID", type: "string"},
 			{name: "Name", type: "string"},
 		]
-		result: {
-			row: "View"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SchemaID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "ViewDefinition", type: "string"},
-				{name: "Comment", type: "sql.NullString"},
-				{name: "Properties", type: "sql.NullString"},
-				{name: "Owner", type: "string"},
-				{name: "SourceTables", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "DeletedAt", type: "sql.NullString"},
-			]
-		}
+		result: {table: "views"}
 		select: {
 			from: "views"
-			columns: [
-				{expr: "id"},
-				{expr: "schema_id"},
-				{expr: "name"},
-				{expr: "view_definition"},
-				{expr: "comment"},
-				{expr: "properties"},
-				{expr: "owner"},
-				{expr: "source_tables"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "deleted_at"},
-			]
 			where: [
 				{column: "schema_id", op: "=", param: "SchemaID"},
 				{column: "name", op: "=", param: "Name"},
@@ -164,55 +99,19 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "ListViews"
-		kind: "many"
-		params: [
+	#ListFilteredPaginatedOrdered & {
+		name:   "ListViews"
+		_table: "views"
+		_params: [
 			{name: "SchemaID", type: "string"},
-			{name: "Limit", type: "int64"},
-			{name: "Offset", type: "int64"},
 		]
-		result: {
-			row: "View"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SchemaID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "ViewDefinition", type: "string"},
-				{name: "Comment", type: "sql.NullString"},
-				{name: "Properties", type: "sql.NullString"},
-				{name: "Owner", type: "string"},
-				{name: "SourceTables", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "DeletedAt", type: "sql.NullString"},
-			]
-		}
-		select: {
-			from: "views"
-			columns: [
-				{expr: "id"},
-				{expr: "schema_id"},
-				{expr: "name"},
-				{expr: "view_definition"},
-				{expr: "comment"},
-				{expr: "properties"},
-				{expr: "owner"},
-				{expr: "source_tables"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "deleted_at"},
-			]
-			where: [
-				{column: "schema_id", op: "=", param: "SchemaID"},
-				{column: "deleted_at", op: "IS", valueSQL: "NULL"},
-			]
-			orderBy: [
-				{expr: "name"},
-			]
-			limitParam: "Limit"
-			offsetParam: "Offset"
-		}
+		_where: [
+			{column: "schema_id", op: "=", param: "SchemaID"},
+			{column: "deleted_at", op: "IS", valueSQL: "NULL"},
+		]
+		_order: [
+			{expr: "name"},
+		]
 	},
 	{
 		name: "UpdateView"

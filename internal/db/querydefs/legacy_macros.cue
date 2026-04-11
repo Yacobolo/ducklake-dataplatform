@@ -1,20 +1,13 @@
 package querydefs
 
 queries: [
-	{
-		name: "CountMacros"
-		kind: "one"
-		result: {scalar: "int64"}
-		select: {
-			from: "macros"
-			columns: [
-				{expr: "COUNT(*)"},
-			]
-		}
+	#CountAll & {
+		name:   "CountMacros"
+		_table: "macros"
 	},
-	{
-		name: "CreateMacro"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateMacro"
+		_table: "macros"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "Name", type: "string"},
@@ -31,29 +24,7 @@ queries: [
 			{name: "Status", type: "string"},
 			{name: "CreatedBy", type: "string"},
 		]
-		result: {
-			row: "Macro"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "MacroType", type: "string"},
-				{name: "Parameters", type: "string"},
-				{name: "Body", type: "string"},
-				{name: "Description", type: "string"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "CatalogName", type: "string"},
-				{name: "ProjectName", type: "string"},
-				{name: "Visibility", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "Properties", type: "string"},
-				{name: "Tags", type: "string"},
-				{name: "Status", type: "string"},
-			]
-		}
 		insert: {
-			into: "macros"
 			columns: [
 				"id",
 				"name",
@@ -86,24 +57,6 @@ queries: [
 				{param: "Status"},
 				{param: "CreatedBy"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "macro_type"},
-				{expr: "parameters"},
-				{expr: "body"},
-				{expr: "description"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "catalog_name"},
-				{expr: "project_name"},
-				{expr: "visibility"},
-				{expr: "owner"},
-				{expr: "properties"},
-				{expr: "tags"},
-				{expr: "status"},
-			]
 		}
 	},
 	{
@@ -119,161 +72,25 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "GetMacroByName"
-		kind: "one"
-		params: [
-			{name: "name", type: "string"},
-		]
-		result: {
-			row: "Macro"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "MacroType", type: "string"},
-				{name: "Parameters", type: "string"},
-				{name: "Body", type: "string"},
-				{name: "Description", type: "string"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "CatalogName", type: "string"},
-				{name: "ProjectName", type: "string"},
-				{name: "Visibility", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "Properties", type: "string"},
-				{name: "Tags", type: "string"},
-				{name: "Status", type: "string"},
-			]
-		}
-		select: {
-			from: "macros"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "macro_type"},
-				{expr: "parameters"},
-				{expr: "body"},
-				{expr: "description"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "catalog_name"},
-				{expr: "project_name"},
-				{expr: "visibility"},
-				{expr: "owner"},
-				{expr: "properties"},
-				{expr: "tags"},
-				{expr: "status"},
-			]
-			where: [
-				{column: "name", op: "=", param: "name"},
-			]
-		}
+	#GetByStringField & {
+		name:   "GetMacroByName"
+		_table: "macros"
+		_field: "name"
+		_param: "name"
 	},
-	{
-		name: "ListAllMacros"
-		kind: "many"
-		result: {
-			row: "Macro"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "MacroType", type: "string"},
-				{name: "Parameters", type: "string"},
-				{name: "Body", type: "string"},
-				{name: "Description", type: "string"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "CatalogName", type: "string"},
-				{name: "ProjectName", type: "string"},
-				{name: "Visibility", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "Properties", type: "string"},
-				{name: "Tags", type: "string"},
-				{name: "Status", type: "string"},
-			]
-		}
-		select: {
-			from: "macros"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "macro_type"},
-				{expr: "parameters"},
-				{expr: "body"},
-				{expr: "description"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "catalog_name"},
-				{expr: "project_name"},
-				{expr: "visibility"},
-				{expr: "owner"},
-				{expr: "properties"},
-				{expr: "tags"},
-				{expr: "status"},
-			]
-			orderBy: [
-				{expr: "name"},
-			]
-		}
-	},
-	{
-		name: "ListMacros"
-		kind: "many"
-		params: [
-			{name: "Limit", type: "int64"},
-			{name: "Offset", type: "int64"},
+	#ListAllOrdered & {
+		name:   "ListAllMacros"
+		_table: "macros"
+		_order: [
+			{expr: "name"},
 		]
-		result: {
-			row: "Macro"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "MacroType", type: "string"},
-				{name: "Parameters", type: "string"},
-				{name: "Body", type: "string"},
-				{name: "Description", type: "string"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-				{name: "CatalogName", type: "string"},
-				{name: "ProjectName", type: "string"},
-				{name: "Visibility", type: "string"},
-				{name: "Owner", type: "string"},
-				{name: "Properties", type: "string"},
-				{name: "Tags", type: "string"},
-				{name: "Status", type: "string"},
-			]
-		}
-		select: {
-			from: "macros"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "macro_type"},
-				{expr: "parameters"},
-				{expr: "body"},
-				{expr: "description"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-				{expr: "catalog_name"},
-				{expr: "project_name"},
-				{expr: "visibility"},
-				{expr: "owner"},
-				{expr: "properties"},
-				{expr: "tags"},
-				{expr: "status"},
-			]
-			orderBy: [
-				{expr: "name"},
-			]
-			limitParam: "Limit"
-			offsetParam: "Offset"
-		}
+	},
+	#ListPaginatedOrdered & {
+		name:   "ListMacros"
+		_table: "macros"
+		_order: [
+			{expr: "name"},
+		]
 	},
 	{
 		name: "UpdateMacro"

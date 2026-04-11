@@ -73,18 +73,9 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "DeleteLineageEdge"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "lineage_edges"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#DeleteByID & {
+		name:   "DeleteLineageEdge"
+		_table: "lineage_edges"
 	},
 	{
 		name: "GetDownstreamLineage"
@@ -123,7 +114,7 @@ queries: [
 			orderBy: [
 				{expr: "created_at", desc: true},
 			]
-			limitParam: "Limit"
+			limitParam:  "Limit"
 			offsetParam: "Offset"
 		}
 	},
@@ -164,7 +155,7 @@ queries: [
 			orderBy: [
 				{expr: "created_at", desc: true},
 			]
-			limitParam: "Limit"
+			limitParam:  "Limit"
 			offsetParam: "Offset"
 		}
 	},

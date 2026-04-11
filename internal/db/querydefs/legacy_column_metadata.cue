@@ -70,7 +70,12 @@ queries: [
 		]
 		insert: {
 			into: "column_metadata"
-			columns: ["table_securable_name", "column_name", "comment", "properties"]
+			columns: [
+				"table_securable_name",
+				"column_name",
+				"comment",
+				"properties",
+			]
 			values: [
 				{param: "TableSecurableName"},
 				{param: "ColumnName"},
@@ -78,7 +83,10 @@ queries: [
 				{param: "Properties"},
 			]
 			conflict: {
-				targets: ["table_securable_name", "column_name"]
+				targets: [
+					"table_securable_name",
+					"column_name",
+				]
 				doUpdate: [
 					{column: "comment", value: {sql: "COALESCE(excluded.comment, comment)"}},
 					{column: "properties", value: {sql: "COALESCE(excluded.properties, properties)"}},

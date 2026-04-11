@@ -17,6 +17,25 @@ import (
 
 // LoadQueries loads CUE-authored query definitions from srcDir.
 func LoadQueries(srcDir string) ([]cuesql.Query, error) {
+	files, err := LoadQueryFiles(srcDir)
+	if err != nil {
+		return nil, err
+	}
+	var queries []cuesql.Query
+	for _, file := range files {
+		queries = append(queries, file.Queries...)
+	}
+	return queries, nil
+}
+
+// LoadedQueryFile describes a single decoded querydef file.
+type LoadedQueryFile struct {
+	Path    string
+	Queries []cuesql.Query
+}
+
+// LoadQueryFiles loads CUE-authored query definitions grouped by source file.
+func LoadQueryFiles(srcDir string) ([]LoadedQueryFile, error) {
 	files, err := filepath.Glob(filepath.Join(srcDir, "*.cue"))
 	if err != nil {
 		return nil, fmt.Errorf("glob query definitions: %w", err)
@@ -37,7 +56,7 @@ func LoadQueries(srcDir string) ([]cuesql.Query, error) {
 		}
 	}
 
-	var queries []cuesql.Query
+	var loaded []LoadedQueryFile
 	seen := make(map[string]struct{})
 	for _, file := range queryFiles {
 		value := ctx.BuildFile(buildCombinedQuerydefFile(support, file))
@@ -57,10 +76,13 @@ func LoadQueries(srcDir string) ([]cuesql.Query, error) {
 				return nil, fmt.Errorf("duplicate query name %q", query.Name)
 			}
 			seen[query.Name] = struct{}{}
-			queries = append(queries, query)
 		}
+		loaded = append(loaded, LoadedQueryFile{
+			Path:    file.Path,
+			Queries: decoded,
+		})
 	}
-	return queries, nil
+	return loaded, nil
 }
 
 type querydefFile struct {

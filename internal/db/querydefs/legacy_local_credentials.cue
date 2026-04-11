@@ -1,5 +1,18 @@
 package querydefs
 
+#LocalCredentialResult: {
+	row: "LocalCredential"
+	fields: [
+		{name: "PrincipalID", type: "string"},
+		{name: "Username", type: "string"},
+		{name: "PasswordHash", type: "string"},
+		{name: "PasswordChangedAt", type: "time.Time"},
+		{name: "MustChangePassword", type: "int64"},
+		{name: "CreatedAt", type: "time.Time"},
+		{name: "UpdatedAt", type: "time.Time"},
+	]
+}
+
 queries: [
 	{
 		name: "DeleteLocalCredential"
@@ -20,18 +33,7 @@ queries: [
 		params: [
 			{name: "principalID", type: "string"},
 		]
-		result: {
-			row: "LocalCredential"
-			fields: [
-				{name: "PrincipalID", type: "string"},
-				{name: "Username", type: "string"},
-				{name: "PasswordHash", type: "string"},
-				{name: "PasswordChangedAt", type: "time.Time"},
-				{name: "MustChangePassword", type: "int64"},
-				{name: "CreatedAt", type: "time.Time"},
-				{name: "UpdatedAt", type: "time.Time"},
-			]
-		}
+		result: #LocalCredentialResult
 		select: {
 			from: "local_credentials"
 			columns: [
@@ -55,18 +57,7 @@ queries: [
 		params: [
 			{name: "username", type: "string"},
 		]
-		result: {
-			row: "LocalCredential"
-			fields: [
-				{name: "PrincipalID", type: "string"},
-				{name: "Username", type: "string"},
-				{name: "PasswordHash", type: "string"},
-				{name: "PasswordChangedAt", type: "time.Time"},
-				{name: "MustChangePassword", type: "int64"},
-				{name: "CreatedAt", type: "time.Time"},
-				{name: "UpdatedAt", type: "time.Time"},
-			]
-		}
+		result: #LocalCredentialResult
 		select: {
 			from: "local_credentials"
 			columns: [
@@ -112,7 +103,9 @@ queries: [
 				{sql: "CURRENT_TIMESTAMP"},
 			]
 			conflict: {
-				targets: ["principal_id"]
+				targets: [
+					"principal_id",
+				]
 				doUpdate: [
 					{column: "username", value: {sql: "excluded.username"}},
 					{column: "password_hash", value: {sql: "excluded.password_hash"}},

@@ -29,13 +29,14 @@ queries: [
 				{expr: "created_at"},
 				{expr: "updated_at"},
 			]
-			where: [{column: "id", op: "=", valueSQL: "1"}]
+			where: [
+				{column: "id", op: "=", valueSQL: "1"},
+			]
 		}
 	},
 	{
 		name: "SetSetupBootstrapToken"
 		kind: "exec"
-		paramMode: "struct"
 		params: [
 			{name: "BootstrapTokenHash", type: "sql.NullString"},
 			{name: "BootstrapTokenExpiresAt", type: "sql.NullTime"},
@@ -47,7 +48,9 @@ queries: [
 				{column: "bootstrap_token_expires_at", value: {param: "BootstrapTokenExpiresAt"}},
 				{column: "updated_at", value: {sql: "CURRENT_TIMESTAMP"}},
 			]
-			where: [{column: "id", op: "=", valueSQL: "1"}]
+			where: [
+				{column: "id", op: "=", valueSQL: "1"},
+			]
 		}
 	},
 	{
@@ -60,13 +63,14 @@ queries: [
 				{column: "bootstrap_token_expires_at", value: {sql: "NULL"}},
 				{column: "updated_at", value: {sql: "CURRENT_TIMESTAMP"}},
 			]
-			where: [{column: "id", op: "=", valueSQL: "1"}]
+			where: [
+				{column: "id", op: "=", valueSQL: "1"},
+			]
 		}
 	},
 	{
 		name: "CompleteSetupState"
 		kind: "exec"
-		paramMode: "single"
 		params: [
 			{name: "setupCompletedBy", type: "sql.NullString"},
 		]
@@ -78,7 +82,9 @@ queries: [
 				{column: "setup_completed_by", value: {param: "setupCompletedBy"}},
 				{column: "updated_at", value: {sql: "CURRENT_TIMESTAMP"}},
 			]
-			where: [{column: "id", op: "=", valueSQL: "1"}]
+			where: [
+				{column: "id", op: "=", valueSQL: "1"},
+			]
 		}
 	},
 ]

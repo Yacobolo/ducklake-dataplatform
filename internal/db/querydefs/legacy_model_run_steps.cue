@@ -1,9 +1,9 @@
 package querydefs
 
 queries: [
-	{
-		name: "CreateModelRunStep"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateModelRunStep"
+		_table: "model_run_steps"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "RunID", type: "string"},
@@ -17,29 +17,7 @@ queries: [
 			{name: "Status", type: "string"},
 			{name: "Tier", type: "int64"},
 		]
-		result: {
-			row: "ModelRunStep"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "RunID", type: "string"},
-				{name: "ModelID", type: "string"},
-				{name: "ModelName", type: "string"},
-				{name: "Status", type: "string"},
-				{name: "Tier", type: "int64"},
-				{name: "RowsAffected", type: "sql.NullInt64"},
-				{name: "StartedAt", type: "sql.NullString"},
-				{name: "FinishedAt", type: "sql.NullString"},
-				{name: "ErrorMessage", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "CompiledSql", type: "sql.NullString"},
-				{name: "CompiledHash", type: "sql.NullString"},
-				{name: "DependsOn", type: "string"},
-				{name: "VarsUsed", type: "string"},
-				{name: "MacrosUsed", type: "string"},
-			]
-		}
 		insert: {
-			into: "model_run_steps"
 			columns: [
 				"id",
 				"run_id",
@@ -66,24 +44,6 @@ queries: [
 				{param: "Status"},
 				{param: "Tier"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "run_id"},
-				{expr: "model_id"},
-				{expr: "model_name"},
-				{expr: "status"},
-				{expr: "tier"},
-				{expr: "rows_affected"},
-				{expr: "started_at"},
-				{expr: "finished_at"},
-				{expr: "error_message"},
-				{expr: "created_at"},
-				{expr: "compiled_sql"},
-				{expr: "compiled_hash"},
-				{expr: "depends_on"},
-				{expr: "vars_used"},
-				{expr: "macros_used"},
-			]
 		}
 	},
 	{
@@ -92,47 +52,9 @@ queries: [
 		params: [
 			{name: "runID", type: "string"},
 		]
-		result: {
-			row: "ModelRunStep"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "RunID", type: "string"},
-				{name: "ModelID", type: "string"},
-				{name: "ModelName", type: "string"},
-				{name: "Status", type: "string"},
-				{name: "Tier", type: "int64"},
-				{name: "RowsAffected", type: "sql.NullInt64"},
-				{name: "StartedAt", type: "sql.NullString"},
-				{name: "FinishedAt", type: "sql.NullString"},
-				{name: "ErrorMessage", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "CompiledSql", type: "sql.NullString"},
-				{name: "CompiledHash", type: "sql.NullString"},
-				{name: "DependsOn", type: "string"},
-				{name: "VarsUsed", type: "string"},
-				{name: "MacrosUsed", type: "string"},
-			]
-		}
+		result: {table: "model_run_steps"}
 		select: {
 			from: "model_run_steps"
-			columns: [
-				{expr: "id"},
-				{expr: "run_id"},
-				{expr: "model_id"},
-				{expr: "model_name"},
-				{expr: "status"},
-				{expr: "tier"},
-				{expr: "rows_affected"},
-				{expr: "started_at"},
-				{expr: "finished_at"},
-				{expr: "error_message"},
-				{expr: "created_at"},
-				{expr: "compiled_sql"},
-				{expr: "compiled_hash"},
-				{expr: "depends_on"},
-				{expr: "vars_used"},
-				{expr: "macros_used"},
-			]
 			where: [
 				{column: "run_id", op: "=", param: "runID"},
 			]

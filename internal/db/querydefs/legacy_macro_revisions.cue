@@ -1,9 +1,9 @@
 package querydefs
 
 queries: [
-	{
-		name: "CreateMacroRevision"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateMacroRevision"
+		_table: "macro_revisions"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "MacroID", type: "string"},
@@ -16,24 +16,7 @@ queries: [
 			{name: "Status", type: "string"},
 			{name: "CreatedBy", type: "string"},
 		]
-		result: {
-			row: "MacroRevision"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "MacroID", type: "string"},
-				{name: "MacroName", type: "string"},
-				{name: "Version", type: "int64"},
-				{name: "ContentHash", type: "string"},
-				{name: "Parameters", type: "string"},
-				{name: "Body", type: "string"},
-				{name: "Description", type: "string"},
-				{name: "Status", type: "string"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
 		insert: {
-			into: "macro_revisions"
 			columns: [
 				"id",
 				"macro_id",
@@ -57,19 +40,6 @@ queries: [
 				{param: "Description"},
 				{param: "Status"},
 				{param: "CreatedBy"},
-			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "macro_id"},
-				{expr: "macro_name"},
-				{expr: "version"},
-				{expr: "content_hash"},
-				{expr: "parameters"},
-				{expr: "body"},
-				{expr: "description"},
-				{expr: "status"},
-				{expr: "created_by"},
-				{expr: "created_at"},
 			]
 		}
 	},
@@ -97,37 +67,9 @@ queries: [
 			{name: "MacroName", type: "string"},
 			{name: "Version", type: "int64"},
 		]
-		result: {
-			row: "MacroRevision"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "MacroID", type: "string"},
-				{name: "MacroName", type: "string"},
-				{name: "Version", type: "int64"},
-				{name: "ContentHash", type: "string"},
-				{name: "Parameters", type: "string"},
-				{name: "Body", type: "string"},
-				{name: "Description", type: "string"},
-				{name: "Status", type: "string"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
+		result: {table: "macro_revisions"}
 		select: {
 			from: "macro_revisions"
-			columns: [
-				{expr: "id"},
-				{expr: "macro_id"},
-				{expr: "macro_name"},
-				{expr: "version"},
-				{expr: "content_hash"},
-				{expr: "parameters"},
-				{expr: "body"},
-				{expr: "description"},
-				{expr: "status"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-			]
 			where: [
 				{column: "macro_name", op: "=", param: "MacroName"},
 				{column: "version", op: "=", param: "Version"},
@@ -140,37 +82,9 @@ queries: [
 		params: [
 			{name: "macroName", type: "string"},
 		]
-		result: {
-			row: "MacroRevision"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "MacroID", type: "string"},
-				{name: "MacroName", type: "string"},
-				{name: "Version", type: "int64"},
-				{name: "ContentHash", type: "string"},
-				{name: "Parameters", type: "string"},
-				{name: "Body", type: "string"},
-				{name: "Description", type: "string"},
-				{name: "Status", type: "string"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
+		result: {table: "macro_revisions"}
 		select: {
 			from: "macro_revisions"
-			columns: [
-				{expr: "id"},
-				{expr: "macro_id"},
-				{expr: "macro_name"},
-				{expr: "version"},
-				{expr: "content_hash"},
-				{expr: "parameters"},
-				{expr: "body"},
-				{expr: "description"},
-				{expr: "status"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-			]
 			where: [
 				{column: "macro_name", op: "=", param: "macroName"},
 			]

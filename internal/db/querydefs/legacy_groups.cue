@@ -14,7 +14,11 @@ queries: [
 			{name: "Description", type: "sql.NullString"},
 		]
 		insert: {
-			columns: ["id", "name", "description"]
+			columns: [
+				"id",
+				"name",
+				"description",
+			]
 			values: [
 				{param: "ID"},
 				{param: "Name"},
@@ -59,12 +63,16 @@ queries: [
 	#ListAllOrdered & {
 		name:   "ListGroups"
 		_table: "groups"
-		_order: [{expr: "name"}]
+		_order: [
+			{expr: "name"},
+		]
 	},
 	#ListPaginatedOrdered & {
 		name:   "ListGroupsPaginated"
 		_table: "groups"
-		_order: [{expr: "id"}]
+		_order: [
+			{expr: "id"},
+		]
 	},
 	{
 		name: "UpdateGroup"
@@ -79,7 +87,9 @@ queries: [
 			set: [
 				{column: "description", value: {param: "Description"}},
 			]
-			where: [{column: "id", op: "=", param: "ID"}]
+			where: [
+				{column: "id", op: "=", param: "ID"},
+			]
 			returning: true
 		}
 	},

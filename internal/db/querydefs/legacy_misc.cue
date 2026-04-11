@@ -11,8 +11,12 @@ queries: [
 		]
 		insert: {
 			modifier: "OR IGNORE"
-			into: "group_members"
-			columns: ["group_id", "member_type", "member_id"]
+			into:     "group_members"
+			columns: [
+				"group_id",
+				"member_type",
+				"member_id",
+			]
 			values: [
 				{param: "GroupID"},
 				{param: "MemberType"},
@@ -32,7 +36,7 @@ queries: [
 		]
 		insert: {
 			modifier: "OR IGNORE"
-			into: "column_mask_bindings"
+			into:     "column_mask_bindings"
 			columns: [
 				"id",
 				"column_mask_id",
@@ -60,8 +64,13 @@ queries: [
 		]
 		insert: {
 			modifier: "OR IGNORE"
-			into: "row_filter_bindings"
-			columns: ["id", "row_filter_id", "principal_id", "principal_type"]
+			into:     "row_filter_bindings"
+			columns: [
+				"id",
+				"row_filter_id",
+				"principal_id",
+				"principal_type",
+			]
 			values: [
 				{param: "ID"},
 				{param: "RowFilterID"},
@@ -81,8 +90,13 @@ queries: [
 		]
 		insert: {
 			modifier: "OR REPLACE"
-			into: "catalog_metadata"
-			columns: ["securable_type", "securable_name", "comment", "owner"]
+			into:     "catalog_metadata"
+			columns: [
+				"securable_type",
+				"securable_name",
+				"comment",
+				"owner",
+			]
 			values: [
 				{param: "SecurableType"},
 				{param: "SecurableName"},

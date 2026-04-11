@@ -132,7 +132,10 @@ queries: [
 				{param: "Owner"},
 			]
 			conflict: {
-				targets: ["securable_type", "securable_name"]
+				targets: [
+					"securable_type",
+					"securable_name",
+				]
 				doUpdate: [
 					{column: "comment", value: {sql: "COALESCE(excluded.comment, comment)"}},
 					{column: "properties", value: {sql: "COALESCE(excluded.properties, properties)"}},

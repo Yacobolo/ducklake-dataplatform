@@ -7,23 +7,9 @@ queries: [
 		params: [
 			{name: "rowFilterID", type: "string"},
 		]
-		result: {
-			row: "RowFilterBinding"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "RowFilterID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "PrincipalType", type: "string"},
-			]
-		}
+		result: {table: "row_filter_bindings"}
 		select: {
 			from: "row_filter_bindings"
-			columns: [
-				{expr: "id"},
-				{expr: "row_filter_id"},
-				{expr: "principal_id"},
-				{expr: "principal_type"},
-			]
 			where: [
 				{column: "row_filter_id", op: "=", param: "rowFilterID"},
 			]

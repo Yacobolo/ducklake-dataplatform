@@ -1,298 +1,160 @@
 package querydefs
 
-queries: [
-	{
-		name: "CountAPIKeysForPrincipal"
-		kind: "one"
-		params: [
-			{name: "principalID", type: "string"},
-		]
-		result: {scalar: "int64"}
-		select: {
-			from: "api_keys"
-			columns: [
-				{expr: "COUNT(*)", alias: "cnt"},
-			]
-			where: [
-				{column: "principal_id", op: "=", param: "principalID"},
-			]
-		}
-	},
-	{
-		name: "CountAllAPIKeys"
-		kind: "one"
-		result: {scalar: "int64"}
-		select: {
-			from: "api_keys"
-			columns: [
-				{expr: "COUNT(*)", alias: "cnt"},
-			]
-		}
-	},
-	{
-		name: "CreateAPIKey"
-		kind: "one"
-		params: [
+apiKeys: {
+	table: "api_keys"
+	order: [{expr: "created_at", desc: true}]
+	byPrincipalParams: [{name: "principalID", type: "string"}]
+	byPrincipalWhere:  [{column: "principal_id", op: "=", param: "principalID"}]
+
+	#HashLookupRow: {
+		row: "GetAPIKeyByHashRow"
+		fields: [
 			{name: "ID", type: "string"},
 			{name: "KeyHash", type: "string"},
-			{name: "KeyPrefix", type: "sql.NullString"},
 			{name: "PrincipalID", type: "string"},
 			{name: "Name", type: "string"},
 			{name: "ExpiresAt", type: "sql.NullString"},
+			{name: "CreatedAt", type: "string"},
+			{name: "KeyPrefix", type: "sql.NullString"},
+			{name: "PrincipalName", type: "string"},
 		]
-		result: {
-			row: "ApiKey"
-			fields: [
+	}
+
+	queries: {
+		countForPrincipal: #CountFiltered & {
+			name: "CountAPIKeysForPrincipal"
+			_table:  apiKeys.table
+			_params: apiKeys.byPrincipalParams
+			_where:  apiKeys.byPrincipalWhere
+		}
+
+		countAll: #CountAll & {
+			name: "CountAllAPIKeys"
+			_table: apiKeys.table
+		}
+
+		create: #InsertReturningTable & {
+			name: "CreateAPIKey"
+			_table: apiKeys.table
+			params: [
 				{name: "ID", type: "string"},
 				{name: "KeyHash", type: "string"},
+				{name: "KeyPrefix", type: "sql.NullString"},
 				{name: "PrincipalID", type: "string"},
 				{name: "Name", type: "string"},
 				{name: "ExpiresAt", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "KeyPrefix", type: "sql.NullString"},
 			]
+			insert: {
+				columns: [
+					"id",
+					"key_hash",
+					"key_prefix",
+					"principal_id",
+					"name",
+					"expires_at",
+				]
+				values: [
+					{param: "ID"},
+					{param: "KeyHash"},
+					{param: "KeyPrefix"},
+					{param: "PrincipalID"},
+					{param: "Name"},
+					{param: "ExpiresAt"},
+				]
+			}
 		}
-		insert: {
-			into: "api_keys"
-			columns: [
-				"id",
-				"key_hash",
-				"key_prefix",
-				"principal_id",
-				"name",
-				"expires_at",
-			]
-			values: [
-				{param: "ID"},
-				{param: "KeyHash"},
-				{param: "KeyPrefix"},
-				{param: "PrincipalID"},
-				{param: "Name"},
-				{param: "ExpiresAt"},
-			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "key_hash"},
-				{expr: "principal_id"},
-				{expr: "name"},
-				{expr: "expires_at"},
-				{expr: "created_at"},
-				{expr: "key_prefix"},
-			]
+
+		deleteByID: #DeleteByID & {
+			name: "DeleteAPIKey"
+			_table: apiKeys.table
 		}
-	},
-	{
-		name: "DeleteAPIKey"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "api_keys"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
+
+		deleteExpired: {
+			name: "DeleteExpiredKeys"
+			kind: "execresult"
+			delete: {
+				from: apiKeys.table
+				where: [
+					{column: "expires_at", op: "IS NOT", valueSQL: "NULL"},
+					{column: "expires_at", op: "<=", valueSQL: "datetime('now', 'localtime')"},
+				]
+			}
 		}
-	},
-	{
-		name: "DeleteExpiredKeys"
-		kind: "execresult"
-		delete: {
-			from: "api_keys"
-			where: [
-				{column: "expires_at", op: "IS NOT", valueSQL: "NULL"},
-				{column: "expires_at", op: "<=", valueSQL: "datetime('now', 'localtime')"},
-			]
+
+		getByHash: {
+			name: "GetAPIKeyByHash"
+			kind: "one"
+			params: [{name: "keyHash", type: "string"}]
+			result: #HashLookupRow
+			select: {
+				from:  apiKeys.table
+				alias: "ak"
+				columns: [
+					{expr: "ak.id"},
+					{expr: "ak.key_hash"},
+					{expr: "ak.principal_id"},
+					{expr: "ak.name"},
+					{expr: "ak.expires_at"},
+					{expr: "ak.created_at"},
+					{expr: "ak.key_prefix"},
+					{expr: "p.name", alias: "principal_name"},
+				]
+				joins: [
+					{type: "JOIN", table: "principals", alias: "p", on: "ak.principal_id = p.id"},
+				]
+				where: [
+					{column: "ak.key_hash", op: "=", param: "keyHash"},
+					{rawSQL: "(ak.expires_at IS NULL OR ak.expires_at > datetime('now', 'localtime'))"},
+				]
+			}
 		}
-	},
-	{
-		name: "GetAPIKeyByHash"
-		kind: "one"
-		params: [
-			{name: "keyHash", type: "string"},
-		]
-		result: {
-			row: "GetAPIKeyByHashRow"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "KeyHash", type: "string"},
+
+		getByID: #GetByID & {
+			name: "GetAPIKeyByID"
+			_table: apiKeys.table
+		}
+
+		listByPrincipal: {
+			name:   "ListAPIKeysForPrincipal"
+			kind:   "many"
+			params: apiKeys.byPrincipalParams
+			result: {table: apiKeys.table}
+			select: {
+				from:    apiKeys.table
+				where:   apiKeys.byPrincipalWhere
+				orderBy: apiKeys.order
+			}
+		}
+
+		listByPrincipalPaginated: #ListFilteredPaginatedOrdered & {
+			name:   "ListAPIKeysForPrincipalPaginated"
+			_table: apiKeys.table
+			_order: apiKeys.order
+			_params: [
 				{name: "PrincipalID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "ExpiresAt", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "KeyPrefix", type: "sql.NullString"},
-				{name: "PrincipalName", type: "string"},
 			]
-		}
-		select: {
-			from: "api_keys"
-			alias: "ak"
-			columns: [
-				{expr: "ak.id"},
-				{expr: "ak.key_hash"},
-				{expr: "ak.principal_id"},
-				{expr: "ak.name"},
-				{expr: "ak.expires_at"},
-				{expr: "ak.created_at"},
-				{expr: "ak.key_prefix"},
-				{expr: "p.name", alias: "principal_name"},
-			]
-			joins: [
-				{type: "JOIN", table: "principals", alias: "p", on: "ak.principal_id = p.id"},
-			]
-			where: [
-				{column: "ak.key_hash", op: "=", param: "keyHash"},
-				{rawSQL: "(ak.expires_at IS NULL OR ak.expires_at > datetime('now', 'localtime'))"},
-			]
-		}
-	},
-	{
-		name: "GetAPIKeyByID"
-		kind: "one"
-		params: [
-			{name: "id", type: "string"},
-		]
-		result: {
-			row: "ApiKey"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "KeyHash", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "ExpiresAt", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "KeyPrefix", type: "sql.NullString"},
-			]
-		}
-		select: {
-			from: "api_keys"
-			columns: [
-				{expr: "id"},
-				{expr: "key_hash"},
-				{expr: "principal_id"},
-				{expr: "name"},
-				{expr: "expires_at"},
-				{expr: "created_at"},
-				{expr: "key_prefix"},
-			]
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
-	},
-	{
-		name: "ListAPIKeysForPrincipal"
-		kind: "many"
-		params: [
-			{name: "principalID", type: "string"},
-		]
-		result: {
-			row: "ApiKey"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "KeyHash", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "ExpiresAt", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "KeyPrefix", type: "sql.NullString"},
-			]
-		}
-		select: {
-			from: "api_keys"
-			columns: [
-				{expr: "id"},
-				{expr: "key_hash"},
-				{expr: "principal_id"},
-				{expr: "name"},
-				{expr: "expires_at"},
-				{expr: "created_at"},
-				{expr: "key_prefix"},
-			]
-			where: [
-				{column: "principal_id", op: "=", param: "principalID"},
-			]
-			orderBy: [
-				{expr: "created_at", desc: true},
-			]
-		}
-	},
-	{
-		name: "ListAPIKeysForPrincipalPaginated"
-		kind: "many"
-		params: [
-			{name: "PrincipalID", type: "string"},
-			{name: "Limit", type: "int64"},
-			{name: "Offset", type: "int64"},
-		]
-		result: {
-			row: "ApiKey"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "KeyHash", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "ExpiresAt", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "KeyPrefix", type: "sql.NullString"},
-			]
-		}
-		select: {
-			from: "api_keys"
-			columns: [
-				{expr: "id"},
-				{expr: "key_hash"},
-				{expr: "principal_id"},
-				{expr: "name"},
-				{expr: "expires_at"},
-				{expr: "created_at"},
-				{expr: "key_prefix"},
-			]
-			where: [
+			_where: [
 				{column: "principal_id", op: "=", param: "PrincipalID"},
 			]
-			orderBy: [
-				{expr: "created_at", desc: true},
-			]
-			limitParam: "Limit"
-			offsetParam: "Offset"
 		}
-	},
-	{
-		name: "ListAllAPIKeysPaginated"
-		kind: "many"
-		params: [
-			{name: "Limit", type: "int64"},
-			{name: "Offset", type: "int64"},
-		]
-		result: {
-			row: "ApiKey"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "KeyHash", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "ExpiresAt", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "KeyPrefix", type: "sql.NullString"},
-			]
+
+		listAllPaginated: #ListPaginatedOrdered & {
+			name: "ListAllAPIKeysPaginated"
+			_table: apiKeys.table
+			_order: apiKeys.order
 		}
-		select: {
-			from: "api_keys"
-			columns: [
-				{expr: "id"},
-				{expr: "key_hash"},
-				{expr: "principal_id"},
-				{expr: "name"},
-				{expr: "expires_at"},
-				{expr: "created_at"},
-				{expr: "key_prefix"},
-			]
-			orderBy: [
-				{expr: "created_at", desc: true},
-			]
-			limitParam: "Limit"
-			offsetParam: "Offset"
-		}
-	},
+	}
+}
+
+queries: [
+	apiKeys.queries.countForPrincipal,
+	apiKeys.queries.countAll,
+	apiKeys.queries.create,
+	apiKeys.queries.deleteByID,
+	apiKeys.queries.deleteExpired,
+	apiKeys.queries.getByHash,
+	apiKeys.queries.getByID,
+	apiKeys.queries.listByPrincipal,
+	apiKeys.queries.listByPrincipalPaginated,
+	apiKeys.queries.listAllPaginated,
 ]

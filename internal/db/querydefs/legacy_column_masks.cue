@@ -1,26 +1,19 @@
 package querydefs
 
 queries: [
-	{
-		name: "CountColumnMasksForTable"
-		kind: "one"
-		params: [
+	#CountFiltered & {
+		name:   "CountColumnMasksForTable"
+		_table: "column_masks"
+		_params: [
 			{name: "tableID", type: "string"},
 		]
-		result: {scalar: "int64"}
-		select: {
-			from: "column_masks"
-			columns: [
-				{expr: "COUNT(*)", alias: "cnt"},
-			]
-			where: [
-				{column: "table_id", op: "=", param: "tableID"},
-			]
-		}
+		_where: [
+			{column: "table_id", op: "=", param: "tableID"},
+		]
 	},
-	{
-		name: "CreateColumnMask"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateColumnMask"
+		_table: "column_masks"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "TableID", type: "string"},
@@ -29,20 +22,7 @@ queries: [
 			{name: "MaskExpression", type: "string"},
 			{name: "Description", type: "sql.NullString"},
 		]
-		result: {
-			row: "ColumnMask"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "TableID", type: "string"},
-				{name: "ColumnName", type: "string"},
-				{name: "MaskExpression", type: "string"},
-				{name: "Description", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "Name", type: "sql.NullString"},
-			]
-		}
 		insert: {
-			into: "column_masks"
 			columns: [
 				"id",
 				"table_id",
@@ -59,29 +39,11 @@ queries: [
 				{param: "MaskExpression"},
 				{param: "Description"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "table_id"},
-				{expr: "column_name"},
-				{expr: "mask_expression"},
-				{expr: "description"},
-				{expr: "created_at"},
-				{expr: "name"},
-			]
 		}
 	},
-	{
-		name: "DeleteColumnMask"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "column_masks"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#DeleteByID & {
+		name:   "DeleteColumnMask"
+		_table: "column_masks"
 	},
 	{
 		name: "DeleteColumnMasksByTable"
@@ -113,7 +75,7 @@ queries: [
 			]
 		}
 		select: {
-			from: "column_masks"
+			from:  "column_masks"
 			alias: "cm"
 			columns: [
 				{expr: "cm.table_id"},
@@ -147,7 +109,7 @@ queries: [
 			]
 		}
 		select: {
-			from: "column_masks"
+			from:  "column_masks"
 			alias: "cm"
 			columns: [
 				{expr: "cm.column_name"},
@@ -170,73 +132,25 @@ queries: [
 		params: [
 			{name: "tableID", type: "string"},
 		]
-		result: {
-			row: "ColumnMask"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "TableID", type: "string"},
-				{name: "ColumnName", type: "string"},
-				{name: "MaskExpression", type: "string"},
-				{name: "Description", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "Name", type: "sql.NullString"},
-			]
-		}
+		result: {table: "column_masks"}
 		select: {
 			from: "column_masks"
-			columns: [
-				{expr: "id"},
-				{expr: "table_id"},
-				{expr: "column_name"},
-				{expr: "mask_expression"},
-				{expr: "description"},
-				{expr: "created_at"},
-				{expr: "name"},
-			]
 			where: [
 				{column: "table_id", op: "=", param: "tableID"},
 			]
 		}
 	},
-	{
-		name: "ListColumnMasksForTablePaginated"
-		kind: "many"
-		params: [
+	#ListFilteredPaginatedOrdered & {
+		name:   "ListColumnMasksForTablePaginated"
+		_table: "column_masks"
+		_params: [
 			{name: "TableID", type: "string"},
-			{name: "Limit", type: "int64"},
-			{name: "Offset", type: "int64"},
 		]
-		result: {
-			row: "ColumnMask"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "TableID", type: "string"},
-				{name: "ColumnName", type: "string"},
-				{name: "MaskExpression", type: "string"},
-				{name: "Description", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "Name", type: "sql.NullString"},
-			]
-		}
-		select: {
-			from: "column_masks"
-			columns: [
-				{expr: "id"},
-				{expr: "table_id"},
-				{expr: "column_name"},
-				{expr: "mask_expression"},
-				{expr: "description"},
-				{expr: "created_at"},
-				{expr: "name"},
-			]
-			where: [
-				{column: "table_id", op: "=", param: "TableID"},
-			]
-			orderBy: [
-				{expr: "id"},
-			]
-			limitParam: "Limit"
-			offsetParam: "Offset"
-		}
+		_where: [
+			{column: "table_id", op: "=", param: "TableID"},
+		]
+		_order: [
+			{expr: "id"},
+		]
 	},
 ]

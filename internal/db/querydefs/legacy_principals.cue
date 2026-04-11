@@ -15,7 +15,9 @@ queries: [
 				{column: "external_id", value: {param: "ExternalID"}},
 				{column: "external_issuer", value: {param: "ExternalIssuer"}},
 			]
-			where: [{column: "id", op: "=", param: "ID"}]
+			where: [
+				{column: "id", op: "=", param: "ID"},
+			]
 		}
 	},
 	#CountAll & {
@@ -32,7 +34,12 @@ queries: [
 			{name: "IsAdmin", type: "int64"},
 		]
 		insert: {
-			columns: ["id", "name", "type", "is_admin"]
+			columns: [
+				"id",
+				"name",
+				"type",
+				"is_admin",
+			]
 			values: [
 				{param: "ID"},
 				{param: "Name"},
@@ -105,12 +112,16 @@ queries: [
 	#ListAllOrdered & {
 		name:   "ListPrincipals"
 		_table: "principals"
-		_order: [{expr: "name"}]
+		_order: [
+			{expr: "name"},
+		]
 	},
 	#ListPaginatedOrdered & {
 		name:   "ListPrincipalsPaginated"
 		_table: "principals"
-		_order: [{expr: "id"}]
+		_order: [
+			{expr: "id"},
+		]
 	},
 	{
 		name: "SetAdmin"
@@ -124,7 +135,9 @@ queries: [
 			set: [
 				{column: "is_admin", value: {param: "IsAdmin"}},
 			]
-			where: [{column: "id", op: "=", param: "ID"}]
+			where: [
+				{column: "id", op: "=", param: "ID"},
+			]
 		}
 	},
 ]

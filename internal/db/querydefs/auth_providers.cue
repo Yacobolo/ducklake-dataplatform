@@ -33,13 +33,14 @@ queries: [
 				{expr: "created_at"},
 				{expr: "updated_at"},
 			]
-			where: [{column: "id", op: "=", valueSQL: "1"}]
+			where: [
+				{column: "id", op: "=", valueSQL: "1"},
+			]
 		}
 	},
 	{
 		name: "UpsertAuthProviderConfig"
 		kind: "exec"
-		paramMode: "struct"
 		params: [
 			{name: "OidcEnabled", type: "int64"},
 			{name: "OidcIssuerUrl", type: "sql.NullString"},
@@ -74,7 +75,9 @@ queries: [
 				{sql: "CURRENT_TIMESTAMP"},
 			]
 			conflict: {
-				targets: ["id"]
+				targets: [
+					"id",
+				]
 				doUpdate: [
 					{column: "oidc_enabled", value: {sql: "excluded.oidc_enabled"}},
 					{column: "oidc_issuer_url", value: {sql: "excluded.oidc_issuer_url"}},

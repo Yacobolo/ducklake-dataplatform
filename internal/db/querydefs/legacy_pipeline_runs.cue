@@ -18,27 +18,20 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "CountActivePipelineRuns"
-		kind: "one"
-		params: [
+	#CountFiltered & {
+		name:   "CountActivePipelineRuns"
+		_table: "pipeline_runs"
+		_params: [
 			{name: "pipelineID", type: "string"},
 		]
-		result: {scalar: "int64"}
-		select: {
-			from: "pipeline_runs"
-			columns: [
-				{expr: "COUNT(*)"},
-			]
-			where: [
-				{column: "pipeline_id", op: "=", param: "pipelineID"},
-				{rawSQL: "status IN ('PENDING', 'RUNNING')"},
-			]
-		}
+		_where: [
+			{column: "pipeline_id", op: "=", param: "pipelineID"},
+			{rawSQL: "status IN ('PENDING', 'RUNNING')"},
+		]
 	},
-	{
-		name: "CreatePipelineRun"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreatePipelineRun"
+		_table: "pipeline_runs"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "PipelineID", type: "string"},
@@ -48,24 +41,7 @@ queries: [
 			{name: "Parameters", type: "string"},
 			{name: "GitCommitHash", type: "sql.NullString"},
 		]
-		result: {
-			row: "PipelineRun"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PipelineID", type: "string"},
-				{name: "Status", type: "string"},
-				{name: "TriggerType", type: "string"},
-				{name: "TriggeredBy", type: "string"},
-				{name: "Parameters", type: "string"},
-				{name: "GitCommitHash", type: "sql.NullString"},
-				{name: "StartedAt", type: "sql.NullString"},
-				{name: "FinishedAt", type: "sql.NullString"},
-				{name: "ErrorMessage", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
 		insert: {
-			into: "pipeline_runs"
 			columns: [
 				"id",
 				"pipeline_id",
@@ -84,62 +60,11 @@ queries: [
 				{param: "Parameters"},
 				{param: "GitCommitHash"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "pipeline_id"},
-				{expr: "status"},
-				{expr: "trigger_type"},
-				{expr: "triggered_by"},
-				{expr: "parameters"},
-				{expr: "git_commit_hash"},
-				{expr: "started_at"},
-				{expr: "finished_at"},
-				{expr: "error_message"},
-				{expr: "created_at"},
-			]
 		}
 	},
-	{
-		name: "GetPipelineRunByID"
-		kind: "one"
-		params: [
-			{name: "id", type: "string"},
-		]
-		result: {
-			row: "PipelineRun"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PipelineID", type: "string"},
-				{name: "Status", type: "string"},
-				{name: "TriggerType", type: "string"},
-				{name: "TriggeredBy", type: "string"},
-				{name: "Parameters", type: "string"},
-				{name: "GitCommitHash", type: "sql.NullString"},
-				{name: "StartedAt", type: "sql.NullString"},
-				{name: "FinishedAt", type: "sql.NullString"},
-				{name: "ErrorMessage", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "pipeline_runs"
-			columns: [
-				{expr: "id"},
-				{expr: "pipeline_id"},
-				{expr: "status"},
-				{expr: "trigger_type"},
-				{expr: "triggered_by"},
-				{expr: "parameters"},
-				{expr: "git_commit_hash"},
-				{expr: "started_at"},
-				{expr: "finished_at"},
-				{expr: "error_message"},
-				{expr: "created_at"},
-			]
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#GetByID & {
+		name:   "GetPipelineRunByID"
+		_table: "pipeline_runs"
 	},
 	{
 		name: "UpdatePipelineRunFinished"

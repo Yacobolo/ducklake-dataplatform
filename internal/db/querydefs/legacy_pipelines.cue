@@ -58,16 +58,20 @@ queries: [
 	#ListPaginatedOrdered & {
 		name:   "ListPipelines"
 		_table: "pipelines"
-		_order: [{expr: "name"}]
+		_order: [
+			{expr: "name"},
+		]
 	},
 	#ListAllOrdered & {
 		name:   "ListScheduledPipelines"
 		_table: "pipelines"
 		_order: []
-		select: where: [
-			{column: "schedule_cron", op: "IS NOT", valueSQL: "NULL"},
-			{column: "is_paused", op: "=", valueSQL: "0"},
-		]
+		select: {
+			where: [
+				{column: "schedule_cron", op: "IS NOT", valueSQL: "NULL"},
+				{column: "is_paused", op: "=", valueSQL: "0"},
+			]
+		}
 	},
 	#UpdateByIDTouch & {
 		name:   "UpdatePipeline"

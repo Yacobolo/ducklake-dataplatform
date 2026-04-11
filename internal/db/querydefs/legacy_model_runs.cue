@@ -1,9 +1,9 @@
 package querydefs
 
 queries: [
-	{
-		name: "CreateModelRun"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateModelRun"
+		_table: "model_runs"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "Status", type: "string"},
@@ -20,31 +20,7 @@ queries: [
 			{name: "CompileManifest", type: "string"},
 			{name: "CompileDiagnostics", type: "string"},
 		]
-		result: {
-			row: "ModelRun"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Status", type: "string"},
-				{name: "TriggerType", type: "string"},
-				{name: "TriggeredBy", type: "string"},
-				{name: "TargetCatalog", type: "string"},
-				{name: "TargetSchema", type: "string"},
-				{name: "ModelSelector", type: "string"},
-				{name: "Variables", type: "string"},
-				{name: "StartedAt", type: "sql.NullString"},
-				{name: "FinishedAt", type: "sql.NullString"},
-				{name: "ErrorMessage", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "FullRefresh", type: "int64"},
-				{name: "CompileManifest", type: "string"},
-				{name: "CompileDiagnostics", type: "string"},
-				{name: "ProjectName", type: "string"},
-				{name: "EnvironmentName", type: "string"},
-				{name: "BuildID", type: "sql.NullString"},
-			]
-		}
 		insert: {
-			into: "model_runs"
 			columns: [
 				"id",
 				"status",
@@ -77,83 +53,11 @@ queries: [
 				{param: "CompileManifest"},
 				{param: "CompileDiagnostics"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "status"},
-				{expr: "trigger_type"},
-				{expr: "triggered_by"},
-				{expr: "target_catalog"},
-				{expr: "target_schema"},
-				{expr: "model_selector"},
-				{expr: "variables"},
-				{expr: "started_at"},
-				{expr: "finished_at"},
-				{expr: "error_message"},
-				{expr: "created_at"},
-				{expr: "full_refresh"},
-				{expr: "compile_manifest"},
-				{expr: "compile_diagnostics"},
-				{expr: "project_name"},
-				{expr: "environment_name"},
-				{expr: "build_id"},
-			]
 		}
 	},
-	{
-		name: "GetModelRunByID"
-		kind: "one"
-		params: [
-			{name: "id", type: "string"},
-		]
-		result: {
-			row: "ModelRun"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Status", type: "string"},
-				{name: "TriggerType", type: "string"},
-				{name: "TriggeredBy", type: "string"},
-				{name: "TargetCatalog", type: "string"},
-				{name: "TargetSchema", type: "string"},
-				{name: "ModelSelector", type: "string"},
-				{name: "Variables", type: "string"},
-				{name: "StartedAt", type: "sql.NullString"},
-				{name: "FinishedAt", type: "sql.NullString"},
-				{name: "ErrorMessage", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-				{name: "FullRefresh", type: "int64"},
-				{name: "CompileManifest", type: "string"},
-				{name: "CompileDiagnostics", type: "string"},
-				{name: "ProjectName", type: "string"},
-				{name: "EnvironmentName", type: "string"},
-				{name: "BuildID", type: "sql.NullString"},
-			]
-		}
-		select: {
-			from: "model_runs"
-			columns: [
-				{expr: "id"},
-				{expr: "status"},
-				{expr: "trigger_type"},
-				{expr: "triggered_by"},
-				{expr: "target_catalog"},
-				{expr: "target_schema"},
-				{expr: "model_selector"},
-				{expr: "variables"},
-				{expr: "started_at"},
-				{expr: "finished_at"},
-				{expr: "error_message"},
-				{expr: "created_at"},
-				{expr: "full_refresh"},
-				{expr: "compile_manifest"},
-				{expr: "compile_diagnostics"},
-				{expr: "project_name"},
-				{expr: "environment_name"},
-				{expr: "build_id"},
-			]
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#GetByID & {
+		name:   "GetModelRunByID"
+		_table: "model_runs"
 	},
 	{
 		name: "UpdateModelRunBuild"

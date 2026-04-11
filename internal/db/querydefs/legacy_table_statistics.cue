@@ -27,37 +27,11 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "GetTableStatistics"
-		kind: "one"
-		params: [
-			{name: "tableSecurableName", type: "string"},
-		]
-		result: {
-			row: "TableStatistic"
-			fields: [
-				{name: "TableSecurableName", type: "string"},
-				{name: "RowCount", type: "sql.NullInt64"},
-				{name: "SizeBytes", type: "sql.NullInt64"},
-				{name: "ColumnCount", type: "sql.NullInt64"},
-				{name: "LastProfiledAt", type: "sql.NullString"},
-				{name: "ProfiledBy", type: "sql.NullString"},
-			]
-		}
-		select: {
-			from: "table_statistics"
-			columns: [
-				{expr: "table_securable_name"},
-				{expr: "row_count"},
-				{expr: "size_bytes"},
-				{expr: "column_count"},
-				{expr: "last_profiled_at"},
-				{expr: "profiled_by"},
-			]
-			where: [
-				{column: "table_securable_name", op: "=", param: "tableSecurableName"},
-			]
-		}
+	#GetByStringField & {
+		name:   "GetTableStatistics"
+		_table: "table_statistics"
+		_field: "table_securable_name"
+		_param: "tableSecurableName"
 	},
 	{
 		name: "UpsertTableStatistics"
@@ -88,7 +62,9 @@ queries: [
 				{param: "ProfiledBy"},
 			]
 			conflict: {
-				targets: ["table_securable_name"]
+				targets: [
+					"table_securable_name",
+				]
 				doUpdate: [
 					{column: "row_count", value: {sql: "excluded.row_count"}},
 					{column: "size_bytes", value: {sql: "excluded.size_bytes"}},

@@ -15,7 +15,12 @@ queries: [
 			{name: "CreatedBy", type: "string"},
 		]
 		insert: {
-			columns: ["id", "key", "value", "created_by"]
+			columns: [
+				"id",
+				"key",
+				"value",
+				"created_by",
+			]
 			values: [
 				{param: "ID"},
 				{param: "Key"},
@@ -35,7 +40,10 @@ queries: [
 	#ListPaginatedOrdered & {
 		name:   "ListTags"
 		_table: "tags"
-		_order: [{expr: "key"}, {expr: "value"}]
+		_order: [
+			{expr: "key"},
+			{expr: "value"},
+		]
 	},
 	{
 		name: "ListTagsForSecurable"
@@ -57,7 +65,10 @@ queries: [
 				{column: "ta.securable_id", op: "=", param: "SecurableID"},
 				{column: "ta.column_name", op: "=", param: "ColumnName", optional: true},
 			]
-			orderBy: [{expr: "t.key"}, {expr: "t.value"}]
+			orderBy: [
+				{expr: "t.key"},
+				{expr: "t.value"},
+			]
 		}
 	},
 ]

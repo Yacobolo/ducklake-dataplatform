@@ -1,20 +1,13 @@
 package querydefs
 
 queries: [
-	{
-		name: "CountTagAssignments"
-		kind: "one"
-		result: {scalar: "int64"}
-		select: {
-			from: "tag_assignments"
-			columns: [
-				{expr: "COUNT(*)", alias: "cnt"},
-			]
-		}
+	#CountAll & {
+		name:   "CountTagAssignments"
+		_table: "tag_assignments"
 	},
-	{
-		name: "CreateTagAssignment"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateTagAssignment"
+		_table: "tag_assignments"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "TagID", type: "string"},
@@ -23,20 +16,7 @@ queries: [
 			{name: "ColumnName", type: "sql.NullString"},
 			{name: "AssignedBy", type: "string"},
 		]
-		result: {
-			row: "TagAssignment"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "TagID", type: "string"},
-				{name: "SecurableType", type: "string"},
-				{name: "SecurableID", type: "string"},
-				{name: "ColumnName", type: "sql.NullString"},
-				{name: "AssignedBy", type: "string"},
-				{name: "AssignedAt", type: "string"},
-			]
-		}
 		insert: {
-			into: "tag_assignments"
 			columns: [
 				"id",
 				"tag_id",
@@ -53,29 +33,11 @@ queries: [
 				{param: "ColumnName"},
 				{param: "AssignedBy"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "tag_id"},
-				{expr: "securable_type"},
-				{expr: "securable_id"},
-				{expr: "column_name"},
-				{expr: "assigned_by"},
-				{expr: "assigned_at"},
-			]
 		}
 	},
-	{
-		name: "DeleteTagAssignment"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "tag_assignments"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#DeleteByID & {
+		name:   "DeleteTagAssignment"
+		_table: "tag_assignments"
 	},
 	{
 		name: "DeleteTagAssignmentsBySecurable"
@@ -119,69 +81,19 @@ queries: [
 		params: [
 			{name: "tagID", type: "string"},
 		]
-		result: {
-			row: "TagAssignment"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "TagID", type: "string"},
-				{name: "SecurableType", type: "string"},
-				{name: "SecurableID", type: "string"},
-				{name: "ColumnName", type: "sql.NullString"},
-				{name: "AssignedBy", type: "string"},
-				{name: "AssignedAt", type: "string"},
-			]
-		}
+		result: {table: "tag_assignments"}
 		select: {
 			from: "tag_assignments"
-			columns: [
-				{expr: "id"},
-				{expr: "tag_id"},
-				{expr: "securable_type"},
-				{expr: "securable_id"},
-				{expr: "column_name"},
-				{expr: "assigned_by"},
-				{expr: "assigned_at"},
-			]
 			where: [
 				{column: "tag_id", op: "=", param: "tagID"},
 			]
 		}
 	},
-	{
-		name: "ListTagAssignments"
-		kind: "many"
-		params: [
-			{name: "Limit", type: "int64"},
-			{name: "Offset", type: "int64"},
+	#ListPaginatedOrdered & {
+		name:   "ListTagAssignments"
+		_table: "tag_assignments"
+		_order: [
+			{expr: "id"},
 		]
-		result: {
-			row: "TagAssignment"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "TagID", type: "string"},
-				{name: "SecurableType", type: "string"},
-				{name: "SecurableID", type: "string"},
-				{name: "ColumnName", type: "sql.NullString"},
-				{name: "AssignedBy", type: "string"},
-				{name: "AssignedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "tag_assignments"
-			columns: [
-				{expr: "id"},
-				{expr: "tag_id"},
-				{expr: "securable_type"},
-				{expr: "securable_id"},
-				{expr: "column_name"},
-				{expr: "assigned_by"},
-				{expr: "assigned_at"},
-			]
-			orderBy: [
-				{expr: "id"},
-			]
-			limitParam: "Limit"
-			offsetParam: "Offset"
-		}
 	},
 ]

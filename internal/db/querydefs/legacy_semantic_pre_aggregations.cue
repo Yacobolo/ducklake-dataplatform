@@ -1,9 +1,9 @@
 package querydefs
 
 queries: [
-	{
-		name: "CreateSemanticPreAggregation"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateSemanticPreAggregation"
+		_table: "semantic_pre_aggregations"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "SemanticModelID", type: "string"},
@@ -15,24 +15,7 @@ queries: [
 			{name: "RefreshPolicy", type: "string"},
 			{name: "CreatedBy", type: "string"},
 		]
-		result: {
-			row: "SemanticPreAggregation"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SemanticModelID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "MetricSet", type: "string"},
-				{name: "DimensionSet", type: "string"},
-				{name: "Grain", type: "string"},
-				{name: "TargetRelation", type: "string"},
-				{name: "RefreshPolicy", type: "string"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-			]
-		}
 		insert: {
-			into: "semantic_pre_aggregations"
 			columns: [
 				"id",
 				"semantic_model_id",
@@ -55,119 +38,23 @@ queries: [
 				{param: "RefreshPolicy"},
 				{param: "CreatedBy"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "semantic_model_id"},
-				{expr: "name"},
-				{expr: "metric_set"},
-				{expr: "dimension_set"},
-				{expr: "grain"},
-				{expr: "target_relation"},
-				{expr: "refresh_policy"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-			]
 		}
 	},
-	{
-		name: "DeleteSemanticPreAggregation"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "semantic_pre_aggregations"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#DeleteByID & {
+		name:   "DeleteSemanticPreAggregation"
+		_table: "semantic_pre_aggregations"
 	},
-	{
-		name: "GetSemanticPreAggregationByID"
-		kind: "one"
-		params: [
-			{name: "id", type: "string"},
-		]
-		result: {
-			row: "SemanticPreAggregation"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SemanticModelID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "MetricSet", type: "string"},
-				{name: "DimensionSet", type: "string"},
-				{name: "Grain", type: "string"},
-				{name: "TargetRelation", type: "string"},
-				{name: "RefreshPolicy", type: "string"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "semantic_pre_aggregations"
-			columns: [
-				{expr: "id"},
-				{expr: "semantic_model_id"},
-				{expr: "name"},
-				{expr: "metric_set"},
-				{expr: "dimension_set"},
-				{expr: "grain"},
-				{expr: "target_relation"},
-				{expr: "refresh_policy"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-			]
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#GetByID & {
+		name:   "GetSemanticPreAggregationByID"
+		_table: "semantic_pre_aggregations"
 	},
-	{
-		name: "GetSemanticPreAggregationByName"
-		kind: "one"
-		params: [
-			{name: "SemanticModelID", type: "string"},
-			{name: "Name", type: "string"},
-		]
-		result: {
-			row: "SemanticPreAggregation"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SemanticModelID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "MetricSet", type: "string"},
-				{name: "DimensionSet", type: "string"},
-				{name: "Grain", type: "string"},
-				{name: "TargetRelation", type: "string"},
-				{name: "RefreshPolicy", type: "string"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "semantic_pre_aggregations"
-			columns: [
-				{expr: "id"},
-				{expr: "semantic_model_id"},
-				{expr: "name"},
-				{expr: "metric_set"},
-				{expr: "dimension_set"},
-				{expr: "grain"},
-				{expr: "target_relation"},
-				{expr: "refresh_policy"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-			]
-			where: [
-				{column: "semantic_model_id", op: "=", param: "SemanticModelID"},
-				{column: "name", op: "=", param: "Name"},
-			]
-		}
+	#GetByTwoStringFields & {
+		name:    "GetSemanticPreAggregationByName"
+		_table:  "semantic_pre_aggregations"
+		_field1: "semantic_model_id"
+		_param1: "SemanticModelID"
+		_field2: "name"
+		_param2: "Name"
 	},
 	{
 		name: "ListSemanticPreAggregationsByModel"
@@ -175,37 +62,9 @@ queries: [
 		params: [
 			{name: "semanticModelID", type: "string"},
 		]
-		result: {
-			row: "SemanticPreAggregation"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "SemanticModelID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "MetricSet", type: "string"},
-				{name: "DimensionSet", type: "string"},
-				{name: "Grain", type: "string"},
-				{name: "TargetRelation", type: "string"},
-				{name: "RefreshPolicy", type: "string"},
-				{name: "CreatedBy", type: "string"},
-				{name: "CreatedAt", type: "string"},
-				{name: "UpdatedAt", type: "string"},
-			]
-		}
+		result: {table: "semantic_pre_aggregations"}
 		select: {
 			from: "semantic_pre_aggregations"
-			columns: [
-				{expr: "id"},
-				{expr: "semantic_model_id"},
-				{expr: "name"},
-				{expr: "metric_set"},
-				{expr: "dimension_set"},
-				{expr: "grain"},
-				{expr: "target_relation"},
-				{expr: "refresh_policy"},
-				{expr: "created_by"},
-				{expr: "created_at"},
-				{expr: "updated_at"},
-			]
 			where: [
 				{column: "semantic_model_id", op: "=", param: "semanticModelID"},
 			]
@@ -214,9 +73,9 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "UpdateSemanticPreAggregation"
-		kind: "exec"
+	#UpdateByIDTouch & {
+		name:   "UpdateSemanticPreAggregation"
+		_table: "semantic_pre_aggregations"
 		params: [
 			{name: "MetricSet", type: "string"},
 			{name: "DimensionSet", type: "string"},
@@ -225,19 +84,12 @@ queries: [
 			{name: "RefreshPolicy", type: "string"},
 			{name: "ID", type: "string"},
 		]
-		update: {
-			table: "semantic_pre_aggregations"
-			set: [
-				{column: "metric_set", value: {param: "MetricSet"}, coalesceWith: true},
-				{column: "dimension_set", value: {param: "DimensionSet"}, coalesceWith: true},
-				{column: "grain", value: {param: "Grain"}, coalesceWith: true},
-				{column: "target_relation", value: {param: "TargetRelation"}, coalesceWith: true},
-				{column: "refresh_policy", value: {param: "RefreshPolicy"}, coalesceWith: true},
-				{column: "updated_at", value: {sql: "datetime('now')"}},
-			]
-			where: [
-				{column: "id", op: "=", param: "ID"},
-			]
-		}
+		_set: [
+			{column: "metric_set", value: {param: "MetricSet"}, coalesceWith: true},
+			{column: "dimension_set", value: {param: "DimensionSet"}, coalesceWith: true},
+			{column: "grain", value: {param: "Grain"}, coalesceWith: true},
+			{column: "target_relation", value: {param: "TargetRelation"}, coalesceWith: true},
+			{column: "refresh_policy", value: {param: "RefreshPolicy"}, coalesceWith: true},
+		]
 	},
 ]

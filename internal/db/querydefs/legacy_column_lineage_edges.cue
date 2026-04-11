@@ -1,5 +1,20 @@
 package querydefs
 
+#ColumnLineageEdgeResult: {
+	row: "ColumnLineageEdge"
+	fields: [
+		{name: "ID", type: "int64"},
+		{name: "LineageEdgeID", type: "string"},
+		{name: "TargetColumn", type: "string"},
+		{name: "SourceSchema", type: "string"},
+		{name: "SourceTable", type: "string"},
+		{name: "SourceColumn", type: "string"},
+		{name: "TransformType", type: "string"},
+		{name: "FunctionName", type: "string"},
+		{name: "CreatedAt", type: "time.Time"},
+	]
+}
+
 queries: [
 	{
 		name: "DeleteColumnLineageByEdgeID"
@@ -20,20 +35,7 @@ queries: [
 		params: [
 			{name: "lineageEdgeID", type: "string"},
 		]
-		result: {
-			row: "ColumnLineageEdge"
-			fields: [
-				{name: "ID", type: "int64"},
-				{name: "LineageEdgeID", type: "string"},
-				{name: "TargetColumn", type: "string"},
-				{name: "SourceSchema", type: "string"},
-				{name: "SourceTable", type: "string"},
-				{name: "SourceColumn", type: "string"},
-				{name: "TransformType", type: "string"},
-				{name: "FunctionName", type: "string"},
-				{name: "CreatedAt", type: "time.Time"},
-			]
-		}
+		result: #ColumnLineageEdgeResult
 		select: {
 			from: "column_lineage_edges"
 			columns: [
@@ -65,22 +67,9 @@ queries: [
 			{name: "SourceTable", type: "string"},
 			{name: "SourceColumn", type: "string"},
 		]
-		result: {
-			row: "ColumnLineageEdge"
-			fields: [
-				{name: "ID", type: "int64"},
-				{name: "LineageEdgeID", type: "string"},
-				{name: "TargetColumn", type: "string"},
-				{name: "SourceSchema", type: "string"},
-				{name: "SourceTable", type: "string"},
-				{name: "SourceColumn", type: "string"},
-				{name: "TransformType", type: "string"},
-				{name: "FunctionName", type: "string"},
-				{name: "CreatedAt", type: "time.Time"},
-			]
-		}
+		result: #ColumnLineageEdgeResult
 		select: {
-			from: "column_lineage_edges"
+			from:  "column_lineage_edges"
 			alias: "cle"
 			columns: [
 				{expr: "cle.id"},
@@ -113,22 +102,9 @@ queries: [
 			{name: "TargetSchema", type: "sql.NullString"},
 			{name: "TargetTable", type: "sql.NullString"},
 		]
-		result: {
-			row: "ColumnLineageEdge"
-			fields: [
-				{name: "ID", type: "int64"},
-				{name: "LineageEdgeID", type: "string"},
-				{name: "TargetColumn", type: "string"},
-				{name: "SourceSchema", type: "string"},
-				{name: "SourceTable", type: "string"},
-				{name: "SourceColumn", type: "string"},
-				{name: "TransformType", type: "string"},
-				{name: "FunctionName", type: "string"},
-				{name: "CreatedAt", type: "time.Time"},
-			]
-		}
+		result: #ColumnLineageEdgeResult
 		select: {
-			from: "column_lineage_edges"
+			from:  "column_lineage_edges"
 			alias: "cle"
 			columns: [
 				{expr: "cle.id"},

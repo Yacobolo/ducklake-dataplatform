@@ -1,5 +1,21 @@
 package querydefs
 
+#WebauthnCredentialResult: {
+	row: "WebauthnCredential"
+	fields: [
+		{name: "ID", type: "string"},
+		{name: "PrincipalID", type: "string"},
+		{name: "CredentialID", type: "string"},
+		{name: "PublicKey", type: "string"},
+		{name: "SignCount", type: "int64"},
+		{name: "Transports", type: "sql.NullString"},
+		{name: "BackupEligible", type: "int64"},
+		{name: "BackupState", type: "int64"},
+		{name: "CreatedAt", type: "time.Time"},
+		{name: "LastUsedAt", type: "sql.NullTime"},
+	]
+}
+
 queries: [
 	{
 		name: "CreateWebauthnCredential"
@@ -14,21 +30,7 @@ queries: [
 			{name: "BackupEligible", type: "int64"},
 			{name: "BackupState", type: "int64"},
 		]
-		result: {
-			row: "WebauthnCredential"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "CredentialID", type: "string"},
-				{name: "PublicKey", type: "string"},
-				{name: "SignCount", type: "int64"},
-				{name: "Transports", type: "sql.NullString"},
-				{name: "BackupEligible", type: "int64"},
-				{name: "BackupState", type: "int64"},
-				{name: "CreatedAt", type: "time.Time"},
-				{name: "LastUsedAt", type: "sql.NullTime"},
-			]
-		}
+		result: #WebauthnCredentialResult
 		insert: {
 			into: "webauthn_credentials"
 			columns: [
@@ -65,18 +67,9 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "DeleteWebauthnCredential"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "webauthn_credentials"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#DeleteByID & {
+		name:   "DeleteWebauthnCredential"
+		_table: "webauthn_credentials"
 	},
 	{
 		name: "GetWebauthnCredentialByCredentialID"
@@ -84,21 +77,7 @@ queries: [
 		params: [
 			{name: "credentialID", type: "string"},
 		]
-		result: {
-			row: "WebauthnCredential"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "CredentialID", type: "string"},
-				{name: "PublicKey", type: "string"},
-				{name: "SignCount", type: "int64"},
-				{name: "Transports", type: "sql.NullString"},
-				{name: "BackupEligible", type: "int64"},
-				{name: "BackupState", type: "int64"},
-				{name: "CreatedAt", type: "time.Time"},
-				{name: "LastUsedAt", type: "sql.NullTime"},
-			]
-		}
+		result: #WebauthnCredentialResult
 		select: {
 			from: "webauthn_credentials"
 			columns: [
@@ -125,21 +104,7 @@ queries: [
 		params: [
 			{name: "principalID", type: "string"},
 		]
-		result: {
-			row: "WebauthnCredential"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "CredentialID", type: "string"},
-				{name: "PublicKey", type: "string"},
-				{name: "SignCount", type: "int64"},
-				{name: "Transports", type: "sql.NullString"},
-				{name: "BackupEligible", type: "int64"},
-				{name: "BackupState", type: "int64"},
-				{name: "CreatedAt", type: "time.Time"},
-				{name: "LastUsedAt", type: "sql.NullTime"},
-			]
-		}
+		result: #WebauthnCredentialResult
 		select: {
 			from: "webauthn_credentials"
 			columns: [

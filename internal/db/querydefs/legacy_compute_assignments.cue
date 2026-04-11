@@ -1,22 +1,28 @@
 package querydefs
 
+#ComputeAssignmentResult: {
+	row: "ComputeAssignment"
+	fields: [
+		{name: "ID", type: "string"},
+		{name: "PrincipalID", type: "string"},
+		{name: "PrincipalType", type: "string"},
+		{name: "EndpointID", type: "string"},
+		{name: "IsDefault", type: "int64"},
+		{name: "FallbackLocal", type: "int64"},
+		{name: "CreatedAt", type: "time.Time"},
+	]
+}
+
 queries: [
-	{
-		name: "CountAssignmentsForEndpoint"
-		kind: "one"
-		params: [
+	#CountFiltered & {
+		name:   "CountAssignmentsForEndpoint"
+		_table: "compute_assignments"
+		_params: [
 			{name: "endpointID", type: "string"},
 		]
-		result: {scalar: "int64"}
-		select: {
-			from: "compute_assignments"
-			columns: [
-				{expr: "COUNT(*)"},
-			]
-			where: [
-				{column: "endpoint_id", op: "=", param: "endpointID"},
-			]
-		}
+		_where: [
+			{column: "endpoint_id", op: "=", param: "endpointID"},
+		]
 	},
 	{
 		name: "CreateComputeAssignment"
@@ -29,18 +35,7 @@ queries: [
 			{name: "IsDefault", type: "int64"},
 			{name: "FallbackLocal", type: "int64"},
 		]
-		result: {
-			row: "ComputeAssignment"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "PrincipalType", type: "string"},
-				{name: "EndpointID", type: "string"},
-				{name: "IsDefault", type: "int64"},
-				{name: "FallbackLocal", type: "int64"},
-				{name: "CreatedAt", type: "time.Time"},
-			]
-		}
+		result: #ComputeAssignmentResult
 		insert: {
 			into: "compute_assignments"
 			columns: [
@@ -70,18 +65,9 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "DeleteComputeAssignment"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "compute_assignments"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#DeleteByID & {
+		name:   "DeleteComputeAssignment"
+		_table: "compute_assignments"
 	},
 	{
 		name: "ListAssignmentsForEndpoint"
@@ -91,18 +77,7 @@ queries: [
 			{name: "Limit", type: "int64"},
 			{name: "Offset", type: "int64"},
 		]
-		result: {
-			row: "ComputeAssignment"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "PrincipalType", type: "string"},
-				{name: "EndpointID", type: "string"},
-				{name: "IsDefault", type: "int64"},
-				{name: "FallbackLocal", type: "int64"},
-				{name: "CreatedAt", type: "time.Time"},
-			]
-		}
+		result: #ComputeAssignmentResult
 		select: {
 			from: "compute_assignments"
 			columns: [
@@ -120,7 +95,7 @@ queries: [
 			orderBy: [
 				{expr: "id"},
 			]
-			limitParam: "Limit"
+			limitParam:  "Limit"
 			offsetParam: "Offset"
 		}
 	},

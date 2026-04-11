@@ -4,7 +4,6 @@ queries: [
 	{
 		name: "InsertAuthLoginAttempt"
 		kind: "exec"
-		paramMode: "struct"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "Username", type: "sql.NullString"},
@@ -13,8 +12,14 @@ queries: [
 			{name: "Reason", type: "sql.NullString"},
 		]
 		insert: {
-			into:    "auth_login_attempts"
-			columns: ["id", "username", "ip_address", "success", "reason"]
+			into: "auth_login_attempts"
+			columns: [
+				"id",
+				"username",
+				"ip_address",
+				"success",
+				"reason",
+			]
 			values: [
 				{param: "ID"},
 				{param: "Username"},
@@ -24,42 +29,30 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "CountRecentFailedAuthLoginAttemptsByUsername"
-		kind: "one"
-		paramMode: "struct"
-		params: [
+	#CountFiltered & {
+		name:   "CountRecentFailedAuthLoginAttemptsByUsername"
+		_table: "auth_login_attempts"
+		_params: [
 			{name: "Username", type: "sql.NullString"},
 			{name: "CreatedAt", type: "time.Time"},
 		]
-		result: {scalar: "int64"}
-		select: {
-			from:    "auth_login_attempts"
-			columns: [{expr: "COUNT(*)"}]
-			where: [
-				{column: "username", op: "=", param: "Username"},
-				{column: "success", op: "=", valueSQL: "0"},
-				{column: "created_at", op: ">=", param: "CreatedAt"},
-			]
-		}
+		_where: [
+			{column: "username", op: "=", param: "Username"},
+			{column: "success", op: "=", valueSQL: "0"},
+			{column: "created_at", op: ">=", param: "CreatedAt"},
+		]
 	},
-	{
-		name: "CountRecentFailedAuthLoginAttemptsByIP"
-		kind: "one"
-		paramMode: "struct"
-		params: [
+	#CountFiltered & {
+		name:   "CountRecentFailedAuthLoginAttemptsByIP"
+		_table: "auth_login_attempts"
+		_params: [
 			{name: "IpAddress", type: "sql.NullString"},
 			{name: "CreatedAt", type: "time.Time"},
 		]
-		result: {scalar: "int64"}
-		select: {
-			from:    "auth_login_attempts"
-			columns: [{expr: "COUNT(*)"}]
-			where: [
-				{column: "ip_address", op: "=", param: "IpAddress"},
-				{column: "success", op: "=", valueSQL: "0"},
-				{column: "created_at", op: ">=", param: "CreatedAt"},
-			]
-		}
+		_where: [
+			{column: "ip_address", op: "=", param: "IpAddress"},
+			{column: "success", op: "=", valueSQL: "0"},
+			{column: "created_at", op: ">=", param: "CreatedAt"},
+		]
 	},
 ]

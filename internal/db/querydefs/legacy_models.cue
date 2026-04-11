@@ -74,7 +74,10 @@ queries: [
 	#ListAllOrdered & {
 		name:   "ListAllModels"
 		_table: "models"
-		_order: [{expr: "project_name"}, {expr: "name"}]
+		_order: [
+			{expr: "project_name"},
+			{expr: "name"},
+		]
 	},
 	#UpdateByIDTouch & {
 		name:   "UpdateModel"

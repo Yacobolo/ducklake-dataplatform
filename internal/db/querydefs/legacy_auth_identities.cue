@@ -1,5 +1,20 @@
 package querydefs
 
+#AuthIdentityResult: {
+	row: "AuthIdentity"
+	fields: [
+		{name: "ID", type: "string"},
+		{name: "PrincipalID", type: "string"},
+		{name: "Provider", type: "string"},
+		{name: "Issuer", type: "sql.NullString"},
+		{name: "Subject", type: "string"},
+		{name: "Email", type: "sql.NullString"},
+		{name: "EmailVerified", type: "int64"},
+		{name: "CreatedAt", type: "time.Time"},
+		{name: "UpdatedAt", type: "time.Time"},
+	]
+}
+
 queries: [
 	{
 		name: "CreateAuthIdentity"
@@ -13,20 +28,7 @@ queries: [
 			{name: "Email", type: "sql.NullString"},
 			{name: "EmailVerified", type: "int64"},
 		]
-		result: {
-			row: "AuthIdentity"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "Provider", type: "string"},
-				{name: "Issuer", type: "sql.NullString"},
-				{name: "Subject", type: "string"},
-				{name: "Email", type: "sql.NullString"},
-				{name: "EmailVerified", type: "int64"},
-				{name: "CreatedAt", type: "time.Time"},
-				{name: "UpdatedAt", type: "time.Time"},
-			]
-		}
+		result: #AuthIdentityResult
 		insert: {
 			into: "auth_identities"
 			columns: [
@@ -60,18 +62,9 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "DeleteAuthIdentity"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "auth_identities"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#DeleteByID & {
+		name:   "DeleteAuthIdentity"
+		_table: "auth_identities"
 	},
 	{
 		name: "GetAuthIdentityByProviderSubject"
@@ -81,20 +74,7 @@ queries: [
 			{name: "Issuer", type: "sql.NullString"},
 			{name: "Subject", type: "string"},
 		]
-		result: {
-			row: "AuthIdentity"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "Provider", type: "string"},
-				{name: "Issuer", type: "sql.NullString"},
-				{name: "Subject", type: "string"},
-				{name: "Email", type: "sql.NullString"},
-				{name: "EmailVerified", type: "int64"},
-				{name: "CreatedAt", type: "time.Time"},
-				{name: "UpdatedAt", type: "time.Time"},
-			]
-		}
+		result: #AuthIdentityResult
 		select: {
 			from: "auth_identities"
 			columns: [
@@ -122,20 +102,7 @@ queries: [
 		params: [
 			{name: "principalID", type: "string"},
 		]
-		result: {
-			row: "AuthIdentity"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "Provider", type: "string"},
-				{name: "Issuer", type: "sql.NullString"},
-				{name: "Subject", type: "string"},
-				{name: "Email", type: "sql.NullString"},
-				{name: "EmailVerified", type: "int64"},
-				{name: "CreatedAt", type: "time.Time"},
-				{name: "UpdatedAt", type: "time.Time"},
-			]
-		}
+		result: #AuthIdentityResult
 		select: {
 			from: "auth_identities"
 			columns: [

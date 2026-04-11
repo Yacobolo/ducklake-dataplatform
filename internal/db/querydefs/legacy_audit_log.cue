@@ -91,7 +91,9 @@ queries: [
 			{column: "action", op: "=", param: "Action", optional: true},
 			{column: "status", op: "=", param: "Status", optional: true},
 		]
-		_order: [{expr: "created_at", desc: true}]
+		_order: [
+			{expr: "created_at", desc: true},
+		]
 	},
 	#ListFilteredPaginatedOrdered & {
 		name:   "ListQueryHistory"
@@ -109,6 +111,8 @@ queries: [
 			{column: "created_at", op: ">=", param: "CreatedAtFrom", optional: true},
 			{column: "created_at", op: "<=", param: "CreatedAtTo", optional: true},
 		]
-		_order: [{expr: "created_at", desc: true}]
+		_order: [
+			{expr: "created_at", desc: true},
+		]
 	},
 ]

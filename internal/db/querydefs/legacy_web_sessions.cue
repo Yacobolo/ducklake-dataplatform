@@ -1,21 +1,33 @@
 package querydefs
 
+#WebSessionResult: {
+	row: "WebSession"
+	fields: [
+		{name: "ID", type: "string"},
+		{name: "PrincipalID", type: "string"},
+		{name: "SessionHash", type: "string"},
+		{name: "AuthMethod", type: "string"},
+		{name: "UserAgent", type: "sql.NullString"},
+		{name: "IpAddress", type: "sql.NullString"},
+		{name: "ExpiresAt", type: "time.Time"},
+		{name: "IdleExpiresAt", type: "time.Time"},
+		{name: "LastSeenAt", type: "time.Time"},
+		{name: "RevokedAt", type: "sql.NullTime"},
+		{name: "CreatedAt", type: "time.Time"},
+		{name: "UpdatedAt", type: "time.Time"},
+	]
+}
+
 queries: [
-	{
-		name: "CountActiveWebSessions"
-		kind: "one"
-		result: {scalar: "int64"}
-		select: {
-			from: "web_sessions"
-			columns: [
-				{expr: "COUNT(*)"},
-			]
-			where: [
-				{column: "revoked_at", op: "IS", valueSQL: "NULL"},
-				{column: "expires_at", op: ">", valueSQL: "CURRENT_TIMESTAMP"},
-				{column: "idle_expires_at", op: ">", valueSQL: "CURRENT_TIMESTAMP"},
-			]
-		}
+	#CountFiltered & {
+		name:   "CountActiveWebSessions"
+		_table: "web_sessions"
+		_params: []
+		_where: [
+			{column: "revoked_at", op: "IS", valueSQL: "NULL"},
+			{column: "expires_at", op: ">", valueSQL: "CURRENT_TIMESTAMP"},
+			{column: "idle_expires_at", op: ">", valueSQL: "CURRENT_TIMESTAMP"},
+		]
 	},
 	{
 		name: "CreateWebSession"
@@ -30,23 +42,7 @@ queries: [
 			{name: "ExpiresAt", type: "time.Time"},
 			{name: "IdleExpiresAt", type: "time.Time"},
 		]
-		result: {
-			row: "WebSession"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "SessionHash", type: "string"},
-				{name: "AuthMethod", type: "string"},
-				{name: "UserAgent", type: "sql.NullString"},
-				{name: "IpAddress", type: "sql.NullString"},
-				{name: "ExpiresAt", type: "time.Time"},
-				{name: "IdleExpiresAt", type: "time.Time"},
-				{name: "LastSeenAt", type: "time.Time"},
-				{name: "RevokedAt", type: "sql.NullTime"},
-				{name: "CreatedAt", type: "time.Time"},
-				{name: "UpdatedAt", type: "time.Time"},
-			]
-		}
+		result: #WebSessionResult
 		insert: {
 			into: "web_sessions"
 			columns: [
@@ -103,23 +99,7 @@ queries: [
 		params: [
 			{name: "sessionHash", type: "string"},
 		]
-		result: {
-			row: "WebSession"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "SessionHash", type: "string"},
-				{name: "AuthMethod", type: "string"},
-				{name: "UserAgent", type: "sql.NullString"},
-				{name: "IpAddress", type: "sql.NullString"},
-				{name: "ExpiresAt", type: "time.Time"},
-				{name: "IdleExpiresAt", type: "time.Time"},
-				{name: "LastSeenAt", type: "time.Time"},
-				{name: "RevokedAt", type: "sql.NullTime"},
-				{name: "CreatedAt", type: "time.Time"},
-				{name: "UpdatedAt", type: "time.Time"},
-			]
-		}
+		result: #WebSessionResult
 		select: {
 			from: "web_sessions"
 			columns: [

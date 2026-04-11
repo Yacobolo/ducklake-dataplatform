@@ -1,5 +1,17 @@
 package querydefs
 
+#AuthRecoveryCodeResult: {
+	row: "AuthRecoveryCode"
+	fields: [
+		{name: "ID", type: "string"},
+		{name: "PrincipalID", type: "string"},
+		{name: "CodeHash", type: "string"},
+		{name: "UsedAt", type: "sql.NullTime"},
+		{name: "ExpiresAt", type: "time.Time"},
+		{name: "CreatedAt", type: "time.Time"},
+	]
+}
+
 queries: [
 	{
 		name: "CreateAuthRecoveryCode"
@@ -10,20 +22,15 @@ queries: [
 			{name: "CodeHash", type: "string"},
 			{name: "ExpiresAt", type: "time.Time"},
 		]
-		result: {
-			row: "AuthRecoveryCode"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "CodeHash", type: "string"},
-				{name: "UsedAt", type: "sql.NullTime"},
-				{name: "ExpiresAt", type: "time.Time"},
-				{name: "CreatedAt", type: "time.Time"},
-			]
-		}
+		result: #AuthRecoveryCodeResult
 		insert: {
 			into: "auth_recovery_codes"
-			columns: ["id", "principal_id", "code_hash", "expires_at"]
+			columns: [
+				"id",
+				"principal_id",
+				"code_hash",
+				"expires_at",
+			]
 			values: [
 				{param: "ID"},
 				{param: "PrincipalID"},
@@ -56,17 +63,7 @@ queries: [
 		params: [
 			{name: "codeHash", type: "string"},
 		]
-		result: {
-			row: "AuthRecoveryCode"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "CodeHash", type: "string"},
-				{name: "UsedAt", type: "sql.NullTime"},
-				{name: "ExpiresAt", type: "time.Time"},
-				{name: "CreatedAt", type: "time.Time"},
-			]
-		}
+		result: #AuthRecoveryCodeResult
 		select: {
 			from: "auth_recovery_codes"
 			columns: [
@@ -91,17 +88,7 @@ queries: [
 		params: [
 			{name: "principalID", type: "string"},
 		]
-		result: {
-			row: "AuthRecoveryCode"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "PrincipalID", type: "string"},
-				{name: "CodeHash", type: "string"},
-				{name: "UsedAt", type: "sql.NullTime"},
-				{name: "ExpiresAt", type: "time.Time"},
-				{name: "CreatedAt", type: "time.Time"},
-			]
-		}
+		result: #AuthRecoveryCodeResult
 		select: {
 			from: "auth_recovery_codes"
 			columns: [
