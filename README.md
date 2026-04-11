@@ -47,6 +47,26 @@ task site:check
 The canonical public API contract is `api/gen/openapi.yaml`.
 Generated reference under `site/content/reference/generated` is derived from that contract plus the declarative schema artifacts.
 
+## APIGen Pipeline
+
+The API authoring and generation flow is now:
+
+```bash
+api/cue/*.cue
+  -> go run ./cmd/apigen cue-compile
+  -> api/gen/json-ir.json
+  -> api/gen/openapi.yaml
+  -> go run ./cmd/apigen all
+  -> internal/api/*.gen.go + pkg/cli/gen/apigen_registry.gen.go
+```
+
+Notes:
+
+- `api/cue` is the authored source of truth.
+- `api/gen/openapi.yaml` is the canonical published contract artifact.
+- `api/gen/json-ir.json` is the APIGen compiler boundary consumed by the Go emitters.
+- Generated server code embeds the canonical OpenAPI contract for `/openapi.json` and `/docs`.
+
 ## Examples
 
 Start with the MovieLens showcase:
