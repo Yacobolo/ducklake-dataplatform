@@ -29,6 +29,37 @@ queries: [{name: "GetThing", kind: "exec", raw: {sql: "DELETE FROM other_things"
 	assert.Contains(t, err.Error(), `duplicate query name "GetThing"`)
 }
 
+func TestLoadQueries_SupportDefsCanBeSharedAcrossFiles(t *testing.T) {
+	dir := t.TempDir()
+	writeQuerydefFile(t, dir, "_defs.cue", `
+package querydefs
+
+#CountThings: {
+	name: string
+	kind: "one"
+	result: {scalar: "int64"}
+	select: {
+		from: "things"
+		columns: [{expr: "COUNT(*)", alias: "cnt"}]
+	}
+	...
+}
+`)
+	writeQuerydefFile(t, dir, "things.cue", `
+package querydefs
+
+queries: [
+	#CountThings & {name: "CountThings"},
+]
+`)
+
+	queries, err := LoadQueries(dir)
+	require.NoError(t, err)
+	require.Len(t, queries, 1)
+	assert.Equal(t, "CountThings", queries[0].Name)
+	assert.Equal(t, cuesql.KindOne, queries[0].Kind)
+}
+
 func TestValidateQueries_UnknownRawBindFailsClearly(t *testing.T) {
 	err := ValidateQueries(Catalog{}, []cuesql.Query{
 		{

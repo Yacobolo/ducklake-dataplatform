@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/parser"
 
 	cuesql "duck-demo/pkg/cue-sql"
 )
@@ -21,25 +23,34 @@ func LoadQueries(srcDir string) ([]cuesql.Query, error) {
 	}
 	sort.Strings(files)
 	ctx := cuecontext.New()
+	support := make([]querydefFile, 0, len(files))
+	queryFiles := make([]querydefFile, 0, len(files))
+	for _, file := range files {
+		entry, err := loadQuerydefFile(file)
+		if err != nil {
+			return nil, err
+		}
+		if entry.HasQueries {
+			queryFiles = append(queryFiles, entry)
+		} else {
+			support = append(support, entry)
+		}
+	}
+
 	var queries []cuesql.Query
 	seen := make(map[string]struct{})
-	for _, file := range files {
-		//nolint:gosec // The generator controls the query definition directory contents.
-		contents, err := os.ReadFile(file)
-		if err != nil {
-			return nil, fmt.Errorf("read %s: %w", file, err)
-		}
-		value := ctx.CompileBytes(contents, cue.Filename(file))
+	for _, file := range queryFiles {
+		value := ctx.BuildFile(buildCombinedQuerydefFile(support, file))
 		if err := value.Err(); err != nil {
-			return nil, fmt.Errorf("compile %s: %w", filepath.Base(file), err)
+			return nil, fmt.Errorf("compile %s: %w", filepath.Base(file.Path), err)
 		}
 		field := value.LookupPath(cue.ParsePath("queries"))
 		if err := field.Err(); err != nil {
-			return nil, fmt.Errorf("%s: missing queries field: %w", filepath.Base(file), err)
+			return nil, fmt.Errorf("%s: missing queries field: %w", filepath.Base(file.Path), err)
 		}
 		var decoded []cuesql.Query
 		if err := field.Decode(&decoded); err != nil {
-			return nil, fmt.Errorf("decode %s queries: %w", filepath.Base(file), err)
+			return nil, fmt.Errorf("decode %s queries: %w", filepath.Base(file.Path), err)
 		}
 		for _, query := range decoded {
 			if _, ok := seen[query.Name]; ok {
@@ -50,6 +61,70 @@ func LoadQueries(srcDir string) ([]cuesql.Query, error) {
 		}
 	}
 	return queries, nil
+}
+
+type querydefFile struct {
+	Path       string
+	File       *ast.File
+	HasQueries bool
+}
+
+func loadQuerydefFile(path string) (querydefFile, error) {
+	//nolint:gosec // The generator controls the query definition directory contents.
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return querydefFile{}, fmt.Errorf("read %s: %w", path, err)
+	}
+	file, err := parser.ParseFile(path, contents, parser.ParseComments)
+	if err != nil {
+		return querydefFile{}, fmt.Errorf("parse %s: %w", filepath.Base(path), err)
+	}
+	return querydefFile{
+		Path:       path,
+		File:       file,
+		HasQueries: hasTopLevelQueriesField(file),
+	}, nil
+}
+
+func hasTopLevelQueriesField(file *ast.File) bool {
+	for _, decl := range file.Decls {
+		field, ok := decl.(*ast.Field)
+		if !ok {
+			continue
+		}
+		name, _, err := ast.LabelName(field.Label)
+		if err != nil {
+			continue
+		}
+		if name == "queries" {
+			return true
+		}
+	}
+	return false
+}
+
+func buildCombinedQuerydefFile(support []querydefFile, target querydefFile) *ast.File {
+	combined := &ast.File{Filename: target.Path}
+	appendDecls := func(file *ast.File, includeQueries bool) {
+		for _, decl := range file.Decls {
+			if _, ok := decl.(*ast.Package); ok && len(combined.Decls) > 0 {
+				continue
+			}
+			if !includeQueries {
+				if field, ok := decl.(*ast.Field); ok {
+					if name, _, err := ast.LabelName(field.Label); err == nil && name == "queries" {
+						continue
+					}
+				}
+			}
+			combined.Decls = append(combined.Decls, decl)
+		}
+	}
+	for _, file := range support {
+		appendDecls(file.File, false)
+	}
+	appendDecls(target.File, true)
+	return combined
 }
 
 // ValidateQueries validates query definitions against the migration-derived catalog.

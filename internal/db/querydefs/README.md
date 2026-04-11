@@ -3,6 +3,7 @@
 This directory is the source of truth for generated metadata-store queries.
 
 Files:
+- `_shared_defs.cue`: reusable authoring helpers for common declarative query shapes.
 - `legacy_*.cue`: the imported compatibility corpus, split by domain/table for reviewability.
 - `dynamic_overrides.cue`: structured definitions for queries where `cue-sql` should omit optional predicates or expand slices instead of preserving legacy SQL hacks.
 - `setup_state.cue`, `auth_login_attempts.cue`, `auth_providers.cue`: examples of fully structured authoring that replace former raw imports.
@@ -15,6 +16,7 @@ Authoring rules:
 
 Workflow:
 - Edit or add `*.cue` files here.
+- Prefer shared defs from `_shared_defs.cue` when a query is a common CRUD shape.
 - Optionally run `go run ./cmd/cue-sql-structurize -src internal/db/querydefs` to convert simple legacy raw statements into structured definitions before hand-tuning the remaining complex ones.
 - Run `task cue-sql` to regenerate `internal/db/cuestore`.
 - Run `task check` before shipping changes.

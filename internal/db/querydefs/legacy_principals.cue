@@ -15,45 +15,23 @@ queries: [
 				{column: "external_id", value: {param: "ExternalID"}},
 				{column: "external_issuer", value: {param: "ExternalIssuer"}},
 			]
-			where: [
-				{column: "id", op: "=", param: "ID"},
-			]
+			where: [{column: "id", op: "=", param: "ID"}]
 		}
 	},
-	{
-		name: "CountPrincipals"
-		kind: "one"
-		result: {scalar: "int64"}
-		select: {
-			from: "principals"
-			columns: [
-				{expr: "COUNT(*)", alias: "cnt"},
-			]
-		}
+	#CountAll & {
+		name:   "CountPrincipals"
+		_table: "principals"
 	},
-	{
-		name: "CreatePrincipal"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreatePrincipal"
+		_table: "principals"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "Name", type: "string"},
 			{name: "Type", type: "string"},
 			{name: "IsAdmin", type: "int64"},
 		]
-		result: {
-			row: "Principal"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Type", type: "string"},
-				{name: "IsAdmin", type: "int64"},
-				{name: "CreatedAt", type: "string"},
-				{name: "ExternalID", type: "sql.NullString"},
-				{name: "ExternalIssuer", type: "sql.NullString"},
-			]
-		}
 		insert: {
-			into: "principals"
 			columns: ["id", "name", "type", "is_admin"]
 			values: [
 				{param: "ID"},
@@ -61,20 +39,11 @@ queries: [
 				{param: "Type"},
 				{param: "IsAdmin"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "type"},
-				{expr: "is_admin"},
-				{expr: "created_at"},
-				{expr: "external_id"},
-				{expr: "external_issuer"},
-			]
 		}
 	},
-	{
-		name: "CreatePrincipalWithExternalID"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreatePrincipalWithExternalID"
+		_table: "principals"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "Name", type: "string"},
@@ -83,20 +52,7 @@ queries: [
 			{name: "ExternalID", type: "sql.NullString"},
 			{name: "ExternalIssuer", type: "sql.NullString"},
 		]
-		result: {
-			row: "Principal"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Type", type: "string"},
-				{name: "IsAdmin", type: "int64"},
-				{name: "CreatedAt", type: "string"},
-				{name: "ExternalID", type: "sql.NullString"},
-				{name: "ExternalIssuer", type: "sql.NullString"},
-			]
-		}
 		insert: {
-			into: "principals"
 			columns: [
 				"id",
 				"name",
@@ -113,63 +69,15 @@ queries: [
 				{param: "ExternalID"},
 				{param: "ExternalIssuer"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "type"},
-				{expr: "is_admin"},
-				{expr: "created_at"},
-				{expr: "external_id"},
-				{expr: "external_issuer"},
-			]
 		}
 	},
-	{
-		name: "DeletePrincipal"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "principals"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#DeleteByID & {
+		name:   "DeletePrincipal"
+		_table: "principals"
 	},
-	{
-		name: "GetPrincipal"
-		kind: "one"
-		params: [
-			{name: "id", type: "string"},
-		]
-		result: {
-			row: "Principal"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Type", type: "string"},
-				{name: "IsAdmin", type: "int64"},
-				{name: "CreatedAt", type: "string"},
-				{name: "ExternalID", type: "sql.NullString"},
-				{name: "ExternalIssuer", type: "sql.NullString"},
-			]
-		}
-		select: {
-			from: "principals"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "type"},
-				{expr: "is_admin"},
-				{expr: "created_at"},
-				{expr: "external_id"},
-				{expr: "external_issuer"},
-			]
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#GetByID & {
+		name:   "GetPrincipal"
+		_table: "principals"
 	},
 	{
 		name: "GetPrincipalByExternalID"
@@ -178,29 +86,9 @@ queries: [
 			{name: "ExternalIssuer", type: "sql.NullString"},
 			{name: "ExternalID", type: "sql.NullString"},
 		]
-		result: {
-			row: "Principal"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Type", type: "string"},
-				{name: "IsAdmin", type: "int64"},
-				{name: "CreatedAt", type: "string"},
-				{name: "ExternalID", type: "sql.NullString"},
-				{name: "ExternalIssuer", type: "sql.NullString"},
-			]
-		}
+		result: {table: "principals"}
 		select: {
 			from: "principals"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "type"},
-				{expr: "is_admin"},
-				{expr: "created_at"},
-				{expr: "external_id"},
-				{expr: "external_issuer"},
-			]
 			where: [
 				{column: "external_issuer", op: "IS", param: "ExternalIssuer"},
 				{column: "external_id", op: "=", param: "ExternalID"},
@@ -208,107 +96,21 @@ queries: [
 			limitSQL: "1"
 		}
 	},
-	{
-		name: "GetPrincipalByName"
-		kind: "one"
-		params: [
-			{name: "name", type: "string"},
-		]
-		result: {
-			row: "Principal"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Type", type: "string"},
-				{name: "IsAdmin", type: "int64"},
-				{name: "CreatedAt", type: "string"},
-				{name: "ExternalID", type: "sql.NullString"},
-				{name: "ExternalIssuer", type: "sql.NullString"},
-			]
-		}
-		select: {
-			from: "principals"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "type"},
-				{expr: "is_admin"},
-				{expr: "created_at"},
-				{expr: "external_id"},
-				{expr: "external_issuer"},
-			]
-			where: [
-				{column: "name", op: "=", param: "name"},
-			]
-		}
+	#GetByStringField & {
+		name:   "GetPrincipalByName"
+		_table: "principals"
+		_field: "name"
+		_param: "name"
 	},
-	{
-		name: "ListPrincipals"
-		kind: "many"
-		result: {
-			row: "Principal"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Type", type: "string"},
-				{name: "IsAdmin", type: "int64"},
-				{name: "CreatedAt", type: "string"},
-				{name: "ExternalID", type: "sql.NullString"},
-				{name: "ExternalIssuer", type: "sql.NullString"},
-			]
-		}
-		select: {
-			from: "principals"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "type"},
-				{expr: "is_admin"},
-				{expr: "created_at"},
-				{expr: "external_id"},
-				{expr: "external_issuer"},
-			]
-			orderBy: [
-				{expr: "name"},
-			]
-		}
+	#ListAllOrdered & {
+		name:   "ListPrincipals"
+		_table: "principals"
+		_order: [{expr: "name"}]
 	},
-	{
-		name: "ListPrincipalsPaginated"
-		kind: "many"
-		params: [
-			{name: "Limit", type: "int64"},
-			{name: "Offset", type: "int64"},
-		]
-		result: {
-			row: "Principal"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Type", type: "string"},
-				{name: "IsAdmin", type: "int64"},
-				{name: "CreatedAt", type: "string"},
-				{name: "ExternalID", type: "sql.NullString"},
-				{name: "ExternalIssuer", type: "sql.NullString"},
-			]
-		}
-		select: {
-			from: "principals"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "type"},
-				{expr: "is_admin"},
-				{expr: "created_at"},
-				{expr: "external_id"},
-				{expr: "external_issuer"},
-			]
-			orderBy: [
-				{expr: "id"},
-			]
-			limitParam: "Limit"
-			offsetParam: "Offset"
-		}
+	#ListPaginatedOrdered & {
+		name:   "ListPrincipalsPaginated"
+		_table: "principals"
+		_order: [{expr: "id"}]
 	},
 	{
 		name: "SetAdmin"
@@ -322,9 +124,7 @@ queries: [
 			set: [
 				{column: "is_admin", value: {param: "IsAdmin"}},
 			]
-			where: [
-				{column: "id", op: "=", param: "ID"},
-			]
+			where: [{column: "id", op: "=", param: "ID"}]
 		}
 	},
 ]

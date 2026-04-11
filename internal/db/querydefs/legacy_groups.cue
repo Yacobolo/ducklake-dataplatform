@@ -1,118 +1,40 @@
 package querydefs
 
 queries: [
-	{
-		name: "CountGroups"
-		kind: "one"
-		result: {scalar: "int64"}
-		select: {
-			from: "groups"
-			columns: [
-				{expr: "COUNT(*)", alias: "cnt"},
-			]
-		}
+	#CountAll & {
+		name:   "CountGroups"
+		_table: "groups"
 	},
-	{
-		name: "CreateGroup"
-		kind: "one"
+	#InsertReturningTable & {
+		name:   "CreateGroup"
+		_table: "groups"
 		params: [
 			{name: "ID", type: "string"},
 			{name: "Name", type: "string"},
 			{name: "Description", type: "sql.NullString"},
 		]
-		result: {
-			row: "Group"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Description", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
 		insert: {
-			into: "groups"
 			columns: ["id", "name", "description"]
 			values: [
 				{param: "ID"},
 				{param: "Name"},
 				{param: "Description"},
 			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "description"},
-				{expr: "created_at"},
-			]
 		}
 	},
-	{
-		name: "DeleteGroup"
-		kind: "exec"
-		params: [
-			{name: "id", type: "string"},
-		]
-		delete: {
-			from: "groups"
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#DeleteByID & {
+		name:   "DeleteGroup"
+		_table: "groups"
 	},
-	{
-		name: "GetGroup"
-		kind: "one"
-		params: [
-			{name: "id", type: "string"},
-		]
-		result: {
-			row: "Group"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Description", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "groups"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "description"},
-				{expr: "created_at"},
-			]
-			where: [
-				{column: "id", op: "=", param: "id"},
-			]
-		}
+	#GetByID & {
+		name:   "GetGroup"
+		_table: "groups"
 	},
-	{
-		name: "GetGroupByName"
-		kind: "one"
-		params: [
-			{name: "name", type: "string"},
-		]
-		result: {
-			row: "Group"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Description", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "groups"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "description"},
-				{expr: "created_at"},
-			]
-			where: [
-				{column: "name", op: "=", param: "name"},
-			]
-		}
+	#GetByStringField & {
+		name:   "GetGroupByName"
+		_table: "groups"
+		_field: "name"
+		_param: "name"
 	},
 	{
 		name: "GetGroupsForMember"
@@ -121,24 +43,10 @@ queries: [
 			{name: "MemberType", type: "string"},
 			{name: "MemberID", type: "string"},
 		]
-		result: {
-			row: "Group"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Description", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
+		result: {table: "groups"}
 		select: {
-			from: "groups"
+			from:  "groups"
 			alias: "g"
-			columns: [
-				{expr: "g.id"},
-				{expr: "g.name"},
-				{expr: "g.description"},
-				{expr: "g.created_at"},
-			]
 			joins: [
 				{type: "JOIN", table: "group_members", alias: "gm", on: "g.id = gm.group_id"},
 			]
@@ -148,61 +56,15 @@ queries: [
 			]
 		}
 	},
-	{
-		name: "ListGroups"
-		kind: "many"
-		result: {
-			row: "Group"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Description", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "groups"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "description"},
-				{expr: "created_at"},
-			]
-			orderBy: [
-				{expr: "name"},
-			]
-		}
+	#ListAllOrdered & {
+		name:   "ListGroups"
+		_table: "groups"
+		_order: [{expr: "name"}]
 	},
-	{
-		name: "ListGroupsPaginated"
-		kind: "many"
-		params: [
-			{name: "Limit", type: "int64"},
-			{name: "Offset", type: "int64"},
-		]
-		result: {
-			row: "Group"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Description", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
-		select: {
-			from: "groups"
-			columns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "description"},
-				{expr: "created_at"},
-			]
-			orderBy: [
-				{expr: "id"},
-			]
-			limitParam: "Limit"
-			offsetParam: "Offset"
-		}
+	#ListPaginatedOrdered & {
+		name:   "ListGroupsPaginated"
+		_table: "groups"
+		_order: [{expr: "id"}]
 	},
 	{
 		name: "UpdateGroup"
@@ -211,29 +73,14 @@ queries: [
 			{name: "Description", type: "sql.NullString"},
 			{name: "ID", type: "string"},
 		]
-		result: {
-			row: "Group"
-			fields: [
-				{name: "ID", type: "string"},
-				{name: "Name", type: "string"},
-				{name: "Description", type: "sql.NullString"},
-				{name: "CreatedAt", type: "string"},
-			]
-		}
+		result: {table: "groups"}
 		update: {
 			table: "groups"
 			set: [
 				{column: "description", value: {param: "Description"}},
 			]
-			where: [
-				{column: "id", op: "=", param: "ID"},
-			]
-			returningColumns: [
-				{expr: "id"},
-				{expr: "name"},
-				{expr: "description"},
-				{expr: "created_at"},
-			]
+			where: [{column: "id", op: "=", param: "ID"}]
+			returning: true
 		}
 	},
 ]

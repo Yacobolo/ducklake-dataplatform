@@ -193,3 +193,42 @@ func TestGenerateQueries_DynamicBuilderHandlesPredicateGroups(t *testing.T) {
 	assert.Contains(t, output, `where = append(where, "("+strings.Join(groupWhere0, " OR ")+")")`)
 	assert.Contains(t, output, "args = append(args, groupArgs0...)")
 }
+
+func TestGenerateModels_TableResultGeneratesStructFromCatalog(t *testing.T) {
+	catalog := Catalog{
+		Tables: map[string]Table{
+			"tags": {
+				Name: "tags",
+				Columns: []Column{
+					{Name: "id", DBType: "TEXT", NotNull: true},
+					{Name: "key", DBType: "TEXT", NotNull: true},
+					{Name: "value", DBType: "TEXT", NotNull: false},
+					{Name: "created_by", DBType: "TEXT", NotNull: true},
+					{Name: "created_at", DBType: "TEXT", NotNull: true},
+				},
+			},
+		},
+	}
+	queries := []cuesql.Query{
+		{
+			Name:   "GetTag",
+			Kind:   cuesql.KindOne,
+			Params: []cuesql.Param{{Name: "id", Type: "string"}},
+			Result: cuesql.Result{Table: "tags"},
+			Select: &cuesql.Select{
+				From: "tags",
+				Where: []cuesql.Predicate{
+					{Column: "id", Op: "=", Param: "id"},
+				},
+			},
+		},
+	}
+
+	output := string(generateModels(catalog, queries))
+	assert.Contains(t, output, "type Tag struct {")
+	assert.Contains(t, output, "ID string")
+	assert.Contains(t, output, "Key string")
+	assert.Contains(t, output, "Value sql.NullString")
+	assert.Contains(t, output, "CreatedBy string")
+	assert.Contains(t, output, "CreatedAt string")
+}
