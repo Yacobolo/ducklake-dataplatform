@@ -2,1753 +2,281 @@ package api
 
 // Authored identity operations.
 
-endpoints_identity: [
-  {
-    "method": "get",
-    "path": "/principals",
-    "operation_id": "listPrincipals",
-    "summary": "List principals",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedPrincipals"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedPrincipals",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedPrincipals",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedPrincipals",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedPrincipals",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedPrincipals",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedPrincipals",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "admin_only"
-      },
-      "x-cli-command": "security principals list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/principals",
-    "operation_id": "createPrincipal",
-    "summary": "Create principal",
-    "tags": [
-      "Identity"
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreatePrincipalRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "Principal"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security principals create"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/principals/{principal_id}",
-    "operation_id": "getPrincipal",
-    "summary": "Get principal",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "principal_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "Principal"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Principal",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security principals get"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/principals/{principal_id}",
-    "operation_id": "deletePrincipal",
-    "summary": "Delete principal",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "principal_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security principals delete"
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/principals/{principal_id}",
-    "operation_id": "updatePrincipal",
-    "summary": "Update principal",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "principal_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdatePrincipalRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "Principal"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security principals set-admin"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/groups",
-    "operation_id": "listGroups",
-    "summary": "List groups",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedGroups"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroups",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroups",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroups",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroups",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroups",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroups",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "admin_only"
-      },
-      "x-cli-command": "security groups list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/groups",
-    "operation_id": "createGroup",
-    "summary": "Create group",
-    "tags": [
-      "Identity"
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateGroupRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "Group"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security groups create"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/groups/{group_id}",
-    "operation_id": "getGroup",
-    "summary": "Get group",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "group_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "Group"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Group",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security groups get"
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/groups/{group_id}",
-    "operation_id": "updateGroup",
-    "summary": "Update group",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "group_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdateGroupRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "Group"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/groups/{group_id}",
-    "operation_id": "deleteGroup",
-    "summary": "Delete group",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "group_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security groups delete"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/groups/{group_id}/members",
-    "operation_id": "listGroupMembers",
-    "summary": "List group members",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "group_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedGroupMembers"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroupMembers",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroupMembers",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroupMembers",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroupMembers",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroupMembers",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroupMembers",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGroupMembers",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security members list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/groups/{group_id}/members",
-    "operation_id": "createGroupMember",
-    "summary": "Create group member",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "group_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateGroupMemberRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security members add"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/groups/{group_id}/members/{member_type}/{member_id}",
-    "operation_id": "deleteGroupMember",
-    "summary": "Delete group member",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "group_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "member_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "member_type",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "ref": "PrincipalType"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security members remove"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/api-keys",
-    "operation_id": "listAPIKeys",
-    "summary": "List API keys",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "principal_id",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedAPIKeys"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedAPIKeys",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedAPIKeys",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedAPIKeys",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedAPIKeys",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedAPIKeys",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security api-keys list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/api-keys",
-    "operation_id": "createAPIKey",
-    "summary": "Create API key",
-    "tags": [
-      "Identity"
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateAPIKeyRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "CreateAPIKeyResponse"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CreateAPIKeyResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CreateAPIKeyResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CreateAPIKeyResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CreateAPIKeyResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CreateAPIKeyResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CreateAPIKeyResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security api-keys create"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/api-keys/{api_key_id}",
-    "operation_id": "deleteAPIKey",
-    "summary": "Delete API key",
-    "tags": [
-      "Identity"
-    ],
-    "parameters": [
-      {
-        "name": "api_key_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security api-keys delete"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/api-key-cleanup-runs",
-    "operation_id": "cleanupExpiredAPIKeys",
-    "summary": "Clean up expired API keys",
-    "tags": [
-      "Identity"
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "CleanupAPIKeysResponse"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CleanupAPIKeysResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CleanupAPIKeysResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CleanupAPIKeysResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CleanupAPIKeysResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CleanupAPIKeysResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "CleanupAPIKeysResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security api-keys cleanup"
-    }
-  }
+#identityTag: "Identity"
+
+#wrappedIdentityOperation: #genericOperationSpec & {
+	wrapped: true
+}
+
+#plainIdentityOperation: #genericOperationSpec & {
+	wrapped: false
+}
+
+#principalIDPathParameter: #pathStringParameter & {
+	#name: "principal_id"
+}
+
+#groupIDPathParameter: #pathStringParameter & {
+	#name: "group_id"
+}
+
+#memberIDPathParameter: #pathStringParameter & {
+	#name: "member_id"
+}
+
+#apiKeyIDPathParameter: #pathStringParameter & {
+	#name: "api_key_id"
+}
+
+#memberTypePathParameter: {
+	name:     "member_type"
+	in:       "path"
+	required: true
+	schema: {
+		ref: "PrincipalType"
+	}
+}
+
+#principalIDQueryParameter: #queryStringParameter & {
+	#name: "principal_id"
+}
+
+#principalPathParameters: [
+	#principalIDPathParameter,
 ]
 
+#groupPathParameters: [
+	#groupIDPathParameter,
+]
+
+#groupMemberListParameters: [
+	#groupIDPathParameter,
+	#paginationParameters[0],
+	#paginationParameters[1],
+]
+
+#groupMemberPathParameters: [
+	#groupIDPathParameter,
+	#memberTypePathParameter,
+	#memberIDPathParameter,
+]
+
+#apiKeyPathParameters: [
+	#apiKeyIDPathParameter,
+]
+
+#listAPIKeysParameters: [
+	#principalIDQueryParameter,
+	#paginationParameters[0],
+	#paginationParameters[1],
+]
+
+#adminOnlyIdentityAuthz: {
+	mode: "admin_only"
+}
+
+#identityOps: [
+	#wrappedIdentityOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listPrincipals"
+		path:         "/principals"
+		summary:      "List principals"
+		cli:          "security principals list"
+		returns:      "PaginatedPrincipals"
+		error_family: "guarded_read"
+		params:       #paginationParameters
+		authz:        #adminOnlyIdentityAuthz
+	},
+	#wrappedIdentityOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createPrincipal"
+		path:           "/principals"
+		summary:        "Create principal"
+		cli:            "security principals create"
+		returns:        "Principal"
+		success_status: 201
+		error_family:   "mutating"
+		body_ref:       "CreatePrincipalRequest"
+		body_description: "Request payload"
+	},
+	#wrappedIdentityOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getPrincipal"
+		path:         "/principals/{principal_id}"
+		summary:      "Get principal"
+		cli:          "security principals get"
+		returns:      "Principal"
+		error_family: "resource"
+		params:       #principalPathParameters
+	},
+	#plainIdentityOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deletePrincipal"
+		path:         "/principals/{principal_id}"
+		summary:      "Delete principal"
+		cli:          "security principals delete"
+		error_family: "mutating"
+		params:       #principalPathParameters
+	},
+	#plainIdentityOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updatePrincipal"
+		path:         "/principals/{principal_id}"
+		summary:      "Update principal"
+		cli:          "security principals set-admin"
+		returns:      "Principal"
+		error_family: "mutating"
+		params:       #principalPathParameters
+		body_ref:     "UpdatePrincipalRequest"
+		body_description: "Request payload"
+	},
+	#wrappedIdentityOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listGroups"
+		path:         "/groups"
+		summary:      "List groups"
+		cli:          "security groups list"
+		returns:      "PaginatedGroups"
+		error_family: "guarded_read"
+		params:       #paginationParameters
+		authz:        #adminOnlyIdentityAuthz
+	},
+	#wrappedIdentityOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createGroup"
+		path:           "/groups"
+		summary:        "Create group"
+		cli:            "security groups create"
+		returns:        "Group"
+		success_status: 201
+		error_family:   "mutating"
+		body_ref:       "CreateGroupRequest"
+		body_description: "Request payload"
+	},
+	#wrappedIdentityOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getGroup"
+		path:         "/groups/{group_id}"
+		summary:      "Get group"
+		cli:          "security groups get"
+		returns:      "Group"
+		error_family: "resource"
+		params:       #groupPathParameters
+	},
+	#plainIdentityOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updateGroup"
+		path:         "/groups/{group_id}"
+		summary:      "Update group"
+		returns:      "Group"
+		error_family: "resource"
+		params:       #groupPathParameters
+		body_ref:     "UpdateGroupRequest"
+		body_description: "Request payload"
+	},
+	#plainIdentityOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteGroup"
+		path:         "/groups/{group_id}"
+		summary:      "Delete group"
+		cli:          "security groups delete"
+		error_family: "mutating"
+		params:       #groupPathParameters
+	},
+	#wrappedIdentityOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listGroupMembers"
+		path:         "/groups/{group_id}/members"
+		summary:      "List group members"
+		cli:          "security members list"
+		returns:      "PaginatedGroupMembers"
+		error_family: "resource"
+		params:       #groupMemberListParameters
+	},
+	#plainIdentityOperation & {
+		kind:           "created_empty"
+		method:         "post"
+		op:             "createGroupMember"
+		path:           "/groups/{group_id}/members"
+		summary:        "Create group member"
+		cli:            "security members add"
+		error_family:   "mutating"
+		params:         #groupPathParameters
+		body_ref:       "CreateGroupMemberRequest"
+		body_description: "Request payload"
+	},
+	#plainIdentityOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteGroupMember"
+		path:         "/groups/{group_id}/members/{member_type}/{member_id}"
+		summary:      "Delete group member"
+		cli:          "security members remove"
+		error_family: "mutating"
+		params:       #groupMemberPathParameters
+	},
+	#wrappedIdentityOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listAPIKeys"
+		path:         "/api-keys"
+		summary:      "List API keys"
+		cli:          "security api-keys list"
+		returns:      "PaginatedAPIKeys"
+		error_family: "standard"
+		params:       #listAPIKeysParameters
+	},
+	#wrappedIdentityOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createAPIKey"
+		path:           "/api-keys"
+		summary:        "Create API key"
+		cli:            "security api-keys create"
+		returns:        "CreateAPIKeyResponse"
+		success_status: 201
+		error_family:   "mutating"
+		body_ref:       "CreateAPIKeyRequest"
+		body_description: "Request payload"
+	},
+	#plainIdentityOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteAPIKey"
+		path:         "/api-keys/{api_key_id}"
+		summary:      "Delete API key"
+		cli:          "security api-keys delete"
+		error_family: "mutating"
+		params:       #apiKeyPathParameters
+	},
+	#wrappedIdentityOperation & {
+		kind:         "response"
+		method:       "post"
+		op:           "cleanupExpiredAPIKeys"
+		path:         "/api-key-cleanup-runs"
+		summary:      "Clean up expired API keys"
+		cli:          "security api-keys cleanup"
+		returns:      "CleanupAPIKeysResponse"
+		error_family: "mutating"
+	},
+]
+
+endpoints_identity: [
+	for op in #identityOps {
+		(#endpointFromGenericOperation & {
+			tag:  #identityTag
+			spec: op
+		}).endpoint
+	},
+]
