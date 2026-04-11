@@ -3,163 +3,163 @@ package api
 // Authored paginated schemas.
 
 schemas_pagination: {
-  "PaginatedAPIKeys": #paginatedItemsSchema & {
+  PaginatedAPIKeys: #paginatedItemsSchema & {
     #item_ref: "APIKeyInfo"
   },
-  "PaginatedAssetCheckResults": #paginatedItemsSchema & {
+  PaginatedAssetCheckResults: #paginatedItemsSchema & {
     #item_ref: "AssetCheckResult"
   },
-  "PaginatedAssetMaterializations": #paginatedItemsSchema & {
+  PaginatedAssetMaterializations: #paginatedItemsSchema & {
     #item_ref: "AssetMaterialization"
   },
-  "PaginatedAssetPartitions": #paginatedItemsSchema & {
+  PaginatedAssetPartitions: #paginatedItemsSchema & {
     #item_ref: "AssetPartition"
   },
-  "PaginatedAssetRuns": #paginatedItemsSchema & {
+  PaginatedAssetRuns: #paginatedItemsSchema & {
     #item_ref: "AssetRun"
   },
-  "PaginatedAssets": #paginatedItemsSchema & {
+  PaginatedAssets: #paginatedItemsSchema & {
     #item_ref: "Asset"
   },
-  "PaginatedAuditLogs": #paginatedItemsSchema & {
+  PaginatedAuditLogs: #paginatedItemsSchema & {
     #item_ref: "AuditEntry"
   },
-  "PaginatedBackfillRequests": #paginatedItemsSchema & {
+  PaginatedBackfillRequests: #paginatedItemsSchema & {
     #item_ref: "BackfillRequest"
   },
-  "PaginatedBuilds": #paginatedItemsSchema & {
+  PaginatedBuilds: #paginatedItemsSchema & {
     #item_ref: "Build"
   },
-  "PaginatedColumnDetails": #paginatedItemsSchema & {
+  PaginatedColumnDetails: #paginatedItemsSchema & {
     #item_ref: "ColumnDetail"
   },
-  "PaginatedColumnLineageEdges": #paginatedItemsSchema & {
+  PaginatedColumnLineageEdges: #paginatedItemsSchema & {
     #item_ref: "ColumnLineageEdge"
   },
-  "PaginatedColumnMaskBindings": #paginatedItemsSchema & {
+  PaginatedColumnMaskBindings: #paginatedItemsSchema & {
     #item_ref: "ColumnMaskBinding"
   },
-  "PaginatedColumnMasks": #paginatedItemsSchema & {
+  PaginatedColumnMasks: #paginatedItemsSchema & {
     #item_ref: "ColumnMask"
   },
-  "PaginatedComputeAssignments": #paginatedItemsSchema & {
+  PaginatedComputeAssignments: #paginatedItemsSchema & {
     #item_ref: "ComputeAssignment"
   },
-  "PaginatedComputeEndpoints": #paginatedItemsSchema & {
+  PaginatedComputeEndpoints: #paginatedItemsSchema & {
     #item_ref: "ComputeEndpoint"
   },
-  "PaginatedDashboards": #paginatedItemsSchema & {
+  PaginatedDashboards: #paginatedItemsSchema & {
     #item_ref: "Dashboard"
   },
-  "PaginatedDataProducts": #paginatedItemsSchema & {
+  PaginatedDataProducts: #paginatedItemsSchema & {
     #item_ref: "DataProductListItem"
   },
-  "PaginatedEnvironments": #paginatedItemsSchema & {
+  PaginatedEnvironments: #paginatedItemsSchema & {
     #item_ref: "Environment"
   },
-  "PaginatedExternalLocations": #paginatedItemsSchema & {
+  PaginatedExternalLocations: #paginatedItemsSchema & {
     #item_ref: "ExternalLocation"
   },
-  "PaginatedFolderContents": #paginatedItemsSchema & {
+  PaginatedFolderContents: #paginatedItemsSchema & {
     #item_ref: "FolderContentItem"
   },
-  "PaginatedFolders": #paginatedItemsSchema & {
+  PaginatedFolders: #paginatedItemsSchema & {
     #item_ref: "Folder"
   },
-  "PaginatedGitRepos": #paginatedItemsSchema & {
+  PaginatedGitRepos: #paginatedItemsSchema & {
     #item_ref: "GitRepo"
   },
-  "PaginatedGrants": #paginatedItemsSchema & {
+  PaginatedGrants: #paginatedItemsSchema & {
     #item_ref: "PrivilegeGrant"
   },
-  "PaginatedGroupMembers": #paginatedItemsSchema & {
+  PaginatedGroupMembers: #paginatedItemsSchema & {
     #item_ref: "GroupMember"
   },
-  "PaginatedGroups": #paginatedItemsSchema & {
+  PaginatedGroups: #paginatedItemsSchema & {
     #item_ref: "Group"
   },
-  "PaginatedLineageEdges": #paginatedItemsSchema & {
+  PaginatedLineageEdges: #paginatedItemsSchema & {
     #item_ref: "LineageEdge"
   },
-  "PaginatedMacros": #paginatedItemsSchema & {
+  PaginatedMacros: #paginatedItemsSchema & {
     #item_ref: "Macro"
   },
-  "PaginatedModelRuns": #paginatedItemsSchema & {
+  PaginatedModelRuns: #paginatedItemsSchema & {
     #item_ref: "ModelRun"
   },
-  "PaginatedModels": #paginatedItemsSchema & {
+  PaginatedModels: #paginatedItemsSchema & {
     #item_ref: "Model"
   },
-  "PaginatedNotebookJobs": #paginatedItemsSchema & {
+  PaginatedNotebookJobs: #paginatedItemsSchema & {
     #item_ref: "NotebookJob"
   },
-  "PaginatedNotebooks": #paginatedItemsSchema & {
+  PaginatedNotebooks: #paginatedItemsSchema & {
     #item_ref: "Notebook"
   },
-  "PaginatedPipelineRuns": #paginatedItemsSchema & {
+  PaginatedPipelineRuns: #paginatedItemsSchema & {
     #item_ref: "PipelineRun"
   },
-  "PaginatedPipelines": #paginatedItemsSchema & {
+  PaginatedPipelines: #paginatedItemsSchema & {
     #item_ref: "Pipeline"
   },
-  "PaginatedPrincipals": #paginatedItemsSchema & {
+  PaginatedPrincipals: #paginatedItemsSchema & {
     #item_ref: "Principal"
   },
-  "PaginatedProductDomains": #paginatedItemsSchema & {
+  PaginatedProductDomains: #paginatedItemsSchema & {
     #item_ref: "ProductDomain"
   },
-  "PaginatedProductTeams": #paginatedItemsSchema & {
+  PaginatedProductTeams: #paginatedItemsSchema & {
     #item_ref: "ProductTeam"
   },
-  "PaginatedProjects": #paginatedItemsSchema & {
+  PaginatedProjects: #paginatedItemsSchema & {
     #item_ref: "Project"
   },
-  "PaginatedQueryHistoryEntries": #paginatedItemsSchema & {
+  PaginatedQueryHistoryEntries: #paginatedItemsSchema & {
     #item_ref: "QueryHistoryEntry"
   },
-  "PaginatedQueryJobs": #paginatedItemsSchema & {
+  PaginatedQueryJobs: #paginatedItemsSchema & {
     #item_ref: "QueryJob"
   },
-  "PaginatedRecentResources": #paginatedItemsSchema & {
+  PaginatedRecentResources: #paginatedItemsSchema & {
     #item_ref: "RecentResource"
   },
-  "PaginatedRowFilterBindings": #paginatedItemsSchema & {
+  PaginatedRowFilterBindings: #paginatedItemsSchema & {
     #item_ref: "RowFilterBinding"
   },
-  "PaginatedRowFilters": #paginatedItemsSchema & {
+  PaginatedRowFilters: #paginatedItemsSchema & {
     #item_ref: "RowFilter"
   },
-  "PaginatedSavedResources": #paginatedItemsSchema & {
+  PaginatedSavedResources: #paginatedItemsSchema & {
     #item_ref: "SavedResource"
   },
-  "PaginatedSchemaDetails": #paginatedItemsSchema & {
+  PaginatedSchemaDetails: #paginatedItemsSchema & {
     #item_ref: "SchemaDetail"
   },
-  "PaginatedSearchResults": #paginatedItemsSchema & {
+  PaginatedSearchResults: #paginatedItemsSchema & {
     #item_ref: "SearchResult"
   },
-  "PaginatedSemanticModels": #paginatedItemsSchema & {
+  PaginatedSemanticModels: #paginatedItemsSchema & {
     #item_ref: "SemanticModel"
   },
-  "PaginatedStorageCredentials": #paginatedItemsSchema & {
+  PaginatedStorageCredentials: #paginatedItemsSchema & {
     #item_ref: "StorageCredential"
   },
-  "PaginatedTableDetails": #paginatedItemsSchema & {
+  PaginatedTableDetails: #paginatedItemsSchema & {
     #item_ref: "TableDetail"
   },
-  "PaginatedTagAssignments": #paginatedItemsSchema & {
+  PaginatedTagAssignments: #paginatedItemsSchema & {
     #item_ref: "TagAssignment"
   },
-  "PaginatedTags": #paginatedItemsSchema & {
+  PaginatedTags: #paginatedItemsSchema & {
     #item_ref: "Tag"
   },
-  "PaginatedViewDetails": #paginatedItemsSchema & {
+  PaginatedViewDetails: #paginatedItemsSchema & {
     #item_ref: "ViewDetail"
   },
-  "PaginatedVolumes": #paginatedItemsSchema & {
+  PaginatedVolumes: #paginatedItemsSchema & {
     #item_ref: "VolumeDetail"
   },
-  "PaginatedWorkspaces": #paginatedItemsSchema & {
+  PaginatedWorkspaces: #paginatedItemsSchema & {
     #item_ref: "Workspace"
   },
 }

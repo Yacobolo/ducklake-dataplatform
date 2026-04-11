@@ -3,22 +3,22 @@ package api
 // Authored security and workspace schemas.
 
 schemas_security_workspace: {
-  "AddWorkspaceMemberRequest": #objectSchema & {
+  AddWorkspaceMemberRequest: #objectSchema & {
     #fields: {
-      "principal_name": #principalNameProperty,
-      "role": #refProperty & {#ref: "NotebookShareRole"}
+      principal_name: #principalNameProperty,
+      role: #refProperty & {#ref: "NotebookShareRole"}
     },
     #required: [
       "principal_name"
     ]
   },
-  "CreateGrantRequest": #objectSchema & {
+  CreateGrantRequest: #objectSchema & {
     #fields: {
-      "principal_id": #principalIDProperty,
-      "principal_type": #refProperty & {#ref: "PrincipalType"},
-      "privilege": #stringProperty,
-      "securable_id": #stringProperty,
-      "securable_type": #stringProperty
+      principal_id: #principalIDProperty,
+      principal_type: #refProperty & {#ref: "PrincipalType"},
+      privilege: #stringProperty,
+      securable_id: #stringProperty,
+      securable_type: #stringProperty
     },
     #required: [
       "principal_id",
@@ -28,163 +28,163 @@ schemas_security_workspace: {
       "privilege"
     ]
   },
-  "CreateGroupMemberRequest": #objectSchema & {
+  CreateGroupMemberRequest: #objectSchema & {
     #fields: {
-      "member_id": #stringProperty,
-      "member_type": #refProperty & {#ref: "PrincipalType"}
+      member_id: #stringProperty,
+      member_type: #refProperty & {#ref: "PrincipalType"}
     },
     #required: [
       "member_type",
       "member_id"
     ]
   },
-  "CreateGroupRequest": #objectSchema & {
+  CreateGroupRequest: #objectSchema & {
     #fields: {
-      "description": #descriptionProperty,
-      "name": #nameProperty
+      description: #descriptionProperty,
+      name: #nameProperty
     },
     #required: [
       "name"
     ]
   },
-  "CreateRowFilterRequest": #objectSchema & {
+  CreateRowFilterRequest: #objectSchema & {
     #fields: {
-      "description": #descriptionProperty,
-      "filter_sql": #stringProperty,
-      "name": #nameProperty,
-      "table_id": #stringProperty
+      description: #descriptionProperty,
+      filter_sql: #stringProperty,
+      name: #nameProperty,
+      table_id: #stringProperty
     },
     #required: [
       "name",
       "filter_sql"
     ]
   },
-  "CreateSavedResourceRequest": #objectSchema & {
+  CreateSavedResourceRequest: #objectSchema & {
     #fields: {
-      "display_name": #stringProperty,
-      "resource_key": #stringProperty,
-      "resource_path": #stringProperty,
-      "resource_type": #stringProperty,
-      "section": #stringProperty
+      display_name: #stringProperty,
+      resource_key: #stringProperty,
+      resource_path: #stringProperty,
+      resource_type: #stringProperty,
+      section: #stringProperty
     },
     #required: [
       "resource_type",
       "resource_key"
     ]
   },
-  "CreateTagAssignmentRequest": #objectSchema & {
+  CreateTagAssignmentRequest: #objectSchema & {
     #fields: {
-      "column_name": #stringProperty,
-      "securable_id": #stringProperty,
-      "securable_type": #refProperty & {#ref: "TagAssignmentSecurableType"}
+      column_name: #stringProperty,
+      securable_id: #stringProperty,
+      securable_type: #refProperty & {#ref: "TagAssignmentSecurableType"}
     },
     #required: [
       "securable_type",
       "securable_id"
     ]
   },
-  "CreateTagRequest": #objectSchema & {
+  CreateTagRequest: #objectSchema & {
     #fields: {
-      "key": #stringProperty,
-      "value": #stringProperty
+      key: #stringProperty,
+      value: #stringProperty
     },
     #required: [
       "key"
     ]
   },
-  "CreateWorkspaceRequest": #objectSchema & {
+  CreateWorkspaceRequest: #objectSchema & {
     #fields: {
-      "default_environment_id": #stringProperty,
-      "default_project_id": #stringProperty,
-      "git_repo_id": #stringProperty,
-      "git_root_path": #stringProperty,
-      "kind": #refProperty & {#ref: "WorkspaceKind"},
-      "name": #nameProperty,
-      "owner_principal": #stringProperty,
-      "owner_team_id": #stringProperty
+      default_environment_id: #stringProperty,
+      default_project_id: #stringProperty,
+      git_repo_id: #stringProperty,
+      git_root_path: #stringProperty,
+      kind: #refProperty & {#ref: "WorkspaceKind"},
+      name: #nameProperty,
+      owner_principal: #stringProperty,
+      owner_team_id: #stringProperty
     },
     #required: [
       "name"
     ]
   },
-  "Folder": #objectSchema & {
+  Folder: #objectSchema & {
     #fields: {
-      "created_at": #createdAtProperty,
-      "default_environment_id": #stringProperty,
-      "default_project_id": #stringProperty,
-      "depth": #int32Property,
-      "git_repo_id": #stringProperty,
-      "git_root_path": #stringProperty,
-      "id": #idProperty,
-      "name": #nameProperty,
-      "owner": #ownerProperty,
-      "parent_folder_id": #stringProperty,
-      "path": #stringProperty,
-      "system_role": #stringProperty,
-      "updated_at": #updatedAtProperty,
-      "workspace_id": #stringProperty
+      created_at: #createdAtProperty,
+      default_environment_id: #stringProperty,
+      default_project_id: #stringProperty,
+      depth: #int32Property,
+      git_repo_id: #stringProperty,
+      git_root_path: #stringProperty,
+      id: #idProperty,
+      name: #nameProperty,
+      owner: #ownerProperty,
+      parent_folder_id: #stringProperty,
+      path: #stringProperty,
+      system_role: #stringProperty,
+      updated_at: #updatedAtProperty,
+      workspace_id: #stringProperty
     }
   },
-  "FolderContentItem": #objectSchema & {
+  FolderContentItem: #objectSchema & {
     #fields: {
-      "folder_id": #stringProperty,
-      "git_repo_id": #stringProperty,
-      "id": #idProperty,
-      "kind": #stringProperty,
-      "name": #nameProperty,
-      "owner": #ownerProperty,
-      "project_bound": #boolProperty,
-      "project_name": #stringProperty,
-      "scope": #stringProperty,
-      "shared": #boolProperty,
-      "updated_at": #updatedAtProperty
+      folder_id: #stringProperty,
+      git_repo_id: #stringProperty,
+      id: #idProperty,
+      kind: #stringProperty,
+      name: #nameProperty,
+      owner: #ownerProperty,
+      project_bound: #boolProperty,
+      project_name: #stringProperty,
+      scope: #stringProperty,
+      shared: #boolProperty,
+      updated_at: #updatedAtProperty
     }
   },
-  "FolderPath": #objectSchema & {
+  FolderPath: #objectSchema & {
     #fields: {
-      "data": #arrayRefProperty & {#ref: "Folder"}
+      data: #arrayRefProperty & {#ref: "Folder"}
     },
     #required: [
       "data"
     ]
   },
-  "FolderShare": #objectSchema & {
+  FolderShare: #objectSchema & {
     #fields: {
-      "principal_name": #principalNameProperty,
-      "role": #refProperty & {#ref: "NotebookShareRole"}
+      principal_name: #principalNameProperty,
+      role: #refProperty & {#ref: "NotebookShareRole"}
     }
   },
-  "FreshnessPolicy": #objectSchema & {
+  FreshnessPolicy: #objectSchema & {
     #fields: {
-      "cron_schedule": #stringProperty,
-      "max_lag_seconds": #int64Property
+      cron_schedule: #stringProperty,
+      max_lag_seconds: #int64Property
     }
   },
-  "FreshnessStatus": #objectSchema & {
+  FreshnessStatus: #objectSchema & {
     #fields: {
-      "is_fresh": #boolProperty,
-      "last_run_at": #stringProperty,
-      "max_lag_seconds": #int64Property,
-      "stale_since": #stringProperty
+      is_fresh: #boolProperty,
+      last_run_at: #stringProperty,
+      max_lag_seconds: #int64Property,
+      stale_since: #stringProperty
     }
   },
-  "Group": #objectSchema & {
+  Group: #objectSchema & {
     #fields: {
-      "created_at": #createdAtProperty,
-      "description": #descriptionProperty,
-      "id": #idProperty,
-      "name": #nameProperty
+      created_at: #createdAtProperty,
+      description: #descriptionProperty,
+      id: #idProperty,
+      name: #nameProperty
     },
     #required: [
       "id",
       "name"
     ]
   },
-  "GroupMember": #objectSchema & {
+  GroupMember: #objectSchema & {
     #fields: {
-      "group_id": #stringProperty,
-      "member_id": #stringProperty,
-      "member_type": #refProperty & {#ref: "PrincipalType"}
+      group_id: #stringProperty,
+      member_id: #stringProperty,
+      member_type: #refProperty & {#ref: "PrincipalType"}
     },
     #required: [
       "group_id",
@@ -192,16 +192,16 @@ schemas_security_workspace: {
       "member_id"
     ]
   },
-  "PrivilegeGrant": #objectSchema & {
+  PrivilegeGrant: #objectSchema & {
     #fields: {
-      "granted_at": #stringProperty,
-      "granted_by": #stringProperty,
-      "id": #idProperty,
-      "principal_id": #principalIDProperty,
-      "principal_type": #refProperty & {#ref: "PrincipalType"},
-      "privilege": #stringProperty,
-      "securable_id": #stringProperty,
-      "securable_type": #stringProperty
+      granted_at: #stringProperty,
+      granted_by: #stringProperty,
+      id: #idProperty,
+      principal_id: #principalIDProperty,
+      principal_type: #refProperty & {#ref: "PrincipalType"},
+      privilege: #stringProperty,
+      securable_id: #stringProperty,
+      securable_type: #stringProperty
     },
     #required: [
       "id",
@@ -212,19 +212,19 @@ schemas_security_workspace: {
       "privilege"
     ]
   },
-  "Project": #objectSchema & {
+  Project: #objectSchema & {
     #fields: {
-      "created_at": #createdAtProperty,
-      "default_branch": #stringProperty,
-      "description": #descriptionProperty,
-      "id": #idProperty,
-      "kind": #refProperty & {#ref: "ProjectKind"},
-      "name": #nameProperty,
-      "owner_principal": #stringProperty,
-      "owner_team_id": #stringProperty,
-      "product_id": #stringProperty,
-      "updated_at": #updatedAtProperty,
-      "workspace_id": #stringProperty
+      created_at: #createdAtProperty,
+      default_branch: #stringProperty,
+      description: #descriptionProperty,
+      id: #idProperty,
+      kind: #refProperty & {#ref: "ProjectKind"},
+      name: #nameProperty,
+      owner_principal: #stringProperty,
+      owner_team_id: #stringProperty,
+      product_id: #stringProperty,
+      updated_at: #updatedAtProperty,
+      workspace_id: #stringProperty
     },
     #required: [
       "workspace_id",
@@ -232,22 +232,22 @@ schemas_security_workspace: {
       "kind"
     ]
   },
-  "ProjectKind": #enumSchema & {
+  ProjectKind: #enumSchema & {
     #values: [
       "personal",
       "shared",
       "library"
     ]
   },
-  "RecentResource": #objectSchema & {
+  RecentResource: #objectSchema & {
     #fields: {
-      "accessed_at": #stringProperty,
-      "display_name": #stringProperty,
-      "href": #stringProperty,
-      "resource_key": #stringProperty,
-      "resource_path": #stringProperty,
-      "resource_type": #stringProperty,
-      "section": #stringProperty
+      accessed_at: #stringProperty,
+      display_name: #stringProperty,
+      href: #stringProperty,
+      resource_key: #stringProperty,
+      resource_path: #stringProperty,
+      resource_type: #stringProperty,
+      section: #stringProperty
     },
     #required: [
       "resource_type",
@@ -255,14 +255,14 @@ schemas_security_workspace: {
       "display_name"
     ]
   },
-  "RowFilter": #objectSchema & {
+  RowFilter: #objectSchema & {
     #fields: {
-      "created_at": #createdAtProperty,
-      "description": #descriptionProperty,
-      "filter_sql": #stringProperty,
-      "id": #idProperty,
-      "name": #nameProperty,
-      "table_id": #stringProperty
+      created_at: #createdAtProperty,
+      description: #descriptionProperty,
+      filter_sql: #stringProperty,
+      id: #idProperty,
+      name: #nameProperty,
+      table_id: #stringProperty
     },
     #required: [
       "id",
@@ -271,34 +271,34 @@ schemas_security_workspace: {
       "filter_sql"
     ]
   },
-  "RowFilterBinding": #objectSchema & {
+  RowFilterBinding: #objectSchema & {
     #fields: {
-      "id": #idProperty,
-      "principal_id": #principalIDProperty,
-      "principal_type": #refProperty & {#ref: "PrincipalType"},
-      "row_filter_id": #stringProperty
+      id: #idProperty,
+      principal_id: #principalIDProperty,
+      principal_type: #refProperty & {#ref: "PrincipalType"},
+      row_filter_id: #stringProperty
     }
   },
-  "RowFilterBindingRequest": #objectSchema & {
+  RowFilterBindingRequest: #objectSchema & {
     #fields: {
-      "principal_id": #principalIDProperty,
-      "principal_type": #refProperty & {#ref: "PrincipalType"}
+      principal_id: #principalIDProperty,
+      principal_type: #refProperty & {#ref: "PrincipalType"}
     },
     #required: [
       "principal_id",
       "principal_type"
     ]
   },
-  "SavedResource": #objectSchema & {
+  SavedResource: #objectSchema & {
     #fields: {
-      "display_name": #stringProperty,
-      "href": #stringProperty,
-      "last_accessed_at": #stringProperty,
-      "resource_key": #stringProperty,
-      "resource_path": #stringProperty,
-      "resource_type": #stringProperty,
-      "saved_at": #stringProperty,
-      "section": #stringProperty
+      display_name: #stringProperty,
+      href: #stringProperty,
+      last_accessed_at: #stringProperty,
+      resource_key: #stringProperty,
+      resource_path: #stringProperty,
+      resource_type: #stringProperty,
+      saved_at: #stringProperty,
+      section: #stringProperty
     },
     #required: [
       "resource_type",
@@ -306,58 +306,58 @@ schemas_security_workspace: {
       "display_name"
     ]
   },
-  "SearchResult": #objectSchema & {
+  SearchResult: #objectSchema & {
     #fields: {
-      "comment": #commentProperty,
-      "match_field": #stringProperty,
-      "name": #nameProperty,
-      "schema_name": #stringProperty,
-      "table_name": #stringProperty,
-      "type": #stringProperty
+      comment: #commentProperty,
+      match_field: #stringProperty,
+      name: #nameProperty,
+      schema_name: #stringProperty,
+      table_name: #stringProperty,
+      type: #stringProperty
     }
   },
-  "SetDefaultCatalogRequest": #objectSchema,
-  "ShareFolderRequest": #objectSchema & {
+  SetDefaultCatalogRequest: #objectSchema,
+  ShareFolderRequest: #objectSchema & {
     #fields: {
-      "principal_name": #principalNameProperty,
-      "role": #refProperty & {#ref: "NotebookShareRole"}
+      principal_name: #principalNameProperty,
+      role: #refProperty & {#ref: "NotebookShareRole"}
     },
     #required: [
       "principal_name"
     ]
   },
-  "SourceFreshnessStatus": #objectSchema & {
+  SourceFreshnessStatus: #objectSchema & {
     #fields: {
-      "is_fresh": #boolProperty,
-      "last_loaded_at": #stringProperty,
-      "max_lag_seconds": #int64Property,
-      "source_schema": #stringProperty,
-      "source_table": #stringProperty,
-      "stale_since": #stringProperty,
-      "timestamp_column": #stringProperty
+      is_fresh: #boolProperty,
+      last_loaded_at: #stringProperty,
+      max_lag_seconds: #int64Property,
+      source_schema: #stringProperty,
+      source_table: #stringProperty,
+      stale_since: #stringProperty,
+      timestamp_column: #stringProperty
     }
   },
-  "Tag": #objectSchema & {
+  Tag: #objectSchema & {
     #fields: {
-      "created_at": #createdAtProperty,
-      "created_by": #stringProperty,
-      "id": #idProperty,
-      "key": #stringProperty,
-      "value": #stringProperty
+      created_at: #createdAtProperty,
+      created_by: #stringProperty,
+      id: #idProperty,
+      key: #stringProperty,
+      value: #stringProperty
     }
   },
-  "TagAssignment": #objectSchema & {
+  TagAssignment: #objectSchema & {
     #fields: {
-      "assigned_at": #stringProperty,
-      "assigned_by": #stringProperty,
-      "column_name": #stringProperty,
-      "id": #idProperty,
-      "securable_id": #stringProperty,
-      "securable_type": #refProperty & {#ref: "TagAssignmentSecurableType"},
-      "tag_id": #stringProperty
+      assigned_at: #stringProperty,
+      assigned_by: #stringProperty,
+      column_name: #stringProperty,
+      id: #idProperty,
+      securable_id: #stringProperty,
+      securable_type: #refProperty & {#ref: "TagAssignmentSecurableType"},
+      tag_id: #stringProperty
     }
   },
-  "TagAssignmentSecurableType": #enumSchema & {
+  TagAssignmentSecurableType: #enumSchema & {
     #values: [
       "schema",
       "table",
@@ -365,66 +365,66 @@ schemas_security_workspace: {
       "macro"
     ]
   },
-  "UpdateGroupRequest": #objectSchema & {
+  UpdateGroupRequest: #objectSchema & {
     #fields: {
-      "description": #descriptionProperty
+      description: #descriptionProperty
     }
   },
-  "UpdateRowFilterRequest": #objectSchema & {
+  UpdateRowFilterRequest: #objectSchema & {
     #fields: {
-      "description": #descriptionProperty,
-      "filter_sql": #stringProperty,
-      "name": #nameProperty
+      description: #descriptionProperty,
+      filter_sql: #stringProperty,
+      name: #nameProperty
     }
   },
-  "UpdateTagRequest": #objectSchema & {
+  UpdateTagRequest: #objectSchema & {
     #fields: {
-      "key": #stringProperty,
-      "value": #stringProperty
+      key: #stringProperty,
+      value: #stringProperty
     }
   },
-  "UpdateWorkspaceRequest": #objectSchema & {
+  UpdateWorkspaceRequest: #objectSchema & {
     #fields: {
-      "default_environment_id": #stringProperty,
-      "default_project_id": #stringProperty,
-      "git_repo_id": #stringProperty,
-      "git_root_path": #stringProperty,
-      "name": #nameProperty
+      default_environment_id: #stringProperty,
+      default_project_id: #stringProperty,
+      git_repo_id: #stringProperty,
+      git_root_path: #stringProperty,
+      name: #nameProperty
     }
   },
-  "Workspace": #objectSchema & {
+  Workspace: #objectSchema & {
     #fields: {
-      "created_at": #createdAtProperty,
-      "default_environment_id": #stringProperty,
-      "default_project_id": #stringProperty,
-      "git_repo_id": #stringProperty,
-      "git_root_path": #stringProperty,
-      "id": #idProperty,
-      "kind": #refProperty & {#ref: "WorkspaceKind"},
-      "name": #nameProperty,
-      "owner_principal": #stringProperty,
-      "owner_team_id": #stringProperty,
-      "updated_at": #updatedAtProperty
+      created_at: #createdAtProperty,
+      default_environment_id: #stringProperty,
+      default_project_id: #stringProperty,
+      git_repo_id: #stringProperty,
+      git_root_path: #stringProperty,
+      id: #idProperty,
+      kind: #refProperty & {#ref: "WorkspaceKind"},
+      name: #nameProperty,
+      owner_principal: #stringProperty,
+      owner_team_id: #stringProperty,
+      updated_at: #updatedAtProperty
     },
     #required: [
       "name",
       "kind"
     ]
   },
-  "WorkspaceKind": #enumSchema & {
+  WorkspaceKind: #enumSchema & {
     #values: [
       "personal",
       "shared",
       "library"
     ]
   },
-  "WorkspaceMember": #objectSchema & {
+  WorkspaceMember: #objectSchema & {
     #fields: {
-      "created_at": #createdAtProperty,
-      "principal_name": #principalNameProperty,
-      "role": #refProperty & {#ref: "NotebookShareRole"},
-      "updated_at": #updatedAtProperty,
-      "workspace_id": #stringProperty
+      created_at: #createdAtProperty,
+      principal_name: #principalNameProperty,
+      role: #refProperty & {#ref: "NotebookShareRole"},
+      updated_at: #updatedAtProperty,
+      workspace_id: #stringProperty
     },
     #required: [
       "workspace_id",

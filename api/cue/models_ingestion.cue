@@ -3,27 +3,27 @@ package api
 // Authored ingestion schemas.
 
 schemas_ingestion: {
-  "CommitIngestionRequest": #objectSchema & {
+  CommitIngestionRequest: #objectSchema & {
     #fields: {
-      "options": #refProperty & {#ref: "IngestionOptions"},
-      "s3_keys": #stringArrayProperty
+      options: #refProperty & {#ref: "IngestionOptions"},
+      s3_keys: #stringArrayProperty
     },
     #required: [
       "s3_keys"
     ]
   },
-  "IngestionOptions": #objectSchema & {
+  IngestionOptions: #objectSchema & {
     #fields: {
-      "allow_missing_columns": #boolProperty,
-      "ignore_extra_columns": #boolProperty
+      allow_missing_columns: #boolProperty,
+      ignore_extra_columns: #boolProperty
     }
   },
-  "IngestionResult": #objectSchema & {
+  IngestionResult: #objectSchema & {
     #fields: {
-      "files_registered": #int64Property,
-      "files_skipped": #int64Property,
-      "schema": #stringProperty,
-      "table": #stringProperty
+      files_registered: #int64Property,
+      files_skipped: #int64Property,
+      schema: #stringProperty,
+      table: #stringProperty
     },
     #required: [
       "files_registered",
@@ -32,25 +32,25 @@ schemas_ingestion: {
       "table"
     ]
   },
-  "LoadExternalRequest": #objectSchema & {
+  LoadExternalRequest: #objectSchema & {
     #fields: {
-      "options": #refProperty & {#ref: "IngestionOptions"},
-      "paths": #stringArrayProperty
+      options: #refProperty & {#ref: "IngestionOptions"},
+      paths: #stringArrayProperty
     },
     #required: [
       "paths"
     ]
   },
-  "UploadUrlRequest": #objectSchema & {
+  UploadUrlRequest: #objectSchema & {
     #fields: {
-      "filename": #stringProperty
+      filename: #stringProperty
     }
   },
-  "UploadUrlResponse": #objectSchema & {
+  UploadUrlResponse: #objectSchema & {
     #fields: {
-      "expires_at": #expiresAtProperty,
-      "s3_key": #stringProperty,
-      "upload_url": #stringProperty
+      expires_at: #expiresAtProperty,
+      s3_key: #stringProperty,
+      upload_url: #stringProperty
     },
     #required: [
       "upload_url",

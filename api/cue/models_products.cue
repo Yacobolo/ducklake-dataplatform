@@ -3,26 +3,26 @@ package api
 // Authored product schemas.
 
 schemas_products: {
-  "CreateDataProductRequest": #objectSchema & {
+  CreateDataProductRequest: #objectSchema & {
     #fields: {
-      "access_request_path": #stringProperty,
-      "business_definitions": #refProperty & {#ref: "Record"},
-      "consumer_audience": #stringProperty,
-      "contact_channel": #stringProperty,
-      "contract": #refProperty & {#ref: "ProductContract"},
-      "created_by": #stringProperty,
-      "description": #descriptionProperty,
-      "docs_url": #stringProperty,
-      "domain_name": #stringProperty,
-      "name": #nameProperty,
-      "primary_asset_key": #stringProperty,
-      "producing_build_id": #stringProperty,
-      "semantic_model_refs": #stringArrayProperty,
-      "slo": #refProperty & {#ref: "ProductSLO"},
-      "slug": #stringProperty,
-      "steward_principal": #stringProperty,
-      "team_name": #stringProperty,
-      "visibility": #stringProperty
+      access_request_path: #stringProperty,
+      business_definitions: #refProperty & {#ref: "Record"},
+      consumer_audience: #stringProperty,
+      contact_channel: #stringProperty,
+      contract: #refProperty & {#ref: "ProductContract"},
+      created_by: #stringProperty,
+      description: #descriptionProperty,
+      docs_url: #stringProperty,
+      domain_name: #stringProperty,
+      name: #nameProperty,
+      primary_asset_key: #stringProperty,
+      producing_build_id: #stringProperty,
+      semantic_model_refs: #stringArrayProperty,
+      slo: #refProperty & {#ref: "ProductSLO"},
+      slug: #stringProperty,
+      steward_principal: #stringProperty,
+      team_name: #stringProperty,
+      visibility: #stringProperty
     },
     #required: [
       "slug",
@@ -33,77 +33,77 @@ schemas_products: {
       "contact_channel"
     ]
   },
-  "CreateDataProductVersionRequest": #objectSchema & {
+  CreateDataProductVersionRequest: #objectSchema & {
     #fields: {
-      "access_request_path": #stringProperty,
-      "compatibility_level": #stringProperty,
-      "contract": #refProperty & {#ref: "ProductContract"},
-      "created_by": #stringProperty,
-      "docs_url": #stringProperty,
-      "output_asset_keys": #stringArrayProperty,
-      "producing_build_id": #stringProperty,
-      "semantic_model_refs": #stringArrayProperty,
-      "slo": #refProperty & {#ref: "ProductSLO"}
+      access_request_path: #stringProperty,
+      compatibility_level: #stringProperty,
+      contract: #refProperty & {#ref: "ProductContract"},
+      created_by: #stringProperty,
+      docs_url: #stringProperty,
+      output_asset_keys: #stringArrayProperty,
+      producing_build_id: #stringProperty,
+      semantic_model_refs: #stringArrayProperty,
+      slo: #refProperty & {#ref: "ProductSLO"}
     }
   },
-  "CreateProductDependencyRequest": #objectSchema & {
+  CreateProductDependencyRequest: #objectSchema & {
     #fields: {
-      "depends_on_slug": #stringProperty
+      depends_on_slug: #stringProperty
     },
     #required: [
       "depends_on_slug"
     ]
   },
-  "CreateProductDomainRequest": #objectSchema & {
+  CreateProductDomainRequest: #objectSchema & {
     #fields: {
-      "description": #descriptionProperty,
-      "name": #nameProperty
+      description: #descriptionProperty,
+      name: #nameProperty
     },
     #required: [
       "name"
     ]
   },
-  "CreateProductSubscriptionRequest": #objectSchema & {
+  CreateProductSubscriptionRequest: #objectSchema & {
     #fields: {
-      "channel": #stringProperty,
-      "event_type": #stringProperty,
-      "principal_name": #principalNameProperty
+      channel: #stringProperty,
+      event_type: #stringProperty,
+      principal_name: #principalNameProperty
     },
     #required: [
       "principal_name",
       "event_type"
     ]
   },
-  "CreateProductTeamRequest": #objectSchema & {
+  CreateProductTeamRequest: #objectSchema & {
     #fields: {
-      "contact_channel": #stringProperty,
-      "name": #nameProperty
+      contact_channel: #stringProperty,
+      name: #nameProperty
     },
     #required: [
       "name"
     ]
   },
-  "DataProduct": #objectSchema & {
+  DataProduct: #objectSchema & {
     #fields: {
-      "access_request_path": #stringProperty,
-      "business_definitions": #refProperty & {#ref: "Record"},
-      "consumer_audience": #stringProperty,
-      "contact_channel": #stringProperty,
-      "contract": #refProperty & {#ref: "ProductContract"},
-      "created_at": #createdAtProperty,
-      "created_by": #stringProperty,
-      "description": #descriptionProperty,
-      "docs_url": #stringProperty,
-      "domain_id": #stringProperty,
-      "id": #idProperty,
-      "name": #nameProperty,
-      "owner_team_id": #stringProperty,
-      "publication_intent": #stringProperty,
-      "slo": #refProperty & {#ref: "ProductSLO"},
-      "slug": #stringProperty,
-      "steward_principal": #stringProperty,
-      "updated_at": #updatedAtProperty,
-      "visibility": #stringProperty
+      access_request_path: #stringProperty,
+      business_definitions: #refProperty & {#ref: "Record"},
+      consumer_audience: #stringProperty,
+      contact_channel: #stringProperty,
+      contract: #refProperty & {#ref: "ProductContract"},
+      created_at: #createdAtProperty,
+      created_by: #stringProperty,
+      description: #descriptionProperty,
+      docs_url: #stringProperty,
+      domain_id: #stringProperty,
+      id: #idProperty,
+      name: #nameProperty,
+      owner_team_id: #stringProperty,
+      publication_intent: #stringProperty,
+      slo: #refProperty & {#ref: "ProductSLO"},
+      slug: #stringProperty,
+      steward_principal: #stringProperty,
+      updated_at: #updatedAtProperty,
+      visibility: #stringProperty
     },
     #required: [
       "id",
@@ -116,18 +116,18 @@ schemas_products: {
       "contact_channel"
     ]
   },
-  "DataProductDetail": #objectSchema & {
+  DataProductDetail: #objectSchema & {
     #fields: {
-      "dependencies": #arrayRefProperty & {#ref: "DataProductListItem"},
-      "domain": #refProperty & {#ref: "ProductDomain"},
-      "events": #arrayRefProperty & {#ref: "ProductEvent"},
-      "outputs": #arrayRefProperty & {#ref: "ProductOutput"},
-      "owner_team": #refProperty & {#ref: "ProductTeam"},
-      "product": #refProperty & {#ref: "DataProduct"},
-      "semantic_entrypoints": #arrayRefProperty & {#ref: "ProductSemanticEntrypoint"},
-      "status": #refProperty & {#ref: "DataProductStatus"},
-      "subscriptions": #arrayRefProperty & {#ref: "ProductSubscription"},
-      "versions": #arrayRefProperty & {#ref: "DataProductVersion"}
+      dependencies: #arrayRefProperty & {#ref: "DataProductListItem"},
+      domain: #refProperty & {#ref: "ProductDomain"},
+      events: #arrayRefProperty & {#ref: "ProductEvent"},
+      outputs: #arrayRefProperty & {#ref: "ProductOutput"},
+      owner_team: #refProperty & {#ref: "ProductTeam"},
+      product: #refProperty & {#ref: "DataProduct"},
+      semantic_entrypoints: #arrayRefProperty & {#ref: "ProductSemanticEntrypoint"},
+      status: #refProperty & {#ref: "DataProductStatus"},
+      subscriptions: #arrayRefProperty & {#ref: "ProductSubscription"},
+      versions: #arrayRefProperty & {#ref: "DataProductVersion"}
     },
     #required: [
       "product",
@@ -141,14 +141,14 @@ schemas_products: {
       "events"
     ]
   },
-  "DataProductListItem": #objectSchema & {
+  DataProductListItem: #objectSchema & {
     #fields: {
-      "domain": #refProperty & {#ref: "ProductDomain"},
-      "latest_version": #refProperty & {#ref: "DataProductVersion"},
-      "owner_team": #refProperty & {#ref: "ProductTeam"},
-      "primary_output": #refProperty & {#ref: "ProductOutput"},
-      "product": #refProperty & {#ref: "DataProduct"},
-      "status": #refProperty & {#ref: "DataProductStatus"}
+      domain: #refProperty & {#ref: "ProductDomain"},
+      latest_version: #refProperty & {#ref: "DataProductVersion"},
+      owner_team: #refProperty & {#ref: "ProductTeam"},
+      primary_output: #refProperty & {#ref: "ProductOutput"},
+      product: #refProperty & {#ref: "DataProduct"},
+      status: #refProperty & {#ref: "DataProductStatus"}
     },
     #required: [
       "product",
@@ -156,20 +156,20 @@ schemas_products: {
       "owner_team"
     ]
   },
-  "DataProductStatus": #objectSchema & {
+  DataProductStatus: #objectSchema & {
     #fields: {
-      "adoption_metrics": #refProperty & {#ref: "Record"},
-      "certification_state": #stringProperty,
-      "failing_checks_count": #int64Property,
-      "freshness_status": #stringProperty,
-      "last_successful_update_at": #stringProperty,
-      "lineage_coverage": #numberProperty,
-      "open_warnings": #stringArrayProperty,
-      "product_id": #stringProperty,
-      "publication_state": #stringProperty,
-      "quality_status": #stringProperty,
-      "replacement_product_id": #stringProperty,
-      "updated_at": #updatedAtProperty
+      adoption_metrics: #refProperty & {#ref: "Record"},
+      certification_state: #stringProperty,
+      failing_checks_count: #int64Property,
+      freshness_status: #stringProperty,
+      last_successful_update_at: #stringProperty,
+      lineage_coverage: #numberProperty,
+      open_warnings: #stringArrayProperty,
+      product_id: #stringProperty,
+      publication_state: #stringProperty,
+      quality_status: #stringProperty,
+      replacement_product_id: #stringProperty,
+      updated_at: #updatedAtProperty
     },
     #required: [
       "product_id",
@@ -180,20 +180,20 @@ schemas_products: {
       "failing_checks_count"
     ]
   },
-  "DataProductVersion": #objectSchema & {
+  DataProductVersion: #objectSchema & {
     #fields: {
-      "access_request_path": #stringProperty,
-      "compatibility_level": #stringProperty,
-      "contract": #refProperty & {#ref: "ProductContract"},
-      "created_at": #createdAtProperty,
-      "created_by": #stringProperty,
-      "docs_url": #stringProperty,
-      "id": #idProperty,
-      "producing_build_id": #stringProperty,
-      "product_id": #stringProperty,
-      "release_state": #stringProperty,
-      "slo": #refProperty & {#ref: "ProductSLO"},
-      "version": #int32Property
+      access_request_path: #stringProperty,
+      compatibility_level: #stringProperty,
+      contract: #refProperty & {#ref: "ProductContract"},
+      created_at: #createdAtProperty,
+      created_by: #stringProperty,
+      docs_url: #stringProperty,
+      id: #idProperty,
+      producing_build_id: #stringProperty,
+      product_id: #stringProperty,
+      release_state: #stringProperty,
+      slo: #refProperty & {#ref: "ProductSLO"},
+      version: #int32Property
     },
     #required: [
       "id",
@@ -203,17 +203,17 @@ schemas_products: {
       "compatibility_level"
     ]
   },
-  "DataProductVersionDetail": #objectSchema & {
+  DataProductVersionDetail: #objectSchema & {
     #fields: {
-      "dependencies": #arrayRefProperty & {#ref: "DataProductListItem"},
-      "domain": #refProperty & {#ref: "ProductDomain"},
-      "events": #arrayRefProperty & {#ref: "ProductEvent"},
-      "outputs": #arrayRefProperty & {#ref: "ProductOutput"},
-      "owner_team": #refProperty & {#ref: "ProductTeam"},
-      "product": #refProperty & {#ref: "DataProduct"},
-      "semantic_entrypoints": #arrayRefProperty & {#ref: "ProductSemanticEntrypoint"},
-      "status": #refProperty & {#ref: "DataProductStatus"},
-      "version": #refProperty & {#ref: "DataProductVersion"}
+      dependencies: #arrayRefProperty & {#ref: "DataProductListItem"},
+      domain: #refProperty & {#ref: "ProductDomain"},
+      events: #arrayRefProperty & {#ref: "ProductEvent"},
+      outputs: #arrayRefProperty & {#ref: "ProductOutput"},
+      owner_team: #refProperty & {#ref: "ProductTeam"},
+      product: #refProperty & {#ref: "DataProduct"},
+      semantic_entrypoints: #arrayRefProperty & {#ref: "ProductSemanticEntrypoint"},
+      status: #refProperty & {#ref: "DataProductStatus"},
+      version: #refProperty & {#ref: "DataProductVersion"}
     },
     #required: [
       "product",
@@ -226,24 +226,24 @@ schemas_products: {
       "events"
     ]
   },
-  "DataProductVersionList": #objectSchema & {
+  DataProductVersionList: #objectSchema & {
     #fields: {
-      "data": #arrayRefProperty & {#ref: "DataProductVersion"}
+      data: #arrayRefProperty & {#ref: "DataProductVersion"}
     },
     #required: [
       "data"
     ]
   },
-  "DeprecateProductVersionRequest": #objectSchema & {
+  DeprecateProductVersionRequest: #objectSchema & {
     #fields: {
-      "replacement_slug": #stringProperty
+      replacement_slug: #stringProperty
     }
   },
-  "OrphanResource": #objectSchema & {
+  OrphanResource: #objectSchema & {
     #fields: {
-      "resource_id": #stringProperty,
-      "resource_name": #stringProperty,
-      "resource_type": #stringProperty
+      resource_id: #stringProperty,
+      resource_name: #stringProperty,
+      resource_type: #stringProperty
     },
     #required: [
       "resource_type",
@@ -251,18 +251,18 @@ schemas_products: {
       "resource_name"
     ]
   },
-  "ProductAdoptionSummary": #objectSchema & {
+  ProductAdoptionSummary: #objectSchema & {
     #fields: {
-      "adoption_score": #int64Property,
-      "domain_name": #stringProperty,
-      "downstream_product_count": #int64Property,
-      "output_count": #int64Property,
-      "product_id": #stringProperty,
-      "product_name": #stringProperty,
-      "product_slug": #stringProperty,
-      "semantic_entrypoint_count": #int64Property,
-      "subscriber_count": #int64Property,
-      "team_name": #stringProperty
+      adoption_score: #int64Property,
+      domain_name: #stringProperty,
+      downstream_product_count: #int64Property,
+      output_count: #int64Property,
+      product_id: #stringProperty,
+      product_name: #stringProperty,
+      product_slug: #stringProperty,
+      semantic_entrypoint_count: #int64Property,
+      subscriber_count: #int64Property,
+      team_name: #stringProperty
     },
     #required: [
       "product_id",
@@ -277,35 +277,35 @@ schemas_products: {
       "adoption_score"
     ]
   },
-  "ProductContract": #objectSchema & {
+  ProductContract: #objectSchema & {
     #fields: {
-      "breaking_change_policy": #stringProperty,
-      "data_grain": #stringProperty,
-      "dimensions": #stringArrayProperty,
-      "join_keys": #stringArrayProperty,
-      "measures": #stringArrayProperty,
-      "primary_keys": #stringArrayProperty,
-      "quality_expectations": #stringArrayProperty,
-      "retention_window": #stringProperty,
-      "sample_queries": #stringArrayProperty,
-      "update_cadence": #stringProperty
+      breaking_change_policy: #stringProperty,
+      data_grain: #stringProperty,
+      dimensions: #stringArrayProperty,
+      join_keys: #stringArrayProperty,
+      measures: #stringArrayProperty,
+      primary_keys: #stringArrayProperty,
+      quality_expectations: #stringArrayProperty,
+      retention_window: #stringProperty,
+      sample_queries: #stringArrayProperty,
+      update_cadence: #stringProperty
     }
   },
-  "ProductDependencyList": #objectSchema & {
+  ProductDependencyList: #objectSchema & {
     #fields: {
-      "data": #arrayRefProperty & {#ref: "DataProductListItem"}
+      data: #arrayRefProperty & {#ref: "DataProductListItem"}
     },
     #required: [
       "data"
     ]
   },
-  "ProductDomain": #objectSchema & {
+  ProductDomain: #objectSchema & {
     #fields: {
-      "created_at": #createdAtProperty,
-      "description": #descriptionProperty,
-      "id": #idProperty,
-      "name": #nameProperty,
-      "updated_at": #updatedAtProperty
+      created_at: #createdAtProperty,
+      description: #descriptionProperty,
+      id: #idProperty,
+      name: #nameProperty,
+      updated_at: #updatedAtProperty
     },
     #required: [
       "id",
@@ -313,15 +313,15 @@ schemas_products: {
       "description"
     ]
   },
-  "ProductEvent": #objectSchema & {
+  ProductEvent: #objectSchema & {
     #fields: {
-      "created_at": #createdAtProperty,
-      "description": #descriptionProperty,
-      "event_type": #stringProperty,
-      "id": #idProperty,
-      "metadata": #refProperty & {#ref: "Record"},
-      "product_id": #stringProperty,
-      "title": #stringProperty
+      created_at: #createdAtProperty,
+      description: #descriptionProperty,
+      event_type: #stringProperty,
+      id: #idProperty,
+      metadata: #refProperty & {#ref: "Record"},
+      product_id: #stringProperty,
+      title: #stringProperty
     },
     #required: [
       "id",
@@ -331,24 +331,24 @@ schemas_products: {
       "description"
     ]
   },
-  "ProductEventList": #objectSchema & {
+  ProductEventList: #objectSchema & {
     #fields: {
-      "data": #arrayRefProperty & {#ref: "ProductEvent"},
-      "next_page_token": #stringProperty
+      data: #arrayRefProperty & {#ref: "ProductEvent"},
+      next_page_token: #stringProperty
     },
     #required: [
       "data"
     ]
   },
-  "ProductOutput": #objectSchema & {
+  ProductOutput: #objectSchema & {
     #fields: {
-      "asset_id": #stringProperty,
-      "asset_key": #stringProperty,
-      "asset_type": #stringProperty,
-      "created_at": #createdAtProperty,
-      "id": #idProperty,
-      "is_primary": #boolProperty,
-      "product_version_id": #stringProperty
+      asset_id: #stringProperty,
+      asset_key: #stringProperty,
+      asset_type: #stringProperty,
+      created_at: #createdAtProperty,
+      id: #idProperty,
+      is_primary: #boolProperty,
+      product_version_id: #stringProperty
     },
     #required: [
       "id",
@@ -359,21 +359,21 @@ schemas_products: {
       "is_primary"
     ]
   },
-  "ProductOutputList": #objectSchema & {
+  ProductOutputList: #objectSchema & {
     #fields: {
-      "data": #arrayRefProperty & {#ref: "ProductOutput"}
+      data: #arrayRefProperty & {#ref: "ProductOutput"}
     },
     #required: [
       "data"
     ]
   },
-  "ProductPortfolioGroup": #objectSchema & {
+  ProductPortfolioGroup: #objectSchema & {
     #fields: {
-      "average_completeness_pct": #int32Property,
-      "certified_count": #int64Property,
-      "name": #nameProperty,
-      "product_count": #int64Property,
-      "published_count": #int64Property
+      average_completeness_pct: #int32Property,
+      certified_count: #int64Property,
+      name: #nameProperty,
+      product_count: #int64Property,
+      published_count: #int64Property
     },
     #required: [
       "name",
@@ -383,15 +383,15 @@ schemas_products: {
       "average_completeness_pct"
     ]
   },
-  "ProductPortfolioReport": #objectSchema & {
+  ProductPortfolioReport: #objectSchema & {
     #fields: {
-      "domain_scorecards": #arrayRefProperty & {#ref: "ProductPortfolioGroup"},
-      "high_blast_radius": #arrayRefProperty & {#ref: "ProductAdoptionSummary"},
-      "least_adopted": #arrayRefProperty & {#ref: "ProductAdoptionSummary"},
-      "orphan_assets": #arrayRefProperty & {#ref: "OrphanResource"},
-      "orphan_semantic_models": #arrayRefProperty & {#ref: "OrphanResource"},
-      "team_scorecards": #arrayRefProperty & {#ref: "ProductPortfolioGroup"},
-      "top_used": #arrayRefProperty & {#ref: "ProductAdoptionSummary"}
+      domain_scorecards: #arrayRefProperty & {#ref: "ProductPortfolioGroup"},
+      high_blast_radius: #arrayRefProperty & {#ref: "ProductAdoptionSummary"},
+      least_adopted: #arrayRefProperty & {#ref: "ProductAdoptionSummary"},
+      orphan_assets: #arrayRefProperty & {#ref: "OrphanResource"},
+      orphan_semantic_models: #arrayRefProperty & {#ref: "OrphanResource"},
+      team_scorecards: #arrayRefProperty & {#ref: "ProductPortfolioGroup"},
+      top_used: #arrayRefProperty & {#ref: "ProductAdoptionSummary"}
     },
     #required: [
       "top_used",
@@ -403,28 +403,28 @@ schemas_products: {
       "orphan_semantic_models"
     ]
   },
-  "ProductSLO": #objectSchema & {
+  ProductSLO: #objectSchema & {
     #fields: {
-      "freshness_slo": #stringProperty,
-      "latency_slo": #stringProperty
+      freshness_slo: #stringProperty,
+      latency_slo: #stringProperty
     }
   },
-  "ProductScorecard": #objectSchema & {
+  ProductScorecard: #objectSchema & {
     #fields: {
-      "certification_state": #stringProperty,
-      "completeness_percent": #int32Property,
-      "domain_name": #stringProperty,
-      "has_contract": #boolProperty,
-      "has_docs_or_access_path": #boolProperty,
-      "has_owner": #boolProperty,
-      "has_primary_output": #boolProperty,
-      "has_slo": #boolProperty,
-      "has_warnings": #boolProperty,
-      "product_id": #stringProperty,
-      "product_name": #stringProperty,
-      "product_slug": #stringProperty,
-      "publication_state": #stringProperty,
-      "team_name": #stringProperty
+      certification_state: #stringProperty,
+      completeness_percent: #int32Property,
+      domain_name: #stringProperty,
+      has_contract: #boolProperty,
+      has_docs_or_access_path: #boolProperty,
+      has_owner: #boolProperty,
+      has_primary_output: #boolProperty,
+      has_slo: #boolProperty,
+      has_warnings: #boolProperty,
+      product_id: #stringProperty,
+      product_name: #stringProperty,
+      product_slug: #stringProperty,
+      publication_state: #stringProperty,
+      team_name: #stringProperty
     },
     #required: [
       "product_id",
@@ -443,22 +443,22 @@ schemas_products: {
       "completeness_percent"
     ]
   },
-  "ProductScorecardList": #objectSchema & {
+  ProductScorecardList: #objectSchema & {
     #fields: {
-      "data": #arrayRefProperty & {#ref: "ProductScorecard"},
-      "next_page_token": #stringProperty
+      data: #arrayRefProperty & {#ref: "ProductScorecard"},
+      next_page_token: #stringProperty
     },
     #required: [
       "data"
     ]
   },
-  "ProductSemanticEntrypoint": #objectSchema & {
+  ProductSemanticEntrypoint: #objectSchema & {
     #fields: {
-      "created_at": #createdAtProperty,
-      "id": #idProperty,
-      "model_name": #stringProperty,
-      "product_version_id": #stringProperty,
-      "semantic_model_id": #stringProperty
+      created_at: #createdAtProperty,
+      id: #idProperty,
+      model_name: #stringProperty,
+      product_version_id: #stringProperty,
+      semantic_model_id: #stringProperty
     },
     #required: [
       "id",
@@ -467,22 +467,22 @@ schemas_products: {
       "model_name"
     ]
   },
-  "ProductSemanticEntrypointList": #objectSchema & {
+  ProductSemanticEntrypointList: #objectSchema & {
     #fields: {
-      "data": #arrayRefProperty & {#ref: "ProductSemanticEntrypoint"}
+      data: #arrayRefProperty & {#ref: "ProductSemanticEntrypoint"}
     },
     #required: [
       "data"
     ]
   },
-  "ProductSubscription": #objectSchema & {
+  ProductSubscription: #objectSchema & {
     #fields: {
-      "channel": #stringProperty,
-      "created_at": #createdAtProperty,
-      "event_type": #stringProperty,
-      "id": #idProperty,
-      "principal_name": #principalNameProperty,
-      "product_id": #stringProperty
+      channel: #stringProperty,
+      created_at: #createdAtProperty,
+      event_type: #stringProperty,
+      id: #idProperty,
+      principal_name: #principalNameProperty,
+      product_id: #stringProperty
     },
     #required: [
       "id",
@@ -492,22 +492,22 @@ schemas_products: {
       "channel"
     ]
   },
-  "ProductSubscriptionList": #objectSchema & {
+  ProductSubscriptionList: #objectSchema & {
     #fields: {
-      "data": #arrayRefProperty & {#ref: "ProductSubscription"}
+      data: #arrayRefProperty & {#ref: "ProductSubscription"}
     },
     #required: [
       "data"
     ]
   },
-  "ProductTeam": #objectSchema & {
+  ProductTeam: #objectSchema & {
     #fields: {
-      "contact_channel": #stringProperty,
-      "created_at": #createdAtProperty,
-      "domain_id": #stringProperty,
-      "id": #idProperty,
-      "name": #nameProperty,
-      "updated_at": #updatedAtProperty
+      contact_channel: #stringProperty,
+      created_at: #createdAtProperty,
+      domain_id: #stringProperty,
+      id: #idProperty,
+      name: #nameProperty,
+      updated_at: #updatedAtProperty
     },
     #required: [
       "id",
@@ -516,22 +516,22 @@ schemas_products: {
       "contact_channel"
     ]
   },
-  "UpdateDataProductRequest": #objectSchema & {
+  UpdateDataProductRequest: #objectSchema & {
     #fields: {
-      "access_request_path": #stringProperty,
-      "business_definitions": #refProperty & {#ref: "Record"},
-      "consumer_audience": #stringProperty,
-      "contact_channel": #stringProperty,
-      "contract": #refProperty & {#ref: "ProductContract"},
-      "description": #descriptionProperty,
-      "docs_url": #stringProperty,
-      "domain_name": #stringProperty,
-      "name": #nameProperty,
-      "publication_intent": #stringProperty,
-      "slo": #refProperty & {#ref: "ProductSLO"},
-      "steward_principal": #stringProperty,
-      "team_name": #stringProperty,
-      "visibility": #stringProperty
+      access_request_path: #stringProperty,
+      business_definitions: #refProperty & {#ref: "Record"},
+      consumer_audience: #stringProperty,
+      contact_channel: #stringProperty,
+      contract: #refProperty & {#ref: "ProductContract"},
+      description: #descriptionProperty,
+      docs_url: #stringProperty,
+      domain_name: #stringProperty,
+      name: #nameProperty,
+      publication_intent: #stringProperty,
+      slo: #refProperty & {#ref: "ProductSLO"},
+      steward_principal: #stringProperty,
+      team_name: #stringProperty,
+      visibility: #stringProperty
     },
     #required: [
       "name",
@@ -541,14 +541,14 @@ schemas_products: {
       "contact_channel"
     ]
   },
-  "UpdateProductDomainRequest": #objectSchema & {
+  UpdateProductDomainRequest: #objectSchema & {
     #fields: {
-      "description": #descriptionProperty
+      description: #descriptionProperty
     }
   },
-  "UpdateProductTeamRequest": #objectSchema & {
+  UpdateProductTeamRequest: #objectSchema & {
     #fields: {
-      "contact_channel": #stringProperty
+      contact_channel: #stringProperty
     }
   }
 }

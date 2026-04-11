@@ -5,87 +5,87 @@ package api
 openapi_extra_schemas: schemas_generated
 
 schemas_generated: {
-  "CatalogInfo": #objectSchema & {
+  CatalogInfo: #objectSchema & {
     #fields: {
-      "name": #nameProperty
-      "comment": #commentProperty
-      "created_at": #createdAtProperty
-      "updated_at": #updatedAtProperty
-      "system_managed": #boolProperty
+      name: #nameProperty
+      comment: #commentProperty
+      created_at: #createdAtProperty
+      updated_at: #updatedAtProperty
+      system_managed: #boolProperty
     }
     #required: [
       "name",
     ]
   }
-  "DashboardNotebookCellSourceUpdate": #objectSchema & {
+  DashboardNotebookCellSourceUpdate: #objectSchema & {
     #fields: {
-      "notebook_id": #stringProperty
-      "cell_id": #stringProperty
+      notebook_id: #stringProperty
+      cell_id: #stringProperty
     }
   }
-  "DashboardSQLQuerySourceUpdate": #objectSchema & {
+  DashboardSQLQuerySourceUpdate: #objectSchema & {
     #fields: {
-      "sql": #stringProperty
-      "catalog": #stringProperty
-      "schema": #stringProperty
+      sql: #stringProperty
+      catalog: #stringProperty
+      schema: #stringProperty
     }
   }
-  "DashboardSemanticQuerySourceUpdate": #objectSchema & {
+  DashboardSemanticQuerySourceUpdate: #objectSchema & {
     #fields: {
-      "semantic_model_id": #stringProperty
-      "metrics": #stringArrayProperty
-      "relationship_names": #stringArrayProperty
-      "dimensions": #stringArrayProperty
-      "filters": #stringArrayProperty
-      "order_by": #stringArrayProperty
-      "limit": #int32Property
-      "time_grain": #stringProperty
+      semantic_model_id: #stringProperty
+      metrics: #stringArrayProperty
+      relationship_names: #stringArrayProperty
+      dimensions: #stringArrayProperty
+      filters: #stringArrayProperty
+      order_by: #stringArrayProperty
+      limit: #int32Property
+      time_grain: #stringProperty
     }
   }
-  "DashboardWidgetLayoutUpdate": #objectSchema & {
+  DashboardWidgetLayoutUpdate: #objectSchema & {
     #fields: {
-      "x": #int32Property
-      "y": #int32Property
-      "w": #int32Property
-      "h": #int32Property
+      x: #int32Property
+      y: #int32Property
+      w: #int32Property
+      h: #int32Property
     }
   }
-  "DashboardWidgetSourceUpdate": #objectSchema & {
+  DashboardWidgetSourceUpdate: #objectSchema & {
     #fields: {
-      "kind": #refProperty & {#ref: "DashboardWidgetSourceKind"}
-      "sql_query": #refProperty & {#ref: "DashboardSQLQuerySourceUpdate"}
-      "notebook_cell": #refProperty & {#ref: "DashboardNotebookCellSourceUpdate"}
-      "semantic_query": #refProperty & {#ref: "DashboardSemanticQuerySourceUpdate"}
+      kind: #refProperty & {#ref: "DashboardWidgetSourceKind"}
+      sql_query: #refProperty & {#ref: "DashboardSQLQuerySourceUpdate"}
+      notebook_cell: #refProperty & {#ref: "DashboardNotebookCellSourceUpdate"}
+      semantic_query: #refProperty & {#ref: "DashboardSemanticQuerySourceUpdate"}
     }
   }
-  "PaginatedSemanticRelationships": #paginatedItemsSchema & {
+  PaginatedSemanticRelationships: #paginatedItemsSchema & {
     #item_ref: "SemanticRelationship"
   }
-  "VisualEncodingsUpdate": #objectSchema & {
+  VisualEncodingsUpdate: #objectSchema & {
     #fields: {
-      "x": #refProperty & {#ref: "VisualFieldBindingUpdate"}
-      "y": #refProperty & {#ref: "VisualFieldBindingUpdate"}
-      "series": #refProperty & {#ref: "VisualFieldBindingUpdate"}
-      "label": #refProperty & {#ref: "VisualFieldBindingUpdate"}
-      "value": #refProperty & {#ref: "VisualFieldBindingUpdate"}
-      "secondary": #refProperty & {#ref: "VisualFieldBindingUpdate"}
+      x: #refProperty & {#ref: "VisualFieldBindingUpdate"}
+      y: #refProperty & {#ref: "VisualFieldBindingUpdate"}
+      series: #refProperty & {#ref: "VisualFieldBindingUpdate"}
+      label: #refProperty & {#ref: "VisualFieldBindingUpdate"}
+      value: #refProperty & {#ref: "VisualFieldBindingUpdate"}
+      secondary: #refProperty & {#ref: "VisualFieldBindingUpdate"}
     }
   }
-  "VisualFieldBindingUpdate": #objectSchema & {
+  VisualFieldBindingUpdate: #objectSchema & {
     #fields: {
-      "field": #stringProperty
+      field: #stringProperty
     }
   }
-  "VisualSpecUpdate": #objectSchema & {
+  VisualSpecUpdate: #objectSchema & {
     #fields: {
-      "kind": #refProperty & {#ref: "VisualOutputKind"}
-      "chart_type": #refProperty & {#ref: "VisualChartType"}
-      "encodings": #refProperty & {#ref: "VisualEncodingsUpdate"}
-      "title": #stringProperty
-      "subtitle": #stringProperty
-      "legend": #boolProperty
-      "stacked": #boolProperty
-      "color_palette": #stringProperty
+      kind: #refProperty & {#ref: "VisualOutputKind"}
+      chart_type: #refProperty & {#ref: "VisualChartType"}
+      encodings: #refProperty & {#ref: "VisualEncodingsUpdate"}
+      title: #stringProperty
+      subtitle: #stringProperty
+      legend: #boolProperty
+      stacked: #boolProperty
+      color_palette: #stringProperty
     }
   }
 }

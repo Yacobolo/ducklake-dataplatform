@@ -3,42 +3,42 @@ package api
 // Authored core schemas.
 
 schemas_core: {
-  "AuditDecisionStatus": #enumSchema & {
+  AuditDecisionStatus: #enumSchema & {
     #values: [
       "ALLOWED",
       "DENIED",
       "ERROR"
     ]
   },
-  "AuditEntry": #objectSchema & {
+  AuditEntry: #objectSchema & {
     #fields: {
-      "action": #stringProperty,
-      "created_at": #createdAtProperty,
-      "duration_ms": #int64Property,
-      "error_message": #stringProperty,
-      "id": #idProperty,
-      "original_sql": #stringProperty,
-      "principal_name": #principalNameProperty,
-      "rewritten_sql": #stringProperty,
-      "statement_type": #stringProperty,
-      "status": #refProperty & {#ref: "AuditDecisionStatus"},
-      "tables_accessed": #stringArrayProperty
+      action: #stringProperty,
+      created_at: #createdAtProperty,
+      duration_ms: #int64Property,
+      error_message: #stringProperty,
+      id: #idProperty,
+      original_sql: #stringProperty,
+      principal_name: #principalNameProperty,
+      rewritten_sql: #stringProperty,
+      statement_type: #stringProperty,
+      status: #refProperty & {#ref: "AuditDecisionStatus"},
+      tables_accessed: #stringArrayProperty
     },
     #required: [
       "id"
     ]
   },
-  "CreateEnvironmentRequest": #objectSchema & {
+  CreateEnvironmentRequest: #objectSchema & {
     #fields: {
-      "compute_endpoint": #stringProperty,
-      "defer_to_environment": #stringProperty,
-      "description": #descriptionProperty,
-      "kind": #refProperty & {#ref: "EnvironmentKind"},
-      "name": #nameProperty,
-      "source_overrides": #refProperty & {#ref: "Record"},
-      "target_catalog": #stringProperty,
-      "target_schema": #stringProperty,
-      "variables": #refProperty & {#ref: "Record"}
+      compute_endpoint: #stringProperty,
+      defer_to_environment: #stringProperty,
+      description: #descriptionProperty,
+      kind: #refProperty & {#ref: "EnvironmentKind"},
+      name: #nameProperty,
+      source_overrides: #refProperty & {#ref: "Record"},
+      target_catalog: #stringProperty,
+      target_schema: #stringProperty,
+      variables: #refProperty & {#ref: "Record"}
     },
     #required: [
       "name",
@@ -46,201 +46,201 @@ schemas_core: {
       "target_schema"
     ]
   },
-  "CreateFolderRequest": #objectSchema & {
+  CreateFolderRequest: #objectSchema & {
     #fields: {
-      "default_environment_id": #stringProperty,
-      "default_project_id": #stringProperty,
-      "git_repo_id": #stringProperty,
-      "git_root_path": #stringProperty,
-      "name": #nameProperty,
-      "parent_folder_id": #stringProperty
+      default_environment_id: #stringProperty,
+      default_project_id: #stringProperty,
+      git_repo_id: #stringProperty,
+      git_root_path: #stringProperty,
+      name: #nameProperty,
+      parent_folder_id: #stringProperty
     },
     #required: [
       "name"
     ]
   },
-  "CreateProjectRequest": #objectSchema & {
+  CreateProjectRequest: #objectSchema & {
     #fields: {
-      "default_branch": #stringProperty,
-      "description": #descriptionProperty,
-      "kind": #refProperty & {#ref: "ProjectKind"},
-      "name": #nameProperty,
-      "product_id": #stringProperty
+      default_branch: #stringProperty,
+      description: #descriptionProperty,
+      kind: #refProperty & {#ref: "ProjectKind"},
+      name: #nameProperty,
+      product_id: #stringProperty
     },
     #required: [
       "name"
     ]
   },
-  "Error": #objectSchema & {
+  Error: #objectSchema & {
     #fields: {
-      "code": #int32Property,
-      "details": #refProperty & {#ref: "Record"},
-      "message": #stringProperty
+      code: #int32Property,
+      details: #refProperty & {#ref: "Record"},
+      message: #stringProperty
     },
     #required: [
       "code",
       "message"
     ]
   },
-  "GitSyncResult": #objectSchema & {
+  GitSyncResult: #objectSchema & {
     #fields: {
-      "commit_sha": #stringProperty,
-      "notebooks_created": #int32Property,
-      "notebooks_deleted": #int32Property,
-      "notebooks_updated": #int32Property
+      commit_sha: #stringProperty,
+      notebooks_created: #int32Property,
+      notebooks_deleted: #int32Property,
+      notebooks_updated: #int32Property
     }
   },
-  "HealthResponse": #objectSchema & {
+  HealthResponse: #objectSchema & {
     #fields: {
-      "status": #statusProperty
+      status: #statusProperty
     },
     #required: [
       "status"
     ]
   },
-  "LineageEdge": #objectSchema & {
+  LineageEdge: #objectSchema & {
     #fields: {
-      "created_at": #createdAtProperty,
-      "edge_type": #stringProperty,
-      "id": #idProperty,
-      "principal_name": #principalNameProperty,
-      "source_schema": #stringProperty,
-      "source_table": #stringProperty,
-      "target_schema": #stringProperty,
-      "target_table": #stringProperty
+      created_at: #createdAtProperty,
+      edge_type: #stringProperty,
+      id: #idProperty,
+      principal_name: #principalNameProperty,
+      source_schema: #stringProperty,
+      source_table: #stringProperty,
+      target_schema: #stringProperty,
+      target_table: #stringProperty
     }
   },
-  "LineageNode": #objectSchema & {
+  LineageNode: #objectSchema & {
     #fields: {
-      "table_name": #stringProperty,
-      "upstream": #arrayRefProperty & {
+      table_name: #stringProperty,
+      upstream: #arrayRefProperty & {
         #ref: "LineageEdge"
       },
-      "downstream": #arrayRefProperty & {
+      downstream: #arrayRefProperty & {
         #ref: "LineageEdge"
       }
     }
   },
-  "MetastoreSummary": #objectSchema & {
+  MetastoreSummary: #objectSchema & {
     #fields: {
-      "catalog_name": #stringProperty,
-      "data_path": #stringProperty,
-      "metastore_type": #stringProperty,
-      "schema_count": #int32Property,
-      "storage_backend": #stringProperty,
-      "table_count": #int32Property
+      catalog_name: #stringProperty,
+      data_path: #stringProperty,
+      metastore_type: #stringProperty,
+      schema_count: #int32Property,
+      storage_backend: #stringProperty,
+      table_count: #int32Property
     },
     #required: [
       "catalog_name"
     ]
   },
-  "MetastoreType": #enumSchema & {
+  MetastoreType: #enumSchema & {
     #values: [
       "sqlite",
       "postgres"
     ]
   },
-  "MoveFolderRequest": #objectSchema & {
+  MoveFolderRequest: #objectSchema & {
     #fields: {
-      "confirm_context_change": #boolProperty,
-      "confirm_leave_git": #boolProperty,
-      "parent_folder_id": #stringProperty
+      confirm_context_change: #boolProperty,
+      confirm_leave_git: #boolProperty,
+      parent_folder_id: #stringProperty
     }
   },
-  "PurgeLineageRequest": #objectSchema & {
+  PurgeLineageRequest: #objectSchema & {
     #fields: {
-      "older_than_days": #int32Property
+      older_than_days: #int32Property
     },
     #required: [
       "older_than_days"
     ]
   },
-  "PurgeLineageResponse": #objectSchema & {
+  PurgeLineageResponse: #objectSchema & {
     #fields: {
-      "deleted_count": #int64Property
+      deleted_count: #int64Property
     }
   },
-  "Record": #objectSchema,
-  "ResolvedDashboardWidget": #objectSchema & {
+  Record: #objectSchema,
+  ResolvedDashboardWidget: #objectSchema & {
     #fields: {
-      "columns": #stringArrayProperty,
-      "generated_sql": #stringProperty,
-      "row_count": #int64Property,
-      "rows": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "string"
+      columns: #stringArrayProperty,
+      generated_sql: #stringProperty,
+      row_count: #int64Property,
+      rows: {
+        schema: {
+          type: "array",
+          items: {
+            type: "array",
+            items: {
+              type: "string"
             }
           }
         }
       },
-      "widget": #refProperty & {#ref: "DashboardWidget"}
+      widget: #refProperty & {#ref: "DashboardWidget"}
     },
     #required: [
       "columns"
     ]
   },
-  "RunAllResult": #objectSchema & {
+  RunAllResult: #objectSchema & {
     #fields: {
-      "notebook_id": #stringProperty,
-      "results": #arrayRefProperty & {#ref: "CellExecutionResult"},
-      "total_duration_ms": #int64Property
+      notebook_id: #stringProperty,
+      results: #arrayRefProperty & {#ref: "CellExecutionResult"},
+      total_duration_ms: #int64Property
     }
   },
-  "StorageType": #enumSchema & {
+  StorageType: #enumSchema & {
     #values: [
       "S3",
       "AZURE",
       "GCS"
     ]
   },
-  "TableStatistics": #objectSchema & {
+  TableStatistics: #objectSchema & {
     #fields: {
-      "column_count": #int32Property,
-      "last_profiled_at": #stringProperty,
-      "profiled_by": #stringProperty,
-      "row_count": #int64Property,
-      "size_bytes": #int64Property
+      column_count: #int32Property,
+      last_profiled_at: #stringProperty,
+      profiled_by: #stringProperty,
+      row_count: #int64Property,
+      size_bytes: #int64Property
     }
   },
-  "TabularColumn": #objectSchema & {
+  TabularColumn: #objectSchema & {
     #fields: {
-      "name": #nameProperty
+      name: #nameProperty
     },
     #required: [
       "name"
     ]
   },
-  "URLStyle": #enumSchema & {
+  URLStyle: #enumSchema & {
     #values: [
       "path",
       "vhost"
     ]
   },
-  "UpdateCatalogRegistrationRequest": #objectSchema & {
+  UpdateCatalogRegistrationRequest: #objectSchema & {
     #fields: {
-      "comment": #commentProperty,
-      "data_path": #stringProperty
+      comment: #commentProperty,
+      data_path: #stringProperty
     }
   },
-  "UpdateFolderRequest": #objectSchema & {
+  UpdateFolderRequest: #objectSchema & {
     #fields: {
-      "default_environment_id": #stringProperty,
-      "default_project_id": #stringProperty,
-      "git_repo_id": #stringProperty,
-      "git_root_path": #stringProperty,
-      "name": #nameProperty
+      default_environment_id: #stringProperty,
+      default_project_id: #stringProperty,
+      git_repo_id: #stringProperty,
+      git_root_path: #stringProperty,
+      name: #nameProperty
     }
   },
-  "UpdatePrincipalRequest": #objectSchema & {
+  UpdatePrincipalRequest: #objectSchema & {
     #fields: {
-      "is_admin": #boolProperty
+      is_admin: #boolProperty
     }
   },
-  "VisualChartType": #enumSchema & {
+  VisualChartType: #enumSchema & {
     #values: [
       "bar",
       "line",
@@ -251,41 +251,41 @@ schemas_core: {
       "stacked_bar"
     ]
   },
-  "VisualEncodings": #objectSchema & {
+  VisualEncodings: #objectSchema & {
     #fields: {
-      "label": #refProperty & {#ref: "VisualFieldBinding"},
-      "secondary": #refProperty & {#ref: "VisualFieldBinding"},
-      "series": #refProperty & {#ref: "VisualFieldBinding"},
-      "value": #refProperty & {#ref: "VisualFieldBinding"},
-      "x": #refProperty & {#ref: "VisualFieldBinding"},
-      "y": #refProperty & {#ref: "VisualFieldBinding"}
+      label: #refProperty & {#ref: "VisualFieldBinding"},
+      secondary: #refProperty & {#ref: "VisualFieldBinding"},
+      series: #refProperty & {#ref: "VisualFieldBinding"},
+      value: #refProperty & {#ref: "VisualFieldBinding"},
+      x: #refProperty & {#ref: "VisualFieldBinding"},
+      y: #refProperty & {#ref: "VisualFieldBinding"}
     }
   },
-  "VisualFieldBinding": #objectSchema & {
+  VisualFieldBinding: #objectSchema & {
     #fields: {
-      "field": #stringProperty
+      field: #stringProperty
     },
     #required: [
       "field"
     ]
   },
-  "VisualOutputKind": #enumSchema & {
+  VisualOutputKind: #enumSchema & {
     #values: [
       "table",
       "metric",
       "chart"
     ]
   },
-  "VisualSpec": #objectSchema & {
+  VisualSpec: #objectSchema & {
     #fields: {
-      "chart_type": #refProperty & {#ref: "VisualChartType"},
-      "color_palette": #stringProperty,
-      "encodings": #refProperty & {#ref: "VisualEncodings"},
-      "kind": #refProperty & {#ref: "VisualOutputKind"},
-      "legend": #boolProperty,
-      "stacked": #boolProperty,
-      "subtitle": #stringProperty,
-      "title": #stringProperty
+      chart_type: #refProperty & {#ref: "VisualChartType"},
+      color_palette: #stringProperty,
+      encodings: #refProperty & {#ref: "VisualEncodings"},
+      kind: #refProperty & {#ref: "VisualOutputKind"},
+      legend: #boolProperty,
+      stacked: #boolProperty,
+      subtitle: #stringProperty,
+      title: #stringProperty
     },
     #required: [
       "kind"
