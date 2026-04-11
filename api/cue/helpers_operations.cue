@@ -21,6 +21,45 @@ import "list"
 	"x-cli-command": #cli_command
 }
 
+// High-level authored operation specs. These stay close to API intent and are
+// lowered into concrete endpoint objects by the authored CUE modules.
+#getResource: {
+	kind: "wrapped_resource"
+
+	method:  "get"
+	op:      string
+	path:    string
+	summary: string
+	cli:     string
+	returns: string
+	params:  [...#Parameter]
+}
+
+#postWrapped: {
+	kind: "wrapped_mutating"
+
+	method:           "post"
+	op:               string
+	path:             string
+	summary:          string
+	cli:              string
+	returns:          string
+	body_ref:         string
+	body_required?:   bool
+	body_description?: string
+}
+
+#deleteNoContent: {
+	kind: "no_content_mutating"
+
+	method:  "delete"
+	op:      string
+	path:    string
+	summary: string
+	cli:     string
+	params:  [...#Parameter]
+}
+
 #pathStringParameter: {
 	#name: string
 

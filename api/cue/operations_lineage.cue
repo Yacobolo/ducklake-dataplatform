@@ -42,82 +42,63 @@ import "list"
 ])
 
 #lineageOps: [
-	{
-		kind:         "wrapped_resource"
-		method:       "get"
-		path:         #tableLineagePath
-		operation_id: "getTableLineage"
-		summary:      "Get table lineage"
-		cli_command:  "lineage tables get"
-		body_type:    "LineageNode"
-		parameters:   #tableLineageParameters
+	#getResource & {
+		op:      "getTableLineage"
+		path:    #tableLineagePath
+		summary: "Get table lineage"
+		cli:     "lineage tables get"
+		returns: "LineageNode"
+		params:  #tableLineageParameters
 	},
-	{
-		kind:         "wrapped_resource"
-		method:       "get"
-		path:         #tableLineagePath + "/upstream"
-		operation_id: "getUpstreamLineage"
-		summary:      "Get upstream lineage"
-		cli_command:  "lineage tables upstream"
-		body_type:    "PaginatedLineageEdges"
-		parameters:   #tableLineageParameters
+	#getResource & {
+		op:      "getUpstreamLineage"
+		path:    #tableLineagePath + "/upstream"
+		summary: "Get upstream lineage"
+		cli:     "lineage tables upstream"
+		returns: "PaginatedLineageEdges"
+		params:  #tableLineageParameters
 	},
-	{
-		kind:         "wrapped_resource"
-		method:       "get"
-		path:         #tableLineagePath + "/downstream"
-		operation_id: "getDownstreamLineage"
-		summary:      "Get downstream lineage"
-		cli_command:  "lineage tables downstream"
-		body_type:    "PaginatedLineageEdges"
-		parameters:   #tableLineageParameters
+	#getResource & {
+		op:      "getDownstreamLineage"
+		path:    #tableLineagePath + "/downstream"
+		summary: "Get downstream lineage"
+		cli:     "lineage tables downstream"
+		returns: "PaginatedLineageEdges"
+		params:  #tableLineageParameters
 	},
-	{
-		kind:         "no_content_mutating"
-		method:       "delete"
-		path:         "/lineage/edges/{edge_id}"
-		operation_id: "deleteLineageEdge"
-		summary:      "Delete lineage edge"
-		cli_command:  "lineage edges delete"
-		parameters: [
+	#deleteNoContent & {
+		op:      "deleteLineageEdge"
+		path:    "/lineage/edges/{edge_id}"
+		summary: "Delete lineage edge"
+		cli:     "lineage edges delete"
+		params: [
 			#edgeIDPathParameter,
 		]
 	},
-	{
-		kind:         "wrapped_resource"
-		method:       "get"
-		path:         #columnLineagePath
-		operation_id: "getColumnLineage"
-		summary:      "Get column lineage"
-		cli_command:  "lineage columns get"
-		body_type:    "PaginatedColumnLineageEdges"
-		parameters:   #tableLineageParameters
+	#getResource & {
+		op:      "getColumnLineage"
+		path:    #columnLineagePath
+		summary: "Get column lineage"
+		cli:     "lineage columns get"
+		returns: "PaginatedColumnLineageEdges"
+		params:  #tableLineageParameters
 	},
-	{
-		kind:         "wrapped_resource"
-		method:       "get"
-		path:         #columnLineagePath + "/{column_name}/impacts"
-		operation_id: "getColumnImpact"
-		summary:      "Get column impact"
-		cli_command:  "lineage impact get"
-		body_type:    "PaginatedColumnLineageEdges"
-		parameters:   #columnImpactParameters
+	#getResource & {
+		op:      "getColumnImpact"
+		path:    #columnLineagePath + "/{column_name}/impacts"
+		summary: "Get column impact"
+		cli:     "lineage impact get"
+		returns: "PaginatedColumnLineageEdges"
+		params:  #columnImpactParameters
 	},
-	{
-		kind:         "wrapped_mutating"
-		method:       "post"
-		path:         "/lineage/purges"
-		operation_id: "purgeLineage"
-		summary:      "Purge lineage"
-		cli_command:  "lineage purge"
-		body_type:    "PurgeLineageResponse"
-		request_body: {
-			required:    true
-			description: "Request payload"
-			schema: {
-				ref: "PurgeLineageRequest"
-			}
-		}
+	#postWrapped & {
+		op:               "purgeLineage"
+		path:             "/lineage/purges"
+		summary:          "Purge lineage"
+		cli:              "lineage purge"
+		returns:          "PurgeLineageResponse"
+		body_ref:         "PurgeLineageRequest"
+		body_description: "Request payload"
 	},
 ]
 
@@ -126,18 +107,17 @@ endpoints_lineage: [
 		{
 			method:       op.method
 			path:         op.path
-			operation_id: op.operation_id
+			operation_id: op.op
 			summary:      op.summary
 			tags:         [#lineageTag]
-			parameters:   op.parameters
-			if op.request_body != _|_ {
-				request_body: op.request_body
+			if op.params != _|_ {
+				parameters: op.params
 			}
 			if op.kind == "wrapped_resource" {
 				responses: list.Concat([
 					[
 						#wrappedJSONSuccessResponse & {
-							#body_type: op.body_type
+							#body_type: op.returns
 						},
 					],
 					[
@@ -146,17 +126,27 @@ endpoints_lineage: [
 								#status_code: template.status_code
 								#description: template.description
 								#schema_ref:  "Error"
-								#body_type:   op.body_type
+								#body_type:   op.returns
 							}
 						},
 					],
 				])
 			}
 			if op.kind == "wrapped_mutating" {
+				request_body: {
+					required: *true | bool
+					required: *true | op.body_required
+					if op.body_description != _|_ {
+						description: op.body_description
+					}
+					schema: {
+						ref: op.body_ref
+					}
+				}
 				responses: list.Concat([
 					[
 						#wrappedJSONSuccessResponse & {
-							#body_type: op.body_type
+							#body_type: op.returns
 						},
 					],
 					[
@@ -165,7 +155,7 @@ endpoints_lineage: [
 								#status_code: template.status_code
 								#description: template.description
 								#schema_ref:  "Error"
-								#body_type:   op.body_type
+								#body_type:   op.returns
 							}
 						},
 					],
@@ -183,7 +173,7 @@ endpoints_lineage: [
 				])
 			}
 			extensions: #authenticatedExtensions & {
-				#cli_command: op.cli_command
+				#cli_command: op.cli
 			}
 		}
 	},
