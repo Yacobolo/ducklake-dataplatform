@@ -257,6 +257,16 @@ tasks:
       - site/content/reference/generated/declarative/index.md
       - pkg/cli/gen/discovery_index.gen.go
 
+  verify:declarative-schema:
+    desc: Verify declarative CUE reference artifacts are up to date
+    preconditions:
+      - sh: test -f site/content/reference/generated/declarative/index.md
+        msg: "declarative reference artifacts missing. Run 'task generate:declarative-reference' first."
+    cmds:
+      - task generate:declarative-reference
+      - test -f site/content/reference/generated/declarative/index.md
+      - git diff --exit-code -- site/content/reference/generated/declarative pkg/cli/gen/discovery_index.gen.go
+
   docs:generate:
     desc: Generate docs reference pages from generated API and declarative CUE docs
     deps: [generate:api]
