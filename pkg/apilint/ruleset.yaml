@@ -85,7 +85,7 @@ rules:
   owasp-integer-limit: off
   owasp-rate-limit: off
   owasp-define-error-validation: off
-  # Temporarily relaxed while TypeSpec surface is standardized around shared
+  # Temporarily relaxed while the shared API surface is standardized around
   # error response unions. Today, adding 401/429/500 + 403/404 to every
   # operation would create large mechanical churn with little immediate value.
   # Service-layer authz and error mapping remain enforced in runtime/tests.

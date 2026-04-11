@@ -3,7 +3,7 @@ package apiruntime
 import (
 	"net/url"
 
-	cobraruntime "duck-demo/apigen/runtime/cobra"
+	cobraruntime "duck-demo/pkg/apigen/runtime/cobra"
 )
 
 // PaginatedResponse is the minimal envelope used by FetchAllPages.

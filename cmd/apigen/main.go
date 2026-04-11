@@ -10,24 +10,28 @@ import (
 	"os"
 	"path/filepath"
 
-	cligoemit "duck-demo/apigen/emit/cligo"
-	openapiemit "duck-demo/apigen/emit/openapi"
-	requestmodelgoemit "duck-demo/apigen/emit/requestmodelgo"
-	servergoemit "duck-demo/apigen/emit/servergo"
-	"duck-demo/apigen/ir"
+	"duck-demo/pkg/apigen/cuegen"
+	cligoemit "duck-demo/pkg/apigen/emit/cligo"
+	openapiemit "duck-demo/pkg/apigen/emit/openapi"
+	requestmodelgoemit "duck-demo/pkg/apigen/emit/requestmodelgo"
+	servergoemit "duck-demo/pkg/apigen/emit/servergo"
+	"duck-demo/pkg/apigen/ir"
 	"go.yaml.in/yaml/v4"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		fatalf("usage: apigen <openapi|server|cli|all> -ir <path>")
+		fatalf("usage: apigen <openapi|server|cli|all|cue-compile|cue-bootstrap> -ir <path>")
 	}
 
 	command := os.Args[1]
 	fs := flag.NewFlagSet(command, flag.ExitOnError)
 	irPath := fs.String("ir", "api/gen/json-ir.json", "input JSON IR path")
+	irOut := fs.String("ir-out", "api/gen/json-ir.json", "output JSON IR path for CUE compilation")
 	openapiOut := fs.String("openapi-out", "api/gen/openapi.apigen.yaml", "output OpenAPI YAML path for optional debug/compat emission")
 	canonicalOpenAPIPath := fs.String("canonical-openapi", "api/gen/openapi.yaml", "canonical OpenAPI YAML path to embed into generated server code")
+	cueDir := fs.String("cue-dir", "api/cue", "input CUE API source directory")
+	cueOutDir := fs.String("cue-out-dir", "api/cue", "output CUE API source directory")
 	serverOut := fs.String("server-out", "internal/api/server.apigen.gen.go", "output server Go path")
 	serverPackage := fs.String("server-package", "api", "generated server Go package name")
 	requestModelsOut := fs.String("request-models-out", "internal/api/gen_request_models.gen.go", "output APIGen request models Go path")
@@ -40,25 +44,44 @@ func main() {
 		fatalf("parse flags: %v", err)
 	}
 
-	doc, err := loadDocument(*irPath)
-	if err != nil {
-		fatalf("load ir: %v", err)
-	}
-
 	switch command {
 	case "openapi":
+		doc, err := loadDocument(*irPath)
+		if err != nil {
+			fatalf("load ir: %v", err)
+		}
 		if err := generateOpenAPI(doc, *openapiOut); err != nil {
 			fatalf("generate openapi: %v", err)
 		}
+	case "cue-compile":
+		if err := compileCUE(*cueDir, *irOut, *openapiOut); err != nil {
+			fatalf("compile cue: %v", err)
+		}
+	case "cue-bootstrap":
+		if err := bootstrapCUE(*irPath, *cueOutDir); err != nil {
+			fatalf("bootstrap cue: %v", err)
+		}
 	case "server":
+		doc, err := loadDocument(*irPath)
+		if err != nil {
+			fatalf("load ir: %v", err)
+		}
 		if err := generateServer(doc, *serverOut, *serverPackage, *requestModelsOut, *requestModelsPackage, *compatTypesOut, *compatTypesPackage, *canonicalOpenAPIPath); err != nil {
 			fatalf("generate server: %v", err)
 		}
 	case "cli":
+		doc, err := loadDocument(*irPath)
+		if err != nil {
+			fatalf("load ir: %v", err)
+		}
 		if err := generateCLI(doc, *cliOut, *cliPackage); err != nil {
 			fatalf("generate cli: %v", err)
 		}
 	case "all":
+		doc, err := loadDocument(*irPath)
+		if err != nil {
+			fatalf("load ir: %v", err)
+		}
 		if err := generateServer(doc, *serverOut, *serverPackage, *requestModelsOut, *requestModelsPackage, *compatTypesOut, *compatTypesPackage, *canonicalOpenAPIPath); err != nil {
 			fatalf("generate server: %v", err)
 		}
@@ -66,8 +89,30 @@ func main() {
 			fatalf("generate cli: %v", err)
 		}
 	default:
-		fatalf("unsupported command %q (supported: openapi, server, cli, all)", command)
+		fatalf("unsupported command %q (supported: openapi, server, cli, all, cue-compile, cue-bootstrap)", command)
 	}
+}
+
+func compileCUE(cueDir string, irOutPath string, openAPIOutPath string) error {
+	bundle, err := cuegen.CompileDir(cueDir)
+	if err != nil {
+		return err
+	}
+	if err := cuegen.WriteBundle(bundle, irOutPath, openAPIOutPath); err != nil {
+		return err
+	}
+	return nil
+}
+
+func bootstrapCUE(irPath string, cueOutDir string) error {
+	doc, err := loadDocument(irPath)
+	if err != nil {
+		return err
+	}
+	if err := cuegen.Bootstrap(doc, cueOutDir); err != nil {
+		return err
+	}
+	return nil
 }
 
 func generateOpenAPI(doc ir.Document, outPath string) error {

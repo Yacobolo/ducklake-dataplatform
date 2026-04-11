@@ -4,7 +4,7 @@ package apiruntime
 import (
 	"net/http"
 
-	cobraruntime "duck-demo/apigen/runtime/cobra"
+	cobraruntime "duck-demo/pkg/apigen/runtime/cobra"
 )
 
 // Client is the shared HTTP client used by the CLI runtime.

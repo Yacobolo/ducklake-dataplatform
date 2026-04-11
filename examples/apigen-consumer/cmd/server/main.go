@@ -27,7 +27,7 @@ func (server) HandleAPIGen(operationID string, w http.ResponseWriter, r *http.Re
 	}
 }
 
-func (server) ListWidgets(w http.ResponseWriter, _ *http.Request, _ api.GenListWidgetsParams) {
+func (server) ListWidgets(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"data": []map[string]string{
@@ -43,4 +43,8 @@ func (server) CreateWidget(w http.ResponseWriter, _ *http.Request) {
 		"id":   "widget-2",
 		"name": "created",
 	})
+}
+
+func (server) DeleteWidget(w http.ResponseWriter, _ *http.Request, _ string) {
+	w.WriteHeader(http.StatusNoContent)
 }

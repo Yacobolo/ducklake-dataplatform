@@ -24,15 +24,15 @@ type openAPICoreOperation struct {
 func TestOpenAPIContractParity_CoreOperationShape(t *testing.T) {
 	t.Helper()
 
-	typespecDoc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
+	canonicalDoc := loadOpenAPISpec(t, filepath.Join(repoRootDir(), "api", "gen", "openapi.yaml"))
 	generatedDoc := loadEmbeddedOpenAPISpec(t)
 
-	typespecOps := collectOpenAPICoreOperations(t, typespecDoc)
+	canonicalOps := collectOpenAPICoreOperations(t, canonicalDoc)
 	generatedOps := collectOpenAPICoreOperations(t, generatedDoc)
 
-	require.Equal(t, sortedOperationKeys(typespecOps), sortedOperationKeys(generatedOps), "openapi parity: method/path pairs must match between TypeSpec and generated specs")
+	require.Equal(t, sortedOperationKeys(canonicalOps), sortedOperationKeys(generatedOps), "openapi parity: method/path pairs must match between canonical and generated specs")
 
-	for key, expected := range typespecOps {
+	for key, expected := range canonicalOps {
 		actual := generatedOps[key]
 		require.Equalf(t, expected.OperationID, actual.OperationID, "openapi parity: operationId drift for %s %s", expected.Method, expected.Path)
 		require.Equalf(t, expected.HasRequestBody, actual.HasRequestBody, "openapi parity: requestBody presence drift for %s %s", expected.Method, expected.Path)

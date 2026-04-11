@@ -83,33 +83,31 @@ tasks:
       - go run . -gen=all -outdir=../../internal/duckdbsql/catalog/
 
   generate:api:
-    desc: Generate server/CLI from JSON IR (apigen)
-    deps: [typespec:compile]
+    desc: Generate canonical OpenAPI plus server/CLI from CUE-authored APIGen sources
+    deps: [cue:compile]
     cmds:
       - find pkg/cli/gen -maxdepth 1 -type f -name '*.gen.go' ! -name 'apigen_registry.gen.go' ! -name 'discovery_index.gen.go' -delete
       - go run ./cmd/apigen all -ir api/gen/json-ir.json -compat-types-out internal/api/types.gen.go
     sources:
-      - api/gen/json-ir.json
+      - api/cue/**/*.cue
       - cmd/apigen/**/*.go
-      - apigen/**/*.go
+      - pkg/apigen/**/*.go
     generates:
       - api/gen/openapi.yaml
       - api/gen/json-ir.json
       - internal/api/gen_request_models.gen.go
       - internal/api/server.apigen.gen.go
+      - internal/api/types.gen.go
       - pkg/cli/gen/apigen_registry.gen.go
 
-  typespec:compile:
-    desc: Compile TypeSpec into OpenAPI and JSON IR artifacts
+  cue:compile:
+    desc: Compile CUE API sources into canonical OpenAPI and JSON IR artifacts
     cmds:
-      - npm install --prefix tools/typespec-ir-emitter
-      - npm install --prefix api/spec
-      - npm run compile --prefix api/spec
+      - go run ./cmd/apigen cue-compile -cue-dir api/cue -ir-out api/gen/json-ir.json -openapi-out api/gen/openapi.yaml
     sources:
-      - api/spec/**/*.tsp
-      - api/spec/tspconfig.yaml
-      - api/spec/package.json
-      - tools/typespec-ir-emitter/**/*
+      - api/cue/**/*.cue
+      - cmd/apigen/**/*.go
+      - pkg/apigen/**/*.go
     generates:
       - api/gen/openapi.yaml
       - api/gen/json-ir.json
@@ -123,8 +121,14 @@ tasks:
       - task generate:api
       - test -f internal/api/gen_request_models.gen.go
       - test -f internal/api/server.apigen.gen.go
+      - test -f internal/api/types.gen.go
       - test -f pkg/cli/gen/apigen_registry.gen.go
-      - git diff --exit-code -- api/gen/openapi.yaml internal/api/gen_request_models.gen.go internal/api/server.apigen.gen.go pkg/cli/gen/apigen_registry.gen.go
+      - git diff --exit-code -- api/gen/openapi.yaml internal/api/gen_request_models.gen.go internal/api/server.apigen.gen.go internal/api/types.gen.go pkg/cli/gen/apigen_registry.gen.go
+
+  verify:apigen-cue-parity:
+    desc: Verify the CUE pipeline reproduces the checked-in APIGen outputs
+    cmds:
+      - go test ./pkg/apigen/... ./cmd/apigen/... -run 'Test(MainRepoCueParity|CompileDir|GenerateArtifacts|ExampleConsumer_CUEToGeneratedBuild)' -count=1
 
   generate:declarative-schema:
     desc: Generate declarative JSON Schema artifacts
@@ -335,12 +339,6 @@ tasks:
   lint:api:generated:
     desc: Alias for canonical OpenAPI lint
     deps: [generate:api]
-    cmds:
-      - go run ./cmd/lint-api api/gen/openapi.yaml
-
-  lint:api:typespec:
-    desc: Lint TypeSpec OpenAPI artifact for consistency
-    deps: [typespec:compile]
     cmds:
       - go run ./cmd/lint-api api/gen/openapi.yaml
 

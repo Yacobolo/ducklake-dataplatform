@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	cobraruntime "duck-demo/apigen/runtime/cobra"
+	cobraruntime "duck-demo/pkg/apigen/runtime/cobra"
 	"duck-demo/pkg/cli/apiruntime"
 	"duck-demo/pkg/cli/gen"
 )
