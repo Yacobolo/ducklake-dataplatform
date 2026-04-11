@@ -188,6 +188,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.AddCommand(newApplyCmd(client))
 	rootCmd.AddCommand(newExportCmd(client))
 	rootCmd.AddCommand(newValidateCmd(client))
+	rootCmd.AddCommand(newDeclarativeCmd())
 
 	// Agent discovery commands
 	rootCmd.AddCommand(newCommandsCmd())
