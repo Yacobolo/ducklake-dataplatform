@@ -8,7 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
+	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 )
 
@@ -72,18 +73,16 @@ func (r *ModelRunRepo) ListRuns(ctx context.Context, filter domain.ModelRunFilte
 	}
 
 	total, err := r.q.CountModelRuns(ctx, dbstore.CountModelRunsParams{
-		Column1: statusFilter,
-		Status:  statusFilter,
+		Status: mapper.NullStrFromStr(statusFilter),
 	})
 	if err != nil {
 		return nil, 0, err
 	}
 
 	rows, err := r.q.ListModelRuns(ctx, dbstore.ListModelRunsParams{
-		Column1: statusFilter,
-		Status:  statusFilter,
-		Limit:   int64(filter.Page.Limit()),
-		Offset:  int64(filter.Page.Offset()),
+		Status: mapper.NullStrFromStr(statusFilter),
+		Limit:  int64(filter.Page.Limit()),
+		Offset: int64(filter.Page.Offset()),
 	})
 	if err != nil {
 		return nil, 0, err

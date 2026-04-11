@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/domain"
 )
 
@@ -72,8 +72,8 @@ func (r *SemanticModelRepo) List(ctx context.Context, page domain.PageRequest) (
 	}
 
 	rows, err := r.q.ListSemanticModels(ctx, dbstore.ListSemanticModelsParams{
-		Limit:       int64(page.Limit()),
-		Offset:      int64(page.Offset()),
+		Limit:  int64(page.Limit()),
+		Offset: int64(page.Offset()),
 	})
 	if err != nil {
 		return nil, 0, err

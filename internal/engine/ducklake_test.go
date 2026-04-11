@@ -16,7 +16,7 @@ import (
 
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/engine"
 	"duck-demo/internal/service/security"

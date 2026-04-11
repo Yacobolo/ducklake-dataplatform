@@ -38,7 +38,7 @@ import (
 	"duck-demo/internal/config"
 	internaldb "duck-demo/internal/db"
 	"duck-demo/internal/db/crypto"
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/engine"

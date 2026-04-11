@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 )
 
 var _ domain.NotebookRepository = (*NotebookRepo)(nil)
 
-// NotebookRepo implements domain.NotebookRepository using sqlc-generated queries.
+// NotebookRepo implements domain.NotebookRepository using cue-sql-generated queries.
 type NotebookRepo struct {
 	db *sql.DB
 	q  *dbstore.Queries

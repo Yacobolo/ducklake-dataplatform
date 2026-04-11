@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	internaldb "duck-demo/internal/db"
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"
 	"duck-demo/internal/testutil"

@@ -5,14 +5,14 @@ import (
 	"database/sql"
 	"time"
 
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 )
 
 var _ domain.GitRepoRepository = (*GitRepoRepo)(nil)
 
-// GitRepoRepo implements domain.GitRepoRepository using sqlc-generated queries.
+// GitRepoRepo implements domain.GitRepoRepository using cue-sql-generated queries.
 type GitRepoRepo struct {
 	q *dbstore.Queries
 }

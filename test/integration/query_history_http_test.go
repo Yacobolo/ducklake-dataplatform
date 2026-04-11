@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 )
 
 // seedQueryHistoryEntries inserts audit_log rows with action='QUERY' to populate

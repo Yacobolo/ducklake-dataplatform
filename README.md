@@ -68,7 +68,7 @@ internal/api/           -- HTTP handlers and APIGen-generated transport glue
 internal/service/       -- Business logic (depends on domain interfaces only)
 internal/domain/        -- Types, interfaces, errors (zero external deps)
 internal/db/repository/ -- Implements domain repository interfaces
-internal/db/dbstore/    -- sqlc-generated code (do not edit)
+internal/db/cuestore/   -- cue-sql-generated code (do not edit)
 internal/db/migrations/ -- Goose SQL migrations
 internal/engine/        -- SecureEngine (DuckDB + RBAC + RLS + column masking)
 internal/sqlrewrite/    -- SQL parsing/rewriting via pg_query_go

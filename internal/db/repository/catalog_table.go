@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/ddl"
 	"duck-demo/internal/domain"
 )
@@ -50,7 +50,7 @@ func (r *CatalogRepo) CreateTable(ctx context.Context, schemaName string, req do
 	}
 	r.refreshMetaDB(ctx)
 
-	// Store metadata via sqlc
+	// Store metadata via cue-sql
 	securableName := schemaName + "." + req.Name
 	if req.Comment != "" || owner != "" {
 		_ = r.q.InsertOrReplaceCatalogMetadata(ctx, dbstore.InsertOrReplaceCatalogMetadataParams{
@@ -65,7 +65,7 @@ func (r *CatalogRepo) CreateTable(ctx context.Context, schemaName string, req do
 }
 
 // GetTable reads a table by schema and table name, including columns.
-// NOTE: ducklake_schema and ducklake_table are not managed by sqlc.
+// NOTE: ducklake_schema and ducklake_table are not managed by cue-sql.
 func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string) (*domain.TableDetail, error) {
 	// First get the schema_id and schema path
 	var schemaID int64
@@ -112,27 +112,27 @@ func (r *CatalogRepo) GetTable(ctx context.Context, schemaName, tableName string
 	// Resolve storage path for MANAGED tables
 	t.StoragePath = r.resolveStoragePath(ctx, schemaPath, tablePath, tablePathIsRelative)
 
-	// Load columns (ducklake_column — not managed by sqlc)
+	// Load columns (ducklake_column — not managed by cue-sql)
 	cols, err := r.loadColumns(ctx, t.TableID)
 	if err != nil {
 		return nil, err
 	}
 	t.Columns = cols
 
-	// Enrich columns with metadata via sqlc
+	// Enrich columns with metadata via cue-sql
 	securableName := schemaName + "." + tableName
 	for i := range t.Columns {
 		r.enrichColumnMetadata(ctx, securableName, &t.Columns[i])
 	}
 
-	// Join with catalog_metadata via sqlc
+	// Join with catalog_metadata via cue-sql
 	r.enrichTableMetadata(ctx, &t)
 
 	return &t, nil
 }
 
 // ListTables returns a paginated list of tables in a schema.
-// NOTE: ducklake_schema and ducklake_table are not managed by sqlc.
+// NOTE: ducklake_schema and ducklake_table are not managed by cue-sql.
 func (r *CatalogRepo) ListTables(ctx context.Context, schemaName string, page domain.PageRequest) ([]domain.TableDetail, int64, error) {
 	// First get the schema_id
 	schemaID, err := r.resolveSchemaID(ctx, schemaName)
@@ -311,7 +311,7 @@ func (r *CatalogRepo) DeleteTable(ctx context.Context, schemaName, tableName str
 }
 
 // ListColumns returns a paginated list of columns for a table.
-// NOTE: ducklake_schema, ducklake_table, ducklake_column are not managed by sqlc.
+// NOTE: ducklake_schema, ducklake_table, ducklake_column are not managed by cue-sql.
 func (r *CatalogRepo) ListColumns(ctx context.Context, schemaName, tableName string, page domain.PageRequest) ([]domain.ColumnDetail, int64, error) {
 	// First resolve schema_id
 	schemaID, err := r.resolveSchemaID(ctx, schemaName)

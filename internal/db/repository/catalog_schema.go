@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/ddl"
 	"duck-demo/internal/domain"
 )
@@ -40,7 +40,7 @@ func (r *CatalogRepo) CreateSchema(ctx context.Context, name, comment, owner str
 	}
 	r.refreshMetaDB(ctx)
 
-	// Store metadata via sqlc
+	// Store metadata via cue-sql
 	if comment != "" || owner != "" {
 		_ = r.q.InsertOrReplaceCatalogMetadata(ctx, dbstore.InsertOrReplaceCatalogMetadataParams{
 			SecurableType: "schema",
@@ -54,7 +54,7 @@ func (r *CatalogRepo) CreateSchema(ctx context.Context, name, comment, owner str
 }
 
 // GetSchema reads a schema by name from the DuckLake metastore.
-// NOTE: ducklake_schema is not managed by sqlc.
+// NOTE: ducklake_schema is not managed by cue-sql.
 func (r *CatalogRepo) GetSchema(ctx context.Context, name string) (*domain.SchemaDetail, error) {
 	var s domain.SchemaDetail
 	var schemaID int64
@@ -70,14 +70,14 @@ func (r *CatalogRepo) GetSchema(ctx context.Context, name string) (*domain.Schem
 	s.SchemaID = domain.DuckLakeIDToString(schemaID)
 	s.CatalogName = r.catalogName
 
-	// Join with catalog_metadata via sqlc
+	// Join with catalog_metadata via cue-sql
 	r.enrichSchemaMetadata(ctx, &s)
 
 	return &s, nil
 }
 
 // ListSchemas returns a paginated list of schemas.
-// NOTE: ducklake_schema is not managed by sqlc.
+// NOTE: ducklake_schema is not managed by cue-sql.
 func (r *CatalogRepo) ListSchemas(ctx context.Context, page domain.PageRequest) ([]domain.SchemaDetail, int64, error) {
 	var total int64
 	if err := r.metaDB.QueryRowContext(ctx,
@@ -157,7 +157,7 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 	}
 
 	// If force, gather table IDs in this schema for governance cleanup before DDL
-	// NOTE: ducklake_table is not managed by sqlc
+	// NOTE: ducklake_table is not managed by cue-sql
 	var tableIDs []string
 	if force {
 		// schema.SchemaID is a string but DuckLake schema_id is an integer;
@@ -273,7 +273,7 @@ func (r *CatalogRepo) DeleteSchema(ctx context.Context, name string, force bool)
 
 // SetSchemaStoragePath sets the storage path for a schema in DuckLake's metadata.
 // This allows per-schema data paths pointing to different external locations.
-// NOTE: ducklake_schema is not managed by sqlc.
+// NOTE: ducklake_schema is not managed by cue-sql.
 func (r *CatalogRepo) SetSchemaStoragePath(ctx context.Context, schemaID string, path string) error {
 	unlock := r.lockCatalogWrites()
 	defer unlock()

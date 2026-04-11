@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"duck-demo/internal/db/crypto"
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/domain"
 )
 

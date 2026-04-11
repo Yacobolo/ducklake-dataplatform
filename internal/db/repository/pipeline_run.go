@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
+	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 )
 
@@ -68,20 +69,16 @@ func (r *PipelineRunRepo) ListRuns(ctx context.Context, filter domain.PipelineRu
 	}
 
 	total, err := r.q.CountPipelineRuns(ctx, dbstore.CountPipelineRunsParams{
-		Column1:    pipelineIDFilter,
-		PipelineID: pipelineIDFilter,
-		Column3:    statusFilter,
-		Status:     statusFilter,
+		PipelineID: mapper.NullStrFromStr(pipelineIDFilter),
+		Status:     mapper.NullStrFromStr(statusFilter),
 	})
 	if err != nil {
 		return nil, 0, err
 	}
 
 	rows, err := r.q.ListPipelineRuns(ctx, dbstore.ListPipelineRunsParams{
-		Column1:    pipelineIDFilter,
-		PipelineID: pipelineIDFilter,
-		Column3:    statusFilter,
-		Status:     statusFilter,
+		PipelineID: mapper.NullStrFromStr(pipelineIDFilter),
+		Status:     mapper.NullStrFromStr(statusFilter),
 		Limit:      int64(filter.Page.Limit()),
 		Offset:     int64(filter.Page.Offset()),
 	})

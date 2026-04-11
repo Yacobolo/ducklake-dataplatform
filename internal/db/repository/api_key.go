@@ -6,14 +6,14 @@ import (
 	"log/slog"
 	"time"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 )
 
-// APIKeyRepo implements both domain.APIKeyRepository and middleware.APIKeyLookup using sqlc queries.
+// APIKeyRepo implements both domain.APIKeyRepository and middleware.APIKeyLookup using cue-sql queries.
 type APIKeyRepo struct {
-	q  *dbstore.Queries
+	q  *dbstore.Store
 	db *sql.DB
 }
 
@@ -148,7 +148,7 @@ func (r *APIKeyRepo) Delete(ctx context.Context, id string) error {
 
 // DeleteExpired removes all expired API keys and returns the count deleted.
 func (r *APIKeyRepo) DeleteExpired(ctx context.Context) (int64, error) {
-	result, err := r.db.ExecContext(ctx, "DELETE FROM api_keys WHERE expires_at IS NOT NULL AND expires_at <= datetime('now')")
+	result, err := r.q.DeleteExpiredKeys(ctx)
 	if err != nil {
 		return 0, err
 	}

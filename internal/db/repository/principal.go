@@ -4,14 +4,14 @@ import (
 	"context"
 	"database/sql"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 )
 
 // PrincipalRepo implements domain.PrincipalRepository using SQLite.
 type PrincipalRepo struct {
-	q  *dbstore.Queries
+	q  *dbstore.Store
 	db *sql.DB
 }
 

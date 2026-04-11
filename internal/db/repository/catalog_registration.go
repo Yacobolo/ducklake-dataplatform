@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 )
 
 // CatalogRegistrationRepo implements domain.CatalogRegistrationRepository
-// using the control plane SQLite database via sqlc-generated queries.
+// using the control plane SQLite database via cue-sql-generated queries.
 type CatalogRegistrationRepo struct {
 	db *sql.DB
 	q  *dbstore.Queries

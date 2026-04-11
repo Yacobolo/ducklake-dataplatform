@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/domain"
 )
 
@@ -93,7 +93,7 @@ func (r *PipelineRepo) ListPipelinesByFolders(ctx context.Context, folderIDs []s
 	for _, folderID := range folderIDs {
 		params = append(params, sql.NullString{String: folderID, Valid: folderID != ""})
 	}
-	rows, err := r.q.ListPipelinesByFolders(ctx, params)
+	rows, err := r.q.ListPipelinesByFolders(ctx, dbstore.ListPipelinesByFoldersParams{FolderIDs: params})
 	if err != nil {
 		return nil, mapDBError(err)
 	}

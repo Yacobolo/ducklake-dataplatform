@@ -8,7 +8,8 @@ import (
 	"log/slog"
 	"time"
 
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
+	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 )
 
@@ -189,16 +190,14 @@ func (r *ModelRepo) List(ctx context.Context, projectName *string, page domain.P
 	}
 
 	total, err := r.q.CountModels(ctx, dbstore.CountModelsParams{
-		Column1:     projectFilter,
-		ProjectName: projectFilter,
+		ProjectName: mapper.NullStrFromStr(projectFilter),
 	})
 	if err != nil {
 		return nil, 0, err
 	}
 
 	rows, err := r.q.ListModels(ctx, dbstore.ListModelsParams{
-		Column1:     projectFilter,
-		ProjectName: projectFilter,
+		ProjectName: mapper.NullStrFromStr(projectFilter),
 		Limit:       int64(page.Limit()),
 		Offset:      int64(page.Offset()),
 	})

@@ -14,7 +14,7 @@ func TestGeneratedFileSkipPatterns(t *testing.T) {
 
 	assert.True(t, shouldSkipGeneratedFile("internal/api/server.apigen.gen.go"))
 	assert.True(t, shouldSkipGeneratedFile("internal/duckdbsql/catalog/functions_gen.go"))
-	assert.True(t, shouldSkipGeneratedFile("internal/db/dbstore/catalog.sql.go"))
+	assert.True(t, shouldSkipGeneratedFile("internal/db/cuestore/queries.gen.go"))
 
 	assert.False(t, shouldSkipGeneratedFile("internal/service/security/grant.go"))
 	assert.False(t, shouldSkipGeneratedFile("internal/service/security/grant_test.go"))
@@ -29,7 +29,6 @@ func TestDepguardGeneratedExclusionsArePresentAndScoped(t *testing.T) {
 
 	required := []string{
 		"- path: \\.gen\\.go",
-		"- path: internal/db/dbstore/.*\\.sql\\.go",
 		"- path: internal/duckdbsql/catalog/.*_gen\\.go",
 	}
 	for _, pattern := range required {

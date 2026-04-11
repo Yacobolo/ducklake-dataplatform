@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	internaldb "duck-demo/internal/db"
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/domain"
 )
 

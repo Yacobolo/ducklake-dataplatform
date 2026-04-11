@@ -4,14 +4,14 @@ import (
 	"context"
 	"database/sql"
 
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 )
 
 var _ domain.NotebookJobRepository = (*NotebookJobRepo)(nil)
 
-// NotebookJobRepo implements domain.NotebookJobRepository using sqlc-generated queries.
+// NotebookJobRepo implements domain.NotebookJobRepository using cue-sql-generated queries.
 type NotebookJobRepo struct {
 	q *dbstore.Queries
 }

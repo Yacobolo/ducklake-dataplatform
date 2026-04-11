@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/domain"
 
 	"github.com/google/uuid"
@@ -84,7 +84,7 @@ func NullStrFromStr(s string) sql.NullString {
 }
 
 // InterfaceFromPtr converts a *string to interface{} (nil or the string value).
-// Useful for sqlc-generated nullable check parameters.
+// Useful for generated nullable check parameters.
 func InterfaceFromPtr(s *string) interface{} {
 	if s == nil {
 		return nil

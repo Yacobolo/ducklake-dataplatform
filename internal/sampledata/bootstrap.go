@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/db/repository"
 	"duck-demo/internal/domain"

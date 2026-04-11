@@ -4,14 +4,14 @@ import (
 	"context"
 	"database/sql"
 
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 )
 
 var _ domain.NotebookModelLinkRepository = (*NotebookModelLinkRepo)(nil)
 
-// NotebookModelLinkRepo implements domain.NotebookModelLinkRepository using sqlc queries.
+// NotebookModelLinkRepo implements domain.NotebookModelLinkRepository using cue-sql queries.
 type NotebookModelLinkRepo struct {
 	q *dbstore.Queries
 }

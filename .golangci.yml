@@ -169,9 +169,6 @@ linters:
       - path: \.gen\.go
         linters:
           - depguard
-      - path: internal/db/dbstore/.*\.sql\.go
-        linters:
-          - depguard
       - path: internal/duckdbsql/catalog/.*_gen\.go
         linters:
           - depguard

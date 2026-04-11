@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

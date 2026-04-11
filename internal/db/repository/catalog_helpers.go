@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/domain"
 )
 
@@ -78,7 +78,7 @@ func (r *CatalogRepo) resolveStoragePath(ctx context.Context, schemaPath, tableP
 	return dataPath
 }
 
-// loadColumns reads columns from ducklake_column (not managed by sqlc).
+// loadColumns reads columns from ducklake_column (not managed by cue-sql).
 func (r *CatalogRepo) loadColumns(ctx context.Context, tableID string) ([]domain.ColumnDetail, error) {
 	rows, err := r.metaDB.QueryContext(ctx,
 		`SELECT column_name, column_type, column_id, COALESCE(nulls_allowed, 1) FROM ducklake_column WHERE table_id = ? AND end_snapshot IS NULL ORDER BY column_id`,
@@ -105,7 +105,7 @@ func (r *CatalogRepo) loadColumns(ctx context.Context, tableID string) ([]domain
 	return cols, rows.Err()
 }
 
-// enrichSchemaMetadata reads catalog_metadata for a schema via sqlc.
+// enrichSchemaMetadata reads catalog_metadata for a schema via cue-sql.
 func (r *CatalogRepo) enrichSchemaMetadata(ctx context.Context, s *domain.SchemaDetail) {
 	row, err := r.q.GetCatalogMetadata(ctx, dbstore.GetCatalogMetadataParams{
 		SecurableType: "schema",
@@ -142,7 +142,7 @@ func (r *CatalogRepo) enrichSchemaMetadata(ctx context.Context, s *domain.Schema
 	}
 }
 
-// enrichTableMetadata reads catalog_metadata for a table via sqlc.
+// enrichTableMetadata reads catalog_metadata for a table via cue-sql.
 func (r *CatalogRepo) enrichTableMetadata(ctx context.Context, t *domain.TableDetail) {
 	securableName := t.SchemaName + "." + t.Name
 	row, err := r.q.GetCatalogMetadata(ctx, dbstore.GetCatalogMetadataParams{
@@ -180,7 +180,7 @@ func (r *CatalogRepo) enrichTableMetadata(ctx context.Context, t *domain.TableDe
 	}
 }
 
-// enrichColumnMetadata reads column_metadata via sqlc.
+// enrichColumnMetadata reads column_metadata via cue-sql.
 func (r *CatalogRepo) enrichColumnMetadata(ctx context.Context, tableSecurableName string, c *domain.ColumnDetail) {
 	row, err := r.q.GetColumnMetadata(ctx, dbstore.GetColumnMetadataParams{
 		TableSecurableName: tableSecurableName,

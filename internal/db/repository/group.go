@@ -4,14 +4,14 @@ import (
 	"context"
 	"database/sql"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/db/mapper"
 	"duck-demo/internal/domain"
 )
 
 // GroupRepo implements domain.GroupRepository using SQLite.
 type GroupRepo struct {
-	q  *dbstore.Queries
+	q  *dbstore.Store
 	db *sql.DB
 }
 
@@ -142,7 +142,7 @@ WHERE group_id = ? AND member_type = ? AND member_id = ?`,
 	return nil
 }
 
-// RemoveMemberLegacy preserves the sqlc-generated query shape for future regen compatibility.
+// RemoveMemberLegacy preserves the cue-sql-generated query shape for future regen compatibility.
 func (r *GroupRepo) RemoveMemberLegacy(ctx context.Context, m *domain.GroupMember) error {
 	return r.q.RemoveGroupMember(ctx, dbstore.RemoveGroupMemberParams{
 		GroupID:    m.GroupID,

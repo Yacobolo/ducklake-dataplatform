@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/domain"
 )
 
@@ -57,14 +57,14 @@ func (r *DashboardRepo) GetByID(ctx context.Context, id string) (*domain.Dashboa
 func (r *DashboardRepo) List(ctx context.Context, owner *string, page domain.PageRequest) ([]domain.Dashboard, int64, error) {
 	total, err := r.q.CountDashboards(ctx, dbstore.CountDashboardsParams{
 		Owner:    nullableString(owner),
-		FolderID: nil,
+		FolderID: sql.NullString{},
 	})
 	if err != nil {
 		return nil, 0, mapDBError(err)
 	}
 	rows, err := r.q.ListDashboards(ctx, dbstore.ListDashboardsParams{
 		Owner:    nullableString(owner),
-		FolderID: nil,
+		FolderID: sql.NullString{},
 		Limit:    int64(page.Limit()),
 		Offset:   int64(page.Offset()),
 	})
@@ -87,7 +87,7 @@ func (r *DashboardRepo) ListByFolders(ctx context.Context, folderIDs []string) (
 	for _, folderID := range folderIDs {
 		params = append(params, sql.NullString{String: folderID, Valid: folderID != ""})
 	}
-	rows, err := r.q.ListDashboardsByFolders(ctx, params)
+	rows, err := r.q.ListDashboardsByFolders(ctx, dbstore.ListDashboardsByFoldersParams{FolderIDs: params})
 	if err != nil {
 		return nil, mapDBError(err)
 	}
@@ -301,9 +301,9 @@ func marshalDashboardWidgetJSON(source domain.DashboardWidgetSource, visual *dom
 	return string(sourceBytes), visualJSON, nil
 }
 
-func nullableString(value *string) interface{} {
+func nullableString(value *string) sql.NullString {
 	if value == nil {
-		return nil
+		return sql.NullString{}
 	}
-	return *value
+	return sql.NullString{String: *value, Valid: true}
 }

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/ddl"
 	"duck-demo/internal/domain"
 )
@@ -21,7 +21,7 @@ type CatalogRepo struct {
 	metaDB      *sql.DB
 	controlDB   *sql.DB // control-plane DB (for transactions on catalog_metadata, tags, etc.)
 	duckDB      *sql.DB
-	q           *dbstore.Queries // sqlc queries for application-owned tables
+	q           *dbstore.Queries // cue-sql queries for application-owned tables
 	extRepo     *ExternalTableRepo
 	catalogName string // DuckDB catalog alias (e.g., "lake")
 	logger      *slog.Logger
@@ -126,7 +126,7 @@ func (r *CatalogRepo) GetCatalogInfo(ctx context.Context) (*domain.CatalogInfo, 
 		Name: r.catalogName,
 	}
 
-	// Try to read comment from catalog_metadata via sqlc
+	// Try to read comment from catalog_metadata via cue-sql
 	row, err := r.q.GetCatalogMetadata(ctx, dbstore.GetCatalogMetadataParams{
 		SecurableType: "catalog",
 		SecurableName: r.catalogName,
@@ -143,7 +143,7 @@ func (r *CatalogRepo) GetCatalogInfo(ctx context.Context) (*domain.CatalogInfo, 
 }
 
 // GetMetastoreSummary returns high-level info about the DuckLake metastore.
-// NOTE: These queries hit ducklake_* tables (not managed by sqlc).
+// NOTE: These queries hit ducklake_* tables (not managed by cue-sql).
 func (r *CatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.MetastoreSummary, error) {
 	summary := &domain.MetastoreSummary{
 		CatalogName:    r.catalogName,
@@ -151,7 +151,7 @@ func (r *CatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.Metastor
 		StorageBackend: "UNKNOWN",
 	}
 
-	// Read data_path (ducklake_metadata — not managed by sqlc)
+	// Read data_path (ducklake_metadata — not managed by cue-sql)
 	var dataPath sql.NullString
 	_ = r.metaDB.QueryRowContext(ctx,
 		`SELECT value FROM ducklake_metadata WHERE key = 'data_path'`).Scan(&dataPath)
@@ -160,11 +160,11 @@ func (r *CatalogRepo) GetMetastoreSummary(ctx context.Context) (*domain.Metastor
 		summary.StorageBackend = inferStorageBackend(dataPath.String)
 	}
 
-	// Count schemas (ducklake_schema — not managed by sqlc)
+	// Count schemas (ducklake_schema — not managed by cue-sql)
 	_ = r.metaDB.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM ducklake_schema WHERE end_snapshot IS NULL`).Scan(&summary.SchemaCount)
 
-	// Count tables (ducklake_table — not managed by sqlc)
+	// Count tables (ducklake_table — not managed by cue-sql)
 	_ = r.metaDB.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM ducklake_table WHERE end_snapshot IS NULL`).Scan(&summary.TableCount)
 

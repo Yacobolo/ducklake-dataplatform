@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	dbstore "duck-demo/internal/db/dbstore"
+	dbstore "duck-demo/internal/db/cuestore"
 	"duck-demo/internal/domain"
 )
 

@@ -24,7 +24,7 @@ tasks:
 
         mkdir -p "$meta_db_dir"
 
-        if ! test -f internal/api/types.gen.go || ! test -f internal/api/server.apigen.gen.go || ! test -f internal/db/dbstore/db.go || ! test -f internal/db/dbstore/models.go; then
+        if ! test -f internal/api/types.gen.go || ! test -f internal/api/server.apigen.gen.go || ! test -f internal/db/cuestore/db.gen.go || ! test -f internal/db/cuestore/models.gen.go || ! test -f internal/db/cuestore/queries.gen.go; then
           echo "Generated files missing. Running task generate before starting dev server."
           task generate
         fi
@@ -71,10 +71,10 @@ tasks:
     cmds:
       - goose -dir {{.MIGRATIONS_DIR}} create {{.CLI_ARGS}} sql
 
-  sqlc:
-    desc: Generate sqlc code
+  cue-sql:
+    desc: Generate cue-sql code
     cmds:
-      - sqlc generate
+      - go run ./cmd/cue-sql-gen -outdir internal/db/cuestore -src internal/db/querydefs
 
   genduckdb:
     desc: Regenerate DuckDB catalog metadata (keywords, types, functions)
@@ -217,13 +217,15 @@ tasks:
 
   generate:
     desc: Run all code generation
-    deps: [sqlc, genduckdb, docs:generate]
+    deps: [cue-sql, genduckdb, docs:generate]
 
   build:
     desc: Build all packages
     preconditions:
       - sh: test -f internal/api/server.apigen.gen.go
         msg: "Generated files missing. Run 'task generate' first."
+      - sh: test -f internal/db/cuestore/db.gen.go
+        msg: "cue-sql generated files missing. Run 'task generate' first."
     cmds:
       - go build ./...
 
