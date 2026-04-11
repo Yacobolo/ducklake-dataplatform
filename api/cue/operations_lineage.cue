@@ -5,6 +5,8 @@ import "list"
 // Authored lineage operations.
 
 #lineageTag: "Lineage"
+#tableLineagePath:  "/lineage/tables/{schema_name}/{table_name}"
+#columnLineagePath: "/lineage/columns/{schema_name}/{table_name}"
 
 #schemaNamePathParameter: #pathStringParameter & {
 	#name: "schema_name"
@@ -39,9 +41,11 @@ import "list"
 	#paginationParameters,
 ])
 
-#wrappedResourceOps: [
+#lineageOps: [
 	{
-		path:         "/lineage/tables/{schema_name}/{table_name}"
+		kind:         "wrapped_resource"
+		method:       "get"
+		path:         #tableLineagePath
 		operation_id: "getTableLineage"
 		summary:      "Get table lineage"
 		cli_command:  "lineage tables get"
@@ -49,7 +53,9 @@ import "list"
 		parameters:   #tableLineageParameters
 	},
 	{
-		path:         "/lineage/tables/{schema_name}/{table_name}/upstream"
+		kind:         "wrapped_resource"
+		method:       "get"
+		path:         #tableLineagePath + "/upstream"
 		operation_id: "getUpstreamLineage"
 		summary:      "Get upstream lineage"
 		cli_command:  "lineage tables upstream"
@@ -57,7 +63,9 @@ import "list"
 		parameters:   #tableLineageParameters
 	},
 	{
-		path:         "/lineage/tables/{schema_name}/{table_name}/downstream"
+		kind:         "wrapped_resource"
+		method:       "get"
+		path:         #tableLineagePath + "/downstream"
 		operation_id: "getDownstreamLineage"
 		summary:      "Get downstream lineage"
 		cli_command:  "lineage tables downstream"
@@ -65,25 +73,7 @@ import "list"
 		parameters:   #tableLineageParameters
 	},
 	{
-		path:         "/lineage/columns/{schema_name}/{table_name}"
-		operation_id: "getColumnLineage"
-		summary:      "Get column lineage"
-		cli_command:  "lineage columns get"
-		body_type:    "PaginatedColumnLineageEdges"
-		parameters:   #tableLineageParameters
-	},
-	{
-		path:         "/lineage/columns/{schema_name}/{table_name}/{column_name}/impacts"
-		operation_id: "getColumnImpact"
-		summary:      "Get column impact"
-		cli_command:  "lineage impact get"
-		body_type:    "PaginatedColumnLineageEdges"
-		parameters:   #columnImpactParameters
-	},
-]
-
-#noContentMutatingOps: [
-	{
+		kind:         "no_content_mutating"
 		method:       "delete"
 		path:         "/lineage/edges/{edge_id}"
 		operation_id: "deleteLineageEdge"
@@ -93,10 +83,28 @@ import "list"
 			#edgeIDPathParameter,
 		]
 	},
-]
-
-#wrappedMutatingOps: [
 	{
+		kind:         "wrapped_resource"
+		method:       "get"
+		path:         #columnLineagePath
+		operation_id: "getColumnLineage"
+		summary:      "Get column lineage"
+		cli_command:  "lineage columns get"
+		body_type:    "PaginatedColumnLineageEdges"
+		parameters:   #tableLineageParameters
+	},
+	{
+		kind:         "wrapped_resource"
+		method:       "get"
+		path:         #columnLineagePath + "/{column_name}/impacts"
+		operation_id: "getColumnImpact"
+		summary:      "Get column impact"
+		cli_command:  "lineage impact get"
+		body_type:    "PaginatedColumnLineageEdges"
+		parameters:   #columnImpactParameters
+	},
+	{
+		kind:         "wrapped_mutating"
 		method:       "post"
 		path:         "/lineage/purges"
 		operation_id: "purgeLineage"
@@ -113,16 +121,19 @@ import "list"
 	},
 ]
 
-endpoints_lineage: list.Concat([
-	[
-		for op in #wrappedResourceOps {
-			{
-				method:       "get"
-				path:         op.path
-				operation_id: op.operation_id
-				summary:      op.summary
-				tags:         [#lineageTag]
-				parameters:   op.parameters
+endpoints_lineage: [
+	for op in #lineageOps {
+		{
+			method:       op.method
+			path:         op.path
+			operation_id: op.operation_id
+			summary:      op.summary
+			tags:         [#lineageTag]
+			parameters:   op.parameters
+			if op.request_body != _|_ {
+				request_body: op.request_body
+			}
+			if op.kind == "wrapped_resource" {
 				responses: list.Concat([
 					[
 						#wrappedJSONSuccessResponse & {
@@ -140,45 +151,8 @@ endpoints_lineage: list.Concat([
 						},
 					],
 				])
-				extensions: #authenticatedExtensions & {
-					#cli_command: op.cli_command
-				}
 			}
-		},
-	],
-	[
-		for op in #noContentMutatingOps {
-			{
-				method:       op.method
-				path:         op.path
-				operation_id: op.operation_id
-				summary:      op.summary
-				tags:         [#lineageTag]
-				parameters:   op.parameters
-				responses: list.Concat([
-					[
-						#noContentResponse & {
-							#status_code: 204
-							#description: "There is no content to send for this request, but the headers may be useful."
-						},
-					],
-					#mutatingErrorResponses,
-				])
-				extensions: #authenticatedExtensions & {
-					#cli_command: op.cli_command
-				}
-			}
-		},
-	],
-	[
-		for op in #wrappedMutatingOps {
-			{
-				method:       op.method
-				path:         op.path
-				operation_id: op.operation_id
-				summary:      op.summary
-				tags:         [#lineageTag]
-				request_body: op.request_body
+			if op.kind == "wrapped_mutating" {
 				responses: list.Concat([
 					[
 						#wrappedJSONSuccessResponse & {
@@ -196,10 +170,21 @@ endpoints_lineage: list.Concat([
 						},
 					],
 				])
-				extensions: #authenticatedExtensions & {
-					#cli_command: op.cli_command
-				}
 			}
-		},
-	],
-])
+			if op.kind == "no_content_mutating" {
+				responses: list.Concat([
+					[
+						#noContentResponse & {
+							#status_code: 204
+							#description: "There is no content to send for this request, but the headers may be useful."
+						},
+					],
+					#mutatingErrorResponses,
+				])
+			}
+			extensions: #authenticatedExtensions & {
+				#cli_command: op.cli_command
+			}
+		}
+	},
+]

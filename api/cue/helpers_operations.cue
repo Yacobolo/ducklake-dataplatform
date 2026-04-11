@@ -21,14 +21,6 @@ import "list"
 	"x-cli-command": #cli_command
 }
 
-#authenticatedExtensionsFor: {
-	cli_command: string
-
-	value: #authenticatedExtensions & {
-		#cli_command: cli_command
-	}
-}
-
 #pathStringParameter: {
 	#name: string
 
@@ -173,153 +165,10 @@ import "list"
 		}
 	}
 }
-
-#wrappedJSONMutatingErrorResponses: {
-	#body_type: string
-
-	responses: [
-		#wrappedJSONResponse & {
-			#status_code: 400
-			#description: "The server could not understand the request due to invalid syntax."
-			#schema_ref:  "Error"
-			#body_type:   #body_type
-		},
-		#wrappedJSONResponse & {
-			#status_code: 401
-			#description: "Access is unauthorized."
-			#schema_ref:  "Error"
-			#body_type:   #body_type
-		},
-		#wrappedJSONResponse & {
-			#status_code: 403
-			#description: "Access is forbidden."
-			#schema_ref:  "Error"
-			#body_type:   #body_type
-		},
-		#wrappedJSONResponse & {
-			#status_code: 429
-			#description: "Client error"
-			#schema_ref:  "Error"
-			#body_type:   #body_type
-		},
-		#wrappedJSONResponse & {
-			#status_code: 500
-			#description: "Server error"
-			#schema_ref:  "Error"
-			#body_type:   #body_type
-		},
-	]
-}
-
-#wrappedJSONResourceErrorResponses: {
-	#body_type: string
-
-	responses: list.Concat([
-		(#wrappedJSONMutatingErrorResponses & {
-			#body_type: #body_type
-		}).responses,
-		[
-			#wrappedJSONResponse & {
-				#status_code: 404
-				#description: "The server cannot find the requested resource."
-				#schema_ref:  "Error"
-				#body_type:   #body_type
-			},
-		],
-	])
-}
-
-
 #noContentResponse: {
 	#status_code: int
 	#description: string
 
 	status_code: #status_code
 	description: #description
-}
-
-
-#authenticatedWrappedResourceOperation: #Endpoint & {
-	#method:       string
-	#path:         string
-	#operation_id: string
-	#summary:      string
-	#tag:          string
-	#cli_command:  string
-	#body_type:    string
-
-	method:       #method
-	path:         #path
-	operation_id: #operation_id
-	summary:      #summary
-	tags:         [#tag]
-	extensions: #authenticatedExtensions & {
-		#cli_command: #cli_command
-	}
-	responses: list.Concat([
-		[
-			#wrappedJSONSuccessResponse & {
-				#body_type: #body_type
-			},
-		],
-		(#wrappedJSONResourceErrorResponses & {
-			#body_type: #body_type
-		}).responses,
-	])
-}
-
-#authenticatedWrappedMutatingOperation: #Endpoint & {
-	#method:       string
-	#path:         string
-	#operation_id: string
-	#summary:      string
-	#tag:          string
-	#cli_command:  string
-	#body_type:    string
-
-	method:       #method
-	path:         #path
-	operation_id: #operation_id
-	summary:      #summary
-	tags:         [#tag]
-	extensions: #authenticatedExtensions & {
-		#cli_command: #cli_command
-	}
-	responses: list.Concat([
-		[
-			#wrappedJSONSuccessResponse & {
-				#body_type: #body_type
-			},
-		],
-		(#wrappedJSONMutatingErrorResponses & {
-			#body_type: #body_type
-		}).responses,
-	])
-}
-
-#authenticatedNoContentMutatingOperation: #Endpoint & {
-	#method:       string
-	#path:         string
-	#operation_id: string
-	#summary:      string
-	#tag:          string
-	#cli_command:  string
-
-	method:       #method
-	path:         #path
-	operation_id: #operation_id
-	summary:      #summary
-	tags:         [#tag]
-	extensions: #authenticatedExtensions & {
-		#cli_command: #cli_command
-	}
-	responses: list.Concat([
-		[
-			#noContentResponse & {
-				#status_code: 204
-				#description: "There is no content to send for this request, but the headers may be useful."
-			},
-		],
-		#mutatingErrorResponses,
-	])
 }
