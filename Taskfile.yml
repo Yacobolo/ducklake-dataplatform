@@ -226,6 +226,10 @@ tasks:
         msg: "Generated files missing. Run 'task generate' first."
       - sh: test -f internal/db/cuestore/db.gen.go
         msg: "cue-sql generated files missing. Run 'task generate' first."
+      - sh: test -f internal/db/cuestore/models.gen.go
+        msg: "cue-sql generated files missing. Run 'task generate' first."
+      - sh: test -f internal/db/cuestore/queries.gen.go
+        msg: "cue-sql generated files missing. Run 'task generate' first."
     cmds:
       - go build ./...
 

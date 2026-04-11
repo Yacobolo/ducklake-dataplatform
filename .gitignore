@@ -51,6 +51,7 @@ internal/api/gen_request_models.gen.go
 internal/db/dbstore/*.sql.go
 internal/db/dbstore/db.go
 internal/db/dbstore/models.go
+internal/db/cuestore/*.gen.go
 pkg/cli/gen/*.gen.go
 
 # Binaries

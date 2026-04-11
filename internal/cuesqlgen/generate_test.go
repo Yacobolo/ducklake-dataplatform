@@ -108,3 +108,88 @@ func TestGenerateQueries_RawBindOrderFollowsExplicitBindSequence(t *testing.T) {
 	output := string(generateQueries(catalog, queries))
 	assert.Contains(t, output, "s.db.ExecContext(ctx, getPairSQL, arg.Second, arg.First)")
 }
+
+func TestGenerateQueries_DynamicBuilderHandlesStaticLiteralPredicates(t *testing.T) {
+	catalog := Catalog{
+		Tables: map[string]Table{
+			"audit_log": {
+				Name: "audit_log",
+				Columns: []Column{
+					{Name: "id", DBType: "TEXT", NotNull: true},
+					{Name: "action", DBType: "TEXT", NotNull: true},
+					{Name: "status", DBType: "TEXT", NotNull: true},
+					{Name: "created_at", DBType: "TEXT", NotNull: true},
+				},
+			},
+		},
+	}
+	queries := []cuesql.Query{
+		{
+			Name: "CountQueryHistory",
+			Kind: cuesql.KindOne,
+			Params: []cuesql.Param{
+				{Name: "Status", Type: "sql.NullString"},
+			},
+			Result: cuesql.Result{Scalar: "int64"},
+			Select: &cuesql.Select{
+				From:    "audit_log",
+				Columns: []cuesql.Column{{Expr: "COUNT(*)"}},
+				Where: []cuesql.Predicate{
+					{Column: "action", Op: "=", ValueSQL: "'QUERY'"},
+					{Column: "status", Op: "=", Param: "Status", Optional: true},
+				},
+			},
+		},
+	}
+
+	output := string(generateQueries(catalog, queries))
+	assert.Contains(t, output, `where = append(where, "action = 'QUERY'")`)
+	assert.Contains(t, output, `if arg.Status.Valid {`)
+	assert.NotContains(t, output, "arg.)")
+}
+
+func TestGenerateQueries_DynamicBuilderHandlesPredicateGroups(t *testing.T) {
+	catalog := Catalog{
+		Tables: map[string]Table{
+			"privilege_grants": {
+				Name: "privilege_grants",
+				Columns: []Column{
+					{Name: "id", DBType: "TEXT", NotNull: true},
+					{Name: "principal_id", DBType: "TEXT", NotNull: true},
+					{Name: "principal_name", DBType: "TEXT", NotNull: true},
+					{Name: "privilege", DBType: "TEXT", NotNull: true},
+				},
+			},
+		},
+	}
+	queries := []cuesql.Query{
+		{
+			Name: "CheckDirectGrantAny",
+			Kind: cuesql.KindOne,
+			Params: []cuesql.Param{
+				{Name: "PrincipalID", Type: "sql.NullString"},
+				{Name: "PrincipalName", Type: "sql.NullString"},
+				{Name: "Privilege", Type: "string"},
+			},
+			Result: cuesql.Result{Scalar: "int64"},
+			Select: &cuesql.Select{
+				From:    "privilege_grants",
+				Columns: []cuesql.Column{{Expr: "COUNT(*)"}},
+				Where: []cuesql.Predicate{
+					{
+						Any: []cuesql.Predicate{
+							{Column: "principal_id", Op: "=", Param: "PrincipalID", Optional: true},
+							{Column: "principal_name", Op: "=", Param: "PrincipalName", Optional: true},
+						},
+					},
+					{Column: "privilege", Op: "=", Param: "Privilege"},
+				},
+			},
+		},
+	}
+
+	output := string(generateQueries(catalog, queries))
+	assert.Contains(t, output, "groupWhere0 := make([]string, 0, 2)")
+	assert.Contains(t, output, `where = append(where, "("+strings.Join(groupWhere0, " OR ")+")")`)
+	assert.Contains(t, output, "args = append(args, groupArgs0...)")
+}

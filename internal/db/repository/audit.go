@@ -28,52 +28,22 @@ func (r *AuditRepo) Insert(ctx context.Context, e *domain.AuditEntry) error {
 
 // List returns a filtered, paginated list of audit log entries.
 func (r *AuditRepo) List(ctx context.Context, filter domain.AuditFilter) ([]domain.AuditEntry, int64, error) {
-	// Build filter params — use nil for "no filter" column
-	var principalFilter interface{}
-	var principalName string
-	if filter.PrincipalName != nil {
-		principalFilter = *filter.PrincipalName
-		principalName = *filter.PrincipalName
-	}
-
-	var actionFilter interface{}
-	var action string
-	if filter.Action != nil {
-		actionFilter = *filter.Action
-		action = *filter.Action
-	}
-
-	var statusFilter interface{}
-	var status string
-	if filter.Status != nil {
-		statusFilter = *filter.Status
-		status = *filter.Status
-	}
-
 	limit := int64(filter.Page.Limit())
 	offset := int64(filter.Page.Offset())
 
-	// Count
 	total, err := r.q.CountAuditLogs(ctx, dbstore.CountAuditLogsParams{
-		Column1:       principalFilter,
-		PrincipalName: principalName,
-		Column3:       actionFilter,
-		Action:        action,
-		Column5:       statusFilter,
-		Status:        status,
+		PrincipalName: mapper.NullStrFromPtr(filter.PrincipalName),
+		Action:        mapper.NullStrFromPtr(filter.Action),
+		Status:        mapper.NullStrFromPtr(filter.Status),
 	})
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// List
 	rows, err := r.q.ListAuditLogs(ctx, dbstore.ListAuditLogsParams{
-		Column1:       principalFilter,
-		PrincipalName: principalName,
-		Column3:       actionFilter,
-		Action:        action,
-		Column5:       statusFilter,
-		Status:        status,
+		PrincipalName: mapper.NullStrFromPtr(filter.PrincipalName),
+		Action:        mapper.NullStrFromPtr(filter.Action),
+		Status:        mapper.NullStrFromPtr(filter.Status),
 		Limit:         limit,
 		Offset:        offset,
 	})

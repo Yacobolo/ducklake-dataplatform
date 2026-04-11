@@ -85,7 +85,7 @@ func renderSelect(q Query, catalog ResultColumns) (Rendered, error) {
 	dynamic := false
 	staticWhere := make([]string, 0, len(stmt.Where))
 	for _, predicate := range stmt.Where {
-		if predicate.Optional || predicate.Slice {
+		if hasDynamicPredicate(predicate) {
 			dynamic = true
 			continue
 		}
@@ -105,7 +105,10 @@ func renderSelect(q Query, catalog ResultColumns) (Rendered, error) {
 		sb.WriteString("\nORDER BY ")
 		sb.WriteString(JoinOrderBy(stmt.OrderBy))
 	}
-	if stmt.LimitParam != "" {
+	if stmt.LimitSQL != "" {
+		sb.WriteString("\nLIMIT ")
+		sb.WriteString(stmt.LimitSQL)
+	} else if stmt.LimitParam != "" {
 		sb.WriteString("\nLIMIT ?")
 	}
 	if stmt.OffsetParam != "" {
@@ -120,7 +123,12 @@ func renderInsert(q Query, catalog ResultColumns) (Rendered, error) {
 		return Rendered{}, fmt.Errorf("query %s: insert columns/values mismatch", q.Name)
 	}
 	var sb strings.Builder
-	sb.WriteString("INSERT INTO ")
+	sb.WriteString("INSERT")
+	if stmt.Modifier != "" {
+		sb.WriteString(" ")
+		sb.WriteString(stmt.Modifier)
+	}
+	sb.WriteString(" INTO ")
 	sb.WriteString(stmt.Into)
 	sb.WriteString(" (")
 	sb.WriteString(strings.Join(stmt.Columns, ", "))
@@ -131,8 +139,24 @@ func renderInsert(q Query, catalog ResultColumns) (Rendered, error) {
 	}
 	sb.WriteString(strings.Join(valueSQL, ", "))
 	sb.WriteString(")")
-	if stmt.Returning {
-		cols, err := returningColumns(q.Result, catalog)
+	if stmt.Conflict != nil {
+		if len(stmt.Conflict.Targets) == 0 {
+			return Rendered{}, fmt.Errorf("query %s: insert conflict requires targets", q.Name)
+		}
+		if len(stmt.Conflict.DoUpdate) == 0 {
+			return Rendered{}, fmt.Errorf("query %s: insert conflict requires update assignments", q.Name)
+		}
+		sb.WriteString("\nON CONFLICT(")
+		sb.WriteString(strings.Join(stmt.Conflict.Targets, ", "))
+		sb.WriteString(") DO UPDATE SET\n    ")
+		assignments := make([]string, 0, len(stmt.Conflict.DoUpdate))
+		for _, assignment := range stmt.Conflict.DoUpdate {
+			assignments = append(assignments, assignment.Column+" = "+renderValue(assignment.Value))
+		}
+		sb.WriteString(strings.Join(assignments, ",\n    "))
+	}
+	if stmt.Returning || len(stmt.ReturningColumns) > 0 {
+		cols, err := returningColumns(stmt.ReturningColumns, q.Result, catalog)
 		if err != nil {
 			return Rendered{}, fmt.Errorf("query %s: %w", q.Name, err)
 		}
@@ -153,7 +177,7 @@ func renderUpdate(q Query, catalog ResultColumns) (Rendered, error) {
 	sb.WriteString("\nSET ")
 	assignments := make([]string, 0, len(stmt.Set))
 	for _, assignment := range stmt.Set {
-		assignments = append(assignments, assignment.Column+" = "+renderValue(assignment.Value))
+		assignments = append(assignments, renderAssignment(assignment))
 	}
 	sb.WriteString(strings.Join(assignments, ",\n    "))
 	if len(stmt.Where) > 0 {
@@ -172,8 +196,8 @@ func renderUpdate(q Query, catalog ResultColumns) (Rendered, error) {
 			sb.WriteString(strings.Join(where, "\n  AND "))
 		}
 	}
-	if stmt.Returning {
-		cols, err := returningColumns(q.Result, catalog)
+	if stmt.Returning || len(stmt.ReturningColumns) > 0 {
+		cols, err := returningColumns(stmt.ReturningColumns, q.Result, catalog)
 		if err != nil {
 			return Rendered{}, fmt.Errorf("query %s: %w", q.Name, err)
 		}
@@ -209,6 +233,20 @@ func renderDelete(q Query) (Rendered, error) {
 
 // RenderPredicateSQL renders a predicate into SQLite SQL.
 func RenderPredicateSQL(predicate Predicate) (string, error) {
+	if len(predicate.All) > 0 {
+		parts, err := renderPredicateGroup(predicate.All)
+		if err != nil {
+			return "", err
+		}
+		return "(" + strings.Join(parts, " AND ") + ")", nil
+	}
+	if len(predicate.Any) > 0 {
+		parts, err := renderPredicateGroup(predicate.Any)
+		if err != nil {
+			return "", err
+		}
+		return "(" + strings.Join(parts, " OR ") + ")", nil
+	}
 	if predicate.RawSQL != "" {
 		return predicate.RawSQL, nil
 	}
@@ -222,6 +260,9 @@ func RenderPredicateSQL(predicate Predicate) (string, error) {
 	if predicate.Slice {
 		return lhs + " IN (?)", nil
 	}
+	if predicate.ValueSQL != "" {
+		return lhs + " " + predicate.Op + " " + predicate.ValueSQL, nil
+	}
 	return lhs + " " + predicate.Op + " ?", nil
 }
 
@@ -232,7 +273,60 @@ func renderValue(value ValueExpr) string {
 	return "?"
 }
 
-func returningColumns(result Result, catalog ResultColumns) ([]string, error) {
+func renderAssignment(assignment Assignment) string {
+	value := renderValue(assignment.Value)
+	if assignment.CoalesceWith {
+		value = "COALESCE(" + value + ", " + assignment.Column + ")"
+	}
+	return assignment.Column + " = " + value
+}
+
+func renderPredicateGroup(predicates []Predicate) ([]string, error) {
+	parts := make([]string, 0, len(predicates))
+	for _, predicate := range predicates {
+		sqlPart, err := RenderPredicateSQL(predicate)
+		if err != nil {
+			return nil, err
+		}
+		if sqlPart != "" {
+			parts = append(parts, sqlPart)
+		}
+	}
+	if len(parts) == 0 {
+		return nil, fmt.Errorf("predicate group is empty")
+	}
+	return parts, nil
+}
+
+func hasDynamicPredicate(predicate Predicate) bool {
+	if predicate.Optional || predicate.Slice {
+		return true
+	}
+	for _, child := range predicate.All {
+		if hasDynamicPredicate(child) {
+			return true
+		}
+	}
+	for _, child := range predicate.Any {
+		if hasDynamicPredicate(child) {
+			return true
+		}
+	}
+	return false
+}
+
+func returningColumns(explicit []Column, result Result, catalog ResultColumns) ([]string, error) {
+	if len(explicit) > 0 {
+		returning := make([]string, 0, len(explicit))
+		for _, column := range explicit {
+			part := column.Expr
+			if column.Alias != "" {
+				part += " AS " + column.Alias
+			}
+			returning = append(returning, part)
+		}
+		return returning, nil
+	}
 	if result.Table == "" {
 		return nil, fmt.Errorf("returning requires result.table")
 	}

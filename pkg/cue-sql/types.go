@@ -66,6 +66,7 @@ type Select struct {
 	Joins       []Join      `json:"joins,omitempty"`
 	Where       []Predicate `json:"where,omitempty"`
 	OrderBy     []OrderBy   `json:"orderBy,omitempty"`
+	LimitSQL    string      `json:"limitSQL,omitempty"`
 	LimitParam  string      `json:"limitParam,omitempty"`
 	OffsetParam string      `json:"offsetParam,omitempty"`
 }
@@ -90,25 +91,38 @@ type Predicate struct {
 	Expr     string `json:"expr,omitempty"`
 	Op       string `json:"op,omitempty"`
 	Param    string `json:"param,omitempty"`
+	ValueSQL string `json:"valueSQL,omitempty"`
 	Optional bool   `json:"optional,omitempty"`
 	Slice    bool   `json:"slice,omitempty"`
 	RawSQL   string `json:"rawSQL,omitempty"`
+	All      []Predicate `json:"all,omitempty"`
+	Any      []Predicate `json:"any,omitempty"`
 }
 
 // Insert models an INSERT statement.
 type Insert struct {
-	Into      string      `json:"into"`
-	Columns   []string    `json:"columns"`
-	Values    []ValueExpr `json:"values"`
-	Returning bool        `json:"returning,omitempty"`
+	Modifier         string      `json:"modifier,omitempty"`
+	Into             string      `json:"into"`
+	Columns          []string    `json:"columns"`
+	Values           []ValueExpr `json:"values"`
+	Conflict         *Conflict   `json:"conflict,omitempty"`
+	Returning        bool        `json:"returning,omitempty"`
+	ReturningColumns []Column    `json:"returningColumns,omitempty"`
+}
+
+// Conflict describes an INSERT conflict handler.
+type Conflict struct {
+	Targets  []string     `json:"targets"`
+	DoUpdate []Assignment `json:"doUpdate,omitempty"`
 }
 
 // Update models an UPDATE statement.
 type Update struct {
-	Table     string       `json:"table"`
-	Set       []Assignment `json:"set"`
-	Where     []Predicate  `json:"where,omitempty"`
-	Returning bool         `json:"returning,omitempty"`
+	Table            string       `json:"table"`
+	Set              []Assignment `json:"set"`
+	Where            []Predicate  `json:"where,omitempty"`
+	Returning        bool         `json:"returning,omitempty"`
+	ReturningColumns []Column     `json:"returningColumns,omitempty"`
 }
 
 // Delete models a DELETE statement.
@@ -119,8 +133,9 @@ type Delete struct {
 
 // Assignment describes a column assignment within an UPDATE.
 type Assignment struct {
-	Column string    `json:"column"`
-	Value  ValueExpr `json:"value"`
+	Column       string    `json:"column"`
+	Value        ValueExpr `json:"value"`
+	CoalesceWith bool      `json:"coalesceWith,omitempty"`
 }
 
 // ValueExpr describes a parameterized or raw SQL value expression.

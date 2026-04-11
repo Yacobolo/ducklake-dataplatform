@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	cuesql "duck-demo/pkg/cue-sql"
@@ -278,40 +279,9 @@ func generateDynamicSQLBuilder(query cuesql.Query, catalog Catalog) string {
 	}
 	buf.WriteString("\")\n")
 	buf.WriteString("\twhere := make([]string, 0, " + fmt.Sprintf("%d", len(stmt.Where)) + ")\n")
+	groupCounter := 0
 	for _, predicate := range stmt.Where {
-		if predicate.RawSQL != "" {
-			buf.WriteString("\twhere = append(where, \"" + escapeQuoted(predicate.RawSQL) + "\")\n")
-			continue
-		}
-		if predicate.Optional || predicate.Slice {
-			field := "arg." + fieldName(predicate.Param)
-			lhs := predicate.Column
-			if lhs == "" {
-				lhs = predicate.Expr
-			}
-			if predicate.Slice {
-				if predicate.Optional {
-					buf.WriteString("\tif len(" + field + ") > 0 {\n")
-				} else {
-					buf.WriteString("\tif len(" + field + ") == 0 {\n\t\twhere = append(where, \"1 = 0\")\n\t} else {\n")
-				}
-				buf.WriteString("\t\tplaceholders := make([]string, len(" + field + "))\n")
-				buf.WriteString("\t\tfor i, value := range " + field + " {\n")
-				buf.WriteString("\t\t\tplaceholders[i] = \"?\"\n")
-				buf.WriteString("\t\t\targs = append(args, value)\n")
-				buf.WriteString("\t\t}\n")
-				buf.WriteString("\t\twhere = append(where, \"" + escapeQuoted(lhs) + " IN (\"+strings.Join(placeholders, \", \")+\")\")\n")
-				buf.WriteString("\t}\n")
-				continue
-			}
-			buf.WriteString("\tif " + presentExpr(typeForParam(query, predicate.Param), field) + " {\n")
-			buf.WriteString("\t\twhere = append(where, \"" + escapeQuoted(lhs+" "+predicate.Op+" ?") + "\")\n")
-			buf.WriteString("\t\targs = append(args, " + field + ")\n")
-			buf.WriteString("\t}\n")
-			continue
-		}
-		buf.WriteString("\twhere = append(where, \"" + escapeQuoted(mustPredicateSQL(predicate)) + "\")\n")
-		buf.WriteString("\targs = append(args, arg." + fieldName(predicate.Param) + ")\n")
+		writePredicateBuilder(&buf, query, predicate, "where", "args", "\t", &groupCounter)
 	}
 	buf.WriteString("\tif len(where) > 0 {\n")
 	buf.WriteString("\t\tbuilder.WriteString(\"\\nWHERE \")\n")
@@ -323,6 +293,8 @@ func generateDynamicSQLBuilder(query cuesql.Query, catalog Catalog) string {
 	if stmt.LimitParam != "" {
 		buf.WriteString("\tbuilder.WriteString(\"\\nLIMIT ?\")\n")
 		buf.WriteString("\targs = append(args, arg." + fieldName(stmt.LimitParam) + ")\n")
+	} else if stmt.LimitSQL != "" {
+		buf.WriteString("\tbuilder.WriteString(\"\\nLIMIT " + escapeQuoted(stmt.LimitSQL) + "\")\n")
 	}
 	if stmt.OffsetParam != "" {
 		buf.WriteString("\tbuilder.WriteString(\" OFFSET ?\")\n")
@@ -333,19 +305,81 @@ func generateDynamicSQLBuilder(query cuesql.Query, catalog Catalog) string {
 	return buf.String()
 }
 
+func writePredicateBuilder(buf *bytes.Buffer, query cuesql.Query, predicate cuesql.Predicate, whereVar string, argsVar string, indent string, groupCounter *int) {
+	if len(predicate.All) > 0 || len(predicate.Any) > 0 {
+		groupID := *groupCounter
+		(*groupCounter)++
+		groupWhere := fmt.Sprintf("groupWhere%d", groupID)
+		groupArgs := fmt.Sprintf("groupArgs%d", groupID)
+		op := " AND "
+		children := predicate.All
+		if len(predicate.Any) > 0 {
+			op = " OR "
+			children = predicate.Any
+		}
+
+		buf.WriteString(indent + groupWhere + " := make([]string, 0, " + fmt.Sprintf("%d", len(children)) + ")\n")
+		buf.WriteString(indent + groupArgs + " := make([]any, 0, " + fmt.Sprintf("%d", len(children)) + ")\n")
+		for _, child := range children {
+			writePredicateBuilder(buf, query, child, groupWhere, groupArgs, indent, groupCounter)
+		}
+		buf.WriteString(indent + "if len(" + groupWhere + ") > 0 {\n")
+		buf.WriteString(indent + "\t" + whereVar + " = append(" + whereVar + ", \"(\"+strings.Join(" + groupWhere + ", " + strconv.Quote(op) + ")+\")\")\n")
+		buf.WriteString(indent + "\t" + argsVar + " = append(" + argsVar + ", " + groupArgs + "...)\n")
+		buf.WriteString(indent + "}\n")
+		return
+	}
+
+	if predicate.RawSQL != "" {
+		buf.WriteString(indent + whereVar + " = append(" + whereVar + ", " + strconv.Quote(predicate.RawSQL) + ")\n")
+		return
+	}
+
+	lhs := predicate.Column
+	if lhs == "" {
+		lhs = predicate.Expr
+	}
+	if predicate.Slice {
+		field := "arg." + fieldName(predicate.Param)
+		if predicate.Optional {
+			buf.WriteString(indent + "if len(" + field + ") > 0 {\n")
+		} else {
+			buf.WriteString(indent + "if len(" + field + ") == 0 {\n")
+			buf.WriteString(indent + "\t" + whereVar + " = append(" + whereVar + ", \"1 = 0\")\n")
+			buf.WriteString(indent + "} else {\n")
+		}
+		buf.WriteString(indent + "\tplaceholders := make([]string, len(" + field + "))\n")
+		buf.WriteString(indent + "\tfor i, value := range " + field + " {\n")
+		buf.WriteString(indent + "\t\tplaceholders[i] = \"?\"\n")
+		buf.WriteString(indent + "\t\t" + argsVar + " = append(" + argsVar + ", value)\n")
+		buf.WriteString(indent + "\t}\n")
+		buf.WriteString(indent + "\t" + whereVar + " = append(" + whereVar + ", " + strconv.Quote(lhs+" IN (") + "+strings.Join(placeholders, \", \")+" + strconv.Quote(")") + ")\n")
+		buf.WriteString(indent + "}\n")
+		return
+	}
+
+	sqlPart := mustPredicateSQL(predicate)
+	if predicate.Optional {
+		field := "arg." + fieldName(predicate.Param)
+		buf.WriteString(indent + "if " + presentExpr(typeForParam(query, predicate.Param), field) + " {\n")
+		buf.WriteString(indent + "\t" + whereVar + " = append(" + whereVar + ", " + strconv.Quote(sqlPart) + ")\n")
+		buf.WriteString(indent + "\t" + argsVar + " = append(" + argsVar + ", " + field + ")\n")
+		buf.WriteString(indent + "}\n")
+		return
+	}
+
+	buf.WriteString(indent + whereVar + " = append(" + whereVar + ", " + strconv.Quote(sqlPart) + ")\n")
+	if predicate.Param != "" {
+		buf.WriteString(indent + argsVar + " = append(" + argsVar + ", arg." + fieldName(predicate.Param) + ")\n")
+	}
+}
+
 func methodArgs(query cuesql.Query) (signature string, argRef string, callArgs string) {
 	if len(query.Params) == 0 {
 		return "", "", ""
 	}
 	if query.Select != nil {
-		hasDynamic := false
-		for _, predicate := range query.Select.Where {
-			if predicate.Optional || predicate.Slice {
-				hasDynamic = true
-				break
-			}
-		}
-		if hasDynamic {
+		if hasDynamicPredicates(query.Select.Where) {
 			return ", arg " + query.Name + "Params", "arg", ""
 		}
 	}
@@ -431,12 +465,8 @@ func queryImports(queries []cuesql.Query) []string {
 				imports["time"] = struct{}{}
 			}
 		}
-		if query.Select != nil {
-			for _, predicate := range query.Select.Where {
-				if predicate.Optional || predicate.Slice {
-					imports["strings"] = struct{}{}
-				}
-			}
+		if query.Select != nil && hasDynamicPredicates(query.Select.Where) {
+			imports["strings"] = struct{}{}
 		}
 	}
 	return sortedKeys(imports)
@@ -558,6 +588,32 @@ func typeForParam(query cuesql.Query, name string) string {
 		}
 	}
 	return ""
+}
+
+func hasDynamicPredicates(predicates []cuesql.Predicate) bool {
+	for _, predicate := range predicates {
+		if hasDynamicPredicate(predicate) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasDynamicPredicate(predicate cuesql.Predicate) bool {
+	if predicate.Optional || predicate.Slice {
+		return true
+	}
+	for _, child := range predicate.All {
+		if hasDynamicPredicate(child) {
+			return true
+		}
+	}
+	for _, child := range predicate.Any {
+		if hasDynamicPredicate(child) {
+			return true
+		}
+	}
+	return false
 }
 
 func mustPredicateSQL(predicate cuesql.Predicate) string {

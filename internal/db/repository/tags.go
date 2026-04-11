@@ -131,8 +131,7 @@ func (r *TagRepo) ListTagsForSecurable(ctx context.Context, securableType string
 	rows, err := r.q.ListTagsForSecurable(ctx, dbstore.ListTagsForSecurableParams{
 		SecurableType: securableType,
 		SecurableID:   securableID,
-		Column3:       mapper.InterfaceFromPtr(columnName),
-		ColumnName:    mapper.StringFromPtr(columnName),
+		ColumnName:    mapper.NullStrFromPtr(columnName),
 	})
 	if err != nil {
 		return nil, err

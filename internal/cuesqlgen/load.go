@@ -126,6 +126,9 @@ func validateStatement(catalog Catalog, query cuesql.Query) error {
 				return err
 			}
 		}
+		if query.Select.LimitSQL != "" && query.Select.LimitParam != "" {
+			return fmt.Errorf("query %s: select cannot define both limitSQL and limitParam", query.Name)
+		}
 		if query.Select.LimitParam != "" && !hasParam(query, query.Select.LimitParam) {
 			return fmt.Errorf("query %s: unknown limit param %s", query.Name, query.Select.LimitParam)
 		}
@@ -150,6 +153,30 @@ func validateStatement(catalog Catalog, query cuesql.Query) error {
 				return fmt.Errorf("query %s: unknown value param %s", query.Name, value.Param)
 			}
 		}
+		if err := validateReturningColumns(query, query.Insert.ReturningColumns); err != nil {
+			return err
+		}
+		if query.Insert.Conflict != nil {
+			if len(query.Insert.Conflict.Targets) == 0 {
+				return fmt.Errorf("query %s: insert conflict requires at least one target", query.Name)
+			}
+			for _, target := range query.Insert.Conflict.Targets {
+				if !tableHasColumn(table, target) {
+					return fmt.Errorf("query %s: unknown conflict target %s on table %s", query.Name, target, table.Name)
+				}
+			}
+			if len(query.Insert.Conflict.DoUpdate) == 0 {
+				return fmt.Errorf("query %s: insert conflict requires update assignments", query.Name)
+			}
+			for _, assignment := range query.Insert.Conflict.DoUpdate {
+				if !tableHasColumn(table, assignment.Column) {
+					return fmt.Errorf("query %s: unknown conflict update column %s on table %s", query.Name, assignment.Column, table.Name)
+				}
+				if assignment.Value.Param != "" && !hasParam(query, assignment.Value.Param) {
+					return fmt.Errorf("query %s: unknown conflict update param %s", query.Name, assignment.Value.Param)
+				}
+			}
+		}
 	case query.Update != nil:
 		table, err := catalog.MustTable(query.Update.Table)
 		if err != nil {
@@ -167,6 +194,9 @@ func validateStatement(catalog Catalog, query cuesql.Query) error {
 			if err := validatePredicate(query, predicate); err != nil {
 				return err
 			}
+		}
+		if err := validateReturningColumns(query, query.Update.ReturningColumns); err != nil {
+			return err
 		}
 	case query.Delete != nil:
 		if _, err := catalog.MustTable(query.Delete.From); err != nil {
@@ -190,14 +220,53 @@ func validateStatement(catalog Catalog, query cuesql.Query) error {
 }
 
 func validatePredicate(query cuesql.Query, predicate cuesql.Predicate) error {
+	if len(predicate.All) > 0 || len(predicate.Any) > 0 {
+		if predicate.RawSQL != "" || predicate.Param != "" || predicate.ValueSQL != "" || predicate.Column != "" || predicate.Expr != "" || predicate.Op != "" || predicate.Optional || predicate.Slice {
+			return fmt.Errorf("query %s: predicate groups cannot mix with scalar predicate fields", query.Name)
+		}
+		group := predicate.All
+		if len(group) == 0 {
+			group = predicate.Any
+		}
+		if len(group) == 0 {
+			return fmt.Errorf("query %s: predicate group is empty", query.Name)
+		}
+		for _, child := range group {
+			if err := validatePredicate(query, child); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 	if predicate.RawSQL != "" {
 		return nil
+	}
+	if predicate.Param != "" && predicate.ValueSQL != "" {
+		return fmt.Errorf("query %s: predicate cannot define both param and valueSQL", query.Name)
 	}
 	if predicate.Param != "" && !hasParam(query, predicate.Param) {
 		return fmt.Errorf("query %s: unknown predicate param %s", query.Name, predicate.Param)
 	}
+	if predicate.Slice && predicate.Param == "" {
+		return fmt.Errorf("query %s: slice predicate requires param", query.Name)
+	}
 	if strings.TrimSpace(predicate.Column) == "" && strings.TrimSpace(predicate.Expr) == "" {
 		return fmt.Errorf("query %s: predicate missing column/expr", query.Name)
+	}
+	if strings.TrimSpace(predicate.Op) == "" {
+		return fmt.Errorf("query %s: predicate missing op", query.Name)
+	}
+	if !predicate.Slice && predicate.Param == "" && strings.TrimSpace(predicate.ValueSQL) == "" {
+		return fmt.Errorf("query %s: predicate requires param or valueSQL", query.Name)
+	}
+	return nil
+}
+
+func validateReturningColumns(query cuesql.Query, columns []cuesql.Column) error {
+	for _, column := range columns {
+		if strings.TrimSpace(column.Expr) == "" {
+			return fmt.Errorf("query %s: returning column missing expr", query.Name)
+		}
 	}
 	return nil
 }
