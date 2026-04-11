@@ -146,6 +146,9 @@ package api
 		body_description: "Request payload"
 		authz_default:   false
 		authz:           #adminOnlyGovernanceAuthz
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#genericOperationSpec & {
 		kind:          "no_content"
@@ -463,6 +466,9 @@ package api
 		body_ref:       "CreateTagAssignmentRequest"
 		body_description: "Request payload"
 		authz_default:   false
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#genericOperationSpec & {
 		kind:          "no_content"

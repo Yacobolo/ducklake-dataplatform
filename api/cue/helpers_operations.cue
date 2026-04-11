@@ -138,6 +138,7 @@ import "list"
 	schema: {
 		ref: "Error"
 	}
+	any_of?: [...#SchemaRef]
 }
 
 #mutatingErrorTemplates: [
@@ -261,6 +262,7 @@ import "list"
 	schema: {
 		ref: #schema_ref
 	}
+	any_of?: [...#SchemaRef]
 	extensions: {
 		"x-apigen-response-shape": {
 			body_type: #body_type
@@ -277,6 +279,7 @@ import "list"
 	schema: {
 		ref: #body_type
 	}
+	any_of?: [...#SchemaRef]
 	extensions: {
 		"x-apigen-response-shape": {
 			body_type: #body_type
@@ -293,6 +296,7 @@ import "list"
 	schema: {
 		ref: #body_type
 	}
+	any_of?: [...#SchemaRef]
 	extensions: {
 		"x-apigen-response-shape": {
 			body_type: #body_type
@@ -309,6 +313,7 @@ import "list"
 	schema: {
 		ref: #body_type
 	}
+	any_of?: [...#SchemaRef]
 	extensions: {
 		"x-apigen-response-shape": {
 			body_type: #body_type
@@ -346,6 +351,7 @@ import "list"
 	body_ref?:      string
 	body_required:  *true | false
 	body_description?: string
+	response_any_of?: [string]: [...#SchemaRef]
 	authz_default:  *true | false
 	authz?:         _
 }
@@ -384,16 +390,25 @@ import "list"
 						if spec.success_status == 200 {
 							#wrappedJSONSuccessResponse & {
 								#body_type: spec.returns
+								if spec.response_any_of != _|_ && spec.response_any_of["200"] != _|_ {
+									any_of: spec.response_any_of["200"]
+								}
 							}
 						},
 						if spec.success_status == 201 {
 							#wrappedJSONCreatedResponse & {
 								#body_type: spec.returns
+								if spec.response_any_of != _|_ && spec.response_any_of["201"] != _|_ {
+									any_of: spec.response_any_of["201"]
+								}
 							}
 						},
 						if spec.success_status == 202 {
 							#wrappedJSONAcceptedResponse & {
 								#body_type: spec.returns
+								if spec.response_any_of != _|_ && spec.response_any_of["202"] != _|_ {
+									any_of: spec.response_any_of["202"]
+								}
 							}
 						},
 					],
@@ -405,6 +420,9 @@ import "list"
 									#description: template.description
 									#schema_ref:  "Error"
 									#body_type:   spec.returns
+									if spec.response_any_of != _|_ && spec.response_any_of["\(template.status_code)"] != _|_ {
+										any_of: spec.response_any_of["\(template.status_code)"]
+									}
 								}
 							},
 						]
@@ -417,6 +435,9 @@ import "list"
 									#description: template.description
 									#schema_ref:  "Error"
 									#body_type:   spec.returns
+									if spec.response_any_of != _|_ && spec.response_any_of["\(template.status_code)"] != _|_ {
+										any_of: spec.response_any_of["\(template.status_code)"]
+									}
 								}
 							},
 						]
@@ -429,6 +450,9 @@ import "list"
 									#description: template.description
 									#schema_ref:  "Error"
 									#body_type:   spec.returns
+									if spec.response_any_of != _|_ && spec.response_any_of["\(template.status_code)"] != _|_ {
+										any_of: spec.response_any_of["\(template.status_code)"]
+									}
 								}
 							},
 						]
@@ -441,6 +465,9 @@ import "list"
 									#description: template.description
 									#schema_ref:  "Error"
 									#body_type:   spec.returns
+									if spec.response_any_of != _|_ && spec.response_any_of["\(template.status_code)"] != _|_ {
+										any_of: spec.response_any_of["\(template.status_code)"]
+									}
 								}
 							},
 						]
@@ -452,6 +479,9 @@ import "list"
 								#description: #conflictErrorTemplate.description
 								#schema_ref:  "Error"
 								#body_type:   spec.returns
+								if spec.response_any_of != _|_ && spec.response_any_of["409"] != _|_ {
+									any_of: spec.response_any_of["409"]
+								}
 							},
 						]
 					},
@@ -479,25 +509,63 @@ import "list"
 									ref: spec.returns
 								}
 							}
+							if spec.response_any_of != _|_ && spec.response_any_of["\(spec.success_status)"] != _|_ {
+								any_of: spec.response_any_of["\(spec.success_status)"]
+							}
 						},
 					],
 					if spec.error_family == "standard" {
-						#standardPlainErrorResponses
+						[
+							for response in #standardPlainErrorResponses {
+								response & {
+									if spec.response_any_of != _|_ && spec.response_any_of["\(response.status_code)"] != _|_ {
+										any_of: spec.response_any_of["\(response.status_code)"]
+									}
+								}
+							},
+						]
 					},
 					if spec.error_family == "lookup" {
-						#lookupPlainErrorResponses
+						[
+							for response in #lookupPlainErrorResponses {
+								response & {
+									if spec.response_any_of != _|_ && spec.response_any_of["\(response.status_code)"] != _|_ {
+										any_of: spec.response_any_of["\(response.status_code)"]
+									}
+								}
+							},
+						]
 					},
 					if spec.error_family == "guarded_read" || spec.error_family == "mutating" || spec.error_family == "mutating_conflict" {
-						#mutatingErrorResponses
+						[
+							for response in #mutatingErrorResponses {
+								response & {
+									if spec.response_any_of != _|_ && spec.response_any_of["\(response.status_code)"] != _|_ {
+										any_of: spec.response_any_of["\(response.status_code)"]
+									}
+								}
+							},
+						]
 					},
 					if spec.error_family == "resource" || spec.error_family == "resource_conflict" {
-						#resourcePlainErrorResponses
+						[
+							for response in #resourcePlainErrorResponses {
+								response & {
+									if spec.response_any_of != _|_ && spec.response_any_of["\(response.status_code)"] != _|_ {
+										any_of: spec.response_any_of["\(response.status_code)"]
+									}
+								}
+							},
+						]
 					},
 					if spec.error_family == "mutating_conflict" || spec.error_family == "resource_conflict" {
 						[
 							#errorResponse & {
 								#status_code: 409
 								#description: "The request conflicts with the current state of the server."
+								if spec.response_any_of != _|_ && spec.response_any_of["409"] != _|_ {
+									any_of: spec.response_any_of["409"]
+								}
 							},
 						]
 					},
@@ -513,16 +581,35 @@ import "list"
 					},
 				],
 				if spec.error_family == "resource" || spec.error_family == "resource_conflict" {
-					#resourcePlainErrorResponses
+					[
+						for response in #resourcePlainErrorResponses {
+							response & {
+								if spec.response_any_of != _|_ && spec.response_any_of["\(response.status_code)"] != _|_ {
+									any_of: spec.response_any_of["\(response.status_code)"]
+								}
+							}
+						},
+					]
 				},
 				if spec.error_family == "mutating" || spec.error_family == "mutating_conflict" {
-					#mutatingErrorResponses
+					[
+						for response in #mutatingErrorResponses {
+							response & {
+								if spec.response_any_of != _|_ && spec.response_any_of["\(response.status_code)"] != _|_ {
+									any_of: spec.response_any_of["\(response.status_code)"]
+								}
+							}
+						},
+					]
 				},
 				if spec.error_family == "resource_conflict" || spec.error_family == "mutating_conflict" {
 					[
 						#errorResponse & {
 							#status_code: 409
 							#description: "The request conflicts with the current state of the server."
+							if spec.response_any_of != _|_ && spec.response_any_of["409"] != _|_ {
+								any_of: spec.response_any_of["409"]
+							}
 						},
 					]
 				},
@@ -537,22 +624,57 @@ import "list"
 					},
 				],
 				if spec.error_family == "standard" {
-					#standardPlainErrorResponses
+					[
+						for response in #standardPlainErrorResponses {
+							response & {
+								if spec.response_any_of != _|_ && spec.response_any_of["\(response.status_code)"] != _|_ {
+									any_of: spec.response_any_of["\(response.status_code)"]
+								}
+							}
+						},
+					]
 				},
 				if spec.error_family == "lookup" {
-					#lookupPlainErrorResponses
+					[
+						for response in #lookupPlainErrorResponses {
+							response & {
+								if spec.response_any_of != _|_ && spec.response_any_of["\(response.status_code)"] != _|_ {
+									any_of: spec.response_any_of["\(response.status_code)"]
+								}
+							}
+						},
+					]
 				},
 				if spec.error_family == "guarded_read" || spec.error_family == "mutating" || spec.error_family == "mutating_conflict" {
-					#mutatingErrorResponses
+					[
+						for response in #mutatingErrorResponses {
+							response & {
+								if spec.response_any_of != _|_ && spec.response_any_of["\(response.status_code)"] != _|_ {
+									any_of: spec.response_any_of["\(response.status_code)"]
+								}
+							}
+						},
+					]
 				},
 				if spec.error_family == "resource" || spec.error_family == "resource_conflict" {
-					#resourcePlainErrorResponses
+					[
+						for response in #resourcePlainErrorResponses {
+							response & {
+								if spec.response_any_of != _|_ && spec.response_any_of["\(response.status_code)"] != _|_ {
+									any_of: spec.response_any_of["\(response.status_code)"]
+								}
+							}
+						},
+					]
 				},
 				if spec.error_family == "mutating_conflict" || spec.error_family == "resource_conflict" {
 					[
 						#errorResponse & {
 							#status_code: 409
 							#description: "The request conflicts with the current state of the server."
+							if spec.response_any_of != _|_ && spec.response_any_of["409"] != _|_ {
+								any_of: spec.response_any_of["409"]
+							}
 						},
 					]
 				},

@@ -99,6 +99,9 @@ import "list"
 		body_description: "Request payload"
 		authz_default:   false
 		authz:           #createComputeEndpointAuthz
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#wrappedComputeOperation & {
 		kind:          "response"
@@ -167,6 +170,9 @@ import "list"
 		body_description: "Request payload"
 		authz_default:   false
 		authz:           #manageComputeEndpointAuthz
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#genericOperationSpec & {
 		wrapped:       false
@@ -204,6 +210,9 @@ import "list"
 		body_description: "Request payload"
 		authz_default: false
 		authz:         #adminOnlyComputeAuthz
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 ]
 
@@ -237,6 +246,9 @@ endpoints_compute: list.Concat([
 							#description: template.description
 							#schema_ref:  "Error"
 							#body_type:   "ComputeEndpointHealth"
+							if template.status_code == 400 {
+								any_of: [{ref: "Error"}, {ref: "Error"}]
+							}
 						}
 					},
 				],

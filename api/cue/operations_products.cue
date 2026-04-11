@@ -134,6 +134,9 @@ package api
 		params:       #productDomainPathParameters
 		body_ref:     "UpdateProductDomainRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "no_content"
@@ -166,6 +169,9 @@ package api
 		params:         #productDomainPathParameters
 		body_ref:       "CreateProductTeamRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "response"
@@ -188,6 +194,9 @@ package api
 		params:       #productTeamPathParameters
 		body_ref:     "UpdateProductTeamRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "no_content"
@@ -219,6 +228,9 @@ package api
 		error_family:   "mutating_conflict"
 		body_ref:       "CreateDataProductRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "response"
@@ -260,6 +272,9 @@ package api
 		params:       #productSlugPathParameters
 		body_ref:     "UpdateDataProductRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "no_content"
@@ -292,6 +307,9 @@ package api
 		params:         #productSlugPathParameters
 		body_ref:       "CreateDataProductVersionRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "response"
@@ -311,6 +329,9 @@ package api
 		summary:      "Delete data product version"
 		error_family: "resource"
 		params:       #productSlugVersionPathParameters
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "response"
@@ -321,6 +342,9 @@ package api
 		returns:      "DataProductDetail"
 		error_family: "resource"
 		params:       #productSlugVersionPathParameters
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "response"
@@ -334,6 +358,9 @@ package api
 		body_ref:     "DeprecateProductVersionRequest"
 		body_required: false
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "response"
@@ -344,6 +371,9 @@ package api
 		returns:      "DataProductDetail"
 		error_family: "resource"
 		params:       #productSlugVersionPathParameters
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "response"
@@ -397,6 +427,9 @@ package api
 		params:         #productSlugPathParameters
 		body_ref:       "CreateProductDependencyRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "response"
@@ -420,6 +453,9 @@ package api
 		params:         #productSlugPathParameters
 		body_ref:       "CreateProductSubscriptionRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainProductOperation & {
 		kind:         "response"

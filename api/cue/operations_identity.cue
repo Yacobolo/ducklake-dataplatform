@@ -182,6 +182,12 @@ package api
 		params:       #groupPathParameters
 		body_ref:     "UpdateGroupRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [
+				{ref: "Error"},
+				{ref: "Error"},
+			]
+		}
 	},
 	#plainIdentityOperation & {
 		kind:         "no_content"

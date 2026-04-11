@@ -211,6 +211,9 @@ package api
 		params:         #notebookPathParameters
 		body_ref:       "CreateCellRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#wrappedNotebookOperation & {
 		kind:         "response"
@@ -224,6 +227,9 @@ package api
 		params:       #notebookPathParameters
 		body_ref:     "ReorderCellsRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#wrappedNotebookOperation & {
 		kind:         "response"
@@ -237,6 +243,9 @@ package api
 		params:       #notebookCellPathParameters
 		body_ref:     "UpdateCellRequest"
 		body_description: "Request payload"
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#plainNotebookOperation & {
 		kind:         "no_content"
@@ -280,6 +289,9 @@ package api
 		returns:      "CellExecutionResult"
 		error_family: "resource"
 		params:       #executeCellPathParameters
+		response_any_of: {
+			"400": [{ref: "Error"}, {ref: "Error"}]
+		}
 	},
 	#wrappedNotebookOperation & {
 		kind:         "response"

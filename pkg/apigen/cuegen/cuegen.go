@@ -666,6 +666,7 @@ const schemaFile = `package api
 	headers?: [...#Header]
 	content_type?: string
 	schema?: #SchemaRef
+	any_of?: [...#SchemaRef]
 	extensions?: [string]: _
 }
 

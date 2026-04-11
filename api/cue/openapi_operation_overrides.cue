@@ -983,62 +983,6 @@ openapi_operation_overrides: {
       }
     }
   },
-  "createComputeEndpoint": {
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
-    }
-  },
-  "createComputeAssignment": {
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
-    }
-  },
-  "getComputeEndpointHealth": {
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
-    }
-  },
-  "updateComputeRoutingDefaults": {
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
-    }
-  },
   "listDataProducts": {
     "parameter_order": [
       "q",
@@ -1102,20 +1046,6 @@ openapi_operation_overrides: {
       }
     }
   },
-  "createDataProduct": {
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
-    }
-  },
   "listProductScorecards": {
     "parameter_order": [
       "max_results",
@@ -1159,18 +1089,6 @@ openapi_operation_overrides: {
           "type": "string"
         }
       }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
     }
   },
   "deleteDataProduct": {
@@ -1206,18 +1124,6 @@ openapi_operation_overrides: {
         "schema": {
           "type": "string"
         }
-      }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
       }
     }
   },
@@ -1306,18 +1212,6 @@ openapi_operation_overrides: {
           "type": "string"
         }
       }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
     }
   },
   "listDataProductVersions": {
@@ -1341,18 +1235,6 @@ openapi_operation_overrides: {
         "schema": {
           "type": "string"
         }
-      }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
       }
     }
   },
@@ -1392,18 +1274,6 @@ openapi_operation_overrides: {
           "format": "int32"
         }
       }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
     }
   },
   "deprecateDataProductVersion": {
@@ -1422,18 +1292,6 @@ openapi_operation_overrides: {
           "type": "integer",
           "format": "int32"
         }
-      }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
       }
     }
   },
@@ -1454,18 +1312,6 @@ openapi_operation_overrides: {
           "format": "int32"
         }
       }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
     }
   },
   "retireDataProductVersion": {
@@ -1484,18 +1330,6 @@ openapi_operation_overrides: {
           "type": "integer",
           "format": "int32"
         }
-      }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
       }
     }
   },
@@ -1605,20 +1439,6 @@ openapi_operation_overrides: {
       }
     }
   },
-  "createGrant": {
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
-    }
-  },
   "deleteGrant": {
     "parameter_order": [
       "grant_id"
@@ -1628,20 +1448,6 @@ openapi_operation_overrides: {
         "schema": {
           "type": "string"
         }
-      }
-    }
-  },
-  "updateGroup": {
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
       }
     }
   },
@@ -2084,48 +1890,6 @@ openapi_operation_overrides: {
       }
     }
   },
-  "createCell": {
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
-    }
-  },
-  "reorderCells": {
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
-    }
-  },
-  "updateCell": {
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
-    }
-  },
   "promoteNotebookToModel": {
     "parameter_order": [
       "notebook_id"
@@ -2147,20 +1911,6 @@ openapi_operation_overrides: {
         "schema": {
           "type": "string"
         }
-      }
-    }
-  },
-  "executeCell": {
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
       }
     }
   },
@@ -2206,18 +1956,6 @@ openapi_operation_overrides: {
         "schema": {
           "type": "string"
         }
-      }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
       }
     }
   },
@@ -2270,18 +2008,6 @@ openapi_operation_overrides: {
           "type": "string"
         }
       }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
-      }
     }
   },
   "getProductTeam": {
@@ -2317,18 +2043,6 @@ openapi_operation_overrides: {
         "schema": {
           "type": "string"
         }
-      }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
       }
     }
   },
@@ -2570,18 +2284,6 @@ openapi_operation_overrides: {
         "schema": {
           "type": "string"
         }
-      }
-    },
-    "responses": {
-      "400": {
-        "any_of": [
-          {
-            "ref": "Error"
-          },
-          {
-            "ref": "Error"
-          }
-        ]
       }
     }
   },
