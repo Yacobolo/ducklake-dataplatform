@@ -24698,31 +24698,31 @@ components:
         - idle_ttl_seconds
         - absolute_ttl_seconds
       properties:
-        created_total:
-          type: integer
-          format: int64
-        resolved_total:
-          type: integer
-          format: int64
-        resolve_failed_total:
-          type: integer
-          format: int64
-        revoked_total:
-          type: integer
-          format: int64
-        revoked_all_total:
-          type: integer
-          format: int64
-        reaped_total:
+        absolute_ttl_seconds:
           type: integer
           format: int64
         active_sessions:
           type: integer
           format: int64
+        created_total:
+          type: integer
+          format: int64
         idle_ttl_seconds:
           type: integer
           format: int64
-        absolute_ttl_seconds:
+        reaped_total:
+          type: integer
+          format: int64
+        resolve_failed_total:
+          type: integer
+          format: int64
+        resolved_total:
+          type: integer
+          format: int64
+        revoked_all_total:
+          type: integer
+          format: int64
+        revoked_total:
           type: integer
           format: int64
     Workspace:
