@@ -256,7 +256,7 @@ import "list"
 }
 
 #genericOperationSpec: {
-	kind: "response" | "no_content"
+	kind: "response" | "no_content" | "created_empty"
 
 	method:         string
 	op:             string
@@ -401,13 +401,32 @@ import "list"
 				},
 			])
 		}
+		if spec.kind == "created_empty" {
+			responses: list.Concat([
+				[
+					{
+						status_code: 201
+						description: "The request has succeeded and a new resource has been created as a result."
+					},
+				],
+				if spec.error_family == "standard" {
+					#standardPlainErrorResponses
+				},
+				if spec.error_family == "guarded_read" || spec.error_family == "mutating" {
+					#mutatingErrorResponses
+				},
+				if spec.error_family == "resource" {
+					#resourcePlainErrorResponses
+				},
+			])
+		}
 		extensions: {
 			"security": #authenticatedSecurity
-			if spec.authz_default {
-				"x-authz": #authenticatedAuthz
-			}
-			if spec.authz_default == false {
+			if spec.authz != _|_ {
 				"x-authz": spec.authz
+			}
+			if spec.authz == _|_ && spec.authz_default {
+				"x-authz": #authenticatedAuthz
 			}
 			if spec.cli != _|_ {
 				"x-cli-command": spec.cli

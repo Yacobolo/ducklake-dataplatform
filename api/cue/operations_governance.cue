@@ -2,2746 +2,498 @@ package api
 
 // Authored governance operations.
 
-endpoints_governance: [
-  {
-    "method": "get",
-    "path": "/grants",
-    "operation_id": "listGrants",
-    "summary": "List grants",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "principal_id",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "principal_type",
-        "in": "query",
-        "schema": {
-          "ref": "PrincipalType"
-        }
-      },
-      {
-        "name": "securable_id",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "securable_type",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedGrants"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGrants",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGrants",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGrants",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGrants",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGrants",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedGrants",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "admin_only"
-      },
-      "x-cli-command": "security grants list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/grants",
-    "operation_id": "createGrant",
-    "summary": "Create grant",
-    "tags": [
-      "Governance"
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateGrantRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "PrivilegeGrant"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PrivilegeGrant",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PrivilegeGrant",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PrivilegeGrant",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PrivilegeGrant",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PrivilegeGrant",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PrivilegeGrant",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PrivilegeGrant",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "admin_only"
-      },
-      "x-cli-command": "security grants create"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/grants/{grant_id}",
-    "operation_id": "deleteGrant",
-    "summary": "Delete grant",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "grant_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "admin_only"
-      },
-      "x-cli-command": "security grants revoke"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/row-filters",
-    "operation_id": "listRowFilters",
-    "summary": "List row filters",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "table_id",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedRowFilters"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedRowFilters",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedRowFilters",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedRowFilters",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedRowFilters",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedRowFilters",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedRowFilters",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedRowFilters",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security row-filters list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/row-filters",
-    "operation_id": "createRowFilter",
-    "summary": "Create row filter",
-    "tags": [
-      "Governance"
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateRowFilterRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "RowFilter"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "RowFilter",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "RowFilter",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "RowFilter",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "RowFilter",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "RowFilter",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "RowFilter",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security row-filters create"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/row-filters/{row_filter_id}",
-    "operation_id": "getRowFilter",
-    "summary": "Get row filter",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "row_filter_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "RowFilter"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/row-filters/{row_filter_id}",
-    "operation_id": "updateRowFilter",
-    "summary": "Update row filter",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "row_filter_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdateRowFilterRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "RowFilter"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/row-filters/{row_filter_id}",
-    "operation_id": "deleteRowFilter",
-    "summary": "Delete row filter",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "row_filter_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security row-filters delete"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/row-filters/{row_filter_id}/bindings",
-    "operation_id": "listRowFilterBindings",
-    "summary": "List row filter bindings",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "row_filter_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedRowFilterBindings"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "post",
-    "path": "/row-filters/{row_filter_id}/bindings",
-    "operation_id": "bindRowFilter",
-    "summary": "Bind row filter",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "row_filter_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "RowFilterBindingRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security row-filters bind"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/row-filters/{row_filter_id}/bindings/{principal_type}/{principal_id}",
-    "operation_id": "unbindRowFilter",
-    "summary": "Unbind row filter",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "principal_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "principal_type",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "ref": "PrincipalType"
-        }
-      },
-      {
-        "name": "row_filter_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security row-filters unbind"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/column-masks",
-    "operation_id": "listColumnMasks",
-    "summary": "List column masks",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "table_id",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedColumnMasks"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedColumnMasks",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedColumnMasks",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedColumnMasks",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedColumnMasks",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedColumnMasks",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedColumnMasks",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedColumnMasks",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security column-masks list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/column-masks",
-    "operation_id": "createColumnMask",
-    "summary": "Create column mask",
-    "tags": [
-      "Governance"
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateColumnMaskRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "ColumnMask"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "ColumnMask",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "ColumnMask",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "ColumnMask",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "ColumnMask",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "ColumnMask",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "ColumnMask",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security column-masks create"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/column-masks/{column_mask_id}",
-    "operation_id": "getColumnMask",
-    "summary": "Get column mask",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "column_mask_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "ColumnMask"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/column-masks/{column_mask_id}",
-    "operation_id": "updateColumnMask",
-    "summary": "Update column mask",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "column_mask_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdateColumnMaskRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "ColumnMask"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/column-masks/{column_mask_id}",
-    "operation_id": "deleteColumnMask",
-    "summary": "Delete column mask",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "column_mask_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security column-masks delete"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/column-masks/{column_mask_id}/bindings",
-    "operation_id": "listColumnMaskBindings",
-    "summary": "List column mask bindings",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "column_mask_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedColumnMaskBindings"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "post",
-    "path": "/column-masks/{column_mask_id}/bindings",
-    "operation_id": "bindColumnMask",
-    "summary": "Bind column mask",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "column_mask_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "ColumnMaskBindingRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security column-masks bind"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/column-masks/{column_mask_id}/bindings/{principal_type}/{principal_id}",
-    "operation_id": "unbindColumnMask",
-    "summary": "Unbind column mask",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "column_mask_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "principal_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "principal_type",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "ref": "PrincipalType"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "security column-masks unbind"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/tags",
-    "operation_id": "listTags",
-    "summary": "List tags",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedTags"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedTags",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedTags",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedTags",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedTags",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedTags",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "governance tags list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/tags",
-    "operation_id": "createTag",
-    "summary": "Create tag",
-    "tags": [
-      "Governance"
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateTagRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "Tag"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Tag",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Tag",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Tag",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Tag",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Tag",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "Tag",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "governance tags create"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/tags/{tag_id}",
-    "operation_id": "getTag",
-    "summary": "Get tag",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "tag_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "Tag"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/tags/{tag_id}",
-    "operation_id": "updateTag",
-    "summary": "Update tag",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "tag_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdateTagRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "Tag"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/tags/{tag_id}",
-    "operation_id": "deleteTag",
-    "summary": "Delete tag",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "tag_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "governance tags delete"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/tags/{tag_id}/assignments",
-    "operation_id": "listTagAssignments",
-    "summary": "List tag assignments",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "tag_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedTagAssignments"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "post",
-    "path": "/tags/{tag_id}/assignments",
-    "operation_id": "createTagAssignment",
-    "summary": "Create tag assignment",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "tag_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateTagAssignmentRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "TagAssignment"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "TagAssignment",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "TagAssignment",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "TagAssignment",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "TagAssignment",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "TagAssignment",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "TagAssignment",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "TagAssignment",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "governance tag-assignments create"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/tags/{tag_id}/assignments/{assignment_id}",
-    "operation_id": "deleteTagAssignment",
-    "summary": "Delete tag assignment",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "assignment_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "tag_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "governance tag-assignments delete"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/classifications",
-    "operation_id": "listClassifications",
-    "summary": "List classifications",
-    "tags": [
-      "Governance"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedTags"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedTags",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedTags",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedTags",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedTags",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedTags",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "governance classifications list"
-    }
-  }
+#governanceTag: "Governance"
+
+#grantIDPathParameter: #pathStringParameter & {
+	#name: "grant_id"
+}
+
+#rowFilterIDPathParameter: #pathStringParameter & {
+	#name: "row_filter_id"
+}
+
+#columnMaskIDPathParameter: #pathStringParameter & {
+	#name: "column_mask_id"
+}
+
+#principalIDPathParameter: #pathStringParameter & {
+	#name: "principal_id"
+}
+
+#tagIDPathParameter: #pathStringParameter & {
+	#name: "tag_id"
+}
+
+#assignmentIDPathParameter: #pathStringParameter & {
+	#name: "assignment_id"
+}
+
+#principalIDQueryParameter: #queryStringParameter & {
+	#name: "principal_id"
+}
+
+#principalTypeQueryParameter: {
+	name:    "principal_type"
+	in:      "query"
+	explode: false
+	schema: {
+		ref: "PrincipalType"
+	}
+}
+
+#principalTypePathParameter: {
+	name:     "principal_type"
+	in:       "path"
+	required: true
+	schema: {
+		ref: "PrincipalType"
+	}
+}
+
+#tableIDQueryParameter: #queryStringParameter & {
+	#name: "table_id"
+}
+
+#securableIDQueryParameter: #queryStringParameter & {
+	#name: "securable_id"
+}
+
+#securableTypeQueryParameter: #queryStringParameter & {
+	#name: "securable_type"
+}
+
+#listGrantsParameters: [
+	#principalIDQueryParameter,
+	#principalTypeQueryParameter,
+	#securableTypeQueryParameter,
+	#securableIDQueryParameter,
+	#paginationParameters[0],
+	#paginationParameters[1],
 ]
 
+#tableScopedListParameters: [
+	#tableIDQueryParameter,
+	#paginationParameters[0],
+	#paginationParameters[1],
+]
+
+#tagListParameters: #paginationParameters
+
+#rowFilterBindingListParameters: [
+	#rowFilterIDPathParameter,
+	#paginationParameters[0],
+	#paginationParameters[1],
+]
+
+#columnMaskBindingListParameters: [
+	#columnMaskIDPathParameter,
+	#paginationParameters[0],
+	#paginationParameters[1],
+]
+
+#tagAssignmentListParameters: [
+	#tagIDPathParameter,
+	#paginationParameters[0],
+	#paginationParameters[1],
+]
+
+#rowFilterBindingPathParameters: [
+	#rowFilterIDPathParameter,
+	#principalTypePathParameter,
+	#principalIDPathParameter,
+]
+
+#columnMaskBindingPathParameters: [
+	#columnMaskIDPathParameter,
+	#principalTypePathParameter,
+	#principalIDPathParameter,
+]
+
+#tagAssignmentPathParameters: [
+	#tagIDPathParameter,
+	#assignmentIDPathParameter,
+]
+
+#adminOnlyGovernanceAuthz: {
+	mode: "admin_only"
+}
+
+#governanceOps: [
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "get"
+		op:            "listGrants"
+		path:          "/grants"
+		summary:       "List grants"
+		cli:           "security grants list"
+		returns:       "PaginatedGrants"
+		error_family:  "guarded_read"
+		params:        #listGrantsParameters
+		authz_default: false
+		authz:         #adminOnlyGovernanceAuthz
+	},
+	#genericOperationSpec & {
+		kind:           "response"
+		method:         "post"
+		op:             "createGrant"
+		path:           "/grants"
+		summary:        "Create grant"
+		cli:            "security grants create"
+		returns:        "PrivilegeGrant"
+		success_status: 201
+		error_family:   "resource"
+		body_ref:       "CreateGrantRequest"
+		body_description: "Request payload"
+		authz_default:   false
+		authz:           #adminOnlyGovernanceAuthz
+	},
+	#genericOperationSpec & {
+		kind:          "no_content"
+		method:        "delete"
+		op:            "deleteGrant"
+		path:          "/grants/{grant_id}"
+		summary:       "Delete grant"
+		cli:           "security grants revoke"
+		error_family:  "mutating"
+		params: [
+			#grantIDPathParameter,
+		]
+		authz_default: false
+		authz:         #adminOnlyGovernanceAuthz
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "get"
+		op:            "listRowFilters"
+		path:          "/row-filters"
+		summary:       "List row filters"
+		cli:           "security row-filters list"
+		returns:       "PaginatedRowFilters"
+		error_family:  "resource"
+		params:        #tableScopedListParameters
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:           "response"
+		method:         "post"
+		op:             "createRowFilter"
+		path:           "/row-filters"
+		summary:        "Create row filter"
+		cli:            "security row-filters create"
+		returns:        "RowFilter"
+		success_status: 201
+		error_family:   "mutating"
+		body_ref:       "CreateRowFilterRequest"
+		body_description: "Request payload"
+		authz_default:   false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "get"
+		op:            "getRowFilter"
+		path:          "/row-filters/{row_filter_id}"
+		summary:       "Get row filter"
+		returns:       "RowFilter"
+		error_family:  "resource"
+		params: [
+			#rowFilterIDPathParameter,
+		]
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "patch"
+		op:            "updateRowFilter"
+		path:          "/row-filters/{row_filter_id}"
+		summary:       "Update row filter"
+		returns:       "RowFilter"
+		error_family:  "mutating"
+		params: [
+			#rowFilterIDPathParameter,
+		]
+		body_ref:       "UpdateRowFilterRequest"
+		body_description: "Request payload"
+		authz_default:   false
+	},
+	#genericOperationSpec & {
+		kind:          "no_content"
+		method:        "delete"
+		op:            "deleteRowFilter"
+		path:          "/row-filters/{row_filter_id}"
+		summary:       "Delete row filter"
+		cli:           "security row-filters delete"
+		error_family:  "mutating"
+		params: [
+			#rowFilterIDPathParameter,
+		]
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "get"
+		op:            "listRowFilterBindings"
+		path:          "/row-filters/{row_filter_id}/bindings"
+		summary:       "List row filter bindings"
+		returns:       "PaginatedRowFilterBindings"
+		error_family:  "resource"
+		params:        #rowFilterBindingListParameters
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:           "created_empty"
+		method:         "post"
+		op:             "bindRowFilter"
+		path:           "/row-filters/{row_filter_id}/bindings"
+		summary:        "Bind row filter"
+		cli:            "security row-filters bind"
+		error_family:   "mutating"
+		params: [
+			#rowFilterIDPathParameter,
+		]
+		body_ref:       "RowFilterBindingRequest"
+		body_description: "Request payload"
+		authz_default:   false
+	},
+	#genericOperationSpec & {
+		kind:          "no_content"
+		method:        "delete"
+		op:            "unbindRowFilter"
+		path:          "/row-filters/{row_filter_id}/bindings/{principal_type}/{principal_id}"
+		summary:       "Unbind row filter"
+		cli:           "security row-filters unbind"
+		error_family:  "mutating"
+		params:        #rowFilterBindingPathParameters
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "get"
+		op:            "listColumnMasks"
+		path:          "/column-masks"
+		summary:       "List column masks"
+		cli:           "security column-masks list"
+		returns:       "PaginatedColumnMasks"
+		error_family:  "resource"
+		params:        #tableScopedListParameters
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:           "response"
+		method:         "post"
+		op:             "createColumnMask"
+		path:           "/column-masks"
+		summary:        "Create column mask"
+		cli:            "security column-masks create"
+		returns:        "ColumnMask"
+		success_status: 201
+		error_family:   "mutating"
+		body_ref:       "CreateColumnMaskRequest"
+		body_description: "Request payload"
+		authz_default:   false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "get"
+		op:            "getColumnMask"
+		path:          "/column-masks/{column_mask_id}"
+		summary:       "Get column mask"
+		returns:       "ColumnMask"
+		error_family:  "resource"
+		params: [
+			#columnMaskIDPathParameter,
+		]
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "patch"
+		op:            "updateColumnMask"
+		path:          "/column-masks/{column_mask_id}"
+		summary:       "Update column mask"
+		returns:       "ColumnMask"
+		error_family:  "mutating"
+		params: [
+			#columnMaskIDPathParameter,
+		]
+		body_ref:       "UpdateColumnMaskRequest"
+		body_description: "Request payload"
+		authz_default:   false
+	},
+	#genericOperationSpec & {
+		kind:          "no_content"
+		method:        "delete"
+		op:            "deleteColumnMask"
+		path:          "/column-masks/{column_mask_id}"
+		summary:       "Delete column mask"
+		cli:           "security column-masks delete"
+		error_family:  "mutating"
+		params: [
+			#columnMaskIDPathParameter,
+		]
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "get"
+		op:            "listColumnMaskBindings"
+		path:          "/column-masks/{column_mask_id}/bindings"
+		summary:       "List column mask bindings"
+		returns:       "PaginatedColumnMaskBindings"
+		error_family:  "resource"
+		params:        #columnMaskBindingListParameters
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:           "created_empty"
+		method:         "post"
+		op:             "bindColumnMask"
+		path:           "/column-masks/{column_mask_id}/bindings"
+		summary:        "Bind column mask"
+		cli:            "security column-masks bind"
+		error_family:   "mutating"
+		params: [
+			#columnMaskIDPathParameter,
+		]
+		body_ref:       "ColumnMaskBindingRequest"
+		body_description: "Request payload"
+		authz_default:   false
+	},
+	#genericOperationSpec & {
+		kind:          "no_content"
+		method:        "delete"
+		op:            "unbindColumnMask"
+		path:          "/column-masks/{column_mask_id}/bindings/{principal_type}/{principal_id}"
+		summary:       "Unbind column mask"
+		cli:           "security column-masks unbind"
+		error_family:  "mutating"
+		params:        #columnMaskBindingPathParameters
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "get"
+		op:            "listTags"
+		path:          "/tags"
+		summary:       "List tags"
+		cli:           "governance tags list"
+		returns:       "PaginatedTags"
+		error_family:  "standard"
+		params:        #tagListParameters
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:           "response"
+		method:         "post"
+		op:             "createTag"
+		path:           "/tags"
+		summary:        "Create tag"
+		cli:            "governance tags create"
+		returns:        "Tag"
+		success_status: 201
+		error_family:   "mutating"
+		body_ref:       "CreateTagRequest"
+		body_description: "Request payload"
+		authz_default:   false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "get"
+		op:            "getTag"
+		path:          "/tags/{tag_id}"
+		summary:       "Get tag"
+		returns:       "Tag"
+		error_family:  "resource"
+		params: [
+			#tagIDPathParameter,
+		]
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "patch"
+		op:            "updateTag"
+		path:          "/tags/{tag_id}"
+		summary:       "Update tag"
+		returns:       "Tag"
+		error_family:  "mutating"
+		params: [
+			#tagIDPathParameter,
+		]
+		body_ref:       "UpdateTagRequest"
+		body_description: "Request payload"
+		authz_default:   false
+	},
+	#genericOperationSpec & {
+		kind:          "no_content"
+		method:        "delete"
+		op:            "deleteTag"
+		path:          "/tags/{tag_id}"
+		summary:       "Delete tag"
+		cli:           "governance tags delete"
+		error_family:  "mutating"
+		params: [
+			#tagIDPathParameter,
+		]
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "get"
+		op:            "listTagAssignments"
+		path:          "/tags/{tag_id}/assignments"
+		summary:       "List tag assignments"
+		returns:       "PaginatedTagAssignments"
+		error_family:  "resource"
+		params:        #tagAssignmentListParameters
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:           "response"
+		method:         "post"
+		op:             "createTagAssignment"
+		path:           "/tags/{tag_id}/assignments"
+		summary:        "Create tag assignment"
+		cli:            "governance tag-assignments create"
+		returns:        "TagAssignment"
+		success_status: 201
+		error_family:   "resource"
+		params: [
+			#tagIDPathParameter,
+		]
+		body_ref:       "CreateTagAssignmentRequest"
+		body_description: "Request payload"
+		authz_default:   false
+	},
+	#genericOperationSpec & {
+		kind:          "no_content"
+		method:        "delete"
+		op:            "deleteTagAssignment"
+		path:          "/tags/{tag_id}/assignments/{assignment_id}"
+		summary:       "Delete tag assignment"
+		cli:           "governance tag-assignments delete"
+		error_family:  "mutating"
+		params:        #tagAssignmentPathParameters
+		authz_default: false
+	},
+	#genericOperationSpec & {
+		kind:          "response"
+		method:        "get"
+		op:            "listClassifications"
+		path:          "/classifications"
+		summary:       "List classifications"
+		cli:           "governance classifications list"
+		returns:       "PaginatedTags"
+		error_family:  "standard"
+		params:        #tagListParameters
+		authz_default: false
+	},
+]
+
+endpoints_governance: [
+	for op in #governanceOps {
+		(#endpointFromGenericOperation & {
+			tag:  #governanceTag
+			spec: op
+		}).endpoint
+	},
+]
