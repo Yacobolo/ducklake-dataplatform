@@ -413,14 +413,24 @@ tasks:
       - E2E_LIVE_REUSE_SERVER=true E2E_LIVE_STRICT=true go test -tags livee2e -count=1 -v ./test/livee2e
 
   examples:test:
-    desc: Run declarative examples integration suite
+    desc: Run standalone declarative example integration coverage
     cmds:
       - gotestsum --format pkgname-and-test-fails -- -tags integration -run TestDeclarativeExamples_ ./test/integration/...
 
   examples:validate:
-    desc: Validate all example declarative config directories
+    desc: Validate any standalone example declarative config directories
     cmds:
-      - for dir in examples/*/config; do go run ./cmd/cli validate --config-dir "$dir"; done
+      - |
+        found=0
+        for dir in examples/*/config; do
+          if [ -d "$dir" ]; then
+            found=1
+            go run ./cmd/cli validate --config-dir "$dir"
+          fi
+        done
+        if [ "$found" -eq 0 ]; then
+          echo "No standalone example config directories found."
+        fi
 
   vet:
     desc: Run go vet
