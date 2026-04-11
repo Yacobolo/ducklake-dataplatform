@@ -142,8 +142,8 @@ func repoRootFromWorkingDir(t *testing.T, cwd string) string {
 func prepareExampleWorkspace(t *testing.T, repoRoot string) string {
 	t.Helper()
 
-	sourceRoot := filepath.Join(repoRoot, "examples", "apigen-consumer")
-	workspaceRoot := filepath.Join(t.TempDir(), "apigen-consumer")
+	sourceRoot := filepath.Join(repoRoot, "pkg", "apigen", "testdata", "example_consumer")
+	workspaceRoot := filepath.Join(t.TempDir(), "example-consumer")
 	require.NoError(t, copyDir(sourceRoot, workspaceRoot))
 
 	goModPath := filepath.Join(workspaceRoot, "go.mod")

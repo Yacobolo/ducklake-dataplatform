@@ -3,9 +3,9 @@
 This repo remains the source of truth for APIGen until the following stay green together:
 
 - `duck-demo/pkg/apigen/...` has no imports of `duck-demo/internal/...` or sibling repo-private `duck-demo/pkg/...` packages outside `duck-demo/pkg/apigen/...`
-- the nested example consumer compiles its source API spec to OpenAPI + JSON IR
-- the example generates Go server and CLI code using APIGen
-- the example builds against `duck-demo/pkg/apigen/runtime/chi` and `duck-demo/pkg/apigen/runtime/cobra`
+- the bundled test fixture under `pkg/apigen/testdata/example_consumer` compiles its source API spec to OpenAPI + JSON IR
+- the fixture generates Go server and CLI code using APIGen
+- the fixture builds against `duck-demo/pkg/apigen/runtime/chi` and `duck-demo/pkg/apigen/runtime/cobra`
 - JSON IR `v1` remains documented and fixture-tested
 
 Planned standalone targets after that proof step:
