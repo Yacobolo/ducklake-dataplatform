@@ -45,7 +45,7 @@ import "list"
 	cli:              string
 	returns:          string
 	body_ref:         string
-	body_required?:   bool
+	body_required:    *true | false
 	body_description?: string
 }
 
@@ -88,6 +88,18 @@ import "list"
 	name:    #name
 	in:      "query"
 	explode: false
+	schema: {
+		type:   "integer"
+		format: "int32"
+	}
+}
+
+#pathInt32Parameter: {
+	#name: string
+
+	name:     #name
+	in:       "path"
+	required: true
 	schema: {
 		type:   "integer"
 		format: "int32"
@@ -172,6 +184,34 @@ import "list"
 		},
 	],
 ])
+
+#lookupErrorTemplates: [
+	{
+		status_code: 400
+		description: "The server could not understand the request due to invalid syntax."
+	},
+	{
+		status_code: 401
+		description: "Access is unauthorized."
+	},
+	{
+		status_code: 404
+		description: "The server cannot find the requested resource."
+	},
+	{
+		status_code: 429
+		description: "Client error"
+	},
+	{
+		status_code: 500
+		description: "Server error"
+	},
+]
+
+#conflictErrorTemplate: {
+	status_code: 409
+	description: "The request conflicts with the current state of the server."
+}
 
 #mutatingErrorResponses: [
 	#errorResponse & {
@@ -267,10 +307,10 @@ import "list"
 	returns?:       string
 	success_status: *200 | 201
 	wrapped:        *true | false
-	error_family:   "standard" | "guarded_read" | "mutating" | "resource"
+	error_family:   "standard" | "lookup" | "guarded_read" | "mutating" | "resource" | "mutating_conflict" | "resource_conflict"
 	params?:        [...#Parameter]
 	body_ref?:      string
-	body_required?: bool
+	body_required:  *true | false
 	body_description?: string
 	authz_default:  *true | false
 	authz?:         _
@@ -294,8 +334,7 @@ import "list"
 		}
 		if spec.body_ref != _|_ {
 			request_body: {
-				required: *true | bool
-				required: *true | spec.body_required
+				required: spec.body_required
 				if spec.body_description != _|_ {
 					description: spec.body_description
 				}
@@ -331,7 +370,19 @@ import "list"
 							},
 						]
 					},
-					if spec.error_family == "guarded_read" || spec.error_family == "mutating" {
+					if spec.error_family == "lookup" {
+						[
+							for template in #lookupErrorTemplates {
+								#wrappedJSONResponse & {
+									#status_code: template.status_code
+									#description: template.description
+									#schema_ref:  "Error"
+									#body_type:   spec.returns
+								}
+							},
+						]
+					},
+					if spec.error_family == "guarded_read" || spec.error_family == "mutating" || spec.error_family == "mutating_conflict" {
 						[
 							for template in #mutatingErrorTemplates {
 								#wrappedJSONResponse & {
@@ -343,7 +394,7 @@ import "list"
 							},
 						]
 					},
-					if spec.error_family == "resource" {
+					if spec.error_family == "resource" || spec.error_family == "resource_conflict" {
 						[
 							for template in #resourceErrorTemplates {
 								#wrappedJSONResponse & {
@@ -352,6 +403,16 @@ import "list"
 									#schema_ref:  "Error"
 									#body_type:   spec.returns
 								}
+							},
+						]
+					},
+					if spec.error_family == "mutating_conflict" || spec.error_family == "resource_conflict" {
+						[
+							#wrappedJSONResponse & {
+								#status_code: #conflictErrorTemplate.status_code
+								#description: #conflictErrorTemplate.description
+								#schema_ref:  "Error"
+								#body_type:   spec.returns
 							},
 						]
 					},
@@ -376,11 +437,22 @@ import "list"
 					if spec.error_family == "standard" {
 						#standardPlainErrorResponses
 					},
-					if spec.error_family == "guarded_read" || spec.error_family == "mutating" {
+					if spec.error_family == "lookup" {
+						#lookupPlainErrorResponses
+					},
+					if spec.error_family == "guarded_read" || spec.error_family == "mutating" || spec.error_family == "mutating_conflict" {
 						#mutatingErrorResponses
 					},
-					if spec.error_family == "resource" {
+					if spec.error_family == "resource" || spec.error_family == "resource_conflict" {
 						#resourcePlainErrorResponses
+					},
+					if spec.error_family == "mutating_conflict" || spec.error_family == "resource_conflict" {
+						[
+							#errorResponse & {
+								#status_code: 409
+								#description: "The request conflicts with the current state of the server."
+							},
+						]
 					},
 				])
 			}
@@ -412,11 +484,22 @@ import "list"
 				if spec.error_family == "standard" {
 					#standardPlainErrorResponses
 				},
-				if spec.error_family == "guarded_read" || spec.error_family == "mutating" {
+				if spec.error_family == "lookup" {
+					#lookupPlainErrorResponses
+				},
+				if spec.error_family == "guarded_read" || spec.error_family == "mutating" || spec.error_family == "mutating_conflict" {
 					#mutatingErrorResponses
 				},
-				if spec.error_family == "resource" {
+				if spec.error_family == "resource" || spec.error_family == "resource_conflict" {
 					#resourcePlainErrorResponses
+				},
+				if spec.error_family == "mutating_conflict" || spec.error_family == "resource_conflict" {
+					[
+						#errorResponse & {
+							#status_code: 409
+							#description: "The request conflicts with the current state of the server."
+						},
+					]
 				},
 			])
 		}
@@ -469,8 +552,7 @@ import "list"
 		}
 		if spec.kind == "wrapped_mutating" {
 			request_body: {
-				required: *true | bool
-				required: *true | spec.body_required
+				required: spec.body_required
 				if spec.body_description != _|_ {
 					description: spec.body_description
 				}
@@ -525,6 +607,29 @@ import "list"
 	#errorResponse & {
 		#status_code: 403
 		#description: "Access is forbidden."
+	},
+	#errorResponse & {
+		#status_code: 404
+		#description: "The server cannot find the requested resource."
+	},
+	#errorResponse & {
+		#status_code: 429
+		#description: "Client error"
+	},
+	#errorResponse & {
+		#status_code: 500
+		#description: "Server error"
+	},
+]
+
+#lookupPlainErrorResponses: [
+	#errorResponse & {
+		#status_code: 400
+		#description: "The server could not understand the request due to invalid syntax."
+	},
+	#errorResponse & {
+		#status_code: 401
+		#description: "Access is unauthorized."
 	},
 	#errorResponse & {
 		#status_code: 404
