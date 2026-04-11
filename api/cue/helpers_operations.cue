@@ -204,6 +204,85 @@ import "list"
 		}
 	}
 }
+
+#endpointFromOperation: {
+	tag:  string
+	spec: #getResource | #postWrapped | #deleteNoContent
+
+	endpoint: {
+		method:       spec.method
+		path:         spec.path
+		operation_id: spec.op
+		summary:      spec.summary
+		tags:         [tag]
+		if spec.params != _|_ {
+			parameters: spec.params
+		}
+		if spec.kind == "wrapped_resource" {
+			responses: list.Concat([
+				[
+					#wrappedJSONSuccessResponse & {
+						#body_type: spec.returns
+					},
+				],
+				[
+					for template in #resourceErrorTemplates {
+						#wrappedJSONResponse & {
+							#status_code: template.status_code
+							#description: template.description
+							#schema_ref:  "Error"
+							#body_type:   spec.returns
+						}
+					},
+				],
+			])
+		}
+		if spec.kind == "wrapped_mutating" {
+			request_body: {
+				required: *true | bool
+				required: *true | spec.body_required
+				if spec.body_description != _|_ {
+					description: spec.body_description
+				}
+				schema: {
+					ref: spec.body_ref
+				}
+			}
+			responses: list.Concat([
+				[
+					#wrappedJSONSuccessResponse & {
+						#body_type: spec.returns
+					},
+				],
+				[
+					for template in #mutatingErrorTemplates {
+						#wrappedJSONResponse & {
+							#status_code: template.status_code
+							#description: template.description
+							#schema_ref:  "Error"
+							#body_type:   spec.returns
+						}
+					},
+				],
+			])
+		}
+		if spec.kind == "no_content_mutating" {
+			responses: list.Concat([
+				[
+					#noContentResponse & {
+						#status_code: 204
+						#description: "There is no content to send for this request, but the headers may be useful."
+					},
+				],
+				#mutatingErrorResponses,
+			])
+		}
+		extensions: #authenticatedExtensions & {
+			#cli_command: spec.cli
+		}
+	}
+}
+
 #noContentResponse: {
 	#status_code: int
 	#description: string

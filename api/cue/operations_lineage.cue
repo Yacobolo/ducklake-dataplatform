@@ -104,77 +104,9 @@ import "list"
 
 endpoints_lineage: [
 	for op in #lineageOps {
-		{
-			method:       op.method
-			path:         op.path
-			operation_id: op.op
-			summary:      op.summary
-			tags:         [#lineageTag]
-			if op.params != _|_ {
-				parameters: op.params
-			}
-			if op.kind == "wrapped_resource" {
-				responses: list.Concat([
-					[
-						#wrappedJSONSuccessResponse & {
-							#body_type: op.returns
-						},
-					],
-					[
-						for template in #resourceErrorTemplates {
-							#wrappedJSONResponse & {
-								#status_code: template.status_code
-								#description: template.description
-								#schema_ref:  "Error"
-								#body_type:   op.returns
-							}
-						},
-					],
-				])
-			}
-			if op.kind == "wrapped_mutating" {
-				request_body: {
-					required: *true | bool
-					required: *true | op.body_required
-					if op.body_description != _|_ {
-						description: op.body_description
-					}
-					schema: {
-						ref: op.body_ref
-					}
-				}
-				responses: list.Concat([
-					[
-						#wrappedJSONSuccessResponse & {
-							#body_type: op.returns
-						},
-					],
-					[
-						for template in #mutatingErrorTemplates {
-							#wrappedJSONResponse & {
-								#status_code: template.status_code
-								#description: template.description
-								#schema_ref:  "Error"
-								#body_type:   op.returns
-							}
-						},
-					],
-				])
-			}
-			if op.kind == "no_content_mutating" {
-				responses: list.Concat([
-					[
-						#noContentResponse & {
-							#status_code: 204
-							#description: "There is no content to send for this request, but the headers may be useful."
-						},
-					],
-					#mutatingErrorResponses,
-				])
-			}
-			extensions: #authenticatedExtensions & {
-				#cli_command: op.cli
-			}
-		}
+		(#endpointFromOperation & {
+			tag:  #lineageTag
+			spec: op
+		}).endpoint
 	},
 ]
