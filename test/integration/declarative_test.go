@@ -9,10 +9,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	cueformat "cuelang.org/go/cue/format"
+	cueyaml "cuelang.org/go/encoding/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"duck-demo/internal/declarative"
 	"duck-demo/pkg/cli"
@@ -20,14 +24,242 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// YAML helper — writes string content to a file under the config dir.
+// Legacy fixture helper — accepts old YAML document snippets and writes CUE.
 // ---------------------------------------------------------------------------
 
 func writeYAML(t *testing.T, dir, relPath, content string) {
 	t.Helper()
-	fullPath := filepath.Join(dir, relPath)
+	ensureCUEModule(t, dir)
+	fullPath := filepath.Join(dir, cueConfigPath(relPath))
 	require.NoError(t, os.MkdirAll(filepath.Dir(fullPath), 0o750))
-	require.NoError(t, os.WriteFile(fullPath, []byte(content), 0o600))
+	require.NoError(t, os.WriteFile(fullPath, []byte(legacyConfigToCUE(t, relPath, content)), 0o600))
+}
+
+func ensureCUEModule(t *testing.T, dir string) {
+	t.Helper()
+	moduleFile := filepath.Join(dir, "cue.mod", "module.cue")
+	if _, err := os.Stat(moduleFile); err == nil {
+		return
+	}
+	require.NoError(t, os.MkdirAll(filepath.Dir(moduleFile), 0o750))
+	require.NoError(t, os.WriteFile(moduleFile, []byte(`module: "duck.local/integration-config"
+language: {
+	version: "v0.14.0"
+}
+`), 0o600))
+}
+
+func cueConfigPath(relPath string) string {
+	ext := filepath.Ext(relPath)
+	switch strings.ToLower(ext) {
+	case ".yaml", ".yml":
+		return strings.TrimSuffix(relPath, ext) + ".cue"
+	default:
+		return relPath
+	}
+}
+
+func legacyConfigToCUE(t *testing.T, relPath, content string) string {
+	t.Helper()
+
+	var doc declarative.Document
+	require.NoError(t, yaml.Unmarshal([]byte(content), &doc))
+
+	var platform map[string]any
+	switch doc.Kind {
+	case declarative.KindNamePrincipalList:
+		var parsed declarative.PrincipalListDoc
+		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
+		principals := map[string]any{}
+		for _, principal := range parsed.Principals {
+			principals[principal.Name] = map[string]any{
+				"type":     principal.Type,
+				"is_admin": principal.IsAdmin,
+			}
+		}
+		platform = map[string]any{"security": map[string]any{"principals": principals}}
+	case declarative.KindNameGroupList:
+		var parsed declarative.GroupListDoc
+		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
+		groups := map[string]any{}
+		for _, group := range parsed.Groups {
+			groups[group.Name] = map[string]any{
+				"description": group.Description,
+				"members":     group.Members,
+			}
+		}
+		platform = map[string]any{"security": map[string]any{"groups": groups}}
+	case declarative.KindNameGrantList:
+		var parsed declarative.GrantListDoc
+		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
+		platform = map[string]any{"security": map[string]any{"grants": parsed.Grants}}
+	case declarative.KindNameDomain:
+		var parsed declarative.DomainDoc
+		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
+		platform = map[string]any{"domains": map[string]any{parsed.Metadata.Name: parsed.Spec}}
+	case declarative.KindNameTeam:
+		var parsed declarative.TeamDoc
+		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
+		platform = map[string]any{"teams": map[string]any{parsed.Metadata.Name: parsed.Spec}}
+	case declarative.KindNameDataProduct:
+		var parsed declarative.DataProductDoc
+		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
+		platform = map[string]any{"data_products": map[string]any{parsed.Metadata.Name: parsed.Spec}}
+	case declarative.KindNameModel:
+		var parsed declarative.ModelDoc
+		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
+		projectName := inferProjectNameFromPath(relPath, "analytics")
+		platform = scaffoldExistingProjectPlatform(projectName)
+		projects := platform["projects"].(map[string]any)
+		project := projects[projectName].(map[string]any)
+		project["models"] = map[string]any{parsed.Metadata.Name: parsed.Spec}
+	case declarative.KindNameMacro:
+		var parsed declarative.MacroDoc
+		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
+		projectName := strings.TrimSpace(parsed.Spec.ProjectName)
+		if projectName == "" {
+			projectName = inferProjectNameFromPath(relPath, "analytics")
+		}
+		platform = scaffoldExistingProjectPlatform(projectName)
+		projects := platform["projects"].(map[string]any)
+		project := projects[projectName].(map[string]any)
+		macroSpec := parsed.Spec
+		macroSpec.ProjectName = projectName
+		project["macros"] = map[string]any{parsed.Metadata.Name: macroSpec}
+	case declarative.KindNameSemanticModel:
+		var parsed declarative.SemanticModelDoc
+		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
+		projectName := inferSemanticProject(parsed.Spec.BaseModelRef)
+		platform = scaffoldAdHocProjectPlatform(projectName)
+		projects := platform["projects"].(map[string]any)
+		project := projects[projectName].(map[string]any)
+		project["semantic_models"] = map[string]any{parsed.Metadata.Name: parsed.Spec}
+	case declarative.KindNameNotebook:
+		var parsed declarative.NotebookDoc
+		require.NoError(t, yaml.Unmarshal([]byte(content), &parsed))
+		workspaceRef := strings.TrimSpace(parsed.Spec.WorkspaceRef)
+		if workspaceRef == "" {
+			workspaceRef = "admin_user workspace"
+		}
+		folderRef := strings.TrimSpace(parsed.Spec.FolderRef)
+		if folderRef == "" {
+			folderRef = workspaceRef + "/imported"
+		}
+		parts := strings.Split(folderRef, "/")
+		folderName := parts[len(parts)-1]
+		platform = scaffoldWorkspacePlatform(workspaceRef)
+		workspaces := platform["workspaces"].(map[string]any)
+		workspace := workspaces[workspaceRef].(map[string]any)
+		folders := workspace["folders"].(map[string]any)
+		folder := folders[folderName].(map[string]any)
+		notebookSpec := parsed.Spec
+		notebookSpec.WorkspaceRef = workspaceRef
+		notebookSpec.FolderRef = folderRef
+		folder["notebooks"] = map[string]any{parsed.Metadata.Name: notebookSpec}
+		if parsed.Spec.Publish != nil && parsed.Spec.Publish.Model != nil && strings.TrimSpace(parsed.Spec.Publish.Model.Project) != "" {
+			projectName := strings.TrimSpace(parsed.Spec.Publish.Model.Project)
+			platform = mergeMaps(platform, scaffoldExistingProjectPlatform(projectName))
+		}
+	default:
+		require.FailNowf(t, "unsupported legacy declarative fixture kind", "kind %q for %s is not supported by the CUE test writer", doc.Kind, relPath)
+	}
+
+	return encodePlatformFragment(t, platform)
+}
+
+func scaffoldWorkspaceShell(workspaceName string) map[string]any {
+	owner := "admin"
+	if workspaceName == "admin_user workspace" {
+		owner = "admin_user"
+	}
+	return map[string]any{
+		"workspaces": map[string]any{
+			workspaceName: map[string]any{
+				"kind":            "personal",
+				"owner_principal": owner,
+			},
+		},
+	}
+}
+
+func scaffoldWorkspacePlatform(workspaceName string) map[string]any {
+	return mergeMaps(scaffoldWorkspaceShell(workspaceName), map[string]any{
+		"workspaces": map[string]any{
+			workspaceName: map[string]any{
+				"folders": map[string]any{
+					"imported": map[string]any{},
+				},
+			},
+		},
+	})
+}
+
+func scaffoldExistingProjectPlatform(projectName string) map[string]any {
+	return mergeMaps(scaffoldWorkspaceShell("Shared Workspace"), map[string]any{
+		"projects": map[string]any{
+			projectName: map[string]any{
+				"workspace_ref": "Shared Workspace",
+				"kind":          "personal",
+			},
+		},
+	})
+}
+
+func scaffoldAdHocProjectPlatform(projectName string) map[string]any {
+	return mergeMaps(scaffoldWorkspaceShell("admin_user workspace"), map[string]any{
+		"projects": map[string]any{
+			projectName: map[string]any{
+				"workspace_ref": "admin_user workspace",
+				"kind":          "personal",
+			},
+		},
+	})
+}
+
+func inferProjectNameFromPath(relPath, fallback string) string {
+	parts := strings.Split(filepath.ToSlash(relPath), "/")
+	for idx, part := range parts {
+		if part == "models" && idx+1 < len(parts) {
+			return parts[idx+1]
+		}
+	}
+	return fallback
+}
+
+func inferSemanticProject(baseModelRef string) string {
+	parts := strings.Split(strings.TrimSpace(baseModelRef), ".")
+	if len(parts) > 1 && strings.TrimSpace(parts[0]) != "" {
+		return parts[0]
+	}
+	return "analytics"
+}
+
+func mergeMaps(base, overlay map[string]any) map[string]any {
+	out := map[string]any{}
+	for key, value := range base {
+		out[key] = value
+	}
+	for key, value := range overlay {
+		if baseMap, ok := out[key].(map[string]any); ok {
+			if overlayMap, ok := value.(map[string]any); ok {
+				out[key] = mergeMaps(baseMap, overlayMap)
+				continue
+			}
+		}
+		out[key] = value
+	}
+	return out
+}
+
+func encodePlatformFragment(t *testing.T, platform map[string]any) string {
+	t.Helper()
+	payload, err := yaml.Marshal(map[string]any{"platform": platform})
+	require.NoError(t, err)
+	file, err := cueyaml.Extract("fragment.yaml", payload)
+	require.NoError(t, err)
+	formatted, err := cueformat.Node(file)
+	require.NoError(t, err)
+	return "package duckconfig\n\n" + string(formatted)
 }
 
 // ---------------------------------------------------------------------------
@@ -130,6 +362,29 @@ func executeActions(t *testing.T, stateClient *cli.APIStateClient, actions []dec
 	}
 }
 
+func createActionsWithDependencies(plan *declarative.Plan, primaryKinds ...declarative.ResourceKind) []declarative.Action {
+	allowed := map[declarative.ResourceKind]bool{
+		declarative.KindWorkspace:   true,
+		declarative.KindFolder:      true,
+		declarative.KindProject:     true,
+		declarative.KindEnvironment: true,
+	}
+	for _, kind := range primaryKinds {
+		allowed[kind] = true
+	}
+
+	var actions []declarative.Action
+	for _, action := range plan.Actions {
+		if action.Operation != declarative.OpCreate {
+			continue
+		}
+		if allowed[action.ResourceKind] {
+			actions = append(actions, action)
+		}
+	}
+	return actions
+}
+
 // ---------------------------------------------------------------------------
 // TestDeclarative_ValidateOnly — offline YAML validation, no server contact.
 // ---------------------------------------------------------------------------
@@ -201,28 +456,26 @@ groups:
 
 	t.Run("duplicate_principal", func(t *testing.T) {
 		dir := t.TempDir()
+		ensureCUEModule(t, dir)
+		require.NoError(t, os.MkdirAll(filepath.Join(dir, "security"), 0o750))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "security", "principals_a.cue"), []byte(`package duckconfig
 
-		writeYAML(t, dir, "security/principals.yaml", `apiVersion: duck/v1
-kind: PrincipalList
-principals:
-  - name: duped
-    type: user
-  - name: duped
-    type: user
-`)
+platform: security: principals: duped: {
+	type: "user"
+	is_admin: false
+}
+`), 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "security", "principals_b.cue"), []byte(`package duckconfig
 
-		state, err := declarative.LoadDirectory(dir)
-		require.NoError(t, err)
+platform: security: principals: duped: {
+	type: "service_principal"
+	is_admin: false
+}
+`), 0o600))
 
-		errs := declarative.Validate(state)
-		require.NotEmpty(t, errs, "should detect duplicate principal")
-		found := false
-		for _, e := range errs {
-			if e.Message == `duplicate principal name "duped"` {
-				found = true
-			}
-		}
-		assert.True(t, found, "should report duplicate principal, got: %v", errs)
+		_, err := declarative.LoadDirectory(dir)
+		require.Error(t, err, "should fail on conflicting principal fragments")
+		assert.Contains(t, err.Error(), "duped")
 	})
 }
 
@@ -933,7 +1186,7 @@ spec:
 	modelCreates := actionsOfKindAndOp(plan, declarative.KindModel, declarative.OpCreate)
 	require.Len(t, modelCreates, 1, "expected one model create")
 	assert.Equal(t, "analytics.stg_orders", modelCreates[0].ResourceName)
-	executeActions(t, stateClient, modelCreates)
+	executeActions(t, stateClient, createActionsWithDependencies(plan, declarative.KindModel))
 
 	actualAfterCreate, err := stateClient.ReadState(context.Background())
 	require.NoError(t, err)
@@ -975,7 +1228,7 @@ spec:
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindModel, declarative.OpCreate))
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindModel, declarative.OpUpdate))
 
-	require.NoError(t, os.Remove(filepath.Join(dir, "models", "analytics", "stg_orders.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "models", "analytics", "stg_orders.cue")))
 	desiredDeleted, err := declarative.LoadDirectory(dir)
 	require.NoError(t, err)
 	planDelete := declarative.Diff(desiredDeleted, actualAfterUpdate)
@@ -1028,7 +1281,7 @@ spec:
 	plan := declarative.Diff(desired, actual)
 	notebookCreates := actionsOfKindAndOp(plan, declarative.KindNotebook, declarative.OpCreate)
 	require.Len(t, notebookCreates, 1)
-	executeActions(t, stateClient, notebookCreates)
+	executeActions(t, stateClient, createActionsWithDependencies(plan, declarative.KindNotebook))
 
 	actualAfterCreate, err := stateClient.ReadState(context.Background())
 	require.NoError(t, err)
@@ -1181,7 +1434,7 @@ spec:
 	plan := declarative.Diff(desired, actual)
 	macroCreates := actionsOfKindAndOp(plan, declarative.KindMacro, declarative.OpCreate)
 	require.Len(t, macroCreates, 1)
-	executeActions(t, stateClient, macroCreates)
+	executeActions(t, stateClient, createActionsWithDependencies(plan, declarative.KindMacro))
 
 	actualAfterCreate, err := stateClient.ReadState(context.Background())
 	require.NoError(t, err)
@@ -1213,7 +1466,7 @@ spec:
 	replanUpdate := declarative.Diff(desiredUpdated, actualAfterUpdate)
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindMacro, declarative.OpUpdate))
 
-	require.NoError(t, os.Remove(filepath.Join(dir, "macros", "fmt_money.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "macros", "fmt_money.cue")))
 	desiredDeleted, err := declarative.LoadDirectory(dir)
 	require.NoError(t, err)
 	planDelete := declarative.Diff(desiredDeleted, actualAfterUpdate)
@@ -1270,7 +1523,7 @@ spec:
 	plan := declarative.Diff(desired, actual)
 	creates := actionsOfKindAndOp(plan, declarative.KindSemanticModel, declarative.OpCreate)
 	require.Len(t, creates, 2)
-	executeActions(t, stateClient, creates)
+	executeActions(t, stateClient, createActionsWithDependencies(plan, declarative.KindSemanticModel))
 
 	actualAfterCreate, err := stateClient.ReadState(context.Background())
 	require.NoError(t, err)
@@ -1319,8 +1572,8 @@ spec:
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpCreate))
 	assert.Empty(t, actionsOfKindAndOp(replanUpdate, declarative.KindSemanticModel, declarative.OpUpdate))
 
-	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "sales.yaml")))
-	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "customers.yaml")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "sales.cue")))
+	require.NoError(t, os.Remove(filepath.Join(dir, "semantic_models", "customers.cue")))
 
 	desiredDeleted, err := declarative.LoadDirectory(dir)
 	require.NoError(t, err)
@@ -1366,10 +1619,13 @@ spec:
 	require.NoError(t, err)
 	require.Empty(t, declarative.Validate(desired))
 
-	plan := declarative.Diff(desired, &declarative.DesiredState{})
+	actual, err := stateClient.ReadState(context.Background())
+	require.NoError(t, err)
+
+	plan := declarative.Diff(desired, actual)
 	creates := actionsOfKindAndOp(plan, declarative.KindSemanticModel, declarative.OpCreate)
 	require.Len(t, creates, 1)
-	executeActions(t, stateClient, creates)
+	executeActions(t, stateClient, createActionsWithDependencies(plan, declarative.KindSemanticModel))
 
 	semanticModelsResp := doRequest(t, http.MethodGet, env.Server.URL+"/v1/semantic-models", env.Keys.Admin, nil)
 	if semanticModelsResp.StatusCode != http.StatusOK {

@@ -19,8 +19,8 @@ func TestFormatText_NoChanges(t *testing.T) {
 func TestFormatText_WithActions(t *testing.T) {
 	plan := &Plan{
 		Actions: []Action{
-			{Operation: OpCreate, ResourceKind: KindPrincipal, ResourceName: "user1", FilePath: "security/principals.yaml"},
-			{Operation: OpDelete, ResourceKind: KindPrincipal, ResourceName: "user2", FilePath: "security/principals.yaml"},
+			{Operation: OpCreate, ResourceKind: KindPrincipal, ResourceName: "user1", FilePath: "security/principals.cue"},
+			{Operation: OpDelete, ResourceKind: KindPrincipal, ResourceName: "user2", FilePath: "security/principals.cue"},
 		},
 	}
 	var buf bytes.Buffer
@@ -113,7 +113,7 @@ func TestFormatJSON_IncludesChanges(t *testing.T) {
 				Operation:    OpUpdate,
 				ResourceKind: KindGroup,
 				ResourceName: "g1",
-				FilePath:     "security/groups.yaml",
+				FilePath:     "security/groups.cue",
 				Changes: []FieldDiff{
 					{Field: "description", OldValue: "old", NewValue: "new"},
 				},

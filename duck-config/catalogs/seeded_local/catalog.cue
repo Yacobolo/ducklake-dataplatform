@@ -1,0 +1,8 @@
+package duckconfig
+
+platform: catalogs: seeded_local: {
+	metastore_type: "sqlite"
+	dsn:            "__DUCK_DEV_SAMPLE_METASTORE__"
+	data_path:      "__DUCK_DEV_SAMPLE_DATA_DIR__"
+	comment:        "Local seeded NYC taxi catalog for developer workflows"
+}

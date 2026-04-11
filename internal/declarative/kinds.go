@@ -180,7 +180,7 @@ func (o Operation) String() string {
 	}
 }
 
-// Known Kind strings used in YAML documents.
+// Known legacy kind strings used by internal migration/test helpers.
 const (
 	KindNamePrincipalList          = "PrincipalList"
 	KindNameGroupList              = "GroupList"
@@ -216,5 +216,5 @@ const (
 	KindNameDashboard              = "Dashboard"
 )
 
-// SupportedAPIVersion is the current API version for YAML documents.
+// SupportedAPIVersion is retained only for internal migration/test helpers.
 const SupportedAPIVersion = "duck/v1"

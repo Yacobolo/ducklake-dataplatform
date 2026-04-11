@@ -543,7 +543,7 @@ func syncedNotebookMetadataChanged(existing domain.Notebook, repo *domain.GitRep
 }
 
 func notebookGitPath(name string) string {
-	return filepath.ToSlash(filepath.Join("notebooks", name+".yaml"))
+	return filepath.ToSlash(filepath.Join("notebooks", name+".cue"))
 }
 
 func stringPtr(value string) *string {

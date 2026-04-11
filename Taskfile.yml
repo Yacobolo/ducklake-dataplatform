@@ -244,33 +244,36 @@ tasks:
       - test -f pkg/cli/gen/apigen_registry.gen.go
       - git diff --exit-code -- api/gen/openapi.yaml internal/api/gen_request_models.gen.go internal/api/server.apigen.gen.go pkg/cli/gen/apigen_registry.gen.go
 
-  generate:declarative-schema:
-    desc: Generate declarative JSON Schema artifacts
+  generate:declarative-reference:
+    desc: Generate declarative CUE reference docs
     cmds:
-      - go run ./cmd/declarative-schema-gen -outdir schemas/declarative/v1
+      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
     sources:
       - internal/declarative/*.go
-      - cmd/declarative-schema-gen/*.go
+      - internal/docsgen/declarative/*.go
+      - cmd/docsgen/*.go
+      - api/gen/openapi.yaml
     generates:
-      - schemas/declarative/v1/duck.declarative.schema.json
-      - schemas/declarative/v1/index.json
-      - schemas/declarative/v1/kinds/*.schema.json
+      - site/content/reference/generated/declarative/index.md
+      - pkg/cli/gen/discovery_index.gen.go
 
   verify:declarative-schema:
-    desc: Verify declarative schema artifacts are up to date
+    desc: Verify declarative CUE reference artifacts are up to date
+    preconditions:
+      - sh: test -f site/content/reference/generated/declarative/index.md
+        msg: "declarative reference artifacts missing. Run 'task generate:declarative-reference' first."
     cmds:
-      - task generate:declarative-schema
-      - git diff --exit-code -- schemas/declarative/v1
+      - task generate:declarative-reference
+      - test -f site/content/reference/generated/declarative/index.md
+      - git diff --exit-code -- site/content/reference/generated/declarative pkg/cli/gen/discovery_index.gen.go
 
   docs:generate:
-    desc: Generate docs reference pages from generated API and schemas
-    deps: [generate:api, generate:declarative-schema]
+    desc: Generate docs reference pages from generated API and declarative CUE docs
+    deps: [generate:api]
     cmds:
-      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
+      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
     sources:
       - api/gen/openapi.yaml
-      - schemas/declarative/v1/index.json
-      - schemas/declarative/v1/kinds/*.schema.json
       - cmd/docsgen/*.go
       - internal/docsgen/**/*.go
     generates:
@@ -280,10 +283,10 @@ tasks:
       - pkg/cli/gen/discovery_index.gen.go
 
   docs:generate:generated:
-    desc: Generate docs from canonical OpenAPI artifact and declarative schemas
-    deps: [generate:api, generate:declarative-schema]
+    desc: Generate docs from canonical OpenAPI artifact and declarative CUE docs
+    deps: [generate:api]
     cmds:
-      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -declarative-index schemas/declarative/v1/index.json -declarative-dir schemas/declarative/v1 -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
+      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
 
   site:generate:
     desc: Generate the public site content and static export
@@ -420,14 +423,24 @@ tasks:
       - E2E_LIVE_REUSE_SERVER=true E2E_LIVE_STRICT=true go test -tags livee2e -count=1 -v ./test/livee2e
 
   examples:test:
-    desc: Run declarative examples integration suite
+    desc: Run standalone declarative example integration coverage
     cmds:
       - gotestsum --format pkgname-and-test-fails -- -tags integration -run TestDeclarativeExamples_ ./test/integration/...
 
   examples:validate:
-    desc: Validate all example declarative config directories
+    desc: Validate any standalone example declarative config directories
     cmds:
-      - for dir in examples/*/config; do go run ./cmd/cli validate --config-dir "$dir"; done
+      - |
+        found=0
+        for dir in examples/*/config; do
+          if [ -d "$dir" ]; then
+            found=1
+            go run ./cmd/cli validate --config-dir "$dir"
+          fi
+        done
+        if [ "$found" -eq 0 ]; then
+          echo "No standalone example config directories found."
+        fi
 
   vet:
     desc: Run go vet
@@ -478,7 +491,7 @@ tasks:
       - |
         failed=0
         results=""
-        for step in lint:go lint:api verify:apigen-generated verify:declarative-schema site:check test:arch test:authz-matrix test:workflow-invariants test:unit test:integration; do
+        for step in lint:go lint:api verify:apigen-generated site:check test:arch test:authz-matrix test:workflow-invariants test:unit test:integration; do
           if task "$step" > /dev/null 2>&1; then
             results="${results}  ${step} ... ok\n"
           else

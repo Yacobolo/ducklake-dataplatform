@@ -1,5 +1,5 @@
 // Package declarative implements a Terraform-style declarative configuration
-// system for managing platform resources via version-controlled YAML files.
+// system for managing platform resources via version-controlled CUE files.
 package declarative
 
 import (
@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// Diff compares the desired state (from YAML) against the actual state (from server)
+// Diff compares the desired state (from CUE) against the actual state (from server)
 // and returns a Plan describing the changes needed.
 func Diff(desired, actual *DesiredState) *Plan {
 	plan := &Plan{}
@@ -446,7 +446,7 @@ func diffDashboards(plan *Plan, desired, actual []DashboardResource) {
 		seen[d.Name] = true
 		a, exists := actualMap[d.Name]
 		if !exists {
-			addCreate(plan, KindDashboard, d.Name, "dashboards/"+d.Name+".yaml", d)
+			addCreate(plan, KindDashboard, d.Name, "dashboards/"+d.Name+".cue", d)
 			continue
 		}
 
@@ -458,7 +458,7 @@ func diffDashboards(plan *Plan, desired, actual []DashboardResource) {
 		diffField(&changes, "compute", stableJSON(a.Spec.Compute), stableJSON(d.Spec.Compute))
 		diffField(&changes, "widgets", stableJSON(a.Spec.Widgets), stableJSON(d.Spec.Widgets))
 		if len(changes) > 0 {
-			addUpdate(plan, KindDashboard, d.Name, "dashboards/"+d.Name+".yaml", d, a, changes)
+			addUpdate(plan, KindDashboard, d.Name, "dashboards/"+d.Name+".cue", d, a, changes)
 		}
 	}
 

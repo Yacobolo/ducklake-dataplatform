@@ -2,7 +2,6 @@ package declarative
 
 import (
 	"fmt"
-	"os"
 	"strings"
 )
 
@@ -13,20 +12,12 @@ func LoadNotebookResources(root string) ([]NotebookResource, error) {
 
 // LoadNotebookResourcesWithOptions loads and validates only notebook resources from a declarative root.
 func LoadNotebookResourcesWithOptions(root string, opts LoadOptions) ([]NotebookResource, error) {
-	info, err := os.Stat(root)
+	state, err := LoadDirectoryWithOptions(root, opts)
 	if err != nil {
-		return nil, fmt.Errorf("config directory: %w", err)
-	}
-	if !info.IsDir() {
-		return nil, fmt.Errorf("config directory: %s is not a directory", root)
-	}
-
-	state := &DesiredState{}
-	if err := loadNotebooks(root, state, opts); err != nil {
 		return nil, err
 	}
 
-	errs := Validate(&DesiredState{Notebooks: state.Notebooks})
+	errs := Validate(state)
 	if len(errs) == 0 {
 		return state.Notebooks, nil
 	}

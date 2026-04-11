@@ -1,44 +1,18 @@
 # Examples
 
-This directory contains runnable product showcases.
+Standalone showcase examples have been retired.
 
-## Flagship showcase
+The canonical end-to-end declarative example now lives in [`/duck-config`](/Users/yacobolo/.codex/worktrees/44d8/main/duck-config), which also powers `task dev:seeded`.
 
-- `showcase-movielens`: ingestion API -> models (bronze/silver/gold) -> macro reuse -> notebook -> scheduled pipeline -> RBAC/RLS/column masking.
-
-## Prerequisites
-
-- Server running (`go run ./cmd/server`)
-- CLI built (`task build-cli`) or run via `go run ./cmd/cli`
-
-## Fastest path
-
-From repository root:
+Recommended local flow:
 
 ```bash
-export API_KEY="showcase-local-admin-key"
-examples/showcase-movielens/scripts/bootstrap_admin_key.sh
-API_KEY="$API_KEY" examples/showcase-movielens/scripts/run_demo_flow.sh
+task dev:seeded
+./bin/duck validate --config-dir duck-config
+./bin/duck plan --config-dir duck-config
 ```
 
-## Declarative workflow
+Automated verification:
 
-From repository root, run:
-
-```bash
-./bin/duck --token '' --api-key "$API_KEY" validate --config-dir examples/showcase-movielens/config
-./bin/duck --token '' --api-key "$API_KEY" plan --config-dir examples/showcase-movielens/config
-./bin/duck --token '' --api-key "$API_KEY" apply --config-dir examples/showcase-movielens/config --auto-approve
-./bin/duck --token '' --api-key "$API_KEY" plan --config-dir examples/showcase-movielens/config
-```
-
-See `examples/showcase-movielens/README.md` for full quickstart and feature walkthrough.
-
-After apply, the second `plan` should report no further declarative changes.
-
-## Automated verification
-
-- `task examples:test`: runs integration tests that load examples and verify apply/replan behavior.
-- `task examples:validate`: runs offline declarative validation for each example config directory.
-
-Note: examples tasks are intentionally local-only in v1 and are not wired into CI `check` yet.
+- `task examples:test`: runs the remaining example-oriented integration coverage. It skips cleanly when there are no standalone example config directories.
+- `task examples:validate`: validates any standalone configs under `examples/*/config` if present.

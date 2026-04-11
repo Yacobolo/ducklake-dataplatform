@@ -34,4 +34,4 @@ Macros keep repeated SQL behavior consistent across models and teams.
 ## Related Reference
 
 - [Models API](/reference/generated/api/endpoints/models)
-- [Declarative Macro Kind](/reference/generated/declarative/kinds/macro)
+- [Declarative Reference](/reference/generated/declarative/)

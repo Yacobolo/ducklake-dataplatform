@@ -63,4 +63,4 @@ Imagine a finance team wants to ask for `gross_revenue` by `pickup_zone` and wee
 ## Related Reference
 
 - [Semantic Layer API](/reference/generated/api/endpoints/semantic-layer)
-- [Declarative SemanticModel Kind](/reference/generated/declarative/kinds/semantic-model)
+- [Declarative Reference](/reference/generated/declarative/)

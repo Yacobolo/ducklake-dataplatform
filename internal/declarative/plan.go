@@ -7,8 +7,8 @@ type Action struct {
 	Operation    Operation
 	ResourceKind ResourceKind
 	ResourceName string // human-readable identifier e.g. "analyst1" or "main.analytics.orders"
-	FilePath     string // source YAML file path (empty for deletes of server-only resources)
-	Desired      any    // the spec from YAML (nil for Delete)
+	FilePath     string // source CUE file path (empty for deletes of server-only resources)
+	Desired      any    // the compiled desired spec (nil for Delete)
 	Actual       any    // the current server state (nil for Create)
 	Changes      []FieldDiff
 }
@@ -23,7 +23,7 @@ type FieldDiff struct {
 // Plan is an ordered list of actions grouped by dependency layer.
 type Plan struct {
 	Actions []Action
-	Errors  []PlanError // e.g. deletion-protected resources that are missing from YAML
+	Errors  []PlanError // e.g. deletion-protected resources that are missing from desired config
 }
 
 // PlanError represents a non-actionable issue found during planning.

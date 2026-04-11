@@ -34,16 +34,16 @@ Use Git sync when you want notebooks to live as reviewed declarative files inste
 ### Expected Repo Layout
 
 - set the Git repo record `path` to the declarative project root
-- place notebook documents under `notebooks/*.yaml`
-- use the declarative [Notebook kind](/reference/generated/declarative/kinds/notebook) as the source format
+- place notebook documents under `workspaces/<workspace>/workspace.cue`
+- use the declarative [reference](/reference/generated/declarative/) as the source format
 
 Example:
 
 ```text
 analytics/
   notebooks/
-    sales.yaml
-    margin-review.yaml
+    sales.cue
+    margin-review.cue
 ```
 
 ### Sync Behavior
@@ -51,7 +51,7 @@ analytics/
 1. register a Git repo and branch with the notebooks integrations API
 2. call sync to clone the branch and load declarative notebook files from `<path>/notebooks`
 3. create or update local notebooks using the declarative notebook spec
-4. remove previously linked notebooks when their source YAML is deleted from Git
+4. remove previously linked notebooks when their source CUE fragment is deleted from Git
 5. carry forward notebook publish metadata so declared model promotion targets stay attached
 
 Git is the source of truth for linked notebooks. A later sync overwrites linked notebook structure from Git, including cell order, roles, test config, visuals, and publish metadata.
@@ -59,7 +59,7 @@ Git is the source of truth for linked notebooks. A later sync overwrites linked 
 ## Git Sync Flow
 
 <figure class="site-mermaid">
-  <img src="/_site/diagrams/git-notebook-sync-flow.svg" alt="Diagram showing a Git repo with declarative notebook YAML being synced into local notebooks and optional published models." loading="lazy" decoding="async">
+  <img src="/_site/diagrams/git-notebook-sync-flow.svg" alt="Diagram showing a Git repo with declarative notebook CUE being synced into local notebooks and optional published models." loading="lazy" decoding="async">
 </figure>
 
 ## Verification
@@ -75,4 +75,4 @@ Git is the source of truth for linked notebooks. A later sync overwrites linked 
 - [Notebooks API](/reference/generated/api/endpoints/notebooks)
 - [Models API](/reference/generated/api/endpoints/models)
 - [Integrations API](/reference/generated/api/endpoints/integrations)
-- [Declarative Notebook Kind](/reference/generated/declarative/kinds/notebook)
+- [Declarative Reference](/reference/generated/declarative/)

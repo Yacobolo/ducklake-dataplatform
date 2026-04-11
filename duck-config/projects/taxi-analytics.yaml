@@ -1,9 +1,0 @@
-apiVersion: duck/v1
-kind: Project
-metadata:
-  name: taxi-analytics
-spec:
-  workspace_ref: dev-admin
-  kind: personal
-  description: Seeded analytics authoring project for local development
-  default_branch: main
