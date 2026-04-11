@@ -39,258 +39,70 @@ import "list"
 	#paginationParameters,
 ])
 
-#lineageNodeResourceResponses: [
-	#wrappedJSONSuccessResponse & {
-		#body_type: "LineageNode"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 400
-		#description: "The server could not understand the request due to invalid syntax."
-		#schema_ref:  "Error"
-		#body_type:   "LineageNode"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 401
-		#description: "Access is unauthorized."
-		#schema_ref:  "Error"
-		#body_type:   "LineageNode"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 403
-		#description: "Access is forbidden."
-		#schema_ref:  "Error"
-		#body_type:   "LineageNode"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 404
-		#description: "The server cannot find the requested resource."
-		#schema_ref:  "Error"
-		#body_type:   "LineageNode"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 429
-		#description: "Client error"
-		#schema_ref:  "Error"
-		#body_type:   "LineageNode"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 500
-		#description: "Server error"
-		#schema_ref:  "Error"
-		#body_type:   "LineageNode"
-	},
-]
-
-#paginatedLineageResourceResponses: [
-	#wrappedJSONSuccessResponse & {
-		#body_type: "PaginatedLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 400
-		#description: "The server could not understand the request due to invalid syntax."
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 401
-		#description: "Access is unauthorized."
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 403
-		#description: "Access is forbidden."
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 404
-		#description: "The server cannot find the requested resource."
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 429
-		#description: "Client error"
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 500
-		#description: "Server error"
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedLineageEdges"
-	},
-]
-
-#paginatedColumnLineageResourceResponses: [
-	#wrappedJSONSuccessResponse & {
-		#body_type: "PaginatedColumnLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 400
-		#description: "The server could not understand the request due to invalid syntax."
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedColumnLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 401
-		#description: "Access is unauthorized."
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedColumnLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 403
-		#description: "Access is forbidden."
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedColumnLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 404
-		#description: "The server cannot find the requested resource."
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedColumnLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 429
-		#description: "Client error"
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedColumnLineageEdges"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 500
-		#description: "Server error"
-		#schema_ref:  "Error"
-		#body_type:   "PaginatedColumnLineageEdges"
-	},
-]
-
-#purgeLineageResponses: [
-	#wrappedJSONSuccessResponse & {
-		#body_type: "PurgeLineageResponse"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 400
-		#description: "The server could not understand the request due to invalid syntax."
-		#schema_ref:  "Error"
-		#body_type:   "PurgeLineageResponse"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 401
-		#description: "Access is unauthorized."
-		#schema_ref:  "Error"
-		#body_type:   "PurgeLineageResponse"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 403
-		#description: "Access is forbidden."
-		#schema_ref:  "Error"
-		#body_type:   "PurgeLineageResponse"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 429
-		#description: "Client error"
-		#schema_ref:  "Error"
-		#body_type:   "PurgeLineageResponse"
-	},
-	#wrappedJSONResponse & {
-		#status_code: 500
-		#description: "Server error"
-		#schema_ref:  "Error"
-		#body_type:   "PurgeLineageResponse"
-	},
-]
-
-endpoints_lineage: [
+#wrappedResourceOps: [
 	{
-		method:       "get"
 		path:         "/lineage/tables/{schema_name}/{table_name}"
 		operation_id: "getTableLineage"
 		summary:      "Get table lineage"
-		tags:         [#lineageTag]
+		cli_command:  "lineage tables get"
+		body_type:    "LineageNode"
 		parameters:   #tableLineageParameters
-		responses:    #lineageNodeResourceResponses
-		extensions: #authenticatedExtensions & {
-			#cli_command: "lineage tables get"
-		}
 	},
 	{
-		method:       "get"
 		path:         "/lineage/tables/{schema_name}/{table_name}/upstream"
 		operation_id: "getUpstreamLineage"
 		summary:      "Get upstream lineage"
-		tags:         [#lineageTag]
+		cli_command:  "lineage tables upstream"
+		body_type:    "PaginatedLineageEdges"
 		parameters:   #tableLineageParameters
-		responses:    #paginatedLineageResourceResponses
-		extensions: #authenticatedExtensions & {
-			#cli_command: "lineage tables upstream"
-		}
 	},
 	{
-		method:       "get"
 		path:         "/lineage/tables/{schema_name}/{table_name}/downstream"
 		operation_id: "getDownstreamLineage"
 		summary:      "Get downstream lineage"
-		tags:         [#lineageTag]
+		cli_command:  "lineage tables downstream"
+		body_type:    "PaginatedLineageEdges"
 		parameters:   #tableLineageParameters
-		responses:    #paginatedLineageResourceResponses
-		extensions: #authenticatedExtensions & {
-			#cli_command: "lineage tables downstream"
-		}
 	},
+	{
+		path:         "/lineage/columns/{schema_name}/{table_name}"
+		operation_id: "getColumnLineage"
+		summary:      "Get column lineage"
+		cli_command:  "lineage columns get"
+		body_type:    "PaginatedColumnLineageEdges"
+		parameters:   #tableLineageParameters
+	},
+	{
+		path:         "/lineage/columns/{schema_name}/{table_name}/{column_name}/impacts"
+		operation_id: "getColumnImpact"
+		summary:      "Get column impact"
+		cli_command:  "lineage impact get"
+		body_type:    "PaginatedColumnLineageEdges"
+		parameters:   #columnImpactParameters
+	},
+]
+
+#noContentMutatingOps: [
 	{
 		method:       "delete"
 		path:         "/lineage/edges/{edge_id}"
 		operation_id: "deleteLineageEdge"
 		summary:      "Delete lineage edge"
-		tags:         [#lineageTag]
+		cli_command:  "lineage edges delete"
 		parameters: [
 			#edgeIDPathParameter,
 		]
-		responses: list.Concat([
-			[
-				#noContentResponse & {
-					#status_code: 204
-					#description: "There is no content to send for this request, but the headers may be useful."
-				},
-			],
-			#mutatingErrorResponses,
-		])
-		extensions: #authenticatedExtensions & {
-			#cli_command: "lineage edges delete"
-		}
 	},
-	{
-		method:       "get"
-		path:         "/lineage/columns/{schema_name}/{table_name}"
-		operation_id: "getColumnLineage"
-		summary:      "Get column lineage"
-		tags:         [#lineageTag]
-		parameters:   #tableLineageParameters
-		responses:    #paginatedColumnLineageResourceResponses
-		extensions: #authenticatedExtensions & {
-			#cli_command: "lineage columns get"
-		}
-	},
-	{
-		method:       "get"
-		path:         "/lineage/columns/{schema_name}/{table_name}/{column_name}/impacts"
-		operation_id: "getColumnImpact"
-		summary:      "Get column impact"
-		tags:         [#lineageTag]
-		parameters:   #columnImpactParameters
-		responses:    #paginatedColumnLineageResourceResponses
-		extensions: #authenticatedExtensions & {
-			#cli_command: "lineage impact get"
-		}
-	},
+]
+
+#wrappedMutatingOps: [
 	{
 		method:       "post"
 		path:         "/lineage/purges"
 		operation_id: "purgeLineage"
 		summary:      "Purge lineage"
-		tags:         [#lineageTag]
-		responses:    #purgeLineageResponses
+		cli_command:  "lineage purge"
+		body_type:    "PurgeLineageResponse"
 		request_body: {
 			required:    true
 			description: "Request payload"
@@ -298,8 +110,96 @@ endpoints_lineage: [
 				ref: "PurgeLineageRequest"
 			}
 		}
-		extensions: #authenticatedExtensions & {
-			#cli_command: "lineage purge"
-		}
 	},
 ]
+
+endpoints_lineage: list.Concat([
+	[
+		for op in #wrappedResourceOps {
+			{
+				method:       "get"
+				path:         op.path
+				operation_id: op.operation_id
+				summary:      op.summary
+				tags:         [#lineageTag]
+				parameters:   op.parameters
+				responses: list.Concat([
+					[
+						#wrappedJSONSuccessResponse & {
+							#body_type: op.body_type
+						},
+					],
+					[
+						for template in #resourceErrorTemplates {
+							#wrappedJSONResponse & {
+								#status_code: template.status_code
+								#description: template.description
+								#schema_ref:  "Error"
+								#body_type:   op.body_type
+							}
+						},
+					],
+				])
+				extensions: #authenticatedExtensions & {
+					#cli_command: op.cli_command
+				}
+			}
+		},
+	],
+	[
+		for op in #noContentMutatingOps {
+			{
+				method:       op.method
+				path:         op.path
+				operation_id: op.operation_id
+				summary:      op.summary
+				tags:         [#lineageTag]
+				parameters:   op.parameters
+				responses: list.Concat([
+					[
+						#noContentResponse & {
+							#status_code: 204
+							#description: "There is no content to send for this request, but the headers may be useful."
+						},
+					],
+					#mutatingErrorResponses,
+				])
+				extensions: #authenticatedExtensions & {
+					#cli_command: op.cli_command
+				}
+			}
+		},
+	],
+	[
+		for op in #wrappedMutatingOps {
+			{
+				method:       op.method
+				path:         op.path
+				operation_id: op.operation_id
+				summary:      op.summary
+				tags:         [#lineageTag]
+				request_body: op.request_body
+				responses: list.Concat([
+					[
+						#wrappedJSONSuccessResponse & {
+							#body_type: op.body_type
+						},
+					],
+					[
+						for template in #mutatingErrorTemplates {
+							#wrappedJSONResponse & {
+								#status_code: template.status_code
+								#description: template.description
+								#schema_ref:  "Error"
+								#body_type:   op.body_type
+							}
+						},
+					],
+				])
+				extensions: #authenticatedExtensions & {
+					#cli_command: op.cli_command
+				}
+			}
+		},
+	],
+])

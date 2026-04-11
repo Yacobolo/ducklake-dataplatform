@@ -21,6 +21,14 @@ import "list"
 	"x-cli-command": #cli_command
 }
 
+#authenticatedExtensionsFor: {
+	cli_command: string
+
+	value: #authenticatedExtensions & {
+		#cli_command: cli_command
+	}
+}
+
 #pathStringParameter: {
 	#name: string
 
@@ -74,6 +82,39 @@ import "list"
 		ref: "Error"
 	}
 }
+
+#mutatingErrorTemplates: [
+	{
+		status_code: 400
+		description: "The server could not understand the request due to invalid syntax."
+	},
+	{
+		status_code: 401
+		description: "Access is unauthorized."
+	},
+	{
+		status_code: 403
+		description: "Access is forbidden."
+	},
+	{
+		status_code: 429
+		description: "Client error"
+	},
+	{
+		status_code: 500
+		description: "Server error"
+	},
+]
+
+#resourceErrorTemplates: list.Concat([
+	#mutatingErrorTemplates,
+	[
+		{
+			status_code: 404
+			description: "The server cannot find the requested resource."
+		},
+	],
+])
 
 #mutatingErrorResponses: [
 	#errorResponse & {
@@ -188,6 +229,7 @@ import "list"
 	])
 }
 
+
 #noContentResponse: {
 	#status_code: int
 	#description: string
@@ -195,6 +237,7 @@ import "list"
 	status_code: #status_code
 	description: #description
 }
+
 
 #authenticatedWrappedResourceOperation: #Endpoint & {
 	#method:       string
