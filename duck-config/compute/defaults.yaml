@@ -1,0 +1,6 @@
+apiVersion: duck/v1
+kind: ComputeRoutingDefaults
+defaults:
+  interactive_mode: BYOC_LOCAL
+  scheduled_mode: SHARED_ENDPOINT
+  notebook_mode: SHARED_ENDPOINT

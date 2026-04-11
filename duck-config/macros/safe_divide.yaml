@@ -1,0 +1,13 @@
+apiVersion: duck/v1
+kind: Macro
+metadata:
+  name: safe_divide
+spec:
+  macro_type: SCALAR
+  parameters:
+    - numerator
+    - denominator
+  body: CASE WHEN denominator = 0 THEN NULL ELSE numerator / denominator END
+  description: Avoid divide-by-zero errors in quick seeded analyses
+  project_name: taxi-analytics
+  owner: __DUCK_DEV_BOOTSTRAP_PRINCIPAL__

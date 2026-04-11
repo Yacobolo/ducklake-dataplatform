@@ -1,0 +1,17 @@
+apiVersion: duck/v1
+kind: View
+metadata:
+  name: trip_borough_metrics
+spec:
+  comment: Borough-level trip and fare metrics for dashboard slices
+  owner: __DUCK_DEV_BOOTSTRAP_PRINCIPAL__
+  view_definition: |
+    SELECT
+      CAST(r.pickup_at AS DATE) AS service_date,
+      COALESCE(z.borough, 'Unknown') AS pickup_borough,
+      COUNT(*) AS trip_count,
+      ROUND(SUM(r.total_amount), 2) AS total_fare
+    FROM nyc_taxi.raw_trips AS r
+    LEFT JOIN nyc_taxi.taxi_zones AS z
+      ON z.location_id = r.pickup_location_id
+    GROUP BY 1, 2

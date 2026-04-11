@@ -151,6 +151,7 @@ type Config struct {
 	FeatureFlightSQL        bool
 	FeaturePGWire           bool
 	FeatureReconcilerShadow bool
+	SampleDataBootstrap     bool
 	OrchestrationIOManager  string
 	OrchestrationIOFSRoot   string
 	RemoteCanaryUsers       []string
@@ -222,6 +223,7 @@ func LoadFromEnv() (*Config, error) {
 		FeatureFlightSQL:        parseBoolEnvDefault("FEATURE_FLIGHT_SQL", true),
 		FeaturePGWire:           parseBoolEnvDefault("FEATURE_PG_WIRE", true),
 		FeatureReconcilerShadow: parseBoolEnvDefault("FEATURE_RECONCILER_SHADOW", false),
+		SampleDataBootstrap:     parseBoolEnvDefault("SAMPLE_DATA_BOOTSTRAP_ENABLED", true),
 		OrchestrationIOManager:  os.Getenv("ORCHESTRATION_IO_MANAGER"),
 		OrchestrationIOFSRoot:   os.Getenv("ORCHESTRATION_IO_FS_ROOT"),
 	}

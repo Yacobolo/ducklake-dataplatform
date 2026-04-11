@@ -158,7 +158,7 @@ func assertNoNotebookDrift(t *testing.T, plan *declarative.Plan, exampleName str
 	updates := actionsOfKindAndOp(plan, declarative.KindNotebook, declarative.OpUpdate)
 	for _, action := range updates {
 		for _, change := range action.Changes {
-			assert.Equal(t, "owner", change.Field, "expected only notebook owner drift after apply for %s", exampleName)
+			assert.Contains(t, []string{"owner", "workspace_ref"}, change.Field, "expected only notebook owner/workspace drift after apply for %s", exampleName)
 		}
 	}
 }

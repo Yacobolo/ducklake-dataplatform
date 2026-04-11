@@ -1,0 +1,7 @@
+apiVersion: duck/v1
+kind: Team
+metadata:
+  name: platform
+spec:
+  domain_ref: analytics
+  contact_channel: "#data-platform"

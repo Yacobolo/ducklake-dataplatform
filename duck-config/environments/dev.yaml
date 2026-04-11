@@ -1,0 +1,11 @@
+apiVersion: duck/v1
+kind: Environment
+metadata:
+  name: dev
+spec:
+  project_ref: dev-admin/taxi-analytics
+  kind: development
+  description: Local development environment bound to the seeded taxi catalog
+  target_catalog: seeded_local
+  target_schema: nyc_taxi
+  compute_endpoint: local-dev
