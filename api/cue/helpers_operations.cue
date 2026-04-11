@@ -137,6 +137,32 @@ import "list"
 	},
 ]
 
+#standardErrorTemplates: [
+	#mutatingErrorTemplates[0],
+	#mutatingErrorTemplates[1],
+	#mutatingErrorTemplates[3],
+	#mutatingErrorTemplates[4],
+]
+
+#standardPlainErrorResponses: [
+	#errorResponse & {
+		#status_code: 400
+		#description: "The server could not understand the request due to invalid syntax."
+	},
+	#errorResponse & {
+		#status_code: 401
+		#description: "Access is unauthorized."
+	},
+	#errorResponse & {
+		#status_code: 429
+		#description: "Client error"
+	},
+	#errorResponse & {
+		#status_code: 500
+		#description: "Server error"
+	},
+]
+
 #resourceErrorTemplates: list.Concat([
 	#mutatingErrorTemplates,
 	[
@@ -201,6 +227,191 @@ import "list"
 		"x-apigen-response-shape": {
 			body_type: #body_type
 			kind:      "wrapped_json"
+		}
+	}
+}
+
+#wrappedJSONCreatedResponse: {
+	#body_type: string
+
+	status_code: 201
+	description: "The request has succeeded and a new resource has been created as a result."
+	schema: {
+		ref: #body_type
+	}
+	extensions: {
+		"x-apigen-response-shape": {
+			body_type: #body_type
+			kind:      "wrapped_json"
+		}
+	}
+}
+
+#authenticatedAuthz: {
+	mode: "authenticated"
+}
+
+#adminOnlyAuthz: {
+	mode: "admin_only"
+}
+
+#genericOperationSpec: {
+	kind: "response" | "no_content"
+
+	method:         string
+	op:             string
+	path:           string
+	summary:        string
+	description?:   string
+	cli?:           string
+	returns?:       string
+	success_status: *200 | 201
+	wrapped:        *true | false
+	error_family:   "standard" | "guarded_read" | "mutating" | "resource"
+	params?:        [...#Parameter]
+	body_ref?:      string
+	body_required?: bool
+	body_description?: string
+	authz_default:  *true | false
+	authz?:         _
+}
+
+#endpointFromGenericOperation: {
+	tag:  string
+	spec: #genericOperationSpec
+
+	endpoint: {
+		method:       spec.method
+		path:         spec.path
+		operation_id: spec.op
+		summary:      spec.summary
+		tags:         [tag]
+		if spec.description != _|_ {
+			description: spec.description
+		}
+		if spec.params != _|_ {
+			parameters: spec.params
+		}
+		if spec.body_ref != _|_ {
+			request_body: {
+				required: *true | bool
+				required: *true | spec.body_required
+				if spec.body_description != _|_ {
+					description: spec.body_description
+				}
+				schema: {
+					ref: spec.body_ref
+				}
+			}
+		}
+		if spec.kind == "response" {
+			if spec.wrapped {
+				responses: list.Concat([
+					[
+						if spec.success_status == 200 {
+							#wrappedJSONSuccessResponse & {
+								#body_type: spec.returns
+							}
+						},
+						if spec.success_status == 201 {
+							#wrappedJSONCreatedResponse & {
+								#body_type: spec.returns
+							}
+						},
+					],
+					if spec.error_family == "standard" {
+						[
+							for template in #standardErrorTemplates {
+								#wrappedJSONResponse & {
+									#status_code: template.status_code
+									#description: template.description
+									#schema_ref:  "Error"
+									#body_type:   spec.returns
+								}
+							},
+						]
+					},
+					if spec.error_family == "guarded_read" || spec.error_family == "mutating" {
+						[
+							for template in #mutatingErrorTemplates {
+								#wrappedJSONResponse & {
+									#status_code: template.status_code
+									#description: template.description
+									#schema_ref:  "Error"
+									#body_type:   spec.returns
+								}
+							},
+						]
+					},
+					if spec.error_family == "resource" {
+						[
+							for template in #resourceErrorTemplates {
+								#wrappedJSONResponse & {
+									#status_code: template.status_code
+									#description: template.description
+									#schema_ref:  "Error"
+									#body_type:   spec.returns
+								}
+							},
+						]
+					},
+				])
+			}
+			if spec.wrapped == false {
+				responses: list.Concat([
+					[
+						{
+							status_code: spec.success_status
+							if spec.success_status == 200 {
+								description: "The request has succeeded."
+							}
+							if spec.success_status == 201 {
+								description: "The request has succeeded and a new resource has been created as a result."
+							}
+							schema: {
+								ref: spec.returns
+							}
+						},
+					],
+					if spec.error_family == "standard" {
+						#standardPlainErrorResponses
+					},
+					if spec.error_family == "guarded_read" || spec.error_family == "mutating" {
+						#mutatingErrorResponses
+					},
+					if spec.error_family == "resource" {
+						#resourcePlainErrorResponses
+					},
+				])
+			}
+		}
+		if spec.kind == "no_content" {
+			responses: list.Concat([
+				[
+					#noContentResponse & {
+						#status_code: 204
+						#description: "There is no content to send for this request, but the headers may be useful."
+					},
+				],
+				if spec.error_family == "resource" {
+					#resourcePlainErrorResponses
+				},
+				if spec.error_family == "mutating" {
+					#mutatingErrorResponses
+				},
+			])
+		}
+		extensions: {
+			"security": #authenticatedSecurity
+			if spec.authz_default {
+				"x-authz": #authenticatedAuthz
+			}
+			if spec.authz_default == false {
+				"x-authz": spec.authz
+			}
+			if spec.cli != _|_ {
+				"x-cli-command": spec.cli
+			}
 		}
 	}
 }
@@ -282,6 +493,33 @@ import "list"
 		}
 	}
 }
+
+#resourcePlainErrorResponses: [
+	#errorResponse & {
+		#status_code: 400
+		#description: "The server could not understand the request due to invalid syntax."
+	},
+	#errorResponse & {
+		#status_code: 401
+		#description: "Access is unauthorized."
+	},
+	#errorResponse & {
+		#status_code: 403
+		#description: "Access is forbidden."
+	},
+	#errorResponse & {
+		#status_code: 404
+		#description: "The server cannot find the requested resource."
+	},
+	#errorResponse & {
+		#status_code: 429
+		#description: "Client error"
+	},
+	#errorResponse & {
+		#status_code: 500
+		#description: "Server error"
+	},
+]
 
 #noContentResponse: {
 	#status_code: int
