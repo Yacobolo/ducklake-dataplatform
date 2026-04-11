@@ -49,10 +49,12 @@ endpoints_health: [
       }
     ],
     "extensions": {
+      "security": [
+        {}
+      ],
       "x-authz": {
         "mode": "public"
       }
     }
   }
 ]
-

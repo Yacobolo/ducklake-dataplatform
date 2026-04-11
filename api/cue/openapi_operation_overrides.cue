@@ -1,16 +1,6 @@
 package api
 
 openapi_operation_overrides: {
-  "bootstrapComplete": {
-    "security": [
-      {}
-    ]
-  },
-  "localLogin": {
-    "security": [
-      {}
-    ]
-  },
   "listCatalogs": {
     "parameter_order": [
       "max_results",
@@ -1654,11 +1644,6 @@ openapi_operation_overrides: {
         ]
       }
     }
-  },
-  "getHealth": {
-    "security": [
-      {}
-    ]
   },
   "listMacros": {
     "parameter_order": [
