@@ -1575,66 +1575,6 @@ openapi_operation_overrides: {
       }
     }
   },
-  "listRecentResources": {
-    "parameter_order": [
-      "max_results",
-      "page_token"
-    ],
-    "parameters": {
-      "max_results": {
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "explode": false
-      },
-      "page_token": {
-        "schema": {
-          "type": "string"
-        },
-        "explode": false
-      }
-    }
-  },
-  "listSavedResources": {
-    "parameter_order": [
-      "max_results",
-      "page_token"
-    ],
-    "parameters": {
-      "max_results": {
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "explode": false
-      },
-      "page_token": {
-        "schema": {
-          "type": "string"
-        },
-        "explode": false
-      }
-    }
-  },
-  "deleteSavedResource": {
-    "parameter_order": [
-      "resource_type",
-      "resource_key"
-    ],
-    "parameters": {
-      "resource_type": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "resource_key": {
-        "schema": {
-          "type": "string"
-        }
-      }
-    }
-  },
   "listModelRuns": {
     "parameter_order": [
       "status",

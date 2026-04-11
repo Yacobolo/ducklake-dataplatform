@@ -354,6 +354,7 @@ import "list"
 	response_any_of?: [string]: [...#SchemaRef]
 	authz_default:  *true | false
 	authz?:         _
+	security?:      _
 }
 
 #endpointFromGenericOperation: {
@@ -681,7 +682,12 @@ import "list"
 			])
 		}
 		extensions: {
-			"security": #authenticatedSecurity
+			if spec.security != _|_ {
+				"security": spec.security
+			}
+			if spec.security == _|_ {
+				"security": #authenticatedSecurity
+			}
 			if spec.authz != _|_ {
 				"x-authz": spec.authz
 			}
