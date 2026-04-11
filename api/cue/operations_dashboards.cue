@@ -2,916 +2,169 @@ package api
 
 // Authored dashboard operations.
 
-endpoints_dashboards: [
-  {
-    "method": "get",
-    "path": "/dashboards",
-    "operation_id": "listDashboards",
-    "summary": "List dashboards",
-    "tags": [
-      "Dashboards"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "owner",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedDashboards"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "post",
-    "path": "/dashboards",
-    "operation_id": "createDashboard",
-    "summary": "Create dashboard",
-    "tags": [
-      "Dashboards"
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateDashboardRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "Dashboard"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "get",
-    "path": "/dashboards/{dashboard_id}",
-    "operation_id": "getDashboard",
-    "summary": "Get dashboard",
-    "tags": [
-      "Dashboards"
-    ],
-    "parameters": [
-      {
-        "name": "dashboard_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "DashboardDetail"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "get",
-    "path": "/dashboards/{dashboard_id}/rendered",
-    "operation_id": "getRenderedDashboard",
-    "summary": "Get rendered dashboard",
-    "tags": [
-      "Dashboards"
-    ],
-    "parameters": [
-      {
-        "name": "dashboard_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "ResolvedDashboardDetail"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/dashboards/{dashboard_id}",
-    "operation_id": "updateDashboard",
-    "summary": "Update dashboard",
-    "tags": [
-      "Dashboards"
-    ],
-    "parameters": [
-      {
-        "name": "dashboard_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdateDashboardRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "Dashboard"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/dashboards/{dashboard_id}",
-    "operation_id": "deleteDashboard",
-    "summary": "Delete dashboard",
-    "tags": [
-      "Dashboards"
-    ],
-    "parameters": [
-      {
-        "name": "dashboard_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "get",
-    "path": "/dashboards/{dashboard_id}/widgets",
-    "operation_id": "listDashboardWidgets",
-    "summary": "List dashboard widgets",
-    "tags": [
-      "Dashboards"
-    ],
-    "parameters": [
-      {
-        "name": "dashboard_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "DashboardWidget"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "post",
-    "path": "/dashboards/{dashboard_id}/widgets",
-    "operation_id": "createDashboardWidget",
-    "summary": "Create dashboard widget",
-    "tags": [
-      "Dashboards"
-    ],
-    "parameters": [
-      {
-        "name": "dashboard_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateDashboardWidgetRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "DashboardWidget"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "get",
-    "path": "/dashboards/{dashboard_id}/widgets/{widget_id}",
-    "operation_id": "getDashboardWidget",
-    "summary": "Get dashboard widget",
-    "tags": [
-      "Dashboards"
-    ],
-    "parameters": [
-      {
-        "name": "dashboard_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "widget_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "DashboardWidget"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/dashboards/{dashboard_id}/widgets/{widget_id}",
-    "operation_id": "updateDashboardWidget",
-    "summary": "Update dashboard widget",
-    "tags": [
-      "Dashboards"
-    ],
-    "parameters": [
-      {
-        "name": "dashboard_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "widget_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdateDashboardWidgetRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "DashboardWidget"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/dashboards/{dashboard_id}/widgets/{widget_id}",
-    "operation_id": "deleteDashboardWidget",
-    "summary": "Delete dashboard widget",
-    "tags": [
-      "Dashboards"
-    ],
-    "parameters": [
-      {
-        "name": "dashboard_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "widget_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  }
+#dashboardsTag: "Dashboards"
+
+#plainDashboardOperation: #genericOperationSpec & {
+	wrapped: false
+}
+
+#dashboardIDPathParameter: #pathStringParameter & {
+	#name: "dashboard_id"
+}
+
+#widgetIDPathParameter: #pathStringParameter & {
+	#name: "widget_id"
+}
+
+#dashboardOwnerQueryParameter: #queryStringParameter & {
+	#name: "owner"
+}
+
+#dashboardPathParameters: [
+	#dashboardIDPathParameter,
 ]
 
+#dashboardWidgetPathParameters: [
+	#dashboardIDPathParameter,
+	#widgetIDPathParameter,
+]
+
+#listDashboardParameters: [
+	#dashboardOwnerQueryParameter,
+	#paginationParameters[0],
+	#paginationParameters[1],
+]
+
+#dashboardOps: [
+	#plainDashboardOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listDashboards"
+		path:         "/dashboards"
+		summary:      "List dashboards"
+		returns:      "PaginatedDashboards"
+		error_family: "standard"
+		params:       #listDashboardParameters
+	},
+	#plainDashboardOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createDashboard"
+		path:           "/dashboards"
+		summary:        "Create dashboard"
+		returns:        "Dashboard"
+		success_status: 201
+		error_family:   "mutating"
+		body_ref:       "CreateDashboardRequest"
+		body_description: "Request payload"
+	},
+	#plainDashboardOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getDashboard"
+		path:         "/dashboards/{dashboard_id}"
+		summary:      "Get dashboard"
+		returns:      "DashboardDetail"
+		error_family: "resource"
+		params:       #dashboardPathParameters
+	},
+	#plainDashboardOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getRenderedDashboard"
+		path:         "/dashboards/{dashboard_id}/rendered"
+		summary:      "Get rendered dashboard"
+		returns:      "ResolvedDashboardDetail"
+		error_family: "resource"
+		params:       #dashboardPathParameters
+	},
+	#plainDashboardOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updateDashboard"
+		path:         "/dashboards/{dashboard_id}"
+		summary:      "Update dashboard"
+		returns:      "Dashboard"
+		error_family: "mutating"
+		params:       #dashboardPathParameters
+		body_ref:     "UpdateDashboardRequest"
+		body_description: "Request payload"
+	},
+	#plainDashboardOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteDashboard"
+		path:         "/dashboards/{dashboard_id}"
+		summary:      "Delete dashboard"
+		error_family: "mutating"
+		params:       #dashboardPathParameters
+	},
+	#plainDashboardOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listDashboardWidgets"
+		path:         "/dashboards/{dashboard_id}/widgets"
+		summary:      "List dashboard widgets"
+		error_family: "resource"
+		params:       #dashboardPathParameters
+		success_schema: {
+			type: "array"
+			items: {
+				ref: "DashboardWidget"
+			}
+		}
+	},
+	#plainDashboardOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createDashboardWidget"
+		path:           "/dashboards/{dashboard_id}/widgets"
+		summary:        "Create dashboard widget"
+		returns:        "DashboardWidget"
+		success_status: 201
+		error_family:   "mutating"
+		params:         #dashboardPathParameters
+		body_ref:       "CreateDashboardWidgetRequest"
+		body_description: "Request payload"
+	},
+	#plainDashboardOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getDashboardWidget"
+		path:         "/dashboards/{dashboard_id}/widgets/{widget_id}"
+		summary:      "Get dashboard widget"
+		returns:      "DashboardWidget"
+		error_family: "resource"
+		params:       #dashboardWidgetPathParameters
+	},
+	#plainDashboardOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updateDashboardWidget"
+		path:         "/dashboards/{dashboard_id}/widgets/{widget_id}"
+		summary:      "Update dashboard widget"
+		returns:      "DashboardWidget"
+		error_family: "mutating"
+		params:       #dashboardWidgetPathParameters
+		body_ref:     "UpdateDashboardWidgetRequest"
+		body_description: "Request payload"
+	},
+	#plainDashboardOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteDashboardWidget"
+		path:         "/dashboards/{dashboard_id}/widgets/{widget_id}"
+		summary:      "Delete dashboard widget"
+		error_family: "mutating"
+		params:       #dashboardWidgetPathParameters
+	},
+]
+
+endpoints_dashboards: [
+	for op in #dashboardOps {
+		(#endpointFromGenericOperation & {
+			tag:  #dashboardsTag
+			spec: op
+		}).endpoint
+	},
+]

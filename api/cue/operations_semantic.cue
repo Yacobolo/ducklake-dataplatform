@@ -2,2706 +2,367 @@ package api
 
 // Authored semantic-layer operations.
 
-endpoints_semantic: [
-  {
-    "method": "get",
-    "path": "/semantic-sources/{source_schema}/{source_table}/freshness",
-    "operation_id": "checkSourceFreshness",
-    "summary": "Check source freshness",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "max_lag_seconds",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        }
-      },
-      {
-        "name": "source_schema",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "source_table",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "timestamp_column",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SourceFreshnessStatus"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SourceFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SourceFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SourceFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SourceFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SourceFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SourceFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SourceFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "models freshness check-source-freshness"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/semantic-models",
-    "operation_id": "listSemanticModels",
-    "summary": "List semantic models",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "max_results",
-        "in": "query",
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      {
-        "name": "page_token",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "PaginatedSemanticModels"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedSemanticModels",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedSemanticModels",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedSemanticModels",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedSemanticModels",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "PaginatedSemanticModels",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic semantic-models list"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/semantic-models",
-    "operation_id": "createSemanticModel",
-    "summary": "Create semantic model",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateSemanticModelRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "SemanticModel"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic semantic-models create"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/semantic-models/{semantic_model_id}",
-    "operation_id": "getSemanticModel",
-    "summary": "Get semantic model",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SemanticModel"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic semantic-models get"
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/semantic-models/{semantic_model_id}",
-    "operation_id": "updateSemanticModel",
-    "summary": "Update semantic model",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdateSemanticModelRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SemanticModel"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticModel",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic semantic-models update"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/semantic-models/{semantic_model_id}",
-    "operation_id": "deleteSemanticModel",
-    "summary": "Delete semantic model",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic semantic-models delete"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/semantic-models/{semantic_model_id}/metrics",
-    "operation_id": "listSemanticMetrics",
-    "summary": "List semantic metrics",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SemanticMetricList"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetricList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetricList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetricList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetricList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetricList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetricList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetricList",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic metrics list"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/semantic-models/{semantic_model_id}/metrics/{metric_name}",
-    "operation_id": "getSemanticMetric",
-    "summary": "Get semantic metric",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "metric_name",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SemanticMetric"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "post",
-    "path": "/semantic-models/{semantic_model_id}/metrics",
-    "operation_id": "createSemanticMetric",
-    "summary": "Create semantic metric",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateSemanticMetricRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "SemanticMetric"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic metrics create"
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/semantic-models/{semantic_model_id}/metrics/{metric_name}",
-    "operation_id": "updateSemanticMetric",
-    "summary": "Update semantic metric",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "metric_name",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdateSemanticMetricRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SemanticMetric"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticMetric",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic metrics update"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/semantic-models/{semantic_model_id}/metrics/{metric_name}",
-    "operation_id": "deleteSemanticMetric",
-    "summary": "Delete semantic metric",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "metric_name",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic metrics delete"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/semantic-models/{semantic_model_id}/pre-aggregations",
-    "operation_id": "listSemanticPreAggregations",
-    "summary": "List semantic pre aggregations",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SemanticPreAggregationList"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregationList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregationList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregationList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregationList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregationList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregationList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregationList",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic pre-aggregations list"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}",
-    "operation_id": "getSemanticPreAggregation",
-    "summary": "Get semantic pre aggregation",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "pre_aggregation_name",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SemanticPreAggregation"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "post",
-    "path": "/semantic-models/{semantic_model_id}/pre-aggregations",
-    "operation_id": "createSemanticPreAggregation",
-    "summary": "Create semantic pre aggregation",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateSemanticPreAggregationRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "SemanticPreAggregation"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic pre-aggregations create"
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}",
-    "operation_id": "updateSemanticPreAggregation",
-    "summary": "Update semantic pre aggregation",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "pre_aggregation_name",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdateSemanticPreAggregationRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SemanticPreAggregation"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticPreAggregation",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic pre-aggregations update"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}",
-    "operation_id": "deleteSemanticPreAggregation",
-    "summary": "Delete semantic pre aggregation",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "pre_aggregation_name",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic pre-aggregations delete"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/semantic-models/{semantic_model_id}/relationships",
-    "operation_id": "listSemanticModelRelationships",
-    "summary": "List semantic relationships for a semantic model",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SemanticRelationshipList"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationshipList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationshipList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationshipList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationshipList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationshipList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationshipList",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationshipList",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic semantic-relationships list"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/semantic-models/{semantic_model_id}/relationships/{relationship_name}",
-    "operation_id": "getSemanticModelRelationship",
-    "summary": "Get semantic relationship for a semantic model",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "relationship_name",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SemanticRelationship"
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      }
-    }
-  },
-  {
-    "method": "post",
-    "path": "/semantic-models/{semantic_model_id}/relationships",
-    "operation_id": "createSemanticModelRelationship",
-    "summary": "Create semantic relationship for a semantic model",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "CreateSemanticRelationshipRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 201,
-        "description": "The request has succeeded and a new resource has been created as a result.",
-        "schema": {
-          "ref": "SemanticRelationship"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic semantic-relationships create"
-    }
-  },
-  {
-    "method": "patch",
-    "path": "/semantic-models/{semantic_model_id}/relationships/{relationship_name}",
-    "operation_id": "updateSemanticModelRelationship",
-    "summary": "Update semantic relationship for a semantic model",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "relationship_name",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "UpdateSemanticRelationshipRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "SemanticRelationship"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "SemanticRelationship",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic semantic-relationships update"
-    }
-  },
-  {
-    "method": "delete",
-    "path": "/semantic-models/{semantic_model_id}/relationships/{relationship_name}",
-    "operation_id": "deleteSemanticModelRelationship",
-    "summary": "Delete semantic relationship for a semantic model",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "relationship_name",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 204,
-        "description": "There is no content to send for this request, but the headers may be useful."
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic semantic-relationships delete"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/semantic-models/{semantic_model_id}/query-explanations",
-    "operation_id": "explainMetricQuery",
-    "summary": "Explain metric query",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "MetricQueryRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "MetricQueryExplainResponse"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryExplainResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryExplainResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryExplainResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryExplainResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryExplainResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryExplainResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic explain"
-    }
-  },
-  {
-    "method": "post",
-    "path": "/semantic-models/{semantic_model_id}/query-runs",
-    "operation_id": "runMetricQuery",
-    "summary": "Run metric query",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "semantic_model_id",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "request_body": {
-      "required": true,
-      "description": "Request payload",
-      "schema": {
-        "ref": "MetricQueryRequest"
-      }
-    },
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "MetricQueryRunResponse"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryRunResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryRunResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryRunResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryRunResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryRunResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricQueryRunResponse",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic run"
-    }
-  },
-  {
-    "method": "get",
-    "path": "/semantic-metrics/{metric_name}/freshness",
-    "operation_id": "checkMetricFreshness",
-    "summary": "Check metric freshness",
-    "tags": [
-      "Semantic Layer"
-    ],
-    "parameters": [
-      {
-        "name": "metric_name",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string"
-        }
-      },
-      {
-        "name": "semantic_model_id",
-        "in": "query",
-        "schema": {
-          "type": "string"
-        }
-      }
-    ],
-    "responses": [
-      {
-        "status_code": 200,
-        "description": "The request has succeeded.",
-        "schema": {
-          "ref": "MetricFreshnessStatus"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 400,
-        "description": "The server could not understand the request due to invalid syntax.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 401,
-        "description": "Access is unauthorized.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 403,
-        "description": "Access is forbidden.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 404,
-        "description": "The server cannot find the requested resource.",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 429,
-        "description": "Client error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      },
-      {
-        "status_code": 500,
-        "description": "Server error",
-        "schema": {
-          "ref": "Error"
-        },
-        "extensions": {
-          "x-apigen-response-shape": {
-            "body_type": "MetricFreshnessStatus",
-            "kind": "wrapped_json"
-          }
-        }
-      }
-    ],
-    "extensions": {
-      "security": [
-        {
-          "ApiKeyAuth": []
-        },
-        {
-          "BearerAuth": []
-        }
-      ],
-      "x-authz": {
-        "mode": "authenticated"
-      },
-      "x-cli-command": "semantic freshness check-metric-freshness"
-    }
-  }
+#semanticLayerTag: "Semantic Layer"
+
+#plainSemanticOperation: #genericOperationSpec & {
+	wrapped: false
+}
+
+#semanticModelIDPathParameter: #pathStringParameter & {
+	#name: "semantic_model_id"
+}
+
+#metricNamePathParameter: #pathStringParameter & {
+	#name: "metric_name"
+}
+
+#preAggregationNamePathParameter: #pathStringParameter & {
+	#name: "pre_aggregation_name"
+}
+
+#relationshipNamePathParameter: #pathStringParameter & {
+	#name: "relationship_name"
+}
+
+#sourceSchemaPathParameter: #pathStringParameter & {
+	#name: "source_schema"
+}
+
+#sourceTablePathParameter: #pathStringParameter & {
+	#name: "source_table"
+}
+
+#semanticModelIDQueryParameter: #queryStringParameter & {
+	#name: "semantic_model_id"
+}
+
+#timestampColumnQueryParameter: #queryStringParameter & {
+	#name: "timestamp_column"
+}
+
+#maxLagSecondsQueryParameter: #queryInt64Parameter & {
+	#name: "max_lag_seconds"
+}
+
+#semanticModelPathParameters: [
+	#semanticModelIDPathParameter,
 ]
 
+#semanticMetricPathParameters: [
+	#semanticModelIDPathParameter,
+	#metricNamePathParameter,
+]
+
+#semanticPreAggregationPathParameters: [
+	#semanticModelIDPathParameter,
+	#preAggregationNamePathParameter,
+]
+
+#semanticRelationshipPathParameters: [
+	#semanticModelIDPathParameter,
+	#relationshipNamePathParameter,
+]
+
+#metricFreshnessParameters: [
+	#metricNamePathParameter,
+	#semanticModelIDQueryParameter,
+]
+
+#sourceFreshnessParameters: [
+	#sourceSchemaPathParameter,
+	#sourceTablePathParameter,
+	#timestampColumnQueryParameter,
+	#maxLagSecondsQueryParameter,
+]
+
+#semanticOps: [
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "checkMetricFreshness"
+		path:         "/semantic-metrics/{metric_name}/freshness"
+		summary:      "Check metric freshness"
+		cli:          "semantic freshness check-metric-freshness"
+		returns:      "MetricFreshnessStatus"
+		error_family: "resource"
+		params:       #metricFreshnessParameters
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listSemanticModels"
+		path:         "/semantic-models"
+		summary:      "List semantic models"
+		cli:          "semantic semantic-models list"
+		returns:      "PaginatedSemanticModels"
+		error_family: "standard"
+		params:       #paginationParameters
+	},
+	#plainSemanticOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createSemanticModel"
+		path:           "/semantic-models"
+		summary:        "Create semantic model"
+		cli:            "semantic semantic-models create"
+		returns:        "SemanticModel"
+		success_status: 201
+		error_family:   "mutating"
+		body_ref:       "CreateSemanticModelRequest"
+		body_description: "Request payload"
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getSemanticModel"
+		path:         "/semantic-models/{semantic_model_id}"
+		summary:      "Get semantic model"
+		cli:          "semantic semantic-models get"
+		returns:      "SemanticModel"
+		error_family: "resource"
+		params:       #semanticModelPathParameters
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updateSemanticModel"
+		path:         "/semantic-models/{semantic_model_id}"
+		summary:      "Update semantic model"
+		cli:          "semantic semantic-models update"
+		returns:      "SemanticModel"
+		error_family: "mutating"
+		params:       #semanticModelPathParameters
+		body_ref:     "UpdateSemanticModelRequest"
+		body_description: "Request payload"
+	},
+	#plainSemanticOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteSemanticModel"
+		path:         "/semantic-models/{semantic_model_id}"
+		summary:      "Delete semantic model"
+		cli:          "semantic semantic-models delete"
+		error_family: "mutating"
+		params:       #semanticModelPathParameters
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listSemanticMetrics"
+		path:         "/semantic-models/{semantic_model_id}/metrics"
+		summary:      "List semantic metrics"
+		cli:          "semantic metrics list"
+		returns:      "SemanticMetricList"
+		error_family: "resource"
+		params:       #semanticModelPathParameters
+	},
+	#plainSemanticOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createSemanticMetric"
+		path:           "/semantic-models/{semantic_model_id}/metrics"
+		summary:        "Create semantic metric"
+		cli:            "semantic metrics create"
+		returns:        "SemanticMetric"
+		success_status: 201
+		error_family:   "mutating"
+		params:         #semanticModelPathParameters
+		body_ref:       "CreateSemanticMetricRequest"
+		body_description: "Request payload"
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getSemanticMetric"
+		path:         "/semantic-models/{semantic_model_id}/metrics/{metric_name}"
+		summary:      "Get semantic metric"
+		returns:      "SemanticMetric"
+		error_family: "resource"
+		params:       #semanticMetricPathParameters
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updateSemanticMetric"
+		path:         "/semantic-models/{semantic_model_id}/metrics/{metric_name}"
+		summary:      "Update semantic metric"
+		cli:          "semantic metrics update"
+		returns:      "SemanticMetric"
+		error_family: "mutating"
+		params:       #semanticMetricPathParameters
+		body_ref:     "UpdateSemanticMetricRequest"
+		body_description: "Request payload"
+	},
+	#plainSemanticOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteSemanticMetric"
+		path:         "/semantic-models/{semantic_model_id}/metrics/{metric_name}"
+		summary:      "Delete semantic metric"
+		cli:          "semantic metrics delete"
+		error_family: "mutating"
+		params:       #semanticMetricPathParameters
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listSemanticPreAggregations"
+		path:         "/semantic-models/{semantic_model_id}/pre-aggregations"
+		summary:      "List semantic pre aggregations"
+		cli:          "semantic pre-aggregations list"
+		returns:      "SemanticPreAggregationList"
+		error_family: "resource"
+		params:       #semanticModelPathParameters
+	},
+	#plainSemanticOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createSemanticPreAggregation"
+		path:           "/semantic-models/{semantic_model_id}/pre-aggregations"
+		summary:        "Create semantic pre aggregation"
+		cli:            "semantic pre-aggregations create"
+		returns:        "SemanticPreAggregation"
+		success_status: 201
+		error_family:   "mutating"
+		params:         #semanticModelPathParameters
+		body_ref:       "CreateSemanticPreAggregationRequest"
+		body_description: "Request payload"
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getSemanticPreAggregation"
+		path:         "/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}"
+		summary:      "Get semantic pre aggregation"
+		returns:      "SemanticPreAggregation"
+		error_family: "resource"
+		params:       #semanticPreAggregationPathParameters
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updateSemanticPreAggregation"
+		path:         "/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}"
+		summary:      "Update semantic pre aggregation"
+		cli:          "semantic pre-aggregations update"
+		returns:      "SemanticPreAggregation"
+		error_family: "mutating"
+		params:       #semanticPreAggregationPathParameters
+		body_ref:     "UpdateSemanticPreAggregationRequest"
+		body_description: "Request payload"
+	},
+	#plainSemanticOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteSemanticPreAggregation"
+		path:         "/semantic-models/{semantic_model_id}/pre-aggregations/{pre_aggregation_name}"
+		summary:      "Delete semantic pre aggregation"
+		cli:          "semantic pre-aggregations delete"
+		error_family: "mutating"
+		params:       #semanticPreAggregationPathParameters
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "listSemanticModelRelationships"
+		path:         "/semantic-models/{semantic_model_id}/relationships"
+		summary:      "List semantic relationships for a semantic model"
+		cli:          "semantic semantic-relationships list"
+		returns:      "SemanticRelationshipList"
+		error_family: "resource"
+		params:       #semanticModelPathParameters
+	},
+	#plainSemanticOperation & {
+		kind:           "response"
+		method:         "post"
+		op:             "createSemanticModelRelationship"
+		path:           "/semantic-models/{semantic_model_id}/relationships"
+		summary:        "Create semantic relationship for a semantic model"
+		cli:            "semantic semantic-relationships create"
+		returns:        "SemanticRelationship"
+		success_status: 201
+		error_family:   "mutating"
+		params:         #semanticModelPathParameters
+		body_ref:       "CreateSemanticRelationshipRequest"
+		body_description: "Request payload"
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "getSemanticModelRelationship"
+		path:         "/semantic-models/{semantic_model_id}/relationships/{relationship_name}"
+		summary:      "Get semantic relationship for a semantic model"
+		returns:      "SemanticRelationship"
+		error_family: "resource"
+		params:       #semanticRelationshipPathParameters
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "patch"
+		op:           "updateSemanticModelRelationship"
+		path:         "/semantic-models/{semantic_model_id}/relationships/{relationship_name}"
+		summary:      "Update semantic relationship for a semantic model"
+		cli:          "semantic semantic-relationships update"
+		returns:      "SemanticRelationship"
+		error_family: "mutating"
+		params:       #semanticRelationshipPathParameters
+		body_ref:     "UpdateSemanticRelationshipRequest"
+		body_description: "Request payload"
+	},
+	#plainSemanticOperation & {
+		kind:         "no_content"
+		method:       "delete"
+		op:           "deleteSemanticModelRelationship"
+		path:         "/semantic-models/{semantic_model_id}/relationships/{relationship_name}"
+		summary:      "Delete semantic relationship for a semantic model"
+		cli:          "semantic semantic-relationships delete"
+		error_family: "mutating"
+		params:       #semanticRelationshipPathParameters
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "post"
+		op:           "explainMetricQuery"
+		path:         "/semantic-models/{semantic_model_id}/query-explanations"
+		summary:      "Explain metric query"
+		cli:          "semantic explain"
+		returns:      "MetricQueryExplainResponse"
+		error_family: "mutating"
+		params:       #semanticModelPathParameters
+		body_ref:     "MetricQueryRequest"
+		body_description: "Request payload"
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "post"
+		op:           "runMetricQuery"
+		path:         "/semantic-models/{semantic_model_id}/query-runs"
+		summary:      "Run metric query"
+		cli:          "semantic run"
+		returns:      "MetricQueryRunResponse"
+		error_family: "mutating"
+		params:       #semanticModelPathParameters
+		body_ref:     "MetricQueryRequest"
+		body_description: "Request payload"
+	},
+	#plainSemanticOperation & {
+		kind:         "response"
+		method:       "get"
+		op:           "checkSourceFreshness"
+		path:         "/semantic-sources/{source_schema}/{source_table}/freshness"
+		summary:      "Check source freshness"
+		cli:          "models freshness check-source-freshness"
+		returns:      "SourceFreshnessStatus"
+		error_family: "resource"
+		params:       #sourceFreshnessParameters
+	},
+]
+
+endpoints_semantic: [
+	for op in #semanticOps {
+		(#endpointFromGenericOperation & {
+			tag:  #semanticLayerTag
+			spec: op
+		}).endpoint
+	},
+]

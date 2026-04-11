@@ -94,6 +94,18 @@ import "list"
 	}
 }
 
+#queryInt64Parameter: {
+	#name: string
+
+	name:    #name
+	in:      "query"
+	explode: false
+	schema: {
+		type:   "integer"
+		format: "int64"
+	}
+}
+
 #pathInt32Parameter: {
 	#name: string
 
@@ -287,6 +299,22 @@ import "list"
 	}
 }
 
+#wrappedJSONAcceptedResponse: {
+	#body_type: string
+
+	status_code: 202
+	description: "The request has been accepted for processing, but processing has not yet completed."
+	schema: {
+		ref: #body_type
+	}
+	extensions: {
+		"x-apigen-response-shape": {
+			body_type: #body_type
+			kind:      "wrapped_json"
+		}
+	}
+}
+
 #authenticatedAuthz: {
 	mode: "authenticated"
 }
@@ -305,7 +333,8 @@ import "list"
 	description?:   string
 	cli?:           string
 	returns?:       string
-	success_status: *200 | 201
+	success_schema?: #SchemaRef
+	success_status: *200 | 201 | 202
 	wrapped:        *true | false
 	error_family:   "standard" | "lookup" | "guarded_read" | "mutating" | "resource" | "mutating_conflict" | "resource_conflict"
 	params?:        [...#Parameter]
@@ -354,6 +383,11 @@ import "list"
 						},
 						if spec.success_status == 201 {
 							#wrappedJSONCreatedResponse & {
+								#body_type: spec.returns
+							}
+						},
+						if spec.success_status == 202 {
+							#wrappedJSONAcceptedResponse & {
 								#body_type: spec.returns
 							}
 						},
@@ -429,8 +463,16 @@ import "list"
 							if spec.success_status == 201 {
 								description: "The request has succeeded and a new resource has been created as a result."
 							}
-							schema: {
-								ref: spec.returns
+							if spec.success_status == 202 {
+								description: "The request has been accepted for processing, but processing has not yet completed."
+							}
+							if spec.success_schema != _|_ {
+								schema: spec.success_schema
+							}
+							if spec.success_schema == _|_ {
+								schema: {
+									ref: spec.returns
+								}
 							}
 						},
 					],
@@ -465,11 +507,19 @@ import "list"
 						#description: "There is no content to send for this request, but the headers may be useful."
 					},
 				],
-				if spec.error_family == "resource" {
+				if spec.error_family == "resource" || spec.error_family == "resource_conflict" {
 					#resourcePlainErrorResponses
 				},
-				if spec.error_family == "mutating" {
+				if spec.error_family == "mutating" || spec.error_family == "mutating_conflict" {
 					#mutatingErrorResponses
+				},
+				if spec.error_family == "resource_conflict" || spec.error_family == "mutating_conflict" {
+					[
+						#errorResponse & {
+							#status_code: 409
+							#description: "The request conflicts with the current state of the server."
+						},
+					]
 				},
 			])
 		}
