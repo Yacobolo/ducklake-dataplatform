@@ -64,7 +64,7 @@ func TestCompileDir_LineageCompactAuthoringParity(t *testing.T) {
 	require.Equal(t, []string{"data", "next_page_token"}, paginatedLineageEdges.PropertyOrder)
 
 	apiKeyInfo := bundle.Document.Schemas["APIKeyInfo"]
-	require.Equal(t, []string{"created_at", "expires_at", "id", "key_prefix", "name", "principal_id"}, apiKeyInfo.PropertyOrder)
+	require.Equal(t, []string{"id", "principal_id", "name", "key_prefix", "expires_at", "created_at"}, apiKeyInfo.PropertyOrder)
 	require.Equal(t, "date-time", apiKeyInfo.Properties["created_at"].Schema.Format)
 	require.Equal(t, "date-time", apiKeyInfo.Properties["expires_at"].Schema.Format)
 }

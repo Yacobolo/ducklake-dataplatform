@@ -105,6 +105,8 @@ package api
 
 #objectSchema: {
 	type: "object"
+	title?: string
+	description?: string
 	#fields: [string]: #SchemaProperty
 	properties: #fields
 	#required?: [...string]
@@ -115,6 +117,8 @@ package api
 
 #enumSchema: {
 	type: "string"
+	title?: string
+	description?: string
 	#values: [...string]
 	enum: #values
 }

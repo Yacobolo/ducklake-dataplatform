@@ -3,25 +3,28 @@ package api
 // Authored auth and identity schemas.
 
 #apiKeyInfoFields: {
-	created_at:   #createdAtProperty
-	expires_at:   #expiresAtProperty
 	id:           #idProperty
-	key_prefix:   #stringProperty
-	name:         #nameProperty
 	principal_id: #principalIDProperty
+	name:         #nameProperty
+	key_prefix:   #stringProperty
+	expires_at:   #expiresAtProperty
+	created_at:   #createdAtProperty
 	...
 }
 
 #principalSummaryFields: {
 	id:       #idProperty
-	is_admin: #boolProperty
 	name:     #nameProperty
+	is_admin: #boolProperty
 	...
 }
 
-#principalFields: #principalSummaryFields & {
-	created_at: #createdAtProperty
+#principalFields: {
+	id:         #idProperty
+	name:       #nameProperty
 	type:       #refProperty & {#ref: "PrincipalType"}
+	is_admin:   #boolProperty
+	created_at: #createdAtProperty
 }
 
 #usernamePasswordFields: {
@@ -56,14 +59,16 @@ package api
 
 schemas_auth: {
 	APIKeyInfo: #objectSchema & {
+		title:       "API key metadata."
+		description: "Represents a stored API key without returning the full secret value."
 		#fields: #apiKeyInfoFields
 		#required: ["id", "principal_id", "name"]
 	}
 
 	AuthLoginResponse: #objectSchema & {
 		#fields: {
-			principal: #refProperty & {#ref: "AuthPrincipalSummary"}
 			token:     #stringProperty
+			principal: #refProperty & {#ref: "AuthPrincipalSummary"}
 		}
 		#required: ["token", "principal"]
 	}
@@ -75,10 +80,10 @@ schemas_auth: {
 
 	BootstrapCompleteRequest: #objectSchema & {
 		#fields: {
-			bootstrap_token: #stringProperty
+			username:        #stringProperty
 			password:        #stringProperty
 			principal_name:  #principalNameProperty
-			username:        #stringProperty
+			bootstrap_token: #stringProperty
 		}
 		#required: ["username", "password"]
 	}
@@ -106,30 +111,30 @@ schemas_auth: {
 
 	CreateAPIKeyRequest: #objectSchema & {
 		#fields: {
-			expires_at:   #expiresAtProperty
-			name:         #nameProperty
 			principal_id: #principalIDProperty
+			name:         #nameProperty
+			expires_at:   #expiresAtProperty
 		}
 		#required: ["principal_id"]
 	}
 
 	CreateAPIKeyResponse: #objectSchema & {
 		#fields: {
-			created_at: #createdAtProperty
-			expires_at: #expiresAtProperty
 			id:         #idProperty
 			key:        #stringProperty
-			key_prefix: #stringProperty
 			name:       #nameProperty
+			key_prefix: #stringProperty
+			expires_at: #expiresAtProperty
+			created_at: #createdAtProperty
 		}
 		#required: ["id", "key"]
 	}
 
 	CreatePrincipalRequest: #objectSchema & {
 		#fields: {
-			is_admin: #boolProperty
 			name:     #nameProperty
 			type:     #refProperty & {#ref: "PrincipalType"}
+			is_admin: #boolProperty
 		}
 		#required: ["name"]
 	}
@@ -159,6 +164,7 @@ schemas_auth: {
 	}
 
 	Principal: #objectSchema & {
+		title:       "Authenticated principal."
 		#fields:    #principalFields
 		#required: ["id", "name", "type", "is_admin"]
 	}

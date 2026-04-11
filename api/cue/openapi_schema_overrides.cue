@@ -1,18 +1,6 @@
 package api
 
 openapi_schema_overrides: {
-  "APIKeyInfo": {
-    "title": "API key metadata.",
-    "description": "Represents a stored API key without returning the full secret value.",
-    "property_order": [
-      "id",
-      "principal_id",
-      "name",
-      "key_prefix",
-      "expires_at",
-      "created_at"
-    ]
-  },
   "Asset": {
     "property_order": [
       "id",
@@ -243,19 +231,6 @@ openapi_schema_overrides: {
       "created_at"
     ]
   },
-  "AuthLoginResponse": {
-    "property_order": [
-      "token",
-      "principal"
-    ]
-  },
-  "AuthPrincipalSummary": {
-    "property_order": [
-      "id",
-      "name",
-      "is_admin"
-    ]
-  },
   "BackfillRequest": {
     "property_order": [
       "id",
@@ -314,14 +289,6 @@ openapi_schema_overrides: {
         }
       }
     }
-  },
-  "BootstrapCompleteRequest": {
-    "property_order": [
-      "username",
-      "password",
-      "principal_name",
-      "bootstrap_token"
-    ]
   },
   "Build": {
     "property_order": [
@@ -517,23 +484,6 @@ openapi_schema_overrides: {
       "notebook_mode"
     ]
   },
-  "CreateAPIKeyRequest": {
-    "property_order": [
-      "principal_id",
-      "name",
-      "expires_at"
-    ]
-  },
-  "CreateAPIKeyResponse": {
-    "property_order": [
-      "id",
-      "key",
-      "name",
-      "key_prefix",
-      "expires_at",
-      "created_at"
-    ]
-  },
   "CreateAssetBackfillRequest": {
     "property_order": [
       "partition_from",
@@ -696,17 +646,6 @@ openapi_schema_overrides: {
     ]
   },
   "CreateEnvironmentRequest": {
-    "property_order": [
-      "name",
-      "kind",
-      "description",
-      "target_catalog",
-      "target_schema",
-      "compute_endpoint",
-      "defer_to_environment",
-      "variables",
-      "source_overrides"
-    ],
     "properties": {
       "source_overrides": {
         "schema": {
@@ -738,16 +677,6 @@ openapi_schema_overrides: {
       "storage_type",
       "comment",
       "read_only"
-    ]
-  },
-  "CreateFolderRequest": {
-    "property_order": [
-      "name",
-      "parent_folder_id",
-      "git_repo_id",
-      "git_root_path",
-      "default_project_id",
-      "default_environment_id"
     ]
   },
   "CreateGitRepoRequest": {
@@ -859,13 +788,6 @@ openapi_schema_overrides: {
       "folder_id"
     ]
   },
-  "CreatePrincipalRequest": {
-    "property_order": [
-      "name",
-      "type",
-      "is_admin"
-    ]
-  },
   "CreateProductDomainRequest": {
     "property_order": [
       "name",
@@ -883,15 +805,6 @@ openapi_schema_overrides: {
     "property_order": [
       "name",
       "contact_channel"
-    ]
-  },
-  "CreateProjectRequest": {
-    "property_order": [
-      "name",
-      "kind",
-      "description",
-      "product_id",
-      "default_branch"
     ]
   },
   "CreateRowFilterRequest": {
@@ -1401,21 +1314,6 @@ openapi_schema_overrides: {
       "member_id"
     ]
   },
-  "HealthResponse": {
-    "title": "Service health status."
-  },
-  "LineageEdge": {
-    "property_order": [
-      "id",
-      "source_table",
-      "target_table",
-      "source_schema",
-      "target_schema",
-      "edge_type",
-      "principal_name",
-      "created_at"
-    ]
-  },
   "LoadExternalRequest": {
     "property_order": [
       "paths",
@@ -1757,13 +1655,6 @@ openapi_schema_overrides: {
       "created_at"
     ]
   },
-  "MoveFolderRequest": {
-    "property_order": [
-      "parent_folder_id",
-      "confirm_leave_git",
-      "confirm_context_change"
-    ]
-  },
   "MoveNotebookRequest": {
     "property_order": [
       "folder_id",
@@ -1974,16 +1865,6 @@ openapi_schema_overrides: {
         }
       }
     }
-  },
-  "Principal": {
-    "title": "Authenticated principal.",
-    "property_order": [
-      "id",
-      "name",
-      "type",
-      "is_admin",
-      "created_at"
-    ]
   },
   "PrivilegeGrant": {
     "property_order": [
@@ -2489,26 +2370,6 @@ openapi_schema_overrides: {
       }
     }
   },
-  "TableStatistics": {
-    "property_order": [
-      "row_count",
-      "size_bytes",
-      "column_count",
-      "last_profiled_at",
-      "profiled_by"
-    ],
-    "properties": {
-      "last_profiled_at": {
-        "schema": {
-          "type": "string",
-          "format": "date-time"
-        }
-      }
-    }
-  },
-  "TabularColumn": {
-    "title": "Metadata for a result-set column."
-  },
   "Tag": {
     "property_order": [
       "id",
@@ -2938,19 +2799,6 @@ openapi_schema_overrides: {
       "owner",
       "created_at",
       "updated_at"
-    ]
-  },
-  "WebSessionStatsResponse": {
-    "property_order": [
-      "created_total",
-      "resolved_total",
-      "resolve_failed_total",
-      "revoked_total",
-      "revoked_all_total",
-      "reaped_total",
-      "active_sessions",
-      "idle_ttl_seconds",
-      "absolute_ttl_seconds"
     ]
   },
   "Workspace": {

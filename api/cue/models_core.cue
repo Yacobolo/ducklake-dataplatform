@@ -30,15 +30,15 @@ schemas_core: {
   },
   CreateEnvironmentRequest: #objectSchema & {
     #fields: {
-      compute_endpoint: #stringProperty,
-      defer_to_environment: #stringProperty,
-      description: #descriptionProperty,
-      kind: #refProperty & {#ref: "EnvironmentKind"},
       name: #nameProperty,
-      source_overrides: #refProperty & {#ref: "Record"},
+      kind: #refProperty & {#ref: "EnvironmentKind"},
+      description: #descriptionProperty,
       target_catalog: #stringProperty,
       target_schema: #stringProperty,
-      variables: #refProperty & {#ref: "Record"}
+      compute_endpoint: #stringProperty,
+      defer_to_environment: #stringProperty,
+      variables: #refProperty & {#ref: "Record"},
+      source_overrides: #refProperty & {#ref: "Record"}
     },
     #required: [
       "name",
@@ -48,12 +48,12 @@ schemas_core: {
   },
   CreateFolderRequest: #objectSchema & {
     #fields: {
-      default_environment_id: #stringProperty,
-      default_project_id: #stringProperty,
+      name: #nameProperty,
+      parent_folder_id: #stringProperty,
       git_repo_id: #stringProperty,
       git_root_path: #stringProperty,
-      name: #nameProperty,
-      parent_folder_id: #stringProperty
+      default_project_id: #stringProperty,
+      default_environment_id: #stringProperty
     },
     #required: [
       "name"
@@ -61,11 +61,11 @@ schemas_core: {
   },
   CreateProjectRequest: #objectSchema & {
     #fields: {
-      default_branch: #stringProperty,
-      description: #descriptionProperty,
-      kind: #refProperty & {#ref: "ProjectKind"},
       name: #nameProperty,
-      product_id: #stringProperty
+      kind: #refProperty & {#ref: "ProjectKind"},
+      description: #descriptionProperty,
+      product_id: #stringProperty,
+      default_branch: #stringProperty
     },
     #required: [
       "name"
@@ -91,6 +91,7 @@ schemas_core: {
     }
   },
   HealthResponse: #objectSchema & {
+    title: "Service health status."
     #fields: {
       status: #statusProperty
     },
@@ -100,14 +101,14 @@ schemas_core: {
   },
   LineageEdge: #objectSchema & {
     #fields: {
-      created_at: #createdAtProperty,
-      edge_type: #stringProperty,
       id: #idProperty,
-      principal_name: #principalNameProperty,
-      source_schema: #stringProperty,
       source_table: #stringProperty,
+      target_table: #stringProperty,
+      source_schema: #stringProperty,
       target_schema: #stringProperty,
-      target_table: #stringProperty
+      edge_type: #stringProperty,
+      principal_name: #principalNameProperty,
+      created_at: #createdAtProperty
     }
   },
   LineageNode: #objectSchema & {
@@ -142,9 +143,9 @@ schemas_core: {
   },
   MoveFolderRequest: #objectSchema & {
     #fields: {
-      confirm_context_change: #boolProperty,
+      parent_folder_id: #stringProperty,
       confirm_leave_git: #boolProperty,
-      parent_folder_id: #stringProperty
+      confirm_context_change: #boolProperty
     }
   },
   PurgeLineageRequest: #objectSchema & {
@@ -199,14 +200,15 @@ schemas_core: {
   },
   TableStatistics: #objectSchema & {
     #fields: {
-      column_count: #int32Property,
-      last_profiled_at: #stringProperty,
-      profiled_by: #stringProperty,
       row_count: #int64Property,
-      size_bytes: #int64Property
+      size_bytes: #int64Property,
+      column_count: #int32Property,
+      last_profiled_at: #dateTimeProperty,
+      profiled_by: #stringProperty
     }
   },
   TabularColumn: #objectSchema & {
+    title: "Metadata for a result-set column."
     #fields: {
       name: #nameProperty
     },
