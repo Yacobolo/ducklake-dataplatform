@@ -1,3 +1,5 @@
+// Package cuegen compiles authored CUE API definitions into APIGen IR and
+// canonical OpenAPI artifacts.
 package cuegen
 
 import (
@@ -10,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
 
@@ -90,6 +93,8 @@ func CompileDir(dir string) (Bundle, error) {
 	if err := value.Decode(&source); err != nil {
 		return Bundle{}, fmt.Errorf("decode cue package %q: %w", dir, err)
 	}
+	applySchemaPropertyOrderFromSource(value, source.Schemas, "schemas")
+	applySchemaPropertyOrderFromSource(value, source.OpenAPIExtraSchemas, "openapi_extra_schemas")
 
 	fullDoc := ir.Document{
 		SchemaVersion: source.SchemaVersion,
@@ -134,6 +139,46 @@ func CompileDir(dir string) (Bundle, error) {
 		Document:         doc,
 		CanonicalOpenAPI: canonicalOpenAPI,
 	}, nil
+}
+
+func applySchemaPropertyOrderFromSource(root cue.Value, schemas map[string]ir.Schema, field string) {
+	if len(schemas) == 0 {
+		return
+	}
+	sourceSchemas := root.LookupPath(cue.ParsePath(field))
+	if !sourceSchemas.Exists() {
+		return
+	}
+	schemaIter, err := sourceSchemas.Fields(cue.Definitions(false), cue.Optional(true), cue.Hidden(false))
+	if err != nil {
+		return
+	}
+	for schemaIter.Next() {
+		name := schemaIter.Selector().Unquoted()
+		schema, ok := schemas[name]
+		if !ok || len(schema.PropertyOrder) > 0 || len(schema.Properties) == 0 {
+			continue
+		}
+		properties := schemaIter.Value().LookupPath(cue.ParsePath("properties"))
+		if !properties.Exists() {
+			continue
+		}
+		propertyIter, err := properties.Fields(cue.Definitions(false), cue.Optional(true), cue.Hidden(false))
+		if err != nil {
+			continue
+		}
+		order := make([]string, 0, len(schema.Properties))
+		for propertyIter.Next() {
+			propertyName := propertyIter.Selector().Unquoted()
+			if _, ok := schema.Properties[propertyName]; ok {
+				order = append(order, propertyName)
+			}
+		}
+		if len(order) > 0 {
+			schema.PropertyOrder = order
+			schemas[name] = schema
+		}
+	}
 }
 
 func filterGeneratedEndpoints(endpoints []ir.Endpoint) []ir.Endpoint {
@@ -550,11 +595,14 @@ func appendFieldFile(path string, field string, value any) error {
 	if err != nil {
 		return err
 	}
+	//nolint:gosec // Path is a repo-local generated output path chosen by the caller.
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
 	if err != nil {
 		return fmt.Errorf("open %s for append: %w", path, err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	if _, err := file.Write(content); err != nil {
 		return fmt.Errorf("append %s: %w", path, err)
 	}

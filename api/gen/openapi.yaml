@@ -9332,7 +9332,7 @@ paths:
       security:
         - {}
       x-authz:
-        mode: public
+        mode: none
   /lineage/columns/{schema_name}/{table_name}:
     get:
       operationId: getColumnLineage
@@ -19001,6 +19001,10 @@ components:
         max_attempts:
           type: integer
           format: int32
+        partition_from:
+          type: string
+        partition_to:
+          type: string
     BootstrapCompleteRequest:
       type: object
       required:

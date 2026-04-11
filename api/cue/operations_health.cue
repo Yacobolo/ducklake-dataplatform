@@ -53,7 +53,7 @@ endpoints_health: [
         {}
       ],
       "x-authz": {
-        "mode": "public"
+        "mode": "none"
       }
     }
   }

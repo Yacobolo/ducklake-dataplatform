@@ -5,363 +5,87 @@ package api
 openapi_extra_schemas: schemas_generated
 
 schemas_generated: {
-  "CatalogInfo": {
-    "type": "object"
-    "required": [
+  "CatalogInfo": #objectSchema & {
+    #fields: {
+      "name": #nameProperty
+      "comment": #commentProperty
+      "created_at": #createdAtProperty
+      "updated_at": #updatedAtProperty
+      "system_managed": #boolProperty
+    }
+    #required: [
       "name",
     ]
-    "properties": {
-      "name": {
-        "schema": {
-          "type": "string"
-        }
-      }
-      "comment": {
-        "schema": {
-          "type": "string"
-        }
-      }
-      "created_at": {
-        "schema": {
-          "type": "string"
-          "format": "date-time"
-        }
-      }
-      "updated_at": {
-        "schema": {
-          "type": "string"
-          "format": "date-time"
-        }
-      }
-      "system_managed": {
-        "schema": {
-          "type": "boolean"
-        }
-      }
-    }
-    "property_order": [
-      "name",
-      "comment",
-      "created_at",
-      "updated_at",
-      "system_managed",
-    ]
   }
-  "DashboardNotebookCellSourceUpdate": {
-    "type": "object"
-    "properties": {
-      "notebook_id": {
-        "schema": {
-          "type": "string"
-        }
-      }
-      "cell_id": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "DashboardNotebookCellSourceUpdate": #objectSchema & {
+    #fields: {
+      "notebook_id": #stringProperty
+      "cell_id": #stringProperty
     }
-    "property_order": [
-      "notebook_id",
-      "cell_id",
-    ]
   }
-  "DashboardSQLQuerySourceUpdate": {
-    "type": "object"
-    "properties": {
-      "sql": {
-        "schema": {
-          "type": "string"
-        }
-      }
-      "catalog": {
-        "schema": {
-          "type": "string"
-        }
-      }
-      "schema": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "DashboardSQLQuerySourceUpdate": #objectSchema & {
+    #fields: {
+      "sql": #stringProperty
+      "catalog": #stringProperty
+      "schema": #stringProperty
     }
-    "property_order": [
-      "sql",
-      "catalog",
-      "schema",
-    ]
   }
-  "DashboardSemanticQuerySourceUpdate": {
-    "type": "object"
-    "properties": {
-      "semantic_model_id": {
-        "schema": {
-          "type": "string"
-        }
-      }
-      "metrics": {
-        "schema": {
-          "type": "array"
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-      "relationship_names": {
-        "schema": {
-          "type": "array"
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-      "dimensions": {
-        "schema": {
-          "type": "array"
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-      "filters": {
-        "schema": {
-          "type": "array"
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-      "order_by": {
-        "schema": {
-          "type": "array"
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-      "limit": {
-        "schema": {
-          "type": "integer"
-          "format": "int32"
-        }
-      }
-      "time_grain": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "DashboardSemanticQuerySourceUpdate": #objectSchema & {
+    #fields: {
+      "semantic_model_id": #stringProperty
+      "metrics": #stringArrayProperty
+      "relationship_names": #stringArrayProperty
+      "dimensions": #stringArrayProperty
+      "filters": #stringArrayProperty
+      "order_by": #stringArrayProperty
+      "limit": #int32Property
+      "time_grain": #stringProperty
     }
-    "property_order": [
-      "semantic_model_id",
-      "metrics",
-      "relationship_names",
-      "dimensions",
-      "filters",
-      "order_by",
-      "limit",
-      "time_grain",
-    ]
   }
-  "DashboardWidgetLayoutUpdate": {
-    "type": "object"
-    "properties": {
-      "x": {
-        "schema": {
-          "type": "integer"
-          "format": "int32"
-        }
-      }
-      "y": {
-        "schema": {
-          "type": "integer"
-          "format": "int32"
-        }
-      }
-      "w": {
-        "schema": {
-          "type": "integer"
-          "format": "int32"
-        }
-      }
-      "h": {
-        "schema": {
-          "type": "integer"
-          "format": "int32"
-        }
-      }
+  "DashboardWidgetLayoutUpdate": #objectSchema & {
+    #fields: {
+      "x": #int32Property
+      "y": #int32Property
+      "w": #int32Property
+      "h": #int32Property
     }
-    "property_order": [
-      "x",
-      "y",
-      "w",
-      "h",
-    ]
   }
-  "DashboardWidgetSourceUpdate": {
-    "type": "object"
-    "properties": {
-      "kind": {
-        "schema": {
-          "ref": "DashboardWidgetSourceKind"
-        }
-      }
-      "sql_query": {
-        "schema": {
-          "ref": "DashboardSQLQuerySourceUpdate"
-        }
-      }
-      "notebook_cell": {
-        "schema": {
-          "ref": "DashboardNotebookCellSourceUpdate"
-        }
-      }
-      "semantic_query": {
-        "schema": {
-          "ref": "DashboardSemanticQuerySourceUpdate"
-        }
-      }
+  "DashboardWidgetSourceUpdate": #objectSchema & {
+    #fields: {
+      "kind": #refProperty & {#ref: "DashboardWidgetSourceKind"}
+      "sql_query": #refProperty & {#ref: "DashboardSQLQuerySourceUpdate"}
+      "notebook_cell": #refProperty & {#ref: "DashboardNotebookCellSourceUpdate"}
+      "semantic_query": #refProperty & {#ref: "DashboardSemanticQuerySourceUpdate"}
     }
-    "property_order": [
-      "kind",
-      "sql_query",
-      "notebook_cell",
-      "semantic_query",
-    ]
   }
-  "PaginatedSemanticRelationships": {
-    "type": "object"
-    "required": [
-      "data",
-    ]
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array"
-          "items": {
-            "ref": "SemanticRelationship"
-          }
-        }
-      }
-      "next_page_token": {
-        "schema": {
-          "type": "string"
-        }
-      }
-    }
-    "property_order": [
-      "data",
-      "next_page_token",
-    ]
+  "PaginatedSemanticRelationships": #paginatedItemsSchema & {
+    #item_ref: "SemanticRelationship"
   }
-  "VisualEncodingsUpdate": {
-    "type": "object"
-    "properties": {
-      "x": {
-        "schema": {
-          "ref": "VisualFieldBindingUpdate"
-        }
-      }
-      "y": {
-        "schema": {
-          "ref": "VisualFieldBindingUpdate"
-        }
-      }
-      "series": {
-        "schema": {
-          "ref": "VisualFieldBindingUpdate"
-        }
-      }
-      "label": {
-        "schema": {
-          "ref": "VisualFieldBindingUpdate"
-        }
-      }
-      "value": {
-        "schema": {
-          "ref": "VisualFieldBindingUpdate"
-        }
-      }
-      "secondary": {
-        "schema": {
-          "ref": "VisualFieldBindingUpdate"
-        }
-      }
+  "VisualEncodingsUpdate": #objectSchema & {
+    #fields: {
+      "x": #refProperty & {#ref: "VisualFieldBindingUpdate"}
+      "y": #refProperty & {#ref: "VisualFieldBindingUpdate"}
+      "series": #refProperty & {#ref: "VisualFieldBindingUpdate"}
+      "label": #refProperty & {#ref: "VisualFieldBindingUpdate"}
+      "value": #refProperty & {#ref: "VisualFieldBindingUpdate"}
+      "secondary": #refProperty & {#ref: "VisualFieldBindingUpdate"}
     }
-    "property_order": [
-      "x",
-      "y",
-      "series",
-      "label",
-      "value",
-      "secondary",
-    ]
   }
-  "VisualFieldBindingUpdate": {
-    "type": "object"
-    "properties": {
-      "field": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "VisualFieldBindingUpdate": #objectSchema & {
+    #fields: {
+      "field": #stringProperty
     }
-    "property_order": [
-      "field",
-    ]
   }
-  "VisualSpecUpdate": {
-    "type": "object"
-    "properties": {
-      "kind": {
-        "schema": {
-          "ref": "VisualOutputKind"
-        }
-      }
-      "chart_type": {
-        "schema": {
-          "ref": "VisualChartType"
-        }
-      }
-      "encodings": {
-        "schema": {
-          "ref": "VisualEncodingsUpdate"
-        }
-      }
-      "title": {
-        "schema": {
-          "type": "string"
-        }
-      }
-      "subtitle": {
-        "schema": {
-          "type": "string"
-        }
-      }
-      "legend": {
-        "schema": {
-          "type": "boolean"
-        }
-      }
-      "stacked": {
-        "schema": {
-          "type": "boolean"
-        }
-      }
-      "color_palette": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "VisualSpecUpdate": #objectSchema & {
+    #fields: {
+      "kind": #refProperty & {#ref: "VisualOutputKind"}
+      "chart_type": #refProperty & {#ref: "VisualChartType"}
+      "encodings": #refProperty & {#ref: "VisualEncodingsUpdate"}
+      "title": #stringProperty
+      "subtitle": #stringProperty
+      "legend": #boolProperty
+      "stacked": #boolProperty
+      "color_palette": #stringProperty
     }
-    "property_order": [
-      "kind",
-      "chart_type",
-      "encodings",
-      "title",
-      "subtitle",
-      "legend",
-      "stacked",
-      "color_palette",
-    ]
   }
 }

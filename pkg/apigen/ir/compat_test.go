@@ -2,7 +2,6 @@ package ir_test
 
 import (
 	"path/filepath"
-	"strings"
 	"testing"
 
 	cligoemit "duck-demo/pkg/apigen/emit/cligo"
@@ -42,5 +41,5 @@ func TestV1FixtureLoadsAndEmits(t *testing.T) {
 	require.Contains(t, string(cliCode), `import apigencobra "duck-demo/pkg/apigen/runtime/cobra"`)
 	require.Contains(t, string(cliCode), `CLICommand: "widgets list"`)
 	require.Contains(t, string(cliCode), `CLICommand: "widgets create"`)
-	require.False(t, strings.Contains(string(cliCode), "deleteWidget"))
+	require.NotContains(t, string(cliCode), "deleteWidget")
 }

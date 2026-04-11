@@ -314,18 +314,20 @@ type BackfillRequest struct {
 }
 
 type BackfillSlice struct {
-	AssetId      *string `json:"asset_id,omitempty"`
-	AttemptCount *int32  `json:"attempt_count,omitempty"`
-	CreatedAt    *string `json:"created_at,omitempty"`
-	ErrorMessage *string `json:"error_message,omitempty"`
-	FinishedAt   *string `json:"finished_at,omitempty"`
-	Id           *string `json:"id,omitempty"`
-	MaxAttempts  *int32  `json:"max_attempts,omitempty"`
-	PartitionKey *string `json:"partition_key,omitempty"`
-	RequestId    *string `json:"request_id,omitempty"`
-	RunId        *string `json:"run_id,omitempty"`
-	StartedAt    *string `json:"started_at,omitempty"`
-	Status       *string `json:"status,omitempty"`
+	AssetId       *string `json:"asset_id,omitempty"`
+	AttemptCount  *int32  `json:"attempt_count,omitempty"`
+	CreatedAt     *string `json:"created_at,omitempty"`
+	ErrorMessage  *string `json:"error_message,omitempty"`
+	FinishedAt    *string `json:"finished_at,omitempty"`
+	Id            *string `json:"id,omitempty"`
+	MaxAttempts   *int32  `json:"max_attempts,omitempty"`
+	PartitionFrom *string `json:"partition_from,omitempty"`
+	PartitionKey  *string `json:"partition_key,omitempty"`
+	PartitionTo   *string `json:"partition_to,omitempty"`
+	RequestId     *string `json:"request_id,omitempty"`
+	RunId         *string `json:"run_id,omitempty"`
+	StartedAt     *string `json:"started_at,omitempty"`
+	Status        *string `json:"status,omitempty"`
 }
 
 type BootstrapCompleteRequest struct {

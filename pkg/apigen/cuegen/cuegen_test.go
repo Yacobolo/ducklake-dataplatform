@@ -62,6 +62,11 @@ func TestCompileDir_LineageCompactAuthoringParity(t *testing.T) {
 
 	paginatedLineageEdges := bundle.Document.Schemas["PaginatedLineageEdges"]
 	require.Equal(t, []string{"data", "next_page_token"}, paginatedLineageEdges.PropertyOrder)
+
+	apiKeyInfo := bundle.Document.Schemas["APIKeyInfo"]
+	require.Equal(t, []string{"created_at", "expires_at", "id", "key_prefix", "name", "principal_id"}, apiKeyInfo.PropertyOrder)
+	require.Equal(t, "date-time", apiKeyInfo.Properties["created_at"].Schema.Format)
+	require.Equal(t, "date-time", apiKeyInfo.Properties["expires_at"].Schema.Format)
 }
 
 func requireEndpoint(t *testing.T, doc ir.Document, operationID string) ir.Endpoint {

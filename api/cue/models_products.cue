@@ -3,104 +3,28 @@ package api
 // Authored product schemas.
 
 schemas_products: {
-  "CreateDataProductRequest": {
-    "type": "object",
-    "properties": {
-      "access_request_path": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "business_definitions": {
-        "schema": {
-          "ref": "Record"
-        }
-      },
-      "consumer_audience": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "contact_channel": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "contract": {
-        "schema": {
-          "ref": "ProductContract"
-        }
-      },
-      "created_by": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "description": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "docs_url": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "domain_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "primary_asset_key": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "producing_build_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "semantic_model_refs": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "slo": {
-        "schema": {
-          "ref": "ProductSLO"
-        }
-      },
-      "slug": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "steward_principal": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "team_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "visibility": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "CreateDataProductRequest": #objectSchema & {
+    #fields: {
+      "access_request_path": #stringProperty,
+      "business_definitions": #refProperty & {#ref: "Record"},
+      "consumer_audience": #stringProperty,
+      "contact_channel": #stringProperty,
+      "contract": #refProperty & {#ref: "ProductContract"},
+      "created_by": #stringProperty,
+      "description": #descriptionProperty,
+      "docs_url": #stringProperty,
+      "domain_name": #stringProperty,
+      "name": #nameProperty,
+      "primary_asset_key": #stringProperty,
+      "producing_build_id": #stringProperty,
+      "semantic_model_refs": #stringArrayProperty,
+      "slo": #refProperty & {#ref: "ProductSLO"},
+      "slug": #stringProperty,
+      "steward_principal": #stringProperty,
+      "team_name": #stringProperty,
+      "visibility": #stringProperty
     },
-    "required": [
+    #required: [
       "slug",
       "name",
       "domain_name",
@@ -109,235 +33,79 @@ schemas_products: {
       "contact_channel"
     ]
   },
-  "CreateDataProductVersionRequest": {
-    "type": "object",
-    "properties": {
-      "access_request_path": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "compatibility_level": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "contract": {
-        "schema": {
-          "ref": "ProductContract"
-        }
-      },
-      "created_by": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "docs_url": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "output_asset_keys": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "producing_build_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "semantic_model_refs": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "slo": {
-        "schema": {
-          "ref": "ProductSLO"
-        }
-      }
+  "CreateDataProductVersionRequest": #objectSchema & {
+    #fields: {
+      "access_request_path": #stringProperty,
+      "compatibility_level": #stringProperty,
+      "contract": #refProperty & {#ref: "ProductContract"},
+      "created_by": #stringProperty,
+      "docs_url": #stringProperty,
+      "output_asset_keys": #stringArrayProperty,
+      "producing_build_id": #stringProperty,
+      "semantic_model_refs": #stringArrayProperty,
+      "slo": #refProperty & {#ref: "ProductSLO"}
     }
   },
-  "CreateProductDependencyRequest": {
-    "type": "object",
-    "properties": {
-      "depends_on_slug": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "CreateProductDependencyRequest": #objectSchema & {
+    #fields: {
+      "depends_on_slug": #stringProperty
     },
-    "required": [
+    #required: [
       "depends_on_slug"
     ]
   },
-  "CreateProductDomainRequest": {
-    "type": "object",
-    "properties": {
-      "description": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "name": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "CreateProductDomainRequest": #objectSchema & {
+    #fields: {
+      "description": #descriptionProperty,
+      "name": #nameProperty
     },
-    "required": [
+    #required: [
       "name"
     ]
   },
-  "CreateProductSubscriptionRequest": {
-    "type": "object",
-    "properties": {
-      "channel": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "event_type": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "principal_name": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "CreateProductSubscriptionRequest": #objectSchema & {
+    #fields: {
+      "channel": #stringProperty,
+      "event_type": #stringProperty,
+      "principal_name": #principalNameProperty
     },
-    "required": [
+    #required: [
       "principal_name",
       "event_type"
     ]
   },
-  "CreateProductTeamRequest": {
-    "type": "object",
-    "properties": {
-      "contact_channel": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "name": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "CreateProductTeamRequest": #objectSchema & {
+    #fields: {
+      "contact_channel": #stringProperty,
+      "name": #nameProperty
     },
-    "required": [
+    #required: [
       "name"
     ]
   },
-  "DataProduct": {
-    "type": "object",
-    "properties": {
-      "access_request_path": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "business_definitions": {
-        "schema": {
-          "ref": "Record"
-        }
-      },
-      "consumer_audience": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "contact_channel": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "contract": {
-        "schema": {
-          "ref": "ProductContract"
-        }
-      },
-      "created_at": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "created_by": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "description": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "docs_url": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "domain_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "owner_team_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "publication_intent": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "slo": {
-        "schema": {
-          "ref": "ProductSLO"
-        }
-      },
-      "slug": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "steward_principal": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "updated_at": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "visibility": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "DataProduct": #objectSchema & {
+    #fields: {
+      "access_request_path": #stringProperty,
+      "business_definitions": #refProperty & {#ref: "Record"},
+      "consumer_audience": #stringProperty,
+      "contact_channel": #stringProperty,
+      "contract": #refProperty & {#ref: "ProductContract"},
+      "created_at": #createdAtProperty,
+      "created_by": #stringProperty,
+      "description": #descriptionProperty,
+      "docs_url": #stringProperty,
+      "domain_id": #stringProperty,
+      "id": #idProperty,
+      "name": #nameProperty,
+      "owner_team_id": #stringProperty,
+      "publication_intent": #stringProperty,
+      "slo": #refProperty & {#ref: "ProductSLO"},
+      "slug": #stringProperty,
+      "steward_principal": #stringProperty,
+      "updated_at": #updatedAtProperty,
+      "visibility": #stringProperty
     },
-    "required": [
+    #required: [
       "id",
       "slug",
       "name",
@@ -348,79 +116,20 @@ schemas_products: {
       "contact_channel"
     ]
   },
-  "DataProductDetail": {
-    "type": "object",
-    "properties": {
-      "dependencies": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "DataProductListItem"
-          }
-        }
-      },
-      "domain": {
-        "schema": {
-          "ref": "ProductDomain"
-        }
-      },
-      "events": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductEvent"
-          }
-        }
-      },
-      "outputs": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductOutput"
-          }
-        }
-      },
-      "owner_team": {
-        "schema": {
-          "ref": "ProductTeam"
-        }
-      },
-      "product": {
-        "schema": {
-          "ref": "DataProduct"
-        }
-      },
-      "semantic_entrypoints": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductSemanticEntrypoint"
-          }
-        }
-      },
-      "status": {
-        "schema": {
-          "ref": "DataProductStatus"
-        }
-      },
-      "subscriptions": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductSubscription"
-          }
-        }
-      },
-      "versions": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "DataProductVersion"
-          }
-        }
-      }
+  "DataProductDetail": #objectSchema & {
+    #fields: {
+      "dependencies": #arrayRefProperty & {#ref: "DataProductListItem"},
+      "domain": #refProperty & {#ref: "ProductDomain"},
+      "events": #arrayRefProperty & {#ref: "ProductEvent"},
+      "outputs": #arrayRefProperty & {#ref: "ProductOutput"},
+      "owner_team": #refProperty & {#ref: "ProductTeam"},
+      "product": #refProperty & {#ref: "DataProduct"},
+      "semantic_entrypoints": #arrayRefProperty & {#ref: "ProductSemanticEntrypoint"},
+      "status": #refProperty & {#ref: "DataProductStatus"},
+      "subscriptions": #arrayRefProperty & {#ref: "ProductSubscription"},
+      "versions": #arrayRefProperty & {#ref: "DataProductVersion"}
     },
-    "required": [
+    #required: [
       "product",
       "domain",
       "owner_team",
@@ -432,115 +141,37 @@ schemas_products: {
       "events"
     ]
   },
-  "DataProductListItem": {
-    "type": "object",
-    "properties": {
-      "domain": {
-        "schema": {
-          "ref": "ProductDomain"
-        }
-      },
-      "latest_version": {
-        "schema": {
-          "ref": "DataProductVersion"
-        }
-      },
-      "owner_team": {
-        "schema": {
-          "ref": "ProductTeam"
-        }
-      },
-      "primary_output": {
-        "schema": {
-          "ref": "ProductOutput"
-        }
-      },
-      "product": {
-        "schema": {
-          "ref": "DataProduct"
-        }
-      },
-      "status": {
-        "schema": {
-          "ref": "DataProductStatus"
-        }
-      }
+  "DataProductListItem": #objectSchema & {
+    #fields: {
+      "domain": #refProperty & {#ref: "ProductDomain"},
+      "latest_version": #refProperty & {#ref: "DataProductVersion"},
+      "owner_team": #refProperty & {#ref: "ProductTeam"},
+      "primary_output": #refProperty & {#ref: "ProductOutput"},
+      "product": #refProperty & {#ref: "DataProduct"},
+      "status": #refProperty & {#ref: "DataProductStatus"}
     },
-    "required": [
+    #required: [
       "product",
       "domain",
       "owner_team"
     ]
   },
-  "DataProductStatus": {
-    "type": "object",
-    "properties": {
-      "adoption_metrics": {
-        "schema": {
-          "ref": "Record"
-        }
-      },
-      "certification_state": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "failing_checks_count": {
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        }
-      },
-      "freshness_status": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "last_successful_update_at": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "lineage_coverage": {
-        "schema": {
-          "type": "number"
-        }
-      },
-      "open_warnings": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "product_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "publication_state": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "quality_status": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "replacement_product_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "updated_at": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "DataProductStatus": #objectSchema & {
+    #fields: {
+      "adoption_metrics": #refProperty & {#ref: "Record"},
+      "certification_state": #stringProperty,
+      "failing_checks_count": #int64Property,
+      "freshness_status": #stringProperty,
+      "last_successful_update_at": #stringProperty,
+      "lineage_coverage": #numberProperty,
+      "open_warnings": #stringArrayProperty,
+      "product_id": #stringProperty,
+      "publication_state": #stringProperty,
+      "quality_status": #stringProperty,
+      "replacement_product_id": #stringProperty,
+      "updated_at": #updatedAtProperty
     },
-    "required": [
+    #required: [
       "product_id",
       "publication_state",
       "certification_state",
@@ -549,72 +180,22 @@ schemas_products: {
       "failing_checks_count"
     ]
   },
-  "DataProductVersion": {
-    "type": "object",
-    "properties": {
-      "access_request_path": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "compatibility_level": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "contract": {
-        "schema": {
-          "ref": "ProductContract"
-        }
-      },
-      "created_at": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "created_by": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "docs_url": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "producing_build_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "product_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "release_state": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "slo": {
-        "schema": {
-          "ref": "ProductSLO"
-        }
-      },
-      "version": {
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      }
+  "DataProductVersion": #objectSchema & {
+    #fields: {
+      "access_request_path": #stringProperty,
+      "compatibility_level": #stringProperty,
+      "contract": #refProperty & {#ref: "ProductContract"},
+      "created_at": #createdAtProperty,
+      "created_by": #stringProperty,
+      "docs_url": #stringProperty,
+      "id": #idProperty,
+      "producing_build_id": #stringProperty,
+      "product_id": #stringProperty,
+      "release_state": #stringProperty,
+      "slo": #refProperty & {#ref: "ProductSLO"},
+      "version": #int32Property
     },
-    "required": [
+    #required: [
       "id",
       "product_id",
       "version",
@@ -622,68 +203,19 @@ schemas_products: {
       "compatibility_level"
     ]
   },
-  "DataProductVersionDetail": {
-    "type": "object",
-    "properties": {
-      "dependencies": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "DataProductListItem"
-          }
-        }
-      },
-      "domain": {
-        "schema": {
-          "ref": "ProductDomain"
-        }
-      },
-      "events": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductEvent"
-          }
-        }
-      },
-      "outputs": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductOutput"
-          }
-        }
-      },
-      "owner_team": {
-        "schema": {
-          "ref": "ProductTeam"
-        }
-      },
-      "product": {
-        "schema": {
-          "ref": "DataProduct"
-        }
-      },
-      "semantic_entrypoints": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductSemanticEntrypoint"
-          }
-        }
-      },
-      "status": {
-        "schema": {
-          "ref": "DataProductStatus"
-        }
-      },
-      "version": {
-        "schema": {
-          "ref": "DataProductVersion"
-        }
-      }
+  "DataProductVersionDetail": #objectSchema & {
+    #fields: {
+      "dependencies": #arrayRefProperty & {#ref: "DataProductListItem"},
+      "domain": #refProperty & {#ref: "ProductDomain"},
+      "events": #arrayRefProperty & {#ref: "ProductEvent"},
+      "outputs": #arrayRefProperty & {#ref: "ProductOutput"},
+      "owner_team": #refProperty & {#ref: "ProductTeam"},
+      "product": #refProperty & {#ref: "DataProduct"},
+      "semantic_entrypoints": #arrayRefProperty & {#ref: "ProductSemanticEntrypoint"},
+      "status": #refProperty & {#ref: "DataProductStatus"},
+      "version": #refProperty & {#ref: "DataProductVersion"}
     },
-    "required": [
+    #required: [
       "product",
       "domain",
       "owner_team",
@@ -694,180 +226,45 @@ schemas_products: {
       "events"
     ]
   },
-  "DataProductVersionList": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "DataProductVersion"
-          }
-        }
-      }
+  "DataProductVersionList": #objectSchema & {
+    #fields: {
+      "data": #arrayRefProperty & {#ref: "DataProductVersion"}
     },
-    "required": [
+    #required: [
       "data"
     ]
   },
-  "DeprecateProductVersionRequest": {
-    "type": "object",
-    "properties": {
-      "replacement_slug": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "DeprecateProductVersionRequest": #objectSchema & {
+    #fields: {
+      "replacement_slug": #stringProperty
     }
   },
-  "OrphanResource": {
-    "type": "object",
-    "properties": {
-      "resource_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "resource_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "resource_type": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "OrphanResource": #objectSchema & {
+    #fields: {
+      "resource_id": #stringProperty,
+      "resource_name": #stringProperty,
+      "resource_type": #stringProperty
     },
-    "required": [
+    #required: [
       "resource_type",
       "resource_id",
       "resource_name"
     ]
   },
-  "PaginatedDataProducts": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "DataProductListItem"
-          }
-        }
-      },
-      "next_page_token": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductAdoptionSummary": #objectSchema & {
+    #fields: {
+      "adoption_score": #int64Property,
+      "domain_name": #stringProperty,
+      "downstream_product_count": #int64Property,
+      "output_count": #int64Property,
+      "product_id": #stringProperty,
+      "product_name": #stringProperty,
+      "product_slug": #stringProperty,
+      "semantic_entrypoint_count": #int64Property,
+      "subscriber_count": #int64Property,
+      "team_name": #stringProperty
     },
-    "required": [
-      "data"
-    ]
-  },
-  "PaginatedProductDomains": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductDomain"
-          }
-        }
-      },
-      "next_page_token": {
-        "schema": {
-          "type": "string"
-        }
-      }
-    },
-    "required": [
-      "data"
-    ]
-  },
-  "PaginatedProductTeams": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductTeam"
-          }
-        }
-      },
-      "next_page_token": {
-        "schema": {
-          "type": "string"
-        }
-      }
-    },
-    "required": [
-      "data"
-    ]
-  },
-  "ProductAdoptionSummary": {
-    "type": "object",
-    "properties": {
-      "adoption_score": {
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        }
-      },
-      "domain_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "downstream_product_count": {
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        }
-      },
-      "output_count": {
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        }
-      },
-      "product_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "product_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "product_slug": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "semantic_entrypoint_count": {
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        }
-      },
-      "subscriber_count": {
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        }
-      },
-      "team_name": {
-        "schema": {
-          "type": "string"
-        }
-      }
-    },
-    "required": [
+    #required: [
       "product_id",
       "product_slug",
       "product_name",
@@ -880,170 +277,53 @@ schemas_products: {
       "adoption_score"
     ]
   },
-  "ProductContract": {
-    "type": "object",
-    "properties": {
-      "breaking_change_policy": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "data_grain": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "dimensions": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "join_keys": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "measures": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "primary_keys": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "quality_expectations": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "retention_window": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "sample_queries": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "update_cadence": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductContract": #objectSchema & {
+    #fields: {
+      "breaking_change_policy": #stringProperty,
+      "data_grain": #stringProperty,
+      "dimensions": #stringArrayProperty,
+      "join_keys": #stringArrayProperty,
+      "measures": #stringArrayProperty,
+      "primary_keys": #stringArrayProperty,
+      "quality_expectations": #stringArrayProperty,
+      "retention_window": #stringProperty,
+      "sample_queries": #stringArrayProperty,
+      "update_cadence": #stringProperty
     }
   },
-  "ProductDependencyList": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "DataProductListItem"
-          }
-        }
-      }
+  "ProductDependencyList": #objectSchema & {
+    #fields: {
+      "data": #arrayRefProperty & {#ref: "DataProductListItem"}
     },
-    "required": [
+    #required: [
       "data"
     ]
   },
-  "ProductDomain": {
-    "type": "object",
-    "properties": {
-      "created_at": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "description": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "updated_at": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductDomain": #objectSchema & {
+    #fields: {
+      "created_at": #createdAtProperty,
+      "description": #descriptionProperty,
+      "id": #idProperty,
+      "name": #nameProperty,
+      "updated_at": #updatedAtProperty
     },
-    "required": [
+    #required: [
       "id",
       "name",
       "description"
     ]
   },
-  "ProductEvent": {
-    "type": "object",
-    "properties": {
-      "created_at": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "description": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "event_type": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "metadata": {
-        "schema": {
-          "ref": "Record"
-        }
-      },
-      "product_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "title": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductEvent": #objectSchema & {
+    #fields: {
+      "created_at": #createdAtProperty,
+      "description": #descriptionProperty,
+      "event_type": #stringProperty,
+      "id": #idProperty,
+      "metadata": #refProperty & {#ref: "Record"},
+      "product_id": #stringProperty,
+      "title": #stringProperty
     },
-    "required": [
+    #required: [
       "id",
       "product_id",
       "event_type",
@@ -1051,67 +331,26 @@ schemas_products: {
       "description"
     ]
   },
-  "ProductEventList": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductEvent"
-          }
-        }
-      },
-      "next_page_token": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductEventList": #objectSchema & {
+    #fields: {
+      "data": #arrayRefProperty & {#ref: "ProductEvent"},
+      "next_page_token": #stringProperty
     },
-    "required": [
+    #required: [
       "data"
     ]
   },
-  "ProductOutput": {
-    "type": "object",
-    "properties": {
-      "asset_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "asset_key": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "asset_type": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "created_at": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "is_primary": {
-        "schema": {
-          "type": "boolean"
-        }
-      },
-      "product_version_id": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductOutput": #objectSchema & {
+    #fields: {
+      "asset_id": #stringProperty,
+      "asset_key": #stringProperty,
+      "asset_type": #stringProperty,
+      "created_at": #createdAtProperty,
+      "id": #idProperty,
+      "is_primary": #boolProperty,
+      "product_version_id": #stringProperty
     },
-    "required": [
+    #required: [
       "id",
       "product_version_id",
       "asset_id",
@@ -1120,56 +359,23 @@ schemas_products: {
       "is_primary"
     ]
   },
-  "ProductOutputList": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductOutput"
-          }
-        }
-      }
+  "ProductOutputList": #objectSchema & {
+    #fields: {
+      "data": #arrayRefProperty & {#ref: "ProductOutput"}
     },
-    "required": [
+    #required: [
       "data"
     ]
   },
-  "ProductPortfolioGroup": {
-    "type": "object",
-    "properties": {
-      "average_completeness_pct": {
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      "certified_count": {
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        }
-      },
-      "name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "product_count": {
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        }
-      },
-      "published_count": {
-        "schema": {
-          "type": "integer",
-          "format": "int64"
-        }
-      }
+  "ProductPortfolioGroup": #objectSchema & {
+    #fields: {
+      "average_completeness_pct": #int32Property,
+      "certified_count": #int64Property,
+      "name": #nameProperty,
+      "product_count": #int64Property,
+      "published_count": #int64Property
     },
-    "required": [
+    #required: [
       "name",
       "product_count",
       "published_count",
@@ -1177,67 +383,17 @@ schemas_products: {
       "average_completeness_pct"
     ]
   },
-  "ProductPortfolioReport": {
-    "type": "object",
-    "properties": {
-      "domain_scorecards": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductPortfolioGroup"
-          }
-        }
-      },
-      "high_blast_radius": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductAdoptionSummary"
-          }
-        }
-      },
-      "least_adopted": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductAdoptionSummary"
-          }
-        }
-      },
-      "orphan_assets": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "OrphanResource"
-          }
-        }
-      },
-      "orphan_semantic_models": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "OrphanResource"
-          }
-        }
-      },
-      "team_scorecards": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductPortfolioGroup"
-          }
-        }
-      },
-      "top_used": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductAdoptionSummary"
-          }
-        }
-      }
+  "ProductPortfolioReport": #objectSchema & {
+    #fields: {
+      "domain_scorecards": #arrayRefProperty & {#ref: "ProductPortfolioGroup"},
+      "high_blast_radius": #arrayRefProperty & {#ref: "ProductAdoptionSummary"},
+      "least_adopted": #arrayRefProperty & {#ref: "ProductAdoptionSummary"},
+      "orphan_assets": #arrayRefProperty & {#ref: "OrphanResource"},
+      "orphan_semantic_models": #arrayRefProperty & {#ref: "OrphanResource"},
+      "team_scorecards": #arrayRefProperty & {#ref: "ProductPortfolioGroup"},
+      "top_used": #arrayRefProperty & {#ref: "ProductAdoptionSummary"}
     },
-    "required": [
+    #required: [
       "top_used",
       "least_adopted",
       "high_blast_radius",
@@ -1247,97 +403,30 @@ schemas_products: {
       "orphan_semantic_models"
     ]
   },
-  "ProductSLO": {
-    "type": "object",
-    "properties": {
-      "freshness_slo": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "latency_slo": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductSLO": #objectSchema & {
+    #fields: {
+      "freshness_slo": #stringProperty,
+      "latency_slo": #stringProperty
     }
   },
-  "ProductScorecard": {
-    "type": "object",
-    "properties": {
-      "certification_state": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "completeness_percent": {
-        "schema": {
-          "type": "integer",
-          "format": "int32"
-        }
-      },
-      "domain_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "has_contract": {
-        "schema": {
-          "type": "boolean"
-        }
-      },
-      "has_docs_or_access_path": {
-        "schema": {
-          "type": "boolean"
-        }
-      },
-      "has_owner": {
-        "schema": {
-          "type": "boolean"
-        }
-      },
-      "has_primary_output": {
-        "schema": {
-          "type": "boolean"
-        }
-      },
-      "has_slo": {
-        "schema": {
-          "type": "boolean"
-        }
-      },
-      "has_warnings": {
-        "schema": {
-          "type": "boolean"
-        }
-      },
-      "product_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "product_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "product_slug": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "publication_state": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "team_name": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductScorecard": #objectSchema & {
+    #fields: {
+      "certification_state": #stringProperty,
+      "completeness_percent": #int32Property,
+      "domain_name": #stringProperty,
+      "has_contract": #boolProperty,
+      "has_docs_or_access_path": #boolProperty,
+      "has_owner": #boolProperty,
+      "has_primary_output": #boolProperty,
+      "has_slo": #boolProperty,
+      "has_warnings": #boolProperty,
+      "product_id": #stringProperty,
+      "product_name": #stringProperty,
+      "product_slug": #stringProperty,
+      "publication_state": #stringProperty,
+      "team_name": #stringProperty
     },
-    "required": [
+    #required: [
       "product_id",
       "product_slug",
       "product_name",
@@ -1354,114 +443,48 @@ schemas_products: {
       "completeness_percent"
     ]
   },
-  "ProductScorecardList": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductScorecard"
-          }
-        }
-      },
-      "next_page_token": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductScorecardList": #objectSchema & {
+    #fields: {
+      "data": #arrayRefProperty & {#ref: "ProductScorecard"},
+      "next_page_token": #stringProperty
     },
-    "required": [
+    #required: [
       "data"
     ]
   },
-  "ProductSemanticEntrypoint": {
-    "type": "object",
-    "properties": {
-      "created_at": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "model_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "product_version_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "semantic_model_id": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductSemanticEntrypoint": #objectSchema & {
+    #fields: {
+      "created_at": #createdAtProperty,
+      "id": #idProperty,
+      "model_name": #stringProperty,
+      "product_version_id": #stringProperty,
+      "semantic_model_id": #stringProperty
     },
-    "required": [
+    #required: [
       "id",
       "product_version_id",
       "semantic_model_id",
       "model_name"
     ]
   },
-  "ProductSemanticEntrypointList": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductSemanticEntrypoint"
-          }
-        }
-      }
+  "ProductSemanticEntrypointList": #objectSchema & {
+    #fields: {
+      "data": #arrayRefProperty & {#ref: "ProductSemanticEntrypoint"}
     },
-    "required": [
+    #required: [
       "data"
     ]
   },
-  "ProductSubscription": {
-    "type": "object",
-    "properties": {
-      "channel": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "created_at": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "event_type": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "principal_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "product_id": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductSubscription": #objectSchema & {
+    #fields: {
+      "channel": #stringProperty,
+      "created_at": #createdAtProperty,
+      "event_type": #stringProperty,
+      "id": #idProperty,
+      "principal_name": #principalNameProperty,
+      "product_id": #stringProperty
     },
-    "required": [
+    #required: [
       "id",
       "product_id",
       "principal_name",
@@ -1469,138 +492,48 @@ schemas_products: {
       "channel"
     ]
   },
-  "ProductSubscriptionList": {
-    "type": "object",
-    "properties": {
-      "data": {
-        "schema": {
-          "type": "array",
-          "items": {
-            "ref": "ProductSubscription"
-          }
-        }
-      }
+  "ProductSubscriptionList": #objectSchema & {
+    #fields: {
+      "data": #arrayRefProperty & {#ref: "ProductSubscription"}
     },
-    "required": [
+    #required: [
       "data"
     ]
   },
-  "ProductTeam": {
-    "type": "object",
-    "properties": {
-      "contact_channel": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "created_at": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "domain_id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "id": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "updated_at": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "ProductTeam": #objectSchema & {
+    #fields: {
+      "contact_channel": #stringProperty,
+      "created_at": #createdAtProperty,
+      "domain_id": #stringProperty,
+      "id": #idProperty,
+      "name": #nameProperty,
+      "updated_at": #updatedAtProperty
     },
-    "required": [
+    #required: [
       "id",
       "domain_id",
       "name",
       "contact_channel"
     ]
   },
-  "UpdateDataProductRequest": {
-    "type": "object",
-    "properties": {
-      "access_request_path": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "business_definitions": {
-        "schema": {
-          "ref": "Record"
-        }
-      },
-      "consumer_audience": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "contact_channel": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "contract": {
-        "schema": {
-          "ref": "ProductContract"
-        }
-      },
-      "description": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "docs_url": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "domain_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "publication_intent": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "slo": {
-        "schema": {
-          "ref": "ProductSLO"
-        }
-      },
-      "steward_principal": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "team_name": {
-        "schema": {
-          "type": "string"
-        }
-      },
-      "visibility": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "UpdateDataProductRequest": #objectSchema & {
+    #fields: {
+      "access_request_path": #stringProperty,
+      "business_definitions": #refProperty & {#ref: "Record"},
+      "consumer_audience": #stringProperty,
+      "contact_channel": #stringProperty,
+      "contract": #refProperty & {#ref: "ProductContract"},
+      "description": #descriptionProperty,
+      "docs_url": #stringProperty,
+      "domain_name": #stringProperty,
+      "name": #nameProperty,
+      "publication_intent": #stringProperty,
+      "slo": #refProperty & {#ref: "ProductSLO"},
+      "steward_principal": #stringProperty,
+      "team_name": #stringProperty,
+      "visibility": #stringProperty
     },
-    "required": [
+    #required: [
       "name",
       "domain_name",
       "team_name",
@@ -1608,25 +541,14 @@ schemas_products: {
       "contact_channel"
     ]
   },
-  "UpdateProductDomainRequest": {
-    "type": "object",
-    "properties": {
-      "description": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "UpdateProductDomainRequest": #objectSchema & {
+    #fields: {
+      "description": #descriptionProperty
     }
   },
-  "UpdateProductTeamRequest": {
-    "type": "object",
-    "properties": {
-      "contact_channel": {
-        "schema": {
-          "type": "string"
-        }
-      }
+  "UpdateProductTeamRequest": #objectSchema & {
+    #fields: {
+      "contact_channel": #stringProperty
     }
   }
 }
-

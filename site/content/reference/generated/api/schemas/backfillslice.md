@@ -15,7 +15,9 @@
 | `finished_at` | `string` | `false` | - |
 | `id` | `string` | `false` | - |
 | `max_attempts` | `integer` | `false` | - |
+| `partition_from` | `string` | `false` | - |
 | `partition_key` | `string` | `false` | - |
+| `partition_to` | `string` | `false` | - |
 | `request_id` | `string` | `false` | - |
 | `run_id` | `string` | `false` | - |
 | `started_at` | `string` | `false` | - |

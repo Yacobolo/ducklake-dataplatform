@@ -81,7 +81,7 @@ func PrintTable(w io.Writer, columns []string, rows [][]string) {
 				if widths[j] > 3 && len(val) >= widths[j]-3 {
 					rows[i][j] = truncateString(val, widths[j]-3) + "..."
 				} else {
-					rows[i][j] = truncateString(val, widths[j]) //nolint:gosec
+					rows[i][j] = truncateString(val, widths[j])
 				}
 			}
 		}
