@@ -19,9 +19,9 @@ func TestMainRepoCueParity(t *testing.T) {
 	irPath := filepath.Join(tempDir, "json-ir.json")
 	openAPIPath := filepath.Join(tempDir, "openapi.yaml")
 
-	runCommand(t, repoRoot, "go", "run", "./cmd/apigen", "cue-compile", "-cue-dir", filepath.Join(repoRoot, "api", "cue"), "-ir-out", irPath, "-openapi-out", openAPIPath)
+	runCommand(t, repoRoot, "go", "run", "./cmd/apigen", "cue-compile", "-cue-dir", filepath.Join(repoRoot, "internal", "api", "contract", "cue"), "-ir-out", irPath, "-openapi-out", openAPIPath)
 
-	requireFileEquals(t, openAPIPath, filepath.Join(repoRoot, "api", "gen", "openapi.yaml"))
+	requireFileEquals(t, openAPIPath, filepath.Join(repoRoot, "internal", "api", "gen", "openapi.yaml"))
 
 	serverOut := filepath.Join(tempDir, "server.apigen.gen.go")
 	requestModelsOut := filepath.Join(tempDir, "gen_request_models.gen.go")

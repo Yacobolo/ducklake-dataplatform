@@ -26,12 +26,12 @@ func main() {
 
 	command := os.Args[1]
 	fs := flag.NewFlagSet(command, flag.ExitOnError)
-	irPath := fs.String("ir", "api/gen/json-ir.json", "input JSON IR path")
-	irOut := fs.String("ir-out", "api/gen/json-ir.json", "output JSON IR path for CUE compilation")
-	openapiOut := fs.String("openapi-out", "api/gen/openapi.apigen.yaml", "output OpenAPI YAML path for optional debug/compat emission")
-	canonicalOpenAPIPath := fs.String("canonical-openapi", "api/gen/openapi.yaml", "canonical OpenAPI YAML path to embed into generated server code")
-	cueDir := fs.String("cue-dir", "api/cue", "input CUE API source directory")
-	cueOutDir := fs.String("cue-out-dir", "api/cue", "output CUE API source directory")
+	irPath := fs.String("ir", "internal/api/gen/json-ir.json", "input JSON IR path")
+	irOut := fs.String("ir-out", "internal/api/gen/json-ir.json", "output JSON IR path for CUE compilation")
+	openapiOut := fs.String("openapi-out", "internal/api/gen/openapi.apigen.yaml", "output OpenAPI YAML path for optional debug/compat emission")
+	canonicalOpenAPIPath := fs.String("canonical-openapi", "internal/api/gen/openapi.yaml", "canonical OpenAPI YAML path to embed into generated server code")
+	cueDir := fs.String("cue-dir", "internal/api/contract/cue", "input CUE API source directory")
+	cueOutDir := fs.String("cue-out-dir", "internal/api/contract/cue", "output CUE API source directory")
 	serverOut := fs.String("server-out", "internal/api/server.apigen.gen.go", "output server Go path")
 	serverPackage := fs.String("server-package", "api", "generated server Go package name")
 	requestModelsOut := fs.String("request-models-out", "internal/api/gen_request_models.gen.go", "output APIGen request models Go path")

@@ -209,7 +209,7 @@ func writeAPIIndex(path string, outputs []tagOutput, schemaNames []string) error
 	var b strings.Builder
 	b.WriteString(generatedHeader())
 	b.WriteString("# API Reference\n\n")
-	b.WriteString("This section is generated from the OpenAPI artifact (`api/gen/openapi.yaml` by default).\n\n")
+	b.WriteString("This section is generated from the OpenAPI artifact (`internal/api/gen/openapi.yaml` by default).\n\n")
 	b.WriteString("- [Feature Overview](./features)\n\n")
 	b.WriteString("## Endpoint Groups\n\n")
 	for _, output := range outputs {

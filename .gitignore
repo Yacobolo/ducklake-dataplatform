@@ -42,8 +42,8 @@ ducklake_meta.sqlite*
 .task/
 
 # Generated code (regenerate with: task generate)
-api/gen/json-ir.json
-api/gen/openapi.apigen.yaml
+internal/api/gen/json-ir.json
+internal/api/gen/openapi.apigen.yaml
 internal/api/types.gen.go
 internal/api/server.gen.go
 internal/api/server.apigen.gen.go

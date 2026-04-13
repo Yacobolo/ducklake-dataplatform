@@ -205,14 +205,14 @@ tasks:
     deps: [cue:compile]
     cmds:
       - find pkg/cli/gen -maxdepth 1 -type f -name '*.gen.go' ! -name 'apigen_registry.gen.go' ! -name 'discovery_index.gen.go' -delete
-      - go run ./cmd/apigen all -ir api/gen/json-ir.json -compat-types-out internal/api/types.gen.go
+      - go run ./cmd/apigen all -ir internal/api/gen/json-ir.json -compat-types-out internal/api/types.gen.go
     sources:
-      - api/cue/**/*.cue
+      - internal/api/contract/cue/**/*.cue
       - cmd/apigen/**/*.go
       - pkg/apigen/**/*.go
     generates:
-      - api/gen/openapi.yaml
-      - api/gen/json-ir.json
+      - internal/api/gen/openapi.yaml
+      - internal/api/gen/json-ir.json
       - internal/api/gen_request_models.gen.go
       - internal/api/server.apigen.gen.go
       - internal/api/types.gen.go
@@ -221,19 +221,19 @@ tasks:
   cue:compile:
     desc: Compile CUE API sources into canonical OpenAPI and JSON IR artifacts
     cmds:
-      - go run ./cmd/apigen cue-compile -cue-dir api/cue -ir-out api/gen/json-ir.json -openapi-out api/gen/openapi.yaml
+      - go run ./cmd/apigen cue-compile -cue-dir internal/api/contract/cue -ir-out internal/api/gen/json-ir.json -openapi-out internal/api/gen/openapi.yaml
     sources:
-      - api/cue/**/*.cue
+      - internal/api/contract/cue/**/*.cue
       - cmd/apigen/**/*.go
       - pkg/apigen/**/*.go
     generates:
-      - api/gen/openapi.yaml
-      - api/gen/json-ir.json
+      - internal/api/gen/openapi.yaml
+      - internal/api/gen/json-ir.json
 
   verify:apigen-generated:
     desc: Verify apigen artifacts are up to date
     preconditions:
-      - sh: test -f api/gen/openapi.yaml
+      - sh: test -f internal/api/gen/openapi.yaml
         msg: "apigen artifacts missing. Run 'task generate:api' first."
     cmds:
       - task generate:api
@@ -241,7 +241,7 @@ tasks:
       - test -f internal/api/server.apigen.gen.go
       - test -f internal/api/types.gen.go
       - test -f pkg/cli/gen/apigen_registry.gen.go
-      - git diff --exit-code -- api/gen/openapi.yaml internal/api/gen_request_models.gen.go internal/api/server.apigen.gen.go internal/api/types.gen.go pkg/cli/gen/apigen_registry.gen.go
+      - git diff --exit-code -- internal/api/gen/openapi.yaml internal/api/gen_request_models.gen.go internal/api/server.apigen.gen.go internal/api/types.gen.go pkg/cli/gen/apigen_registry.gen.go
 
   verify:apigen-cue-parity:
     desc: Verify the CUE pipeline reproduces the checked-in APIGen outputs
@@ -251,12 +251,12 @@ tasks:
   generate:declarative-reference:
     desc: Generate declarative CUE reference docs
     cmds:
-      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
+      - go run ./cmd/docsgen -openapi internal/api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
     sources:
       - internal/declarative/*.go
       - internal/docsgen/declarative/*.go
       - cmd/docsgen/*.go
-      - api/gen/openapi.yaml
+      - internal/api/gen/openapi.yaml
     generates:
       - site/content/reference/generated/declarative/index.md
       - pkg/cli/gen/discovery_index.gen.go
@@ -275,9 +275,9 @@ tasks:
     desc: Generate docs reference pages from generated API and declarative CUE docs
     deps: [generate:api]
     cmds:
-      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
+      - go run ./cmd/docsgen -openapi internal/api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
     sources:
-      - api/gen/openapi.yaml
+      - internal/api/gen/openapi.yaml
       - cmd/docsgen/*.go
       - internal/docsgen/**/*.go
     generates:
@@ -290,7 +290,7 @@ tasks:
     desc: Generate docs from canonical OpenAPI artifact and declarative CUE docs
     deps: [generate:api]
     cmds:
-      - go run ./cmd/docsgen -openapi api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
+      - go run ./cmd/docsgen -openapi internal/api/gen/openapi.yaml -outdir site/content/reference/generated -docs-dir site/content -cli-index-out pkg/cli/gen/discovery_index.gen.go
 
   site:generate:
     desc: Generate the public site content and static export
@@ -465,13 +465,13 @@ tasks:
     desc: Lint canonical OpenAPI spec for consistency
     deps: [generate:api]
     cmds:
-      - go run ./cmd/lint-api api/gen/openapi.yaml
+      - go run ./cmd/lint-api internal/api/gen/openapi.yaml
 
   lint:api:generated:
     desc: Alias for canonical OpenAPI lint
     deps: [generate:api]
     cmds:
-      - go run ./cmd/lint-api api/gen/openapi.yaml
+      - go run ./cmd/lint-api internal/api/gen/openapi.yaml
 
   test-cli:
     desc: Run CLI tests

@@ -68,10 +68,10 @@ Dependency direction: `api` → `service` → `domain` ← `repository`. Never i
 
 ## Generated Code — Do Not Edit
 
-- `api/cue/*.cue` — checked-in CUE authoring source for APIGen; this is the Go-owned declarative source of truth
-- `api/gen/openapi.yaml` — tracked canonical OpenAPI artifact emitted from `api/cue` via `task cue:compile`; includes repo-owned extensions such as `x-authz` and `x-cli-command`
-- `api/gen/json-ir.json` — local APIGen intermediate emitted from `api/cue` via `task cue:compile` (generated, not committed)
-- `internal/api/gen_request_models.gen.go`, `internal/api/server.apigen.gen.go`, `internal/api/types.gen.go`, `pkg/cli/gen/apigen_registry.gen.go` — APIGen outputs from JSON IR (`api/gen/json-ir.json`) via `cmd/apigen`
+- `internal/api/contract/cue/*.cue` — checked-in CUE authoring source for APIGen; this is the application-owned declarative source of truth
+- `internal/api/gen/openapi.yaml` — tracked canonical OpenAPI artifact emitted from `internal/api/contract/cue` via `task cue:compile`; includes repo-owned extensions such as `x-authz` and `x-cli-command`
+- `internal/api/gen/json-ir.json` — local APIGen intermediate emitted from `internal/api/contract/cue` via `task cue:compile` (generated, not committed)
+- `internal/api/gen_request_models.gen.go`, `internal/api/server.apigen.gen.go`, `internal/api/types.gen.go`, `pkg/cli/gen/apigen_registry.gen.go` — APIGen outputs from JSON IR (`internal/api/gen/json-ir.json`) via `cmd/apigen`
 - Pipeline: CUE authors the contract, `task cue:compile` emits both canonical OpenAPI and JSON IR, then `cmd/apigen` generates Go transport/CLI artifacts from JSON IR while embedding the canonical OpenAPI into the server
 - `pkg/cli/gen/` is primarily generated CLI metadata; do not assume it is the active handwritten CLI runtime boundary
 - `internal/db/dbstore/*.sql.go` — from `internal/db/queries/*.sql` via sqlc

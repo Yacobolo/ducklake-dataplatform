@@ -3310,6 +3310,8 @@ type GetModelDAGParams = GenGetModelDAGParams
 
 type GetQueryResultsParams = GenGetQueryResultsParams
 
+type GetRenderedDashboardParams = GenGetRenderedDashboardParams
+
 type GetTableLineageParams = GenGetTableLineageParams
 
 type GetUpstreamLineageParams = GenGetUpstreamLineageParams

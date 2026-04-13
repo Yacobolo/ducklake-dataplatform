@@ -137,6 +137,12 @@ Get rendered dashboard
 | --- | --- | --- | --- |
 | `dashboard_id` | `string` | `true` | - |
 
+### Query Parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `filters` | `array[string]` | `false` | - |
+
 ### Responses
 
 | Code | Description |

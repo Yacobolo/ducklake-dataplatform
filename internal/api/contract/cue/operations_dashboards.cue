@@ -20,8 +20,25 @@ package api
 	#name: "owner"
 }
 
+#dashboardFiltersQueryParameter: {
+	name:    "filters"
+	in:      "query"
+	explode: false
+	schema: {
+		type: "array"
+		items: {
+			type: "string"
+		}
+	}
+}
+
 #dashboardPathParameters: [
 	#dashboardIDPathParameter,
+]
+
+#renderedDashboardParameters: [
+	#dashboardIDPathParameter,
+	#dashboardFiltersQueryParameter,
 ]
 
 #dashboardWidgetPathParameters: [
@@ -76,7 +93,7 @@ package api
 		summary:      "Get rendered dashboard"
 		returns:      "ResolvedDashboardDetail"
 		error_family: "resource"
-		params:       #dashboardPathParameters
+		params:       #renderedDashboardParameters
 	},
 	#plainDashboardOperation & {
 		kind:         "response"

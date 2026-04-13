@@ -5788,6 +5788,14 @@ paths:
           required: true
           schema:
             type: string
+        - name: filters
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          explode: false
       responses:
         '200':
           description: The request has succeeded.

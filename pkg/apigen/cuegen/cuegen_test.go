@@ -43,7 +43,7 @@ func TestBootstrapRoundTrip(t *testing.T) {
 func TestCompileDir_LineageCompactAuthoringParity(t *testing.T) {
 	t.Helper()
 
-	bundle, err := CompileDir(filepath.Join("..", "..", "..", "api", "cue"))
+	bundle, err := CompileDir(filepath.Join("..", "..", "..", "internal", "api", "contract", "cue"))
 	require.NoError(t, err)
 
 	getTableLineage := requireEndpoint(t, bundle.Document, "getTableLineage")

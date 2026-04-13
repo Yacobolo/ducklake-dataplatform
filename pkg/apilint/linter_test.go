@@ -1100,10 +1100,10 @@ func TestLintActualSpec(t *testing.T) {
 	// Lint the generated project spec end-to-end to verify the linter runs
 	// without crashing and reports violations. The spec currently has many
 	// OWASP-level violations that need to be fixed incrementally.
-	specPath := "../../api/gen/openapi.yaml"
+	specPath := "../../internal/api/gen/openapi.yaml"
 
 	if _, err := os.Stat(specPath); os.IsNotExist(err) {
-		t.Skip("api/gen/openapi.yaml not found at expected path (run task generate:api)")
+		t.Skip("internal/api/gen/openapi.yaml not found at expected path (run task generate:api)")
 	}
 
 	l, err := New(specPath)
